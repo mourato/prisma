@@ -136,6 +136,12 @@ class AudioRecorder: ObservableObject {
         // Attempting to get shareable content triggers the permission prompt
         _ = try? await SCShareableContent.current
     }
+    
+    /// Opens System Preferences to the Screen Recording section.
+    func openScreenRecordingSettings() {
+        let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")!
+        NSWorkspace.shared.open(url)
+    }
 }
 
 // MARK: - Stream Output Handler
