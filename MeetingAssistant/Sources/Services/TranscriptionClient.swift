@@ -21,7 +21,9 @@ class TranscriptionClient {
     
     /// Check if the transcription service is healthy.
     func healthCheck() async throws -> Bool {
-        let url = URL(string: "\(baseURL)/health")!
+        guard let url = URL(string: "\(baseURL)/health") else {
+            throw TranscriptionError.invalidURL("\(baseURL)/health")
+        }
         
         let (data, response) = try await session.data(from: url)
         
@@ -51,7 +53,9 @@ class TranscriptionClient {
     /// Fetch detailed service status.
     /// - Returns: ServiceStatusResponse with comprehensive service information.
     func fetchServiceStatus() async throws -> ServiceStatusResponse {
-        let url = URL(string: "\(baseURL)/status")!
+        guard let url = URL(string: "\(baseURL)/status") else {
+            throw TranscriptionError.invalidURL("\(baseURL)/status")
+        }
         
         let (data, response) = try await session.data(from: url)
         
@@ -65,7 +69,9 @@ class TranscriptionClient {
     
     /// Warm up the model by pre-loading it.
     func warmupModel() async throws {
-        let url = URL(string: "\(baseURL)/warmup")!
+        guard let url = URL(string: "\(baseURL)/warmup") else {
+            throw TranscriptionError.invalidURL("\(baseURL)/warmup")
+        }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         
@@ -80,15 +86,20 @@ class TranscriptionClient {
     }
     
     /// Transcribe an audio file.
-    /// - Parameter audioURL: Path to the WAV file
+    /// - Parameter audioURL: Path to the audio file (WAV, M4A, etc.)
     /// - Returns: Transcription response from the service
     func transcribe(audioURL: URL) async throws -> TranscriptionResponse {
         logger.info("Transcribing file: \(audioURL.lastPathComponent)")
         
-        let url = URL(string: "\(baseURL)/transcribe")!
+        guard let url = URL(string: "\(baseURL)/transcribe") else {
+            throw TranscriptionError.invalidURL("\(baseURL)/transcribe")
+        }
         
         // Read audio file
         let audioData = try Data(contentsOf: audioURL)
+        
+        // Determine MIME type based on file extension
+        let mimeType = mimeTypeForExtension(audioURL.pathExtension)
         
         // Create multipart form request
         let boundary = UUID().uuidString
@@ -98,11 +109,11 @@ class TranscriptionClient {
         
         // Build multipart body
         var body = Data()
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(audioURL.lastPathComponent)\"\r\n".data(using: .utf8)!)
-        body.append("Content-Type: audio/wav\r\n\r\n".data(using: .utf8)!)
+        body.appendString("--\(boundary)\r\n")
+        body.appendString("Content-Disposition: form-data; name=\"file\"; filename=\"\(audioURL.lastPathComponent)\"\r\n")
+        body.appendString("Content-Type: \(mimeType)\r\n\r\n")
         body.append(audioData)
-        body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+        body.appendString("\r\n--\(boundary)--\r\n")
         
         request.httpBody = body
         
@@ -131,6 +142,7 @@ enum TranscriptionError: LocalizedError {
     case serviceUnavailable
     case warmupFailed
     case invalidResponse
+    case invalidURL(String)
     case transcriptionFailed(String)
     
     var errorDescription: String? {
@@ -141,6 +153,8 @@ enum TranscriptionError: LocalizedError {
             return "Falha ao pré-carregar modelo"
         case .invalidResponse:
             return "Resposta inválida do serviço"
+        case .invalidURL(let urlString):
+            return "URL inválida: \(urlString)"
         case .transcriptionFailed(let message):
             return "Falha na transcrição: \(message)"
         }
@@ -207,5 +221,43 @@ struct UserDefaultsStorage<Value> {
         set {
             UserDefaults.standard.set(newValue, forKey: key)
         }
+    }
+}
+
+// MARK: - Data Extension for Safe String Appending
+
+private extension Data {
+    /// Safely append a string to data, using UTF-8 encoding.
+    /// Does nothing if string cannot be encoded (rare edge case).
+    mutating func appendString(_ string: String) {
+        if let data = string.data(using: .utf8) {
+            append(data)
+        }
+    }
+}
+
+// MARK: - MIME Type Helper
+
+/// Determine MIME type based on file extension.
+/// - Parameter ext: File extension (without dot)
+/// - Returns: MIME type string
+private func mimeTypeForExtension(_ ext: String) -> String {
+    switch ext.lowercased() {
+    case "wav":
+        return "audio/wav"
+    case "m4a":
+        return "audio/mp4"
+    case "mp3":
+        return "audio/mpeg"
+    case "mp4":
+        return "video/mp4"
+    case "aac":
+        return "audio/aac"
+    case "flac":
+        return "audio/flac"
+    case "ogg":
+        return "audio/ogg"
+    default:
+        return "application/octet-stream"
     }
 }
