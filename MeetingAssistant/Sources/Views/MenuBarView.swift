@@ -8,12 +8,46 @@ struct MenuBarView: View {
     var body: some View {
         VStack(spacing: 16) {
             headerSection
+            
+            if !recordingManager.hasScreenCapturePermission {
+                permissionWarningSection
+            }
+            
             statusSection
             controlButtons
             transcriptionsList
         }
         .padding()
         .frame(width: 300)
+        .task {
+            await recordingManager.checkPermission()
+        }
+    }
+    
+    // MARK: - Permission Warning
+    
+    private var permissionWarningSection: some View {
+        VStack(spacing: 8) {
+            HStack {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.yellow)
+                Text("Permissão Necessária")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+            }
+            
+            Text("O app precisa de permissão de Gravação de Tela para capturar áudio das reuniões.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+            
+            Button(action: openPermissionSettings) {
+                Label("Abrir Configurações", systemImage: "gear")
+            }
+            .buttonStyle(.bordered)
+        }
+        .padding()
+        .background(.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
     }
     
     // MARK: - Sections
@@ -117,6 +151,10 @@ struct MenuBarView: View {
     
     private func openSettings() {
         NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+    }
+    
+    private func openPermissionSettings() {
+        recordingManager.openPermissionSettings()
     }
 }
 
