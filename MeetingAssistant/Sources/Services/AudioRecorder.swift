@@ -19,6 +19,7 @@ class AudioRecorder: ObservableObject {
     private var assetWriter: AVAssetWriter?
     private var audioInput: AVAssetWriterInput?
     private var streamOutput: AudioStreamOutput?
+    private var audioCaptureQueue: DispatchQueue?
     
     // Audio configuration for Parakeet compatibility
     private let sampleRate: Double = 16000
@@ -77,10 +78,13 @@ class AudioRecorder: ObservableObject {
         // Create and start stream
         stream = SCStream(filter: filter, configuration: config, delegate: nil)
         
+        // Store the queue for later synchronization
+        audioCaptureQueue = DispatchQueue(label: "audio-capture")
+        
         try stream?.addStreamOutput(
             streamOutput!,
             type: .audio,
-            sampleHandlerQueue: DispatchQueue(label: "audio-capture")
+            sampleHandlerQueue: audioCaptureQueue
         )
         
         try await stream?.startCapture()
@@ -101,20 +105,34 @@ class AudioRecorder: ObservableObject {
         
         logger.info("Stopping recording...")
         
+        // Stop the screen capture stream
         try await stream.stopCapture()
         
-        // Finalize the M4A file
+        // CRITICAL: Wait for the audio capture queue to finish processing
+        // any pending samples before finalizing the asset writer.
+        // This prevents the "moov atom not found" error caused by incomplete files.
+        if let queue = audioCaptureQueue {
+            await withCheckedContinuation { continuation in
+                queue.async(flags: .barrier) {
+                    continuation.resume()
+                }
+            }
+        }
+        
+        // Finalize the M4A file (writes the moov atom)
         await finalizeAssetWriter()
         
         // Cleanup
         self.stream = nil
         self.streamOutput = nil
+        self.audioCaptureQueue = nil
         
         isRecording = false
         
         let savedURL = currentRecordingURL
         if let url = savedURL {
             logFileSizeInfo(url: url)
+            verifyFileIntegrity(url: url)
         }
         
         return savedURL
@@ -184,18 +202,35 @@ class AudioRecorder: ObservableObject {
     }
     
     /// Finalize the asset writer and close the file.
+    /// This writes the moov atom which is essential for the file to be playable.
     private func finalizeAssetWriter() async {
+        guard let writer = assetWriter else {
+            logger.warning("No asset writer to finalize")
+            return
+        }
+        
+        // Mark audio input as finished
         audioInput?.markAsFinished()
         
+        // Wait for the writer to finish writing
         await withCheckedContinuation { continuation in
-            assetWriter?.finishWriting {
+            writer.finishWriting {
                 continuation.resume()
             }
         }
         
+        // Check for errors during finalization
+        if writer.status == .failed {
+            let errorMsg = writer.error?.localizedDescription ?? "Unknown error"
+            logger.error("Asset writer failed during finalization: \(errorMsg)")
+        } else if writer.status == .completed {
+            logger.debug("Asset writer finalized successfully (moov atom written)")
+        } else {
+            logger.warning("Asset writer finished with unexpected status: \(writer.status.rawValue)")
+        }
+        
         assetWriter = nil
         audioInput = nil
-        logger.debug("Asset writer finalized")
     }
     
     /// Log file size information for debugging.
@@ -211,6 +246,27 @@ class AudioRecorder: ObservableObject {
             }
         } catch {
             logger.info("Recording saved to: \(url.path)")
+        }
+    }
+    
+    /// Verify that the M4A file is valid and readable.
+    /// This helps detect corrupted files (missing moov atom) immediately.
+    private func verifyFileIntegrity(url: URL) {
+        let asset = AVAsset(url: url)
+        
+        Task {
+            do {
+                let duration = try await asset.load(.duration)
+                let durationSeconds = CMTimeGetSeconds(duration)
+                
+                if durationSeconds > 0 {
+                    logger.info("Recording verified: \(String(format: "%.1f", durationSeconds)) seconds")
+                } else {
+                    logger.warning("Recording may be invalid: duration is zero or negative")
+                }
+            } catch {
+                logger.error("Failed to verify recording integrity: \(error.localizedDescription)")
+            }
         }
     }
 }
