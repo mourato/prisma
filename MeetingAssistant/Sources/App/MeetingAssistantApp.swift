@@ -15,6 +15,7 @@ struct MeetingAssistantApp: App {
 }
 
 /// App delegate for menu bar setup and lifecycle management.
+@MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
     private var popover: NSPopover?

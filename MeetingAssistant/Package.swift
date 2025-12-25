@@ -1,4 +1,4 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 6.0
 // Swift Package Manager configuration for MeetingAssistant
 
 import PackageDescription
@@ -19,10 +19,7 @@ let package = Package(
         .executableTarget(
             name: "MeetingAssistant",
             dependencies: [],
-            path: "Sources",
-            resources: [
-                .copy("../Info.plist")
-            ]
+            path: "Sources"
         )
     ]
 )

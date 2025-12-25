@@ -1,5 +1,5 @@
 import Foundation
-import ScreenCaptureKit
+@preconcurrency import ScreenCaptureKit
 import AVFoundation
 import os.log
 
@@ -178,7 +178,7 @@ private class AudioStreamOutput: NSObject, SCStreamOutput {
             return nil
         }
         
-        let format = AVAudioFormat(streamDescription: audioStreamBasicDescription.pointee)!
+        let format = AVAudioFormat(streamDescription: audioStreamBasicDescription)!
         
         guard let blockBuffer = CMSampleBufferGetDataBuffer(sampleBuffer) else {
             return nil
