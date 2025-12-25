@@ -18,6 +18,9 @@ logger = logging.getLogger(__name__)
 TARGET_SAMPLE_RATE = 16000
 TARGET_CHANNELS = 1  # Mono
 
+# Supported audio formats
+SUPPORTED_EXTENSIONS = {".wav", ".m4a", ".mp3", ".mp4", ".aac", ".flac", ".ogg"}
+
 
 def preprocess_audio(
     input_path: str | Path,
@@ -27,6 +30,7 @@ def preprocess_audio(
     Preprocess audio file for Parakeet transcription.
     
     Converts to WAV format, resamples to 16kHz, and converts to mono.
+    Supports WAV, M4A, MP3, MP4, AAC, FLAC, and OGG formats.
     
     Args:
         input_path: Path to input audio file
@@ -44,8 +48,8 @@ def preprocess_audio(
     
     logger.info(f"Preprocessing audio: {input_path.name}")
     
-    # Read audio
-    audio_data, sample_rate = sf.read(str(input_path))
+    # Read audio based on format
+    audio_data, sample_rate = _read_audio(input_path)
     
     # Convert to mono if stereo
     if len(audio_data.shape) > 1:
@@ -60,11 +64,70 @@ def preprocess_audio(
     # Normalize audio
     audio_data = _normalize(audio_data)
     
-    # Write output
+    # Write output as WAV (for Parakeet compatibility)
     sf.write(str(output_path), audio_data, TARGET_SAMPLE_RATE)
     logger.info(f"Preprocessed audio saved: {output_path.name}")
     
     return output_path
+
+
+def _read_audio(input_path: Path) -> tuple[np.ndarray, int]:
+    """
+    Read audio from various formats.
+    
+    Uses soundfile for WAV/FLAC, pydub for M4A/MP3/AAC.
+    
+    Args:
+        input_path: Path to audio file
+    
+    Returns:
+        Tuple of (audio_data as numpy array, sample_rate)
+    """
+    suffix = input_path.suffix.lower()
+    
+    # Soundfile handles WAV and FLAC natively
+    if suffix in {".wav", ".flac"}:
+        return sf.read(str(input_path))
+    
+    # Use pydub for compressed formats (M4A, MP3, AAC, etc.)
+    # pydub uses ffmpeg backend for decoding
+    if suffix in {".m4a", ".mp3", ".mp4", ".aac", ".ogg"}:
+        return _read_with_pydub(input_path)
+    
+    # Try soundfile as fallback
+    logger.warning(f"Unknown format {suffix}, attempting soundfile read")
+    return sf.read(str(input_path))
+
+
+def _read_with_pydub(input_path: Path) -> tuple[np.ndarray, int]:
+    """
+    Read audio using pydub (requires ffmpeg).
+    
+    Args:
+        input_path: Path to audio file
+    
+    Returns:
+        Tuple of (audio_data as numpy array, sample_rate)
+    """
+    from pydub import AudioSegment
+    
+    suffix = input_path.suffix.lower().lstrip(".")
+    audio = AudioSegment.from_file(str(input_path), format=suffix)
+    
+    # Convert to numpy array
+    sample_rate = audio.frame_rate
+    samples = np.array(audio.get_array_of_samples())
+    
+    # Handle stereo
+    if audio.channels == 2:
+        samples = samples.reshape((-1, 2))
+    
+    # Normalize to float32 range [-1, 1]
+    max_val = 2 ** (audio.sample_width * 8 - 1)
+    samples = samples.astype(np.float32) / max_val
+    
+    logger.debug(f"Read {suffix.upper()} file: {len(samples)} samples at {sample_rate}Hz")
+    return samples, sample_rate
 
 
 def _resample(audio: np.ndarray, orig_sr: int, target_sr: int) -> np.ndarray:
@@ -118,9 +181,19 @@ def get_audio_info(audio_path: str | Path) -> dict:
     """
     Get metadata about audio file.
     
+    Supports WAV, M4A, MP3, and other formats.
+    
     Returns:
         Dict with duration, sample_rate, channels, format
     """
+    audio_path = Path(audio_path)
+    suffix = audio_path.suffix.lower()
+    
+    # Use pydub for compressed formats
+    if suffix in {".m4a", ".mp3", ".mp4", ".aac", ".ogg"}:
+        return _get_audio_info_pydub(audio_path, suffix)
+    
+    # Use soundfile for WAV/FLAC
     info = sf.info(str(audio_path))
     return {
         "duration_seconds": info.duration,
@@ -129,3 +202,25 @@ def get_audio_info(audio_path: str | Path) -> dict:
         "format": info.format,
         "subtype": info.subtype,
     }
+
+
+def _get_audio_info_pydub(audio_path: Path, suffix: str) -> dict:
+    """Get audio info using pydub."""
+    from pydub import AudioSegment
+    
+    format_name = suffix.lstrip(".")
+    audio = AudioSegment.from_file(str(audio_path), format=format_name)
+    
+    return {
+        "duration_seconds": len(audio) / 1000.0,
+        "sample_rate": audio.frame_rate,
+        "channels": audio.channels,
+        "format": format_name.upper(),
+        "subtype": f"{audio.sample_width * 8}-bit",
+    }
+
+
+def is_supported_format(filename: str) -> bool:
+    """Check if file format is supported."""
+    suffix = Path(filename).suffix.lower()
+    return suffix in SUPPORTED_EXTENSIONS

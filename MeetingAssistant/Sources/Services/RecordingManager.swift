@@ -164,7 +164,7 @@ class RecordingManager: ObservableObject {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
         let timestamp = formatter.string(from: meeting.startTime)
-        return "\(meeting.app.rawValue)_\(timestamp).wav"
+        return "\(meeting.app.rawValue)_\(timestamp).m4a"
     }
     
     private func transcribeRecording(audioURL: URL, meeting: Meeting) async {
