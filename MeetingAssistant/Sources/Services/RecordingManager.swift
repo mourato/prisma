@@ -206,8 +206,19 @@ class RecordingManager: ObservableObject {
         currentMeeting = nil
     }
     
+    /// Check if running as a proper app bundle (required for UNUserNotificationCenter).
+    private var isRunningAsAppBundle: Bool {
+        Bundle.main.bundleIdentifier != nil
+    }
+    
     /// Request notification authorization from the user.
+    /// Only works when running as a proper macOS app bundle.
     private func requestNotificationAuthorization() {
+        guard isRunningAsAppBundle else {
+            logger.info("Running as CLI tool, skipping UNUserNotificationCenter authorization")
+            return
+        }
+        
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { [weak self] granted, error in
             if let error = error {
                 self?.logger.error("Notification authorization failed: \(error.localizedDescription)")
@@ -218,10 +229,20 @@ class RecordingManager: ObservableObject {
     }
     
     /// Send a local notification to the user.
+    /// Uses UNUserNotificationCenter for app bundles, falls back to osascript for CLI.
     /// - Parameters:
     ///   - title: The notification title.
     ///   - body: The notification body text.
     private func sendNotification(title: String, body: String) {
+        if isRunningAsAppBundle {
+            sendNotificationViaUserNotifications(title: title, body: body)
+        } else {
+            sendNotificationViaAppleScript(title: title, body: body)
+        }
+    }
+    
+    /// Send notification using UserNotifications framework (requires app bundle).
+    private func sendNotificationViaUserNotifications(title: String, body: String) {
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = body
@@ -230,13 +251,31 @@ class RecordingManager: ObservableObject {
         let request = UNNotificationRequest(
             identifier: UUID().uuidString,
             content: content,
-            trigger: nil  // nil = immediate delivery
+            trigger: nil
         )
         
         UNUserNotificationCenter.current().add(request) { [weak self] error in
             if let error = error {
                 self?.logger.error("Failed to deliver notification: \(error.localizedDescription)")
             }
+        }
+    }
+    
+    /// Send notification using osascript as fallback for CLI tools.
+    private func sendNotificationViaAppleScript(title: String, body: String) {
+        let escapedTitle = title.replacingOccurrences(of: "\"", with: "\\\"")
+        let escapedBody = body.replacingOccurrences(of: "\"", with: "\\\"")
+        
+        let script = "display notification \"\(escapedBody)\" with title \"\(escapedTitle)\" sound name \"default\""
+        
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+        process.arguments = ["-e", script]
+        
+        do {
+            try process.run()
+        } catch {
+            logger.error("Failed to send notification via osascript: \(error.localizedDescription)")
         }
     }
 }
