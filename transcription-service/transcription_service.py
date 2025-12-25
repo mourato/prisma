@@ -9,6 +9,7 @@ import tempfile
 from pathlib import Path
 from datetime import datetime
 from threading import Lock
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
@@ -24,18 +25,42 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# FastAPI app
-app = FastAPI(
-    title="Meeting Transcription Service",
-    description="Local transcription service using Parakeet TDT 0.6B v3",
-    version="1.0.0"
-)
-
 # Temp directory for uploads
 TEMP_DIR = Path(tempfile.gettempdir()) / "meeting-assistant-uploads"
 
 # Thread lock for service state
 _state_lock = Lock()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Application lifespan context manager.
+    Handles startup and shutdown events.
+    """
+    # Startup
+    global _SERVICE_START_TIME
+    with _state_lock:
+        _SERVICE_START_TIME = datetime.now()
+    
+    logger.info("Meeting Transcription Service starting...")
+    logger.info(f"Temp directory: {TEMP_DIR}")
+    TEMP_DIR.mkdir(parents=True, exist_ok=True)
+    
+    yield  # Application runs here
+    
+    # Shutdown
+    logger.info("Shutting down...")
+    engine = get_engine()
+    engine.unload_model()
+
+# FastAPI app with lifespan
+app = FastAPI(
+    title="Meeting Transcription Service",
+    description="Local transcription service using Parakeet TDT 0.6B v3",
+    version="1.0.0",
+    lifespan=lifespan
+)
 
 # Service state tracking (protected by _state_lock)
 _SERVICE_START_TIME: datetime | None = None
@@ -250,25 +275,6 @@ async def warmup_model():
         logger.error(f"Failed to load model: {e}")
         raise HTTPException(status_code=500, detail=f"Model load failed: {e}")
 
-
-@app.on_event("startup")
-async def startup_event():
-    """Log service startup."""
-    global _SERVICE_START_TIME
-    with _state_lock:
-        _SERVICE_START_TIME = datetime.now()
-    
-    logger.info("Meeting Transcription Service starting...")
-    logger.info(f"Temp directory: {TEMP_DIR}")
-    TEMP_DIR.mkdir(parents=True, exist_ok=True)
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on shutdown."""
-    logger.info("Shutting down...")
-    engine = get_engine()
-    engine.unload_model()
 
 
 def _cleanup_temp_files(*paths: Path) -> None:
