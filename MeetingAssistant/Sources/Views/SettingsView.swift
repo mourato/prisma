@@ -24,6 +24,7 @@ struct SettingsView: View {
     
     // MARK: - Tabs
     
+    @ViewBuilder
     private var generalSettings: some View {
         Form {
             Section("Gravação") {
@@ -46,6 +47,7 @@ struct SettingsView: View {
         }
     }
     
+    @ViewBuilder
     private var serviceSettings: some View {
         Form {
             Section("Serviço de Transcrição") {
@@ -79,6 +81,7 @@ struct SettingsView: View {
         }
     }
     
+    @ViewBuilder
     private var monitoredAppsList: some View {
         VStack(alignment: .leading, spacing: 4) {
             ForEach(MeetingApp.allCases, id: \.self) { app in

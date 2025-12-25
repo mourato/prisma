@@ -2,12 +2,13 @@ import Foundation
 import os.log
 
 /// Client for communicating with the Python transcription service.
+@MainActor
 class TranscriptionClient {
     static let shared = TranscriptionClient()
     
     private let logger = Logger(subsystem: "MeetingAssistant", category: "TranscriptionClient")
     
-    @AppStorage("transcriptionServiceURL") private var baseURL = "http://127.0.0.1:8765"
+    @UserDefaultsStorage("transcriptionServiceURL") private var baseURL = "http://127.0.0.1:8765"
     
     private let session: URLSession
     
@@ -131,12 +132,14 @@ enum TranscriptionError: LocalizedError {
     }
 }
 
-// MARK: - AppStorage workaround for non-View contexts
+// MARK: - UserDefaultsStorage for non-View contexts
 
 import SwiftUI
 
+/// Custom property wrapper for UserDefaults access in non-View contexts.
+/// Named differently from SwiftUI's @AppStorage to avoid conflicts.
 @propertyWrapper
-struct AppStorage<Value> {
+struct UserDefaultsStorage<Value> {
     private let key: String
     private let defaultValue: Value
     
