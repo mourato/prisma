@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 import os.log
+import UserNotifications
 
 /// Central manager coordinating recording, meeting detection, and transcription.
 @MainActor
@@ -36,6 +37,7 @@ class RecordingManager: ObservableObject {
     
     private init() {
         setupBindings()
+        requestNotificationAuthorization()
         Task {
             await checkPermission()
         }
@@ -204,12 +206,37 @@ class RecordingManager: ObservableObject {
         currentMeeting = nil
     }
     
+    /// Request notification authorization from the user.
+    private func requestNotificationAuthorization() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { [weak self] granted, error in
+            if let error = error {
+                self?.logger.error("Notification authorization failed: \(error.localizedDescription)")
+            } else if !granted {
+                self?.logger.warning("Notification authorization denied by user")
+            }
+        }
+    }
+    
+    /// Send a local notification to the user.
+    /// - Parameters:
+    ///   - title: The notification title.
+    ///   - body: The notification body text.
     private func sendNotification(title: String, body: String) {
-        let notification = NSUserNotification()
-        notification.title = title
-        notification.informativeText = body
-        notification.soundName = NSUserNotificationDefaultSoundName
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
         
-        NSUserNotificationCenter.default.deliver(notification)
+        let request = UNNotificationRequest(
+            identifier: UUID().uuidString,
+            content: content,
+            trigger: nil  // nil = immediate delivery
+        )
+        
+        UNUserNotificationCenter.current().add(request) { [weak self] error in
+            if let error = error {
+                self?.logger.error("Failed to deliver notification: \(error.localizedDescription)")
+            }
+        }
     }
 }
