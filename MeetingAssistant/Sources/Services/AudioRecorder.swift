@@ -16,17 +16,19 @@ class AudioRecorder: ObservableObject {
     @Published private(set) var error: Error?
     
     private var stream: SCStream?
-    private var audioFile: AVAudioFile?
+    private var assetWriter: AVAssetWriter?
+    private var audioInput: AVAssetWriterInput?
     private var streamOutput: AudioStreamOutput?
     
     // Audio configuration for Parakeet compatibility
     private let sampleRate: Double = 16000
     private let channels: AVAudioChannelCount = 1
+    private let audioBitRate = 64000 // 64 kbps - good quality for speech
     
     private init() {}
     
-    /// Start recording system audio.
-    /// - Parameter outputURL: Where to save the WAV file
+    /// Start recording system audio in M4A format (AAC encoded).
+    /// - Parameter outputURL: Where to save the M4A file
     func startRecording(to outputURL: URL) async throws {
         guard !isRecording else {
             logger.warning("Already recording")
@@ -62,21 +64,15 @@ class AudioRecorder: ObservableObject {
         config.height = 2
         config.minimumFrameInterval = CMTime(value: 1, timescale: 1) // 1 fps
         
-        // Prepare audio file
-        let audioFormat = AVAudioFormat(
-            standardFormatWithSampleRate: sampleRate,
-            channels: channels
-        )!
-        
-        audioFile = try AVAudioFile(
-            forWriting: outputURL,
-            settings: audioFormat.settings,
-            commonFormat: .pcmFormatFloat32,
-            interleaved: false
-        )
+        // Setup AVAssetWriter for M4A output
+        try setupAssetWriter(outputURL: outputURL)
         
         // Create stream output handler
-        streamOutput = AudioStreamOutput(audioFile: audioFile!, logger: logger)
+        streamOutput = AudioStreamOutput(
+            audioInput: audioInput!,
+            assetWriter: assetWriter!,
+            logger: logger
+        )
         
         // Create and start stream
         stream = SCStream(filter: filter, configuration: config, delegate: nil)
@@ -91,7 +87,7 @@ class AudioRecorder: ObservableObject {
         
         isRecording = true
         currentRecordingURL = outputURL
-        logger.info("Recording started successfully")
+        logger.info("Recording started successfully (M4A/AAC format)")
     }
     
     /// Stop the current recording.
@@ -107,15 +103,19 @@ class AudioRecorder: ObservableObject {
         
         try await stream.stopCapture()
         
+        // Finalize the M4A file
+        await finalizeAssetWriter()
+        
         // Cleanup
         self.stream = nil
-        self.audioFile = nil
         self.streamOutput = nil
         
         isRecording = false
         
         let savedURL = currentRecordingURL
-        logger.info("Recording saved to: \(savedURL?.path ?? "unknown")")
+        if let url = savedURL {
+            logFileSizeInfo(url: url)
+        }
         
         return savedURL
     }
@@ -142,17 +142,92 @@ class AudioRecorder: ObservableObject {
         let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")!
         NSWorkspace.shared.open(url)
     }
+    
+    // MARK: - Private Methods
+    
+    /// Setup AVAssetWriter for M4A (AAC) output.
+    private func setupAssetWriter(outputURL: URL) throws {
+        // Remove existing file if present
+        if FileManager.default.fileExists(atPath: outputURL.path) {
+            try FileManager.default.removeItem(at: outputURL)
+        }
+        
+        assetWriter = try AVAssetWriter(outputURL: outputURL, fileType: .m4a)
+        
+        // AAC audio settings optimized for speech
+        let audioSettings: [String: Any] = [
+            AVFormatIDKey: kAudioFormatMPEG4AAC,
+            AVSampleRateKey: sampleRate,
+            AVNumberOfChannelsKey: channels,
+            AVEncoderBitRateKey: audioBitRate
+        ]
+        
+        audioInput = AVAssetWriterInput(
+            mediaType: .audio,
+            outputSettings: audioSettings
+        )
+        audioInput?.expectsMediaDataInRealTime = true
+        
+        if let input = audioInput, assetWriter!.canAdd(input) {
+            assetWriter?.add(input)
+        } else {
+            throw AudioRecorderError.recordingFailed("Cannot add audio input to asset writer")
+        }
+        
+        guard assetWriter?.startWriting() == true else {
+            let errorMsg = assetWriter?.error?.localizedDescription ?? "Unknown error"
+            throw AudioRecorderError.recordingFailed("Failed to start asset writer: \(errorMsg)")
+        }
+        
+        assetWriter?.startSession(atSourceTime: .zero)
+        logger.debug("Asset writer configured for M4A output")
+    }
+    
+    /// Finalize the asset writer and close the file.
+    private func finalizeAssetWriter() async {
+        audioInput?.markAsFinished()
+        
+        await withCheckedContinuation { continuation in
+            assetWriter?.finishWriting {
+                continuation.resume()
+            }
+        }
+        
+        assetWriter = nil
+        audioInput = nil
+        logger.debug("Asset writer finalized")
+    }
+    
+    /// Log file size information for debugging.
+    private func logFileSizeInfo(url: URL) {
+        do {
+            let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+            if let fileSize = attributes[.size] as? Int64 {
+                let fileSizeFormatted = ByteCountFormatter.string(
+                    fromByteCount: fileSize,
+                    countStyle: .file
+                )
+                logger.info("Recording saved: \(url.lastPathComponent) (\(fileSizeFormatted))")
+            }
+        } catch {
+            logger.info("Recording saved to: \(url.path)")
+        }
+    }
 }
 
 // MARK: - Stream Output Handler
 
 /// Handles audio samples from ScreenCaptureKit stream.
 private class AudioStreamOutput: NSObject, SCStreamOutput {
-    private let audioFile: AVAudioFile
+    private let audioInput: AVAssetWriterInput
+    private let assetWriter: AVAssetWriter
     private let logger: Logger
+    private var isFirstSample = true
+    private var sessionStartTime: CMTime = .zero
     
-    init(audioFile: AVAudioFile, logger: Logger) {
-        self.audioFile = audioFile
+    init(audioInput: AVAssetWriterInput, assetWriter: AVAssetWriter, logger: Logger) {
+        self.audioInput = audioInput
+        self.assetWriter = assetWriter
         self.logger = logger
     }
     
@@ -162,61 +237,45 @@ private class AudioStreamOutput: NSObject, SCStreamOutput {
         of type: SCStreamOutputType
     ) {
         guard type == .audio else { return }
+        guard sampleBuffer.isValid else { return }
+        guard assetWriter.status == .writing else { return }
         
-        // Convert CMSampleBuffer to AVAudioPCMBuffer
-        guard let pcmBuffer = createPCMBuffer(from: sampleBuffer) else {
-            logger.warning("Failed to create PCM buffer")
-            return
+        // Handle first sample timing
+        if isFirstSample {
+            sessionStartTime = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+            isFirstSample = false
         }
         
-        // Write to file
-        do {
-            try audioFile.write(from: pcmBuffer)
-        } catch {
-            logger.error("Failed to write audio: \(error.localizedDescription)")
+        // Adjust timestamp relative to session start
+        let adjustedBuffer = adjustTimestamp(sampleBuffer)
+        
+        // Write to asset writer
+        if audioInput.isReadyForMoreMediaData {
+            audioInput.append(adjustedBuffer ?? sampleBuffer)
         }
     }
     
-    private func createPCMBuffer(from sampleBuffer: CMSampleBuffer) -> AVAudioPCMBuffer? {
-        guard let formatDescription = CMSampleBufferGetFormatDescription(sampleBuffer),
-              let audioStreamBasicDescription = CMAudioFormatDescriptionGetStreamBasicDescription(formatDescription)
-        else {
-            return nil
-        }
+    /// Adjust sample buffer timestamp to start from zero.
+    private func adjustTimestamp(_ buffer: CMSampleBuffer) -> CMSampleBuffer? {
+        let originalTime = CMSampleBufferGetPresentationTimeStamp(buffer)
+        let adjustedTime = CMTimeSubtract(originalTime, sessionStartTime)
         
-        let format = AVAudioFormat(streamDescription: audioStreamBasicDescription)!
-        
-        guard let blockBuffer = CMSampleBufferGetDataBuffer(sampleBuffer) else {
-            return nil
-        }
-        
-        let frameCount = CMSampleBufferGetNumSamples(sampleBuffer)
-        
-        guard let pcmBuffer = AVAudioPCMBuffer(
-            pcmFormat: format,
-            frameCapacity: AVAudioFrameCount(frameCount)
-        ) else {
-            return nil
-        }
-        
-        pcmBuffer.frameLength = AVAudioFrameCount(frameCount)
-        
-        var dataPointer: UnsafeMutablePointer<Int8>?
-        var dataLength: Int = 0
-        
-        CMBlockBufferGetDataPointer(
-            blockBuffer,
-            atOffset: 0,
-            lengthAtOffsetOut: nil,
-            totalLengthOut: &dataLength,
-            dataPointerOut: &dataPointer
+        var timingInfo = CMSampleTimingInfo(
+            duration: CMSampleBufferGetDuration(buffer),
+            presentationTimeStamp: adjustedTime,
+            decodeTimeStamp: .invalid
         )
         
-        if let data = dataPointer, let channelData = pcmBuffer.floatChannelData {
-            memcpy(channelData[0], data, dataLength)
-        }
+        var adjustedBuffer: CMSampleBuffer?
+        CMSampleBufferCreateCopyWithNewTiming(
+            allocator: nil,
+            sampleBuffer: buffer,
+            sampleTimingEntryCount: 1,
+            sampleTimingArray: &timingInfo,
+            sampleBufferOut: &adjustedBuffer
+        )
         
-        return pcmBuffer
+        return adjustedBuffer
     }
 }
 
