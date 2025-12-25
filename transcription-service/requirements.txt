@@ -1,9 +1,10 @@
 # Meeting Transcription Service - Python Dependencies
 # For Apple Silicon (M1/M2/M3) with MPS acceleration
+# Requires Python 3.10+
 
 # Core ML/AI
 torch>=2.0.0
-nemo_toolkit[asr]>=2.0.0
+nemo_toolkit[asr]>=1.23.0
 
 # Web Server
 fastapi>=0.109.0
