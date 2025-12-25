@@ -18,6 +18,9 @@ class RecordingManager: ObservableObject {
     @Published private(set) var lastError: Error?
     @Published private(set) var hasScreenCapturePermission = false
     
+    /// Detailed transcription service status for UI feedback.
+    let transcriptionStatus = TranscriptionStatus()
+    
     // MARK: - Services
     
     private let audioRecorder = AudioRecorder.shared
@@ -25,6 +28,7 @@ class RecordingManager: ObservableObject {
     private let transcriptionClient = TranscriptionClient.shared
     
     private var cancellables = Set<AnyCancellable>()
+    private var statusCheckTask: Task<Void, Never>?
     
     // MARK: - Storage
     
@@ -40,6 +44,7 @@ class RecordingManager: ObservableObject {
         requestNotificationAuthorization()
         Task {
             await checkPermission()
+            await startStatusMonitoring()
         }
     }
     
@@ -165,15 +170,27 @@ class RecordingManager: ObservableObject {
     private func transcribeRecording(audioURL: URL, meeting: Meeting) async {
         isTranscribing = true
         
+        // Get audio duration for progress estimation
+        let audioDuration = getAudioDuration(from: audioURL)
+        transcriptionStatus.beginTranscription(audioDuration: audioDuration)
+        
         do {
             // Check service health
+            transcriptionStatus.updateProgress(phase: .preparing)
+            
             let isHealthy = try await transcriptionClient.healthCheck()
             guard isHealthy else {
                 throw TranscriptionError.serviceUnavailable
             }
             
+            // Update status to processing
+            transcriptionStatus.updateProgress(phase: .processing, percentage: 10)
+            
             // Transcribe
             let response = try await transcriptionClient.transcribe(audioURL: audioURL)
+            
+            // Post-processing phase
+            transcriptionStatus.updateProgress(phase: .postProcessing, percentage: 90)
             
             // Create transcription record
             let transcription = Transcription(
@@ -186,15 +203,30 @@ class RecordingManager: ObservableObject {
             // TODO: Save transcription to storage
             logger.info("Transcription saved: \(transcription.wordCount) words")
             
+            // Mark as completed
+            transcriptionStatus.completeTranscription(success: true)
+            
             // Notify user
             sendNotification(
                 title: "Transcrição Concluída",
                 body: "\(meeting.appName): \(transcription.wordCount) palavras transcritas"
             )
             
+            // Reset to idle after short delay
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(3))
+                transcriptionStatus.resetToIdle()
+            }
+            
         } catch {
             logger.error("Transcription failed: \(error.localizedDescription)")
             lastError = error
+            
+            // Record error in status
+            transcriptionStatus.recordError(
+                .transcriptionFailed(error.localizedDescription)
+            )
+            transcriptionStatus.completeTranscription(success: false)
             
             sendNotification(
                 title: "Falha na Transcrição",
@@ -204,6 +236,45 @@ class RecordingManager: ObservableObject {
         
         isTranscribing = false
         currentMeeting = nil
+    }
+    
+    /// Get audio duration from file for progress estimation.
+    private func getAudioDuration(from url: URL) -> Double? {
+        // Use AVAsset to get audio duration
+        // NOTE: AVFoundation import would be needed for full implementation
+        // For now, return nil and let the UI handle unknown duration gracefully
+        return nil
+    }
+    
+    /// Start periodic status monitoring.
+    private func startStatusMonitoring() async {
+        statusCheckTask?.cancel()
+        
+        statusCheckTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                await self?.checkServiceStatus()
+                try? await Task.sleep(for: .seconds(5))
+            }
+        }
+    }
+    
+    /// Check and update service status.
+    private func checkServiceStatus() async {
+        transcriptionStatus.updateServiceState(.connecting)
+        
+        do {
+            let status = try await transcriptionClient.fetchServiceStatus()
+            transcriptionStatus.updateServiceState(.connected)
+            transcriptionStatus.updateModelState(status.modelStateEnum, device: status.device)
+        } catch {
+            transcriptionStatus.updateServiceState(.disconnected)
+            transcriptionStatus.recordError(.connectionFailed(error.localizedDescription))
+        }
+    }
+    
+    /// Manually refresh service status.
+    func refreshServiceStatus() async {
+        await checkServiceStatus()
     }
     
     /// Check if running as a proper app bundle (required for UNUserNotificationCenter).

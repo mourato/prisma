@@ -14,6 +14,10 @@ struct MenuBarView: View {
             }
             
             statusSection
+            
+            // Transcription service status indicator
+            TranscriptionStatusView(status: recordingManager.transcriptionStatus)
+            
             controlButtons
             transcriptionsList
         }
