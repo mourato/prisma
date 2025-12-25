@@ -152,7 +152,8 @@ class ParakeetEngine:
             import soundfile as sf
             info = sf.info(str(audio_path))
             return info.duration
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Failed to get audio duration for {audio_path.name}: {e}")
             return 0.0
     
     @property
