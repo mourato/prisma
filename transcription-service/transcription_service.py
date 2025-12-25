@@ -8,6 +8,7 @@ import logging
 import tempfile
 from pathlib import Path
 from datetime import datetime
+from threading import Lock
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
@@ -33,13 +34,46 @@ app = FastAPI(
 # Temp directory for uploads
 TEMP_DIR = Path(tempfile.gettempdir()) / "meeting-assistant-uploads"
 
-# Service state tracking
-SERVICE_START_TIME: datetime | None = None
-LAST_TRANSCRIPTION_TIME: datetime | None = None
-TOTAL_TRANSCRIPTIONS: int = 0
-TOTAL_AUDIO_PROCESSED_SECONDS: float = 0.0
-MODEL_STATE: str = "unloaded"  # "unloaded", "loading", "loaded", "error"
-MODEL_ERROR: str | None = None
+# Thread lock for service state
+_state_lock = Lock()
+
+# Service state tracking (protected by _state_lock)
+_SERVICE_START_TIME: datetime | None = None
+_LAST_TRANSCRIPTION_TIME: datetime | None = None
+_TOTAL_TRANSCRIPTIONS: int = 0
+_TOTAL_AUDIO_PROCESSED_SECONDS: float = 0.0
+_MODEL_STATE: str = "unloaded"  # "unloaded", "loading", "loaded", "error"
+_MODEL_ERROR: str | None = None
+
+
+def _get_service_state() -> dict:
+    """Thread-safe getter for all service state."""
+    with _state_lock:
+        return {
+            "start_time": _SERVICE_START_TIME,
+            "last_transcription_time": _LAST_TRANSCRIPTION_TIME,
+            "total_transcriptions": _TOTAL_TRANSCRIPTIONS,
+            "total_audio_processed": _TOTAL_AUDIO_PROCESSED_SECONDS,
+            "model_state": _MODEL_STATE,
+            "model_error": _MODEL_ERROR,
+        }
+
+
+def _update_model_state(state: str, error: str | None = None) -> None:
+    """Thread-safe setter for model state."""
+    global _MODEL_STATE, _MODEL_ERROR
+    with _state_lock:
+        _MODEL_STATE = state
+        _MODEL_ERROR = error
+
+
+def _record_transcription(duration_seconds: float) -> None:
+    """Thread-safe update after successful transcription."""
+    global _LAST_TRANSCRIPTION_TIME, _TOTAL_TRANSCRIPTIONS, _TOTAL_AUDIO_PROCESSED_SECONDS
+    with _state_lock:
+        _LAST_TRANSCRIPTION_TIME = datetime.now()
+        _TOTAL_TRANSCRIPTIONS += 1
+        _TOTAL_AUDIO_PROCESSED_SECONDS += duration_seconds
 
 
 class TranscriptionResponse(BaseModel):
@@ -96,35 +130,34 @@ async def get_service_status():
     
     Returns comprehensive status including model state, uptime, and processing stats.
     """
-    global MODEL_STATE
-    
     engine = get_engine()
+    state = _get_service_state()
     
     # Calculate uptime
     uptime = 0.0
-    if SERVICE_START_TIME:
-        uptime = (datetime.now() - SERVICE_START_TIME).total_seconds()
+    if state["start_time"]:
+        uptime = (datetime.now() - state["start_time"]).total_seconds()
     
     # Determine model state based on engine status
+    model_state = state["model_state"]
     if engine.is_loaded:
-        MODEL_STATE = "loaded"
-    elif MODEL_STATE == "loading":
-        pass  # Keep loading state
-    elif MODEL_ERROR:
-        MODEL_STATE = "error"
-    else:
-        MODEL_STATE = "unloaded"
+        model_state = "loaded"
+    elif model_state != "loading":
+        if state["model_error"]:
+            model_state = "error"
+        else:
+            model_state = "unloaded"
     
     return ServiceStatusResponse(
         status="healthy",
-        model_state=MODEL_STATE,
+        model_state=model_state,
         model_loaded=engine.is_loaded,
         device=engine.device,
         model_name="nvidia/parakeet-tdt-0.6b-v3",
         uptime_seconds=uptime,
-        last_transcription_time=LAST_TRANSCRIPTION_TIME.isoformat() if LAST_TRANSCRIPTION_TIME else None,
-        total_transcriptions=TOTAL_TRANSCRIPTIONS,
-        total_audio_processed_seconds=TOTAL_AUDIO_PROCESSED_SECONDS
+        last_transcription_time=state["last_transcription_time"].isoformat() if state["last_transcription_time"] else None,
+        total_transcriptions=state["total_transcriptions"],
+        total_audio_processed_seconds=state["total_audio_processed"]
     )
 
 
@@ -170,11 +203,8 @@ async def transcribe_audio(file: UploadFile = File(...)):
         engine = get_engine()
         result = engine.transcribe(processed_path)
         
-        # Update service statistics
-        global LAST_TRANSCRIPTION_TIME, TOTAL_TRANSCRIPTIONS, TOTAL_AUDIO_PROCESSED_SECONDS
-        LAST_TRANSCRIPTION_TIME = datetime.now()
-        TOTAL_TRANSCRIPTIONS += 1
-        TOTAL_AUDIO_PROCESSED_SECONDS += result.duration_seconds
+        # Update service statistics (thread-safe)
+        _record_transcription(result.duration_seconds)
         
         # Cleanup temp files
         _cleanup_temp_files(upload_path, processed_path)
@@ -207,20 +237,16 @@ async def warmup_model():
     
     Call this at service startup to reduce first-request latency.
     """
-    global MODEL_STATE, MODEL_ERROR
-    
     logger.info("Warming up model...")
-    MODEL_STATE = "loading"
-    MODEL_ERROR = None
+    _update_model_state("loading")
     
     try:
         engine = get_engine()
         engine.load_model()
-        MODEL_STATE = "loaded"
+        _update_model_state("loaded")
         return {"status": "model_loaded", "device": engine.device}
     except Exception as e:
-        MODEL_STATE = "error"
-        MODEL_ERROR = str(e)
+        _update_model_state("error", str(e))
         logger.error(f"Failed to load model: {e}")
         raise HTTPException(status_code=500, detail=f"Model load failed: {e}")
 
@@ -228,8 +254,9 @@ async def warmup_model():
 @app.on_event("startup")
 async def startup_event():
     """Log service startup."""
-    global SERVICE_START_TIME
-    SERVICE_START_TIME = datetime.now()
+    global _SERVICE_START_TIME
+    with _state_lock:
+        _SERVICE_START_TIME = datetime.now()
     
     logger.info("Meeting Transcription Service starting...")
     logger.info(f"Temp directory: {TEMP_DIR}")
