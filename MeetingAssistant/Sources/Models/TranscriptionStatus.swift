@@ -92,7 +92,7 @@ class TranscriptionStatus: ObservableObject {
     /// Returns formatted progress string.
     private var formattedProgress: String {
         if let estimated = estimatedTimeRemaining, estimated > 0 {
-            return "Transcrevendo... \(Int(progressPercentage))% (~\(formatTime(estimated)) restante)"
+            return "Transcrevendo... \(Int(progressPercentage))% (~\(TimeFormatter.format(estimated)) restante)"
         } else if progressPercentage > 0 {
             return "Transcrevendo... \(Int(progressPercentage))%"
         }
@@ -225,21 +225,6 @@ class TranscriptionStatus: ObservableObject {
         
         // Update percentage based on processed duration
         progressPercentage = (processedDurationSeconds / audioDuration) * 100.0
-    }
-    
-    /// Formats time interval as human-readable string.
-    private func formatTime(_ seconds: TimeInterval) -> String {
-        if seconds < 60 {
-            return "\(Int(seconds))s"
-        } else if seconds < 3600 {
-            let minutes = Int(seconds / 60)
-            let secs = Int(seconds.truncatingRemainder(dividingBy: 60))
-            return "\(minutes)m \(secs)s"
-        } else {
-            let hours = Int(seconds / 3600)
-            let minutes = Int((seconds.truncatingRemainder(dividingBy: 3600)) / 60)
-            return "\(hours)h \(minutes)m"
-        }
     }
 }
 
