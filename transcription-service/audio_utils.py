@@ -6,6 +6,7 @@ to prepare audio for Parakeet model.
 """
 
 import logging
+import uuid
 from pathlib import Path
 from typing import BinaryIO
 
@@ -20,6 +21,10 @@ TARGET_CHANNELS = 1  # Mono
 
 # Supported audio formats
 SUPPORTED_EXTENSIONS = {".wav", ".m4a", ".mp3", ".mp4", ".aac", ".flac", ".ogg"}
+
+# Upload limits
+MAX_FILE_SIZE_MB = 500  # 500 MB limit for audio files
+MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
 
 
 def preprocess_audio(
@@ -153,7 +158,7 @@ def _normalize(audio: np.ndarray) -> np.ndarray:
 
 def save_upload_to_temp(file: BinaryIO, filename: str, temp_dir: Path) -> Path:
     """
-    Save uploaded file to temporary directory.
+    Save uploaded file to temporary directory with validation.
     
     Args:
         file: File-like object from upload
@@ -162,18 +167,50 @@ def save_upload_to_temp(file: BinaryIO, filename: str, temp_dir: Path) -> Path:
     
     Returns:
         Path to saved file
+    
+    Raises:
+        ValueError: If file exceeds size limit or has unsupported format
     """
     temp_dir.mkdir(parents=True, exist_ok=True)
     
-    # Sanitize filename
+    # Sanitize filename - only allow alphanumeric, dots, hyphens, underscores
     safe_name = "".join(c for c in filename if c.isalnum() or c in "._-")
+    
+    # Handle empty or invalid filenames
+    if not safe_name or len(safe_name) < 3:
+        ext = Path(filename).suffix.lower() if filename else ".wav"
+        if ext not in SUPPORTED_EXTENSIONS:
+            ext = ".wav"
+        safe_name = f"upload_{uuid.uuid4().hex[:8]}{ext}"
+        logger.debug(f"Generated safe filename: {safe_name}")
+    
+    # Validate file extension
+    ext = Path(safe_name).suffix.lower()
+    if ext not in SUPPORTED_EXTENSIONS:
+        raise ValueError(
+            f"Unsupported audio format: {ext}. "
+            f"Supported formats: {', '.join(sorted(SUPPORTED_EXTENSIONS))}"
+        )
+    
     output_path = temp_dir / safe_name
     
+    # Read content with size limit check
+    content = file.read()
+    file_size = len(content)
+    
+    if file_size > MAX_FILE_SIZE_BYTES:
+        raise ValueError(
+            f"File too large: {file_size / (1024*1024):.1f} MB. "
+            f"Maximum allowed: {MAX_FILE_SIZE_MB} MB"
+        )
+    
+    if file_size == 0:
+        raise ValueError("Empty file uploaded")
+    
     with open(output_path, "wb") as f:
-        content = file.read()
         f.write(content)
     
-    logger.debug(f"Saved upload to: {output_path}")
+    logger.debug(f"Saved upload to: {output_path} ({file_size / (1024*1024):.2f} MB)")
     return output_path
 
 
