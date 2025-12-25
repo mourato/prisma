@@ -135,23 +135,46 @@ enum AIProvider: String, CaseIterable, Codable {
 }
 
 /// Configuration for AI model post-processing.
+/// NOTE: API key is stored securely in Keychain, not in this struct.
 struct AIConfiguration: Codable, Equatable {
     var provider: AIProvider
     var baseURL: String
-    var apiKey: String
     var selectedModel: String
+    
+    // NOTE: apiKey is NOT stored here - it's in Keychain.
+    // This field exists only for Codable compatibility and migration.
+    // It will always be empty after migration.
+    private var _legacyApiKey: String = ""
+    
+    enum CodingKeys: String, CodingKey {
+        case provider, baseURL, selectedModel
+        case _legacyApiKey = "apiKey"  // For migration from old format
+    }
     
     /// Default configuration with empty values.
     static let `default` = AIConfiguration(
         provider: .openai,
         baseURL: AIProvider.openai.defaultBaseURL,
-        apiKey: "",
         selectedModel: ""
     )
     
     /// Check if configuration is valid for making API calls.
+    /// Checks Keychain for API key presence.
     var isValid: Bool {
-        !apiKey.isEmpty && !baseURL.isEmpty
+        let hasApiKey = KeychainManager.exists(for: .aiAPIKey)
+        return hasApiKey && !baseURL.isEmpty
+    }
+    
+    /// Migrate legacy API key from UserDefaults to Keychain.
+    /// Should be called once during app initialization.
+    mutating func migrateLegacyApiKeyIfNeeded() {
+        guard !_legacyApiKey.isEmpty else { return }
+        
+        // Move to Keychain
+        try? KeychainManager.store(_legacyApiKey, for: .aiAPIKey)
+        
+        // Clear from struct (will be saved to UserDefaults without the key)
+        _legacyApiKey = ""
     }
 }
 

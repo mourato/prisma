@@ -269,6 +269,7 @@ struct ShortcutSettingsTab: View {
 struct AISettingsTab: View {
     @ObservedObject private var settings = AppSettingsStore.shared
     @State private var showAPIKey = false
+    @State private var apiKeyText = ""  // Local state for API key (stored in Keychain)
     @State private var connectionStatus: ConnectionStatus = .unknown
     
     enum ConnectionStatus {
@@ -339,12 +340,20 @@ struct AISettingsTab: View {
                         Text("Chave API:")
                         Group {
                             if showAPIKey {
-                                TextField("sk-...", text: $settings.aiConfiguration.apiKey)
+                                TextField("sk-...", text: $apiKeyText)
                             } else {
-                                SecureField("sk-...", text: $settings.aiConfiguration.apiKey)
+                                SecureField("sk-...", text: $apiKeyText)
                             }
                         }
                         .textFieldStyle(.roundedBorder)
+                        .onChange(of: apiKeyText) { newValue in
+                            // Save to Keychain when changed
+                            if !newValue.isEmpty {
+                                try? KeychainManager.store(newValue, for: .aiAPIKey)
+                            } else {
+                                try? KeychainManager.delete(for: .aiAPIKey)
+                            }
+                        }
                         
                         Button {
                             showAPIKey.toggle()
@@ -353,6 +362,14 @@ struct AISettingsTab: View {
                         }
                         .buttonStyle(.borderless)
                         .help(showAPIKey ? "Ocultar chave" : "Mostrar chave")
+                    }
+                    
+                    HStack {
+                        Image(systemName: "lock.shield.fill")
+                            .foregroundStyle(.green)
+                        Text("Chave armazenada com segurança no Keychain")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
                     }
                     
                     HStack {
@@ -390,6 +407,10 @@ struct AISettingsTab: View {
                     }
                 }
             }
+        }
+        .onAppear {
+            // Load API key from Keychain on appear
+            apiKeyText = (try? KeychainManager.retrieve(for: .aiAPIKey)) ?? ""
         }
     }
     
