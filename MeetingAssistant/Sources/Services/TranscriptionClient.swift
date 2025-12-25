@@ -48,6 +48,21 @@ class TranscriptionClient {
         return health.status == "healthy"
     }
     
+    /// Fetch detailed service status.
+    /// - Returns: ServiceStatusResponse with comprehensive service information.
+    func fetchServiceStatus() async throws -> ServiceStatusResponse {
+        let url = URL(string: "\(baseURL)/status")!
+        
+        let (data, response) = try await session.data(from: url)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            throw TranscriptionError.serviceUnavailable
+        }
+        
+        return try JSONDecoder().decode(ServiceStatusResponse.self, from: data)
+    }
+    
     /// Warm up the model by pre-loading it.
     func warmupModel() async throws {
         let url = URL(string: "\(baseURL)/warmup")!
@@ -128,6 +143,43 @@ enum TranscriptionError: LocalizedError {
             return "Resposta inválida do serviço"
         case .transcriptionFailed(let message):
             return "Falha na transcrição: \(message)"
+        }
+    }
+}
+
+// MARK: - Service Status Response
+
+/// Response from the /status endpoint with detailed service information.
+struct ServiceStatusResponse: Codable {
+    let status: String
+    let modelState: String
+    let modelLoaded: Bool
+    let device: String
+    let modelName: String
+    let uptimeSeconds: Double
+    let lastTranscriptionTime: String?
+    let totalTranscriptions: Int
+    let totalAudioProcessedSeconds: Double
+    
+    enum CodingKeys: String, CodingKey {
+        case status
+        case modelState = "model_state"
+        case modelLoaded = "model_loaded"
+        case device
+        case modelName = "model_name"
+        case uptimeSeconds = "uptime_seconds"
+        case lastTranscriptionTime = "last_transcription_time"
+        case totalTranscriptions = "total_transcriptions"
+        case totalAudioProcessedSeconds = "total_audio_processed_seconds"
+    }
+    
+    /// Convert model state string to ModelState enum.
+    var modelStateEnum: ModelState {
+        switch modelState {
+        case "loaded": return .loaded
+        case "loading": return .loading
+        case "error": return .error
+        default: return .unloaded
         }
     }
 }

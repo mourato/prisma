@@ -33,6 +33,14 @@ app = FastAPI(
 # Temp directory for uploads
 TEMP_DIR = Path(tempfile.gettempdir()) / "meeting-assistant-uploads"
 
+# Service state tracking
+SERVICE_START_TIME: datetime | None = None
+LAST_TRANSCRIPTION_TIME: datetime | None = None
+TOTAL_TRANSCRIPTIONS: int = 0
+TOTAL_AUDIO_PROCESSED_SECONDS: float = 0.0
+MODEL_STATE: str = "unloaded"  # "unloaded", "loading", "loaded", "error"
+MODEL_ERROR: str | None = None
+
 
 class TranscriptionResponse(BaseModel):
     """API response model for transcription."""
@@ -52,6 +60,20 @@ class HealthResponse(BaseModel):
     device: str
 
 
+class ServiceStatusResponse(BaseModel):
+    """API response model for detailed service status."""
+    
+    status: str
+    model_state: str  # "unloaded", "loading", "loaded", "error"
+    model_loaded: bool
+    device: str
+    model_name: str
+    uptime_seconds: float
+    last_transcription_time: str | None = None
+    total_transcriptions: int = 0
+    total_audio_processed_seconds: float = 0.0
+
+
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """
@@ -64,6 +86,45 @@ async def health_check():
         status="healthy",
         model_loaded=engine.is_loaded,
         device=engine.device
+    )
+
+
+@app.get("/status", response_model=ServiceStatusResponse)
+async def get_service_status():
+    """
+    Get detailed service status.
+    
+    Returns comprehensive status including model state, uptime, and processing stats.
+    """
+    global MODEL_STATE
+    
+    engine = get_engine()
+    
+    # Calculate uptime
+    uptime = 0.0
+    if SERVICE_START_TIME:
+        uptime = (datetime.now() - SERVICE_START_TIME).total_seconds()
+    
+    # Determine model state based on engine status
+    if engine.is_loaded:
+        MODEL_STATE = "loaded"
+    elif MODEL_STATE == "loading":
+        pass  # Keep loading state
+    elif MODEL_ERROR:
+        MODEL_STATE = "error"
+    else:
+        MODEL_STATE = "unloaded"
+    
+    return ServiceStatusResponse(
+        status="healthy",
+        model_state=MODEL_STATE,
+        model_loaded=engine.is_loaded,
+        device=engine.device,
+        model_name="nvidia/parakeet-tdt-0.6b-v3",
+        uptime_seconds=uptime,
+        last_transcription_time=LAST_TRANSCRIPTION_TIME.isoformat() if LAST_TRANSCRIPTION_TIME else None,
+        total_transcriptions=TOTAL_TRANSCRIPTIONS,
+        total_audio_processed_seconds=TOTAL_AUDIO_PROCESSED_SECONDS
     )
 
 
@@ -109,6 +170,12 @@ async def transcribe_audio(file: UploadFile = File(...)):
         engine = get_engine()
         result = engine.transcribe(processed_path)
         
+        # Update service statistics
+        global LAST_TRANSCRIPTION_TIME, TOTAL_TRANSCRIPTIONS, TOTAL_AUDIO_PROCESSED_SECONDS
+        LAST_TRANSCRIPTION_TIME = datetime.now()
+        TOTAL_TRANSCRIPTIONS += 1
+        TOTAL_AUDIO_PROCESSED_SECONDS += result.duration_seconds
+        
         # Cleanup temp files
         _cleanup_temp_files(upload_path, processed_path)
         
@@ -140,15 +207,30 @@ async def warmup_model():
     
     Call this at service startup to reduce first-request latency.
     """
+    global MODEL_STATE, MODEL_ERROR
+    
     logger.info("Warming up model...")
-    engine = get_engine()
-    engine.load_model()
-    return {"status": "model_loaded", "device": engine.device}
+    MODEL_STATE = "loading"
+    MODEL_ERROR = None
+    
+    try:
+        engine = get_engine()
+        engine.load_model()
+        MODEL_STATE = "loaded"
+        return {"status": "model_loaded", "device": engine.device}
+    except Exception as e:
+        MODEL_STATE = "error"
+        MODEL_ERROR = str(e)
+        logger.error(f"Failed to load model: {e}")
+        raise HTTPException(status_code=500, detail=f"Model load failed: {e}")
 
 
 @app.on_event("startup")
 async def startup_event():
     """Log service startup."""
+    global SERVICE_START_TIME
+    SERVICE_START_TIME = datetime.now()
+    
     logger.info("Meeting Transcription Service starting...")
     logger.info(f"Temp directory: {TEMP_DIR}")
     TEMP_DIR.mkdir(parents=True, exist_ok=True)
