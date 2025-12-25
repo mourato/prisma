@@ -2,9 +2,9 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- App Sandbox -->
+	<!-- App Sandbox disabled for development (ScreenCaptureKit requires it for non-App Store apps) -->
 	<key>com.apple.security.app-sandbox</key>
-	<true/>
+	<false/>
 	
 	<!-- Network (for transcription service) -->
 	<key>com.apple.security.network.client</key>
