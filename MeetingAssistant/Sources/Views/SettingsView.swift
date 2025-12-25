@@ -91,9 +91,15 @@ struct SettingsView: View {
                     
                     Spacer()
                     
-                    Text("Status: Não conectado")
+                    if transcriptionStatus == .testing {
+                        ProgressView()
+                            .scaleEffect(0.5)
+                            .frame(width: 16, height: 16)
+                    }
+                    
+                    Text(transcriptionStatus.text)
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(transcriptionStatus.color)
                 }
             }
             
@@ -135,8 +141,52 @@ struct SettingsView: View {
         }
     }
     
+    // MARK: - Local State for Transcription Service
+    
+    @State private var transcriptionStatus: ConnectionStatus = .unknown
+    
+    enum ConnectionStatus {
+        case unknown, testing, success, failure
+        
+        var color: Color {
+            switch self {
+            case .unknown: return .secondary
+            case .testing: return .orange
+            case .success: return .green
+            case .failure: return .red
+            }
+        }
+        
+        var text: String {
+            switch self {
+            case .unknown: return "Status: Não testado"
+            case .testing: return "Status: Testando..."
+            case .success: return "Status: Conectado"
+            case .failure: return "Status: Falha na conexão"
+            }
+        }
+    }
+
     private func testConnection() {
-        // TODO: Implement connection test
+        transcriptionStatus = .testing
+        
+        Task {
+            // Update service URL from local state binding if needed, 
+            // but standard way is usually settings update. 
+            // Assuming TranscriptionClient uses the UserDefaults value directly or we need to re-init/update it.
+            // For now, we trust TranscriptionClient reads from UserDefaults or we might need to flush.
+            
+            do {
+                let isHealthy = try await TranscriptionClient.shared.healthCheck()
+                await MainActor.run {
+                    transcriptionStatus = isHealthy ? .success : .failure
+                }
+            } catch {
+                await MainActor.run {
+                    transcriptionStatus = .failure
+                }
+            }
+        }
     }
 }
 
@@ -333,7 +383,8 @@ struct AISettingsTab: View {
                             text: $settings.aiConfiguration.baseURL
                         )
                         .textFieldStyle(.roundedBorder)
-                        .disabled(settings.aiConfiguration.provider != .custom)
+                        .textFieldStyle(.roundedBorder)
+                        // .disabled(settings.aiConfiguration.provider != .custom) // Removed to allow local proxies for any provider
                     }
                     
                     HStack {
@@ -417,14 +468,43 @@ struct AISettingsTab: View {
     private func testAPIConnection() {
         connectionStatus = .testing
         
-        // TODO: Implement actual API connection test
+        let urlString = settings.aiConfiguration.baseURL
+        guard let url = URL(string: urlString) else {
+            connectionStatus = .failure
+            return
+        }
+        
         Task {
-            // Simulate network delay
-            try? await Task.sleep(nanoseconds: 1_500_000_000)
-            
-            // For now, just check if we have valid configuration
-            await MainActor.run {
-                connectionStatus = settings.aiConfiguration.isValid ? .success : .failure
+            do {
+                var request = URLRequest(url: url)
+                request.httpMethod = "GET"
+                request.timeoutInterval = 5
+                
+                // If we have an API Key, add it (just in case the endpoint checks auth on root)
+                if let key = try? KeychainManager.retrieve(for: .aiAPIKey), !key.isEmpty {
+                    request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+                }
+                
+                let (_, response) = try await URLSession.shared.data(for: request)
+                
+                await MainActor.run {
+                    if let httpResponse = response as? HTTPURLResponse {
+                        // 200: OK
+                        // 401: Unauthorized (Means we reached the server, just auth failed - which confirms connection)
+                        // 404: Not Found (Server reachable, endpoint wrong - still "connected" to machine)
+                        if (200...499).contains(httpResponse.statusCode) {
+                            connectionStatus = .success
+                        } else {
+                            connectionStatus = .failure
+                        }
+                    } else {
+                        connectionStatus = .failure
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    connectionStatus = .failure
+                }
             }
         }
     }
