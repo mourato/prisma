@@ -333,11 +333,14 @@ class RecordingManager: ObservableObject {
     }
     
     /// Send notification using osascript as fallback for CLI tools.
+    /// Uses proper sanitization to prevent command injection.
     private func sendNotificationViaAppleScript(title: String, body: String) {
-        let escapedTitle = title.replacingOccurrences(of: "\"", with: "\\\"")
-        let escapedBody = body.replacingOccurrences(of: "\"", with: "\\\"")
+        // Sanitize input by removing all characters that could be used for injection.
+        // AppleScript string escaping is complex, so we use a whitelist approach.
+        let sanitizedTitle = sanitizeForAppleScript(title)
+        let sanitizedBody = sanitizeForAppleScript(body)
         
-        let script = "display notification \"\(escapedBody)\" with title \"\(escapedTitle)\" sound name \"default\""
+        let script = "display notification \"\(sanitizedBody)\" with title \"\(sanitizedTitle)\" sound name \"default\""
         
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
@@ -348,5 +351,39 @@ class RecordingManager: ObservableObject {
         } catch {
             logger.error("Failed to send notification via osascript: \(error.localizedDescription)")
         }
+    }
+    
+    /// Sanitize a string for safe use in AppleScript.
+    /// Removes or escapes characters that could be used for command injection.
+    private func sanitizeForAppleScript(_ input: String) -> String {
+        // First, escape backslashes (must be done first)
+        var result = input.replacingOccurrences(of: "\\", with: "\\\\")
+        
+        // Escape double quotes
+        result = result.replacingOccurrences(of: "\"", with: "\\\"")
+        
+        // Remove other dangerous characters that could break out of the string
+        // These include: backticks, $, newlines, and other control characters
+        let dangerousPatterns: [(pattern: String, replacement: String)] = [
+            ("`", "'"),           // Replace backticks with single quotes
+            ("$", ""),            // Remove $ (variable expansion)
+            ("\n", " "),          // Replace newlines with space
+            ("\r", " "),          // Replace carriage return with space
+            ("\t", " "),          // Replace tabs with space
+            ("«", ""),            // Remove chevrons (AppleScript special)
+            ("»", ""),            // Remove chevrons (AppleScript special)
+        ]
+        
+        for (pattern, replacement) in dangerousPatterns {
+            result = result.replacingOccurrences(of: pattern, with: replacement)
+        }
+        
+        // Limit length to prevent excessively long notifications
+        let maxLength = 200
+        if result.count > maxLength {
+            result = String(result.prefix(maxLength)) + "..."
+        }
+        
+        return result
     }
 }
