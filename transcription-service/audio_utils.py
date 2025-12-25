@@ -26,6 +26,9 @@ SUPPORTED_EXTENSIONS = {".wav", ".m4a", ".mp3", ".mp4", ".aac", ".flac", ".ogg"}
 MAX_FILE_SIZE_MB = 500  # 500 MB limit for audio files
 MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
 
+# Audio normalization
+NORMALIZATION_FACTOR = 0.95  # Target peak level (5% headroom to prevent clipping)
+
 
 def preprocess_audio(
     input_path: str | Path,
@@ -149,10 +152,10 @@ def _resample(audio: np.ndarray, orig_sr: int, target_sr: int) -> np.ndarray:
 
 
 def _normalize(audio: np.ndarray) -> np.ndarray:
-    """Normalize audio to prevent clipping."""
+    """Normalize audio to prevent clipping while preserving headroom."""
     max_val = np.abs(audio).max()
     if max_val > 0:
-        audio = audio / max_val * 0.95
+        audio = audio / max_val * NORMALIZATION_FACTOR
     return audio
 
 

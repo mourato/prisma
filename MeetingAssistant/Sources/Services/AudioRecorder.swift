@@ -21,10 +21,17 @@ class AudioRecorder: ObservableObject {
     private var streamOutput: AudioStreamOutput?
     private var audioCaptureQueue: DispatchQueue?
     
+    // MARK: - Configuration Constants
+    
     // Audio configuration for Parakeet compatibility
-    private let sampleRate: Double = 16000
-    private let channels: AVAudioChannelCount = 1
-    private let audioBitRate = 64000 // 64 kbps - good quality for speech
+    private let sampleRate: Double = 16000          // 16 kHz - required by Parakeet
+    private let channels: AVAudioChannelCount = 1   // Mono audio
+    private let audioBitRate = 64000                // 64 kbps - good quality for speech
+    
+    // Video capture configuration (minimized - we only need audio)
+    // Using smallest possible values to reduce CPU/memory usage
+    private let minVideoDimension = 2               // Smallest allowed dimension
+    private let videoFrameRate = 1                  // 1 FPS - minimum for ScreenCaptureKit
     
     private init() {}
     
@@ -61,9 +68,9 @@ class AudioRecorder: ObservableObject {
         config.channelCount = Int(channels)
         
         // Minimize video capture (we only need audio)
-        config.width = 2
-        config.height = 2
-        config.minimumFrameInterval = CMTime(value: 1, timescale: 1) // 1 fps
+        config.width = minVideoDimension
+        config.height = minVideoDimension
+        config.minimumFrameInterval = CMTime(value: 1, timescale: Int32(videoFrameRate))
         
         // Setup AVAssetWriter for M4A output
         try setupAssetWriter(outputURL: outputURL)
