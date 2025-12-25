@@ -21,12 +21,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var popover: NSPopover?
     private var contextMenu: NSMenu?
     private var recordingManager = RecordingManager.shared
+    private var shortcutManager = GlobalShortcutManager.shared
     private var eventMonitor: Any?
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupMenuBar()
         setupContextMenu()
         setupEventMonitor()
+        setupGlobalShortcut()
         
         // Hide dock icon for menu bar only app
         NSApp.setActivationPolicy(.accessory)
@@ -35,6 +37,32 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         if let monitor = eventMonitor {
             NSEvent.removeMonitor(monitor)
+        }
+        shortcutManager.unregisterHotKey()
+    }
+    
+    // MARK: - Global Shortcut Setup
+    
+    private func setupGlobalShortcut() {
+        // Configure shortcut callback to toggle recording
+        shortcutManager.onShortcutActivated = { [weak self] in
+            Task { @MainActor in
+                await self?.toggleRecording()
+            }
+        }
+        
+        // Register the global hotkey
+        shortcutManager.registerHotKey()
+    }
+    
+    /// Toggle recording state when global shortcut is activated.
+    private func toggleRecording() async {
+        if recordingManager.isRecording {
+            await recordingManager.stopRecording(transcribe: true)
+            updateStatusIcon(isRecording: false)
+        } else {
+            await recordingManager.startRecording()
+            updateStatusIcon(isRecording: true)
         }
     }
     
