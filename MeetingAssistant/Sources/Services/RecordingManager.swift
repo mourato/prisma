@@ -33,7 +33,11 @@ class RecordingManager: ObservableObject {
     // MARK: - Storage
     
     private var recordingsDirectory: URL {
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        guard let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            logger.error("Failed to find Application Support directory")
+            // This is a critical failure, but we can try to fall back or crash more gracefully/explicitly
+            fatalError("Critical: Could not access Application Support directory.")
+        }
         let recordings = appSupport.appendingPathComponent("MeetingAssistant/recordings", isDirectory: true)
         try? FileManager.default.createDirectory(at: recordings, withIntermediateDirectories: true)
         return recordings

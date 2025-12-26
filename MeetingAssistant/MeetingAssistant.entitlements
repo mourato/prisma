@@ -2,27 +2,16 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- App Sandbox disabled for development (ScreenCaptureKit requires it for non-App Store apps) -->
 	<key>com.apple.security.app-sandbox</key>
-	<false/>
-	
-	<!-- Network (for transcription service) -->
+	<true/>
 	<key>com.apple.security.network.client</key>
 	<true/>
-	
-	<!-- Screen Recording (for ScreenCaptureKit audio) -->
 	<key>com.apple.security.screen-capture</key>
 	<true/>
-	
-	<!-- Microphone (fallback audio input) -->
 	<key>com.apple.security.device.audio-input</key>
 	<true/>
-	
-	<!-- File access for recordings -->
 	<key>com.apple.security.files.user-selected.read-write</key>
 	<true/>
-	
-	<!-- Application Support folder access -->
 	<key>com.apple.security.files.downloads.read-write</key>
 	<true/>
 </dict>

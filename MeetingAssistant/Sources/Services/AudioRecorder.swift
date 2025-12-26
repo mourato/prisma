@@ -143,7 +143,10 @@ class AudioRecorder: ObservableObject {
         
         // Configure System Audio Player
         // We'll feed it buffers at the processing rate
-        let stereoFormat = AVAudioFormat(standardFormatWithSampleRate: processingSampleRate, channels: 2)!
+        guard let stereoFormat = AVAudioFormat(standardFormatWithSampleRate: processingSampleRate, channels: 2) else {
+            logger.error("Failed to create stereo AVAudioFormat")
+            throw AudioRecorderError.recordingFailed("Could not create audio format")
+        }
         engine.connect(systemAudioPlayer, to: mainMixer, format: stereoFormat)
         
         engine.prepare()
@@ -196,10 +199,18 @@ class AudioRecorder: ObservableObject {
         
         stream = SCStream(filter: filter, configuration: config, delegate: nil)
         
-        audioCaptureQueue = DispatchQueue(label: "audio-capture")
-        streamOutput = AudioStreamOutput(playerNode: systemAudioPlayer, logger: logger)
+        let queue = DispatchQueue(label: "audio-capture")
+        audioCaptureQueue = queue
         
-        try stream?.addStreamOutput(streamOutput!, type: .audio, sampleHandlerQueue: audioCaptureQueue!)
+        let output = AudioStreamOutput(playerNode: systemAudioPlayer, logger: logger)
+        streamOutput = output
+        
+        do {
+            try stream?.addStreamOutput(output, type: .audio, sampleHandlerQueue: queue)
+        } catch {
+            logger.error("Failed to add stream output: \(error.localizedDescription)")
+            throw error
+        }
     }
     
     private func installTap() {
