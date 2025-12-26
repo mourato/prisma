@@ -5,6 +5,7 @@ import PackageDescription
 
 let package = Package(
     name: "MeetingAssistant",
+    defaultLocalization: "pt",
     platforms: [
         .macOS(.v14)
     ],
@@ -29,7 +30,10 @@ let package = Package(
                 .product(name: "FluidAudio", package: "FluidAudio"),
                 .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
             ],
-            path: "Sources/MeetingAssistantCore"
+            resources: [
+                .process("Resources")
+            ],
+
         ),
         .executableTarget(
             name: "MeetingAssistant",
