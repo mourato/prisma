@@ -161,6 +161,12 @@ echo -e "To view in Finder:"
 echo -e "  ${YELLOW}open \"${DIST_DIR}\"${NC}"
 echo ""
 
+# Optional: Reset permissions for testing (Development only)
+echo -e "${YELLOW}Resetting permissions for ${BUNDLE_ID} to ensure clean test state...${NC}"
+tccutil reset All "${BUNDLE_ID}" 2>/dev/null || true
+echo -e "${GREEN}✓ Permissions reset${NC}"
+echo ""
+
 # Ask if user wants to run the app
 read -p "Do you want to run the app now? (y/n) " -n 1 -r
 echo ""
