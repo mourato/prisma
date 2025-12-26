@@ -7,9 +7,19 @@ struct MeetingAssistantApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
     var body: some Scene {
-        // Menu bar app - no main window
-        Settings {
-            SettingsView()
+        WindowGroup {
+            EmptyView()
+                .frame(width: 0, height: 0)
+                .hidden()
+        }
+        .windowResizability(.contentSize)
+        .commands {
+            CommandGroup(replacing: .appSettings) {
+                Button("Configurações...") {
+                    appDelegate.openSettings()
+                }
+                .keyboardShortcut(",", modifiers: .command)
+            }
         }
     }
 }
