@@ -28,7 +28,7 @@ nemo_experiments/
 recordings/
 
 # IDE
-.vscode/
+# .vscode/
 .idea/
 *.swp
 *.swo
