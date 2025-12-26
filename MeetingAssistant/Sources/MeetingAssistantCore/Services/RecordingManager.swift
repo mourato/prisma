@@ -46,6 +46,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     private let transcriptionClient: any TranscriptionService
     private let postProcessingService: any PostProcessingServiceProtocol
     private let storage: any StorageService
+    private let notificationService: NotificationService
 
     private var cancellables = Set<AnyCancellable>()
     private var statusCheckTask: Task<Void, Never>?
@@ -80,7 +81,8 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         postProcessingService: any PostProcessingServiceProtocol = PostProcessingService.shared,
         audioMerger: AudioMerger = AudioMerger(),
         meetingDetector: MeetingDetector = MeetingDetector.shared,
-        storage: any StorageService = FileSystemStorageService.shared
+        storage: any StorageService = FileSystemStorageService.shared,
+        notificationService: NotificationService = .shared
     ) {
         self.micRecorder = micRecorder
         self.systemRecorder = systemRecorder
@@ -89,9 +91,10 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         self.audioMerger = audioMerger
         self.meetingDetector = meetingDetector
         self.storage = storage
+        self.notificationService = notificationService
 
         setupBindings()
-        requestNotificationAuthorization()
+        notificationService.requestAuthorization()
         Task { [weak self] in
             await self?.checkPermission()
             await self?.startStatusMonitoring()
@@ -158,11 +161,16 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             systemAudioURL = storage.createRecordingURL(for: meeting, type: .system)
             mergedAudioURL = storage.createRecordingURL(for: meeting, type: .merged)
 
+            // Ensure URLs are valid
+            guard let micURL = micAudioURL, let systemURL = systemAudioURL else {
+                throw RecordingManagerError.noOutputPath
+            }
+
             // Start microphone recording
-            try await micRecorder.startRecording(to: micAudioURL!, retryCount: 0)
+            try await micRecorder.startRecording(to: micURL, retryCount: 0)
 
             // Start system audio recording (async)
-            try await systemRecorder.startRecording(to: systemAudioURL!, retryCount: 0)
+            try await systemRecorder.startRecording(to: systemURL, retryCount: 0)
 
             isRecording = true
             currentMeeting?.audioFilePath = mergedAudioURL?.path
@@ -387,7 +395,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             ? "(\(transcription.postProcessingPromptTitle ?? "processado"))" : "transcritas"
         let body = "\(transcription.meeting.appName): \(transcription.wordCount) palavras \(suffix)"
 
-        sendNotification(title: "Transcrição Concluída", body: body)
+        notificationService.sendNotification(title: "Transcrição Concluída", body: body)
     }
 
     private func handleTranscriptionError(_ error: Error) {
@@ -397,7 +405,8 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         transcriptionStatus.recordError(.transcriptionFailed(error.localizedDescription))
         transcriptionStatus.completeTranscription(success: false)
 
-        sendNotification(title: "Falha na Transcrição", body: error.localizedDescription)
+        notificationService.sendNotification(
+            title: "Falha na Transcrição", body: error.localizedDescription)
     }
 
     private func scheduleStatusReset() {
@@ -444,98 +453,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         await checkServiceStatus()
     }
 
-    /// Request notification authorization from the user.
-    private func requestNotificationAuthorization() {
-        guard isRunningAsAppBundle else {
-            logger.info("Running as CLI tool, skipping UNUserNotificationCenter authorization")
-            return
-        }
 
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) {
-            [weak self] granted, error in
-            if let error = error {
-                self?.logger.error(
-                    "Notification authorization failed: \(error.localizedDescription)")
-            } else if !granted {
-                self?.logger.warning("Notification authorization denied by user")
-            }
-        }
-    }
-
-    /// Send a local notification to the user.
-    private func sendNotification(title: String, body: String) {
-        if isRunningAsAppBundle {
-            sendNotificationViaUserNotifications(title: title, body: body)
-        } else {
-            sendNotificationViaAppleScript(title: title, body: body)
-        }
-    }
-
-    /// Send notification using UserNotifications framework.
-    private func sendNotificationViaUserNotifications(title: String, body: String) {
-        let content = UNMutableNotificationContent()
-        content.title = title
-        content.body = body
-        content.sound = .default
-
-        let request = UNNotificationRequest(
-            identifier: UUID().uuidString,
-            content: content,
-            trigger: nil
-        )
-
-        UNUserNotificationCenter.current().add(request) { [weak self] error in
-            if let error = error {
-                self?.logger.error("Failed to deliver notification: \(error.localizedDescription)")
-            }
-        }
-    }
-
-    /// Send notification using osascript as fallback.
-    private func sendNotificationViaAppleScript(title: String, body: String) {
-        let sanitizedTitle = sanitizeForAppleScript(title)
-        let sanitizedBody = sanitizeForAppleScript(body)
-
-        let script =
-            "display notification \"\(sanitizedBody)\" with title \"\(sanitizedTitle)\" sound name \"default\""
-
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
-        process.arguments = ["-e", script]
-
-        do {
-            try process.run()
-        } catch {
-            logger.error("Failed to send notification via osascript: \(error.localizedDescription)")
-        }
-    }
-
-    /// Sanitize a string for safe use in AppleScript.
-    private func sanitizeForAppleScript(_ input: String) -> String {
-        var result = input.replacingOccurrences(of: "\\", with: "\\\\")
-        result = result.replacingOccurrences(of: "\"", with: "\\\"")
-
-        let dangerousPatterns: [(pattern: String, replacement: String)] = [
-            ("`", "'"),
-            ("$", ""),
-            ("\n", " "),
-            ("\r", " "),
-            ("\t", " "),
-            ("«", ""),
-            ("»", ""),
-        ]
-
-        for (pattern, replacement) in dangerousPatterns {
-            result = result.replacingOccurrences(of: pattern, with: replacement)
-        }
-
-        let maxLength = 200
-        if result.count > maxLength {
-            result = String(result.prefix(maxLength)) + "..."
-        }
-
-        return result
-    }
 }
 
 // MARK: - Errors
