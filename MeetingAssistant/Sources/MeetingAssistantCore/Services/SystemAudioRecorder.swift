@@ -42,6 +42,25 @@ public class SystemAudioRecorder: ObservableObject {
     
     private init() {}
     
+    // MARK: - Deinit
+    // NOTE: Ensures SCStream is stopped even on unexpected termination.
+    // Without this, macOS keeps screen/audio capture active after crash.
+    deinit {
+        // Synchronously stop stream to prevent orphaned capture sessions
+        if let stream = stream {
+            let semaphore = DispatchSemaphore(value: 0)
+            Task {
+                try? await stream.stopCapture()
+                semaphore.signal()
+            }
+            // Wait up to 1 second for cleanup
+            _ = semaphore.wait(timeout: .now() + 1.0)
+        }
+        
+        // Ensure file is finalized
+        _ = getAndClearAudioFile()
+    }
+    
     // MARK: - Public API
     
     /// Start recording system audio to the specified URL.
@@ -218,6 +237,17 @@ public class SystemAudioRecorder: ObservableObject {
     }
     
     private func cleanup() async {
+        // IMPORTANT: Stop the stream BEFORE releasing reference
+        // Without this, macOS keeps capture active even after process ends
+        if let activeStream = stream {
+            do {
+                try await activeStream.stopCapture()
+                logger.debug("SCStream stopped successfully during cleanup")
+            } catch {
+                logger.warning("Failed to stop SCStream during cleanup: \(error.localizedDescription)")
+            }
+        }
+        
         stream = nil
         streamOutput = nil
         audioCaptureQueue = nil
