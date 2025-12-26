@@ -167,7 +167,7 @@ struct MenuBarView: View {
     
     private func openSettings() {
         // Use the responder chain to find the AppDelegate's showSettingsWindow method
-        NSApp.sendAction(Selector("showSettingsWindow:"), to: nil, from: nil)
+        NSApp.sendAction(#selector(AppDelegate.showSettingsWindow(_:)), to: nil, from: nil)
     }
     
     private func openPermissionSettings() {
