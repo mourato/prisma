@@ -81,7 +81,7 @@ public struct MenuBarView: View {
             
             Spacer()
             
-            Button(action: openSettings) {
+            SettingsLink {
                 Image(systemName: "gear")
             }
             .buttonStyle(.plain)
@@ -167,10 +167,7 @@ public struct MenuBarView: View {
         }
     }
     
-    private func openSettings() {
-        // Use dynamically looked up selector since AppDelegate is not available in this module
-        NSApp.sendAction(Selector("showSettingsWindow:"), to: nil, from: nil)
-    }
+
 }
 
 /// Card showing current meeting info.
