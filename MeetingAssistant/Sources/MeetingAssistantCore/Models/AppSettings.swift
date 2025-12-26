@@ -202,6 +202,10 @@ public class AppSettingsStore: ObservableObject {
         static let keyboardShortcut = "keyboardShortcut"
         static let aiConfiguration = "aiConfiguration"
         static let aiEnabled = "aiPostProcessingEnabled"
+        static let systemPrompt = "postProcessingSystemPrompt"
+        static let userPrompts = "postProcessingUserPrompts"
+        static let selectedPromptId = "postProcessingSelectedPromptId"
+        static let postProcessingEnabled = "postProcessingEnabled"
     }
     
     // MARK: - Published Properties
@@ -216,6 +220,45 @@ public class AppSettingsStore: ObservableObject {
     
     @Published public var aiEnabled: Bool {
         didSet { UserDefaults.standard.set(aiEnabled, forKey: Keys.aiEnabled) }
+    }
+    
+    // MARK: - Post-Processing Properties
+    
+    /// Custom system prompt for post-processing.
+    @Published public var systemPrompt: String {
+        didSet { UserDefaults.standard.set(systemPrompt, forKey: Keys.systemPrompt) }
+    }
+    
+    /// User-created prompts for post-processing.
+    @Published public var userPrompts: [PostProcessingPrompt] {
+        didSet { save(userPrompts, forKey: Keys.userPrompts) }
+    }
+    
+    /// Currently selected prompt ID for post-processing.
+    @Published public var selectedPromptId: UUID? {
+        didSet {
+            if let id = selectedPromptId {
+                UserDefaults.standard.set(id.uuidString, forKey: Keys.selectedPromptId)
+            } else {
+                UserDefaults.standard.removeObject(forKey: Keys.selectedPromptId)
+            }
+        }
+    }
+    
+    /// Whether post-processing is enabled.
+    @Published public var postProcessingEnabled: Bool {
+        didSet { UserDefaults.standard.set(postProcessingEnabled, forKey: Keys.postProcessingEnabled) }
+    }
+    
+    /// All available prompts (predefined + user-created).
+    public var allPrompts: [PostProcessingPrompt] {
+        PostProcessingPrompt.allPredefined + userPrompts
+    }
+    
+    /// Currently selected prompt.
+    public var selectedPrompt: PostProcessingPrompt? {
+        guard let id = selectedPromptId else { return nil }
+        return allPrompts.first { $0.id == id }
     }
     
     // MARK: - Initialization
@@ -239,6 +282,26 @@ public class AppSettingsStore: ObservableObject {
         
         // Load AI enabled state
         self.aiEnabled = UserDefaults.standard.bool(forKey: Keys.aiEnabled)
+        
+        // Load post-processing settings
+        self.systemPrompt = UserDefaults.standard.string(forKey: Keys.systemPrompt)
+            ?? AIPromptTemplates.defaultSystemPrompt
+        
+        if let data = UserDefaults.standard.data(forKey: Keys.userPrompts),
+           let prompts = try? JSONDecoder().decode([PostProcessingPrompt].self, from: data) {
+            self.userPrompts = prompts
+        } else {
+            self.userPrompts = []
+        }
+        
+        if let idString = UserDefaults.standard.string(forKey: Keys.selectedPromptId),
+           let id = UUID(uuidString: idString) {
+            self.selectedPromptId = id
+        } else {
+            self.selectedPromptId = nil
+        }
+        
+        self.postProcessingEnabled = UserDefaults.standard.bool(forKey: Keys.postProcessingEnabled)
     }
     
     // MARK: - Private Helpers
@@ -255,5 +318,38 @@ public class AppSettingsStore: ObservableObject {
         keyboardShortcut = .default
         aiConfiguration = .default
         aiEnabled = false
+        systemPrompt = AIPromptTemplates.defaultSystemPrompt
+        userPrompts = []
+        selectedPromptId = nil
+        postProcessingEnabled = false
+    }
+    
+    // MARK: - Prompt Management
+    
+    /// Adds a new user prompt.
+    /// - Parameter prompt: The prompt to add.
+    public func addPrompt(_ prompt: PostProcessingPrompt) {
+        userPrompts.append(prompt)
+    }
+    
+    /// Updates an existing user prompt.
+    /// - Parameter prompt: The prompt with updated values.
+    public func updatePrompt(_ prompt: PostProcessingPrompt) {
+        guard let index = userPrompts.firstIndex(where: { $0.id == prompt.id }) else { return }
+        userPrompts[index] = prompt
+    }
+    
+    /// Deletes a user prompt by ID.
+    /// - Parameter id: The ID of the prompt to delete.
+    public func deletePrompt(id: UUID) {
+        userPrompts.removeAll { $0.id == id }
+        if selectedPromptId == id {
+            selectedPromptId = nil
+        }
+    }
+    
+    /// Resets the system prompt to default.
+    public func resetSystemPrompt() {
+        systemPrompt = AIPromptTemplates.defaultSystemPrompt
     }
 }
