@@ -35,8 +35,10 @@ public final class NotificationService {
     if isRunningAsAppBundle {
       sendNotificationViaUserNotifications(title: title, body: body)
     } else {
-      // Fallback for development/CLI usage, though ideally we should avoid this in prod
-      sendNotificationViaAppleScript(title: title, body: body)
+      #if DEBUG
+        // Fallback for development/CLI usage
+        sendNotificationViaAppleScript(title: title, body: body)
+      #endif
     }
   }
 
@@ -69,23 +71,25 @@ public final class NotificationService {
   }
 
   /// Send notification using osascript as fallback.
-  private func sendNotificationViaAppleScript(title: String, body: String) {
-    let sanitizedTitle = sanitizeForAppleScript(title)
-    let sanitizedBody = sanitizeForAppleScript(body)
+  #if DEBUG
+    private func sendNotificationViaAppleScript(title: String, body: String) {
+      let sanitizedTitle = sanitizeForAppleScript(title)
+      let sanitizedBody = sanitizeForAppleScript(body)
 
-    let script =
-      "display notification \"\(sanitizedBody)\" with title \"\(sanitizedTitle)\" sound name \"default\""
+      let script =
+        "display notification \"\(sanitizedBody)\" with title \"\(sanitizedTitle)\" sound name \"default\""
 
-    let process = Process()
-    process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
-    process.arguments = ["-e", script]
+      let process = Process()
+      process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+      process.arguments = ["-e", script]
 
-    do {
-      try process.run()
-    } catch {
-      logger.error("Failed to send notification via osascript: \(error.localizedDescription)")
+      do {
+        try process.run()
+      } catch {
+        logger.error("Failed to send notification via osascript: \(error.localizedDescription)")
+      }
     }
-  }
+  #endif
 
   /// Sanitize a string for safe use in AppleScript.
   private func sanitizeForAppleScript(_ input: String) -> String {
