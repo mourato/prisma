@@ -180,55 +180,15 @@ public struct PostProcessingSettingsTab: View {
         let isSelected = self.settings.selectedPromptId == prompt.id
 
         return HStack(spacing: 12) {
-            Image(systemName: prompt.icon)
-                .font(.title3)
-                .foregroundStyle(isSelected ? .white : .primary)
-                .frame(width: 32, height: 32)
-                .background(isSelected ? Color.accentColor : Color(NSColor.controlBackgroundColor))
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(prompt.title)
-                    .font(.body)
-                    .fontWeight(isSelected ? .semibold : .regular)
-
-                if let description = prompt.description {
-                    Text(description)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
+            self.promptIcon(prompt: prompt, isSelected: isSelected)
+            self.promptInfo(prompt: prompt, isSelected: isSelected)
             Spacer()
-
-            if !isPredefined {
-                Button {
-                    self.editingPrompt = prompt
-                    self.showPromptEditor = true
-                } label: {
-                    Image(systemName: "pencil")
-                }
-                .buttonStyle(.borderless)
-                .help("Editar prompt")
-
-                Button {
-                    self.promptToDelete = prompt
-                    self.showDeleteConfirmation = true
-                } label: {
-                    Image(systemName: "trash")
-                        .foregroundStyle(.red)
-                }
-                .buttonStyle(.borderless)
-                .help("Excluir prompt")
-            }
-
-            if isSelected {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
-            }
+            self.promptActions(prompt: prompt, isPredefined: isPredefined, isSelected: isSelected)
         }
         .padding(10)
-        .background(isSelected ? Color.accentColor.opacity(0.1) : Color(NSColor.controlBackgroundColor))
+        .background(
+            isSelected ? Color.accentColor.opacity(0.1) : Color(NSColor.controlBackgroundColor)
+        )
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .overlay(
             RoundedRectangle(cornerRadius: 8)
@@ -237,17 +197,78 @@ public struct PostProcessingSettingsTab: View {
         .contentShape(Rectangle())
         .onTapGesture {
             withAnimation(.easeInOut(duration: 0.2)) {
-                if self.settings.selectedPromptId == prompt.id {
-                    self.settings.selectedPromptId = nil
-                } else {
-                    self.settings.selectedPromptId = prompt.id
-                }
+                self.settings.selectedPromptId = (self.settings.selectedPromptId == prompt.id)
+                    ? nil : prompt.id
             }
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(prompt.title). \(prompt.description ?? "")")
-        .accessibilityHint(isSelected ? "Selecionado. Toque para desmarcar" : "Toque para selecionar como prompt ativo")
+        .accessibilityHint(
+            isSelected
+                ? "Selecionado. Toque para desmarcar"
+                : "Toque para selecionar como prompt ativo"
+        )
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+    }
+
+    @ViewBuilder
+    private func promptIcon(prompt: PostProcessingPrompt, isSelected: Bool) -> some View {
+        Image(systemName: prompt.icon)
+            .font(.title3)
+            .foregroundStyle(isSelected ? .white : .primary)
+            .frame(width: 32, height: 32)
+            .background(
+                isSelected ? Color.accentColor : Color(NSColor.controlBackgroundColor)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+    }
+
+    @ViewBuilder
+    private func promptInfo(prompt: PostProcessingPrompt, isSelected: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(prompt.title)
+                .font(.body)
+                .fontWeight(isSelected ? .semibold : .regular)
+
+            if let description = prompt.description {
+                Text(description)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func promptActions(
+        prompt: PostProcessingPrompt,
+        isPredefined: Bool,
+        isSelected: Bool
+    ) -> some View {
+        if !isPredefined {
+            Button {
+                self.editingPrompt = prompt
+                self.showPromptEditor = true
+            } label: {
+                Image(systemName: "pencil")
+            }
+            .buttonStyle(.borderless)
+            .help("Editar prompt")
+
+            Button {
+                self.promptToDelete = prompt
+                self.showDeleteConfirmation = true
+            } label: {
+                Image(systemName: "trash")
+                    .foregroundStyle(.red)
+            }
+            .buttonStyle(.borderless)
+            .help("Excluir prompt")
+        }
+
+        if isSelected {
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundStyle(.green)
+        }
     }
 
     // MARK: - Actions

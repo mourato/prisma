@@ -19,8 +19,9 @@ public final class NotificationService {
             return
         }
 
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) {
-            [weak self] granted, error in
+        UNUserNotificationCenter.current().requestAuthorization(
+            options: [.alert, .sound]
+        ) { [weak self] granted, error in
             if let error {
                 self?.logger.error(
                     "Notification authorization failed: \(error.localizedDescription)")
@@ -46,8 +47,8 @@ public final class NotificationService {
 
     /// Check if running as a proper app bundle (required for UNUserNotificationCenter).
     private var isRunningAsAppBundle: Bool {
-        guard let id = Bundle.main.bundleIdentifier else { return false }
-        return !id.lowercased().contains("xctest")
+        guard let bundleId = Bundle.main.bundleIdentifier else { return false }
+        return !bundleId.lowercased().contains("xctest")
     }
 
     /// Send notification using UserNotifications framework.

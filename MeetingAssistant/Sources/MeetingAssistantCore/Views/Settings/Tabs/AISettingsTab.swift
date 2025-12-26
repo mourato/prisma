@@ -17,10 +17,14 @@ public struct AISettingsTab: View {
     public var body: some View {
         Form {
             Section("Pós-Processamento com IA") {
-                Toggle("Habilitar processamento de transcrições com IA", isOn: self.$settings.aiEnabled)
+                Toggle(
+                    "Habilitar processamento de transcrições com IA",
+                    isOn: self.$settings.aiEnabled
+                )
 
                 Text(
-                    "Quando habilitado, as transcrições serão enviadas para um modelo de IA para correção, formatação e resumo."
+                    "Quando habilitado, as transcrições serão enviadas para um modelo de IA " +
+                        "para correção, formatação e resumo."
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -169,7 +173,8 @@ public struct AISettingsTab: View {
                 try KeychainManager.delete(for: .aiAPIKey)
             }
         } catch {
-            self.logger.error("Failed to save API key to Keychain: \(error.localizedDescription)")
+            let errorDesc = error.localizedDescription
+            self.logger.error("Failed to save API key to Keychain: \(errorDesc)")
             // NOTE: In a future iteration, show user feedback via an alert
         }
     }
@@ -203,10 +208,11 @@ public struct AISettingsTab: View {
                 await MainActor.run {
                     if let httpResponse = response as? HTTPURLResponse {
                         // Only 2xx codes indicate true success
-                        if (200...299).contains(httpResponse.statusCode) {
+                        let statusCode = httpResponse.statusCode
+                        if (200...299).contains(statusCode) {
                             self.connectionStatus = .success
                         } else {
-                            self.connectionStatus = .failure("HTTP \(httpResponse.statusCode)")
+                            self.connectionStatus = .failure("HTTP \(statusCode)")
                         }
                     } else {
                         self.connectionStatus = .failure("Resposta inválida")

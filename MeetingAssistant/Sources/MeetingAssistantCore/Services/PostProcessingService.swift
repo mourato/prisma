@@ -87,7 +87,10 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
     ///   - transcription: The raw transcription text.
     ///   - prompt: The prompt to use for processing.
     /// - Returns: The processed text from the AI.
-    public func processTranscription(_ transcription: String, with prompt: PostProcessingPrompt) async throws -> String {
+    public func processTranscription(
+        _ transcription: String,
+        with prompt: PostProcessingPrompt
+    ) async throws -> String {
         // Input validation
         let trimmedTranscription = transcription.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedTranscription.isEmpty else {
@@ -125,35 +128,72 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
 
     // MARK: - Private Methods
 
-    private func sendToAI(transcription: String, prompt: PostProcessingPrompt) async throws -> String {
+    private func sendToAI(
+        transcription: String,
+        prompt: PostProcessingPrompt
+    ) async throws -> String {
         let config = self.settings.aiConfiguration
-
-        guard let apiKey = try? KeychainManager.retrieve(for: .aiAPIKey), !apiKey.isEmpty else {
-            throw PostProcessingError.noAPIConfigured
-        }
-
-        let endpoint = self.buildEndpoint(for: config.provider, baseURL: config.baseURL)
-
-        guard let url = URL(string: endpoint) else {
-            throw PostProcessingError.invalidURL
-        }
+        let apiKey = try self.getAPIKey()
+        let url = try self.buildURL(for: config)
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = Constants.requestTimeoutSeconds
 
-        // Authorization Headers
-        switch config.provider {
+        self.configureAuthHeaders(for: &request, provider: config.provider, apiKey: apiKey)
+        try self.setRequestBody(for: &request, config: config, transcription: transcription, prompt: prompt)
+
+        self.logger.debug("Sending post-processing request to \(url.absoluteString)")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try self.validateHTTPResponse(response, data: data)
+
+        return try self.parseSuccessResponse(data: data, provider: config.provider)
+    }
+
+    private func getAPIKey() throws -> String {
+        guard let apiKey = try? KeychainManager.retrieve(for: .aiAPIKey),
+              !apiKey.isEmpty
+        else {
+            throw PostProcessingError.noAPIConfigured
+        }
+        return apiKey
+    }
+
+    private func buildURL(for config: AIConfiguration) throws -> URL {
+        let endpoint = self.buildEndpoint(for: config.provider, baseURL: config.baseURL)
+        guard let url = URL(string: endpoint) else {
+            throw PostProcessingError.invalidURL
+        }
+        return url
+    }
+
+    private func configureAuthHeaders(
+        for request: inout URLRequest,
+        provider: AIProvider,
+        apiKey: String
+    ) {
+        switch provider {
         case .anthropic:
             request.setValue(apiKey, forHTTPHeaderField: "x-api-key")
             request.setValue(Constants.anthropicAPIVersion, forHTTPHeaderField: "anthropic-version")
         case .openai, .groq, .custom:
             request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         }
+    }
 
-        // Request Body Creation using Codable
+    private func setRequestBody(
+        for request: inout URLRequest,
+        config: AIConfiguration,
+        transcription: String,
+        prompt: PostProcessingPrompt
+    ) throws {
         let systemMessage = self.settings.systemPrompt
-        let userContent = AIPromptTemplates.userMessage(transcription: transcription, prompt: prompt.promptText)
+        let userContent = AIPromptTemplates.userMessage(
+            transcription: transcription,
+            prompt: prompt.promptText
+        )
         let encoder = JSONEncoder()
 
         do {
@@ -183,18 +223,13 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
             self.logger.error("Failed to encode request body: \(error.localizedDescription)")
             throw PostProcessingError.requestFailed(error)
         }
+    }
 
-        request.timeoutInterval = Constants.requestTimeoutSeconds
-
-        self.logger.debug("Sending post-processing request to \(endpoint)")
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-
+    private func validateHTTPResponse(_ response: URLResponse, data: Data) throws {
         guard let httpResponse = response as? HTTPURLResponse else {
             throw PostProcessingError.invalidResponse
         }
 
-        // Error Handling
         guard (200...299).contains(httpResponse.statusCode) else {
             let decoder = JSONDecoder()
             if let errorResponse = try? decoder.decode(OpenAIErrorResponse.self, from: data) {
@@ -208,9 +243,6 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
             let rawResponse = String(data: data, encoding: .utf8) ?? ""
             throw PostProcessingError.apiError("HTTP \(httpResponse.statusCode): \(rawResponse)")
         }
-
-        // Success Parsing
-        return try self.parseSuccessResponse(data: data, provider: config.provider)
     }
 
     private func parseSuccessResponse(data: Data, provider: AIProvider) throws -> String {

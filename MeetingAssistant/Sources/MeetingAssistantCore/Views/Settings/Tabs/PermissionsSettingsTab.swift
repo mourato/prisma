@@ -10,7 +10,8 @@ public struct PermissionsSettingsTab: View {
         Form {
             Section {
                 Text(
-                    "O Meeting Assistant precisa de acesso ao microfone e à gravação de tela para capturar o áudio das suas reuniões."
+                    "O Meeting Assistant precisa de acesso ao microfone e à gravação de tela " +
+                        "para capturar o áudio das suas reuniões."
                 )
                 .font(.callout)
                 .foregroundStyle(.secondary)

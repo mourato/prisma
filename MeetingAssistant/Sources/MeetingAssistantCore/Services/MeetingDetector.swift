@@ -35,7 +35,10 @@ public class MeetingDetector: ObservableObject {
         self.checkForMeetings()
 
         // Periodic polling
-        self.monitoringTimer = Timer.scheduledTimer(withTimeInterval: self.pollInterval, repeats: true) { [weak self] _ in
+        self.monitoringTimer = Timer.scheduledTimer(
+            withTimeInterval: self.pollInterval,
+            repeats: true
+        ) { [weak self] _ in
             Task { @MainActor in
                 self?.checkForMeetings()
             }
@@ -55,14 +58,12 @@ public class MeetingDetector: ObservableObject {
     private func checkForMeetings() {
         let runningApps = NSWorkspace.shared.runningApplications
 
-        for meetingApp in MeetingApp.allCases {
-            if self.isMeetingActive(meetingApp, in: runningApps) {
-                if self.detectedMeeting != meetingApp {
-                    self.logger.info("Detected meeting: \(meetingApp.displayName)")
-                    self.detectedMeeting = meetingApp
-                }
-                return
+        for meetingApp in MeetingApp.allCases where self.isMeetingActive(meetingApp, in: runningApps) {
+            if self.detectedMeeting != meetingApp {
+                self.logger.info("Detected meeting: \(meetingApp.displayName)")
+                self.detectedMeeting = meetingApp
             }
+            return
         }
 
         // No meeting detected
@@ -95,18 +96,22 @@ public class MeetingDetector: ObservableObject {
     /// Check browser window titles for meeting indicators.
     private func checkBrowserWindowTitles(for patterns: [String]) -> Bool {
         // Get window list
-        guard let windowList = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as? [[CFString: Any]] else {
+        let windowInfoOptions: CGWindowListOption = [.optionOnScreenOnly]
+        guard
+            let windowList = CGWindowListCopyWindowInfo(
+                windowInfoOptions,
+                kCGNullWindowID
+            ) as? [[CFString: Any]]
+        else {
             return false
         }
 
         for window in windowList {
             guard let windowName = window[kCGWindowName] as? String else { continue }
 
-            for pattern in patterns {
-                if windowName.localizedCaseInsensitiveContains(pattern) {
-                    self.logger.debug("Found matching window: \(windowName)")
-                    return true
-                }
+            for pattern in patterns where windowName.localizedCaseInsensitiveContains(pattern) {
+                self.logger.debug("Found matching window: \(windowName)")
+                return true
             }
         }
 
@@ -120,7 +125,8 @@ public class MeetingDetector: ObservableObject {
         // App launched
         workspace.notificationCenter.publisher(for: NSWorkspace.didLaunchApplicationNotification)
             .sink { [weak self] notification in
-                guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else { return }
+                let appInfo = notification.userInfo?[NSWorkspace.applicationUserInfoKey]
+                guard let app = appInfo as? NSRunningApplication else { return }
                 self?.logger.debug("App launched: \(app.bundleIdentifier ?? "unknown")")
                 Task { @MainActor in
                     self?.checkForMeetings()
@@ -131,7 +137,8 @@ public class MeetingDetector: ObservableObject {
         // App terminated
         workspace.notificationCenter.publisher(for: NSWorkspace.didTerminateApplicationNotification)
             .sink { [weak self] notification in
-                guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else { return }
+                let appInfo = notification.userInfo?[NSWorkspace.applicationUserInfoKey]
+                guard let app = appInfo as? NSRunningApplication else { return }
                 self?.logger.debug("App terminated: \(app.bundleIdentifier ?? "unknown")")
                 Task { @MainActor in
                     self?.checkForMeetings()

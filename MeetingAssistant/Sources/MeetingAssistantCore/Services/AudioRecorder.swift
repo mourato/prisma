@@ -90,68 +90,86 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         let input = engine.inputNode
         self.inputNode = input
 
-        // Get the input format from hardware
         let inputFormat = input.outputFormat(forBus: Constants.tapBusNumber)
+        try self.validateInputFormat(inputFormat)
 
-        guard inputFormat.sampleRate > 0, inputFormat.channelCount > 0 else {
-            self.logger.error("Invalid input format: sample rate or channel count is zero")
-            throw AudioRecorderError.invalidInputFormat
-        }
-
-        // Create desired output format (16kHz Mono PCM Int16)
-        guard
-            let desiredFormat = AVAudioFormat(
-                commonFormat: .pcmFormatInt16,
-                sampleRate: Constants.outputSampleRate,
-                channels: Constants.outputChannels,
-                interleaved: false
-            )
-        else {
-            self.logger.error("Failed to create desired recording format")
-            throw AudioRecorderError.invalidRecordingFormat
-        }
-
-        // Prepare output file
-        let createdAudioFile: AVAudioFile
-        do {
-            if FileManager.default.fileExists(atPath: outputURL.path) {
-                try FileManager.default.removeItem(at: outputURL)
-            }
-
-            createdAudioFile = try AVAudioFile(
-                forWriting: outputURL,
-                settings: desiredFormat.settings,
-                commonFormat: desiredFormat.commonFormat,
-                interleaved: desiredFormat.isInterleaved
-            )
-        } catch {
-            self.logger.error("Failed to create audio file: \(error.localizedDescription)")
-            throw AudioRecorderError.failedToCreateFile(error)
-        }
-
-        // Create format converter
-        guard let audioConverter = AVAudioConverter(from: inputFormat, to: desiredFormat) else {
-            self.logger.error("Failed to create audio format converter")
-            throw AudioRecorderError.failedToCreateConverter
-        }
+        let desiredFormat = try self.createDesiredFormat()
+        let audioFile = try self.createAudioFile(at: outputURL, format: desiredFormat)
+        let converter = try self.createAudioConverter(from: inputFormat, to: desiredFormat)
 
         // Store references (thread-safe sync helper)
         self.setFileState(
-            format: desiredFormat, file: createdAudioFile, converter: audioConverter, url: outputURL
+            format: desiredFormat, file: audioFile, converter: converter, url: outputURL
         )
 
         // Install tap on input node
         input.installTap(
             onBus: Constants.tapBusNumber, bufferSize: Constants.tapBufferSize, format: inputFormat
-        ) {
-            [weak self] buffer, _ in
+        ) { [weak self] buffer, _ in
             guard let self else { return }
             self.audioProcessingQueue.async {
                 self.processAudioBuffer(buffer)
             }
         }
 
-        // Prepare and start engine
+        try self.startAudioEngine(engine, input: input, outputURL: outputURL, retryCount: retryCount)
+    }
+
+    private func validateInputFormat(_ format: AVAudioFormat) throws {
+        guard format.sampleRate > 0, format.channelCount > 0 else {
+            self.logger.error("Invalid input format: sample rate or channel count is zero")
+            throw AudioRecorderError.invalidInputFormat
+        }
+    }
+
+    private func createDesiredFormat() throws -> AVAudioFormat {
+        guard let format = AVAudioFormat(
+            commonFormat: .pcmFormatInt16,
+            sampleRate: Constants.outputSampleRate,
+            channels: Constants.outputChannels,
+            interleaved: false
+        ) else {
+            self.logger.error("Failed to create desired recording format")
+            throw AudioRecorderError.invalidRecordingFormat
+        }
+        return format
+    }
+
+    private func createAudioFile(at url: URL, format: AVAudioFormat) throws -> AVAudioFile {
+        if FileManager.default.fileExists(atPath: url.path) {
+            try FileManager.default.removeItem(at: url)
+        }
+
+        do {
+            return try AVAudioFile(
+                forWriting: url,
+                settings: format.settings,
+                commonFormat: format.commonFormat,
+                interleaved: format.isInterleaved
+            )
+        } catch {
+            self.logger.error("Failed to create audio file: \(error.localizedDescription)")
+            throw AudioRecorderError.failedToCreateFile(error)
+        }
+    }
+
+    private func createAudioConverter(
+        from inputFormat: AVAudioFormat,
+        to outputFormat: AVAudioFormat
+    ) throws -> AVAudioConverter {
+        guard let converter = AVAudioConverter(from: inputFormat, to: outputFormat) else {
+            self.logger.error("Failed to create audio format converter")
+            throw AudioRecorderError.failedToCreateConverter
+        }
+        return converter
+    }
+
+    private func startAudioEngine(
+        _ engine: AVAudioEngine,
+        input: AVAudioInputNode,
+        outputURL: URL,
+        retryCount: Int
+    ) throws {
         engine.prepare()
 
         do {
@@ -271,39 +289,45 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     private func startValidationTimer(url: URL, retryCount: Int) {
         self.validationTimer = Timer.scheduledTimer(
             withTimeInterval: Constants.validationInterval, repeats: false
-        ) {
-            [weak self] _ in
+        ) { [weak self] _ in
             Task { @MainActor in
-                guard let self else { return }
-
-                let validationPassed = self.hasReceivedValidBuffer.load(ordering: .relaxed)
-
-                if !validationPassed {
-                    self.logger.warning("Recording validation failed - no valid buffers received")
-                    _ = await self.stopRecording()
-
-                    if retryCount < Constants.maxRetries {
-                        self.logger.info(
-                            "Retrying recording (attempt \(retryCount + 1)/\(Constants.maxRetries))..."
-                        )
-                        do {
-                            try await Task.sleep(nanoseconds: Constants.retryDelay)
-                            try await self.startRecording(to: url, retryCount: retryCount + 1)
-                        } catch {
-                            self.logger.error("Retry failed: \(error.localizedDescription)")
-                            self.error = error
-                            self.onRecordingError?(error)
-                        }
-                    } else {
-                        self.logger.error("Recording failed after 2 retry attempts")
-                        let error = AudioRecorderError.recordingValidationFailed
-                        self.error = error
-                        self.onRecordingError?(error)
-                    }
-                } else {
-                    self.logger.info("Recording validation successful")
-                }
+                await self?.handleValidationTimeout(url: url, retryCount: retryCount)
             }
+        }
+    }
+
+    private func handleValidationTimeout(url: URL, retryCount: Int) async {
+        let validationPassed = self.hasReceivedValidBuffer.load(ordering: .relaxed)
+
+        guard !validationPassed else {
+            self.logger.info("Recording validation successful")
+            return
+        }
+
+        self.logger.warning("Recording validation failed - no valid buffers received")
+        _ = await self.stopRecording()
+
+        if retryCount < Constants.maxRetries {
+            await self.retryRecording(to: url, retryCount: retryCount)
+        } else {
+            self.logger.error("Recording failed after 2 retry attempts")
+            let validationError = AudioRecorderError.recordingValidationFailed
+            self.error = validationError
+            self.onRecordingError?(validationError)
+        }
+    }
+
+    private func retryRecording(to url: URL, retryCount: Int) async {
+        self.logger.info(
+            "Retrying recording (attempt \(retryCount + 1)/\(Constants.maxRetries))..."
+        )
+        do {
+            try await Task.sleep(nanoseconds: Constants.retryDelay)
+            try await self.startRecording(to: url, retryCount: retryCount + 1)
+        } catch {
+            self.logger.error("Retry failed: \(error.localizedDescription)")
+            self.error = error
+            self.onRecordingError?(error)
         }
     }
 
