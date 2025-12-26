@@ -15,13 +15,13 @@ public enum SettingsSection: String, CaseIterable, Identifiable {
 
     public var title: String {
         switch self {
-        case .transcriptions: "Transcrições"
-        case .general: "Geral"
-        case .shortcuts: "Atalhos"
-        case .ai: "IA"
-        case .postProcessing: "Pós-Processamento"
-        case .service: "Serviço"
-        case .permissions: "Permissões"
+        case .transcriptions: NSLocalizedString("settings.section.transcriptions", comment: "")
+        case .general: NSLocalizedString("settings.section.general", comment: "")
+        case .shortcuts: NSLocalizedString("settings.section.shortcuts", comment: "")
+        case .ai: NSLocalizedString("settings.section.ai", comment: "")
+        case .postProcessing: NSLocalizedString("settings.section.post_processing", comment: "")
+        case .service: NSLocalizedString("settings.section.service", comment: "")
+        case .permissions: NSLocalizedString("settings.section.permissions", comment: "")
         }
     }
 

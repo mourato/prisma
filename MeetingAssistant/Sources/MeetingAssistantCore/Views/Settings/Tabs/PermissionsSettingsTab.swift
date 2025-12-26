@@ -9,13 +9,13 @@ public struct PermissionsSettingsTab: View {
     public var body: some View {
         ScrollView {
             VStack(spacing: SettingsDesignSystem.Layout.sectionSpacing) {
-                SettingsGroup("Sobre Permissões", icon: "info.circle") {
-                    Text("O Meeting Assistant precisa de acesso ao microfone e à gravação de tela para capturar o áudio das suas reuniões e identificar os aplicativos ativos.")
+                SettingsGroup(NSLocalizedString("settings.permissions.about", comment: ""), icon: "info.circle") {
+                    Text(NSLocalizedString("settings.permissions.description", comment: ""))
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
 
-                SettingsGroup("Status das Permissões", icon: "checkmark.shield") {
+                SettingsGroup(NSLocalizedString("settings.permissions.status", comment: ""), icon: "checkmark.shield") {
                     let viewModel = PermissionViewModel(
                         manager: RecordingManager.shared.permissionStatus,
                         requestMicrophone: { await RecordingManager.shared.requestPermission() },

@@ -3,6 +3,19 @@ import Security
 
 /// Secure storage for sensitive data using macOS Keychain.
 /// Provides type-safe API for storing and retrieving secrets.
+public protocol KeychainProvider: Sendable {
+    func store(_ value: String, for key: KeychainManager.Key) throws
+    func retrieve(for key: KeychainManager.Key) throws -> String?
+    func delete(for key: KeychainManager.Key) throws
+}
+
+public struct DefaultKeychainProvider: KeychainProvider {
+    public init() {}
+    public func store(_ value: String, for key: KeychainManager.Key) throws { try KeychainManager.store(value, for: key) }
+    public func retrieve(for key: KeychainManager.Key) throws -> String? { try KeychainManager.retrieve(for: key) }
+    public func delete(for key: KeychainManager.Key) throws { try KeychainManager.delete(for: key) }
+}
+
 enum KeychainManager {
     // MARK: - Constants
 

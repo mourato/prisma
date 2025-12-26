@@ -22,22 +22,22 @@ public struct GeneralSettingsTab: View {
 
     @ViewBuilder
     private var recordingSection: some View {
-        SettingsGroup("Gravação", icon: "recordingtape") {
+        SettingsGroup(NSLocalizedString("settings.general.recording", comment: ""), icon: "recordingtape") {
             VStack(alignment: .leading, spacing: 16) {
-                Toggle("Iniciar gravação automaticamente ao detectar reunião", isOn: self.$viewModel.autoStartRecording)
+                Toggle(NSLocalizedString("settings.general.auto_start", comment: ""), isOn: self.$viewModel.autoStartRecording)
 
                 Divider()
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Pasta de gravações:")
+                    Text(NSLocalizedString("settings.general.recordings_path", comment: ""))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
 
                     HStack {
-                        TextField("Caminho", text: self.$viewModel.recordingsPath)
+                        TextField(NSLocalizedString("settings.general.recordings_path_hint", comment: "Caminho"), text: self.$viewModel.recordingsPath)
                             .textFieldStyle(.roundedBorder)
 
-                        Button("Escolher...") {
+                        Button(NSLocalizedString("settings.general.choose", comment: "")) {
                             self.viewModel.selectRecordingsDirectory()
                         }
                     }
@@ -48,9 +48,9 @@ public struct GeneralSettingsTab: View {
 
     @ViewBuilder
     private var appsSection: some View {
-        SettingsGroup("Apps Monitorados", icon: "app.badge") {
+        SettingsGroup(NSLocalizedString("settings.general.monitored_apps", comment: ""), icon: "app.badge") {
             VStack(alignment: .leading, spacing: 12) {
-                Text("O aplicativo monitora automaticamente o estado destes apps para iniciar/parar gravações.")
+                Text(NSLocalizedString("settings.general.monitored_apps_desc", comment: ""))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .padding(.bottom, 4)

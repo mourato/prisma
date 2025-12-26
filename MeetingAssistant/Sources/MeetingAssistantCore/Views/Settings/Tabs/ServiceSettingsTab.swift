@@ -20,7 +20,7 @@ public struct ServiceSettingsTab: View {
     }
 
     private var modelInfoSection: some View {
-        SettingsGroup("Modelo de Transcrição", icon: "waveform") {
+        SettingsGroup(NSLocalizedString("settings.service.model_info", comment: ""), icon: "waveform") {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 12) {
                     ZStack {
@@ -33,9 +33,9 @@ public struct ServiceSettingsTab: View {
                     }
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Processamento On-Device")
+                        Text(NSLocalizedString("settings.service.on_device", comment: ""))
                             .font(.headline)
-                        Text("Otimizado para Apple Silicon (ANE)")
+                        Text(NSLocalizedString("settings.service.ane_opt", comment: ""))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -45,15 +45,15 @@ public struct ServiceSettingsTab: View {
 
                 Grid(alignment: .leading, horizontalSpacing: 20, verticalSpacing: 8) {
                     GridRow {
-                        Text("Modelo:")
+                        Text(NSLocalizedString("settings.service.model", comment: ""))
                             .foregroundStyle(.secondary)
                         Text("Parakeet TDT 0.6B v3")
                             .fontWeight(.medium)
                     }
                     GridRow {
-                        Text("Idiomas:")
+                        Text(NSLocalizedString("settings.service.languages", comment: ""))
                             .foregroundStyle(.secondary)
-                        Text("Português e +24 europeus")
+                        Text(NSLocalizedString("settings.service.languages_desc", comment: ""))
                             .fontWeight(.medium)
                     }
                 }
@@ -70,10 +70,10 @@ public struct ServiceSettingsTab: View {
                     .foregroundStyle(.orange)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Alta Performance")
+                    Text(NSLocalizedString("settings.service.high_performance", comment: ""))
                         .font(.subheadline)
                         .fontWeight(.medium)
-                    Text("Transcrição em tempo real sem internet")
+                    Text(NSLocalizedString("settings.service.no_internet", comment: ""))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
@@ -87,7 +87,7 @@ public struct ServiceSettingsTab: View {
         SettingsCard {
             HStack {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Estado do Serviço")
+                    Text(NSLocalizedString("settings.service.status", comment: ""))
                         .font(.headline)
 
                     HStack(spacing: 6) {
@@ -106,7 +106,7 @@ public struct ServiceSettingsTab: View {
                     if self.viewModel.transcriptionStatus == .testing {
                         ProgressView().controlSize(.small)
                     } else {
-                        Label("Verificar", systemImage: "arrow.clockwise")
+                        Label(NSLocalizedString("settings.service.verify", comment: ""), systemImage: "arrow.clockwise")
                     }
                 }
                 .buttonStyle(.bordered)

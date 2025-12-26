@@ -22,45 +22,37 @@ public struct AISettingsTab: View {
             }
             .padding()
         }
-        .onAppear {
-            self.viewModel.apiKeyText = (try? KeychainManager.retrieve(for: .aiAPIKey)) ?? ""
-        }
     }
 
     // MARK: - Sections
 
     @ViewBuilder
     private var mainSection: some View {
-        SettingsGroup("Geral", icon: "brain") {
+        SettingsGroup(NSLocalizedString("settings.general.title", comment: ""), icon: "brain") {
             Toggle(
-                "Habilitar processamento de transcrições com IA",
+                NSLocalizedString("settings.ai.enabled", comment: ""),
                 isOn: self.$viewModel.settings.aiEnabled
             )
 
-            Text(
-                "Quando habilitado, as transcrições serão enviadas para um modelo de IA " +
-                    "para correção, formatação e resumo."
-            )
-            .font(.caption)
-            .foregroundStyle(.secondary)
+            Text(NSLocalizedString("settings.ai.description", comment: ""))
+                .font(.caption)
+                .foregroundStyle(.secondary)
 
             Divider()
                 .padding(.vertical, 4)
 
-            Toggle("Identificar Oradores (Beta)", isOn: self.$viewModel.settings.isDiarizationEnabled)
+            Toggle(NSLocalizedString("settings.ai.diarization", comment: ""), isOn: self.$viewModel.settings.isDiarizationEnabled)
 
-            Text(
-                "Identifica quem está falando na reunião. Aumenta significativamente o tempo de processamento."
-            )
-            .font(.caption)
-            .foregroundStyle(.secondary)
+            Text(NSLocalizedString("settings.ai.diarization_desc", comment: ""))
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 
     @ViewBuilder
     private var providerSection: some View {
-        SettingsGroup("Provedor", icon: "server.rack") {
-            Picker("Provedor de IA:", selection: self.$viewModel.settings.aiConfiguration.provider) {
+        SettingsGroup(NSLocalizedString("settings.ai.provider", comment: ""), icon: "server.rack") {
+            Picker(NSLocalizedString("settings.ai.provider_label", comment: ""), selection: self.$viewModel.settings.aiConfiguration.provider) {
                 ForEach(AIProvider.allCases, id: \.self) { provider in
                     HStack {
                         Image(systemName: provider.icon)
@@ -81,10 +73,10 @@ public struct AISettingsTab: View {
 
     @ViewBuilder
     private var apiConfigurationSection: some View {
-        SettingsGroup("Configuração da API", icon: "key.fill") {
+        SettingsGroup(NSLocalizedString("settings.ai.api_config", comment: ""), icon: "key.fill") {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Text("URL Base:")
+                    Text(NSLocalizedString("settings.ai.base_url", comment: ""))
                         .frame(width: 80, alignment: .leading)
                     TextField(
                         self.viewModel.settings.aiConfiguration.provider.defaultBaseURL,
@@ -94,7 +86,7 @@ public struct AISettingsTab: View {
                 }
 
                 HStack {
-                    Text("Chave API:")
+                    Text(NSLocalizedString("settings.ai.api_key", comment: ""))
                         .frame(width: 80, alignment: .leading)
                     Group {
                         if self.viewModel.showAPIKey {
@@ -104,9 +96,6 @@ public struct AISettingsTab: View {
                         }
                     }
                     .textFieldStyle(.roundedBorder)
-                    .onChange(of: self.viewModel.apiKeyText) { _, newValue in
-                        self.viewModel.saveAPIKey(newValue)
-                    }
 
                     Button {
                         self.viewModel.showAPIKey.toggle()
@@ -114,13 +103,13 @@ public struct AISettingsTab: View {
                         Image(systemName: self.viewModel.showAPIKey ? "eye.slash" : "eye")
                     }
                     .buttonStyle(.borderless)
-                    .help(self.viewModel.showAPIKey ? "Ocultar chave" : "Mostrar chave")
+                    .help(self.viewModel.showAPIKey ? NSLocalizedString("settings.ai.hide_key", comment: "") : NSLocalizedString("settings.ai.show_key", comment: ""))
                 }
 
                 HStack {
                     Image(systemName: "lock.shield.fill")
                         .foregroundStyle(.green)
-                    Text("Chave armazenada com segurança no Keychain")
+                    Text(NSLocalizedString("settings.ai.keychain_secure", comment: ""))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
@@ -129,7 +118,7 @@ public struct AISettingsTab: View {
                     .padding(.vertical, 4)
 
                 HStack {
-                    Text("Modelo:")
+                    Text(NSLocalizedString("settings.ai.model", comment: ""))
                         .frame(width: 80, alignment: .leading)
                     TextField(
                         "gpt-4o, claude-3-5-sonnet...", text: self.$viewModel.settings.aiConfiguration.selectedModel
@@ -137,7 +126,7 @@ public struct AISettingsTab: View {
                     .textFieldStyle(.roundedBorder)
                 }
 
-                Text("O modelo será selecionável automaticamente em uma versão futura.")
+                Text(NSLocalizedString("settings.ai.model_future", comment: ""))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -157,7 +146,7 @@ public struct AISettingsTab: View {
                                 .controlSize(.small)
                                 .scaleEffect(0.7)
                         }
-                        Text("Testar Conexão")
+                        Text(NSLocalizedString("settings.ai.test_connection", comment: ""))
                     }
                 }
                 .buttonStyle(.borderedProminent)

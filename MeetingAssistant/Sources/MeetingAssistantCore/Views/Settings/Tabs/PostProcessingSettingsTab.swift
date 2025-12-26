@@ -48,10 +48,10 @@ public struct PostProcessingSettingsTab: View {
     private var enableToggleSection: some View {
         SettingsCard {
             VStack(alignment: .leading, spacing: 8) {
-                Toggle("Habilitar Pós-Processamento com IA", isOn: self.$viewModel.settings.postProcessingEnabled)
+                Toggle(NSLocalizedString("settings.post_processing.enabled", comment: ""), isOn: self.$viewModel.settings.postProcessingEnabled)
                     .font(.headline)
 
-                Text("Quando habilitado, as transcrições serão automaticamente processadas por IA para gerar resumos e correções.")
+                Text(NSLocalizedString("settings.post_processing.description", comment: ""))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -65,10 +65,10 @@ public struct PostProcessingSettingsTab: View {
                 .foregroundStyle(.yellow)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("Conexão com IA não configurada")
+                Text(NSLocalizedString("settings.post_processing.warning_title", comment: ""))
                     .font(.headline)
 
-                Text("Acesse a aba \"IA\" para configurar um provedor e ativar este recurso.")
+                Text(NSLocalizedString("settings.post_processing.warning_desc", comment: ""))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -85,16 +85,16 @@ public struct PostProcessingSettingsTab: View {
     }
 
     private var systemPromptSection: some View {
-        SettingsGroup("Diretrizes do Sistema", icon: "terminal.fill") {
+        SettingsGroup(NSLocalizedString("settings.post_processing.system_prompt", comment: ""), icon: "terminal.fill") {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Text("Instruções Base")
+                    Text(NSLocalizedString("settings.post_processing.base_instructions", comment: ""))
                         .font(.subheadline)
                         .fontWeight(.medium)
 
                     Spacer()
 
-                    Button("Restaurar Padrão") {
+                    Button(NSLocalizedString("settings.post_processing.restore_default", comment: "")) {
                         self.viewModel.resetSystemPrompt()
                     }
                     .buttonStyle(.link)
@@ -112,10 +112,10 @@ public struct PostProcessingSettingsTab: View {
     }
 
     private var userPromptsSection: some View {
-        SettingsGroup("Prompts de Processamento", icon: "sparkles") {
+        SettingsGroup(NSLocalizedString("settings.post_processing.prompts", comment: ""), icon: "sparkles") {
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
-                    Text("Escolha o prompt ativo para as novas transcrições.")
+                    Text(NSLocalizedString("settings.post_processing.choose_active", comment: ""))
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
@@ -125,7 +125,7 @@ public struct PostProcessingSettingsTab: View {
                         self.viewModel.editingPrompt = nil
                         self.viewModel.showPromptEditor = true
                     } label: {
-                        Label("Novo", systemImage: "plus")
+                        Label(NSLocalizedString("settings.post_processing.new_prompt", comment: ""), systemImage: "plus")
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
