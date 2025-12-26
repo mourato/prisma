@@ -73,7 +73,7 @@ public struct SettingsView: View {
         } icon: {
             Image(systemName: section.icon)
                 .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(self.selectedSection == section ? .white : .accentColor)
+                .foregroundStyle(self.selectedSection == section ? .white : Color.accentColor)
                 .frame(width: 24, height: 24)
                 .background(
                     RoundedRectangle(cornerRadius: 6)

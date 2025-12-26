@@ -171,7 +171,7 @@ public struct TranscriptionsSettingsTab: View {
         } label: {
             HStack {
                 Image(systemName: "calendar")
-                    .foregroundStyle(.accentColor)
+                    .foregroundStyle(Color.accentColor)
                 Text(self.viewModel.dateFilter.displayName)
                     .font(.subheadline)
                 Spacer()
