@@ -1,4 +1,5 @@
 import AVFoundation
+import Atomics
 import Combine
 import CoreMedia
 import Foundation
@@ -41,7 +42,7 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
 
     // MARK: - Validation
     private var validationTimer: Timer?
-    nonisolated(unsafe) private var hasReceivedValidBuffer = false
+    private let hasReceivedValidBuffer = ManagedAtomic<Bool>(false)
     public var onRecordingError: ((Error) -> Void)?
 
     private init() {}
@@ -80,7 +81,7 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
         }
 
         logger.info("Starting system audio recording to: \(outputURL.path)")
-        hasReceivedValidBuffer = false
+        hasReceivedValidBuffer.store(false, ordering: .relaxed)
 
         // Setup SCStream
         try await setupScreenCapture()
@@ -206,7 +207,7 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
     }
 
     nonisolated private func markValidBufferReceived() {
-        hasReceivedValidBuffer = true
+        hasReceivedValidBuffer.store(true, ordering: .relaxed)
     }
 
     // MARK: - Private Methods
@@ -271,7 +272,7 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
         _ = getAndClearAudioFile()
 
         isRecording = false
-        hasReceivedValidBuffer = false
+        hasReceivedValidBuffer.store(false, ordering: .relaxed)
     }
 
     private func startValidationTimer() {
@@ -280,7 +281,9 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
             Task { @MainActor in
                 guard let self = self else { return }
 
-                if !self.hasReceivedValidBuffer {
+                let validationPassed = self.hasReceivedValidBuffer.load(ordering: .relaxed)
+
+                if !validationPassed {
                     self.logger.warning(
                         "System audio validation failed - no valid buffers received")
                     let error = SystemAudioRecorderError.recordingValidationFailed
