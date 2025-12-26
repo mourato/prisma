@@ -1,31 +1,31 @@
 import Foundation
 
 /// Represents a completed transcription.
-struct Transcription: Identifiable, Codable, Hashable {
-    let id: UUID
-    let meeting: Meeting
+public struct Transcription: Identifiable, Codable, Hashable {
+    public let id: UUID
+    public let meeting: Meeting
     
     /// Primary text for display (processed if available, otherwise raw).
-    let text: String
+    public let text: String
     
     /// Original transcription from the ASR model.
-    let rawText: String
+    public let rawText: String
     
     /// Processed content from AI post-processing (nil if not processed).
-    var processedContent: String?
+    public var processedContent: String?
     
     /// ID of the prompt used for post-processing (nil if not processed).
-    var postProcessingPromptId: UUID?
+    public var postProcessingPromptId: UUID?
     
     /// Title of the prompt used for post-processing (nil if not processed).
-    var postProcessingPromptTitle: String?
+    public var postProcessingPromptTitle: String?
     
-    let language: String
-    let createdAt: Date
-    let modelName: String
+    public let language: String
+    public let createdAt: Date
+    public let modelName: String
     
     /// Full initializer with post-processing support.
-    init(
+    public init(
         id: UUID = UUID(),
         meeting: Meeting,
         text: String,
@@ -50,7 +50,7 @@ struct Transcription: Identifiable, Codable, Hashable {
     }
     
     /// Convenience initializer for backward compatibility (no post-processing).
-    init(
+    public init(
         id: UUID = UUID(),
         meeting: Meeting,
         text: String,
@@ -73,12 +73,12 @@ struct Transcription: Identifiable, Codable, Hashable {
     }
     
     /// Whether this transcription was post-processed.
-    var isPostProcessed: Bool {
+    public var isPostProcessed: Bool {
         processedContent != nil
     }
     
     /// Formatted date string for display.
-    var formattedDate: String {
+    public var formattedDate: String {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
@@ -87,17 +87,17 @@ struct Transcription: Identifiable, Codable, Hashable {
     }
     
     /// Duration from meeting data.
-    var formattedDuration: String {
+    public var formattedDuration: String {
         meeting.formattedDuration
     }
     
     /// Word count of transcription.
-    var wordCount: Int {
+    public var wordCount: Int {
         text.split(separator: " ").count
     }
     
     /// Preview of transcription text (first 100 chars).
-    var preview: String {
+    public var preview: String {
         if text.count <= 100 {
             return text
         }
