@@ -7,8 +7,27 @@ public struct TranscriptionsSettingsTab: View {
     @State private var selectedTranscription: Transcription?
     @State private var isLoading = true
     @State private var isDropTargeted = false
+    @State private var sourceFilter: RecordingSourceFilter = .all
+    @State private var dateFilter: DateFilter = .allEntries
 
     private let storage = FileSystemStorageService.shared
+
+    /// Supported file extensions for import.
+    private let supportedAudioExtensions = ["m4a", "mp3", "wav", "aac"]
+    private let supportedVideoExtensions = ["mov", "mp4", "m4v"]
+
+    private var supportedExtensions: [String] {
+        self.supportedAudioExtensions + self.supportedVideoExtensions
+    }
+
+    /// Transcriptions filtered by source and date.
+    private var filteredTranscriptions: [Transcription] {
+        self.transcriptions.filter { transcription in
+            let matchesSource = self.matchesSourceFilter(transcription)
+            let matchesDate = self.dateFilter.contains(transcription.createdAt)
+            return matchesSource && matchesDate
+        }
+    }
 
     public init() {}
 
@@ -62,16 +81,107 @@ public struct TranscriptionsSettingsTab: View {
 
             Divider()
 
+            self.filtersSection
+                .padding(.horizontal)
+                .padding(.vertical, 12)
+
+            Divider()
+
             if self.isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if self.transcriptions.isEmpty {
+            } else if self.filteredTranscriptions.isEmpty {
                 self.emptyState
             } else {
                 self.transcriptionsList
             }
         }
         .background(Color(nsColor: .controlBackgroundColor))
+    }
+
+    // MARK: - Filters Section
+
+    private var filtersSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Image(systemName: "line.3.horizontal.decrease.circle")
+                    .foregroundStyle(.secondary)
+                Text("FILTERS")
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundStyle(.secondary)
+            }
+
+            HStack(spacing: 8) {
+                self.sourceFilterPicker
+
+                Spacer()
+
+                self.dateFilterMenu
+            }
+        }
+    }
+
+    private var sourceFilterPicker: some View {
+        HStack(spacing: 0) {
+            ForEach(RecordingSourceFilter.allCases, id: \.self) { filter in
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        self.sourceFilter = filter
+                    }
+                } label: {
+                    Text(filter.displayName)
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            self.sourceFilter == filter
+                                ? Color.accentColor
+                                : Color.clear
+                        )
+                        .foregroundStyle(
+                            self.sourceFilter == filter
+                                ? .white
+                                : .primary
+                        )
+                        .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .background(Color(nsColor: .quaternarySystemFill))
+        .clipShape(Capsule())
+    }
+
+    private var dateFilterMenu: some View {
+        Menu {
+            ForEach(DateFilter.allCases, id: \.self) { filter in
+                Button {
+                    self.dateFilter = filter
+                } label: {
+                    HStack {
+                        Text(filter.displayName)
+                        if self.dateFilter == filter {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Text(self.dateFilter.displayName)
+                    .font(.caption)
+                Image(systemName: "chevron.down")
+                    .font(.caption2)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(Color(nsColor: .quaternarySystemFill))
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
     }
 
     private var dropZone: some View {
@@ -134,11 +244,24 @@ public struct TranscriptionsSettingsTab: View {
     }
 
     private var transcriptionsList: some View {
-        List(self.transcriptions, selection: self.$selectedTranscription) { transcription in
+        List(self.filteredTranscriptions, selection: self.$selectedTranscription) { transcription in
             TranscriptionRowView(transcription: transcription)
                 .tag(transcription)
         }
         .listStyle(.plain)
+    }
+
+    // MARK: - Filter Logic
+
+    private func matchesSourceFilter(_ transcription: Transcription) -> Bool {
+        switch self.sourceFilter {
+        case .all:
+            true
+        case .dictations:
+            transcription.meeting.app != .importedFile
+        case .manualImports:
+            transcription.meeting.app == .importedFile
+        }
     }
 
     // MARK: - Right Panel
