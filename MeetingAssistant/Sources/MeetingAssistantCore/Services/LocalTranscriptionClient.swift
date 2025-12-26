@@ -30,8 +30,8 @@ class LocalTranscriptionClient {
         let startTime = Date()
 
         // Perform transcription
-        // Now returns tuple (text, tokens)
-        let (text, tokens) = try await manager.transcribe(audioURL: audioURL)
+        // Returns tuple (text, segments) -> conceptually "tokens" for alignment if they are small enough
+        let (text, segmentsFromASR) = try await manager.transcribe(audioURL: audioURL)
 
         var segments: [Transcription.Segment] = []
 
@@ -41,7 +41,8 @@ class LocalTranscriptionClient {
             logger.info("Diarization enabled. Processing...")
             do {
                 let diarizationSegments = try await manager.diarize(audioURL: audioURL)
-                segments = merge(text: text, tokens: tokens, speakers: diarizationSegments)
+                segments = merge(
+                    text: text, asrSegments: segmentsFromASR, speakers: diarizationSegments)
             } catch {
                 logger.error(
                     "Diarization failed: \(error.localizedDescription). Proceeding with transcription only."
@@ -63,38 +64,39 @@ class LocalTranscriptionClient {
         )
     }
 
-    /// Merges ASR tokens with Speaker segments to produce aligned transcription segments.
+    /// Merges ASR segments with Speaker segments to produce aligned transcription segments.
     private func merge(
         text: String,
-        tokens: [FluidAIModelManager.AsrToken],
+        asrSegments: [FluidAIModelManager.AsrSegment],
         speakers: [FluidAIModelManager.DiarizationSegment]
     ) -> [Transcription.Segment] {
-        guard !tokens.isEmpty, !speakers.isEmpty else { return [] }
+        guard !asrSegments.isEmpty, !speakers.isEmpty else { return [] }
 
         var result: [Transcription.Segment] = []
         var currentSpeakerId = ""
-        var currentSegmentTokens: [FluidAIModelManager.AsrToken] = []
+        var currentBatch: [FluidAIModelManager.AsrSegment] = []
 
-        // Simple algorithm: Assign each token to the speaker active at token's midpoint
-        // Then group consecutive tokens of same speaker.
+        // Simple algorithm: Assign each ASR segment to the speaker active at its midpoint
+        // Then group consecutive segments of same speaker.
 
-        for token in tokens {
-            let midPoint = (token.startTime + token.endTime) / 2.0
+        for segment in asrSegments {
+            let midPoint = (segment.startTime + segment.endTime) / 2.0
 
             // Find speaker active at midPoint
             // If overlapping speakers, pick the first one (simplification)
             let speaker =
                 speakers.first { $0.startTime <= midPoint && $0.endTime >= midPoint }?.speakerId
-                ?? "Desconhecido"
+                ?? Transcription.unknownSpeaker
 
             if speaker != currentSpeakerId {
                 // Determine if we should start a new segment
-                if !currentSegmentTokens.isEmpty {
-                    let segmentText = currentSegmentTokens.map(\.text).joined(separator: "")
+                if !currentBatch.isEmpty {
+                    let segmentText = currentBatch.map(\.text).joined(separator: "")
                         .trimmingCharacters(in: .whitespaces)
+
                     if !segmentText.isEmpty {
-                        let start = currentSegmentTokens.first?.startTime ?? 0
-                        let end = currentSegmentTokens.last?.endTime ?? 0
+                        let start = currentBatch.first?.startTime ?? 0
+                        let end = currentBatch.last?.endTime ?? 0
                         result.append(
                             Transcription.Segment(
                                 speaker: currentSpeakerId,
@@ -105,19 +107,19 @@ class LocalTranscriptionClient {
                     }
                 }
                 currentSpeakerId = speaker
-                currentSegmentTokens = []
+                currentBatch = []
             }
 
-            currentSegmentTokens.append(token)
+            currentBatch.append(segment)
         }
 
         // Flush last segment
-        if !currentSegmentTokens.isEmpty {
-            let segmentText = currentSegmentTokens.map(\.text).joined(separator: "")
+        if !currentBatch.isEmpty {
+            let segmentText = currentBatch.map(\.text).joined(separator: "")
                 .trimmingCharacters(in: .whitespaces)
             if !segmentText.isEmpty {
-                let start = currentSegmentTokens.first?.startTime ?? 0
-                let end = currentSegmentTokens.last?.endTime ?? 0
+                let start = currentBatch.first?.startTime ?? 0
+                let end = currentBatch.last?.endTime ?? 0
                 result.append(
                     Transcription.Segment(
                         speaker: currentSpeakerId,
