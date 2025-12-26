@@ -125,22 +125,27 @@ public struct MenuBarView: View {
     }
 
     private var controlButtons: some View {
-        HStack(spacing: 12) {
+        VStack {
             if self.viewModel.isRecording {
                 Button(action: self.stopRecording) {
-                    Label("Parar Gravação", systemImage: "stop.fill")
+                    Label(NSLocalizedString("menubar.stop_recording", comment: "Stop recording button"), systemImage: "stop.fill")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, minHeight: 38)
                 }
                 .buttonStyle(.borderedProminent)
+                .controlSize(.large)
                 .tint(.red)
             } else {
                 Button(action: self.startRecording) {
-                    Label("Iniciar Gravação", systemImage: "record.circle")
+                    Label(NSLocalizedString("menubar.start_recording", comment: "Start recording button"), systemImage: "record.circle")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, minHeight: 38)
                 }
                 .buttonStyle(.borderedProminent)
+                .controlSize(.large)
             }
-
-            TranscribeFileButton(viewModel: self.viewModel)
         }
+        .padding(.top, 4)
     }
 
     // MARK: - Actions

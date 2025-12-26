@@ -108,3 +108,8 @@
 "shortcut.global.description" = "Press this shortcut anywhere in the system to start or stop recording.";
 "shortcut.action.toggleRecording" = "Start/Stop Recording:";
 "shortcut.reset.default" = "Restore Default";
+
+
+/* Menu Bar */
+"menubar.start_recording" = "Start Recording";
+"menubar.stop_recording" = "Stop Recording";

@@ -108,3 +108,8 @@
 "shortcut.global.description" = "Pressione este atalho em qualquer lugar do sistema para iniciar ou parar a gravação.";
 "shortcut.action.toggleRecording" = "Iniciar/Parar Gravação:";
 "shortcut.reset.default" = "Restaurar Padrão";
+
+
+/* Menu Bar */
+"menubar.start_recording" = "Iniciar Gravação";
+"menubar.stop_recording" = "Parar Gravação";
