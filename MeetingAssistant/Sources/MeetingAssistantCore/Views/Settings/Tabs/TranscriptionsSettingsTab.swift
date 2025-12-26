@@ -7,8 +7,16 @@ import UniformTypeIdentifiers
 /// Main tab for managing transcriptions in Settings.
 public struct TranscriptionsSettingsTab: View {
     @StateObject private var viewModel = TranscriptionSettingsViewModel()
+    @StateObject private var importViewModel: TranscriptionImportViewModel
 
-    public init() {}
+    public init() {
+        // Initialize importViewModel with a closure to refresh the list
+        let vm = TranscriptionSettingsViewModel()
+        _viewModel = StateObject(wrappedValue: vm)
+        _importViewModel = StateObject(wrappedValue: TranscriptionImportViewModel(onImportSuccess: {
+            await vm.loadTranscriptions()
+        }))
+    }
 
     public var body: some View {
         VStack(spacing: 0) {
@@ -20,7 +28,7 @@ public struct TranscriptionsSettingsTab: View {
             await self.viewModel.loadTranscriptions()
         }
         .alert(
-            "Erro ao carregar transcrições",
+            NSLocalizedString("settings.transcriptions.error_load", comment: ""),
             isPresented: Binding(
                 get: { self.viewModel.errorMessage != nil },
                 set: { if !$0 { self.viewModel.errorMessage = nil } }
@@ -41,10 +49,10 @@ public struct TranscriptionsSettingsTab: View {
     private var headerSection: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text("Transcrições")
+                Text(NSLocalizedString("settings.transcriptions.title", comment: ""))
                     .font(.system(.title2, design: .rounded))
                     .fontWeight(.bold)
-                Text("\(self.viewModel.filteredTranscriptions.count) itens encontrados")
+                Text(String.localizedStringWithFormat(NSLocalizedString("settings.transcriptions.items_found", comment: ""), self.viewModel.filteredTranscriptions.count))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -52,7 +60,7 @@ public struct TranscriptionsSettingsTab: View {
             Spacer()
 
             Button(action: { self.viewModel.openRecordingsDirectory() }) {
-                Label("Abrir Pasta", systemImage: "folder")
+                Label(NSLocalizedString("settings.transcriptions.open_folder", comment: ""), systemImage: "folder")
             }
             .buttonStyle(.bordered)
         }
@@ -93,7 +101,7 @@ public struct TranscriptionsSettingsTab: View {
                     Spacer()
                     ProgressView()
                         .controlSize(.large)
-                    Text("Carregando...")
+                    Text(NSLocalizedString("settings.transcriptions.loading", comment: ""))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .padding(.top, 8)
@@ -116,7 +124,7 @@ public struct TranscriptionsSettingsTab: View {
             HStack {
                 Image(systemName: "line.3.horizontal.decrease.circle")
                     .foregroundStyle(.secondary)
-                Text("FILTROS")
+                Text(NSLocalizedString("settings.transcriptions.filters", comment: ""))
                     .font(.system(.caption, design: .monospaced))
                     .fontWeight(.bold)
                     .foregroundStyle(.secondary)
@@ -129,7 +137,7 @@ public struct TranscriptionsSettingsTab: View {
     }
 
     private var sourceFilterPicker: some View {
-        Picker("Origem", selection: self.$viewModel.sourceFilter) {
+        Picker(NSLocalizedString("settings.transcriptions.source", comment: ""), selection: self.$viewModel.sourceFilter) {
             ForEach(RecordingSourceFilter.allCases, id: \.self) { filter in
                 Text(filter.displayName).tag(filter)
             }
@@ -176,13 +184,13 @@ public struct TranscriptionsSettingsTab: View {
             Image(systemName: "tray.and.arrow.down.fill")
                 .font(.system(size: 28))
                 .foregroundStyle(SettingsDesignSystem.Colors.aiGradient)
-                .symbolEffect(.bounce, value: self.viewModel.isDropTargeted)
+                .symbolEffect(.bounce, value: self.importViewModel.isDropTargeted)
 
             VStack(spacing: 4) {
-                Text("Importar Arquivo")
+                Text(NSLocalizedString("settings.transcriptions.import", comment: ""))
                     .font(.headline)
 
-                Text("Arraste ou clique para importar áudio/vídeo")
+                Text(NSLocalizedString("settings.transcriptions.import_desc", comment: ""))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -193,20 +201,20 @@ public struct TranscriptionsSettingsTab: View {
         .background(
             RoundedRectangle(cornerRadius: 12)
                 .strokeBorder(
-                    self.viewModel.isDropTargeted ? Color.accentColor : Color.secondary.opacity(0.2),
+                    self.importViewModel.isDropTargeted ? Color.accentColor : Color.secondary.opacity(0.2),
                     style: StrokeStyle(lineWidth: 2, dash: [4, 4])
                 )
                 .background(
-                    self.viewModel.isDropTargeted
+                    self.importViewModel.isDropTargeted
                         ? Color.accentColor.opacity(0.1)
                         : Color.primary.opacity(0.02)
                 )
         )
         .onTapGesture {
-            self.viewModel.selectAndImportFile()
+            self.importViewModel.selectAndImportFile()
         }
-        .onDrop(of: [.audio, .fileURL], isTargeted: self.$viewModel.isDropTargeted) { providers in
-            self.viewModel.handleDrop(providers: providers)
+        .onDrop(of: [.audio, .fileURL], isTargeted: self.$importViewModel.isDropTargeted) { providers in
+            self.importViewModel.handleDrop(providers: providers)
             return true
         }
     }
@@ -219,11 +227,11 @@ public struct TranscriptionsSettingsTab: View {
                 .symbolEffect(.pulse)
 
             VStack(spacing: 4) {
-                Text("Sem transcrições")
+                Text(NSLocalizedString("settings.transcriptions.empty_title", comment: ""))
                     .font(.headline)
                     .foregroundStyle(.secondary)
 
-                Text("Grave uma reunião ou importe um áudio")
+                Text(NSLocalizedString("settings.transcriptions.empty_desc", comment: ""))
                     .font(.caption)
                     .foregroundStyle(.tertiary)
                     .multilineTextAlignment(.center)
@@ -261,7 +269,7 @@ public struct TranscriptionsSettingsTab: View {
                 .foregroundStyle(.tertiary)
                 .opacity(0.5)
 
-            Text("Selecione uma transcrição para visualizar os detalhes")
+            Text(NSLocalizedString("settings.transcriptions.no_selection", comment: ""))
                 .font(.headline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

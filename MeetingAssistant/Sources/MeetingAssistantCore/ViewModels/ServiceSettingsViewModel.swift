@@ -5,14 +5,18 @@ import SwiftUI
 public class ServiceSettingsViewModel: ObservableObject {
     @Published public var transcriptionStatus: ConnectionStatus = .unknown
 
-    public init() {}
+    private let transcriptionClient: TranscriptionClient
+
+    public init(transcriptionClient: TranscriptionClient = .shared) {
+        self.transcriptionClient = transcriptionClient
+    }
 
     public func testConnection() {
         self.transcriptionStatus = .testing
 
         Task {
             do {
-                let isHealthy = try await TranscriptionClient.shared.healthCheck()
+                let isHealthy = try await self.transcriptionClient.healthCheck()
                 self.transcriptionStatus = isHealthy ? .success : .failure(nil)
             } catch {
                 self.transcriptionStatus = .failure(error.localizedDescription)

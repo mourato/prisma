@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 import os.log
 import SwiftUI
@@ -10,21 +11,41 @@ public class AISettingsViewModel: ObservableObject {
     @Published public var connectionStatus: ConnectionStatus = .unknown
 
     private let logger = Logger(subsystem: "MeetingAssistant", category: "AISettingsViewModel")
+    private let keychain: KeychainProvider
+    private let session: URLSession
+    private var cancellables = Set<AnyCancellable>()
 
-    public init(settings: AppSettingsStore = .shared) {
+    public init(
+        settings: AppSettingsStore = .shared,
+        keychain: KeychainProvider = DefaultKeychainProvider(),
+        session: URLSession = .shared
+    ) {
         self.settings = settings
-        self.apiKeyText = (try? KeychainManager.retrieve(for: .aiAPIKey)) ?? ""
+        self.keychain = keychain
+        self.session = session
+        self.apiKeyText = (try? keychain.retrieve(for: .aiAPIKey)) ?? ""
+
+        // Reactive persistence for API Key
+        self.$apiKeyText
+            .dropFirst()
+            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
+            .sink { [weak self] newValue in
+                self?.persistAPIKey(newValue)
+            }
+            .store(in: &self.cancellables)
     }
 
-    public func saveAPIKey(_ value: String) {
+    private func persistAPIKey(_ value: String) {
         do {
             if !value.isEmpty {
-                try KeychainManager.store(value, for: .aiAPIKey)
+                try self.keychain.store(value, for: .aiAPIKey)
+                self.logger.info("API Key successfully persisted to Keychain")
             } else {
-                try KeychainManager.delete(for: .aiAPIKey)
+                try self.keychain.delete(for: .aiAPIKey)
+                self.logger.info("API Key removed from Keychain")
             }
         } catch {
-            self.logger.error("Failed to save API key to Keychain: \(error.localizedDescription)")
+            self.logger.error("Failed to persist API key: \(error.localizedDescription)")
         }
     }
 
@@ -38,7 +59,7 @@ public class AISettingsViewModel: ObservableObject {
               let scheme = url.scheme,
               ["http", "https"].contains(scheme.lowercased())
         else {
-            self.connectionStatus = .failure("URL inválida")
+            self.connectionStatus = .failure(NSLocalizedString("settings.ai.connection.invalid_url", comment: ""))
             return
         }
 
@@ -48,11 +69,11 @@ public class AISettingsViewModel: ObservableObject {
                 request.httpMethod = "GET"
                 request.timeoutInterval = 5
 
-                if let key = try? KeychainManager.retrieve(for: .aiAPIKey), !key.isEmpty {
+                if let key = try? self.keychain.retrieve(for: .aiAPIKey), !key.isEmpty {
                     request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
                 }
 
-                let (_, response) = try await URLSession.shared.data(for: request)
+                let (_, response) = try await self.session.data(for: request)
 
                 if let httpResponse = response as? HTTPURLResponse {
                     let statusCode = httpResponse.statusCode
@@ -62,7 +83,7 @@ public class AISettingsViewModel: ObservableObject {
                         self.connectionStatus = .failure("HTTP \(statusCode)")
                     }
                 } else {
-                    self.connectionStatus = .failure("Resposta inválida")
+                    self.connectionStatus = .failure(NSLocalizedString("settings.ai.connection.invalid_response", comment: ""))
                 }
             } catch {
                 self.connectionStatus = .failure(error.localizedDescription)

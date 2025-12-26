@@ -12,9 +12,9 @@ public struct ShortcutSettingsTab: View {
     public var body: some View {
         ScrollView {
             VStack(spacing: SettingsDesignSystem.Layout.sectionSpacing) {
-                SettingsGroup("Atalhos Globais", icon: "command") {
+                SettingsGroup(NSLocalizedString("settings.shortcuts.global", comment: ""), icon: "command") {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Configure atalhos de teclado para controlar o aplicativo com agilidade, mesmo em segundo plano.")
+                        Text(NSLocalizedString("settings.shortcuts.description", comment: ""))
                             .font(.caption)
                             .foregroundStyle(.secondary)
 
@@ -23,10 +23,10 @@ public struct ShortcutSettingsTab: View {
 
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Alternar Gravação")
+                                Text(NSLocalizedString("settings.shortcuts.toggle_recording", comment: ""))
                                     .font(.body)
                                     .fontWeight(.medium)
-                                Text("Inicia ou encerra a gravação atual")
+                                Text(NSLocalizedString("settings.shortcuts.toggle_recording_desc", comment: ""))
                                     .font(.caption2)
                                     .foregroundStyle(.secondary)
                             }
@@ -46,7 +46,7 @@ public struct ShortcutSettingsTab: View {
                         Button(action: {
                             self.viewModel.resetShortcuts()
                         }) {
-                            Text("Resetar para atalhos padrão")
+                            Text(NSLocalizedString("settings.shortcuts.reset", comment: ""))
                         }
                         .buttonStyle(.link)
 
