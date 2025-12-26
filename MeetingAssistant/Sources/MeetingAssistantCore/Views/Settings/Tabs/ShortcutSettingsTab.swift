@@ -10,14 +10,14 @@ public struct ShortcutSettingsTab: View {
     public var body: some View {
 
         Form {
-            Section(header: Text("shortcut.global.title", bundle: .module)) {
+            Section(header: Text("shortcut.global.title")) {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("shortcut.global.description", bundle: .module)
+                    Text("shortcut.global.description")
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
                     HStack {
-                        Text("shortcut.action.toggleRecording", bundle: .module)
+                        Text("shortcut.action.toggleRecording")
                         Spacer()
                         KeyboardShortcuts.Recorder(for: .toggleRecording)
                     }
@@ -28,7 +28,7 @@ public struct ShortcutSettingsTab: View {
                 Button(action: {
                     KeyboardShortcuts.reset(.toggleRecording)
                 }) {
-                    Text("shortcut.reset.default", bundle: .module)
+                    Text("shortcut.reset.default")
                 }
                 .buttonStyle(.link)
             }
