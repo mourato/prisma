@@ -19,7 +19,7 @@ public struct DefaultKeychainProvider: KeychainProvider {
     public func delete(for key: KeychainManager.Key) throws { try KeychainManager.delete(for: key) }
 }
 
-enum KeychainManager {
+public enum KeychainManager {
     // MARK: - Constants
 
     private static let serviceIdentifier = "com.meeting-assistant"
@@ -27,20 +27,20 @@ enum KeychainManager {
     // MARK: - Keys
 
     /// Known keys for Keychain storage.
-    enum Key: String {
+    public enum Key: String {
         case aiAPIKey = "ai_api_key"
     }
 
     // MARK: - Errors
 
     /// Errors that can occur during Keychain operations.
-    enum KeychainError: LocalizedError {
+    public enum KeychainError: LocalizedError {
         case unableToConvertToData
         case unableToConvertFromData
         case itemNotFound
         case unexpectedStatus(OSStatus)
 
-        var errorDescription: String? {
+        public var errorDescription: String? {
             switch self {
             case .unableToConvertToData:
                 "Unable to convert string to data"
