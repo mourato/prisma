@@ -119,6 +119,8 @@ public struct PromptEditorSheet: View {
                 )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Ícone \(icon)")
+        .accessibilityHint(isSelected ? "Selecionado" : "Toque para selecionar")
     }
     
     // MARK: - Description Section
