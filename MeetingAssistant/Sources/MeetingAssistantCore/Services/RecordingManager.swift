@@ -2,6 +2,7 @@ import Foundation
 import Combine
 import os.log
 import UserNotifications
+import AVFoundation
 
 /// Central manager coordinating recording, meeting detection, and transcription.
 /// Orchestrates microphone and system audio recording with post-processing merge.
@@ -27,11 +28,12 @@ public class RecordingManager: ObservableObject {
     
     // MARK: - Services
     
-    private let micRecorder = AudioRecorder.shared
-    private let systemRecorder = SystemAudioRecorder.shared
-    private let audioMerger = AudioMerger()
-    private let meetingDetector = MeetingDetector.shared
-    private let transcriptionClient = TranscriptionClient.shared
+    private let micRecorder: any AudioRecordingService
+    private let systemRecorder: any AudioRecordingService
+    private let audioMerger: AudioMerger
+    private let meetingDetector: MeetingDetector
+    private let transcriptionClient: any TranscriptionService
+    private let postProcessingService: any PostProcessingServiceProtocol
     
     private var cancellables = Set<AnyCancellable>()
     private var statusCheckTask: Task<Void, Never>?
@@ -54,18 +56,36 @@ public class RecordingManager: ObservableObject {
         return recordings
     }
     
-    private init() {
+    public init(
+        micRecorder: any AudioRecordingService = AudioRecorder.shared,
+        systemRecorder: any AudioRecordingService = SystemAudioRecorder.shared,
+        transcriptionClient: any TranscriptionService = TranscriptionClient.shared,
+        postProcessingService: any PostProcessingServiceProtocol = PostProcessingService.shared,
+        audioMerger: AudioMerger = AudioMerger(),
+        meetingDetector: MeetingDetector = MeetingDetector.shared
+    ) {
+        self.micRecorder = micRecorder
+        self.systemRecorder = systemRecorder
+        self.transcriptionClient = transcriptionClient
+        self.postProcessingService = postProcessingService
+        self.audioMerger = audioMerger
+        self.meetingDetector = meetingDetector
+        
         setupBindings()
         requestNotificationAuthorization()
-        Task {
-            await checkPermission()
-            await startStatusMonitoring()
+        Task { [weak self] in
+            await self?.checkPermission()
+            await self?.startStatusMonitoring()
         }
     }
     
-    // MARK: - Permission Handling
+    // ...
     
-    /// Check and update permission status (Screen Recording + Microphone).
+    /// Check if running as a proper app bundle (required for UNUserNotificationCenter).
+    private var isRunningAsAppBundle: Bool {
+        guard let id = Bundle.main.bundleIdentifier else { return false }
+        return !id.lowercased().contains("xctest")
+    }
     public func checkPermission() async {
         let micPermission = await micRecorder.hasPermission()
         let screenPermission = await systemRecorder.hasPermission()
@@ -89,12 +109,12 @@ public class RecordingManager: ObservableObject {
     
     /// Open System Preferences to Screen Recording settings.
     public func openPermissionSettings() {
-        systemRecorder.openScreenRecordingSettings()
+        systemRecorder.openSettings()
     }
     
     /// Open System Preferences to Microphone settings.
     public func openMicrophoneSettings() {
-        micRecorder.openMicrophoneSettings()
+        micRecorder.openSettings()
     }
     
     // MARK: - Public API
@@ -124,10 +144,10 @@ public class RecordingManager: ObservableObject {
             mergedAudioURL = recordingsDirectory.appendingPathComponent(baseFilename)
             
             // Start microphone recording
-            try micRecorder.startRecording(to: micAudioURL!, retryCount: 0)
+            try await micRecorder.startRecording(to: micAudioURL!, retryCount: 0)
             
             // Start system audio recording (async)
-            try await systemRecorder.startRecording(to: systemAudioURL!)
+            try await systemRecorder.startRecording(to: systemAudioURL!, retryCount: 0)
             
             isRecording = true
             currentMeeting?.audioFilePath = mergedAudioURL?.path
@@ -139,7 +159,7 @@ public class RecordingManager: ObservableObject {
             lastError = error
             
             // Cleanup partial starts
-            _ = micRecorder.stopRecording()
+            _ = await micRecorder.stopRecording()
             _ = await systemRecorder.stopRecording()
             
             currentMeeting = nil
@@ -155,7 +175,7 @@ public class RecordingManager: ObservableObject {
         
         do {
             // Stop both recorders
-            let micURL = micRecorder.stopRecording()
+            let micURL = await micRecorder.stopRecording()
             let sysURL = await systemRecorder.stopRecording()
             
             // Update meeting
@@ -216,7 +236,7 @@ public class RecordingManager: ObservableObject {
     
     private func setupBindings() {
         // Sync with audio recorder state
-        micRecorder.$isRecording
+        micRecorder.isRecordingPublisher
             .receive(on: DispatchQueue.main)
             .assign(to: &$isRecording)
     }
@@ -306,7 +326,7 @@ public class RecordingManager: ObservableObject {
         transcriptionStatus.updateProgress(phase: .postProcessing, percentage: Constants.aiProcessingProgress)
         
         do {
-            let processed = try await PostProcessingService.shared.processTranscription(rawText, with: prompt)
+            let processed = try await postProcessingService.processTranscription(rawText, with: prompt)
             logger.info("Post-processing complete using prompt: \(prompt.title)")
             return (processed, prompt.id, prompt.title)
         } catch {
@@ -366,6 +386,7 @@ public class RecordingManager: ObservableObject {
     
     /// Get audio duration from file for progress estimation.
     private func getAudioDuration(from url: URL) -> Double? {
+        // Implementation placeholder (could be added to AudioMerger or utility)
         return nil
     }
     
@@ -400,10 +421,7 @@ public class RecordingManager: ObservableObject {
         await checkServiceStatus()
     }
     
-    /// Check if running as a proper app bundle (required for UNUserNotificationCenter).
-    private var isRunningAsAppBundle: Bool {
-        Bundle.main.bundleIdentifier != nil
-    }
+
     
     /// Request notification authorization from the user.
     private func requestNotificationAuthorization() {

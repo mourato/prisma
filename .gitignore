@@ -72,4 +72,5 @@ temp/
 *.processed.wav
 
 # App bundle
-MeetingAssistant/dist/
+MeetingAssistant/dist
+MeetingAssistant/.swiftpm

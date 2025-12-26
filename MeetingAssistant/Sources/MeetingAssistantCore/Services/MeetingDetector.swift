@@ -6,8 +6,8 @@ import os.log
 /// Service for detecting active meetings from supported apps.
 /// Monitors running applications and window titles.
 @MainActor
-class MeetingDetector: ObservableObject {
-    static let shared = MeetingDetector()
+public class MeetingDetector: ObservableObject {
+    public static let shared = MeetingDetector()
     
     private let logger = Logger(subsystem: "MeetingAssistant", category: "MeetingDetector")
     

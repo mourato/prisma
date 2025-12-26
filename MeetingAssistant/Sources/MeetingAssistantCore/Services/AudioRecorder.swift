@@ -3,22 +3,26 @@ import Foundation
 import CoreAudio
 import AppKit
 import os.log
+import Combine
 
 // MARK: - Audio Recorder (Microphone Only)
 
 /// VoiceInk-style audio recorder using AVAudioEngine with direct file writing.
 /// Records microphone audio to a 16kHz Mono WAV file.
 @MainActor
-public class AudioRecorder: ObservableObject {
+public class AudioRecorder: ObservableObject, AudioRecordingService {
     public static let shared = AudioRecorder()
     
     private let logger = Logger(subsystem: "MeetingAssistant", category: "AudioRecorder")
     
     @Published public private(set) var isRecording = false
+    public var isRecordingPublisher: AnyPublisher<Bool, Never> { $isRecording.eraseToAnyPublisher() }
     @Published public private(set) var currentRecordingURL: URL?
     @Published public private(set) var error: Error?
     @Published public private(set) var currentAveragePower: Float = -160.0
     @Published public private(set) var currentPeakPower: Float = -160.0
+    
+    // ... (rest of properties)
     
     // MARK: - Audio Engine
     private var audioEngine: AVAudioEngine?
@@ -55,9 +59,9 @@ public class AudioRecorder: ObservableObject {
     
     /// Start recording microphone audio to the specified URL.
     /// Uses automatic retry mechanism if initial start fails.
-    public func startRecording(to outputURL: URL, retryCount: Int = 0) throws {
+    public func startRecording(to outputURL: URL, retryCount: Int = 0) async throws {
         // Stop any existing recording first
-        stopRecording()
+        await stopRecording()
         hasReceivedValidBuffer = false
         
         logger.info("Starting microphone recording to: \(outputURL.path)")
@@ -112,13 +116,8 @@ public class AudioRecorder: ObservableObject {
             throw AudioRecorderError.failedToCreateConverter
         }
         
-        // Store references (thread-safe)
-        fileWriteLock.lock()
-        recordingFormat = desiredFormat
-        audioFile = createdAudioFile
-        converter = audioConverter
-        currentRecordingURL = outputURL
-        fileWriteLock.unlock()
+        // Store references (thread-safe sync helper)
+        setFileState(format: desiredFormat, file: createdAudioFile, converter: audioConverter, url: outputURL)
         
         // Install tap on input node
         input.installTap(onBus: tapBusNumber, bufferSize: tapBufferSize, format: inputFormat) { [weak self] buffer, _ in
@@ -145,7 +144,7 @@ public class AudioRecorder: ObservableObject {
     
     /// Stop recording and finalize the audio file.
     @discardableResult
-    public func stopRecording() -> URL? {
+    public func stopRecording() async -> URL? {
         guard isRecording else { return currentRecordingURL }
         
         logger.info("Stopping recording...")
@@ -161,13 +160,8 @@ public class AudioRecorder: ObservableObject {
         // Wait for processing queue to finish
         audioProcessingQueue.sync {}
         
-        // Clean up file resources
-        fileWriteLock.lock()
-        let url = currentRecordingURL
-        audioFile = nil
-        converter = nil
-        recordingFormat = nil
-        fileWriteLock.unlock()
+        // Clean up file resources (thread-safe sync helper)
+        let url = clearFileState()
         
         // Reset state
         audioEngine = nil
@@ -212,6 +206,10 @@ public class AudioRecorder: ObservableObject {
         await AVCaptureDevice.requestAccess(for: .audio)
     }
     
+    public func openSettings() {
+        openMicrophoneSettings()
+    }
+    
     public func openMicrophoneSettings() {
         if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone") {
             NSWorkspace.shared.open(url)
@@ -219,6 +217,26 @@ public class AudioRecorder: ObservableObject {
     }
     
     // MARK: - Private Methods
+    
+    private func setFileState(format: AVAudioFormat, file: AVAudioFile, converter: AVAudioConverter, url: URL) {
+        fileWriteLock.lock()
+        defer { fileWriteLock.unlock() }
+        recordingFormat = format
+        audioFile = file
+        self.converter = converter
+        currentRecordingURL = url
+    }
+    
+    private func clearFileState() -> URL? {
+        fileWriteLock.lock()
+        defer { fileWriteLock.unlock() }
+        let url = currentRecordingURL
+        audioFile = nil
+        converter = nil
+        recordingFormat = nil
+        currentRecordingURL = nil
+        return url
+    }
     
     private func startValidationTimer(url: URL, retryCount: Int) {
         validationTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: false) { [weak self] _ in
@@ -229,13 +247,13 @@ public class AudioRecorder: ObservableObject {
                 
                 if !validationPassed {
                     self.logger.warning("Recording validation failed - no valid buffers received")
-                    _ = self.stopRecording()
+                    _ = await self.stopRecording()
                     
                     if retryCount < 2 {
                         self.logger.info("Retrying recording (attempt \(retryCount + 1)/2)...")
                         try? await Task.sleep(for: .milliseconds(500))
                         do {
-                            try self.startRecording(to: url, retryCount: retryCount + 1)
+                            try await self.startRecording(to: url, retryCount: retryCount + 1)
                         } catch {
                             self.logger.error("Retry failed: \(error.localizedDescription)")
                             self.error = error

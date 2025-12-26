@@ -3,18 +3,20 @@ import Foundation
 import AVFoundation
 import CoreMedia
 import os.log
+import Combine
 
 // MARK: - System Audio Recorder (Screen Capture)
 
 /// Records system audio using ScreenCaptureKit to a separate file.
 /// Uses SCStream to capture all system audio (excluding current app).
 @MainActor
-public class SystemAudioRecorder: ObservableObject {
+public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
     public static let shared = SystemAudioRecorder()
     
     private let logger = Logger(subsystem: "MeetingAssistant", category: "SystemAudioRecorder")
     
     @Published public private(set) var isRecording = false
+    public var isRecordingPublisher: AnyPublisher<Bool, Never> { $isRecording.eraseToAnyPublisher() }
     @Published public private(set) var currentRecordingURL: URL?
     @Published public private(set) var error: Error?
     
@@ -64,7 +66,8 @@ public class SystemAudioRecorder: ObservableObject {
     // MARK: - Public API
     
     /// Start recording system audio to the specified URL.
-    public func startRecording(to outputURL: URL) async throws {
+    /// Note: retryCount is ignored for SystemAudio currently but required by protocol.
+    public func startRecording(to outputURL: URL, retryCount: Int = 0) async throws {
         guard !isRecording else {
             logger.warning("Already recording system audio")
             return
@@ -123,6 +126,13 @@ public class SystemAudioRecorder: ObservableObject {
             throw SystemAudioRecorderError.failedToStartCapture(error)
         }
     }
+    
+    public func openSettings() {
+        openScreenRecordingSettings()
+    }
+    
+    // openScreenRecordingSettings is defined in Permission Checking section below, removed valid redeclaration here
+
     
     /// Stop recording and finalize the audio file.
     @discardableResult
