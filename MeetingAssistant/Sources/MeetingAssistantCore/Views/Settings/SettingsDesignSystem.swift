@@ -1,0 +1,93 @@
+import SwiftUI
+
+/// Design system for the Settings module, following macOS 26 Tahoe aesthetic.
+public enum SettingsDesignSystem {
+    // MARK: - Colors & Gradients
+
+    public enum Colors {
+        public static let accent = Color.accentColor
+        public static let secondaryAccent = Color.blue
+
+        public static let glassBackground = Color(NSColor.windowBackgroundColor).opacity(0.7)
+        public static let cardBackground = Color(NSColor.controlBackgroundColor).opacity(0.5)
+
+        public static var aiGradient: LinearGradient {
+            LinearGradient(
+                colors: [.purple, .blue, .cyan],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
+    }
+
+    // MARK: - Layout Constants
+
+    public enum Layout {
+        public static let cardCornerRadius: CGFloat = 12
+        public static let cardPadding: CGFloat = 16
+        public static let sectionSpacing: CGFloat = 20
+        public static let itemSpacing: CGFloat = 12
+    }
+}
+
+// MARK: - Custom Components
+
+/// A premium card container for settings groups.
+public struct SettingsCard<Content: View>: View {
+    let content: Content
+
+    public init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: SettingsDesignSystem.Layout.itemSpacing) {
+            self.content
+        }
+        .padding(SettingsDesignSystem.Layout.cardPadding)
+        .background(
+            RoundedRectangle(cornerRadius: SettingsDesignSystem.Layout.cardCornerRadius)
+                .fill(SettingsDesignSystem.Colors.cardBackground)
+                .overlay(
+                    RoundedRectangle(cornerRadius: SettingsDesignSystem.Layout.cardCornerRadius)
+                        .stroke(Color.primary.opacity(0.1), lineWidth: 0.5)
+                )
+        )
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: SettingsDesignSystem.Layout.cardCornerRadius))
+    }
+}
+
+/// A labeled group of settings with a Tahoe-style header.
+public struct SettingsGroup<Content: View>: View {
+    let title: String
+    let icon: String?
+    let content: Content
+
+    public init(_ title: String, icon: String? = nil, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.icon = icon
+        self.content = content()
+    }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                if let icon {
+                    Image(systemName: icon)
+                        .foregroundStyle(SettingsDesignSystem.Colors.aiGradient)
+                        .symbolEffect(.bounce, value: true)
+                }
+
+                Text(self.title)
+                    .font(.system(.headline, design: .rounded))
+                    .foregroundStyle(.primary)
+            }
+            .padding(.leading, 4)
+
+            SettingsCard {
+                self.content
+            }
+        }
+    }
+}

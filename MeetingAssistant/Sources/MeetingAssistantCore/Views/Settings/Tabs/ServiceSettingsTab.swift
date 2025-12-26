@@ -4,110 +4,113 @@ import SwiftUI
 
 /// Tab for configuring local transcription service settings.
 public struct ServiceSettingsTab: View {
-    @State private var transcriptionStatus: ConnectionStatus = .unknown
+    @StateObject private var viewModel = ServiceSettingsViewModel()
 
     public init() {}
 
     public var body: some View {
-        Form {
-            Section {
+        ScrollView {
+            VStack(spacing: SettingsDesignSystem.Layout.sectionSpacing) {
+                self.modelInfoSection
+                self.performanceSection
+                self.statusSection
+            }
+            .padding()
+        }
+    }
+
+    private var modelInfoSection: some View {
+        SettingsGroup("Modelo de Transcrição", icon: "waveform") {
+            VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 12) {
                     ZStack {
                         Circle()
-                            .fill(Color.blue.opacity(0.15))
-                            .frame(width: 44, height: 44)
+                            .fill(Color.blue.opacity(0.1))
+                            .frame(width: 48, height: 48)
                         Image(systemName: "cpu")
                             .font(.title2)
                             .foregroundStyle(.blue)
                     }
 
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Processamento Local")
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Processamento On-Device")
                             .font(.headline)
-                        Text("Apple Neural Engine (ANE)")
+                        Text("Otimizado para Apple Silicon (ANE)")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
-
-                    Spacer()
-
-                    self.statusBadge
                 }
-                .padding(.vertical, 4)
-            } header: {
-                Label("Modelo Local", systemImage: "waveform")
-            }
 
-            Section {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
+                Divider().padding(.vertical, 4)
+
+                Grid(alignment: .leading, horizontalSpacing: 20, verticalSpacing: 8) {
+                    GridRow {
                         Text("Modelo:")
                             .foregroundStyle(.secondary)
-                        Spacer()
                         Text("Parakeet TDT 0.6B v3")
                             .fontWeight(.medium)
                     }
-
-                    HStack {
+                    GridRow {
                         Text("Idiomas:")
                             .foregroundStyle(.secondary)
-                        Spacer()
-                        Text("25 europeus (incl. PT)")
+                        Text("Português e +24 europeus")
                             .fontWeight(.medium)
                     }
                 }
                 .font(.subheadline)
-
-                HStack {
-                    Button(action: self.testConnection) {
-                        Label("Verificar Status", systemImage: "arrow.clockwise")
-                    }
-                    .disabled(self.transcriptionStatus == .testing)
-
-                    Spacer()
-
-                    if self.transcriptionStatus == .testing {
-                        ProgressView()
-                            .controlSize(.small)
-                    }
-                }
-            } header: {
-                Label("Modelo de Transcrição", systemImage: "text.bubble")
             }
         }
-        .padding()
     }
 
-    private var statusBadge: some View {
-        HStack(spacing: 4) {
-            Circle()
-                .fill(self.transcriptionStatus.color)
-                .frame(width: 8, height: 8)
-            Text(self.transcriptionStatus.text)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+    private var performanceSection: some View {
+        SettingsCard {
+            HStack(spacing: 12) {
+                Image(systemName: "speedometer")
+                    .font(.title3)
+                    .foregroundStyle(.orange)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Alta Performance")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                    Text("Transcrição em tempo real sem internet")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+            }
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 5)
-        .background(
-            Capsule()
-                .fill(self.transcriptionStatus.color.opacity(0.1))
-        )
     }
 
-    func testConnection() {
-        self.transcriptionStatus = .testing
+    private var statusSection: some View {
+        SettingsCard {
+            HStack {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Estado do Serviço")
+                        .font(.headline)
 
-        Task {
-            do {
-                let isHealthy = try await TranscriptionClient.shared.healthCheck()
-                await MainActor.run {
-                    self.transcriptionStatus = isHealthy ? .success : .failure(nil)
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(self.viewModel.transcriptionStatus.color)
+                            .frame(width: 8, height: 8)
+                        Text(self.viewModel.transcriptionStatus.text)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
-            } catch {
-                await MainActor.run {
-                    self.transcriptionStatus = .failure(error.localizedDescription)
+
+                Spacer()
+
+                Button(action: { self.viewModel.testConnection() }) {
+                    if self.viewModel.transcriptionStatus == .testing {
+                        ProgressView().controlSize(.small)
+                    } else {
+                        Label("Verificar", systemImage: "arrow.clockwise")
+                    }
                 }
+                .buttonStyle(.bordered)
+                .disabled(self.viewModel.transcriptionStatus == .testing)
             }
         }
     }

@@ -2,35 +2,11 @@ import OSLog
 import SwiftUI
 import UniformTypeIdentifiers
 
-// MARK: - File Extension Constants
-
-/// Supported file extensions for import, declared outside @MainActor context.
-private enum SupportedFileTypes {
-    static let audio = ["m4a", "mp3", "wav", "aac"]
-    static let video = ["mov", "mp4", "m4v"]
-    static let all = audio + video
-}
+// MARK: - Main Tab
 
 /// Main tab for managing transcriptions in Settings.
 public struct TranscriptionsSettingsTab: View {
-    @State private var transcriptions: [Transcription] = []
-    @State private var selectedTranscription: Transcription?
-    @State private var isLoading = true
-    @State private var isDropTargeted = false
-    @State private var sourceFilter: RecordingSourceFilter = .all
-    @State private var dateFilter: DateFilter = .allEntries
-    @State private var errorMessage: String?
-
-    private let storage = FileSystemStorageService.shared
-
-    /// Transcriptions filtered by source and date.
-    private var filteredTranscriptions: [Transcription] {
-        self.transcriptions.filter { transcription in
-            let matchesSource = self.matchesSourceFilter(transcription)
-            let matchesDate = self.dateFilter.contains(transcription.createdAt)
-            return matchesSource && matchesDate
-        }
-    }
+    @StateObject private var viewModel = TranscriptionSettingsViewModel()
 
     public init() {}
 
@@ -41,20 +17,20 @@ public struct TranscriptionsSettingsTab: View {
             self.contentSection
         }
         .task {
-            await self.loadTranscriptions()
+            await self.viewModel.loadTranscriptions()
         }
         .alert(
             "Erro ao carregar transcrições",
             isPresented: Binding(
-                get: { self.errorMessage != nil },
-                set: { if !$0 { self.errorMessage = nil } }
+                get: { self.viewModel.errorMessage != nil },
+                set: { if !$0 { self.viewModel.errorMessage = nil } }
             )
         ) {
             Button("OK", role: .cancel) {
-                self.errorMessage = nil
+                self.viewModel.errorMessage = nil
             }
         } message: {
-            if let errorMessage {
+            if let errorMessage = self.viewModel.errorMessage {
                 Text(errorMessage)
             }
         }
@@ -64,18 +40,24 @@ public struct TranscriptionsSettingsTab: View {
 
     private var headerSection: some View {
         HStack {
-            Text("Transcrições")
-                .font(.title2)
-                .fontWeight(.semibold)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Transcrições")
+                    .font(.system(.title2, design: .rounded))
+                    .fontWeight(.bold)
+                Text("\(self.viewModel.filteredTranscriptions.count) itens encontrados")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
 
             Spacer()
 
-            Button("Abrir Pasta") {
-                NSWorkspace.shared.open(self.storage.recordingsDirectory)
+            Button(action: { self.viewModel.openRecordingsDirectory() }) {
+                Label("Abrir Pasta", systemImage: "folder")
             }
             .buttonStyle(.bordered)
         }
         .padding()
+        .background(.ultraThinMaterial)
     }
 
     // MARK: - Content Section
@@ -83,10 +65,11 @@ public struct TranscriptionsSettingsTab: View {
     private var contentSection: some View {
         HSplitView {
             self.leftPanel
-                .frame(minWidth: 260, idealWidth: 300, maxWidth: 400)
+                .frame(minWidth: 280, idealWidth: 320, maxWidth: 450)
 
             self.rightPanel
                 .frame(minWidth: 420)
+                .background(Color(NSColor.controlBackgroundColor).opacity(0.3))
         }
     }
 
@@ -105,189 +88,165 @@ public struct TranscriptionsSettingsTab: View {
 
             Divider()
 
-            if self.isLoading {
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if self.filteredTranscriptions.isEmpty {
+            if self.viewModel.isLoading {
+                VStack {
+                    Spacer()
+                    ProgressView()
+                        .controlSize(.large)
+                    Text("Carregando...")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 8)
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if self.viewModel.filteredTranscriptions.isEmpty {
                 self.emptyState
             } else {
                 self.transcriptionsList
             }
         }
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(Color(NSColor.windowBackgroundColor))
     }
 
     // MARK: - Filters Section
 
     private var filtersSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: "line.3.horizontal.decrease.circle")
                     .foregroundStyle(.secondary)
                 Text("FILTROS")
-                    .font(.caption)
-                    .fontWeight(.medium)
+                    .font(.system(.caption, design: .monospaced))
+                    .fontWeight(.bold)
                     .foregroundStyle(.secondary)
             }
 
-            HStack(spacing: 8) {
-                self.sourceFilterPicker
+            self.sourceFilterPicker
 
-                Spacer()
-
-                self.dateFilterMenu
-            }
+            self.dateFilterMenu
         }
     }
 
     private var sourceFilterPicker: some View {
-        HStack(spacing: 0) {
+        Picker("Origem", selection: self.$viewModel.sourceFilter) {
             ForEach(RecordingSourceFilter.allCases, id: \.self) { filter in
-                Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        self.sourceFilter = filter
-                    }
-                } label: {
-                    Text(filter.displayName)
-                        .font(.caption)
-                        .fontWeight(.medium)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(
-                            self.sourceFilter == filter
-                                ? Color.accentColor
-                                : Color.clear
-                        )
-                        .foregroundStyle(
-                            self.sourceFilter == filter
-                                ? .white
-                                : .primary
-                        )
-                        .clipShape(Capsule())
-                }
-                .buttonStyle(.plain)
+                Text(filter.displayName).tag(filter)
             }
         }
-        .background(Color(nsColor: .quaternarySystemFill))
-        .clipShape(Capsule())
+        .pickerStyle(.segmented)
+        .controlSize(.small)
     }
 
     private var dateFilterMenu: some View {
         Menu {
             ForEach(DateFilter.allCases, id: \.self) { filter in
                 Button {
-                    self.dateFilter = filter
+                    self.viewModel.dateFilter = filter
                 } label: {
                     HStack {
                         Text(filter.displayName)
-                        if self.dateFilter == filter {
+                        if self.viewModel.dateFilter == filter {
                             Image(systemName: "checkmark")
                         }
                     }
                 }
             }
         } label: {
-            HStack(spacing: 4) {
-                Text(self.dateFilter.displayName)
-                    .font(.caption)
+            HStack {
+                Image(systemName: "calendar")
+                    .foregroundStyle(.accentColor)
+                Text(self.viewModel.dateFilter.displayName)
+                    .font(.subheadline)
+                Spacer()
                 Image(systemName: "chevron.down")
                     .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
             .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(Color(nsColor: .quaternarySystemFill))
-            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .padding(.vertical, 8)
+            .background(Color.primary.opacity(0.05))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
         }
         .menuStyle(.borderlessButton)
-        .fixedSize()
     }
 
     private var dropZone: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "arrow.down.doc")
-                .font(.title)
-                .foregroundStyle(.secondary)
+        VStack(spacing: 12) {
+            Image(systemName: "tray.and.arrow.down.fill")
+                .font(.system(size: 28))
+                .foregroundStyle(SettingsDesignSystem.Colors.aiGradient)
+                .symbolEffect(.bounce, value: self.viewModel.isDropTargeted)
 
-            VStack(spacing: 2) {
-                Text("Solte arquivos de áudio ou vídeo")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
+            VStack(spacing: 4) {
+                Text("Importar Arquivo")
+                    .font(.headline)
 
-                Text("ou clique para importar • .aac, .m4a, .m4v, .mov, .mp3, .mp4, .wav")
+                Text("Arraste ou clique para importar áudio/vídeo")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
             }
         }
         .frame(maxWidth: .infinity)
-        .frame(maxHeight: 120)
-        .padding(.vertical, 16)
+        .padding(.vertical, 20)
         .background(
-            RoundedRectangle(cornerRadius: 8)
+            RoundedRectangle(cornerRadius: 12)
                 .strokeBorder(
-                    self.isDropTargeted ? Color.accentColor : Color.secondary.opacity(0.3),
-                    style: StrokeStyle(lineWidth: 2, dash: [6])
+                    self.viewModel.isDropTargeted ? Color.accentColor : Color.secondary.opacity(0.2),
+                    style: StrokeStyle(lineWidth: 2, dash: [4, 4])
                 )
                 .background(
-                    self.isDropTargeted
+                    self.viewModel.isDropTargeted
                         ? Color.accentColor.opacity(0.1)
-                        : Color.clear
+                        : Color.primary.opacity(0.02)
                 )
         )
-        .contentShape(Rectangle())
         .onTapGesture {
-            self.selectAndImportFile()
+            self.viewModel.selectAndImportFile()
         }
-        .onDrop(of: [.audio, .fileURL], isTargeted: self.$isDropTargeted) { providers in
-            self.handleDrop(providers: providers)
+        .onDrop(of: [.audio, .fileURL], isTargeted: self.$viewModel.isDropTargeted) { providers in
+            self.viewModel.handleDrop(providers: providers)
             return true
         }
     }
 
     private var emptyState: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "doc.text")
-                .font(.system(size: 48))
+        VStack(spacing: 16) {
+            Image(systemName: "doc.text.badge.plus")
+                .font(.system(size: 40))
                 .foregroundStyle(.tertiary)
+                .symbolEffect(.pulse)
 
-            Text("Nenhuma transcrição")
-                .font(.headline)
-                .foregroundStyle(.secondary)
+            VStack(spacing: 4) {
+                Text("Sem transcrições")
+                    .font(.headline)
+                    .foregroundStyle(.secondary)
 
-            Text("Grave uma reunião ou importe um arquivo de áudio")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-                .multilineTextAlignment(.center)
+                Text("Grave uma reunião ou importe um áudio")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .multilineTextAlignment(.center)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()
     }
 
     private var transcriptionsList: some View {
-        List(self.filteredTranscriptions, selection: self.$selectedTranscription) { transcription in
+        List(self.viewModel.filteredTranscriptions, selection: self.$viewModel.selectedTranscription) { transcription in
             TranscriptionRowView(transcription: transcription)
                 .tag(transcription)
+                .listRowSeparator(.visible, edges: .bottom)
         }
-        .listStyle(.plain)
-    }
-
-    // MARK: - Filter Logic
-
-    private func matchesSourceFilter(_ transcription: Transcription) -> Bool {
-        switch self.sourceFilter {
-        case .all:
-            true
-        case .dictations:
-            transcription.meeting.app != .importedFile
-        case .manualImports:
-            transcription.meeting.app == .importedFile
-        }
+        .listStyle(.inset)
     }
 
     // MARK: - Right Panel
 
     private var rightPanel: some View {
         Group {
-            if let selected = selectedTranscription {
+            if let selected = self.viewModel.selectedTranscription {
                 TranscriptionDetailView(transcription: selected)
             } else {
                 self.noSelectionView
@@ -296,71 +255,19 @@ public struct TranscriptionsSettingsTab: View {
     }
 
     private var noSelectionView: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 16) {
             Image(systemName: "doc.text.magnifyingglass")
-                .font(.system(size: 48))
+                .font(.system(size: 64))
                 .foregroundStyle(.tertiary)
+                .opacity(0.5)
 
-            Text("Selecione uma transcrição")
+            Text("Selecione uma transcrição para visualizar os detalhes")
                 .font(.headline)
                 .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    // MARK: - Actions
-
-    private static let logger = Logger(
-        subsystem: Bundle.main.bundleIdentifier ?? "MeetingAssistant",
-        category: "TranscriptionsSettingsTab"
-    )
-
-    private func loadTranscriptions() async {
-        self.isLoading = true
-        do {
-            self.transcriptions = try await self.storage.loadTranscriptions()
-        } catch {
-            Self.logger.error("Failed to load transcriptions: \(error.localizedDescription)")
-            self.errorMessage = "Não foi possível carregar as transcrições. Tente novamente."
-        }
-        self.isLoading = false
-    }
-
-    private func selectAndImportFile() {
-        let panel = NSOpenPanel()
-        panel.canChooseFiles = true
-        panel.canChooseDirectories = false
-        panel.allowsMultipleSelection = false
-        panel.allowedContentTypes = [
-            .audio, .mpeg4Audio, .mp3, .wav,
-            .movie, .mpeg4Movie, .quickTimeMovie,
-        ]
-        panel.message = "Selecione um arquivo de áudio ou vídeo para transcrever"
-        panel.prompt = "Transcrever"
-
-        if panel.runModal() == .OK, let url = panel.url {
-            Task {
-                await RecordingManager.shared.transcribeExternalAudio(from: url)
-                await self.loadTranscriptions()
-            }
-        }
-    }
-
-    private func handleDrop(providers: [NSItemProvider]) {
-        for provider in providers {
-            provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, _ in
-                guard let data = item as? Data,
-                      let url = URL(dataRepresentation: data, relativeTo: nil)
-                else { return }
-
-                guard SupportedFileTypes.all.contains(url.pathExtension.lowercased()) else { return }
-
-                Task { @MainActor in
-                    await RecordingManager.shared.transcribeExternalAudio(from: url)
-                    await self.loadTranscriptions()
-                }
-            }
-        }
     }
 }
 
@@ -371,37 +278,43 @@ struct TranscriptionRowView: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: self.transcription.meeting.appIcon)
-                .font(.title2)
-                .foregroundStyle(self.transcription.meeting.appColor)
-                .frame(width: 32)
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(self.transcription.meeting.appColor.opacity(0.1))
+                    .frame(width: 40, height: 40)
+
+                Image(systemName: self.transcription.meeting.appIcon)
+                    .font(.title3)
+                    .foregroundStyle(self.transcription.meeting.appColor)
+            }
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(self.transcription.formattedDate)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
+                    .font(.body)
+                    .fontWeight(.semibold)
 
                 Text(self.transcription.truncatedPreview)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .lineLimit(2)
+                    .lineLimit(1)
             }
 
             Spacer()
 
             VStack(alignment: .trailing, spacing: 4) {
                 Text(self.transcription.formattedTime)
-                    .font(.caption)
+                    .font(.caption2)
+                    .monospacedDigit()
                     .foregroundStyle(.tertiary)
 
                 if self.transcription.isPostProcessed {
                     Image(systemName: "sparkles")
                         .font(.caption)
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(SettingsDesignSystem.Colors.aiGradient)
                 }
             }
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, 8)
     }
 }
 
