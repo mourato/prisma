@@ -97,10 +97,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Settings
         let settingsItem = NSMenuItem(
             title: "Configurações...",
-            action: Selector("showSettingsWindow:"),
+            action: #selector(openSettings),
             keyEquivalent: ","
         )
-        // settingsItem.target = nil // Implicitly nil targets First Responder
+        settingsItem.target = self
         contextMenu?.addItem(settingsItem)
 
         // About
@@ -186,6 +186,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     // MARK: - Menu Actions
+
+    @objc private func openSettings() {
+        NSApp.activate(ignoringOtherApps: true)
+        if #available(macOS 13.0, *) {
+            NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        } else {
+            NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
+        }
+    }
 
     @objc private func showAbout() {
         popover?.performClose(nil)
