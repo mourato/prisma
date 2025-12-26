@@ -174,7 +174,7 @@ public struct AISettingsTab: View {
         }
     }
 
-    private func testAPIConnection() {
+    func testAPIConnection() {
         self.connectionStatus = .testing
 
         let urlString = self.settings.aiConfiguration.baseURL

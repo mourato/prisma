@@ -44,6 +44,14 @@ excluded:
   - dist
   - Packages
   - Tests
+  - MeetingAssistant/.build
+  - MeetingAssistant/.swiftpm
+  - MeetingAssistant/dist
+  - MeetingAssistant/Tests
+  - "**/.build"
+  - "**/.swiftpm"
+  - "**/DerivedData"
+  - "**/Tests"
 
 # MARK: - Rule Thresholds (stricter to match your 20-line function guideline)
 
