@@ -44,6 +44,8 @@ public class PostProcessingService: ObservableObject {
         static let maxTokens = 4096
         /// Request timeout in seconds (AI responses can be slow for long texts).
         static let requestTimeoutSeconds: TimeInterval = 120
+        /// Anthropic API version header value.
+        static let anthropicAPIVersion = "2023-06-01"
     }
     
     @Published public private(set) var isProcessing = false
@@ -134,7 +136,7 @@ public class PostProcessingService: ObservableObject {
         // Anthropic requires a different header
         if config.provider == .anthropic {
             request.setValue(apiKey, forHTTPHeaderField: "x-api-key")
-            request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+            request.setValue(Constants.anthropicAPIVersion, forHTTPHeaderField: "anthropic-version")
         }
         
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
