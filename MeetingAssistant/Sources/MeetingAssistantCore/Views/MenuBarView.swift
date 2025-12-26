@@ -17,7 +17,7 @@ public struct MenuBarView: View {
             statusSection
             
             // Transcription service status indicator
-            TranscriptionStatusView(viewModel: TranscriptionViewModel(status: viewModel.transcriptionStatus))
+            TranscriptionStatusView(viewModel: viewModel.transcriptionViewModel)
             
             controlButtons
             transcriptionsList
@@ -32,21 +32,9 @@ public struct MenuBarView: View {
     // MARK: - Permission Status Section
     
     private var permissionStatusSection: some View {
-        PermissionStatusView(
-            permissionManager: viewModel.permissionStatus,
-            onRequestMicrophone: {
-                Task { await viewModel.requestPermission() }
-            },
-            onRequestScreenRecording: {
-                Task { await viewModel.requestPermission() }
-            },
-            onOpenMicrophoneSettings: {
-                viewModel.openMicrophoneSettings()
-            },
-            onOpenScreenRecordingSettings: {
-                viewModel.openPermissionSettings()
-            }
-        )
+            PermissionStatusView(
+                viewModel: viewModel.permissionViewModel
+            )
     }
     
     // MARK: - Sections

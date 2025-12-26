@@ -5,46 +5,32 @@ import SwiftUI
 /// A view that displays individual permission status with visual indicators.
 /// Shows each permission type with an icon and its current authorization state.
 public struct PermissionStatusView: View {
-    @ObservedObject private var permissionManager: PermissionStatusManager
-    
-    private let onRequestMicrophone: () -> Void
-    private let onRequestScreenRecording: () -> Void
-    private let onOpenMicrophoneSettings: () -> Void
-    private let onOpenScreenRecordingSettings: () -> Void
-    
-    public init(
-        permissionManager: PermissionStatusManager,
-        onRequestMicrophone: @escaping () -> Void = {},
-        onRequestScreenRecording: @escaping () -> Void = {},
-        onOpenMicrophoneSettings: @escaping () -> Void = {},
-        onOpenScreenRecordingSettings: @escaping () -> Void = {}
-    ) {
-        self.permissionManager = permissionManager
-        self.onRequestMicrophone = onRequestMicrophone
-        self.onRequestScreenRecording = onRequestScreenRecording
-        self.onOpenMicrophoneSettings = onOpenMicrophoneSettings
-        self.onOpenScreenRecordingSettings = onOpenScreenRecordingSettings
+    @ObservedObject var viewModel: PermissionViewModel
+
+    public init(viewModel: PermissionViewModel) {
+        self.viewModel = viewModel
     }
-    
+
     public var body: some View {
         VStack(spacing: 12) {
             headerSection
-            
+
             VStack(spacing: 8) {
                 PermissionRowView(
-                    permission: permissionManager.microphonePermission,
-                    onRequest: onRequestMicrophone,
-                    onOpenSettings: onOpenMicrophoneSettings
+                    permission: PermissionInfo(type: .microphone, state: viewModel.microphoneState),
+                    onRequest: { Task { await viewModel.requestMicrophonePermission() } },
+                    onOpenSettings: { viewModel.openMicrophoneSystemSettings() }
                 )
-                
+
                 PermissionRowView(
-                    permission: permissionManager.screenRecordingPermission,
-                    onRequest: onRequestScreenRecording,
-                    onOpenSettings: onOpenScreenRecordingSettings
+                    permission: PermissionInfo(
+                        type: .screenRecording, state: viewModel.screenState),
+                    onRequest: { Task { await viewModel.requestScreenPermission() } },
+                    onOpenSettings: { viewModel.openScreenSystemSettings() }
                 )
             }
-            
-            if !permissionManager.allPermissionsGranted {
+
+            if !allPermissionsGranted {
                 permissionWarning
             }
         }
@@ -58,65 +44,76 @@ public struct PermissionStatusView: View {
                 .strokeBorder(borderColor, lineWidth: 1)
         )
     }
-    
+
+    private var allPermissionsGranted: Bool {
+        viewModel.microphoneState == .granted && viewModel.screenState == .granted
+    }
+
+    private var grantedCount: Int {
+        var count = 0
+        if viewModel.microphoneState == .granted { count += 1 }
+        if viewModel.screenState == .granted { count += 1 }
+        return count
+    }
+
     // MARK: - Header Section
-    
+
     private var headerSection: some View {
         HStack {
             Image(systemName: "shield.checkered")
                 .font(.title2)
                 .foregroundStyle(headerIconColor)
-            
+
             VStack(alignment: .leading, spacing: 2) {
                 Text("Permissões do Sistema")
                     .font(.subheadline)
                     .fontWeight(.semibold)
-                
-                Text("\(permissionManager.grantedCount)/\(permissionManager.totalPermissions) concedidas")
+
+                Text("\(grantedCount)/2 concedidas")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            
+
             Spacer()
-            
+
             statusBadge
         }
     }
-    
+
     private var statusBadge: some View {
-        Text(permissionManager.allPermissionsGranted ? "OK" : "!")
+        Text(allPermissionsGranted ? "OK" : "!")
             .font(.caption2)
             .fontWeight(.bold)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(
                 Capsule()
-                    .fill(permissionManager.allPermissionsGranted ? Color.green : Color.orange)
+                    .fill(allPermissionsGranted ? Color.green : Color.orange)
             )
             .foregroundColor(.white)
     }
-    
+
     private var permissionWarning: some View {
         HStack(spacing: 6) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundStyle(.orange)
                 .font(.caption)
-            
+
             Text("Algumas permissões são necessárias para gravar reuniões.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
         .padding(.top, 4)
     }
-    
+
     // MARK: - Computed Properties
-    
+
     private var backgroundGradient: LinearGradient {
-        if permissionManager.allPermissionsGranted {
+        if allPermissionsGranted {
             return LinearGradient(
                 colors: [
                     Color.green.opacity(0.05),
-                    Color.green.opacity(0.02)
+                    Color.green.opacity(0.02),
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
@@ -125,22 +122,22 @@ public struct PermissionStatusView: View {
             return LinearGradient(
                 colors: [
                     Color.orange.opacity(0.08),
-                    Color.orange.opacity(0.03)
+                    Color.orange.opacity(0.03),
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
         }
     }
-    
+
     private var borderColor: Color {
-        permissionManager.allPermissionsGranted
+        allPermissionsGranted
             ? Color.green.opacity(0.2)
             : Color.orange.opacity(0.3)
     }
-    
+
     private var headerIconColor: Color {
-        permissionManager.allPermissionsGranted ? .green : .orange
+        allPermissionsGranted ? .green : .orange
     }
 }
 
@@ -151,7 +148,7 @@ struct PermissionRowView: View {
     let permission: PermissionInfo
     let onRequest: () -> Void
     let onOpenSettings: () -> Void
-    
+
     var body: some View {
         HStack(spacing: 12) {
             // Permission type icon
@@ -159,26 +156,26 @@ struct PermissionRowView: View {
                 Circle()
                     .fill(iconBackgroundColor)
                     .frame(width: 36, height: 36)
-                
+
                 Image(systemName: permission.type.iconName)
                     .font(.system(size: 16))
                     .foregroundStyle(iconForegroundColor)
             }
-            
+
             // Permission info
             VStack(alignment: .leading, spacing: 2) {
                 Text(permission.type.displayName)
                     .font(.subheadline)
                     .fontWeight(.medium)
-                
+
                 Text(permission.type.permissionDescription)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
-            
+
             Spacer()
-            
+
             // Status indicator and action button
             statusIndicator
         }
@@ -189,9 +186,9 @@ struct PermissionRowView: View {
                 .fill(.background)
         )
     }
-    
+
     // MARK: - Status Indicator
-    
+
     @ViewBuilder
     private var statusIndicator: some View {
         HStack(spacing: 8) {
@@ -199,15 +196,16 @@ struct PermissionRowView: View {
             Image(systemName: permission.state.iconName)
                 .font(.title3)
                 .foregroundStyle(statusColor)
-                .symbolEffect(.pulse, options: .repeating, isActive: permission.state == .notDetermined)
-            
+                .symbolEffect(
+                    .pulse, options: .repeating, isActive: permission.state == .notDetermined)
+
             // Action button when not granted
             if !permission.state.isAuthorized {
                 actionButton
             }
         }
     }
-    
+
     @ViewBuilder
     private var actionButton: some View {
         switch permission.state {
@@ -218,21 +216,21 @@ struct PermissionRowView: View {
             .buttonStyle(.borderedProminent)
             .controlSize(.small)
             .tint(.blue)
-            
+
         case .denied, .restricted:
             Button("Configurar") {
                 onOpenSettings()
             }
             .buttonStyle(.bordered)
             .controlSize(.small)
-            
+
         case .granted:
             EmptyView()
         }
     }
-    
+
     // MARK: - Computed Properties
-    
+
     private var iconBackgroundColor: Color {
         switch permission.state {
         case .granted:
@@ -243,7 +241,7 @@ struct PermissionRowView: View {
             return Color.blue.opacity(0.15)
         }
     }
-    
+
     private var iconForegroundColor: Color {
         switch permission.state {
         case .granted:
@@ -254,7 +252,7 @@ struct PermissionRowView: View {
             return .blue
         }
     }
-    
+
     private var statusColor: Color {
         switch permission.state {
         case .granted:
@@ -274,17 +272,17 @@ struct PermissionRowView: View {
 /// A compact inline view showing permission status with minimal space.
 public struct CompactPermissionStatusView: View {
     @ObservedObject private var permissionManager: PermissionStatusManager
-    
+
     public init(permissionManager: PermissionStatusManager) {
         self.permissionManager = permissionManager
     }
-    
+
     public var body: some View {
         HStack(spacing: 12) {
             CompactPermissionIndicator(
                 permission: permissionManager.microphonePermission
             )
-            
+
             CompactPermissionIndicator(
                 permission: permissionManager.screenRecordingPermission
             )
@@ -295,13 +293,13 @@ public struct CompactPermissionStatusView: View {
 /// Compact indicator for a single permission.
 struct CompactPermissionIndicator: View {
     let permission: PermissionInfo
-    
+
     var body: some View {
         HStack(spacing: 4) {
             Image(systemName: permission.type.iconName)
                 .font(.caption)
                 .foregroundStyle(iconColor)
-            
+
             Image(systemName: permission.state.iconName)
                 .font(.caption2)
                 .foregroundStyle(statusColor)
@@ -314,11 +312,11 @@ struct CompactPermissionIndicator: View {
         )
         .help("\(permission.type.displayName): \(permission.state.displayName)")
     }
-    
+
     private var iconColor: Color {
         permission.state.isAuthorized ? .primary : .secondary
     }
-    
+
     private var statusColor: Color {
         switch permission.state {
         case .granted:
@@ -331,7 +329,7 @@ struct CompactPermissionIndicator: View {
             return .gray
         }
     }
-    
+
     private var backgroundColor: Color {
         switch permission.state {
         case .granted:
@@ -352,8 +350,16 @@ struct CompactPermissionIndicator: View {
     let manager = PermissionStatusManager()
     manager.updateMicrophoneState(.granted)
     manager.updateScreenRecordingState(.granted)
-    
-    return PermissionStatusView(permissionManager: manager)
+
+    let vm = PermissionViewModel(
+        manager: manager,
+        requestMicrophone: {},
+        requestScreen: {},
+        openMicrophoneSettings: {},
+        openScreenSettings: {}
+    )
+
+    return PermissionStatusView(viewModel: vm)
         .frame(width: 320)
         .padding()
 }
@@ -362,16 +368,32 @@ struct CompactPermissionIndicator: View {
     let manager = PermissionStatusManager()
     manager.updateMicrophoneState(.granted)
     manager.updateScreenRecordingState(.denied)
-    
-    return PermissionStatusView(permissionManager: manager)
+
+    let vm = PermissionViewModel(
+        manager: manager,
+        requestMicrophone: {},
+        requestScreen: {},
+        openMicrophoneSettings: {},
+        openScreenSettings: {}
+    )
+
+    return PermissionStatusView(viewModel: vm)
         .frame(width: 320)
         .padding()
 }
 
 #Preview("Full Permission View - Not Determined") {
     let manager = PermissionStatusManager()
-    
-    return PermissionStatusView(permissionManager: manager)
+
+    let vm = PermissionViewModel(
+        manager: manager,
+        requestMicrophone: {},
+        requestScreen: {},
+        openMicrophoneSettings: {},
+        openScreenSettings: {}
+    )
+
+    return PermissionStatusView(viewModel: vm)
         .frame(width: 320)
         .padding()
 }
@@ -380,7 +402,7 @@ struct CompactPermissionIndicator: View {
     let manager = PermissionStatusManager()
     manager.updateMicrophoneState(.granted)
     manager.updateScreenRecordingState(.notDetermined)
-    
+
     return CompactPermissionStatusView(permissionManager: manager)
         .padding()
 }

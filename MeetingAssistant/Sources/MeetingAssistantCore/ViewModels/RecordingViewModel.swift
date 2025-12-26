@@ -5,15 +5,18 @@ import Combine
 @MainActor
 public class RecordingViewModel: ObservableObject {
     // MARK: - Dependencies
-    private let recordingManager: RecordingManager
+    private let recordingManager: any RecordingServiceProtocol
     private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Published Properties
     @Published public var isRecording: Bool = false
     @Published public var isTranscribing: Bool = false
     @Published public var currentMeeting: Meeting?
-    @Published public var permissionStatus: PermissionStatusManager
-    @Published public var transcriptionStatus: TranscriptionStatus
+    // @Published public var permissionStatus: PermissionStatusManager // Refactored to use Child ViewModel
+    
+    // MARK: - Child ViewModels
+    public let transcriptionViewModel: TranscriptionViewModel
+    public let permissionViewModel: PermissionViewModel
     
     // MARK: - Computed Properties
     public var statusText: String {
@@ -27,10 +30,20 @@ public class RecordingViewModel: ObservableObject {
     }
     
     // MARK: - Initialization
-    public init(recordingManager: RecordingManager = .shared) {
+    // MARK: - Initialization
+    public init(recordingManager: some RecordingServiceProtocol = RecordingManager.shared) {
         self.recordingManager = recordingManager
-        self.permissionStatus = recordingManager.permissionStatus
-        self.transcriptionStatus = recordingManager.transcriptionStatus
+        
+        // Initialize child ViewModels
+        self.transcriptionViewModel = TranscriptionViewModel(status: recordingManager.transcriptionStatus)
+        
+        self.permissionViewModel = PermissionViewModel(
+            manager: recordingManager.permissionStatus,
+            requestMicrophone: { await recordingManager.requestPermission() },
+            requestScreen: { await recordingManager.requestPermission() },
+            openMicrophoneSettings: { recordingManager.openMicrophoneSettings() },
+            openScreenSettings: { recordingManager.openPermissionSettings() }
+        )
         
         setupBindings()
     }
@@ -62,15 +75,15 @@ public class RecordingViewModel: ObservableObject {
     
     // MARK: - Private Methods
     private func setupBindings() {
-        recordingManager.$isRecording
+        recordingManager.isRecordingPublisher
             .receive(on: DispatchQueue.main)
             .assign(to: &$isRecording)
         
-        recordingManager.$isTranscribing
+        recordingManager.isTranscribingPublisher
             .receive(on: DispatchQueue.main)
             .assign(to: &$isTranscribing)
         
-        recordingManager.$currentMeeting
+        recordingManager.currentMeetingPublisher
             .receive(on: DispatchQueue.main)
             .assign(to: &$currentMeeting)
             
