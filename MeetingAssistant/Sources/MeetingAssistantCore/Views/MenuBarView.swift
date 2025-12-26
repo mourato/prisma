@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Menu bar popover view displaying recording status and controls.
 public struct MenuBarView: View {
-    @EnvironmentObject var recordingManager: RecordingManager
+    @StateObject private var viewModel = RecordingViewModel()
     @State private var showingTranscriptions = false
     
     public init() {}
@@ -17,7 +17,7 @@ public struct MenuBarView: View {
             statusSection
             
             // Transcription service status indicator
-            TranscriptionStatusView(status: recordingManager.transcriptionStatus)
+            TranscriptionStatusView(viewModel: TranscriptionViewModel(status: viewModel.transcriptionStatus))
             
             controlButtons
             transcriptionsList
@@ -25,7 +25,7 @@ public struct MenuBarView: View {
         .padding()
         .frame(width: 300)
         .task {
-            await recordingManager.checkPermission()
+            await viewModel.checkPermission()
         }
     }
     
@@ -33,18 +33,18 @@ public struct MenuBarView: View {
     
     private var permissionStatusSection: some View {
         PermissionStatusView(
-            permissionManager: recordingManager.permissionStatus,
+            permissionManager: viewModel.permissionStatus,
             onRequestMicrophone: {
-                Task { await recordingManager.requestPermission() }
+                Task { await viewModel.requestPermission() }
             },
             onRequestScreenRecording: {
-                Task { await recordingManager.requestPermission() }
+                Task { await viewModel.requestPermission() }
             },
             onOpenMicrophoneSettings: {
-                recordingManager.openMicrophoneSettings()
+                viewModel.openMicrophoneSettings()
             },
             onOpenScreenRecordingSettings: {
-                recordingManager.openPermissionSettings()
+                viewModel.openPermissionSettings()
             }
         )
     }
@@ -73,17 +73,17 @@ public struct MenuBarView: View {
         VStack(spacing: 8) {
             HStack {
                 Circle()
-                    .fill(recordingManager.isRecording ? .red : .gray)
+                    .fill(viewModel.isRecording ? .red : .gray)
                     .frame(width: 10, height: 10)
                 
-                Text(statusText)
+                Text(viewModel.statusText)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 
                 Spacer()
             }
             
-            if recordingManager.isRecording, let meeting = recordingManager.currentMeeting {
+            if viewModel.isRecording, let meeting = viewModel.currentMeeting {
                 MeetingCard(meeting: meeting)
             }
         }
@@ -93,7 +93,7 @@ public struct MenuBarView: View {
     
     private var controlButtons: some View {
         HStack(spacing: 12) {
-            if recordingManager.isRecording {
+            if viewModel.isRecording {
                 Button(action: stopRecording) {
                     Label("Parar Gravação", systemImage: "stop.fill")
                 }
@@ -122,29 +122,17 @@ public struct MenuBarView: View {
         }
     }
     
-    // MARK: - Computed Properties
-    
-    private var statusText: String {
-        if recordingManager.isRecording {
-            return "Gravando..."
-        } else if recordingManager.isTranscribing {
-            return "Transcrevendo..."
-        } else {
-            return "Aguardando reunião"
-        }
-    }
-    
     // MARK: - Actions
     
     private func startRecording() {
         Task {
-            await recordingManager.startRecording()
+            await viewModel.startRecording()
         }
     }
     
     private func stopRecording() {
         Task {
-            await recordingManager.stopRecording()
+            await viewModel.stopRecording()
         }
     }
     
@@ -180,5 +168,4 @@ struct MeetingCard: View {
 
 #Preview {
     MenuBarView()
-        .environmentObject(RecordingManager.shared)
 }
