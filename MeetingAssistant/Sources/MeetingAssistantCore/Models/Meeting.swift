@@ -49,8 +49,8 @@ public enum MeetingApp: String, CaseIterable, Codable, Sendable {
         case .microsoftTeams: "Microsoft Teams"
         case .slack: "Slack"
         case .zoom: "Zoom"
-        case .importedFile: "Arquivo Importado"
-        case .unknown: "Desconhecido"
+        case .importedFile: NSLocalizedString("meeting.app.imported", comment: "Imported File")
+        case .unknown: NSLocalizedString("meeting.app.unknown", comment: "Unknown App")
         }
     }
 
