@@ -95,7 +95,7 @@ public struct ServiceSettingsTab: View {
         )
     }
 
-    private func testConnection() {
+    func testConnection() {
         self.transcriptionStatus = .testing
 
         Task {
