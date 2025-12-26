@@ -8,17 +8,16 @@ public struct ShortcutSettingsTab: View {
     public init() {}
 
     public var body: some View {
+
         Form {
-            Section("Atalho Global para Gravação") {
+            Section(header: Text("shortcut.global.title", bundle: .module)) {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text(
-                        "Pressione este atalho em qualquer lugar do sistema para iniciar ou parar a gravação."
-                    )
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    Text("shortcut.global.description", bundle: .module)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
 
                     HStack {
-                        Text("Iniciar/Parar Gravação:")
+                        Text("shortcut.action.toggleRecording", bundle: .module)
                         Spacer()
                         KeyboardShortcuts.Recorder(for: .toggleRecording)
                     }
@@ -26,8 +25,10 @@ public struct ShortcutSettingsTab: View {
             }
 
             Section {
-                Button("Restaurar Padrão") {
+                Button(action: {
                     KeyboardShortcuts.reset(.toggleRecording)
+                }) {
+                    Text("shortcut.reset.default", bundle: .module)
                 }
                 .buttonStyle(.link)
             }

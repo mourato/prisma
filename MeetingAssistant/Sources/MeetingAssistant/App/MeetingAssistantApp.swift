@@ -1,3 +1,4 @@
+import KeyboardShortcuts
 import MeetingAssistantCore
 import SwiftUI
 
@@ -32,7 +33,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var popover: NSPopover?
     private var contextMenu: NSMenu?
     private var recordingManager = RecordingManager.shared
-    private var shortcutManager = GlobalShortcutManager.shared
     private var eventMonitor: Any?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -55,7 +55,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func setupGlobalShortcut() {
         // Configure shortcut callback to toggle recording
-        shortcutManager.onShortcutActivated = { [weak self] in
+        KeyboardShortcuts.onKeyUp(for: .toggleRecording) { [weak self] in
             Task { @MainActor in
                 await self?.toggleRecording()
             }
