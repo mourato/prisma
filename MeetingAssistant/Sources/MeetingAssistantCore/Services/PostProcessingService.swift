@@ -219,13 +219,7 @@ public class PostProcessingService: ObservableObject {
             return nil
         }
         
-        // OpenAI format
-        if let error = json["error"] as? [String: Any],
-           let message = error["message"] as? String {
-            return message
-        }
-        
-        // Anthropic format
+        // Both OpenAI and Anthropic use the same error format
         if let error = json["error"] as? [String: Any],
            let message = error["message"] as? String {
             return message
