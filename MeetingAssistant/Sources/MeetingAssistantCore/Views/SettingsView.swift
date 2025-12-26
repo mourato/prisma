@@ -1,43 +1,145 @@
 import SwiftUI
+import os.log
+
+// MARK: - Layout Constants
+
+private enum LayoutConstants {
+    static let windowWidth: CGFloat = 700
+    static let windowHeight: CGFloat = 500
+    static let sidebarMinWidth: CGFloat = 180
+    static let sidebarIdealWidth: CGFloat = 200
+    static let sidebarMaxWidth: CGFloat = 220
+}
+
+// MARK: - Connection Status
+
+/// Unified connection status for service health checks.
+enum ConnectionStatus: Equatable {
+    case unknown
+    case testing
+    case success
+    case failure(String?)
+    
+    var color: Color {
+        switch self {
+        case .unknown: return .secondary
+        case .testing: return .orange
+        case .success: return .green
+        case .failure: return .red
+        }
+    }
+    
+    var text: String {
+        switch self {
+        case .unknown: return "Não testado"
+        case .testing: return "Testando..."
+        case .success: return "Conectado"
+        case .failure(let message): return message ?? "Falha"
+        }
+    }
+    
+    static func == (lhs: ConnectionStatus, rhs: ConnectionStatus) -> Bool {
+        switch (lhs, rhs) {
+        case (.unknown, .unknown), (.testing, .testing), (.success, .success):
+            return true
+        case (.failure, .failure):
+            return true
+        default:
+            return false
+        }
+    }
+}
+
+// MARK: - Settings Section Enum
+
+enum SettingsSection: String, CaseIterable, Identifiable {
+    case general
+    case shortcuts
+    case ai
+    case service
+    case permissions
+    
+    var id: String { rawValue }
+    
+    var title: String {
+        switch self {
+        case .general: return "Geral"
+        case .shortcuts: return "Atalhos"
+        case .ai: return "IA"
+        case .service: return "Serviço"
+        case .permissions: return "Permissões"
+        }
+    }
+    
+    var icon: String {
+        switch self {
+        case .general: return "gear"
+        case .shortcuts: return "command"
+        case .ai: return "brain"
+        case .service: return "server.rack"
+        case .permissions: return "lock.shield"
+        }
+    }
+}
+
+// MARK: - Settings View
 
 /// Settings view for app configuration.
-/// Organized into tabs: General, Shortcuts, AI Post-Processing, and Service.
-/// Settings view for app configuration.
-/// Organized into tabs: General, Shortcuts, AI Post-Processing, and Service.
+/// Uses sidebar navigation pattern similar to macOS System Settings.
 public struct SettingsView: View {
     @AppStorage("autoStartRecording") private var autoStartRecording = true
-
     @AppStorage("recordingsDirectory") private var recordingsPath = ""
+    
+    @State private var selectedSection: SettingsSection = .general
+    @State private var transcriptionStatus: ConnectionStatus = .unknown
     
     public init() {}
     
     public var body: some View {
-        TabView {
-            generalSettings
-                .tabItem {
-                    Label("Geral", systemImage: "gear")
-                }
-            
-            shortcutSettings
-                .tabItem {
-                    Label("Atalhos", systemImage: "command")
-                }
-            
-            aiSettings
-                .tabItem {
-                    Label("IA", systemImage: "brain")
-                }
-            
-            serviceSettings
-                .tabItem {
-                    Label("Serviço", systemImage: "server.rack")
-                }
+        NavigationSplitView {
+            sidebar
+        } detail: {
+            detailView
         }
-        .padding()
-        .frame(width: 500, height: 400)
+        .frame(width: LayoutConstants.windowWidth, height: LayoutConstants.windowHeight)
     }
     
-    // MARK: - General Tab
+    // MARK: - Sidebar
+    
+    private var sidebar: some View {
+        List(selection: $selectedSection) {
+            ForEach(SettingsSection.allCases) { section in
+                Label(section.title, systemImage: section.icon)
+                    .tag(section)
+            }
+        }
+        .listStyle(.sidebar)
+        .navigationSplitViewColumnWidth(
+            min: LayoutConstants.sidebarMinWidth,
+            ideal: LayoutConstants.sidebarIdealWidth,
+            max: LayoutConstants.sidebarMaxWidth
+        )
+    }
+    
+    // MARK: - Detail View
+    
+    @ViewBuilder
+    private var detailView: some View {
+        switch selectedSection {
+        case .general:
+            generalSettings
+        case .shortcuts:
+            ShortcutSettingsTab()
+        case .ai:
+            AISettingsTab()
+        case .service:
+            serviceSettings
+        case .permissions:
+            permissionsSettings
+        }
+    }
+    
+    // MARK: - General Settings
     
     @ViewBuilder
     private var generalSettings: some View {
@@ -60,67 +162,7 @@ public struct SettingsView: View {
                 monitoredAppsList
             }
         }
-    }
-    
-    // MARK: - Shortcuts Tab
-    
-    @ViewBuilder
-    private var shortcutSettings: some View {
-        ShortcutSettingsTab()
-    }
-    
-    // MARK: - AI Settings Tab
-    
-    @ViewBuilder
-    private var aiSettings: some View {
-        AISettingsTab()
-    }
-    
-    // MARK: - Service Tab
-    
-    @ViewBuilder
-    private var serviceSettings: some View {
-        Form {
-            Section("Modelo Local (FluidAudio)") {
-                HStack {
-                    Image(systemName: "cpu")
-                        .font(.title2)
-                        .foregroundStyle(.blue)
-                    
-                    VStack(alignment: .leading) {
-                        Text("Processamento Local no Dispositivo")
-                            .font(.headline)
-                        Text("Utilizando Apple Neural Engine (ANE)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .padding(.vertical, 4)
-                
-                if transcriptionStatus == .testing {
-                    HStack {
-                        ProgressView()
-                            .scaleEffect(0.5)
-                            .frame(width: 16, height: 16)
-                        Text("Verificando modelo...")
-                            .font(.caption)
-                    }
-                }
-            }
-            
-            Section("Modelo de Transcrição") {
-                Text("Parakeet TDT 0.6B v3")
-                    .font(.headline)
-                
-                Text("Suporte: 25 idiomas europeus incluindo português")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                
-                Button("Verificar status do modelo") {
-                    testConnection()
-                }
-            }
-        }
+        .padding()
     }
     
     @ViewBuilder
@@ -137,6 +179,136 @@ public struct SettingsView: View {
         .font(.caption)
     }
     
+    // MARK: - Service Settings
+    
+    @ViewBuilder
+    private var serviceSettings: some View {
+        Form {
+            Section {
+                HStack(spacing: 12) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.blue.opacity(0.15))
+                            .frame(width: 44, height: 44)
+                        Image(systemName: "cpu")
+                            .font(.title2)
+                            .foregroundStyle(.blue)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Processamento Local")
+                            .font(.headline)
+                        Text("Apple Neural Engine (ANE)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    
+                    Spacer()
+                    
+                    statusBadge
+                }
+                .padding(.vertical, 4)
+            } header: {
+                Label("Modelo Local", systemImage: "waveform")
+            }
+            
+            Section {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Modelo:")
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Text("Parakeet TDT 0.6B v3")
+                            .fontWeight(.medium)
+                    }
+                    
+                    HStack {
+                        Text("Idiomas:")
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Text("25 europeus (incl. PT)")
+                            .fontWeight(.medium)
+                    }
+                }
+                .font(.subheadline)
+                
+                HStack {
+                    Button(action: testConnection) {
+                        Label("Verificar Status", systemImage: "arrow.clockwise")
+                    }
+                    .disabled(transcriptionStatus == .testing)
+                    
+                    Spacer()
+                    
+                    if transcriptionStatus == .testing {
+                        ProgressView()
+                            .scaleEffect(0.7)
+                    }
+                }
+            } header: {
+                Label("Modelo de Transcrição", systemImage: "text.bubble")
+            }
+        }
+        .padding()
+    }
+    
+    private var statusBadge: some View {
+        HStack(spacing: 4) {
+            Circle()
+                .fill(transcriptionStatus.color)
+                .frame(width: 8, height: 8)
+            Text(transcriptionStatus.text)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .background(
+            Capsule()
+                .fill(transcriptionStatus.color.opacity(0.1))
+        )
+    }
+    
+    // MARK: - Permissions Settings
+    
+    @ViewBuilder
+    private var permissionsSettings: some View {
+        Form {
+            Section {
+                Text("O Meeting Assistant precisa de acesso ao microfone e à gravação de tela para capturar o áudio das suas reuniões.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .padding(.vertical, 4)
+            } header: {
+                Label("Sobre Permissões", systemImage: "info.circle")
+            }
+            
+            Section {
+                PermissionStatusView(
+                    permissionManager: RecordingManager.shared.permissionStatus,
+                    onRequestMicrophone: {
+                        Task { await RecordingManager.shared.requestPermission() }
+                    },
+                    onRequestScreenRecording: {
+                        Task { await RecordingManager.shared.requestPermission() }
+                    },
+                    onOpenMicrophoneSettings: {
+                        RecordingManager.shared.openMicrophoneSettings()
+                    },
+                    onOpenScreenRecordingSettings: {
+                        RecordingManager.shared.openPermissionSettings()
+                    }
+                )
+            } header: {
+                Label("Status das Permissões", systemImage: "checkmark.shield")
+            }
+        }
+        .padding()
+        .task {
+            await RecordingManager.shared.checkPermission()
+        }
+    }
+    
     // MARK: - Actions
     
     private func selectRecordingsDirectory() {
@@ -150,58 +322,29 @@ public struct SettingsView: View {
         }
     }
     
-    // MARK: - Local State for Transcription Service
-    
-    @State private var transcriptionStatus: ConnectionStatus = .unknown
-    
-    enum ConnectionStatus {
-        case unknown, testing, success, failure
-        
-        var color: Color {
-            switch self {
-            case .unknown: return .secondary
-            case .testing: return .orange
-            case .success: return .green
-            case .failure: return .red
-            }
-        }
-        
-        var text: String {
-            switch self {
-            case .unknown: return "Status: Não testado"
-            case .testing: return "Status: Testando..."
-            case .success: return "Status: Conectado"
-            case .failure: return "Status: Falha na conexão"
-            }
-        }
-    }
-
     private func testConnection() {
         transcriptionStatus = .testing
         
         Task {
-            // Update service URL from local state binding if needed, 
-            // but standard way is usually settings update. 
-            // Assuming TranscriptionClient uses the UserDefaults value directly or we need to re-init/update it.
-            // For now, we trust TranscriptionClient reads from UserDefaults or we might need to flush.
-            
             do {
                 let isHealthy = try await TranscriptionClient.shared.healthCheck()
                 await MainActor.run {
-                    transcriptionStatus = isHealthy ? .success : .failure
+                    transcriptionStatus = isHealthy ? .success : .failure(nil)
                 }
             } catch {
                 await MainActor.run {
-                    transcriptionStatus = .failure
+                    transcriptionStatus = .failure(error.localizedDescription)
                 }
             }
         }
     }
 }
 
+
+
 // MARK: - Shortcut Settings Tab
 
-/// Tab for configuring global keyboard shortcuts.
+/// Section for configuring global keyboard shortcuts.
 struct ShortcutSettingsTab: View {
     @ObservedObject private var settings = AppSettingsStore.shared
     @ObservedObject private var shortcutManager = GlobalShortcutManager.shared
@@ -260,6 +403,7 @@ struct ShortcutSettingsTab: View {
                 .buttonStyle(.link)
             }
         }
+        .padding()
     }
     
     @ViewBuilder
@@ -324,34 +468,12 @@ struct ShortcutSettingsTab: View {
 
 // MARK: - AI Settings Tab
 
-/// Tab for configuring AI post-processing settings.
+/// Section for configuring AI post-processing settings.
 struct AISettingsTab: View {
     @ObservedObject private var settings = AppSettingsStore.shared
     @State private var showAPIKey = false
-    @State private var apiKeyText = ""  // Local state for API key (stored in Keychain)
+    @State private var apiKeyText = ""
     @State private var connectionStatus: ConnectionStatus = .unknown
-    
-    enum ConnectionStatus {
-        case unknown, testing, success, failure
-        
-        var color: Color {
-            switch self {
-            case .unknown: return .secondary
-            case .testing: return .orange
-            case .success: return .green
-            case .failure: return .red
-            }
-        }
-        
-        var text: String {
-            switch self {
-            case .unknown: return "Não testado"
-            case .testing: return "Testando..."
-            case .success: return "Conectado"
-            case .failure: return "Falha na conexão"
-            }
-        }
-    }
     
     var body: some View {
         Form {
@@ -376,7 +498,6 @@ struct AISettingsTab: View {
                     }
                     .pickerStyle(.menu)
                     .onChange(of: settings.aiConfiguration.provider) { _, newProvider in
-                        // Update base URL when provider changes
                         if newProvider != .custom {
                             settings.aiConfiguration.baseURL = newProvider.defaultBaseURL
                         }
@@ -392,8 +513,6 @@ struct AISettingsTab: View {
                             text: $settings.aiConfiguration.baseURL
                         )
                         .textFieldStyle(.roundedBorder)
-                        .textFieldStyle(.roundedBorder)
-                        // .disabled(settings.aiConfiguration.provider != .custom) // Removed to allow local proxies for any provider
                     }
                     
                     HStack {
@@ -407,12 +526,7 @@ struct AISettingsTab: View {
                         }
                         .textFieldStyle(.roundedBorder)
                         .onChange(of: apiKeyText) { _, newValue in
-                            // Save to Keychain when changed
-                            if !newValue.isEmpty {
-                                try? KeychainManager.store(newValue, for: .aiAPIKey)
-                            } else {
-                                try? KeychainManager.delete(for: .aiAPIKey)
-                            }
+                            saveAPIKeyToKeychain(newValue)
                         }
                         
                         Button {
@@ -468,9 +582,25 @@ struct AISettingsTab: View {
                 }
             }
         }
+        .padding()
         .onAppear {
-            // Load API key from Keychain on appear
             apiKeyText = (try? KeychainManager.retrieve(for: .aiAPIKey)) ?? ""
+        }
+    }
+    
+    private let logger = Logger(subsystem: "MeetingAssistant", category: "AISettings")
+    
+    /// Saves API key to Keychain with proper error handling.
+    private func saveAPIKeyToKeychain(_ value: String) {
+        do {
+            if !value.isEmpty {
+                try KeychainManager.store(value, for: .aiAPIKey)
+            } else {
+                try KeychainManager.delete(for: .aiAPIKey)
+            }
+        } catch {
+            logger.error("Failed to save API key to Keychain: \(error.localizedDescription)")
+            // NOTE: In a future iteration, show user feedback via an alert
         }
     }
     
@@ -478,8 +608,12 @@ struct AISettingsTab: View {
         connectionStatus = .testing
         
         let urlString = settings.aiConfiguration.baseURL
-        guard let url = URL(string: urlString) else {
-            connectionStatus = .failure
+        
+        // Validate URL format and scheme
+        guard let url = URL(string: urlString),
+              let scheme = url.scheme,
+              ["http", "https"].contains(scheme.lowercased()) else {
+            connectionStatus = .failure("URL inválida")
             return
         }
         
@@ -489,7 +623,6 @@ struct AISettingsTab: View {
                 request.httpMethod = "GET"
                 request.timeoutInterval = 5
                 
-                // If we have an API Key, add it (just in case the endpoint checks auth on root)
                 if let key = try? KeychainManager.retrieve(for: .aiAPIKey), !key.isEmpty {
                     request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
                 }
@@ -498,21 +631,19 @@ struct AISettingsTab: View {
                 
                 await MainActor.run {
                     if let httpResponse = response as? HTTPURLResponse {
-                        // 200: OK
-                        // 401: Unauthorized (Means we reached the server, just auth failed - which confirms connection)
-                        // 404: Not Found (Server reachable, endpoint wrong - still "connected" to machine)
-                        if (200...499).contains(httpResponse.statusCode) {
+                        // Only 2xx codes indicate true success
+                        if (200...299).contains(httpResponse.statusCode) {
                             connectionStatus = .success
                         } else {
-                            connectionStatus = .failure
+                            connectionStatus = .failure("HTTP \(httpResponse.statusCode)")
                         }
                     } else {
-                        connectionStatus = .failure
+                        connectionStatus = .failure("Resposta inválida")
                     }
                 }
             } catch {
                 await MainActor.run {
-                    connectionStatus = .failure
+                    connectionStatus = .failure(error.localizedDescription)
                 }
             }
         }
