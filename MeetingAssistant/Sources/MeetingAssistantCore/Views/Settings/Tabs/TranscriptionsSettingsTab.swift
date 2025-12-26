@@ -306,8 +306,11 @@ public struct TranscriptionsSettingsTab: View {
         panel.canChooseFiles = true
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = false
-        panel.allowedContentTypes = [.audio, .mpeg4Audio, .mp3, .wav]
-        panel.message = "Selecione um arquivo de áudio para transcrever"
+        panel.allowedContentTypes = [
+            .audio, .mpeg4Audio, .mp3, .wav,
+            .movie, .mpeg4Movie, .quickTimeMovie,
+        ]
+        panel.message = "Selecione um arquivo de áudio ou vídeo para transcrever"
         panel.prompt = "Transcrever"
 
         if panel.runModal() == .OK, let url = panel.url {
@@ -325,8 +328,7 @@ public struct TranscriptionsSettingsTab: View {
                       let url = URL(dataRepresentation: data, relativeTo: nil)
                 else { return }
 
-                let validExtensions = ["m4a", "mp3", "wav", "aac"]
-                guard validExtensions.contains(url.pathExtension.lowercased()) else { return }
+                guard self.supportedExtensions.contains(url.pathExtension.lowercased()) else { return }
 
                 Task { @MainActor in
                     await RecordingManager.shared.transcribeExternalAudio(from: url)
