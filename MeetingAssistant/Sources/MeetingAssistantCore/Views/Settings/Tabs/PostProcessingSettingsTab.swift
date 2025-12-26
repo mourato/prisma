@@ -6,8 +6,6 @@ import os.log
 /// Settings tab for configuring AI post-processing prompts.
 public struct PostProcessingSettingsTab: View {
     @ObservedObject private var settings = AppSettingsStore.shared
-    @State private var isEditingSystemPrompt = false
-    @State private var editedSystemPrompt = ""
     @State private var showPromptEditor = false
     @State private var editingPrompt: PostProcessingPrompt?
     @State private var showDeleteConfirmation = false
