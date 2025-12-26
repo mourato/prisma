@@ -135,6 +135,16 @@ public class SystemAudioRecorder: ObservableObject {
         return CGPreflightScreenCaptureAccess()
     }
     
+    /// Returns the detailed permission state for screen recording.
+    /// Note: macOS screen recording only has granted/denied visible states.
+    public func getPermissionState() -> PermissionState {
+        // CGPreflightScreenCaptureAccess returns true if permission was previously granted
+        // It returns false if denied or never requested
+        // Unfortunately, macOS doesn't distinguish between "not determined" and "denied"
+        // for screen recording via API, so we use a simple binary check
+        return CGPreflightScreenCaptureAccess() ? .granted : .notDetermined
+    }
+    
     public func requestPermission() async {
         _ = try? await SCShareableContent.current
     }

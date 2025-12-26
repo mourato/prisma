@@ -11,9 +11,8 @@ public struct MenuBarView: View {
         VStack(spacing: 16) {
             headerSection
             
-            if !recordingManager.hasRequiredPermissions {
-                permissionWarningSection
-            }
+            // Always show permission status for visibility
+            permissionStatusSection
             
             statusSection
             
@@ -30,42 +29,24 @@ public struct MenuBarView: View {
         }
     }
     
-    // MARK: - Permission Warning
+    // MARK: - Permission Status Section
     
-    private var permissionWarningSection: some View {
-        VStack(spacing: 8) {
-            HStack {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.yellow)
-                Text("Permissões Necessárias")
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-            }
-            
-            Text("É necessário acesso à Tela e Microfone para gravar.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-            
-            Button("Solicitar Acesso") {
+    private var permissionStatusSection: some View {
+        PermissionStatusView(
+            permissionManager: recordingManager.permissionStatus,
+            onRequestMicrophone: {
                 Task { await recordingManager.requestPermission() }
+            },
+            onRequestScreenRecording: {
+                Task { await recordingManager.requestPermission() }
+            },
+            onOpenMicrophoneSettings: {
+                recordingManager.openMicrophoneSettings()
+            },
+            onOpenScreenRecordingSettings: {
+                recordingManager.openPermissionSettings()
             }
-            .buttonStyle(.borderedProminent)
-            
-            HStack {
-                Button("Abrir Tela") {
-                    recordingManager.openPermissionSettings()
-                }
-                .font(.caption)
-                
-                Button("Abrir Mic") {
-                    recordingManager.openMicrophoneSettings()
-                }
-                .font(.caption)
-            }
-        }
-        .padding()
-        .background(.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+        )
     }
     
     // MARK: - Sections

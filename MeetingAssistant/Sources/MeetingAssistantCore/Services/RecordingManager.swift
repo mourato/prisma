@@ -22,6 +22,9 @@ public class RecordingManager: ObservableObject {
     /// Detailed transcription service status for UI feedback.
     public let transcriptionStatus = TranscriptionStatus()
     
+    /// Individual permission status tracking for UI display.
+    public let permissionStatus = PermissionStatusManager()
+    
     // MARK: - Services
     
     private let micRecorder = AudioRecorder.shared
@@ -66,6 +69,14 @@ public class RecordingManager: ObservableObject {
     public func checkPermission() async {
         let micPermission = await micRecorder.hasPermission()
         let screenPermission = await systemRecorder.hasPermission()
+        
+        // Update individual permission states using detailed state methods
+        let micState = micRecorder.getPermissionState()
+        let screenState = systemRecorder.getPermissionState()
+        
+        permissionStatus.updateMicrophoneState(micState)
+        permissionStatus.updateScreenRecordingState(screenState)
+        
         hasRequiredPermissions = micPermission && screenPermission
     }
     
