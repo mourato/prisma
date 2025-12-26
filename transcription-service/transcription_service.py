@@ -242,6 +242,10 @@ async def transcribe_audio(file: UploadFile = File(...)):
             processed_at=datetime.now().isoformat()
         )
         
+    except ValueError as e:
+        logger.error(f"Validation error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
     except FileNotFoundError as e:
         logger.error(f"File not found: {e}")
         raise HTTPException(status_code=404, detail=str(e))

@@ -138,6 +138,20 @@ class AudioRecorder: ObservableObject {
         
         let savedURL = currentRecordingURL
         if let url = savedURL {
+            // Validate file size to prevent processing empty recordings
+            do {
+                let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+                let fileSize = attributes[.size] as? Int64 ?? 0
+                
+                if fileSize == 0 {
+                    logger.error("Recording failed: File is empty (0 bytes)")
+                    try? FileManager.default.removeItem(at: url)
+                    return nil
+                }
+            } catch {
+                logger.error("Failed to validate recording file: \(error.localizedDescription)")
+            }
+            
             logFileSizeInfo(url: url)
             verifyFileIntegrity(url: url)
         }
