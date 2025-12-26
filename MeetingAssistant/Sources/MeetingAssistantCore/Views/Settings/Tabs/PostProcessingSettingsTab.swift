@@ -1,5 +1,4 @@
 import SwiftUI
-import os.log
 
 // MARK: - Post-Processing Settings Tab
 
@@ -10,8 +9,6 @@ public struct PostProcessingSettingsTab: View {
     @State private var editingPrompt: PostProcessingPrompt?
     @State private var showDeleteConfirmation = false
     @State private var promptToDelete: PostProcessingPrompt?
-    
-    private let logger = Logger(subsystem: "MeetingAssistant", category: "PostProcessing")
     
     public init() {}
     
