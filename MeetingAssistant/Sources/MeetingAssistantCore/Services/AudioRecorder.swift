@@ -1,9 +1,10 @@
-import Foundation
 @preconcurrency import AVFoundation
-import CoreAudio
 import AppKit
-import os.log
+import Atomics
 import Combine
+import CoreAudio
+import Foundation
+import os.log
 
 // MARK: - Audio Recorder (Microphone Only)
 
@@ -12,93 +13,97 @@ import Combine
 @MainActor
 public class AudioRecorder: ObservableObject, AudioRecordingService {
     public static let shared = AudioRecorder()
-    
+
     private let logger = Logger(subsystem: "MeetingAssistant", category: "AudioRecorder")
-    
+
     @Published public private(set) var isRecording = false
-    public var isRecordingPublisher: AnyPublisher<Bool, Never> { $isRecording.eraseToAnyPublisher() }
+    public var isRecordingPublisher: AnyPublisher<Bool, Never> {
+        $isRecording.eraseToAnyPublisher()
+    }
     @Published public private(set) var currentRecordingURL: URL?
     @Published public private(set) var error: Error?
     @Published public private(set) var currentAveragePower: Float = -160.0
     @Published public private(set) var currentPeakPower: Float = -160.0
-    
+
     // ... (rest of properties)
-    
+
     // MARK: - Audio Engine
     private var audioEngine: AVAudioEngine?
     private var inputNode: AVAudioInputNode?
-    
+
     // Thread-safe file handling (nonisolated for use in tap callback)
     nonisolated(unsafe) private var audioFile: AVAudioFile?
     nonisolated(unsafe) private var recordingFormat: AVAudioFormat?
     nonisolated(unsafe) private var converter: AVAudioConverter?
-    
+
     // MARK: - Configuration
     private let tapBufferSize: AVAudioFrameCount = 4096
     private let tapBusNumber: AVAudioNodeBus = 0
-    
+
     // Output format: 16kHz Mono (optimized for transcription)
     private let outputSampleRate: Double = 16000.0
     private let outputChannels: AVAudioChannelCount = 1
-    
+
     // MARK: - Thread Safety
     private let audioProcessingQueue = DispatchQueue(
         label: "MeetingAssistant.audioProcessing",
         qos: .userInitiated
     )
     private let fileWriteLock = NSLock()
-    
+
     // MARK: - Validation & Retry
     private var validationTimer: Timer?
-    nonisolated(unsafe) private var hasReceivedValidBuffer = false
+    private let hasReceivedValidBuffer = ManagedAtomic<Bool>(false)
     public var onRecordingError: ((Error) -> Void)?
-    
+
     private init() {}
-    
+
     // MARK: - Public API
-    
+
     /// Start recording microphone audio to the specified URL.
     /// Uses automatic retry mechanism if initial start fails.
     public func startRecording(to outputURL: URL, retryCount: Int = 0) async throws {
         // Stop any existing recording first
         await stopRecording()
-        hasReceivedValidBuffer = false
-        
+        hasReceivedValidBuffer.store(false, ordering: .relaxed)
+
         logger.info("Starting microphone recording to: \(outputURL.path)")
-        
+
         // Create new engine instance
         let engine = AVAudioEngine()
         audioEngine = engine
-        
+
         let input = engine.inputNode
         inputNode = input
-        
+
         // Get the input format from hardware
         let inputFormat = input.outputFormat(forBus: tapBusNumber)
-        
+
         guard inputFormat.sampleRate > 0, inputFormat.channelCount > 0 else {
             logger.error("Invalid input format: sample rate or channel count is zero")
             throw AudioRecorderError.invalidInputFormat
         }
-        
+
         // Create desired output format (16kHz Mono PCM Int16)
-        guard let desiredFormat = AVAudioFormat(
-            commonFormat: .pcmFormatInt16,
-            sampleRate: outputSampleRate,
-            channels: outputChannels,
-            interleaved: false
-        ) else {
+        guard
+            let desiredFormat = AVAudioFormat(
+                commonFormat: .pcmFormatInt16,
+                sampleRate: outputSampleRate,
+                channels: outputChannels,
+                interleaved: false
+            )
+        else {
             logger.error("Failed to create desired recording format")
             throw AudioRecorderError.invalidRecordingFormat
         }
-        
+
         // Prepare output file
         let createdAudioFile: AVAudioFile
         do {
             if FileManager.default.fileExists(atPath: outputURL.path) {
                 try FileManager.default.removeItem(at: outputURL)
             }
-            
+
             createdAudioFile = try AVAudioFile(
                 forWriting: outputURL,
                 settings: desiredFormat.settings,
@@ -109,27 +114,30 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             logger.error("Failed to create audio file: \(error.localizedDescription)")
             throw AudioRecorderError.failedToCreateFile(error)
         }
-        
+
         // Create format converter
         guard let audioConverter = AVAudioConverter(from: inputFormat, to: desiredFormat) else {
             logger.error("Failed to create audio format converter")
             throw AudioRecorderError.failedToCreateConverter
         }
-        
+
         // Store references (thread-safe sync helper)
-        setFileState(format: desiredFormat, file: createdAudioFile, converter: audioConverter, url: outputURL)
-        
+        setFileState(
+            format: desiredFormat, file: createdAudioFile, converter: audioConverter, url: outputURL
+        )
+
         // Install tap on input node
-        input.installTap(onBus: tapBusNumber, bufferSize: tapBufferSize, format: inputFormat) { [weak self] buffer, _ in
+        input.installTap(onBus: tapBusNumber, bufferSize: tapBufferSize, format: inputFormat) {
+            [weak self] buffer, _ in
             guard let self = self else { return }
             self.audioProcessingQueue.async {
                 self.processAudioBuffer(buffer)
             }
         }
-        
+
         // Prepare and start engine
         engine.prepare()
-        
+
         do {
             try engine.start()
             isRecording = true
@@ -141,50 +149,52 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             throw AudioRecorderError.failedToStartEngine(error)
         }
     }
-    
+
     /// Stop recording and finalize the audio file.
     @discardableResult
     public func stopRecording() async -> URL? {
         guard isRecording else { return currentRecordingURL }
-        
+
         logger.info("Stopping recording...")
-        
+
         // Cancel validation timer
         validationTimer?.invalidate()
         validationTimer = nil
-        
+
         // Remove tap and stop engine
         inputNode?.removeTap(onBus: tapBusNumber)
         audioEngine?.stop()
-        
+
         // Wait for processing queue to finish
         audioProcessingQueue.sync {}
-        
+
         // Clean up file resources (thread-safe sync helper)
         let url = clearFileState()
-        
+
         // Reset state
         audioEngine = nil
         inputNode = nil
         isRecording = false
-        hasReceivedValidBuffer = false
+        inputNode = nil
+        isRecording = false
+        hasReceivedValidBuffer.store(false, ordering: .relaxed)
         currentAveragePower = -160.0
         currentPeakPower = -160.0
-        
+
         if let url = url {
             verifyFileIntegrity(url: url)
         }
-        
+
         return url
     }
-    
+
     // MARK: - Permission Checking
-    
+
     public func hasPermission() async -> Bool {
         let micStatus = AVCaptureDevice.authorizationStatus(for: .audio)
         return micStatus == .authorized
     }
-    
+
     /// Returns the detailed permission state for the microphone.
     public func getPermissionState() -> PermissionState {
         let status = AVCaptureDevice.authorizationStatus(for: .audio)
@@ -201,24 +211,28 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             return .notDetermined
         }
     }
-    
+
     public func requestPermission() async {
         await AVCaptureDevice.requestAccess(for: .audio)
     }
-    
+
     public func openSettings() {
         openMicrophoneSettings()
     }
-    
+
     public func openMicrophoneSettings() {
-        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone") {
+        if let url = URL(
+            string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone")
+        {
             NSWorkspace.shared.open(url)
         }
     }
-    
+
     // MARK: - Private Methods
-    
-    private func setFileState(format: AVAudioFormat, file: AVAudioFile, converter: AVAudioConverter, url: URL) {
+
+    private func setFileState(
+        format: AVAudioFormat, file: AVAudioFile, converter: AVAudioConverter, url: URL
+    ) {
         fileWriteLock.lock()
         defer { fileWriteLock.unlock() }
         recordingFormat = format
@@ -226,7 +240,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         self.converter = converter
         currentRecordingURL = url
     }
-    
+
     private func clearFileState() -> URL? {
         fileWriteLock.lock()
         defer { fileWriteLock.unlock() }
@@ -237,18 +251,19 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         currentRecordingURL = nil
         return url
     }
-    
+
     private func startValidationTimer(url: URL, retryCount: Int) {
-        validationTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: false) { [weak self] _ in
+        validationTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: false) {
+            [weak self] _ in
             Task { @MainActor in
                 guard let self = self else { return }
-                
-                let validationPassed = self.hasReceivedValidBuffer
-                
+
+                let validationPassed = self.hasReceivedValidBuffer.load(ordering: .relaxed)
+
                 if !validationPassed {
                     self.logger.warning("Recording validation failed - no valid buffers received")
                     _ = await self.stopRecording()
-                    
+
                     if retryCount < 2 {
                         self.logger.info("Retrying recording (attempt \(retryCount + 1)/2)...")
                         try? await Task.sleep(for: .milliseconds(500))
@@ -271,39 +286,42 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             }
         }
     }
-    
+
     nonisolated private func processAudioBuffer(_ buffer: AVAudioPCMBuffer) {
         updateMeters(from: buffer)
         writeBufferToFile(buffer)
     }
-    
+
     nonisolated private func writeBufferToFile(_ buffer: AVAudioPCMBuffer) {
         fileWriteLock.lock()
         defer { fileWriteLock.unlock() }
-        
+
         guard let audioFile = audioFile,
-              let converter = converter,
-              let format = recordingFormat else { return }
-        
+            let converter = converter,
+            let format = recordingFormat
+        else { return }
+
         guard buffer.frameLength > 0 else {
             logger.error("Empty buffer received")
             return
         }
-        
+
         // Calculate output capacity based on sample rate ratio
         let inputSampleRate = buffer.format.sampleRate
         let outputSampleRate = format.sampleRate
         let ratio = outputSampleRate / inputSampleRate
         let outputCapacity = AVAudioFrameCount(Double(buffer.frameLength) * ratio)
-        
-        guard let convertedBuffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: outputCapacity) else {
+
+        guard
+            let convertedBuffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: outputCapacity)
+        else {
             logger.error("Failed to create converted buffer")
             return
         }
-        
+
         var error: NSError?
         let state = ConverterState()
-        
+
         converter.convert(to: convertedBuffer, error: &error) { _, outStatus in
             if state.hasProvidedBuffer {
                 outStatus.pointee = .noDataNow
@@ -314,56 +332,55 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
                 return buffer
             }
         }
-        
+
         if let error = error {
             logger.error("Audio conversion failed: \(error.localizedDescription)")
             return
         }
-        
+
         do {
             try audioFile.write(from: convertedBuffer)
-            Task { @MainActor in
-                if !self.hasReceivedValidBuffer {
-                    self.hasReceivedValidBuffer = true
-                }
-            }
+
+            // Atomically mark that we have received valid data
+            self.hasReceivedValidBuffer.store(true, ordering: .relaxed)
+
         } catch {
             logger.error("File write failed: \(error.localizedDescription)")
         }
     }
-    
+
     nonisolated private func updateMeters(from buffer: AVAudioPCMBuffer) {
         guard let channelData = buffer.floatChannelData else { return }
-        
+
         let channelCount = Int(buffer.format.channelCount)
         let frameLength = Int(buffer.frameLength)
-        
+
         guard channelCount > 0, frameLength > 0 else { return }
-        
+
         let channel = channelData[0]
         var sum: Float = 0.0
         var peak: Float = 0.0
-        
+
         for frame in 0..<frameLength {
             let sample = channel[frame]
             let absSample = abs(sample)
-            
+
             if absSample > peak {
                 peak = absSample
             }
             sum += sample * sample
         }
-        
+
         let rms = sqrt(sum / Float(frameLength))
         let averagePowerDb = 20.0 * log10(max(rms, 0.000001))
         let peakPowerDb = 20.0 * log10(max(peak, 0.000001))
-        
+
         Task { @MainActor in
             self.currentAveragePower = averagePowerDb
             self.currentPeakPower = peakPowerDb
         }
     }
-    
+
     private func verifyFileIntegrity(url: URL) {
         let asset = AVAsset(url: url)
         Task {
@@ -388,7 +405,7 @@ public enum AudioRecorderError: LocalizedError {
     case audioConversionError(Error)
     case fileWriteFailed(Error)
     case recordingValidationFailed
-    
+
     public var errorDescription: String? {
         switch self {
         case .invalidInputFormat:
