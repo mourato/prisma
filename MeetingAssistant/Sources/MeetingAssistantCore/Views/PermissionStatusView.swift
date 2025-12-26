@@ -197,7 +197,7 @@ struct PermissionRowView: View {
                 .font(.title3)
                 .foregroundStyle(statusColor)
                 .symbolEffect(
-                    .pulse, options: .repeating, isActive: permission.state == .notDetermined)
+                    .pulse, options: .nonRepeating, isActive: permission.state == .notDetermined)
 
             // Action button when not granted
             if !permission.state.isAuthorized {
