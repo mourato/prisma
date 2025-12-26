@@ -90,21 +90,8 @@ class LocalTranscriptionClient {
 
             if speaker != currentSpeakerId {
                 // Determine if we should start a new segment
-                if !currentBatch.isEmpty {
-                    let segmentText = currentBatch.map(\.text).joined(separator: "")
-                        .trimmingCharacters(in: .whitespaces)
-
-                    if !segmentText.isEmpty {
-                        let start = currentBatch.first?.startTime ?? 0
-                        let end = currentBatch.last?.endTime ?? 0
-                        result.append(
-                            Transcription.Segment(
-                                speaker: currentSpeakerId,
-                                text: segmentText,
-                                startTime: start,
-                                endTime: end
-                            ))
-                    }
+                if let segment = makeSegment(from: currentBatch, speaker: currentSpeakerId) {
+                    result.append(segment)
                 }
                 currentSpeakerId = speaker
                 currentBatch = []
@@ -114,22 +101,30 @@ class LocalTranscriptionClient {
         }
 
         // Flush last segment
-        if !currentBatch.isEmpty {
-            let segmentText = currentBatch.map(\.text).joined(separator: "")
-                .trimmingCharacters(in: .whitespaces)
-            if !segmentText.isEmpty {
-                let start = currentBatch.first?.startTime ?? 0
-                let end = currentBatch.last?.endTime ?? 0
-                result.append(
-                    Transcription.Segment(
-                        speaker: currentSpeakerId,
-                        text: segmentText,
-                        startTime: start,
-                        endTime: end
-                    ))
-            }
+        if let segment = makeSegment(from: currentBatch, speaker: currentSpeakerId) {
+            result.append(segment)
         }
 
         return result
+    }
+
+    private func makeSegment(from batch: [FluidAIModelManager.AsrSegment], speaker: String)
+        -> Transcription.Segment?
+    {
+        guard !batch.isEmpty else { return nil }
+
+        let segmentText = batch.map(\.text).joined(separator: "").trimmingCharacters(
+            in: .whitespaces)
+        guard !segmentText.isEmpty else { return nil }
+
+        let start = batch.first?.startTime ?? 0
+        let end = batch.last?.endTime ?? 0
+
+        return Transcription.Segment(
+            speaker: speaker,
+            text: segmentText,
+            startTime: start,
+            endTime: end
+        )
     }
 }
