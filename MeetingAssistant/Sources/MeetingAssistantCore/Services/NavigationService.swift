@@ -6,19 +6,22 @@ public class NavigationService: ObservableObject {
     public static let shared = NavigationService()
 
     /// Reference to the SwiftUI openWindow action.
-    /// This is injected by a view that has access to the environment.
-    public var openWindow: OpenWindowAction?
+    public private(set) var openWindow: OpenWindowAction?
 
     private init() {}
+
+    /// Registers the openWindow action from the SwiftUI environment.
+    public func register(openWindow: OpenWindowAction) {
+        self.openWindow = openWindow
+    }
 
     /// Opens the settings/dashboard window.
     public func openSettings() {
         if let openWindow = self.openWindow {
             openWindow(id: "settings")
+            NSApp.activate(ignoringOtherApps: true)
         } else {
-            // Fallback for when the environment action is not yet available
-            // This can happen if called before the first view appears.
-            // In AppKit, we can try to send the action to the responder chain as a last resort.
+            // Fallback for app startup or when environment isn't bridged yet
             NSApp.activate(ignoringOtherApps: true)
             NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
         }

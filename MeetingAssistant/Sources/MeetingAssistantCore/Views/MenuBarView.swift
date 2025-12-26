@@ -70,7 +70,7 @@ public struct MenuBarView: View {
             await self.viewModel.checkPermission()
         }
         .onAppear {
-            NavigationService.shared.openWindow = self.openWindow
+            NavigationService.shared.register(openWindow: self.openWindow)
         }
     }
 
