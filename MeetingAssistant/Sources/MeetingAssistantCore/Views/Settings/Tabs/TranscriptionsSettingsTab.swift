@@ -212,7 +212,7 @@ public struct TranscriptionsSettingsTab: View {
                     .font(.subheadline)
                     .fontWeight(.medium)
 
-                Text("ou clique para importar • .aac, .m4a, .mp3, .wav")
+                Text("ou clique para importar • .aac, .m4a, .m4v, .mov, .mp3, .mp4, .wav")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
