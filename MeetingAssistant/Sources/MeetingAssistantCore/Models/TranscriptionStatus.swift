@@ -125,7 +125,7 @@ public class TranscriptionStatus: ObservableObject {
     // MARK: - Update Methods
     
     /// Update service connection state.
-    func updateServiceState(_ state: ServiceState) {
+    public func updateServiceState(_ state: ServiceState) {
         serviceState = state
         if state == .connected {
             lastHealthCheck = Date()
@@ -133,7 +133,7 @@ public class TranscriptionStatus: ObservableObject {
     }
     
     /// Update model loading state.
-    func updateModelState(_ state: ModelState, device: String? = nil) {
+    public func updateModelState(_ state: ModelState, device: String? = nil) {
         modelState = state
         if let device = device {
             self.device = device
@@ -141,7 +141,7 @@ public class TranscriptionStatus: ObservableObject {
     }
     
     /// Begins a new transcription session.
-    func beginTranscription(audioDuration: Double?) {
+    public func beginTranscription(audioDuration: Double?) {
         phase = .preparing
         progressPercentage = 0.0
         estimatedTimeRemaining = nil
@@ -152,7 +152,7 @@ public class TranscriptionStatus: ObservableObject {
     }
     
     /// Updates transcription progress during processing.
-    func updateProgress(
+    public func updateProgress(
         phase: TranscriptionPhase,
         percentage: Double? = nil,
         processedSeconds: Double? = nil
@@ -170,7 +170,7 @@ public class TranscriptionStatus: ObservableObject {
     }
     
     /// Marks transcription as completed.
-    func completeTranscription(success: Bool) {
+    public func completeTranscription(success: Bool) {
         phase = success ? .completed : .failed
         progressPercentage = success ? 100.0 : progressPercentage
         estimatedTimeRemaining = nil
@@ -178,7 +178,7 @@ public class TranscriptionStatus: ObservableObject {
     }
     
     /// Resets to idle state after completion.
-    func resetToIdle() {
+    public func resetToIdle() {
         phase = .idle
         progressPercentage = 0.0
         estimatedTimeRemaining = nil
@@ -188,7 +188,7 @@ public class TranscriptionStatus: ObservableObject {
     }
     
     /// Records an error that occurred.
-    func recordError(_ error: TranscriptionStatusError) {
+    public func recordError(_ error: TranscriptionStatusError) {
         lastError = error
         lastErrorTime = Date()
         
@@ -204,7 +204,7 @@ public class TranscriptionStatus: ObservableObject {
     }
     
     /// Clears error state.
-    func clearError() {
+    public func clearError() {
         lastError = nil
         lastErrorTime = nil
     }
