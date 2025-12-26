@@ -26,4 +26,37 @@ public class NavigationService: ObservableObject {
             NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
         }
     }
+
+    /// Shows the About alert.
+    public func showAbout() {
+        let alert = NSAlert()
+        alert.messageText = "Meeting Assistant"
+        alert.informativeText = """
+        Versão 0.1.1
+
+        Transcreva suas reuniões de vídeo automaticamente usando IA.
+
+        © 2025 Todos os direitos reservados.
+        """
+        alert.alertStyle = .informational
+        alert.icon = NSImage(
+            systemSymbolName: "waveform.circle.fill", accessibilityDescription: "Meeting Assistant"
+        )
+        alert.addButton(withTitle: "OK")
+
+        NSApp.activate(ignoringOtherApps: true)
+        alert.runModal()
+    }
+
+    /// Checks for updates (static placeholder for now).
+    public func checkForUpdates() {
+        let alert = NSAlert()
+        alert.messageText = "Verificar Atualizações"
+        alert.informativeText = "Você está usando a versão mais recente do Meeting Assistant."
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: "OK")
+
+        NSApp.activate(ignoringOtherApps: true)
+        alert.runModal()
+    }
 }
