@@ -7,7 +7,7 @@ import Foundation
 struct ASRTranscriptionResult: Sendable {
     let text: String
     let confidence: Float
-    let tokenTimings: [TokenTiming]?
+    let tokenTimings: [TokenTiming]
 
     /// Represents timing information for a single token/word.
     struct TokenTiming: Sendable {
@@ -16,7 +16,7 @@ struct ASRTranscriptionResult: Sendable {
         let endTime: Double
     }
 
-    init(text: String, confidence: Float = 1.0, tokenTimings: [TokenTiming]? = nil) {
+    init(text: String, confidence: Float = 1.0, tokenTimings: [TokenTiming] = []) {
         self.text = text
         self.confidence = confidence
         self.tokenTimings = tokenTimings

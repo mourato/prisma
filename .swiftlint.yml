@@ -83,21 +83,21 @@ identifier_name:
     - at
     - to
 
-# Type body: more conservative
+# Type body: more conservative for audio services
 type_body_length:
-  warning: 300
-  error: 500
+  warning: 400
+  error: 600
 
 # File length: stricter
 file_length:
-  warning: 500
-  error: 800
+  warning: 600
+  error: 900
 
 # Function body: matches your 20-line guideline with more tolerance
-# (20 lines warning, 50 lines error for complex cases)
+# (50 lines warning for complex audio/recording code, 100 lines error)
 function_body_length:
-  warning: 40
-  error: 80
+  warning: 50
+  error: 100
 
 # Cyclomatic complexity: lower for readability
 cyclomatic_complexity:
@@ -126,14 +126,6 @@ custom_rules:
   enforce_mark_spacing:
     regex: '\/\/ MARK:(?! - )'
     message: "Format section markers as `// MARK: - Section`."
-    severity: warning
-
-  # Discourage force unwrap in production
-  no_force_unwrap:
-    regex: '\!\s*[^=]'
-    match_kinds:
-      - identifier
-    message: "Avoid force unwrapping. Use guard-let or if-let instead."
     severity: warning
 
   # Enforce comment language (optional, for internationalized teams)

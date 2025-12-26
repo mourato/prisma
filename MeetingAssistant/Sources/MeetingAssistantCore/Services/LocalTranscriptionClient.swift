@@ -71,7 +71,13 @@ class LocalTranscriptionClient {
         asrSegments: [FluidAIModelManager.AsrSegment],
         speakers: [FluidAIModelManager.DiarizationSegment]
     ) -> [Transcription.Segment] {
-        guard !asrSegments.isEmpty, !speakers.isEmpty else { return [] }
+        guard let firstAsrSegment = asrSegments.first,
+              let firstSpeaker = speakers.first
+        else {
+            return []
+        }
+        _ = firstAsrSegment // Validates asrSegments is not empty
+        _ = firstSpeaker // Validates speakers is not empty
 
         var result: [Transcription.Segment] = []
         var currentSpeakerId = ""
@@ -118,8 +124,8 @@ class LocalTranscriptionClient {
             in: .whitespaces)
         guard !segmentText.isEmpty else { return nil }
 
-        let start = batch.first?.startTime ?? 0
-        let end = batch.last?.endTime ?? 0
+        let start = batch.first.map(\.startTime) ?? 0
+        let end = batch.last.map(\.endTime) ?? 0
 
         return Transcription.Segment(
             speaker: speaker,

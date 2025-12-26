@@ -37,7 +37,8 @@ public final class FileSystemStorageService: StorageService {
 
     public init() {
         // Setup directories in Application Support
-        guard let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+        let appSupportURLs = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)
+        guard let appSupport = appSupportURLs.first else {
             fatalError("Critical: Could not access Application Support directory.")
         }
 

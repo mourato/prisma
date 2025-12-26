@@ -93,8 +93,8 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
     /// Check if running as a proper app bundle (required for UNUserNotificationCenter).
     private var isRunningAsAppBundle: Bool {
-        guard let id = Bundle.main.bundleIdentifier else { return false }
-        return !id.lowercased().contains("xctest")
+        guard let bundleId = Bundle.main.bundleIdentifier else { return false }
+        return !bundleId.lowercased().contains("xctest")
     }
 
     public func checkPermission() async {
@@ -240,9 +240,10 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             .removeDuplicates()
             .sink { [weak self] detected in
                 Task { @MainActor in
-                    if detected != nil, !(self?.isRecording ?? false) {
+                    let isCurrentlyRecording = self?.isRecording ?? false
+                    if detected != nil, !isCurrentlyRecording {
                         await self?.startRecording()
-                    } else if detected == nil, self?.isRecording ?? false {
+                    } else if detected == nil, isCurrentlyRecording {
                         await self?.stopRecording()
                     }
                 }

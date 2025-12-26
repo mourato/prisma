@@ -282,24 +282,29 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
     }
 
     private func startValidationTimer() {
-        self.validationTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) {
-            [weak self] _ in
+        self.validationTimer = Timer.scheduledTimer(
+            withTimeInterval: 2.0,
+            repeats: false
+        ) { [weak self] _ in
             Task { @MainActor in
-                guard let self else { return }
-
-                let validationPassed = self.hasReceivedValidBuffer.load(ordering: .relaxed)
-
-                if !validationPassed {
-                    self.logger.warning(
-                        "System audio validation failed - no valid buffers received")
-                    let error = SystemAudioRecorderError.recordingValidationFailed
-                    self.error = error
-                    self.onRecordingError?(error)
-                } else {
-                    self.logger.info("System audio validation successful")
-                }
+                await self?.handleValidationResult()
             }
         }
+    }
+
+    private func handleValidationResult() async {
+        let validationPassed = self.hasReceivedValidBuffer.load(ordering: .relaxed)
+
+        guard !validationPassed else {
+            self.logger.info("System audio validation successful")
+            return
+        }
+
+        self.logger.warning(
+            "System audio validation failed - no valid buffers received")
+        let validationError = SystemAudioRecorderError.recordingValidationFailed
+        self.error = validationError
+        self.onRecordingError?(validationError)
     }
 
     private func verifyFileIntegrity(url: URL) {

@@ -75,7 +75,7 @@ final class FluidAudioProvider: @unchecked Sendable {
                 startTime: Double(token.startTime),
                 endTime: Double(token.endTime)
             )
-        }
+        } ?? []
 
         return ASRTranscriptionResult(
             text: result.text,
@@ -102,7 +102,7 @@ final class FluidAudioProvider: @unchecked Sendable {
                 startTime: Double(token.startTime),
                 endTime: Double(token.endTime)
             )
-        }
+        } ?? []
 
         return ASRTranscriptionResult(
             text: result.text,
