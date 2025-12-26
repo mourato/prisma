@@ -56,6 +56,8 @@ public struct SettingsView: View {
             ShortcutSettingsTab()
         case .ai:
             AISettingsTab()
+        case .postProcessing:
+            PostProcessingSettingsTab()
         case .service:
             ServiceSettingsTab()
         case .permissions:
