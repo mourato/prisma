@@ -1,0 +1,7 @@
+{
+    "recommendations": [
+        "vknabel.vscode-swiftformat",
+        "vknabel.vscode-swiftlint",
+        "swiftlang.swift-vscode"
+    ]
+}

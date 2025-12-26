@@ -1,0 +1,34 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug MeetingAssistant",
+            "program": "${workspaceFolder}/MeetingAssistant/dist/MeetingAssistant.app/Contents/MacOS/MeetingAssistant",
+            "args": [],
+            "cwd": "${workspaceFolder}/MeetingAssistant",
+            "preLaunchTask": "build-debug"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:my-meeting-assistant}/MeetingAssistant",
+            "name": "Debug MeetingAssistant (MeetingAssistant)",
+            "preLaunchTask": "swift: Build Debug MeetingAssistant (MeetingAssistant)",
+            "target": "MeetingAssistant",
+            "configuration": "debug"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:my-meeting-assistant}/MeetingAssistant",
+            "name": "Release MeetingAssistant (MeetingAssistant)",
+            "preLaunchTask": "swift: Build Release MeetingAssistant (MeetingAssistant)",
+            "target": "MeetingAssistant",
+            "configuration": "release"
+        }
+    ]
+}

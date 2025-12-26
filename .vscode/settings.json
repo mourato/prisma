@@ -1,0 +1,41 @@
+{
+    // MARK: - Editor Settings
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": false,
+    "editor.codeActionsOnSave": {
+        "source.fixAll": "explicit"
+    },
+
+    // MARK: - Swift Language Settings
+    "[swift]": {
+        "editor.defaultFormatter": "vknabel.vscode-swiftformat",
+        "editor.formatOnSave": true,
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true
+    },
+
+    // MARK: - SwiftLint Settings
+    "swiftlint.enable": true,
+    "swiftlint.autoLintWorkspace": true,
+    "swiftlint.lintOnSave": true,
+    "swiftlint.path": "/opt/homebrew/bin/swiftlint",
+    "swiftlint.configFilePath": "${workspaceFolder}/.swiftlint.yml",
+
+    // MARK: - SwiftFormat Settings
+    "swiftformat.enable": true,
+    "swiftformat.path": "/opt/homebrew/bin/swiftformat",
+    "swiftformat.configFilePath": "${workspaceFolder}/.swiftformat",
+    "swiftformat.formatOnSave": true,
+
+    // MARK: - File Associations
+    "files.associations": {
+        "*.swift": "swift"
+    },
+
+    // MARK: - File Exclusions (for performance)
+    "files.watcherExclude": {
+        "**/.build/**": true,
+        "**/DerivedData/**": true,
+        "**/.swiftpm/**": true
+    }
+}
