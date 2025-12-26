@@ -35,6 +35,11 @@ let package = Package(
                 "MeetingAssistantCore"
             ],
             path: "Sources/MeetingAssistant"
+        ),
+        .testTarget(
+            name: "MeetingAssistantTests",
+            dependencies: ["MeetingAssistantCore"],
+            path: "Tests/MeetingAssistantTests"
         )
     ]
 )

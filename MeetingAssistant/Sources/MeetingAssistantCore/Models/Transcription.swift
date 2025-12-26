@@ -111,12 +111,12 @@ public struct Transcription: Identifiable, Codable, Hashable {
 }
 
 /// Response from transcription API.
-struct TranscriptionResponse: Codable {
-    let text: String
-    let language: String
-    let durationSeconds: Double
-    let model: String
-    let processedAt: String
+public struct TranscriptionResponse: Codable {
+    public let text: String
+    public let language: String
+    public let durationSeconds: Double
+    public let model: String
+    public let processedAt: String
     
     enum CodingKeys: String, CodingKey {
         case text
@@ -124,5 +124,13 @@ struct TranscriptionResponse: Codable {
         case durationSeconds = "duration_seconds"
         case model
         case processedAt = "processed_at"
+    }
+    
+    public init(text: String, language: String, durationSeconds: Double, model: String, processedAt: String) {
+        self.text = text
+        self.language = language
+        self.durationSeconds = durationSeconds
+        self.model = model
+        self.processedAt = processedAt
     }
 }

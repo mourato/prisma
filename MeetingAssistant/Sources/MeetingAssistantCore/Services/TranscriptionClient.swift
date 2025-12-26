@@ -2,11 +2,73 @@ import Foundation
 import os.log
 import Combine
 
+// MARK: - Service Status Response
+
+/// Response from the /status endpoint with detailed service information.
+public struct ServiceStatusResponse: Codable {
+    public let status: String
+    public let modelState: String
+    public let modelLoaded: Bool
+    public let device: String
+    public let modelName: String
+    public let uptimeSeconds: Double
+    public let lastTranscriptionTime: String?
+    public let totalTranscriptions: Int
+    public let totalAudioProcessedSeconds: Double
+    
+    enum CodingKeys: String, CodingKey {
+        case status
+        case modelState = "model_state"
+        case modelLoaded = "model_loaded"
+        case device
+        case modelName = "model_name"
+        case uptimeSeconds = "uptime_seconds"
+        case lastTranscriptionTime = "last_transcription_time"
+        case totalTranscriptions = "total_transcriptions"
+        case totalAudioProcessedSeconds = "total_audio_processed_seconds"
+    }
+    
+    public init(
+        status: String,
+        modelState: String,
+        modelLoaded: Bool,
+        device: String,
+        modelName: String,
+        uptimeSeconds: Double,
+        lastTranscriptionTime: String?,
+        totalTranscriptions: Int,
+        totalAudioProcessedSeconds: Double
+    ) {
+        self.status = status
+        self.modelState = modelState
+        self.modelLoaded = modelLoaded
+        self.device = device
+        self.modelName = modelName
+        self.uptimeSeconds = uptimeSeconds
+        self.lastTranscriptionTime = lastTranscriptionTime
+        self.totalTranscriptions = totalTranscriptions
+        self.totalAudioProcessedSeconds = totalAudioProcessedSeconds
+    }
+    
+    /// Convert model state string to ModelState enum.
+    public var modelStateEnum: ModelState {
+        switch modelState {
+        case "loaded": return .loaded
+        case "loading": return .loading
+        case "downloading": return .downloading
+        case "error": return .error
+        default: return .unloaded
+        }
+    }
+}
+
+// MARK: - Transcription Client
+
 /// Client for communicating with the local FluidAudio transcription service.
 /// Adapts the local model manager to the existing client interface.
 @MainActor
-class TranscriptionClient {
-    static let shared = TranscriptionClient()
+public class TranscriptionClient: ObservableObject, TranscriptionService {
+    public static let shared = TranscriptionClient()
     
     private let logger = Logger(subsystem: "MeetingAssistant", category: "TranscriptionClient")
     private let manager = FluidAIModelManager.shared
@@ -22,7 +84,7 @@ class TranscriptionClient {
     }
     
     /// Check if the transcription service is healthy (local model manager).
-    func healthCheck() async throws -> Bool {
+    public func healthCheck() async throws -> Bool {
         // Local service is always "healthy" if the app is running,
         // unless the model failed to load.
         // We trigger a load check if needed.
@@ -34,21 +96,13 @@ class TranscriptionClient {
     
     /// Fetch detailed service status.
     /// - Returns: ServiceStatusResponse with comprehensive service information.
-    func fetchServiceStatus() async throws -> ServiceStatusResponse {
+    public func fetchServiceStatus() async throws -> ServiceStatusResponse {
         // Construct a response based on local manager state
         
         let currentState = manager.modelState
         let isLoaded = currentState == .loaded
         
         // Map local state to the expected JSON response format
-        // Logic:
-        // - status: "healthy" if not error
-        // - model_state: internal state string
-        // - model_loaded: boolean
-        // - device: "ANE" (since FluidAudio targets ANE)
-        
-        // Calculate uptime / stats if available (omitted for now or mocked)
-        
         return ServiceStatusResponse(
             status: currentState == .error ? "unhealthy" : "healthy",
             modelState: currentState.rawValue,
@@ -63,42 +117,31 @@ class TranscriptionClient {
     }
     
     /// Warm up the model by pre-loading it.
-    func warmupModel() async throws {
+    public func warmupModel() async throws {
         await manager.loadModels()
     }
     
     /// Transcribe an audio file.
     /// - Parameter audioURL: Path to the audio file (WAV, M4A, etc.)
     /// - Returns: Transcription response from the service
-    func transcribe(audioURL: URL) async throws -> TranscriptionResponse {
+    public func transcribe(audioURL: URL) async throws -> TranscriptionResponse {
         logger.info("Transcribing file locally: \(audioURL.lastPathComponent)")
         
-        
-        // Use the manager to transcribe
-        // Note: manager.transcribe returns a FluidAudio result, but we shouldn't access it directly here
-        // to avoid tight coupling if possible?
-        // Actually, LocalTranscriptionClient does this mapping. Let's reuse Logic from LocalTranscriptionClient
-        // or just implement it here since TranscriptionClient IS the client now.
-        
-        // Wait, I created LocalTranscriptionClient. I should probably use it or merge it.
-        // LocalTranscriptionClient matches the app usage pretty well.
-        // I will delegate to LocalTranscriptionClient or just inline the logic since TranscriptionClient is the main entry point.
-        // Let's use LocalTranscriptionClient as the implementation provider.
-        
+        // Use LocalTranscriptionClient as the implementation provider.
         return try await LocalTranscriptionClient.shared.transcribe(audioURL: audioURL)
     }
 }
 
 // MARK: - Errors
 
-enum TranscriptionError: LocalizedError {
+public enum TranscriptionError: LocalizedError {
     case serviceUnavailable
     case warmupFailed
     case invalidResponse
     case invalidURL(String)
     case transcriptionFailed(String)
     
-    var errorDescription: String? {
+    public var errorDescription: String? {
         switch self {
         case .serviceUnavailable:
             return "Serviço de transcrição não disponível"
@@ -114,60 +157,20 @@ enum TranscriptionError: LocalizedError {
     }
 }
 
-// MARK: - Service Status Response
-
-/// Response from the /status endpoint with detailed service information.
-struct ServiceStatusResponse: Codable {
-    let status: String
-    let modelState: String
-    let modelLoaded: Bool
-    let device: String
-    let modelName: String
-    let uptimeSeconds: Double
-    let lastTranscriptionTime: String?
-    let totalTranscriptions: Int
-    let totalAudioProcessedSeconds: Double
-    
-    enum CodingKeys: String, CodingKey {
-        case status
-        case modelState = "model_state"
-        case modelLoaded = "model_loaded"
-        case device
-        case modelName = "model_name"
-        case uptimeSeconds = "uptime_seconds"
-        case lastTranscriptionTime = "last_transcription_time"
-        case totalTranscriptions = "total_transcriptions"
-        case totalAudioProcessedSeconds = "total_audio_processed_seconds"
-    }
-    
-    /// Convert model state string to ModelState enum.
-    var modelStateEnum: ModelState {
-        switch modelState {
-        case "loaded": return .loaded
-        case "loading": return .loading
-        case "downloading": return .downloading
-        case "error": return .error
-        default: return .unloaded
-        }
-    }
-}
-
 // MARK: - UserDefaultsStorage for non-View contexts
-// (Kept if needed for other settings, though baseURL is no longer used)
-
 import SwiftUI
 
 @propertyWrapper
-struct UserDefaultsStorage<Value> {
+public struct UserDefaultsStorage<Value> {
     private let key: String
     private let defaultValue: Value
     
-    init(wrappedValue: Value, _ key: String) {
+    public init(wrappedValue: Value, _ key: String) {
         self.key = key
         self.defaultValue = wrappedValue
     }
     
-    var wrappedValue: Value {
+    public var wrappedValue: Value {
         get {
             UserDefaults.standard.object(forKey: key) as? Value ?? defaultValue
         }

@@ -40,10 +40,10 @@ public enum PostProcessingError: LocalizedError {
 
 /// Service for post-processing transcriptions using AI.
 @MainActor
-public class PostProcessingService: ObservableObject {
+public class PostProcessingService: ObservableObject, PostProcessingServiceProtocol {
     public static let shared = PostProcessingService()
     
-    // MARK: - Constants
+    // ...
     
     private enum Constants {
         /// Maximum tokens for AI response (suitable for long meeting notes).
