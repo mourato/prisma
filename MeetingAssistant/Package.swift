@@ -16,16 +16,18 @@ let package = Package(
         .executable(
             name: "MeetingAssistant",
             targets: ["MeetingAssistant"]
-        )
+        ),
     ],
     dependencies: [
-        .package(url: "https://github.com/FluidInference/FluidAudio.git", from: "0.7.9")
+        .package(url: "https://github.com/FluidInference/FluidAudio.git", from: "0.7.9"),
+        .package(url: "https://github.com/sindresorhus/KeyboardShortcuts", from: "2.0.0"),
     ],
     targets: [
         .target(
             name: "MeetingAssistantCore",
             dependencies: [
-                .product(name: "FluidAudio", package: "FluidAudio")
+                .product(name: "FluidAudio", package: "FluidAudio"),
+                .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
             ],
             path: "Sources/MeetingAssistantCore"
         ),
@@ -40,6 +42,6 @@ let package = Package(
             name: "MeetingAssistantTests",
             dependencies: ["MeetingAssistantCore"],
             path: "Tests/MeetingAssistantTests"
-        )
+        ),
     ]
 )

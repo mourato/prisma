@@ -1,106 +1,4 @@
 import Foundation
-import Carbon.HIToolbox
-
-// MARK: - Keyboard Shortcut Model
-
-/// Represents a keyboard shortcut with modifiers and key code.
-public struct KeyboardShortcut: Codable, Equatable, Sendable {
-    public var keyCode: UInt32
-    public var modifiers: UInt32
-
-    public init(keyCode: UInt32, modifiers: UInt32) {
-        self.keyCode = keyCode
-        self.modifiers = modifiers
-    }
-    
-    /// Human-readable display string for the shortcut.
-    public var displayString: String {
-        var parts: [String] = []
-        
-        // Modifier keys
-        if modifiers & UInt32(controlKey) != 0 { parts.append("⌃") }
-        if modifiers & UInt32(optionKey) != 0 { parts.append("⌥") }
-        if modifiers & UInt32(shiftKey) != 0 { parts.append("⇧") }
-        if modifiers & UInt32(cmdKey) != 0 { parts.append("⌘") }
-        
-        // Key name
-        if let keyName = Self.keyName(for: keyCode) {
-            parts.append(keyName)
-        }
-        
-        return parts.joined()
-    }
-    
-    /// Default shortcut: Cmd + Shift + R
-    public static let `default` = KeyboardShortcut(
-        keyCode: UInt32(kVK_ANSI_R),
-        modifiers: UInt32(cmdKey | shiftKey)
-    )
-    
-    /// Maps key codes to their display names.
-    private static func keyName(for keyCode: UInt32) -> String? {
-        switch Int(keyCode) {
-        case kVK_ANSI_A: return "A"
-        case kVK_ANSI_B: return "B"
-        case kVK_ANSI_C: return "C"
-        case kVK_ANSI_D: return "D"
-        case kVK_ANSI_E: return "E"
-        case kVK_ANSI_F: return "F"
-        case kVK_ANSI_G: return "G"
-        case kVK_ANSI_H: return "H"
-        case kVK_ANSI_I: return "I"
-        case kVK_ANSI_J: return "J"
-        case kVK_ANSI_K: return "K"
-        case kVK_ANSI_L: return "L"
-        case kVK_ANSI_M: return "M"
-        case kVK_ANSI_N: return "N"
-        case kVK_ANSI_O: return "O"
-        case kVK_ANSI_P: return "P"
-        case kVK_ANSI_Q: return "Q"
-        case kVK_ANSI_R: return "R"
-        case kVK_ANSI_S: return "S"
-        case kVK_ANSI_T: return "T"
-        case kVK_ANSI_U: return "U"
-        case kVK_ANSI_V: return "V"
-        case kVK_ANSI_W: return "W"
-        case kVK_ANSI_X: return "X"
-        case kVK_ANSI_Y: return "Y"
-        case kVK_ANSI_Z: return "Z"
-        case kVK_ANSI_0: return "0"
-        case kVK_ANSI_1: return "1"
-        case kVK_ANSI_2: return "2"
-        case kVK_ANSI_3: return "3"
-        case kVK_ANSI_4: return "4"
-        case kVK_ANSI_5: return "5"
-        case kVK_ANSI_6: return "6"
-        case kVK_ANSI_7: return "7"
-        case kVK_ANSI_8: return "8"
-        case kVK_ANSI_9: return "9"
-        case kVK_F1: return "F1"
-        case kVK_F2: return "F2"
-        case kVK_F3: return "F3"
-        case kVK_F4: return "F4"
-        case kVK_F5: return "F5"
-        case kVK_F6: return "F6"
-        case kVK_F7: return "F7"
-        case kVK_F8: return "F8"
-        case kVK_F9: return "F9"
-        case kVK_F10: return "F10"
-        case kVK_F11: return "F11"
-        case kVK_F12: return "F12"
-        case kVK_Space: return "Espaço"
-        case kVK_Return: return "↩"
-        case kVK_Tab: return "⇥"
-        case kVK_Delete: return "⌫"
-        case kVK_Escape: return "⎋"
-        case kVK_LeftArrow: return "←"
-        case kVK_RightArrow: return "→"
-        case kVK_UpArrow: return "↑"
-        case kVK_DownArrow: return "↓"
-        default: return nil
-        }
-    }
-}
 
 // MARK: - AI Provider Configuration
 
@@ -110,7 +8,7 @@ public enum AIProvider: String, CaseIterable, Codable, Sendable {
     case anthropic = "anthropic"
     case groq = "groq"
     case custom = "custom"
-    
+
     public var displayName: String {
         switch self {
         case .openai: return "OpenAI"
@@ -119,7 +17,7 @@ public enum AIProvider: String, CaseIterable, Codable, Sendable {
         case .custom: return "Personalizado"
         }
     }
-    
+
     public var defaultBaseURL: String {
         switch self {
         case .openai: return "https://api.openai.com/v1"
@@ -128,7 +26,7 @@ public enum AIProvider: String, CaseIterable, Codable, Sendable {
         case .custom: return ""
         }
     }
-    
+
     public var icon: String {
         switch self {
         case .openai: return "brain"
@@ -145,45 +43,45 @@ public struct AIConfiguration: Codable, Equatable, Sendable {
     public var provider: AIProvider
     public var baseURL: String
     public var selectedModel: String
-    
+
     // NOTE: apiKey is NOT stored here - it's in Keychain.
     // This field exists only for Codable compatibility and migration.
     // It will always be empty after migration.
     private var _legacyApiKey: String = ""
-    
+
     enum CodingKeys: String, CodingKey {
         case provider, baseURL, selectedModel
         case _legacyApiKey = "apiKey"  // For migration from old format
     }
-    
+
     public init(provider: AIProvider, baseURL: String, selectedModel: String) {
         self.provider = provider
         self.baseURL = baseURL
         self.selectedModel = selectedModel
     }
-    
+
     /// Default configuration with empty values.
     public static let `default` = AIConfiguration(
         provider: .openai,
         baseURL: AIProvider.openai.defaultBaseURL,
         selectedModel: ""
     )
-    
+
     /// Check if configuration is valid for making API calls.
     /// Checks Keychain for API key presence.
     public var isValid: Bool {
         let hasApiKey = KeychainManager.exists(for: .aiAPIKey)
         return hasApiKey && !baseURL.isEmpty
     }
-    
+
     /// Migrate legacy API key from UserDefaults to Keychain.
     /// Should be called once during app initialization.
     mutating func migrateLegacyApiKeyIfNeeded() {
         guard !_legacyApiKey.isEmpty else { return }
-        
+
         // Move to Keychain
         try? KeychainManager.store(_legacyApiKey, for: .aiAPIKey)
-        
+
         // Clear from struct (will be saved to UserDefaults without the key)
         _legacyApiKey = ""
     }
@@ -195,11 +93,11 @@ public struct AIConfiguration: Codable, Equatable, Sendable {
 @MainActor
 public class AppSettingsStore: ObservableObject {
     public static let shared = AppSettingsStore()
-    
+
     // MARK: - Keys
-    
+
     private enum Keys {
-        static let keyboardShortcut = "keyboardShortcut"
+
         static let aiConfiguration = "aiConfiguration"
         static let aiEnabled = "aiPostProcessingEnabled"
         static let systemPrompt = "postProcessingSystemPrompt"
@@ -207,33 +105,29 @@ public class AppSettingsStore: ObservableObject {
         static let selectedPromptId = "postProcessingSelectedPromptId"
         static let postProcessingEnabled = "postProcessingEnabled"
     }
-    
+
     // MARK: - Published Properties
-    
-    @Published public var keyboardShortcut: KeyboardShortcut {
-        didSet { save(keyboardShortcut, forKey: Keys.keyboardShortcut) }
-    }
-    
+
     @Published public var aiConfiguration: AIConfiguration {
         didSet { save(aiConfiguration, forKey: Keys.aiConfiguration) }
     }
-    
+
     @Published public var aiEnabled: Bool {
         didSet { UserDefaults.standard.set(aiEnabled, forKey: Keys.aiEnabled) }
     }
-    
+
     // MARK: - Post-Processing Properties
-    
+
     /// Custom system prompt for post-processing.
     @Published public var systemPrompt: String {
         didSet { UserDefaults.standard.set(systemPrompt, forKey: Keys.systemPrompt) }
     }
-    
+
     /// User-created prompts for post-processing.
     @Published public var userPrompts: [PostProcessingPrompt] {
         didSet { save(userPrompts, forKey: Keys.userPrompts) }
     }
-    
+
     /// Currently selected prompt ID for post-processing.
     @Published public var selectedPromptId: UUID? {
         didSet {
@@ -244,78 +138,77 @@ public class AppSettingsStore: ObservableObject {
             }
         }
     }
-    
+
     /// Whether post-processing is enabled.
     @Published public var postProcessingEnabled: Bool {
-        didSet { UserDefaults.standard.set(postProcessingEnabled, forKey: Keys.postProcessingEnabled) }
+        didSet {
+            UserDefaults.standard.set(postProcessingEnabled, forKey: Keys.postProcessingEnabled)
+        }
     }
-    
+
     /// All available prompts (predefined + user-created).
     public var allPrompts: [PostProcessingPrompt] {
         PostProcessingPrompt.allPredefined + userPrompts
     }
-    
+
     /// Currently selected prompt.
     public var selectedPrompt: PostProcessingPrompt? {
         guard let id = selectedPromptId else { return nil }
         return allPrompts.first { $0.id == id }
     }
-    
+
     // MARK: - Initialization
-    
+
     private init() {
-        // Load keyboard shortcut
-        if let data = UserDefaults.standard.data(forKey: Keys.keyboardShortcut),
-           let shortcut = try? JSONDecoder().decode(KeyboardShortcut.self, from: data) {
-            self.keyboardShortcut = shortcut
-        } else {
-            self.keyboardShortcut = .default
-        }
-        
+
         // Load AI configuration
         if let data = UserDefaults.standard.data(forKey: Keys.aiConfiguration),
-           let config = try? JSONDecoder().decode(AIConfiguration.self, from: data) {
+            let config = try? JSONDecoder().decode(AIConfiguration.self, from: data)
+        {
             self.aiConfiguration = config
         } else {
             self.aiConfiguration = .default
         }
-        
+
         // Load AI enabled state
         self.aiEnabled = UserDefaults.standard.bool(forKey: Keys.aiEnabled)
-        
+
         // Load post-processing settings
-        self.systemPrompt = UserDefaults.standard.string(forKey: Keys.systemPrompt)
+        self.systemPrompt =
+            UserDefaults.standard.string(forKey: Keys.systemPrompt)
             ?? AIPromptTemplates.defaultSystemPrompt
-        
+
         if let data = UserDefaults.standard.data(forKey: Keys.userPrompts),
-           let prompts = try? JSONDecoder().decode([PostProcessingPrompt].self, from: data) {
+            let prompts = try? JSONDecoder().decode([PostProcessingPrompt].self, from: data)
+        {
             self.userPrompts = prompts
         } else {
             self.userPrompts = []
         }
-        
+
         if let idString = UserDefaults.standard.string(forKey: Keys.selectedPromptId),
-           let id = UUID(uuidString: idString) {
+            let id = UUID(uuidString: idString)
+        {
             self.selectedPromptId = id
         } else {
             self.selectedPromptId = nil
         }
-        
+
         self.postProcessingEnabled = UserDefaults.standard.bool(forKey: Keys.postProcessingEnabled)
     }
-    
+
     // MARK: - Private Helpers
-    
+
     /// Encodes and saves a Codable value to UserDefaults.
     private func save<T: Encodable>(_ value: T, forKey key: String) {
         if let data = try? JSONEncoder().encode(value) {
             UserDefaults.standard.set(data, forKey: key)
         }
     }
-    
+
     /// Reset all settings to defaults.
     public func resetToDefaults() {
-        keyboardShortcut = .default
+
         aiConfiguration = .default
         aiEnabled = false
         systemPrompt = AIPromptTemplates.defaultSystemPrompt
@@ -323,22 +216,22 @@ public class AppSettingsStore: ObservableObject {
         selectedPromptId = nil
         postProcessingEnabled = false
     }
-    
+
     // MARK: - Prompt Management
-    
+
     /// Adds a new user prompt.
     /// - Parameter prompt: The prompt to add.
     public func addPrompt(_ prompt: PostProcessingPrompt) {
         userPrompts.append(prompt)
     }
-    
+
     /// Updates an existing user prompt.
     /// - Parameter prompt: The prompt with updated values.
     public func updatePrompt(_ prompt: PostProcessingPrompt) {
         guard let index = userPrompts.firstIndex(where: { $0.id == prompt.id }) else { return }
         userPrompts[index] = prompt
     }
-    
+
     /// Deletes a user prompt by ID.
     /// - Parameter id: The ID of the prompt to delete.
     public func deletePrompt(id: UUID) {
@@ -347,7 +240,7 @@ public class AppSettingsStore: ObservableObject {
             selectedPromptId = nil
         }
     }
-    
+
     /// Resets the system prompt to default.
     public func resetSystemPrompt() {
         systemPrompt = AIPromptTemplates.defaultSystemPrompt
