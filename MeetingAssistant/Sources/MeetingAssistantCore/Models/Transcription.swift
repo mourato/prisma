@@ -1,7 +1,7 @@
 import Foundation
 
 /// Represents a completed transcription.
-public struct Transcription: Identifiable, Codable, Hashable {
+public struct Transcription: Identifiable, Codable, Hashable, Sendable {
     public let id: UUID
     public let meeting: Meeting
     

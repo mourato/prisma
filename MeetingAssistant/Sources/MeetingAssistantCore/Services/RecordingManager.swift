@@ -34,6 +34,7 @@ public class RecordingManager: ObservableObject {
     private let meetingDetector: MeetingDetector
     private let transcriptionClient: any TranscriptionService
     private let postProcessingService: any PostProcessingServiceProtocol
+    private let storage: any StorageService
     
     private var cancellables = Set<AnyCancellable>()
     private var statusCheckTask: Task<Void, Never>?
@@ -62,7 +63,8 @@ public class RecordingManager: ObservableObject {
         transcriptionClient: any TranscriptionService = TranscriptionClient.shared,
         postProcessingService: any PostProcessingServiceProtocol = PostProcessingService.shared,
         audioMerger: AudioMerger = AudioMerger(),
-        meetingDetector: MeetingDetector = MeetingDetector.shared
+        meetingDetector: MeetingDetector = MeetingDetector.shared,
+        storage: any StorageService = FileSystemStorageService.shared
     ) {
         self.micRecorder = micRecorder
         self.systemRecorder = systemRecorder
@@ -70,6 +72,7 @@ public class RecordingManager: ObservableObject {
         self.postProcessingService = postProcessingService
         self.audioMerger = audioMerger
         self.meetingDetector = meetingDetector
+        self.storage = storage
         
         setupBindings()
         requestNotificationAuthorization()
@@ -134,14 +137,10 @@ public class RecordingManager: ObservableObject {
             let meeting = Meeting(app: app)
             currentMeeting = meeting
             
-            // Generate output file paths
-            let baseFilename = generateFilename(for: meeting)
-            let micFilename = baseFilename.replacingOccurrences(of: ".m4a", with: "_mic.wav")
-            let sysFilename = baseFilename.replacingOccurrences(of: ".m4a", with: "_sys.wav")
-            
-            micAudioURL = recordingsDirectory.appendingPathComponent(micFilename)
-            systemAudioURL = recordingsDirectory.appendingPathComponent(sysFilename)
-            mergedAudioURL = recordingsDirectory.appendingPathComponent(baseFilename)
+            // Generate output file paths using StorageService
+            micAudioURL = storage.createRecordingURL(for: meeting, type: .microphone)
+            systemAudioURL = storage.createRecordingURL(for: meeting, type: .system)
+            mergedAudioURL = storage.createRecordingURL(for: meeting, type: .merged)
             
             // Start microphone recording
             try await micRecorder.startRecording(to: micAudioURL!, retryCount: 0)
@@ -241,21 +240,13 @@ public class RecordingManager: ObservableObject {
             .assign(to: &$isRecording)
     }
     
-    private func generateFilename(for meeting: Meeting) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
-        let timestamp = formatter.string(from: meeting.startTime)
-        return "\(meeting.app.rawValue)_\(timestamp).m4a"
-    }
-    
     private func cleanupTemporaryFiles() {
-        // Remove individual mic and system audio files after merge
-        if let micURL = micAudioURL {
-            try? FileManager.default.removeItem(at: micURL)
-        }
-        if let sysURL = systemAudioURL {
-            try? FileManager.default.removeItem(at: sysURL)
-        }
+        var urlsToDelete: [URL] = []
+        if let micURL = micAudioURL { urlsToDelete.append(micURL) }
+        if let sysURL = systemAudioURL { urlsToDelete.append(sysURL) }
+        
+        storage.cleanupTemporaryFiles(urls: urlsToDelete)
+        
         micAudioURL = nil
         systemAudioURL = nil
     }
@@ -278,7 +269,7 @@ public class RecordingManager: ObservableObject {
             let response = try await performTranscription(audioURL: audioURL)
             let (processedContent, promptId, promptTitle) = await applyPostProcessing(rawText: response.text)
             
-            let transcription = createAndSaveTranscription(
+            let transcription = try await createAndSaveTranscription(
                 meeting: meeting,
                 response: response,
                 processedContent: processedContent,
@@ -341,7 +332,7 @@ public class RecordingManager: ObservableObject {
         processedContent: String?,
         promptId: UUID?,
         promptTitle: String?
-    ) -> Transcription {
+    ) async throws -> Transcription {
         let transcription = Transcription(
             meeting: meeting,
             text: processedContent ?? response.text,
@@ -354,9 +345,9 @@ public class RecordingManager: ObservableObject {
         )
         
         let logMessageSuffix = transcription.isPostProcessed ? "(post-processed with '\(promptTitle ?? "unknown")')" : "(raw)"
-        logger.info("Transcription saved: \(transcription.wordCount) words \(logMessageSuffix)")
+        logger.info("Transcription created: \(transcription.wordCount) words \(logMessageSuffix)")
         
-        // TODO: Save to permanent storage
+        try await storage.saveTranscription(transcription)
         return transcription
     }
     

@@ -9,6 +9,7 @@ final class RecordingManagerTests: XCTestCase {
     var mockSystem: MockAudioRecorder!
     var mockTranscription: MockTranscriptionClient!
     var mockPostProcessing: MockPostProcessingService!
+    var mockStorage: MockStorageService!
     
     override func setUp() async throws {
         try await super.setUp()
@@ -16,12 +17,14 @@ final class RecordingManagerTests: XCTestCase {
         mockSystem = MockAudioRecorder()
         mockTranscription = MockTranscriptionClient()
         mockPostProcessing = MockPostProcessingService()
+        mockStorage = MockStorageService()
         
         manager = RecordingManager(
             micRecorder: mockMic,
             systemRecorder: mockSystem,
             transcriptionClient: mockTranscription,
-            postProcessingService: mockPostProcessing
+            postProcessingService: mockPostProcessing,
+            storage: mockStorage
         )
     }
     
@@ -31,13 +34,21 @@ final class RecordingManagerTests: XCTestCase {
         mockSystem = nil
         mockTranscription = nil
         mockPostProcessing = nil
+        mockStorage = nil
         try await super.tearDown()
     }
     
     func testInitialization() {
+        XCTAssertNotNil(manager)
         XCTAssertFalse(manager.isRecording)
-        XCTAssertFalse(manager.hasRequiredPermissions)
+        XCTAssertFalse(manager.isTranscribing)
     }
+    
+    func testStorageServiceUsage() async {
+        await manager.startRecording()
+        XCTAssertTrue(mockStorage.createRecordingURLCalled)
+    }
+
     
     func testCheckPermissions_WhenBothGranted() async {
         mockMic.permissionGranted = true
