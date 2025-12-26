@@ -137,6 +137,8 @@ public struct MenuBarView: View {
                 .buttonStyle(.borderedProminent)
             }
 
+            TranscribeFileButton(viewModel: self.viewModel)
+
             Button(action: { self.showingTranscriptions.toggle() }) {
                 Label("Transcrições", systemImage: "doc.text")
             }
