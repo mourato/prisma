@@ -179,15 +179,37 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem?.menu = nil  // Reset so left-click works again
     }
     
+    private lazy var settingsWindow: NSWindow = {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 500, height: 400),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.center()
+        window.title = "Configurações"
+        window.contentView = NSHostingView(rootView: SettingsView())
+        window.isReleasedWhenClosed = false
+        return window
+    }()
+    
     // MARK: - Menu Actions
     
-    @objc private func openSettings() {
+    @objc func openSettings() {
         // Close popover first
         popover?.performClose(nil)
         
         // Open settings window
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        if !settingsWindow.isVisible {
+            settingsWindow.center()
+        }
+        settingsWindow.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+    }
+    
+    /// Handle the standard showSettingsWindow: action
+    @objc func showSettingsWindow(_ sender: Any?) {
+        openSettings()
     }
     
     @objc private func showAbout() {
