@@ -240,120 +240,128 @@ public class RecordingManager: ObservableObject {
         systemAudioURL = nil
     }
     
+    private enum Constants {
+        static let processingProgress: Double = 10.0
+        static let postProcessingProgress: Double = 90.0
+        static let aiProcessingProgress: Double = 92.0
+        static let statusResetDelay: Int = 3
+    }
+    
     private func transcribeRecording(audioURL: URL, meeting: Meeting) async {
         isTranscribing = true
-        
-        // Get audio duration for progress estimation
         let audioDuration = getAudioDuration(from: audioURL)
         transcriptionStatus.beginTranscription(audioDuration: audioDuration)
         
         do {
-            // Check service health
-            transcriptionStatus.updateProgress(phase: .preparing)
+            try await performHealthCheck()
             
-            let isHealthy = try await transcriptionClient.healthCheck()
-            guard isHealthy else {
-                throw TranscriptionError.serviceUnavailable
-            }
+            let response = try await performTranscription(audioURL: audioURL)
+            let (processedContent, promptId, promptTitle) = await applyPostProcessing(rawText: response.text)
             
-            // Update status to processing
-            transcriptionStatus.updateProgress(phase: .processing, percentage: 10)
-            
-            // Transcribe
-            let response = try await transcriptionClient.transcribe(audioURL: audioURL)
-            
-            // Post-processing phase
-            transcriptionStatus.updateProgress(phase: .postProcessing, percentage: 90)
-            
-            // Apply AI post-processing if enabled
-            let rawText = response.text
-            var processedContent: String? = nil
-            var promptId: UUID? = nil
-            var promptTitle: String? = nil
-            
-            let settings = AppSettingsStore.shared
-            if settings.postProcessingEnabled,
-               settings.aiConfiguration.isValid,
-               let prompt = settings.selectedPrompt {
-                
-                transcriptionStatus.updateProgress(
-                    phase: .postProcessing,
-                    percentage: 92
-                )
-                
-                do {
-                    processedContent = try await PostProcessingService.shared.processTranscription(
-                        rawText,
-                        with: prompt
-                    )
-                    promptId = prompt.id
-                    promptTitle = prompt.title
-                    logger.info("Post-processing complete using prompt: \(prompt.title)")
-                } catch {
-                    // Silent fallback - log warning but continue with raw text
-                    logger.warning("Post-processing failed, using raw transcription: \(error.localizedDescription)")
-                }
-            }
-            
-            // Create transcription record
-            let transcription = Transcription(
+            let transcription = createAndSaveTranscription(
                 meeting: meeting,
-                text: processedContent ?? rawText,
-                rawText: rawText,
+                response: response,
                 processedContent: processedContent,
-                postProcessingPromptId: promptId,
-                postProcessingPromptTitle: promptTitle,
-                language: response.language,
-                modelName: response.model
+                promptId: promptId,
+                promptTitle: promptTitle
             )
             
-            // TODO: Save transcription to storage
-            if transcription.isPostProcessed {
-                logger.info("Transcription saved: \(transcription.wordCount) words (post-processed with '\(promptTitle ?? "unknown")')")
-            } else {
-                logger.info("Transcription saved: \(transcription.wordCount) words (raw)")
-            }
-            
-            // Mark as completed
             transcriptionStatus.completeTranscription(success: true)
-            
-            // Notify user with appropriate message
-            let notificationBody: String
-            if transcription.isPostProcessed {
-                notificationBody = "\(meeting.appName): \(transcription.wordCount) palavras (\(promptTitle ?? "processado"))"
-            } else {
-                notificationBody = "\(meeting.appName): \(transcription.wordCount) palavras transcritas"
-            }
-            
-            sendNotification(
-                title: "Transcrição Concluída",
-                body: notificationBody
-            )
-            
-            // Reset to idle after short delay
-            Task { @MainActor in
-                try? await Task.sleep(for: .seconds(3))
-                transcriptionStatus.resetToIdle()
-            }
+            notifySuccess(for: transcription)
+            scheduleStatusReset()
             
         } catch {
-            logger.error("Transcription failed: \(error.localizedDescription)")
-            lastError = error
-            
-            // Record error in status
-            transcriptionStatus.recordError(
-                .transcriptionFailed(error.localizedDescription)
-            )
-            transcriptionStatus.completeTranscription(success: false)
-            
-            sendNotification(
-                title: "Falha na Transcrição",
-                body: error.localizedDescription
-            )
+            handleTranscriptionError(error)
         }
         
         isTranscribing = false
         currentMeeting = nil
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func performHealthCheck() async throws {
+        transcriptionStatus.updateProgress(phase: .preparing)
+        let isHealthy = try await transcriptionClient.healthCheck()
+        guard isHealthy else {
+            throw TranscriptionError.serviceUnavailable
+        }
+    }
+    
+    private func performTranscription(audioURL: URL) async throws -> TranscriptionResponse {
+        transcriptionStatus.updateProgress(phase: .processing, percentage: Constants.processingProgress)
+        return try await transcriptionClient.transcribe(audioURL: audioURL)
+    }
+    
+    private func applyPostProcessing(rawText: String) async -> (String?, UUID?, String?) {
+        transcriptionStatus.updateProgress(phase: .postProcessing, percentage: Constants.postProcessingProgress)
+        
+        let settings = AppSettingsStore.shared
+        guard settings.postProcessingEnabled,
+              settings.aiConfiguration.isValid,
+              let prompt = settings.selectedPrompt else {
+            return (nil, nil, nil)
+        }
+        
+        transcriptionStatus.updateProgress(phase: .postProcessing, percentage: Constants.aiProcessingProgress)
+        
+        do {
+            let processed = try await PostProcessingService.shared.processTranscription(rawText, with: prompt)
+            logger.info("Post-processing complete using prompt: \(prompt.title)")
+            return (processed, prompt.id, prompt.title)
+        } catch {
+            logger.warning("Post-processing failed, using raw transcription: \(error.localizedDescription)")
+            return (nil, nil, nil)
+        }
+    }
+    
+    private func createAndSaveTranscription(
+        meeting: Meeting,
+        response: TranscriptionResponse,
+        processedContent: String?,
+        promptId: UUID?,
+        promptTitle: String?
+    ) -> Transcription {
+        let transcription = Transcription(
+            meeting: meeting,
+            text: processedContent ?? response.text,
+            rawText: response.text,
+            processedContent: processedContent,
+            postProcessingPromptId: promptId,
+            postProcessingPromptTitle: promptTitle,
+            language: response.language,
+            modelName: response.model
+        )
+        
+        let logMessageSuffix = transcription.isPostProcessed ? "(post-processed with '\(promptTitle ?? "unknown")')" : "(raw)"
+        logger.info("Transcription saved: \(transcription.wordCount) words \(logMessageSuffix)")
+        
+        // TODO: Save to permanent storage
+        return transcription
+    }
+    
+    private func notifySuccess(for transcription: Transcription) {
+        let suffix = transcription.isPostProcessed ? "(\(transcription.postProcessingPromptTitle ?? "processado"))" : "transcritas"
+        let body = "\(transcription.meeting.appName): \(transcription.wordCount) palavras \(suffix)"
+        
+        sendNotification(title: "Transcrição Concluída", body: body)
+    }
+    
+    private func handleTranscriptionError(_ error: Error) {
+        logger.error("Transcription failed: \(error.localizedDescription)")
+        lastError = error
+        
+        transcriptionStatus.recordError(.transcriptionFailed(error.localizedDescription))
+        transcriptionStatus.completeTranscription(success: false)
+        
+        sendNotification(title: "Falha na Transcrição", body: error.localizedDescription)
+    }
+    
+    private func scheduleStatusReset() {
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(Constants.statusResetDelay))
+            transcriptionStatus.resetToIdle()
+        }
     }
     
     /// Get audio duration from file for progress estimation.
