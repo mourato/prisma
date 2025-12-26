@@ -17,6 +17,7 @@ struct MeetingAssistantApp: App {
                     NavigationService.shared.register(openWindow: self.openWindow)
                 }
         }
+        .handlesExternalEvents(matching: Set(["settings"]))
         .windowResizability(.contentSize)
         .commands {
             CommandGroup(replacing: .appSettings) {
