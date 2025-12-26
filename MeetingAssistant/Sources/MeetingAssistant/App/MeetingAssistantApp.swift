@@ -229,11 +229,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let alert = NSAlert()
         alert.messageText = "Meeting Assistant"
         alert.informativeText = """
-            Versão 1.0.0
+            Versão 0.1.1
             
             Transcreva suas reuniões de vídeo automaticamente usando IA.
             
-            © 2024 Todos os direitos reservados.
+            © 2025 Todos os direitos reservados.
             """
         alert.alertStyle = .informational
         alert.icon = NSImage(systemSymbolName: "waveform.circle.fill", accessibilityDescription: "Meeting Assistant")
