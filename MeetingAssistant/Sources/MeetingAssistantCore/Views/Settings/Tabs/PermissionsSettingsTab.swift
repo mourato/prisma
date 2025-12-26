@@ -9,13 +9,13 @@ public struct PermissionsSettingsTab: View {
     public var body: some View {
         ScrollView {
             VStack(spacing: SettingsDesignSystem.Layout.sectionSpacing) {
-                SettingsGroup(NSLocalizedString("settings.permissions.about", comment: ""), icon: "info.circle") {
-                    Text(NSLocalizedString("settings.permissions.description", comment: ""))
+                SettingsGroup(NSLocalizedString("settings.permissions.about", bundle: .module, comment: ""), icon: "info.circle") {
+                    Text(NSLocalizedString("settings.permissions.description", bundle: .module, comment: ""))
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
 
-                SettingsGroup(NSLocalizedString("settings.permissions.status", comment: ""), icon: "checkmark.shield") {
+                SettingsGroup(NSLocalizedString("settings.permissions.status", bundle: .module, comment: ""), icon: "checkmark.shield") {
                     let viewModel = PermissionViewModel(
                         manager: RecordingManager.shared.permissionStatus,
                         requestMicrophone: { await RecordingManager.shared.requestPermission() },
