@@ -230,6 +230,40 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         }
     }
 
+    /// Transcribe an externally recorded audio file.
+    /// - Parameter audioURL: Path to the audio file (m4a, mp3, wav).
+    public func transcribeExternalAudio(from audioURL: URL) async {
+        guard !self.isTranscribing else {
+            self.logger.warning("Already transcribing")
+            return
+        }
+
+        // Validate file exists
+        guard FileManager.default.fileExists(atPath: audioURL.path) else {
+            self.logger.error("Audio file not found: \(audioURL.path)")
+            self.lastError = AudioImportError.fileNotFound
+            return
+        }
+
+        // Validate file extension
+        let validExtensions = ["m4a", "mp3", "wav"]
+        guard validExtensions.contains(audioURL.pathExtension.lowercased()) else {
+            self.logger.error("Unsupported audio format: \(audioURL.pathExtension)")
+            self.lastError = AudioImportError.unsupportedFormat
+            return
+        }
+
+        // Create meeting record for imported file
+        let meeting = Meeting(
+            app: .importedFile,
+            audioFilePath: audioURL.path
+        )
+        self.currentMeeting = meeting
+
+        self.logger.info("Starting transcription for imported file: \(audioURL.lastPathComponent)")
+        await self.transcribeRecording(audioURL: audioURL, meeting: meeting)
+    }
+
     /// Enable automatic recording when meetings are detected.
     func enableAutoRecording() {
         self.meetingDetector.startMonitoring()
@@ -468,6 +502,20 @@ public enum RecordingManagerError: LocalizedError {
             "No output path specified for merged audio"
         case let .mergeFailed(error):
             "Audio merge failed: \(error.localizedDescription)"
+        }
+    }
+}
+
+public enum AudioImportError: LocalizedError {
+    case fileNotFound
+    case unsupportedFormat
+
+    public var errorDescription: String? {
+        switch self {
+        case .fileNotFound:
+            "Audio file not found"
+        case .unsupportedFormat:
+            "Unsupported audio format. Supported formats: m4a, mp3, wav"
         }
     }
 }

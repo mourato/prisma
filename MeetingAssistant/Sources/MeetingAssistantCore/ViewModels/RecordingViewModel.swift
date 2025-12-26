@@ -80,6 +80,12 @@ public class RecordingViewModel: ObservableObject {
         self.recordingManager.openPermissionSettings()
     }
 
+    /// Import and transcribe an external audio file.
+    /// - Parameter url: Path to the audio file (m4a, mp3, wav).
+    public func transcribeFile(at url: URL) async {
+        await self.recordingManager.transcribeExternalAudio(from: url)
+    }
+
     // MARK: - Private Methods
 
     private func setupBindings() {
