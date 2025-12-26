@@ -159,14 +159,21 @@ class FluidAIModelManager: ObservableObject {
     }
 
     private func convertTo16kHz(buffer: AVAudioPCMBuffer) throws -> AVAudioPCMBuffer {
-        let targetFormat = AVAudioFormat(
-            commonFormat: .pcmFormatFloat32, sampleRate: 16000, channels: 1, interleaved: false)!
+        guard
+            let targetFormat = AVAudioFormat(
+                commonFormat: .pcmFormatFloat32, sampleRate: 16000, channels: 1, interleaved: false)
+        else {
+            throw FluidError.conversionFailed
+        }
 
         if buffer.format.sampleRate == 16000 && buffer.format.channelCount == 1 {
             return buffer
         }
 
-        let converter = AVAudioConverter(from: buffer.format, to: targetFormat)!
+        guard let converter = AVAudioConverter(from: buffer.format, to: targetFormat) else {
+            throw FluidError.conversionFailed
+        }
+
         let targetFrameCapacity = AVAudioFrameCount(
             Double(buffer.frameLength) * targetFormat.sampleRate / buffer.format.sampleRate)
 
