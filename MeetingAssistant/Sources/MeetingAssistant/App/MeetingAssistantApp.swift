@@ -8,16 +8,24 @@ import SwiftUI
 struct MeetingAssistantApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
+    @Environment(\.openWindow) private var openWindow
+
     var body: some Scene {
-        WindowGroup {
-            EmptyView()
-                .frame(width: 0, height: 0)
-                .hidden()
+        WindowGroup("Configurações", id: "settings") {
+            SettingsView()
+                .onAppear {
+                    NavigationService.shared.openWindow = self.openWindow
+                }
         }
         .windowResizability(.contentSize)
-
-        Settings {
-            SettingsView()
+        .commands {
+            CommandGroup(replacing: .appSettings) {
+                Button("Configurações...") {
+                    self.openWindow(id: "settings")
+                    NSApp.activate(ignoringOtherApps: true)
+                }
+                .keyboardShortcut(",", modifiers: .command)
+            }
         }
     }
 }
@@ -189,12 +197,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Menu Actions
 
     @objc private func openSettings() {
-        NSApp.activate(ignoringOtherApps: true)
-        if #available(macOS 13.0, *) {
-            NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-        } else {
-            NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
-        }
+        NavigationService.shared.openSettings()
     }
 
     @objc private func showAbout() {
