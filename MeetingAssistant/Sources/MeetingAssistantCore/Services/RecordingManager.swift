@@ -5,21 +5,21 @@ import UserNotifications
 
 /// Central manager coordinating recording, meeting detection, and transcription.
 @MainActor
-class RecordingManager: ObservableObject {
-    static let shared = RecordingManager()
+public class RecordingManager: ObservableObject {
+    public static let shared = RecordingManager()
     
     private let logger = Logger(subsystem: "MeetingAssistant", category: "RecordingManager")
     
     // MARK: - Published State
     
-    @Published private(set) var isRecording = false
-    @Published private(set) var isTranscribing = false
-    @Published private(set) var currentMeeting: Meeting?
-    @Published private(set) var lastError: Error?
-    @Published private(set) var hasRequiredPermissions = false
+    @Published public private(set) var isRecording = false
+    @Published public private(set) var isTranscribing = false
+    @Published public private(set) var currentMeeting: Meeting?
+    @Published public private(set) var lastError: Error?
+    @Published public private(set) var hasRequiredPermissions = false
     
     /// Detailed transcription service status for UI feedback.
-    let transcriptionStatus = TranscriptionStatus()
+    public let transcriptionStatus = TranscriptionStatus()
     
     // MARK: - Services
     
@@ -55,30 +55,30 @@ class RecordingManager: ObservableObject {
     // MARK: - Permission Handling
     
     /// Check and update permission status (Screen Recording + Microphone).
-    func checkPermission() async {
+    public func checkPermission() async {
         hasRequiredPermissions = await audioRecorder.hasPermission()
     }
     
     /// Request permissions (Screen Recording + Microphone).
-    func requestPermission() async {
+    public func requestPermission() async {
         await audioRecorder.requestPermission()
         await checkPermission()
     }
     
     /// Open System Preferences to Screen Recording settings.
-    func openPermissionSettings() {
+    public func openPermissionSettings() {
         audioRecorder.openScreenRecordingSettings()
     }
     
     /// Open System Preferences to Microphone settings.
-    func openMicrophoneSettings() {
+    public func openMicrophoneSettings() {
         audioRecorder.openMicrophoneSettings()
     }
     
     // MARK: - Public API
     
     /// Start recording audio for a meeting.
-    func startRecording() async {
+    public func startRecording() async {
         guard !isRecording else {
             logger.warning("Already recording")
             return
@@ -112,7 +112,7 @@ class RecordingManager: ObservableObject {
     }
     
     /// Stop recording and optionally transcribe.
-    func stopRecording(transcribe: Bool = true) async {
+    public func stopRecording(transcribe: Bool = true) async {
         guard isRecording else {
             logger.warning("Not recording")
             return

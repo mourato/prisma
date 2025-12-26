@@ -1,4 +1,5 @@
 import SwiftUI
+import MeetingAssistantCore
 
 /// Main entry point for the Meeting Assistant app.
 /// Runs as a menu bar application without a dock icon.

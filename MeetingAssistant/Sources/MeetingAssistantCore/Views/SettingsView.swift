@@ -2,12 +2,16 @@ import SwiftUI
 
 /// Settings view for app configuration.
 /// Organized into tabs: General, Shortcuts, AI Post-Processing, and Service.
-struct SettingsView: View {
+/// Settings view for app configuration.
+/// Organized into tabs: General, Shortcuts, AI Post-Processing, and Service.
+public struct SettingsView: View {
     @AppStorage("autoStartRecording") private var autoStartRecording = true
 
     @AppStorage("recordingsDirectory") private var recordingsPath = ""
     
-    var body: some View {
+    public init() {}
+    
+    public var body: some View {
         TabView {
             generalSettings
                 .tabItem {

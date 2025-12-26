@@ -4,12 +4,17 @@ import Carbon.HIToolbox
 // MARK: - Keyboard Shortcut Model
 
 /// Represents a keyboard shortcut with modifiers and key code.
-struct KeyboardShortcut: Codable, Equatable {
-    var keyCode: UInt32
-    var modifiers: UInt32
+public struct KeyboardShortcut: Codable, Equatable, Sendable {
+    public var keyCode: UInt32
+    public var modifiers: UInt32
+
+    public init(keyCode: UInt32, modifiers: UInt32) {
+        self.keyCode = keyCode
+        self.modifiers = modifiers
+    }
     
     /// Human-readable display string for the shortcut.
-    var displayString: String {
+    public var displayString: String {
         var parts: [String] = []
         
         // Modifier keys
@@ -27,7 +32,7 @@ struct KeyboardShortcut: Codable, Equatable {
     }
     
     /// Default shortcut: Cmd + Shift + R
-    static let `default` = KeyboardShortcut(
+    public static let `default` = KeyboardShortcut(
         keyCode: UInt32(kVK_ANSI_R),
         modifiers: UInt32(cmdKey | shiftKey)
     )
@@ -100,13 +105,13 @@ struct KeyboardShortcut: Codable, Equatable {
 // MARK: - AI Provider Configuration
 
 /// Supported AI providers for post-processing transcriptions.
-enum AIProvider: String, CaseIterable, Codable {
+public enum AIProvider: String, CaseIterable, Codable, Sendable {
     case openai = "openai"
     case anthropic = "anthropic"
     case groq = "groq"
     case custom = "custom"
     
-    var displayName: String {
+    public var displayName: String {
         switch self {
         case .openai: return "OpenAI"
         case .anthropic: return "Anthropic"
@@ -115,7 +120,7 @@ enum AIProvider: String, CaseIterable, Codable {
         }
     }
     
-    var defaultBaseURL: String {
+    public var defaultBaseURL: String {
         switch self {
         case .openai: return "https://api.openai.com/v1"
         case .anthropic: return "https://api.anthropic.com/v1"
@@ -124,7 +129,7 @@ enum AIProvider: String, CaseIterable, Codable {
         }
     }
     
-    var icon: String {
+    public var icon: String {
         switch self {
         case .openai: return "brain"
         case .anthropic: return "sparkles"
@@ -136,10 +141,10 @@ enum AIProvider: String, CaseIterable, Codable {
 
 /// Configuration for AI model post-processing.
 /// NOTE: API key is stored securely in Keychain, not in this struct.
-struct AIConfiguration: Codable, Equatable {
-    var provider: AIProvider
-    var baseURL: String
-    var selectedModel: String
+public struct AIConfiguration: Codable, Equatable, Sendable {
+    public var provider: AIProvider
+    public var baseURL: String
+    public var selectedModel: String
     
     // NOTE: apiKey is NOT stored here - it's in Keychain.
     // This field exists only for Codable compatibility and migration.
@@ -151,8 +156,14 @@ struct AIConfiguration: Codable, Equatable {
         case _legacyApiKey = "apiKey"  // For migration from old format
     }
     
+    public init(provider: AIProvider, baseURL: String, selectedModel: String) {
+        self.provider = provider
+        self.baseURL = baseURL
+        self.selectedModel = selectedModel
+    }
+    
     /// Default configuration with empty values.
-    static let `default` = AIConfiguration(
+    public static let `default` = AIConfiguration(
         provider: .openai,
         baseURL: AIProvider.openai.defaultBaseURL,
         selectedModel: ""
@@ -160,7 +171,7 @@ struct AIConfiguration: Codable, Equatable {
     
     /// Check if configuration is valid for making API calls.
     /// Checks Keychain for API key presence.
-    var isValid: Bool {
+    public var isValid: Bool {
         let hasApiKey = KeychainManager.exists(for: .aiAPIKey)
         return hasApiKey && !baseURL.isEmpty
     }
@@ -182,8 +193,8 @@ struct AIConfiguration: Codable, Equatable {
 
 /// Centralized settings manager using UserDefaults.
 @MainActor
-class AppSettingsStore: ObservableObject {
-    static let shared = AppSettingsStore()
+public class AppSettingsStore: ObservableObject {
+    public static let shared = AppSettingsStore()
     
     // MARK: - Keys
     
@@ -195,15 +206,15 @@ class AppSettingsStore: ObservableObject {
     
     // MARK: - Published Properties
     
-    @Published var keyboardShortcut: KeyboardShortcut {
+    @Published public var keyboardShortcut: KeyboardShortcut {
         didSet { save(keyboardShortcut, forKey: Keys.keyboardShortcut) }
     }
     
-    @Published var aiConfiguration: AIConfiguration {
+    @Published public var aiConfiguration: AIConfiguration {
         didSet { save(aiConfiguration, forKey: Keys.aiConfiguration) }
     }
     
-    @Published var aiEnabled: Bool {
+    @Published public var aiEnabled: Bool {
         didSet { UserDefaults.standard.set(aiEnabled, forKey: Keys.aiEnabled) }
     }
     
@@ -240,7 +251,7 @@ class AppSettingsStore: ObservableObject {
     }
     
     /// Reset all settings to defaults.
-    func resetToDefaults() {
+    public func resetToDefaults() {
         keyboardShortcut = .default
         aiConfiguration = .default
         aiEnabled = false

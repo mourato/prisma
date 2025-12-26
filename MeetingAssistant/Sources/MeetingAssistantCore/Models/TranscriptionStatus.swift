@@ -1,7 +1,8 @@
 import Foundation
 
 /// Represents the current state of the transcription service.
-enum ServiceState: String, Codable, Equatable {
+/// Represents the current state of the transcription service.
+public enum ServiceState: String, Codable, Equatable {
     case unknown = "unknown"
     case connecting = "connecting"
     case connected = "connected"
@@ -10,7 +11,8 @@ enum ServiceState: String, Codable, Equatable {
 }
 
 /// Represents the model loading state.
-enum ModelState: String, Codable, Equatable {
+/// Represents the model loading state.
+public enum ModelState: String, Codable, Equatable {
     case unloaded = "unloaded"
     case downloading = "downloading"
     case loading = "loading"
@@ -19,7 +21,8 @@ enum ModelState: String, Codable, Equatable {
 }
 
 /// Represents the transcription processing phase.
-enum TranscriptionPhase: String, Codable, Equatable {
+/// Represents the transcription processing phase.
+public enum TranscriptionPhase: String, Codable, Equatable {
     case idle = "idle"
     case preparing = "preparing"
     case processing = "processing"
@@ -31,35 +34,37 @@ enum TranscriptionPhase: String, Codable, Equatable {
 /// Comprehensive status of the transcription system.
 /// Tracks model, service, and transcription state for UI feedback.
 @MainActor
-class TranscriptionStatus: ObservableObject {
+public class TranscriptionStatus: ObservableObject {
     // MARK: - Service State
     
-    @Published private(set) var serviceState: ServiceState = .unknown
-    @Published private(set) var modelState: ModelState = .unloaded
-    @Published private(set) var device: String = "unknown"
+    @Published public private(set) var serviceState: ServiceState = .unknown
+    @Published public private(set) var modelState: ModelState = .unloaded
+    @Published public private(set) var device: String = "unknown"
     
     // MARK: - Transcription Progress
     
-    @Published private(set) var phase: TranscriptionPhase = .idle
-    @Published private(set) var progressPercentage: Double = 0.0
-    @Published private(set) var estimatedTimeRemaining: TimeInterval?
-    @Published private(set) var audioDurationSeconds: Double?
-    @Published private(set) var processedDurationSeconds: Double = 0.0
+    @Published public private(set) var phase: TranscriptionPhase = .idle
+    @Published public private(set) var progressPercentage: Double = 0.0
+    @Published public private(set) var estimatedTimeRemaining: TimeInterval?
+    @Published public private(set) var audioDurationSeconds: Double?
+    @Published public private(set) var processedDurationSeconds: Double = 0.0
     
     // MARK: - Error Tracking
     
-    @Published private(set) var lastError: TranscriptionStatusError?
-    @Published private(set) var lastErrorTime: Date?
+    @Published public private(set) var lastError: TranscriptionStatusError?
+    @Published public private(set) var lastErrorTime: Date?
     
     // MARK: - Timing
     
-    @Published private(set) var transcriptionStartTime: Date?
-    @Published private(set) var lastHealthCheck: Date?
+    @Published public private(set) var transcriptionStartTime: Date?
+    @Published public private(set) var lastHealthCheck: Date?
+    
+    public init() {}
     
     // MARK: - Computed Properties
     
     /// Returns user-friendly status message.
-    var statusMessage: String {
+    public var statusMessage: String {
         switch (serviceState, modelState, phase) {
         case (.disconnected, _, _):
             return "Serviço desconectado"
@@ -103,17 +108,17 @@ class TranscriptionStatus: ObservableObject {
     }
     
     /// Whether system is ready for transcription.
-    var isReady: Bool {
+    public var isReady: Bool {
         serviceState == .connected && modelState == .loaded && phase == .idle
     }
     
     /// Whether transcription is currently in progress.
-    var isProcessing: Bool {
+    public var isProcessing: Bool {
         [.preparing, .processing, .postProcessing].contains(phase)
     }
     
     /// Whether there's a blocking error.
-    var hasBlockingError: Bool {
+    public var hasBlockingError: Bool {
         serviceState == .error || serviceState == .disconnected || modelState == .error
     }
     
@@ -234,13 +239,14 @@ class TranscriptionStatus: ObservableObject {
 // MARK: - Error Types
 
 /// Errors related to transcription status.
-enum TranscriptionStatusError: LocalizedError, Equatable {
+/// Errors related to transcription status.
+public enum TranscriptionStatusError: LocalizedError, Equatable {
     case serviceUnavailable
     case connectionFailed(String)
     case modelLoadFailed(String)
     case transcriptionFailed(String)
     
-    var errorDescription: String? {
+    public var errorDescription: String? {
         switch self {
         case .serviceUnavailable:
             return "Serviço de transcrição indisponível"

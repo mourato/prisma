@@ -9,6 +9,10 @@ let package = Package(
         .macOS(.v14)
     ],
     products: [
+        .library(
+            name: "MeetingAssistantCore",
+            targets: ["MeetingAssistantCore"]
+        ),
         .executable(
             name: "MeetingAssistant",
             targets: ["MeetingAssistant"]
@@ -18,12 +22,19 @@ let package = Package(
         .package(url: "https://github.com/FluidInference/FluidAudio.git", from: "0.7.9")
     ],
     targets: [
-        .executableTarget(
-            name: "MeetingAssistant",
+        .target(
+            name: "MeetingAssistantCore",
             dependencies: [
                 .product(name: "FluidAudio", package: "FluidAudio")
             ],
-            path: "Sources"
+            path: "Sources/MeetingAssistantCore"
+        ),
+        .executableTarget(
+            name: "MeetingAssistant",
+            dependencies: [
+                "MeetingAssistantCore"
+            ],
+            path: "Sources/MeetingAssistant"
         )
     ]
 )
