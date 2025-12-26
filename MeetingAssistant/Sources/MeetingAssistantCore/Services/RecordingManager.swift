@@ -4,6 +4,7 @@ import os.log
 import UserNotifications
 
 /// Central manager coordinating recording, meeting detection, and transcription.
+/// Orchestrates microphone and system audio recording with post-processing merge.
 @MainActor
 public class RecordingManager: ObservableObject {
     public static let shared = RecordingManager()
@@ -23,19 +24,26 @@ public class RecordingManager: ObservableObject {
     
     // MARK: - Services
     
-    private let audioRecorder = AudioRecorder.shared
+    private let micRecorder = AudioRecorder.shared
+    private let systemRecorder = SystemAudioRecorder.shared
+    private let audioMerger = AudioMerger()
     private let meetingDetector = MeetingDetector.shared
     private let transcriptionClient = TranscriptionClient.shared
     
     private var cancellables = Set<AnyCancellable>()
     private var statusCheckTask: Task<Void, Never>?
     
+    // MARK: - Recording URLs
+    
+    private var micAudioURL: URL?
+    private var systemAudioURL: URL?
+    private var mergedAudioURL: URL?
+    
     // MARK: - Storage
     
     private var recordingsDirectory: URL {
         guard let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
             logger.error("Failed to find Application Support directory")
-            // This is a critical failure, but we can try to fall back or crash more gracefully/explicitly
             fatalError("Critical: Could not access Application Support directory.")
         }
         let recordings = appSupport.appendingPathComponent("MeetingAssistant/recordings", isDirectory: true)
@@ -56,28 +64,31 @@ public class RecordingManager: ObservableObject {
     
     /// Check and update permission status (Screen Recording + Microphone).
     public func checkPermission() async {
-        hasRequiredPermissions = await audioRecorder.hasPermission()
+        let micPermission = await micRecorder.hasPermission()
+        let screenPermission = await systemRecorder.hasPermission()
+        hasRequiredPermissions = micPermission && screenPermission
     }
     
     /// Request permissions (Screen Recording + Microphone).
     public func requestPermission() async {
-        await audioRecorder.requestPermission()
+        await micRecorder.requestPermission()
+        await systemRecorder.requestPermission()
         await checkPermission()
     }
     
     /// Open System Preferences to Screen Recording settings.
     public func openPermissionSettings() {
-        audioRecorder.openScreenRecordingSettings()
+        systemRecorder.openScreenRecordingSettings()
     }
     
     /// Open System Preferences to Microphone settings.
     public func openMicrophoneSettings() {
-        audioRecorder.openMicrophoneSettings()
+        micRecorder.openMicrophoneSettings()
     }
     
     // MARK: - Public API
     
-    /// Start recording audio for a meeting.
+    /// Start recording audio for a meeting (both microphone and system audio).
     public func startRecording() async {
         guard !isRecording else {
             logger.warning("Already recording")
@@ -92,21 +103,34 @@ public class RecordingManager: ObservableObject {
             let meeting = Meeting(app: app)
             currentMeeting = meeting
             
-            // Generate output file path
-            let filename = generateFilename(for: meeting)
-            let outputURL = recordingsDirectory.appendingPathComponent(filename)
+            // Generate output file paths
+            let baseFilename = generateFilename(for: meeting)
+            let micFilename = baseFilename.replacingOccurrences(of: ".m4a", with: "_mic.wav")
+            let sysFilename = baseFilename.replacingOccurrences(of: ".m4a", with: "_sys.wav")
             
-            // Start recording
-            try await audioRecorder.startRecording(to: outputURL)
+            micAudioURL = recordingsDirectory.appendingPathComponent(micFilename)
+            systemAudioURL = recordingsDirectory.appendingPathComponent(sysFilename)
+            mergedAudioURL = recordingsDirectory.appendingPathComponent(baseFilename)
+            
+            // Start microphone recording
+            try micRecorder.startRecording(to: micAudioURL!, retryCount: 0)
+            
+            // Start system audio recording (async)
+            try await systemRecorder.startRecording(to: systemAudioURL!)
             
             isRecording = true
-            currentMeeting?.audioFilePath = outputURL.path
+            currentMeeting?.audioFilePath = mergedAudioURL?.path
             
-            logger.info("Recording started for \(app.displayName)")
+            logger.info("Recording started for \(app.displayName) (mic + system)")
             
         } catch {
             logger.error("Failed to start recording: \(error.localizedDescription)")
             lastError = error
+            
+            // Cleanup partial starts
+            _ = micRecorder.stopRecording()
+            _ = await systemRecorder.stopRecording()
+            
             currentMeeting = nil
         }
     }
@@ -119,18 +143,35 @@ public class RecordingManager: ObservableObject {
         }
         
         do {
-            // Stop recording
-            let audioURL = try await audioRecorder.stopRecording()
+            // Stop both recorders
+            let micURL = micRecorder.stopRecording()
+            let sysURL = await systemRecorder.stopRecording()
             
             // Update meeting
             currentMeeting?.endTime = Date()
             isRecording = false
             
-            logger.info("Recording stopped")
+            logger.info("Recording stopped, merging audio files...")
+            
+            // Merge audio files
+            var inputURLs: [URL] = []
+            if let micURL = micURL { inputURLs.append(micURL) }
+            if let sysURL = sysURL { inputURLs.append(sysURL) }
+            
+            guard let outputURL = mergedAudioURL else {
+                throw RecordingManagerError.noOutputPath
+            }
+            
+            let finalURL = try await audioMerger.mergeAudioFiles(inputURLs: inputURLs, to: outputURL)
+            
+            // Clean up temporary files
+            cleanupTemporaryFiles()
+            
+            logger.info("Audio merge complete: \(finalURL.lastPathComponent)")
             
             // Transcribe if requested
-            if transcribe, let url = audioURL, let meeting = currentMeeting {
-                await transcribeRecording(audioURL: url, meeting: meeting)
+            if transcribe, let meeting = currentMeeting {
+                await transcribeRecording(audioURL: finalURL, meeting: meeting)
             }
             
         } catch {
@@ -164,7 +205,7 @@ public class RecordingManager: ObservableObject {
     
     private func setupBindings() {
         // Sync with audio recorder state
-        audioRecorder.$isRecording
+        micRecorder.$isRecording
             .receive(on: DispatchQueue.main)
             .assign(to: &$isRecording)
     }
@@ -174,6 +215,18 @@ public class RecordingManager: ObservableObject {
         formatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
         let timestamp = formatter.string(from: meeting.startTime)
         return "\(meeting.app.rawValue)_\(timestamp).m4a"
+    }
+    
+    private func cleanupTemporaryFiles() {
+        // Remove individual mic and system audio files after merge
+        if let micURL = micAudioURL {
+            try? FileManager.default.removeItem(at: micURL)
+        }
+        if let sysURL = systemAudioURL {
+            try? FileManager.default.removeItem(at: sysURL)
+        }
+        micAudioURL = nil
+        systemAudioURL = nil
     }
     
     private func transcribeRecording(audioURL: URL, meeting: Meeting) async {
@@ -249,9 +302,6 @@ public class RecordingManager: ObservableObject {
     
     /// Get audio duration from file for progress estimation.
     private func getAudioDuration(from url: URL) -> Double? {
-        // Use AVAsset to get audio duration
-        // NOTE: AVFoundation import would be needed for full implementation
-        // For now, return nil and let the UI handle unknown duration gracefully
         return nil
     }
     
@@ -292,7 +342,6 @@ public class RecordingManager: ObservableObject {
     }
     
     /// Request notification authorization from the user.
-    /// Only works when running as a proper macOS app bundle.
     private func requestNotificationAuthorization() {
         guard isRunningAsAppBundle else {
             logger.info("Running as CLI tool, skipping UNUserNotificationCenter authorization")
@@ -309,10 +358,6 @@ public class RecordingManager: ObservableObject {
     }
     
     /// Send a local notification to the user.
-    /// Uses UNUserNotificationCenter for app bundles, falls back to osascript for CLI.
-    /// - Parameters:
-    ///   - title: The notification title.
-    ///   - body: The notification body text.
     private func sendNotification(title: String, body: String) {
         if isRunningAsAppBundle {
             sendNotificationViaUserNotifications(title: title, body: body)
@@ -321,7 +366,7 @@ public class RecordingManager: ObservableObject {
         }
     }
     
-    /// Send notification using UserNotifications framework (requires app bundle).
+    /// Send notification using UserNotifications framework.
     private func sendNotificationViaUserNotifications(title: String, body: String) {
         let content = UNMutableNotificationContent()
         content.title = title
@@ -341,11 +386,8 @@ public class RecordingManager: ObservableObject {
         }
     }
     
-    /// Send notification using osascript as fallback for CLI tools.
-    /// Uses proper sanitization to prevent command injection.
+    /// Send notification using osascript as fallback.
     private func sendNotificationViaAppleScript(title: String, body: String) {
-        // Sanitize input by removing all characters that could be used for injection.
-        // AppleScript string escaping is complex, so we use a whitelist approach.
         let sanitizedTitle = sanitizeForAppleScript(title)
         let sanitizedBody = sanitizeForAppleScript(body)
         
@@ -363,36 +405,45 @@ public class RecordingManager: ObservableObject {
     }
     
     /// Sanitize a string for safe use in AppleScript.
-    /// Removes or escapes characters that could be used for command injection.
     private func sanitizeForAppleScript(_ input: String) -> String {
-        // First, escape backslashes (must be done first)
         var result = input.replacingOccurrences(of: "\\", with: "\\\\")
-        
-        // Escape double quotes
         result = result.replacingOccurrences(of: "\"", with: "\\\"")
         
-        // Remove other dangerous characters that could break out of the string
-        // These include: backticks, $, newlines, and other control characters
         let dangerousPatterns: [(pattern: String, replacement: String)] = [
-            ("`", "'"),           // Replace backticks with single quotes
-            ("$", ""),            // Remove $ (variable expansion)
-            ("\n", " "),          // Replace newlines with space
-            ("\r", " "),          // Replace carriage return with space
-            ("\t", " "),          // Replace tabs with space
-            ("«", ""),            // Remove chevrons (AppleScript special)
-            ("»", ""),            // Remove chevrons (AppleScript special)
+            ("`", "'"),
+            ("$", ""),
+            ("\n", " "),
+            ("\r", " "),
+            ("\t", " "),
+            ("«", ""),
+            ("»", ""),
         ]
         
         for (pattern, replacement) in dangerousPatterns {
             result = result.replacingOccurrences(of: pattern, with: replacement)
         }
         
-        // Limit length to prevent excessively long notifications
         let maxLength = 200
         if result.count > maxLength {
             result = String(result.prefix(maxLength)) + "..."
         }
         
         return result
+    }
+}
+
+// MARK: - Errors
+
+public enum RecordingManagerError: LocalizedError {
+    case noOutputPath
+    case mergeFailed(Error)
+    
+    public var errorDescription: String? {
+        switch self {
+        case .noOutputPath:
+            return "No output path specified for merged audio"
+        case .mergeFailed(let error):
+            return "Audio merge failed: \(error.localizedDescription)"
+        }
     }
 }
