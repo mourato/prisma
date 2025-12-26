@@ -16,20 +16,21 @@ private enum LayoutConstants {
 /// Uses sidebar navigation pattern similar to macOS System Settings.
 public struct SettingsView: View {
     @State private var selectedSection: SettingsSection = .general
-    
+
     public init() {}
-    
+
     public var body: some View {
         NavigationSplitView {
             sidebar
         } detail: {
             detailView
         }
-        .frame(width: LayoutConstants.windowWidth, height: LayoutConstants.windowHeight)
+        // Removed rigid constraints to allow user resizing and accessibility scaling
+        // Default size will be determined by content or window definition
     }
-    
+
     // MARK: - Sidebar
-    
+
     private var sidebar: some View {
         List(selection: $selectedSection) {
             ForEach(SettingsSection.allCases) { section in
@@ -44,9 +45,9 @@ public struct SettingsView: View {
             max: LayoutConstants.sidebarMaxWidth
         )
     }
-    
+
     // MARK: - Detail View
-    
+
     @ViewBuilder
     private var detailView: some View {
         switch selectedSection {
