@@ -7,15 +7,15 @@ import os.log
 /// Manages global keyboard shortcuts for the application.
 /// Registers and handles system-wide hotkeys using Carbon Event Manager.
 @MainActor
-class GlobalShortcutManager: ObservableObject {
-    static let shared = GlobalShortcutManager()
+public class GlobalShortcutManager: ObservableObject {
+    public static let shared = GlobalShortcutManager()
     
     private let logger = Logger(subsystem: "MeetingAssistant", category: "GlobalShortcutManager")
     
     // MARK: - Published State
     
-    @Published private(set) var isRegistered = false
-    @Published var isRecordingShortcut = false
+    @Published public private(set) var isRegistered = false
+    @Published public var isRecordingShortcut = false
     
     // MARK: - Private Properties
     
@@ -25,10 +25,10 @@ class GlobalShortcutManager: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     
     /// Callback triggered when the shortcut is activated.
-    var onShortcutActivated: (() -> Void)?
+    public var onShortcutActivated: (() -> Void)?
     
     /// Callback for capturing a new shortcut during recording mode.
-    var onShortcutCaptured: ((KeyboardShortcut) -> Void)?
+    public var onShortcutCaptured: ((KeyboardShortcut) -> Void)?
     
     // MARK: - Static Hotkey Identifier
     
@@ -51,14 +51,14 @@ class GlobalShortcutManager: ObservableObject {
     // MARK: - Public API
     
     /// Register the global hotkey with the current settings.
-    func registerHotKey() {
+    public func registerHotKey() {
         let shortcut = AppSettingsStore.shared.keyboardShortcut
         registerHotKey(shortcut)
     }
     
     /// Register a specific keyboard shortcut as a global hotkey.
     /// - Parameter shortcut: The keyboard shortcut to register.
-    func registerHotKey(_ shortcut: KeyboardShortcut) {
+    public func registerHotKey(_ shortcut: KeyboardShortcut) {
         unregisterHotKey()
         
         // Convert modifiers to Carbon format
@@ -95,7 +95,7 @@ class GlobalShortcutManager: ObservableObject {
     }
     
     /// Unregister the current global hotkey.
-    func unregisterHotKey() {
+    public func unregisterHotKey() {
         if let hotKeyRef = eventHotKeyRef {
             UnregisterEventHotKey(hotKeyRef)
             eventHotKeyRef = nil
@@ -105,12 +105,13 @@ class GlobalShortcutManager: ObservableObject {
     }
     
     /// Start recording mode to capture a new shortcut.
-    func startRecordingShortcut() {
+    public func startRecordingShortcut() {
         isRecordingShortcut = true
         unregisterHotKey()
         
         // Monitor for key presses
         localEventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            // Handle key event logic...
             self?.handleKeyEvent(event)
             return nil // Consume the event
         }
@@ -119,7 +120,7 @@ class GlobalShortcutManager: ObservableObject {
     }
     
     /// Stop recording mode without saving.
-    func stopRecordingShortcut() {
+    public func stopRecordingShortcut() {
         isRecordingShortcut = false
         
         if let monitor = localEventMonitor {

@@ -2,7 +2,8 @@ import Foundation
 import SwiftUI
 
 /// Represents a meeting app that can be detected.
-enum MeetingApp: String, CaseIterable, Codable {
+/// Represents a meeting app that can be detected.
+public enum MeetingApp: String, CaseIterable, Codable {
     case googleMeet = "google-meet"
     case microsoftTeams = "microsoft-teams"
     case slack = "slack"
@@ -10,7 +11,7 @@ enum MeetingApp: String, CaseIterable, Codable {
     case unknown = "unknown"
     
     /// Bundle identifiers to detect this app.
-    var bundleIdentifiers: [String] {
+    public var bundleIdentifiers: [String] {
         switch self {
         case .googleMeet:
             return ["com.google.Chrome", "com.apple.Safari", "com.microsoft.edgemac"]
@@ -26,7 +27,7 @@ enum MeetingApp: String, CaseIterable, Codable {
     }
     
     /// Window title patterns to detect meeting in progress.
-    var windowTitlePatterns: [String] {
+    public var windowTitlePatterns: [String] {
         switch self {
         case .googleMeet:
             return ["meet.google.com", "Google Meet"]
@@ -41,7 +42,7 @@ enum MeetingApp: String, CaseIterable, Codable {
         }
     }
     
-    var displayName: String {
+    public var displayName: String {
         switch self {
         case .googleMeet: return "Google Meet"
         case .microsoftTeams: return "Microsoft Teams"
@@ -51,7 +52,7 @@ enum MeetingApp: String, CaseIterable, Codable {
         }
     }
     
-    var icon: String {
+    public var icon: String {
         switch self {
         case .googleMeet: return "video.fill"
         case .microsoftTeams: return "person.3.fill"
@@ -61,7 +62,7 @@ enum MeetingApp: String, CaseIterable, Codable {
         }
     }
     
-    var color: Color {
+    public var color: Color {
         switch self {
         case .googleMeet: return .green
         case .microsoftTeams: return .purple
@@ -73,14 +74,14 @@ enum MeetingApp: String, CaseIterable, Codable {
 }
 
 /// Represents an active or completed meeting.
-struct Meeting: Identifiable, Codable, Hashable {
-    let id: UUID
-    let app: MeetingApp
-    let startTime: Date
-    var endTime: Date?
-    var audioFilePath: String?
+public struct Meeting: Identifiable, Codable, Hashable {
+    public let id: UUID
+    public let app: MeetingApp
+    public let startTime: Date
+    public var endTime: Date?
+    public var audioFilePath: String?
     
-    init(
+    public init(
         id: UUID = UUID(),
         app: MeetingApp,
         startTime: Date = Date(),
@@ -95,13 +96,13 @@ struct Meeting: Identifiable, Codable, Hashable {
     }
     
     /// Duration of the meeting in seconds.
-    var duration: TimeInterval {
+    public var duration: TimeInterval {
         let end = endTime ?? Date()
         return end.timeIntervalSince(startTime)
     }
     
     /// Formatted duration string (e.g., "1h 23m").
-    var formattedDuration: String {
+    public var formattedDuration: String {
         let seconds = Int(duration)
         let hours = seconds / 3600
         let minutes = (seconds % 3600) / 60
@@ -113,7 +114,7 @@ struct Meeting: Identifiable, Codable, Hashable {
         }
     }
     
-    var appName: String { app.displayName }
-    var appIcon: String { app.icon }
-    var appColor: Color { app.color }
+    public var appName: String { app.displayName }
+    public var appIcon: String { app.icon }
+    public var appColor: Color { app.color }
 }

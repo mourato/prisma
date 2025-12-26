@@ -1,11 +1,13 @@
 import SwiftUI
 
 /// Menu bar popover view displaying recording status and controls.
-struct MenuBarView: View {
+public struct MenuBarView: View {
     @EnvironmentObject var recordingManager: RecordingManager
     @State private var showingTranscriptions = false
     
-    var body: some View {
+    public init() {}
+    
+    public var body: some View {
         VStack(spacing: 16) {
             headerSection
             
@@ -166,12 +168,8 @@ struct MenuBarView: View {
     }
     
     private func openSettings() {
-        // Use the responder chain to find the AppDelegate's showSettingsWindow method
-        NSApp.sendAction(#selector(AppDelegate.showSettingsWindow(_:)), to: nil, from: nil)
-    }
-    
-    private func openPermissionSettings() {
-        recordingManager.openPermissionSettings()
+        // Use dynamically looked up selector since AppDelegate is not available in this module
+        NSApp.sendAction(Selector("showSettingsWindow:"), to: nil, from: nil)
     }
 }
 
