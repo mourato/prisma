@@ -119,3 +119,28 @@ class MockPostProcessingService: PostProcessingServiceProtocol {
         ))
     }
 }
+
+// MARK: - Mock Storage Service
+
+// MARK: - Mock Storage Service
+
+class MockStorageService: StorageService, @unchecked Sendable {
+    var recordingsDirectory: URL = URL(fileURLWithPath: "/tmp/mock/recordings")
+    
+    var createRecordingURLCalled = false
+    var cleanupTemporaryFilesCalled = false
+    var saveTranscriptionCalled = false
+    
+    func createRecordingURL(for meeting: Meeting, type: RecordingType) -> URL {
+        createRecordingURLCalled = true
+        return recordingsDirectory.appendingPathComponent("mock_\(type.rawValue).wav")
+    }
+    
+    func cleanupTemporaryFiles(urls: [URL]) {
+        cleanupTemporaryFilesCalled = true
+    }
+    
+    func saveTranscription(_ transcription: Transcription) async throws {
+        saveTranscriptionCalled = true
+    }
+}

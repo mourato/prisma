@@ -3,7 +3,7 @@ import SwiftUI
 
 /// Represents a meeting app that can be detected.
 /// Represents a meeting app that can be detected.
-public enum MeetingApp: String, CaseIterable, Codable {
+public enum MeetingApp: String, CaseIterable, Codable, Sendable {
     case googleMeet = "google-meet"
     case microsoftTeams = "microsoft-teams"
     case slack = "slack"
@@ -74,7 +74,7 @@ public enum MeetingApp: String, CaseIterable, Codable {
 }
 
 /// Represents an active or completed meeting.
-public struct Meeting: Identifiable, Codable, Hashable {
+public struct Meeting: Identifiable, Codable, Hashable, Sendable {
     public let id: UUID
     public let app: MeetingApp
     public let startTime: Date
