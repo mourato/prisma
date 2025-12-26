@@ -5,9 +5,9 @@ import SwiftUI
 /// Tab for configuring local transcription service settings.
 public struct ServiceSettingsTab: View {
     @State private var transcriptionStatus: ConnectionStatus = .unknown
-    
+
     public init() {}
-    
+
     public var body: some View {
         Form {
             Section {
@@ -20,7 +20,7 @@ public struct ServiceSettingsTab: View {
                             .font(.title2)
                             .foregroundStyle(.blue)
                     }
-                    
+
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Processamento Local")
                             .font(.headline)
@@ -28,16 +28,16 @@ public struct ServiceSettingsTab: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
-                    
+
                     Spacer()
-                    
+
                     statusBadge
                 }
                 .padding(.vertical, 4)
             } header: {
                 Label("Modelo Local", systemImage: "waveform")
             }
-            
+
             Section {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
@@ -47,7 +47,7 @@ public struct ServiceSettingsTab: View {
                         Text("Parakeet TDT 0.6B v3")
                             .fontWeight(.medium)
                     }
-                    
+
                     HStack {
                         Text("Idiomas:")
                             .foregroundStyle(.secondary)
@@ -57,18 +57,18 @@ public struct ServiceSettingsTab: View {
                     }
                 }
                 .font(.subheadline)
-                
+
                 HStack {
                     Button(action: testConnection) {
                         Label("Verificar Status", systemImage: "arrow.clockwise")
                     }
                     .disabled(transcriptionStatus == .testing)
-                    
+
                     Spacer()
-                    
+
                     if transcriptionStatus == .testing {
                         ProgressView()
-                            .scaleEffect(0.7)
+                            .controlSize(.small)
                     }
                 }
             } header: {
@@ -77,7 +77,7 @@ public struct ServiceSettingsTab: View {
         }
         .padding()
     }
-    
+
     private var statusBadge: some View {
         HStack(spacing: 4) {
             Circle()
@@ -94,10 +94,10 @@ public struct ServiceSettingsTab: View {
                 .fill(transcriptionStatus.color.opacity(0.1))
         )
     }
-    
+
     private func testConnection() {
         transcriptionStatus = .testing
-        
+
         Task {
             do {
                 let isHealthy = try await TranscriptionClient.shared.healthCheck()

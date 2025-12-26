@@ -9,21 +9,23 @@ public struct AISettingsTab: View {
     @State private var showAPIKey = false
     @State private var apiKeyText = ""
     @State private var connectionStatus: ConnectionStatus = .unknown
-    
+
     private let logger = Logger(subsystem: "MeetingAssistant", category: "AISettings")
-    
+
     public init() {}
-    
+
     public var body: some View {
         Form {
             Section("Pós-Processamento com IA") {
                 Toggle("Habilitar processamento de transcrições com IA", isOn: $settings.aiEnabled)
-                
-                Text("Quando habilitado, as transcrições serão enviadas para um modelo de IA para correção, formatação e resumo.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+
+                Text(
+                    "Quando habilitado, as transcrições serão enviadas para um modelo de IA para correção, formatação e resumo."
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
-            
+
             if settings.aiEnabled {
                 providerSection
                 apiConfigurationSection
@@ -35,9 +37,9 @@ public struct AISettingsTab: View {
             apiKeyText = (try? KeychainManager.retrieve(for: .aiAPIKey)) ?? ""
         }
     }
-    
+
     // MARK: - Provider Section
-    
+
     @ViewBuilder
     private var providerSection: some View {
         Section("Provedor") {
@@ -59,9 +61,9 @@ public struct AISettingsTab: View {
             }
         }
     }
-    
+
     // MARK: - API Configuration Section
-    
+
     @ViewBuilder
     private var apiConfigurationSection: some View {
         Section("Configuração da API") {
@@ -73,7 +75,7 @@ public struct AISettingsTab: View {
                 )
                 .textFieldStyle(.roundedBorder)
             }
-            
+
             HStack {
                 Text("Chave API:")
                 Group {
@@ -87,7 +89,7 @@ public struct AISettingsTab: View {
                 .onChange(of: apiKeyText) { _, newValue in
                     saveAPIKeyToKeychain(newValue)
                 }
-                
+
                 Button {
                     showAPIKey.toggle()
                 } label: {
@@ -96,7 +98,7 @@ public struct AISettingsTab: View {
                 .buttonStyle(.borderless)
                 .help(showAPIKey ? "Ocultar chave" : "Mostrar chave")
             }
-            
+
             HStack {
                 Image(systemName: "lock.shield.fill")
                     .foregroundStyle(.green)
@@ -104,21 +106,23 @@ public struct AISettingsTab: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
-            
+
             HStack {
                 Text("Modelo:")
-                TextField("gpt-4o, claude-3-5-sonnet...", text: $settings.aiConfiguration.selectedModel)
-                    .textFieldStyle(.roundedBorder)
+                TextField(
+                    "gpt-4o, claude-3-5-sonnet...", text: $settings.aiConfiguration.selectedModel
+                )
+                .textFieldStyle(.roundedBorder)
             }
-            
+
             Text("O modelo será selecionável automaticamente em uma versão futura.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
     }
-    
+
     // MARK: - Connection Test Section
-    
+
     @ViewBuilder
     private var connectionTestSection: some View {
         Section {
@@ -127,13 +131,13 @@ public struct AISettingsTab: View {
                     testAPIConnection()
                 }
                 .disabled(!settings.aiConfiguration.isValid || connectionStatus == .testing)
-                
+
                 Spacer()
-                
+
                 HStack(spacing: 4) {
                     if connectionStatus == .testing {
                         ProgressView()
-                            .scaleEffect(0.6)
+                            .controlSize(.small)
                     }
                     Circle()
                         .fill(connectionStatus.color)
@@ -145,9 +149,9 @@ public struct AISettingsTab: View {
             }
         }
     }
-    
+
     // MARK: - Private Methods
-    
+
     /// Saves API key to Keychain with proper error handling.
     private func saveAPIKeyToKeychain(_ value: String) {
         do {
@@ -161,32 +165,33 @@ public struct AISettingsTab: View {
             // NOTE: In a future iteration, show user feedback via an alert
         }
     }
-    
+
     private func testAPIConnection() {
         connectionStatus = .testing
-        
+
         let urlString = settings.aiConfiguration.baseURL
-        
+
         // Validate URL format and scheme
         guard let url = URL(string: urlString),
-              let scheme = url.scheme,
-              ["http", "https"].contains(scheme.lowercased()) else {
+            let scheme = url.scheme,
+            ["http", "https"].contains(scheme.lowercased())
+        else {
             connectionStatus = .failure("URL inválida")
             return
         }
-        
+
         Task {
             do {
                 var request = URLRequest(url: url)
                 request.httpMethod = "GET"
                 request.timeoutInterval = 5
-                
+
                 if let key = try? KeychainManager.retrieve(for: .aiAPIKey), !key.isEmpty {
                     request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
                 }
-                
+
                 let (_, response) = try await URLSession.shared.data(for: request)
-                
+
                 await MainActor.run {
                     if let httpResponse = response as? HTTPURLResponse {
                         // Only 2xx codes indicate true success
