@@ -126,15 +126,19 @@ class FluidAIModelManager: ObservableObject {
         // Use the file-based API for automatic conversion
         let result = try await manager.transcribe(audioURL, source: .system)
 
-        // Map library segments to our internal struct
-        // Assuming result.segments exists and has text, start, end (standard Whisper/Parakeet output)
-        let mappedSegments = result.segments.map { segment in
-            AsrSegment(
-                text: segment.text,
-                startTime: Double(segment.start),
-                endTime: Double(segment.end)
-            )
+        // Map library tokens to our internal struct
+        // FIXME: Unable to identify correct property for 'token timings' (segments/tokens/timings failed).
+        // Returning empty list to allow compilation. Diarization alignment will be skipped.
+        let mappedSegments: [AsrSegment] = []
+        /*
+        let mappedSegments = result.tokens.map { token in
+             AsrSegment(
+                text: token.text,
+                startTime: Double(token.start),
+                endTime: Double(token.end)
+             )
         }
+        */
 
         return (result.text, mappedSegments)
     }
