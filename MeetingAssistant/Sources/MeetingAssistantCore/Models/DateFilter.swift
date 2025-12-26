@@ -33,44 +33,21 @@ public enum DateFilter: String, CaseIterable, Sendable {
     /// Date range for filtering.
     /// Returns a tuple of (start, end) dates for the filter period.
     public var dateRange: (start: Date, end: Date) {
-        let calendar = Calendar.current
-        let now = Date()
+        let calculator = DateRangeCalculator()
 
         switch self {
         case .today:
-            let start = calendar.startOfDay(for: now)
-            let end = calendar.date(byAdding: .day, value: 1, to: start) ?? now
-            return (start, end)
-
+            return calculator.todayRange()
         case .yesterday:
-            let todayStart = calendar.startOfDay(for: now)
-            let start = calendar.date(byAdding: .day, value: -1, to: todayStart) ?? now
-            return (start, todayStart)
-
+            return calculator.yesterdayRange()
         case .thisWeek:
-            let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)
-            let start = calendar.date(from: components) ?? now
-            let end = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: now)) ?? now
-            return (start, end)
-
+            return calculator.thisWeekRange()
         case .lastWeek:
-            let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)
-            let thisWeekStart = calendar.date(from: components) ?? now
-            let start = calendar.date(byAdding: .weekOfYear, value: -1, to: thisWeekStart) ?? now
-            return (start, thisWeekStart)
-
+            return calculator.lastWeekRange()
         case .thisMonth:
-            let components = calendar.dateComponents([.year, .month], from: now)
-            let start = calendar.date(from: components) ?? now
-            let end = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: now)) ?? now
-            return (start, end)
-
+            return calculator.thisMonthRange()
         case .lastMonth:
-            let components = calendar.dateComponents([.year, .month], from: now)
-            let thisMonthStart = calendar.date(from: components) ?? now
-            let start = calendar.date(byAdding: .month, value: -1, to: thisMonthStart) ?? now
-            return (start, thisMonthStart)
-
+            return calculator.lastMonthRange()
         case .allEntries:
             return (.distantPast, .distantFuture)
         }
@@ -80,5 +57,67 @@ public enum DateFilter: String, CaseIterable, Sendable {
     public func contains(_ date: Date) -> Bool {
         let range = self.dateRange
         return date >= range.start && date < range.end
+    }
+}
+
+// MARK: - Date Range Calculator
+
+/// Helper struct for calculating date ranges.
+/// Extracted to keep individual functions under 20 lines.
+private struct DateRangeCalculator {
+    private let calendar = Calendar.current
+    private let now = Date()
+
+    func todayRange() -> (start: Date, end: Date) {
+        let start = self.calendar.startOfDay(for: self.now)
+        let end = self.calendar.date(byAdding: .day, value: 1, to: start) ?? self.now
+        return (start, end)
+    }
+
+    func yesterdayRange() -> (start: Date, end: Date) {
+        let todayStart = self.calendar.startOfDay(for: self.now)
+        let start = self.calendar.date(byAdding: .day, value: -1, to: todayStart) ?? self.now
+        return (start, todayStart)
+    }
+
+    func thisWeekRange() -> (start: Date, end: Date) {
+        let start = self.startOfCurrentWeek()
+        let end = self.endOfToday()
+        return (start, end)
+    }
+
+    func lastWeekRange() -> (start: Date, end: Date) {
+        let thisWeekStart = self.startOfCurrentWeek()
+        let start = self.calendar.date(byAdding: .weekOfYear, value: -1, to: thisWeekStart) ?? self.now
+        return (start, thisWeekStart)
+    }
+
+    func thisMonthRange() -> (start: Date, end: Date) {
+        let start = self.startOfCurrentMonth()
+        let end = self.endOfToday()
+        return (start, end)
+    }
+
+    func lastMonthRange() -> (start: Date, end: Date) {
+        let thisMonthStart = self.startOfCurrentMonth()
+        let start = self.calendar.date(byAdding: .month, value: -1, to: thisMonthStart) ?? self.now
+        return (start, thisMonthStart)
+    }
+
+    // MARK: - Private Helpers
+
+    private func startOfCurrentWeek() -> Date {
+        let components = self.calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: self.now)
+        return self.calendar.date(from: components) ?? self.now
+    }
+
+    private func startOfCurrentMonth() -> Date {
+        let components = self.calendar.dateComponents([.year, .month], from: self.now)
+        return self.calendar.date(from: components) ?? self.now
+    }
+
+    private func endOfToday() -> Date {
+        let todayStart = self.calendar.startOfDay(for: self.now)
+        return self.calendar.date(byAdding: .day, value: 1, to: todayStart) ?? self.now
     }
 }
