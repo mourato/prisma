@@ -15,13 +15,9 @@ struct MeetingAssistantApp: App {
                 .hidden()
         }
         .windowResizability(.contentSize)
-        .commands {
-            CommandGroup(replacing: .appSettings) {
-                Button("Configurações...") {
-                    appDelegate.openSettings()
-                }
-                .keyboardShortcut(",", modifiers: .command)
-            }
+
+        Settings {
+            SettingsView()
         }
     }
 }
@@ -101,10 +97,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Settings
         let settingsItem = NSMenuItem(
             title: "Configurações...",
-            action: #selector(openSettings),
+            action: Selector("showSettingsWindow:"),
             keyEquivalent: ","
         )
-        settingsItem.target = self
+        // settingsItem.target = nil // Implicitly nil targets First Responder
         contextMenu?.addItem(settingsItem)
 
         // About
@@ -189,38 +185,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem?.menu = nil  // Reset so left-click works again
     }
 
-    private lazy var settingsWindow: NSWindow = {
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 500, height: 400),
-            styleMask: [.titled, .closable, .miniaturizable, .resizable],
-            backing: .buffered,
-            defer: false
-        )
-        window.center()
-        window.title = "Configurações"
-        window.contentView = NSHostingView(rootView: SettingsView())
-        window.isReleasedWhenClosed = false
-        return window
-    }()
-
     // MARK: - Menu Actions
-
-    @objc func openSettings() {
-        // Close popover first
-        popover?.performClose(nil)
-
-        // Open settings window
-        if !settingsWindow.isVisible {
-            settingsWindow.center()
-        }
-        settingsWindow.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
-    }
-
-    /// Handle the standard showSettingsWindow: action
-    @objc func showSettingsWindow(_ sender: Any?) {
-        openSettings()
-    }
 
     @objc private func showAbout() {
         popover?.performClose(nil)
