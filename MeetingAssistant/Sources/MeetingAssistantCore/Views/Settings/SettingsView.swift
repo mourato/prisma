@@ -3,11 +3,11 @@ import SwiftUI
 // MARK: - Layout Constants
 
 private enum LayoutConstants {
-    static let windowWidth: CGFloat = 700
-    static let windowHeight: CGFloat = 500
-    static let sidebarMinWidth: CGFloat = 180
-    static let sidebarIdealWidth: CGFloat = 200
-    static let sidebarMaxWidth: CGFloat = 220
+    static let windowWidth: CGFloat = 900
+    static let windowHeight: CGFloat = 600
+    static let sidebarMinWidth: CGFloat = 200
+    static let sidebarIdealWidth: CGFloat = 220
+    static let sidebarMaxWidth: CGFloat = 260
 }
 
 // MARK: - Settings View
@@ -16,17 +16,26 @@ private enum LayoutConstants {
 /// Uses sidebar navigation pattern similar to macOS System Settings.
 public struct SettingsView: View {
     @State private var selectedSection: SettingsSection = .transcriptions
+    @State private var columnVisibility = NavigationSplitViewVisibility.all
 
     public init() {}
 
     public var body: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: self.$columnVisibility) {
             self.sidebar
         } detail: {
             self.detailView
         }
-        // Removed rigid constraints to allow user resizing and accessibility scaling
-        // Default size will be determined by content or window definition
+        .navigationSplitViewStyle(.balanced)
+        .navigationTitle(self.selectedSection.title)
+        .toolbar {
+            ToolbarItem(placement: .navigation) {
+                // This helps align the sidebar toggle with the traffic lights
+                // in the title bar on macOS 13+.
+            }
+        }
+        .frame(minWidth: LayoutConstants.windowWidth, minHeight: LayoutConstants.windowHeight)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Sidebar

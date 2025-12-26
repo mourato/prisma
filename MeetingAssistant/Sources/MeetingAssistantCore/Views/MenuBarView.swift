@@ -3,6 +3,7 @@ import SwiftUI
 /// Menu bar popover view displaying recording status and controls.
 public struct MenuBarView: View {
     @EnvironmentObject var recordingManager: RecordingManager
+    @Environment(\.openWindow) private var openWindow
     @StateObject private var viewModel: RecordingViewModel
 
     public init(viewModel: RecordingViewModel? = nil) {
@@ -68,6 +69,9 @@ public struct MenuBarView: View {
         .task {
             await self.viewModel.checkPermission()
         }
+        .onAppear {
+            NavigationService.shared.openWindow = self.openWindow
+        }
     }
 
     // MARK: - Permission Status Section
@@ -91,7 +95,10 @@ public struct MenuBarView: View {
 
             Spacer()
 
-            SettingsLink {
+            Button(action: {
+                self.openWindow(id: "settings")
+                NSApp.activate(ignoringOtherApps: true)
+            }) {
                 Image(systemName: "gear")
             }
             .buttonStyle(.plain)
