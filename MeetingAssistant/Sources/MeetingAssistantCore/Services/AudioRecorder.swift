@@ -2,7 +2,10 @@ import Foundation
 @preconcurrency import ScreenCaptureKit
 import AVFoundation
 import CoreGraphics
+import CoreMedia
+import AudioToolbox
 import os.log
+
 
 /// Service for capturing system audio and microphone using ScreenCaptureKit and AVAudioEngine.
 /// Mixes both sources into a single 16kHz Mono M4A file for Parakeet.
@@ -36,26 +39,15 @@ class AudioRecorder: ObservableObject {
     // Internal processing format (standard 48kHz or 44.1kHz is usually best for engine)
     private let processingSampleRate: Double = 48000
     
-    // Video capture (minimal)
+    // Video capture (limit to minimal to save resources as we only want audio)
     private let minVideoDimension = 2
     private let videoFrameRate = 1
     
     private init() {
-        setupAudioEngine()
+        // We delay engine setup until needed to avoid claiming resources too early
     }
     
-    private func setupAudioEngine() {
-        engine.attach(systemAudioPlayer)
-        
-        // Connect system audio player to main mixer
-        // We'll configure format later when we start recording and know the hardware format
-        let mainMixer = engine.mainMixerNode
-        engine.connect(systemAudioPlayer, to: mainMixer, format: nil)
-        
-        // Microphone input is connected automatically by the engine when we access inputNode,
-        // but we need to ensure volume is up and format is compatible.
-        // We'll do this in startRecording.
-    }
+    // MARK: - Lifecycle Management
     
     /// Start recording system audio + microphone.
     func startRecording(to outputURL: URL) async throws {
@@ -70,27 +62,41 @@ class AudioRecorder: ObservableObject {
             throw AudioRecorderError.permissionDenied
         }
         
-        // 1. Prepare Audio Engine
-        try prepareEngine()
+        // Cleanup potential previous state
+        await cleanup()
         
-        // 2. Setup Asset Writer
-        try setupAssetWriter(outputURL: outputURL)
-        
-        // 3. Setup ScreenCaptureKit (System Audio)
-        try await setupScreenCapture()
-        
-        // 4. Install Tap on Main Mixer to write to file
-        installTap()
-        
-        // 5. Start Engine
-        try engine.start()
-        
-        // 6. Start Screen Capture
-        try await stream?.startCapture()
-        
-        isRecording = true
-        currentRecordingURL = outputURL
-        logger.info("Audio Engine & Screen Capture started")
+        do {
+            // 1. Prepare Audio Engine
+            try prepareEngine()
+            
+            // 2. Setup ScreenCaptureKit (System Audio)
+            // We do this BEFORE writer to fail fast if no display / permission
+            try await setupScreenCapture()
+            
+            // 3. Setup Asset Writer
+            try setupAssetWriter(outputURL: outputURL)
+            
+            // 4. Install Tap on Main Mixer to write to file
+            installTap()
+            
+            // 5. Start Engine
+            try engine.start()
+            
+            // 6. Start Screen Capture
+            if let stream = stream {
+                try await stream.startCapture()
+            }
+            
+            isRecording = true
+            currentRecordingURL = outputURL
+            logger.info("Audio Engine & Screen Capture started successfully")
+            
+        } catch {
+            logger.error("Failed to start recording: \(error.localizedDescription)")
+            // Rollback/Cleanup on failure
+            await cleanup()
+            throw error
+        }
     }
     
     /// Stop recording.
@@ -100,9 +106,9 @@ class AudioRecorder: ObservableObject {
         
         logger.info("Stopping recording...")
         
-        // Stop capture related items
+        // Stop capture
         if let stream = stream {
-            try await stream.stopCapture()
+            try? await stream.stopCapture()
         }
         
         engine.stop()
@@ -114,31 +120,57 @@ class AudioRecorder: ObservableObject {
             await assetWriter.finishWriting()
         }
         
-        // Cleanup
-        stream = nil
-        streamOutput = nil
-        assetWriter = nil
-        audioInput = nil
-        isRecording = false
+        // Cleanup resources
+        let url = currentRecordingURL
+        await cleanup(keepFile: true)
         
         // Validate
-        if let url = currentRecordingURL {
+        if let url = url {
             verifyFileIntegrity(url: url)
             return url
         }
         return nil
     }
     
+    /// Internal cleanup method to reset state
+    private func cleanup(keepFile: Bool = false) async {
+        stream = nil
+        streamOutput = nil
+        
+        engine.stop()
+        engine.reset()
+        engine.mainMixerNode.removeTap(onBus: 0)
+        
+        // Reset player node connections
+        engine.detach(systemAudioPlayer)
+        
+        assetWriter = nil
+        audioInput = nil
+        
+        totalFrames = 0
+        
+        isRecording = false
+        if !keepFile {
+            currentRecordingURL = nil
+        }
+    }
+    
     // MARK: - Setup Methods
     
     private func prepareEngine() throws {
+        // Ensure detached first
+        engine.detach(systemAudioPlayer)
+        engine.attach(systemAudioPlayer)
+        
         let inputNode = engine.inputNode
         let mainMixer = engine.mainMixerNode
         
         // Configure Microphone Input
         // Note: inputNode format is read-only and determined by hardware.
-        // We connect it to mixer, allowing mixer to handle resampling if needed.
         let inputFormat = inputNode.inputFormat(forBus: 0)
+        
+        // Connect Input -> Mixer
+        // We let the mixer handle sample rate conversion if needed
         engine.connect(inputNode, to: mainMixer, format: inputFormat)
         
         // Configure System Audio Player
@@ -147,6 +179,8 @@ class AudioRecorder: ObservableObject {
             logger.error("Failed to create stereo AVAudioFormat")
             throw AudioRecorderError.recordingFailed("Could not create audio format")
         }
+        
+        // Connect Player -> Mixer
         engine.connect(systemAudioPlayer, to: mainMixer, format: stereoFormat)
         
         engine.prepare()
@@ -157,31 +191,43 @@ class AudioRecorder: ObservableObject {
             try FileManager.default.removeItem(at: outputURL)
         }
         
-        assetWriter = try AVAssetWriter(outputURL: outputURL, fileType: .m4a)
+        let writer = try AVAssetWriter(outputURL: outputURL, fileType: .m4a)
+        assetWriter = writer
         
-        // Output format: AAC, 16kHz, Mono
+        // Output format: M4A (AAC), 16kHz, Mono
+        var acl = AudioChannelLayout()
+        memset(&acl, 0, MemoryLayout<AudioChannelLayout>.size)
+        acl.mChannelLayoutTag = kAudioChannelLayoutTag_Mono
+        
         let outputSettings: [String: Any] = [
             AVFormatIDKey: kAudioFormatMPEG4AAC,
             AVSampleRateKey: outputSampleRate,
             AVNumberOfChannelsKey: outputChannels,
-            AVEncoderBitRateKey: audioBitRate
+            AVEncoderBitRateKey: audioBitRate,
+            AVChannelLayoutKey: Data(bytes: &acl, count: MemoryLayout<AudioChannelLayout>.size)
         ]
         
-        audioInput = AVAssetWriterInput(mediaType: .audio, outputSettings: outputSettings)
-        audioInput?.expectsMediaDataInRealTime = true
-        
-        guard let writer = assetWriter, let input = audioInput else { return }
+        let input = AVAssetWriterInput(mediaType: .audio, outputSettings: outputSettings)
+        input.expectsMediaDataInRealTime = true
+        audioInput = input
         
         if writer.canAdd(input) {
             writer.add(input)
+        } else {
+            throw AudioRecorderError.recordingFailed("Cannot add audio input to writer")
         }
         
-        writer.startWriting()
+        if !writer.startWriting() {
+            throw AudioRecorderError.recordingFailed("Failed to start writing: \(writer.error?.localizedDescription ?? "Unknown error")")
+        }
+        
         writer.startSession(atSourceTime: .zero)
     }
     
     private func setupScreenCapture() async throws {
         let content = try await SCShareableContent.current
+        
+        // Prioritize finding a suitable display
         guard let display = content.displays.first else {
             throw AudioRecorderError.noDisplayFound
         }
@@ -190,6 +236,7 @@ class AudioRecorder: ObservableObject {
         let config = SCStreamConfiguration()
         
         config.capturesAudio = true
+        config.excludesCurrentProcessAudio = true // Avoid feedback loop?
         // Capture at our processing rate to match the player node
         config.sampleRate = Int(processingSampleRate)
         config.channelCount = 2 // Capture stereo from system
@@ -202,6 +249,7 @@ class AudioRecorder: ObservableObject {
         let queue = DispatchQueue(label: "audio-capture")
         audioCaptureQueue = queue
         
+        // Create output handler
         let output = AudioStreamOutput(playerNode: systemAudioPlayer, logger: logger)
         streamOutput = output
         
@@ -217,6 +265,9 @@ class AudioRecorder: ObservableObject {
         let mainMixer = engine.mainMixerNode
         let format = mainMixer.outputFormat(forBus: 0) // The mixer's operating format
         
+        // Remove existing tap if any
+        mainMixer.removeTap(onBus: 0)
+        
         mainMixer.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] (buffer, time) in
             guard let self = self,
                   let input = self.audioInput,
@@ -224,20 +275,16 @@ class AudioRecorder: ObservableObject {
                   writer.status == .writing,
                   input.isReadyForMoreMediaData else { return }
             
-            // Adjust timestamp to be continuous
-            // Note: In a real app, we might need robust timestamp logic.
-            // For now, we rely on the continuous stream from the mixer.
-            
-            // Convert AVAudioPCMBuffer to CMSampleBuffer for AVAssetWriter
+            // Create a CMSampleBuffer wrapping the data
             if let sampleBuffer = self.createSampleBuffer(from: buffer) {
                 input.append(sampleBuffer)
             }
         }
     }
     
-    /// Converts AVAudioPCMBuffer to CMSampleBuffer
+    /// Converts AVAudioPCMBuffer to CMSampleBuffer safely
     private func createSampleBuffer(from buffer: AVAudioPCMBuffer) -> CMSampleBuffer? {
-        return createCMSampleBuffer(from: buffer, timestamp: getCurrentTimestamp(for: buffer))
+        return createCMSampleBufferWithAudioBufferList(from: buffer, timestamp: getCurrentTimestamp(for: buffer))
     }
     
     private var totalFrames: AVAudioFramePosition = 0
@@ -252,24 +299,25 @@ class AudioRecorder: ObservableObject {
         return time
     }
     
-    private func createCMSampleBuffer(from buffer: AVAudioPCMBuffer, timestamp: CMTime) -> CMSampleBuffer? {
-        var backingASBD = buffer.format.streamDescription.pointee
+    /// Safer creation of CMSampleBuffer using CMSampleBufferCreate and CMSampleBufferSetDataBufferFromAudioBufferList
+    private func createCMSampleBufferWithAudioBufferList(from buffer: AVAudioPCMBuffer, timestamp: CMTime) -> CMSampleBuffer? {
+        let formatDescription = buffer.format.formatDescription
         
-        var formatDesc: CMAudioFormatDescription?
-        CMAudioFormatDescriptionCreate(allocator: kCFAllocatorDefault, asbd: &backingASBD, layoutSize: 0, layout: nil, magicCookieSize: 0, magicCookie: nil, extensions: nil, formatDescriptionOut: &formatDesc)
-        
-        guard let format = formatDesc else { return nil }
+        var timing = CMSampleTimingInfo(
+            duration: CMTime(value: 1, timescale: Int32(buffer.format.sampleRate)),
+            presentationTimeStamp: timestamp,
+            decodeTimeStamp: .invalid
+        )
         
         var sampleBuffer: CMSampleBuffer?
-        var timing = CMSampleTimingInfo(duration: CMTime(value: 1, timescale: Int32(backingASBD.mSampleRate)), presentationTimeStamp: timestamp, decodeTimeStamp: .invalid)
         
-        CMSampleBufferCreate(
+        let status = CMSampleBufferCreate(
             allocator: kCFAllocatorDefault,
             dataBuffer: nil,
-            dataReady: true,
+            dataReady: false,
             makeDataReadyCallback: nil,
             refcon: nil,
-            formatDescription: format,
+            formatDescription: formatDescription,
             sampleCount: CMItemCount(buffer.frameLength),
             sampleTimingEntryCount: 1,
             sampleTimingArray: &timing,
@@ -278,10 +326,12 @@ class AudioRecorder: ObservableObject {
             sampleBufferOut: &sampleBuffer
         )
         
-        guard let sBuffer = sampleBuffer else { return nil }
+        guard status == noErr, let sBuffer = sampleBuffer else {
+            logger.error("CMSampleBufferCreate failed: \(status)")
+            return nil
+        }
         
-        // Copy data
-        let status = CMSampleBufferSetDataBufferFromAudioBufferList(
+        let result = CMSampleBufferSetDataBufferFromAudioBufferList(
             sBuffer,
             blockBufferAllocator: kCFAllocatorDefault,
             blockBufferMemoryAllocator: kCFAllocatorDefault,
@@ -289,7 +339,12 @@ class AudioRecorder: ObservableObject {
             bufferList: buffer.audioBufferList
         )
         
-        return status == noErr ? sBuffer : nil
+        if result != noErr {
+            logger.error("CMSampleBufferSetDataBufferFromAudioBufferList failed: \(result)")
+            return nil
+        }
+        
+        return sBuffer
     }
     
     // MARK: - Helper Methods
@@ -305,11 +360,13 @@ class AudioRecorder: ObservableObject {
     }
     
     func requestPermission() async {
-        // Screen Recording (triggers prompt if needed)
-        _ = try? await SCShareableContent.current
-        
         // Microphone (triggers prompt if needed)
         await AVCaptureDevice.requestAccess(for: .audio)
+        
+        // Screen Recording (triggers prompt if needed via SCKit)
+        // There is no explicit request API for Screen Recording, 
+        // calling SCShareableContent.current usually triggers it if not authorized.
+        _ = try? await SCShareableContent.current
     }
     
     func openScreenRecordingSettings() {
@@ -350,9 +407,13 @@ private class AudioStreamOutput: NSObject, SCStreamOutput {
         guard type == .audio, sampleBuffer.isValid else { return }
         
         // Convert CMSampleBuffer to AVAudioPCMBuffer
-        // We know we requested 48kHz Stereo, which connects to our player
         if let buffer = createPCMBuffer(from: sampleBuffer) {
-            playerNode.scheduleBuffer(buffer)
+            // Schedule the buffer to play
+            playerNode.scheduleBuffer(buffer) {
+                // Completion handler (optional)
+            }
+            
+            // Ensure player is playing
             if !playerNode.isPlaying {
                 playerNode.play()
             }
@@ -364,7 +425,9 @@ private class AudioStreamOutput: NSObject, SCStreamOutput {
         let format = AVAudioFormat(cmAudioFormatDescription: formatDescription)
         
         let frames = AVAudioFrameCount(sampleBuffer.numSamples)
-        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frames) else { return nil }
+        
+        // Ensure strictly that we can allocate this buffer
+        guard frames > 0, let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frames) else { return nil }
         buffer.frameLength = frames
         
         let status = CMSampleBufferCopyPCMDataIntoAudioBufferList(
