@@ -14,19 +14,19 @@ public enum DateFilter: String, CaseIterable, Sendable {
     public var displayName: String {
         switch self {
         case .today:
-            "Today"
+            "Hoje"
         case .yesterday:
-            "Yesterday"
+            "Ontem"
         case .thisWeek:
-            "This Week"
+            "Esta Semana"
         case .lastWeek:
-            "Last Week"
+            "Semana Passada"
         case .thisMonth:
-            "This Month"
+            "Este Mês"
         case .lastMonth:
-            "Last Month"
+            "Mês Passado"
         case .allEntries:
-            "All Entries"
+            "Todas"
         }
     }
 
