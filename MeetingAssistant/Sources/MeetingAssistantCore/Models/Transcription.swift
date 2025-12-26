@@ -115,6 +115,26 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
         return String(self.text.prefix(100)) + "..."
     }
 
+    /// Short preview for list display (first 80 chars).
+    public var truncatedPreview: String {
+        if self.text.count <= 80 {
+            return self.text
+        }
+        return String(self.text.prefix(80)) + "..."
+    }
+
+    /// Cached time formatter for transcription times.
+    private static let timeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return formatter
+    }()
+
+    /// Formatted time string for display.
+    public var formattedTime: String {
+        Self.timeFormatter.string(from: self.createdAt)
+    }
+
     /// A segment of the transcription associated with a speaker.
     public struct Segment: Identifiable, Codable, Hashable, Sendable {
         public let id: UUID

@@ -4,7 +4,6 @@ import SwiftUI
 public struct MenuBarView: View {
     @EnvironmentObject var recordingManager: RecordingManager
     @StateObject private var viewModel: RecordingViewModel
-    @State private var showingTranscriptions = false
 
     public init(viewModel: RecordingViewModel? = nil) {
         // Allow injection for previews/tests, otherwise delay initialization until onAppear/Environment is available
@@ -63,7 +62,6 @@ public struct MenuBarView: View {
             TranscriptionStatusView(viewModel: self.viewModel.transcriptionViewModel)
 
             self.controlButtons
-            self.transcriptionsList
         }
         .padding()
         .frame(minWidth: 300)
@@ -138,20 +136,6 @@ public struct MenuBarView: View {
             }
 
             TranscribeFileButton(viewModel: self.viewModel)
-
-            Button(action: { self.showingTranscriptions.toggle() }) {
-                Label("Transcrições", systemImage: "doc.text")
-            }
-            .buttonStyle(.bordered)
-        }
-    }
-
-    private var transcriptionsList: some View {
-        Group {
-            if self.showingTranscriptions {
-                TranscriptionListView()
-                    .frame(height: 200)
-            }
         }
     }
 

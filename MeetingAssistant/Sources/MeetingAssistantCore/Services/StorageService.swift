@@ -23,6 +23,9 @@ public protocol StorageService: Sendable {
 
     /// Save a transcription to persistent storage.
     func saveTranscription(_ transcription: Transcription) async throws
+
+    /// Load all transcriptions from storage.
+    func loadTranscriptions() async throws -> [Transcription]
 }
 
 // MARK: - Implementation
@@ -103,5 +106,36 @@ public final class FileSystemStorageService: StorageService {
         try data.write(to: url)
 
         self.logger.info("Saved transcription to \(filename)")
+    }
+
+    public func loadTranscriptions() async throws -> [Transcription] {
+        let fileManager = FileManager.default
+        let contents = try fileManager.contentsOfDirectory(
+            at: self.transcriptsDirectory,
+            includingPropertiesForKeys: [.contentModificationDateKey],
+            options: .skipsHiddenFiles
+        )
+
+        let jsonFiles = contents.filter { $0.pathExtension == "json" }
+        var transcriptions: [Transcription] = []
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+
+        for file in jsonFiles {
+            do {
+                let data = try Data(contentsOf: file)
+                let transcription = try decoder.decode(Transcription.self, from: data)
+                transcriptions.append(transcription)
+            } catch {
+                self.logger.warning("Failed to load transcription \(file.lastPathComponent): \(error.localizedDescription)")
+            }
+        }
+
+        // Sort by date, most recent first
+        transcriptions.sort { $0.createdAt > $1.createdAt }
+
+        self.logger.info("Loaded \(transcriptions.count) transcriptions")
+        return transcriptions
     }
 }
