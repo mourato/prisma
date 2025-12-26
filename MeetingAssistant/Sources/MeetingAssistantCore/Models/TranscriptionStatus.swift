@@ -1,7 +1,6 @@
 import Foundation
 
 /// Represents the current state of the transcription service.
-/// Represents the current state of the transcription service.
 public enum ServiceState: String, Codable, Equatable {
     case unknown = "unknown"
     case connecting = "connecting"
@@ -11,7 +10,6 @@ public enum ServiceState: String, Codable, Equatable {
 }
 
 /// Represents the model loading state.
-/// Represents the model loading state.
 public enum ModelState: String, Codable, Equatable {
     case unloaded = "unloaded"
     case downloading = "downloading"
@@ -20,7 +18,6 @@ public enum ModelState: String, Codable, Equatable {
     case error = "error"
 }
 
-/// Represents the transcription processing phase.
 /// Represents the transcription processing phase.
 public enum TranscriptionPhase: String, Codable, Equatable {
     case idle = "idle"
@@ -32,7 +29,6 @@ public enum TranscriptionPhase: String, Codable, Equatable {
 }
 
 /// Comprehensive status of the transcription system.
-/// Tracks model, service, and transcription state for UI feedback.
 @MainActor
 public class TranscriptionStatus: ObservableObject {
     // MARK: - Service State
@@ -238,7 +234,6 @@ public class TranscriptionStatus: ObservableObject {
 
 // MARK: - Error Types
 
-/// Errors related to transcription status.
 /// Errors related to transcription status.
 public enum TranscriptionStatusError: LocalizedError, Equatable {
     case serviceUnavailable
