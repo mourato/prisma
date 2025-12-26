@@ -292,8 +292,6 @@ public struct CompactTranscriptionStatusView: View {
                         .stroke(dotColor.opacity(0.5), lineWidth: 1)
                         .scaleEffect(1.5)
                         .opacity(viewModel.isProcessing ? 1 : 0)
-                        .animation(
-                            .easeInOut(duration: 1).repeatForever(), value: viewModel.isProcessing)
                 }
             }
     }
