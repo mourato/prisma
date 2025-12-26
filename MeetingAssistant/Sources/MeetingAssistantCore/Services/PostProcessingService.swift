@@ -37,6 +37,15 @@ public enum PostProcessingError: LocalizedError {
 public class PostProcessingService: ObservableObject {
     public static let shared = PostProcessingService()
     
+    // MARK: - Constants
+    
+    private enum Constants {
+        /// Maximum tokens for AI response (suitable for long meeting notes).
+        static let maxTokens = 4096
+        /// Request timeout in seconds (AI responses can be slow for long texts).
+        static let requestTimeoutSeconds: TimeInterval = 120
+    }
+    
     @Published public private(set) var isProcessing = false
     @Published public private(set) var lastError: PostProcessingError?
     
@@ -129,7 +138,7 @@ public class PostProcessingService: ObservableObject {
         }
         
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
-        request.timeoutInterval = 120 // AI responses can take a while
+        request.timeoutInterval = Constants.requestTimeoutSeconds
         
         logger.debug("Sending post-processing request to \(endpoint)")
         
@@ -170,7 +179,7 @@ public class PostProcessingService: ObservableObject {
         case .anthropic:
             return [
                 "model": model,
-                "max_tokens": 4096,
+                "max_tokens": Constants.maxTokens,
                 "system": systemMessage,
                 "messages": [
                     ["role": "user", "content": userMessage]
@@ -183,7 +192,7 @@ public class PostProcessingService: ObservableObject {
                     ["role": "system", "content": systemMessage],
                     ["role": "user", "content": userMessage]
                 ],
-                "max_tokens": 4096
+                "max_tokens": Constants.maxTokens
             ]
         }
     }
