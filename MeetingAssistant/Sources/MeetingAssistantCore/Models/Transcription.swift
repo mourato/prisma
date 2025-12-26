@@ -137,6 +137,8 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
             self.endTime = endTime
         }
     }
+    /// Default string for unknown speaker.
+    public static let unknownSpeaker = "Desconhecido"
 }
 
 /// Response from transcription API.

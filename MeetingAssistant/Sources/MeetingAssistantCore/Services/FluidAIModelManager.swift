@@ -126,36 +126,17 @@ class FluidAIModelManager: ObservableObject {
         // Use the file-based API for automatic conversion
         let result = try await manager.transcribe(audioURL, source: .system)
 
-        // Use tokens for precise alignment derived from 'token timings'
-        // Assuming result.tokens exists. If not, we might need a fallback or upgrade.
-        // We'll map them to our internal struct.
-        // Note: Assuming tokens have start/end times.
-        // If compilation fails on `tokens`, we'll need to investigate available properties on ASRResult again.
+        // Map library segments to our internal struct
+        // Assuming result.segments exists and has text, start, end (standard Whisper/Parakeet output)
+        let mappedSegments = result.segments.map { segment in
+            AsrSegment(
+                text: segment.text,
+                startTime: Double(segment.start),
+                endTime: Double(segment.end)
+            )
+        }
 
-        // For now, let's assume we can get tokens.
-        // If result.tokens is missing, we will return empty tokens list (fallback).
-
-        var mappedTokens: [AsrToken] = []
-
-        // Attempt to access tokens if available (dynamically if needed? No, Swift is static).
-        // Let's rely on the documentation claim "token timings".
-        // If the property is named 'tokenTimings', we'd use that.
-        // Let's gamble on 'tokens' first as it's standard.
-
-        /*
-           If result.tokens is available:
-        */
-
-        // mappedTokens = result.tokens.map { token in
-        //    AsrToken(text: token.text, startTime: Double(token.start), endTime: Double(token.end))
-        // }
-
-        // Since I'm not 100% sure of the property name and I want to avoid another build error loop:
-        // I will return empty tokens for now and add a TODO to implement proper token extraction once verified.
-        // This allows me to proceed with the orchestration logic.
-        // I'll leave the struct there.
-
-        return (result.text, mappedTokens)
+        return (result.text, mappedSegments)
     }
 
     private func convertTo16kHz(buffer: AVAudioPCMBuffer) throws -> AVAudioPCMBuffer {
