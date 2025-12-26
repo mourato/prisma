@@ -13,25 +13,25 @@ public enum PostProcessingError: LocalizedError {
     case apiError(String)
     case emptyTranscription
     case transcriptionTooLong(Int)
-    
+
     public var errorDescription: String? {
         switch self {
         case .noPromptSelected:
-            return "Nenhum prompt de pós-processamento selecionado"
+            "Nenhum prompt de pós-processamento selecionado"
         case .noAPIConfigured:
-            return "API de IA não configurada"
+            "API de IA não configurada"
         case .invalidURL:
-            return "URL da API inválida"
-        case .requestFailed(let error):
-            return "Falha na requisição: \(error.localizedDescription)"
+            "URL da API inválida"
+        case let .requestFailed(error):
+            "Falha na requisição: \(error.localizedDescription)"
         case .invalidResponse:
-            return "Resposta inválida da API"
-        case .apiError(let message):
-            return "Erro da API: \(message)"
+            "Resposta inválida da API"
+        case let .apiError(message):
+            "Erro da API: \(message)"
         case .emptyTranscription:
-            return "A transcrição está vazia"
-        case .transcriptionTooLong(let count):
-            return "Transcrição muito longa (\(count) caracteres). Máximo permitido: 100.000"
+            "A transcrição está vazia"
+        case let .transcriptionTooLong(count):
+            "Transcrição muito longa (\(count) caracteres). Máximo permitido: 100.000"
         }
     }
 }
@@ -42,9 +42,9 @@ public enum PostProcessingError: LocalizedError {
 @MainActor
 public class PostProcessingService: ObservableObject, PostProcessingServiceProtocol {
     public static let shared = PostProcessingService()
-    
+
     // ...
-    
+
     private enum Constants {
         /// Maximum tokens for AI response (suitable for long meeting notes).
         static let maxTokens = 4096
@@ -55,33 +55,33 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
         /// Maximum input characters to prevent excessive API costs.
         static let maxInputCharacters = 100_000
     }
-    
+
     @Published public private(set) var isProcessing = false
     @Published public private(set) var lastError: PostProcessingError?
-    
+
     private let settings = AppSettingsStore.shared
     private let logger = Logger(subsystem: "MeetingAssistant", category: "PostProcessing")
-    
+
     private init() {}
-    
+
     // MARK: - Public API
-    
+
     /// Processes a transcription using the currently selected prompt.
     /// - Parameter transcription: The raw transcription text.
     /// - Returns: The processed text from the AI.
     public func processTranscription(_ transcription: String) async throws -> String {
-        guard settings.postProcessingEnabled else {
-            logger.info("Post-processing is disabled, returning original transcription")
+        guard self.settings.postProcessingEnabled else {
+            self.logger.info("Post-processing is disabled, returning original transcription")
             return transcription
         }
-        
+
         guard let prompt = settings.selectedPrompt else {
             throw PostProcessingError.noPromptSelected
         }
-        
-        return try await processTranscription(transcription, with: prompt)
+
+        return try await self.processTranscription(transcription, with: prompt)
     }
-    
+
     /// Processes a transcription using a specific prompt.
     /// - Parameters:
     ///   - transcription: The raw transcription text.
@@ -93,55 +93,55 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
         guard !trimmedTranscription.isEmpty else {
             throw PostProcessingError.emptyTranscription
         }
-        
+
         guard trimmedTranscription.count <= Constants.maxInputCharacters else {
             throw PostProcessingError.transcriptionTooLong(trimmedTranscription.count)
         }
-        
-        guard settings.aiConfiguration.isValid else {
+
+        guard self.settings.aiConfiguration.isValid else {
             throw PostProcessingError.noAPIConfigured
         }
-        
-        isProcessing = true
-        lastError = nil
-        
+
+        self.isProcessing = true
+        self.lastError = nil
+
         defer { isProcessing = false }
-        
+
         do {
             let result = try await sendToAI(transcription: transcription, prompt: prompt)
-            logger.info("Post-processing completed successfully")
+            self.logger.info("Post-processing completed successfully")
             return result
         } catch let error as PostProcessingError {
             lastError = error
             throw error
         } catch {
             let processingError = PostProcessingError.requestFailed(error)
-            lastError = processingError
+            self.lastError = processingError
             throw processingError
         }
     }
-    
+
     // MARK: - Private Methods
-    
+
     // MARK: - Private Methods
-    
+
     private func sendToAI(transcription: String, prompt: PostProcessingPrompt) async throws -> String {
-        let config = settings.aiConfiguration
-        
+        let config = self.settings.aiConfiguration
+
         guard let apiKey = try? KeychainManager.retrieve(for: .aiAPIKey), !apiKey.isEmpty else {
             throw PostProcessingError.noAPIConfigured
         }
-        
-        let endpoint = buildEndpoint(for: config.provider, baseURL: config.baseURL)
-        
+
+        let endpoint = self.buildEndpoint(for: config.provider, baseURL: config.baseURL)
+
         guard let url = URL(string: endpoint) else {
             throw PostProcessingError.invalidURL
         }
-        
+
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
+
         // Authorization Headers
         switch config.provider {
         case .anthropic:
@@ -150,12 +150,12 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
         case .openai, .groq, .custom:
             request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         }
-        
+
         // Request Body Creation using Codable
-        let systemMessage = settings.systemPrompt
+        let systemMessage = self.settings.systemPrompt
         let userContent = AIPromptTemplates.userMessage(transcription: transcription, prompt: prompt.promptText)
         let encoder = JSONEncoder()
-        
+
         do {
             switch config.provider {
             case .anthropic:
@@ -166,11 +166,11 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
                     messages: [AIChatMessage(role: "user", content: userContent)]
                 )
                 request.httpBody = try encoder.encode(payload)
-                
+
             case .openai, .groq, .custom:
                 let messages = [
                     AIChatMessage(role: "system", content: systemMessage),
-                    AIChatMessage(role: "user", content: userContent)
+                    AIChatMessage(role: "user", content: userContent),
                 ]
                 let payload = OpenAIChatRequest(
                     model: config.selectedModel,
@@ -180,42 +180,42 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
                 request.httpBody = try encoder.encode(payload)
             }
         } catch {
-            logger.error("Failed to encode request body: \(error.localizedDescription)")
+            self.logger.error("Failed to encode request body: \(error.localizedDescription)")
             throw PostProcessingError.requestFailed(error)
         }
-        
+
         request.timeoutInterval = Constants.requestTimeoutSeconds
-        
-        logger.debug("Sending post-processing request to \(endpoint)")
-        
+
+        self.logger.debug("Sending post-processing request to \(endpoint)")
+
         let (data, response) = try await URLSession.shared.data(for: request)
-        
+
         guard let httpResponse = response as? HTTPURLResponse else {
             throw PostProcessingError.invalidResponse
         }
-        
+
         // Error Handling
         guard (200...299).contains(httpResponse.statusCode) else {
             let decoder = JSONDecoder()
             if let errorResponse = try? decoder.decode(OpenAIErrorResponse.self, from: data) {
-                 throw PostProcessingError.apiError(errorResponse.error.message)
+                throw PostProcessingError.apiError(errorResponse.error.message)
             }
             if let errorResponse = try? decoder.decode(AnthropicErrorResponse.self, from: data) {
                 throw PostProcessingError.apiError(errorResponse.error.message)
             }
-            
+
             // Fallback to raw string if possible
             let rawResponse = String(data: data, encoding: .utf8) ?? ""
             throw PostProcessingError.apiError("HTTP \(httpResponse.statusCode): \(rawResponse)")
         }
-        
+
         // Success Parsing
-        return try parseSuccessResponse(data: data, provider: config.provider)
+        return try self.parseSuccessResponse(data: data, provider: config.provider)
     }
-    
+
     private func parseSuccessResponse(data: Data, provider: AIProvider) throws -> String {
         let decoder = JSONDecoder()
-        
+
         do {
             switch provider {
             case .anthropic:
@@ -224,7 +224,7 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
                     throw PostProcessingError.invalidResponse
                 }
                 return text
-                
+
             case .openai, .groq, .custom:
                 let response = try decoder.decode(OpenAIChatResponse.self, from: data)
                 guard let content = response.choices.first?.message.content else {
@@ -233,15 +233,15 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
                 return content
             }
         } catch {
-            logger.error("Failed to decode response: \(error.localizedDescription)")
+            self.logger.error("Failed to decode response: \(error.localizedDescription)")
             throw PostProcessingError.invalidResponse
         }
     }
-    
+
     private func buildEndpoint(for provider: AIProvider, baseURL: String) -> String {
         // Remove potential trailing slash to avoid double slash
         let base = baseURL.hasSuffix("/") ? String(baseURL.dropLast()) : baseURL
-        
+
         switch provider {
         case .openai, .groq, .custom:
             return "\(base)/chat/completions"

@@ -1,6 +1,6 @@
-import Foundation
 import AppKit
 import Combine
+import Foundation
 import os.log
 
 /// Service for detecting active meetings from supported apps.
@@ -8,70 +8,70 @@ import os.log
 @MainActor
 public class MeetingDetector: ObservableObject {
     public static let shared = MeetingDetector()
-    
+
     private let logger = Logger(subsystem: "MeetingAssistant", category: "MeetingDetector")
-    
+
     @Published private(set) var detectedMeeting: MeetingApp?
     @Published private(set) var isMonitoring = false
-    
+
     private var monitoringTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
-    
+
     // Poll interval in seconds
     private let pollInterval: TimeInterval = 2.0
-    
+
     private init() {
-        setupAppNotifications()
+        self.setupAppNotifications()
     }
-    
+
     /// Start monitoring for meeting apps.
     func startMonitoring() {
-        guard !isMonitoring else { return }
-        
-        logger.info("Starting meeting detection monitoring")
-        isMonitoring = true
-        
+        guard !self.isMonitoring else { return }
+
+        self.logger.info("Starting meeting detection monitoring")
+        self.isMonitoring = true
+
         // Initial check
-        checkForMeetings()
-        
+        self.checkForMeetings()
+
         // Periodic polling
-        monitoringTimer = Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true) { [weak self] _ in
+        self.monitoringTimer = Timer.scheduledTimer(withTimeInterval: self.pollInterval, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 self?.checkForMeetings()
             }
         }
     }
-    
+
     /// Stop monitoring for meeting apps.
     func stopMonitoring() {
-        logger.info("Stopping meeting detection monitoring")
-        isMonitoring = false
-        monitoringTimer?.invalidate()
-        monitoringTimer = nil
-        detectedMeeting = nil
+        self.logger.info("Stopping meeting detection monitoring")
+        self.isMonitoring = false
+        self.monitoringTimer?.invalidate()
+        self.monitoringTimer = nil
+        self.detectedMeeting = nil
     }
-    
+
     /// Check currently running apps for active meetings.
     private func checkForMeetings() {
         let runningApps = NSWorkspace.shared.runningApplications
-        
+
         for meetingApp in MeetingApp.allCases {
-            if isMeetingActive(meetingApp, in: runningApps) {
-                if detectedMeeting != meetingApp {
-                    logger.info("Detected meeting: \(meetingApp.displayName)")
-                    detectedMeeting = meetingApp
+            if self.isMeetingActive(meetingApp, in: runningApps) {
+                if self.detectedMeeting != meetingApp {
+                    self.logger.info("Detected meeting: \(meetingApp.displayName)")
+                    self.detectedMeeting = meetingApp
                 }
                 return
             }
         }
-        
+
         // No meeting detected
-        if detectedMeeting != nil {
-            logger.info("Meeting ended")
-            detectedMeeting = nil
+        if self.detectedMeeting != nil {
+            self.logger.info("Meeting ended")
+            self.detectedMeeting = nil
         }
     }
-    
+
     /// Check if a specific meeting app has an active meeting.
     private func isMeetingActive(_ app: MeetingApp, in runningApps: [NSRunningApplication]) -> Bool {
         // Find matching running app
@@ -79,44 +79,44 @@ public class MeetingDetector: ObservableObject {
             guard let bundleId = runningApp.bundleIdentifier else { return false }
             return app.bundleIdentifiers.contains(bundleId)
         }
-        
+
         guard !matchingApps.isEmpty else { return false }
-        
+
         // For browser-based meetings, check window titles
         if app == .googleMeet {
-            return checkBrowserWindowTitles(for: app.windowTitlePatterns)
+            return self.checkBrowserWindowTitles(for: app.windowTitlePatterns)
         }
-        
+
         // For native apps, just check if running
         // More sophisticated detection could check window titles
         return true
     }
-    
+
     /// Check browser window titles for meeting indicators.
     private func checkBrowserWindowTitles(for patterns: [String]) -> Bool {
         // Get window list
         guard let windowList = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as? [[CFString: Any]] else {
             return false
         }
-        
+
         for window in windowList {
             guard let windowName = window[kCGWindowName] as? String else { continue }
-            
+
             for pattern in patterns {
                 if windowName.localizedCaseInsensitiveContains(pattern) {
-                    logger.debug("Found matching window: \(windowName)")
+                    self.logger.debug("Found matching window: \(windowName)")
                     return true
                 }
             }
         }
-        
+
         return false
     }
-    
+
     /// Setup notifications for app launches/terminations.
     private func setupAppNotifications() {
         let workspace = NSWorkspace.shared
-        
+
         // App launched
         workspace.notificationCenter.publisher(for: NSWorkspace.didLaunchApplicationNotification)
             .sink { [weak self] notification in
@@ -126,8 +126,8 @@ public class MeetingDetector: ObservableObject {
                     self?.checkForMeetings()
                 }
             }
-            .store(in: &cancellables)
-        
+            .store(in: &self.cancellables)
+
         // App terminated
         workspace.notificationCenter.publisher(for: NSWorkspace.didTerminateApplicationNotification)
             .sink { [weak self] notification in
@@ -137,6 +137,6 @@ public class MeetingDetector: ObservableObject {
                     self?.checkForMeetings()
                 }
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
     }
 }

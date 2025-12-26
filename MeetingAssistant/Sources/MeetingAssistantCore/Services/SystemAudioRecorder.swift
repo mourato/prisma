@@ -1,10 +1,10 @@
-import AVFoundation
 import Atomics
+import AVFoundation
 import Combine
 import CoreMedia
 import Foundation
-@preconcurrency import ScreenCaptureKit
 import os.log
+@preconcurrency import ScreenCaptureKit
 
 // MARK: - System Audio Recorder (Screen Capture)
 
@@ -18,22 +18,26 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
 
     @Published public private(set) var isRecording = false
     public var isRecordingPublisher: AnyPublisher<Bool, Never> {
-        $isRecording.eraseToAnyPublisher()
+        self.$isRecording.eraseToAnyPublisher()
     }
+
     @Published public private(set) var currentRecordingURL: URL?
     @Published public private(set) var error: Error?
 
     // MARK: - SCStream
+
     private var stream: SCStream?
     private var streamOutput: SystemAudioStreamOutput?
     private var audioCaptureQueue: DispatchQueue?
 
     // MARK: - File Writing (nonisolated for callback)
-    nonisolated(unsafe) private var audioFile: AVAudioFile?
+
+    private nonisolated(unsafe) var audioFile: AVAudioFile?
     private let fileWriteLock = NSLock()
 
     // MARK: - Configuration
-    private let sampleRate: Double = 16000.0
+
+    private let sampleRate: Double = 16_000.0
     private let channelCount: Int = 1
 
     // Minimal video config (we only want audio)
@@ -41,6 +45,7 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
     private let videoFrameRate = 1
 
     // MARK: - Validation
+
     private var validationTimer: Timer?
     private let hasReceivedValidBuffer = ManagedAtomic<Bool>(false)
     public var onRecordingError: ((Error) -> Void)?
@@ -48,11 +53,12 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
     private init() {}
 
     // MARK: - Deinit
+
     // NOTE: Ensures SCStream is stopped even on unexpected termination.
     // Without this, macOS keeps screen/audio capture active after crash.
     deinit {
         // Synchronously stop stream to prevent orphaned capture sessions
-        if let stream = stream {
+        if let stream {
             let semaphore = DispatchSemaphore(value: 0)
             Task {
                 try? await stream.stopCapture()
@@ -71,20 +77,20 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
     /// Start recording system audio to the specified URL.
     /// Note: retryCount is ignored for SystemAudio currently but required by protocol.
     public func startRecording(to outputURL: URL, retryCount: Int = 0) async throws {
-        guard !isRecording else {
-            logger.warning("Already recording system audio")
+        guard !self.isRecording else {
+            self.logger.warning("Already recording system audio")
             return
         }
 
-        guard await hasPermission() else {
+        guard await self.hasPermission() else {
             throw SystemAudioRecorderError.permissionDenied
         }
 
-        logger.info("Starting system audio recording to: \(outputURL.path)")
-        hasReceivedValidBuffer.store(false, ordering: .relaxed)
+        self.logger.info("Starting system audio recording to: \(outputURL.path)")
+        self.hasReceivedValidBuffer.store(false, ordering: .relaxed)
 
         // Setup SCStream
-        try await setupScreenCapture()
+        try await self.setupScreenCapture()
 
         // Prepare output file (stereo 48kHz WAV)
         guard
@@ -111,29 +117,29 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
             )
 
             // Use sync dispatch to set file (avoids NSLock in async context)
-            setAudioFile(file)
-            currentRecordingURL = outputURL
+            self.setAudioFile(file)
+            self.currentRecordingURL = outputURL
 
         } catch {
-            logger.error("Failed to create audio file: \(error.localizedDescription)")
+            self.logger.error("Failed to create audio file: \(error.localizedDescription)")
             throw SystemAudioRecorderError.failedToCreateFile(error)
         }
 
         // Start capture
         do {
-            try await stream?.startCapture()
-            isRecording = true
-            startValidationTimer()
-            logger.info("System audio capture started successfully")
+            try await self.stream?.startCapture()
+            self.isRecording = true
+            self.startValidationTimer()
+            self.logger.info("System audio capture started successfully")
         } catch {
-            logger.error("Failed to start screen capture: \(error.localizedDescription)")
-            await cleanup()
+            self.logger.error("Failed to start screen capture: \(error.localizedDescription)")
+            await self.cleanup()
             throw SystemAudioRecorderError.failedToStartCapture(error)
         }
     }
 
     public func openSettings() {
-        openScreenRecordingSettings()
+        self.openScreenRecordingSettings()
     }
 
     // openScreenRecordingSettings is defined in Permission Checking section below, removed valid redeclaration here
@@ -141,22 +147,22 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
     /// Stop recording and finalize the audio file.
     @discardableResult
     public func stopRecording() async -> URL? {
-        guard isRecording else { return currentRecordingURL }
+        guard self.isRecording else { return self.currentRecordingURL }
 
-        logger.info("Stopping system audio recording...")
+        self.logger.info("Stopping system audio recording...")
 
-        validationTimer?.invalidate()
-        validationTimer = nil
+        self.validationTimer?.invalidate()
+        self.validationTimer = nil
 
-        if let stream = stream {
+        if let stream {
             try? await stream.stopCapture()
         }
 
-        let url = currentRecordingURL
-        await cleanup()
+        let url = self.currentRecordingURL
+        await self.cleanup()
 
-        if let url = url {
-            verifyFileIntegrity(url: url)
+        if let url {
+            self.verifyFileIntegrity(url: url)
         }
 
         return url
@@ -165,7 +171,7 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
     // MARK: - Permission Checking
 
     public func hasPermission() async -> Bool {
-        return CGPreflightScreenCaptureAccess()
+        CGPreflightScreenCaptureAccess()
     }
 
     /// Returns the detailed permission state for screen recording.
@@ -175,7 +181,7 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
         // It returns false if denied or never requested
         // Unfortunately, macOS doesn't distinguish between "not determined" and "denied"
         // for screen recording via API, so we use a simple binary check
-        return CGPreflightScreenCaptureAccess() ? .granted : .notDetermined
+        CGPreflightScreenCaptureAccess() ? .granted : .notDetermined
     }
 
     public func requestPermission() async {
@@ -192,22 +198,22 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
 
     // MARK: - Thread-Safe Helpers
 
-    nonisolated private func setAudioFile(_ file: AVAudioFile?) {
-        fileWriteLock.lock()
-        audioFile = file
-        fileWriteLock.unlock()
+    private nonisolated func setAudioFile(_ file: AVAudioFile?) {
+        self.fileWriteLock.lock()
+        self.audioFile = file
+        self.fileWriteLock.unlock()
     }
 
-    nonisolated private func getAndClearAudioFile() -> AVAudioFile? {
-        fileWriteLock.lock()
-        let file = audioFile
-        audioFile = nil
-        fileWriteLock.unlock()
+    private nonisolated func getAndClearAudioFile() -> AVAudioFile? {
+        self.fileWriteLock.lock()
+        let file = self.audioFile
+        self.audioFile = nil
+        self.fileWriteLock.unlock()
         return file
     }
 
-    nonisolated private func markValidBufferReceived() {
-        hasReceivedValidBuffer.store(true, ordering: .relaxed)
+    private nonisolated func markValidBufferReceived() {
+        self.hasReceivedValidBuffer.store(true, ordering: .relaxed)
     }
 
     // MARK: - Private Methods
@@ -225,18 +231,18 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
         // Audio configuration
         config.capturesAudio = true
         config.excludesCurrentProcessAudio = true
-        config.sampleRate = Int(sampleRate)
-        config.channelCount = channelCount
+        config.sampleRate = Int(self.sampleRate)
+        config.channelCount = self.channelCount
 
         // Minimal video (required by SCStream but we don't use it)
-        config.width = minVideoDimension
-        config.height = minVideoDimension
-        config.minimumFrameInterval = CMTime(value: 1, timescale: Int32(videoFrameRate))
+        config.width = self.minVideoDimension
+        config.height = self.minVideoDimension
+        config.minimumFrameInterval = CMTime(value: 1, timescale: Int32(self.videoFrameRate))
 
-        stream = SCStream(filter: filter, configuration: config, delegate: nil)
+        self.stream = SCStream(filter: filter, configuration: config, delegate: nil)
 
         let queue = DispatchQueue(label: "MeetingAssistant.systemAudioCapture", qos: .userInitiated)
-        audioCaptureQueue = queue
+        self.audioCaptureQueue = queue
 
         // Create output handler
         let output = SystemAudioStreamOutput(
@@ -247,9 +253,9 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
                 self?.markValidBufferReceived()
             }
         )
-        streamOutput = output
+        self.streamOutput = output
 
-        try stream?.addStreamOutput(output, type: .audio, sampleHandlerQueue: queue)
+        try self.stream?.addStreamOutput(output, type: .audio, sampleHandlerQueue: queue)
     }
 
     private func cleanup() async {
@@ -258,28 +264,28 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
         if let activeStream = stream {
             do {
                 try await activeStream.stopCapture()
-                logger.debug("SCStream stopped successfully during cleanup")
+                self.logger.debug("SCStream stopped successfully during cleanup")
             } catch {
-                logger.warning(
+                self.logger.warning(
                     "Failed to stop SCStream during cleanup: \(error.localizedDescription)")
             }
         }
 
-        stream = nil
-        streamOutput = nil
-        audioCaptureQueue = nil
+        self.stream = nil
+        self.streamOutput = nil
+        self.audioCaptureQueue = nil
 
-        _ = getAndClearAudioFile()
+        _ = self.getAndClearAudioFile()
 
-        isRecording = false
-        hasReceivedValidBuffer.store(false, ordering: .relaxed)
+        self.isRecording = false
+        self.hasReceivedValidBuffer.store(false, ordering: .relaxed)
     }
 
     private func startValidationTimer() {
-        validationTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) {
+        self.validationTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) {
             [weak self] _ in
             Task { @MainActor in
-                guard let self = self else { return }
+                guard let self else { return }
 
                 let validationPassed = self.hasReceivedValidBuffer.load(ordering: .relaxed)
 
@@ -301,9 +307,9 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
         Task {
             do {
                 let duration = try await asset.load(.duration)
-                logger.info("System audio saved: \(url.lastPathComponent) (\(duration.seconds)s)")
+                self.logger.info("System audio saved: \(url.lastPathComponent) (\(duration.seconds)s)")
             } catch {
-                logger.error("Verification failed: \(error.localizedDescription)")
+                self.logger.error("Verification failed: \(error.localizedDescription)")
             }
         }
     }
@@ -337,16 +343,16 @@ private class SystemAudioStreamOutput: NSObject, SCStreamOutput {
 
         guard let buffer = createPCMBuffer(from: sampleBuffer) else { return }
 
-        fileLock.lock()
+        self.fileLock.lock()
         defer { fileLock.unlock() }
 
         guard let audioFile = getAudioFile() else { return }
 
         do {
             try audioFile.write(from: buffer)
-            onValidBuffer()
+            self.onValidBuffer()
         } catch {
-            logger.error("Failed to write system audio buffer: \(error.localizedDescription)")
+            self.logger.error("Failed to write system audio buffer: \(error.localizedDescription)")
         }
     }
 
@@ -386,17 +392,17 @@ public enum SystemAudioRecorderError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .permissionDenied:
-            return "Screen recording permission denied. Enable in System Preferences."
+            "Screen recording permission denied. Enable in System Preferences."
         case .noDisplayFound:
-            return "No display found for audio capture."
+            "No display found for audio capture."
         case .invalidFormat:
-            return "Failed to create audio format."
-        case .failedToCreateFile(let error):
-            return "Failed to create audio file: \(error.localizedDescription)"
-        case .failedToStartCapture(let error):
-            return "Failed to start screen capture: \(error.localizedDescription)"
+            "Failed to create audio format."
+        case let .failedToCreateFile(error):
+            "Failed to create audio file: \(error.localizedDescription)"
+        case let .failedToStartCapture(error):
+            "Failed to start screen capture: \(error.localizedDescription)"
         case .recordingValidationFailed:
-            return "System audio recording failed - no valid audio received"
+            "System audio recording failed - no valid audio received"
         }
     }
 }

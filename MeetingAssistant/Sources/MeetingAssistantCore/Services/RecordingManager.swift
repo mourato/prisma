@@ -1,8 +1,8 @@
 import AVFoundation
 import Combine
 import Foundation
-import UserNotifications
 import os.log
+import UserNotifications
 
 /// Central manager coordinating recording, meeting detection, and transcription.
 /// Orchestrates microphone and system audio recording with post-processing merge.
@@ -21,14 +21,17 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     @Published public private(set) var hasRequiredPermissions = false
 
     // MARK: - Protocol Publishers
+
     public var isRecordingPublisher: AnyPublisher<Bool, Never> {
-        $isRecording.eraseToAnyPublisher()
+        self.$isRecording.eraseToAnyPublisher()
     }
+
     public var isTranscribingPublisher: AnyPublisher<Bool, Never> {
-        $isTranscribing.eraseToAnyPublisher()
+        self.$isTranscribing.eraseToAnyPublisher()
     }
+
     public var currentMeetingPublisher: AnyPublisher<Meeting?, Never> {
-        $currentMeeting.eraseToAnyPublisher()
+        self.$currentMeeting.eraseToAnyPublisher()
     }
 
     /// Detailed transcription service status for UI feedback.
@@ -78,7 +81,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         self.storage = storage
         self.notificationService = notificationService
 
-        setupBindings()
+        self.setupBindings()
         notificationService.requestAuthorization()
         Task { [weak self] in
             await self?.checkPermission()
@@ -93,58 +96,59 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         guard let id = Bundle.main.bundleIdentifier else { return false }
         return !id.lowercased().contains("xctest")
     }
+
     public func checkPermission() async {
         let micPermission = await micRecorder.hasPermission()
         let screenPermission = await systemRecorder.hasPermission()
 
         // Update individual permission states using detailed state methods
-        let micState = micRecorder.getPermissionState()
-        let screenState = systemRecorder.getPermissionState()
+        let micState = self.micRecorder.getPermissionState()
+        let screenState = self.systemRecorder.getPermissionState()
 
-        permissionStatus.updateMicrophoneState(micState)
-        permissionStatus.updateScreenRecordingState(screenState)
+        self.permissionStatus.updateMicrophoneState(micState)
+        self.permissionStatus.updateScreenRecordingState(screenState)
 
-        hasRequiredPermissions = micPermission && screenPermission
+        self.hasRequiredPermissions = micPermission && screenPermission
     }
 
     /// Request permissions (Screen Recording + Microphone).
     public func requestPermission() async {
-        await micRecorder.requestPermission()
-        await systemRecorder.requestPermission()
-        await checkPermission()
+        await self.micRecorder.requestPermission()
+        await self.systemRecorder.requestPermission()
+        await self.checkPermission()
     }
 
     /// Open System Preferences to Screen Recording settings.
     public func openPermissionSettings() {
-        systemRecorder.openSettings()
+        self.systemRecorder.openSettings()
     }
 
     /// Open System Preferences to Microphone settings.
     public func openMicrophoneSettings() {
-        micRecorder.openSettings()
+        self.micRecorder.openSettings()
     }
 
     // MARK: - Public API
 
     /// Start recording audio for a meeting (both microphone and system audio).
     public func startRecording() async {
-        guard !isRecording else {
-            logger.warning("Already recording")
+        guard !self.isRecording else {
+            self.logger.warning("Already recording")
             return
         }
 
         do {
             // Determine meeting app (if detected)
-            let app = meetingDetector.detectedMeeting ?? .unknown
+            let app = self.meetingDetector.detectedMeeting ?? .unknown
 
             // Create meeting record
             let meeting = Meeting(app: app)
-            currentMeeting = meeting
+            self.currentMeeting = meeting
 
             // Generate output file paths using StorageService
-            micAudioURL = storage.createRecordingURL(for: meeting, type: .microphone)
-            systemAudioURL = storage.createRecordingURL(for: meeting, type: .system)
-            mergedAudioURL = storage.createRecordingURL(for: meeting, type: .merged)
+            self.micAudioURL = self.storage.createRecordingURL(for: meeting, type: .microphone)
+            self.systemAudioURL = self.storage.createRecordingURL(for: meeting, type: .system)
+            self.mergedAudioURL = self.storage.createRecordingURL(for: meeting, type: .merged)
 
             // Ensure URLs are valid
             guard let micURL = micAudioURL, let systemURL = systemAudioURL else {
@@ -152,36 +156,36 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             }
 
             // Start microphone recording
-            try await micRecorder.startRecording(to: micURL, retryCount: 0)
+            try await self.micRecorder.startRecording(to: micURL, retryCount: 0)
 
             // Start system audio recording (async)
-            try await systemRecorder.startRecording(to: systemURL, retryCount: 0)
+            try await self.systemRecorder.startRecording(to: systemURL, retryCount: 0)
 
-            isRecording = true
-            currentMeeting?.audioFilePath = mergedAudioURL?.path
+            self.isRecording = true
+            self.currentMeeting?.audioFilePath = self.mergedAudioURL?.path
 
-            logger.info("Recording started for \(app.displayName) (mic + system)")
+            self.logger.info("Recording started for \(app.displayName) (mic + system)")
 
         } catch {
-            logger.error("Failed to start recording: \(error.localizedDescription)")
-            lastError = error
+            self.logger.error("Failed to start recording: \(error.localizedDescription)")
+            self.lastError = error
 
             // Cleanup partial starts
-            _ = await micRecorder.stopRecording()
-            _ = await systemRecorder.stopRecording()
+            _ = await self.micRecorder.stopRecording()
+            _ = await self.systemRecorder.stopRecording()
 
-            currentMeeting = nil
+            self.currentMeeting = nil
         }
     }
 
     /// Stop recording and optionally transcribe.
     public func stopRecording() async {
-        await stopRecording(transcribe: true)
+        await self.stopRecording(transcribe: true)
     }
 
     public func stopRecording(transcribe: Bool = true) async {
-        guard isRecording else {
-            logger.warning("Not recording")
+        guard self.isRecording else {
+            self.logger.warning("Not recording")
             return
         }
 
@@ -191,67 +195,68 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             let sysURL = await systemRecorder.stopRecording()
 
             // Update meeting
-            currentMeeting?.endTime = Date()
-            isRecording = false
+            self.currentMeeting?.endTime = Date()
+            self.isRecording = false
 
-            logger.info("Recording stopped, merging audio files...")
+            self.logger.info("Recording stopped, merging audio files...")
 
             // Merge audio files
             var inputURLs: [URL] = []
-            if let micURL = micURL { inputURLs.append(micURL) }
-            if let sysURL = sysURL { inputURLs.append(sysURL) }
+            if let micURL { inputURLs.append(micURL) }
+            if let sysURL { inputURLs.append(sysURL) }
 
             guard let outputURL = mergedAudioURL else {
                 throw RecordingManagerError.noOutputPath
             }
 
             let finalURL = try await audioMerger.mergeAudioFiles(
-                inputURLs: inputURLs, to: outputURL)
+                inputURLs: inputURLs, to: outputURL
+            )
 
             // Clean up temporary files
-            cleanupTemporaryFiles()
+            self.cleanupTemporaryFiles()
 
-            logger.info("Audio merge complete: \(finalURL.lastPathComponent)")
+            self.logger.info("Audio merge complete: \(finalURL.lastPathComponent)")
 
             // Transcribe if requested
             if transcribe, let meeting = currentMeeting {
-                await transcribeRecording(audioURL: finalURL, meeting: meeting)
+                await self.transcribeRecording(audioURL: finalURL, meeting: meeting)
             }
 
         } catch {
-            logger.error("Failed to stop recording: \(error.localizedDescription)")
-            lastError = error
-            isRecording = false
+            self.logger.error("Failed to stop recording: \(error.localizedDescription)")
+            self.lastError = error
+            self.isRecording = false
         }
     }
 
     /// Enable automatic recording when meetings are detected.
     func enableAutoRecording() {
-        meetingDetector.startMonitoring()
+        self.meetingDetector.startMonitoring()
 
         // Watch for detected meetings
-        meetingDetector.$detectedMeeting
+        self.meetingDetector.$detectedMeeting
             .dropFirst()
             .removeDuplicates()
             .sink { [weak self] detected in
                 Task { @MainActor in
-                    if detected != nil && !(self?.isRecording ?? false) {
+                    if detected != nil, !(self?.isRecording ?? false) {
                         await self?.startRecording()
-                    } else if detected == nil && (self?.isRecording ?? false) {
+                    } else if detected == nil, self?.isRecording ?? false {
                         await self?.stopRecording()
                     }
                 }
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
     }
 
     // MARK: - Private Methods
 
     private func setupBindings() {
         // Sync with audio recorder state
-        micRecorder.isRecordingPublisher
+        self.micRecorder.isRecordingPublisher
             .receive(on: DispatchQueue.main)
-            .assign(to: &$isRecording)
+            .assign(to: &self.$isRecording)
     }
 
     private func cleanupTemporaryFiles() {
@@ -259,10 +264,10 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         if let micURL = micAudioURL { urlsToDelete.append(micURL) }
         if let sysURL = systemAudioURL { urlsToDelete.append(sysURL) }
 
-        storage.cleanupTemporaryFiles(urls: urlsToDelete)
+        self.storage.cleanupTemporaryFiles(urls: urlsToDelete)
 
-        micAudioURL = nil
-        systemAudioURL = nil
+        self.micAudioURL = nil
+        self.systemAudioURL = nil
     }
 
     private enum Constants {
@@ -273,12 +278,12 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     }
 
     private func transcribeRecording(audioURL: URL, meeting: Meeting) async {
-        isTranscribing = true
+        self.isTranscribing = true
         let audioDuration = await getAudioDuration(from: audioURL)
-        transcriptionStatus.beginTranscription(audioDuration: audioDuration)
+        self.transcriptionStatus.beginTranscription(audioDuration: audioDuration)
 
         do {
-            try await performHealthCheck()
+            try await self.performHealthCheck()
 
             let response = try await performTranscription(audioURL: audioURL)
             let (processedContent, promptId, promptTitle) = await applyPostProcessing(
@@ -292,22 +297,22 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
                 promptTitle: promptTitle
             )
 
-            transcriptionStatus.completeTranscription(success: true)
-            notifySuccess(for: transcription)
-            scheduleStatusReset()
+            self.transcriptionStatus.completeTranscription(success: true)
+            self.notifySuccess(for: transcription)
+            self.scheduleStatusReset()
 
         } catch {
-            handleTranscriptionError(error)
+            self.handleTranscriptionError(error)
         }
 
-        isTranscribing = false
-        currentMeeting = nil
+        self.isTranscribing = false
+        self.currentMeeting = nil
     }
 
     // MARK: - Helper Methods
 
     private func performHealthCheck() async throws {
-        transcriptionStatus.updateProgress(phase: .preparing)
+        self.transcriptionStatus.updateProgress(phase: .preparing)
         let isHealthy = try await transcriptionClient.healthCheck()
         guard isHealthy else {
             throw TranscriptionError.serviceUnavailable
@@ -315,33 +320,37 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     }
 
     private func performTranscription(audioURL: URL) async throws -> TranscriptionResponse {
-        transcriptionStatus.updateProgress(
-            phase: .processing, percentage: Constants.processingProgress)
-        return try await transcriptionClient.transcribe(audioURL: audioURL)
+        self.transcriptionStatus.updateProgress(
+            phase: .processing, percentage: Constants.processingProgress
+        )
+        return try await self.transcriptionClient.transcribe(audioURL: audioURL)
     }
 
     private func applyPostProcessing(rawText: String) async -> (String?, UUID?, String?) {
-        transcriptionStatus.updateProgress(
-            phase: .postProcessing, percentage: Constants.postProcessingProgress)
+        self.transcriptionStatus.updateProgress(
+            phase: .postProcessing, percentage: Constants.postProcessingProgress
+        )
 
         let settings = AppSettingsStore.shared
         guard settings.postProcessingEnabled,
-            settings.aiConfiguration.isValid,
-            let prompt = settings.selectedPrompt
+              settings.aiConfiguration.isValid,
+              let prompt = settings.selectedPrompt
         else {
             return (nil, nil, nil)
         }
 
-        transcriptionStatus.updateProgress(
-            phase: .postProcessing, percentage: Constants.aiProcessingProgress)
+        self.transcriptionStatus.updateProgress(
+            phase: .postProcessing, percentage: Constants.aiProcessingProgress
+        )
 
         do {
             let processed = try await postProcessingService.processTranscription(
-                rawText, with: prompt)
-            logger.info("Post-processing complete using prompt: \(prompt.title)")
+                rawText, with: prompt
+            )
+            self.logger.info("Post-processing complete using prompt: \(prompt.title)")
             return (processed, prompt.id, prompt.title)
         } catch {
-            logger.warning(
+            self.logger.warning(
                 "Post-processing failed, using raw transcription: \(error.localizedDescription)")
             return (nil, nil, nil)
         }
@@ -367,37 +376,38 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
         let logMessageSuffix =
             transcription.isPostProcessed
-            ? "(post-processed with '\(promptTitle ?? "unknown")')" : "(raw)"
-        logger.info("Transcription created: \(transcription.wordCount) words \(logMessageSuffix)")
+                ? "(post-processed with '\(promptTitle ?? "unknown")')" : "(raw)"
+        self.logger.info("Transcription created: \(transcription.wordCount) words \(logMessageSuffix)")
 
-        try await storage.saveTranscription(transcription)
+        try await self.storage.saveTranscription(transcription)
         return transcription
     }
 
     private func notifySuccess(for transcription: Transcription) {
         let suffix =
             transcription.isPostProcessed
-            ? "(\(transcription.postProcessingPromptTitle ?? "processado"))" : "transcritas"
+                ? "(\(transcription.postProcessingPromptTitle ?? "processado"))" : "transcritas"
         let body = "\(transcription.meeting.appName): \(transcription.wordCount) palavras \(suffix)"
 
-        notificationService.sendNotification(title: "Transcrição Concluída", body: body)
+        self.notificationService.sendNotification(title: "Transcrição Concluída", body: body)
     }
 
     private func handleTranscriptionError(_ error: Error) {
-        logger.error("Transcription failed: \(error.localizedDescription)")
-        lastError = error
+        self.logger.error("Transcription failed: \(error.localizedDescription)")
+        self.lastError = error
 
-        transcriptionStatus.recordError(.transcriptionFailed(error.localizedDescription))
-        transcriptionStatus.completeTranscription(success: false)
+        self.transcriptionStatus.recordError(.transcriptionFailed(error.localizedDescription))
+        self.transcriptionStatus.completeTranscription(success: false)
 
-        notificationService.sendNotification(
-            title: "Falha na Transcrição", body: error.localizedDescription)
+        self.notificationService.sendNotification(
+            title: "Falha na Transcrição", body: error.localizedDescription
+        )
     }
 
     private func scheduleStatusReset() {
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(Constants.statusResetDelay))
-            transcriptionStatus.resetToIdle()
+            self.transcriptionStatus.resetToIdle()
         }
     }
 
@@ -408,16 +418,16 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             let duration = try await asset.load(.duration)
             return duration.seconds
         } catch {
-            logger.warning("Failed to load audio duration: \(error.localizedDescription)")
+            self.logger.warning("Failed to load audio duration: \(error.localizedDescription)")
             return nil
         }
     }
 
     /// Start periodic status monitoring.
     private func startStatusMonitoring() async {
-        statusCheckTask?.cancel()
+        self.statusCheckTask?.cancel()
 
-        statusCheckTask = Task { @MainActor [weak self] in
+        self.statusCheckTask = Task { @MainActor [weak self] in
             while !Task.isCancelled {
                 await self?.checkServiceStatus()
                 try? await Task.sleep(for: .seconds(5))
@@ -427,23 +437,22 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
     /// Check and update service status.
     private func checkServiceStatus() async {
-        transcriptionStatus.updateServiceState(.connecting)
+        self.transcriptionStatus.updateServiceState(.connecting)
 
         do {
             let status = try await transcriptionClient.fetchServiceStatus()
-            transcriptionStatus.updateServiceState(.connected)
-            transcriptionStatus.updateModelState(status.modelStateEnum, device: status.device)
+            self.transcriptionStatus.updateServiceState(.connected)
+            self.transcriptionStatus.updateModelState(status.modelStateEnum, device: status.device)
         } catch {
-            transcriptionStatus.updateServiceState(.disconnected)
-            transcriptionStatus.recordError(.connectionFailed(error.localizedDescription))
+            self.transcriptionStatus.updateServiceState(.disconnected)
+            self.transcriptionStatus.recordError(.connectionFailed(error.localizedDescription))
         }
     }
 
     /// Manually refresh service status.
     func refreshServiceStatus() async {
-        await checkServiceStatus()
+        await self.checkServiceStatus()
     }
-
 }
 
 // MARK: - Errors
@@ -455,9 +464,9 @@ public enum RecordingManagerError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .noOutputPath:
-            return "No output path specified for merged audio"
-        case .mergeFailed(let error):
-            return "Audio merge failed: \(error.localizedDescription)"
+            "No output path specified for merged audio"
+        case let .mergeFailed(error):
+            "Audio merge failed: \(error.localizedDescription)"
         }
     }
 }

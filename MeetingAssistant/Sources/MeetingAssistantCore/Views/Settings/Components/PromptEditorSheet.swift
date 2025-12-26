@@ -8,13 +8,13 @@ public struct PromptEditorSheet: View {
     @State private var promptText: String
     @State private var selectedIcon: String
     @State private var description: String
-    
+
     private let existingPrompt: PostProcessingPrompt?
     private let onSave: (PostProcessingPrompt) -> Void
     private let onCancel: () -> Void
-    
-    private var isEditing: Bool { existingPrompt != nil }
-    
+
+    private var isEditing: Bool { self.existingPrompt != nil }
+
     public init(
         prompt: PostProcessingPrompt?,
         onSave: @escaping (PostProcessingPrompt) -> Void,
@@ -23,89 +23,89 @@ public struct PromptEditorSheet: View {
         self.existingPrompt = prompt
         self.onSave = onSave
         self.onCancel = onCancel
-        
+
         _title = State(initialValue: prompt?.title ?? "")
         _promptText = State(initialValue: prompt?.promptText ?? "")
         _selectedIcon = State(initialValue: prompt?.icon ?? "doc.text.fill")
         _description = State(initialValue: prompt?.description ?? "")
     }
-    
+
     public var body: some View {
         VStack(spacing: 0) {
             // Header
-            header
-            
+            self.header
+
             Divider()
-            
+
             // Content
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    titleSection
-                    iconSection
-                    descriptionSection
-                    promptSection
+                    self.titleSection
+                    self.iconSection
+                    self.descriptionSection
+                    self.promptSection
                 }
                 .padding()
             }
-            
+
             Divider()
-            
+
             // Footer
-            footer
+            self.footer
         }
         .frame(width: 500, height: 550)
     }
-    
+
     // MARK: - Header
-    
+
     private var header: some View {
         HStack {
-            Text(isEditing ? "Editar Prompt" : "Novo Prompt")
+            Text(self.isEditing ? "Editar Prompt" : "Novo Prompt")
                 .font(.headline)
-            
+
             Spacer()
         }
         .padding()
         .background(Color(NSColor.windowBackgroundColor))
     }
-    
+
     // MARK: - Title Section
-    
+
     private var titleSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Título")
                 .font(.subheadline)
                 .fontWeight(.medium)
-            
-            TextField("Ex: Resumo de Reunião", text: $title)
+
+            TextField("Ex: Resumo de Reunião", text: self.$title)
                 .textFieldStyle(.roundedBorder)
         }
     }
-    
+
     // MARK: - Icon Section
-    
+
     private var iconSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Ícone")
                 .font(.subheadline)
                 .fontWeight(.medium)
-            
+
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ForEach(PostProcessingPrompt.availableIcons, id: \.self) { icon in
-                        iconButton(icon)
+                        self.iconButton(icon)
                     }
                 }
                 .padding(.vertical, 4)
             }
         }
     }
-    
+
     private func iconButton(_ icon: String) -> some View {
-        let isSelected = selectedIcon == icon
-        
+        let isSelected = self.selectedIcon == icon
+
         return Button {
-            selectedIcon = icon
+            self.selectedIcon = icon
         } label: {
             Image(systemName: icon)
                 .font(.title3)
@@ -122,39 +122,39 @@ public struct PromptEditorSheet: View {
         .accessibilityLabel("Ícone \(icon)")
         .accessibilityHint(isSelected ? "Selecionado" : "Toque para selecionar")
     }
-    
+
     // MARK: - Description Section
-    
+
     private var descriptionSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text("Descrição")
                     .font(.subheadline)
                     .fontWeight(.medium)
-                
+
                 Text("(opcional)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            
-            TextField("Uma breve descrição do que este prompt faz", text: $description)
+
+            TextField("Uma breve descrição do que este prompt faz", text: self.$description)
                 .textFieldStyle(.roundedBorder)
         }
     }
-    
+
     // MARK: - Prompt Section
-    
+
     private var promptSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Instruções do Prompt")
                 .font(.subheadline)
                 .fontWeight(.medium)
-            
+
             Text("Defina as instruções que serão enviadas ao modelo de IA junto com a transcrição.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            
-            TextEditor(text: $promptText)
+
+            TextEditor(text: self.$promptText)
                 .font(.system(.body, design: .monospaced))
                 .frame(minHeight: 150)
                 .padding(8)
@@ -166,49 +166,49 @@ public struct PromptEditorSheet: View {
                 )
         }
     }
-    
+
     // MARK: - Footer
-    
+
     private var footer: some View {
         HStack {
             Button("Cancelar") {
-                onCancel()
+                self.onCancel()
             }
             .keyboardShortcut(.escape)
-            
+
             Spacer()
-            
-            Button(isEditing ? "Salvar" : "Criar") {
-                savePrompt()
+
+            Button(self.isEditing ? "Salvar" : "Criar") {
+                self.savePrompt()
             }
             .keyboardShortcut(.return)
             .buttonStyle(.borderedProminent)
-            .disabled(!isValid)
+            .disabled(!self.isValid)
         }
         .padding()
         .background(Color(NSColor.windowBackgroundColor))
     }
-    
+
     // MARK: - Validation
-    
+
     private var isValid: Bool {
-        !title.trimmingCharacters(in: .whitespaces).isEmpty &&
-        !promptText.trimmingCharacters(in: .whitespaces).isEmpty
+        !self.title.trimmingCharacters(in: .whitespaces).isEmpty &&
+            !self.promptText.trimmingCharacters(in: .whitespaces).isEmpty
     }
-    
+
     // MARK: - Actions
-    
+
     private func savePrompt() {
         let prompt = PostProcessingPrompt(
             id: existingPrompt?.id ?? UUID(),
-            title: title.trimmingCharacters(in: .whitespaces),
-            promptText: promptText.trimmingCharacters(in: .whitespacesAndNewlines),
-            isActive: existingPrompt?.isActive ?? false,
-            icon: selectedIcon,
-            description: description.isEmpty ? nil : description.trimmingCharacters(in: .whitespaces),
+            title: self.title.trimmingCharacters(in: .whitespaces),
+            promptText: self.promptText.trimmingCharacters(in: .whitespacesAndNewlines),
+            isActive: self.existingPrompt?.isActive ?? false,
+            icon: self.selectedIcon,
+            description: self.description.isEmpty ? nil : self.description.trimmingCharacters(in: .whitespaces),
             isPredefined: false
         )
-        onSave(prompt)
+        self.onSave(prompt)
     }
 }
 

@@ -5,6 +5,7 @@ import SwiftUI
 @MainActor
 public class PermissionViewModel: ObservableObject {
     // MARK: - Dependencies
+
     private let permissionManager: PermissionStatusManager
     // Optional: We might need a way to trigger requests back to RecordingManager
     // Or we keep requests in RecordingViewModel and just observe state here?
@@ -17,10 +18,12 @@ public class PermissionViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
 
     // MARK: - Published Properties
+
     @Published public private(set) var microphoneState: PermissionState = .notDetermined
     @Published public private(set) var screenState: PermissionState = .notDetermined
 
     // MARK: - Init
+
     public init(
         manager: PermissionStatusManager,
         requestMicrophone: @escaping () async -> Void,
@@ -34,36 +37,38 @@ public class PermissionViewModel: ObservableObject {
         self.openMicrophoneSettingsAction = openMicrophoneSettings
         self.openScreenSettingsAction = openScreenSettings
 
-        setupBindings()
+        self.setupBindings()
     }
 
     // MARK: - Actions
+
     public func requestMicrophonePermission() async {
-        await requestMicrophoneAction()
+        await self.requestMicrophoneAction()
     }
 
     public func requestScreenPermission() async {
-        await requestScreenAction()
+        await self.requestScreenAction()
     }
 
     public func openMicrophoneSystemSettings() {
-        openMicrophoneSettingsAction()
+        self.openMicrophoneSettingsAction()
     }
 
     public func openScreenSystemSettings() {
-        openScreenSettingsAction()
+        self.openScreenSettingsAction()
     }
 
     // MARK: - Private
-    private func setupBindings() {
-        permissionManager.$microphonePermission
-            .map { $0.state }
-            .receive(on: DispatchQueue.main)
-            .assign(to: &$microphoneState)
 
-        permissionManager.$screenRecordingPermission
-            .map { $0.state }
+    private func setupBindings() {
+        self.permissionManager.$microphonePermission
+            .map(\.state)
             .receive(on: DispatchQueue.main)
-            .assign(to: &$screenState)
+            .assign(to: &self.$microphoneState)
+
+        self.permissionManager.$screenRecordingPermission
+            .map(\.state)
+            .receive(on: DispatchQueue.main)
+            .assign(to: &self.$screenState)
     }
 }

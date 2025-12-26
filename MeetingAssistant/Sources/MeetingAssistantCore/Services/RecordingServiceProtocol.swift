@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 /// Protocol defining the public interface of the RecordingService.
 @MainActor
@@ -10,12 +10,12 @@ public protocol RecordingServiceProtocol: AnyObject {
     var currentMeeting: Meeting? { get }
     var transcriptionStatus: TranscriptionStatus { get }
     var permissionStatus: PermissionStatusManager { get }
-    
+
     // Publishers
     var isRecordingPublisher: AnyPublisher<Bool, Never> { get }
     var isTranscribingPublisher: AnyPublisher<Bool, Never> { get }
     var currentMeetingPublisher: AnyPublisher<Meeting?, Never> { get }
-    
+
     // Actions
     func startRecording() async
     func stopRecording() async

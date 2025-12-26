@@ -12,7 +12,7 @@ public struct PostProcessingPrompt: Identifiable, Codable, Equatable, Sendable {
     public var icon: String
     public var description: String?
     public let isPredefined: Bool
-    
+
     public init(
         id: UUID = UUID(),
         title: String,
@@ -34,26 +34,28 @@ public struct PostProcessingPrompt: Identifiable, Codable, Equatable, Sendable {
 
 // MARK: - Predefined Prompts
 
-extension PostProcessingPrompt {
-    
+public extension PostProcessingPrompt {
     /// Stable UUIDs for predefined prompts to ensure persistence consistency.
     private enum PredefinedIDs {
         static let meetingNotes = UUID(uuidString: "00000000-0000-0000-0000-000000000001") ?? {
             preconditionFailure("Invalid UUID string for meetingNotes")
         }()
+
         static let executiveSummary = UUID(uuidString: "00000000-0000-0000-0000-000000000002") ?? {
             preconditionFailure("Invalid UUID string for executiveSummary")
         }()
+
         static let actionItems = UUID(uuidString: "00000000-0000-0000-0000-000000000003") ?? {
             preconditionFailure("Invalid UUID string for actionItems")
         }()
+
         static let cleanTranscription = UUID(uuidString: "00000000-0000-0000-0000-000000000004") ?? {
             preconditionFailure("Invalid UUID string for cleanTranscription")
         }()
     }
-    
+
     /// Predefined prompt for generating meeting notes.
-    public static let meetingNotes = PostProcessingPrompt(
+    static let meetingNotes = PostProcessingPrompt(
         id: PredefinedIDs.meetingNotes,
         title: "Notas de Reunião",
         promptText: """
@@ -62,16 +64,16 @@ extension PostProcessingPrompt {
         - Tópicos principais discutidos
         - Decisões tomadas
         - Pontos de atenção
-        
+
         Mantenha um formato limpo e profissional.
         """,
         icon: "note.text",
         description: "Gera notas de reunião estruturadas",
         isPredefined: true
     )
-    
+
     /// Predefined prompt for executive summary.
-    public static let executiveSummary = PostProcessingPrompt(
+    static let executiveSummary = PostProcessingPrompt(
         id: PredefinedIDs.executiveSummary,
         title: "Resumo Executivo",
         promptText: """
@@ -83,9 +85,9 @@ extension PostProcessingPrompt {
         description: "Cria um resumo executivo conciso",
         isPredefined: true
     )
-    
+
     /// Predefined prompt for extracting action items.
-    public static let actionItems = PostProcessingPrompt(
+    static let actionItems = PostProcessingPrompt(
         id: PredefinedIDs.actionItems,
         title: "Action Items",
         promptText: """
@@ -94,16 +96,16 @@ extension PostProcessingPrompt {
         - Responsável
         - Prazo mencionado
         - Contexto/detalhes relevantes
-        
+
         Liste em formato de checklist.
         """,
         icon: "checklist",
         description: "Extrai tarefas e próximos passos",
         isPredefined: true
     )
-    
+
     /// Predefined prompt for clean transcription.
-    public static let cleanTranscription = PostProcessingPrompt(
+    static let cleanTranscription = PostProcessingPrompt(
         id: PredefinedIDs.cleanTranscription,
         title: "Transcrição Limpa",
         promptText: """
@@ -111,7 +113,7 @@ extension PostProcessingPrompt {
         - Hesitações e palavras de preenchimento (uh, uhm, é...)
         - Repetições desnecessárias
         - Correções de erros de fala
-        
+
         Mantenha o conteúdo original, apenas melhorando a legibilidade.
         Não altere o significado ou adicione informações.
         """,
@@ -119,54 +121,53 @@ extension PostProcessingPrompt {
         description: "Remove hesitações e corrige erros de fala",
         isPredefined: true
     )
-    
+
     /// All predefined prompts.
-    public static let allPredefined: [PostProcessingPrompt] = [
+    static let allPredefined: [PostProcessingPrompt] = [
         .meetingNotes,
         .executiveSummary,
         .actionItems,
-        .cleanTranscription
+        .cleanTranscription,
     ]
 }
 
 // MARK: - Icon Options
 
-extension PostProcessingPrompt {
-    
+public extension PostProcessingPrompt {
     /// Available SF Symbol icons for prompts.
-    public static let availableIcons: [String] = [
+    static let availableIcons: [String] = [
         // Document & Text
         "doc.text.fill",
         "doc.text.magnifyingglass",
         "note.text",
         "text.badge.checkmark",
-        
+
         // Organization
         "checklist",
         "list.bullet",
         "list.bullet.rectangle",
         "folder.fill",
-        
+
         // Communication
         "bubble.left.and.bubble.right.fill",
         "message.fill",
         "envelope.fill",
-        
+
         // Professional
         "person.2.fill",
         "briefcase.fill",
         "building.2.fill",
-        
+
         // Technical
         "terminal.fill",
         "gearshape.fill",
         "wrench.and.screwdriver.fill",
-        
+
         // Content
         "book.fill",
         "bookmark.fill",
         "pencil.circle.fill",
-        
+
         // Productivity
         "clock.fill",
         "calendar",
@@ -174,6 +175,6 @@ extension PostProcessingPrompt {
         "target",
         "lightbulb.fill",
         "star.fill",
-        "flag.fill"
+        "flag.fill",
     ]
 }

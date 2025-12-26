@@ -13,18 +13,18 @@ class LocalTranscriptionClient {
 
     /// Initializes and warms up the model.
     func prepare() async {
-        await manager.loadModels()
+        await self.manager.loadModels()
     }
 
     /// Transcribe an audio file locally.
     /// - Parameter audioURL: Path to the audio file.
     /// - Returns: TranscriptionResponse compatible with existing app logic.
     func transcribe(audioURL: URL) async throws -> TranscriptionResponse {
-        logger.info("Starting local transcription for: \(audioURL.lastPathComponent)")
+        self.logger.info("Starting local transcription for: \(audioURL.lastPathComponent)")
 
         // Ensure models are loaded
-        if manager.modelState != .loaded {
-            await manager.loadModels()
+        if self.manager.modelState != .loaded {
+            await self.manager.loadModels()
         }
 
         let startTime = Date()
@@ -38,13 +38,14 @@ class LocalTranscriptionClient {
         // Check if diarization is enabled
         if AppSettingsStore.shared.isDiarizationEnabled {
             // Perform diarization
-            logger.info("Diarization enabled. Processing...")
+            self.logger.info("Diarization enabled. Processing...")
             do {
                 let diarizationSegments = try await manager.diarize(audioURL: audioURL)
-                segments = merge(
-                    text: text, asrSegments: segmentsFromASR, speakers: diarizationSegments)
+                segments = self.merge(
+                    text: text, asrSegments: segmentsFromASR, speakers: diarizationSegments
+                )
             } catch {
-                logger.error(
+                self.logger.error(
                     "Diarization failed: \(error.localizedDescription). Proceeding with transcription only."
                 )
             }
@@ -86,7 +87,7 @@ class LocalTranscriptionClient {
             // If overlapping speakers, pick the first one (simplification)
             let speaker =
                 speakers.first { $0.startTime <= midPoint && $0.endTime >= midPoint }?.speakerId
-                ?? Transcription.unknownSpeaker
+                    ?? Transcription.unknownSpeaker
 
             if speaker != currentSpeakerId {
                 // Determine if we should start a new segment

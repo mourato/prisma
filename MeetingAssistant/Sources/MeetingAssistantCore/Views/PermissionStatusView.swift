@@ -13,46 +13,47 @@ public struct PermissionStatusView: View {
 
     public var body: some View {
         VStack(spacing: 12) {
-            headerSection
+            self.headerSection
 
             VStack(spacing: 8) {
                 PermissionRowView(
-                    permission: PermissionInfo(type: .microphone, state: viewModel.microphoneState),
-                    onRequest: { Task { await viewModel.requestMicrophonePermission() } },
-                    onOpenSettings: { viewModel.openMicrophoneSystemSettings() }
+                    permission: PermissionInfo(type: .microphone, state: self.viewModel.microphoneState),
+                    onRequest: { Task { await self.viewModel.requestMicrophonePermission() } },
+                    onOpenSettings: { self.viewModel.openMicrophoneSystemSettings() }
                 )
 
                 PermissionRowView(
                     permission: PermissionInfo(
-                        type: .screenRecording, state: viewModel.screenState),
-                    onRequest: { Task { await viewModel.requestScreenPermission() } },
-                    onOpenSettings: { viewModel.openScreenSystemSettings() }
+                        type: .screenRecording, state: self.viewModel.screenState
+                    ),
+                    onRequest: { Task { await self.viewModel.requestScreenPermission() } },
+                    onOpenSettings: { self.viewModel.openScreenSystemSettings() }
                 )
             }
 
-            if !allPermissionsGranted {
-                permissionWarning
+            if !self.allPermissionsGranted {
+                self.permissionWarning
             }
         }
         .padding()
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(backgroundGradient)
+                .fill(self.backgroundGradient)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(borderColor, lineWidth: 1)
+                .strokeBorder(self.borderColor, lineWidth: 1)
         )
     }
 
     private var allPermissionsGranted: Bool {
-        viewModel.microphoneState == .granted && viewModel.screenState == .granted
+        self.viewModel.microphoneState == .granted && self.viewModel.screenState == .granted
     }
 
     private var grantedCount: Int {
         var count = 0
-        if viewModel.microphoneState == .granted { count += 1 }
-        if viewModel.screenState == .granted { count += 1 }
+        if self.viewModel.microphoneState == .granted { count += 1 }
+        if self.viewModel.screenState == .granted { count += 1 }
         return count
     }
 
@@ -62,33 +63,33 @@ public struct PermissionStatusView: View {
         HStack {
             Image(systemName: "shield.checkered")
                 .font(.title2)
-                .foregroundStyle(headerIconColor)
+                .foregroundStyle(self.headerIconColor)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("Permissões do Sistema")
                     .font(.subheadline)
                     .fontWeight(.semibold)
 
-                Text("\(grantedCount)/2 concedidas")
+                Text("\(self.grantedCount)/2 concedidas")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
             Spacer()
 
-            statusBadge
+            self.statusBadge
         }
     }
 
     private var statusBadge: some View {
-        Text(allPermissionsGranted ? "OK" : "!")
+        Text(self.allPermissionsGranted ? "OK" : "!")
             .font(.caption2)
             .fontWeight(.bold)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(
                 Capsule()
-                    .fill(allPermissionsGranted ? Color.green : Color.orange)
+                    .fill(self.allPermissionsGranted ? Color.green : Color.orange)
             )
             .foregroundColor(.white)
     }
@@ -109,8 +110,8 @@ public struct PermissionStatusView: View {
     // MARK: - Computed Properties
 
     private var backgroundGradient: LinearGradient {
-        if allPermissionsGranted {
-            return LinearGradient(
+        if self.allPermissionsGranted {
+            LinearGradient(
                 colors: [
                     Color.green.opacity(0.05),
                     Color.green.opacity(0.02),
@@ -119,7 +120,7 @@ public struct PermissionStatusView: View {
                 endPoint: .bottomTrailing
             )
         } else {
-            return LinearGradient(
+            LinearGradient(
                 colors: [
                     Color.orange.opacity(0.08),
                     Color.orange.opacity(0.03),
@@ -131,13 +132,13 @@ public struct PermissionStatusView: View {
     }
 
     private var borderColor: Color {
-        allPermissionsGranted
+        self.allPermissionsGranted
             ? Color.green.opacity(0.2)
             : Color.orange.opacity(0.3)
     }
 
     private var headerIconColor: Color {
-        allPermissionsGranted ? .green : .orange
+        self.allPermissionsGranted ? .green : .orange
     }
 }
 
@@ -154,21 +155,21 @@ struct PermissionRowView: View {
             // Permission type icon
             ZStack {
                 Circle()
-                    .fill(iconBackgroundColor)
+                    .fill(self.iconBackgroundColor)
                     .frame(width: 36, height: 36)
 
-                Image(systemName: permission.type.iconName)
+                Image(systemName: self.permission.type.iconName)
                     .font(.system(size: 16))
-                    .foregroundStyle(iconForegroundColor)
+                    .foregroundStyle(self.iconForegroundColor)
             }
 
             // Permission info
             VStack(alignment: .leading, spacing: 2) {
-                Text(permission.type.displayName)
+                Text(self.permission.type.displayName)
                     .font(.subheadline)
                     .fontWeight(.medium)
 
-                Text(permission.type.permissionDescription)
+                Text(self.permission.type.permissionDescription)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -177,7 +178,7 @@ struct PermissionRowView: View {
             Spacer()
 
             // Status indicator and action button
-            statusIndicator
+            self.statusIndicator
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
@@ -193,25 +194,26 @@ struct PermissionRowView: View {
     private var statusIndicator: some View {
         HStack(spacing: 8) {
             // Status icon with animation
-            Image(systemName: permission.state.iconName)
+            Image(systemName: self.permission.state.iconName)
                 .font(.title3)
-                .foregroundStyle(statusColor)
+                .foregroundStyle(self.statusColor)
                 .symbolEffect(
-                    .pulse, options: .nonRepeating, isActive: permission.state == .notDetermined)
+                    .pulse, options: .nonRepeating, isActive: self.permission.state == .notDetermined
+                )
 
             // Action button when not granted
-            if !permission.state.isAuthorized {
-                actionButton
+            if !self.permission.state.isAuthorized {
+                self.actionButton
             }
         }
     }
 
     @ViewBuilder
     private var actionButton: some View {
-        switch permission.state {
+        switch self.permission.state {
         case .notDetermined:
             Button("Solicitar") {
-                onRequest()
+                self.onRequest()
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.small)
@@ -219,7 +221,7 @@ struct PermissionRowView: View {
 
         case .denied, .restricted:
             Button("Configurar") {
-                onOpenSettings()
+                self.onOpenSettings()
             }
             .buttonStyle(.bordered)
             .controlSize(.small)
@@ -232,37 +234,37 @@ struct PermissionRowView: View {
     // MARK: - Computed Properties
 
     private var iconBackgroundColor: Color {
-        switch permission.state {
+        switch self.permission.state {
         case .granted:
-            return Color.green.opacity(0.15)
+            Color.green.opacity(0.15)
         case .denied, .restricted:
-            return Color.red.opacity(0.15)
+            Color.red.opacity(0.15)
         case .notDetermined:
-            return Color.blue.opacity(0.15)
+            Color.blue.opacity(0.15)
         }
     }
 
     private var iconForegroundColor: Color {
-        switch permission.state {
+        switch self.permission.state {
         case .granted:
-            return .green
+            .green
         case .denied, .restricted:
-            return .red
+            .red
         case .notDetermined:
-            return .blue
+            .blue
         }
     }
 
     private var statusColor: Color {
-        switch permission.state {
+        switch self.permission.state {
         case .granted:
-            return .green
+            .green
         case .denied:
-            return .red
+            .red
         case .notDetermined:
-            return .orange
+            .orange
         case .restricted:
-            return .gray
+            .gray
         }
     }
 }
@@ -280,11 +282,11 @@ public struct CompactPermissionStatusView: View {
     public var body: some View {
         HStack(spacing: 12) {
             CompactPermissionIndicator(
-                permission: permissionManager.microphonePermission
+                permission: self.permissionManager.microphonePermission
             )
 
             CompactPermissionIndicator(
-                permission: permissionManager.screenRecordingPermission
+                permission: self.permissionManager.screenRecordingPermission
             )
         }
     }
@@ -296,50 +298,50 @@ struct CompactPermissionIndicator: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            Image(systemName: permission.type.iconName)
+            Image(systemName: self.permission.type.iconName)
                 .font(.caption)
-                .foregroundStyle(iconColor)
+                .foregroundStyle(self.iconColor)
 
-            Image(systemName: permission.state.iconName)
+            Image(systemName: self.permission.state.iconName)
                 .font(.caption2)
-                .foregroundStyle(statusColor)
+                .foregroundStyle(self.statusColor)
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
         .background(
             Capsule()
-                .fill(backgroundColor)
+                .fill(self.backgroundColor)
         )
-        .help("\(permission.type.displayName): \(permission.state.displayName)")
+        .help("\(self.permission.type.displayName): \(self.permission.state.displayName)")
     }
 
     private var iconColor: Color {
-        permission.state.isAuthorized ? .primary : .secondary
+        self.permission.state.isAuthorized ? .primary : .secondary
     }
 
     private var statusColor: Color {
-        switch permission.state {
+        switch self.permission.state {
         case .granted:
-            return .green
+            .green
         case .denied:
-            return .red
+            .red
         case .notDetermined:
-            return .orange
+            .orange
         case .restricted:
-            return .gray
+            .gray
         }
     }
 
     private var backgroundColor: Color {
-        switch permission.state {
+        switch self.permission.state {
         case .granted:
-            return Color.green.opacity(0.1)
+            Color.green.opacity(0.1)
         case .denied:
-            return Color.red.opacity(0.1)
+            Color.red.opacity(0.1)
         case .notDetermined:
-            return Color.orange.opacity(0.1)
+            Color.orange.opacity(0.1)
         case .restricted:
-            return Color.gray.opacity(0.1)
+            Color.gray.opacity(0.1)
         }
     }
 }

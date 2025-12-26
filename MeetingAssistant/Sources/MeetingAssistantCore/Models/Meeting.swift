@@ -6,69 +6,69 @@ import SwiftUI
 public enum MeetingApp: String, CaseIterable, Codable, Sendable {
     case googleMeet = "google-meet"
     case microsoftTeams = "microsoft-teams"
-    case slack = "slack"
-    case zoom = "zoom"
-    case unknown = "unknown"
-    
+    case slack
+    case zoom
+    case unknown
+
     /// Bundle identifiers to detect this app.
     public var bundleIdentifiers: [String] {
         switch self {
         case .googleMeet:
-            return ["com.google.Chrome", "com.apple.Safari", "com.microsoft.edgemac"]
+            ["com.google.Chrome", "com.apple.Safari", "com.microsoft.edgemac"]
         case .microsoftTeams:
-            return ["com.microsoft.teams", "com.microsoft.teams2"]
+            ["com.microsoft.teams", "com.microsoft.teams2"]
         case .slack:
-            return ["com.tinyspeck.slackmacgap"]
+            ["com.tinyspeck.slackmacgap"]
         case .zoom:
-            return ["us.zoom.xos"]
+            ["us.zoom.xos"]
         case .unknown:
-            return []
+            []
         }
     }
-    
+
     /// Window title patterns to detect meeting in progress.
     public var windowTitlePatterns: [String] {
         switch self {
         case .googleMeet:
-            return ["meet.google.com", "Google Meet"]
+            ["meet.google.com", "Google Meet"]
         case .microsoftTeams:
-            return ["Microsoft Teams", "| Teams"]
+            ["Microsoft Teams", "| Teams"]
         case .slack:
-            return ["Huddle", "Call"]
+            ["Huddle", "Call"]
         case .zoom:
-            return ["Zoom Meeting", "Zoom Webinar"]
+            ["Zoom Meeting", "Zoom Webinar"]
         case .unknown:
-            return []
+            []
         }
     }
-    
+
     public var displayName: String {
         switch self {
-        case .googleMeet: return "Google Meet"
-        case .microsoftTeams: return "Microsoft Teams"
-        case .slack: return "Slack"
-        case .zoom: return "Zoom"
-        case .unknown: return "Desconhecido"
+        case .googleMeet: "Google Meet"
+        case .microsoftTeams: "Microsoft Teams"
+        case .slack: "Slack"
+        case .zoom: "Zoom"
+        case .unknown: "Desconhecido"
         }
     }
-    
+
     public var icon: String {
         switch self {
-        case .googleMeet: return "video.fill"
-        case .microsoftTeams: return "person.3.fill"
-        case .slack: return "number.square.fill"
-        case .zoom: return "video.circle.fill"
-        case .unknown: return "questionmark.circle"
+        case .googleMeet: "video.fill"
+        case .microsoftTeams: "person.3.fill"
+        case .slack: "number.square.fill"
+        case .zoom: "video.circle.fill"
+        case .unknown: "questionmark.circle"
         }
     }
-    
+
     public var color: Color {
         switch self {
-        case .googleMeet: return .green
-        case .microsoftTeams: return .purple
-        case .slack: return .pink
-        case .zoom: return .blue
-        case .unknown: return .gray
+        case .googleMeet: .green
+        case .microsoftTeams: .purple
+        case .slack: .pink
+        case .zoom: .blue
+        case .unknown: .gray
         }
     }
 }
@@ -80,7 +80,7 @@ public struct Meeting: Identifiable, Codable, Hashable, Sendable {
     public let startTime: Date
     public var endTime: Date?
     public var audioFilePath: String?
-    
+
     public init(
         id: UUID = UUID(),
         app: MeetingApp,
@@ -94,27 +94,27 @@ public struct Meeting: Identifiable, Codable, Hashable, Sendable {
         self.endTime = endTime
         self.audioFilePath = audioFilePath
     }
-    
+
     /// Duration of the meeting in seconds.
     public var duration: TimeInterval {
-        let end = endTime ?? Date()
-        return end.timeIntervalSince(startTime)
+        let end = self.endTime ?? Date()
+        return end.timeIntervalSince(self.startTime)
     }
-    
+
     /// Formatted duration string (e.g., "1h 23m").
     public var formattedDuration: String {
         let seconds = Int(duration)
         let hours = seconds / 3600
         let minutes = (seconds % 3600) / 60
-        
+
         if hours > 0 {
             return "\(hours)h \(minutes)m"
         } else {
             return "\(minutes)m"
         }
     }
-    
-    public var appName: String { app.displayName }
-    public var appIcon: String { app.icon }
-    public var appColor: Color { app.color }
+
+    public var appName: String { self.app.displayName }
+    public var appIcon: String { self.app.icon }
+    public var appColor: Color { self.app.color }
 }
