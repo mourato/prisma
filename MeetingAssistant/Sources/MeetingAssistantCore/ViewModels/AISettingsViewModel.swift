@@ -52,42 +52,46 @@ public class AISettingsViewModel: ObservableObject {
     public func testAPIConnection() {
         self.connectionStatus = .testing
 
-        let urlString = self.settings.aiConfiguration.baseURL
-
-        // Validate URL format and scheme
-        guard let url = URL(string: urlString),
-              let scheme = url.scheme,
-              ["http", "https"].contains(scheme.lowercased())
-        else {
+        guard let url = self.validateURL(self.settings.aiConfiguration.baseURL) else {
             self.connectionStatus = .failure(NSLocalizedString("settings.ai.connection.invalid_url", comment: ""))
             return
         }
 
         Task {
             do {
-                var request = URLRequest(url: url)
-                request.httpMethod = "GET"
-                request.timeoutInterval = 5
-
-                if let key = try? self.keychain.retrieve(for: .aiAPIKey), !key.isEmpty {
-                    request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
-                }
-
+                let request = try self.buildTestRequest(for: url)
                 let (_, response) = try await self.session.data(for: request)
-
-                if let httpResponse = response as? HTTPURLResponse {
-                    let statusCode = httpResponse.statusCode
-                    if (200...299).contains(statusCode) {
-                        self.connectionStatus = .success
-                    } else {
-                        self.connectionStatus = .failure("HTTP \(statusCode)")
-                    }
-                } else {
-                    self.connectionStatus = .failure(NSLocalizedString("settings.ai.connection.invalid_response", comment: ""))
-                }
+                self.handleTestResponse(response)
             } catch {
                 self.connectionStatus = .failure(error.localizedDescription)
             }
+        }
+    }
+
+    private func validateURL(_ urlString: String) -> URL? {
+        guard let url = URL(string: urlString),
+              let scheme = url.scheme,
+              ["http", "https"].contains(scheme.lowercased())
+        else { return nil }
+        return url
+    }
+
+    private func buildTestRequest(for url: URL) throws -> URLRequest {
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.timeoutInterval = 5
+        if let key = try? self.keychain.retrieve(for: .aiAPIKey), !key.isEmpty {
+            request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+        }
+        return request
+    }
+
+    private func handleTestResponse(_ response: URLResponse) {
+        if let httpResponse = response as? HTTPURLResponse {
+            let statusCode = httpResponse.statusCode
+            self.connectionStatus = (200...299).contains(statusCode) ? .success : .failure("HTTP \(statusCode)")
+        } else {
+            self.connectionStatus = .failure(NSLocalizedString("settings.ai.connection.invalid_response", comment: ""))
         }
     }
 }
