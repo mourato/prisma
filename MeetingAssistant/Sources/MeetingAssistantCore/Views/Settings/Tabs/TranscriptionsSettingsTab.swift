@@ -83,10 +83,10 @@ public struct TranscriptionsSettingsTab: View {
     private var contentSection: some View {
         HSplitView {
             self.leftPanel
-                .frame(minWidth: 280, idealWidth: 320, maxWidth: 400)
+                .frame(minWidth: 260, idealWidth: 300, maxWidth: 400)
 
             self.rightPanel
-                .frame(minWidth: 400)
+                .frame(minWidth: 420)
         }
     }
 
@@ -219,6 +219,7 @@ public struct TranscriptionsSettingsTab: View {
             }
         }
         .frame(maxWidth: .infinity)
+        .frame(maxHeight: 120)
         .padding(.vertical, 16)
         .background(
             RoundedRectangle(cornerRadius: 8)
