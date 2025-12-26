@@ -77,13 +77,18 @@ public struct Transcription: Identifiable, Codable, Hashable {
         processedContent != nil
     }
     
-    /// Formatted date string for display.
-    public var formattedDate: String {
+    /// Cached formatter for transcription dates.
+    private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         formatter.locale = Locale(identifier: "pt_BR")
-        return formatter.string(from: createdAt)
+        return formatter
+    }()
+    
+    /// Formatted date string for display.
+    public var formattedDate: String {
+        Self.dateFormatter.string(from: createdAt)
     }
     
     /// Duration from meeting data.
