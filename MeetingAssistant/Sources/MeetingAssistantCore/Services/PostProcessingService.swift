@@ -123,6 +123,8 @@ public class PostProcessingService: ObservableObject {
     
     // MARK: - Private Methods
     
+    // MARK: - Private Methods
+    
     private func sendToAI(transcription: String, prompt: PostProcessingPrompt) async throws -> String {
         let config = settings.aiConfiguration
         
@@ -136,28 +138,52 @@ public class PostProcessingService: ObservableObject {
             throw PostProcessingError.invalidURL
         }
         
-        let systemMessage = settings.systemPrompt
-        let userMessage = AIPromptTemplates.userMessage(transcription: transcription, prompt: prompt.promptText)
-        
-        let requestBody = buildRequestBody(
-            provider: config.provider,
-            model: config.selectedModel,
-            systemMessage: systemMessage,
-            userMessage: userMessage
-        )
-        
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         
-        // Anthropic requires a different header
-        if config.provider == .anthropic {
+        // Authorization Headers
+        switch config.provider {
+        case .anthropic:
             request.setValue(apiKey, forHTTPHeaderField: "x-api-key")
             request.setValue(Constants.anthropicAPIVersion, forHTTPHeaderField: "anthropic-version")
+        case .openai, .groq, .custom:
+            request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         }
         
-        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+        // Request Body Creation using Codable
+        let systemMessage = settings.systemPrompt
+        let userContent = AIPromptTemplates.userMessage(transcription: transcription, prompt: prompt.promptText)
+        let encoder = JSONEncoder()
+        
+        do {
+            switch config.provider {
+            case .anthropic:
+                let payload = AnthropicMessageRequest(
+                    model: config.selectedModel,
+                    maxTokens: Constants.maxTokens,
+                    system: systemMessage,
+                    messages: [AIChatMessage(role: "user", content: userContent)]
+                )
+                request.httpBody = try encoder.encode(payload)
+                
+            case .openai, .groq, .custom:
+                let messages = [
+                    AIChatMessage(role: "system", content: systemMessage),
+                    AIChatMessage(role: "user", content: userContent)
+                ]
+                let payload = OpenAIChatRequest(
+                    model: config.selectedModel,
+                    messages: messages,
+                    maxTokens: Constants.maxTokens
+                )
+                request.httpBody = try encoder.encode(payload)
+            }
+        } catch {
+            logger.error("Failed to encode request body: \(error.localizedDescription)")
+            throw PostProcessingError.requestFailed(error)
+        }
+        
         request.timeoutInterval = Constants.requestTimeoutSeconds
         
         logger.debug("Sending post-processing request to \(endpoint)")
@@ -168,18 +194,53 @@ public class PostProcessingService: ObservableObject {
             throw PostProcessingError.invalidResponse
         }
         
+        // Error Handling
         guard (200...299).contains(httpResponse.statusCode) else {
-            if let errorMessage = parseErrorMessage(from: data) {
-                throw PostProcessingError.apiError(errorMessage)
+            let decoder = JSONDecoder()
+            if let errorResponse = try? decoder.decode(OpenAIErrorResponse.self, from: data) {
+                 throw PostProcessingError.apiError(errorResponse.error.message)
             }
-            throw PostProcessingError.apiError("HTTP \(httpResponse.statusCode)")
+            if let errorResponse = try? decoder.decode(AnthropicErrorResponse.self, from: data) {
+                throw PostProcessingError.apiError(errorResponse.error.message)
+            }
+            
+            // Fallback to raw string if possible
+            let rawResponse = String(data: data, encoding: .utf8) ?? ""
+            throw PostProcessingError.apiError("HTTP \(httpResponse.statusCode): \(rawResponse)")
         }
         
-        return try parseResponseContent(from: data, provider: config.provider)
+        // Success Parsing
+        return try parseSuccessResponse(data: data, provider: config.provider)
+    }
+    
+    private func parseSuccessResponse(data: Data, provider: AIProvider) throws -> String {
+        let decoder = JSONDecoder()
+        
+        do {
+            switch provider {
+            case .anthropic:
+                let response = try decoder.decode(AnthropicMessageResponse.self, from: data)
+                guard let text = response.content.first?.text else {
+                    throw PostProcessingError.invalidResponse
+                }
+                return text
+                
+            case .openai, .groq, .custom:
+                let response = try decoder.decode(OpenAIChatResponse.self, from: data)
+                guard let content = response.choices.first?.message.content else {
+                    throw PostProcessingError.invalidResponse
+                }
+                return content
+            }
+        } catch {
+            logger.error("Failed to decode response: \(error.localizedDescription)")
+            throw PostProcessingError.invalidResponse
+        }
     }
     
     private func buildEndpoint(for provider: AIProvider, baseURL: String) -> String {
-        let base = baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        // Remove potential trailing slash to avoid double slash
+        let base = baseURL.hasSuffix("/") ? String(baseURL.dropLast()) : baseURL
         
         switch provider {
         case .openai, .groq, .custom:
@@ -187,73 +248,5 @@ public class PostProcessingService: ObservableObject {
         case .anthropic:
             return "\(base)/messages"
         }
-    }
-    
-    private func buildRequestBody(
-        provider: AIProvider,
-        model: String,
-        systemMessage: String,
-        userMessage: String
-    ) -> [String: Any] {
-        switch provider {
-        case .anthropic:
-            return [
-                "model": model,
-                "max_tokens": Constants.maxTokens,
-                "system": systemMessage,
-                "messages": [
-                    ["role": "user", "content": userMessage]
-                ]
-            ]
-        case .openai, .groq, .custom:
-            return [
-                "model": model,
-                "messages": [
-                    ["role": "system", "content": systemMessage],
-                    ["role": "user", "content": userMessage]
-                ],
-                "max_tokens": Constants.maxTokens
-            ]
-        }
-    }
-    
-    private func parseResponseContent(from data: Data, provider: AIProvider) throws -> String {
-        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            throw PostProcessingError.invalidResponse
-        }
-        
-        switch provider {
-        case .anthropic:
-            // Anthropic response format: { "content": [{ "text": "..." }] }
-            if let content = json["content"] as? [[String: Any]],
-               let firstContent = content.first,
-               let text = firstContent["text"] as? String {
-                return text
-            }
-        case .openai, .groq, .custom:
-            // OpenAI response format: { "choices": [{ "message": { "content": "..." } }] }
-            if let choices = json["choices"] as? [[String: Any]],
-               let firstChoice = choices.first,
-               let message = firstChoice["message"] as? [String: Any],
-               let content = message["content"] as? String {
-                return content
-            }
-        }
-        
-        throw PostProcessingError.invalidResponse
-    }
-    
-    private func parseErrorMessage(from data: Data) -> String? {
-        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            return nil
-        }
-        
-        // Both OpenAI and Anthropic use the same error format
-        if let error = json["error"] as? [String: Any],
-           let message = error["message"] as? String {
-            return message
-        }
-        
-        return nil
     }
 }
