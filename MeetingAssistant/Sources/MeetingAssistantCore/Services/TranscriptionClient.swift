@@ -1,6 +1,6 @@
+import Combine
 import Foundation
 import os.log
-import Combine
 
 // MARK: - Service Status Response
 
@@ -15,7 +15,7 @@ public struct ServiceStatusResponse: Codable {
     public let lastTranscriptionTime: String?
     public let totalTranscriptions: Int
     public let totalAudioProcessedSeconds: Double
-    
+
     enum CodingKeys: String, CodingKey {
         case status
         case modelState = "model_state"
@@ -27,7 +27,7 @@ public struct ServiceStatusResponse: Codable {
         case totalTranscriptions = "total_transcriptions"
         case totalAudioProcessedSeconds = "total_audio_processed_seconds"
     }
-    
+
     public init(
         status: String,
         modelState: String,
@@ -49,15 +49,15 @@ public struct ServiceStatusResponse: Codable {
         self.totalTranscriptions = totalTranscriptions
         self.totalAudioProcessedSeconds = totalAudioProcessedSeconds
     }
-    
+
     /// Convert model state string to ModelState enum.
     public var modelStateEnum: ModelState {
-        switch modelState {
-        case "loaded": return .loaded
-        case "loading": return .loading
-        case "downloading": return .downloading
-        case "error": return .error
-        default: return .unloaded
+        switch self.modelState {
+        case "loaded": .loaded
+        case "loading": .loading
+        case "downloading": .downloading
+        case "error": .error
+        default: .unloaded
         }
     }
 }
@@ -69,39 +69,39 @@ public struct ServiceStatusResponse: Codable {
 @MainActor
 public class TranscriptionClient: ObservableObject, TranscriptionService {
     public static let shared = TranscriptionClient()
-    
+
     private let logger = Logger(subsystem: "MeetingAssistant", category: "TranscriptionClient")
     private let manager = FluidAIModelManager.shared
-    
+
     // We observe the manager to update our synthetic "ServiceStatus" if needed,
     // but the fetchServiceStatus() method is pull-based, so we can just compute it on demand.
-    
+
     private init() {
         Task {
             // Pre-load models on init (or we can wait for explicit warmup)
-            await manager.loadModels()
+            await self.manager.loadModels()
         }
     }
-    
+
     /// Check if the transcription service is healthy (local model manager).
     public func healthCheck() async throws -> Bool {
         // Local service is always "healthy" if the app is running,
         // unless the model failed to load.
         // We trigger a load check if needed.
-        if manager.modelState == .error {
+        if self.manager.modelState == .error {
             return false
         }
         return true
     }
-    
+
     /// Fetch detailed service status.
     /// - Returns: ServiceStatusResponse with comprehensive service information.
     public func fetchServiceStatus() async throws -> ServiceStatusResponse {
         // Construct a response based on local manager state
-        
-        let currentState = manager.modelState
+
+        let currentState = self.manager.modelState
         let isLoaded = currentState == .loaded
-        
+
         // Map local state to the expected JSON response format
         return ServiceStatusResponse(
             status: currentState == .error ? "unhealthy" : "healthy",
@@ -115,18 +115,18 @@ public class TranscriptionClient: ObservableObject, TranscriptionService {
             totalAudioProcessedSeconds: 0
         )
     }
-    
+
     /// Warm up the model by pre-loading it.
     public func warmupModel() async throws {
-        await manager.loadModels()
+        await self.manager.loadModels()
     }
-    
+
     /// Transcribe an audio file.
     /// - Parameter audioURL: Path to the audio file (WAV, M4A, etc.)
     /// - Returns: Transcription response from the service
     public func transcribe(audioURL: URL) async throws -> TranscriptionResponse {
-        logger.info("Transcribing file locally: \(audioURL.lastPathComponent)")
-        
+        self.logger.info("Transcribing file locally: \(audioURL.lastPathComponent)")
+
         // Use LocalTranscriptionClient as the implementation provider.
         return try await LocalTranscriptionClient.shared.transcribe(audioURL: audioURL)
     }
@@ -140,42 +140,43 @@ public enum TranscriptionError: LocalizedError {
     case invalidResponse
     case invalidURL(String)
     case transcriptionFailed(String)
-    
+
     public var errorDescription: String? {
         switch self {
         case .serviceUnavailable:
-            return "Serviço de transcrição não disponível"
+            "Serviço de transcrição não disponível"
         case .warmupFailed:
-            return "Falha ao pré-carregar modelo"
+            "Falha ao pré-carregar modelo"
         case .invalidResponse:
-            return "Resposta inválida do serviço"
-        case .invalidURL(let urlString):
-            return "URL inválida: \(urlString)"
-        case .transcriptionFailed(let message):
-            return "Falha na transcrição: \(message)"
+            "Resposta inválida do serviço"
+        case let .invalidURL(urlString):
+            "URL inválida: \(urlString)"
+        case let .transcriptionFailed(message):
+            "Falha na transcrição: \(message)"
         }
     }
 }
 
 // MARK: - UserDefaultsStorage for non-View contexts
+
 import SwiftUI
 
 @propertyWrapper
 public struct UserDefaultsStorage<Value> {
     private let key: String
     private let defaultValue: Value
-    
+
     public init(wrappedValue: Value, _ key: String) {
         self.key = key
         self.defaultValue = wrappedValue
     }
-    
+
     public var wrappedValue: Value {
         get {
-            UserDefaults.standard.object(forKey: key) as? Value ?? defaultValue
+            UserDefaults.standard.object(forKey: self.key) as? Value ?? self.defaultValue
         }
         set {
-            UserDefaults.standard.set(newValue, forKey: key)
+            UserDefaults.standard.set(newValue, forKey: self.key)
         }
     }
 }

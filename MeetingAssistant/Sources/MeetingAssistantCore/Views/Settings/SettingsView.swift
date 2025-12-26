@@ -21,9 +21,9 @@ public struct SettingsView: View {
 
     public var body: some View {
         NavigationSplitView {
-            sidebar
+            self.sidebar
         } detail: {
-            detailView
+            self.detailView
         }
         // Removed rigid constraints to allow user resizing and accessibility scaling
         // Default size will be determined by content or window definition
@@ -32,7 +32,7 @@ public struct SettingsView: View {
     // MARK: - Sidebar
 
     private var sidebar: some View {
-        List(selection: $selectedSection) {
+        List(selection: self.$selectedSection) {
             ForEach(SettingsSection.allCases) { section in
                 Label(section.title, systemImage: section.icon)
                     .tag(section)
@@ -50,7 +50,7 @@ public struct SettingsView: View {
 
     @ViewBuilder
     private var detailView: some View {
-        switch selectedSection {
+        switch self.selectedSection {
         case .general:
             GeneralSettingsTab()
         case .shortcuts:

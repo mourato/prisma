@@ -52,23 +52,23 @@ public struct MenuBarView: View {
 
     public var body: some View {
         VStack(spacing: 16) {
-            headerSection
+            self.headerSection
 
             // Always show permission status for visibility
-            permissionStatusSection
+            self.permissionStatusSection
 
-            statusSection
+            self.statusSection
 
             // Transcription service status indicator
-            TranscriptionStatusView(viewModel: viewModel.transcriptionViewModel)
+            TranscriptionStatusView(viewModel: self.viewModel.transcriptionViewModel)
 
-            controlButtons
-            transcriptionsList
+            self.controlButtons
+            self.transcriptionsList
         }
         .padding()
         .frame(minWidth: 300)
         .task {
-            await viewModel.checkPermission()
+            await self.viewModel.checkPermission()
         }
     }
 
@@ -76,7 +76,7 @@ public struct MenuBarView: View {
 
     private var permissionStatusSection: some View {
         PermissionStatusView(
-            viewModel: viewModel.permissionViewModel
+            viewModel: self.viewModel.permissionViewModel
         )
     }
 
@@ -104,17 +104,17 @@ public struct MenuBarView: View {
         VStack(spacing: 8) {
             HStack {
                 Circle()
-                    .fill(viewModel.isRecording ? .red : .gray)
+                    .fill(self.viewModel.isRecording ? .red : .gray)
                     .frame(width: 10, height: 10)
 
-                Text(viewModel.statusText)
+                Text(self.viewModel.statusText)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
                 Spacer()
             }
 
-            if viewModel.isRecording, let meeting = viewModel.currentMeeting {
+            if self.viewModel.isRecording, let meeting = viewModel.currentMeeting {
                 MeetingCard(meeting: meeting)
             }
         }
@@ -124,20 +124,20 @@ public struct MenuBarView: View {
 
     private var controlButtons: some View {
         HStack(spacing: 12) {
-            if viewModel.isRecording {
-                Button(action: stopRecording) {
+            if self.viewModel.isRecording {
+                Button(action: self.stopRecording) {
                     Label("Parar Gravação", systemImage: "stop.fill")
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.red)
             } else {
-                Button(action: startRecording) {
+                Button(action: self.startRecording) {
                     Label("Iniciar Gravação", systemImage: "record.circle")
                 }
                 .buttonStyle(.borderedProminent)
             }
 
-            Button(action: { showingTranscriptions.toggle() }) {
+            Button(action: { self.showingTranscriptions.toggle() }) {
                 Label("Transcrições", systemImage: "doc.text")
             }
             .buttonStyle(.bordered)
@@ -146,7 +146,7 @@ public struct MenuBarView: View {
 
     private var transcriptionsList: some View {
         Group {
-            if showingTranscriptions {
+            if self.showingTranscriptions {
                 TranscriptionListView()
                     .frame(height: 200)
             }
@@ -157,16 +157,15 @@ public struct MenuBarView: View {
 
     private func startRecording() {
         Task {
-            await viewModel.startRecording()
+            await self.viewModel.startRecording()
         }
     }
 
     private func stopRecording() {
         Task {
-            await viewModel.stopRecording()
+            await self.viewModel.stopRecording()
         }
     }
-
 }
 
 /// Card showing current meeting info.
@@ -175,16 +174,16 @@ struct MeetingCard: View {
 
     var body: some View {
         HStack {
-            Image(systemName: meeting.appIcon)
+            Image(systemName: self.meeting.appIcon)
                 .font(.title2)
-                .foregroundStyle(meeting.appColor)
+                .foregroundStyle(self.meeting.appColor)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(meeting.appName)
+                Text(self.meeting.appName)
                     .font(.subheadline)
                     .fontWeight(.medium)
 
-                Text(meeting.formattedDuration)
+                Text(self.meeting.formattedDuration)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

@@ -1,5 +1,5 @@
 import KeyboardShortcuts
 
-extension KeyboardShortcuts.Name {
-  public static let toggleRecording = Self("toggleRecording")
+public extension KeyboardShortcuts.Name {
+    static let toggleRecording = Self("toggleRecording")
 }

@@ -31,7 +31,7 @@ public struct ServiceSettingsTab: View {
 
                     Spacer()
 
-                    statusBadge
+                    self.statusBadge
                 }
                 .padding(.vertical, 4)
             } header: {
@@ -59,14 +59,14 @@ public struct ServiceSettingsTab: View {
                 .font(.subheadline)
 
                 HStack {
-                    Button(action: testConnection) {
+                    Button(action: self.testConnection) {
                         Label("Verificar Status", systemImage: "arrow.clockwise")
                     }
-                    .disabled(transcriptionStatus == .testing)
+                    .disabled(self.transcriptionStatus == .testing)
 
                     Spacer()
 
-                    if transcriptionStatus == .testing {
+                    if self.transcriptionStatus == .testing {
                         ProgressView()
                             .controlSize(.small)
                     }
@@ -81,9 +81,9 @@ public struct ServiceSettingsTab: View {
     private var statusBadge: some View {
         HStack(spacing: 4) {
             Circle()
-                .fill(transcriptionStatus.color)
+                .fill(self.transcriptionStatus.color)
                 .frame(width: 8, height: 8)
-            Text(transcriptionStatus.text)
+            Text(self.transcriptionStatus.text)
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -91,22 +91,22 @@ public struct ServiceSettingsTab: View {
         .padding(.vertical, 5)
         .background(
             Capsule()
-                .fill(transcriptionStatus.color.opacity(0.1))
+                .fill(self.transcriptionStatus.color.opacity(0.1))
         )
     }
 
     private func testConnection() {
-        transcriptionStatus = .testing
+        self.transcriptionStatus = .testing
 
         Task {
             do {
                 let isHealthy = try await TranscriptionClient.shared.healthCheck()
                 await MainActor.run {
-                    transcriptionStatus = isHealthy ? .success : .failure(nil)
+                    self.transcriptionStatus = isHealthy ? .success : .failure(nil)
                 }
             } catch {
                 await MainActor.run {
-                    transcriptionStatus = .failure(error.localizedDescription)
+                    self.transcriptionStatus = .failure(error.localizedDescription)
                 }
             }
         }

@@ -1,5 +1,5 @@
-import SwiftUI
 import os.log
+import SwiftUI
 
 // MARK: - AI Settings Tab
 
@@ -17,7 +17,7 @@ public struct AISettingsTab: View {
     public var body: some View {
         Form {
             Section("Pós-Processamento com IA") {
-                Toggle("Habilitar processamento de transcrições com IA", isOn: $settings.aiEnabled)
+                Toggle("Habilitar processamento de transcrições com IA", isOn: self.$settings.aiEnabled)
 
                 Text(
                     "Quando habilitado, as transcrições serão enviadas para um modelo de IA para correção, formatação e resumo."
@@ -25,7 +25,7 @@ public struct AISettingsTab: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-                Toggle("Identificar Oradores (Beta)", isOn: $settings.isDiarizationEnabled)
+                Toggle("Identificar Oradores (Beta)", isOn: self.$settings.isDiarizationEnabled)
 
                 Text(
                     "Identifica quem está falando na reunião. Aumenta significativamente o tempo de processamento."
@@ -34,15 +34,15 @@ public struct AISettingsTab: View {
                 .foregroundStyle(.secondary)
             }
 
-            if settings.aiEnabled {
-                providerSection
-                apiConfigurationSection
-                connectionTestSection
+            if self.settings.aiEnabled {
+                self.providerSection
+                self.apiConfigurationSection
+                self.connectionTestSection
             }
         }
         .padding()
         .onAppear {
-            apiKeyText = (try? KeychainManager.retrieve(for: .aiAPIKey)) ?? ""
+            self.apiKeyText = (try? KeychainManager.retrieve(for: .aiAPIKey)) ?? ""
         }
     }
 
@@ -51,7 +51,7 @@ public struct AISettingsTab: View {
     @ViewBuilder
     private var providerSection: some View {
         Section("Provedor") {
-            Picker("Provedor de IA:", selection: $settings.aiConfiguration.provider) {
+            Picker("Provedor de IA:", selection: self.$settings.aiConfiguration.provider) {
                 ForEach(AIProvider.allCases, id: \.self) { provider in
                     HStack {
                         Image(systemName: provider.icon)
@@ -61,11 +61,11 @@ public struct AISettingsTab: View {
                 }
             }
             .pickerStyle(.menu)
-            .onChange(of: settings.aiConfiguration.provider) { _, newProvider in
+            .onChange(of: self.settings.aiConfiguration.provider) { _, newProvider in
                 if newProvider != .custom {
-                    settings.aiConfiguration.baseURL = newProvider.defaultBaseURL
+                    self.settings.aiConfiguration.baseURL = newProvider.defaultBaseURL
                 }
-                connectionStatus = .unknown
+                self.connectionStatus = .unknown
             }
         }
     }
@@ -78,8 +78,8 @@ public struct AISettingsTab: View {
             HStack {
                 Text("URL Base:")
                 TextField(
-                    settings.aiConfiguration.provider.defaultBaseURL,
-                    text: $settings.aiConfiguration.baseURL
+                    self.settings.aiConfiguration.provider.defaultBaseURL,
+                    text: self.$settings.aiConfiguration.baseURL
                 )
                 .textFieldStyle(.roundedBorder)
             }
@@ -87,24 +87,24 @@ public struct AISettingsTab: View {
             HStack {
                 Text("Chave API:")
                 Group {
-                    if showAPIKey {
-                        TextField("sk-...", text: $apiKeyText)
+                    if self.showAPIKey {
+                        TextField("sk-...", text: self.$apiKeyText)
                     } else {
-                        SecureField("sk-...", text: $apiKeyText)
+                        SecureField("sk-...", text: self.$apiKeyText)
                     }
                 }
                 .textFieldStyle(.roundedBorder)
-                .onChange(of: apiKeyText) { _, newValue in
-                    saveAPIKeyToKeychain(newValue)
+                .onChange(of: self.apiKeyText) { _, newValue in
+                    self.saveAPIKeyToKeychain(newValue)
                 }
 
                 Button {
-                    showAPIKey.toggle()
+                    self.showAPIKey.toggle()
                 } label: {
-                    Image(systemName: showAPIKey ? "eye.slash" : "eye")
+                    Image(systemName: self.showAPIKey ? "eye.slash" : "eye")
                 }
                 .buttonStyle(.borderless)
-                .help(showAPIKey ? "Ocultar chave" : "Mostrar chave")
+                .help(self.showAPIKey ? "Ocultar chave" : "Mostrar chave")
             }
 
             HStack {
@@ -118,7 +118,7 @@ public struct AISettingsTab: View {
             HStack {
                 Text("Modelo:")
                 TextField(
-                    "gpt-4o, claude-3-5-sonnet...", text: $settings.aiConfiguration.selectedModel
+                    "gpt-4o, claude-3-5-sonnet...", text: self.$settings.aiConfiguration.selectedModel
                 )
                 .textFieldStyle(.roundedBorder)
             }
@@ -136,21 +136,21 @@ public struct AISettingsTab: View {
         Section {
             HStack {
                 Button("Testar Conexão") {
-                    testAPIConnection()
+                    self.testAPIConnection()
                 }
-                .disabled(!settings.aiConfiguration.isValid || connectionStatus == .testing)
+                .disabled(!self.settings.aiConfiguration.isValid || self.connectionStatus == .testing)
 
                 Spacer()
 
                 HStack(spacing: 4) {
-                    if connectionStatus == .testing {
+                    if self.connectionStatus == .testing {
                         ProgressView()
                             .controlSize(.small)
                     }
                     Circle()
-                        .fill(connectionStatus.color)
+                        .fill(self.connectionStatus.color)
                         .frame(width: 8, height: 8)
-                    Text(connectionStatus.text)
+                    Text(self.connectionStatus.text)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -169,22 +169,22 @@ public struct AISettingsTab: View {
                 try KeychainManager.delete(for: .aiAPIKey)
             }
         } catch {
-            logger.error("Failed to save API key to Keychain: \(error.localizedDescription)")
+            self.logger.error("Failed to save API key to Keychain: \(error.localizedDescription)")
             // NOTE: In a future iteration, show user feedback via an alert
         }
     }
 
     private func testAPIConnection() {
-        connectionStatus = .testing
+        self.connectionStatus = .testing
 
-        let urlString = settings.aiConfiguration.baseURL
+        let urlString = self.settings.aiConfiguration.baseURL
 
         // Validate URL format and scheme
         guard let url = URL(string: urlString),
-            let scheme = url.scheme,
-            ["http", "https"].contains(scheme.lowercased())
+              let scheme = url.scheme,
+              ["http", "https"].contains(scheme.lowercased())
         else {
-            connectionStatus = .failure("URL inválida")
+            self.connectionStatus = .failure("URL inválida")
             return
         }
 
@@ -204,17 +204,17 @@ public struct AISettingsTab: View {
                     if let httpResponse = response as? HTTPURLResponse {
                         // Only 2xx codes indicate true success
                         if (200...299).contains(httpResponse.statusCode) {
-                            connectionStatus = .success
+                            self.connectionStatus = .success
                         } else {
-                            connectionStatus = .failure("HTTP \(httpResponse.statusCode)")
+                            self.connectionStatus = .failure("HTTP \(httpResponse.statusCode)")
                         }
                     } else {
-                        connectionStatus = .failure("Resposta inválida")
+                        self.connectionStatus = .failure("Resposta inválida")
                     }
                 }
             } catch {
                 await MainActor.run {
-                    connectionStatus = .failure(error.localizedDescription)
+                    self.connectionStatus = .failure(error.localizedDescription)
                 }
             }
         }

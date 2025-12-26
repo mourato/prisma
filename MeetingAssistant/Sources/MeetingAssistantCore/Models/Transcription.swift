@@ -80,7 +80,7 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
 
     /// Whether this transcription was post-processed.
     public var isPostProcessed: Bool {
-        processedContent != nil
+        self.processedContent != nil
     }
 
     /// Cached formatter for transcription dates.
@@ -94,25 +94,25 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
 
     /// Formatted date string for display.
     public var formattedDate: String {
-        Self.dateFormatter.string(from: createdAt)
+        Self.dateFormatter.string(from: self.createdAt)
     }
 
     /// Duration from meeting data.
     public var formattedDuration: String {
-        meeting.formattedDuration
+        self.meeting.formattedDuration
     }
 
     /// Word count of transcription.
     public var wordCount: Int {
-        text.split(separator: " ").count
+        self.text.split(separator: " ").count
     }
 
     /// Preview of transcription text (first 100 chars).
     public var preview: String {
-        if text.count <= 100 {
-            return text
+        if self.text.count <= 100 {
+            return self.text
         }
-        return String(text.prefix(100)) + "..."
+        return String(self.text.prefix(100)) + "..."
     }
 
     /// A segment of the transcription associated with a speaker.
@@ -137,6 +137,7 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
             self.endTime = endTime
         }
     }
+
     /// Default string for unknown speaker.
     public static let unknownSpeaker = "Desconhecido"
 }

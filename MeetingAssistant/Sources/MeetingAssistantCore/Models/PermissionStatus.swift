@@ -8,38 +8,38 @@ public enum PermissionState: String, Sendable {
     case denied
     case notDetermined
     case restricted
-    
+
     /// Localized display name for the permission state.
     public var displayName: String {
         switch self {
         case .granted:
-            return "Concedida"
+            "Concedida"
         case .denied:
-            return "Negada"
+            "Negada"
         case .notDetermined:
-            return "Não Solicitada"
+            "Não Solicitada"
         case .restricted:
-            return "Restrita"
+            "Restrita"
         }
     }
-    
+
     /// SF Symbol icon name for the permission state.
     public var iconName: String {
         switch self {
         case .granted:
-            return "checkmark.circle.fill"
+            "checkmark.circle.fill"
         case .denied:
-            return "xmark.circle.fill"
+            "xmark.circle.fill"
         case .notDetermined:
-            return "questionmark.circle.fill"
+            "questionmark.circle.fill"
         case .restricted:
-            return "lock.circle.fill"
+            "lock.circle.fill"
         }
     }
-    
+
     /// Whether operations requiring this permission can proceed.
     public var isAuthorized: Bool {
-        return self == .granted
+        self == .granted
     }
 }
 
@@ -47,34 +47,34 @@ public enum PermissionState: String, Sendable {
 public enum PermissionType: String, CaseIterable, Sendable {
     case microphone
     case screenRecording
-    
+
     /// Localized display name for the permission type.
     public var displayName: String {
         switch self {
         case .microphone:
-            return "Microfone"
+            "Microfone"
         case .screenRecording:
-            return "Gravação de Tela"
+            "Gravação de Tela"
         }
     }
-    
+
     /// SF Symbol icon name representing the permission type.
     public var iconName: String {
         switch self {
         case .microphone:
-            return "mic.fill"
+            "mic.fill"
         case .screenRecording:
-            return "tv.fill"
+            "tv.fill"
         }
     }
-    
+
     /// Description explaining why the permission is needed.
     public var permissionDescription: String {
         switch self {
         case .microphone:
-            return "Necessário para capturar sua voz durante reuniões."
+            "Necessário para capturar sua voz durante reuniões."
         case .screenRecording:
-            return "Necessário para capturar o áudio do sistema (participantes)."
+            "Necessário para capturar o áudio do sistema (participantes)."
         }
     }
 }
@@ -84,7 +84,7 @@ public struct PermissionInfo: Sendable {
     public let type: PermissionType
     public var state: PermissionState
     public var lastChecked: Date?
-    
+
     public init(
         type: PermissionType,
         state: PermissionState = .notDetermined,
@@ -94,11 +94,11 @@ public struct PermissionInfo: Sendable {
         self.state = state
         self.lastChecked = lastChecked
     }
-    
+
     /// Updates the permission state with current timestamp.
     public mutating func updateState(_ newState: PermissionState) {
-        state = newState
-        lastChecked = Date()
+        self.state = newState
+        self.lastChecked = Date()
     }
 }
 
@@ -107,36 +107,36 @@ public struct PermissionInfo: Sendable {
 public class PermissionStatusManager: ObservableObject {
     @Published public private(set) var microphonePermission: PermissionInfo
     @Published public private(set) var screenRecordingPermission: PermissionInfo
-    
+
     /// Returns true if all required permissions are granted.
     public var allPermissionsGranted: Bool {
-        return microphonePermission.state.isAuthorized
-            && screenRecordingPermission.state.isAuthorized
+        self.microphonePermission.state.isAuthorized
+            && self.screenRecordingPermission.state.isAuthorized
     }
-    
+
     /// Returns the count of granted permissions.
     public var grantedCount: Int {
         var count = 0
-        if microphonePermission.state.isAuthorized { count += 1 }
-        if screenRecordingPermission.state.isAuthorized { count += 1 }
+        if self.microphonePermission.state.isAuthorized { count += 1 }
+        if self.screenRecordingPermission.state.isAuthorized { count += 1 }
         return count
     }
-    
+
     /// Total number of required permissions.
     public let totalPermissions = 2
-    
+
     public init() {
         self.microphonePermission = PermissionInfo(type: .microphone)
         self.screenRecordingPermission = PermissionInfo(type: .screenRecording)
     }
-    
+
     /// Updates the microphone permission state.
     public func updateMicrophoneState(_ state: PermissionState) {
-        microphonePermission.updateState(state)
+        self.microphonePermission.updateState(state)
     }
-    
+
     /// Updates the screen recording permission state.
     public func updateScreenRecordingState(_ state: PermissionState) {
-        screenRecordingPermission.updateState(state)
+        self.screenRecordingPermission.updateState(state)
     }
 }

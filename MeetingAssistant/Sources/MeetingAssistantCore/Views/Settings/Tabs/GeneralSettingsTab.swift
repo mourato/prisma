@@ -6,32 +6,32 @@ import SwiftUI
 public struct GeneralSettingsTab: View {
     @AppStorage("autoStartRecording") private var autoStartRecording = true
     @AppStorage("recordingsDirectory") private var recordingsPath = ""
-    
+
     public init() {}
-    
+
     public var body: some View {
         Form {
             Section("Gravação") {
-                Toggle("Iniciar gravação automaticamente ao detectar reunião", isOn: $autoStartRecording)
-                
+                Toggle("Iniciar gravação automaticamente ao detectar reunião", isOn: self.$autoStartRecording)
+
                 HStack {
                     Text("Pasta de gravações:")
-                    TextField("Caminho", text: $recordingsPath)
+                    TextField("Caminho", text: self.$recordingsPath)
                         .textFieldStyle(.roundedBorder)
-                    
+
                     Button("Escolher...") {
-                        selectRecordingsDirectory()
+                        self.selectRecordingsDirectory()
                     }
                 }
             }
-            
+
             Section("Apps Monitorados") {
-                monitoredAppsList
+                self.monitoredAppsList
             }
         }
         .padding()
     }
-    
+
     @ViewBuilder
     private var monitoredAppsList: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -45,15 +45,15 @@ public struct GeneralSettingsTab: View {
         }
         .font(.caption)
     }
-    
+
     private func selectRecordingsDirectory() {
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
-        
+
         if panel.runModal() == .OK, let url = panel.url {
-            recordingsPath = url.path
+            self.recordingsPath = url.path
         }
     }
 }

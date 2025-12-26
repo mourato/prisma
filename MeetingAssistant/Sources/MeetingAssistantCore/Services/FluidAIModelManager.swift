@@ -28,37 +28,37 @@ class FluidAIModelManager: ObservableObject {
 
     /// Loads the ASR models. Downloads them if not present.
     func loadModels() async {
-        guard modelState != .loaded && modelState != .loading else { return }
+        guard self.modelState != .loaded, self.modelState != .loading else { return }
 
-        modelState = .downloading
-        logger.info("Starting model download/load...")
+        self.modelState = .downloading
+        self.logger.info("Starting model download/load...")
 
         do {
             // Use v3 (Multilingual)
             let models = try await AsrModels.downloadAndLoad(version: .v3)
 
-            modelState = .loading
-            logger.info("Initializing ASR Manager...")
+            self.modelState = .loading
+            self.logger.info("Initializing ASR Manager...")
 
             // AsrManager initialization
             let manager = AsrManager(config: .default)
             try await manager.initialize(models: models)
 
             self.asrManager = manager
-            modelState = .loaded
-            logger.info("ASR Manager initialized successfully.")
+            self.modelState = .loaded
+            self.logger.info("ASR Manager initialized successfully.")
 
         } catch {
-            logger.error("Failed to load models: \(error.localizedDescription)")
-            modelState = .error
+            self.logger.error("Failed to load models: \(error.localizedDescription)")
+            self.modelState = .error
         }
     }
 
     /// Loads the Diarization models.
     func loadDiarizationModels() async {
-        guard diarizerManager == nil else { return }
+        guard self.diarizerManager == nil else { return }
 
-        logger.info("Loading Diarization models...")
+        self.logger.info("Loading Diarization models...")
 
         do {
             let config = OfflineDiarizerConfig()
@@ -66,9 +66,9 @@ class FluidAIModelManager: ObservableObject {
             try await manager.prepareModels()
 
             self.diarizerManager = manager
-            logger.info("Diarization Manager initialized.")
+            self.logger.info("Diarization Manager initialized.")
         } catch {
-            logger.error("Failed to load diarization models: \(error.localizedDescription)")
+            self.logger.error("Failed to load diarization models: \(error.localizedDescription)")
         }
     }
 
@@ -83,15 +83,15 @@ class FluidAIModelManager: ObservableObject {
     /// Perform speaker diarization on an audio file
     func diarize(audioURL: URL) async throws -> [DiarizationSegment] {
         guard let manager = diarizerManager else {
-            logger.warning("Diarizer not loaded, attempting to load...")
-            await loadDiarizationModels()
-            if diarizerManager == nil {
+            self.logger.warning("Diarizer not loaded, attempting to load...")
+            await self.loadDiarizationModels()
+            if self.diarizerManager == nil {
                 throw FluidError.diarizerNotLoaded
             }
-            return try await diarize(audioURL: audioURL)
+            return try await self.diarize(audioURL: audioURL)
         }
 
-        logger.info("Diarizing audio file: \(audioURL.path)")
+        self.logger.info("Diarizing audio file: \(audioURL.path)")
 
         // FluidAudio Diarizer usually handles file reading internally for optimal performance
         // based on the documentation example: let result = try await manager.process(url)
@@ -100,7 +100,7 @@ class FluidAIModelManager: ObservableObject {
 
         return result.segments.map { segment in
             DiarizationSegment(
-                speakerId: String(segment.speakerId),  // Ensure it's string
+                speakerId: String(segment.speakerId), // Ensure it's string
                 startTime: Double(segment.startTimeSeconds),
                 endTime: Double(segment.endTimeSeconds)
             )
@@ -121,7 +121,7 @@ class FluidAIModelManager: ObservableObject {
             throw FluidError.modelNotLoaded
         }
 
-        logger.info("Transcribing audio file: \(audioURL.path)")
+        self.logger.info("Transcribing audio file: \(audioURL.path)")
 
         // Use the file-based API for automatic conversion
         let result = try await manager.transcribe(audioURL, source: .system)
@@ -142,12 +142,13 @@ class FluidAIModelManager: ObservableObject {
     private func convertTo16kHz(buffer: AVAudioPCMBuffer) throws -> AVAudioPCMBuffer {
         guard
             let targetFormat = AVAudioFormat(
-                commonFormat: .pcmFormatFloat32, sampleRate: 16000, channels: 1, interleaved: false)
+                commonFormat: .pcmFormatFloat32, sampleRate: 16_000, channels: 1, interleaved: false
+            )
         else {
             throw FluidError.conversionFailed
         }
 
-        if buffer.format.sampleRate == 16000 && buffer.format.channelCount == 1 {
+        if buffer.format.sampleRate == 16_000, buffer.format.channelCount == 1 {
             return buffer
         }
 
@@ -160,7 +161,8 @@ class FluidAIModelManager: ObservableObject {
 
         guard
             let targetBuffer = AVAudioPCMBuffer(
-                pcmFormat: targetFormat, frameCapacity: targetFrameCapacity)
+                pcmFormat: targetFormat, frameCapacity: targetFrameCapacity
+            )
         else {
             throw FluidError.conversionFailed
         }
@@ -177,7 +179,7 @@ class FluidAIModelManager: ObservableObject {
 
         converter.convert(to: targetBuffer, error: &error, withInputFrom: inputBlock)
 
-        if let error = error {
+        if let error {
             throw error
         }
 

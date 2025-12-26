@@ -32,10 +32,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var eventMonitor: Any?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        setupMenuBar()
-        setupContextMenu()
-        setupEventMonitor()
-        setupGlobalShortcut()
+        self.setupMenuBar()
+        self.setupContextMenu()
+        self.setupEventMonitor()
+        self.setupGlobalShortcut()
 
         // Hide dock icon for menu bar only app
         NSApp.setActivationPolicy(.accessory)
@@ -60,39 +60,40 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Toggle recording state when global shortcut is activated.
     private func toggleRecording() async {
-        if recordingManager.isRecording {
-            await recordingManager.stopRecording(transcribe: true)
-            updateStatusIcon(isRecording: false)
+        if self.recordingManager.isRecording {
+            await self.recordingManager.stopRecording(transcribe: true)
+            self.updateStatusIcon(isRecording: false)
         } else {
-            await recordingManager.startRecording()
-            updateStatusIcon(isRecording: true)
+            await self.recordingManager.startRecording()
+            self.updateStatusIcon(isRecording: true)
         }
     }
 
     // MARK: - Menu Bar Setup
 
     private func setupMenuBar() {
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
         if let button = statusItem?.button {
             button.image = NSImage(
-                systemSymbolName: "mic.circle", accessibilityDescription: "Meeting Assistant")
-            button.action = #selector(handleStatusItemClick)
+                systemSymbolName: "mic.circle", accessibilityDescription: "Meeting Assistant"
+            )
+            button.action = #selector(self.handleStatusItemClick)
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
             button.target = self
         }
 
-        popover = NSPopover()
-        popover?.contentSize = NSSize(width: 320, height: 400)
-        popover?.behavior = .transient
-        popover?.contentViewController = NSHostingController(
+        self.popover = NSPopover()
+        self.popover?.contentSize = NSSize(width: 320, height: 400)
+        self.popover?.behavior = .transient
+        self.popover?.contentViewController = NSHostingController(
             rootView: MenuBarView()
-                .environmentObject(recordingManager)
+                .environmentObject(self.recordingManager)
         )
     }
 
     private func setupContextMenu() {
-        contextMenu = NSMenu()
+        self.contextMenu = NSMenu()
 
         // Settings
         let settingsItem = NSMenuItem(
@@ -101,7 +102,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             keyEquivalent: ","
         )
         settingsItem.target = self
-        contextMenu?.addItem(settingsItem)
+        self.contextMenu?.addItem(settingsItem)
 
         // About
         let aboutItem = NSMenuItem(
@@ -110,10 +111,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             keyEquivalent: ""
         )
         aboutItem.target = self
-        contextMenu?.addItem(aboutItem)
+        self.contextMenu?.addItem(aboutItem)
 
         // Separator
-        contextMenu?.addItem(NSMenuItem.separator())
+        self.contextMenu?.addItem(NSMenuItem.separator())
 
         // Check for Updates (placeholder)
         let checkUpdatesItem = NSMenuItem(
@@ -122,10 +123,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             keyEquivalent: ""
         )
         checkUpdatesItem.target = self
-        contextMenu?.addItem(checkUpdatesItem)
+        self.contextMenu?.addItem(checkUpdatesItem)
 
         // Separator
-        contextMenu?.addItem(NSMenuItem.separator())
+        self.contextMenu?.addItem(NSMenuItem.separator())
 
         // Quit
         let quitItem = NSMenuItem(
@@ -134,12 +135,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             keyEquivalent: "q"
         )
         quitItem.target = self
-        contextMenu?.addItem(quitItem)
+        self.contextMenu?.addItem(quitItem)
     }
 
     private func setupEventMonitor() {
         // Monitor for clicks outside popover to close it
-        eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [
+        self.eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [
             .leftMouseDown, .rightMouseDown,
         ]) { [weak self] _ in
             if self?.popover?.isShown == true {
@@ -154,14 +155,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         guard let event = NSApp.currentEvent else { return }
 
         if event.type == .rightMouseUp {
-            showContextMenu()
+            self.showContextMenu()
         } else {
-            togglePopover()
+            self.togglePopover()
         }
     }
 
     private func togglePopover() {
-        guard let popover = popover, let button = statusItem?.button else { return }
+        guard let popover, let button = statusItem?.button else { return }
 
         if popover.isShown {
             popover.performClose(nil)
@@ -177,12 +178,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         guard let menu = contextMenu, let button = statusItem?.button else { return }
 
         // Close popover if open
-        popover?.performClose(nil)
+        self.popover?.performClose(nil)
 
         // Show context menu
-        statusItem?.menu = menu
+        self.statusItem?.menu = menu
         button.performClick(nil)
-        statusItem?.menu = nil  // Reset so left-click works again
+        self.statusItem?.menu = nil // Reset so left-click works again
     }
 
     // MARK: - Menu Actions
@@ -197,20 +198,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func showAbout() {
-        popover?.performClose(nil)
+        self.popover?.performClose(nil)
 
         let alert = NSAlert()
         alert.messageText = "Meeting Assistant"
         alert.informativeText = """
-            Versão 0.1.1
+        Versão 0.1.1
 
-            Transcreva suas reuniões de vídeo automaticamente usando IA.
+        Transcreva suas reuniões de vídeo automaticamente usando IA.
 
-            © 2025 Todos os direitos reservados.
-            """
+        © 2025 Todos os direitos reservados.
+        """
         alert.alertStyle = .informational
         alert.icon = NSImage(
-            systemSymbolName: "waveform.circle.fill", accessibilityDescription: "Meeting Assistant")
+            systemSymbolName: "waveform.circle.fill", accessibilityDescription: "Meeting Assistant"
+        )
         alert.addButton(withTitle: "OK")
 
         NSApp.activate(ignoringOtherApps: true)
@@ -218,7 +220,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func checkForUpdates() {
-        popover?.performClose(nil)
+        self.popover?.performClose(nil)
 
         let alert = NSAlert()
         alert.messageText = "Verificar Atualizações"
@@ -232,9 +234,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func quitApp() {
         // Stop any ongoing recording before quitting
-        if recordingManager.isRecording {
+        if self.recordingManager.isRecording {
             Task {
-                await recordingManager.stopRecording(transcribe: false)
+                await self.recordingManager.stopRecording(transcribe: false)
                 NSApp.terminate(nil)
             }
         } else {
@@ -247,7 +249,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Update menu bar icon based on recording state.
     func updateStatusIcon(isRecording: Bool) {
         let iconName = isRecording ? "record.circle.fill" : "mic.circle"
-        statusItem?.button?.image = NSImage(
+        self.statusItem?.button?.image = NSImage(
             systemSymbolName: iconName,
             accessibilityDescription: isRecording ? "Recording" : "Meeting Assistant"
         )

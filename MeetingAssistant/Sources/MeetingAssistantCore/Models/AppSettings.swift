@@ -4,35 +4,35 @@ import Foundation
 
 /// Supported AI providers for post-processing transcriptions.
 public enum AIProvider: String, CaseIterable, Codable, Sendable {
-    case openai = "openai"
-    case anthropic = "anthropic"
-    case groq = "groq"
-    case custom = "custom"
+    case openai
+    case anthropic
+    case groq
+    case custom
 
     public var displayName: String {
         switch self {
-        case .openai: return "OpenAI"
-        case .anthropic: return "Anthropic"
-        case .groq: return "Groq"
-        case .custom: return "Personalizado"
+        case .openai: "OpenAI"
+        case .anthropic: "Anthropic"
+        case .groq: "Groq"
+        case .custom: "Personalizado"
         }
     }
 
     public var defaultBaseURL: String {
         switch self {
-        case .openai: return "https://api.openai.com/v1"
-        case .anthropic: return "https://api.anthropic.com/v1"
-        case .groq: return "https://api.groq.com/openai/v1"
-        case .custom: return ""
+        case .openai: "https://api.openai.com/v1"
+        case .anthropic: "https://api.anthropic.com/v1"
+        case .groq: "https://api.groq.com/openai/v1"
+        case .custom: ""
         }
     }
 
     public var icon: String {
         switch self {
-        case .openai: return "brain"
-        case .anthropic: return "sparkles"
-        case .groq: return "bolt.fill"
-        case .custom: return "server.rack"
+        case .openai: "brain"
+        case .anthropic: "sparkles"
+        case .groq: "bolt.fill"
+        case .custom: "server.rack"
         }
     }
 }
@@ -51,7 +51,7 @@ public struct AIConfiguration: Codable, Equatable, Sendable {
 
     enum CodingKeys: String, CodingKey {
         case provider, baseURL, selectedModel
-        case _legacyApiKey = "apiKey"  // For migration from old format
+        case _legacyApiKey = "apiKey" // For migration from old format
     }
 
     public init(provider: AIProvider, baseURL: String, selectedModel: String) {
@@ -71,19 +71,19 @@ public struct AIConfiguration: Codable, Equatable, Sendable {
     /// Checks Keychain for API key presence.
     public var isValid: Bool {
         let hasApiKey = KeychainManager.exists(for: .aiAPIKey)
-        return hasApiKey && !baseURL.isEmpty
+        return hasApiKey && !self.baseURL.isEmpty
     }
 
     /// Migrate legacy API key from UserDefaults to Keychain.
     /// Should be called once during app initialization.
     mutating func migrateLegacyApiKeyIfNeeded() {
-        guard !_legacyApiKey.isEmpty else { return }
+        guard !self._legacyApiKey.isEmpty else { return }
 
         // Move to Keychain
-        try? KeychainManager.store(_legacyApiKey, for: .aiAPIKey)
+        try? KeychainManager.store(self._legacyApiKey, for: .aiAPIKey)
 
         // Clear from struct (will be saved to UserDefaults without the key)
-        _legacyApiKey = ""
+        self._legacyApiKey = ""
     }
 }
 
@@ -97,7 +97,6 @@ public class AppSettingsStore: ObservableObject {
     // MARK: - Keys
 
     private enum Keys {
-
         static let aiConfiguration = "aiConfiguration"
         static let aiEnabled = "aiPostProcessingEnabled"
         static let systemPrompt = "postProcessingSystemPrompt"
@@ -110,23 +109,23 @@ public class AppSettingsStore: ObservableObject {
     // MARK: - Published Properties
 
     @Published public var aiConfiguration: AIConfiguration {
-        didSet { save(aiConfiguration, forKey: Keys.aiConfiguration) }
+        didSet { self.save(self.aiConfiguration, forKey: Keys.aiConfiguration) }
     }
 
     @Published public var aiEnabled: Bool {
-        didSet { UserDefaults.standard.set(aiEnabled, forKey: Keys.aiEnabled) }
+        didSet { UserDefaults.standard.set(self.aiEnabled, forKey: Keys.aiEnabled) }
     }
 
     // MARK: - Post-Processing Properties
 
     /// Custom system prompt for post-processing.
     @Published public var systemPrompt: String {
-        didSet { UserDefaults.standard.set(systemPrompt, forKey: Keys.systemPrompt) }
+        didSet { UserDefaults.standard.set(self.systemPrompt, forKey: Keys.systemPrompt) }
     }
 
     /// User-created prompts for post-processing.
     @Published public var userPrompts: [PostProcessingPrompt] {
-        didSet { save(userPrompts, forKey: Keys.userPrompts) }
+        didSet { self.save(self.userPrompts, forKey: Keys.userPrompts) }
     }
 
     /// Currently selected prompt ID for post-processing.
@@ -143,35 +142,34 @@ public class AppSettingsStore: ObservableObject {
     /// Whether post-processing is enabled.
     @Published public var postProcessingEnabled: Bool {
         didSet {
-            UserDefaults.standard.set(postProcessingEnabled, forKey: Keys.postProcessingEnabled)
+            UserDefaults.standard.set(self.postProcessingEnabled, forKey: Keys.postProcessingEnabled)
         }
     }
 
     /// Whether speaker diarization is enabled.
     @Published public var isDiarizationEnabled: Bool {
         didSet {
-            UserDefaults.standard.set(isDiarizationEnabled, forKey: Keys.isDiarizationEnabled)
+            UserDefaults.standard.set(self.isDiarizationEnabled, forKey: Keys.isDiarizationEnabled)
         }
     }
 
     /// All available prompts (predefined + user-created).
     public var allPrompts: [PostProcessingPrompt] {
-        PostProcessingPrompt.allPredefined + userPrompts
+        PostProcessingPrompt.allPredefined + self.userPrompts
     }
 
     /// Currently selected prompt.
     public var selectedPrompt: PostProcessingPrompt? {
         guard let id = selectedPromptId else { return nil }
-        return allPrompts.first { $0.id == id }
+        return self.allPrompts.first { $0.id == id }
     }
 
     // MARK: - Initialization
 
     private init() {
-
         // Load AI configuration
         if let data = UserDefaults.standard.data(forKey: Keys.aiConfiguration),
-            let config = try? JSONDecoder().decode(AIConfiguration.self, from: data)
+           let config = try? JSONDecoder().decode(AIConfiguration.self, from: data)
         {
             self.aiConfiguration = config
         } else {
@@ -184,10 +182,10 @@ public class AppSettingsStore: ObservableObject {
         // Load post-processing settings
         self.systemPrompt =
             UserDefaults.standard.string(forKey: Keys.systemPrompt)
-            ?? AIPromptTemplates.defaultSystemPrompt
+                ?? AIPromptTemplates.defaultSystemPrompt
 
         if let data = UserDefaults.standard.data(forKey: Keys.userPrompts),
-            let prompts = try? JSONDecoder().decode([PostProcessingPrompt].self, from: data)
+           let prompts = try? JSONDecoder().decode([PostProcessingPrompt].self, from: data)
         {
             self.userPrompts = prompts
         } else {
@@ -195,7 +193,7 @@ public class AppSettingsStore: ObservableObject {
         }
 
         if let idString = UserDefaults.standard.string(forKey: Keys.selectedPromptId),
-            let id = UUID(uuidString: idString)
+           let id = UUID(uuidString: idString)
         {
             self.selectedPromptId = id
         } else {
@@ -209,7 +207,7 @@ public class AppSettingsStore: ObservableObject {
     // MARK: - Private Helpers
 
     /// Encodes and saves a Codable value to UserDefaults.
-    private func save<T: Encodable>(_ value: T, forKey key: String) {
+    private func save(_ value: some Encodable, forKey key: String) {
         if let data = try? JSONEncoder().encode(value) {
             UserDefaults.standard.set(data, forKey: key)
         }
@@ -217,14 +215,13 @@ public class AppSettingsStore: ObservableObject {
 
     /// Reset all settings to defaults.
     public func resetToDefaults() {
-
-        aiConfiguration = .default
-        aiEnabled = false
-        systemPrompt = AIPromptTemplates.defaultSystemPrompt
-        userPrompts = []
-        selectedPromptId = nil
-        postProcessingEnabled = false
-        isDiarizationEnabled = false
+        self.aiConfiguration = .default
+        self.aiEnabled = false
+        self.systemPrompt = AIPromptTemplates.defaultSystemPrompt
+        self.userPrompts = []
+        self.selectedPromptId = nil
+        self.postProcessingEnabled = false
+        self.isDiarizationEnabled = false
     }
 
     // MARK: - Prompt Management
@@ -232,27 +229,27 @@ public class AppSettingsStore: ObservableObject {
     /// Adds a new user prompt.
     /// - Parameter prompt: The prompt to add.
     public func addPrompt(_ prompt: PostProcessingPrompt) {
-        userPrompts.append(prompt)
+        self.userPrompts.append(prompt)
     }
 
     /// Updates an existing user prompt.
     /// - Parameter prompt: The prompt with updated values.
     public func updatePrompt(_ prompt: PostProcessingPrompt) {
         guard let index = userPrompts.firstIndex(where: { $0.id == prompt.id }) else { return }
-        userPrompts[index] = prompt
+        self.userPrompts[index] = prompt
     }
 
     /// Deletes a user prompt by ID.
     /// - Parameter id: The ID of the prompt to delete.
     public func deletePrompt(id: UUID) {
-        userPrompts.removeAll { $0.id == id }
-        if selectedPromptId == id {
-            selectedPromptId = nil
+        self.userPrompts.removeAll { $0.id == id }
+        if self.selectedPromptId == id {
+            self.selectedPromptId = nil
         }
     }
 
     /// Resets the system prompt to default.
     public func resetSystemPrompt() {
-        systemPrompt = AIPromptTemplates.defaultSystemPrompt
+        self.systemPrompt = AIPromptTemplates.defaultSystemPrompt
     }
 }

@@ -8,7 +8,6 @@ public struct ShortcutSettingsTab: View {
     public init() {}
 
     public var body: some View {
-
         Form {
             Section(header: Text("shortcut.global.title")) {
                 VStack(alignment: .leading, spacing: 12) {
