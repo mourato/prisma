@@ -24,6 +24,14 @@ public struct AISettingsTab: View {
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)
+
+                Toggle("Identificar Oradores (Beta)", isOn: $settings.isDiarizationEnabled)
+
+                Text(
+                    "Identifica quem está falando na reunião. Aumenta significativamente o tempo de processamento."
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
 
             if settings.aiEnabled {

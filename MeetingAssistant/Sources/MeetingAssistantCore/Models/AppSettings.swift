@@ -104,6 +104,7 @@ public class AppSettingsStore: ObservableObject {
         static let userPrompts = "postProcessingUserPrompts"
         static let selectedPromptId = "postProcessingSelectedPromptId"
         static let postProcessingEnabled = "postProcessingEnabled"
+        static let isDiarizationEnabled = "isDiarizationEnabled"
     }
 
     // MARK: - Published Properties
@@ -143,6 +144,13 @@ public class AppSettingsStore: ObservableObject {
     @Published public var postProcessingEnabled: Bool {
         didSet {
             UserDefaults.standard.set(postProcessingEnabled, forKey: Keys.postProcessingEnabled)
+        }
+    }
+
+    /// Whether speaker diarization is enabled.
+    @Published public var isDiarizationEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(isDiarizationEnabled, forKey: Keys.isDiarizationEnabled)
         }
     }
 
@@ -195,6 +203,7 @@ public class AppSettingsStore: ObservableObject {
         }
 
         self.postProcessingEnabled = UserDefaults.standard.bool(forKey: Keys.postProcessingEnabled)
+        self.isDiarizationEnabled = UserDefaults.standard.bool(forKey: Keys.isDiarizationEnabled)
     }
 
     // MARK: - Private Helpers
@@ -215,6 +224,7 @@ public class AppSettingsStore: ObservableObject {
         userPrompts = []
         selectedPromptId = nil
         postProcessingEnabled = false
+        isDiarizationEnabled = false
     }
 
     // MARK: - Prompt Management
