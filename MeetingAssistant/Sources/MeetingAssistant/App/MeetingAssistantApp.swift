@@ -14,7 +14,7 @@ struct MeetingAssistantApp: App {
         WindowGroup("Configurações", id: "settings") {
             SettingsView()
                 .onAppear {
-                    NavigationService.shared.openWindow = self.openWindow
+                    NavigationService.shared.register(openWindow: self.openWindow)
                 }
         }
         .windowResizability(.contentSize)
