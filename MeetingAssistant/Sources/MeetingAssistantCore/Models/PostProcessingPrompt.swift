@@ -36,9 +36,25 @@ public struct PostProcessingPrompt: Identifiable, Codable, Equatable, Sendable {
 
 extension PostProcessingPrompt {
     
+    /// Stable UUIDs for predefined prompts to ensure persistence consistency.
+    private enum PredefinedIDs {
+        static let meetingNotes = UUID(uuidString: "00000000-0000-0000-0000-000000000001") ?? {
+            preconditionFailure("Invalid UUID string for meetingNotes")
+        }()
+        static let executiveSummary = UUID(uuidString: "00000000-0000-0000-0000-000000000002") ?? {
+            preconditionFailure("Invalid UUID string for executiveSummary")
+        }()
+        static let actionItems = UUID(uuidString: "00000000-0000-0000-0000-000000000003") ?? {
+            preconditionFailure("Invalid UUID string for actionItems")
+        }()
+        static let cleanTranscription = UUID(uuidString: "00000000-0000-0000-0000-000000000004") ?? {
+            preconditionFailure("Invalid UUID string for cleanTranscription")
+        }()
+    }
+    
     /// Predefined prompt for generating meeting notes.
     public static let meetingNotes = PostProcessingPrompt(
-        id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+        id: PredefinedIDs.meetingNotes,
         title: "Notas de Reunião",
         promptText: """
         Analise a transcrição e gere notas de reunião estruturadas com:
@@ -56,7 +72,7 @@ extension PostProcessingPrompt {
     
     /// Predefined prompt for executive summary.
     public static let executiveSummary = PostProcessingPrompt(
-        id: UUID(uuidString: "00000000-0000-0000-0000-000000000002")!,
+        id: PredefinedIDs.executiveSummary,
         title: "Resumo Executivo",
         promptText: """
         Crie um resumo executivo conciso da reunião em 3-5 parágrafos.
@@ -70,7 +86,7 @@ extension PostProcessingPrompt {
     
     /// Predefined prompt for extracting action items.
     public static let actionItems = PostProcessingPrompt(
-        id: UUID(uuidString: "00000000-0000-0000-0000-000000000003")!,
+        id: PredefinedIDs.actionItems,
         title: "Action Items",
         promptText: """
         Extraia todos os action items e próximos passos mencionados na reunião.
@@ -88,7 +104,7 @@ extension PostProcessingPrompt {
     
     /// Predefined prompt for clean transcription.
     public static let cleanTranscription = PostProcessingPrompt(
-        id: UUID(uuidString: "00000000-0000-0000-0000-000000000004")!,
+        id: PredefinedIDs.cleanTranscription,
         title: "Transcrição Limpa",
         promptText: """
         Limpe a transcrição removendo:
