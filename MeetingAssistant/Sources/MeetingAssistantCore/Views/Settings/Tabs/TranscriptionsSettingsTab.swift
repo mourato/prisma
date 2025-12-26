@@ -52,9 +52,14 @@ public struct TranscriptionsSettingsTab: View {
                 Text(NSLocalizedString("settings.transcriptions.title", comment: ""))
                     .font(.system(.title2, design: .rounded))
                     .fontWeight(.bold)
-                Text(String.localizedStringWithFormat(NSLocalizedString("settings.transcriptions.items_found", comment: ""), self.viewModel.filteredTranscriptions.count))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text(
+                    String.localizedStringWithFormat(
+                        NSLocalizedString("settings.transcriptions.items_found", comment: ""),
+                        self.viewModel.filteredTranscriptions.count
+                    )
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
 
             Spacer()
@@ -137,7 +142,10 @@ public struct TranscriptionsSettingsTab: View {
     }
 
     private var sourceFilterPicker: some View {
-        Picker(NSLocalizedString("settings.transcriptions.source", comment: ""), selection: self.$viewModel.sourceFilter) {
+        Picker(
+            NSLocalizedString("settings.transcriptions.source", comment: ""),
+            selection: self.$viewModel.sourceFilter
+        ) {
             ForEach(RecordingSourceFilter.allCases, id: \.self) { filter in
                 Text(filter.displayName).tag(filter)
             }

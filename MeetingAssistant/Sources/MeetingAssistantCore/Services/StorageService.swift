@@ -128,7 +128,9 @@ public final class FileSystemStorageService: StorageService {
                 let transcription = try decoder.decode(Transcription.self, from: data)
                 transcriptions.append(transcription)
             } catch {
-                self.logger.warning("Failed to load transcription \(file.lastPathComponent): \(error.localizedDescription)")
+                self.logger.warning(
+                    "Failed to load transcription \(file.lastPathComponent): \(error.localizedDescription)"
+                )
             }
         }
 

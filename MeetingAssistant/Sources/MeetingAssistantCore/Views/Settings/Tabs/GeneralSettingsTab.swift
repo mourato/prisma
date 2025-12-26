@@ -24,7 +24,10 @@ public struct GeneralSettingsTab: View {
     private var recordingSection: some View {
         SettingsGroup(NSLocalizedString("settings.general.recording", comment: ""), icon: "recordingtape") {
             VStack(alignment: .leading, spacing: 16) {
-                Toggle(NSLocalizedString("settings.general.auto_start", comment: ""), isOn: self.$viewModel.autoStartRecording)
+                Toggle(
+                    NSLocalizedString("settings.general.auto_start", comment: ""),
+                    isOn: self.$viewModel.autoStartRecording
+                )
 
                 Divider()
 
@@ -34,8 +37,11 @@ public struct GeneralSettingsTab: View {
                         .foregroundStyle(.secondary)
 
                     HStack {
-                        TextField(NSLocalizedString("settings.general.recordings_path_hint", comment: "Caminho"), text: self.$viewModel.recordingsPath)
-                            .textFieldStyle(.roundedBorder)
+                        TextField(
+                            NSLocalizedString("settings.general.recordings_path_hint", comment: "Caminho"),
+                            text: self.$viewModel.recordingsPath
+                        )
+                        .textFieldStyle(.roundedBorder)
 
                         Button(NSLocalizedString("settings.general.choose", comment: "")) {
                             self.viewModel.selectRecordingsDirectory()

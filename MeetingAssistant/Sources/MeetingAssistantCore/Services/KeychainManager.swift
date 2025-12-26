@@ -11,7 +11,10 @@ public protocol KeychainProvider: Sendable {
 
 public struct DefaultKeychainProvider: KeychainProvider {
     public init() {}
-    public func store(_ value: String, for key: KeychainManager.Key) throws { try KeychainManager.store(value, for: key) }
+    public func store(_ value: String, for key: KeychainManager.Key) throws {
+        try KeychainManager.store(value, for: key)
+    }
+
     public func retrieve(for key: KeychainManager.Key) throws -> String? { try KeychainManager.retrieve(for: key) }
     public func delete(for key: KeychainManager.Key) throws { try KeychainManager.delete(for: key) }
 }
