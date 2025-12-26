@@ -16,7 +16,7 @@ class RecordingManager: ObservableObject {
     @Published private(set) var isTranscribing = false
     @Published private(set) var currentMeeting: Meeting?
     @Published private(set) var lastError: Error?
-    @Published private(set) var hasScreenCapturePermission = false
+    @Published private(set) var hasRequiredPermissions = false
     
     /// Detailed transcription service status for UI feedback.
     let transcriptionStatus = TranscriptionStatus()
@@ -50,12 +50,12 @@ class RecordingManager: ObservableObject {
     
     // MARK: - Permission Handling
     
-    /// Check and update screen capture permission status.
+    /// Check and update permission status (Screen Recording + Microphone).
     func checkPermission() async {
-        hasScreenCapturePermission = await audioRecorder.hasPermission()
+        hasRequiredPermissions = await audioRecorder.hasPermission()
     }
     
-    /// Request screen recording permission.
+    /// Request permissions (Screen Recording + Microphone).
     func requestPermission() async {
         await audioRecorder.requestPermission()
         await checkPermission()
@@ -64,6 +64,11 @@ class RecordingManager: ObservableObject {
     /// Open System Preferences to Screen Recording settings.
     func openPermissionSettings() {
         audioRecorder.openScreenRecordingSettings()
+    }
+    
+    /// Open System Preferences to Microphone settings.
+    func openMicrophoneSettings() {
+        audioRecorder.openMicrophoneSettings()
     }
     
     // MARK: - Public API

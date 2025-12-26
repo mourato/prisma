@@ -9,7 +9,7 @@ struct MenuBarView: View {
         VStack(spacing: 16) {
             headerSection
             
-            if !recordingManager.hasScreenCapturePermission {
+            if !recordingManager.hasRequiredPermissions {
                 permissionWarningSection
             }
             
@@ -35,20 +35,32 @@ struct MenuBarView: View {
             HStack {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .foregroundStyle(.yellow)
-                Text("Permissão Necessária")
+                Text("Permissões Necessárias")
                     .font(.subheadline)
                     .fontWeight(.semibold)
             }
             
-            Text("O app precisa de permissão de Gravação de Tela para capturar áudio das reuniões.")
+            Text("É necessário acesso à Tela e Microfone para gravar.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             
-            Button(action: openPermissionSettings) {
-                Label("Abrir Configurações", systemImage: "gear")
+            Button("Solicitar Acesso") {
+                Task { await recordingManager.requestPermission() }
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(.borderedProminent)
+            
+            HStack {
+                Button("Abrir Tela") {
+                    recordingManager.openPermissionSettings()
+                }
+                .font(.caption)
+                
+                Button("Abrir Mic") {
+                    recordingManager.openMicrophoneSettings()
+                }
+                .font(.caption)
+            }
         }
         .padding()
         .background(.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
