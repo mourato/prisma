@@ -59,21 +59,6 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
     // MARK: - Storage
 
-    private var recordingsDirectory: URL {
-        guard
-            let appSupport = FileManager.default.urls(
-                for: .applicationSupportDirectory, in: .userDomainMask
-            ).first
-        else {
-            logger.error("Failed to find Application Support directory")
-            fatalError("Critical: Could not access Application Support directory.")
-        }
-        let recordings = appSupport.appendingPathComponent(
-            "MeetingAssistant/recordings", isDirectory: true)
-        try? FileManager.default.createDirectory(at: recordings, withIntermediateDirectories: true)
-        return recordings
-    }
-
     public init(
         micRecorder: any AudioRecordingService = AudioRecorder.shared,
         systemRecorder: any AudioRecordingService = SystemAudioRecorder.shared,
