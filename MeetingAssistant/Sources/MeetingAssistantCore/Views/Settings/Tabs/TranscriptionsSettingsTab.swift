@@ -2,6 +2,15 @@ import OSLog
 import SwiftUI
 import UniformTypeIdentifiers
 
+// MARK: - File Extension Constants
+
+/// Supported file extensions for import, declared outside @MainActor context.
+private enum SupportedFileTypes {
+    static let audio = ["m4a", "mp3", "wav", "aac"]
+    static let video = ["mov", "mp4", "m4v"]
+    static let all = audio + video
+}
+
 /// Main tab for managing transcriptions in Settings.
 public struct TranscriptionsSettingsTab: View {
     @State private var transcriptions: [Transcription] = []
@@ -13,14 +22,6 @@ public struct TranscriptionsSettingsTab: View {
     @State private var errorMessage: String?
 
     private let storage = FileSystemStorageService.shared
-
-    /// Supported file extensions for import.
-    private let supportedAudioExtensions = ["m4a", "mp3", "wav", "aac"]
-    private let supportedVideoExtensions = ["mov", "mp4", "m4v"]
-
-    private var supportedExtensions: [String] {
-        self.supportedAudioExtensions + self.supportedVideoExtensions
-    }
 
     /// Transcriptions filtered by source and date.
     private var filteredTranscriptions: [Transcription] {
@@ -123,7 +124,7 @@ public struct TranscriptionsSettingsTab: View {
             HStack {
                 Image(systemName: "line.3.horizontal.decrease.circle")
                     .foregroundStyle(.secondary)
-                Text("FILTERS")
+                Text("FILTROS")
                     .font(.caption)
                     .fontWeight(.medium)
                     .foregroundStyle(.secondary)
@@ -351,7 +352,7 @@ public struct TranscriptionsSettingsTab: View {
                       let url = URL(dataRepresentation: data, relativeTo: nil)
                 else { return }
 
-                guard self.supportedExtensions.contains(url.pathExtension.lowercased()) else { return }
+                guard SupportedFileTypes.all.contains(url.pathExtension.lowercased()) else { return }
 
                 Task { @MainActor in
                     await RecordingManager.shared.transcribeExternalAudio(from: url)

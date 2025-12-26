@@ -10,11 +10,11 @@ public enum RecordingSourceFilter: String, CaseIterable, Sendable {
     public var displayName: String {
         switch self {
         case .all:
-            "All"
+            "Todas"
         case .dictations:
-            "Dictations"
+            "Gravações"
         case .manualImports:
-            "Manual Imports"
+            "Importadas"
         }
     }
 }
