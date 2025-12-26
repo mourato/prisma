@@ -71,6 +71,9 @@ struct TranscriptionStatusView: View {
             case (.connecting, _, _):
                 ProgressView()
                     .scaleEffect(0.6)
+            case (.connected, .downloading, _):
+                ProgressView()
+                    .scaleEffect(0.6)
             case (.connected, .loading, _):
                 ProgressView()
                     .scaleEffect(0.6)
@@ -151,6 +154,7 @@ struct TranscriptionStatusView: View {
     private var modelStateLabel: String {
         switch status.modelState {
         case .loaded: return "Carregado"
+        case .downloading: return "Baixando..."
         case .loading: return "Carregando..."
         case .unloaded: return "Não carregado"
         case .error: return "Erro ao carregar"
@@ -301,6 +305,8 @@ struct CompactTranscriptionStatusView: View {
             return "Offline"
         case (.connecting, _, _):
             return "Conectando..."
+        case (.connected, .downloading, _):
+            return "Baixando modelo..."
         case (.connected, .loading, _):
             return "Carregando modelo..."
         case (.connected, .loaded, .idle):
