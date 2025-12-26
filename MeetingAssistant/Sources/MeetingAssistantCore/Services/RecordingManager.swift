@@ -265,24 +265,69 @@ public class RecordingManager: ObservableObject {
             // Post-processing phase
             transcriptionStatus.updateProgress(phase: .postProcessing, percentage: 90)
             
+            // Apply AI post-processing if enabled
+            let rawText = response.text
+            var processedContent: String? = nil
+            var promptId: UUID? = nil
+            var promptTitle: String? = nil
+            
+            let settings = AppSettingsStore.shared
+            if settings.postProcessingEnabled,
+               settings.aiConfiguration.isValid,
+               let prompt = settings.selectedPrompt {
+                
+                transcriptionStatus.updateProgress(
+                    phase: .postProcessing,
+                    percentage: 92
+                )
+                
+                do {
+                    processedContent = try await PostProcessingService.shared.processTranscription(
+                        rawText,
+                        with: prompt
+                    )
+                    promptId = prompt.id
+                    promptTitle = prompt.title
+                    logger.info("Post-processing complete using prompt: \(prompt.title)")
+                } catch {
+                    // Silent fallback - log warning but continue with raw text
+                    logger.warning("Post-processing failed, using raw transcription: \(error.localizedDescription)")
+                }
+            }
+            
             // Create transcription record
             let transcription = Transcription(
                 meeting: meeting,
-                text: response.text,
+                text: processedContent ?? rawText,
+                rawText: rawText,
+                processedContent: processedContent,
+                postProcessingPromptId: promptId,
+                postProcessingPromptTitle: promptTitle,
                 language: response.language,
                 modelName: response.model
             )
             
             // TODO: Save transcription to storage
-            logger.info("Transcription saved: \(transcription.wordCount) words")
+            if transcription.isPostProcessed {
+                logger.info("Transcription saved: \(transcription.wordCount) words (post-processed with '\(promptTitle ?? "unknown")')")
+            } else {
+                logger.info("Transcription saved: \(transcription.wordCount) words (raw)")
+            }
             
             // Mark as completed
             transcriptionStatus.completeTranscription(success: true)
             
-            // Notify user
+            // Notify user with appropriate message
+            let notificationBody: String
+            if transcription.isPostProcessed {
+                notificationBody = "\(meeting.appName): \(transcription.wordCount) palavras (\(promptTitle ?? "processado"))"
+            } else {
+                notificationBody = "\(meeting.appName): \(transcription.wordCount) palavras transcritas"
+            }
+            
             sendNotification(
                 title: "Transcrição Concluída",
-                body: "\(meeting.appName): \(transcription.wordCount) palavras transcritas"
+                body: notificationBody
             )
             
             // Reset to idle after short delay
