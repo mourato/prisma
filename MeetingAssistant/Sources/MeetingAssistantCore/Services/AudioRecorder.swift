@@ -191,6 +191,23 @@ public class AudioRecorder: ObservableObject {
         return micStatus == .authorized
     }
     
+    /// Returns the detailed permission state for the microphone.
+    public func getPermissionState() -> PermissionState {
+        let status = AVCaptureDevice.authorizationStatus(for: .audio)
+        switch status {
+        case .authorized:
+            return .granted
+        case .denied:
+            return .denied
+        case .notDetermined:
+            return .notDetermined
+        case .restricted:
+            return .restricted
+        @unknown default:
+            return .notDetermined
+        }
+    }
+    
     public func requestPermission() async {
         await AVCaptureDevice.requestAccess(for: .audio)
     }
