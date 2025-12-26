@@ -13,9 +13,5 @@ This document tracks known limitations for features and initiatives within the p
   * *Context*: Scope of initial implementation was limited to Data and Service layer. UI implementation is a future task.
 
 ### Settings Architecture & Localization
-* **Hardcoded UI Strings**: Many UI labels and error messages in the Settings module are currently hardcoded in Portuguese, hindering internationalization.
-  * *Context*: Identified [2025-12-26] during a code review of the MVVM refactoring. A migration to `Localizable.strings` is planned.
-* **Tight Singleton Coupling**: ViewModels in the Settings module are directly coupled to service singletons (`RecordingManager`, `TranscriptionClient`, `FileSystemStorageService`), which limits testability via dependency injection.
-  * *Context*: Part of the initial MVVM migration [2025-12-26]. Refactoring to full DI is deferred to a future cleanup phase.
 * **Settings Window Persistence**: The settings window does not currently persist its position or size between launches.
   * *Context*: Side effect of moving to a custom `NavigationSplitView` implementation [2025-12-26].
