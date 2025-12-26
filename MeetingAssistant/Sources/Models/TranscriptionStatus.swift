@@ -12,6 +12,7 @@ enum ServiceState: String, Codable, Equatable {
 /// Represents the model loading state.
 enum ModelState: String, Codable, Equatable {
     case unloaded = "unloaded"
+    case downloading = "downloading"
     case loading = "loading"
     case loaded = "loaded"
     case error = "error"
@@ -66,6 +67,8 @@ class TranscriptionStatus: ObservableObject {
             return "Conectando ao serviço..."
         case (.error, _, _):
             return lastError?.localizedDescription ?? "Erro de conexão"
+        case (.connected, .downloading, _):
+            return "Baixando modelo (isso pode demorar)..."
         case (.connected, .loading, _):
             return "Carregando modelo..."
         case (.connected, .error, _):

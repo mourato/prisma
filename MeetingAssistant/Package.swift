@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "MeetingAssistant",
     platforms: [
-        .macOS(.v13)
+        .macOS(.v14)
     ],
     products: [
         .executable(
@@ -14,11 +14,15 @@ let package = Package(
             targets: ["MeetingAssistant"]
         )
     ],
-    dependencies: [],
+    dependencies: [
+        .package(url: "https://github.com/FluidInference/FluidAudio.git", from: "0.7.9")
+    ],
     targets: [
         .executableTarget(
             name: "MeetingAssistant",
-            dependencies: [],
+            dependencies: [
+                .product(name: "FluidAudio", package: "FluidAudio")
+            ],
             path: "Sources"
         )
     ]

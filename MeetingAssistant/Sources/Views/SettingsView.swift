@@ -4,7 +4,7 @@ import SwiftUI
 /// Organized into tabs: General, Shortcuts, AI Post-Processing, and Service.
 struct SettingsView: View {
     @AppStorage("autoStartRecording") private var autoStartRecording = true
-    @AppStorage("transcriptionServiceURL") private var serviceURL = "http://127.0.0.1:8765"
+
     @AppStorage("recordingsDirectory") private var recordingsPath = ""
     
     var body: some View {
@@ -77,39 +77,44 @@ struct SettingsView: View {
     @ViewBuilder
     private var serviceSettings: some View {
         Form {
-            Section("Serviço de Transcrição") {
+            Section("Modelo Local (FluidAudio)") {
                 HStack {
-                    Text("URL do serviço:")
-                    TextField("http://127.0.0.1:8765", text: $serviceURL)
-                        .textFieldStyle(.roundedBorder)
-                }
-                
-                HStack {
-                    Button("Testar Conexão") {
-                        testConnection()
+                    Image(systemName: "cpu")
+                        .font(.title2)
+                        .foregroundStyle(.blue)
+                    
+                    VStack(alignment: .leading) {
+                        Text("Processamento Local no Dispositivo")
+                            .font(.headline)
+                        Text("Utilizando Apple Neural Engine (ANE)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
-                    
-                    Spacer()
-                    
-                    if transcriptionStatus == .testing {
+                }
+                .padding(.vertical, 4)
+                
+                if transcriptionStatus == .testing {
+                    HStack {
                         ProgressView()
                             .scaleEffect(0.5)
                             .frame(width: 16, height: 16)
+                        Text("Verificando modelo...")
+                            .font(.caption)
                     }
-                    
-                    Text(transcriptionStatus.text)
-                        .font(.caption)
-                        .foregroundStyle(transcriptionStatus.color)
                 }
             }
             
-            Section("Modelo") {
+            Section("Modelo de Transcrição") {
                 Text("Parakeet TDT 0.6B v3")
                     .font(.headline)
                 
                 Text("Suporte: 25 idiomas europeus incluindo português")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                
+                Button("Verificar status do modelo") {
+                    testConnection()
+                }
             }
         }
     }
@@ -366,7 +371,7 @@ struct AISettingsTab: View {
                         }
                     }
                     .pickerStyle(.menu)
-                    .onChange(of: settings.aiConfiguration.provider) { newProvider in
+                    .onChange(of: settings.aiConfiguration.provider) { _, newProvider in
                         // Update base URL when provider changes
                         if newProvider != .custom {
                             settings.aiConfiguration.baseURL = newProvider.defaultBaseURL
@@ -397,7 +402,7 @@ struct AISettingsTab: View {
                             }
                         }
                         .textFieldStyle(.roundedBorder)
-                        .onChange(of: apiKeyText) { newValue in
+                        .onChange(of: apiKeyText) { _, newValue in
                             // Save to Keychain when changed
                             if !newValue.isEmpty {
                                 try? KeychainManager.store(newValue, for: .aiAPIKey)
