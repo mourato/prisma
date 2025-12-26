@@ -289,7 +289,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
     private func transcribeRecording(audioURL: URL, meeting: Meeting) async {
         isTranscribing = true
-        let audioDuration = getAudioDuration(from: audioURL)
+        let audioDuration = await getAudioDuration(from: audioURL)
         transcriptionStatus.beginTranscription(audioDuration: audioDuration)
 
         do {
@@ -417,9 +417,15 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     }
 
     /// Get audio duration from file for progress estimation.
-    private func getAudioDuration(from url: URL) -> Double? {
-        // Implementation placeholder (could be added to AudioMerger or utility)
-        return nil
+    private func getAudioDuration(from url: URL) async -> Double? {
+        let asset = AVURLAsset(url: url)
+        do {
+            let duration = try await asset.load(.duration)
+            return duration.seconds
+        } catch {
+            logger.warning("Failed to load audio duration: \(error.localizedDescription)")
+            return nil
+        }
     }
 
     /// Start periodic status monitoring.
@@ -452,7 +458,6 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     func refreshServiceStatus() async {
         await checkServiceStatus()
     }
-
 
 }
 
