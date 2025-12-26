@@ -14,7 +14,21 @@ import os.log
 public class AudioRecorder: ObservableObject, AudioRecordingService {
     public static let shared = AudioRecorder()
 
-    private let logger = Logger(subsystem: "MeetingAssistant", category: "AudioRecorder")
+    // MARK: - Constants
+
+    private enum Constants {
+        static let tapBufferSize: AVAudioFrameCount = 4096
+        static let tapBusNumber: AVAudioNodeBus = 0
+        static let outputSampleRate: Double = 16000.0
+        static let outputChannels: AVAudioChannelCount = 1
+        static let validationInterval: TimeInterval = 1.5
+        static let retryDelay: UInt64 = 500_000_000  // 500ms in nanoseconds
+        static let maxRetries = 2
+        static let logSubsystem = "MeetingAssistant"
+        static let logCategory = "AudioRecorder"
+    }
+
+    private let logger = Logger(subsystem: Constants.logSubsystem, category: Constants.logCategory)
 
     @Published public private(set) var isRecording = false
     public var isRecordingPublisher: AnyPublisher<Bool, Never> {
@@ -37,12 +51,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     nonisolated(unsafe) private var converter: AVAudioConverter?
 
     // MARK: - Configuration
-    private let tapBufferSize: AVAudioFrameCount = 4096
-    private let tapBusNumber: AVAudioNodeBus = 0
-
     // Output format: 16kHz Mono (optimized for transcription)
-    private let outputSampleRate: Double = 16000.0
-    private let outputChannels: AVAudioChannelCount = 1
 
     // MARK: - Thread Safety
     private let audioProcessingQueue = DispatchQueue(
@@ -77,7 +86,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         inputNode = input
 
         // Get the input format from hardware
-        let inputFormat = input.outputFormat(forBus: tapBusNumber)
+        let inputFormat = input.outputFormat(forBus: Constants.tapBusNumber)
 
         guard inputFormat.sampleRate > 0, inputFormat.channelCount > 0 else {
             logger.error("Invalid input format: sample rate or channel count is zero")
@@ -88,8 +97,8 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         guard
             let desiredFormat = AVAudioFormat(
                 commonFormat: .pcmFormatInt16,
-                sampleRate: outputSampleRate,
-                channels: outputChannels,
+                sampleRate: Constants.outputSampleRate,
+                channels: Constants.outputChannels,
                 interleaved: false
             )
         else {
@@ -127,7 +136,9 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         )
 
         // Install tap on input node
-        input.installTap(onBus: tapBusNumber, bufferSize: tapBufferSize, format: inputFormat) {
+        input.installTap(
+            onBus: Constants.tapBusNumber, bufferSize: Constants.tapBufferSize, format: inputFormat
+        ) {
             [weak self] buffer, _ in
             guard let self = self else { return }
             self.audioProcessingQueue.async {
@@ -145,7 +156,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             logger.info("Audio engine started successfully")
         } catch {
             logger.error("Failed to start audio engine: \(error.localizedDescription)")
-            input.removeTap(onBus: tapBusNumber)
+            input.removeTap(onBus: Constants.tapBusNumber)
             throw AudioRecorderError.failedToStartEngine(error)
         }
     }
@@ -162,7 +173,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         validationTimer = nil
 
         // Remove tap and stop engine
-        inputNode?.removeTap(onBus: tapBusNumber)
+        inputNode?.removeTap(onBus: Constants.tapBusNumber)
         audioEngine?.stop()
 
         // Wait for processing queue to finish
@@ -220,7 +231,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         openMicrophoneSettings()
     }
 
-    public func openMicrophoneSettings() {
+    private func openMicrophoneSettings() {
         if let url = URL(
             string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone")
         {
@@ -253,7 +264,9 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     }
 
     private func startValidationTimer(url: URL, retryCount: Int) {
-        validationTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: false) {
+        validationTimer = Timer.scheduledTimer(
+            withTimeInterval: Constants.validationInterval, repeats: false
+        ) {
             [weak self] _ in
             Task { @MainActor in
                 guard let self = self else { return }
@@ -264,10 +277,12 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
                     self.logger.warning("Recording validation failed - no valid buffers received")
                     _ = await self.stopRecording()
 
-                    if retryCount < 2 {
-                        self.logger.info("Retrying recording (attempt \(retryCount + 1)/2)...")
-                        try? await Task.sleep(for: .milliseconds(500))
+                    if retryCount < Constants.maxRetries {
+                        self.logger.info(
+                            "Retrying recording (attempt \(retryCount + 1)/\(Constants.maxRetries))..."
+                        )
                         do {
+                            try await Task.sleep(nanoseconds: Constants.retryDelay)
                             try await self.startRecording(to: url, retryCount: retryCount + 1)
                         } catch {
                             self.logger.error("Retry failed: \(error.localizedDescription)")
