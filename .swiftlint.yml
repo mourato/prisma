@@ -1,0 +1,136 @@
+# MeetingAssistant SwiftLint Configuration
+# Adapted from FluidVoice with stricter limits matching your coding guidelines
+
+# MARK: - Disabled Rules (handled by SwiftFormat or not applicable)
+disabled_rules:
+  - colon # handled by SwiftFormat
+  - trailing_comma # handled by SwiftFormat
+  - opening_brace # handled by SwiftFormat
+  - explicit_type_interface # too verbose for SwiftUI
+  - closure_body_length # SwiftUI closures can be long
+  - attributes # placement varies by context
+  - multiple_closures_with_trailing_closure # common in SwiftUI
+  - implicit_optional_initialization # common in SwiftUI/AppKit
+  - nesting # sometimes needed for namespacing
+  - todo # TODOs are tracked separately
+
+# MARK: - Opt-in Rules (stricter quality enforcement)
+opt_in_rules:
+  - discouraged_optional_collection
+  - empty_count
+  - fatal_error_message
+  - file_header
+  - first_where
+  - force_unwrapping
+  - literal_expression_end_indentation
+  - multiline_arguments
+  - pattern_matching_keywords
+  - redundant_type_annotation
+  - sorted_imports
+  - strict_fileprivate
+  - toggle_bool
+  - unavailable_function
+  - unowned_variable_capture
+  - explicit_init
+  - fallthrough
+  - implicitly_unwrapped_optional
+  - overridden_super_call
+
+# MARK: - Excluded Paths
+excluded:
+  - .build
+  - DerivedData
+  - .swiftpm
+  - dist
+  - Packages
+  - Tests
+
+# MARK: - Rule Thresholds (stricter to match your 20-line function guideline)
+
+# Line length: warning at 120 (matches your rules), error at 150
+line_length:
+  warning: 120
+  error: 150
+  ignores_comments: true
+  ignores_urls: true
+
+# Identifier naming
+identifier_name:
+  min_length: 1
+  max_length: 50
+  allowed_symbols: ["_"]
+  excluded:
+    - id
+    - ui
+    - ai
+    - x
+    - y
+    - ok
+    - xs
+    - sm
+    - md
+    - lg
+    - xl
+    - on
+    - at
+    - to
+
+# Type body: more conservative
+type_body_length:
+  warning: 300
+  error: 500
+
+# File length: stricter
+file_length:
+  warning: 500
+  error: 800
+
+# Function body: matches your 20-line guideline with more tolerance
+# (20 lines warning, 50 lines error for complex cases)
+function_body_length:
+  warning: 40
+  error: 80
+
+# Cyclomatic complexity: lower for readability
+cyclomatic_complexity:
+  warning: 15
+  error: 25
+
+# Function parameter count
+function_parameter_count:
+  warning: 5
+  error: 8
+
+# Large tuple
+large_tuple:
+  warning: 3
+  error: 5
+
+# MARK: - Custom Rules
+custom_rules:
+  # Enforce DebugLogger or os.log instead of print/NSLog
+  disallow_print_and_nslog:
+    regex: '(print\(|NSLog\()'
+    message: "Use Logger from os.log for consistency instead of print() or NSLog()."
+    severity: warning
+
+  # Enforce proper MARK formatting
+  enforce_mark_spacing:
+    regex: '\/\/ MARK:(?! - )'
+    message: "Format section markers as `// MARK: - Section`."
+    severity: warning
+
+  # Discourage force unwrap in production
+  no_force_unwrap:
+    regex: '\!\s*[^=]'
+    match_kinds:
+      - identifier
+    message: "Avoid force unwrapping. Use guard-let or if-let instead."
+    severity: warning
+
+  # Enforce comment language (optional, for internationalized teams)
+  # Uncomment if you want to enforce English comments:
+  # english_comments_only:
+  #   regex: '//\s*[À-ÿ]'
+  #   message: "Comments should be in English."
+  #   severity: warning

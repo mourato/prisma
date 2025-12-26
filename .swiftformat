@@ -1,0 +1,83 @@
+# MARK: - Rule Configurations
+# Adapted from FluidVoice with adjustments for MeetingAssistant conventions
+
+# Braces style (K&R, not Allman)
+--allman false
+
+# Grouping for binary literals
+--binarygrouping 4,8
+
+# Always use trailing commas
+--commas always
+
+# Indent comments
+--comments indent
+
+# Group decimal numbers
+--decimalgrouping 3,5
+
+# Else on same line as closing brace
+--elseposition same-line
+
+# Use Void over ()
+--empty void
+
+# Lowercase exponent
+--exponentcase lowercase
+
+# No grouping for exponents
+--exponentgrouping disabled
+
+# Group fractions
+--fractiongrouping enabled
+
+# No grouping for hex
+--hexgrouping none
+
+# Lowercase hex literals
+--hexliteralcase lowercase
+
+# Don't indent #ifdef
+--ifdef noindent
+
+# 4 spaces indentation (matches your rules)
+--indent 4
+
+# Don't indent case in switch
+--indentcase false
+
+# Unix line breaks
+--linebreaks lf
+
+# Group octal literals
+--octalgrouping 4,8
+
+# Space around operators in function declarations
+--operatorfunc spaced
+
+# Hoist pattern let
+--patternlet hoist
+
+# No space in ranges
+--ranges nospace
+
+# Insert explicit self
+--self insert
+
+# Semicolons inline
+--semicolons inline
+
+# Only strip unused args in closures
+--stripunusedargs closure-only
+
+# Always trim whitespace
+--trimwhitespace always
+
+# Wrap function arguments before first
+--wraparguments beforefirst
+
+# Wrap collections before first
+--wrapcollections beforefirst
+
+# Exclude build directories
+--exclude .build,DerivedData,.swiftpm,dist
