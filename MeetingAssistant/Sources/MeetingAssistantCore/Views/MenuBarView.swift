@@ -95,10 +95,7 @@ public struct MenuBarView: View {
 
             Spacer()
 
-            Button(action: {
-                self.openWindow(id: "settings")
-                NSApp.activate(ignoringOtherApps: true)
-            }) {
+            Button(action: { NavigationService.shared.openSettings() }) {
                 Image(systemName: "gear")
             }
             .buttonStyle(.plain)

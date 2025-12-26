@@ -202,37 +202,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func showAbout() {
         self.popover?.performClose(nil)
-
-        let alert = NSAlert()
-        alert.messageText = "Meeting Assistant"
-        alert.informativeText = """
-        Versão 0.1.1
-
-        Transcreva suas reuniões de vídeo automaticamente usando IA.
-
-        © 2025 Todos os direitos reservados.
-        """
-        alert.alertStyle = .informational
-        alert.icon = NSImage(
-            systemSymbolName: "waveform.circle.fill", accessibilityDescription: "Meeting Assistant"
-        )
-        alert.addButton(withTitle: "OK")
-
-        NSApp.activate(ignoringOtherApps: true)
-        alert.runModal()
+        NavigationService.shared.showAbout()
     }
 
     @objc private func checkForUpdates() {
         self.popover?.performClose(nil)
-
-        let alert = NSAlert()
-        alert.messageText = "Verificar Atualizações"
-        alert.informativeText = "Você está usando a versão mais recente do Meeting Assistant."
-        alert.alertStyle = .informational
-        alert.addButton(withTitle: "OK")
-
-        NSApp.activate(ignoringOtherApps: true)
-        alert.runModal()
+        NavigationService.shared.checkForUpdates()
     }
 
     @objc private func quitApp() {
