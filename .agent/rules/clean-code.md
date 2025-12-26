@@ -10,3 +10,4 @@ trigger: always_on
 - Mantenha funções pequenas com uma única responsabilidade
 - Prefira computed properties e inicializadores customizados a métodos auxiliares dispersos
 - Escreva comentários que expliquem "por quê", não "o quê"
+- **Linting & Formatting**: Mantenha o código em conformidade com as regras do SwiftLint e SwiftFormat definidas no projeto. Execute \`swiftlint\` antes de commitar.

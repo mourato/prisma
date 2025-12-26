@@ -11,6 +11,8 @@ App nativo para macOS que detecta reuniões por videochamada, captura o áudio d
 - ⌨️ **Atalho global configurável** para iniciar/parar gravação
 - 💾 **Privacidade Total**: Todo processamento ocorre no dispositivo
 - 🤖 **Pós-processamento com IA** (opcional via Settings)
+- 📂 **Importação de Arquivos**: Transcreva arquivos de áudio existentes (mp3, m4a, wav)
+
 
 ## Requisitos
 
@@ -73,6 +75,8 @@ O app solicitará acesso em: **System Settings → Privacy & Security**
 ## Tecnologias
 
 - **Frontend/App**: Swift 6.0, SwiftUI, ScreenCaptureKit
+- **Quality**: SwiftLint, SwiftFormat
+
 - **AI Core**: [FluidAudio SDK](https://github.com/FluidInference/FluidAudio)
 - **Model**: Parakeet TDT 0.6B v3 (CoreML optimized for ANE)
 
