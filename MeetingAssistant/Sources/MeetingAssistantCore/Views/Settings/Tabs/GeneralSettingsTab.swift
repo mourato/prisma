@@ -72,7 +72,7 @@ public struct GeneralSettingsTab: View {
                             Text(app.displayName)
                                 .font(.body)
                                 .fontWeight(.medium)
-                            Text("Monitoramento ativo")
+                            Text(NSLocalizedString("settings.general.monitoring_active", comment: ""))
                                 .font(.caption2)
                                 .foregroundStyle(.green)
                         }

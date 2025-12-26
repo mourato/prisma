@@ -1,0 +1,110 @@
+/* Sidebar Sections */
+"settings.section.general" = "General";
+"settings.section.transcriptions" = "Transcriptions";
+"settings.section.shortcuts" = "Shortcuts";
+"settings.section.ai" = "AI";
+"settings.section.post_processing" = "Post-Processing";
+"settings.section.service" = "Service";
+"settings.section.permissions" = "Permissions";
+
+
+/* General Settings */
+"settings.general.title" = "General";
+"settings.general.recording" = "Recording";
+"settings.general.auto_start" = "Automatically start recording when meeting is detected";
+"settings.general.recordings_path" = "Recordings folder:";
+"settings.general.recordings_path_hint" = "Path";
+"settings.general.choose" = "Choose...";
+"settings.general.monitored_apps" = "Monitored Apps";
+"settings.general.monitored_apps_desc" = "The application automatically monitors these applications to start/stop recordings.";
+"settings.general.monitoring_active" = "Active monitoring";
+"meeting.app.imported" = "Imported File";
+"meeting.app.unknown" = "Unknown";
+
+/* AI Settings */
+"settings.ai.title" = "AI";
+"settings.ai.enabled" = "Enable AI transcription processing";
+"settings.ai.description" = "When enabled, transcriptions will be sent to an AI model for correction, formatting, and summarization.";
+"settings.ai.diarization" = "Identify Speakers (Beta)";
+"settings.ai.diarization_desc" = "Identifies who is speaking in the meeting. Significantly increases processing time.";
+"settings.ai.provider" = "Provider";
+"settings.ai.provider_label" = "AI Provider:";
+"settings.ai.api_config" = "API Configuration";
+"settings.ai.base_url" = "Base URL:";
+"settings.ai.api_key" = "API Key:";
+"settings.ai.keychain_secure" = "Key securely stored in Keychain";
+"settings.ai.model" = "Model:";
+"settings.ai.model_future" = "The model will be automatically selectable in a future version.";
+"settings.ai.test_connection" = "Test Connection";
+"settings.ai.hide_key" = "Hide Key";
+"settings.ai.show_key" = "Show Key";
+"settings.ai.connection.testing" = "Testing...";
+"settings.ai.connection.success" = "Connected";
+"settings.ai.connection.invalid_url" = "Invalid URL";
+"settings.ai.connection.invalid_response" = "Invalid Response";
+
+/* Post-Processing Settings */
+"settings.post_processing.title" = "Post-Processing";
+"settings.post_processing.enabled" = "Enable AI Post-Processing";
+"settings.post_processing.description" = "When enabled, transcriptions will be automatically processed by AI to generate summaries and corrections.";
+"settings.post_processing.warning_title" = "AI Connection Not Configured";
+"settings.post_processing.warning_desc" = "Go to the \"AI\" tab to configure a provider and enable this feature.";
+"settings.post_processing.system_prompt" = "System Guidelines";
+"settings.post_processing.base_instructions" = "Base Instructions";
+"settings.post_processing.restore_default" = "Restore Default";
+"settings.post_processing.prompts" = "Processing Prompts";
+"settings.post_processing.choose_active" = "Choose the active prompt for new transcriptions.";
+"settings.post_processing.new_prompt" = "New";
+"settings.post_processing.edit" = "Edit";
+"settings.post_processing.delete" = "Delete";
+"settings.post_processing.delete_confirm_title" = "Delete Prompt?";
+"settings.post_processing.delete_confirm_message" = "Are you sure you want to delete the prompt \"%@\"? This action cannot be undone.";
+
+/* Service Settings */
+"settings.service.title" = "Service";
+"settings.service.model_info" = "Transcription Model";
+"settings.service.on_device" = "On-Device Processing";
+"settings.service.ane_opt" = "Optimized for Apple Silicon (ANE)";
+"settings.service.model" = "Model:";
+"settings.service.languages" = "Languages:";
+"settings.service.languages_desc" = "Portuguese and +24 European languages";
+"settings.service.high_performance" = "High Performance";
+"settings.service.no_internet" = "Real-time transcription without internet";
+"settings.service.status" = "Service Status";
+"settings.service.verify" = "Verify";
+
+/* Shortcut Settings */
+"settings.shortcuts.title" = "Shortcuts";
+"settings.shortcuts.global" = "Global Shortcuts";
+"settings.shortcuts.description" = "Configure keyboard shortcuts to control the app quickly, even in the background.";
+"settings.shortcuts.toggle_recording" = "Toggle Recording";
+"settings.shortcuts.toggle_recording_desc" = "Starts or stops the current recording";
+"settings.shortcuts.reset" = "Reset to Default Shortcuts";
+
+/* Permissions Settings */
+"settings.permissions.title" = "Permissions";
+"settings.permissions.about" = "About Permissions";
+"settings.permissions.description" = "Meeting Assistant needs access to microphone and screen recording to capture meeting audio and identify active applications.";
+"settings.permissions.status" = "Permissions Status";
+
+/* Transcriptions Settings */
+"settings.transcriptions.title" = "Transcriptions";
+"settings.transcriptions.items_found" = "%lld items found";
+"settings.transcriptions.open_folder" = "Open Folder";
+"settings.transcriptions.loading" = "Loading...";
+"settings.transcriptions.filters" = "FILTERS";
+"settings.transcriptions.source" = "Source";
+"settings.transcriptions.import" = "Import File";
+"settings.transcriptions.import_desc" = "Drag or click to import audio/video";
+"settings.transcriptions.empty_title" = "No transcriptions";
+"settings.transcriptions.empty_desc" = "Record a meeting or import an audio file";
+"settings.transcriptions.no_selection" = "Select a transcription to view details";
+"settings.transcriptions.error_load" = "Could not load transcriptions. Please try again.";
+"settings.transcriptions.import_select_msg" = "Select an audio or video file to transcribe";
+"settings.transcriptions.import_prompt" = "Transcribe";
+
+/* Legacy Shortcuts (Keep for compatibility) */
+"shortcut.global.title" = "Global Recording Shortcut";
+"shortcut.global.description" = "Press this shortcut anywhere in the system to start or stop recording.";
+"shortcut.action.toggleRecording" = "Start/Stop Recording:";
+"shortcut.reset.default" = "Restore Default";

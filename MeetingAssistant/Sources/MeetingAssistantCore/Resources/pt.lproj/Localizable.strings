@@ -7,6 +7,7 @@
 "settings.section.service" = "Serviço";
 "settings.section.permissions" = "Permissões";
 
+
 /* General Settings */
 "settings.general.title" = "Geral";
 "settings.general.recording" = "Gravação";
@@ -16,6 +17,9 @@
 "settings.general.choose" = "Escolher...";
 "settings.general.monitored_apps" = "Apps Monitorados";
 "settings.general.monitored_apps_desc" = "O aplicativo monitora automaticamente o estado destes apps para iniciar/parar gravações.";
+"settings.general.monitoring_active" = "Monitoramento ativo";
+"meeting.app.imported" = "Arquivo Importado";
+"meeting.app.unknown" = "Desconhecido";
 
 /* AI Settings */
 "settings.ai.title" = "IA";
