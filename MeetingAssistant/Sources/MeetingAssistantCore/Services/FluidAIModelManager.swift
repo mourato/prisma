@@ -127,18 +127,14 @@ class FluidAIModelManager: ObservableObject {
         let result = try await manager.transcribe(audioURL, source: .system)
 
         // Map library tokens to our internal struct
-        // FIXME: Unable to identify correct property for 'token timings' (segments/tokens/timings failed).
-        // Returning empty list to allow compilation. Diarization alignment will be skipped.
-        let mappedSegments: [AsrSegment] = []
-        /*
-        let mappedSegments = result.tokens.map { token in
-             AsrSegment(
-                text: token.text,
-                startTime: Double(token.start),
-                endTime: Double(token.end)
-             )
+
+        let mappedSegments = (result.tokenTimings ?? []).map { token in
+            AsrSegment(
+                text: token.token,
+                startTime: Double(token.startTime),
+                endTime: Double(token.endTime)
+            )
         }
-        */
 
         return (result.text, mappedSegments)
     }
