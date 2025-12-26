@@ -128,7 +128,7 @@ public struct MenuBarView: View {
         VStack {
             if self.viewModel.isRecording {
                 Button(action: self.stopRecording) {
-                    Label(NSLocalizedString("menubar.stop_recording", comment: "Stop recording button"), systemImage: "stop.fill")
+                    Label(NSLocalizedString("menubar.stop_recording", bundle: .module, comment: "Stop recording button"), systemImage: "stop.fill")
                         .font(.headline)
                         .frame(maxWidth: .infinity, minHeight: 38)
                 }
@@ -137,7 +137,7 @@ public struct MenuBarView: View {
                 .tint(.red)
             } else {
                 Button(action: self.startRecording) {
-                    Label(NSLocalizedString("menubar.start_recording", comment: "Start recording button"), systemImage: "record.circle")
+                    Label(NSLocalizedString("menubar.start_recording", bundle: .module, comment: "Start recording button"), systemImage: "record.circle")
                         .font(.headline)
                         .frame(maxWidth: .infinity, minHeight: 38)
                 }
