@@ -1,3 +1,4 @@
+import OSLog
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -9,6 +10,7 @@ public struct TranscriptionsSettingsTab: View {
     @State private var isDropTargeted = false
     @State private var sourceFilter: RecordingSourceFilter = .all
     @State private var dateFilter: DateFilter = .allEntries
+    @State private var errorMessage: String?
 
     private let storage = FileSystemStorageService.shared
 
@@ -39,6 +41,21 @@ public struct TranscriptionsSettingsTab: View {
         }
         .task {
             await self.loadTranscriptions()
+        }
+        .alert(
+            "Erro ao carregar transcrições",
+            isPresented: Binding(
+                get: { self.errorMessage != nil },
+                set: { if !$0 { self.errorMessage = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {
+                self.errorMessage = nil
+            }
+        } message: {
+            if let errorMessage {
+                Text(errorMessage)
+            }
         }
     }
 
@@ -291,12 +308,18 @@ public struct TranscriptionsSettingsTab: View {
 
     // MARK: - Actions
 
+    private static let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier ?? "MeetingAssistant",
+        category: "TranscriptionsSettingsTab"
+    )
+
     private func loadTranscriptions() async {
         self.isLoading = true
         do {
             self.transcriptions = try await self.storage.loadTranscriptions()
         } catch {
-            print("Failed to load transcriptions: \(error)")
+            Self.logger.error("Failed to load transcriptions: \(error.localizedDescription)")
+            self.errorMessage = "Não foi possível carregar as transcrições. Tente novamente."
         }
         self.isLoading = false
     }
