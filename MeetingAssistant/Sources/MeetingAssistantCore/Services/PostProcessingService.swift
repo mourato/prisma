@@ -11,6 +11,8 @@ public enum PostProcessingError: LocalizedError {
     case requestFailed(Error)
     case invalidResponse
     case apiError(String)
+    case emptyTranscription
+    case transcriptionTooLong(Int)
     
     public var errorDescription: String? {
         switch self {
@@ -26,6 +28,10 @@ public enum PostProcessingError: LocalizedError {
             return "Resposta inválida da API"
         case .apiError(let message):
             return "Erro da API: \(message)"
+        case .emptyTranscription:
+            return "A transcrição está vazia"
+        case .transcriptionTooLong(let count):
+            return "Transcrição muito longa (\(count) caracteres). Máximo permitido: 100.000"
         }
     }
 }
@@ -46,6 +52,8 @@ public class PostProcessingService: ObservableObject {
         static let requestTimeoutSeconds: TimeInterval = 120
         /// Anthropic API version header value.
         static let anthropicAPIVersion = "2023-06-01"
+        /// Maximum input characters to prevent excessive API costs.
+        static let maxInputCharacters = 100_000
     }
     
     @Published public private(set) var isProcessing = false
@@ -80,6 +88,16 @@ public class PostProcessingService: ObservableObject {
     ///   - prompt: The prompt to use for processing.
     /// - Returns: The processed text from the AI.
     public func processTranscription(_ transcription: String, with prompt: PostProcessingPrompt) async throws -> String {
+        // Input validation
+        let trimmedTranscription = transcription.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedTranscription.isEmpty else {
+            throw PostProcessingError.emptyTranscription
+        }
+        
+        guard trimmedTranscription.count <= Constants.maxInputCharacters else {
+            throw PostProcessingError.transcriptionTooLong(trimmedTranscription.count)
+        }
+        
         guard settings.aiConfiguration.isValid else {
             throw PostProcessingError.noAPIConfigured
         }
