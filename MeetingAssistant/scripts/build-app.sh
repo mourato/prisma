@@ -53,6 +53,11 @@ cp "${BUILD_DIR}/${APP_NAME}" "${APP_BUNDLE}/Contents/MacOS/${APP_NAME}"
 chmod +x "${APP_BUNDLE}/Contents/MacOS/${APP_NAME}"
 echo -e "${GREEN}✓ Executable copied${NC}"
 
+# Step 3.5: Copy resources (bundles)
+echo -e "${YELLOW}[3.5/5]${NC} Copying resources..."
+cp -R "${BUILD_DIR}/"*.bundle "${APP_BUNDLE}/Contents/Resources/" 2>/dev/null || true
+echo -e "${GREEN}✓ Resources copied${NC}"
+
 # Step 4: Create Info.plist with resolved variables
 echo -e "${YELLOW}[4/5]${NC} Creating Info.plist..."
 cat > "${APP_BUNDLE}/Contents/Info.plist" << EOF
