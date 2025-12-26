@@ -244,6 +244,10 @@ public struct PostProcessingSettingsTab: View {
                 }
             }
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(prompt.title). \(prompt.description ?? "")")
+        .accessibilityHint(isSelected ? "Selecionado. Toque para desmarcar" : "Toque para selecionar como prompt ativo")
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
     
     // MARK: - Actions
