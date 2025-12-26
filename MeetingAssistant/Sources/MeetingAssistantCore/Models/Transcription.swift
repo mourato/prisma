@@ -4,11 +4,52 @@ import Foundation
 struct Transcription: Identifiable, Codable, Hashable {
     let id: UUID
     let meeting: Meeting
+    
+    /// Primary text for display (processed if available, otherwise raw).
     let text: String
+    
+    /// Original transcription from the ASR model.
+    let rawText: String
+    
+    /// Processed content from AI post-processing (nil if not processed).
+    var processedContent: String?
+    
+    /// ID of the prompt used for post-processing (nil if not processed).
+    var postProcessingPromptId: UUID?
+    
+    /// Title of the prompt used for post-processing (nil if not processed).
+    var postProcessingPromptTitle: String?
+    
     let language: String
     let createdAt: Date
     let modelName: String
     
+    /// Full initializer with post-processing support.
+    init(
+        id: UUID = UUID(),
+        meeting: Meeting,
+        text: String,
+        rawText: String,
+        processedContent: String? = nil,
+        postProcessingPromptId: UUID? = nil,
+        postProcessingPromptTitle: String? = nil,
+        language: String = "pt",
+        createdAt: Date = Date(),
+        modelName: String = "parakeet-tdt-0.6b-v3"
+    ) {
+        self.id = id
+        self.meeting = meeting
+        self.text = text
+        self.rawText = rawText
+        self.processedContent = processedContent
+        self.postProcessingPromptId = postProcessingPromptId
+        self.postProcessingPromptTitle = postProcessingPromptTitle
+        self.language = language
+        self.createdAt = createdAt
+        self.modelName = modelName
+    }
+    
+    /// Convenience initializer for backward compatibility (no post-processing).
     init(
         id: UUID = UUID(),
         meeting: Meeting,
@@ -17,12 +58,23 @@ struct Transcription: Identifiable, Codable, Hashable {
         createdAt: Date = Date(),
         modelName: String = "parakeet-tdt-0.6b-v3"
     ) {
-        self.id = id
-        self.meeting = meeting
-        self.text = text
-        self.language = language
-        self.createdAt = createdAt
-        self.modelName = modelName
+        self.init(
+            id: id,
+            meeting: meeting,
+            text: text,
+            rawText: text,
+            processedContent: nil,
+            postProcessingPromptId: nil,
+            postProcessingPromptTitle: nil,
+            language: language,
+            createdAt: createdAt,
+            modelName: modelName
+        )
+    }
+    
+    /// Whether this transcription was post-processed.
+    var isPostProcessed: Bool {
+        processedContent != nil
     }
     
     /// Formatted date string for display.
