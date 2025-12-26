@@ -48,8 +48,11 @@ public struct PostProcessingSettingsTab: View {
     private var enableToggleSection: some View {
         SettingsCard {
             VStack(alignment: .leading, spacing: 8) {
-                Toggle(NSLocalizedString("settings.post_processing.enabled", comment: ""), isOn: self.$viewModel.settings.postProcessingEnabled)
-                    .font(.headline)
+                Toggle(
+                    NSLocalizedString("settings.post_processing.enabled", comment: ""),
+                    isOn: self.$viewModel.settings.postProcessingEnabled
+                )
+                .font(.headline)
 
                 Text(NSLocalizedString("settings.post_processing.description", comment: ""))
                     .font(.caption)
@@ -125,7 +128,10 @@ public struct PostProcessingSettingsTab: View {
                         self.viewModel.editingPrompt = nil
                         self.viewModel.showPromptEditor = true
                     } label: {
-                        Label(NSLocalizedString("settings.post_processing.new_prompt", comment: ""), systemImage: "plus")
+                        Label(
+                            NSLocalizedString("settings.post_processing.new_prompt", comment: ""),
+                            systemImage: "plus"
+                        )
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
@@ -154,57 +160,17 @@ public struct PostProcessingSettingsTab: View {
         let isSelected = self.viewModel.settings.selectedPromptId == prompt.id
 
         return HStack(spacing: 12) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(isSelected ? Color.accentColor : Color.primary.opacity(0.05))
-                    .frame(width: 36, height: 36)
-
-                Image(systemName: prompt.icon)
-                    .font(.subheadline)
-                    .foregroundStyle(isSelected ? .white : .primary)
-            }
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(prompt.title)
-                    .font(.body)
-                    .fontWeight(isSelected ? .bold : .medium)
-
-                if let description = prompt.description {
-                    Text(description)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-            }
+            self.promptIcon(prompt: prompt, isSelected: isSelected)
+            self.promptInfo(prompt: prompt, isSelected: isSelected)
 
             Spacer()
 
             if isSelected {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
-                    .symbolEffect(.bounce, value: isSelected)
+                self.selectionIndicator
             }
 
             if !isPredefined {
-                Menu {
-                    Button {
-                        self.viewModel.editingPrompt = prompt
-                        self.viewModel.showPromptEditor = true
-                    } label: {
-                        Label("Editar", systemImage: "pencil")
-                    }
-
-                    Button(role: .destructive) {
-                        self.viewModel.confirmDeletePrompt(prompt)
-                    } label: {
-                        Label("Excluir", systemImage: "trash")
-                    }
-                } label: {
-                    Image(systemName: "ellipsis.circle")
-                        .foregroundStyle(.secondary)
-                }
-                .menuStyle(.borderlessButton)
-                .fixedSize()
+                self.promptMenu(prompt: prompt)
             }
         }
         .padding(10)
@@ -213,6 +179,61 @@ public struct PostProcessingSettingsTab: View {
         .onTapGesture {
             self.viewModel.selectPrompt(prompt.id)
         }
+    }
+
+    private func promptIcon(prompt: PostProcessingPrompt, isSelected: Bool) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 8)
+                .fill(isSelected ? Color.accentColor : Color.primary.opacity(0.05))
+                .frame(width: 36, height: 36)
+
+            Image(systemName: prompt.icon)
+                .font(.subheadline)
+                .foregroundStyle(isSelected ? .white : .primary)
+        }
+    }
+
+    private func promptInfo(prompt: PostProcessingPrompt, isSelected: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(prompt.title)
+                .font(.body)
+                .fontWeight(isSelected ? .bold : .medium)
+
+            if let description = prompt.description {
+                Text(description)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+        }
+    }
+
+    private var selectionIndicator: some View {
+        Image(systemName: "checkmark.circle.fill")
+            .foregroundStyle(.green)
+            .symbolEffect(.bounce, value: true)
+    }
+
+    private func promptMenu(prompt: PostProcessingPrompt) -> some View {
+        Menu {
+            Button {
+                self.viewModel.editingPrompt = prompt
+                self.viewModel.showPromptEditor = true
+            } label: {
+                Label("Editar", systemImage: "pencil")
+            }
+
+            Button(role: .destructive) {
+                self.viewModel.confirmDeletePrompt(prompt)
+            } label: {
+                Label("Excluir", systemImage: "trash")
+            }
+        } label: {
+            Image(systemName: "ellipsis.circle")
+                .foregroundStyle(.secondary)
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
     }
 }
 

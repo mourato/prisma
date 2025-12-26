@@ -41,7 +41,10 @@ public struct AISettingsTab: View {
             Divider()
                 .padding(.vertical, 4)
 
-            Toggle(NSLocalizedString("settings.ai.diarization", comment: ""), isOn: self.$viewModel.settings.isDiarizationEnabled)
+            Toggle(
+                NSLocalizedString("settings.ai.diarization", comment: ""),
+                isOn: self.$viewModel.settings.isDiarizationEnabled
+            )
 
             Text(NSLocalizedString("settings.ai.diarization_desc", comment: ""))
                 .font(.caption)
@@ -52,7 +55,10 @@ public struct AISettingsTab: View {
     @ViewBuilder
     private var providerSection: some View {
         SettingsGroup(NSLocalizedString("settings.ai.provider", comment: ""), icon: "server.rack") {
-            Picker(NSLocalizedString("settings.ai.provider_label", comment: ""), selection: self.$viewModel.settings.aiConfiguration.provider) {
+            Picker(
+                NSLocalizedString("settings.ai.provider_label", comment: ""),
+                selection: self.$viewModel.settings.aiConfiguration.provider
+            ) {
                 ForEach(AIProvider.allCases, id: \.self) { provider in
                     HStack {
                         Image(systemName: provider.icon)
@@ -103,7 +109,11 @@ public struct AISettingsTab: View {
                         Image(systemName: self.viewModel.showAPIKey ? "eye.slash" : "eye")
                     }
                     .buttonStyle(.borderless)
-                    .help(self.viewModel.showAPIKey ? NSLocalizedString("settings.ai.hide_key", comment: "") : NSLocalizedString("settings.ai.show_key", comment: ""))
+                    .help(
+                        self.viewModel.showAPIKey
+                            ? NSLocalizedString("settings.ai.hide_key", comment: "")
+                            : NSLocalizedString("settings.ai.show_key", comment: "")
+                    )
                 }
 
                 HStack {
@@ -150,7 +160,10 @@ public struct AISettingsTab: View {
                     }
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(!self.viewModel.settings.aiConfiguration.isValid || self.viewModel.connectionStatus == .testing)
+                .disabled(
+                    !self.viewModel.settings.aiConfiguration.isValid ||
+                        self.viewModel.connectionStatus == .testing
+                )
 
                 Spacer()
 
