@@ -271,15 +271,15 @@ public enum SystemAudioRecorderError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .permissionDenied:
-            "Screen recording permission denied. Enable in System Preferences."
+            "Permissão de gravação de tela negada. Habilite nas Preferências do Sistema."
         case .noDisplayFound:
-            "No display found for audio capture."
+            "Nenhuma tela encontrada para captura de áudio."
         case .invalidFormat:
-            "Failed to create audio format."
+            "Falha ao criar formato de áudio."
         case let .failedToStartCapture(error):
-            "Failed to start screen capture: \(error.localizedDescription)"
+            "Falha ao iniciar captura de tela: \(error.localizedDescription)"
         case .recordingValidationFailed:
-            "System audio recording failed - no valid audio received"
+            "Gravação de áudio do sistema falhou - nenhum áudio válido recebido"
         }
     }
 }

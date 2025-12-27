@@ -513,21 +513,21 @@ public enum AudioRecorderError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .invalidInputFormat:
-            "Invalid audio input format from device"
+            "Formato de entrada de áudio inválido do dispositivo"
         case .invalidRecordingFormat:
-            "Failed to create recording format"
+            "Falha ao criar formato de gravação"
         case let .failedToCreateFile(error):
-            "Failed to create audio file: \(error.localizedDescription)"
+            "Falha ao criar arquivo de áudio: \(error.localizedDescription)"
         case .failedToCreateConverter:
-            "Failed to create audio format converter"
+            "Falha ao criar conversor de formato de áudio"
         case let .failedToStartEngine(error):
-            "Failed to start audio engine: \(error.localizedDescription)"
+            "Falha ao iniciar motor de áudio: \(error.localizedDescription)"
         case let .audioConversionError(error):
-            "Audio format conversion failed: \(error.localizedDescription)"
+            "Falha na conversão de formato de áudio: \(error.localizedDescription)"
         case let .fileWriteFailed(error):
-            "Failed to write audio data to file: \(error.localizedDescription)"
+            "Falha ao gravar dados de áudio no arquivo: \(error.localizedDescription)"
         case .recordingValidationFailed:
-            "Recording failed to start - no valid audio received from device"
+            "A gravação falhou ao iniciar - nenhum áudio válido recebido do dispositivo"
         }
     }
 }
