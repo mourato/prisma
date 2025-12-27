@@ -1,5 +1,5 @@
 import Atomics
-import AVFoundation
+@preconcurrency import AVFoundation
 import Foundation
 import os.log
 
