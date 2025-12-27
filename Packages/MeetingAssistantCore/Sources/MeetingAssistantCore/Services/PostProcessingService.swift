@@ -60,7 +60,6 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
     @Published public private(set) var lastError: PostProcessingError?
 
     private let settings = AppSettingsStore.shared
-    // private let logger = Logger(subsystem: "MeetingAssistant", category: "PostProcessing") // Replaced by AppLogger
 
     private init() {}
 
