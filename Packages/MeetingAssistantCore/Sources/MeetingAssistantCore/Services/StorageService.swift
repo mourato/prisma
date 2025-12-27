@@ -33,18 +33,35 @@ public protocol StorageService: Sendable {
 public final class FileSystemStorageService: StorageService {
     public static let shared = FileSystemStorageService()
 
-    public let recordingsDirectory: URL
+    private enum Keys {
+        static let recordingsDirectory = "recordingsDirectory"
+    }
+
+    public var recordingsDirectory: URL {
+        // Read directly from UserDefaults to avoid MainActor isolation issues with AppSettingsStore
+        let configuredPath = UserDefaults.standard.string(forKey: Keys.recordingsDirectory) ?? ""
+
+        if !configuredPath.isEmpty {
+            let url = URL(fileURLWithPath: configuredPath)
+            // Ensure it exists when accessed - creating directories is thread-safe on FileManager.default
+            try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+            return url
+        }
+        return self.defaultRecordingsDirectory
+    }
+
+    private let defaultRecordingsDirectory: URL
     private let transcriptsDirectory: URL
 
     public init() {
-        // Setup directories in Application Support
+        // Setup default directories in Application Support
         let appSupportURLs = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)
         guard let appSupport = appSupportURLs.first else {
             fatalError("Critical: Could not access Application Support directory.")
         }
 
         let baseDir = appSupport.appendingPathComponent("MeetingAssistant", isDirectory: true)
-        self.recordingsDirectory = baseDir.appendingPathComponent("recordings", isDirectory: true)
+        self.defaultRecordingsDirectory = baseDir.appendingPathComponent("recordings", isDirectory: true)
         self.transcriptsDirectory = baseDir.appendingPathComponent("transcripts", isDirectory: true)
 
         self.setupDirectories()
@@ -52,7 +69,7 @@ public final class FileSystemStorageService: StorageService {
 
     private func setupDirectories() {
         do {
-            try FileManager.default.createDirectory(at: self.recordingsDirectory, withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(at: self.defaultRecordingsDirectory, withIntermediateDirectories: true)
             try FileManager.default.createDirectory(at: self.transcriptsDirectory, withIntermediateDirectories: true)
         } catch {
             AppLogger.fault("Failed to create storage directories", category: .databaseManager, error: error)
@@ -69,7 +86,8 @@ public final class FileSystemStorageService: StorageService {
 
         switch type {
         case .microphone:
-            filename += "_mic.wav"
+            // AudioRecorder writes AAC, so we must use .m4a to avoid format mismatch errors
+            filename += "_mic.m4a"
         case .system:
             filename += "_sys.wav"
         case .merged:
