@@ -2,8 +2,8 @@
 trigger: always_on
 ---
 
-- Segurança de Thread: Use `Actor`, `@MainActor` ou mecanismos de locking adequados
+- Use `Actor`, `@MainActor` ou mecanismos de locking adequados para segurança de thread
 - Evite `@unchecked Sendable` a menos que absolutamente necessário
 - Prefira `Async/Await` e estruturas modernas de concorrência em vez de callbacks
-- **Lock Safety (Audio)**: NUNCA use `NSLock` em callbacks de áudio. Use `OSAllocatedUnfairLock`.
-- **Sendable**: Closures entre threads DEVEM ser `@Sendable`.
+- Closures passadas entre threads DEVEM ser marcadas `@Sendable`
+- Para áudio real-time, veja `audio-realtime.md` para regras específicas de lock safety
