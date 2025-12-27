@@ -125,6 +125,13 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         AppLogger.debug("Configuring worker...", category: .recordingManager)
         try self.configureWorker(writingTo: outputURL, mixer: mixer)
 
+        // Increase maximum frames per slice to avoid kAudioUnitErr_TooManyFramesToProcess (-10874)
+        // when hardware or drivers send buffers larger than the default 512 frames.
+        let safeMaxFrames: AVAudioFrameCount = 4096
+        engine.mainMixerNode.auAudioUnit.maximumFramesToRender = safeMaxFrames
+        mixer.auAudioUnit.maximumFramesToRender = safeMaxFrames
+        AppLogger.debug("Set maximumFramesToRender to \(safeMaxFrames)", category: .recordingManager)
+
         AppLogger.debug("Starting engine...", category: .recordingManager)
         try self.startAudioEngine(engine, outputURL: outputURL, retryCount: retryCount)
         self.currentRecordingURL = outputURL
