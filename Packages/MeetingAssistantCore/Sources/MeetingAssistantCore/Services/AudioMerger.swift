@@ -98,32 +98,79 @@ public final class AudioMerger {
         format: AppSettingsStore.AudioFormat,
         sampleRate: Double
     ) async throws {
-        // 1. Setup Reader
-        let reader = try AVAssetReader(asset: composition)
+        let (reader, readerOutput) = try await createReader(for: composition)
+        let (writer, writerInput) = try createWriter(outputURL: outputURL, format: format, sampleRate: sampleRate)
 
-        // Configure Reader Output to PCM for processing
-        let readerSettings: [String: Any] = [
+        if !reader.startReading() {
+            throw AudioMergerError.exportFailed(reader.error)
+        }
+        if !writer.startWriting() {
+            throw AudioMergerError.exportFailed(writer.error)
+        }
+
+        writer.startSession(atSourceTime: .zero)
+
+        let context = ExportContext(reader: reader, output: readerOutput, input: writerInput)
+
+        await withCheckedContinuation { continuation in
+            let queue = DispatchQueue(label: "audioMerger.export")
+
+            writerInput.requestMediaDataWhenReady(on: queue) {
+                processExportLoop(context: context, continuation: continuation)
+            }
+        }
+
+        await writer.finishWriting()
+
+        if writer.status == .failed {
+            throw AudioMergerError.exportFailed(writer.error)
+        }
+        if reader.status == .failed {
+            throw AudioMergerError.exportFailed(reader.error)
+        }
+    }
+
+    private func createReader(for composition: AVAsset) async throws -> (AVAssetReader, AVAssetReaderOutput) {
+        let reader = try AVAssetReader(asset: composition)
+        let settings: [String: Any] = [
             AVFormatIDKey: kAudioFormatLinearPCM,
             AVLinearPCMBitDepthKey: 32,
             AVLinearPCMIsFloatKey: true,
             AVLinearPCMIsNonInterleaved: false,
         ]
 
-        // Use async loadTracks instead of deprecated synchronous tracks(withMediaType:)
-        let audioTracks = try await composition.loadTracks(withMediaType: .audio)
-        let readerOutput = AVAssetReaderAudioMixOutput(audioTracks: audioTracks, audioSettings: readerSettings)
-        if reader.canAdd(readerOutput) {
-            reader.add(readerOutput)
-        } else {
+        let tracks = try await composition.loadTracks(withMediaType: .audio)
+        let output = AVAssetReaderAudioMixOutput(audioTracks: tracks, audioSettings: settings)
+
+        guard reader.canAdd(output) else {
             throw AudioMergerError.failedToCreateExportSession
         }
+        reader.add(output)
 
-        // 2. Setup Writer
+        return (reader, output)
+    }
+
+    private func createWriter(
+        outputURL: URL,
+        format: AppSettingsStore.AudioFormat,
+        sampleRate: Double
+    ) throws -> (AVAssetWriter, AVAssetWriterInput) {
         let writer = try AVAssetWriter(outputURL: outputURL, fileType: format == .m4a ? .m4a : .wav)
+        let settings = self.getWriterSettings(for: format, sampleRate: sampleRate)
+        let input = AVAssetWriterInput(mediaType: .audio, outputSettings: settings)
 
-        // Configure Writer Input based on format
-        // Use source sample rate to avoid unnecessary conversion
-        let writerSettings: [String: Any] = switch format {
+        input.expectsMediaDataInRealTime = false
+
+        guard writer.canAdd(input) else {
+            throw AudioMergerError.failedToCreateExportSession
+        }
+        writer.add(input)
+
+        return (writer, input)
+    }
+
+    private func getWriterSettings(for format: AppSettingsStore.AudioFormat, sampleRate: Double) -> [String: Any] {
+        switch format {
         case .m4a:
             [
                 AVFormatIDKey: kAudioFormatMPEG4AAC,
@@ -142,74 +189,39 @@ public final class AudioMerger {
                 AVLinearPCMIsNonInterleaved: false,
             ]
         }
+    }
+}
 
-        let writerInput = AVAssetWriterInput(mediaType: .audio, outputSettings: writerSettings)
-        writerInput.expectsMediaDataInRealTime = false
+// MARK: - Private Helpers (Non-Isolated)
 
-        if writer.canAdd(writerInput) {
-            writer.add(writerInput)
-        } else {
-            throw AudioMergerError.failedToCreateExportSession
-        }
+/// Context wrapper to safely transfer non-Sendable AVFoundation objects to the processing queue.
+/// This is safe because these objects are accessed exclusively within the serial export queue.
+private struct ExportContext: @unchecked Sendable {
+    let reader: AVAssetReader
+    let output: AVAssetReaderOutput
+    let input: AVAssetWriterInput
+}
 
-        // 3. Start Processing
-        if !reader.startReading() {
-            throw AudioMergerError.exportFailed(reader.error)
-        }
+private func processExportLoop(context: ExportContext, continuation: CheckedContinuation<Void, Never>) {
+    let input = context.input
+    let output = context.output
+    let reader = context.reader
 
-        if !writer.startWriting() {
-            throw AudioMergerError.exportFailed(writer.error)
-        }
-
-        writer.startSession(atSourceTime: .zero)
-
-        // 4. Pump Buffers
-        // Use a detached task or blocking loop? AVAssetWriterInput requestMediaData is async-friendly-ish but usually used with a queue.
-        // For simplicity in async context, we can use requestMediaDataWhenReady logic wrapper.
-
-        await withCheckedContinuation { continuation in
-            let queue = DispatchQueue(label: "audioMerger.export")
-
-            writerInput.requestMediaDataWhenReady(on: queue) {
-                while writerInput.isReadyForMoreMediaData {
-                    if let buffer = readerOutput.copyNextSampleBuffer() {
-                        if !writerInput.append(buffer) {
-                            writerInput.markAsFinished()
-                            continuation.resume()
-                            return
-                        }
-                    } else {
-                        // verify if reading actually finished or failed
-                        if reader.status == .reading {
-                            // This case might happen if we just ran out of buffer temporarily, but copyNextSampleBuffer implies pull.
-                            // Usually nil means done or error.
-                            // We should mark indices finished.
-                            writerInput.markAsFinished()
-                        } else if reader.status == .completed {
-                            writerInput.markAsFinished()
-                        } else if reader.status == .failed {
-                            // We cannot throw easily from here async, so we signal finish and let the cleanup check catch it.
-                            // Ideally we should cancel.
-                            writerInput.markAsFinished() // Writer will likely fail or just finish empty.
-                            // We will check listener status at the end.
-                        } else {
-                            writerInput.markAsFinished()
-                        }
-                        continuation.resume()
-                        return
-                    }
-                }
+    while input.isReadyForMoreMediaData {
+        if let buffer = output.copyNextSampleBuffer() {
+            if !input.append(buffer) {
+                input.markAsFinished()
+                continuation.resume()
+                return
             }
-        }
-
-        await writer.finishWriting()
-
-        if writer.status == .failed {
-            throw AudioMergerError.exportFailed(writer.error)
-        }
-
-        if reader.status == .failed {
-            throw AudioMergerError.exportFailed(reader.error)
+        } else {
+            if reader.status == .failed {
+                input.markAsFinished()
+            } else {
+                input.markAsFinished()
+            }
+            continuation.resume()
+            return
         }
     }
 }
