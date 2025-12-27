@@ -39,19 +39,15 @@ opt_in_rules:
 # MARK: - Excluded Paths
 excluded:
   - .build
+  - .xcode-build
   - DerivedData
   - .swiftpm
   - dist
-  - Packages
-  - Tests
-  - MeetingAssistant/.build
-  - MeetingAssistant/.swiftpm
-  - MeetingAssistant/dist
-  - MeetingAssistant/Tests
+  - Packages/*/.build
+  - Packages/*/Tests
   - "**/.build"
   - "**/.swiftpm"
   - "**/DerivedData"
-  - "**/Tests"
 
 # MARK: - Rule Thresholds (stricter to match your 20-line function guideline)
 

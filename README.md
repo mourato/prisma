@@ -18,47 +18,60 @@ App nativo para macOS que detecta reuniões por videochamada, captura o áudio d
 
 - macOS 14.0+ (Sonoma ou superior)
 - Apple Silicon (M1/M2/M3) altamente recomendado (para aceleração Neural Engine)
-- Xcode 15.0+ (para desenvolvimento)
+- Xcode 16.0+ (para desenvolvimento)
 
 ## Estrutura do Projeto
 
 ```
 my-meeting-assistant/
-├── MeetingAssistant/              # App Swift/SwiftUI
-│   ├── Sources/
-│   │   ├── App/                   # Entry point e configuração do app
-│   │   ├── Models/                # Modelos de dados
-│   │   ├── Services/              # Serviços 
-│   │   │   ├── FluidAIModelManager.swift # Gerenciador do modelo FluidAudio
-│   │   │   └── ...
-│   │   └── Views/                 # Componentes de UI (MenuBar, Settings)
-│   ├── scripts/
-│   │   └── build-app.sh           # Script de build automatizado
-│   ├── dist/                      # Output do build (.app bundle)
-│   ├── Package.swift              # Configuração Swift Package Manager
-│   └── Info.plist                 # Metadados do app
+├── App/                           # App target (entry point)
+│   ├── MeetingAssistantApp.swift  # Main app and AppDelegate
+│   ├── Info.plist                 # App configuration
+│   └── MeetingAssistant.entitlements
+├── Packages/                      # Local Swift packages
+│   └── MeetingAssistantCore/      # Core library
+│       ├── Package.swift
+│       ├── Sources/
+│       │   └── MeetingAssistantCore/
+│       │       ├── Models/        # Data models
+│       │       ├── Services/      # Recording, transcription, etc.
+│       │       ├── ViewModels/    # MVVM view models
+│       │       ├── Views/         # SwiftUI views
+│       │       └── Resources/     # Localization (en, pt)
+│       └── Tests/
+├── MeetingAssistant.xcodeproj     # Xcode project
+├── project.yml                    # XcodeGen specification
+└── scripts/                       # Build utilities
+    ├── build-release.sh           # Build Release via xcodebuild
+    ├── create-dmg.sh              # Create DMG installer
+    └── lint.sh                    # Run SwiftLint
 ```
 
 ## Quick Start
 
 ### Build e Executar
 
-1. **Build via Script (Recomendado)**
+**Via Xcode (Recomendado)**
 
-O script `build-app.sh` cria um `.app` bundle completo com Info.plist e entitlements, necessário para permissões de Screen Recording e Microphone.
+1. Abra `MeetingAssistant.xcodeproj` no Xcode
+2. Pressione ⌘R para executar
+
+**Via Linha de Comando**
 
 ```bash
-cd MeetingAssistant
-chmod +x scripts/build-app.sh
-./scripts/build-app.sh
+# Build Release
+./scripts/build-release.sh
+
+# Criar DMG para distribuição
+./scripts/create-dmg.sh
 ```
 
-Após o build, o app estará em: `MeetingAssistant/dist/MeetingAssistant.app`.
+### Regenerar Projeto Xcode
 
-2. **Primeira Execução**
+Se você modificar `project.yml`, regenere o projeto:
 
 ```bash
-open MeetingAssistant/dist/MeetingAssistant.app
+xcodegen generate
 ```
 
 > **Nota**: Na primeira vez que iniciar a transcrição, o app fará o download automático do modelo Parakeet TDT (~600MB). Isso pode levar alguns minutos dependendo da conexão.
@@ -75,8 +88,8 @@ O app solicitará acesso em: **System Settings → Privacy & Security**
 ## Tecnologias
 
 - **Frontend/App**: Swift 6.0, SwiftUI, ScreenCaptureKit
+- **Build**: Xcode + XcodeGen
 - **Quality**: SwiftLint, SwiftFormat
-
 - **AI Core**: [FluidAudio SDK](https://github.com/FluidInference/FluidAudio)
 - **Model**: Parakeet TDT 0.6B v3 (CoreML optimized for ANE)
 

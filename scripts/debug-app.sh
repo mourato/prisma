@@ -1,16 +1,17 @@
 #!/bin/bash
 # =============================================================================
-# debug-app.sh - Builds and runs MeetingAssistant in debug mode
+# debug-app.sh - Builds and runs MeetingAssistant in debug mode via Xcode
 # =============================================================================
-# Fast development build with debug symbols. Does not create full app bundle.
+# Uses xcodebuild for a Debug build. Faster than Release for development.
 # =============================================================================
 
-set -e  # Exit on any error
+set -e
 
 # Configuration
 APP_NAME="MeetingAssistant"
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-BUILD_DIR="${PROJECT_DIR}/.build/debug"
+XCODEPROJ="${PROJECT_DIR}/MeetingAssistant.xcodeproj"
+DERIVED_DATA="${PROJECT_DIR}/.xcode-build"
 
 # Colors for output
 RED='\033[0;31m'
@@ -24,31 +25,46 @@ echo -e "${BLUE}  Building ${APP_NAME} (Debug Mode)${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
-# Step 1: Build the Swift package in debug mode
-echo -e "${YELLOW}[1/2]${NC} Building Swift package (debug mode)..."
-cd "${PROJECT_DIR}"
-swift build
+# Check if xcodeproj exists
+if [ ! -d "${XCODEPROJ}" ]; then
+    echo -e "${RED}Error: Xcode project not found at ${XCODEPROJ}${NC}"
+    echo -e "${YELLOW}Run 'xcodegen generate' first to create the project.${NC}"
+    exit 1
+fi
 
-if [ ! -f "${BUILD_DIR}/${APP_NAME}" ]; then
-    echo -e "${RED}Error: Build failed. Executable not found at ${BUILD_DIR}/${APP_NAME}${NC}"
+# Build Debug
+echo -e "${YELLOW}[1/2]${NC} Building with xcodebuild (Debug)..."
+xcodebuild -project "${XCODEPROJ}" \
+    -scheme "${APP_NAME}" \
+    -configuration Debug \
+    -derivedDataPath "${DERIVED_DATA}" \
+    -destination 'platform=macOS' \
+    build \
+    2>&1 | grep -E "(Compiling|Linking|Signing|BUILD|error:|warning:)" | head -20
+
+BUILD_DIR="${DERIVED_DATA}/Build/Products/Debug"
+APP_PATH="${BUILD_DIR}/${APP_NAME}.app"
+
+if [ ! -d "${APP_PATH}" ]; then
+    echo -e "${RED}Error: Build failed. App not found at ${APP_PATH}${NC}"
     exit 1
 fi
 echo -e "${GREEN}✓ Build completed${NC}"
 
-# Step 2: Run the app (optional, controlled by argument)
+# Run if requested
 if [[ "$1" == "--run" || "$1" == "-r" ]]; then
     echo -e "${YELLOW}[2/2]${NC} Running ${APP_NAME}..."
     echo ""
-    "${BUILD_DIR}/${APP_NAME}"
+    open "${APP_PATH}"
 else
     echo ""
     echo -e "${GREEN}✓ Build successful!${NC}"
     echo ""
-    echo -e "Executable location:"
-    echo -e "  ${YELLOW}${BUILD_DIR}/${APP_NAME}${NC}"
+    echo -e "App location:"
+    echo -e "  ${YELLOW}${APP_PATH}${NC}"
     echo ""
     echo -e "To run the app:"
-    echo -e "  ${YELLOW}${BUILD_DIR}/${APP_NAME}${NC}"
+    echo -e "  ${YELLOW}open \"${APP_PATH}\"${NC}"
     echo -e "  or: ${YELLOW}$0 --run${NC}"
     echo ""
 fi
