@@ -78,18 +78,28 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     // MARK: - Public API
 
     /// Start recording merged audio (Mic + System) to the specified URL.
+    /// Start recording merged audio (Mic + System) to the specified URL.
     public func startRecording(to outputURL: URL, retryCount: Int = 0) async throws {
         // Stop any existing recording first
         await self.stopRecording()
 
         AppLogger.info("Starting merged recording", category: .recordingManager, extra: ["path": outputURL.path])
 
-        // 1. Start Capture
-        // We start this first so buffers begin filling for the engine to pull
-        try await self.systemRecorder.startRecording(to: outputURL) // URL ignored by system recorder now
+        // 1. Determine Hardware Sample Rate
+        // We query a temporary engine to know what the hardware (MainMixer/Output) expects.
+        // This ensures we capture System Audio at the same rate, avoiding heavy SRC or -10874 errors.
+        let tempEngine = AVAudioEngine()
+        let hardwareSampleRate = tempEngine.outputNode.outputFormat(forBus: 0).sampleRate
+        let targetSampleRate = (hardwareSampleRate > 0) ? hardwareSampleRate : Constants.outputSampleRate
+
+        AppLogger.info("Detected Hardware Sample Rate: \(targetSampleRate)", category: .recordingManager)
+
+        // 2. Start Capture
+        // Start system capture with the matching rate
+        try await self.systemRecorder.startRecording(to: outputURL, sampleRate: targetSampleRate)
 
         do {
-            try self.setupAndStartEngine(writingTo: outputURL, retryCount: retryCount)
+            try self.setupAndStartEngine(writingTo: outputURL, retryCount: retryCount, sampleRate: targetSampleRate)
         } catch {
             await self.stopRecording()
             throw error
@@ -98,7 +108,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
     // MARK: - Engine Setup Helpers
 
-    private func setupAndStartEngine(writingTo outputURL: URL, retryCount: Int) throws {
+    private func setupAndStartEngine(writingTo outputURL: URL, retryCount: Int, sampleRate: Double) throws {
         AppLogger.debug("Setting up Audio Engine...", category: .recordingManager)
         let engine = AVAudioEngine()
         let mixer = AVAudioMixerNode()
@@ -108,7 +118,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         self.mixerNode = mixer
 
         AppLogger.debug("Configuring inputs...", category: .recordingManager)
-        try self.configureInputs(engine: engine, mixer: mixer)
+        try self.configureInputs(engine: engine, mixer: mixer, sampleRate: sampleRate)
         AppLogger.debug("Configuring worker...", category: .recordingManager)
         try self.configureWorker(writingTo: outputURL, mixer: mixer)
 
@@ -118,11 +128,11 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         AppLogger.debug("Audio Engine setup complete.", category: .recordingManager)
     }
 
-    private func configureInputs(engine: AVAudioEngine, mixer: AVAudioMixerNode) throws {
+    private func configureInputs(engine: AVAudioEngine, mixer: AVAudioMixerNode, sampleRate: Double) throws {
         AppLogger.debug("Connecting Microphone...", category: .recordingManager)
         try self.connectMicrophone(to: engine, mixer: mixer)
         AppLogger.debug("Connecting System Audio...", category: .recordingManager)
-        try self.connectSystemAudio(to: engine, mixer: mixer)
+        try self.connectSystemAudio(to: engine, mixer: mixer, sampleRate: sampleRate)
 
         // Connect mixer to mainMixer without forcing a specific format.
         // This allows the engine to align with the hardware output sample rate (e.g., 44.1kHz or 48kHz)
@@ -156,14 +166,14 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         engine.connect(inputNode, to: mixer, format: inputFormat)
     }
 
-    private func connectSystemAudio(to engine: AVAudioEngine, mixer: AVAudioMixerNode) throws {
+    private func connectSystemAudio(to engine: AVAudioEngine, mixer: AVAudioMixerNode, sampleRate: Double) throws {
         let sourceNode = self.createSystemSourceNode(queue: self.systemAudioQueue)
         self.systemAudioSourceNode = sourceNode
         engine.attach(sourceNode)
 
         guard let systemFormat = AVAudioFormat(
             commonFormat: .pcmFormatFloat32,
-            sampleRate: Constants.outputSampleRate,
+            sampleRate: sampleRate, // Use aligned Hardware Rate
             channels: 2,
             interleaved: false
         ) else {
