@@ -40,8 +40,12 @@ public final class AudioMerger {
         // Original code: inserts all at .zero. This creates a MIX.
         try await self.buildComposition(composition, from: existingURLs)
 
+        // Extract sample rate from first audio track to match source
+        let sampleRate = await self.extractSampleRate(from: composition) ?? 48_000.0
+        self.logger.info("Using sample rate: \(sampleRate)Hz for export")
+
         // Export using AVAssetWriter
-        try await self.export(composition: composition, to: outputURL, format: format)
+        try await self.export(composition: composition, to: outputURL, format: format, sampleRate: sampleRate)
 
         return outputURL
     }
@@ -73,7 +77,27 @@ public final class AudioMerger {
         }
     }
 
-    private func export(composition: AVAsset, to outputURL: URL, format: AppSettingsStore.AudioFormat) async throws {
+    private func extractSampleRate(from asset: AVAsset) async -> Double? {
+        do {
+            let tracks = try await asset.loadTracks(withMediaType: .audio)
+            guard let track = tracks.first else { return nil }
+            let formatDescriptions = try await track.load(.formatDescriptions)
+            guard let formatDesc = formatDescriptions.first else { return nil }
+
+            let audioDesc = CMAudioFormatDescriptionGetStreamBasicDescription(formatDesc)
+            return audioDesc?.pointee.mSampleRate
+        } catch {
+            self.logger.warning("Failed to extract sample rate: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    private func export(
+        composition: AVAsset,
+        to outputURL: URL,
+        format: AppSettingsStore.AudioFormat,
+        sampleRate: Double
+    ) async throws {
         // 1. Setup Reader
         let reader = try AVAssetReader(asset: composition)
 
@@ -96,19 +120,20 @@ public final class AudioMerger {
         let writer = try AVAssetWriter(outputURL: outputURL, fileType: format == .m4a ? .m4a : .wav)
 
         // Configure Writer Input based on format
+        // Use source sample rate to avoid unnecessary conversion
         let writerSettings: [String: Any] = switch format {
         case .m4a:
             [
                 AVFormatIDKey: kAudioFormatMPEG4AAC,
                 AVNumberOfChannelsKey: 2,
-                AVSampleRateKey: 48_000, // Standardize to 48kHz
+                AVSampleRateKey: sampleRate,
                 AVEncoderBitRateKey: 128_000,
             ]
         case .wav:
             [
                 AVFormatIDKey: kAudioFormatLinearPCM,
                 AVNumberOfChannelsKey: 2,
-                AVSampleRateKey: 48_000,
+                AVSampleRateKey: sampleRate,
                 AVLinearPCMBitDepthKey: 32,
                 AVLinearPCMIsFloatKey: true,
                 AVLinearPCMIsBigEndianKey: false,
