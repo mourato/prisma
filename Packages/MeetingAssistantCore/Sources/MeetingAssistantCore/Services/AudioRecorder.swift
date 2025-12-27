@@ -19,8 +19,8 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     private enum Constants {
         static let tapBufferSize: AVAudioFrameCount = 4096
         static let tapBusNumber: AVAudioNodeBus = 0
-        static let outputSampleRate: Double = 48_000.0 // Standard for AAC/Video
-        static let outputChannels: AVAudioChannelCount = 2 // Stereo mix
+        static let outputSampleRate: Double = 48_000.0
+        static let outputChannels: AVAudioChannelCount = 2
         static let validationInterval: TimeInterval = 1.5
         static let retryDelay: UInt64 = 500_000_000 // 500ms
         static let maxRetries = 2
@@ -55,7 +55,6 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
     /// Thread-safe worker that handles file writing and processing off the main actor.
     private let worker = AudioRecordingWorker()
-
     private var validationTimer: Timer?
     public var onRecordingError: ((Error) -> Void)?
 
@@ -89,11 +88,11 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
         self.logger.info("Starting merged recording to: \(outputURL.path)")
 
-        // 1. Start System Audio Capture
+        // 1. Start Capture
         // We start this first so buffers begin filling for the engine to pull
         try await self.systemRecorder.startRecording(to: outputURL) // URL ignored by system recorder now
 
-        // 2. Setup Audio Engine
+        // 2. Setup Engine
         let engine = AVAudioEngine()
         self.audioEngine = engine
 
@@ -101,41 +100,50 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         self.mixerNode = mixer
         engine.attach(mixer)
 
-        // Connect Mic (InputNode) -> Mixer
+        // Microphone Connection
+        // CRITICAL: Handle potential permission/hardware errors gracefully
         let inputNode = engine.inputNode
         let inputFormat = inputNode.inputFormat(forBus: Constants.tapBusNumber)
+
+        // Prevent 0Hz sample rate crash
+        guard inputFormat.sampleRate > 0 else {
+            throw AudioRecorderError.invalidInputFormat
+        }
+
         engine.connect(inputNode, to: mixer, format: inputFormat)
 
-        // Create System Audio Source Node -> Mixer
+        // System Audio Connection
         let sourceNode = self.createSystemSourceNode()
         self.systemAudioSourceNode = sourceNode
         engine.attach(sourceNode)
 
-        // Connect Source -> Mixer
-        // We use the same format as input for simplicity, or standard stereo
-        let systemFormat = AVAudioFormat(standardFormatWithSampleRate: Constants.outputSampleRate, channels: 2)
+        // Explicitly format for the mixer
+        guard let systemFormat = AVAudioFormat(
+            commonFormat: .pcmFormatFloat32,
+            sampleRate: Constants.outputSampleRate,
+            channels: 2,
+            interleaved: false
+        ) else {
+            throw AudioRecorderError.invalidRecordingFormat
+        }
+
         engine.connect(sourceNode, to: mixer, format: systemFormat)
-
-        // Connect Mixer to Main Output (Speaker) - Optional: Mute execution to prevent feedback if needed?
-        // For recording, we just tap the mixer. connect to mainMixerNode to silence it if we want monitoring
         engine.connect(mixer, to: engine.mainMixerNode, format: systemFormat)
-
-        // Mute the main output to prevent hearing yourself/system audio loopback
         engine.mainMixerNode.outputVolume = 0.0
 
-        // 3. Configure Worker (AAC)
-        try self.worker.start(writingTo: outputURL, format: systemFormat ?? inputFormat) // Use mixer format
+        // 3. Configure Worker
+        // Use the mixer's output format ensuring consistency
+        let mixerOutputFormat = mixer.outputFormat(forBus: 0)
+        try self.worker.start(writingTo: outputURL, format: mixerOutputFormat)
         self.currentRecordingURL = outputURL
 
-        // 4. Install Tap on Mixer Output
+        // 4. Tap Mixer
         // Tapping the mixer gives us the combined stream (Mic + System)
         let worker = self.worker
-        let tapFormat = mixer.outputFormat(forBus: 0)
-
         mixer.installTap(
             onBus: 0,
             bufferSize: Constants.tapBufferSize,
-            format: tapFormat
+            format: mixerOutputFormat
         ) { buffer, _ in
             worker.process(buffer)
         }
@@ -175,7 +183,6 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
         // Stop Engine & System Capture
         _ = await self.systemRecorder.stopRecording()
-
         self.cleanupEngine()
 
         // Finalize worker
@@ -198,7 +205,13 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         if let mixer = self.mixerNode {
             mixer.removeTap(onBus: 0)
         }
-        self.audioEngine?.stop()
+        if let engine = self.audioEngine {
+            if engine.isRunning {
+                engine.stop()
+            }
+            engine.reset() // Break connections
+        }
+
         self.audioEngine = nil
         self.mixerNode = nil
         self.systemAudioSourceNode = nil
@@ -207,13 +220,11 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     // MARK: - Permission Checking
 
     public func hasPermission() async -> Bool {
-        let micStatus = AVCaptureDevice.authorizationStatus(for: .audio)
-        return micStatus == .authorized
+        AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
     }
 
     public func getPermissionState() -> PermissionState {
-        let status = AVCaptureDevice.authorizationStatus(for: .audio)
-        switch status {
+        switch AVCaptureDevice.authorizationStatus(for: .audio) {
         case .authorized: return .granted
         case .denied: return .denied
         case .notDetermined: return .notDetermined
@@ -227,9 +238,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     }
 
     public func openSettings() {
-        if let url = URL(
-            string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone")
-        {
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone") {
             NSWorkspace.shared.open(url)
         }
     }
@@ -269,12 +278,12 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
                         guard let dest = buffers[ch].mData?.assumingMemoryBound(to: Float.self) else { continue }
                         let src = srcChannels[ch]
 
-                        // Copy 'framesToCopy' samples
-                        // Offset: dest + framesFilled
-                        // Src: src + 0 (Simplification: always consuming full buffer or dropping rest)
-
-                        for i in 0..<framesToCopy {
-                            dest[framesFilled + i] = src[i]
+                        // Safety check
+                        if framesFilled + framesToCopy <= Int(frameCount) {
+                            // Manual copy loop is safest across buffer boundaries without complex memcpy math
+                            for i in 0..<framesToCopy {
+                                dest[framesFilled + i] = src[i]
+                            }
                         }
                     }
                 }
@@ -286,6 +295,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             if framesFilled < targetFrames {
                 for ch in 0..<buffers.count {
                     guard let dest = buffers[ch].mData?.assumingMemoryBound(to: Float.self) else { continue }
+                    // Zero fill
                     for i in framesFilled..<targetFrames {
                         dest[i] = 0
                     }
@@ -322,10 +332,10 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         if retryCount < Constants.maxRetries {
             await self.retryRecording(to: url, retryCount: retryCount)
         } else {
-            self.logger.error("Recording failed after 2 retry attempts")
-            let validationError = AudioRecorderError.recordingValidationFailed
-            self.error = validationError
-            self.onRecordingError?(validationError)
+            self.logger.error("Recording failed after retries")
+            let error = AudioRecorderError.recordingValidationFailed
+            self.error = error
+            self.onRecordingError?(error)
         }
     }
 
@@ -335,7 +345,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             try await Task.sleep(nanoseconds: Constants.retryDelay)
             try await self.startRecording(to: url, retryCount: retryCount + 1)
         } catch {
-            self.logger.error("Retry failed: \(error.localizedDescription)")
+            self.logger.error("Retry failed: \(error)")
             self.error = error
             self.onRecordingError?(error)
         }
@@ -431,7 +441,7 @@ private final class AudioRecordingWorker: @unchecked Sendable {
                 defer { self.lock.unlock() }
 
                 let url = self.currentURL
-                self.audioFile = nil
+                self.audioFile = nil // Close file
                 self.currentURL = nil
 
                 continuation.resume(returning: url)
