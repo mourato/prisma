@@ -1,6 +1,6 @@
 import AppKit
 import Atomics
-import AVFoundation
+@preconcurrency import AVFoundation
 import Combine
 import CoreAudio
 import Foundation
@@ -24,11 +24,9 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         static let validationInterval: TimeInterval = 1.5
         static let retryDelay: UInt64 = 500_000_000 // 500ms
         static let maxRetries = 2
-        static let logSubsystem = "MeetingAssistant"
-        static let logCategory = "AudioRecorder"
     }
 
-    private let logger = Logger(subsystem: Constants.logSubsystem, category: Constants.logCategory)
+    // private let logger = Logger(subsystem: Constants.logSubsystem, category: Constants.logCategory) // Replaced by AppLogger
 
     @Published public private(set) var isRecording = false
     public var isRecordingPublisher: AnyPublisher<Bool, Never> {
@@ -86,7 +84,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         // Stop any existing recording first
         await self.stopRecording()
 
-        self.logger.info("Starting merged recording to: \(outputURL.path)")
+        AppLogger.info("Starting merged recording", category: .recordingManager, extra: ["path": outputURL.path])
 
         // 1. Start Capture
         // We start this first so buffers begin filling for the engine to pull
@@ -162,9 +160,9 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             try engine.start()
             self.isRecording = true
             self.startValidationTimer(url: outputURL, retryCount: retryCount)
-            self.logger.info("Audio engine started successfully")
+            AppLogger.info("Audio engine started successfully", category: .recordingManager)
         } catch {
-            self.logger.error("Failed to start audio engine: \(error.localizedDescription)")
+            AppLogger.fault("Failed to start audio engine", category: .recordingManager, error: error)
             self.cleanupEngine()
             throw AudioRecorderError.failedToStartEngine(error)
         }
@@ -175,7 +173,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     public func stopRecording() async -> URL? {
         guard self.isRecording else { return self.currentRecordingURL }
 
-        self.logger.info("Stopping recording...")
+        AppLogger.info("Stopping recording...", category: .recordingManager)
 
         // Cancel validation timer
         self.validationTimer?.invalidate()
@@ -322,17 +320,17 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         let validationPassed = self.worker.hasReceivedValidBuffer
 
         guard !validationPassed else {
-            self.logger.info("Recording validation successful")
+            AppLogger.info("Recording validation successful", category: .recordingManager)
             return
         }
 
-        self.logger.warning("Recording validation failed - no valid buffers received")
+        AppLogger.error("Recording validation failed - no valid buffers received", category: .recordingManager)
         _ = await self.stopRecording()
 
         if retryCount < Constants.maxRetries {
             await self.retryRecording(to: url, retryCount: retryCount)
         } else {
-            self.logger.error("Recording failed after retries")
+            AppLogger.fault("Recording failed after retries", category: .recordingManager)
             let error = AudioRecorderError.recordingValidationFailed
             self.error = error
             self.onRecordingError?(error)
@@ -340,19 +338,19 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     }
 
     private func retryRecording(to url: URL, retryCount: Int) async {
-        self.logger.info("Retrying recording (attempt \(retryCount + 1)/\(Constants.maxRetries))...")
+        AppLogger.info("Retrying recording", category: .recordingManager, extra: ["attempt": retryCount + 1, "max": Constants.maxRetries])
         do {
             try await Task.sleep(nanoseconds: Constants.retryDelay)
             try await self.startRecording(to: url, retryCount: retryCount + 1)
         } catch {
-            self.logger.error("Retry failed: \(error)")
+            AppLogger.error("Retry failed", category: .recordingManager, error: error)
             self.error = error
             self.onRecordingError?(error)
         }
     }
 
     private func handleWorkerError(_ error: Error) {
-        self.logger.error("Worker error: \(error.localizedDescription)")
+        AppLogger.error("Worker error", category: .recordingManager, error: error)
         self.error = error
     }
 
@@ -361,9 +359,9 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         Task {
             do {
                 let duration = try await asset.load(.duration)
-                self.logger.info("Recording saved: \(url.lastPathComponent) (\(duration.seconds)s)")
+                AppLogger.info("Recording saved", category: .recordingManager, extra: ["filename": url.lastPathComponent, "duration": duration.seconds])
             } catch {
-                self.logger.error("Verification failed: \(error.localizedDescription)")
+                AppLogger.error("Verification failed", category: .recordingManager, error: error)
             }
         }
     }

@@ -70,7 +70,7 @@ public struct ServiceStatusResponse: Codable {
 public class TranscriptionClient: ObservableObject, TranscriptionService {
     public static let shared = TranscriptionClient()
 
-    private let logger = Logger(subsystem: "MeetingAssistant", category: "TranscriptionClient")
+    // private let logger = Logger(subsystem: "MeetingAssistant", category: "TranscriptionClient") // Replaced by AppLogger
     private let manager = FluidAIModelManager.shared
 
     // We observe the manager to update our synthetic "ServiceStatus" if needed,
@@ -123,10 +123,17 @@ public class TranscriptionClient: ObservableObject, TranscriptionService {
     /// - Parameter audioURL: Path to the audio file (WAV, M4A, etc.)
     /// - Returns: Transcription response from the service
     public func transcribe(audioURL: URL) async throws -> TranscriptionResponse {
-        self.logger.info("Transcribing file locally: \(audioURL.lastPathComponent)")
+        AppLogger.info("Transcribing file locally", category: .transcriptionEngine, extra: ["filename": audioURL.lastPathComponent])
 
         // Use LocalTranscriptionClient as the implementation provider.
-        return try await LocalTranscriptionClient.shared.transcribe(audioURL: audioURL)
+        do {
+            let response = try await LocalTranscriptionClient.shared.transcribe(audioURL: audioURL)
+            AppLogger.info("Transcription completed info", category: .transcriptionEngine, extra: ["words": response.text.split(separator: " ").count])
+            return response
+        } catch {
+            AppLogger.error("Transcription failed", category: .transcriptionEngine, error: error, extra: ["filename": audioURL.lastPathComponent])
+            throw error
+        }
     }
 }
 

@@ -33,7 +33,7 @@ public protocol StorageService: Sendable {
 public final class FileSystemStorageService: StorageService {
     public static let shared = FileSystemStorageService()
 
-    private let logger = Logger(subsystem: "MeetingAssistant", category: "StorageService")
+    // private let logger = Logger(subsystem: "MeetingAssistant", category: "StorageService") // Replaced by AppLogger
 
     public let recordingsDirectory: URL
     private let transcriptsDirectory: URL
@@ -57,7 +57,7 @@ public final class FileSystemStorageService: StorageService {
             try FileManager.default.createDirectory(at: self.recordingsDirectory, withIntermediateDirectories: true)
             try FileManager.default.createDirectory(at: self.transcriptsDirectory, withIntermediateDirectories: true)
         } catch {
-            self.logger.error("Failed to create storage directories: \(error.localizedDescription)")
+            AppLogger.fault("Failed to create storage directories", category: .databaseManager, error: error)
         }
     }
 
@@ -86,10 +86,10 @@ public final class FileSystemStorageService: StorageService {
             do {
                 if FileManager.default.fileExists(atPath: url.path) {
                     try FileManager.default.removeItem(at: url)
-                    self.logger.debug("Deleted temporary file: \(url.lastPathComponent)")
+                    AppLogger.debug("Deleted temporary file", category: .databaseManager, extra: ["filename": url.lastPathComponent])
                 }
             } catch {
-                self.logger.warning("Failed to delete file \(url.lastPathComponent): \(error.localizedDescription)")
+                AppLogger.error("Failed to delete file", category: .databaseManager, error: error, extra: ["filename": url.lastPathComponent])
             }
         }
     }
@@ -105,7 +105,7 @@ public final class FileSystemStorageService: StorageService {
         let data = try encoder.encode(transcription)
         try data.write(to: url)
 
-        self.logger.info("Saved transcription to \(filename)")
+        AppLogger.info("Saved transcription", category: .databaseManager, extra: ["filename": filename])
     }
 
     public func loadTranscriptions() async throws -> [Transcription] {
@@ -128,16 +128,14 @@ public final class FileSystemStorageService: StorageService {
                 let transcription = try decoder.decode(Transcription.self, from: data)
                 transcriptions.append(transcription)
             } catch {
-                self.logger.warning(
-                    "Failed to load transcription \(file.lastPathComponent): \(error.localizedDescription)"
-                )
+                AppLogger.error("Failed to load transcription", category: .databaseManager, error: error, extra: ["filename": file.lastPathComponent])
             }
         }
 
         // Sort by date, most recent first
         transcriptions.sort { $0.createdAt > $1.createdAt }
 
-        self.logger.info("Loaded \(transcriptions.count) transcriptions")
+        AppLogger.info("Loaded transcriptions", category: .databaseManager, extra: ["count": transcriptions.count])
         return transcriptions
     }
 }

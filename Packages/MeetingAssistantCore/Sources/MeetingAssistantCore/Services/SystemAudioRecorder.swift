@@ -14,7 +14,7 @@ import os.log
 public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
     public static let shared = SystemAudioRecorder()
 
-    private let logger = Logger(subsystem: "MeetingAssistant", category: "SystemAudioRecorder")
+    // private let logger = Logger(subsystem: "MeetingAssistant", category: "SystemAudioRecorder") // Replaced by AppLogger
 
     @Published public private(set) var isRecording = false
     public var isRecordingPublisher: AnyPublisher<Bool, Never> {
@@ -66,7 +66,7 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
     /// `outputURL` is ignored as this class no longer writes files, but kept for protocol conformance.
     public func startRecording(to outputURL: URL, retryCount: Int = 0) async throws {
         guard !self.isRecording else {
-            self.logger.warning("Already recording system audio")
+            AppLogger.info("Already recording system audio", category: .recordingManager)
             return
         }
 
@@ -74,7 +74,7 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
             throw SystemAudioRecorderError.permissionDenied
         }
 
-        self.logger.info("Starting system audio capture stream...")
+        AppLogger.info("Starting system audio capture stream...", category: .recordingManager)
         self.hasReceivedValidBuffer.store(false, ordering: .relaxed)
 
         try await self.setupScreenCapture()
@@ -83,9 +83,9 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
             try await self.stream?.startCapture()
             self.isRecording = true
             self.startValidationTimer()
-            self.logger.info("System audio capture started successfully")
+            AppLogger.info("System audio capture started successfully", category: .recordingManager)
         } catch {
-            self.logger.error("Failed to start screen capture: \(error.localizedDescription)")
+            AppLogger.error("Failed to start screen capture", category: .recordingManager, error: error)
             await self.cleanup()
             throw SystemAudioRecorderError.failedToStartCapture(error)
         }
@@ -94,7 +94,7 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
     public func stopRecording() async -> URL? {
         guard self.isRecording else { return nil }
 
-        self.logger.info("Stopping system audio capture...")
+        AppLogger.info("Stopping system audio capture...", category: .recordingManager)
 
         self.validationTimer?.invalidate()
         self.validationTimer = nil
@@ -158,7 +158,6 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
         self.audioCaptureQueue = queue
 
         let output = SystemAudioStreamOutput(
-            logger: logger,
             onBuffer: { [weak self] buffer in
                 self?.handleBuffer(buffer)
             }
@@ -175,9 +174,15 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
         }
 
         // Forward buffer to listener
+        let sendableBuffer = SendableBuffer(buffer)
         Task { @MainActor in
-            self.onAudioBuffer?(buffer)
+            self.onAudioBuffer?(sendableBuffer.buffer)
         }
+    }
+
+    private struct SendableBuffer: @unchecked Sendable {
+        let buffer: AVAudioPCMBuffer
+        init(_ buffer: AVAudioPCMBuffer) { self.buffer = buffer }
     }
 
     private func cleanup() async {
@@ -203,11 +208,11 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
     private func handleValidationResult() async {
         let validationPassed = self.hasReceivedValidBuffer.load(ordering: .relaxed)
         if !validationPassed {
-            self.logger.warning("System audio validation failed - no valid buffers received")
+            AppLogger.warning("System audio validation failed - no valid buffers received", category: .recordingManager)
             // We don't fail hard here for now, as system audio might just be silent,
             // but for diagnosis it is useful.
         } else {
-            self.logger.info("System audio validation successful")
+            AppLogger.info("System audio validation successful", category: .recordingManager)
         }
     }
 }
@@ -215,11 +220,11 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
 // MARK: - Stream Output Handler
 
 private class SystemAudioStreamOutput: NSObject, SCStreamOutput {
-    private let logger: Logger
+    // private let logger: Logger // Removed unused
     private let onBuffer: (AVAudioPCMBuffer) -> Void
 
-    init(logger: Logger, onBuffer: @escaping (AVAudioPCMBuffer) -> Void) {
-        self.logger = logger
+    init(onBuffer: @escaping (AVAudioPCMBuffer) -> Void) {
+        // self.logger = logger
         self.onBuffer = onBuffer
     }
 
