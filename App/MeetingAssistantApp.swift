@@ -2,6 +2,8 @@ import KeyboardShortcuts
 import MeetingAssistantCore
 import SwiftUI
 
+import os
+
 /// Main entry point for the Meeting Assistant app.
 /// Runs as a menu bar application without a dock icon.
 @main
@@ -34,6 +36,7 @@ struct MeetingAssistantApp: App {
 /// App delegate for menu bar setup and lifecycle management.
 @MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
+    private let logger = Logger(subsystem: "MeetingAssistant", category: "AppDelegate")
     private var statusItem: NSStatusItem?
     private var popover: NSPopover?
     private var contextMenu: NSMenu?
@@ -48,7 +51,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Warmup transcription model
         Task {
-            try? await TranscriptionClient.shared.warmupModel()
+            do {
+                try await TranscriptionClient.shared.warmupModel()
+            } catch {
+                self.logger.error("Failed to warmup model: \(error.localizedDescription)")
+            }
         }
 
         // Hide dock icon for menu bar only app
