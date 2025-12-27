@@ -10,7 +10,7 @@ import UserNotifications
 public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     public static let shared = RecordingManager()
 
-    private let logger = Logger(subsystem: "MeetingAssistant", category: "RecordingManager")
+    // private let logger = Logger(subsystem: "MeetingAssistant", category: "RecordingManager") // Replaced by AppLogger
 
     // MARK: - Published State
 
@@ -133,7 +133,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     /// Start recording audio for a meeting (both microphone and system audio).
     public func startRecording() async {
         guard !self.isRecording else {
-            self.logger.warning("Already recording")
+            AppLogger.info("Attempted to start recording but already recording", category: .recordingManager)
             return
         }
 
@@ -156,18 +156,24 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             }
 
             // Start microphone recording
+            AppLogger.debug("Starting microphone recording", category: .recordingManager, extra: ["url": micURL.path])
             try await self.micRecorder.startRecording(to: micURL, retryCount: 0)
 
             // Start system audio recording (async)
+            AppLogger.debug("Starting system audio recording", category: .recordingManager, extra: ["url": systemURL.path])
             try await self.systemRecorder.startRecording(to: systemURL, retryCount: 0)
 
             self.isRecording = true
             self.currentMeeting?.audioFilePath = self.mergedAudioURL?.path
 
-            self.logger.info("Recording started for \(app.displayName) (mic + system)")
+            AppLogger.info("Recording started successfully", category: .recordingManager, extra: [
+                "app": app.displayName,
+                "micURL": micURL.lastPathComponent,
+                "systemURL": systemURL.lastPathComponent,
+            ])
 
         } catch {
-            self.logger.error("Failed to start recording: \(error.localizedDescription)")
+            AppLogger.fault("CRITICAL: Failed to start recording", category: .recordingManager, error: error, extra: ["state": "start_failed"])
             self.lastError = error
 
             // Cleanup partial starts
@@ -185,7 +191,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
     public func stopRecording(transcribe: Bool = true) async {
         guard self.isRecording else {
-            self.logger.warning("Not recording")
+            AppLogger.info("Attempted to stop recording but not recording", category: .recordingManager)
             return
         }
 
@@ -198,7 +204,10 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             self.currentMeeting?.endTime = Date()
             self.isRecording = false
 
-            self.logger.info("Recording stopped, merging audio files...")
+            AppLogger.info("Recording stopped, merging audio files...", category: .recordingManager, extra: [
+                "micURL": micURL?.lastPathComponent ?? "nil",
+                "sysURL": sysURL?.lastPathComponent ?? "nil",
+            ])
 
             // Merge audio files
             var inputURLs: [URL] = []
@@ -216,7 +225,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             // Clean up temporary files
             self.cleanupTemporaryFiles()
 
-            self.logger.info("Audio merge complete: \(finalURL.lastPathComponent)")
+            AppLogger.info("Audio merge complete", category: .recordingManager, extra: ["finalURL": finalURL.lastPathComponent])
 
             // Transcribe if requested
             if transcribe, let meeting = currentMeeting {
@@ -224,7 +233,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             }
 
         } catch {
-            self.logger.error("Failed to stop recording: \(error.localizedDescription)")
+            AppLogger.error("Failed to stop recording cleanly", category: .recordingManager, error: error)
             self.lastError = error
             self.isRecording = false
         }
@@ -234,13 +243,13 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     /// - Parameter audioURL: Path to the audio file (m4a, mp3, wav).
     public func transcribeExternalAudio(from audioURL: URL) async {
         guard !self.isTranscribing else {
-            self.logger.warning("Already transcribing")
+            AppLogger.info("Already transcribing", category: .recordingManager)
             return
         }
 
         // Validate file exists
         guard FileManager.default.fileExists(atPath: audioURL.path) else {
-            self.logger.error("Audio file not found: \(audioURL.path)")
+            AppLogger.error("Audio file not found for import", category: .recordingManager, extra: ["path": audioURL.path])
             self.lastError = AudioImportError.fileNotFound
             return
         }
@@ -248,7 +257,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         // Validate file extension
         let validExtensions = ["m4a", "mp3", "wav"]
         guard validExtensions.contains(audioURL.pathExtension.lowercased()) else {
-            self.logger.error("Unsupported audio format: \(audioURL.pathExtension)")
+            AppLogger.error("Unsupported audio format for import", category: .recordingManager, extra: ["extension": audioURL.pathExtension])
             self.lastError = AudioImportError.unsupportedFormat
             return
         }
@@ -260,7 +269,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         )
         self.currentMeeting = meeting
 
-        self.logger.info("Starting transcription for imported file: \(audioURL.lastPathComponent)")
+        AppLogger.info("Starting transcription for imported file", category: .recordingManager, extra: ["filename": audioURL.lastPathComponent])
         await self.transcribeRecording(audioURL: audioURL, meeting: meeting)
     }
 
@@ -382,11 +391,10 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             let processed = try await postProcessingService.processTranscription(
                 rawText, with: prompt
             )
-            self.logger.info("Post-processing complete using prompt: \(prompt.title)")
+            AppLogger.info("Post-processing complete", category: .recordingManager, extra: ["prompt": prompt.title])
             return (processed, prompt.id, prompt.title)
         } catch {
-            self.logger.warning(
-                "Post-processing failed, using raw transcription: \(error.localizedDescription)")
+            AppLogger.error("Post-processing failed, using raw transcription", category: .recordingManager, error: error)
             return (nil, nil, nil)
         }
     }
@@ -411,8 +419,8 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
         let logMessageSuffix =
             transcription.isPostProcessed
-                ? "(post-processed with '\(promptTitle ?? "unknown")')" : "(raw)"
-        self.logger.info("Transcription created: \(transcription.wordCount) words \(logMessageSuffix)")
+                ? "post-processed" : "raw"
+        AppLogger.info("Transcription created", category: .recordingManager, extra: ["words": transcription.wordCount, "type": logMessageSuffix])
 
         try await self.storage.saveTranscription(transcription)
         return transcription
@@ -428,7 +436,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     }
 
     private func handleTranscriptionError(_ error: Error) {
-        self.logger.error("Transcription failed: \(error.localizedDescription)")
+        AppLogger.error("Transcription failed", category: .recordingManager, error: error)
         self.lastError = error
 
         self.transcriptionStatus.recordError(.transcriptionFailed(error.localizedDescription))
@@ -453,7 +461,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             let duration = try await asset.load(.duration)
             return duration.seconds
         } catch {
-            self.logger.warning("Failed to load audio duration: \(error.localizedDescription)")
+            AppLogger.error("Failed to load audio duration", category: .recordingManager, error: error)
             return nil
         }
     }
