@@ -47,6 +47,8 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     private let systemRecorder = SystemAudioRecorder.shared
     // Non-isolated to allow background threads (SystemAudioRecorder) to enqueue without MainActor hopping
     private nonisolated let systemAudioQueue = AudioBufferQueue(capacity: 200)
+    /// Tracks partially consumed buffers between render cycles to prevent frame loss
+    private nonisolated let partialBufferState = PartialBufferState()
 
     // MARK: - Worker & State
 
@@ -177,7 +179,10 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     }
 
     private func connectSystemAudio(to engine: AVAudioEngine, mixer: AVAudioMixerNode, sampleRate: Double) throws {
-        let sourceNode = self.createSystemSourceNode(queue: self.systemAudioQueue)
+        let sourceNode = self.createSystemSourceNode(
+            queue: self.systemAudioQueue,
+            partialState: self.partialBufferState
+        )
         self.systemAudioSourceNode = sourceNode
         engine.attach(sourceNode)
 
@@ -256,6 +261,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         self.currentAveragePower = -160.0
         self.currentPeakPower = -160.0
         self.systemAudioQueue.clear()
+        self.partialBufferState.clear()
 
         if let url {
             self.verifyFileIntegrity(url: url)
@@ -308,17 +314,27 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
     // MARK: - Source Node Configuration
 
-    private nonisolated func createSystemSourceNode(queue: AudioBufferQueue) -> AVAudioSourceNode {
+    private nonisolated func createSystemSourceNode(
+        queue: AudioBufferQueue,
+        partialState: PartialBufferState
+    ) -> AVAudioSourceNode {
         AVAudioSourceNode { _, _, frameCount, audioBufferList -> OSStatus in
             let buffers = UnsafeMutableAudioBufferListPointer(audioBufferList)
-
-            // 1. Identify valid data needs
             let targetFrames = Int(frameCount)
             var framesFilled = 0
 
+            // 1. First consume any remaining frames from partial buffer
+            if partialState.hasPartial {
+                let consumed = partialState.consume(
+                    maxFrames: targetFrames - framesFilled,
+                    into: buffers,
+                    destOffset: framesFilled
+                )
+                framesFilled += consumed
+            }
+
             // 2. Pull from queue until satisfied
             while framesFilled < targetFrames {
-                // If we don't have a current buffer, try dequeue
                 guard let buffer = queue.dequeue() else {
                     break // No data available, fill rest with silence
                 }
@@ -326,22 +342,19 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
                 let bufferLength = Int(buffer.frameLength)
                 let framesToCopy = min(targetFrames - framesFilled, bufferLength)
 
-                // Copy logic (naive implementation for PCM Float)
-                // In production this needs robust circular buffer logic to handle partial buffer consumption
-                // For this MVP, we are assuming 1:1 consumption or simple drops for safety,
-                // but proper pointer arithmetic is required for split buffers.
-                //
-                // Simplified: We assume samples match and just copy what we can.
-
+                // Copy frames from the new buffer
                 if let srcChannels = buffer.floatChannelData {
                     for ch in 0..<min(buffers.count, Int(buffer.format.channelCount)) {
-                        guard let dest = buffers[ch].mData?.assumingMemoryBound(to: Float.self) else { continue }
+                        guard let dest = buffers[ch].mData?.assumingMemoryBound(to: Float.self) else {
+                            continue
+                        }
                         let src = srcChannels[ch]
 
-                        // Safety check
-                        if framesFilled + framesToCopy <= Int(frameCount) {
-                            // Optimized Copy: Use memory move (memcpy) instead of loop
-                            let destPtr = UnsafeMutableBufferPointer(start: dest.advanced(by: framesFilled), count: framesToCopy)
+                        if framesFilled + framesToCopy <= targetFrames {
+                            let destPtr = UnsafeMutableBufferPointer(
+                                start: dest.advanced(by: framesFilled),
+                                count: framesToCopy
+                            )
                             let srcPtr = UnsafeBufferPointer(start: src, count: framesToCopy)
                             _ = destPtr.initialize(from: srcPtr)
                         }
@@ -349,16 +362,21 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
                 }
 
                 framesFilled += framesToCopy
+
+                // 3. If buffer has remaining frames, store for next render cycle
+                if framesToCopy < bufferLength {
+                    partialState.setBuffer(buffer, offset: framesToCopy)
+                    break // We have enough frames now
+                }
             }
 
-            // 3. Silence remaining
+            // 4. Silence remaining
             if framesFilled < targetFrames {
                 for ch in 0..<buffers.count {
-                    guard let dest = buffers[ch].mData?.assumingMemoryBound(to: Float.self) else { continue }
-                    // Zero fill
-                    for i in framesFilled..<targetFrames {
-                        dest[i] = 0
+                    guard let dest = buffers[ch].mData?.assumingMemoryBound(to: Float.self) else {
+                        continue
                     }
+                    memset(dest.advanced(by: framesFilled), 0, (targetFrames - framesFilled) * MemoryLayout<Float>.size)
                 }
             }
 
