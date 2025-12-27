@@ -35,7 +35,7 @@ public struct TranscriptionDetailView: View {
                 Spacer()
 
                 Menu {
-                    Button(NSLocalizedString("common.delete", bundle: .safeModule, comment: ""), role: .destructive) {
+                    Button("common.delete".localized, role: .destructive) {
                         // TODO: Implement delete
                     }
                 } label: {
@@ -46,18 +46,18 @@ public struct TranscriptionDetailView: View {
             }
 
             HStack(spacing: 8) {
-                self.statusBadge(text: NSLocalizedString("transcription.completed", bundle: .safeModule, comment: ""), color: .green, icon: "checkmark.circle.fill")
+                self.statusBadge(text: "transcription.completed".localized, color: .green, icon: "checkmark.circle.fill")
                 self.statusBadge(text: self.transcription.meeting.appName, color: .blue, icon: "mic.fill")
                 if self.transcription.isPostProcessed {
                     self.statusBadge(
-                        text: self.transcription.postProcessingPromptTitle ?? NSLocalizedString("transcription.processed", bundle: .safeModule, comment: ""),
+                        text: self.transcription.postProcessingPromptTitle ?? "transcription.processed".localized,
                         color: .orange,
                         icon: "sparkles"
                     )
                 }
             }
 
-            Text(String(format: NSLocalizedString("transcription.recorded_on", bundle: .safeModule, comment: ""), self.transcription.formattedDate))
+            Text("transcription.recorded_on".localized(with: self.transcription.formattedDate))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -80,7 +80,7 @@ public struct TranscriptionDetailView: View {
     private var transcriptSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text(NSLocalizedString("transcription.title", bundle: .safeModule, comment: ""))
+                Text("transcription.title".localized)
                     .font(.headline)
 
                 Spacer()
@@ -89,7 +89,7 @@ public struct TranscriptionDetailView: View {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(self.transcription.text, forType: .string)
                 } label: {
-                    Label(NSLocalizedString("common.copy", bundle: .safeModule, comment: ""), systemImage: "doc.on.doc")
+                    Label("common.copy".localized, systemImage: "doc.on.doc")
                 }
                 .buttonStyle(.bordered)
             }
@@ -108,7 +108,7 @@ public struct TranscriptionDetailView: View {
     private var originalTranscriptSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text(NSLocalizedString("transcription.original_title", bundle: .safeModule, comment: ""))
+                Text("transcription.original_title".localized)
                     .font(.headline)
 
                 Spacer()
@@ -117,7 +117,7 @@ public struct TranscriptionDetailView: View {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(self.transcription.rawText, forType: .string)
                 } label: {
-                    Label(NSLocalizedString("common.copy", bundle: .safeModule, comment: ""), systemImage: "doc.on.doc")
+                    Label("common.copy".localized, systemImage: "doc.on.doc")
                 }
                 .buttonStyle(.bordered)
             }

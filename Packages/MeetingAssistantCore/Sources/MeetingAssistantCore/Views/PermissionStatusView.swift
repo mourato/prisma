@@ -69,11 +69,11 @@ public struct PermissionStatusView: View {
                 .foregroundStyle(self.headerIconColor)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(NSLocalizedString("permissions.system_title", bundle: .safeModule, comment: ""))
+                Text("permissions.system_title".localized)
                     .font(.subheadline)
                     .fontWeight(.semibold)
 
-                Text(String(format: NSLocalizedString("permissions.granted_count", bundle: .safeModule, comment: ""), self.grantedCount))
+                Text("permissions.granted_count".localized(with: self.grantedCount))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -101,7 +101,7 @@ public struct PermissionStatusView: View {
             }
             .buttonStyle(.plain)
         } else {
-            Text("!")
+            Image(systemName: "exclamationmark")
                 .font(.caption2)
                 .fontWeight(.bold)
                 .padding(.horizontal, 8)
@@ -116,12 +116,12 @@ public struct PermissionStatusView: View {
 
     private var permissionWarning: some View {
         HStack(spacing: 6) {
-            Image(systemName: "exclamationmark.triangle.fill")
+            Image(systemName: "exclamationmark.triangle")
                 .foregroundStyle(.orange)
                 .font(.caption)
 
-            Text(NSLocalizedString("permissions.required_warning", bundle: .safeModule, comment: ""))
-                .font(.caption2)
+            Text("permissions.warning".localized)
+                .font(.caption)
                 .foregroundStyle(.secondary)
         }
         .padding(.top, 4)
@@ -232,7 +232,7 @@ struct PermissionRowView: View {
     private var actionButton: some View {
         switch self.permission.state {
         case .notDetermined:
-            Button(NSLocalizedString("permissions.request", bundle: .safeModule, comment: "")) {
+            Button("permissions.request".localized) {
                 self.onRequest()
             }
             .buttonStyle(.borderedProminent)
@@ -240,7 +240,7 @@ struct PermissionRowView: View {
             .tint(.blue)
 
         case .denied, .restricted:
-            Button(NSLocalizedString("permissions.configure", bundle: .safeModule, comment: "")) {
+            Button("permissions.configure".localized) {
                 self.onOpenSettings()
             }
             .buttonStyle(.bordered)

@@ -123,11 +123,10 @@ public struct TranscriptionStatusView: View {
             .frame(height: 4)
 
             if let remaining = viewModel.estimatedTimeRemaining, remaining > 0 {
-                Text(String(format: NSLocalizedString("transcription.time_remaining", bundle: .safeModule, comment: ""), self.formatTime(remaining)))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-        }
+            Text("transcription.time_remaining".localized(with: self.formatTime(remaining)))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }    }
     }
 
     // MARK: - Expanded Details
@@ -183,11 +182,13 @@ public struct TranscriptionStatusView: View {
         HStack(spacing: 6) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundStyle(.red)
-            Text(error.errorDescription ?? NSLocalizedString("error.unknown", bundle: .safeModule, comment: ""))
-                .font(.caption)
-                .foregroundStyle(.red)
-        }
-        .padding(6)
+            VStack(alignment: .leading) {
+                        Text(error.localizedDescription)
+                            .foregroundStyle(.red)
+                        Text("transcription.error.click_retry".localized)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }.padding(6)
         .background(.red.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
     }
 
