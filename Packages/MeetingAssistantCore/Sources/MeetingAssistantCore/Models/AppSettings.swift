@@ -271,6 +271,9 @@ public class AppSettingsStore: ObservableObject {
         } else {
             self.selectedLanguage = .system
         }
+
+        // Ensure language is applied on startup
+        self.applyLanguage(self.selectedLanguage)
     }
 
     // MARK: - Private Helpers

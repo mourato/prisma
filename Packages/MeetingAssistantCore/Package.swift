@@ -5,7 +5,7 @@ import PackageDescription
 
 let package = Package(
     name: "MeetingAssistantCore",
-    defaultLocalization: "pt",
+    defaultLocalization: "en",
     platforms: [
         .macOS(.v14),
     ],
