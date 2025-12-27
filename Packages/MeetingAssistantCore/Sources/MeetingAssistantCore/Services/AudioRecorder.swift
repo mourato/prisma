@@ -334,14 +334,13 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             var framesFilled = 0
 
             // 1. First consume any remaining frames from partial buffer
-            if partialState.hasPartial {
-                let consumed = partialState.consume(
-                    maxFrames: targetFrames - framesFilled,
-                    into: buffers,
-                    destOffset: framesFilled
-                )
-                framesFilled += consumed
-            }
+            // consume() returns 0 if no partial data exists, avoiding redundant lock check
+            let consumed = partialState.consume(
+                maxFrames: targetFrames,
+                into: buffers,
+                destOffset: 0
+            )
+            framesFilled += consumed
 
             // 2. Pull from queue until satisfied
             while framesFilled < targetFrames {
