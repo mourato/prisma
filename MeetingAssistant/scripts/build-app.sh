@@ -54,8 +54,10 @@ chmod +x "${APP_BUNDLE}/Contents/MacOS/${APP_NAME}"
 echo -e "${GREEN}✓ Executable copied${NC}"
 
 # Step 3.5: Copy resources (bundles)
+# IMPORTANT: SPM's Bundle.module looks for bundles at Bundle.main.bundleURL (the .app root)
+# NOT in Contents/Resources. We must copy bundles to the root of the app bundle.
 echo -e "${YELLOW}[3.5/5]${NC} Copying resources..."
-cp -R "${BUILD_DIR}/"*.bundle "${APP_BUNDLE}/Contents/Resources/" 2>/dev/null || true
+cp -R "${BUILD_DIR}/"*.bundle "${APP_BUNDLE}/" 2>/dev/null || true
 echo -e "${GREEN}✓ Resources copied${NC}"
 
 # Step 4: Create Info.plist with resolved variables
