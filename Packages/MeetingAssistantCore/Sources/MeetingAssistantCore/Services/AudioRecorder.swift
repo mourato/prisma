@@ -94,73 +94,73 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             await self.stopRecording()
             throw error
         }
+    }
 
-        // MARK: - Engine Setup Helpers
+    // MARK: - Engine Setup Helpers
 
-        private func setupAndStartEngine(writingTo outputURL: URL, retryCount: Int) throws {
-            let engine = AVAudioEngine()
-            let mixer = AVAudioMixerNode()
-            engine.attach(mixer)
+    private func setupAndStartEngine(writingTo outputURL: URL, retryCount: Int) throws {
+        let engine = AVAudioEngine()
+        let mixer = AVAudioMixerNode()
+        engine.attach(mixer)
 
-            self.audioEngine = engine
-            self.mixerNode = mixer
+        self.audioEngine = engine
+        self.mixerNode = mixer
 
-            try self.configureInputs(engine: engine, mixer: mixer)
-            try self.configureWorker(writingTo: outputURL, mixer: mixer)
+        try self.configureInputs(engine: engine, mixer: mixer)
+        try self.configureWorker(writingTo: outputURL, mixer: mixer)
 
-            try self.startAudioEngine(engine, outputURL: outputURL, retryCount: retryCount)
-            self.currentRecordingURL = outputURL
+        try self.startAudioEngine(engine, outputURL: outputURL, retryCount: retryCount)
+        self.currentRecordingURL = outputURL
+    }
+
+    private func configureInputs(engine: AVAudioEngine, mixer: AVAudioMixerNode) throws {
+        try self.connectMicrophone(to: engine, mixer: mixer)
+        try self.connectSystemAudio(to: engine, mixer: mixer)
+
+        // Mix to main output (silenced)
+        engine.connect(mixer, to: engine.mainMixerNode, format: nil)
+        engine.mainMixerNode.outputVolume = 0.0
+    }
+
+    private func connectMicrophone(to engine: AVAudioEngine, mixer: AVAudioMixerNode) throws {
+        let inputNode = engine.inputNode
+        let inputFormat = inputNode.inputFormat(forBus: Constants.tapBusNumber)
+
+        guard inputFormat.sampleRate > 0 else {
+            throw AudioRecorderError.invalidInputFormat
         }
 
-        private func configureInputs(engine: AVAudioEngine, mixer: AVAudioMixerNode) throws {
-            try self.connectMicrophone(to: engine, mixer: mixer)
-            try self.connectSystemAudio(to: engine, mixer: mixer)
+        engine.connect(inputNode, to: mixer, format: inputFormat)
+    }
 
-            // Mix to main output (silenced)
-            engine.connect(mixer, to: engine.mainMixerNode, format: nil)
-            engine.mainMixerNode.outputVolume = 0.0
+    private func connectSystemAudio(to engine: AVAudioEngine, mixer: AVAudioMixerNode) throws {
+        let sourceNode = self.createSystemSourceNode()
+        self.systemAudioSourceNode = sourceNode
+        engine.attach(sourceNode)
+
+        guard let systemFormat = AVAudioFormat(
+            commonFormat: .pcmFormatFloat32,
+            sampleRate: Constants.outputSampleRate,
+            channels: 2,
+            interleaved: false
+        ) else {
+            throw AudioRecorderError.invalidRecordingFormat
         }
 
-        private func connectMicrophone(to engine: AVAudioEngine, mixer: AVAudioMixerNode) throws {
-            let inputNode = engine.inputNode
-            let inputFormat = inputNode.inputFormat(forBus: Constants.tapBusNumber)
+        engine.connect(sourceNode, to: mixer, format: systemFormat)
+    }
 
-            guard inputFormat.sampleRate > 0 else {
-                throw AudioRecorderError.invalidInputFormat
-            }
+    private func configureWorker(writingTo url: URL, mixer: AVAudioMixerNode) throws {
+        let mixerOutputFormat = mixer.outputFormat(forBus: 0)
+        try self.worker.start(writingTo: url, format: mixerOutputFormat)
 
-            engine.connect(inputNode, to: mixer, format: inputFormat)
-        }
-
-        private func connectSystemAudio(to engine: AVAudioEngine, mixer: AVAudioMixerNode) throws {
-            let sourceNode = self.createSystemSourceNode()
-            self.systemAudioSourceNode = sourceNode
-            engine.attach(sourceNode)
-
-            guard let systemFormat = AVAudioFormat(
-                commonFormat: .pcmFormatFloat32,
-                sampleRate: Constants.outputSampleRate,
-                channels: 2,
-                interleaved: false
-            ) else {
-                throw AudioRecorderError.invalidRecordingFormat
-            }
-
-            engine.connect(sourceNode, to: mixer, format: systemFormat)
-        }
-
-        private func configureWorker(writingTo url: URL, mixer: AVAudioMixerNode) throws {
-            let mixerOutputFormat = mixer.outputFormat(forBus: 0)
-            try self.worker.start(writingTo: url, format: mixerOutputFormat)
-
-            let worker = self.worker
-            mixer.installTap(
-                onBus: 0,
-                bufferSize: Constants.tapBufferSize,
-                format: mixerOutputFormat
-            ) { buffer, _ in
-                worker.process(buffer)
-            }
+        let worker = self.worker
+        mixer.installTap(
+            onBus: 0,
+            bufferSize: Constants.tapBufferSize,
+            format: mixerOutputFormat
+        ) { buffer, _ in
+            worker.process(buffer)
         }
     }
 

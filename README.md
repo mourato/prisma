@@ -12,6 +12,7 @@ App nativo para macOS que detecta reuniões por videochamada, captura o áudio d
 - 💾 **Privacidade Total**: Todo processamento ocorre no dispositivo
 - 🤖 **Pós-processamento com IA** (opcional via Settings)
 - 📂 **Importação de Arquivos**: Transcreva arquivos de áudio existentes (mp3, m4a, wav)
+- 📊 **Logging Centralizado**: Sistema robusto baseado em `os.log` para diagnóstico e telemetria local
 
 
 ## Requisitos

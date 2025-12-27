@@ -15,3 +15,15 @@ This document tracks known limitations for features and initiatives within the p
 ### Settings Architecture & Localization
 * **Settings Window Persistence**: The settings window does not currently persist its position or size between launches.
   * *Context*: Side effect of moving to a custom `NavigationSplitView` implementation [2025-12-26].
+
+### Storage Service
+* **Scalability (JSON Based)**: The current `FileSystemStorageService` loads and decodes ALL transcription JSON files into memory at startup. This works for hundreds of files but will degrade performance with thousands.
+  * *Context*: [2025-12-27] Optimized to run in a detached background task to prevent UI blocking, but the fundamental O(n) memory and IO cost remains. Future recommendation: Migrate to CoreData or SQLite (GRDB).
+
+### Audio Recording
+* **Concurrency (Unchecked Sendable)**: `AudioRecordingWorker` uses `@unchecked Sendable` and manual `NSLock` synchronization to handle strictly non-Sendable `AVAudioPCMBuffer` and `AVAudioFile` objects.
+  * *Context*: [2025-12-27] Necessary workaround to satisfy Swift 6 Strict Concurrency without rewriting the audio engine. Requires careful manual review of any modification to the worker class.
+
+### Logging
+* **Privacy Level**: `AppLogger` is currently configured with `{ privacy: .public }` for all log levels to aid in debugging strict concurrency crashes.
+  * *Context*: [2025-12-27] This logs potentially sensitive metadata to the system console. Must be changed to `.private` or `.auto` before public App Store release.
