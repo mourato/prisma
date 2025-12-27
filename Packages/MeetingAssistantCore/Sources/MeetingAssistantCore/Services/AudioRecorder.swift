@@ -83,7 +83,6 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     // MARK: - Public API
 
     /// Start recording merged audio (Mic + System) to the specified URL.
-    /// Start recording merged audio (Mic + System) to the specified URL.
     public func startRecording(to outputURL: URL, retryCount: Int = 0) async throws {
         // Stop any existing recording first
         await self.stopRecording()
