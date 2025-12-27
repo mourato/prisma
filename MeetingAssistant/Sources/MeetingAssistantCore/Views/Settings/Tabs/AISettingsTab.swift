@@ -127,16 +127,71 @@ public struct AISettingsTab: View {
                 Divider()
                     .padding(.vertical, 4)
 
-                HStack {
-                    Text(NSLocalizedString("settings.ai.model", bundle: .module, comment: ""))
-                        .frame(width: 80, alignment: .leading)
+                self.modelSelectionSection
+            }
+        }
+    }
+
+    // MARK: - Model Selection
+
+    @ViewBuilder
+    private var modelSelectionSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(NSLocalizedString("settings.ai.model", bundle: .module, comment: ""))
+                    .frame(width: 80, alignment: .leading)
+
+                if self.viewModel.isLoadingModels {
+                    ProgressView()
+                        .controlSize(.small)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } else if !self.viewModel.availableModels.isEmpty {
+                    Picker("", selection: self.$viewModel.settings.aiConfiguration.selectedModel) {
+                        Text(NSLocalizedString("settings.ai.model_select", bundle: .module, comment: ""))
+                            .tag("")
+                        ForEach(self.viewModel.availableModels) { model in
+                            Text(model.id).tag(model.id)
+                        }
+                    }
+                    .labelsHidden()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
                     TextField(
-                        "gpt-4o, claude-3-5-sonnet...", text: self.$viewModel.settings.aiConfiguration.selectedModel
+                        "gpt-4o, claude-3-5-sonnet...",
+                        text: self.$viewModel.settings.aiConfiguration.selectedModel
                     )
                     .textFieldStyle(.roundedBorder)
                 }
 
-                Text(NSLocalizedString("settings.ai.model_future", bundle: .module, comment: ""))
+                Button {
+                    Task { await self.viewModel.fetchAvailableModels() }
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                }
+                .buttonStyle(.borderless)
+                .disabled(self.viewModel.isLoadingModels || !self.viewModel.settings.aiConfiguration.isValid)
+                .help(NSLocalizedString("settings.ai.model_refresh", bundle: .module, comment: ""))
+            }
+
+            if let error = self.viewModel.modelsFetchError {
+                HStack(spacing: 4) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.yellow)
+                    Text(error)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            } else if !self.viewModel.availableModels.isEmpty {
+                Text(
+                    String(
+                        format: NSLocalizedString("settings.ai.models_loaded", bundle: .module, comment: ""),
+                        self.viewModel.availableModels.count
+                    )
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            } else {
+                Text(NSLocalizedString("settings.ai.model_hint", bundle: .module, comment: ""))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
