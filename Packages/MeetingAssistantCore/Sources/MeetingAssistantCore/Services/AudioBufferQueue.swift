@@ -1,50 +1,89 @@
-import AVFoundation
+@preconcurrency import AVFoundation
 import Foundation
+import os.lock
 
-/// A thread-safe FIFO queue for `AVAudioPCMBuffer`.
-/// Used to bridge the push-based `SCStream` system audio to the pull-based `AVAudioSourceNode`.
+/// A thread-safe, fixed-size Circular Buffer (Ring Buffer) for `AVAudioPCMBuffer`.
+/// Designed for high-performance audio bridging between `ScreenCaptureKit` (Push) and `AVAudioSourceNode` (Pull).
+/// Uses `OSAllocatedUnfairLock` to minimize blocking overhead on the audio thread.
 public final class AudioBufferQueue: @unchecked Sendable {
-    private let lock = NSLock()
-    private var buffers: [AVAudioPCMBuffer] = []
+    // MARK: - State
 
-    // Limits total frames to avoid unbounded memory growth
-    private let maxFrameCount: AVAudioFrameCount
-    private var currentFrameCount: AVAudioFrameCount = 0
+    private let lock = OSAllocatedUnfairLock()
 
-    public init(maxFrames: AVAudioFrameCount = 48_000 * 5) { // ~5 seconds buffer @ 48kHz
-        self.maxFrameCount = maxFrames
+    // Fixed buffer storage
+    private var bufferStorage: [AVAudioPCMBuffer?]
+    private let capacity: Int
+
+    // Ring indices
+    private var head: Int = 0 // Write index
+    private var tail: Int = 0 // Read index
+    private var count: Int = 0 // Current items
+
+    private var droppedFrameCount: Int64 = 0
+
+    // MARK: - Lifecycle
+
+    /// Initializes a ring buffer with a specific capacity (number of chunks).
+    /// - Parameter capacity: Maximum number of buffers to hold. Default is 50 (~5-10s depending on buffer size).
+    public init(capacity: Int = 50) {
+        self.capacity = capacity
+        self.bufferStorage = Array(repeating: nil, count: capacity)
     }
 
+    // MARK: - Public API
+
+    /// Enqueues a buffer. STRICTLY NON-BLOCKING (spins/waits very briefly).
+    /// If full, overwrites the oldest data (Drop Oldest strategy) to maintain real-time currency.
     public func enqueue(_ buffer: AVAudioPCMBuffer) {
-        self.lock.lock()
-        defer { lock.unlock() }
+        self.lock.withLock {
+            if self.count >= self.capacity {
+                // Buffer full: Drop oldest (tail) to make space
+                // This ensures we always have fresh data and don't lag behind
+                self.bufferStorage[self.tail] = nil // Release ref
+                self.tail = (self.tail + 1) % self.capacity
+                self.count -= 1
+                self.droppedFrameCount += Int64(buffer.frameLength)
+            }
 
-        // Drop oldest if full
-        while self.currentFrameCount + buffer.frameLength > self.maxFrameCount, !self.buffers.isEmpty {
-            let dropped = self.buffers.removeFirst()
-            self.currentFrameCount -= dropped.frameLength
+            // Write to head
+            self.bufferStorage[self.head] = buffer
+            self.head = (self.head + 1) % self.capacity
+            self.count += 1
         }
-
-        self.buffers.append(buffer)
-        self.currentFrameCount += buffer.frameLength
     }
 
+    /// Dequeues a buffer.
+    /// - Returns: The next buffer, or nil if empty.
     public func dequeue() -> AVAudioPCMBuffer? {
-        self.lock.lock()
-        defer { lock.unlock() }
+        self.lock.withLock {
+            guard self.count > 0 else { return nil }
 
-        guard !self.buffers.isEmpty else { return nil }
+            let buffer = self.bufferStorage[self.tail]
+            self.bufferStorage[self.tail] = nil // Clear ref to avoid leaks
+            self.tail = (self.tail + 1) % self.capacity
+            self.count -= 1
 
-        let buffer = self.buffers.removeFirst()
-        self.currentFrameCount -= buffer.frameLength
-        return buffer
+            return buffer
+        }
     }
 
+    /// Clears the queue.
     public func clear() {
-        self.lock.lock()
-        defer { lock.unlock() }
+        self.lock.withLock {
+            for i in 0..<self.capacity {
+                self.bufferStorage[i] = nil
+            }
+            self.head = 0
+            self.tail = 0
+            self.count = 0
+            self.droppedFrameCount = 0
+        }
+    }
 
-        self.buffers.removeAll()
-        self.currentFrameCount = 0
+    /// Returns debug statistics (thread-safe).
+    public var stats: (count: Int, dropped: Int64) {
+        self.lock.withLock {
+            (self.count, self.droppedFrameCount)
+        }
     }
 }
