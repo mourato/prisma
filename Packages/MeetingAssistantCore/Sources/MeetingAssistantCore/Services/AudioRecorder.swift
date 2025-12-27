@@ -145,7 +145,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     }
 
     private func connectSystemAudio(to engine: AVAudioEngine, mixer: AVAudioMixerNode) throws {
-        let sourceNode = self.createSystemSourceNode()
+        let sourceNode = self.createSystemSourceNode(queue: self.systemAudioQueue)
         self.systemAudioSourceNode = sourceNode
         engine.attach(sourceNode)
 
@@ -281,11 +281,8 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
     // MARK: - Source Node Configuration
 
-    private func createSystemSourceNode() -> AVAudioSourceNode {
-        // Capture a thread-safe reference to the queue
-        let queue = self.systemAudioQueue
-
-        return AVAudioSourceNode { _, _, frameCount, audioBufferList -> OSStatus in
+    private nonisolated func createSystemSourceNode(queue: AudioBufferQueue) -> AVAudioSourceNode {
+        AVAudioSourceNode { _, _, frameCount, audioBufferList -> OSStatus in
             let buffers = UnsafeMutableAudioBufferListPointer(audioBufferList)
 
             // 1. Identify valid data needs

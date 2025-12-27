@@ -253,3 +253,25 @@ public class AppSettingsStore: ObservableObject {
         self.systemPrompt = AIPromptTemplates.defaultSystemPrompt
     }
 }
+
+// MARK: - General Settings Extension
+
+public extension AppSettingsStore {
+    private enum GeneralKeys {
+        static let recordingsDirectory = "recordingsDirectory"
+        static let autoStartRecording = "autoStartRecording"
+    }
+
+    /// Configured path for saving recordings.
+    /// If empty or invalid, services should fallback to the default Application Support directory.
+    var recordingsDirectory: String {
+        get { UserDefaults.standard.string(forKey: GeneralKeys.recordingsDirectory) ?? "" }
+        set { UserDefaults.standard.set(newValue, forKey: GeneralKeys.recordingsDirectory) }
+    }
+
+    /// Whether to automatically start recording when a meeting is detected.
+    var autoStartRecording: Bool {
+        get { UserDefaults.standard.bool(forKey: GeneralKeys.autoStartRecording) }
+        set { UserDefaults.standard.set(newValue, forKey: GeneralKeys.autoStartRecording) }
+    }
+}
