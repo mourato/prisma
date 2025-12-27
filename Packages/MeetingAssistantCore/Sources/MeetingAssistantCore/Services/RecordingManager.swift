@@ -258,15 +258,8 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
                 finalURL = outputURL
 
-                // Cleanup system URL if it exists (though usually nil/empty relative to storage)
-                if let sysURL, FileManager.default.fileExists(atPath: sysURL.path) {
-                    try? FileManager.default.removeItem(at: sysURL)
-                }
-
-                // Mic URL is already moved, so we don't need to delete it.
-                // We should clear the reference in cleanup or handle it here.
-                self.micAudioURL = nil
-                self.systemAudioURL = nil
+                // Clean up any other temporary files (e.g. system audio)
+                self.cleanupTemporaryFiles()
             }
 
             // Transcribe if requested
