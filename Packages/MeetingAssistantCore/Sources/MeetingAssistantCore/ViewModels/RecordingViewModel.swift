@@ -26,12 +26,13 @@ public class RecordingViewModel: ObservableObject {
     // MARK: - Computed Properties
 
     public var statusText: String {
+    public var statusText: String {
         if self.isRecording {
-            "Gravando..."
+            NSLocalizedString("status.recording", bundle: .safeModule, comment: "Recording status")
         } else if self.isTranscribing {
-            "Transcrevendo..."
+            NSLocalizedString("status.transcribing", bundle: .safeModule, comment: "Transcribing status")
         } else {
-            "Aguardando reunião"
+            NSLocalizedString("status.waiting", bundle: .safeModule, comment: "Waiting status")
         }
     }
 

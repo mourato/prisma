@@ -117,3 +117,6 @@
 /* Menu Bar */
 "menubar.start_recording" = "Start Recording";
 "menubar.stop_recording" = "Stop Recording";
+"status.recording" = "Recording...";
+"status.transcribing" = "Transcribing...";
+"status.waiting" = "Waiting for meeting";
