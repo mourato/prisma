@@ -10,11 +10,11 @@ public enum RecordingSourceFilter: String, CaseIterable, Sendable {
     public var displayName: String {
         switch self {
         case .all:
-            NSLocalizedString("filter.source.all", bundle: .safeModule, comment: "")
+            "filter.source.all".localized
         case .dictations:
-            NSLocalizedString("filter.source.dictations", bundle: .safeModule, comment: "")
+            "filter.source.dictations".localized
         case .manualImports:
-            NSLocalizedString("filter.source.manual_imports", bundle: .safeModule, comment: "")
+            "filter.source.manual_imports".localized
         }
     }
 }
