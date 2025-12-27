@@ -124,19 +124,13 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         AppLogger.debug("Connecting System Audio...", category: .recordingManager)
         try self.connectSystemAudio(to: engine, mixer: mixer)
 
-        // Force a standard output format (48kHz Stereo)
-        // This ensures the mixer output is deterministic and valid for AAC encoding
-        // preventing issues where microphone format (e.g. 16kHz or 44.1kHz) dictates the tap format
-        guard let outputFormat = AVAudioFormat(
-            standardFormatWithSampleRate: Constants.outputSampleRate,
-            channels: Constants.outputChannels
-        ) else {
-            throw AudioRecorderError.invalidRecordingFormat
-        }
+        // Connect mixer to mainMixer without forcing a specific format.
+        // This allows the engine to align with the hardware output sample rate (e.g., 44.1kHz or 48kHz)
+        // preventing "Invalid Element" (-10877) errors due to failed graph updates or incompatible conversions.
+        let mainMixerFormat = engine.mainMixerNode.outputFormat(forBus: 0)
+        AppLogger.debug("Main Mixer Output Format: \(mainMixerFormat)", category: .recordingManager)
 
-        // Mix to main output (silenced)
-        // Explicitly setting format forces mixer to convert upstream inputs to this format
-        engine.connect(mixer, to: engine.mainMixerNode, format: outputFormat)
+        engine.connect(mixer, to: engine.mainMixerNode, format: mainMixerFormat)
         engine.mainMixerNode.outputVolume = 0.0
     }
 
@@ -180,26 +174,18 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     }
 
     private func configureWorker(writingTo url: URL, mixer: AVAudioMixerNode) throws {
-        // Explicitly use the standard format we enforced in configureInputs (48kHz Stereo)
-        // This avoids any ambiguity from mixer.outputFormat query before engine start
-        guard let tapFormat = AVAudioFormat(
-            standardFormatWithSampleRate: Constants.outputSampleRate,
-            channels: Constants.outputChannels
-        ) else {
-            throw AudioRecorderError.failedToCreateConverter
-        }
+        // Use the mixer's actual output format for the Tap.
+        // This avoids asking the Tap to perform sample rate conversion, which can be fragile.
+        let tapFormat = mixer.outputFormat(forBus: 0)
+        AppLogger.debug("Configuring Worker with format: \(tapFormat)", category: .recordingManager)
 
-        do {
-            try self.worker.start(writingTo: url, format: tapFormat)
-        } catch {
-            throw AudioRecorderError.failedToCreateFile(error)
-        }
+        try self.worker.start(writingTo: url, format: tapFormat)
 
         let worker = self.worker
         mixer.installTap(
             onBus: 0,
             bufferSize: Constants.tapBufferSize,
-            format: tapFormat
+            format: tapFormat // Request exact same format to avoid conversion overhead
         ) { buffer, _ in
             worker.process(buffer)
         }
