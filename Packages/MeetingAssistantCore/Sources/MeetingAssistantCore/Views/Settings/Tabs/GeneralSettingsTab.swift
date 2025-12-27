@@ -23,9 +23,9 @@ public struct GeneralSettingsTab: View {
 
     @ViewBuilder
     private var languageSection: some View {
-        SettingsGroup(NSLocalizedString("settings.general.language", bundle: .safeModule, comment: ""), icon: "globe") {
+        SettingsGroup("settings.general.language".localized, icon: "globe") {
             VStack(alignment: .leading, spacing: 12) {
-                Text(NSLocalizedString("settings.general.language_desc", bundle: .safeModule, comment: ""))
+                Text("settings.general.language_desc".localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
@@ -37,12 +37,13 @@ public struct GeneralSettingsTab: View {
                 .labelsHidden()
                 .pickerStyle(.menu)
                 .frame(maxWidth: 200)
+                .accessibilityLabel("settings.general.language".localized)
 
                 if self.viewModel.selectedLanguage != .system {
                     HStack(spacing: 6) {
                         Image(systemName: "arrow.clockwise")
                             .font(.caption)
-                        Text(NSLocalizedString("settings.general.language_restart_required", bundle: .safeModule, comment: ""))
+                        Text("settings.general.language_restart_required".localized)
                             .font(.caption)
                     }
                     .foregroundStyle(.orange)
@@ -53,28 +54,28 @@ public struct GeneralSettingsTab: View {
 
     @ViewBuilder
     private var recordingSection: some View {
-        SettingsGroup(NSLocalizedString("settings.general.recording", bundle: .safeModule, comment: ""), icon: "recordingtape") {
+        SettingsGroup("settings.general.recording".localized, icon: "recordingtape") {
             VStack(alignment: .leading, spacing: 16) {
                 Toggle(
-                    NSLocalizedString("settings.general.auto_start", bundle: .safeModule, comment: ""),
+                    "settings.general.auto_start".localized,
                     isOn: self.$viewModel.autoStartRecording
                 )
 
                 Divider()
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(NSLocalizedString("settings.general.recordings_path", bundle: .safeModule, comment: ""))
+                    Text("settings.general.recordings_path".localized)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
 
                     HStack {
                         TextField(
-                            NSLocalizedString("settings.general.recordings_path_hint", bundle: .safeModule, comment: "Caminho"),
+                            "settings.general.recordings_path_hint".localized,
                             text: self.$viewModel.recordingsPath
                         )
                         .textFieldStyle(.roundedBorder)
 
-                        Button(NSLocalizedString("settings.general.choose", bundle: .safeModule, comment: "")) {
+                        Button("settings.general.choose".localized) {
                             self.viewModel.selectRecordingsDirectory()
                         }
                     }
@@ -84,7 +85,7 @@ public struct GeneralSettingsTab: View {
 
                 // Audio Format
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(NSLocalizedString("settings.general.audio_format", bundle: .safeModule, comment: "Formato de Áudio"))
+                    Text("settings.general.audio_format".localized)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
 
@@ -100,7 +101,7 @@ public struct GeneralSettingsTab: View {
 
                 // Merge Toggle
                 Toggle(
-                    NSLocalizedString("settings.general.merge_audio", bundle: .safeModule, comment: "Mesclar áudio (Mic + Sistema)"),
+                    "settings.general.merge_audio".localized,
                     isOn: self.$viewModel.shouldMergeAudioFiles
                 )
             }

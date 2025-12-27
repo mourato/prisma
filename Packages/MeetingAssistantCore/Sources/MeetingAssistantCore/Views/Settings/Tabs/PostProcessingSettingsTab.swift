@@ -31,14 +31,14 @@ public struct PostProcessingSettingsTab: View {
                 onCancel: { self.viewModel.showPromptEditor = false }
             )
         }
-        .alert(NSLocalizedString("settings.post_processing.delete_confirm_title", bundle: .safeModule, comment: ""), isPresented: self.$viewModel.showDeleteConfirmation) {
-            Button(NSLocalizedString("common.cancel", bundle: .safeModule, comment: ""), role: .cancel) {}
-            Button(NSLocalizedString("common.delete", bundle: .safeModule, comment: ""), role: .destructive) {
+        .alert("settings.post_processing.delete_confirm_title".localized, isPresented: self.$viewModel.showDeleteConfirmation) {
+            Button("common.cancel".localized, role: .cancel) {}
+            Button("common.delete".localized, role: .destructive) {
                 self.viewModel.executeDelete()
             }
         } message: {
             if let prompt = self.viewModel.promptToDelete {
-                Text(String(format: NSLocalizedString("settings.post_processing.delete_confirm_message", bundle: .safeModule, comment: ""), prompt.title))
+                Text("settings.post_processing.delete_confirm_message".localized(with: prompt.title))
             }
         }
     }
@@ -220,13 +220,13 @@ public struct PostProcessingSettingsTab: View {
                 self.viewModel.editingPrompt = prompt
                 self.viewModel.showPromptEditor = true
             } label: {
-                Label(NSLocalizedString("settings.post_processing.edit", bundle: .safeModule, comment: ""), systemImage: "pencil")
+                Label("settings.post_processing.edit".localized, systemImage: "pencil")
             }
 
             Button(role: .destructive) {
                 self.viewModel.confirmDeletePrompt(prompt)
             } label: {
-                Label(NSLocalizedString("settings.post_processing.delete", bundle: .safeModule, comment: ""), systemImage: "trash")
+                Label("settings.post_processing.delete".localized, systemImage: "trash")
             }
         } label: {
             Image(systemName: "ellipsis.circle")

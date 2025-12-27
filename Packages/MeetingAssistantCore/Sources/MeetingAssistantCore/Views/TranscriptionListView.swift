@@ -8,7 +8,11 @@ struct TranscriptionListView: View {
     var body: some View {
         Group {
             if self.transcriptions.isEmpty {
-                self.emptyState
+                ContentUnavailableView(
+                    "settings.transcriptions.empty_title".localized,
+                    systemImage: "doc.text.magnifyingglass",
+                    description: Text("settings.transcriptions.empty_desc".localized)
+                )
             } else {
                 self.transcriptionList
             }
@@ -18,23 +22,17 @@ struct TranscriptionListView: View {
         }
     }
 
-    private var emptyState: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "doc.text")
-                .font(.largeTitle)
-                .foregroundStyle(.tertiary)
-
-            Text(NSLocalizedString("settings.transcriptions.empty_title", bundle: .safeModule, comment: ""))
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
+    // The emptyState property is removed as its functionality is replaced by ContentUnavailableView directly in body.
 
     private var transcriptionList: some View {
         List(self.transcriptions, selection: self.$selectedTranscription) { transcription in
             TranscriptionRow(transcription: transcription)
                 .tag(transcription)
+                .contextMenu {
+                    Button("common.delete".localized, role: .destructive) {
+                        // TODO: Implement delete
+                    }
+                }
         }
         .listStyle(.plain)
     }
