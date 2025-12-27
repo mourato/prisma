@@ -45,7 +45,8 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     // MARK: - System Audio Integration
 
     private let systemRecorder = SystemAudioRecorder.shared
-    private let systemAudioQueue = AudioBufferQueue()
+    // Non-isolated to allow background threads (SystemAudioRecorder) to enqueue without MainActor hopping
+    private nonisolated let systemAudioQueue = AudioBufferQueue(capacity: 200)
 
     // MARK: - Worker & State
 

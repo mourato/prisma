@@ -32,9 +32,26 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
     // MARK: - Streaming Output
 
     /// Callback for received audio buffers (Thread-safe, called on background queue)
-    public var onAudioBuffer: ((AVAudioPCMBuffer) -> Void)?
+    // MARK: - Public API
 
-    // MARK: - Configuration
+    /// Thread-safe storage for the audio buffer callback
+    private class CallbackStorage: @unchecked Sendable {
+        var callback: ((AVAudioPCMBuffer) -> Void)?
+    }
+
+    private let callbackStorage = CallbackStorage()
+
+    /// Callback for received audio buffers (Thread-safe, called on background queue)
+    public nonisolated var onAudioBuffer: ((AVAudioPCMBuffer) -> Void)? {
+        get { self.callbackStorage.callback }
+        set { self.callbackStorage.callback = newValue }
+    }
+
+    // MARK: - Protocol Conformance
+
+    public func startRecording(to outputURL: URL, retryCount: Int) async throws {
+        try await self.startRecording(to: outputURL, sampleRate: 48_000.0, retryCount: retryCount)
+    }
 
     // MARK: - Configuration
 
@@ -174,16 +191,9 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
             self.hasReceivedValidBuffer.store(true, ordering: .relaxed)
         }
 
-        // Forward buffer to listener
-        let sendableBuffer = SendableBuffer(buffer)
-        Task { @MainActor in
-            self.onAudioBuffer?(sendableBuffer.buffer)
-        }
-    }
-
-    private struct SendableBuffer: @unchecked Sendable {
-        let buffer: AVAudioPCMBuffer
-        init(_ buffer: AVAudioPCMBuffer) { self.buffer = buffer }
+        // Forward buffer to listener directly on capture queue
+        // This avoids Main Thread overhead for high-frequency audio buffers
+        self.onAudioBuffer?(buffer)
     }
 
     private func cleanup() async {
