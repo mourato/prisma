@@ -32,7 +32,10 @@ public final class PartialBufferState: @unchecked Sendable {
 
     /// Whether there is a partial buffer with unconsumed frames.
     public var hasPartial: Bool {
-        self.framesRemaining > 0
+        self.lock.withLock {
+            guard let buffer else { return false }
+            return self.readOffset < Int(buffer.frameLength)
+        }
     }
 
     /// Sets a new buffer to consume from.
