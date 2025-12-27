@@ -117,3 +117,6 @@
 /* Menu Bar */
 "menubar.start_recording" = "Iniciar Gravação";
 "menubar.stop_recording" = "Parar Gravação";
+"status.recording" = "Gravando...";
+"status.transcribing" = "Transcrevendo...";
+"status.waiting" = "Aguardando reunião";
