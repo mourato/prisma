@@ -53,7 +53,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     /// Thread-safe worker that handles file writing and processing off the main actor.
     private let worker = AudioRecordingWorker()
     private var validationTimer: Timer?
-    public var onRecordingError: ((Error) -> Void)?
+    public var onRecordingError: (@Sendable (Error) -> Void)?
 
     private init() {
         // Setup worker callbacks to bridge back to MainActor
@@ -75,6 +75,8 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             self?.systemAudioQueue.enqueue(buffer)
         }
     }
+
+    // ...
 
     // MARK: - Public API
 
@@ -325,7 +327,6 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
                 // Simplified: We assume samples match and just copy what we can.
 
                 if let srcChannels = buffer.floatChannelData {
-                if let srcChannels = buffer.floatChannelData {
                     for ch in 0..<min(buffers.count, Int(buffer.format.channelCount)) {
                         guard let dest = buffers[ch].mData?.assumingMemoryBound(to: Float.self) else { continue }
                         let src = srcChannels[ch]
@@ -339,7 +340,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
                         }
                     }
                 }
-                
+
                 framesFilled += framesToCopy
             }
 

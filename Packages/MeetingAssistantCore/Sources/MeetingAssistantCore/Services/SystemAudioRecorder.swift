@@ -3,6 +3,7 @@ import AVFoundation
 import Combine
 import CoreMedia
 import Foundation
+import os.lock
 import os.log
 @preconcurrency import ScreenCaptureKit
 
@@ -34,16 +35,14 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
     /// Callback for received audio buffers (Thread-safe, called on background queue)
     // MARK: - Public API
 
-    import os.lock
-
     // MARK: - Public API
 
     /// Thread-safe storage for the audio buffer callback
     private class CallbackStorage: @unchecked Sendable {
         private let lock = OSAllocatedUnfairLock()
-        private var _callback: ((AVAudioPCMBuffer) -> Void)?
+        private var _callback: (@Sendable (AVAudioPCMBuffer) -> Void)?
 
-        var callback: ((AVAudioPCMBuffer) -> Void)? {
+        var callback: (@Sendable (AVAudioPCMBuffer) -> Void)? {
             get { self.lock.withLock { self._callback } }
             set { self.lock.withLock { self._callback = newValue } }
         }
@@ -52,7 +51,7 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
     private let callbackStorage = CallbackStorage()
 
     /// Callback for received audio buffers (Thread-safe, called on background queue)
-    public nonisolated var onAudioBuffer: ((AVAudioPCMBuffer) -> Void)? {
+    public nonisolated var onAudioBuffer: (@Sendable (AVAudioPCMBuffer) -> Void)? {
         get { self.callbackStorage.callback }
         set { self.callbackStorage.callback = newValue }
     }
