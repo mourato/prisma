@@ -153,8 +153,10 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
         _ = try? await SCShareableContent.current
     }
 
+    private let screenRecordingPrivacyURL = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")
+
     public func openScreenRecordingSettings() {
-        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
+        if let url = screenRecordingPrivacyURL {
             NSWorkspace.shared.open(url)
         }
     }
