@@ -36,7 +36,9 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
 
     // MARK: - Configuration
 
-    private let sampleRate: Double = 48_000.0 // Capture at 48kHz (native often)
+    // MARK: - Configuration
+
+    private var currentSampleRate: Double = 48_000.0 // Configurable per recording session
     private let channelCount: Int = 2 // Stereo capture for system audio
 
     private let minVideoDimension = 2
@@ -62,7 +64,7 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
 
     /// Starts system audio capture.
     /// `outputURL` is ignored as this class no longer writes files, but kept for protocol conformance.
-    public func startRecording(to outputURL: URL, retryCount: Int = 0) async throws {
+    public func startRecording(to outputURL: URL, sampleRate: Double = 48_000.0, retryCount: Int = 0) async throws {
         guard !self.isRecording else {
             AppLogger.info("Already recording system audio", category: .recordingManager)
             return
@@ -72,7 +74,8 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
             throw SystemAudioRecorderError.permissionDenied
         }
 
-        AppLogger.info("Starting system audio capture stream...", category: .recordingManager)
+        AppLogger.info("Starting system audio capture stream at \(sampleRate)Hz...", category: .recordingManager)
+        self.currentSampleRate = sampleRate
         self.hasReceivedValidBuffer.store(false, ordering: .relaxed)
 
         try await self.setupScreenCapture()
@@ -142,7 +145,7 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
 
         config.capturesAudio = true
         config.excludesCurrentProcessAudio = true // Essential to avoid feedback loop if we play back
-        config.sampleRate = Int(self.sampleRate)
+        config.sampleRate = Int(self.currentSampleRate)
         config.channelCount = self.channelCount
 
         // Minimal video
