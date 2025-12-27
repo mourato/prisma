@@ -102,13 +102,17 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             format: desiredFormat, file: audioFile, converter: converter, url: outputURL
         )
 
+        // Capture nonisolated references for the audio tap callback
+        // The callback runs on a realtime audio thread, not the main actor
+        let processingQueue = self.audioProcessingQueue
+
         // Install tap on input node
         input.installTap(
             onBus: Constants.tapBusNumber, bufferSize: Constants.tapBufferSize, format: inputFormat
         ) { [weak self] buffer, _ in
             guard let self else { return }
-            self.audioProcessingQueue.async {
-                self.processAudioBuffer(buffer)
+            processingQueue.async { [weak self] in
+                self?.processAudioBuffer(buffer)
             }
         }
 
