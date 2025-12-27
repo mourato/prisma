@@ -99,6 +99,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     // MARK: - Engine Setup Helpers
 
     private func setupAndStartEngine(writingTo outputURL: URL, retryCount: Int) throws {
+        AppLogger.debug("Setting up Audio Engine...", category: .recordingManager)
         let engine = AVAudioEngine()
         let mixer = AVAudioMixerNode()
         engine.attach(mixer)
@@ -106,15 +107,21 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         self.audioEngine = engine
         self.mixerNode = mixer
 
+        AppLogger.debug("Configuring inputs...", category: .recordingManager)
         try self.configureInputs(engine: engine, mixer: mixer)
+        AppLogger.debug("Configuring worker...", category: .recordingManager)
         try self.configureWorker(writingTo: outputURL, mixer: mixer)
 
+        AppLogger.debug("Starting engine...", category: .recordingManager)
         try self.startAudioEngine(engine, outputURL: outputURL, retryCount: retryCount)
         self.currentRecordingURL = outputURL
+        AppLogger.debug("Audio Engine setup complete.", category: .recordingManager)
     }
 
     private func configureInputs(engine: AVAudioEngine, mixer: AVAudioMixerNode) throws {
+        AppLogger.debug("Connecting Microphone...", category: .recordingManager)
         try self.connectMicrophone(to: engine, mixer: mixer)
+        AppLogger.debug("Connecting System Audio...", category: .recordingManager)
         try self.connectSystemAudio(to: engine, mixer: mixer)
 
         // Force a standard output format (48kHz Stereo)
@@ -203,10 +210,13 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         outputURL: URL,
         retryCount: Int
     ) throws {
+        AppLogger.debug("Preparing engine...", category: .recordingManager)
         engine.prepare()
 
         do {
+            AppLogger.debug("Calling engine.start()...", category: .recordingManager)
             try engine.start()
+            AppLogger.debug("Engine started. IsRunning: \(engine.isRunning)", category: .recordingManager)
             self.isRecording = true
             self.startValidationTimer(url: outputURL, retryCount: retryCount)
             AppLogger.info("Audio engine started successfully", category: .recordingManager)
