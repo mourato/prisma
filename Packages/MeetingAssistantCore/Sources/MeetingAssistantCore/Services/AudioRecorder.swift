@@ -325,20 +325,21 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
                 // Simplified: We assume samples match and just copy what we can.
 
                 if let srcChannels = buffer.floatChannelData {
+                if let srcChannels = buffer.floatChannelData {
                     for ch in 0..<min(buffers.count, Int(buffer.format.channelCount)) {
                         guard let dest = buffers[ch].mData?.assumingMemoryBound(to: Float.self) else { continue }
                         let src = srcChannels[ch]
 
                         // Safety check
                         if framesFilled + framesToCopy <= Int(frameCount) {
-                            // Manual copy loop is safest across buffer boundaries without complex memcpy math
-                            for i in 0..<framesToCopy {
-                                dest[framesFilled + i] = src[i]
-                            }
+                            // Optimized Copy: Use memory move (memcpy) instead of loop
+                            let destPtr = UnsafeMutableBufferPointer(start: dest.advanced(by: framesFilled), count: framesToCopy)
+                            let srcPtr = UnsafeBufferPointer(start: src, count: framesToCopy)
+                            _ = destPtr.initialize(from: srcPtr)
                         }
                     }
                 }
-
+                
                 framesFilled += framesToCopy
             }
 
