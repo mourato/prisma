@@ -20,7 +20,7 @@ public struct ServiceSettingsTab: View {
     }
 
     private var modelInfoSection: some View {
-        SettingsGroup(NSLocalizedString("settings.service.model_info", bundle: .module, comment: ""), icon: "waveform") {
+        SettingsGroup(NSLocalizedString("settings.service.model_info", bundle: .safeModule, comment: ""), icon: "waveform") {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 12) {
                     ZStack {
@@ -33,9 +33,9 @@ public struct ServiceSettingsTab: View {
                     }
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(NSLocalizedString("settings.service.on_device", bundle: .module, comment: ""))
+                        Text(NSLocalizedString("settings.service.on_device", bundle: .safeModule, comment: ""))
                             .font(.headline)
-                        Text(NSLocalizedString("settings.service.ane_opt", bundle: .module, comment: ""))
+                        Text(NSLocalizedString("settings.service.ane_opt", bundle: .safeModule, comment: ""))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -45,15 +45,15 @@ public struct ServiceSettingsTab: View {
 
                 Grid(alignment: .leading, horizontalSpacing: 20, verticalSpacing: 8) {
                     GridRow {
-                        Text(NSLocalizedString("settings.service.model", bundle: .module, comment: ""))
+                        Text(NSLocalizedString("settings.service.model", bundle: .safeModule, comment: ""))
                             .foregroundStyle(.secondary)
                         Text("Parakeet TDT 0.6B v3")
                             .fontWeight(.medium)
                     }
                     GridRow {
-                        Text(NSLocalizedString("settings.service.languages", bundle: .module, comment: ""))
+                        Text(NSLocalizedString("settings.service.languages", bundle: .safeModule, comment: ""))
                             .foregroundStyle(.secondary)
-                        Text(NSLocalizedString("settings.service.languages_desc", bundle: .module, comment: ""))
+                        Text(NSLocalizedString("settings.service.languages_desc", bundle: .safeModule, comment: ""))
                             .fontWeight(.medium)
                     }
                 }
@@ -70,10 +70,10 @@ public struct ServiceSettingsTab: View {
                     .foregroundStyle(.orange)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(NSLocalizedString("settings.service.high_performance", bundle: .module, comment: ""))
+                    Text(NSLocalizedString("settings.service.high_performance", bundle: .safeModule, comment: ""))
                         .font(.subheadline)
                         .fontWeight(.medium)
-                    Text(NSLocalizedString("settings.service.no_internet", bundle: .module, comment: ""))
+                    Text(NSLocalizedString("settings.service.no_internet", bundle: .safeModule, comment: ""))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
@@ -87,7 +87,7 @@ public struct ServiceSettingsTab: View {
         SettingsCard {
             HStack {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(NSLocalizedString("settings.service.status", bundle: .module, comment: ""))
+                    Text(NSLocalizedString("settings.service.status", bundle: .safeModule, comment: ""))
                         .font(.headline)
 
                     HStack(spacing: 6) {
@@ -106,7 +106,7 @@ public struct ServiceSettingsTab: View {
                     if self.viewModel.transcriptionStatus == .testing {
                         ProgressView().controlSize(.small)
                     } else {
-                        Label(NSLocalizedString("settings.service.verify", bundle: .module, comment: ""), systemImage: "arrow.clockwise")
+                        Label(NSLocalizedString("settings.service.verify", bundle: .safeModule, comment: ""), systemImage: "arrow.clockwise")
                     }
                 }
                 .buttonStyle(.bordered)
