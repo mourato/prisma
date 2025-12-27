@@ -123,7 +123,7 @@ public struct TranscriptionStatusView: View {
             .frame(height: 4)
 
             if let remaining = viewModel.estimatedTimeRemaining, remaining > 0 {
-                Text("~\(self.formatTime(remaining)) restante")
+                Text(String(format: NSLocalizedString("transcription.time_remaining", bundle: .safeModule, comment: ""), self.formatTime(remaining)))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
@@ -136,9 +136,9 @@ public struct TranscriptionStatusView: View {
         VStack(alignment: .leading, spacing: 8) {
             Divider()
 
-            self.detailRow(label: "Serviço", value: self.serviceStateLabel)
-            self.detailRow(label: "Modelo", value: self.modelStateLabel)
-            self.detailRow(label: "Dispositivo", value: self.viewModel.device.uppercased())
+            self.detailRow(label: NSLocalizedString("transcription.service", bundle: .safeModule, comment: ""), value: self.serviceStateLabel)
+            self.detailRow(label: NSLocalizedString("transcription.model", bundle: .safeModule, comment: ""), value: self.modelStateLabel)
+            self.detailRow(label: NSLocalizedString("transcription.device", bundle: .safeModule, comment: ""), value: self.viewModel.device.uppercased())
 
             if let error = viewModel.lastError {
                 self.errorRow(error: error)
@@ -149,21 +149,21 @@ public struct TranscriptionStatusView: View {
 
     private var serviceStateLabel: String {
         switch self.viewModel.serviceState {
-        case .connected: "Conectado"
-        case .connecting: "Conectando..."
-        case .disconnected: "Desconectado"
-        case .error: "Erro"
-        case .unknown: "Desconhecido"
+        case .connected: NSLocalizedString("transcription.state.connected", bundle: .safeModule, comment: "")
+        case .connecting: NSLocalizedString("transcription.state.connecting", bundle: .safeModule, comment: "")
+        case .disconnected: NSLocalizedString("transcription.state.disconnected", bundle: .safeModule, comment: "")
+        case .error: NSLocalizedString("transcription.state.error", bundle: .safeModule, comment: "")
+        case .unknown: NSLocalizedString("transcription.state.unknown", bundle: .safeModule, comment: "")
         }
     }
 
     private var modelStateLabel: String {
         switch self.viewModel.modelState {
-        case .loaded: "Carregado"
-        case .downloading: "Baixando..."
-        case .loading: "Carregando..."
-        case .unloaded: "Não carregado"
-        case .error: "Erro ao carregar"
+        case .loaded: NSLocalizedString("transcription.model_state.loaded", bundle: .safeModule, comment: "")
+        case .downloading: NSLocalizedString("transcription.model_state.downloading", bundle: .safeModule, comment: "")
+        case .loading: NSLocalizedString("transcription.model_state.loading", bundle: .safeModule, comment: "")
+        case .unloaded: NSLocalizedString("transcription.model_state.unloaded", bundle: .safeModule, comment: "")
+        case .error: NSLocalizedString("transcription.model_state.error", bundle: .safeModule, comment: "")
         }
     }
 
@@ -183,7 +183,7 @@ public struct TranscriptionStatusView: View {
         HStack(spacing: 6) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundStyle(.red)
-            Text(error.errorDescription ?? "Erro desconhecido")
+            Text(error.errorDescription ?? NSLocalizedString("error.unknown", bundle: .safeModule, comment: ""))
                 .font(.caption)
                 .foregroundStyle(.red)
         }
@@ -311,24 +311,24 @@ public struct CompactTranscriptionStatusView: View {
     private var compactStatusText: String {
         switch (self.viewModel.serviceState, self.viewModel.modelState, self.viewModel.phase) {
         case (.disconnected, _, _), (.error, _, _):
-            return "Offline"
+            return NSLocalizedString("transcription.compact.offline", bundle: .safeModule, comment: "")
         case (.connecting, _, _):
-            return "Conectando..."
+            return NSLocalizedString("transcription.compact.connecting", bundle: .safeModule, comment: "")
         case (.connected, .downloading, _):
-            return "Baixando modelo..."
+            return NSLocalizedString("transcription.compact.downloading_model", bundle: .safeModule, comment: "")
         case (.connected, .loading, _):
-            return "Carregando modelo..."
+            return NSLocalizedString("transcription.compact.loading_model", bundle: .safeModule, comment: "")
         case (.connected, .loaded, .idle):
-            return "Pronto"
+            return NSLocalizedString("transcription.compact.ready", bundle: .safeModule, comment: "")
         case (.connected, .loaded, .processing):
             if self.viewModel.progressPercentage > 0 {
-                return "Transcrevendo \(Int(self.viewModel.progressPercentage))%"
+                return String(format: NSLocalizedString("transcription.compact.transcribing_percent", bundle: .safeModule, comment: ""), Int(self.viewModel.progressPercentage))
             }
-            return "Transcrevendo..."
+            return NSLocalizedString("transcription.compact.transcribing", bundle: .safeModule, comment: "")
         case (.connected, .loaded, .completed):
-            return "Concluído"
+            return NSLocalizedString("transcription.compact.completed", bundle: .safeModule, comment: "")
         default:
-            return "Aguardando..."
+            return NSLocalizedString("transcription.compact.waiting", bundle: .safeModule, comment: "")
         }
     }
 }

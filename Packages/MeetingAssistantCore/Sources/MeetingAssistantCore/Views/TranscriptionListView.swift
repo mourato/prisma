@@ -24,7 +24,7 @@ struct TranscriptionListView: View {
                 .font(.largeTitle)
                 .foregroundStyle(.tertiary)
 
-            Text("Nenhuma transcrição")
+            Text(NSLocalizedString("settings.transcriptions.empty_title", bundle: .safeModule, comment: ""))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }

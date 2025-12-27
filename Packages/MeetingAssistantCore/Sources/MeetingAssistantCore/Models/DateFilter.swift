@@ -14,19 +14,19 @@ public enum DateFilter: String, CaseIterable, Sendable {
     public var displayName: String {
         switch self {
         case .today:
-            "Hoje"
+            NSLocalizedString("filter.date.today", bundle: .safeModule, comment: "")
         case .yesterday:
-            "Ontem"
+            NSLocalizedString("filter.date.yesterday", bundle: .safeModule, comment: "")
         case .thisWeek:
-            "Esta Semana"
+            NSLocalizedString("filter.date.this_week", bundle: .safeModule, comment: "")
         case .lastWeek:
-            "Semana Passada"
+            NSLocalizedString("filter.date.last_week", bundle: .safeModule, comment: "")
         case .thisMonth:
-            "Este Mês"
+            NSLocalizedString("filter.date.this_month", bundle: .safeModule, comment: "")
         case .lastMonth:
-            "Mês Passado"
+            NSLocalizedString("filter.date.last_month", bundle: .safeModule, comment: "")
         case .allEntries:
-            "Todas"
+            NSLocalizedString("filter.date.all", bundle: .safeModule, comment: "")
         }
     }
 

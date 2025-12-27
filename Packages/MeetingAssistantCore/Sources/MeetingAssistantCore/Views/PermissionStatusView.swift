@@ -69,11 +69,11 @@ public struct PermissionStatusView: View {
                 .foregroundStyle(self.headerIconColor)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Permissões do Sistema")
+                Text(NSLocalizedString("permissions.system_title", bundle: .safeModule, comment: ""))
                     .font(.subheadline)
                     .fontWeight(.semibold)
 
-                Text("\(self.grantedCount)/2 concedidas")
+                Text(String(format: NSLocalizedString("permissions.granted_count", bundle: .safeModule, comment: ""), self.grantedCount))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -88,7 +88,7 @@ public struct PermissionStatusView: View {
     private var statusBadge: some View {
         if self.allPermissionsGranted {
             Button(action: { self.onDismiss?() }) {
-                Text("OK")
+                Text(NSLocalizedString("common.ok", bundle: .safeModule, comment: ""))
                     .font(.caption2)
                     .fontWeight(.bold)
                     .padding(.horizontal, 8)
@@ -120,7 +120,7 @@ public struct PermissionStatusView: View {
                 .foregroundStyle(.orange)
                 .font(.caption)
 
-            Text("Algumas permissões são necessárias para gravar reuniões.")
+            Text(NSLocalizedString("permissions.required_warning", bundle: .safeModule, comment: ""))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
@@ -232,7 +232,7 @@ struct PermissionRowView: View {
     private var actionButton: some View {
         switch self.permission.state {
         case .notDetermined:
-            Button("Solicitar") {
+            Button(NSLocalizedString("permissions.request", bundle: .safeModule, comment: "")) {
                 self.onRequest()
             }
             .buttonStyle(.borderedProminent)
@@ -240,7 +240,7 @@ struct PermissionRowView: View {
             .tint(.blue)
 
         case .denied, .restricted:
-            Button("Configurar") {
+            Button(NSLocalizedString("permissions.configure", bundle: .safeModule, comment: "")) {
                 self.onOpenSettings()
             }
             .buttonStyle(.bordered)

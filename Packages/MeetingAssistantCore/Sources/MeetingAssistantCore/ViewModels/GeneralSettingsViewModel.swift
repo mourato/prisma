@@ -30,11 +30,18 @@ public class GeneralSettingsViewModel: ObservableObject {
         }
     }
 
+    @Published public var selectedLanguage: AppLanguage {
+        didSet {
+            self.settingsStore.selectedLanguage = self.selectedLanguage
+        }
+    }
+
     public init() {
         self.autoStartRecording = AppSettingsStore.shared.autoStartRecording
         self.recordingsPath = AppSettingsStore.shared.recordingsDirectory
         self.audioFormat = AppSettingsStore.shared.audioFormat
         self.shouldMergeAudioFiles = AppSettingsStore.shared.shouldMergeAudioFiles
+        self.selectedLanguage = AppSettingsStore.shared.selectedLanguage
     }
 
     public func selectRecordingsDirectory() {

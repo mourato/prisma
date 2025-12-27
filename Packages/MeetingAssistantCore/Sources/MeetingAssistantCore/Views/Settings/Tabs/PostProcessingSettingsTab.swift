@@ -31,14 +31,14 @@ public struct PostProcessingSettingsTab: View {
                 onCancel: { self.viewModel.showPromptEditor = false }
             )
         }
-        .alert("Excluir Prompt?", isPresented: self.$viewModel.showDeleteConfirmation) {
-            Button("Cancelar", role: .cancel) {}
-            Button("Excluir", role: .destructive) {
+        .alert(NSLocalizedString("settings.post_processing.delete_confirm_title", bundle: .safeModule, comment: ""), isPresented: self.$viewModel.showDeleteConfirmation) {
+            Button(NSLocalizedString("common.cancel", bundle: .safeModule, comment: ""), role: .cancel) {}
+            Button(NSLocalizedString("common.delete", bundle: .safeModule, comment: ""), role: .destructive) {
                 self.viewModel.executeDelete()
             }
         } message: {
             if let prompt = self.viewModel.promptToDelete {
-                Text("Tem certeza que deseja excluir o prompt \"\(prompt.title)\"? Esta ação não pode ser desfeita.")
+                Text(String(format: NSLocalizedString("settings.post_processing.delete_confirm_message", bundle: .safeModule, comment: ""), prompt.title))
             }
         }
     }
@@ -220,13 +220,13 @@ public struct PostProcessingSettingsTab: View {
                 self.viewModel.editingPrompt = prompt
                 self.viewModel.showPromptEditor = true
             } label: {
-                Label("Editar", systemImage: "pencil")
+                Label(NSLocalizedString("settings.post_processing.edit", bundle: .safeModule, comment: ""), systemImage: "pencil")
             }
 
             Button(role: .destructive) {
                 self.viewModel.confirmDeletePrompt(prompt)
             } label: {
-                Label("Excluir", systemImage: "trash")
+                Label(NSLocalizedString("settings.post_processing.delete", bundle: .safeModule, comment: ""), systemImage: "trash")
             }
         } label: {
             Image(systemName: "ellipsis.circle")

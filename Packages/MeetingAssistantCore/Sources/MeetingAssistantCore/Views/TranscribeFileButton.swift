@@ -10,7 +10,7 @@ public struct TranscribeFileButton: View {
 
     public var body: some View {
         Button(action: self.selectAndTranscribeFile) {
-            Label("Importar Áudio", systemImage: "doc.badge.arrow.up")
+            Label(NSLocalizedString("transcribe.import_audio", bundle: .safeModule, comment: ""), systemImage: "doc.badge.arrow.up")
         }
         .buttonStyle(.bordered)
         .disabled(self.viewModel.isTranscribing)

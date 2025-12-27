@@ -12,3 +12,19 @@ public extension Bundle {
         #endif
     }
 }
+
+// MARK: - String Localization Helper
+
+public extension String {
+    /// Localized string using the safe module bundle.
+    /// Usage: `"settings.general.language".localized`
+    var localized: String {
+        NSLocalizedString(self, bundle: .safeModule, comment: "")
+    }
+
+    /// Localized string with format arguments.
+    /// Usage: `"permissions.granted_count".localized(with: count)`
+    func localized(with arguments: CVarArg...) -> String {
+        String(format: self.localized, arguments: arguments)
+    }
+}

@@ -11,6 +11,7 @@ public struct GeneralSettingsTab: View {
     public var body: some View {
         ScrollView {
             VStack(spacing: SettingsDesignSystem.Layout.sectionSpacing) {
+                self.languageSection
                 self.recordingSection
                 self.appsSection
             }
@@ -19,6 +20,36 @@ public struct GeneralSettingsTab: View {
     }
 
     // MARK: - Sections
+
+    @ViewBuilder
+    private var languageSection: some View {
+        SettingsGroup(NSLocalizedString("settings.general.language", bundle: .safeModule, comment: ""), icon: "globe") {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(NSLocalizedString("settings.general.language_desc", bundle: .safeModule, comment: ""))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Picker("", selection: self.$viewModel.selectedLanguage) {
+                    ForEach(AppLanguage.allCases, id: \.self) { language in
+                        Text(language.displayName).tag(language)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .frame(maxWidth: 200)
+
+                if self.viewModel.selectedLanguage != .system {
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.caption)
+                        Text(NSLocalizedString("settings.general.language_restart_required", bundle: .safeModule, comment: ""))
+                            .font(.caption)
+                    }
+                    .foregroundStyle(.orange)
+                }
+            }
+        }
+    }
 
     @ViewBuilder
     private var recordingSection: some View {

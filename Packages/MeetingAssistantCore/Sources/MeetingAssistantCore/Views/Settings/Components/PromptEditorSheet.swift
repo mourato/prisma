@@ -60,7 +60,7 @@ public struct PromptEditorSheet: View {
 
     private var header: some View {
         HStack {
-            Text(self.isEditing ? "Editar Prompt" : "Novo Prompt")
+            Text(self.isEditing ? NSLocalizedString("prompt.edit_title", bundle: .safeModule, comment: "") : NSLocalizedString("prompt.new_title", bundle: .safeModule, comment: ""))
                 .font(.headline)
 
             Spacer()
@@ -73,11 +73,11 @@ public struct PromptEditorSheet: View {
 
     private var titleSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Título")
+            Text(NSLocalizedString("prompt.title_label", bundle: .safeModule, comment: ""))
                 .font(.subheadline)
                 .fontWeight(.medium)
 
-            TextField("Ex: Resumo de Reunião", text: self.$title)
+            TextField(NSLocalizedString("prompt.title_placeholder", bundle: .safeModule, comment: ""), text: self.$title)
                 .textFieldStyle(.roundedBorder)
         }
     }
@@ -86,7 +86,7 @@ public struct PromptEditorSheet: View {
 
     private var iconSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Ícone")
+            Text(NSLocalizedString("prompt.icon_label", bundle: .safeModule, comment: ""))
                 .font(.subheadline)
                 .fontWeight(.medium)
 
@@ -119,8 +119,8 @@ public struct PromptEditorSheet: View {
                 )
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Ícone \(icon)")
-        .accessibilityHint(isSelected ? "Selecionado" : "Toque para selecionar")
+        .accessibilityLabel(String(format: NSLocalizedString("prompt.icon_accessibility", bundle: .safeModule, comment: ""), icon))
+        .accessibilityHint(isSelected ? NSLocalizedString("prompt.icon_selected", bundle: .safeModule, comment: "") : NSLocalizedString("prompt.icon_select", bundle: .safeModule, comment: ""))
     }
 
     // MARK: - Description Section
@@ -128,16 +128,16 @@ public struct PromptEditorSheet: View {
     private var descriptionSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text("Descrição")
+                Text(NSLocalizedString("prompt.description_label", bundle: .safeModule, comment: ""))
                     .font(.subheadline)
                     .fontWeight(.medium)
 
-                Text("(opcional)")
+                Text(NSLocalizedString("common.optional", bundle: .safeModule, comment: ""))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
-            TextField("Uma breve descrição do que este prompt faz", text: self.$description)
+            TextField(NSLocalizedString("prompt.description_placeholder", bundle: .safeModule, comment: ""), text: self.$description)
                 .textFieldStyle(.roundedBorder)
         }
     }
@@ -146,11 +146,11 @@ public struct PromptEditorSheet: View {
 
     private var promptSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Instruções do Prompt")
+            Text(NSLocalizedString("prompt.instructions_label", bundle: .safeModule, comment: ""))
                 .font(.subheadline)
                 .fontWeight(.medium)
 
-            Text("Defina as instruções que serão enviadas ao modelo de IA junto com a transcrição.")
+            Text(NSLocalizedString("prompt.instructions_hint", bundle: .safeModule, comment: ""))
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -171,14 +171,14 @@ public struct PromptEditorSheet: View {
 
     private var footer: some View {
         HStack {
-            Button("Cancelar") {
+            Button(NSLocalizedString("common.cancel", bundle: .safeModule, comment: "")) {
                 self.onCancel()
             }
             .keyboardShortcut(.escape)
 
             Spacer()
 
-            Button(self.isEditing ? "Salvar" : "Criar") {
+            Button(self.isEditing ? NSLocalizedString("common.save", bundle: .safeModule, comment: "") : NSLocalizedString("common.create", bundle: .safeModule, comment: "")) {
                 self.savePrompt()
             }
             .keyboardShortcut(.return)

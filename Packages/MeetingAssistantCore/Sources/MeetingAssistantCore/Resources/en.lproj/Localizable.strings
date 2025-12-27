@@ -125,3 +125,118 @@
 "status.recording" = "Recording...";
 "status.transcribing" = "Transcribing...";
 "status.waiting" = "Waiting for meeting";
+
+/* Permission Status View */
+"permissions.system_title" = "System Permissions";
+"permissions.granted_count" = "%d/2 granted";
+"permissions.required_warning" = "Some permissions are required to record meetings.";
+"permissions.request" = "Request";
+"permissions.configure" = "Configure";
+
+/* Permission States */
+"permission.state.granted" = "Granted";
+"permission.state.denied" = "Denied";
+"permission.state.not_determined" = "Not Requested";
+"permission.state.restricted" = "Restricted";
+
+/* Permission Types */
+"permission.type.microphone" = "Microphone";
+"permission.type.screen_recording" = "Screen Recording";
+"permission.type.microphone.desc" = "Required to capture your voice during meetings.";
+"permission.type.screen_recording.desc" = "Required to capture system audio (participants).";
+
+/* Transcription Status */
+"transcription.time_remaining" = "~%@ remaining";
+"transcription.service" = "Service";
+"transcription.model" = "Model";
+"transcription.device" = "Device";
+"transcription.completed" = "Completed";
+"transcription.processed" = "Processed";
+"transcription.recorded_on" = "Recorded on %@";
+"transcription.title" = "Transcription";
+"transcription.original_title" = "Original Transcription";
+
+/* Transcription Service States */
+"transcription.state.connected" = "Connected";
+"transcription.state.connecting" = "Connecting...";
+"transcription.state.disconnected" = "Disconnected";
+"transcription.state.error" = "Error";
+"transcription.state.unknown" = "Unknown";
+
+/* Model States */
+"transcription.model_state.loaded" = "Loaded";
+"transcription.model_state.downloading" = "Downloading...";
+"transcription.model_state.loading" = "Loading...";
+"transcription.model_state.unloaded" = "Not loaded";
+"transcription.model_state.error" = "Load error";
+
+/* Compact Transcription Status */
+"transcription.compact.offline" = "Offline";
+"transcription.compact.connecting" = "Connecting...";
+"transcription.compact.downloading_model" = "Downloading model...";
+"transcription.compact.loading_model" = "Loading model...";
+"transcription.compact.ready" = "Ready";
+"transcription.compact.transcribing" = "Transcribing...";
+"transcription.compact.transcribing_percent" = "Transcribing %d%%";
+"transcription.compact.completed" = "Completed";
+"transcription.compact.waiting" = "Waiting...";
+
+/* Common Actions */
+"common.ok" = "OK";
+"common.cancel" = "Cancel";
+"common.delete" = "Delete";
+"common.copy" = "Copy";
+"common.save" = "Save";
+"common.create" = "Create";
+"common.optional" = "(optional)";
+
+/* Prompt Editor */
+"prompt.edit_title" = "Edit Prompt";
+"prompt.new_title" = "New Prompt";
+"prompt.title_label" = "Title";
+"prompt.title_placeholder" = "E.g.: Meeting Summary";
+"prompt.icon_label" = "Icon";
+"prompt.icon_accessibility" = "Icon %@";
+"prompt.icon_selected" = "Selected";
+"prompt.icon_select" = "Tap to select";
+"prompt.description_label" = "Description";
+"prompt.description_placeholder" = "A brief description of what this prompt does";
+"prompt.instructions_label" = "Prompt Instructions";
+"prompt.instructions_hint" = "Define the instructions that will be sent to the AI model along with the transcription.";
+
+/* Errors */
+"error.unknown" = "Unknown error";
+
+/* Connection Status */
+"connection.status.unknown" = "Not tested";
+"connection.status.testing" = "Testing...";
+"connection.status.success" = "Connected";
+"connection.status.failure" = "Failed";
+
+/* Filters */
+"filter.source.all" = "All";
+"filter.source.dictations" = "Recordings";
+"filter.source.manual_imports" = "Imported";
+
+/* Date Filters */
+"filter.date.today" = "Today";
+"filter.date.yesterday" = "Yesterday";
+"filter.date.this_week" = "This Week";
+"filter.date.last_week" = "Last Week";
+"filter.date.this_month" = "This Month";
+"filter.date.last_month" = "Last Month";
+"filter.date.all" = "All";
+
+/* AI Provider */
+"ai.provider.custom" = "Custom";
+
+/* Language Settings */
+"settings.general.language" = "Language";
+"settings.general.language_desc" = "Choose the display language for the application.";
+"settings.general.language.system" = "System Default";
+"settings.general.language.english" = "English";
+"settings.general.language.portuguese" = "Português";
+"settings.general.language_restart_required" = "Restart required to apply language change.";
+
+/* Transcribe File */
+"transcribe.import_audio" = "Import Audio";
