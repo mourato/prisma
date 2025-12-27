@@ -153,6 +153,21 @@ public class AppSettingsStore: ObservableObject {
         }
     }
 
+    /// Selected audio format for recordings.
+    @Published public var audioFormat: AudioFormat {
+        didSet {
+            UserDefaults.standard.set(self.audioFormat.rawValue, forKey: PostProcessingKeys.audioFormat)
+        }
+    }
+
+    /// Whether to merge audio files after recording.
+    /// Default: true
+    @Published public var shouldMergeAudioFiles: Bool {
+        didSet {
+            UserDefaults.standard.set(self.shouldMergeAudioFiles, forKey: PostProcessingKeys.shouldMergeAudioFiles)
+        }
+    }
+
     /// All available prompts (predefined + user-created).
     public var allPrompts: [PostProcessingPrompt] {
         PostProcessingPrompt.allPredefined + self.userPrompts
@@ -318,21 +333,5 @@ public extension AppSettingsStore {
         }
     }
 
-    /// Selected audio format for recordings.
-    /// Selected audio format for recordings.
-    @Published var audioFormat: AudioFormat {
-        didSet {
-            UserDefaults.standard.set(self.audioFormat.rawValue, forKey: PostProcessingKeys.audioFormat)
-        }
-    }
-
-    /// Whether to merge audio files after recording.
-    /// Default: true
-    /// Whether to merge audio files after recording.
-    /// Default: true
-    @Published var shouldMergeAudioFiles: Bool {
-        didSet {
-            UserDefaults.standard.set(self.shouldMergeAudioFiles, forKey: PostProcessingKeys.shouldMergeAudioFiles)
-        }
-    }
+    // Moved to main class body to support @Published storage
 }
