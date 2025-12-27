@@ -138,50 +138,62 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         }
 
         do {
-            // Determine meeting app (if detected)
-            let app = self.meetingDetector.detectedMeeting ?? .unknown
-
-            // Create meeting record
-            let meeting = Meeting(app: app)
+            let meeting = self.createMeeting()
             self.currentMeeting = meeting
 
-            // Generate output file paths using StorageService
-            self.micAudioURL = self.storage.createRecordingURL(for: meeting, type: .microphone)
-            self.systemAudioURL = self.storage.createRecordingURL(for: meeting, type: .system)
-            self.mergedAudioURL = self.storage.createRecordingURL(for: meeting, type: .merged)
+            let (micURL, systemURL) = try self.generateRecordingPaths(for: meeting)
 
-            // Ensure URLs are valid
-            guard let micURL = micAudioURL, let systemURL = systemAudioURL else {
-                throw RecordingManagerError.noOutputPath
-            }
-
-            // Start microphone recording
-            AppLogger.debug("Starting microphone recording", category: .recordingManager, extra: ["url": micURL.path])
-            try await self.micRecorder.startRecording(to: micURL, retryCount: 0)
-
-            // Start system audio recording (async)
-            AppLogger.debug("Starting system audio recording", category: .recordingManager, extra: ["url": systemURL.path])
-            try await self.systemRecorder.startRecording(to: systemURL, retryCount: 0)
+            try await self.startRecorders(micURL: micURL, systemURL: systemURL)
 
             self.isRecording = true
             self.currentMeeting?.audioFilePath = self.mergedAudioURL?.path
 
             AppLogger.info("Recording started successfully", category: .recordingManager, extra: [
-                "app": app.displayName,
+                "app": meeting.app.displayName,
                 "micURL": micURL.lastPathComponent,
                 "systemURL": systemURL.lastPathComponent,
             ])
 
         } catch {
-            AppLogger.fault("CRITICAL: Failed to start recording", category: .recordingManager, error: error, extra: ["state": "start_failed"])
-            self.lastError = error
-
-            // Cleanup partial starts
-            _ = await self.micRecorder.stopRecording()
-            _ = await self.systemRecorder.stopRecording()
-
-            self.currentMeeting = nil
+            await self.handleStartRecordingError(error)
         }
+    }
+
+    private func createMeeting() -> Meeting {
+        let app = self.meetingDetector.detectedMeeting ?? .unknown
+        return Meeting(app: app)
+    }
+
+    private func generateRecordingPaths(for meeting: Meeting) throws -> (URL, URL) {
+        self.micAudioURL = self.storage.createRecordingURL(for: meeting, type: .microphone)
+        self.systemAudioURL = self.storage.createRecordingURL(for: meeting, type: .system)
+        self.mergedAudioURL = self.storage.createRecordingURL(for: meeting, type: .merged)
+
+        guard let micURL = micAudioURL, let systemURL = systemAudioURL else {
+            throw RecordingManagerError.noOutputPath
+        }
+        return (micURL, systemURL)
+    }
+
+    private func startRecorders(micURL: URL, systemURL: URL) async throws {
+        // Start microphone recording
+        AppLogger.debug("Starting microphone recording", category: .recordingManager, extra: ["url": micURL.path])
+        try await self.micRecorder.startRecording(to: micURL, retryCount: 0)
+
+        // Start system audio recording
+        AppLogger.debug("Starting system audio recording", category: .recordingManager, extra: ["url": systemURL.path])
+        try await self.systemRecorder.startRecording(to: systemURL, retryCount: 0)
+    }
+
+    private func handleStartRecordingError(_ error: Error) async {
+        AppLogger.fault("CRITICAL: Failed to start recording", category: .recordingManager, error: error, extra: ["state": "start_failed"])
+        self.lastError = error
+
+        // Cleanup partial starts
+        _ = await self.micRecorder.stopRecording()
+        _ = await self.systemRecorder.stopRecording()
+
+        self.currentMeeting = nil
     }
 
     /// Stop recording and optionally transcribe.
