@@ -140,9 +140,12 @@ public struct MenuBarView: View {
         VStack {
             if self.viewModel.isRecording {
                 Button(action: self.stopRecording) {
-                    Label(NSLocalizedString("menubar.stop_recording", bundle: .safeModule, comment: "Stop recording button"), systemImage: "stop.fill")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity, minHeight: 38)
+                    Label(
+                        self.viewModel.recordButtonTitle,
+                        systemImage: self.viewModel.recordButtonIcon
+                    )
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, minHeight: 38)
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
@@ -150,21 +153,15 @@ public struct MenuBarView: View {
             } else {
                 Button(action: self.startRecording) {
                     Label(
-                        self.viewModel.isModelLoaded
-                            ? NSLocalizedString(
-                                "menubar.start_recording", bundle: .safeModule, comment: "Start recording button"
-                            )
-                            : NSLocalizedString(
-                                "settings.transcriptions.loading", bundle: .safeModule, comment: "Loading"
-                            ),
-                        systemImage: self.viewModel.isModelLoaded ? "record.circle" : "hourglass"
+                        self.viewModel.recordButtonTitle,
+                        systemImage: self.viewModel.recordButtonIcon
                     )
                     .font(.headline)
                     .frame(maxWidth: .infinity, minHeight: 38)
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
-                .disabled(!self.viewModel.isModelLoaded)
+                .disabled(!self.viewModel.canStartRecording)
             }
         }
         .padding(.top, 4)
