@@ -58,7 +58,7 @@ public class AISettingsViewModel: ObservableObject {
         self.modelsFetchError = nil
 
         guard let url = self.validateURL(self.settings.aiConfiguration.baseURL) else {
-            self.connectionStatus = .failure(NSLocalizedString("settings.ai.connection.invalid_url", comment: ""))
+            self.connectionStatus = .failure("settings.ai.connection.invalid_url".localized)
             return
         }
 
@@ -81,7 +81,7 @@ public class AISettingsViewModel: ObservableObject {
     /// Fetches available models from the LLM service's /models endpoint.
     public func fetchAvailableModels() async {
         guard let baseURL = self.validateURL(self.settings.aiConfiguration.baseURL) else {
-            self.modelsFetchError = NSLocalizedString("settings.ai.connection.invalid_url", comment: "")
+            self.modelsFetchError = "settings.ai.connection.invalid_url".localized
             return
         }
 
@@ -97,7 +97,7 @@ public class AISettingsViewModel: ObservableObject {
             guard let httpResponse = response as? HTTPURLResponse,
                   (200...299).contains(httpResponse.statusCode)
             else {
-                self.modelsFetchError = NSLocalizedString("settings.ai.models.fetch_failed", comment: "")
+                self.modelsFetchError = "settings.ai.models.fetch_failed".localized
                 return
             }
 
@@ -145,7 +145,7 @@ public class AISettingsViewModel: ObservableObject {
             let statusCode = httpResponse.statusCode
             self.connectionStatus = (200...299).contains(statusCode) ? .success : .failure("HTTP \(statusCode)")
         } else {
-            self.connectionStatus = .failure(NSLocalizedString("settings.ai.connection.invalid_response", comment: ""))
+            self.connectionStatus = .failure("settings.ai.connection.invalid_response".localized)
         }
     }
 }

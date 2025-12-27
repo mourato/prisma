@@ -149,21 +149,21 @@ public struct TranscriptionStatusView: View {
 
     private var serviceStateLabel: String {
         switch self.viewModel.serviceState {
-        case .connected: NSLocalizedString("transcription.state.connected", bundle: .safeModule, comment: "")
-        case .connecting: NSLocalizedString("transcription.state.connecting", bundle: .safeModule, comment: "")
-        case .disconnected: NSLocalizedString("transcription.state.disconnected", bundle: .safeModule, comment: "")
-        case .error: NSLocalizedString("transcription.state.error", bundle: .safeModule, comment: "")
-        case .unknown: NSLocalizedString("transcription.state.unknown", bundle: .safeModule, comment: "")
+        case .connected: "transcription.state.connected".localized
+        case .connecting: "transcription.state.connecting".localized
+        case .disconnected: "transcription.state.disconnected".localized
+        case .error: "transcription.state.error".localized
+        case .unknown: "transcription.state.unknown".localized
         }
     }
 
     private var modelStateLabel: String {
         switch self.viewModel.modelState {
-        case .loaded: NSLocalizedString("transcription.model_state.loaded", bundle: .safeModule, comment: "")
-        case .downloading: NSLocalizedString("transcription.model_state.downloading", bundle: .safeModule, comment: "")
-        case .loading: NSLocalizedString("transcription.model_state.loading", bundle: .safeModule, comment: "")
-        case .unloaded: NSLocalizedString("transcription.model_state.unloaded", bundle: .safeModule, comment: "")
-        case .error: NSLocalizedString("transcription.model_state.error", bundle: .safeModule, comment: "")
+        case .loaded: "transcription.model_state.loaded".localized
+        case .downloading: "transcription.model_state.downloading".localized
+        case .loading: "transcription.model_state.loading".localized
+        case .unloaded: "transcription.model_state.unloaded".localized
+        case .error: "transcription.model_state.error".localized
         }
     }
 
@@ -201,6 +201,8 @@ public struct TranscriptionStatusView: View {
             .font(.caption)
             .foregroundStyle(.secondary)
             .rotationEffect(.degrees(self.isExpanded ? 180 : 0))
+            .accessibilityLabel("transcription.view.toggle_details".localized)
+            .accessibilityAddTraits(.isButton)
     }
 
     // MARK: - Styling Computed Properties
@@ -316,24 +318,25 @@ public struct CompactTranscriptionStatusView: View {
     private var compactStatusText: String {
         switch (self.viewModel.serviceState, self.viewModel.modelState, self.viewModel.phase) {
         case (.disconnected, _, _), (.error, _, _):
-            return NSLocalizedString("transcription.compact.offline", bundle: .safeModule, comment: "")
+            return "transcription.compact.offline".localized
         case (.connecting, _, _):
-            return NSLocalizedString("transcription.compact.connecting", bundle: .safeModule, comment: "")
+            return "transcription.compact.connecting".localized
         case (.connected, .downloading, _):
-            return NSLocalizedString("transcription.compact.downloading_model", bundle: .safeModule, comment: "")
+            return "transcription.compact.downloading_model".localized
         case (.connected, .loading, _):
-            return NSLocalizedString("transcription.compact.loading_model", bundle: .safeModule, comment: "")
+            return "transcription.compact.loading_model".localized
         case (.connected, .loaded, .idle):
-            return NSLocalizedString("transcription.compact.ready", bundle: .safeModule, comment: "")
+            return "transcription.compact.ready".localized
         case (.connected, .loaded, .processing):
             if self.viewModel.progressPercentage > 0 {
-                return String(format: NSLocalizedString("transcription.compact.transcribing_percent", bundle: .safeModule, comment: ""), Int(self.viewModel.progressPercentage))
+                return "transcription.compact.transcribing_percent"
+                    .localized(with: Int(self.viewModel.progressPercentage))
             }
-            return NSLocalizedString("transcription.compact.transcribing", bundle: .safeModule, comment: "")
+            return "transcription.compact.transcribing".localized
         case (.connected, .loaded, .completed):
-            return NSLocalizedString("transcription.compact.completed", bundle: .safeModule, comment: "")
+            return "transcription.compact.completed".localized
         default:
-            return NSLocalizedString("transcription.compact.waiting", bundle: .safeModule, comment: "")
+            return "transcription.compact.waiting".localized
         }
     }
 }

@@ -14,31 +14,20 @@ public enum ConnectionStatus: Equatable {
         case .unknown: .secondary
         case .testing: .orange
         case .success: .green
-        case .connected: .green
-        case .failed: .red
+        case .failure: .red
         }
     }
 
     public var text: String {
         switch self {
-        case .notTested:
+        case .unknown:
             "settings.service.status.not_tested".localized
         case .testing:
             "settings.service.status.testing".localized
-        case .connected:
+        case .success:
             "settings.service.status.connected".localized
-        case .failed:
+        case .failure:
             "settings.service.status.failed".localized
-        }
-    }
-
-    public static func == (lhs: ConnectionStatus, rhs: ConnectionStatus) -> Bool {
-        switch (lhs, rhs) {
-            true
-        case (.failure, .failure):
-            true
-        default:
-            false
         }
     }
 }
