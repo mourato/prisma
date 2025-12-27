@@ -53,10 +53,13 @@ build/
 
 # Swift Package Manager
 .build/
-Packages/
+.swiftpm/
 Package.pins
 Package.resolved
-*.xcworkspace
+
+# Note: We DO track Packages/MeetingAssistantCore/ (our local package)
+# but ignore the .build folders inside
+Packages/*/.build/
 
 # Environment
 .env
@@ -72,6 +75,11 @@ temp/
 scratch/
 *.processed.wav
 
-# App bundle
+# Old structure (to be removed after migration)
 MeetingAssistant/dist
 MeetingAssistant/.swiftpm
+MeetingAssistant/.build/
+
+# Build artifacts
+dist/
+

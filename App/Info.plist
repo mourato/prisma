@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>pt-BR</string>
+    
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    
+    <key>CFBundleIdentifier</key>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    
+    <key>CFBundleName</key>
+    <string>$(PRODUCT_NAME)</string>
+    
+    <key>CFBundleDisplayName</key>
+    <string>Meeting Assistant</string>
+    
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+    
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.productivity</string>
+    
+    <key>LSMinimumSystemVersion</key>
+    <string>$(MACOSX_DEPLOYMENT_TARGET)</string>
+    
+    <!-- Menu bar only app (no dock icon) -->
+    <key>LSUIElement</key>
+    <true/>
+    
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    
+    <!-- Privacy Usage Descriptions (Required for TCC) -->
+    <key>NSMicrophoneUsageDescription</key>
+    <string>O Meeting Assistant precisa acessar o microfone para capturar áudio quando a captura de tela não estiver disponível.</string>
+    
+    <key>NSScreenCaptureUsageDescription</key>
+    <string>O Meeting Assistant precisa capturar áudio do sistema para gravar suas reuniões por videochamada.</string>
+    
+    <key>NSHumanReadableCopyright</key>
+    <string>Copyright © 2024. Todos os direitos reservados.</string>
+    
+    <key>NSPrincipalClass</key>
+    <string>NSApplication</string>
+</dict>
+</plist>

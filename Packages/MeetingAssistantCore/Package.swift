@@ -1,22 +1,18 @@
 // swift-tools-version: 6.0
-// Swift Package Manager configuration for MeetingAssistant
+// Swift Package for MeetingAssistantCore library
 
 import PackageDescription
 
 let package = Package(
-    name: "MeetingAssistant",
+    name: "MeetingAssistantCore",
     defaultLocalization: "pt",
     platforms: [
-        .macOS(.v14)
+        .macOS(.v14),
     ],
     products: [
         .library(
             name: "MeetingAssistantCore",
             targets: ["MeetingAssistantCore"]
-        ),
-        .executable(
-            name: "MeetingAssistant",
-            targets: ["MeetingAssistant"]
         ),
     ],
     dependencies: [
@@ -33,21 +29,13 @@ let package = Package(
                 .product(name: "Atomics", package: "swift-atomics"),
             ],
             resources: [
-                .process("Resources")
-            ],
-
-        ),
-        .executableTarget(
-            name: "MeetingAssistant",
-            dependencies: [
-                "MeetingAssistantCore"
-            ],
-            path: "Sources/MeetingAssistant"
+                .process("Resources"),
+            ]
         ),
         .testTarget(
-            name: "MeetingAssistantTests",
+            name: "MeetingAssistantCoreTests",
             dependencies: ["MeetingAssistantCore"],
-            path: "Tests/MeetingAssistantTests"
+            path: "Tests/MeetingAssistantCoreTests"
         ),
     ]
 )
