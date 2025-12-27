@@ -109,11 +109,13 @@ public final class AudioMerger {
             AVLinearPCMIsNonInterleaved: false,
         ]
 
-        let readerOutput = AVAssetReaderAudioMixOutput(audioTracks: composition.tracks(withMediaType: .audio), audioSettings: readerSettings)
+        // Use async loadTracks instead of deprecated synchronous tracks(withMediaType:)
+        let audioTracks = try await composition.loadTracks(withMediaType: .audio)
+        let readerOutput = AVAssetReaderAudioMixOutput(audioTracks: audioTracks, audioSettings: readerSettings)
         if reader.canAdd(readerOutput) {
             reader.add(readerOutput)
         } else {
-            throw AudioMergerError.failedToCreateExportSession // Reuse error or create new
+            throw AudioMergerError.failedToCreateExportSession
         }
 
         // 2. Setup Writer
