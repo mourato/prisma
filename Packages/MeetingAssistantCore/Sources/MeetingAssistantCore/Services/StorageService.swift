@@ -107,33 +107,40 @@ public final class FileSystemStorageService: StorageService {
     }
 
     public func loadTranscriptions() async throws -> [Transcription] {
-        let fileManager = FileManager.default
-        let contents = try fileManager.contentsOfDirectory(
-            at: self.transcriptsDirectory,
-            includingPropertiesForKeys: [.contentModificationDateKey],
-            options: .skipsHiddenFiles
-        )
+        try await Task.detached(priority: .userInitiated) {
+            let fileManager = FileManager.default
+            let contents = try fileManager.contentsOfDirectory(
+                at: self.transcriptsDirectory,
+                includingPropertiesForKeys: [.contentModificationDateKey],
+                options: .skipsHiddenFiles
+            )
 
-        let jsonFiles = contents.filter { $0.pathExtension == "json" }
-        var transcriptions: [Transcription] = []
+            let jsonFiles = contents.filter { $0.pathExtension == "json" }
+            var transcriptions: [Transcription] = []
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
 
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-
-        for file in jsonFiles {
-            do {
-                let data = try Data(contentsOf: file)
-                let transcription = try decoder.decode(Transcription.self, from: data)
-                transcriptions.append(transcription)
-            } catch {
-                AppLogger.error("Failed to load transcription", category: .databaseManager, error: error, extra: ["filename": file.lastPathComponent])
+            for file in jsonFiles {
+                if let transcription = try? self.decodeTranscription(from: file, using: decoder) {
+                    transcriptions.append(transcription)
+                }
             }
+
+            // Sort by date, most recent first
+            transcriptions.sort { $0.createdAt > $1.createdAt }
+
+            AppLogger.info("Loaded transcriptions", category: .databaseManager, extra: ["count": transcriptions.count])
+            return transcriptions
+        }.value
+    }
+
+    private func decodeTranscription(from file: URL, using decoder: JSONDecoder) throws -> Transcription? {
+        do {
+            let data = try Data(contentsOf: file)
+            return try decoder.decode(Transcription.self, from: data)
+        } catch {
+            AppLogger.error("Failed to load transcription", category: .databaseManager, error: error, extra: ["filename": file.lastPathComponent])
+            return nil
         }
-
-        // Sort by date, most recent first
-        transcriptions.sort { $0.createdAt > $1.createdAt }
-
-        AppLogger.info("Loaded transcriptions", category: .databaseManager, extra: ["count": transcriptions.count])
-        return transcriptions
     }
 }
