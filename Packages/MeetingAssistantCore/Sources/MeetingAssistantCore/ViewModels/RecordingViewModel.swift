@@ -13,6 +13,7 @@ public class RecordingViewModel: ObservableObject {
 
     @Published public var isRecording: Bool = false
     @Published public var isTranscribing: Bool = false
+    @Published public var arePermissionsGranted: Bool = false
     @Published public var currentMeeting: Meeting?
     @Published public var isModelLoaded: Bool = false
     // @Published public var permissionStatus: PermissionStatusManager // Refactored to use Child ViewModel
@@ -112,5 +113,12 @@ public class RecordingViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .map { $0 == .loaded }
             .assign(to: &self.$isModelLoaded)
+
+        // Observe permission state from child ViewModel
+        self.permissionViewModel.$microphoneState
+            .combineLatest(self.permissionViewModel.$screenState)
+            .map { mic, screen in mic == .granted && screen == .granted }
+            .receive(on: DispatchQueue.main)
+            .assign(to: &self.$arePermissionsGranted)
     }
 }

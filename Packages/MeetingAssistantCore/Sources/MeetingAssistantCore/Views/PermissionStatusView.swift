@@ -7,8 +7,11 @@ import SwiftUI
 public struct PermissionStatusView: View {
     @ObservedObject var viewModel: PermissionViewModel
 
-    public init(viewModel: PermissionViewModel) {
+    public var onDismiss: (() -> Void)?
+
+    public init(viewModel: PermissionViewModel, onDismiss: (() -> Void)? = nil) {
         self.viewModel = viewModel
+        self.onDismiss = onDismiss
     }
 
     public var body: some View {
@@ -81,17 +84,34 @@ public struct PermissionStatusView: View {
         }
     }
 
+    @ViewBuilder
     private var statusBadge: some View {
-        Text(self.allPermissionsGranted ? "OK" : "!")
-            .font(.caption2)
-            .fontWeight(.bold)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(
-                Capsule()
-                    .fill(self.allPermissionsGranted ? Color.green : Color.orange)
-            )
-            .foregroundColor(.white)
+        if self.allPermissionsGranted {
+            Button(action: { self.onDismiss?() }) {
+                Text("OK")
+                    .font(.caption2)
+                    .fontWeight(.bold)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        Capsule()
+                            .fill(Color.green)
+                    )
+                    .foregroundColor(.white)
+            }
+            .buttonStyle(.plain)
+        } else {
+            Text("!")
+                .font(.caption2)
+                .fontWeight(.bold)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(
+                    Capsule()
+                        .fill(Color.orange)
+                )
+                .foregroundColor(.white)
+        }
     }
 
     private var permissionWarning: some View {
