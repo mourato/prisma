@@ -134,11 +134,22 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     }
 
     private func connectMicrophone(to engine: AVAudioEngine, mixer: AVAudioMixerNode) throws {
+        let status = AVCaptureDevice.authorizationStatus(for: .audio)
+        guard status == .authorized else {
+            AppLogger.warning("Microphone permission not authorized (status: \(status.rawValue)). Skipping microphone connection.", category: .recordingManager)
+            return
+        }
+
         let inputNode = engine.inputNode
         let inputFormat = inputNode.inputFormat(forBus: Constants.tapBusNumber)
 
         guard inputFormat.sampleRate > 0 else {
             throw AudioRecorderError.invalidInputFormat
+        }
+
+        guard inputFormat.channelCount > 0 else {
+            AppLogger.warning("Microphone input has 0 channels. Skipping connection.", category: .recordingManager)
+            return
         }
 
         engine.connect(inputNode, to: mixer, format: inputFormat)
