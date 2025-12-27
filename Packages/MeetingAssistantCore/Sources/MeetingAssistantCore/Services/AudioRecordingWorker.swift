@@ -15,7 +15,6 @@ final class AudioRecordingWorker: @unchecked Sendable {
 
     // Thread safety
     private let queue = DispatchQueue(label: "MeetingAssistant.audioProcessing", qos: .userInitiated)
-    private let lock = NSLock()
 
     // Atomic state for validation
     private let _hasReceivedValidBuffer = ManagedAtomic<Bool>(false)
@@ -32,60 +31,59 @@ final class AudioRecordingWorker: @unchecked Sendable {
     // MARK: - Lifecycle
 
     func start(writingTo url: URL, format: AVAudioFormat, fileFormat: AppSettingsStore.AudioFormat) throws {
-        self.lock.lock()
-        defer { lock.unlock() }
+        try self.queue.sync {
+            // Reset state
+            self.audioFile = nil
+            self._hasReceivedValidBuffer.store(false, ordering: .relaxed)
 
-        // Reset state
-        self.audioFile = nil
-        self._hasReceivedValidBuffer.store(false, ordering: .relaxed)
+            // Prepare file
+            if FileManager.default.fileExists(atPath: url.path) {
+                try FileManager.default.removeItem(at: url)
+            }
 
-        // Prepare file
-        if FileManager.default.fileExists(atPath: url.path) {
-            try FileManager.default.removeItem(at: url)
+            // Create Audio Settings based on format
+            let settings: [String: Any]
+            let commonFormat: AVAudioCommonFormat
+            let interleaved: Bool
+
+            switch fileFormat {
+            case .m4a:
+                settings = [
+                    AVFormatIDKey: kAudioFormatMPEG4AAC,
+                    AVSampleRateKey: format.sampleRate,
+                    AVNumberOfChannelsKey: 2,
+                    AVEncoderBitRateKey: 128_000,
+                    AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue,
+                ]
+                commonFormat = .pcmFormatFloat32
+                interleaved = false
+
+            case .wav:
+                // Linear PCM 32-bit Float (High Quality, larger size)
+                // Using Float32 matches the engine's internal format, avoiding conversion overhead
+                settings = [
+                    AVFormatIDKey: kAudioFormatLinearPCM,
+                    AVSampleRateKey: format.sampleRate,
+                    AVNumberOfChannelsKey: 2,
+                    AVLinearPCMBitDepthKey: 32,
+                    AVLinearPCMIsFloatKey: true,
+                    AVLinearPCMIsBigEndianKey: false,
+                    AVLinearPCMIsNonInterleaved: false,
+                ]
+                commonFormat = .pcmFormatFloat32
+                interleaved = false // AVAudioFile handles interleaving for us if needed, but we provide non-interleaved buffers
+            }
+
+            // Create Audio File
+            let file = try AVAudioFile(
+                forWriting: url,
+                settings: settings,
+                commonFormat: commonFormat,
+                interleaved: interleaved
+            )
+            self.audioFile = file
+            self.currentURL = url
         }
-
-        // Create Audio Settings based on format
-        let settings: [String: Any]
-        let commonFormat: AVAudioCommonFormat
-        let interleaved: Bool
-
-        switch fileFormat {
-        case .m4a:
-            settings = [
-                AVFormatIDKey: kAudioFormatMPEG4AAC,
-                AVSampleRateKey: format.sampleRate,
-                AVNumberOfChannelsKey: 2,
-                AVEncoderBitRateKey: 128_000,
-                AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue,
-            ]
-            commonFormat = .pcmFormatFloat32
-            interleaved = false
-
-        case .wav:
-            // Linear PCM 32-bit Float (High Quality, larger size)
-            // Using Float32 matches the engine's internal format, avoiding conversion overhead
-            settings = [
-                AVFormatIDKey: kAudioFormatLinearPCM,
-                AVSampleRateKey: format.sampleRate,
-                AVNumberOfChannelsKey: 2,
-                AVLinearPCMBitDepthKey: 32,
-                AVLinearPCMIsFloatKey: true,
-                AVLinearPCMIsBigEndianKey: false,
-                AVLinearPCMIsNonInterleaved: false,
-            ]
-            commonFormat = .pcmFormatFloat32
-            interleaved = false // AVAudioFile handles interleaving for us if needed, but we provide non-interleaved buffers
-        }
-
-        // Create Audio File
-        let file = try AVAudioFile(
-            forWriting: url,
-            settings: settings,
-            commonFormat: commonFormat,
-            interleaved: interleaved
-        )
-        self.audioFile = file
-        self.currentURL = url
     }
 
     func stop() async -> URL? {
@@ -96,8 +94,7 @@ final class AudioRecordingWorker: @unchecked Sendable {
                     return
                 }
 
-                self.lock.lock()
-                defer { self.lock.unlock() }
+                // Lock removed; serialized by queue
 
                 let url = self.currentURL
                 self.audioFile = nil // Close file
@@ -119,8 +116,7 @@ final class AudioRecordingWorker: @unchecked Sendable {
     private func processBufferInternal(_ buffer: AVAudioPCMBuffer) {
         self.calculateMeters(from: buffer)
 
-        self.lock.lock()
-        defer { lock.unlock() }
+        // Lock removed; serialized by queue
 
         guard let audioFile else { return }
         guard buffer.frameLength > 0 else { return }
