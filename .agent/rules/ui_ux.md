@@ -1,13 +1,12 @@
-# UI/UX Guidelines
+---
+trigger: model_decision
+description: When working with UI views, windows, or user-facing features.
+---
 
-## Window Management
-- **Standard Windows**: Prefer standard SwiftUI `WindowGroup` or `Settings` scenes over custom `NSWindow` management in `AppDelegate` unless strictly necessary for non-standard behavior (like floating panels).
-- **NavigationSplitView**: Use `NavigationSplitView` for complex apps with sidebars. Configure `columnVisibility` to handle resizing behavior correctly.
-- **Resizability**: Ensure windows are resizable and handle standard macOS traffic light buttons (close, minimize, maximize) naturally.
-
-## Aesthetics
-- **Native Look & Feel**: Follow Apple's Human Interface Guidelines (HIG). Use standard controls where possible.
-- **Dark Mode**: Always support Dark Mode. Use semantic colors (`Color(.windowBackgroundColor)`, `Color.primary`) rather than fixed colors.
-
-## General Style
-- Use the latest visual styles and practices for macOS 26 Tahoe.
+# Window Management
+- Prefira `WindowGroup` ou `Settings` scenes padrão do SwiftUI sobre `NSWindow` customizado
+- Use `NavigationSplitView` para apps com sidebars; configure `columnVisibility` corretamente
+- Garanta que janelas sejam redimensionáveis e respeitem os botões de traffic light (close, minimize, maximize)
+# Aesthetics
+- Siga as Apple Human Interface Guidelines (HIG); use controles nativos quando possível
+- Sempre suporte Dark Mode com cores semânticas (`Color(.windowBackgroundColor)`, `Color.primary`)
