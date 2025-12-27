@@ -110,7 +110,6 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         input.installTap(
             onBus: Constants.tapBusNumber, bufferSize: Constants.tapBufferSize, format: inputFormat
         ) { [weak self] buffer, _ in
-            guard let self else { return }
             processingQueue.async { [weak self] in
                 self?.processAudioBuffer(buffer)
             }
