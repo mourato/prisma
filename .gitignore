@@ -75,11 +75,6 @@ temp/
 scratch/
 *.processed.wav
 
-# Old structure (to be removed after migration)
-MeetingAssistant/dist
-MeetingAssistant/.swiftpm
-MeetingAssistant/.build/
-
 # Build artifacts
 dist/
-
+.xcode-build/

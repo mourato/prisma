@@ -2,6 +2,8 @@
 # =============================================================================
 # create-dmg.sh - Packages MeetingAssistant.app into a .dmg file
 # =============================================================================
+# Works with the new Xcode project structure. Will build Release if needed.
+# =============================================================================
 
 set -e
 
@@ -25,11 +27,19 @@ echo -e "${BLUE}  Creating ${DMG_NAME}${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
-# Check if App Bundle exists
+# Check if App Bundle exists, build if not
 if [ ! -d "${APP_BUNDLE}" ]; then
     echo -e "${YELLOW}App bundle not found at ${APP_BUNDLE}${NC}"
-    echo -e "${YELLOW}Building app first...${NC}"
-    "${PROJECT_DIR}/scripts/build-app.sh"
+    echo -e "${YELLOW}Building Release version first...${NC}"
+    echo ""
+    "${PROJECT_DIR}/scripts/build-release.sh" <<< "n"
+    echo ""
+fi
+
+# Verify app exists after build
+if [ ! -d "${APP_BUNDLE}" ]; then
+    echo -e "${RED}Error: App bundle still not found after build.${NC}"
+    exit 1
 fi
 
 # Prepare staging area
