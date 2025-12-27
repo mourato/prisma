@@ -13,6 +13,8 @@
 "settings.general.recording" = "Gravação";
 "settings.general.auto_start" = "Iniciar gravação automaticamente ao detectar reunião";
 "settings.general.recordings_path" = "Pasta de gravações:";
+"settings.general.audio_format" = "Formato de Áudio";
+"settings.general.merge_audio" = "Mesclar arquivos de áudio ao finalizar";
 "settings.general.recordings_path_hint" = "Caminho";
 "settings.general.choose" = "Escolher...";
 "settings.general.monitored_apps" = "Apps Monitorados";
@@ -22,7 +24,7 @@
 "meeting.app.unknown" = "Desconhecido";
 
 /* AI Settings */
-"settings.ai.title" = "IA";
+"settings.ai.title" = "Modelos de IA";
 "settings.ai.enabled" = "Habilitar processamento de transcrições com IA";
 "settings.ai.description" = "Quando habilitado, as transcrições serão enviadas para um modelo de IA para correção, formatação e resumo.";
 "settings.ai.diarization" = "Identificar Oradores (Beta)";
