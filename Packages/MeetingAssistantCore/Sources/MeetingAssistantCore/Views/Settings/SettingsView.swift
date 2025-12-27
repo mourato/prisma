@@ -88,18 +88,14 @@ public struct SettingsView: View {
     @ViewBuilder
     private var detailView: some View {
         switch self.selectedSection {
-        case .transcriptions:
-            TranscriptionsSettingsTab()
         case .general:
             GeneralSettingsTab()
-        case .shortcuts:
-            ShortcutSettingsTab()
-        case .ai:
-            AISettingsTab()
+        case .transcriptions:
+            TranscriptionsSettingsTab()
         case .postProcessing:
             PostProcessingSettingsTab()
-        case .service:
-            ServiceSettingsTab()
+        case .aiModels:
+            AISettingsTab()
         case .permissions:
             PermissionsSettingsTab()
         }

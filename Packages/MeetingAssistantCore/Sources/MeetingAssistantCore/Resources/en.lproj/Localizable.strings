@@ -13,6 +13,8 @@
 "settings.general.recording" = "Recording";
 "settings.general.auto_start" = "Automatically start recording when meeting is detected";
 "settings.general.recordings_path" = "Recordings folder:";
+"settings.general.audio_format" = "Audio Format";
+"settings.general.merge_audio" = "Merge audio files after recording";
 "settings.general.recordings_path_hint" = "Path";
 "settings.general.choose" = "Choose...";
 "settings.general.monitored_apps" = "Monitored Apps";
@@ -22,7 +24,7 @@
 "meeting.app.unknown" = "Unknown";
 
 /* AI Settings */
-"settings.ai.title" = "AI";
+"settings.ai.title" = "AI Models";
 "settings.ai.enabled" = "Enable AI transcription processing";
 "settings.ai.description" = "When enabled, transcriptions will be sent to an AI model for correction, formatting, and summarization.";
 "settings.ai.diarization" = "Identify Speakers (Beta)";

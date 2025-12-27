@@ -17,6 +17,13 @@ public class NavigationService: ObservableObject {
 
     /// Opens the settings/dashboard window.
     public func openSettings() {
+        // First check if the window is already open
+        if let existingWindow = NSApp.windows.first(where: { $0.identifier?.rawValue == "settings" }) {
+            existingWindow.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+
         if let openWindow = self.openWindow {
             openWindow(id: "settings")
             NSApp.activate(ignoringOtherApps: true)
