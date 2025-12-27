@@ -35,7 +35,7 @@ public struct TranscriptionDetailView: View {
                 Spacer()
 
                 Menu {
-                    Button("Excluir", role: .destructive) {
+                    Button(NSLocalizedString("common.delete", bundle: .safeModule, comment: ""), role: .destructive) {
                         // TODO: Implement delete
                     }
                 } label: {
@@ -46,18 +46,18 @@ public struct TranscriptionDetailView: View {
             }
 
             HStack(spacing: 8) {
-                self.statusBadge(text: "Concluído", color: .green, icon: "checkmark.circle.fill")
+                self.statusBadge(text: NSLocalizedString("transcription.completed", bundle: .safeModule, comment: ""), color: .green, icon: "checkmark.circle.fill")
                 self.statusBadge(text: self.transcription.meeting.appName, color: .blue, icon: "mic.fill")
                 if self.transcription.isPostProcessed {
                     self.statusBadge(
-                        text: self.transcription.postProcessingPromptTitle ?? "Processado",
+                        text: self.transcription.postProcessingPromptTitle ?? NSLocalizedString("transcription.processed", bundle: .safeModule, comment: ""),
                         color: .orange,
                         icon: "sparkles"
                     )
                 }
             }
 
-            Text("Gravado em \(self.transcription.formattedDate)")
+            Text(String(format: NSLocalizedString("transcription.recorded_on", bundle: .safeModule, comment: ""), self.transcription.formattedDate))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -80,7 +80,7 @@ public struct TranscriptionDetailView: View {
     private var transcriptSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Transcrição")
+                Text(NSLocalizedString("transcription.title", bundle: .safeModule, comment: ""))
                     .font(.headline)
 
                 Spacer()
@@ -89,7 +89,7 @@ public struct TranscriptionDetailView: View {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(self.transcription.text, forType: .string)
                 } label: {
-                    Label("Copiar", systemImage: "doc.on.doc")
+                    Label(NSLocalizedString("common.copy", bundle: .safeModule, comment: ""), systemImage: "doc.on.doc")
                 }
                 .buttonStyle(.bordered)
             }
@@ -108,7 +108,7 @@ public struct TranscriptionDetailView: View {
     private var originalTranscriptSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Transcrição Original")
+                Text(NSLocalizedString("transcription.original_title", bundle: .safeModule, comment: ""))
                     .font(.headline)
 
                 Spacer()
@@ -117,7 +117,7 @@ public struct TranscriptionDetailView: View {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(self.transcription.rawText, forType: .string)
                 } label: {
-                    Label("Copiar", systemImage: "doc.on.doc")
+                    Label(NSLocalizedString("common.copy", bundle: .safeModule, comment: ""), systemImage: "doc.on.doc")
                 }
                 .buttonStyle(.bordered)
             }

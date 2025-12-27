@@ -13,13 +13,13 @@ public enum PermissionState: String, Sendable {
     public var displayName: String {
         switch self {
         case .granted:
-            "Concedida"
+            NSLocalizedString("permission.state.granted", bundle: .safeModule, comment: "")
         case .denied:
-            "Negada"
+            NSLocalizedString("permission.state.denied", bundle: .safeModule, comment: "")
         case .notDetermined:
-            "Não Solicitada"
+            NSLocalizedString("permission.state.not_determined", bundle: .safeModule, comment: "")
         case .restricted:
-            "Restrita"
+            NSLocalizedString("permission.state.restricted", bundle: .safeModule, comment: "")
         }
     }
 
@@ -52,9 +52,9 @@ public enum PermissionType: String, CaseIterable, Sendable {
     public var displayName: String {
         switch self {
         case .microphone:
-            "Microfone"
+            NSLocalizedString("permission.type.microphone", bundle: .safeModule, comment: "")
         case .screenRecording:
-            "Gravação de Tela"
+            NSLocalizedString("permission.type.screen_recording", bundle: .safeModule, comment: "")
         }
     }
 
@@ -72,9 +72,9 @@ public enum PermissionType: String, CaseIterable, Sendable {
     public var permissionDescription: String {
         switch self {
         case .microphone:
-            "Necessário para capturar sua voz durante reuniões."
+            NSLocalizedString("permission.type.microphone.desc", bundle: .safeModule, comment: "")
         case .screenRecording:
-            "Necessário para capturar o áudio do sistema (participantes)."
+            NSLocalizedString("permission.type.screen_recording.desc", bundle: .safeModule, comment: "")
         }
     }
 }

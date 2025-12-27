@@ -125,3 +125,118 @@
 "status.recording" = "Gravando...";
 "status.transcribing" = "Transcrevendo...";
 "status.waiting" = "Aguardando reunião";
+
+/* Permission Status View */
+"permissions.system_title" = "Permissões do Sistema";
+"permissions.granted_count" = "%d/2 concedidas";
+"permissions.required_warning" = "Algumas permissões são necessárias para gravar reuniões.";
+"permissions.request" = "Solicitar";
+"permissions.configure" = "Configurar";
+
+/* Permission States */
+"permission.state.granted" = "Concedida";
+"permission.state.denied" = "Negada";
+"permission.state.not_determined" = "Não Solicitada";
+"permission.state.restricted" = "Restrita";
+
+/* Permission Types */
+"permission.type.microphone" = "Microfone";
+"permission.type.screen_recording" = "Gravação de Tela";
+"permission.type.microphone.desc" = "Necessário para capturar sua voz durante reuniões.";
+"permission.type.screen_recording.desc" = "Necessário para capturar o áudio do sistema (participantes).";
+
+/* Transcription Status */
+"transcription.time_remaining" = "~%@ restante";
+"transcription.service" = "Serviço";
+"transcription.model" = "Modelo";
+"transcription.device" = "Dispositivo";
+"transcription.completed" = "Concluído";
+"transcription.processed" = "Processado";
+"transcription.recorded_on" = "Gravado em %@";
+"transcription.title" = "Transcrição";
+"transcription.original_title" = "Transcrição Original";
+
+/* Transcription Service States */
+"transcription.state.connected" = "Conectado";
+"transcription.state.connecting" = "Conectando...";
+"transcription.state.disconnected" = "Desconectado";
+"transcription.state.error" = "Erro";
+"transcription.state.unknown" = "Desconhecido";
+
+/* Model States */
+"transcription.model_state.loaded" = "Carregado";
+"transcription.model_state.downloading" = "Baixando...";
+"transcription.model_state.loading" = "Carregando...";
+"transcription.model_state.unloaded" = "Não carregado";
+"transcription.model_state.error" = "Erro ao carregar";
+
+/* Compact Transcription Status */
+"transcription.compact.offline" = "Offline";
+"transcription.compact.connecting" = "Conectando...";
+"transcription.compact.downloading_model" = "Baixando modelo...";
+"transcription.compact.loading_model" = "Carregando modelo...";
+"transcription.compact.ready" = "Pronto";
+"transcription.compact.transcribing" = "Transcrevendo...";
+"transcription.compact.transcribing_percent" = "Transcrevendo %d%%";
+"transcription.compact.completed" = "Concluído";
+"transcription.compact.waiting" = "Aguardando...";
+
+/* Common Actions */
+"common.ok" = "OK";
+"common.cancel" = "Cancelar";
+"common.delete" = "Excluir";
+"common.copy" = "Copiar";
+"common.save" = "Salvar";
+"common.create" = "Criar";
+"common.optional" = "(opcional)";
+
+/* Prompt Editor */
+"prompt.edit_title" = "Editar Prompt";
+"prompt.new_title" = "Novo Prompt";
+"prompt.title_label" = "Título";
+"prompt.title_placeholder" = "Ex: Resumo de Reunião";
+"prompt.icon_label" = "Ícone";
+"prompt.icon_accessibility" = "Ícone %@";
+"prompt.icon_selected" = "Selecionado";
+"prompt.icon_select" = "Toque para selecionar";
+"prompt.description_label" = "Descrição";
+"prompt.description_placeholder" = "Uma breve descrição do que este prompt faz";
+"prompt.instructions_label" = "Instruções do Prompt";
+"prompt.instructions_hint" = "Defina as instruções que serão enviadas ao modelo de IA junto com a transcrição.";
+
+/* Errors */
+"error.unknown" = "Erro desconhecido";
+
+/* Connection Status */
+"connection.status.unknown" = "Não testado";
+"connection.status.testing" = "Testando...";
+"connection.status.success" = "Conectado";
+"connection.status.failure" = "Falha";
+
+/* Filters */
+"filter.source.all" = "Todas";
+"filter.source.dictations" = "Gravações";
+"filter.source.manual_imports" = "Importadas";
+
+/* Date Filters */
+"filter.date.today" = "Hoje";
+"filter.date.yesterday" = "Ontem";
+"filter.date.this_week" = "Esta Semana";
+"filter.date.last_week" = "Semana Passada";
+"filter.date.this_month" = "Este Mês";
+"filter.date.last_month" = "Mês Passado";
+"filter.date.all" = "Todas";
+
+/* AI Provider */
+"ai.provider.custom" = "Personalizado";
+
+/* Language Settings */
+"settings.general.language" = "Idioma";
+"settings.general.language_desc" = "Escolha o idioma de exibição do aplicativo.";
+"settings.general.language.system" = "Padrão do Sistema";
+"settings.general.language.english" = "English";
+"settings.general.language.portuguese" = "Português";
+"settings.general.language_restart_required" = "Reinicialização necessária para aplicar mudança de idioma.";
+
+/* Transcribe File */
+"transcribe.import_audio" = "Importar Áudio";

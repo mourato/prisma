@@ -20,10 +20,10 @@ public enum ConnectionStatus: Equatable {
 
     public var text: String {
         switch self {
-        case .unknown: "Não testado"
-        case .testing: "Testando..."
-        case .success: "Conectado"
-        case let .failure(message): message ?? "Falha"
+        case .unknown: NSLocalizedString("connection.status.unknown", bundle: .safeModule, comment: "")
+        case .testing: NSLocalizedString("connection.status.testing", bundle: .safeModule, comment: "")
+        case .success: NSLocalizedString("connection.status.success", bundle: .safeModule, comment: "")
+        case let .failure(message): message ?? NSLocalizedString("connection.status.failure", bundle: .safeModule, comment: "")
         }
     }
 

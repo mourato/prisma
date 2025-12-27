@@ -14,7 +14,7 @@ public enum AIProvider: String, CaseIterable, Codable, Sendable {
         case .openai: "OpenAI"
         case .anthropic: "Anthropic"
         case .groq: "Groq"
-        case .custom: "Personalizado"
+        case .custom: NSLocalizedString("ai.provider.custom", bundle: .safeModule, comment: "")
         }
     }
 
@@ -33,6 +33,26 @@ public enum AIProvider: String, CaseIterable, Codable, Sendable {
         case .anthropic: "sparkles"
         case .groq: "bolt.fill"
         case .custom: "server.rack"
+        }
+    }
+}
+
+// MARK: - App Language Configuration
+
+/// Supported app languages for UI localization.
+public enum AppLanguage: String, CaseIterable, Codable, Sendable {
+    case system
+    case english
+    case portuguese
+
+    public var displayName: String {
+        switch self {
+        case .system:
+            NSLocalizedString("settings.general.language.system", bundle: .safeModule, comment: "")
+        case .english:
+            NSLocalizedString("settings.general.language.english", bundle: .safeModule, comment: "")
+        case .portuguese:
+            NSLocalizedString("settings.general.language.portuguese", bundle: .safeModule, comment: "")
         }
     }
 }
@@ -104,6 +124,7 @@ public class AppSettingsStore: ObservableObject {
         static let selectedPromptId = "postProcessingSelectedPromptId"
         static let postProcessingEnabled = "postProcessingEnabled"
         static let isDiarizationEnabled = "isDiarizationEnabled"
+        static let selectedLanguage = "selectedLanguage"
     }
 
     // MARK: - Published Properties
@@ -165,6 +186,14 @@ public class AppSettingsStore: ObservableObject {
     @Published public var shouldMergeAudioFiles: Bool {
         didSet {
             UserDefaults.standard.set(self.shouldMergeAudioFiles, forKey: PostProcessingKeys.shouldMergeAudioFiles)
+        }
+    }
+
+    /// Selected app language.
+    @Published public var selectedLanguage: AppLanguage {
+        didSet {
+            UserDefaults.standard.set(self.selectedLanguage.rawValue, forKey: Keys.selectedLanguage)
+            self.applyLanguage(self.selectedLanguage)
         }
     }
 
@@ -233,6 +262,15 @@ public class AppSettingsStore: ObservableObject {
         } else {
             self.shouldMergeAudioFiles = UserDefaults.standard.bool(forKey: PostProcessingKeys.shouldMergeAudioFiles)
         }
+
+        // Initialize Language Setting
+        if let rawValue = UserDefaults.standard.string(forKey: Keys.selectedLanguage),
+           let language = AppLanguage(rawValue: rawValue)
+        {
+            self.selectedLanguage = language
+        } else {
+            self.selectedLanguage = .system
+        }
     }
 
     // MARK: - Private Helpers
@@ -242,6 +280,19 @@ public class AppSettingsStore: ObservableObject {
         if let data = try? JSONEncoder().encode(value) {
             UserDefaults.standard.set(data, forKey: key)
         }
+    }
+
+    /// Apply language preference to the system.
+    private func applyLanguage(_ language: AppLanguage) {
+        switch language {
+        case .system:
+            UserDefaults.standard.removeObject(forKey: "AppleLanguages")
+        case .english:
+            UserDefaults.standard.set(["en"], forKey: "AppleLanguages")
+        case .portuguese:
+            UserDefaults.standard.set(["pt"], forKey: "AppleLanguages")
+        }
+        UserDefaults.standard.synchronize()
     }
 
     /// Reset all settings to defaults.
