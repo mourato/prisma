@@ -78,8 +78,6 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         }
     }
 
-    // ...
-
     // MARK: - Public API
 
     /// Start recording merged audio (Mic + System) to the specified URL.
