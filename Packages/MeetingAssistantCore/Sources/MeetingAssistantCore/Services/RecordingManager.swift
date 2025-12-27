@@ -10,8 +10,6 @@ import UserNotifications
 public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     public static let shared = RecordingManager()
 
-    // private let logger = Logger(subsystem: "MeetingAssistant", category: "RecordingManager") // Replaced by AppLogger
-
     // MARK: - Published State
 
     @Published public private(set) var isRecording = false

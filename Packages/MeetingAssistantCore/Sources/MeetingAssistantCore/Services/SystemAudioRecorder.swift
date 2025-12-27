@@ -14,8 +14,6 @@ import os.log
 public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
     public static let shared = SystemAudioRecorder()
 
-    // private let logger = Logger(subsystem: "MeetingAssistant", category: "SystemAudioRecorder") // Replaced by AppLogger
-
     @Published public private(set) var isRecording = false
     public var isRecordingPublisher: AnyPublisher<Bool, Never> {
         self.$isRecording.eraseToAnyPublisher()

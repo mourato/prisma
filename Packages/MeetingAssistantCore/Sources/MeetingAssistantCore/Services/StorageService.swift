@@ -33,8 +33,6 @@ public protocol StorageService: Sendable {
 public final class FileSystemStorageService: StorageService {
     public static let shared = FileSystemStorageService()
 
-    // private let logger = Logger(subsystem: "MeetingAssistant", category: "StorageService") // Replaced by AppLogger
-
     public let recordingsDirectory: URL
     private let transcriptsDirectory: URL
 

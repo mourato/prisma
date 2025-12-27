@@ -70,7 +70,6 @@ public struct ServiceStatusResponse: Codable {
 public class TranscriptionClient: ObservableObject, TranscriptionService {
     public static let shared = TranscriptionClient()
 
-    // private let logger = Logger(subsystem: "MeetingAssistant", category: "TranscriptionClient") // Replaced by AppLogger
     private let manager = FluidAIModelManager.shared
 
     // We observe the manager to update our synthetic "ServiceStatus" if needed,
