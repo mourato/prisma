@@ -50,12 +50,19 @@ public struct MenuBarView: View {
         _viewModel = StateObject(wrappedValue: viewModel ?? RecordingViewModel())
     }
 
+    @State private var isPermissionDismissed = false
+
+    private var shouldShowPermissionStatus: Bool {
+        !self.viewModel.arePermissionsGranted || !self.isPermissionDismissed
+    }
+
     public var body: some View {
         VStack(spacing: 16) {
             self.headerSection
 
-            // Always show permission status for visibility
-            self.permissionStatusSection
+            if self.shouldShowPermissionStatus {
+                self.permissionStatusSection
+            }
 
             self.statusSection
 
@@ -78,7 +85,12 @@ public struct MenuBarView: View {
 
     private var permissionStatusSection: some View {
         PermissionStatusView(
-            viewModel: self.viewModel.permissionViewModel
+            viewModel: self.viewModel.permissionViewModel,
+            onDismiss: {
+                withAnimation {
+                    self.isPermissionDismissed = true
+                }
+            }
         )
     }
 

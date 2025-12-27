@@ -58,6 +58,10 @@ public class PermissionViewModel: ObservableObject {
         self.openScreenSettingsAction()
     }
 
+    public var allPermissionsGranted: Bool {
+        self.microphoneState == .granted && self.screenState == .granted
+    }
+
     // MARK: - Private
 
     private func setupBindings() {
