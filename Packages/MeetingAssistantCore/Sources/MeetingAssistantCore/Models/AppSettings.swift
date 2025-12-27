@@ -277,9 +277,9 @@ public extension AppSettingsStore {
 
     // MARK: - Post-Processing Extension
 
-    private enum PostProcessingKeys {
-        static let audioFormat = "audioFormat"
-        static let shouldMergeAudioFiles = "shouldMergeAudioFiles"
+    enum PostProcessingKeys {
+        public static let audioFormat = "audioFormat"
+        public static let shouldMergeAudioFiles = "shouldMergeAudioFiles"
     }
 
     /// Supported audio formats for recording.
