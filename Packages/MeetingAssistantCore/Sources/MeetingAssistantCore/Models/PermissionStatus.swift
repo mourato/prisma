@@ -13,13 +13,13 @@ public enum PermissionState: String, Sendable {
     public var displayName: String {
         switch self {
         case .granted:
-            NSLocalizedString("permission.state.granted", bundle: .safeModule, comment: "")
+            "permission.state.granted".localized
         case .denied:
-            NSLocalizedString("permission.state.denied", bundle: .safeModule, comment: "")
+            "permission.state.denied".localized
         case .notDetermined:
-            NSLocalizedString("permission.state.not_determined", bundle: .safeModule, comment: "")
+            "permission.state.not_determined".localized
         case .restricted:
-            NSLocalizedString("permission.state.restricted", bundle: .safeModule, comment: "")
+            "permission.state.restricted".localized
         }
     }
 
@@ -52,9 +52,9 @@ public enum PermissionType: String, CaseIterable, Sendable {
     public var displayName: String {
         switch self {
         case .microphone:
-            NSLocalizedString("permission.type.microphone", bundle: .safeModule, comment: "")
+            "permission.type.microphone".localized
         case .screenRecording:
-            NSLocalizedString("permission.type.screen_recording", bundle: .safeModule, comment: "")
+            "permission.type.screen_recording".localized
         }
     }
 
@@ -72,9 +72,9 @@ public enum PermissionType: String, CaseIterable, Sendable {
     public var permissionDescription: String {
         switch self {
         case .microphone:
-            NSLocalizedString("permission.type.microphone.desc", bundle: .safeModule, comment: "")
+            "permission.type.microphone.desc".localized
         case .screenRecording:
-            NSLocalizedString("permission.type.screen_recording.desc", bundle: .safeModule, comment: "")
+            "permission.type.screen_recording.desc".localized
         }
     }
 }

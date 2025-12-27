@@ -14,7 +14,7 @@ public enum AIProvider: String, CaseIterable, Codable, Sendable {
         case .openai: "OpenAI"
         case .anthropic: "Anthropic"
         case .groq: "Groq"
-        case .custom: NSLocalizedString("ai.provider.custom", bundle: .safeModule, comment: "")
+        case .custom: "ai.provider.custom".localized
         }
     }
 
@@ -48,11 +48,11 @@ public enum AppLanguage: String, CaseIterable, Codable, Sendable {
     public var displayName: String {
         switch self {
         case .system:
-            NSLocalizedString("settings.general.language.system", bundle: .safeModule, comment: "")
+            "settings.general.language.system".localized
         case .english:
-            NSLocalizedString("settings.general.language.english", bundle: .safeModule, comment: "")
+            "settings.general.language.english".localized
         case .portuguese:
-            NSLocalizedString("settings.general.language.portuguese", bundle: .safeModule, comment: "")
+            "settings.general.language.portuguese".localized
         }
     }
 }
@@ -292,7 +292,7 @@ public class AppSettingsStore: ObservableObject {
         case .portuguese:
             UserDefaults.standard.set(["pt"], forKey: "AppleLanguages")
         }
-        UserDefaults.standard.synchronize()
+        // UserDefaults synchronizes automatically
     }
 
     /// Reset all settings to defaults.
