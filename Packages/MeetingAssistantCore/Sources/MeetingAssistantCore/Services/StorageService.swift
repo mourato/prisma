@@ -86,8 +86,10 @@ public final class FileSystemStorageService: StorageService {
 
         // Read audio format directly from UserDefaults to avoid MainActor isolation issues
         // Key matches AppSettingsStore.PostProcessingKeys.audioFormat
-        let formatRaw = UserDefaults.standard.string(forKey: "audioFormat")
-        let fileExtension = (formatRaw == "m4a") ? "m4a" : "wav"
+        let formatRaw = UserDefaults.standard.string(forKey: AppSettingsStore.PostProcessingKeys.audioFormat)
+        // Default to .wav if nil or invalid
+        let format = formatRaw.flatMap { AppSettingsStore.AudioFormat(rawValue: $0) } ?? .wav
+        let fileExtension = format.fileExtension
 
         switch type {
         case .microphone:
