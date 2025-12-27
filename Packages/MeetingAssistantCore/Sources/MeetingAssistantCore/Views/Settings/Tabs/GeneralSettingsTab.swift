@@ -22,28 +22,28 @@ public struct GeneralSettingsTab: View {
 
     @ViewBuilder
     private var recordingSection: some View {
-        SettingsGroup(NSLocalizedString("settings.general.recording", bundle: .module, comment: ""), icon: "recordingtape") {
+        SettingsGroup(NSLocalizedString("settings.general.recording", bundle: .safeModule, comment: ""), icon: "recordingtape") {
             VStack(alignment: .leading, spacing: 16) {
                 Toggle(
-                    NSLocalizedString("settings.general.auto_start", bundle: .module, comment: ""),
+                    NSLocalizedString("settings.general.auto_start", bundle: .safeModule, comment: ""),
                     isOn: self.$viewModel.autoStartRecording
                 )
 
                 Divider()
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(NSLocalizedString("settings.general.recordings_path", bundle: .module, comment: ""))
+                    Text(NSLocalizedString("settings.general.recordings_path", bundle: .safeModule, comment: ""))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
 
                     HStack {
                         TextField(
-                            NSLocalizedString("settings.general.recordings_path_hint", bundle: .module, comment: "Caminho"),
+                            NSLocalizedString("settings.general.recordings_path_hint", bundle: .safeModule, comment: "Caminho"),
                             text: self.$viewModel.recordingsPath
                         )
                         .textFieldStyle(.roundedBorder)
 
-                        Button(NSLocalizedString("settings.general.choose", bundle: .module, comment: "")) {
+                        Button(NSLocalizedString("settings.general.choose", bundle: .safeModule, comment: "")) {
                             self.viewModel.selectRecordingsDirectory()
                         }
                     }
@@ -54,9 +54,9 @@ public struct GeneralSettingsTab: View {
 
     @ViewBuilder
     private var appsSection: some View {
-        SettingsGroup(NSLocalizedString("settings.general.monitored_apps", bundle: .module, comment: ""), icon: "app.badge") {
+        SettingsGroup(NSLocalizedString("settings.general.monitored_apps", bundle: .safeModule, comment: ""), icon: "app.badge") {
             VStack(alignment: .leading, spacing: 12) {
-                Text(NSLocalizedString("settings.general.monitored_apps_desc", bundle: .module, comment: ""))
+                Text(NSLocalizedString("settings.general.monitored_apps_desc", bundle: .safeModule, comment: ""))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .padding(.bottom, 4)
@@ -72,7 +72,7 @@ public struct GeneralSettingsTab: View {
                             Text(app.displayName)
                                 .font(.body)
                                 .fontWeight(.medium)
-                            Text(NSLocalizedString("settings.general.monitoring_active", bundle: .module, comment: ""))
+                            Text(NSLocalizedString("settings.general.monitoring_active", bundle: .safeModule, comment: ""))
                                 .font(.caption2)
                                 .foregroundStyle(.green)
                         }

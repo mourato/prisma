@@ -12,9 +12,9 @@ public struct ShortcutSettingsTab: View {
     public var body: some View {
         ScrollView {
             VStack(spacing: SettingsDesignSystem.Layout.sectionSpacing) {
-                SettingsGroup(NSLocalizedString("settings.shortcuts.global", bundle: .module, comment: ""), icon: "command") {
+                SettingsGroup(NSLocalizedString("settings.shortcuts.global", bundle: .safeModule, comment: ""), icon: "command") {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text(NSLocalizedString("settings.shortcuts.description", bundle: .module, comment: ""))
+                        Text(NSLocalizedString("settings.shortcuts.description", bundle: .safeModule, comment: ""))
                             .font(.caption)
                             .foregroundStyle(.secondary)
 
@@ -23,10 +23,10 @@ public struct ShortcutSettingsTab: View {
 
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(NSLocalizedString("settings.shortcuts.toggle_recording", bundle: .module, comment: ""))
+                                Text(NSLocalizedString("settings.shortcuts.toggle_recording", bundle: .safeModule, comment: ""))
                                     .font(.body)
                                     .fontWeight(.medium)
-                                Text(NSLocalizedString("settings.shortcuts.toggle_recording_desc", bundle: .module, comment: ""))
+                                Text(NSLocalizedString("settings.shortcuts.toggle_recording_desc", bundle: .safeModule, comment: ""))
                                     .font(.caption2)
                                     .foregroundStyle(.secondary)
                             }
@@ -46,7 +46,7 @@ public struct ShortcutSettingsTab: View {
                         Button(action: {
                             self.viewModel.resetShortcuts()
                         }) {
-                            Text(NSLocalizedString("settings.shortcuts.reset", bundle: .module, comment: ""))
+                            Text(NSLocalizedString("settings.shortcuts.reset", bundle: .safeModule, comment: ""))
                         }
                         .buttonStyle(.link)
 

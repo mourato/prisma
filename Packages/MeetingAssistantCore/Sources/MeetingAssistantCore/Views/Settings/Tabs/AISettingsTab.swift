@@ -28,13 +28,13 @@ public struct AISettingsTab: View {
 
     @ViewBuilder
     private var mainSection: some View {
-        SettingsGroup(NSLocalizedString("settings.general.title", bundle: .module, comment: ""), icon: "brain") {
+        SettingsGroup(NSLocalizedString("settings.general.title", bundle: .safeModule, comment: ""), icon: "brain") {
             Toggle(
-                NSLocalizedString("settings.ai.enabled", bundle: .module, comment: ""),
+                NSLocalizedString("settings.ai.enabled", bundle: .safeModule, comment: ""),
                 isOn: self.$viewModel.settings.aiEnabled
             )
 
-            Text(NSLocalizedString("settings.ai.description", bundle: .module, comment: ""))
+            Text(NSLocalizedString("settings.ai.description", bundle: .safeModule, comment: ""))
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -42,11 +42,11 @@ public struct AISettingsTab: View {
                 .padding(.vertical, 4)
 
             Toggle(
-                NSLocalizedString("settings.ai.diarization", bundle: .module, comment: ""),
+                NSLocalizedString("settings.ai.diarization", bundle: .safeModule, comment: ""),
                 isOn: self.$viewModel.settings.isDiarizationEnabled
             )
 
-            Text(NSLocalizedString("settings.ai.diarization_desc", bundle: .module, comment: ""))
+            Text(NSLocalizedString("settings.ai.diarization_desc", bundle: .safeModule, comment: ""))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -54,9 +54,9 @@ public struct AISettingsTab: View {
 
     @ViewBuilder
     private var providerSection: some View {
-        SettingsGroup(NSLocalizedString("settings.ai.provider", bundle: .module, comment: ""), icon: "server.rack") {
+        SettingsGroup(NSLocalizedString("settings.ai.provider", bundle: .safeModule, comment: ""), icon: "server.rack") {
             Picker(
-                NSLocalizedString("settings.ai.provider_label", bundle: .module, comment: ""),
+                NSLocalizedString("settings.ai.provider_label", bundle: .safeModule, comment: ""),
                 selection: self.$viewModel.settings.aiConfiguration.provider
             ) {
                 ForEach(AIProvider.allCases, id: \.self) { provider in
@@ -79,10 +79,10 @@ public struct AISettingsTab: View {
 
     @ViewBuilder
     private var apiConfigurationSection: some View {
-        SettingsGroup(NSLocalizedString("settings.ai.api_config", bundle: .module, comment: ""), icon: "key.fill") {
+        SettingsGroup(NSLocalizedString("settings.ai.api_config", bundle: .safeModule, comment: ""), icon: "key.fill") {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Text(NSLocalizedString("settings.ai.base_url", bundle: .module, comment: ""))
+                    Text(NSLocalizedString("settings.ai.base_url", bundle: .safeModule, comment: ""))
                         .frame(width: 80, alignment: .leading)
                     TextField(
                         self.viewModel.settings.aiConfiguration.provider.defaultBaseURL,
@@ -92,7 +92,7 @@ public struct AISettingsTab: View {
                 }
 
                 HStack {
-                    Text(NSLocalizedString("settings.ai.api_key", bundle: .module, comment: ""))
+                    Text(NSLocalizedString("settings.ai.api_key", bundle: .safeModule, comment: ""))
                         .frame(width: 80, alignment: .leading)
                     Group {
                         if self.viewModel.showAPIKey {
@@ -111,15 +111,15 @@ public struct AISettingsTab: View {
                     .buttonStyle(.borderless)
                     .help(
                         self.viewModel.showAPIKey
-                            ? NSLocalizedString("settings.ai.hide_key", bundle: .module, comment: "")
-                            : NSLocalizedString("settings.ai.show_key", bundle: .module, comment: "")
+                            ? NSLocalizedString("settings.ai.hide_key", bundle: .safeModule, comment: "")
+                            : NSLocalizedString("settings.ai.show_key", bundle: .safeModule, comment: "")
                     )
                 }
 
                 HStack {
                     Image(systemName: "lock.shield.fill")
                         .foregroundStyle(.green)
-                    Text(NSLocalizedString("settings.ai.keychain_secure", bundle: .module, comment: ""))
+                    Text(NSLocalizedString("settings.ai.keychain_secure", bundle: .safeModule, comment: ""))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
@@ -138,7 +138,7 @@ public struct AISettingsTab: View {
     private var modelSelectionSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text(NSLocalizedString("settings.ai.model", bundle: .module, comment: ""))
+                Text(NSLocalizedString("settings.ai.model", bundle: .safeModule, comment: ""))
                     .frame(width: 80, alignment: .leading)
 
                 if self.viewModel.isLoadingModels {
@@ -147,7 +147,7 @@ public struct AISettingsTab: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                 } else if !self.viewModel.availableModels.isEmpty {
                     Picker("", selection: self.$viewModel.settings.aiConfiguration.selectedModel) {
-                        Text(NSLocalizedString("settings.ai.model_select", bundle: .module, comment: ""))
+                        Text(NSLocalizedString("settings.ai.model_select", bundle: .safeModule, comment: ""))
                             .tag("")
                         ForEach(self.viewModel.availableModels) { model in
                             Text(model.id).tag(model.id)
@@ -170,7 +170,7 @@ public struct AISettingsTab: View {
                 }
                 .buttonStyle(.borderless)
                 .disabled(self.viewModel.isLoadingModels || !self.viewModel.settings.aiConfiguration.isValid)
-                .help(NSLocalizedString("settings.ai.model_refresh", bundle: .module, comment: ""))
+                .help(NSLocalizedString("settings.ai.model_refresh", bundle: .safeModule, comment: ""))
             }
 
             if let error = self.viewModel.modelsFetchError {
@@ -184,14 +184,14 @@ public struct AISettingsTab: View {
             } else if !self.viewModel.availableModels.isEmpty {
                 Text(
                     String(
-                        format: NSLocalizedString("settings.ai.models_loaded", bundle: .module, comment: ""),
+                        format: NSLocalizedString("settings.ai.models_loaded", bundle: .safeModule, comment: ""),
                         self.viewModel.availableModels.count
                     )
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)
             } else {
-                Text(NSLocalizedString("settings.ai.model_hint", bundle: .module, comment: ""))
+                Text(NSLocalizedString("settings.ai.model_hint", bundle: .safeModule, comment: ""))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -211,7 +211,7 @@ public struct AISettingsTab: View {
                                 .controlSize(.small)
                                 .scaleEffect(0.7)
                         }
-                        Text(NSLocalizedString("settings.ai.test_connection", bundle: .module, comment: ""))
+                        Text(NSLocalizedString("settings.ai.test_connection", bundle: .safeModule, comment: ""))
                     }
                 }
                 .buttonStyle(.borderedProminent)
