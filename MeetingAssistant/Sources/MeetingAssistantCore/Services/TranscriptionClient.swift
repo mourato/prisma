@@ -77,10 +77,8 @@ public class TranscriptionClient: ObservableObject, TranscriptionService {
     // but the fetchServiceStatus() method is pull-based, so we can just compute it on demand.
 
     private init() {
-        Task {
-            // Pre-load models on init (or we can wait for explicit warmup)
-            await self.manager.loadModels()
-        }
+        // NOTE: Model loading is now deferred to first transcription or explicit warmupModel() call
+        // to prevent main thread starvation during app startup.
     }
 
     /// Check if the transcription service is healthy (local model manager).

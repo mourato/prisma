@@ -57,15 +57,12 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
     // NOTE: Ensures SCStream is stopped even on unexpected termination.
     // Without this, macOS keeps screen/audio capture active after crash.
     deinit {
-        // Synchronously stop stream to prevent orphaned capture sessions
+        // Use detached task to stop stream without blocking (prevents main thread deadlock)
+        // The stream cleanup is fire-and-forget since deinit cannot await.
         if let stream {
-            let semaphore = DispatchSemaphore(value: 0)
-            Task {
+            Task.detached { [stream] in
                 try? await stream.stopCapture()
-                semaphore.signal()
             }
-            // Wait up to 1 second for cleanup
-            _ = semaphore.wait(timeout: .now() + 1.0)
         }
 
         // Ensure file is finalized

@@ -37,7 +37,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
     private var popover: NSPopover?
     private var contextMenu: NSMenu?
-    private var recordingManager = RecordingManager.shared
+    private lazy var recordingManager: RecordingManager = .shared
     private var eventMonitor: Any?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -54,6 +54,27 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if let monitor = eventMonitor {
             NSEvent.removeMonitor(monitor)
         }
+    }
+
+    // MARK: - Document Handling (Disabled for Menu Bar App)
+
+    /// Prevent the app from reopening windows when activated.
+    /// This is critical for menu bar-only apps in SPM builds.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        // Do not create new windows when app is reactivated
+        false
+    }
+
+    /// Prevent the app from opening untitled files on launch.
+    /// Without this, AppKit calls this method and crashes in SPM builds.
+    func applicationOpenUntitledFile(_ sender: NSApplication) -> Bool {
+        // Menu bar apps don't open documents
+        true
+    }
+
+    /// Prevent app from prompting to open a new document.
+    func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool {
+        false
     }
 
     // MARK: - Global Shortcut Setup

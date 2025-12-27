@@ -1,50 +1,50 @@
-import Foundation
 import Combine
+import Foundation
 import MeetingAssistantCore
 
 // MARK: - Mock Audio Recording Service
 
 class MockAudioRecorder: AudioRecordingService {
     @Published var isRecording = false
-    var isRecordingPublisher: AnyPublisher<Bool, Never> { $isRecording.eraseToAnyPublisher() }
-    
+    var isRecordingPublisher: AnyPublisher<Bool, Never> { self.$isRecording.eraseToAnyPublisher() }
+
     var currentRecordingURL: URL?
     var error: Error?
-    
+
     var shouldFailStart = false
     var permissionGranted = true
     var permissionState: PermissionState = .granted
-    
+
     var startRecordingCalled = false
     var stopRecordingCalled = false
-    
+
     func startRecording(to outputURL: URL, retryCount: Int) async throws {
-        if shouldFailStart {
-             throw NSError(domain: "MockRecorder", code: 1, userInfo: [NSLocalizedDescriptionKey: "Mock failure"])
+        if self.shouldFailStart {
+            throw NSError(domain: "MockRecorder", code: 1, userInfo: [NSLocalizedDescriptionKey: "Mock failure"])
         }
-        startRecordingCalled = true
-        isRecording = true
-        currentRecordingURL = outputURL
+        self.startRecordingCalled = true
+        self.isRecording = true
+        self.currentRecordingURL = outputURL
     }
-    
+
     func stopRecording() async -> URL? {
-        stopRecordingCalled = true
-        isRecording = false
-        return currentRecordingURL
+        self.stopRecordingCalled = true
+        self.isRecording = false
+        return self.currentRecordingURL
     }
-    
+
     func hasPermission() async -> Bool {
-        return permissionGranted
+        self.permissionGranted
     }
-    
+
     func requestPermission() async {
         // no-op
     }
-    
+
     func getPermissionState() -> PermissionState {
-        return permissionState
+        self.permissionState
     }
-    
+
     func openSettings() {
         // no-op
     }
@@ -54,17 +54,17 @@ class MockAudioRecorder: AudioRecordingService {
 
 class MockTranscriptionClient: TranscriptionService {
     @Published var isTranscribing = false // Simulated state if needed
-    
+
     var shouldFailHealthCheck = false
     var shouldFailTranscription = false
-    
+
     func healthCheck() async throws -> Bool {
-        if shouldFailHealthCheck { return false }
+        if self.shouldFailHealthCheck { return false }
         return true
     }
-    
+
     func fetchServiceStatus() async throws -> ServiceStatusResponse {
-        return ServiceStatusResponse(
+        ServiceStatusResponse(
             status: "ready",
             modelState: "loaded",
             modelLoaded: true,
@@ -76,9 +76,9 @@ class MockTranscriptionClient: TranscriptionService {
             totalAudioProcessedSeconds: 0
         )
     }
-    
+
     func transcribe(audioURL: URL) async throws -> TranscriptionResponse {
-        if shouldFailTranscription {
+        if self.shouldFailTranscription {
             throw NSError(domain: "MockTranscription", code: 2, userInfo: [NSLocalizedDescriptionKey: "Transcription failed"])
         }
         return TranscriptionResponse(
@@ -96,22 +96,22 @@ class MockTranscriptionClient: TranscriptionService {
 @MainActor
 class MockPostProcessingService: PostProcessingServiceProtocol {
     @Published var isProcessing = false
-    var isProcessingPublisher: AnyPublisher<Bool, Never> { $isProcessing.eraseToAnyPublisher() }
-    
+    var isProcessingPublisher: AnyPublisher<Bool, Never> { self.$isProcessing.eraseToAnyPublisher() }
+
     var lastError: PostProcessingError?
-    
+
     var shouldFail = false
-    
+
     func processTranscription(_ text: String, with prompt: PostProcessingPrompt) async throws -> String {
-        if shouldFail {
+        if self.shouldFail {
             // Throwing a generic error for now as PostProcessingError might not have a generic init
             throw PostProcessingError.apiError("Mock failure")
         }
         return "Processed: \(text)"
     }
-    
+
     func processTranscription(_ text: String) async throws -> String {
-        return try await processTranscription(text, with: PostProcessingPrompt(
+        try await self.processTranscription(text, with: PostProcessingPrompt(
             id: UUID(),
             title: "Default",
             promptText: "Fix this: {{TRANSCRIPTION}}",
@@ -125,22 +125,26 @@ class MockPostProcessingService: PostProcessingServiceProtocol {
 // MARK: - Mock Storage Service
 
 class MockStorageService: StorageService, @unchecked Sendable {
-    var recordingsDirectory: URL = URL(fileURLWithPath: "/tmp/mock/recordings")
-    
+    var recordingsDirectory: URL = .init(fileURLWithPath: "/tmp/mock/recordings")
+
     var createRecordingURLCalled = false
     var cleanupTemporaryFilesCalled = false
     var saveTranscriptionCalled = false
-    
+
     func createRecordingURL(for meeting: Meeting, type: RecordingType) -> URL {
-        createRecordingURLCalled = true
-        return recordingsDirectory.appendingPathComponent("mock_\(type.rawValue).wav")
+        self.createRecordingURLCalled = true
+        return self.recordingsDirectory.appendingPathComponent("mock_\(type.rawValue).wav")
     }
-    
+
     func cleanupTemporaryFiles(urls: [URL]) {
-        cleanupTemporaryFilesCalled = true
+        self.cleanupTemporaryFilesCalled = true
     }
-    
+
     func saveTranscription(_ transcription: Transcription) async throws {
-        saveTranscriptionCalled = true
+        self.saveTranscriptionCalled = true
+    }
+
+    func loadTranscriptions() async throws -> [Transcription] {
+        []
     }
 }
