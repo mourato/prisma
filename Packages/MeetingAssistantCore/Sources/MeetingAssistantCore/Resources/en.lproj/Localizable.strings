@@ -120,6 +120,8 @@
 "menubar.settings" = "Settings...";
 "menubar.check_updates" = "Check for Updates...";
 "menubar.quit" = "Quit";
+"menubar.accessibility.recording" = "Recording in progress";
+"menubar.accessibility.idle" = "Meeting Assistant";
 "status.recording" = "Recording...";
 "status.transcribing" = "Transcribing...";
 "status.waiting" = "Waiting for meeting";
