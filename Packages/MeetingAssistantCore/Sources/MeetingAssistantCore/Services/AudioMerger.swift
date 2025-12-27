@@ -152,7 +152,22 @@ public final class AudioMerger {
                             return
                         }
                     } else {
-                        writerInput.markAsFinished()
+                        // verify if reading actually finished or failed
+                        if reader.status == .reading {
+                            // This case might happen if we just ran out of buffer temporarily, but copyNextSampleBuffer implies pull.
+                            // Usually nil means done or error.
+                            // We should mark indices finished.
+                            writerInput.markAsFinished()
+                        } else if reader.status == .completed {
+                            writerInput.markAsFinished()
+                        } else if reader.status == .failed {
+                            // We cannot throw easily from here async, so we signal finish and let the cleanup check catch it.
+                            // Ideally we should cancel.
+                            writerInput.markAsFinished() // Writer will likely fail or just finish empty.
+                            // We will check listener status at the end.
+                        } else {
+                            writerInput.markAsFinished()
+                        }
                         continuation.resume()
                         return
                     }
@@ -164,6 +179,10 @@ public final class AudioMerger {
 
         if writer.status == .failed {
             throw AudioMergerError.exportFailed(writer.error)
+        }
+
+        if reader.status == .failed {
+            throw AudioMergerError.exportFailed(reader.error)
         }
     }
 }
