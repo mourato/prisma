@@ -12,13 +12,14 @@ public final class AudioMerger {
 
     // MARK: - Public API
 
-    /// Merge multiple audio files into a single M4A file.
+    /// Merge multiple audio files into a single file.
     /// - Parameters:
-    ///   - inputURLs: Array of audio file URLs to merge (can be different formats/sample rates)
-    ///   - outputURL: Destination URL for the merged file (.m4a)
-    /// - Returns: URL of the merged file
-    public func mergeAudioFiles(inputURLs: [URL], to outputURL: URL) async throws -> URL {
-        self.logger.info("Merging \(inputURLs.count) audio files to: \(outputURL.path)")
+    ///   - inputURLs: Array of audio file URLs to merge.
+    ///   - outputURL: Destination URL.
+    ///   - format: Target audio format (WAV or M4A).
+    /// - Returns: URL of the merged file.
+    public func mergeAudioFiles(inputURLs: [URL], to outputURL: URL, format: AppSettingsStore.AudioFormat) async throws -> URL {
+        self.logger.info("Merging \(inputURLs.count) audio files to: \(outputURL.path) (Format: \(format.displayName))")
 
         // Filter out non-existent files
         let existingURLs = inputURLs.filter { FileManager.default.fileExists(atPath: $0.path) }
@@ -27,129 +28,143 @@ public final class AudioMerger {
             throw AudioMergerError.noInputFiles
         }
 
-        // If only one file exists, just convert it to M4A
-        if existingURLs.count == 1 {
-            return try await self.convertToM4A(inputURL: existingURLs[0], outputURL: outputURL)
+        // Remove existing output file
+        if FileManager.default.fileExists(atPath: outputURL.path) {
+            try FileManager.default.removeItem(at: outputURL)
         }
 
         // Create composition
         let composition = AVMutableComposition()
 
-        // Load all assets and add to composition
-        var longestDuration: CMTime = .zero
+        // Add tracks (sequentially or mixed? implementation assumes mixing start at zero based on previous code)
+        // Original code: inserts all at .zero. This creates a MIX.
+        try await self.buildComposition(composition, from: existingURLs)
 
-        for (index, url) in existingURLs.enumerated() {
+        // Export using AVAssetWriter
+        try await self.export(composition: composition, to: outputURL, format: format)
+
+        return outputURL
+    }
+
+    // MARK: - Private Methods
+
+    private func buildComposition(_ composition: AVMutableComposition, from urls: [URL]) async throws {
+        for (index, url) in urls.enumerated() {
             let asset = AVAsset(url: url)
-
             do {
                 let tracks = try await asset.loadTracks(withMediaType: .audio)
                 let duration = try await asset.load(.duration)
 
-                guard let track = tracks.first else {
-                    self.logger.warning("No audio track found in: \(url.lastPathComponent)")
-                    continue
-                }
+                guard let track = tracks.first else { continue }
 
                 guard let compositionTrack = composition.addMutableTrack(
                     withMediaType: .audio,
                     preferredTrackID: Int32(index + 1)
-                ) else {
-                    self.logger.warning("Failed to add track for: \(url.lastPathComponent)")
-                    continue
-                }
+                ) else { continue }
 
                 try compositionTrack.insertTimeRange(
                     CMTimeRange(start: .zero, duration: duration),
                     of: track,
                     at: .zero
                 )
-
-                if duration > longestDuration {
-                    longestDuration = duration
-                }
-
-                self.logger.info("Added track: \(url.lastPathComponent) (\(duration.seconds)s)")
-
             } catch {
-                self.logger.warning("Failed to load asset \(url.lastPathComponent): \(error.localizedDescription)")
+                self.logger.warning("Failed to add track from \(url.lastPathComponent): \(error.localizedDescription)")
             }
         }
+    }
 
-        guard !composition.tracks.isEmpty else {
-            throw AudioMergerError.noValidTracks
+    private func export(composition: AVAsset, to outputURL: URL, format: AppSettingsStore.AudioFormat) async throws {
+        // 1. Setup Reader
+        let reader = try AVAssetReader(asset: composition)
+
+        // Configure Reader Output to PCM for processing
+        let readerSettings: [String: Any] = [
+            AVFormatIDKey: kAudioFormatLinearPCM,
+            AVLinearPCMBitDepthKey: 32,
+            AVLinearPCMIsFloatKey: true,
+            AVLinearPCMIsNonInterleaved: false,
+        ]
+
+        let readerOutput = AVAssetReaderAudioMixOutput(audioTracks: composition.tracks(withMediaType: .audio), audioSettings: readerSettings)
+        if reader.canAdd(readerOutput) {
+            reader.add(readerOutput)
+        } else {
+            throw AudioMergerError.failedToCreateExportSession // Reuse error or create new
         }
 
-        // Export to M4A
-        return try await self.exportComposition(composition, to: outputURL)
-    }
+        // 2. Setup Writer
+        let writer = try AVAssetWriter(outputURL: outputURL, fileType: format == .m4a ? .m4a : .wav)
 
-    /// Convert a single audio file to M4A format.
-    public func convertToM4A(inputURL: URL, outputURL: URL) async throws -> URL {
-        self.logger.info("Converting \(inputURL.lastPathComponent) to M4A")
-
-        let asset = AVAsset(url: inputURL)
-        return try await self.exportAsset(asset, to: outputURL)
-    }
-
-    // MARK: - Private Methods
-
-    private func exportComposition(_ composition: AVComposition, to outputURL: URL) async throws -> URL {
-        try await self.exportAsset(composition, to: outputURL)
-    }
-
-    private func exportAsset(_ asset: AVAsset, to outputURL: URL) async throws -> URL {
-        // Remove existing file if present
-        if FileManager.default.fileExists(atPath: outputURL.path) {
-            try FileManager.default.removeItem(at: outputURL)
+        // Configure Writer Input based on format
+        let writerSettings: [String: Any] = switch format {
+        case .m4a:
+            [
+                AVFormatIDKey: kAudioFormatMPEG4AAC,
+                AVNumberOfChannelsKey: 2,
+                AVSampleRateKey: 48_000, // Standardize to 48kHz
+                AVEncoderBitRateKey: 128_000,
+            ]
+        case .wav:
+            [
+                AVFormatIDKey: kAudioFormatLinearPCM,
+                AVNumberOfChannelsKey: 2,
+                AVSampleRateKey: 48_000,
+                AVLinearPCMBitDepthKey: 32,
+                AVLinearPCMIsFloatKey: true,
+                AVLinearPCMIsBigEndianKey: false,
+                AVLinearPCMIsNonInterleaved: false,
+            ]
         }
 
-        // Create export session
-        guard let exportSession = AVAssetExportSession(
-            asset: asset,
-            presetName: AVAssetExportPresetAppleM4A
-        ) else {
+        let writerInput = AVAssetWriterInput(mediaType: .audio, outputSettings: writerSettings)
+        writerInput.expectsMediaDataInRealTime = false
+
+        if writer.canAdd(writerInput) {
+            writer.add(writerInput)
+        } else {
             throw AudioMergerError.failedToCreateExportSession
         }
 
-        exportSession.outputURL = outputURL
-        exportSession.outputFileType = .m4a
-
-        // Optimize for speech transcription: 16kHz mono
-        exportSession.audioMix = try await self.createAudioMix(for: asset)
-
-        // Export
-        await exportSession.export()
-
-        switch exportSession.status {
-        case .completed:
-            self.logger.info("Export completed: \(outputURL.lastPathComponent)")
-            return outputURL
-        case .failed:
-            throw AudioMergerError.exportFailed(exportSession.error)
-        case .cancelled:
-            throw AudioMergerError.exportCancelled
-        default:
-            throw AudioMergerError.exportFailed(nil)
-        }
-    }
-
-    private func createAudioMix(for asset: AVAsset) async throws -> AVAudioMix? {
-        let tracks = try await asset.loadTracks(withMediaType: .audio)
-
-        guard !tracks.isEmpty else { return nil }
-
-        let mix = AVMutableAudioMix()
-        var inputParameters: [AVMutableAudioMixInputParameters] = []
-
-        for track in tracks {
-            let params = AVMutableAudioMixInputParameters(track: track)
-            // Keep full volume for all tracks
-            params.setVolume(1.0, at: .zero)
-            inputParameters.append(params)
+        // 3. Start Processing
+        if !reader.startReading() {
+            throw AudioMergerError.exportFailed(reader.error)
         }
 
-        mix.inputParameters = inputParameters
-        return mix
+        if !writer.startWriting() {
+            throw AudioMergerError.exportFailed(writer.error)
+        }
+
+        writer.startSession(atSourceTime: .zero)
+
+        // 4. Pump Buffers
+        // Use a detached task or blocking loop? AVAssetWriterInput requestMediaData is async-friendly-ish but usually used with a queue.
+        // For simplicity in async context, we can use requestMediaDataWhenReady logic wrapper.
+
+        await withCheckedContinuation { continuation in
+            let queue = DispatchQueue(label: "audioMerger.export")
+
+            writerInput.requestMediaDataWhenReady(on: queue) {
+                while writerInput.isReadyForMoreMediaData {
+                    if let buffer = readerOutput.copyNextSampleBuffer() {
+                        if !writerInput.append(buffer) {
+                            writerInput.markAsFinished()
+                            continuation.resume()
+                            return
+                        }
+                    } else {
+                        writerInput.markAsFinished()
+                        continuation.resume()
+                        return
+                    }
+                }
+            }
+        }
+
+        await writer.finishWriting()
+
+        if writer.status == .failed {
+            throw AudioMergerError.exportFailed(writer.error)
+        }
     }
 }
 

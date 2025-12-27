@@ -192,7 +192,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         let tapFormat = mixer.outputFormat(forBus: 0)
         AppLogger.debug("Configuring Worker with format: \(tapFormat)", category: .recordingManager)
 
-        try self.worker.start(writingTo: url, format: tapFormat)
+        try self.worker.start(writingTo: url, format: tapFormat, fileFormat: AppSettingsStore.shared.audioFormat)
 
         let worker = self.worker
         mixer.installTap(

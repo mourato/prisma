@@ -274,4 +274,60 @@ public extension AppSettingsStore {
         get { UserDefaults.standard.bool(forKey: GeneralKeys.autoStartRecording) }
         set { UserDefaults.standard.set(newValue, forKey: GeneralKeys.autoStartRecording) }
     }
+
+    // MARK: - Post-Processing Extension
+
+    private enum PostProcessingKeys {
+        static let audioFormat = "audioFormat"
+        static let shouldMergeAudioFiles = "shouldMergeAudioFiles"
+    }
+
+    /// Supported audio formats for recording.
+    enum AudioFormat: String, CaseIterable, Codable, Sendable {
+        case m4a
+        case wav
+
+        public var fileExtension: String {
+            switch self {
+            case .m4a: "m4a"
+            case .wav: "wav"
+            }
+        }
+
+        public var displayName: String {
+            switch self {
+            case .m4a: "AAC (.m4a)"
+            case .wav: "WAV (Linear PCM)"
+            }
+        }
+    }
+
+    /// Selected audio format for recordings.
+    nonisolated var audioFormat: AudioFormat {
+        get {
+            if let rawValue = UserDefaults.standard.string(forKey: PostProcessingKeys.audioFormat),
+               let format = AudioFormat(rawValue: rawValue)
+            {
+                return format
+            }
+            return .wav // Default to WAV
+        }
+        set {
+            UserDefaults.standard.set(newValue.rawValue, forKey: PostProcessingKeys.audioFormat)
+        }
+    }
+
+    /// Whether to merge audio files after recording.
+    /// Default: true
+    nonisolated var shouldMergeAudioFiles: Bool {
+        get {
+            if UserDefaults.standard.object(forKey: PostProcessingKeys.shouldMergeAudioFiles) == nil {
+                return true // Default true
+            }
+            return UserDefaults.standard.bool(forKey: PostProcessingKeys.shouldMergeAudioFiles)
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: PostProcessingKeys.shouldMergeAudioFiles)
+        }
+    }
 }

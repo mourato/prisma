@@ -84,14 +84,20 @@ public final class FileSystemStorageService: StorageService {
 
         var filename = "\(appName)_\(timestamp)"
 
+        // Read audio format directly from UserDefaults to avoid MainActor isolation issues
+        // Key matches AppSettingsStore.PostProcessingKeys.audioFormat
+        let formatRaw = UserDefaults.standard.string(forKey: "audioFormat")
+        let fileExtension = (formatRaw == "m4a") ? "m4a" : "wav"
+
         switch type {
         case .microphone:
-            // AudioRecorder writes AAC, so we must use .m4a to avoid format mismatch errors
-            filename += "_mic.m4a"
+            // AudioRecorder now supports both M4A and WAV
+            filename += "_mic.\(fileExtension)"
         case .system:
+            // System audio is captured as raw PCM, so usually kept as WAV if saved individually
             filename += "_sys.wav"
         case .merged:
-            filename += ".m4a"
+            filename += ".\(fileExtension)"
         }
 
         return self.recordingsDirectory.appendingPathComponent(filename)

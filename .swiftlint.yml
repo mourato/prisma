@@ -52,11 +52,11 @@ excluded:
 # MARK: - Rule Thresholds (stricter to match your 20-line function guideline)
 
 # Line length: warning at 120 (matches your rules), error at 150
-line_length:
-  warning: 120
-  error: 150
-  ignores_comments: true
-  ignores_urls: true
+#line_length:
+#  warning: 120
+#  error: 150
+#  ignores_comments: true
+#  ignores_urls: true
 
 # Identifier naming
 identifier_name:

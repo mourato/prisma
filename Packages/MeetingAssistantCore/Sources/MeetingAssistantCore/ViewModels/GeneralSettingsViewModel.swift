@@ -18,9 +18,23 @@ public class GeneralSettingsViewModel: ObservableObject {
         }
     }
 
+    @Published public var audioFormat: AppSettingsStore.AudioFormat {
+        didSet {
+            self.settingsStore.audioFormat = self.audioFormat
+        }
+    }
+
+    @Published public var shouldMergeAudioFiles: Bool {
+        didSet {
+            self.settingsStore.shouldMergeAudioFiles = self.shouldMergeAudioFiles
+        }
+    }
+
     public init() {
         self.autoStartRecording = AppSettingsStore.shared.autoStartRecording
         self.recordingsPath = AppSettingsStore.shared.recordingsDirectory
+        self.audioFormat = AppSettingsStore.shared.audioFormat
+        self.shouldMergeAudioFiles = AppSettingsStore.shared.shouldMergeAudioFiles
     }
 
     public func selectRecordingsDirectory() {
