@@ -260,6 +260,17 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         self.isRecording = false
         self.currentAveragePower = -160.0
         self.currentPeakPower = -160.0
+
+        // Log dropped frames before clearing (for diagnostics)
+        let queueStats = self.systemAudioQueue.stats
+        if queueStats.dropped > 0 {
+            AppLogger.warning(
+                "System audio frames dropped during session",
+                category: .recordingManager,
+                extra: ["droppedFrames": queueStats.dropped, "buffersRemaining": queueStats.count]
+            )
+        }
+
         self.systemAudioQueue.clear()
         self.partialBufferState.clear()
 
