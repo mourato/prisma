@@ -36,6 +36,29 @@ public class RecordingViewModel: ObservableObject {
         }
     }
 
+    // MARK: - View Logic
+    
+    public var recordButtonTitle: String {
+        if self.isRecording {
+            return NSLocalizedString("menubar.stop_recording", bundle: .safeModule, comment: "Stop recording button")
+        }
+        
+        return self.isModelLoaded
+            ? NSLocalizedString("menubar.start_recording", bundle: .safeModule, comment: "Start recording button")
+            : NSLocalizedString("settings.transcriptions.loading", bundle: .safeModule, comment: "Loading")
+    }
+
+    public var recordButtonIcon: String {
+        if self.isRecording {
+            return "stop.fill"
+        }
+        return self.isModelLoaded ? "record.circle" : "hourglass"
+    }
+    
+    public var canStartRecording: Bool {
+        self.isModelLoaded
+    }
+
     // MARK: - Initialization
 
     // MARK: - Initialization
