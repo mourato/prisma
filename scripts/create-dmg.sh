@@ -27,14 +27,11 @@ echo -e "${BLUE}  Creating ${DMG_NAME}${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
-# Check if App Bundle exists, build if not
-if [ ! -d "${APP_BUNDLE}" ]; then
-    echo -e "${YELLOW}App bundle not found at ${APP_BUNDLE}${NC}"
-    echo -e "${YELLOW}Building Release version first...${NC}"
-    echo ""
-    "${PROJECT_DIR}/scripts/build-release.sh" <<< "n"
-    echo ""
-fi
+# Always build Release version
+echo -e "${YELLOW}Building Release version...${NC}"
+echo ""
+"${PROJECT_DIR}/scripts/build-release.sh" <<< "n"
+echo ""
 
 # Verify app exists after build
 if [ ! -d "${APP_BUNDLE}" ]; then
@@ -77,3 +74,10 @@ echo ""
 echo -e "To open in Finder:"
 echo -e "  ${YELLOW}open -R \"${DMG_PATH}\"${NC}"
 echo ""
+
+# Ask if user wants to open the DMG
+read -p "Do you want to open the new DMG file? (y/n) " -n 1 -r
+echo ""
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    open "${DMG_PATH}"
+fi
