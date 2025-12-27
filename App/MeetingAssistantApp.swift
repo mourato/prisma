@@ -40,6 +40,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
     private var popover: NSPopover?
     private var contextMenu: NSMenu?
+    private var startStopMenuItem: NSMenuItem?
     private lazy var recordingManager: RecordingManager = .shared
     private var eventMonitor: Any?
 
@@ -137,42 +138,63 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupContextMenu() {
         self.contextMenu = NSMenu()
 
+        // Bundle for localized strings
+        let bundle = Bundle.safeModule
+
+        // Start/Stop Recording
+        let recordTitle = NSLocalizedString(
+            "menubar.start_recording",
+            bundle: bundle,
+            comment: "Start Recording menu item"
+        )
+        let startStopItem = NSMenuItem(
+            title: recordTitle,
+            action: #selector(toggleRecordingFromMenu),
+            keyEquivalent: ""
+        )
+        startStopItem.target = self
+        self.startStopMenuItem = startStopItem
+        self.contextMenu?.addItem(startStopItem)
+
+        // Separator
+        self.contextMenu?.addItem(NSMenuItem.separator())
+
         // Settings
+        let settingsTitle = NSLocalizedString(
+            "menubar.settings",
+            bundle: bundle,
+            comment: "Settings menu item"
+        )
         let settingsItem = NSMenuItem(
-            title: "Configurações...",
+            title: settingsTitle,
             action: #selector(openSettings),
             keyEquivalent: ","
         )
         settingsItem.target = self
         self.contextMenu?.addItem(settingsItem)
 
-        // About
-        let aboutItem = NSMenuItem(
-            title: "Sobre o Meeting Assistant",
-            action: #selector(showAbout),
-            keyEquivalent: ""
+        // Check for Updates
+        let checkUpdatesTitle = NSLocalizedString(
+            "menubar.check_updates",
+            bundle: bundle,
+            comment: "Check for Updates menu item"
         )
-        aboutItem.target = self
-        self.contextMenu?.addItem(aboutItem)
-
-        // Separator
-        self.contextMenu?.addItem(NSMenuItem.separator())
-
-        // Check for Updates (placeholder)
         let checkUpdatesItem = NSMenuItem(
-            title: "Verificar Atualizações...",
+            title: checkUpdatesTitle,
             action: #selector(checkForUpdates),
             keyEquivalent: ""
         )
         checkUpdatesItem.target = self
         self.contextMenu?.addItem(checkUpdatesItem)
 
-        // Separator
-        self.contextMenu?.addItem(NSMenuItem.separator())
-
         // Quit
+        let quitTitle = NSLocalizedString(
+            "menubar.quit",
+            bundle: bundle,
+            comment: "Quit menu item"
+        )
         let quitItem = NSMenuItem(
-            title: "Sair",
+            title: quitTitle,
             action: #selector(quitApp),
             keyEquivalent: "q"
         )
@@ -234,9 +256,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NavigationService.shared.openSettings()
     }
 
-    @objc private func showAbout() {
-        self.popover?.performClose(nil)
-        NavigationService.shared.showAbout()
+    @objc private func toggleRecordingFromMenu() {
+        Task { @MainActor in
+            await self.toggleRecording()
+        }
     }
 
     @objc private func checkForUpdates() {
@@ -258,12 +281,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Public Methods
 
-    /// Update menu bar icon based on recording state.
+    /// Update menu bar icon and menu item based on recording state.
     func updateStatusIcon(isRecording: Bool) {
         let iconName = isRecording ? "record.circle.fill" : "mic.circle"
         self.statusItem?.button?.image = NSImage(
             systemSymbolName: iconName,
             accessibilityDescription: isRecording ? "Recording" : "Meeting Assistant"
         )
+
+        // Update menu item title
+        let bundle = Bundle.safeModule
+        let key = isRecording ? "menubar.stop_recording" : "menubar.start_recording"
+        self.startStopMenuItem?.title = NSLocalizedString(key, bundle: bundle, comment: "")
     }
 }

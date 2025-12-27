@@ -117,6 +117,9 @@
 /* Menu Bar */
 "menubar.start_recording" = "Iniciar Gravação";
 "menubar.stop_recording" = "Parar Gravação";
+"menubar.settings" = "Configurações...";
+"menubar.check_updates" = "Verificar Atualizações...";
+"menubar.quit" = "Sair";
 "status.recording" = "Gravando...";
 "status.transcribing" = "Transcrevendo...";
 "status.waiting" = "Aguardando reunião";
