@@ -110,9 +110,9 @@ public struct GeneralSettingsTab: View {
 
     @ViewBuilder
     private var appsSection: some View {
-        SettingsGroup(NSLocalizedString("settings.general.monitored_apps", bundle: .safeModule, comment: ""), icon: "app.badge") {
+        SettingsGroup("settings.general.monitored_apps".localized, icon: "app.badge") {
             VStack(alignment: .leading, spacing: 12) {
-                Text(NSLocalizedString("settings.general.monitored_apps_desc", bundle: .safeModule, comment: ""))
+                Text("settings.general.monitored_apps_desc".localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .padding(.bottom, 4)
@@ -128,7 +128,7 @@ public struct GeneralSettingsTab: View {
                             Text(app.displayName)
                                 .font(.body)
                                 .fontWeight(.medium)
-                            Text(NSLocalizedString("settings.general.monitoring_active", bundle: .safeModule, comment: ""))
+                            Text("settings.general.monitoring_active".localized)
                                 .font(.caption2)
                                 .foregroundStyle(.green)
                         }
