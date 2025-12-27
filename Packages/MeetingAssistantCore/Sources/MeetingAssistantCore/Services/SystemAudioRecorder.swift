@@ -34,9 +34,19 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
     /// Callback for received audio buffers (Thread-safe, called on background queue)
     // MARK: - Public API
 
+    import os.lock
+
+    // MARK: - Public API
+
     /// Thread-safe storage for the audio buffer callback
     private class CallbackStorage: @unchecked Sendable {
-        var callback: ((AVAudioPCMBuffer) -> Void)?
+        private let lock = OSAllocatedUnfairLock()
+        private var _callback: ((AVAudioPCMBuffer) -> Void)?
+
+        var callback: ((AVAudioPCMBuffer) -> Void)? {
+            get { self.lock.withLock { self._callback } }
+            set { self.lock.withLock { self._callback = newValue } }
+        }
     }
 
     private let callbackStorage = CallbackStorage()
