@@ -27,11 +27,11 @@ public class RecordingViewModel: ObservableObject {
 
     public var statusText: String {
         if self.isRecording {
-            NSLocalizedString("status.recording", bundle: .safeModule, comment: "Recording status")
+            "status.recording".localized
         } else if self.isTranscribing {
-            NSLocalizedString("status.transcribing", bundle: .safeModule, comment: "Transcribing status")
+            "status.transcribing".localized
         } else {
-            NSLocalizedString("status.waiting", bundle: .safeModule, comment: "Waiting status")
+            "status.waiting".localized
         }
     }
 
@@ -39,12 +39,12 @@ public class RecordingViewModel: ObservableObject {
 
     public var recordButtonTitle: String {
         if self.isRecording {
-            return NSLocalizedString("menubar.stop_recording", bundle: .safeModule, comment: "Stop recording button")
+            return "menubar.stop_recording".localized
         }
 
         return self.isModelLoaded
-            ? NSLocalizedString("menubar.start_recording", bundle: .safeModule, comment: "Start recording button")
-            : NSLocalizedString("settings.transcriptions.loading", bundle: .safeModule, comment: "Loading")
+            ? "menubar.start_recording".localized
+            : "settings.transcriptions.loading".localized
     }
 
     public var recordButtonIcon: String {

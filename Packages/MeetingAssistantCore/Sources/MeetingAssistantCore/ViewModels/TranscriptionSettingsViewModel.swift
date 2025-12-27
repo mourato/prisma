@@ -50,7 +50,7 @@ public class TranscriptionSettingsViewModel: ObservableObject {
             self.transcriptions = try await self.storage.loadTranscriptions()
         } catch {
             self.logger.error("Failed to load transcriptions: \(error.localizedDescription)")
-            self.errorMessage = NSLocalizedString("settings.transcriptions.error_load", comment: "")
+            self.errorMessage = "settings.transcriptions.error_load".localized
         }
         self.isLoading = false
     }
