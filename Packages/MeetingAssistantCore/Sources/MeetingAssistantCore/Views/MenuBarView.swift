@@ -137,12 +137,22 @@ public struct MenuBarView: View {
                 .tint(.red)
             } else {
                 Button(action: self.startRecording) {
-                    Label(NSLocalizedString("menubar.start_recording", bundle: .safeModule, comment: "Start recording button"), systemImage: "record.circle")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity, minHeight: 38)
+                    Label(
+                        self.viewModel.isModelLoaded
+                            ? NSLocalizedString(
+                                "menubar.start_recording", bundle: .safeModule, comment: "Start recording button"
+                            )
+                            : NSLocalizedString(
+                                "settings.transcriptions.loading", bundle: .safeModule, comment: "Loading"
+                            ),
+                        systemImage: self.viewModel.isModelLoaded ? "record.circle" : "hourglass"
+                    )
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, minHeight: 38)
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
+                .disabled(!self.viewModel.isModelLoaded)
             }
         }
         .padding(.top, 4)

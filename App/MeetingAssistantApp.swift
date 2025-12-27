@@ -46,6 +46,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         self.setupEventMonitor()
         self.setupGlobalShortcut()
 
+        // Warmup transcription model
+        Task {
+            try? await TranscriptionClient.shared.warmupModel()
+        }
+
         // Hide dock icon for menu bar only app
         NSApp.setActivationPolicy(.accessory)
     }

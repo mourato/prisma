@@ -14,6 +14,7 @@ public class RecordingViewModel: ObservableObject {
     @Published public var isRecording: Bool = false
     @Published public var isTranscribing: Bool = false
     @Published public var currentMeeting: Meeting?
+    @Published public var isModelLoaded: Bool = false
     // @Published public var permissionStatus: PermissionStatusManager // Refactored to use Child ViewModel
 
     // MARK: - Child ViewModels
@@ -105,5 +106,11 @@ public class RecordingViewModel: ObservableObject {
         // so we don't necessarily need to re-assign them if the reference itself doesn't change.
         // However, if RecordingManager replaces them, we should observe that.
         // Assuming they are constant references in RecordingManager for now based on previous code.
+
+        // Observe model state
+        FluidAIModelManager.shared.$modelState
+            .receive(on: DispatchQueue.main)
+            .map { $0 == .loaded }
+            .assign(to: &self.$isModelLoaded)
     }
 }
