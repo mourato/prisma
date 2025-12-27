@@ -123,10 +123,11 @@ public struct TranscriptionStatusView: View {
             .frame(height: 4)
 
             if let remaining = viewModel.estimatedTimeRemaining, remaining > 0 {
-            Text("transcription.time_remaining".localized(with: self.formatTime(remaining)))
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-        }    }
+                Text("transcription.time_remaining".localized(with: self.formatTime(remaining)))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
     }
 
     // MARK: - Expanded Details
@@ -135,9 +136,9 @@ public struct TranscriptionStatusView: View {
         VStack(alignment: .leading, spacing: 8) {
             Divider()
 
-            self.detailRow(label: NSLocalizedString("transcription.service", bundle: .safeModule, comment: ""), value: self.serviceStateLabel)
-            self.detailRow(label: NSLocalizedString("transcription.model", bundle: .safeModule, comment: ""), value: self.modelStateLabel)
-            self.detailRow(label: NSLocalizedString("transcription.device", bundle: .safeModule, comment: ""), value: self.viewModel.device.uppercased())
+            self.detailRow(label: "transcription.service".localized, value: self.serviceStateLabel)
+            self.detailRow(label: "transcription.model".localized, value: self.modelStateLabel)
+            self.detailRow(label: "transcription.device".localized, value: self.viewModel.device.uppercased())
 
             if let error = viewModel.lastError {
                 self.errorRow(error: error)
@@ -182,13 +183,16 @@ public struct TranscriptionStatusView: View {
         HStack(spacing: 6) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundStyle(.red)
+
             VStack(alignment: .leading) {
-                        Text(error.localizedDescription)
-                            .foregroundStyle(.red)
-                        Text("transcription.error.click_retry".localized)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }.padding(6)
+                Text(error.localizedDescription)
+                    .foregroundStyle(.red)
+                Text("transcription.error.click_retry".localized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(6)
         .background(.red.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
     }
 

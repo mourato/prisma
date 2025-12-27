@@ -13,8 +13,9 @@ This document tracks known limitations for features and initiatives within the p
   * *Context*: Scope of initial implementation was limited to Data and Service layer. UI implementation is a future task.
 
 ### Settings Architecture & Localization
-* **Settings Window Persistence**: The settings window does not currently persist its position or size between launches.
   * *Context*: Side effect of moving to a custom `NavigationSplitView` implementation [2025-12-26].
+* **Language Selection Persistence**: Changing the app language from settings requires a manual app restart to take effect.
+  * *Context*: `AppleLanguages` UserDefaults key strictly controls localization load order at launch. Dynamic language switching at runtime is technically complex and not implemented in this release [2025-12-27].
 
 ### Storage Service
 * **Scalability (JSON Based)**: The current `FileSystemStorageService` loads and decodes ALL transcription JSON files into memory at startup. This works for hundreds of files but will degrade performance with thousands.
