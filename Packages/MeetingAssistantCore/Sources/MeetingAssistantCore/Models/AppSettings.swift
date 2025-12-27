@@ -202,6 +202,22 @@ public class AppSettingsStore: ObservableObject {
 
         self.postProcessingEnabled = UserDefaults.standard.bool(forKey: Keys.postProcessingEnabled)
         self.isDiarizationEnabled = UserDefaults.standard.bool(forKey: Keys.isDiarizationEnabled)
+
+        // Initialize Audio Format
+        if let rawValue = UserDefaults.standard.string(forKey: PostProcessingKeys.audioFormat),
+           let format = AudioFormat(rawValue: rawValue)
+        {
+            self.audioFormat = format
+        } else {
+            self.audioFormat = .wav
+        }
+
+        // Initialize Merge Setting
+        if UserDefaults.standard.object(forKey: PostProcessingKeys.shouldMergeAudioFiles) == nil {
+            self.shouldMergeAudioFiles = true
+        } else {
+            self.shouldMergeAudioFiles = UserDefaults.standard.bool(forKey: PostProcessingKeys.shouldMergeAudioFiles)
+        }
     }
 
     // MARK: - Private Helpers
@@ -303,31 +319,20 @@ public extension AppSettingsStore {
     }
 
     /// Selected audio format for recordings.
-    nonisolated var audioFormat: AudioFormat {
-        get {
-            if let rawValue = UserDefaults.standard.string(forKey: PostProcessingKeys.audioFormat),
-               let format = AudioFormat(rawValue: rawValue)
-            {
-                return format
-            }
-            return .wav // Default to WAV
-        }
-        set {
-            UserDefaults.standard.set(newValue.rawValue, forKey: PostProcessingKeys.audioFormat)
+    /// Selected audio format for recordings.
+    @Published var audioFormat: AudioFormat {
+        didSet {
+            UserDefaults.standard.set(self.audioFormat.rawValue, forKey: PostProcessingKeys.audioFormat)
         }
     }
 
     /// Whether to merge audio files after recording.
     /// Default: true
-    nonisolated var shouldMergeAudioFiles: Bool {
-        get {
-            if UserDefaults.standard.object(forKey: PostProcessingKeys.shouldMergeAudioFiles) == nil {
-                return true // Default true
-            }
-            return UserDefaults.standard.bool(forKey: PostProcessingKeys.shouldMergeAudioFiles)
-        }
-        set {
-            UserDefaults.standard.set(newValue, forKey: PostProcessingKeys.shouldMergeAudioFiles)
+    /// Whether to merge audio files after recording.
+    /// Default: true
+    @Published var shouldMergeAudioFiles: Bool {
+        didSet {
+            UserDefaults.standard.set(self.shouldMergeAudioFiles, forKey: PostProcessingKeys.shouldMergeAudioFiles)
         }
     }
 }
