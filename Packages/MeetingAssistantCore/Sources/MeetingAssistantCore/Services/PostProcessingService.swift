@@ -60,7 +60,7 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
     @Published public private(set) var lastError: PostProcessingError?
 
     private let settings = AppSettingsStore.shared
-    private let logger = Logger(subsystem: "MeetingAssistant", category: "PostProcessing")
+    // private let logger = Logger(subsystem: "MeetingAssistant", category: "PostProcessing") // Replaced by AppLogger
 
     private init() {}
 
@@ -71,7 +71,7 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
     /// - Returns: The processed text from the AI.
     public func processTranscription(_ transcription: String) async throws -> String {
         guard self.settings.postProcessingEnabled else {
-            self.logger.info("Post-processing is disabled, returning original transcription")
+            AppLogger.info("Post-processing disabled, skipping", category: .transcriptionEngine)
             return transcription
         }
 
@@ -112,7 +112,7 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
 
         do {
             let result = try await sendToAI(transcription: transcription, prompt: prompt)
-            self.logger.info("Post-processing completed successfully")
+            AppLogger.info("Post-processing completed", category: .transcriptionEngine)
             return result
         } catch let error as PostProcessingError {
             lastError = error
@@ -144,7 +144,7 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
         self.configureAuthHeaders(for: &request, provider: config.provider, apiKey: apiKey)
         try self.setRequestBody(for: &request, config: config, transcription: transcription, prompt: prompt)
 
-        self.logger.debug("Sending post-processing request to \(url.absoluteString)")
+        AppLogger.debug("Sending post-processing request", category: .transcriptionEngine, extra: ["url": url.absoluteString])
 
         let (data, response) = try await URLSession.shared.data(for: request)
         try self.validateHTTPResponse(response, data: data)
@@ -220,7 +220,7 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
                 request.httpBody = try encoder.encode(payload)
             }
         } catch {
-            self.logger.error("Failed to encode request body: \(error.localizedDescription)")
+            AppLogger.error("Failed to encode request body", category: .transcriptionEngine, error: error)
             throw PostProcessingError.requestFailed(error)
         }
     }
@@ -265,7 +265,7 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
                 return content
             }
         } catch {
-            self.logger.error("Failed to decode response: \(error.localizedDescription)")
+            AppLogger.error("Failed to decode response", category: .transcriptionEngine, error: error)
             throw PostProcessingError.invalidResponse
         }
     }
