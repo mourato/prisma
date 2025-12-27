@@ -162,9 +162,17 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     }
 
     private func configureWorker(writingTo url: URL, mixer: AVAudioMixerNode) throws {
-        let mixerOutputFormat = mixer.outputFormat(forBus: 0)
+        // Explicitly use the standard format we enforced in configureInputs (48kHz Stereo)
+        // This avoids any ambiguity from mixer.outputFormat query before engine start
+        guard let tapFormat = AVAudioFormat(
+            standardFormatWithSampleRate: Constants.outputSampleRate,
+            channels: Constants.outputChannels
+        ) else {
+            throw AudioRecorderError.failedToCreateConverter
+        }
+
         do {
-            try self.worker.start(writingTo: url, format: mixerOutputFormat)
+            try self.worker.start(writingTo: url, format: tapFormat)
         } catch {
             throw AudioRecorderError.failedToCreateFile(error)
         }
@@ -173,7 +181,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         mixer.installTap(
             onBus: 0,
             bufferSize: Constants.tapBufferSize,
-            format: mixerOutputFormat
+            format: tapFormat
         ) { buffer, _ in
             worker.process(buffer)
         }
