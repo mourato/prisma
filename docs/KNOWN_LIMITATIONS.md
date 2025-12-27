@@ -24,6 +24,9 @@ This document tracks known limitations for features and initiatives within the p
 * **Concurrency (Unchecked Sendable)**: `AudioRecordingWorker` uses `@unchecked Sendable` and manual `NSLock` synchronization to handle strictly non-Sendable `AVAudioPCMBuffer` and `AVAudioFile` objects.
   * *Context*: [2025-12-27] Necessary workaround to satisfy Swift 6 Strict Concurrency without rewriting the audio engine. Requires careful manual review of any modification to the worker class.
 
+* **Memory Safety (Unsafe Pointers)**: The optimized `AudioRecorder` uses `memcpy` and `UnsafeMutableBufferPointer` for performance.
+  * *Context*: [2025-12-27] Replaced safe loop with fast copy. This introduces risk of buffer overflow if `min(target, filled)` logic is ever flawed. Any changes to `createSystemSourceNode` must be peer-reviewed for pointer arithmetic correctness.
+
 ### Logging
 * **Privacy Level**: `AppLogger` is currently configured with `{ privacy: .public }` for all log levels to aid in debugging strict concurrency crashes.
   * *Context*: [2025-12-27] This logs potentially sensitive metadata to the system console. Must be changed to `.private` or `.auto` before public App Store release.
