@@ -214,28 +214,60 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             self.currentMeeting?.endTime = Date()
             self.isRecording = false
 
-            AppLogger.info("Recording stopped, merging audio files...", category: .recordingManager, extra: [
+            AppLogger.info("Recording stopped", category: .recordingManager, extra: [
                 "micURL": micURL?.lastPathComponent ?? "nil",
                 "sysURL": sysURL?.lastPathComponent ?? "nil",
             ])
-
-            // Merge audio files
-            var inputURLs: [URL] = []
-            if let micURL { inputURLs.append(micURL) }
-            if let sysURL { inputURLs.append(sysURL) }
 
             guard let outputURL = mergedAudioURL else {
                 throw RecordingManagerError.noOutputPath
             }
 
-            let finalURL = try await audioMerger.mergeAudioFiles(
-                inputURLs: inputURLs, to: outputURL
-            )
+            let settings = AppSettingsStore.shared
+            var finalURL: URL
 
-            // Clean up temporary files
-            self.cleanupTemporaryFiles()
+            if settings.shouldMergeAudioFiles {
+                AppLogger.info("Merging audio files...", category: .recordingManager)
+                // Merge audio files
+                var inputURLs: [URL] = []
+                if let micURL { inputURLs.append(micURL) }
+                if let sysURL { inputURLs.append(sysURL) }
 
-            AppLogger.info("Audio merge complete", category: .recordingManager, extra: ["finalURL": finalURL.lastPathComponent])
+                finalURL = try await self.audioMerger.mergeAudioFiles(
+                    inputURLs: inputURLs,
+                    to: outputURL,
+                    format: settings.audioFormat
+                )
+
+                // Clean up temporary files
+                self.cleanupTemporaryFiles()
+                AppLogger.info("Audio merge complete", category: .recordingManager, extra: ["finalURL": finalURL.lastPathComponent])
+
+            } else {
+                AppLogger.info("Audio merge disabled. Using microphone recording as primary.", category: .recordingManager)
+
+                guard let sourceURL = micURL else {
+                    throw RecordingManagerError.noInputFiles
+                }
+
+                // Move or copy mic recording to final location to maintain consistency
+                if FileManager.default.fileExists(atPath: outputURL.path) {
+                    try FileManager.default.removeItem(at: outputURL)
+                }
+                try FileManager.default.moveItem(at: sourceURL, to: outputURL)
+
+                finalURL = outputURL
+
+                // Cleanup system URL if it exists (though usually nil/empty relative to storage)
+                if let sysURL, FileManager.default.fileExists(atPath: sysURL.path) {
+                    try? FileManager.default.removeItem(at: sysURL)
+                }
+
+                // Mic URL is already moved, so we don't need to delete it.
+                // We should clear the reference in cleanup or handle it here.
+                self.micAudioURL = nil
+                self.systemAudioURL = nil
+            }
 
             // Transcribe if requested
             if transcribe, let meeting = currentMeeting {
@@ -513,6 +545,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 public enum RecordingManagerError: LocalizedError {
     case noOutputPath
     case mergeFailed(Error)
+    case noInputFiles
 
     public var errorDescription: String? {
         switch self {
@@ -520,6 +553,8 @@ public enum RecordingManagerError: LocalizedError {
             "No output path specified for merged audio"
         case let .mergeFailed(error):
             "Audio merge failed: \(error.localizedDescription)"
+        case .noInputFiles:
+            "No audio files recorded"
         }
     }
 }

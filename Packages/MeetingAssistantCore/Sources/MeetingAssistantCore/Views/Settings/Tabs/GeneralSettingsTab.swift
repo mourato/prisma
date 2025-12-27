@@ -48,6 +48,30 @@ public struct GeneralSettingsTab: View {
                         }
                     }
                 }
+
+                Divider()
+
+                // Audio Format
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(NSLocalizedString("settings.general.audio_format", bundle: .safeModule, comment: "Formato de Áudio"))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+
+                    Picker("", selection: self.$viewModel.audioFormat) {
+                        ForEach(AppSettingsStore.AudioFormat.allCases, id: \.self) { format in
+                            Text(format.displayName).tag(format)
+                        }
+                    }
+                    .labelsHidden() // Label is above
+                    .pickerStyle(.menu)
+                    .frame(maxWidth: 200)
+                }
+
+                // Merge Toggle
+                Toggle(
+                    NSLocalizedString("settings.general.merge_audio", bundle: .safeModule, comment: "Mesclar áudio (Mic + Sistema)"),
+                    isOn: self.$viewModel.shouldMergeAudioFiles
+                )
             }
         }
     }
