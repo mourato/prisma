@@ -26,7 +26,6 @@ public class RecordingViewModel: ObservableObject {
     // MARK: - Computed Properties
 
     public var statusText: String {
-    public var statusText: String {
         if self.isRecording {
             NSLocalizedString("status.recording", bundle: .safeModule, comment: "Recording status")
         } else if self.isTranscribing {
@@ -37,12 +36,12 @@ public class RecordingViewModel: ObservableObject {
     }
 
     // MARK: - View Logic
-    
+
     public var recordButtonTitle: String {
         if self.isRecording {
             return NSLocalizedString("menubar.stop_recording", bundle: .safeModule, comment: "Stop recording button")
         }
-        
+
         return self.isModelLoaded
             ? NSLocalizedString("menubar.start_recording", bundle: .safeModule, comment: "Start recording button")
             : NSLocalizedString("settings.transcriptions.loading", bundle: .safeModule, comment: "Loading")
@@ -54,7 +53,7 @@ public class RecordingViewModel: ObservableObject {
         }
         return self.isModelLoaded ? "record.circle" : "hourglass"
     }
-    
+
     public var canStartRecording: Bool {
         self.isModelLoaded
     }
