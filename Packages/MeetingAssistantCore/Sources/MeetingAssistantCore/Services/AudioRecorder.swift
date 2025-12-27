@@ -117,8 +117,19 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         try self.connectMicrophone(to: engine, mixer: mixer)
         try self.connectSystemAudio(to: engine, mixer: mixer)
 
+        // Force a standard output format (48kHz Stereo)
+        // This ensures the mixer output is deterministic and valid for AAC encoding
+        // preventing issues where microphone format (e.g. 16kHz or 44.1kHz) dictates the tap format
+        guard let outputFormat = AVAudioFormat(
+            standardFormatWithSampleRate: Constants.outputSampleRate,
+            channels: Constants.outputChannels
+        ) else {
+            throw AudioRecorderError.invalidRecordingFormat
+        }
+
         // Mix to main output (silenced)
-        engine.connect(mixer, to: engine.mainMixerNode, format: nil)
+        // Explicitly setting format forces mixer to convert upstream inputs to this format
+        engine.connect(mixer, to: engine.mainMixerNode, format: outputFormat)
         engine.mainMixerNode.outputVolume = 0.0
     }
 
@@ -152,7 +163,11 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
     private func configureWorker(writingTo url: URL, mixer: AVAudioMixerNode) throws {
         let mixerOutputFormat = mixer.outputFormat(forBus: 0)
-        try self.worker.start(writingTo: url, format: mixerOutputFormat)
+        do {
+            try self.worker.start(writingTo: url, format: mixerOutputFormat)
+        } catch {
+            throw AudioRecorderError.failedToCreateFile(error)
+        }
 
         let worker = self.worker
         mixer.installTap(
