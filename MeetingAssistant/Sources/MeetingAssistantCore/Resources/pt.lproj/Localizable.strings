@@ -34,7 +34,11 @@
 "settings.ai.api_key" = "Chave API:";
 "settings.ai.keychain_secure" = "Chave armazenada com segurança no Keychain";
 "settings.ai.model" = "Modelo:";
-"settings.ai.model_future" = "O modelo será selecionável automaticamente em uma versão futura.";
+"settings.ai.model_select" = "Selecionar modelo...";
+"settings.ai.model_refresh" = "Atualizar modelos disponíveis";
+"settings.ai.models_loaded" = "%d modelos disponíveis";
+"settings.ai.model_hint" = "Teste a conexão para carregar os modelos disponíveis";
+"settings.ai.models.fetch_failed" = "Falha ao buscar modelos";
 "settings.ai.test_connection" = "Testar Conexão";
 "settings.ai.hide_key" = "Ocultar chave";
 "settings.ai.show_key" = "Mostrar chave";

@@ -9,6 +9,9 @@ public class AISettingsViewModel: ObservableObject {
     @Published public var showAPIKey = false
     @Published public var apiKeyText = ""
     @Published public var connectionStatus: ConnectionStatus = .unknown
+    @Published public var availableModels: [LLMModel] = []
+    @Published public var isLoadingModels = false
+    @Published public var modelsFetchError: String?
 
     private let logger = Logger(subsystem: "MeetingAssistant", category: "AISettingsViewModel")
     private let keychain: KeychainProvider
@@ -51,6 +54,8 @@ public class AISettingsViewModel: ObservableObject {
 
     public func testAPIConnection() {
         self.connectionStatus = .testing
+        self.availableModels = []
+        self.modelsFetchError = nil
 
         guard let url = self.validateURL(self.settings.aiConfiguration.baseURL) else {
             self.connectionStatus = .failure(NSLocalizedString("settings.ai.connection.invalid_url", comment: ""))
@@ -62,10 +67,59 @@ public class AISettingsViewModel: ObservableObject {
                 let request = try self.buildTestRequest(for: url)
                 let (_, response) = try await self.session.data(for: request)
                 self.handleTestResponse(response)
+
+                // Fetch models on successful connection
+                if self.connectionStatus == .success {
+                    await self.fetchAvailableModels()
+                }
             } catch {
                 self.connectionStatus = .failure(error.localizedDescription)
             }
         }
+    }
+
+    /// Fetches available models from the LLM service's /models endpoint.
+    public func fetchAvailableModels() async {
+        guard let baseURL = self.validateURL(self.settings.aiConfiguration.baseURL) else {
+            self.modelsFetchError = NSLocalizedString("settings.ai.connection.invalid_url", comment: "")
+            return
+        }
+
+        self.isLoadingModels = true
+        self.modelsFetchError = nil
+
+        defer { self.isLoadingModels = false }
+
+        do {
+            let request = try self.buildModelsRequest(for: baseURL)
+            let (data, response) = try await self.session.data(for: request)
+
+            guard let httpResponse = response as? HTTPURLResponse,
+                  (200...299).contains(httpResponse.statusCode)
+            else {
+                self.modelsFetchError = NSLocalizedString("settings.ai.models.fetch_failed", comment: "")
+                return
+            }
+
+            let modelsResponse = try JSONDecoder().decode(LLMModelsResponse.self, from: data)
+            self.availableModels = modelsResponse.data.sorted { $0.id < $1.id }
+            self.logger.info("Fetched \(self.availableModels.count) models from API")
+        } catch {
+            self.logger.error("Failed to fetch models: \(error.localizedDescription)")
+            self.modelsFetchError = error.localizedDescription
+        }
+    }
+
+    private func buildModelsRequest(for baseURL: URL) throws -> URLRequest {
+        let modelsURL = baseURL.appendingPathComponent("models")
+        var request = URLRequest(url: modelsURL)
+        request.httpMethod = "GET"
+        request.timeoutInterval = 10
+
+        if let key = try? self.keychain.retrieve(for: .aiAPIKey), !key.isEmpty {
+            request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+        }
+        return request
     }
 
     private func validateURL(_ urlString: String) -> URL? {

@@ -34,7 +34,11 @@
 "settings.ai.api_key" = "API Key:";
 "settings.ai.keychain_secure" = "Key securely stored in Keychain";
 "settings.ai.model" = "Model:";
-"settings.ai.model_future" = "The model will be automatically selectable in a future version.";
+"settings.ai.model_select" = "Select a model...";
+"settings.ai.model_refresh" = "Refresh available models";
+"settings.ai.models_loaded" = "%d models available";
+"settings.ai.model_hint" = "Test connection to load available models";
+"settings.ai.models.fetch_failed" = "Failed to fetch models";
 "settings.ai.test_connection" = "Test Connection";
 "settings.ai.hide_key" = "Hide Key";
 "settings.ai.show_key" = "Show Key";
