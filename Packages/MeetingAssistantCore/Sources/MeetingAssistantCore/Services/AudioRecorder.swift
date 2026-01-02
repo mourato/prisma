@@ -144,7 +144,14 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         let safeMaxFrames: AVAudioFrameCount = 4096
         engine.mainMixerNode.auAudioUnit.maximumFramesToRender = safeMaxFrames
         mixer.auAudioUnit.maximumFramesToRender = safeMaxFrames
-        AppLogger.debug("Set maximumFramesToRender to \(safeMaxFrames)", category: .recordingManager)
+        engine.outputNode.auAudioUnit.maximumFramesToRender = safeMaxFrames
+
+        // Also apply to inputNode if we are using it (to be safe against Input AU errors too)
+        if source == .microphone || source == .all {
+            engine.inputNode.auAudioUnit.maximumFramesToRender = safeMaxFrames
+        }
+
+        AppLogger.debug("Set maximumFramesToRender to \(safeMaxFrames) for mainMixer, mixer, and outputNode", category: .recordingManager)
 
         AppLogger.debug("Starting engine...", category: .recordingManager)
         try self.startAudioEngine(engine, outputURL: outputURL, source: source, retryCount: retryCount)
