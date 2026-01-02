@@ -73,8 +73,10 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         }
 
         // Link System Recorder to Queue
-        self.systemRecorder.onAudioBuffer = { [weak self] buffer in
-            self?.systemAudioQueue.enqueue(buffer)
+        // Capture queue directly to avoid 'self' (MainActor) capture in background thread
+        let queue = self.systemAudioQueue
+        self.systemRecorder.onAudioBuffer = { buffer in
+            queue.enqueue(buffer)
         }
     }
 
