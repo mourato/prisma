@@ -80,12 +80,22 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
     // MARK: - Public API
 
+    /// Start recording audio to the specified URL. (Protocol Conformance)
+    /// Defaults to .all sources.
+    public func startRecording(to outputURL: URL, retryCount: Int) async throws {
+        try await self.startRecording(to: outputURL, source: .all, retryCount: retryCount)
+    }
+
     /// Start recording merged audio (Mic + System) to the specified URL.
-    public func startRecording(to outputURL: URL, retryCount: Int = 0) async throws {
+    /// - Parameters:
+    ///   - outputURL: The destination URL for the audio file.
+    ///   - source: The audio source to record.
+    ///   - retryCount: Number of retries attempted so far.
+    public func startRecording(to outputURL: URL, source: RecordingSource, retryCount: Int = 0) async throws {
         // Stop any existing recording first
         await self.stopRecording()
 
-        AppLogger.info("Starting merged recording", category: .recordingManager, extra: ["path": outputURL.path])
+        AppLogger.info("Starting recording", category: .recordingManager, extra: ["path": outputURL.path, "source": source.rawValue])
 
         // 1. Determine Hardware Sample Rate
         // We query a temporary engine to know what the hardware (MainMixer/Output) expects.
@@ -97,11 +107,16 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         AppLogger.info("Detected Hardware Sample Rate: \(targetSampleRate)", category: .recordingManager)
 
         // 2. Start Capture
-        // Start system capture with the matching rate
-        try await self.systemRecorder.startRecording(to: outputURL, sampleRate: targetSampleRate)
+        // Start system capture with the matching rate ONLY if source includes system audio
+        if source == .system || source == .all {
+            AppLogger.debug("Starting system recorder...", category: .recordingManager)
+            try await self.systemRecorder.startRecording(to: outputURL, sampleRate: targetSampleRate)
+        } else {
+            AppLogger.debug("Skipping system recorder start (source: \(source.rawValue))", category: .recordingManager)
+        }
 
         do {
-            try self.setupAndStartEngine(writingTo: outputURL, retryCount: retryCount, sampleRate: targetSampleRate)
+            try self.setupAndStartEngine(writingTo: outputURL, source: source, retryCount: retryCount, sampleRate: targetSampleRate)
         } catch {
             await self.stopRecording()
             throw error
@@ -110,7 +125,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
     // MARK: - Engine Setup Helpers
 
-    private func setupAndStartEngine(writingTo outputURL: URL, retryCount: Int, sampleRate: Double) throws {
+    private func setupAndStartEngine(writingTo outputURL: URL, source: RecordingSource, retryCount: Int, sampleRate: Double) throws {
         AppLogger.debug("Setting up Audio Engine...", category: .recordingManager)
         let engine = AVAudioEngine()
         let mixer = AVAudioMixerNode()
@@ -120,7 +135,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         self.mixerNode = mixer
 
         AppLogger.debug("Configuring inputs...", category: .recordingManager)
-        try self.configureInputs(engine: engine, mixer: mixer, sampleRate: sampleRate)
+        try self.configureInputs(engine: engine, mixer: mixer, source: source, sampleRate: sampleRate)
         AppLogger.debug("Configuring worker...", category: .recordingManager)
         try self.configureWorker(writingTo: outputURL, mixer: mixer)
 
@@ -132,16 +147,21 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         AppLogger.debug("Set maximumFramesToRender to \(safeMaxFrames)", category: .recordingManager)
 
         AppLogger.debug("Starting engine...", category: .recordingManager)
-        try self.startAudioEngine(engine, outputURL: outputURL, retryCount: retryCount)
+        try self.startAudioEngine(engine, outputURL: outputURL, source: source, retryCount: retryCount)
         self.currentRecordingURL = outputURL
         AppLogger.debug("Audio Engine setup complete.", category: .recordingManager)
     }
 
-    private func configureInputs(engine: AVAudioEngine, mixer: AVAudioMixerNode, sampleRate: Double) throws {
-        AppLogger.debug("Connecting Microphone...", category: .recordingManager)
-        try self.connectMicrophone(to: engine, mixer: mixer)
-        AppLogger.debug("Connecting System Audio...", category: .recordingManager)
-        try self.connectSystemAudio(to: engine, mixer: mixer, sampleRate: sampleRate)
+    private func configureInputs(engine: AVAudioEngine, mixer: AVAudioMixerNode, source: RecordingSource, sampleRate: Double) throws {
+        if source == .microphone || source == .all {
+            AppLogger.debug("Connecting Microphone...", category: .recordingManager)
+            try self.connectMicrophone(to: engine, mixer: mixer)
+        }
+
+        if source == .system || source == .all {
+            AppLogger.debug("Connecting System Audio...", category: .recordingManager)
+            try self.connectSystemAudio(to: engine, mixer: mixer, sampleRate: sampleRate)
+        }
 
         // Connect mixer to mainMixer without forcing a specific format.
         // This allows the engine to align with the hardware output sample rate (e.g., 44.1kHz or 48kHz)
@@ -216,6 +236,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     private func startAudioEngine(
         _ engine: AVAudioEngine,
         outputURL: URL,
+        source: RecordingSource,
         retryCount: Int
     ) throws {
         AppLogger.debug("Preparing engine...", category: .recordingManager)
@@ -226,7 +247,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             try engine.start()
             AppLogger.debug("Engine started. IsRunning: \(engine.isRunning)", category: .recordingManager)
             self.isRecording = true
-            self.startValidationTimer(url: outputURL, retryCount: retryCount)
+            self.startValidationTimer(url: outputURL, source: source, retryCount: retryCount)
             AppLogger.info("Audio engine started successfully", category: .recordingManager)
         } catch {
             AppLogger.fault("Failed to start audio engine", category: .recordingManager, error: error)
@@ -393,17 +414,17 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
     // MARK: - Validation & Retry
 
-    private func startValidationTimer(url: URL, retryCount: Int) {
+    private func startValidationTimer(url: URL, source: RecordingSource, retryCount: Int) {
         self.validationTimer = Timer.scheduledTimer(
             withTimeInterval: Constants.validationInterval, repeats: false
         ) { [weak self] _ in
             Task { @MainActor in
-                await self?.handleValidationTimeout(url: url, retryCount: retryCount)
+                await self?.handleValidationTimeout(url: url, source: source, retryCount: retryCount)
             }
         }
     }
 
-    private func handleValidationTimeout(url: URL, retryCount: Int) async {
+    private func handleValidationTimeout(url: URL, source: RecordingSource, retryCount: Int) async {
         let validationPassed = self.worker.hasReceivedValidBuffer
 
         guard !validationPassed else {
@@ -415,7 +436,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         _ = await self.stopRecording()
 
         if retryCount < Constants.maxRetries {
-            await self.retryRecording(to: url, retryCount: retryCount)
+            await self.retryRecording(to: url, source: source, retryCount: retryCount)
         } else {
             AppLogger.fault("Recording failed after retries", category: .recordingManager)
             let error = AudioRecorderError.recordingValidationFailed
@@ -424,11 +445,11 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         }
     }
 
-    private func retryRecording(to url: URL, retryCount: Int) async {
+    private func retryRecording(to url: URL, source: RecordingSource, retryCount: Int) async {
         AppLogger.info("Retrying recording", category: .recordingManager, extra: ["attempt": retryCount + 1, "max": Constants.maxRetries])
         do {
             try await Task.sleep(nanoseconds: Constants.retryDelay)
-            try await self.startRecording(to: url, retryCount: retryCount + 1)
+            try await self.startRecording(to: url, source: source, retryCount: retryCount + 1)
         } catch {
             AppLogger.error("Retry failed", category: .recordingManager, error: error)
             self.error = error

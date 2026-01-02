@@ -151,17 +151,62 @@ public struct MenuBarView: View {
                 .controlSize(.large)
                 .tint(.red)
             } else {
-                Button(action: self.startRecording) {
-                    Label(
-                        self.viewModel.recordButtonTitle,
-                        systemImage: self.viewModel.recordButtonIcon
+                // Split Button for Start Recording
+                HStack(spacing: 0) {
+                    // Main Action (Record All)
+                    Button(action: { self.startRecording(source: .all) }) {
+                        Label(
+                            self.viewModel.recordButtonTitle,
+                            systemImage: self.viewModel.recordButtonIcon
+                        )
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, minHeight: 38)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .disabled(!self.viewModel.canStartRecording)
+
+                    // Dropdown Menu
+                    Menu {
+                        Section("Gravar...") { // Localization should be added
+                            Button {
+                                self.startRecording(source: .all)
+                            } label: {
+                                Label(RecordingSource.all.displayName, systemImage: "circle.circle.fill")
+                            }
+
+                            Button {
+                                self.startRecording(source: .microphone)
+                            } label: {
+                                Label(RecordingSource.microphone.displayName, systemImage: "mic.fill")
+                            }
+
+                            Button {
+                                self.startRecording(source: .system)
+                            } label: {
+                                Label(RecordingSource.system.displayName, systemImage: "display")
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "chevron.down")
+                            .frame(width: 20, height: 38) // Match height
+                            .contentShape(Rectangle())
+                    }
+                    .menuStyle(.borderlessButton)
+                    .frame(width: 30) // Fixed width for chevron area
+                    .background(Color.accentColor) // Match main button style
+                    .cornerRadius(6) // Only corners on right?
+                    // Basic styling to make it look joined
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .overlay(
+                        Rectangle()
+                            .frame(width: 1)
+                            .foregroundColor(Color.black.opacity(0.2)),
+                        alignment: .leading
                     )
-                    .font(.headline)
-                    .frame(maxWidth: .infinity, minHeight: 38)
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .disabled(!self.viewModel.canStartRecording)
+                // Apply common container styling to the HStack to make it look like one pill
+                .padding(0)
             }
         }
         .padding(.top, 4)
@@ -169,9 +214,9 @@ public struct MenuBarView: View {
 
     // MARK: - Actions
 
-    private func startRecording() {
+    private func startRecording(source: RecordingSource = .all) {
         Task {
-            await self.viewModel.startRecording()
+            await self.viewModel.startRecording(source: source)
         }
     }
 
