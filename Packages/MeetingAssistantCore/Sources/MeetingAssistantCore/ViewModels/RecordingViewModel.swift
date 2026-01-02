@@ -16,6 +16,7 @@ public class RecordingViewModel: ObservableObject {
     @Published public var arePermissionsGranted: Bool = false
     @Published public var currentMeeting: Meeting?
     @Published public var isModelLoaded: Bool = false
+    @Published public var selectedSource: RecordingSource = .all
     // @Published public var permissionStatus: PermissionStatusManager // Refactored to use Child ViewModel
 
     // MARK: - Child ViewModels
@@ -81,8 +82,17 @@ public class RecordingViewModel: ObservableObject {
 
     // MARK: - Methods
 
-    public func startRecording() async {
-        await self.recordingManager.startRecording()
+    public func startRecording(source: RecordingSource? = nil) async {
+        // If specific source requested, use it (and maybe update selection?)
+        // Or just use it for this session. User request implies clicking arrow chooses what to record.
+        // If I click "Mic Only" in menu, I expect it to start recording Mic Only.
+        // Does it change the DEFAULT for the main button?
+        // User said: "se eu clicar no botão em si, ele inicia a gravação de tudo... mas se eu clicar no canto direito, posso escolher..."
+        // This implies main button is ALWAYS "Tudo" or "Default".
+        // Let's support passing source.
+        let sourceToUse = source ?? .all
+        self.selectedSource = sourceToUse // Sync UI state
+        await self.recordingManager.startRecording(source: sourceToUse)
     }
 
     public func stopRecording() async {

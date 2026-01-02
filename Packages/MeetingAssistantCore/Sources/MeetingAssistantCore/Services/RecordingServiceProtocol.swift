@@ -17,7 +17,7 @@ public protocol RecordingServiceProtocol: AnyObject {
     var currentMeetingPublisher: AnyPublisher<Meeting?, Never> { get }
 
     // Actions
-    func startRecording() async
+    func startRecording(source: RecordingSource) async
     func stopRecording() async
     func transcribeExternalAudio(from audioURL: URL) async
     func checkPermission() async

@@ -128,8 +128,9 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
     // MARK: - Public API
 
-    /// Start recording audio for a meeting (both microphone and system audio).
-    public func startRecording() async {
+    /// Start recording audio for a meeting.
+    /// - Parameter source: The audio source to record.
+    public func startRecording(source: RecordingSource = .all) async {
         guard !self.isRecording else {
             AppLogger.info("Attempted to start recording but already recording", category: .recordingManager)
             return
@@ -139,21 +140,42 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             let meeting = self.createMeeting()
             self.currentMeeting = meeting
 
-            let (micURL, systemURL) = try self.generateRecordingPaths(for: meeting)
+            // We only need one output URL because AudioRecorder handles mixing
+            let audioURL = self.storage.createRecordingURL(for: meeting, type: .merged)
+            self.mergedAudioURL = audioURL
+            let outputURL = audioURL
 
-            try await self.startRecorders(micURL: micURL, systemURL: systemURL)
+            // guard let outputURL = audioURL else {
+            //    throw RecordingManagerError.noOutputPath
+            // }
+
+            try await self.startRecorder(to: outputURL, source: source)
 
             self.isRecording = true
-            self.currentMeeting?.audioFilePath = self.mergedAudioURL?.path
+            self.currentMeeting?.audioFilePath = outputURL.path
 
             AppLogger.info("Recording started successfully", category: .recordingManager, extra: [
                 "app": meeting.app.displayName,
-                "micURL": micURL.lastPathComponent,
-                "systemURL": systemURL.lastPathComponent,
+                "url": outputURL.lastPathComponent,
+                "source": source.rawValue,
             ])
 
         } catch {
             await self.handleStartRecordingError(error)
+        }
+    }
+
+    private func startRecorder(to url: URL, source: RecordingSource) async throws {
+        // Start recorder with source preference
+        // We assume micRecorder is capable of handling the source logic (AudioRecorder)
+        AppLogger.debug("Starting recorder", category: .recordingManager, extra: ["url": url.path, "source": source.rawValue])
+
+        // Use specific overload if available, or fallback
+        if let recorder = self.micRecorder as? AudioRecorder {
+            try await recorder.startRecording(to: url, source: source, retryCount: 0)
+        } else {
+            // Fallback for mocks or generic services
+            try await self.micRecorder.startRecording(to: url, retryCount: 0)
         }
     }
 
