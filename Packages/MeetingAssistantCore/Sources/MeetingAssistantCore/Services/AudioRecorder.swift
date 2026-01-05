@@ -17,7 +17,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     // MARK: - Constants
 
     private enum Constants {
-        static let tapBufferSize: AVAudioFrameCount = 4096
+        static let tapBufferSize: AVAudioFrameCount = 2048
         static let tapBusNumber: AVAudioNodeBus = 0
         static let outputSampleRate: Double = 48_000.0
         static let outputChannels: AVAudioChannelCount = 2
@@ -143,7 +143,8 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
         // Increase maximum frames per slice to avoid kAudioUnitErr_TooManyFramesToProcess (-10874)
         // when hardware or drivers send buffers larger than the default 512 frames.
-        let safeMaxFrames: AVAudioFrameCount = 4096
+        // Using 2048 to reduce HALC overload risk while still handling most buffer sizes.
+        let safeMaxFrames: AVAudioFrameCount = 2048
         engine.mainMixerNode.auAudioUnit.maximumFramesToRender = safeMaxFrames
         mixer.auAudioUnit.maximumFramesToRender = safeMaxFrames
         engine.outputNode.auAudioUnit.maximumFramesToRender = safeMaxFrames
@@ -193,11 +194,17 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         let inputFormat = inputNode.inputFormat(forBus: Constants.tapBusNumber)
 
         guard inputFormat.sampleRate > 0 else {
-            throw AudioRecorderError.invalidInputFormat
+            AppLogger.warning("Microphone input has invalid sample rate. Skipping connection.", category: .recordingManager)
+            return
         }
 
         guard inputFormat.channelCount > 0 else {
             AppLogger.warning("Microphone input has 0 channels. Skipping connection.", category: .recordingManager)
+            return
+        }
+
+        guard inputFormat.commonFormat == .pcmFormatFloat32 else {
+            AppLogger.warning("Microphone input format is not Float32. Skipping connection.", category: .recordingManager)
             return
         }
 
@@ -381,19 +388,23 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
                 // Copy frames from the new buffer
                 if let srcChannels = buffer.floatChannelData {
-                    for ch in 0..<min(buffers.count, Int(buffer.format.channelCount)) {
-                        guard let dest = buffers[ch].mData?.assumingMemoryBound(to: Float.self) else {
+                    let channelsToCopy = min(buffers.count, Int(buffer.format.channelCount))
+                    for ch in 0..<channelsToCopy {
+                        let srcChannelData = srcChannels[ch]
+                        let destBuffer = buffers[ch]
+                        guard destBuffer.mData != nil, destBuffer.mDataByteSize > 0 else {
                             continue
                         }
-                        let src = srcChannels[ch]
-
-                        if framesFilled + framesToCopy <= targetFrames {
-                            let destPtr = UnsafeMutableBufferPointer(
-                                start: dest.advanced(by: framesFilled),
-                                count: framesToCopy
-                            )
-                            let srcPtr = UnsafeBufferPointer(start: src, count: framesToCopy)
-                            _ = destPtr.initialize(from: srcPtr)
+                        let destStart = destBuffer.mData?.assumingMemoryBound(to: Float.self)
+                        if let dest = destStart {
+                            if framesFilled + framesToCopy <= targetFrames {
+                                let destPtr = UnsafeMutableBufferPointer(
+                                    start: dest.advanced(by: framesFilled),
+                                    count: framesToCopy
+                                )
+                                let srcPtr = UnsafeBufferPointer(start: srcChannelData, count: framesToCopy)
+                                _ = destPtr.initialize(from: srcPtr)
+                            }
                         }
                     }
                 }
@@ -410,10 +421,13 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             // 4. Silence remaining
             if framesFilled < targetFrames {
                 for ch in 0..<buffers.count {
-                    guard let dest = buffers[ch].mData?.assumingMemoryBound(to: Float.self) else {
+                    let destBuffer = buffers[ch]
+                    guard destBuffer.mData != nil, destBuffer.mDataByteSize > 0 else {
                         continue
                     }
-                    memset(dest.advanced(by: framesFilled), 0, (targetFrames - framesFilled) * MemoryLayout<Float>.size)
+                    if let dest = destBuffer.mData?.assumingMemoryBound(to: Float.self) {
+                        memset(dest.advanced(by: framesFilled), 0, (targetFrames - framesFilled) * MemoryLayout<Float>.size)
+                    }
                 }
             }
 
