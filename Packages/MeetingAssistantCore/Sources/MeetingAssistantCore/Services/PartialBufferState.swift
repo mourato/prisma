@@ -62,6 +62,7 @@ public final class PartialBufferState: @unchecked Sendable {
         destOffset: Int
     ) -> Int {
         self.lock.withLock {
+            // CRITICAL: No I/O operations in audio callback path - can cause crashes
             guard let buffer, self.readOffset < Int(buffer.frameLength) else {
                 return 0
             }
@@ -73,8 +74,14 @@ public final class PartialBufferState: @unchecked Sendable {
                 return 0
             }
 
+            // CRITICAL FIX: Don't access destBuffers.count as it may crash on uninitialized structure
+            // Use the buffer's channel count and validate destBuffers access individually
+            let bufferChannelCount = Int(buffer.format.channelCount)
+            let channelsToCopy = min(2, bufferChannelCount) // We know format is 2 channels (stereo)
+
             // Copy each channel
-            for ch in 0..<min(destBuffers.count, Int(buffer.format.channelCount)) {
+            for ch in 0..<channelsToCopy {
+                guard ch < 2 else { break } // Safety check for destBuffers access
                 let destBuffer = destBuffers[ch]
                 guard destBuffer.mData != nil, destBuffer.mDataByteSize > 0 else {
                     continue

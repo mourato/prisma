@@ -56,9 +56,61 @@ public final class AudioBufferQueue: @unchecked Sendable {
     /// - Returns: The next buffer, or nil if empty.
     public func dequeue() -> AVAudioPCMBuffer? {
         self.lock.withLock {
-            guard self.count > 0 else { return nil }
+            // #region agent log
+            let logPath = "/Users/usuario/Documents/Repos/my-meeting-assistant/.cursor/debug.log"
+            func writeLog(_ data: [String: Any]) {
+                if let json = try? JSONSerialization.data(withJSONObject: data),
+                   let jsonStr = String(data: json, encoding: .utf8) {
+                    if let handle = FileHandle(forWritingAtPath: logPath) {
+                        handle.seekToEndOfFile()
+                        handle.write((jsonStr + "\n").data(using: .utf8)!)
+                        try? handle.close()
+                    } else {
+                        try? (jsonStr + "\n").write(toFile: logPath, atomically: true, encoding: .utf8)
+                    }
+                }
+            }
+            // #endregion
+            
+            guard self.count > 0 else {
+                // #region agent log
+                writeLog([
+                    "sessionId": "debug-session",
+                    "runId": "run1",
+                    "hypothesisId": "D",
+                    "location": "AudioBufferQueue.swift:59",
+                    "message": "Queue empty",
+                    "data": [
+                        "count": self.count
+                    ],
+                    "timestamp": Int64(Date().timeIntervalSince1970 * 1000)
+                ])
+                // #endregion
+                return nil
+            }
 
             let buffer = self.bufferStorage[self.tail]
+            
+            // #region agent log
+            writeLog([
+                "sessionId": "debug-session",
+                "runId": "run1",
+                "hypothesisId": "D",
+                "location": "AudioBufferQueue.swift:61",
+                "message": "Buffer dequeued",
+                "data": [
+                    "bufferIsNil": buffer == nil,
+                    "frameLength": buffer != nil ? Int(buffer!.frameLength) : 0,
+                    "formatChannelCount": buffer != nil ? Int(buffer!.format.channelCount) : 0,
+                    "formatSampleRate": buffer != nil ? buffer!.format.sampleRate : 0,
+                    "hasFloatChannelData": buffer != nil ? (buffer!.floatChannelData != nil) : false,
+                    "tail": self.tail,
+                    "count": self.count
+                ],
+                "timestamp": Int64(Date().timeIntervalSince1970 * 1000)
+            ])
+            // #endregion
+            
             // self.bufferStorage[self.tail] = nil // Avoid dealloc on audio thread
             self.tail = (self.tail + 1) % self.capacity
             self.count -= 1
