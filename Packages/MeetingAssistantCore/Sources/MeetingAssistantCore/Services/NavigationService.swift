@@ -37,19 +37,18 @@ public class NavigationService: ObservableObject {
     /// Shows the About alert.
     public func showAbout() {
         let alert = NSAlert()
-        alert.messageText = "Meeting Assistant"
-        alert.informativeText = """
-        Versão 0.1.1
-
-        Transcreva suas reuniões de vídeo automaticamente usando IA.
-
-        © 2025 Todos os direitos reservados.
-        """
+        alert.messageText = NSLocalizedString("about.title", bundle: .safeModule, comment: "")
+        alert.informativeText = String(
+            format: NSLocalizedString("about.version", bundle: .safeModule, comment: ""),
+            AppVersion.current
+        ) + "\n\n" +
+        NSLocalizedString("about.description", bundle: .safeModule, comment: "") + "\n\n" +
+        String(format: NSLocalizedString("about.copyright", bundle: .safeModule, comment: ""), 2025)
         alert.alertStyle = .informational
         alert.icon = NSImage(
-            systemSymbolName: "waveform.circle.fill", accessibilityDescription: "Meeting Assistant"
+            systemSymbolName: "waveform.circle.fill", accessibilityDescription: NSLocalizedString("about.title", bundle: .safeModule, comment: "")
         )
-        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: NSLocalizedString("common.ok", bundle: .safeModule, comment: ""))
 
         NSApp.activate(ignoringOtherApps: true)
         alert.runModal()
@@ -58,10 +57,10 @@ public class NavigationService: ObservableObject {
     /// Checks for updates (static placeholder for now).
     public func checkForUpdates() {
         let alert = NSAlert()
-        alert.messageText = "Verificar Atualizações"
-        alert.informativeText = "Você está usando a versão mais recente do Meeting Assistant."
+        alert.messageText = NSLocalizedString("updates.check_title", bundle: .safeModule, comment: "")
+        alert.informativeText = NSLocalizedString("updates.latest_version", bundle: .safeModule, comment: "")
         alert.alertStyle = .informational
-        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: NSLocalizedString("common.ok", bundle: .safeModule, comment: ""))
 
         NSApp.activate(ignoringOtherApps: true)
         alert.runModal()

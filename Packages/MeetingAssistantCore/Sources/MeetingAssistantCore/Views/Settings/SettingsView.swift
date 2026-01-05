@@ -49,7 +49,7 @@ public struct SettingsView: View {
                         .tag(section)
                 }
             } header: {
-                Text("Meeting Assistant")
+                Text(NSLocalizedString("about.title", bundle: .safeModule, comment: ""))
                     .font(.caption2)
                     .fontWeight(.bold)
                     .foregroundStyle(.secondary)

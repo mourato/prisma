@@ -102,7 +102,7 @@ public struct MenuBarView: View {
                 .font(.title)
                 .foregroundStyle(.blue)
 
-            Text("Meeting Assistant")
+            Text(NSLocalizedString("about.title", bundle: .safeModule, comment: ""))
                 .font(.headline)
 
             Spacer()
@@ -168,7 +168,7 @@ public struct MenuBarView: View {
 
                     // Dropdown Menu
                     Menu {
-                        Section("Gravar...") { // Localization should be added
+                        Section(NSLocalizedString("menubar.record_section", bundle: .safeModule, comment: "")) {
                             Button {
                                 self.startRecording(source: .all)
                             } label: {

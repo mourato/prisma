@@ -243,3 +243,19 @@
 
 /* Transcribe File */
 "transcribe.import_audio" = "Importar Áudio";
+
+/* About */
+"about.title" = "Meeting Assistant";
+"about.version" = "Versão %@";
+"about.description" = "Transcreva suas reuniões de vídeo automaticamente usando IA.";
+"about.copyright" = "© %d Todos os direitos reservados.";
+
+/* Updates */
+"updates.check_title" = "Verificar Atualizações";
+"updates.latest_version" = "Você está usando a versão mais recente do Meeting Assistant.";
+
+/* Menu Bar */
+"menubar.record_section" = "Gravar...";
+
+/* Settings */
+"settings.title" = "Configurações";
