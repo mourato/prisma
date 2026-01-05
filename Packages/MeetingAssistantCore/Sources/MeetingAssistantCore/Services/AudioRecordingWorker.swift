@@ -30,12 +30,15 @@ final class AudioRecordingWorker: @unchecked Sendable {
 
     // MARK: - Lifecycle
 
-    func start(writingTo url: URL, format: AVAudioFormat, fileFormat: AppSettingsStore.AudioFormat) throws {
-        try self.queue.sync {
-            if Thread.isMainThread {
-                try self.startInternal(writingTo: url, format: format, fileFormat: fileFormat)
-            } else {
-                try self.startInternal(writingTo: url, format: format, fileFormat: fileFormat)
+    func start(writingTo url: URL, format: AVAudioFormat, fileFormat: AppSettingsStore.AudioFormat) async throws {
+        try await withCheckedThrowingContinuation { continuation in
+            self.queue.async {
+                do {
+                    try self.startInternal(writingTo: url, format: format, fileFormat: fileFormat)
+                    continuation.resume()
+                } catch {
+                    continuation.resume(throwing: error)
+                }
             }
         }
     }
