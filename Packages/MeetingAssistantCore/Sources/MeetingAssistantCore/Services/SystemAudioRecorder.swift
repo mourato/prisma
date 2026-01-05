@@ -32,6 +32,9 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
 
     // MARK: - Streaming Output
 
+    /// Strong reference to prevent premature deallocation during capture
+    private var streamOutputHolder: Any?
+
     /// Callback for received audio buffers (Thread-safe, called on background queue)
     // MARK: - Public API
 
@@ -192,6 +195,7 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
             }
         )
         self.streamOutput = output
+        self.streamOutputHolder = output  // Keep strong reference to prevent deallocation
 
         try self.stream?.addStreamOutput(output, type: .audio, sampleHandlerQueue: queue)
     }

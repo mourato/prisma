@@ -75,18 +75,21 @@ public final class PartialBufferState: @unchecked Sendable {
 
             // Copy each channel
             for ch in 0..<min(destBuffers.count, Int(buffer.format.channelCount)) {
-                guard let dest = destBuffers[ch].mData?.assumingMemoryBound(to: Float.self) else {
+                let destBuffer = destBuffers[ch]
+                guard destBuffer.mData != nil, destBuffer.mDataByteSize > 0 else {
                     continue
                 }
                 let src = srcChannels[ch].advanced(by: self.readOffset)
 
                 // Optimized memcpy via UnsafeBufferPointer
-                let destPtr = UnsafeMutableBufferPointer(
-                    start: dest.advanced(by: destOffset),
-                    count: framesToCopy
-                )
-                let srcPtr = UnsafeBufferPointer(start: src, count: framesToCopy)
-                _ = destPtr.initialize(from: srcPtr)
+                if let destStart = destBuffer.mData?.assumingMemoryBound(to: Float.self) {
+                    let destPtr = UnsafeMutableBufferPointer(
+                        start: destStart.advanced(by: destOffset),
+                        count: framesToCopy
+                    )
+                    let srcPtr = UnsafeBufferPointer(start: src, count: framesToCopy)
+                    _ = destPtr.initialize(from: srcPtr)
+                }
             }
 
             self.readOffset += framesToCopy
