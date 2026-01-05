@@ -12,6 +12,7 @@
 "settings.general.title" = "Geral";
 "settings.general.recording" = "Gravação";
 "settings.general.auto_start" = "Iniciar gravação automaticamente ao detectar reunião";
+"settings.general.show_settings_on_launch" = "Exibir janela de configurações ao iniciar o app";
 "settings.general.recordings_path" = "Pasta de gravações:";
 "settings.general.audio_format" = "Formato de Áudio";
 "settings.general.merge_audio" = "Mesclar arquivos de áudio ao finalizar";

@@ -65,6 +65,13 @@ public struct GeneralSettingsTab: View {
 
                 Divider()
 
+                Toggle(
+                    "settings.general.show_settings_on_launch".localized,
+                    isOn: self.$viewModel.showSettingsOnLaunch
+                )
+
+                Divider()
+
                 VStack(alignment: .leading, spacing: 8) {
                     Text("settings.general.recordings_path".localized)
                         .font(.subheadline)
