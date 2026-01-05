@@ -29,7 +29,7 @@ class MockRecordingService: RecordingServiceProtocol {
     var openPermissionSettingsCalled = false
     var transcribeExternalAudioCalled = false
 
-    func startRecording() async {
+    func startRecording(source: RecordingSource) async {
         self.startRecordingCalled = true
         self.isRecording = true
         self.isRecordingSubject.send(true)

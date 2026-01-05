@@ -59,7 +59,7 @@ public final class AudioBufferQueue: @unchecked Sendable {
             guard self.count > 0 else { return nil }
 
             let buffer = self.bufferStorage[self.tail]
-            self.bufferStorage[self.tail] = nil // Clear ref to avoid leaks
+            // self.bufferStorage[self.tail] = nil // Avoid dealloc on audio thread
             self.tail = (self.tail + 1) % self.capacity
             self.count -= 1
 
