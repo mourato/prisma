@@ -345,6 +345,7 @@ public extension AppSettingsStore {
     private enum GeneralKeys {
         static let recordingsDirectory = "recordingsDirectory"
         static let autoStartRecording = "autoStartRecording"
+        static let showSettingsOnLaunch = "showSettingsOnLaunch"
     }
 
     /// Configured path for saving recordings.
@@ -358,6 +359,12 @@ public extension AppSettingsStore {
     var autoStartRecording: Bool {
         get { UserDefaults.standard.bool(forKey: GeneralKeys.autoStartRecording) }
         set { UserDefaults.standard.set(newValue, forKey: GeneralKeys.autoStartRecording) }
+    }
+
+    /// Whether to show the settings window on app launch.
+    var showSettingsOnLaunch: Bool {
+        get { UserDefaults.standard.bool(forKey: GeneralKeys.showSettingsOnLaunch) }
+        set { UserDefaults.standard.set(newValue, forKey: GeneralKeys.showSettingsOnLaunch) }
     }
 
     // MARK: - Post-Processing Extension

@@ -17,9 +17,11 @@ struct MeetingAssistantApp: App {
             SettingsView()
                 .onAppear {
                     NavigationService.shared.register(openWindow: self.openWindow)
+                    if AppSettingsStore.shared.showSettingsOnLaunch {
+                        self.openWindow(id: "settings")
+                    }
                 }
         }
-        .handlesExternalEvents(matching: Set(["settings"]))
         .windowResizability(.contentSize)
         .commands {
             CommandGroup(replacing: .appSettings) {

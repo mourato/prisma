@@ -36,12 +36,19 @@ public class GeneralSettingsViewModel: ObservableObject {
         }
     }
 
+    @Published public var showSettingsOnLaunch: Bool {
+        didSet {
+            self.settingsStore.showSettingsOnLaunch = self.showSettingsOnLaunch
+        }
+    }
+
     public init() {
         self.autoStartRecording = AppSettingsStore.shared.autoStartRecording
         self.recordingsPath = AppSettingsStore.shared.recordingsDirectory
         self.audioFormat = AppSettingsStore.shared.audioFormat
         self.shouldMergeAudioFiles = AppSettingsStore.shared.shouldMergeAudioFiles
         self.selectedLanguage = AppSettingsStore.shared.selectedLanguage
+        self.showSettingsOnLaunch = AppSettingsStore.shared.showSettingsOnLaunch
     }
 
     public func selectRecordingsDirectory() {
