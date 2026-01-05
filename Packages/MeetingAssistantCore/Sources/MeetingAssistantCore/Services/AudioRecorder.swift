@@ -157,7 +157,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         AppLogger.debug("Set maximumFramesToRender to \(safeMaxFrames) for mainMixer, mixer, and outputNode", category: .recordingManager)
 
         AppLogger.debug("Starting engine...", category: .recordingManager)
-        try self.startAudioEngine(engine, outputURL: outputURL, source: source, retryCount: retryCount)
+        try await self.startAudioEngine(engine, outputURL: outputURL, source: source, retryCount: retryCount)
         self.currentRecordingURL = outputURL
         AppLogger.debug("Audio Engine setup complete.", category: .recordingManager)
     }
@@ -254,22 +254,28 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         outputURL: URL,
         source: RecordingSource,
         retryCount: Int
-    ) throws {
+    ) async throws {
         AppLogger.debug("Preparing engine...", category: .recordingManager)
-        engine.prepare()
 
-        do {
-            AppLogger.debug("Calling engine.start()...", category: .recordingManager)
-            try engine.start()
-            AppLogger.debug("Engine started. IsRunning: \(engine.isRunning)", category: .recordingManager)
-            self.isRecording = true
-            self.startValidationTimer(url: outputURL, source: source, retryCount: retryCount)
-            AppLogger.info("Audio engine started successfully", category: .recordingManager)
-        } catch {
-            AppLogger.fault("Failed to start audio engine", category: .recordingManager, error: error)
-            self.cleanupEngine()
-            throw AudioRecorderError.failedToStartEngine(error)
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            group.addTask {
+                engine.prepare()
+                try engine.start()
+            }
+
+            group.addTask {
+                try await Task.sleep(nanoseconds: 10_000_000_000)
+                throw AudioRecorderError.failedToStartEngine(NSError(domain: "AudioRecorder", code: -1, userInfo: [NSLocalizedDescriptionKey: "Audio engine start timeout"]))
+            }
+
+            try await group.next()
+            group.cancelAll()
         }
+
+        AppLogger.debug("Engine started. IsRunning: \(engine.isRunning)", category: .recordingManager)
+        self.isRecording = true
+        self.startValidationTimer(url: outputURL, source: source, retryCount: retryCount)
+        AppLogger.info("Audio engine started successfully", category: .recordingManager)
     }
 
     /// Stop recording and finalize the audio file.
