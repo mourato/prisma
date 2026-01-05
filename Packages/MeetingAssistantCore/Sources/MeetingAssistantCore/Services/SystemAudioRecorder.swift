@@ -262,11 +262,14 @@ private class SystemAudioStreamOutput: NSObject, SCStreamOutput {
     }
 
     private func createPCMBuffer(from sampleBuffer: CMSampleBuffer) -> AVAudioPCMBuffer? {
-        // Handle potential format mismatch or absence
         guard let formatDescription = CMSampleBufferGetFormatDescription(sampleBuffer) else {
             return nil
         }
         let format = AVAudioFormat(cmAudioFormatDescription: formatDescription)
+        guard format.sampleRate > 0, format.channelCount > 0 else {
+            AppLogger.error("Invalid audio format - sampleRate: \(format.sampleRate), channels: \(format.channelCount)", category: .recordingManager)
+            return nil
+        }
         let frames = AVAudioFrameCount(sampleBuffer.numSamples)
 
         guard frames > 0, let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frames) else {
@@ -281,7 +284,12 @@ private class SystemAudioStreamOutput: NSObject, SCStreamOutput {
             into: buffer.mutableAudioBufferList
         )
 
-        return status == noErr ? buffer : nil
+        guard status == noErr else {
+            AppLogger.error("CMSampleBufferCopyPCMDataIntoAudioBufferList failed with status: \(status)", category: .recordingManager)
+            return nil
+        }
+
+        return buffer
     }
 }
 

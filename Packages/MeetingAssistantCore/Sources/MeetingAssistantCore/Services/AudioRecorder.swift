@@ -118,7 +118,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         }
 
         do {
-            try self.setupAndStartEngine(writingTo: outputURL, source: source, retryCount: retryCount, sampleRate: targetSampleRate)
+            try await self.setupAndStartEngine(writingTo: outputURL, source: source, retryCount: retryCount, sampleRate: targetSampleRate)
         } catch {
             await self.stopRecording()
             throw error
@@ -127,7 +127,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
     // MARK: - Engine Setup Helpers
 
-    private func setupAndStartEngine(writingTo outputURL: URL, source: RecordingSource, retryCount: Int, sampleRate: Double) throws {
+    private func setupAndStartEngine(writingTo outputURL: URL, source: RecordingSource, retryCount: Int, sampleRate: Double) async throws {
         AppLogger.debug("Setting up Audio Engine...", category: .recordingManager)
         let engine = AVAudioEngine()
         let mixer = AVAudioMixerNode()
@@ -139,7 +139,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         AppLogger.debug("Configuring inputs...", category: .recordingManager)
         try self.configureInputs(engine: engine, mixer: mixer, source: source, sampleRate: sampleRate)
         AppLogger.debug("Configuring worker...", category: .recordingManager)
-        try self.configureWorker(writingTo: outputURL, mixer: mixer)
+        try await self.configureWorker(writingTo: outputURL, mixer: mixer)
 
         // Increase maximum frames per slice to avoid kAudioUnitErr_TooManyFramesToProcess (-10874)
         // when hardware or drivers send buffers larger than the default 512 frames.
@@ -231,13 +231,13 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         engine.connect(sourceNode, to: mixer, format: systemFormat)
     }
 
-    private func configureWorker(writingTo url: URL, mixer: AVAudioMixerNode) throws {
+    private func configureWorker(writingTo url: URL, mixer: AVAudioMixerNode) async throws {
         // Use the mixer's actual output format for the Tap.
         // This avoids asking the Tap to perform sample rate conversion, which can be fragile.
         let tapFormat = mixer.outputFormat(forBus: 0)
         AppLogger.debug("Configuring Worker with format: \(tapFormat)", category: .recordingManager)
 
-        try self.worker.start(writingTo: url, format: tapFormat, fileFormat: AppSettingsStore.shared.audioFormat)
+        try await self.worker.start(writingTo: url, format: tapFormat, fileFormat: AppSettingsStore.shared.audioFormat)
 
         let worker = self.worker
         mixer.installTap(
