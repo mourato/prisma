@@ -13,7 +13,7 @@ struct MeetingAssistantApp: App {
     @Environment(\.openWindow) private var openWindow
 
     var body: some Scene {
-        WindowGroup("Configurações", id: "settings") {
+        WindowGroup(NSLocalizedString("settings.title", bundle: .module, comment: ""), id: "settings") {
             SettingsView()
                 .onAppear {
                     NavigationService.shared.register(openWindow: self.openWindow)
@@ -25,7 +25,7 @@ struct MeetingAssistantApp: App {
         .windowResizability(.contentSize)
         .commands {
             CommandGroup(replacing: .appSettings) {
-                Button("Configurações...") {
+                Button(NSLocalizedString("settings.title", bundle: .module, comment: "") + "...") {
                     self.openWindow(id: "settings")
                     NSApp.activate(ignoringOtherApps: true)
                 }
@@ -122,7 +122,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         if let button = statusItem?.button {
             button.image = NSImage(
-                systemSymbolName: "mic.circle", accessibilityDescription: "Meeting Assistant"
+                systemSymbolName: "mic.circle", accessibilityDescription: NSLocalizedString("about.title", bundle: .module, comment: "")
             )
             button.action = #selector(self.handleStatusItemClick)
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
