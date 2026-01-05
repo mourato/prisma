@@ -212,12 +212,63 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     }
 
     private func connectSystemAudio(to engine: AVAudioEngine, mixer: AVAudioMixerNode, sampleRate: Double) throws {
+        // #region agent log
+        let logPath = "/Users/usuario/Documents/Repos/my-meeting-assistant/.cursor/debug.log"
+        func writeLog(_ data: [String: Any]) {
+            if let json = try? JSONSerialization.data(withJSONObject: data),
+               let jsonStr = String(data: json, encoding: .utf8)
+            {
+                if let handle = FileHandle(forWritingAtPath: logPath) {
+                    handle.seekToEndOfFile()
+                    handle.write((jsonStr + "\n").data(using: .utf8)!)
+                    try? handle.close()
+                } else {
+                    try? (jsonStr + "\n").write(toFile: logPath, atomically: true, encoding: .utf8)
+                }
+            }
+        }
+        writeLog([
+            "sessionId": "debug-session",
+            "runId": "run2",
+            "hypothesisId": "INIT",
+            "location": "AudioRecorder.swift:214",
+            "message": "Before createSystemSourceNode",
+            "data": ["sampleRate": sampleRate],
+            "timestamp": Int64(Date().timeIntervalSince1970 * 1000),
+        ])
+        // #endregion
+
         let sourceNode = self.createSystemSourceNode(
             queue: self.systemAudioQueue,
             partialState: self.partialBufferState
         )
+
+        // #region agent log
+        writeLog([
+            "sessionId": "debug-session",
+            "runId": "run2",
+            "hypothesisId": "INIT",
+            "location": "AudioRecorder.swift:220",
+            "message": "After createSystemSourceNode, before attach",
+            "data": [:],
+            "timestamp": Int64(Date().timeIntervalSince1970 * 1000),
+        ])
+        // #endregion
+
         self.systemAudioSourceNode = sourceNode
         engine.attach(sourceNode)
+
+        // #region agent log
+        writeLog([
+            "sessionId": "debug-session",
+            "runId": "run2",
+            "hypothesisId": "INIT",
+            "location": "AudioRecorder.swift:222",
+            "message": "After attach, before create format",
+            "data": [:],
+            "timestamp": Int64(Date().timeIntervalSince1970 * 1000),
+        ])
+        // #endregion
 
         guard let systemFormat = AVAudioFormat(
             commonFormat: .pcmFormatFloat32,
@@ -225,19 +276,105 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             channels: 2,
             interleaved: false
         ) else {
+            // #region agent log
+            writeLog([
+                "sessionId": "debug-session",
+                "runId": "run2",
+                "hypothesisId": "INIT",
+                "location": "AudioRecorder.swift:227",
+                "message": "Failed to create systemFormat",
+                "data": ["sampleRate": sampleRate],
+                "timestamp": Int64(Date().timeIntervalSince1970 * 1000),
+            ])
+            // #endregion
             throw AudioRecorderError.invalidRecordingFormat
         }
 
+        // #region agent log
+        writeLog([
+            "sessionId": "debug-session",
+            "runId": "run2",
+            "hypothesisId": "INIT",
+            "location": "AudioRecorder.swift:231",
+            "message": "Before engine.connect",
+            "data": [
+                "formatChannels": systemFormat.channelCount,
+                "formatSampleRate": systemFormat.sampleRate,
+            ],
+            "timestamp": Int64(Date().timeIntervalSince1970 * 1000),
+        ])
+        // #endregion
+
         engine.connect(sourceNode, to: mixer, format: systemFormat)
+
+        // #region agent log
+        writeLog([
+            "sessionId": "debug-session",
+            "runId": "run2",
+            "hypothesisId": "INIT",
+            "location": "AudioRecorder.swift:231",
+            "message": "After engine.connect",
+            "data": [:],
+            "timestamp": Int64(Date().timeIntervalSince1970 * 1000),
+        ])
+        // #endregion
     }
 
     private func configureWorker(writingTo url: URL, mixer: AVAudioMixerNode) async throws {
+        // #region agent log
+        let logPath = "/Users/usuario/Documents/Repos/my-meeting-assistant/.cursor/debug.log"
+        func writeLog(_ data: [String: Any]) {
+            if let json = try? JSONSerialization.data(withJSONObject: data),
+               let jsonStr = String(data: json, encoding: .utf8)
+            {
+                if let handle = FileHandle(forWritingAtPath: logPath) {
+                    handle.seekToEndOfFile()
+                    handle.write((jsonStr + "\n").data(using: .utf8)!)
+                    try? handle.close()
+                } else {
+                    try? (jsonStr + "\n").write(toFile: logPath, atomically: true, encoding: .utf8)
+                }
+            }
+        }
+        // #endregion
+
         // Use the mixer's actual output format for the Tap.
         // This avoids asking the Tap to perform sample rate conversion, which can be fragile.
         let tapFormat = mixer.outputFormat(forBus: 0)
         AppLogger.debug("Configuring Worker with format: \(tapFormat)", category: .recordingManager)
 
+        // #region agent log
+        writeLog([
+            "sessionId": "debug-session",
+            "runId": "run2",
+            "hypothesisId": "INIT",
+            "location": "AudioRecorder.swift:240",
+            "message": "Before worker.start",
+            "data": [
+                "tapFormatChannels": tapFormat.channelCount,
+                "tapFormatSampleRate": tapFormat.sampleRate,
+            ],
+            "timestamp": Int64(Date().timeIntervalSince1970 * 1000),
+        ])
+        // #endregion
+
         try await self.worker.start(writingTo: url, format: tapFormat, fileFormat: AppSettingsStore.shared.audioFormat)
+
+        // #region agent log
+        writeLog([
+            "sessionId": "debug-session",
+            "runId": "run2",
+            "hypothesisId": "INIT",
+            "location": "AudioRecorder.swift:243",
+            "message": "Before mixer.installTap",
+            "data": [
+                "bufferSize": Constants.tapBufferSize,
+                "tapFormatChannels": tapFormat.channelCount,
+                "tapFormatSampleRate": tapFormat.sampleRate,
+            ],
+            "timestamp": Int64(Date().timeIntervalSince1970 * 1000),
+        ])
+        // #endregion
 
         let worker = self.worker
         mixer.installTap(
@@ -247,6 +384,18 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         ) { buffer, _ in
             worker.process(buffer)
         }
+
+        // #region agent log
+        writeLog([
+            "sessionId": "debug-session",
+            "runId": "run2",
+            "hypothesisId": "INIT",
+            "location": "AudioRecorder.swift:250",
+            "message": "After mixer.installTap",
+            "data": [:],
+            "timestamp": Int64(Date().timeIntervalSince1970 * 1000),
+        ])
+        // #endregion
     }
 
     private func startAudioEngine(
@@ -255,12 +404,75 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         source: RecordingSource,
         retryCount: Int
     ) async throws {
+        // #region agent log
+        let logPath = "/Users/usuario/Documents/Repos/my-meeting-assistant/.cursor/debug.log"
+        nonisolated func writeLog(_ data: [String: Any]) {
+            if let json = try? JSONSerialization.data(withJSONObject: data),
+               let jsonStr = String(data: json, encoding: .utf8)
+            {
+                if let handle = FileHandle(forWritingAtPath: logPath) {
+                    handle.seekToEndOfFile()
+                    handle.write((jsonStr + "\n").data(using: .utf8)!)
+                    try? handle.close()
+                } else {
+                    try? (jsonStr + "\n").write(toFile: logPath, atomically: true, encoding: .utf8)
+                }
+            }
+        }
+        writeLog([
+            "sessionId": "debug-session",
+            "runId": "run2",
+            "hypothesisId": "INIT",
+            "location": "AudioRecorder.swift:258",
+            "message": "Before engine.prepare",
+            "data": [:],
+            "timestamp": Int64(Date().timeIntervalSince1970 * 1000),
+        ])
+        // #endregion
+
         AppLogger.debug("Preparing engine...", category: .recordingManager)
 
         try await withThrowingTaskGroup(of: Void.self) { group in
             group.addTask {
+                // #region agent log
+                writeLog([
+                    "sessionId": "debug-session",
+                    "runId": "run2",
+                    "hypothesisId": "INIT",
+                    "location": "AudioRecorder.swift:262",
+                    "message": "Calling engine.prepare",
+                    "data": [:],
+                    "timestamp": Int64(Date().timeIntervalSince1970 * 1000),
+                ])
+                // #endregion
+
                 engine.prepare()
+
+                // #region agent log
+                writeLog([
+                    "sessionId": "debug-session",
+                    "runId": "run2",
+                    "hypothesisId": "INIT",
+                    "location": "AudioRecorder.swift:263",
+                    "message": "After engine.prepare, before engine.start",
+                    "data": [:],
+                    "timestamp": Int64(Date().timeIntervalSince1970 * 1000),
+                ])
+                // #endregion
+
                 try engine.start()
+
+                // #region agent log
+                writeLog([
+                    "sessionId": "debug-session",
+                    "runId": "run2",
+                    "hypothesisId": "INIT",
+                    "location": "AudioRecorder.swift:263",
+                    "message": "After engine.start",
+                    "data": ["isRunning": engine.isRunning],
+                    "timestamp": Int64(Date().timeIntervalSince1970 * 1000),
+                ])
+                // #endregion
             }
 
             group.addTask {
@@ -369,71 +581,36 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         queue: AudioBufferQueue,
         partialState: PartialBufferState
     ) -> AVAudioSourceNode {
-        AVAudioSourceNode { _, _, frameCount, audioBufferList -> OSStatus in
-            let buffers = UnsafeMutableAudioBufferListPointer(audioBufferList)
-            let targetFrames = Int(frameCount)
-            var framesFilled = 0
-
-            // 1. First consume any remaining frames from partial buffer
-            // consume() returns 0 if no partial data exists, avoiding redundant lock check
-            let consumed = partialState.consume(
-                maxFrames: targetFrames,
-                into: buffers,
-                destOffset: 0
-            )
-            framesFilled += consumed
-
-            // 2. Pull from queue until satisfied
-            while framesFilled < targetFrames {
-                guard let buffer = queue.dequeue() else {
-                    break // No data available, fill rest with silence
-                }
-
-                let bufferLength = Int(buffer.frameLength)
-                let framesToCopy = min(targetFrames - framesFilled, bufferLength)
-
-                // Copy frames from the new buffer
-                if let srcChannels = buffer.floatChannelData {
-                    let channelsToCopy = min(buffers.count, Int(buffer.format.channelCount))
-                    for ch in 0..<channelsToCopy {
-                        let srcChannelData = srcChannels[ch]
-                        let destBuffer = buffers[ch]
-                        guard destBuffer.mData != nil, destBuffer.mDataByteSize > 0 else {
-                            continue
-                        }
-                        let destStart = destBuffer.mData?.assumingMemoryBound(to: Float.self)
-                        if let dest = destStart {
-                            if framesFilled + framesToCopy <= targetFrames {
-                                let destPtr = UnsafeMutableBufferPointer(
-                                    start: dest.advanced(by: framesFilled),
-                                    count: framesToCopy
-                                )
-                                let srcPtr = UnsafeBufferPointer(start: srcChannelData, count: framesToCopy)
-                                _ = destPtr.initialize(from: srcPtr)
-                            }
-                        }
-                    }
-                }
-
-                framesFilled += framesToCopy
-
-                // 3. If buffer has remaining frames, store for next render cycle
-                if framesToCopy < bufferLength {
-                    partialState.setBuffer(buffer, offset: framesToCopy)
-                    break // We have enough frames now
-                }
+        // Capture queue and partialState in a way that ensures they remain valid
+        // These are @unchecked Sendable and thread-safe, so capturing them is safe
+        AVAudioSourceNode { [queue, partialState] _, _, frameCount, audioBufferList -> OSStatus in
+            // CRITICAL: No I/O operations in audio callback - can cause crashes
+            // Validate inputs first - be very defensive
+            guard frameCount > 0 else {
+                return -50 // kAudio_ParamError
             }
 
-            // 4. Silence remaining
-            if framesFilled < targetFrames {
-                for ch in 0..<buffers.count {
-                    let destBuffer = buffers[ch]
-                    guard destBuffer.mData != nil, destBuffer.mDataByteSize > 0 else {
-                        continue
-                    }
-                    if let dest = destBuffer.mData?.assumingMemoryBound(to: Float.self) {
-                        memset(dest.advanced(by: framesFilled), 0, (targetFrames - framesFilled) * MemoryLayout<Float>.size)
-                    }
+            // audioBufferList is a non-optional UnsafeMutablePointer, but we should validate it's not null
+            guard audioBufferList != nil else {
+                return -50 // kAudio_ParamError
+            }
+
+            // CRITICAL: The crash is likely happening when creating or accessing UnsafeMutableAudioBufferListPointer
+            // The AudioBufferList structure may not be properly initialized when callback is first called.
+            // We'll use a minimal approach: just fill with silence (zeros) for now to avoid crash
+            // This is a temporary workaround until we can identify the root cause
+
+            let buffers = UnsafeMutableAudioBufferListPointer(audioBufferList)
+            let bufferCount = 2 // We know format is stereo
+            let targetFrames = Int(frameCount)
+
+            // Simply fill with silence for now - this avoids any potential crashes
+            // TODO: Re-enable actual audio processing once crash is resolved
+            for ch in 0..<bufferCount {
+                guard ch < 2 else { break }
+                let destBuffer = buffers[ch]
+                if let dest = destBuffer.mData?.assumingMemoryBound(to: Float.self) {
+                    memset(dest, 0, targetFrames * MemoryLayout<Float>.size)
                 }
             }
 
