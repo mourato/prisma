@@ -215,6 +215,66 @@ final class AudioRecorderTests: XCTestCase {
         XCTAssertTrue(mockEngine.isRunning)
     }
 
+    // MARK: - Performance Tests
+
+    func testPerformance_StartRecordingOperation() async throws {
+        let outputURL = createTemporaryURL()
+
+        // Baseline: Start recording should be reasonably fast
+        measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
+            Task {
+                try await audioRecorder.startRecording(to: outputURL, source: .microphone, retryCount: 0)
+                _ = await audioRecorder.stopRecording()
+            }
+        }
+    }
+
+    func testPerformance_StopRecordingOperation() async throws {
+        let outputURL = createTemporaryURL()
+
+        // Pre-start recording for stop measurement
+        try await audioRecorder.startRecording(to: outputURL, source: .microphone, retryCount: 0)
+
+        // Baseline: Stop recording should be very fast
+        measure(metrics: [XCTClockMetric(), XCTCPUMetric()]) {
+            Task {
+                _ = await audioRecorder.stopRecording()
+            }
+        }
+    }
+
+    func testPerformance_MultipleStartStopCycles() async throws {
+        // Baseline: Multiple recording cycles should not degrade performance
+        measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
+            Task {
+                for _ in 0..<10 {
+                    let outputURL = createTemporaryURL()
+                    try await audioRecorder.startRecording(to: outputURL, source: .microphone, retryCount: 0)
+                    _ = await audioRecorder.stopRecording()
+                }
+            }
+        }
+    }
+
+    func testPerformance_SourceTypeSwitching() async throws {
+        let outputURL = createTemporaryURL()
+
+        // Baseline: Switching between different audio sources should be efficient
+        measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
+            Task {
+                // Test different sources
+                try await audioRecorder.startRecording(to: outputURL, source: .microphone, retryCount: 0)
+                _ = await audioRecorder.stopRecording()
+
+                try await audioRecorder.startRecording(to: outputURL, source: .system, retryCount: 0)
+                _ = await audioRecorder.stopRecording()
+
+                try await audioRecorder.startRecording(to: outputURL, source: .all, retryCount: 0)
+                _ = await audioRecorder.stopRecording()
+            }
+        }
+    }
+
     // MARK: - Helpers
 
     private func createTemporaryURL() -> URL {

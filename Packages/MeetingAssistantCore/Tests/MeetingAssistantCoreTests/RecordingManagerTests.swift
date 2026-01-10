@@ -183,4 +183,89 @@ final class RecordingManagerTests: XCTestCase {
         XCTAssertEqual(mockMic.startRecordingParams.first?.url, audioURL)
         XCTAssertEqual(mockMic.stopRecordingCalledCount, 1)
     }
+
+    // MARK: - Performance Tests
+
+    func testPerformance_StartRecordingOperation() async {
+        mockMic.permissionGranted = true
+        mockSystem.permissionGranted = true
+
+        // Baseline: Start recording should be fast
+        measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
+            Task {
+                await manager.startRecording()
+            }
+        }
+
+        XCTAssertTrue(manager.isRecording)
+    }
+
+    func testPerformance_StopRecordingOperation() async {
+        mockMic.permissionGranted = true
+        mockSystem.permissionGranted = true
+
+        await manager.startRecording()
+        XCTAssertTrue(manager.isRecording)
+
+        // Baseline: Stop recording should be very fast
+        measure(metrics: [XCTClockMetric(), XCTCPUMetric()]) {
+            Task {
+                await manager.stopRecording()
+            }
+        }
+
+        XCTAssertFalse(manager.isRecording)
+    }
+
+    func testPerformance_PermissionCheckOperation() async {
+        mockMic.permissionGranted = true
+        mockSystem.permissionGranted = true
+
+        // Baseline: Permission checks should be fast
+        measure(metrics: [XCTClockMetric(), XCTCPUMetric()]) {
+            Task {
+                await manager.checkPermission()
+            }
+        }
+
+        XCTAssertTrue(manager.hasRequiredPermissions)
+    }
+
+    func testPerformance_MultipleRecordingCycles() async {
+        mockMic.permissionGranted = true
+        mockSystem.permissionGranted = true
+
+        // Baseline: Multiple recording cycles should maintain performance
+        measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
+            Task {
+                for _ in 0..<5 {
+                    await manager.startRecording()
+                    await manager.stopRecording()
+                }
+            }
+        }
+
+        XCTAssertFalse(manager.isRecording)
+    }
+
+    func testPerformance_TranscriptionWorkflow() async throws {
+        mockMic.permissionGranted = true
+        mockSystem.permissionGranted = true
+
+        // Start recording to create a recording
+        await manager.startRecording()
+        await manager.stopRecording()
+
+        // Mock a transcription result
+        let audioURL = URL(fileURLWithPath: "/tmp/test.m4a")
+
+        // Baseline: Transcription operations should be reasonably fast
+        measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
+            Task {
+                _ = try await mockTranscription.transcribe(audioURL: audioURL)
+            }
+        }
+
+        XCTAssertEqual(mockTranscription.transcribeCallCount, 1)
+    }
 }

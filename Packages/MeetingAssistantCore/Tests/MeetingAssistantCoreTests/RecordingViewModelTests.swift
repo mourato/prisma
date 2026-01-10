@@ -74,4 +74,54 @@ final class RecordingViewModelTests: XCTestCase {
             viewModel.transcriptionViewModel.statusMessage
                 == mockService.transcriptionStatus.statusMessage)
     }
+
+    // MARK: - Performance Tests
+
+    func testPerformance_StartRecordingOperation() async {
+        // Baseline: UI operations should be fast
+        measure(metrics: [XCTClockMetric(), XCTCPUMetric()]) {
+            Task {
+                await viewModel.startRecording()
+            }
+        }
+
+        XCTAssertTrue(mockService.startRecordingCalled)
+    }
+
+    func testPerformance_StopRecordingOperation() async {
+        // Pre-start recording
+        await viewModel.startRecording()
+        mockService.startRecordingCalled = false // Reset for measurement
+
+        // Baseline: Stop operations should be fast
+        measure(metrics: [XCTClockMetric(), XCTCPUMetric()]) {
+            Task {
+                await viewModel.stopRecording()
+            }
+        }
+
+        XCTAssertTrue(mockService.stopRecordingCalled)
+    }
+
+    func testPerformance_StatusTextComputation() {
+        // Baseline: Status text computation should be very fast
+        measure(metrics: [XCTClockMetric()]) {
+            for _ in 0..<1000 {
+                _ = viewModel.statusText
+            }
+        }
+    }
+
+    func testPerformance_StateUpdates() async {
+        // Baseline: State updates through Combine should be efficient
+        measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
+            Task {
+                for _ in 0..<100 {
+                    mockService.simulateState(recording: true, transcribing: false)
+                    mockService.simulateState(recording: false, transcribing: true)
+                    mockService.simulateState(recording: false, transcribing: false)
+                }
+            }
+        }
+    }
 }
