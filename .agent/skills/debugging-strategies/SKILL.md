@@ -519,9 +519,8 @@ afterEach(() => {
 
 ## Resources
 
-- **references/debugging-tools-guide.md**: Comprehensive tool documentation
-- **references/performance-profiling.md**: Performance debugging guide
-- **references/production-debugging.md**: Debugging live systems
-- **assets/debugging-checklist.md**: Quick reference checklist
-- **assets/common-bugs.md**: Common bug patterns
-- **scripts/debug-helper.ts**: Debugging utility functions
+- **[references/debugging-tools-guide.md](references/debugging-tools-guide.md)**: Comprehensive tool documentation
+- **[references/performance-profiling.md](references/performance-profiling.md)**: Performance debugging guide
+- **[references/production-debugging.md](references/production-debugging.md)**: Debugging live systems
+- **[assets/debugging-checklist.md](assets/debugging-checklist.md)**: Quick reference checklist
+- **[assets/common-bugs.md](assets/common-bugs.md)**: Common bug patterns

@@ -82,12 +82,18 @@ Skills are loaded when specific contexts are detected. See `.agent/skills/` for 
 | Skill | Trigger |
 |-------|---------|
 | [audio-realtime](.agent/skills/audio-realtime/) | AVAudioSourceNode, AudioRecorder, ProcessTap |
+| [debugging-strategies](.agent/skills/debugging-strategies/) | bugs, crash, performance issue |
 | [documentation](.agent/skills/documentation/) | DocC comments, API documentation |
+| [git-advanced-workflows](.agent/skills/git-advanced-workflows/) | rebase, bisect, cherry-pick |
 | [git-workflow](.agent/skills/git-workflow/) | git commit, branches, PRs |
+| [keychain-security](.agent/skills/keychain-security/) | KeychainManager, KeychainProvider, storeSecret |
 | [localization](.agent/skills/localization/) | Bundle.module, NSLocalizedString, accessibility |
 | [menubar](.agent/skills/menubar/) | NSStatusItem, NSMenu, NSPopover |
-| [swiftui-patterns](.agent/skills/swiftui-patterns/) | SwiftUI views, @State, NavigationStack |
+| [skill-development](.agent/skills/skill-development/) | create skill, develop plugin |
+| [skills-discovery](.agent/skills/skills-discovery/) | search skills, registry |
 | [swift-package-manager](.agent/skills/swift-package-manager/) | Package.swift, SPM dependencies |
+| [swiftui-patterns](.agent/skills/swiftui-patterns/) | SwiftUI views, @State, NavigationStack |
+| [testing-xctest](.agent/skills/testing-xctest/) | XCTest, @Test, mock, XCTAssert |
 
 ## Code Style Summary
 

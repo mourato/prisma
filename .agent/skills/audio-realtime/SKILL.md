@@ -1,14 +1,14 @@
-# Áudio Real-Time
+# Real-Time Audio
 
-> **Skill Condicional** - Ativada quando trabalhando com código de áudio
+> **Conditional Skill** - Triggered when working with audio code
 
-## Visão Geral
+## Overview
 
-Esta skill aborda políticas críticas para processamento de áudio em tempo real, onde alocações de memória e locks são especialmente sensíveis.
+This skill addresses critical policies for real-time audio processing, where memory allocations and locks are especially sensitive.
 
-## Quando Usar
+## When to Use
 
-Ative esta skill quando detectar:
+Activate this skill when detecting:
 - `AVAudioSourceNode`
 - `AVAudioEngine` + `installTap`
 - `ProcessTap`
@@ -16,22 +16,22 @@ Ative esta skill quando detectar:
 - `SystemAudioRecorder`
 - `AudioBufferQueue`
 
-## Conceitos-Chave
+## Key Concepts
 
 ### Zero Allocation Policy
 
-**CRÍTICO**: NUNCA aloque memória dentro de callbacks de áudio.
+**CRITICAL**: NEVER allocate memory inside audio callbacks.
 
 ```swift
-// ❌ ERRADO - Aloca memória no callback
+// WRONG - Allocates memory in callback
 func renderBlock(timestamp: AVAudioTime, frameCount: AVAudioFrameCount) -> UnsafePointer<Float> {
-    let buffer = [Float](repeating: 0, count: Int(frameCount)) // ALOCA!
+    let buffer = [Float](repeating: 0, count: Int(frameCount)) // ALLOCATES!
     return process(buffer)
 }
 
-// ✅ CORRETO - Use ring buffer pré-alocado
+// CORRECT - Use pre-allocated ring buffer
 class AudioProcessor {
-    private let ringBuffer: RingBuffer // Alocado uma vez na init
+    private let ringBuffer: RingBuffer // Allocated once in init
 
     func renderBlock(timestamp: AVAudioTime, frameCount: AVAudioFrameCount) {
         guard let output = ringBuffer.readBuffer(count: Int(frameCount)) else { return }
@@ -40,7 +40,7 @@ class AudioProcessor {
 }
 ```
 
-### Ring Buffer Pré-Alocado
+### Pre-allocated Ring Buffer
 
 ```swift
 final class RingBuffer {
@@ -73,17 +73,17 @@ final class RingBuffer {
 
 ### Bounds Checking
 
-Sempre use `min()` para prevenir buffer overflows:
+Always use `min()` to prevent buffer overflows:
 
 ```swift
-// ✅ CORRETO
+// CORRECT
 let copies = min(source.count, dest.count)
 memcpy(destPtr, sourcePtr, copies * MemoryLayout<Element>.size)
 ```
 
 ### Lock Safety
 
-**NUNCA use** `NSLock` ou `@MainActor` em callbacks de áudio real-time. Use `OSAllocatedUnfairLock`:
+**NEVER use** `NSLock` or `@MainActor` in real-time audio callbacks. Use `OSAllocatedUnfairLock`:
 
 ```swift
 import os.lock
@@ -101,7 +101,7 @@ final class AtomicCounter {
 }
 ```
 
-## Patterns Comuns
+## Common Patterns
 
 ### Audio Buffer Queue
 
@@ -110,7 +110,7 @@ final class AudioBufferQueue {
     private let queue = DispatchQueue(label: "com.meeting.audio.buffer", qos: .userInitiated)
     private var buffers: [Data] = []
 
-    // ❌ Não faça isso - aloca no callback
+    // DON'T do this - allocates in callback
     func processAudio(_ data: UnsafePointer<Float>, frameCount: UInt32) {
         queue.async {
             let copy = Data(bytes: data, count: Int(frameCount) * MemoryLayout<Float>.size)
@@ -120,14 +120,14 @@ final class AudioBufferQueue {
 }
 ```
 
-## Armadilhas Comuns
+## Common Pitfalls
 
-1. **Strings em callbacks** - Mesmo `"\(value)"` aloca memória
-2. **Arrays temporários** - `[Float](repeating:)` aloca
-3. **Error creation** - `throw MyError()` pode alocar
-4. **Getters complexos** - Evite computed properties em callbacks
+1. **Strings in callbacks** - Even `"\(value)"` allocates memory
+2. **Temporary arrays** - `[Float](repeating:)` allocates
+3. **Error creation** - `throw MyError()` may allocate
+4. **Complex getters** - Avoid computed properties in callbacks
 
-## Referências
+## References
 
 - [AudioBufferQueue.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Services/AudioBufferQueue.swift)
 - [SystemAudioRecorder.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Services/SystemAudioRecorder.swift)
