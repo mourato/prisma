@@ -47,7 +47,7 @@ public struct MenuBarView: View {
         // RecordingViewModel adds "statusText" logic.
 
         // Let's instantiate the VM with the shared instance (Current behavior) but allow injection.
-        _viewModel = StateObject(wrappedValue: viewModel ?? RecordingViewModel())
+        _viewModel = StateObject(wrappedValue: viewModel ?? RecordingViewModel(recordingManager: RecordingManager.shared))
     }
 
     @State private var isPermissionDismissed = false

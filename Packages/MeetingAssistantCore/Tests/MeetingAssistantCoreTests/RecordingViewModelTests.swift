@@ -24,7 +24,7 @@ final class RecordingViewModelTests: XCTestCase {
     func testInitialState() {
         XCTAssertFalse(viewModel.isRecording)
         XCTAssertFalse(viewModel.isTranscribing)
-        XCTAssertEqual(viewModel.statusText, "Aguardando reunião")
+        XCTAssertEqual(viewModel.statusText, "status.waiting".localized)
         XCTAssertFalse(viewModel.transcriptionViewModel.progressPercentage > 0)
     }
 
@@ -40,7 +40,7 @@ final class RecordingViewModelTests: XCTestCase {
         try? await Task.sleep(nanoseconds: 10_000_000)
 
         XCTAssertTrue(viewModel.isRecording)
-        XCTAssertEqual(viewModel.statusText, "Gravando...")
+        XCTAssertEqual(viewModel.statusText, "status.recording".localized)
     }
 
     func testStopRecording() async {
@@ -58,7 +58,7 @@ final class RecordingViewModelTests: XCTestCase {
 
         XCTAssertFalse(viewModel.isRecording)
         XCTAssertTrue(viewModel.isTranscribing)
-        XCTAssertEqual(viewModel.statusText, "Transcrevendo...")
+        XCTAssertEqual(viewModel.statusText, "status.transcribing".localized)
     }
 
     func testPermissionRequest() async {

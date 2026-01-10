@@ -100,7 +100,12 @@ public struct AIConfiguration: Codable, Equatable, Sendable {
         guard !self._legacyApiKey.isEmpty else { return }
 
         // Move to Keychain
-        try? KeychainManager.store(self._legacyApiKey, for: .aiAPIKey)
+        do {
+            try KeychainManager.store(self._legacyApiKey, for: .aiAPIKey)
+        } catch {
+            AppLogger.error("Failed to store legacy API key in Keychain during migration", category: .general, error: error)
+            // For migration scenarios, continuing without logging the error is acceptable
+        }
 
         // Clear from struct (will be saved to UserDefaults without the key)
         self._legacyApiKey = ""

@@ -37,20 +37,51 @@ public struct PostProcessingPrompt: Identifiable, Codable, Equatable, Sendable {
 public extension PostProcessingPrompt {
     /// Stable UUIDs for predefined prompts to ensure persistence consistency.
     private enum PredefinedIDs {
-        static let meetingNotes = UUID(uuidString: "00000000-0000-0000-0000-000000000001") ?? {
-            preconditionFailure("Invalid UUID string for meetingNotes")
+        // MARK: - Fallback UUIDs (valid for all Swift versions)
+
+        private static let fallbackMeetingNotes = UUID(
+            uuidString: "00000000-0000-0000-0000-000000000001"
+        )!
+        private static let fallbackExecutiveSummary = UUID(
+            uuidString: "00000000-0000-0000-0000-000000000002"
+        )!
+        private static let fallbackActionItems = UUID(
+            uuidString: "00000000-0000-0000-0000-000000000003"
+        )!
+        private static let fallbackCleanTranscription = UUID(
+            uuidString: "00000000-0000-0000-0000-000000000004"
+        )!
+
+        static let meetingNotes: UUID = {
+            guard let uuid = UUID(uuidString: "00000000-0000-0000-0000-000000000001") else {
+                assertionFailure("Invalid UUID string for meetingNotes")
+                return fallbackMeetingNotes
+            }
+            return uuid
         }()
 
-        static let executiveSummary = UUID(uuidString: "00000000-0000-0000-0000-000000000002") ?? {
-            preconditionFailure("Invalid UUID string for executiveSummary")
+        static let executiveSummary: UUID = {
+            guard let uuid = UUID(uuidString: "00000000-0000-0000-0000-000000000002") else {
+                assertionFailure("Invalid UUID string for executiveSummary")
+                return fallbackExecutiveSummary
+            }
+            return uuid
         }()
 
-        static let actionItems = UUID(uuidString: "00000000-0000-0000-0000-000000000003") ?? {
-            preconditionFailure("Invalid UUID string for actionItems")
+        static let actionItems: UUID = {
+            guard let uuid = UUID(uuidString: "00000000-0000-0000-0000-000000000003") else {
+                assertionFailure("Invalid UUID string for actionItems")
+                return fallbackActionItems
+            }
+            return uuid
         }()
 
-        static let cleanTranscription = UUID(uuidString: "00000000-0000-0000-0000-000000000004") ?? {
-            preconditionFailure("Invalid UUID string for cleanTranscription")
+        static let cleanTranscription: UUID = {
+            guard let uuid = UUID(uuidString: "00000000-0000-0000-0000-000000000004") else {
+                assertionFailure("Invalid UUID string for cleanTranscription")
+                return fallbackCleanTranscription
+            }
+            return uuid
         }()
     }
 

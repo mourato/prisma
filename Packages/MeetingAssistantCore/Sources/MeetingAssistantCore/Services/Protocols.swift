@@ -66,3 +66,26 @@ public protocol PostProcessingServiceProtocol: ObservableObject {
     /// Process a raw transcription using a specific prompt.
     func processTranscription(_ transcription: String, with prompt: PostProcessingPrompt) async throws -> String
 }
+
+// MARK: - Notification Service Protocol
+
+/// Abstract interface for notification services.
+public protocol NotificationServiceProtocol {
+    /// Request notification authorization.
+    func requestAuthorization()
+
+    /// Show notification for recording started.
+    func showRecordingStarted()
+
+    /// Show notification for recording stopped.
+    func showRecordingStopped()
+
+    /// Show notification for transcription completed.
+    func showTranscriptionCompleted()
+
+    /// Show notification for transcription failed.
+    func showTranscriptionFailed()
+
+    /// Send a custom notification.
+    func sendNotification(title: String, body: String)
+}

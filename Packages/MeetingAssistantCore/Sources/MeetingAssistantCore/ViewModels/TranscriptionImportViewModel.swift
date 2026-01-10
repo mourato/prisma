@@ -40,7 +40,7 @@ public class TranscriptionImportViewModel: ObservableObject {
 
     public func handleDrop(providers: [NSItemProvider]) {
         for provider in providers {
-            provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { [weak self] item, _ in
+            provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { @Sendable [weak self] item, _ in
                 guard let data = item as? Data,
                       let url = URL(dataRepresentation: data, relativeTo: nil)
                 else { return }
