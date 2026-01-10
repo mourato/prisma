@@ -15,6 +15,7 @@ Before starting any non-trivial task, ask yourself:
 
 1. Do I have a skill for this? → Use it
 2. Might one exist that I don't have? → Search the registry
+3. Do I need to create a new skill? → Use [skill-development](../skill-development/SKILL.md) to create one
 
 Search proactively when:
 
@@ -129,10 +130,31 @@ When you find relevant skills:
 
 1. Show 3-5 most relevant results maximum
 2. Include: name, namespace, description, stars, installs
-3. Explain how each skill helps with their _specific_ task
-4. Prioritize those with high installs
-5. Always ask for confirmation before installing
-6. Offer to help directly if no good skill exists or user declines
+3. **Evaluate quality**: Consider stars, installs, last updated date, and maintenance activity
+4. Explain how each skill helps with their _specific_ task
+5. Prioritize those with high installs AND recent updates
+6. Always ask for confirmation before installing
+7. Offer to help directly if no good skill exists or user declines
+
+## Quality Evaluation Criteria
+
+When presenting skills to users, evaluate using these criteria:
+
+| Criterion | What to Look For | Weight |
+|-----------|------------------|--------|
+| **Stars** | Community validation and popularity | Medium |
+| **Installs** | Real-world adoption | High |
+| **Last Updated** | Recent maintenance (check GitHub activity) | High |
+| **Author Reputation** | Known organizations or maintainers | Medium |
+| **Description Quality** | Clear trigger phrases and scope | High |
+
+**Red flags to watch for:**
+- No updates in 6+ months
+- Low stars with high installs (possible bot activity)
+- Vague descriptions without specific triggers
+- Skills from unknown authors without verified repositories
+
+**Best practice:** Prioritize skills with high installs AND recent activity. A skill with 500 installs and a commit from last week is better than one with 5,000 installs and no updates in 2 years.
 
 ## Examples
 

@@ -136,14 +136,28 @@ To establish the skill's contents, analyze each concrete example to create a lis
 
 ### Step 3: Create Skill Structure
 
-For Claude Code plugins, create the skill directory structure:
+To create a new skill, use the initialization script (recommended) or create manually:
+
+**Using init_skill.py (recommended):**
+
+```bash
+python scripts/init_skill.py skill-name --path ./skills
+```
+
+The script:
+- Creates the skill directory with proper structure
+- Generates SKILL.md template with frontmatter
+- Creates scripts/, references/, and assets/ directories
+- Adds example files that can be customized or deleted
+
+**Manual creation:**
 
 ```bash
 mkdir -p plugin-name/skills/skill-name/{references,examples,scripts}
 touch plugin-name/skills/skill-name/SKILL.md
 ```
 
-**Note:** Unlike the generic skill-creator which uses `init_skill.py`, plugin skills are created directly in the plugin's `skills/` directory with a simpler manual structure.
+**Note:** For generic skills distributed as .skill files, always use `init_skill.py`. For plugin-specific skills, manual creation is acceptable but `init_skill.py` still works.
 
 ### Step 4: Edit the Skill
 
@@ -615,8 +629,10 @@ Plugin-dev's skills demonstrate best practices:
 
 ### Reference Files
 
-For complete skill-creator methodology:
+For complete skill-development methodology:
 - **`references/skill-creator-original.md`** - Full original skill-creator content
+- **`references/output-patterns.md`** - Template and example patterns for consistent output
+- **`references/workflows.md`** - Sequential and conditional workflow patterns
 
 ## Implementation Workflow
 
@@ -624,7 +640,7 @@ To create a skill for your plugin:
 
 1. **Understand use cases**: Identify concrete examples of skill usage
 2. **Plan resources**: Determine what scripts/references/examples needed
-3. **Create structure**: `mkdir -p skills/skill-name/{references,examples,scripts}`
+3. **Create structure**: Use `init_skill.py` or `mkdir -p skills/skill-name/{references,examples,scripts}`
 4. **Write SKILL.md**:
    - Frontmatter with third-person description and trigger phrases
    - Lean body (1,500-2,000 words) in imperative form
