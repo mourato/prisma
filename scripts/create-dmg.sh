@@ -30,7 +30,11 @@ echo ""
 # Always build Release version
 echo -e "${YELLOW}Building Release version...${NC}"
 echo ""
-"${PROJECT_DIR}/scripts/build-release.sh" <<< "n"
+if [[ "$1" == "--ci" || "$1" == "--no-interactive" ]]; then
+    "${PROJECT_DIR}/scripts/build-release.sh" --ci
+else
+    "${PROJECT_DIR}/scripts/build-release.sh" <<< "n"
+fi
 echo ""
 
 # Verify app exists after build
@@ -75,9 +79,11 @@ echo -e "To open in Finder:"
 echo -e "  ${YELLOW}open -R \"${DMG_PATH}\"${NC}"
 echo ""
 
-# Ask if user wants to open the DMG
-read -p "Do you want to open the new DMG file? (y/n) " -n 1 -r
-echo ""
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    open "${DMG_PATH}"
+# Ask if user wants to open the DMG (skip in CI mode)
+if [[ "$1" != "--ci" && "$1" != "--no-interactive" ]]; then
+    read -p "Do you want to open the new DMG file? (y/n) " -n 1 -r
+    echo ""
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        open "${DMG_PATH}"
+    fi
 fi
