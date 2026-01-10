@@ -1,8 +1,9 @@
 #!/bin/bash
 # =============================================================================
-# debug-app.sh - Builds and runs MeetingAssistant in debug mode via Xcode
+# debug-app.sh - Builds and runs MeetingAssistant in debug mode via CLI
 # =============================================================================
 # Uses xcodebuild for a Debug build. Faster than Release for development.
+# CLI-first workflow with optional test execution.
 # =============================================================================
 
 set -e
@@ -51,8 +52,17 @@ if [ ! -d "${APP_PATH}" ]; then
 fi
 echo -e "${GREEN}✓ Build completed${NC}"
 
-# Run if requested
-if [[ "$1" == "--run" || "$1" == "-r" ]]; then
+# Handle command line arguments
+if [[ "$1" == "--test" || "$1" == "-t" ]]; then
+    echo -e "${YELLOW}[2/2]${NC} Running tests..."
+    echo ""
+    xcodebuild test -project "${XCODEPROJ}" \
+        -scheme "${APP_NAME}" \
+        -destination 'platform=macOS' \
+        CODE_SIGN_IDENTITY="-" \
+        2>&1 | grep -E "(Test Suite|Test Case|error:|warning:|failed|passed)" | head -30
+    echo -e "${GREEN}✓ Tests completed${NC}"
+elif [[ "$1" == "--run" || "$1" == "-r" ]]; then
     echo -e "${YELLOW}[2/2]${NC} Running ${APP_NAME}..."
     echo ""
     open "${APP_PATH}"
@@ -66,5 +76,8 @@ else
     echo -e "To run the app:"
     echo -e "  ${YELLOW}open \"${APP_PATH}\"${NC}"
     echo -e "  or: ${YELLOW}$0 --run${NC}"
+    echo ""
+    echo -e "To run tests:"
+    echo -e "  ${YELLOW}$0 --test${NC}"
     echo ""
 fi

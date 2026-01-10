@@ -1,8 +1,9 @@
 #!/bin/bash
 # =============================================================================
-# build-release.sh - Builds MeetingAssistant.app using Xcode in Release mode
+# build-release.sh - Builds MeetingAssistant.app using xcodebuild CLI in Release mode
 # =============================================================================
-# Uses xcodebuild to create a Release build and exports it to dist/
+# Uses xcodebuild CLI to create a Release build and exports it to dist/
+# CLI-first workflow for consistent builds across environments.
 # =============================================================================
 
 set -e
@@ -81,9 +82,11 @@ echo -e "To create a DMG:"
 echo -e "  ${YELLOW}./scripts/create-dmg.sh${NC}"
 echo ""
 
-# Ask if user wants to run
-read -p "Run the app now? (y/n) " -n 1 -r
-echo ""
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    open "${DIST_DIR}/${APP_NAME}.app"
+# Ask if user wants to run (skip in CI mode)
+if [[ "$1" != "--ci" && "$1" != "--no-interactive" ]]; then
+    read -p "Run the app now? (y/n) " -n 1 -r
+    echo ""
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        open "${DIST_DIR}/${APP_NAME}.app"
+    fi
 fi
