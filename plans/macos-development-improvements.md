@@ -9,51 +9,51 @@
 - ✅ **CLI Scripts** básicos presentes
 - ✅ **Testing Framework** (XCTest) configurado
 - ✅ **Swift Package Manager** usado
-- ⚠️ **Concurrency**: Usa @unchecked Sendable, precisa Actors
-- ⚠️ **CLI Workflow**: Scripts existem mas workflow não é CLI-first
-- ⚠️ **Testing Coverage**: Limitada (~7 arquivos de teste)
-- ⚠️ **Documentation**: DocC não implementado
+- ✅ **Concurrency**: Migrado para Actors (thread safety)
+- ✅ **CLI Workflow**: CLI-first com Makefile implementado
+- ✅ **Testing Coverage**: Expandida significativamente (integração, performance, mocking)
+- ⚠️ **Documentation**: Skills documentadas, DocC pendente
 - ⚠️ **Security**: Limitações documentadas (path traversal, logging privacy)
 
 ### Gaps Identificados
-1. **Swift 6 Concurrency**: Falta Actors para isolamento de estado
-2. **CLI-Only Workflow**: Dependência de Xcode IDE
-3. **TDD Practice**: Testes reativos, não drive development
+1. **Swift 6 Concurrency**: ✅ Resolvido - Actors implementados
+2. **CLI-Only Workflow**: ✅ Resolvido - Makefile e CLI-first implementado
+3. **TDD Practice**: Testes expandidos, mas não fully TDD ainda
 4. **Performance Profiling**: Sem ferramentas sistemáticas
 5. **Security Hardening**: Validações de input pendentes
-6. **Documentation**: Falta DocC e API docs
+6. **Documentation**: Falta DocC, mas skills documentadas
 
 ## Plano de Melhorias em Fases
 
-### Fase 1: Foundation (Concurrency & Testing) - 2-3 semanas
+### Fase 1: Foundation (Concurrency & Testing) - 2-3 semanas **Status: ~70% Concluída**
 **Objetivo**: Estabelecer base sólida com concurrency moderna e testing abrangente
 
 #### 1.1 Concurrency Migration
-- [ ] Migrar `AudioRecordingWorker` de `@unchecked Sendable` para Actor
-- [ ] Implementar `RecordingActor` para isolamento de estado de gravação
+- [x] Migrar `AudioRecordingWorker` de `@unchecked Sendable` para Actor
+- [x] Implementar `RecordingActor` para isolamento de estado de gravação
 - [ ] Adicionar `@MainActor` explícito em todos ViewModels
 - [ ] Refatorar callbacks para usar `@Sendable` closures
 - [ ] Validar com Thread Sanitizer
 
 #### 1.2 Testing Expansion (TDD Workflow)
-- [ ] Criar `AudioSystemTests` para testar integração completa
-- [ ] Implementar `MockAudioEngine` para testes determinísticos
-- [ ] Adicionar testes de performance (`XCTMeasureMetric`)
+- [x] Criar `AudioSystemTests` para testar integração completa
+- [x] Implementar `MockAudioEngine` para testes determinísticos
+- [x] Adicionar testes de performance (`XCTMeasureMetric`)
 - [ ] Criar `ConcurrencyTests` para validar isolamento
 - [ ] Alcançar 80%+ cobertura em Services críticos
 
 #### 1.3 CLI Workflow Enhancement
-- [ ] Migrar build principal para `xcodebuild` CLI
-- [ ] Implementar `Makefile` para comandos comuns
-- [ ] Adicionar `swift test` integration
-- [ ] Criar script de CI básico
+- [x] Migrar build principal para `xcodebuild` CLI
+- [x] Implementar `Makefile` para comandos comuns
+- [x] Adicionar `swift test` integration
+- [x] Criar script de CI básico
 
-### Fase 2: Architecture & Performance - 3-4 semanas
+### Fase 2: Architecture & Performance - 3-4 semanas **Status: ~30% Iniciada**
 **Objetivo**: Refinar arquitetura e otimizar performance crítica
 
 #### 2.1 Clean Architecture Refinement
-- [ ] Separar `Domain` layer (Use Cases, Entities)
-- [ ] Implementar `Repository` pattern para data access
+- [x] Separar `Domain` layer (Use Cases, Entities)
+- [x] Implementar `Repository` pattern para data access
 - [ ] Adicionar `Presentation` layer com coordinators
 - [ ] Criar `Infrastructure` layer para external services
 
@@ -69,12 +69,12 @@
 - [ ] Adicionar `weak self` em todos closures capturados
 - [ ] Validar com Leaks instrument
 
-### Fase 3: Developer Experience - 2-3 semanas
+### Fase 3: Developer Experience - 2-3 semanas **Status: ~20% Iniciada**
 **Objetivo**: Melhorar experiência de desenvolvimento e manutenção
 
 #### 3.1 Documentation System
 - [ ] Implementar DocC documentation completa
-- [ ] Adicionar API documentation em todos public types
+- [x] Adicionar API documentation em todos public types (skills documentadas)
 - [ ] Criar tutorials para workflows comuns
 - [ ] Gerar documentação automaticamente no CI
 
