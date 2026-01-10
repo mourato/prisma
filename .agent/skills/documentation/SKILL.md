@@ -12,6 +12,7 @@ Ative esta skill quando detectar:
 - `///` comentários de documentação
 - `documentation:` parâmetros
 - `Symbol Graph` files
+- **Context7 MCP queries** - para consultar documentações de libraries externas
 
 ## Conceitos-Chave
 
@@ -130,3 +131,41 @@ extension Recording: Codable {
 
 - [Meeting.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Models/Meeting.swift)
 - [Apple DocC Guide](https://developer.apple.com/documentation/docc)
+
+---
+
+## Context7 MCP Integration
+
+Use Context7 MCP to get up-to-date documentation for external libraries and frameworks.
+
+### When to Use Context7
+
+- Working with unfamiliar libraries or frameworks
+- Need code examples for specific APIs
+- Verifying best practices for implementation
+- Facing configuration or usage questions about dependencies
+
+### How to Query
+
+1. **Resolve library ID**: Use `mcp--context7--resolve-library-id`
+2. **Query docs**: Use `mcp--context7--query-docs` with specific questions
+
+```bash
+# Example: Get Supabase documentation
+mcp--context7--resolve-library-id(
+  libraryName: "supabase",
+  query: "Swift iOS authentication"
+)
+
+mcp--context7--query-docs(
+  libraryId: "/supabase/supabase-js",
+  query: "How to implement JWT authentication"
+)
+```
+
+### Best Practices
+
+- Be specific in queries (use cases, not generic topics)
+- Verify doc dates - Context7 provides updated docs
+- Combine with existing project code
+- Validate examples in development environment

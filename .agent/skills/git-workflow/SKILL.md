@@ -13,6 +13,7 @@ Activate this skill when detecting:
 - `git branch`
 - Pull requests
 - `.github/PULL_REQUEST_TEMPLATE.md`
+- Proactive commit suggestions (see "When to Suggest Commit" below)
 
 ## Key Concepts
 
@@ -108,3 +109,37 @@ For advanced Git operations, see the [git-advanced-workflows](../git-advanced-wo
 
 - [.github/PULL_REQUEST_TEMPLATE.md](../../.github/PULL_REQUEST_TEMPLATE.md)
 - [Conventional Commits](https://www.conventionalcommits.org)
+
+---
+
+## When to Suggest Commit
+
+This skill also activates when proactive commit suggestions are needed. Trigger this section when:
+
+- Task completed with `attempt_completion`
+- Multiple files modified (5+ in a session)
+- Before starting a new significant task
+- After creating new files or modifying config files
+
+### Suggested Workflow
+
+1. Check `git status` to see modified files
+2. Use `ask_followup_question` to offer commit options:
+   - Commit now with descriptive message
+   - View diff first
+   - Defer for later
+   - Check full status
+3. Execute user's choice or record for later
+
+### Example Suggestion Message
+
+```
+**Modificações detectadas**: X arquivo(s) modificado(s), Y novo(s), Z deletado(s)
+
+Gostaria de fazer commit das alterações?
+
+1. **Fazer commit agora** - Criar commit com mensagem descritiva
+2. **Ver diff primeiro** - Mostrar alterações antes de commitar
+3. **Adicionar mais tarde** - Adiar commit para após próximas mudanças
+4. **Verificar status** - Mostrar status completo do repositório
+```
