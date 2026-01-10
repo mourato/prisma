@@ -1,0 +1,62 @@
+// TranscriptionSegmentMO - Managed Object para segmentos de transcrição
+// Modelo CoreData thread-safe seguindo Clean Architecture
+
+import CoreData
+import Foundation
+
+/// Managed Object para segmentos de transcrição
+@objc(TranscriptionSegmentMO)
+public final class TranscriptionSegmentMO: NSManagedObject {
+    @NSManaged public var id: UUID
+    @NSManaged public var speaker: String
+    @NSManaged public var text: String
+    @NSManaged public var startTime: Double
+    @NSManaged public var endTime: Double
+
+    // Relacionamentos
+    @NSManaged public var transcription: TranscriptionMO
+}
+
+// MARK: - Fetch Requests
+
+extension TranscriptionSegmentMO {
+    /// Fetch request para buscar segmentos de uma transcrição
+    @nonobjc public class func fetchRequest(for transcriptionId: UUID) -> NSFetchRequest<TranscriptionSegmentMO> {
+        let request = NSFetchRequest<TranscriptionSegmentMO>(entityName: "TranscriptionSegmentMO")
+        request.predicate = NSPredicate(format: "transcription.id == %@", transcriptionId as CVarArg)
+        request.sortDescriptors = [NSSortDescriptor(key: "startTime", ascending: true)]
+        return request
+    }
+}
+
+// MARK: - Conversion Methods
+
+extension TranscriptionSegmentMO {
+    /// Converte Managed Object para Domain Entity
+    func toDomain() -> TranscriptionEntity.Segment {
+        TranscriptionEntity.Segment(
+            id: self.id,
+            speaker: self.speaker,
+            text: self.text,
+            startTime: self.startTime,
+            endTime: self.endTime
+        )
+    }
+
+    /// Atualiza Managed Object com dados da Domain Entity
+    func update(from segment: TranscriptionEntity.Segment) {
+        self.id = segment.id
+        self.speaker = segment.speaker
+        self.text = segment.text
+        self.startTime = segment.startTime
+        self.endTime = segment.endTime
+    }
+
+    /// Cria novo Managed Object a partir de Domain Entity
+    static func create(from segment: TranscriptionEntity.Segment, transcription: TranscriptionMO, in context: NSManagedObjectContext) -> TranscriptionSegmentMO {
+        let segmentMO = TranscriptionSegmentMO(context: context)
+        segmentMO.update(from: segment)
+        segmentMO.transcription = transcription
+        return segmentMO
+    }
+}

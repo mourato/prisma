@@ -1,0 +1,68 @@
+// MeetingMO - Managed Object para MeetingEntity
+// Modelo CoreData thread-safe seguindo Clean Architecture
+
+import CoreData
+import Foundation
+
+/// Managed Object para entidade Meeting
+@objc(MeetingMO)
+public final class MeetingMO: NSManagedObject {
+    @NSManaged public var id: UUID
+    @NSManaged public var appRawValue: String
+    @NSManaged public var startTime: Date
+    @NSManaged public var endTime: Date?
+    @NSManaged public var audioFilePath: String?
+
+    // Relacionamentos
+    @NSManaged public var transcriptions: Set<TranscriptionMO>
+}
+
+// MARK: - Fetch Requests
+
+extension MeetingMO {
+    /// Fetch request para buscar todas as reuniões ordenadas por data
+    @nonobjc public class func fetchRequest() -> NSFetchRequest<MeetingMO> {
+        let request = NSFetchRequest<MeetingMO>(entityName: "MeetingMO")
+        request.sortDescriptors = [NSSortDescriptor(key: "startTime", ascending: false)]
+        return request
+    }
+
+    /// Fetch request para buscar reunião por ID
+    @nonobjc public class func fetchRequest(for id: UUID) -> NSFetchRequest<MeetingMO> {
+        let request = NSFetchRequest<MeetingMO>(entityName: "MeetingMO")
+        request.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+        request.fetchLimit = 1
+        return request
+    }
+}
+
+// MARK: - Conversion Methods
+
+extension MeetingMO {
+    /// Converte Managed Object para Domain Entity
+    func toDomain() -> MeetingEntity {
+        MeetingEntity(
+            id: self.id,
+            app: DomainMeetingApp(rawValue: self.appRawValue) ?? .unknown,
+            startTime: self.startTime,
+            endTime: self.endTime,
+            audioFilePath: self.audioFilePath
+        )
+    }
+
+    /// Atualiza Managed Object com dados da Domain Entity
+    func update(from entity: MeetingEntity) {
+        self.id = entity.id
+        self.appRawValue = entity.app.rawValue
+        self.startTime = entity.startTime
+        self.endTime = entity.endTime
+        self.audioFilePath = entity.audioFilePath
+    }
+
+    /// Cria novo Managed Object a partir de Domain Entity
+    static func create(from entity: MeetingEntity, in context: NSManagedObjectContext) -> MeetingMO {
+        let meetingMO = MeetingMO(context: context)
+        meetingMO.update(from: entity)
+        return meetingMO
+    }
+}
