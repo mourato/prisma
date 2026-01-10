@@ -215,3 +215,33 @@ Present results and ask which to install.
 - User may need to restart their client
 - Verify correct installation directory
 - Confirm SKILL.md exists in installation path
+
+---
+
+## Agent Skills MCP
+
+Use Agent Skills MCP to get best practices for skill development itself.
+
+### When to Use Agent Skills MCP
+
+- Creating new skills for your project
+- Improving existing skill descriptions
+- Following skill development patterns
+- Structuring skill documentation
+
+### How to Query
+
+```bash
+mcp--agent-skills--SearchAgentSkills(
+  query: "skill development best practices structure"
+)
+```
+
+### Integration with This Skill
+
+When creating new skills:
+
+1. Use this skill to find existing skills in the registry
+2. If no suitable skill exists, use `skill-development` skill with Agent Skills MCP
+3. Follow Agent Skills MCP guidance for best practices
+4. Create and document the new skill

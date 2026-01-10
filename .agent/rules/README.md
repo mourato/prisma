@@ -10,13 +10,16 @@ This directory contains **always-on rules** that apply to all tasks.
 | [clean-code.md](clean-code.md) | Code quality and function guidelines |
 | [concurrency.md](concurrency.md) | Async/await, actors, and thread safety |
 | [data-persistency.md](data-persistency.md) | Data storage strategies (UserDefaults, Keychain) |
+| [documentation.md](documentation.md) | Context7 MCP integration for library docs |
 | [error-handling.md](error-handling.md) | Error propagation and structured logging |
 | [external-dependencies.md](external-dependencies.md) | Swift Package Manager guidelines |
+| [git-version-control.md](git-version-control.md) | Git workflow and proactive commit suggestions |
 | [known-limitations.md](known-limitations.md) | Documentation requirements |
 | [lifecycle-and-memory.md](lifecycle-and-memory.md) | Memory management and object lifecycle |
 | [network.md](network.md) | URLSession and API patterns |
 | [performance.md](performance.md) | Optimization and profiling guidelines |
 | [security.md](security.md) | Security best practices |
+| [skill-development.md](skill-development.md) | Agent Skills MCP integration for skill dev |
 | [swift-style.md](swift-style.md) | Code style conventions |
 | [testing.md](testing.md) | Unit testing and mocking strategies |
 | [type-security.md](type-security.md) | Type safety patterns |

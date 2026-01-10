@@ -1,7 +1,7 @@
 ---
 name: Skill Development
-description: This skill should be used when the user wants to "create a skill", "add a skill to plugin", "write a new skill", "improve skill description", "organize skill content", or needs guidance on skill structure, progressive disclosure, or skill development best practices for Claude Code plugins.
-version: 0.1.0
+description: This skill should be used when the user wants to "create a skill", "add a skill to plugin", "write a new skill", "improve skill description", "organize skill content", or needs guidance on skill structure, progressive disclosure, or skill development best practices for Claude Code plugins. Also use Agent Skills MCP to search for skill development best practices and patterns.
+version: 0.2.0
 ---
 
 # Skill Development for Claude Code Plugins
@@ -651,3 +651,46 @@ To create a skill for your plugin:
 8. **Iterate**: Improve based on usage
 
 Focus on strong trigger descriptions, progressive disclosure, and imperative writing style for effective skills that load when needed and provide targeted guidance.
+
+---
+
+## Agent Skills MCP Integration
+
+Use Agent Skills MCP to get up-to-date best practices for skill development.
+
+### When to Use Agent Skills MCP
+
+- Creating new skills for the project
+- Modifying or improving existing skills
+- Following skill development patterns and conventions
+- Structuring skill documentation
+
+### How to Query
+
+Use `mcp--agent-skills--SearchAgentSkills` to find relevant information:
+
+```bash
+mcp--agent-skills--SearchAgentSkills(
+  query: "skill development best practices structure"
+)
+```
+
+### Development Workflow with Agent Skills
+
+```mermaid
+graph TD
+    A[Create/modify skill] --> B[Consult mcp--agent-skills--SearchAgentSkills]
+    C[Need guidance] --> B
+    B --> D{Found relevant docs?}
+    D -->|Yes| E[Use Agent Skills guidance]
+    D -->|No| F[Use local skill-development/SKILL.md]
+    E --> G[Implement with best practices]
+    F --> G
+```
+
+### Skill Development Principles
+
+1. **Progressive Disclosure**: Keep SKILL.md lean, move details to references/
+2. **Trigger Phrases**: Use specific third-person descriptions in frontmatter
+3. **Imperative Form**: Write instructions in imperative mood
+4. **Resources**: Include scripts/, references/, and assets/ when appropriate
