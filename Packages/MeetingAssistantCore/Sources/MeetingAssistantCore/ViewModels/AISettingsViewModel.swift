@@ -19,7 +19,7 @@ public class AISettingsViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
 
     public init(
-        settings: AppSettingsStore = .shared,
+        settings: AppSettingsStore,
         keychain: KeychainProvider = DefaultKeychainProvider(),
         session: URLSession = .shared
     ) {

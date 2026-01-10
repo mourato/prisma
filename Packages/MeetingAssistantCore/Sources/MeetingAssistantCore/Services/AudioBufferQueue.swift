@@ -63,7 +63,9 @@ public final class AudioBufferQueue: @unchecked Sendable {
                    let jsonStr = String(data: json, encoding: .utf8) {
                     if let handle = FileHandle(forWritingAtPath: logPath) {
                         handle.seekToEndOfFile()
-                        handle.write((jsonStr + "\n").data(using: .utf8)!)
+                        if let data = (jsonStr + "\n").data(using: .utf8) {
+                            handle.write(data)
+                        }
                         try? handle.close()
                     } else {
                         try? (jsonStr + "\n").write(toFile: logPath, atomically: true, encoding: .utf8)
@@ -72,7 +74,7 @@ public final class AudioBufferQueue: @unchecked Sendable {
             }
             // #endregion
             
-            guard self.count > 0 else {
+            guard !self.isEmpty else {
                 // #region agent log
                 writeLog([
                     "sessionId": "debug-session",
@@ -100,10 +102,10 @@ public final class AudioBufferQueue: @unchecked Sendable {
                 "message": "Buffer dequeued",
                 "data": [
                     "bufferIsNil": buffer == nil,
-                    "frameLength": buffer != nil ? Int(buffer!.frameLength) : 0,
-                    "formatChannelCount": buffer != nil ? Int(buffer!.format.channelCount) : 0,
-                    "formatSampleRate": buffer != nil ? buffer!.format.sampleRate : 0,
-                    "hasFloatChannelData": buffer != nil ? (buffer!.floatChannelData != nil) : false,
+                    "frameLength": buffer?.frameLength ?? 0,
+                    "formatChannelCount": buffer?.format.channelCount ?? 0,
+                    "formatSampleRate": buffer?.format.sampleRate ?? 0,
+                    "hasFloatChannelData": buffer?.floatChannelData != nil,
                     "tail": self.tail,
                     "count": self.count
                 ],
@@ -138,4 +140,11 @@ public final class AudioBufferQueue: @unchecked Sendable {
             (self.count, self.droppedFrameCount)
         }
     }
+
+    /// Returns whether the queue is empty.
+    // swiftlint:disable empty_count
+    public var isEmpty: Bool {
+        self.count == 0
+    }
+    // swiftlint:enable empty_count
 }

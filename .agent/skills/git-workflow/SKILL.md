@@ -1,20 +1,20 @@
 # Git Workflow
 
-> **Skill Condicional** - Ativada quando trabalhando com versionamento
+> **Conditional Skill** - Triggered when working with version control
 
-## Visão Geral
+## Overview
 
-Padrões de commits, branches e pull requests para o Meeting Assistant.
+Commit, branch, and pull request patterns for the Meeting Assistant project.
 
-## Quando Usar
+## When to Use
 
-Ative esta skill quando detectar:
+Activate this skill when detecting:
 - `git commit`
 - `git branch`
 - Pull requests
 - `.github/PULL_REQUEST_TEMPLATE.md`
 
-## Conceitos-Chave
+## Key Concepts
 
 ### Branch Naming
 
@@ -27,11 +27,11 @@ feature/settings-persistence
 fix/transcription-timeout
 fix/menubar-crash
 
-# Experimentos
+# Experiments
 experiment/new-transcription-engine
 experiment/ai-enhancements
 
-# Issues específicos
+# Specific issues
 fix/123-audio-dropout
 feature/456-cloud-sync
 ```
@@ -39,19 +39,19 @@ feature/456-cloud-sync
 ### Commit Messages
 
 ```
-[tipo]: descrição curta (max 50 chars)
+[type]: short description (max 50 chars)
 
-Corpo da mensagem opcional, com descrição mais detalhada.
-Use frases completas e explique o "por quê".
+Optional body with more detailed description.
+Use complete sentences and explain the "why".
 
-- Lista de mudanças se necessário
-- Referência a issues: #123
+- List of changes if needed
+- Reference issues: #123
 
-Tipos: feat, fix, refactor, docs, test, chore, style, perf
+Types: feat, fix, refactor, docs, test, chore, style, perf
 ```
 
 ```bash
-# Exemplos
+# Examples
 git commit -m "feat(audio): add noise cancellation filter"
 git commit -m "fix(settings): resolve API key persistence issue"
 git commit -m "docs: update AGENTS.md with new commands"
@@ -60,51 +60,51 @@ git commit -m "refactor(transcription): simplify buffer management"
 
 ### Pull Requests
 
-Use o template `.github/PULL_REQUEST_TEMPLATE.md`:
+Use the template `.github/PULL_REQUEST_TEMPLATE.md`:
 
 ```markdown
-## Descrição
-<!-- O que foi modificado e por quê -->
+## Description
+<!-- What was modified and why -->
 
 ## Checklist
-- [ ] Testes passaram
-- [ ]Lint passou
-- [ ] Documentação atualizada
-- [ ] Breaking changes documentados
+- [ ] Tests passed
+- [ ] Lint passed
+- [ ] Documentation updated
+- [ ] Breaking changes documented
 
-## Screenshots (se aplicável)
+## Screenshots (if applicable)
 ```
 
-## Patterns Comuns
+## Common Patterns
 
 ### Squash Commits
 
 ```bash
-# Antes de fazer merge, squash commits relacionados
+# Before merging, squash related commits
 git rebase -i HEAD~n
-# Mude "pick" para "squash" para commits relacionados
+# Change "pick" to "squash" for related commits
 ```
 
-### Correlation de Issues
+### Issue Correlation
 
 ```bash
-# Fecha issue automaticamente
+# Close issue automatically
 git commit -m "feat(audio): add recording capability
 
 Closes #123"
 ```
 
-## Técnicas Avançadas
+## Advanced Techniques
 
-Para operações avançadas de Git, consulte a skill [git-advanced-workflows](../git-advanced-workflows/SKILL.md):
+For advanced Git operations, see the [git-advanced-workflows](../git-advanced-workflows/SKILL.md) skill:
 
-- **Rebase interativo**: pick, reword, squash, fixup, drop
-- **Cherry-picking**: commits únicos e em range
-- **Git bisect**: busca binária para encontrar bugs
-- **Worktrees**: trabalhar em múltiplos branches simultaneamente
-- **Reflog**: recuperação de commits deletados
+- **Interactive rebase**: pick, reword, squash, fixup, drop
+- **Cherry-picking**: single and range commits
+- **Git bisect**: binary search for bugs
+- **Worktrees**: work on multiple branches simultaneously
+- **Reflog**: recover deleted commits
 
-## Referências
+## References
 
 - [.github/PULL_REQUEST_TEMPLATE.md](../../.github/PULL_REQUEST_TEMPLATE.md)
-- [Conventional Commits](https://www.conventionalcommits.org/)
+- [Conventional Commits](https://www.conventionalcommits.org)
