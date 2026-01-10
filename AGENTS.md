@@ -82,8 +82,8 @@ make test-verbose
 # Run tests with verbose output
 ./scripts/run-tests.sh --verbose
 
-# Legacy xcodebuild commands (still supported)
-xcodebuild test -project MeetingAssistant.xcodeproj -scheme MeetingAssistant -destination 'platform=macOS' CODE_SIGN_IDENTITY="-"
+# CI test run (no user interaction)
+make ci-test
 ```
 
 ## Rules Index (Always-On)
