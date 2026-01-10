@@ -39,5 +39,5 @@ public struct TranscribeFileButton: View {
 }
 
 #Preview {
-    TranscribeFileButton(viewModel: RecordingViewModel())
+    TranscribeFileButton(viewModel: RecordingViewModel(recordingManager: RecordingManager.shared))
 }

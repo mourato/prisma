@@ -168,7 +168,11 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     private func startRecorder(to url: URL, source: RecordingSource) async throws {
         // Start recorder with source preference
         // We assume micRecorder is capable of handling the source logic (AudioRecorder)
-        AppLogger.debug("Starting recorder", category: .recordingManager, extra: ["url": url.path, "source": source.rawValue])
+        AppLogger.debug(
+            "Starting recorder",
+            category: .recordingManager,
+            extra: ["url": url.path, "source": source.rawValue]
+        )
 
         // Use specific overload if available, or fallback
         if let recorder = self.micRecorder as? AudioRecorder {
@@ -206,7 +210,12 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     }
 
     private func handleStartRecordingError(_ error: Error) async {
-        AppLogger.fault("CRITICAL: Failed to start recording", category: .recordingManager, error: error, extra: ["state": "start_failed"])
+        AppLogger.fault(
+            "CRITICAL: Failed to start recording",
+            category: .recordingManager,
+            error: error,
+            extra: ["state": "start_failed"]
+        )
         self.lastError = error
 
         // Cleanup partial starts
@@ -263,10 +272,17 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
                 // Clean up temporary files
                 self.cleanupTemporaryFiles()
-                AppLogger.info("Audio merge complete", category: .recordingManager, extra: ["finalURL": finalURL.lastPathComponent])
+                AppLogger.info(
+                    "Audio merge complete",
+                    category: .recordingManager,
+                    extra: ["finalURL": finalURL.lastPathComponent]
+                )
 
             } else {
-                AppLogger.info("Audio merge disabled. Using microphone recording as primary.", category: .recordingManager)
+                AppLogger.info(
+                    "Audio merge disabled. Using microphone recording as primary.",
+                    category: .recordingManager
+                )
 
                 guard let sourceURL = micURL else {
                     throw RecordingManagerError.noInputFiles
@@ -306,7 +322,11 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
         // Validate file exists
         guard FileManager.default.fileExists(atPath: audioURL.path) else {
-            AppLogger.error("Audio file not found for import", category: .recordingManager, extra: ["path": audioURL.path])
+            AppLogger.error(
+                "Audio file not found for import",
+                category: .recordingManager,
+                extra: ["path": audioURL.path]
+            )
             self.lastError = AudioImportError.fileNotFound
             return
         }
@@ -314,7 +334,11 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         // Validate file extension
         let validExtensions = ["m4a", "mp3", "wav"]
         guard validExtensions.contains(audioURL.pathExtension.lowercased()) else {
-            AppLogger.error("Unsupported audio format for import", category: .recordingManager, extra: ["extension": audioURL.pathExtension])
+            AppLogger.error(
+                "Unsupported audio format for import",
+                category: .recordingManager,
+                extra: ["extension": audioURL.pathExtension]
+            )
             self.lastError = AudioImportError.unsupportedFormat
             return
         }
@@ -326,7 +350,11 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         )
         self.currentMeeting = meeting
 
-        AppLogger.info("Starting transcription for imported file", category: .recordingManager, extra: ["filename": audioURL.lastPathComponent])
+        AppLogger.info(
+            "Starting transcription for imported file",
+            category: .recordingManager,
+            extra: ["filename": audioURL.lastPathComponent]
+        )
         await self.transcribeRecording(audioURL: audioURL, meeting: meeting)
     }
 
@@ -451,7 +479,11 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             AppLogger.info("Post-processing complete", category: .recordingManager, extra: ["prompt": prompt.title])
             return (processed, prompt.id, prompt.title)
         } catch {
-            AppLogger.error("Post-processing failed, using raw transcription", category: .recordingManager, error: error)
+            AppLogger.error(
+                "Post-processing failed, using raw transcription",
+                category: .recordingManager,
+                error: error
+            )
             return (nil, nil, nil)
         }
     }
@@ -477,7 +509,11 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         let logMessageSuffix =
             transcription.isPostProcessed
                 ? "post-processed" : "raw"
-        AppLogger.info("Transcription created", category: .recordingManager, extra: ["words": transcription.wordCount, "type": logMessageSuffix])
+        AppLogger.info(
+            "Transcription created",
+            category: .recordingManager,
+            extra: ["words": transcription.wordCount, "type": logMessageSuffix]
+        )
 
         try await self.storage.saveTranscription(transcription)
         return transcription
@@ -506,6 +542,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
     private func scheduleStatusReset() {
         Task { @MainActor in
+            // Task.sleep throws only if cancelled, which is not critical for status reset
             try? await Task.sleep(for: .seconds(Constants.statusResetDelay))
             self.transcriptionStatus.resetToIdle()
         }

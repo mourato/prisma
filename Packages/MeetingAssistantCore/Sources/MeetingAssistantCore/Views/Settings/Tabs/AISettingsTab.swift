@@ -5,7 +5,7 @@ import SwiftUI
 
 /// Tab for configuring AI post-processing settings.
 public struct AISettingsTab: View {
-    @StateObject private var viewModel = AISettingsViewModel()
+    @StateObject private var viewModel = AISettingsViewModel(settings: .shared)
 
     public init() {}
 

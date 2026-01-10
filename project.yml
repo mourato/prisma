@@ -42,3 +42,20 @@ targets:
         product: MeetingAssistantCore
     entitlements:
       path: App/MeetingAssistant.entitlements
+
+schemes:
+  MeetingAssistant:
+    build:
+      targets:
+        MeetingAssistant: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      gatherCoverageData: true
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
