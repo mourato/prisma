@@ -13,17 +13,43 @@ This file provides guidelines and AI agents working on this codebase. See `.agen
 
 ```bash
 # Generate Xcode project (required after modifying project.yml)
-xcodegen generate
+make xcodegen
 
-# Build Debug (opens in Xcode)
-open MeetingAssistant.xcodeproj && echo "Press ⌘R to run"
+# Build Debug (CLI-first)
+make build
+
+# Build and run Debug version
+make run
 
 # Build Release from command line
-./scripts/build-release.sh
+make build-release
 
 # Create DMG installer
-./scripts/create-dmg.sh
+make dmg
+
+# Full development workflow
+make setup    # Install dependencies
+make lint     # Check code quality
+make test     # Run tests
+make build    # Build app
+make run      # Launch app
 ```
+
+### CLI-First Workflow
+
+This project uses a CLI-first development approach with xcodebuild. While Xcode IDE is still supported for debugging and UI design, all builds, tests, and releases are performed via command line for consistency and CI/CD compatibility.
+
+**Quick Start:**
+```bash
+make setup    # One-time setup
+make          # Build and verify (default: debug build)
+```
+
+**Common Workflows:**
+- **Development:** `make build && make run`
+- **Testing:** `make test`
+- **Release:** `make lint && make test && make build-release && make dmg`
+- **CI/CD:** `make ci-build`
 
 ## Lint & Format Commands
 
@@ -42,16 +68,22 @@ brew install swiftlint swiftformat
 
 ```bash
 # Build and run all tests
-xcodebuild test -project MeetingAssistant.xcodeproj -scheme MeetingAssistant -destination 'platform=macOS' CODE_SIGN_IDENTITY="-"
-
-# Run a single test file
-xcodebuild test -project MeetingAssistant.xcodeproj -scheme MeetingAssistant -destination 'platform=macOS' -only-testing:MeetingAssistantCoreTests/PartialBufferStateTests
-
-# Run a specific test
-xcodebuild test -project MeetingAssistant.xcodeproj -scheme MeetingAssistant -destination 'platform=macOS' -only-testing:MeetingAssistantCoreTests/RecordingViewModelTests/testInitialState
+make test
 
 # Run tests with verbose output
-xcodebuild test -project MeetingAssistant.xcodeproj -scheme MeetingAssistant -destination 'platform=macOS' CODE_SIGN_IDENTITY="-" VERBOSE=1
+make test-verbose
+
+# Run a single test file
+./scripts/run-tests.sh --file RecordingViewModelTests
+
+# Run a specific test
+./scripts/run-tests.sh --test testInitialState
+
+# Run tests with verbose output
+./scripts/run-tests.sh --verbose
+
+# Legacy xcodebuild commands (still supported)
+xcodebuild test -project MeetingAssistant.xcodeproj -scheme MeetingAssistant -destination 'platform=macOS' CODE_SIGN_IDENTITY="-"
 ```
 
 ## Rules Index (Always-On)

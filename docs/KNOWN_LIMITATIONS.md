@@ -27,6 +27,10 @@ This document tracks known limitations for features and initiatives within the p
 * **(RESOLVED) Partial Buffer Consumption**: Previously, the `AVAudioSourceNode` discarded unconsumed frames when a buffer exceeded the requested `frameCount`, causing intermittent audio loss.
   * *Context*: [2025-12-27] Fixed by introducing `PartialBufferState` to track unconsumed frames across render cycles.
 
+### Testing & Concurrency Validation
+* **Concurrency Test Coverage**: Added comprehensive concurrency tests to validate thread safety and Actor isolation.
+  * *Context*: [2026-01-10] Implemented `ConcurrencyTests.swift` with tests for `RecordingActor` isolation, `AudioRecordingWorker` concurrent buffer processing, and stress testing under high concurrency loads. Tests validate absence of race conditions and proper state consistency across multiple threads.
+
 ### Security (Filesystem)
 * **Path Traversal Risk**: `recordingsDirectory` is read directly from `UserDefaults` without sanitization.
   * *Context*: [2025-12-27] Identified during code review. While the App Sandbox mitigates system-wide damage, input validation should be added in future updates to prevent unrestricted writes within the container.
