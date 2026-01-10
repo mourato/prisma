@@ -336,6 +336,108 @@ final class AudioSystemTests: XCTestCase {
         }
     }
 
+    func testPerformance_BufferProcessingIntegration() async throws {
+        // Skip test if running in CI or without screen recording permissions
+        guard await systemRecorder.hasPermission() else {
+            throw XCTSkip("Screen recording permission not available")
+        }
+
+        let outputURL = createTemporaryURL()
+        let format = AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 2)!
+        let testBuffers = try createTestBuffers(count: 50, frameCount: 1024)
+
+        // Baseline: Buffer processing should complete within reasonable time limits
+        measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
+            Task {
+                try await recordingWorker.start(writingTo: outputURL, format: format, fileFormat: .wav)
+
+                for buffer in testBuffers {
+                    recordingWorker.process(buffer)
+                }
+
+                _ = await recordingWorker.stop()
+            }
+        }
+    }
+
+    func testPerformance_AudioRecordingStartStop() async throws {
+        let outputURL = createTemporaryURL()
+
+        // Baseline: Recording operations should be fast and not consume excessive resources
+        measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
+            Task {
+                try await audioRecorder.startRecording(to: outputURL, source: .microphone, retryCount: 0)
+                _ = await audioRecorder.stopRecording()
+            }
+        }
+    }
+
+    func testPerformance_SystemAudioBufferCallback() async throws {
+        // Skip test if running in CI or without screen recording permissions
+        guard await systemRecorder.hasPermission() else {
+            throw XCTSkip("Screen recording permission not available")
+        }
+
+        let receivedBuffers = AtomicArray<AVAudioPCMBuffer>()
+        let outputURL = createTemporaryURL()
+
+        systemRecorder.onAudioBuffer = { @Sendable buffer in
+            receivedBuffers.append(buffer)
+        }
+
+        // Baseline: Buffer callbacks should be processed efficiently
+        measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
+            Task {
+                try await systemRecorder.startRecording(to: outputURL, sampleRate: 48_000.0)
+
+                // Wait for some buffers to be processed
+                try await Task.sleep(nanoseconds: 500_000_000) // 0.5s
+
+                _ = await systemRecorder.stopRecording()
+            }
+        }
+
+        // Verify we received buffers
+        XCTAssertGreaterThan(receivedBuffers.count, 0)
+    }
+
+    func testPerformance_BufferQueueOverflowHandling() throws {
+        let smallQueue = AudioBufferQueue(capacity: 10)
+        let buffer = try createTestBuffer(frameCount: 1024)
+
+        // Baseline: Overflow handling should be efficient even under high load
+        measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
+            // Fill queue beyond capacity multiple times
+            for _ in 0..<200 { // 20x capacity
+                smallQueue.enqueue(buffer)
+            }
+        }
+
+        // Verify overflow behavior
+        XCTAssertEqual(smallQueue.stats.count, 10) // Should maintain capacity
+        XCTAssertGreaterThan(smallQueue.stats.dropped, 0) // Should have dropped buffers
+    }
+
+    func testPerformance_RecordingManagerStateTransitions() async throws {
+        let mockTranscription = MockTranscriptionClient()
+        let mockPostProcessing = MockPostProcessingService()
+        let mockStorage = MockStorageService()
+
+        let recordingManager = RecordingManager(
+            transcriptionClient: mockTranscription,
+            postProcessingService: mockPostProcessing,
+            storage: mockStorage
+        )
+
+        // Baseline: State transitions should be fast
+        measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
+            Task {
+                await recordingManager.startRecording()
+                await recordingManager.stopRecording()
+            }
+        }
+    }
+
     // MARK: - Testes de Cleanup Adequado
 
     func testCleanup_AudioRecorderResourceCleanup() async throws {

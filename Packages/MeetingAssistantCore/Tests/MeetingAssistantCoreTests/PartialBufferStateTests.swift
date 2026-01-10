@@ -97,6 +97,58 @@ final class PartialBufferStateTests: XCTestCase {
         // If we get here without crash, the test passes
     }
 
+    // MARK: - Performance Tests
+
+    func testPerformance_SetBufferOperation() throws {
+        let buffer = try createTestBuffer(frameCount: 2048)
+
+        // Baseline: Set buffer operations should be very fast
+        measure(metrics: [XCTClockMetric(), XCTMemoryMetric()]) {
+            for _ in 0..<1000 {
+                self.sut.setBuffer(buffer, offset: Int.random(in: 0..<100))
+            }
+        }
+    }
+
+    func testPerformance_PropertyAccess() throws {
+        let buffer = try createTestBuffer(frameCount: 1024)
+        self.sut.setBuffer(buffer, offset: 50)
+
+        // Baseline: Property access should be instantaneous
+        measure(metrics: [XCTClockMetric()]) {
+            for _ in 0..<10000 {
+                _ = self.sut.hasPartial
+                _ = self.sut.framesRemaining
+            }
+        }
+    }
+
+    func testPerformance_ClearOperation() throws {
+        let buffer = try createTestBuffer(frameCount: 1024)
+
+        // Baseline: Clear operations should be very fast
+        measure(metrics: [XCTClockMetric(), XCTMemoryMetric()]) {
+            for _ in 0..<1000 {
+                self.sut.setBuffer(buffer)
+                self.sut.clear()
+            }
+        }
+    }
+
+    func testPerformance_BufferStateTransitions() throws {
+        let buffer = try createTestBuffer(frameCount: 1024)
+
+        // Baseline: State transitions should be efficient
+        measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
+            for _ in 0..<500 {
+                self.sut.setBuffer(buffer, offset: 100)
+                _ = self.sut.hasPartial
+                _ = self.sut.framesRemaining
+                self.sut.clear()
+            }
+        }
+    }
+
     // MARK: - Helpers
 
     private func createTestBuffer(frameCount: AVAudioFrameCount) throws -> AVAudioPCMBuffer {

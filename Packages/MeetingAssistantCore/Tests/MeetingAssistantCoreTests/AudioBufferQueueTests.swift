@@ -223,6 +223,93 @@ final class AudioBufferQueueTests: XCTestCase {
         XCTAssertEqual(self.sut.stats.count, 1)
     }
 
+    // MARK: - Performance Tests
+
+    func testPerformance_EnqueueOperations() throws {
+        let buffer = try createTestBuffer(frameCount: 1024)
+
+        // Baseline: Enqueue operations should be fast and memory-efficient
+        measure(metrics: [XCTClockMetric(), XCTMemoryMetric()]) {
+            for _ in 0..<1000 {
+                self.sut.enqueue(buffer)
+                if self.sut.stats.count > 40 { // Prevent excessive growth
+                    _ = self.sut.dequeue()
+                }
+            }
+        }
+    }
+
+    func testPerformance_DequeueOperations() throws {
+        let buffer = try createTestBuffer(frameCount: 1024)
+
+        // Pre-populate queue
+        for _ in 0..<50 {
+            self.sut.enqueue(buffer)
+        }
+
+        // Baseline: Dequeue operations should be very fast
+        measure(metrics: [XCTClockMetric(), XCTCPUMetric()]) {
+            for _ in 0..<1000 {
+                if !self.sut.isEmpty {
+                    _ = self.sut.dequeue()
+                } else {
+                    self.sut.enqueue(buffer) // Keep some buffers for measurement
+                }
+            }
+        }
+    }
+
+    func testPerformance_StatsAccess() throws {
+        let buffer = try createTestBuffer(frameCount: 512)
+
+        // Pre-populate with some data
+        for _ in 0..<10 {
+            self.sut.enqueue(buffer)
+        }
+
+        // Baseline: Stats access should be instantaneous
+        measure(metrics: [XCTClockMetric()]) {
+            for _ in 0..<10000 {
+                _ = self.sut.stats
+            }
+        }
+    }
+
+    func testPerformance_ClearOperation() throws {
+        let buffer = try createTestBuffer(frameCount: 1024)
+
+        // Baseline: Clear operations should be efficient
+        measure(metrics: [XCTClockMetric(), XCTMemoryMetric()]) {
+            // Fill queue
+            for _ in 0..<50 {
+                self.sut.enqueue(buffer)
+            }
+
+            // Clear it
+            self.sut.clear()
+        }
+
+        // Verify clear worked
+        XCTAssertTrue(self.sut.isEmpty)
+        XCTAssertEqual(self.sut.stats.count, 0)
+    }
+
+    func testPerformance_OverflowHandling() throws {
+        let smallQueue = AudioBufferQueue(capacity: 5)
+        let buffer = try createTestBuffer(frameCount: 512)
+
+        // Baseline: Overflow handling should maintain performance under load
+        measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
+            for _ in 0..<500 { // 100x capacity
+                smallQueue.enqueue(buffer)
+            }
+        }
+
+        // Verify overflow behavior maintained
+        XCTAssertEqual(smallQueue.stats.count, 5)
+        XCTAssertGreaterThan(smallQueue.stats.dropped, 0)
+    }
+
     // MARK: - Helpers
 
     private func createTestBuffer(frameCount: AVAudioFrameCount) throws -> AVAudioPCMBuffer {
