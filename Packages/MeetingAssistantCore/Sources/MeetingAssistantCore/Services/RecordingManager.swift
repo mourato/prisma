@@ -10,6 +10,10 @@ import UserNotifications
 public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     public static let shared = RecordingManager()
 
+    // MARK: - Recording Actor
+
+    private let recordingActor = RecordingActor()
+
     // MARK: - Published State
 
     @Published public private(set) var isRecording = false
@@ -52,11 +56,31 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     private var cancellables = Set<AnyCancellable>()
     private var statusCheckTask: Task<Void, Never>?
 
-    // MARK: - Recording URLs
+    // MARK: - Computed Properties for Actor State
 
-    private var micAudioURL: URL?
-    private var systemAudioURL: URL?
-    private var mergedAudioURL: URL?
+    private func getMicAudioURL() async -> URL? {
+        await recordingActor.micAudioURLState
+    }
+
+    private func getSystemAudioURL() async -> URL? {
+        await recordingActor.systemAudioURLState
+    }
+
+    private func getMergedAudioURL() async -> URL? {
+        await recordingActor.mergedAudioURLState
+    }
+
+    private func setMicAudioURL(_ url: URL?) {
+        Task { await recordingActor.setMicAudioURL(url) }
+    }
+
+    private func setSystemAudioURL(_ url: URL?) {
+        Task { await recordingActor.setSystemAudioURL(url) }
+    }
+
+    private func setMergedAudioURL(_ url: URL?) {
+        Task { await recordingActor.setMergedAudioURL(url) }
+    }
 
     // MARK: - Storage
 
@@ -81,10 +105,20 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
         self.setupBindings()
         notificationService.requestAuthorization()
-        Task { [weak self] in
+        Task { @Sendable [weak self] in
             await self?.checkPermission()
             await self?.startStatusMonitoring()
+            await self?.syncStateFromActor()
         }
+    }
+
+    /// Sincroniza o estado local com o estado do actor (para inicialização).
+    private func syncStateFromActor() async {
+        self.isRecording = await recordingActor.recordingState
+        self.isTranscribing = await recordingActor.transcribingState
+        self.currentMeeting = await recordingActor.currentMeetingState
+        self.lastError = await recordingActor.lastErrorState
+        self.hasRequiredPermissions = await recordingActor.permissionsState
     }
 
     // ...
@@ -106,7 +140,8 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         self.permissionStatus.updateMicrophoneState(micState)
         self.permissionStatus.updateScreenRecordingState(screenState)
 
-        self.hasRequiredPermissions = micPermission && screenPermission
+        await recordingActor.setPermissions(micPermission && screenPermission)
+        self.hasRequiredPermissions = await recordingActor.permissionsState
     }
 
     /// Request permissions (Screen Recording + Microphone).
@@ -142,7 +177,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
             // We only need one output URL because AudioRecorder handles mixing
             let audioURL = self.storage.createRecordingURL(for: meeting, type: .merged)
-            self.mergedAudioURL = audioURL
+            self.setMergedAudioURL(audioURL)
             let outputURL = audioURL
 
             // guard let outputURL = audioURL else {
@@ -188,12 +223,12 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         return Meeting(app: app)
     }
 
-    private func generateRecordingPaths(for meeting: Meeting) throws -> (URL, URL) {
-        self.micAudioURL = self.storage.createRecordingURL(for: meeting, type: .microphone)
-        self.systemAudioURL = self.storage.createRecordingURL(for: meeting, type: .system)
-        self.mergedAudioURL = self.storage.createRecordingURL(for: meeting, type: .merged)
+    private func generateRecordingPaths(for meeting: Meeting) async throws -> (URL, URL) {
+        self.setMicAudioURL(self.storage.createRecordingURL(for: meeting, type: .microphone))
+        self.setSystemAudioURL(self.storage.createRecordingURL(for: meeting, type: .system))
+        self.setMergedAudioURL(self.storage.createRecordingURL(for: meeting, type: .merged))
 
-        guard let micURL = micAudioURL, let systemURL = systemAudioURL else {
+        guard let micURL = await getMicAudioURL(), let systemURL = await getSystemAudioURL() else {
             throw RecordingManagerError.noOutputPath
         }
         return (micURL, systemURL)
@@ -250,7 +285,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
                 "sysURL": sysURL?.lastPathComponent ?? "nil",
             ])
 
-            guard let outputURL = mergedAudioURL else {
+            guard let outputURL = await getMergedAudioURL() else {
                 throw RecordingManagerError.noOutputPath
             }
 
@@ -271,7 +306,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
                 )
 
                 // Clean up temporary files
-                self.cleanupTemporaryFiles()
+                await self.cleanupTemporaryFiles()
                 AppLogger.info(
                     "Audio merge complete",
                     category: .recordingManager,
@@ -297,7 +332,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
                 finalURL = outputURL
 
                 // Clean up any other temporary files (e.g. system audio)
-                self.cleanupTemporaryFiles()
+                await self.cleanupTemporaryFiles()
             }
 
             // Transcribe if requested
@@ -366,7 +401,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         self.meetingDetector.$detectedMeeting
             .dropFirst()
             .removeDuplicates()
-            .sink { [weak self] detected in
+            .sink { @Sendable [weak self] detected in
                 Task { @MainActor in
                     let isCurrentlyRecording = self?.isRecording ?? false
                     if detected != nil, !isCurrentlyRecording {
@@ -388,15 +423,15 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             .assign(to: &self.$isRecording)
     }
 
-    private func cleanupTemporaryFiles() {
+    private func cleanupTemporaryFiles() async {
         var urlsToDelete: [URL] = []
-        if let micURL = micAudioURL { urlsToDelete.append(micURL) }
-        if let sysURL = systemAudioURL { urlsToDelete.append(sysURL) }
+        if let micURL = await getMicAudioURL() { urlsToDelete.append(micURL) }
+        if let sysURL = await getSystemAudioURL() { urlsToDelete.append(sysURL) }
 
         self.storage.cleanupTemporaryFiles(urls: urlsToDelete)
 
-        self.micAudioURL = nil
-        self.systemAudioURL = nil
+        self.setMicAudioURL(nil)
+        self.setSystemAudioURL(nil)
     }
 
     private enum Constants {
@@ -564,7 +599,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     private func startStatusMonitoring() async {
         self.statusCheckTask?.cancel()
 
-        self.statusCheckTask = Task { @MainActor [weak self] in
+        self.statusCheckTask = Task { @Sendable @MainActor [weak self] in
             while !Task.isCancelled {
                 await self?.checkServiceStatus()
                 try? await Task.sleep(for: .seconds(5))

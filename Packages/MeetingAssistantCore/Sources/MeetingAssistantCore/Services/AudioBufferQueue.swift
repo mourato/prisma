@@ -144,7 +144,9 @@ public final class AudioBufferQueue: @unchecked Sendable {
     /// Returns whether the queue is empty.
     // swiftlint:disable empty_count
     public var isEmpty: Bool {
-        self.count == 0
+        self.lock.withLock {
+            self.count == 0
+        }
     }
     // swiftlint:enable empty_count
 }

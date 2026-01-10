@@ -5,16 +5,14 @@ import os.log
 
 // MARK: - Audio Recording Worker
 
-/// A thread-safe, non-isolated worker class that handles Audio Processing and File Writing.
+/// A thread-safe actor that handles Audio Processing and File Writing.
 /// Extracted from AudioRecorder.swift to adhere to Single Responsibility Principle.
-final class AudioRecordingWorker: @unchecked Sendable {
+/// Uses Actor pattern for automatic thread safety isolation.
+actor AudioRecordingWorker {
     // MARK: - State
 
     private var audioFile: AVAudioFile?
     private var currentURL: URL?
-
-    // Thread safety
-    private let queue = DispatchQueue(label: "MeetingAssistant.audioProcessing", qos: .userInitiated)
 
     // Atomic state for validation
     private let _hasReceivedValidBuffer = ManagedAtomic<Bool>(false)
@@ -22,31 +20,59 @@ final class AudioRecordingWorker: @unchecked Sendable {
         self._hasReceivedValidBuffer.load(ordering: .relaxed)
     }
 
-    // Callbacks
-    var onPowerUpdate: ((Float, Float) -> Void)?
-    var onError: ((AudioRecorderError) -> Void)?
+    // Callbacks - marked as Sendable since they are set from MainActor
+    private var onPowerUpdate: (@Sendable (Float, Float) -> Void)?
+    private var onError: (@Sendable (AudioRecorderError) -> Void)?
+
+    // Non-isolated buffer queue for synchronous enqueue from tap
+    private nonisolated let bufferQueue = AudioBufferQueue(capacity: 100)
+
+    // Processing task
+    private var processingTask: Task<Void, Never>?
 
     init() {}
+
+    // MARK: - Callback Setters
+
+    nonisolated func setOnPowerUpdate(_ callback: (@Sendable (Float, Float) -> Void)?) {
+        Task { await self.setOnPowerUpdateIsolated(callback) }
+    }
+
+    nonisolated func setOnError(_ callback: (@Sendable (AudioRecorderError) -> Void)?) {
+        Task { await self.setOnErrorIsolated(callback) }
+    }
+
+    private func setOnPowerUpdateIsolated(_ callback: (@Sendable (Float, Float) -> Void)?) {
+        self.onPowerUpdate = callback
+    }
+
+    private func setOnErrorIsolated(_ callback: (@Sendable (AudioRecorderError) -> Void)?) {
+        self.onError = callback
+    }
+
+    // MARK: - Property Accessors
+
+    nonisolated func getHasReceivedValidBuffer() async -> Bool {
+        await self.getHasReceivedValidBufferIsolated()
+    }
+
+    private func getHasReceivedValidBufferIsolated() -> Bool {
+        self.hasReceivedValidBuffer
+    }
 
     // MARK: - Lifecycle
 
     func start(writingTo url: URL, format: AVAudioFormat, fileFormat: AppSettingsStore.AudioFormat) async throws {
-        try await withCheckedThrowingContinuation { continuation in
-            self.queue.async {
-                do {
-                    try self.startInternal(writingTo: url, format: format, fileFormat: fileFormat)
-                    continuation.resume()
-                } catch {
-                    continuation.resume(throwing: error)
-                }
-            }
-        }
-    }
-
-    private func startInternal(writingTo url: URL, format: AVAudioFormat, fileFormat: AppSettingsStore.AudioFormat) throws {
         // Reset state
         self.audioFile = nil
         self._hasReceivedValidBuffer.store(false, ordering: .relaxed)
+
+        // Cancel any existing processing task
+        self.processingTask?.cancel()
+        self.processingTask = nil
+
+        // Clear buffer queue
+        self.bufferQueue.clear()
 
         // Prepare file
         if FileManager.default.fileExists(atPath: url.path) {
@@ -95,32 +121,45 @@ final class AudioRecordingWorker: @unchecked Sendable {
         )
         self.audioFile = file
         self.currentURL = url
+
+        // Start processing task
+        self.processingTask = Task {
+            await self.processBuffers()
+        }
     }
 
     func stop() async -> URL? {
-        await withCheckedContinuation { continuation in
-            self.queue.async { [weak self] in
-                guard let self else {
-                    continuation.resume(returning: nil)
-                    return
-                }
+        // Cancel processing task
+        self.processingTask?.cancel()
+        self.processingTask = nil
 
-                // Lock removed; serialized by queue
+        // Wait for task to finish
+        await self.processingTask?.value
 
-                let url = self.currentURL
-                self.audioFile = nil // Close file
-                self.currentURL = nil
+        // Clear queue
+        self.bufferQueue.clear()
 
-                continuation.resume(returning: url)
-            }
-        }
+        let url = self.currentURL
+        self.audioFile = nil // Close file
+        self.currentURL = nil
+
+        return url
     }
 
     // MARK: - Processing
 
-    func process(_ buffer: AVAudioPCMBuffer) {
-        self.queue.async { [weak self] in
-            self?.processBufferInternal(buffer)
+    nonisolated func process(_ buffer: AVAudioPCMBuffer) {
+        self.bufferQueue.enqueue(buffer)
+    }
+
+    private func processBuffers() async {
+        while !Task.isCancelled {
+            if let buffer = self.bufferQueue.dequeue() {
+                self.processBufferInternal(buffer)
+            } else {
+                // Wait a bit before checking again
+                try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
+            }
         }
     }
 
