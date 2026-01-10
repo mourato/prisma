@@ -22,8 +22,8 @@ This document tracks known limitations for features and initiatives within the p
   * *Context*: [2025-12-27] Optimized to run in a detached background task to prevent UI blocking, but the fundamental O(n) memory and IO cost remains. Future recommendation: Migrate to CoreData or SQLite (GRDB).
 
 ### Audio Recording
-* **Concurrency (Unchecked Sendable)**: `AudioRecordingWorker` and `PartialBufferState` use `@unchecked Sendable` and lock-based synchronization to handle strictly non-Sendable `AVAudioPCMBuffer` and `AVAudioFile` objects.
-  * *Context*: [2025-12-27] Necessary workaround to satisfy Swift 6 Strict Concurrency without rewriting the audio engine.
+* **(RESOLVED) Concurrency (Unchecked Sendable)**: `AudioRecordingWorker` was migrated from `@unchecked Sendable` to Actor pattern for automatic thread safety isolation.
+  * *Context*: [2026-01-10] Refactored to use Swift 6 Actor pattern, eliminating the need for manual synchronization and improving thread safety guarantees.
 * **(RESOLVED) Partial Buffer Consumption**: Previously, the `AVAudioSourceNode` discarded unconsumed frames when a buffer exceeded the requested `frameCount`, causing intermittent audio loss.
   * *Context*: [2025-12-27] Fixed by introducing `PartialBufferState` to track unconsumed frames across render cycles.
 

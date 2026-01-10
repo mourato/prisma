@@ -77,7 +77,7 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
 
     private var validationTimer: Timer?
     private let hasReceivedValidBuffer = ManagedAtomic<Bool>(false)
-    public var onRecordingError: ((Error) -> Void)?
+    public var onRecordingError: (@Sendable (Error) -> Void)?
 
     private init() {}
 
@@ -190,7 +190,7 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
         self.audioCaptureQueue = queue
 
         let output = SystemAudioStreamOutput(
-            onBuffer: { [weak self] buffer in
+            onBuffer: { @Sendable [weak self] buffer in
                 self?.handleBuffer(buffer)
             }
         )
@@ -224,7 +224,7 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
     }
 
     private func startValidationTimer() {
-        self.validationTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
+        self.validationTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { @Sendable [weak self] _ in
             Task { @MainActor in
                 await self?.handleValidationResult()
             }
@@ -247,9 +247,9 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
 
 private class SystemAudioStreamOutput: NSObject, SCStreamOutput {
     // private let logger: Logger // Removed unused
-    private let onBuffer: (AVAudioPCMBuffer) -> Void
+    private let onBuffer: (@Sendable (AVAudioPCMBuffer) -> Void)
 
-    init(onBuffer: @escaping (AVAudioPCMBuffer) -> Void) {
+    init(onBuffer: @escaping (@Sendable (AVAudioPCMBuffer) -> Void)) {
         // self.logger = logger
         self.onBuffer = onBuffer
     }

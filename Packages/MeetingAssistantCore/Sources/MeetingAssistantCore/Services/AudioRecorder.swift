@@ -59,14 +59,14 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
     private init() {
         // Setup worker callbacks to bridge back to MainActor
-        self.worker.onPowerUpdate = { [weak self] avg, peak in
+        self.worker.setOnPowerUpdate { [weak self] avg, peak in
             Task { @MainActor [weak self] in
                 self?.currentAveragePower = avg
                 self?.currentPeakPower = peak
             }
         }
 
-        self.worker.onError = { [weak self] error in
+        self.worker.setOnError { [weak self] error in
             Task { @MainActor [weak self] in
                 self?.handleWorkerError(error)
             }
@@ -75,7 +75,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         // Link System Recorder to Queue
         // Capture queue directly to avoid 'self' (MainActor) capture in background thread
         let queue = self.systemAudioQueue
-        self.systemRecorder.onAudioBuffer = { buffer in
+        self.systemRecorder.onAudioBuffer = { @Sendable buffer in
             queue.enqueue(buffer)
         }
     }
@@ -276,7 +276,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             onBus: 0,
             bufferSize: Constants.tapBufferSize,
             format: tapFormat // Request exact same format to avoid conversion overhead
-        ) { buffer, _ in
+        ) { @Sendable buffer, _ in
             worker.process(buffer)
         }
     }
@@ -410,7 +410,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         queue: AudioBufferQueue,
         partialState: PartialBufferState
     ) -> AVAudioSourceNode {
-        AVAudioSourceNode { [queue, partialState] _, _, frameCount, audioBufferList -> OSStatus in
+        AVAudioSourceNode { @Sendable [queue, partialState] _, _, frameCount, audioBufferList -> OSStatus in
             self.validateCallbackInputs(frameCount: frameCount, audioBufferList: audioBufferList)
         }
     }
@@ -477,7 +477,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     private func startValidationTimer(url: URL, source: RecordingSource, retryCount: Int) {
         self.validationTimer = Timer.scheduledTimer(
             withTimeInterval: Constants.validationInterval, repeats: false
-        ) { [weak self] _ in
+        ) { @Sendable [weak self] _ in
             Task { @MainActor in
                 await self?.handleValidationTimeout(url: url, source: source, retryCount: retryCount)
             }
@@ -485,7 +485,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     }
 
     private func handleValidationTimeout(url: URL, source: RecordingSource, retryCount: Int) async {
-        let validationPassed = self.worker.hasReceivedValidBuffer
+        let validationPassed = await self.worker.getHasReceivedValidBuffer()
 
         guard !validationPassed else {
             AppLogger.info("Recording validation successful", category: .recordingManager)
