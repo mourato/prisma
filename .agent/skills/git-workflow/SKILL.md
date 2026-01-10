@@ -94,6 +94,16 @@ git commit -m "feat(audio): add recording capability
 Closes #123"
 ```
 
+## Técnicas Avançadas
+
+Para operações avançadas de Git, consulte a skill [git-advanced-workflows](../git-advanced-workflows/SKILL.md):
+
+- **Rebase interativo**: pick, reword, squash, fixup, drop
+- **Cherry-picking**: commits únicos e em range
+- **Git bisect**: busca binária para encontrar bugs
+- **Worktrees**: trabalhar em múltiplos branches simultaneamente
+- **Reflog**: recuperação de commits deletados
+
 ## Referências
 
 - [.github/PULL_REQUEST_TEMPLATE.md](../../.github/PULL_REQUEST_TEMPLATE.md)
