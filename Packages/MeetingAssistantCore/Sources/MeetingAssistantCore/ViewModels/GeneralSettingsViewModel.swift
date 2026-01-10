@@ -4,7 +4,7 @@ import SwiftUI
 
 @MainActor
 public class GeneralSettingsViewModel: ObservableObject {
-    private let settingsStore = AppSettingsStore.shared
+    private let settingsStore: AppSettingsStore
 
     @Published public var autoStartRecording: Bool {
         didSet {
@@ -42,13 +42,14 @@ public class GeneralSettingsViewModel: ObservableObject {
         }
     }
 
-    public init() {
-        self.autoStartRecording = AppSettingsStore.shared.autoStartRecording
-        self.recordingsPath = AppSettingsStore.shared.recordingsDirectory
-        self.audioFormat = AppSettingsStore.shared.audioFormat
-        self.shouldMergeAudioFiles = AppSettingsStore.shared.shouldMergeAudioFiles
-        self.selectedLanguage = AppSettingsStore.shared.selectedLanguage
-        self.showSettingsOnLaunch = AppSettingsStore.shared.showSettingsOnLaunch
+    public init(settingsStore: AppSettingsStore = .shared) {
+        self.settingsStore = settingsStore
+        self.autoStartRecording = settingsStore.autoStartRecording
+        self.recordingsPath = settingsStore.recordingsDirectory
+        self.audioFormat = settingsStore.audioFormat
+        self.shouldMergeAudioFiles = settingsStore.shouldMergeAudioFiles
+        self.selectedLanguage = settingsStore.selectedLanguage
+        self.showSettingsOnLaunch = settingsStore.showSettingsOnLaunch
     }
 
     public func selectRecordingsDirectory() {

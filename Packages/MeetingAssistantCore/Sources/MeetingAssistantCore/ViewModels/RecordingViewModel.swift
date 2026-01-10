@@ -63,7 +63,7 @@ public class RecordingViewModel: ObservableObject {
 
     // MARK: - Initialization
 
-    public init(recordingManager: some RecordingServiceProtocol = RecordingManager.shared) {
+    public init(recordingManager: some RecordingServiceProtocol) {
         self.recordingManager = recordingManager
 
         // Initialize child ViewModels
