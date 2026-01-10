@@ -42,6 +42,10 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     private var mixerNode: AVAudioMixerNode?
     private var systemAudioSourceNode: AVAudioSourceNode?
 
+    // MARK: - Dependency Injection for Testing
+
+    private var injectedEngine: AVAudioEngine?
+
     // MARK: - System Audio Integration
 
     private let systemRecorder = SystemAudioRecorder.shared
@@ -57,7 +61,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     private var validationTimer: Timer?
     public var onRecordingError: (@Sendable (Error) -> Void)?
 
-    private init() {
+    init() {
         // Setup worker callbacks to bridge back to MainActor
         self.worker.setOnPowerUpdate { [weak self] avg, peak in
             Task { @MainActor [weak self] in
@@ -143,7 +147,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         sampleRate: Double
     ) async throws {
         AppLogger.debug("Setting up Audio Engine...", category: .recordingManager)
-        let engine = AVAudioEngine()
+        let engine = injectedEngine ?? AVAudioEngine()
         let mixer = AVAudioMixerNode()
         engine.attach(mixer)
 
