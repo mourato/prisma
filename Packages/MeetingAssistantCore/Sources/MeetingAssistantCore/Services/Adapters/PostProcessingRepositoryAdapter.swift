@@ -4,8 +4,9 @@
 import Foundation
 
 /// Adapter que implementa PostProcessingRepository usando PostProcessingService existente
+@MainActor
 public final class PostProcessingRepositoryAdapter: PostProcessingRepository {
-    private let postProcessingService: PostProcessingServiceProtocol
+    private let postProcessingService: any PostProcessingServiceProtocol
 
     public init(postProcessingService: PostProcessingServiceProtocol) {
         self.postProcessingService = postProcessingService
