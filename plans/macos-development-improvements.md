@@ -25,7 +25,7 @@
 
 ## Plano de Melhorias em Fases
 
-### Fase 1: Foundation (Concurrency & Testing) - 2-3 semanas **Status: ~90% Concluída**
+### Fase 1: Foundation (Concurrency & Testing) - 2-3 semanas **Status: ~95% Concluída**
 **Objetivo**: Estabelecer base sólida com concurrency moderna e testing abrangente
 
 #### 1.1 Concurrency Migration
@@ -39,8 +39,8 @@
 - [x] Criar `AudioSystemTests` para testar integração completa
 - [x] Implementar `MockAudioEngine` para testes determinísticos
 - [x] Adicionar testes de performance (`XCTMeasureMetric`)
-- [ ] Criar `ConcurrencyTests` para validar isolamento
-- [ ] Alcançar 80%+ cobertura em Services críticos
+- [x] Criar `ConcurrencyTests` para validar isolamento
+- [ ] Alcançar 80%+ cobertura em Services críticos (bloqueado por issues Cuckoo)
 
 #### 1.3 CLI Workflow Enhancement
 - [x] Migrar build principal para `xcodebuild` CLI
@@ -48,17 +48,17 @@
 - [x] Adicionar `swift test` integration
 - [x] Criar script de CI básico
 
-### Fase 2: Architecture & Performance - 3-4 semanas **Status: ~30% Iniciada**
+### Fase 2: Architecture & Performance - 3-4 semanas **Status: ~60% Concluída**
 **Objetivo**: Refinar arquitetura e otimizar performance crítica
 
 #### 2.1 Clean Architecture Refinement
 - [x] Separar `Domain` layer (Use Cases, Entities)
 - [x] Implementar `Repository` pattern para data access
-- [ ] Adicionar `Presentation` layer com coordinators
+- [x] Adicionar `Presentation` layer com coordinators
 - [ ] Criar `Infrastructure` layer para external services
 
 #### 2.2 Performance Optimization
-- [ ] Implementar Instruments profiling workflow
+- [x] Implementar Instruments profiling workflow (script criado)
 - [ ] Adicionar `XCTMetric` para performance regression tests
 - [ ] Otimizar `StorageService` (migrar para CoreData/SQLite)
 - [ ] Implementar lazy loading para transcriptions
@@ -66,7 +66,7 @@
 #### 2.3 Memory Management
 - [ ] Auditar retenções cíclicas com Memory Graph Debugger
 - [ ] Implementar `deinit` logging em classes críticas
-- [ ] Adicionar `weak self` em todos closures capturados
+- [x] Adicionar `weak self` em todos closures capturados (coordinators)
 - [ ] Validar com Leaks instrument
 
 ### Fase 3: Developer Experience - 2-3 semanas **Status: ~20% Iniciada**

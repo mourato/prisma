@@ -32,13 +32,7 @@ public final class SettingsCoordinator: Coordinator {
     // MARK: - Coordinator Protocol
 
     public func start() -> AnyView {
-        let viewModel = SettingsCoordinatorViewModel(
-            repositoryFactory: repositoryFactory,
-            recordingManager: recordingManager,
-            coordinator: self
-        )
-
-        let settingsView = SettingsView(viewModel: viewModel)
+        let settingsView = SettingsView()
         return AnyView(settingsView)
     }
 
@@ -111,23 +105,23 @@ public final class SettingsCoordinatorViewModel: ObservableObject {
     // MARK: - View Models for Tabs
 
     func generalSettingsViewModel() -> GeneralSettingsViewModel {
-        GeneralSettingsViewModel(repositoryFactory: repositoryFactory)
+        GeneralSettingsViewModel()
     }
 
     func audioSettingsViewModel() -> AISettingsViewModel {
-        AISettingsViewModel(repositoryFactory: repositoryFactory)
+        AISettingsViewModel(settings: .shared)
     }
 
     func transcriptionSettingsViewModel() -> TranscriptionSettingsViewModel {
-        TranscriptionSettingsViewModel(repositoryFactory: repositoryFactory)
+        TranscriptionSettingsViewModel(recordingManager: recordingManager)
     }
 
     func shortcutsSettingsViewModel() -> ShortcutSettingsViewModel {
-        ShortcutSettingsViewModel(repositoryFactory: repositoryFactory)
+        ShortcutSettingsViewModel()
     }
 
     func postProcessingSettingsViewModel() -> PostProcessingSettingsViewModel {
-        PostProcessingSettingsViewModel(repositoryFactory: repositoryFactory)
+        PostProcessingSettingsViewModel()
     }
 
     // MARK: - Actions

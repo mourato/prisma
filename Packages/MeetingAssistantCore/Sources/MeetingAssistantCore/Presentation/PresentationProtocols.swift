@@ -13,15 +13,15 @@ public protocol Presenter {
 
 /// Protocolo para objetos que coordenam navegação
 @MainActor
-public protocol NavigationCoordinator: AnyObject {
+public protocol Coordinator: AnyObject {
     /// Coordinator pai (opcional)
-    var parentCoordinator: NavigationCoordinator? { get set }
+    var parentCoordinator: Coordinator? { get set }
 
     /// Coordinators filhos
-    var childCoordinators: [NavigationCoordinator] { get set }
+    var childCoordinators: [Coordinator] { get set }
 
-    /// Inicia o coordinator
-    func start()
+    /// Inicia o coordinator e retorna a view inicial
+    func start() -> AnyView
 
     /// Navega para uma rota específica
     func navigate(to route: AppRoute)
@@ -36,7 +36,7 @@ public protocol NavigationCoordinator: AnyObject {
 /// Protocolo para view models que suportam navegação
 @MainActor
 public protocol NavigableViewModel: ObservableObject {
-    associatedtype CoordinatorType: NavigationCoordinator
+    associatedtype CoordinatorType: Coordinator
 
     /// Coordinator associado para navegação
     var coordinator: CoordinatorType? { get set }
@@ -78,4 +78,4 @@ public enum AppRoute {
 // MARK: - Type Aliases
 
 /// Type alias para facilitar uso do Coordinator base
-public typealias AppCoordinator = Coordinator
+/// Note: AppCoordinator is now a concrete class, not just a typealias
