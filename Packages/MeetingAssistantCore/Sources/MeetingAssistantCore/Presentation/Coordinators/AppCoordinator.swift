@@ -58,10 +58,7 @@ public final class AppCoordinator: Coordinator {
     // MARK: - Navigation Methods
 
     private func navigateToMain() -> AnyView {
-        let viewModel = RecordingViewModel(
-            recordingManager: recordingManager,
-            repositoryFactory: repositoryFactory
-        )
+        let viewModel = RecordingViewModel(recordingManager: recordingManager)
 
         let mainView = MenuBarView(viewModel: viewModel)
         return AnyView(mainView)
@@ -82,16 +79,18 @@ public final class AppCoordinator: Coordinator {
     }
 
     private func navigateToTranscriptionDetails(_ transcription: Transcription) -> AnyView {
-        // Criar status básico para o view model
-        let status = TranscriptionStatus(transcription: transcription)
-        let viewModel = TranscriptionViewModel(status: status)
-
-        let detailView = TranscriptionDetailView(viewModel: viewModel)
+        let detailView = TranscriptionDetailView(transcription: transcription)
         return AnyView(detailView)
     }
 
     private func navigateToPermissionSetup() -> AnyView {
-        let viewModel = PermissionViewModel()
+        let viewModel = PermissionViewModel(
+            manager: self.recordingManager.permissionStatus,
+            requestMicrophone: { [weak self] in await self?.recordingManager.requestPermission() },
+            requestScreen: { [weak self] in await self?.recordingManager.requestPermission() },
+            openMicrophoneSettings: { [weak self] in self?.recordingManager.openMicrophoneSettings() },
+            openScreenSettings: { [weak self] in self?.recordingManager.openPermissionSettings() }
+        )
         let permissionView = PermissionStatusView(viewModel: viewModel)
         return AnyView(permissionView)
     }
