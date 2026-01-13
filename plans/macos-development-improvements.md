@@ -25,15 +25,15 @@
 
 ## Plano de Melhorias em Fases
 
-### Fase 1: Foundation (Concurrency & Testing) - 2-3 semanas **Status: ~70% Concluída**
+### Fase 1: Foundation (Concurrency & Testing) - 2-3 semanas **Status: ~90% Concluída**
 **Objetivo**: Estabelecer base sólida com concurrency moderna e testing abrangente
 
 #### 1.1 Concurrency Migration
 - [x] Migrar `AudioRecordingWorker` de `@unchecked Sendable` para Actor
 - [x] Implementar `RecordingActor` para isolamento de estado de gravação
-- [ ] Adicionar `@MainActor` explícito em todos ViewModels
-- [ ] Refatorar callbacks para usar `@Sendable` closures
-- [ ] Validar com Thread Sanitizer
+- [x] Adicionar `@MainActor` explícito em todos ViewModels
+- [x] Refatorar callbacks para usar `@Sendable` closures
+- [x] Validar com Thread Sanitizer
 
 #### 1.2 Testing Expansion (TDD Workflow)
 - [x] Criar `AudioSystemTests` para testar integração completa

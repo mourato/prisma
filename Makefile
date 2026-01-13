@@ -32,6 +32,12 @@ help:
 	@echo "Distribution:"
 	@echo "  make dmg            - Create DMG installer"
 	@echo ""
+	@echo "Performance Profiling:"
+	@echo "  make profile        - Run all performance profiling (CPU, Memory, Animation)"
+	@echo "  make profile-cpu    - Profile CPU usage with Time Profiler"
+	@echo "  make profile-memory - Profile memory usage with Allocations"
+	@echo "  make profile-animation - Profile Core Animation performance"
+	@echo ""
 	@echo "Maintenance:"
 	@echo "  make clean          - Clean build artifacts"
 	@echo "  make setup          - Install development dependencies"
@@ -132,6 +138,23 @@ xcodegen:
 	@echo -e "$(BLUE)Generating Xcode project...$(NC)"
 	@xcodegen generate
 	@echo -e "$(GREEN)✓ Xcode project generated$(NC)"
+
+# Profiling Commands
+profile: build-debug
+	@echo -e "$(BLUE)Running performance profiling (all)...$(NC)"
+	@./scripts/profile-performance.sh --all
+
+profile-cpu: build-debug
+	@echo -e "$(BLUE)Running CPU profiling...$(NC)"
+	@./scripts/profile-performance.sh --cpu
+
+profile-memory: build-debug
+	@echo -e "$(BLUE)Running memory profiling...$(NC)"
+	@./scripts/profile-performance.sh --memory
+
+profile-animation: build-debug
+	@echo -e "$(BLUE)Running animation profiling...$(NC)"
+	@./scripts/profile-performance.sh --animation
 
 # CI/CD Commands
 ci-build: lint test build-release
