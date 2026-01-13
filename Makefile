@@ -156,6 +156,18 @@ profile-animation: build-debug
 	@echo -e "$(BLUE)Running animation profiling...$(NC)"
 	@./scripts/profile-performance.sh --animation
 
+# Mock Generation
+mocks:
+	@echo -e "$(BLUE)Generating Cuckoo mocks...$(NC)"
+	@cd Packages/MeetingAssistantCore && \
+	if [ -f "/tmp/Cuckoo/.build/debug/CuckooGenerator" ]; then \
+		/tmp/Cuckoo/.build/debug/CuckooGenerator --configuration Cuckoofile.toml; \
+		echo -e "$(GREEN)✓ Cuckoo mocks generated$(NC)"; \
+	else \
+		echo -e "$(YELLOW)⚠️  CuckooGenerator not found$(NC)"; \
+		echo -e "$(YELLOW)   Run: mint install Brightify/Cuckoo CuckooGenerator && swift run --package-path /tmp/Cuckoo CuckooGenerator$(NC)"; \
+	fi
+
 # CI/CD Commands
 ci-build: lint test build-release
 	@echo -e "$(GREEN)✓ CI build completed successfully$(NC)"
