@@ -4,7 +4,8 @@
 import Foundation
 
 /// Protocolo para fábrica de repositórios
-public protocol RepositoryFactory: Sendable {
+@MainActor
+public protocol RepositoryFactory {
     func makeMeetingRepository() -> MeetingRepository
     func makeTranscriptionStorageRepository() -> TranscriptionStorageRepository
     func makeRecordingRepository() -> RecordingRepository
@@ -14,6 +15,7 @@ public protocol RepositoryFactory: Sendable {
 }
 
 /// Implementação padrão da fábrica de repositórios
+@MainActor
 public final class DefaultRepositoryFactory: RepositoryFactory {
     private let coreDataStack: CoreDataStack
     private let storageService: FileSystemStorageService
@@ -48,7 +50,7 @@ public final class DefaultRepositoryFactory: RepositoryFactory {
 
     public func makeTranscriptionRepository() -> TranscriptionRepository {
         // Usar adaptador existente por enquanto
-        TranscriptionRepositoryAdapter(transcriptionClient: LocalTranscriptionClient.shared)
+        TranscriptionRepositoryAdapter(transcriptionClient: TranscriptionClient.shared)
     }
 
     @MainActor

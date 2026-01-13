@@ -59,9 +59,7 @@ public final class CoreDataStack: Sendable {
     ) async throws -> T {
         let context = self.backgroundContext
 
-        return try await context.perform {
-            return try await operation(context)
-        }
+        return try await operation(context)
     }
 
     /// Salva contexto de forma segura
