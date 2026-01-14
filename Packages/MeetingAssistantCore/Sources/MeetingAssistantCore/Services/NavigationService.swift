@@ -46,7 +46,8 @@ public class NavigationService: ObservableObject {
             String(format: NSLocalizedString("about.copyright", bundle: .safeModule, comment: ""), 2025)
         alert.alertStyle = .informational
         alert.icon = NSImage(
-            systemSymbolName: "waveform.circle.fill", accessibilityDescription: NSLocalizedString("about.title", bundle: .safeModule, comment: "")
+            systemSymbolName: "waveform.circle.fill",
+            accessibilityDescription: NSLocalizedString("about.title", bundle: .safeModule, comment: "")
         )
         alert.addButton(withTitle: NSLocalizedString("common.ok", bundle: .safeModule, comment: ""))
 

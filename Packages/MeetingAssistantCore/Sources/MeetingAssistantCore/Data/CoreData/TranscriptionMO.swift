@@ -3,6 +3,7 @@
 
 import CoreData
 import Foundation
+
 // swiftlint:disable force_unwrapping
 
 /// Managed Object para entidade Transcription
@@ -28,10 +29,11 @@ public final class TranscriptionMO: NSManagedObject {
 public extension TranscriptionMO {
     /// Fetch request para buscar todas as transcrições ordenadas por data
     @nonobjc class func fetchRequest() -> NSFetchRequest<TranscriptionMO> {
-    let request = NSFetchRequest<TranscriptionMO>(entityName: "TranscriptionMO")
-    request.sortDescriptors = [NSSortDescriptor(key: "createdAt", ascending: false)]
+        let request = NSFetchRequest<TranscriptionMO>(entityName: "TranscriptionMO")
+        request.sortDescriptors = [NSSortDescriptor(key: "createdAt", ascending: false)]
         return request
     }
+
     // swiftlint:enable force_unwrapping
 
     /// Fetch request para buscar transcrição por ID
@@ -90,7 +92,9 @@ extension TranscriptionMO {
 
         // Atualizar segmentos
         self.segments.forEach { self.managedObjectContext?.delete($0) }
-        let newSegments = entity.segments.map { TranscriptionSegmentMO.create(from: $0, transcription: self, in: self.managedObjectContext!) }
+        let newSegments = entity.segments.map {
+            TranscriptionSegmentMO.create(from: $0, transcription: self, in: self.managedObjectContext!)
+        }
         self.segments = Set(newSegments)
     }
 
@@ -109,7 +113,9 @@ extension TranscriptionMO {
         transcriptionMO.meeting = meeting
 
         // Criar segmentos
-        let segments = entity.segments.map { TranscriptionSegmentMO.create(from: $0, transcription: transcriptionMO, in: context) }
+        let segments = entity.segments.map {
+            TranscriptionSegmentMO.create(from: $0, transcription: transcriptionMO, in: context)
+        }
         transcriptionMO.segments = Set(segments)
 
         return transcriptionMO

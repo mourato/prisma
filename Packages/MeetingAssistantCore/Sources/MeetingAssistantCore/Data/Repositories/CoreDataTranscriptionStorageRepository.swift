@@ -15,11 +15,11 @@ public final class CoreDataTranscriptionStorageRepository: TranscriptionStorageR
     public func saveTranscription(_ transcription: TranscriptionEntity) async throws {
         try await self.stack.performBackgroundTask { context in
             // Buscar a reunião associada no contexto atual
-                // swiftlint:disable line_length
-        // swiftlint:disable line_length
-        let meetingRequest = MeetingMO.fetchRequest(for: transcription.meeting.id)
-        // swiftlint:enable line_length
-    // swiftlint:enable line_length
+            // swiftlint:disable line_length
+            // swiftlint:disable line_length
+            let meetingRequest = MeetingMO.fetchRequest(for: transcription.meeting.id)
+            // swiftlint:enable line_length
+            // swiftlint:enable line_length
             guard let meetingMO = try context.fetch(meetingRequest).first else {
                 throw NSError(domain: "CoreDataTranscriptionStorageRepository", code: 404, userInfo: [NSLocalizedDescriptionKey: "Meeting not found for transcription"])
             }

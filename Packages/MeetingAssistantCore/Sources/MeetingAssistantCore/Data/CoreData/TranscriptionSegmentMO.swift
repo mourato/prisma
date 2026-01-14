@@ -53,11 +53,11 @@ extension TranscriptionSegmentMO {
     }
 
     /// Cria novo Managed Object a partir de Domain Entity
-        static func create(
-            from segment: TranscriptionEntity.Segment,
-            transcription: TranscriptionMO,
-            in context: NSManagedObjectContext
-        ) -> TranscriptionSegmentMO {
+    static func create(
+        from segment: TranscriptionEntity.Segment,
+        transcription: TranscriptionMO,
+        in context: NSManagedObjectContext
+    ) -> TranscriptionSegmentMO {
         let segmentMO = TranscriptionSegmentMO(context: context)
         segmentMO.update(from: segment)
         segmentMO.transcription = transcription

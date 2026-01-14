@@ -143,7 +143,11 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
         self.configureAuthHeaders(for: &request, provider: config.provider, apiKey: apiKey)
         try self.setRequestBody(for: &request, config: config, transcription: transcription, prompt: prompt)
 
-        AppLogger.debug("Sending post-processing request", category: .transcriptionEngine, extra: ["url": url.absoluteString])
+        AppLogger.debug(
+            "Sending post-processing request",
+            category: .transcriptionEngine,
+            extra: ["url": url.absoluteString]
+        )
 
         let (data, response) = try await URLSession.shared.data(for: request)
         try self.validateHTTPResponse(response, data: data)

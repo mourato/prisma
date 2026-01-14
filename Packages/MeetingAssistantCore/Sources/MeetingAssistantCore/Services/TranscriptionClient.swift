@@ -122,15 +122,28 @@ public class TranscriptionClient: ObservableObject, TranscriptionService {
     /// - Parameter audioURL: Path to the audio file (WAV, M4A, etc.)
     /// - Returns: Transcription response from the service
     public func transcribe(audioURL: URL) async throws -> TranscriptionResponse {
-        AppLogger.info("Transcribing file locally", category: .transcriptionEngine, extra: ["filename": audioURL.lastPathComponent])
+        AppLogger.info(
+            "Transcribing file locally",
+            category: .transcriptionEngine,
+            extra: ["filename": audioURL.lastPathComponent]
+        )
 
         // Use LocalTranscriptionClient as the implementation provider.
         do {
             let response = try await LocalTranscriptionClient.shared.transcribe(audioURL: audioURL)
-            AppLogger.info("Transcription completed info", category: .transcriptionEngine, extra: ["words": response.text.split(separator: " ").count])
+            AppLogger.info(
+                "Transcription completed info",
+                category: .transcriptionEngine,
+                extra: ["words": response.text.split(separator: " ").count]
+            )
             return response
         } catch {
-            AppLogger.error("Transcription failed", category: .transcriptionEngine, error: error, extra: ["filename": audioURL.lastPathComponent])
+            AppLogger.error(
+                "Transcription failed",
+                category: .transcriptionEngine,
+                error: error,
+                extra: ["filename": audioURL.lastPathComponent]
+            )
             throw error
         }
     }
