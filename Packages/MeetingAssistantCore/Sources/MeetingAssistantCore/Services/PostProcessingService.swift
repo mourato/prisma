@@ -284,4 +284,8 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
             return "\(base)/messages"
         }
     }
+
+    deinit {
+        AppLogger.debug("PostProcessingService deinitialized", category: .transcriptionEngine)
+    }
 }

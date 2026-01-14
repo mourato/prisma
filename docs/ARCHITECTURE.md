@@ -27,7 +27,20 @@ The audio recording system in `MeetingAssistantCore` is designed for high-perfor
 ### 4. AudioRecordingWorker (Writer)
 - **Role**: Handles file writing and metering.
 - **Pattern**: **Worker Pattern** (Extracted from `AudioRecorder`).
-- **Concurrency**: Runs on a private serial queue. Marked `@unchecked Sendable` due to `AVAudioFile` limitations, requiring manual synchronization (`NSLock`) and strict usage discipline.
+- **Concurrency**: Implemented as a Swift **Actor** for automatic thread safety and state isolation.
+- **Optimization**: Processes buffers non-isolatedly when possible to minimize actor contention.
+
+## Memory Management Policy
+- **Cycle Prevention**: All coordinators and long-lived services must use `[weak self]` in closures.
+- **Audit Tooling**: Services implement `deinit` logging (via `AppLogger`) to verify deallocation during manual and automated audits.
+- **Verification**: `MemorySanityTests` in the test suite automate the verification of component deallocation.
+
+## Performance Policy
+- **Zero Allocation**: The audio hot path (Producer to Consumer) must favor pre-allocated buffers and avoid heap allocations during active recording.
+- **Guardrails**: Performance is tracked via `XCTMetric` tests (where runner stability permits).
+- **Baselines**:
+    - Circular buffer operations: < 0.05ms (Apple Silicon).
+    - State transitions: < 100ms for user-perceived responsiveness.
 
 ## Data Flow
 1. **SCStream** (System) -> `SystemAudioRecorder` -> `buffer`

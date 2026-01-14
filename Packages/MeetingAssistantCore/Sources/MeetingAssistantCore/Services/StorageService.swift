@@ -175,4 +175,8 @@ public final class FileSystemStorageService: StorageService {
             return nil
         }
     }
+
+    deinit {
+        AppLogger.debug("FileSystemStorageService deinitialized", category: .databaseManager)
+    }
 }
