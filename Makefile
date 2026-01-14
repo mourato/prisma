@@ -25,6 +25,8 @@ help:
 	@echo "  make lint           - Run linting checks"
 	@echo "  make lint-fix       - Auto-fix linting issues"
 	@echo "  make health         - Run comprehensive code health check"
+	@echo "  make danger         - Run Danger-Swift checks (CI mode)"
+	@echo "  make danger-local   - Run Danger-Swift checks against local changes"
 	@echo ""
 	@echo "Run Commands:"
 	@echo "  make run            - Build and run debug version"
@@ -118,6 +120,14 @@ format:
 health:
 	@echo -e "$(BLUE)Running code health check...$(NC)"
 	@./scripts/code-health-check.sh
+
+danger:
+	@echo -e "$(BLUE)Running Danger-Swift...$(NC)"
+	@danger-swift ci
+
+danger-local:
+	@echo -e "$(BLUE)Running Danger-Swift (local)...$(NC)"
+	@danger-swift local
 
 # Run Commands
 run: build-debug
