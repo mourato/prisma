@@ -19,7 +19,7 @@ public final class AudioFileRepositoryAdapter: AudioFileRepository {
     }
 
     public func audioFileExists(at url: URL) -> Bool {
-        return FileManager.default.fileExists(atPath: url.path)
+        FileManager.default.fileExists(atPath: url.path)
     }
 
     public func generateAudioFileURL(for meetingId: UUID) -> URL {
@@ -29,11 +29,11 @@ public final class AudioFileRepositoryAdapter: AudioFileRepository {
             app: .importedFile,
             startTime: Date()
         )
-        return storageService.createRecordingURL(for: tempMeeting, type: .merged)
+        return self.storageService.createRecordingURL(for: tempMeeting, type: .merged)
     }
 
     public func listAudioFiles() async throws -> [URL] {
-        let recordingsDir = storageService.recordingsDirectory
+        let recordingsDir = self.storageService.recordingsDirectory
         let contents = try FileManager.default.contentsOfDirectory(
             at: recordingsDir,
             includingPropertiesForKeys: nil,

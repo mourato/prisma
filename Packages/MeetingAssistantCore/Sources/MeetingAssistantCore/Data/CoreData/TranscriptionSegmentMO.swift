@@ -19,9 +19,9 @@ public final class TranscriptionSegmentMO: NSManagedObject {
 
 // MARK: - Fetch Requests
 
-extension TranscriptionSegmentMO {
+public extension TranscriptionSegmentMO {
     /// Fetch request para buscar segmentos de uma transcrição
-    @nonobjc public class func fetchRequest(for transcriptionId: UUID) -> NSFetchRequest<TranscriptionSegmentMO> {
+    @nonobjc class func fetchRequest(for transcriptionId: UUID) -> NSFetchRequest<TranscriptionSegmentMO> {
         let request = NSFetchRequest<TranscriptionSegmentMO>(entityName: "TranscriptionSegmentMO")
         request.predicate = NSPredicate(format: "transcription.id == %@", transcriptionId as CVarArg)
         request.sortDescriptors = [NSSortDescriptor(key: "startTime", ascending: true)]
@@ -53,7 +53,11 @@ extension TranscriptionSegmentMO {
     }
 
     /// Cria novo Managed Object a partir de Domain Entity
-    static func create(from segment: TranscriptionEntity.Segment, transcription: TranscriptionMO, in context: NSManagedObjectContext) -> TranscriptionSegmentMO {
+        static func create(
+            from segment: TranscriptionEntity.Segment,
+            transcription: TranscriptionMO,
+            in context: NSManagedObjectContext
+        ) -> TranscriptionSegmentMO {
         let segmentMO = TranscriptionSegmentMO(context: context)
         segmentMO.update(from: segment)
         segmentMO.transcription = transcription

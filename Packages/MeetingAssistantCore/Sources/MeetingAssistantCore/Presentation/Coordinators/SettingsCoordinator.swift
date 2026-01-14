@@ -38,17 +38,17 @@ public final class SettingsCoordinator: Coordinator {
 
     public func navigate(to route: AppRoute) {
         switch route {
-        case .settings(let tab):
-            selectedTab = tab
+        case let .settings(tab):
+            self.selectedTab = tab
         default:
             // Delegar para coordinator pai
-            parentCoordinator?.navigate(to: route)
+            self.parentCoordinator?.navigate(to: route)
         }
     }
 
     public func goBack() {
         // Voltar para tela principal
-        parentCoordinator?.navigate(to: .main)
+        self.parentCoordinator?.navigate(to: .main)
     }
 
     public func dismiss() {
@@ -62,12 +62,12 @@ public final class SettingsCoordinator: Coordinator {
 
     /// Navega para uma aba específica das configurações
     func navigateToTab(_ tab: AppRoute.SettingsTab) {
-        selectedTab = tab
+        self.selectedTab = tab
     }
 
     /// Retorna a aba atualmente selecionada
     var currentTab: AppRoute.SettingsTab {
-        selectedTab
+        self.selectedTab
     }
 }
 
@@ -98,8 +98,8 @@ public final class SettingsCoordinatorViewModel: ObservableObject {
     // MARK: - Tab Navigation
 
     func selectTab(_ tab: AppRoute.SettingsTab) {
-        selectedTab = tab
-        coordinator?.navigateToTab(tab)
+        self.selectedTab = tab
+        self.coordinator?.navigateToTab(tab)
     }
 
     // MARK: - View Models for Tabs
@@ -113,7 +113,7 @@ public final class SettingsCoordinatorViewModel: ObservableObject {
     }
 
     func transcriptionSettingsViewModel() -> TranscriptionSettingsViewModel {
-        TranscriptionSettingsViewModel(recordingManager: recordingManager)
+        TranscriptionSettingsViewModel(recordingManager: self.recordingManager)
     }
 
     func shortcutsSettingsViewModel() -> ShortcutSettingsViewModel {
@@ -127,6 +127,6 @@ public final class SettingsCoordinatorViewModel: ObservableObject {
     // MARK: - Actions
 
     func dismiss() {
-        coordinator?.dismiss()
+        self.coordinator?.dismiss()
     }
 }

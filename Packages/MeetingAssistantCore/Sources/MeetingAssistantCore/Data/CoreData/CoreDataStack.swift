@@ -38,7 +38,7 @@ public final class CoreDataStack: Sendable {
         }
 
         self.persistentContainer.loadPersistentStores { [weak self] storeDescription, error in
-            if let error = error {
+            if let error {
                 self?.logger.error("Failed to load persistent stores: \(error.localizedDescription)")
                 fatalError("CoreData store failed to load: \(error.localizedDescription)")
             }

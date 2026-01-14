@@ -25,16 +25,16 @@ public final class StartRecordingUseCase {
     /// - Throws: RecordingError se não conseguir iniciar gravação
     public func execute(for meeting: MeetingEntity) async throws -> URL {
         // Verificar permissões
-        guard await recordingRepository.hasPermission() else {
+        guard await self.recordingRepository.hasPermission() else {
             throw RecordingError.permissionDenied
         }
 
         // Gerar URL para arquivo de áudio
-        let audioFileURL = audioFileRepository.generateAudioFileURL(for: meeting.id)
+        let audioFileURL = self.audioFileRepository.generateAudioFileURL(for: meeting.id)
 
         // Iniciar gravação
         do {
-            try await recordingRepository.startRecording(to: audioFileURL, retryCount: 3)
+            try await self.recordingRepository.startRecording(to: audioFileURL, retryCount: 3)
         } catch {
             throw RecordingError.recordingFailed(error)
         }
@@ -42,7 +42,7 @@ public final class StartRecordingUseCase {
         // Atualizar reunião com caminho do arquivo de áudio
         var updatedMeeting = meeting
         updatedMeeting.audioFilePath = audioFileURL.path
-        try await meetingRepository.updateMeeting(updatedMeeting)
+        try await self.meetingRepository.updateMeeting(updatedMeeting)
 
         return audioFileURL
     }

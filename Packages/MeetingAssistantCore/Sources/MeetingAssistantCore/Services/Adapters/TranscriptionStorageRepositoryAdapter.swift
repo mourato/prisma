@@ -40,7 +40,7 @@ public final class TranscriptionStorageRepositoryAdapter: TranscriptionStorageRe
             modelName: transcription.modelName
         )
 
-        try await storageService.saveTranscription(legacyTranscription)
+        try await self.storageService.saveTranscription(legacyTranscription)
     }
 
     public func fetchTranscription(by id: UUID) async throws -> TranscriptionEntity? {
@@ -121,11 +121,13 @@ public final class TranscriptionStorageRepositoryAdapter: TranscriptionStorageRe
         // O StorageService atual não tem método de delete individual.
         // Como estamos migrando para CoreData, este adaptador JSON é mantido apenas para leitura.
         // Deleção em JSON não será implementada para evitar complexidade no legado.
+        // swiftlint:disable line_length
         throw NSError(domain: "TranscriptionStorageRepositoryAdapter", code: -1, userInfo: [NSLocalizedDescriptionKey: "Delete not supported for legacy JSON storage. Use CoreData for new data."])
+        // swiftlint:enable line_length
     }
 
     public func updateTranscription(_ transcription: TranscriptionEntity) async throws {
         // Para atualizar, salvar novamente (o StorageService sobrescreve)
-        try await saveTranscription(transcription)
+        try await self.saveTranscription(transcription)
     }
 }

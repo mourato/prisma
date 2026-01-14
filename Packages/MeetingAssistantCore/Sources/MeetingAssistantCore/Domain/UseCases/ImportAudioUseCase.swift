@@ -27,7 +27,7 @@ public final class ImportAudioUseCase {
         meetingTitle: String? = nil
     ) async throws -> (meeting: MeetingEntity, audioFileURL: URL) {
         // Verificar se arquivo fonte existe
-        guard audioFileRepository.audioFileExists(at: sourceURL) else {
+        guard self.audioFileRepository.audioFileExists(at: sourceURL) else {
             throw ImportError.sourceFileNotFound
         }
 
@@ -41,21 +41,21 @@ public final class ImportAudioUseCase {
         try await meetingRepository.saveMeeting(meeting)
 
         // Gerar URL de destino para arquivo de áudio
-        let destinationURL = audioFileRepository.generateAudioFileURL(for: meeting.id)
+        let destinationURL = self.audioFileRepository.generateAudioFileURL(for: meeting.id)
 
         // Copiar arquivo de áudio
         do {
-            try await audioFileRepository.saveAudioFile(from: sourceURL, to: destinationURL)
+            try await self.audioFileRepository.saveAudioFile(from: sourceURL, to: destinationURL)
         } catch {
             // Se cópia falhar, remover reunião criada
-            try? await meetingRepository.deleteMeeting(by: meeting.id)
+            try? await self.meetingRepository.deleteMeeting(by: meeting.id)
             throw ImportError.fileCopyFailed(error)
         }
 
         // Atualizar reunião com caminho do arquivo
         var updatedMeeting = meeting
         updatedMeeting.audioFilePath = destinationURL.path
-        try await meetingRepository.updateMeeting(updatedMeeting)
+        try await self.meetingRepository.updateMeeting(updatedMeeting)
 
         return (meeting: updatedMeeting, audioFileURL: destinationURL)
     }

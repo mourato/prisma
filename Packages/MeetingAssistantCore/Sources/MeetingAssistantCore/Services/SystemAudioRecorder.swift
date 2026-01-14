@@ -195,7 +195,7 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
             }
         )
         self.streamOutput = output
-        self.streamOutputHolder = output  // Keep strong reference to prevent deallocation
+        self.streamOutputHolder = output // Keep strong reference to prevent deallocation
 
         try self.stream?.addStreamOutput(output, type: .audio, sampleHandlerQueue: queue)
     }
@@ -247,7 +247,7 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
 
 private class SystemAudioStreamOutput: NSObject, SCStreamOutput {
     // private let logger: Logger // Removed unused
-    private let onBuffer: (@Sendable (AVAudioPCMBuffer) -> Void)
+    private let onBuffer: @Sendable (AVAudioPCMBuffer) -> Void
 
     init(onBuffer: @escaping (@Sendable (AVAudioPCMBuffer) -> Void)) {
         // self.logger = logger

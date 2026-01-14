@@ -24,6 +24,7 @@ help:
 	@echo "Code Quality:"
 	@echo "  make lint           - Run linting checks"
 	@echo "  make lint-fix       - Auto-fix linting issues"
+	@echo "  make health         - Run comprehensive code health check"
 	@echo ""
 	@echo "Run Commands:"
 	@echo "  make run            - Build and run debug version"
@@ -64,7 +65,7 @@ NC = \033[0m
 # Build Commands
 build: build-debug
 
-build-debug:
+build-debug: format
 	@echo -e "$(BLUE)Building $(APP_NAME) (Debug)...$(NC)"
 	@xcodebuild -project "$(XCODEPROJ)" \
 		-scheme "$(APP_NAME)" \
@@ -104,6 +105,19 @@ lint:
 lint-fix:
 	@echo -e "$(BLUE)Auto-fixing lint issues...$(NC)"
 	@./scripts/lint-fix.sh
+
+format:
+	@echo -e "$(BLUE)Running SwiftFormat...$(NC)"
+	@if ! command -v swiftformat &> /dev/null; then \
+		echo "❌ SwiftFormat not installed. Install with: brew install swiftformat"; \
+		exit 1; \
+	fi
+	@swiftformat --config .swiftformat App Packages/MeetingAssistantCore/Sources
+	@echo -e "$(GREEN)✓ Code formatted$(NC)"
+
+health:
+	@echo -e "$(BLUE)Running code health check...$(NC)"
+	@./scripts/code-health-check.sh
 
 # Run Commands
 run: build-debug

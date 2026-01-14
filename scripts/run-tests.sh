@@ -21,6 +21,7 @@ NC='\033[0m'
 
 # Default values
 VERBOSE=0
+QUIET=0
 SPECIFIC_TEST=""
 TEST_FILE=""
 
@@ -29,6 +30,10 @@ while [[ $# -gt 0 ]]; do
     case $1 in
         --verbose|-v)
             VERBOSE=1
+            shift
+            ;;
+        --quiet|-q)
+            QUIET=1
             shift
             ;;
         --test|-t)
@@ -44,6 +49,7 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "Options:"
             echo "  --verbose, -v    Run tests with verbose output"
+            echo "  --quiet, -q      Run tests quietly (no output except final result)"
             echo "  --test, -t TEST  Run specific test (e.g., testInitialState)"
             echo "  --file, -f FILE  Run tests from specific file (e.g., RecordingViewModelTests)"
             echo "  --help, -h       Show this help"
@@ -51,6 +57,7 @@ while [[ $# -gt 0 ]]; do
             echo "Examples:"
             echo "  $0                          # Run all tests"
             echo "  $0 --verbose                # Run all tests with verbose output"
+            echo "  $0 --quiet                  # Run all tests quietly"
             echo "  $0 --file RecordingViewModelTests  # Run tests from specific file"
             echo "  $0 --test testInitialState  # Run specific test"
             exit 0

@@ -1,6 +1,6 @@
 # Plano de Melhorias - macOS Development Skill
 
-## 🎉 Conquistas Recentes (Dezembro 2024)
+## 🎉 Conquistas Recentes (Janeiro 2025)
 
 ### ✅ Cuckoo Framework Implementation Completa
 - **Mocks Auto-gerados**: Implementação completa do Cuckoo para geração automática de mocks
@@ -14,6 +14,13 @@
 - **Status**: Fase 1 agora 100% concluída
 - **Resultado**: Base sólida estabelecida com concurrency moderna e testing abrangente
 - **Próximo**: Foco na Fase 2 (Architecture & Performance)
+
+### ✅ Architecture & Performance - Avanços Significativos
+- **Clean Architecture Refinement**: Domain e Repository layers implementados
+- **Instruments Profiling**: Script completo para CPU, Memory e Core Animation profiling
+- **CoreData Migration**: Modelo programático implementado, migração automática preparada
+- **Memory Management**: Coordinators com `weak self` implementado
+- **Resultado**: ~70% da Fase 2 concluída, arquitetura sólida estabelecida
 
 ## Análise Atual vs Skill Standards
 
@@ -34,7 +41,7 @@
 1. **Swift 6 Concurrency**: ✅ Resolvido - Actors implementados
 2. **CLI-Only Workflow**: ✅ Resolvido - Makefile e CLI-first implementado
 3. **TDD Practice**: Testes expandidos, mas não fully TDD ainda
-4. **Performance Profiling**: Sem ferramentas sistemáticas
+4. **Performance Profiling**: ✅ Resolvido - Instruments profiling script implementado
 5. **Security Hardening**: Validações de input pendentes
 6. **Documentation**: Falta DocC, mas skills documentadas
 
@@ -66,7 +73,7 @@
 - [x] Adicionar `swift test` integration
 - [x] Criar script de CI básico
 
-### Fase 2: Architecture & Performance - 3-4 semanas **Status: ~60% Concluída**
+### Fase 2: Architecture & Performance - 3-4 semanas **Status: ~70% Concluída**
 **Objetivo**: Refinar arquitetura e otimizar performance crítica
 
 #### 2.1 Clean Architecture Refinement
@@ -78,7 +85,7 @@
 #### 2.2 Performance Optimization
 - [x] Implementar Instruments profiling workflow (script criado)
 - [ ] Adicionar `XCTMetric` para performance regression tests
-- [ ] Otimizar `StorageService` (migrar para CoreData/SQLite)
+- [x] Otimizar `StorageService` (migrar para CoreData/SQLite) - Modelo programático implementado
 - [ ] Implementar lazy loading para transcriptions
 
 #### 2.3 Memory Management

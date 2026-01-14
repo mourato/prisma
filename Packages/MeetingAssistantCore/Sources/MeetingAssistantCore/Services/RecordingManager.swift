@@ -59,27 +59,27 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     // MARK: - Computed Properties for Actor State
 
     private func getMicAudioURL() async -> URL? {
-        await recordingActor.micAudioURLState
+        await self.recordingActor.micAudioURLState
     }
 
     private func getSystemAudioURL() async -> URL? {
-        await recordingActor.systemAudioURLState
+        await self.recordingActor.systemAudioURLState
     }
 
     private func getMergedAudioURL() async -> URL? {
-        await recordingActor.mergedAudioURLState
+        await self.recordingActor.mergedAudioURLState
     }
 
     private func setMicAudioURL(_ url: URL?) {
-        Task { await recordingActor.setMicAudioURL(url) }
+        Task { await self.recordingActor.setMicAudioURL(url) }
     }
 
     private func setSystemAudioURL(_ url: URL?) {
-        Task { await recordingActor.setSystemAudioURL(url) }
+        Task { await self.recordingActor.setSystemAudioURL(url) }
     }
 
     private func setMergedAudioURL(_ url: URL?) {
-        Task { await recordingActor.setMergedAudioURL(url) }
+        Task { await self.recordingActor.setMergedAudioURL(url) }
     }
 
     // MARK: - Storage
@@ -114,11 +114,11 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
     /// Sincroniza o estado local com o estado do actor (para inicialização).
     private func syncStateFromActor() async {
-        self.isRecording = await recordingActor.recordingState
-        self.isTranscribing = await recordingActor.transcribingState
-        self.currentMeeting = await recordingActor.currentMeetingState
-        self.lastError = await recordingActor.lastErrorState
-        self.hasRequiredPermissions = await recordingActor.permissionsState
+        self.isRecording = await self.recordingActor.recordingState
+        self.isTranscribing = await self.recordingActor.transcribingState
+        self.currentMeeting = await self.recordingActor.currentMeetingState
+        self.lastError = await self.recordingActor.lastErrorState
+        self.hasRequiredPermissions = await self.recordingActor.permissionsState
     }
 
     // ...
@@ -140,8 +140,8 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         self.permissionStatus.updateMicrophoneState(micState)
         self.permissionStatus.updateScreenRecordingState(screenState)
 
-        await recordingActor.setPermissions(micPermission && screenPermission)
-        self.hasRequiredPermissions = await recordingActor.permissionsState
+        await self.recordingActor.setPermissions(micPermission && screenPermission)
+        self.hasRequiredPermissions = await self.recordingActor.permissionsState
     }
 
     /// Request permissions (Screen Recording + Microphone).
