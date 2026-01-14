@@ -18,7 +18,7 @@ public final class HybridTranscriptionStorageRepository: TranscriptionStorageRep
 
     public func saveTranscription(_ transcription: TranscriptionEntity) async throws {
         // Novos dados sempre vão para o CoreData
-        try await coreDataRepo.saveTranscription(transcription)
+        try await self.coreDataRepo.saveTranscription(transcription)
     }
 
     public func fetchTranscription(by id: UUID) async throws -> TranscriptionEntity? {
@@ -27,14 +27,15 @@ public final class HybridTranscriptionStorageRepository: TranscriptionStorageRep
             return transcription
         }
         // Se não encontrar, tentar legado
-        return try await legacyRepo.fetchTranscription(by: id)
+        return try await self.legacyRepo.fetchTranscription(by: id)
     }
 
     public func fetchTranscriptions(for meetingId: UUID) async throws -> [TranscriptionEntity] {
         let coreDataResults = try await coreDataRepo.fetchTranscriptions(for: meetingId)
         let legacyResults = try await legacyRepo.fetchTranscriptions(for: meetingId)
 
-        // Combinar resultados (CoreData tem precedência se houver IDs duplicados, o que não deve ocorrer)
+        // Combinar resultados (CoreData tem precedência se houver IDs duplicados,
+        // o que não deve ocorrer)
         return coreDataResults + legacyResults
     }
 
@@ -48,21 +49,27 @@ public final class HybridTranscriptionStorageRepository: TranscriptionStorageRep
     public func deleteTranscription(by id: UUID) async throws {
         // Tentar deletar do CoreData
         do {
-            try await coreDataRepo.deleteTranscription(by: id)
+            try await self.coreDataRepo.deleteTranscription(by: id)
         } catch {
             // Se falhar ou não existir, tentar legado (que lançará erro conforme implementado)
-            try await legacyRepo.deleteTranscription(by: id)
+            try await self.legacyRepo.deleteTranscription(by: id)
         }
     }
 
     public func updateTranscription(_ transcription: TranscriptionEntity) async throws {
         // Se existir no CoreData, atualizar lá
-        if try await coreDataRepo.fetchTranscription(by: transcription.id) != nil {
-            try await coreDataRepo.updateTranscription(transcription)
+        if try await self.coreDataRepo.fetchTranscription(by: transcription.id) != nil {
+            try await self.coreDataRepo.updateTranscription(transcription)
         } else {
             // Se for legado, não permitimos atualização direta no JSON para manter integridade.
             // Uma estratégia futura seria migrar para CoreData ao atualizar.
-            throw NSError(domain: "HybridTranscriptionStorageRepository", code: -1, userInfo: [NSLocalizedDescriptionKey: "Updating legacy JSON transcriptions is not supported. Migrate to CoreData first."])
+            throw NSError(
+    domain: "HybridTranscriptionStorageRepository",
+    code: -1,
+    userInfo: [
+        NSLocalizedDescriptionKey: "Updating legacy JSON transcriptions is not supported. Migrate to CoreData first."
+    ]
+)
         }
     }
 }

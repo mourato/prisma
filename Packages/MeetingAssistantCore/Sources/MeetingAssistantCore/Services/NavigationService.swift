@@ -42,8 +42,8 @@ public class NavigationService: ObservableObject {
             format: NSLocalizedString("about.version", bundle: .safeModule, comment: ""),
             AppVersion.current
         ) + "\n\n" +
-        NSLocalizedString("about.description", bundle: .safeModule, comment: "") + "\n\n" +
-        String(format: NSLocalizedString("about.copyright", bundle: .safeModule, comment: ""), 2025)
+            NSLocalizedString("about.description", bundle: .safeModule, comment: "") + "\n\n" +
+            String(format: NSLocalizedString("about.copyright", bundle: .safeModule, comment: ""), 2025)
         alert.alertStyle = .informational
         alert.icon = NSImage(
             systemSymbolName: "waveform.circle.fill", accessibilityDescription: NSLocalizedString("about.title", bundle: .safeModule, comment: "")

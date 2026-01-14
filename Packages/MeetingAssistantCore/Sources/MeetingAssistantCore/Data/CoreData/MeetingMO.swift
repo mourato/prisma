@@ -19,16 +19,16 @@ public final class MeetingMO: NSManagedObject {
 
 // MARK: - Fetch Requests
 
-extension MeetingMO {
+public extension MeetingMO {
     /// Fetch request para buscar todas as reuniões ordenadas por data
-    @nonobjc public class func fetchRequest() -> NSFetchRequest<MeetingMO> {
+    @nonobjc class func fetchRequest() -> NSFetchRequest<MeetingMO> {
         let request = NSFetchRequest<MeetingMO>(entityName: "MeetingMO")
         request.sortDescriptors = [NSSortDescriptor(key: "startTime", ascending: false)]
         return request
     }
 
     /// Fetch request para buscar reunião por ID
-    @nonobjc public class func fetchRequest(for id: UUID) -> NSFetchRequest<MeetingMO> {
+    @nonobjc class func fetchRequest(for id: UUID) -> NSFetchRequest<MeetingMO> {
         let request = NSFetchRequest<MeetingMO>(entityName: "MeetingMO")
         request.predicate = NSPredicate(format: "id == %@", id as CVarArg)
         request.fetchLimit = 1

@@ -28,26 +28,26 @@ public final class AppCoordinator: Coordinator {
     // MARK: - Coordinator Protocol
 
     public func start() -> AnyView {
-        navigateToMain()
+        self.navigateToMain()
     }
 
     public func navigate(to route: AppRoute) {
         switch route {
         case .main:
-            navigateToMain()
-        case .settings(let tab):
-            navigateToSettings(tab: tab)
-        case .transcriptionDetails(let transcription):
-            navigateToTranscriptionDetails(transcription)
+            self.navigateToMain()
+        case let .settings(tab):
+            self.navigateToSettings(tab: tab)
+        case let .transcriptionDetails(transcription):
+            self.navigateToTranscriptionDetails(transcription)
         case .permissionSetup:
-            navigateToPermissionSetup()
+            self.navigateToPermissionSetup()
         }
     }
 
     public func goBack() {
         // Implementar navegação para trás se necessário
         // Por enquanto, volta para main
-        navigate(to: .main)
+        self.navigate(to: .main)
     }
 
     public func dismiss() {
@@ -72,7 +72,7 @@ public final class AppCoordinator: Coordinator {
         )
         coordinator.parentCoordinator = self
 
-        childCoordinators.append(coordinator)
+        self.childCoordinators.append(coordinator)
 
         let settingsView = coordinator.start()
         return settingsView
@@ -100,7 +100,7 @@ public final class AppCoordinator: Coordinator {
     /// Remove coordinator filho quando ele for dispensado
     func childCoordinatorDidFinish(_ coordinator: Coordinator) {
         if let index = childCoordinators.firstIndex(where: { $0 === coordinator }) {
-            childCoordinators.remove(at: index)
+            self.childCoordinators.remove(at: index)
         }
     }
 }

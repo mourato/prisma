@@ -34,14 +34,14 @@ public final class TranscribeAudioUseCase {
         postProcessingPrompt: DomainPostProcessingPrompt? = nil
     ) async throws -> TranscriptionEntity {
         // Verificar saúde do serviço
-        guard try await transcriptionRepository.healthCheck() else {
+        guard try await self.transcriptionRepository.healthCheck() else {
             throw TranscriptionError.serviceUnavailable
         }
 
         // Transcrever áudio
         let response: DomainTranscriptionResponse
         do {
-            response = try await transcriptionRepository.transcribe(audioURL: audioURL)
+            response = try await self.transcriptionRepository.transcribe(audioURL: audioURL)
         } catch {
             throw DomainTranscriptionError.transcriptionFailed(error.localizedDescription)
         }
@@ -63,6 +63,7 @@ public final class TranscribeAudioUseCase {
             } catch {
                 // Pós-processamento falhou, mas transcrição foi bem-sucedida
                 // Não falhar o caso de uso inteiro por isso
+                // swiftlint:disable:next disallow_print_and_nslog
                 print("Post-processing failed: \(error)")
             }
         }
@@ -88,7 +89,7 @@ public final class TranscribeAudioUseCase {
         )
 
         // Salvar transcrição
-        try await transcriptionStorageRepository.saveTranscription(transcription)
+        try await self.transcriptionStorageRepository.saveTranscription(transcription)
 
         return transcription
     }

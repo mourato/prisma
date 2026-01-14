@@ -18,97 +18,97 @@ public actor RecordingActor {
     // MARK: - Acesso Thread-Safe ao Estado
 
     public var recordingState: Bool {
-        isRecording
+        self.isRecording
     }
 
     public var transcribingState: Bool {
-        isTranscribing
+        self.isTranscribing
     }
 
     public var currentMeetingState: Meeting? {
-        currentMeeting
+        self.currentMeeting
     }
 
     public var lastErrorState: Error? {
-        lastError
+        self.lastError
     }
 
     public var permissionsState: Bool {
-        hasRequiredPermissions
+        self.hasRequiredPermissions
     }
 
     public var micAudioURLState: URL? {
-        micAudioURL
+        self.micAudioURL
     }
 
     public var systemAudioURLState: URL? {
-        systemAudioURL
+        self.systemAudioURL
     }
 
     public var mergedAudioURLState: URL? {
-        mergedAudioURL
+        self.mergedAudioURL
     }
 
     // MARK: - Métodos de Modificação
 
     public func setRecording(_ value: Bool) {
-        isRecording = value
+        self.isRecording = value
         AppLogger.debug("Recording state updated to: \(value)", category: .recordingManager)
     }
 
     public func setTranscribing(_ value: Bool) {
-        isTranscribing = value
+        self.isTranscribing = value
         AppLogger.debug("Transcribing state updated to: \(value)", category: .recordingManager)
     }
 
     public func setCurrentMeeting(_ meeting: Meeting?) {
-        currentMeeting = meeting
+        self.currentMeeting = meeting
         AppLogger.debug("Current meeting updated: \(meeting?.app.displayName ?? "nil")", category: .recordingManager)
     }
 
     public func setLastError(_ error: Error?) {
-        lastError = error
+        self.lastError = error
         if let error {
             AppLogger.error("Last error updated", category: .recordingManager, error: error)
         }
     }
 
     public func setPermissions(_ hasPermissions: Bool) {
-        hasRequiredPermissions = hasPermissions
+        self.hasRequiredPermissions = hasPermissions
         AppLogger.debug("Permissions state updated to: \(hasPermissions)", category: .recordingManager)
     }
 
     public func setMicAudioURL(_ url: URL?) {
-        micAudioURL = url
+        self.micAudioURL = url
     }
 
     public func setSystemAudioURL(_ url: URL?) {
-        systemAudioURL = url
+        self.systemAudioURL = url
     }
 
     public func setMergedAudioURL(_ url: URL?) {
-        mergedAudioURL = url
+        self.mergedAudioURL = url
     }
 
     public func clearTemporaryURLs() {
-        micAudioURL = nil
-        systemAudioURL = nil
-        mergedAudioURL = nil
+        self.micAudioURL = nil
+        self.systemAudioURL = nil
+        self.mergedAudioURL = nil
     }
 
     // MARK: - Utilitários
 
     public func createMeeting(app: MeetingApp) -> Meeting {
         let meeting = Meeting(app: app)
-        currentMeeting = meeting
+        self.currentMeeting = meeting
         return meeting
     }
 
     public func updateMeetingEndTime() {
-        currentMeeting?.endTime = Date()
+        self.currentMeeting?.endTime = Date()
     }
 
     public func updateMeetingAudioPath(_ path: String) {
-        currentMeeting?.audioFilePath = path
+        self.currentMeeting?.audioFilePath = path
     }
 }

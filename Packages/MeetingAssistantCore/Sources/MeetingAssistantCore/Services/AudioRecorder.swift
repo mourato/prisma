@@ -147,7 +147,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         sampleRate: Double
     ) async throws {
         AppLogger.debug("Setting up Audio Engine...", category: .recordingManager)
-        let engine = injectedEngine ?? AVAudioEngine()
+        let engine = self.injectedEngine ?? AVAudioEngine()
         let mixer = AVAudioMixerNode()
         engine.attach(mixer)
 

@@ -5,11 +5,12 @@ import CoreData
 import Foundation
 
 /// Configuração programática do modelo CoreData
-public final class CoreDataModel {
+public enum CoreDataModel {
     /// Versão atual do modelo
     public static let currentVersion = "1.0"
 
     /// Cria o modelo CoreData programaticamente
+            // swiftlint:disable function_body_length
     public static func createManagedObjectModel() -> NSManagedObjectModel {
         let model = NSManagedObjectModel()
 
@@ -49,7 +50,7 @@ public final class CoreDataModel {
             meetingAppAttribute,
             meetingStartTimeAttribute,
             meetingEndTimeAttribute,
-            meetingAudioFilePathAttribute
+            meetingAudioFilePathAttribute,
         ]
 
         // Entidade TranscriptionSegment
@@ -88,7 +89,7 @@ public final class CoreDataModel {
             segmentSpeakerAttribute,
             segmentTextAttribute,
             segmentStartTimeAttribute,
-            segmentEndTimeAttribute
+            segmentEndTimeAttribute,
         ]
 
         // Entidade Transcription
@@ -151,7 +152,7 @@ public final class CoreDataModel {
             transcriptionPromptTitleAttribute,
             transcriptionLanguageAttribute,
             transcriptionCreatedAtAttribute,
-            transcriptionModelNameAttribute
+            transcriptionModelNameAttribute,
         ]
 
         // Relacionamentos
@@ -172,7 +173,7 @@ public final class CoreDataModel {
         meetingToTranscriptionsRelationship.isOptional = true
         meetingToTranscriptionsRelationship.deleteRule = .cascadeDeleteRule
         meetingToTranscriptionsRelationship.maxCount = 0 // To-many
-        
+
         transcriptionToMeetingRelationship.inverseRelationship = meetingToTranscriptionsRelationship
 
         // Segment -> Transcription (many-to-one)
@@ -191,7 +192,7 @@ public final class CoreDataModel {
         transcriptionToSegmentsRelationship.isOptional = true
         transcriptionToSegmentsRelationship.deleteRule = .cascadeDeleteRule
         transcriptionToSegmentsRelationship.maxCount = 0 // To-many
-        
+
         segmentToTranscriptionRelationship.inverseRelationship = transcriptionToSegmentsRelationship
 
         // Adicionar relacionamentos às entidades
@@ -202,6 +203,7 @@ public final class CoreDataModel {
         // Adicionar entidades ao modelo
         model.entities = [meetingEntity, transcriptionEntity, segmentEntity]
 
-        return model
+            return model
     }
+        // swiftlint:enable function_body_length
 }

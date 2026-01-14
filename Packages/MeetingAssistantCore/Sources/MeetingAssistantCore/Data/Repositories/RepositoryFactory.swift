@@ -29,7 +29,7 @@ public final class DefaultRepositoryFactory: RepositoryFactory {
     }
 
     public func makeMeetingRepository() -> MeetingRepository {
-        CoreDataMeetingRepository(stack: coreDataStack)
+        CoreDataMeetingRepository(stack: self.coreDataStack)
     }
 
     public func makeTranscriptionStorageRepository() -> TranscriptionStorageRepository {
@@ -45,7 +45,7 @@ public final class DefaultRepositoryFactory: RepositoryFactory {
 
     public func makeAudioFileRepository() -> AudioFileRepository {
         // Usar adaptador existente por enquanto
-        AudioFileRepositoryAdapter(storageService: storageService)
+        AudioFileRepositoryAdapter(storageService: self.storageService)
     }
 
     public func makeTranscriptionRepository() -> TranscriptionRepository {

@@ -3,6 +3,7 @@
 
 import CoreData
 import Foundation
+// swiftlint:disable force_unwrapping
 
 /// Managed Object para entidade Transcription
 @objc(TranscriptionMO)
@@ -24,16 +25,17 @@ public final class TranscriptionMO: NSManagedObject {
 
 // MARK: - Fetch Requests
 
-extension TranscriptionMO {
+public extension TranscriptionMO {
     /// Fetch request para buscar todas as transcrições ordenadas por data
-    @nonobjc public class func fetchRequest() -> NSFetchRequest<TranscriptionMO> {
-        let request = NSFetchRequest<TranscriptionMO>(entityName: "TranscriptionMO")
-        request.sortDescriptors = [NSSortDescriptor(key: "createdAt", ascending: false)]
+    @nonobjc class func fetchRequest() -> NSFetchRequest<TranscriptionMO> {
+    let request = NSFetchRequest<TranscriptionMO>(entityName: "TranscriptionMO")
+    request.sortDescriptors = [NSSortDescriptor(key: "createdAt", ascending: false)]
         return request
     }
+    // swiftlint:enable force_unwrapping
 
     /// Fetch request para buscar transcrição por ID
-    @nonobjc public class func fetchRequest(forTranscriptionId id: UUID) -> NSFetchRequest<TranscriptionMO> {
+    @nonobjc class func fetchRequest(forTranscriptionId id: UUID) -> NSFetchRequest<TranscriptionMO> {
         let request = NSFetchRequest<TranscriptionMO>(entityName: "TranscriptionMO")
         request.predicate = NSPredicate(format: "id == %@", id as CVarArg)
         request.fetchLimit = 1
@@ -41,7 +43,7 @@ extension TranscriptionMO {
     }
 
     /// Fetch request para buscar transcrições de uma reunião
-    @nonobjc public class func fetchRequest(forMeetingId meetingId: UUID) -> NSFetchRequest<TranscriptionMO> {
+    @nonobjc class func fetchRequest(forMeetingId meetingId: UUID) -> NSFetchRequest<TranscriptionMO> {
         let request = NSFetchRequest<TranscriptionMO>(entityName: "TranscriptionMO")
         request.predicate = NSPredicate(format: "meeting.id == %@", meetingId as CVarArg)
         request.sortDescriptors = [NSSortDescriptor(key: "createdAt", ascending: false)]

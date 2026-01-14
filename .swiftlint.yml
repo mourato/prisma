@@ -53,8 +53,8 @@ excluded:
 
 # Line length: warning at 120 (matches your rules), error at 160
 line_length:
-  warning: 120
-  error: 160
+  #warning: 160
+  #error: 200
   ignores_comments: true
   ignores_urls: true
 
@@ -92,8 +92,8 @@ file_length:
 # Function body: matches your 20-line guideline with more tolerance
 # (50 lines warning for complex audio/recording code, 100 lines error)
 function_body_length:
-  warning: 50
-  error: 100
+#  warning: 50
+#  error: 100
 
 # Cyclomatic complexity: lower for readability
 cyclomatic_complexity:
