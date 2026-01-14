@@ -10,7 +10,7 @@ public enum CoreDataModel {
     public static let currentVersion = "1.0"
 
     /// Cria o modelo CoreData programaticamente
-            // swiftlint:disable function_body_length
+    // swiftlint:disable function_body_length
     public static func createManagedObjectModel() -> NSManagedObjectModel {
         let model = NSManagedObjectModel()
 
@@ -203,7 +203,7 @@ public enum CoreDataModel {
         // Adicionar entidades ao modelo
         model.entities = [meetingEntity, transcriptionEntity, segmentEntity]
 
-            return model
+        return model
     }
-        // swiftlint:enable function_body_length
+    // swiftlint:enable function_body_length
 }

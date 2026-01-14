@@ -3,8 +3,8 @@ import os.log
 
 /// Centralized logger for the application using os.log
 // swiftlint:disable:next orphaned_doc_comment
-    // swiftlint:disable discouraged_optional_collection
-    public enum AppLogger {
+// swiftlint:disable discouraged_optional_collection
+public enum AppLogger {
     private static let subsystem = "com.meetingassistant.app"
 
     // MARK: - Public API
@@ -15,7 +15,7 @@ import os.log
         let formattedMessage = self.format(message, extra: extra)
         logger.debug("\(formattedMessage, privacy: .public)")
         // swiftlint:enable discouraged_optional_collection
-}
+    }
 
     /// Log an informational message (general events)
     public static func info(_ message: String, category: LogCategory, extra: [String: Any] = [:]) {

@@ -64,12 +64,12 @@ public final class HybridTranscriptionStorageRepository: TranscriptionStorageRep
             // Se for legado, não permitimos atualização direta no JSON para manter integridade.
             // Uma estratégia futura seria migrar para CoreData ao atualizar.
             throw NSError(
-    domain: "HybridTranscriptionStorageRepository",
-    code: -1,
-    userInfo: [
-        NSLocalizedDescriptionKey: "Updating legacy JSON transcriptions is not supported. Migrate to CoreData first."
-    ]
-)
+                domain: "HybridTranscriptionStorageRepository",
+                code: -1,
+                userInfo: [
+                    NSLocalizedDescriptionKey: "Updating legacy JSON transcriptions is not supported. Migrate to CoreData first.",
+                ]
+            )
         }
     }
 }

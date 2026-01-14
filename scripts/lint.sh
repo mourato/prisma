@@ -20,10 +20,10 @@ fi
 # Lint App and Packages sources
 SOURCES="App Packages/MeetingAssistantCore/Sources"
 
-swiftlint lint --config .swiftlint.yml ${SOURCES} 2>/dev/null
+swiftlint lint --config .swiftlint.yml ${SOURCES}
 
 # Get counts
-WARNINGS=$(swiftlint lint --config .swiftlint.yml ${SOURCES} 2>/dev/null | wc -l | tr -d ' ')
+WARNINGS=$(swiftlint lint --config .swiftlint.yml ${SOURCES} 2>/dev/null | grep -c "warning:" || echo "0")
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
