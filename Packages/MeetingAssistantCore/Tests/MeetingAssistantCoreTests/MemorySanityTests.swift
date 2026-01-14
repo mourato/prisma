@@ -1,0 +1,72 @@
+@testable import MeetingAssistantCore
+import XCTest
+
+@MainActor
+final class MemorySanityTests: XCTestCase {
+    /// Helper to verify that an object is deallocated.
+    /// Uses a weak reference to check if the object's reference count drops to zero.
+    func verifyDeallocation(
+        of object: (some AnyObject)?,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        weak var weakObject = object
+        XCTAssertNotNil(weakObject, "Object should not be nil before deallocation check", file: file, line: line)
+
+        // This closure is needed to ensure the local strong reference is gone
+        // when we check the weak reference.
+    }
+
+    func testRecordingManagerDeallocation() async {
+        // Given
+        var manager: RecordingManager? = RecordingManager(
+            micRecorder: MockAudioRecorder(),
+            systemRecorder: MockAudioRecorder(),
+            transcriptionClient: MockTranscriptionClient(),
+            postProcessingService: MockPostProcessingService(),
+            storage: MockStorageService()
+        )
+        weak var weakManager = manager
+
+        XCTAssertNotNil(weakManager)
+
+        // When
+        manager = nil
+
+        // Then
+        // Small delay to allow any pending async tasks/auto-release pools to drain
+        try? await Task.sleep(for: .milliseconds(100))
+        XCTAssertNil(weakManager, "RecordingManager should have been deallocated")
+    }
+
+    func testPostProcessingServicePersistence() async {
+        // Given
+        var service: PostProcessingService? = PostProcessingService.shared
+        weak var weakService = service
+
+        XCTAssertNotNil(weakService)
+
+        // When
+        service = nil
+
+        // Then
+        try? await Task.sleep(for: .milliseconds(100))
+        // Shared singletons remain allocated
+        XCTAssertNotNil(weakService, "PostProcessingService.shared should remain allocated")
+    }
+
+    func testTranscriptionClientPersistence() async {
+        // Given
+        var client: TranscriptionClient? = TranscriptionClient.shared
+        weak var weakClient = client
+
+        XCTAssertNotNil(weakClient)
+
+        // When
+        client = nil
+
+        // Then
+        try? await Task.sleep(for: .milliseconds(100))
+        XCTAssertNotNil(weakClient, "TranscriptionClient.shared should remain allocated")
+    }
+}

@@ -56,63 +56,11 @@ public final class AudioBufferQueue: @unchecked Sendable {
     /// - Returns: The next buffer, or nil if empty.
     public func dequeue() -> AVAudioPCMBuffer? {
         self.lock.withLock {
-            // #region agent log
-            let logPath = "/Users/usuario/Documents/Repos/my-meeting-assistant/.cursor/debug.log"
-            func writeLog(_ data: [String: Any]) {
-                if let json = try? JSONSerialization.data(withJSONObject: data),
-                   let jsonStr = String(data: json, encoding: .utf8)
-                {
-                    if let handle = FileHandle(forWritingAtPath: logPath) {
-                        handle.seekToEndOfFile()
-                        if let data = (jsonStr + "\n").data(using: .utf8) {
-                            handle.write(data)
-                        }
-                        try? handle.close()
-                    } else {
-                        try? (jsonStr + "\n").write(toFile: logPath, atomically: true, encoding: .utf8)
-                    }
-                }
-            }
-            // #endregion
-
-            guard !self.isEmpty else {
-                // #region agent log
-                writeLog([
-                    "sessionId": "debug-session",
-                    "runId": "run1",
-                    "hypothesisId": "D",
-                    "location": "AudioBufferQueue.swift:59",
-                    "message": "Queue empty",
-                    "data": [
-                        "count": self.count,
-                    ],
-                    "timestamp": Int64(Date().timeIntervalSince1970 * 1000),
-                ])
-                // #endregion
+            guard !self.isEmptyInternal else {
                 return nil
             }
 
             let buffer = self.bufferStorage[self.tail]
-
-            // #region agent log
-            writeLog([
-                "sessionId": "debug-session",
-                "runId": "run1",
-                "hypothesisId": "D",
-                "location": "AudioBufferQueue.swift:61",
-                "message": "Buffer dequeued",
-                "data": [
-                    "bufferIsNil": buffer == nil,
-                    "frameLength": buffer?.frameLength ?? 0,
-                    "formatChannelCount": buffer?.format.channelCount ?? 0,
-                    "formatSampleRate": buffer?.format.sampleRate ?? 0,
-                    "hasFloatChannelData": buffer?.floatChannelData != nil,
-                    "tail": self.tail,
-                    "count": self.count,
-                ],
-                "timestamp": Int64(Date().timeIntervalSince1970 * 1000),
-            ])
-            // #endregion
 
             // self.bufferStorage[self.tail] = nil // Avoid dealloc on audio thread
             self.tail = (self.tail + 1) % self.capacity
@@ -149,5 +97,10 @@ public final class AudioBufferQueue: @unchecked Sendable {
             self.count == 0
         }
     }
+
     // swiftlint:enable empty_count
+
+    private var isEmptyInternal: Bool {
+        self.isEmpty
+    }
 }

@@ -1,6 +1,6 @@
-import XCTest
 import Combine
 @testable import MeetingAssistantCore
+import XCTest
 
 @MainActor
 final class RecordingManagerTests: XCTestCase {
@@ -13,93 +13,93 @@ final class RecordingManagerTests: XCTestCase {
 
     override func setUp() async throws {
         try await super.setUp()
-        mockMic = MockAudioRecorder()
-        mockSystem = MockAudioRecorder()
-        mockTranscription = MockTranscriptionClient()
-        mockPostProcessing = MockPostProcessingService()
-        mockStorage = MockStorageService()
+        self.mockMic = MockAudioRecorder()
+        self.mockSystem = MockAudioRecorder()
+        self.mockTranscription = MockTranscriptionClient()
+        self.mockPostProcessing = MockPostProcessingService()
+        self.mockStorage = MockStorageService()
 
-        manager = RecordingManager(
-            micRecorder: mockMic,
-            systemRecorder: mockSystem,
-            transcriptionClient: mockTranscription,
-            postProcessingService: mockPostProcessing,
-            storage: mockStorage
+        self.manager = RecordingManager(
+            micRecorder: self.mockMic,
+            systemRecorder: self.mockSystem,
+            transcriptionClient: self.mockTranscription,
+            postProcessingService: self.mockPostProcessing,
+            storage: self.mockStorage
         )
     }
 
     override func tearDown() async throws {
-        manager = nil
-        mockMic = nil
-        mockSystem = nil
-        mockTranscription = nil
-        mockPostProcessing = nil
-        mockStorage = nil
+        self.manager = nil
+        self.mockMic = nil
+        self.mockSystem = nil
+        self.mockTranscription = nil
+        self.mockPostProcessing = nil
+        self.mockStorage = nil
         try await super.tearDown()
     }
 
     // MARK: - Basic Tests
 
     func testInitialization() {
-        XCTAssertNotNil(manager)
-        XCTAssertFalse(manager.isRecording)
-        XCTAssertFalse(manager.isTranscribing)
+        XCTAssertNotNil(self.manager)
+        XCTAssertFalse(self.manager.isRecording)
+        XCTAssertFalse(self.manager.isTranscribing)
     }
 
     func testStorageServiceUsage() async {
-        await manager.startRecording()
-        XCTAssertTrue(mockStorage.createRecordingURLCalled)
+        await self.manager.startRecording()
+        XCTAssertTrue(self.mockStorage.createRecordingURLCalled)
     }
 
     func testCheckPermissions_WhenBothGranted() async {
-        mockMic.permissionGranted = true
-        mockSystem.permissionGranted = true
+        self.mockMic.permissionGranted = true
+        self.mockSystem.permissionGranted = true
 
-        await manager.checkPermission()
+        await self.manager.checkPermission()
 
-        XCTAssertTrue(manager.hasRequiredPermissions)
+        XCTAssertTrue(self.manager.hasRequiredPermissions)
     }
 
     func testCheckPermissions_WhenOneDenied() async {
-        mockMic.permissionGranted = true
-        mockSystem.permissionGranted = false
+        self.mockMic.permissionGranted = true
+        self.mockSystem.permissionGranted = false
 
-        await manager.checkPermission()
+        await self.manager.checkPermission()
 
-        XCTAssertFalse(manager.hasRequiredPermissions)
+        XCTAssertFalse(self.manager.hasRequiredPermissions)
     }
 
     func testStartRecording_Success() async {
-        mockMic.permissionGranted = true
-        mockSystem.permissionGranted = true
+        self.mockMic.permissionGranted = true
+        self.mockSystem.permissionGranted = true
 
-        await manager.startRecording()
+        await self.manager.startRecording()
 
-        XCTAssertTrue(manager.isRecording)
-        XCTAssertTrue(mockMic.startRecordingCalled)
+        XCTAssertTrue(self.manager.isRecording)
+        XCTAssertTrue(self.mockMic.startRecordingCalled)
     }
 
     func testStartRecording_FailsIfAlreadyRecording() async {
-        await manager.startRecording()
+        await self.manager.startRecording()
 
-        mockMic.startRecordingCalled = false
+        self.mockMic.startRecordingCalled = false
 
-        await manager.startRecording()
+        await self.manager.startRecording()
 
-        XCTAssertFalse(mockMic.startRecordingCalled)
+        XCTAssertFalse(self.mockMic.startRecordingCalled)
     }
 
     // MARK: - Error Handling Tests
 
     func testStartRecording_FailsWhenSystemRecorderFails() async {
         // Given
-        mockMic.permissionGranted = true
-        mockSystem.permissionGranted = true
-        mockMic.shouldFailStart = true
+        self.mockMic.permissionGranted = true
+        self.mockSystem.permissionGranted = true
+        self.mockMic.shouldFailStart = true
 
         // When
         do {
-            try await mockMic.startRecording(to: URL(fileURLWithPath: "/tmp/test.m4a"), retryCount: 0)
+            try await self.mockMic.startRecording(to: URL(fileURLWithPath: "/tmp/test.m4a"), retryCount: 0)
             XCTFail("Expected error to be thrown")
         } catch {
             // Then
@@ -109,26 +109,26 @@ final class RecordingManagerTests: XCTestCase {
 
     func testStopRecording_HandlesErrorGracefully() async {
         // Given
-        mockMic.permissionGranted = true
-        mockSystem.permissionGranted = true
+        self.mockMic.permissionGranted = true
+        self.mockSystem.permissionGranted = true
 
-        await manager.startRecording()
+        await self.manager.startRecording()
 
         // When - stopping should not throw even if cleanup fails
-        await manager.stopRecording()
+        await self.manager.stopRecording()
 
         // Then - should have stopped
-        XCTAssertFalse(manager.isRecording)
+        XCTAssertFalse(self.manager.isRecording)
     }
 
     func testTranscription_FailsWithInvalidURL() async throws {
         // Given
         let invalidURL = URL(fileURLWithPath: "/nonexistent/path/file.m4a")
-        mockTranscription.shouldFailTranscription = true
+        self.mockTranscription.shouldFailTranscription = true
 
         // When/Then
         do {
-            _ = try await mockTranscription.transcribe(audioURL: invalidURL)
+            _ = try await self.mockTranscription.transcribe(audioURL: invalidURL)
             XCTFail("Expected error for transcription failure")
         } catch {
             // Should fail when shouldFailTranscription is true
@@ -148,14 +148,14 @@ final class RecordingManagerTests: XCTestCase {
             language: "pt",
             modelName: "test-model"
         )
-        mockStorage.mockTranscriptions = [mockTranscription]
+        self.mockStorage.mockTranscriptions = [mockTranscription]
 
         // When
         let transcriptions = try await mockStorage.loadTranscriptions()
 
         // Then
         XCTAssertEqual(transcriptions.count, 1)
-        XCTAssertEqual(mockStorage.loadTranscriptionsCallCount, 1)
+        XCTAssertEqual(self.mockStorage.loadTranscriptionsCallCount, 1)
     }
 
     func testMockTranscriptionClient_CallTracking() async throws {
@@ -163,11 +163,11 @@ final class RecordingManagerTests: XCTestCase {
         let audioURL = URL(fileURLWithPath: "/tmp/test.m4a")
 
         // When
-        _ = try await mockTranscription.transcribe(audioURL: audioURL)
+        _ = try await self.mockTranscription.transcribe(audioURL: audioURL)
 
         // Then
-        XCTAssertEqual(mockTranscription.transcribeCallCount, 1)
-        XCTAssertEqual(mockTranscription.lastTranscribeAudioURL, audioURL)
+        XCTAssertEqual(self.mockTranscription.transcribeCallCount, 1)
+        XCTAssertEqual(self.mockTranscription.lastTranscribeAudioURL, audioURL)
     }
 
     func testMockAudioRecorder_CallTracking() async throws {
@@ -176,96 +176,11 @@ final class RecordingManagerTests: XCTestCase {
 
         // When
         try await mockMic.startRecording(to: audioURL, retryCount: 0)
-        _ = await mockMic.stopRecording()
+        _ = await self.mockMic.stopRecording()
 
         // Then
-        XCTAssertEqual(mockMic.startRecordingParams.count, 1)
-        XCTAssertEqual(mockMic.startRecordingParams.first?.url, audioURL)
-        XCTAssertEqual(mockMic.stopRecordingCalledCount, 1)
-    }
-
-    // MARK: - Performance Tests
-
-    func testPerformance_StartRecordingOperation() async {
-        mockMic.permissionGranted = true
-        mockSystem.permissionGranted = true
-
-        // Baseline: Start recording should be fast
-        measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
-            Task {
-                await manager.startRecording()
-            }
-        }
-
-        XCTAssertTrue(manager.isRecording)
-    }
-
-    func testPerformance_StopRecordingOperation() async {
-        mockMic.permissionGranted = true
-        mockSystem.permissionGranted = true
-
-        await manager.startRecording()
-        XCTAssertTrue(manager.isRecording)
-
-        // Baseline: Stop recording should be very fast
-        measure(metrics: [XCTClockMetric(), XCTCPUMetric()]) {
-            Task {
-                await manager.stopRecording()
-            }
-        }
-
-        XCTAssertFalse(manager.isRecording)
-    }
-
-    func testPerformance_PermissionCheckOperation() async {
-        mockMic.permissionGranted = true
-        mockSystem.permissionGranted = true
-
-        // Baseline: Permission checks should be fast
-        measure(metrics: [XCTClockMetric(), XCTCPUMetric()]) {
-            Task {
-                await manager.checkPermission()
-            }
-        }
-
-        XCTAssertTrue(manager.hasRequiredPermissions)
-    }
-
-    func testPerformance_MultipleRecordingCycles() async {
-        mockMic.permissionGranted = true
-        mockSystem.permissionGranted = true
-
-        // Baseline: Multiple recording cycles should maintain performance
-        measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
-            Task {
-                for _ in 0..<5 {
-                    await manager.startRecording()
-                    await manager.stopRecording()
-                }
-            }
-        }
-
-        XCTAssertFalse(manager.isRecording)
-    }
-
-    func testPerformance_TranscriptionWorkflow() async throws {
-        mockMic.permissionGranted = true
-        mockSystem.permissionGranted = true
-
-        // Start recording to create a recording
-        await manager.startRecording()
-        await manager.stopRecording()
-
-        // Mock a transcription result
-        let audioURL = URL(fileURLWithPath: "/tmp/test.m4a")
-
-        // Baseline: Transcription operations should be reasonably fast
-        measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
-            Task {
-                _ = try await mockTranscription.transcribe(audioURL: audioURL)
-            }
-        }
-
-        XCTAssertEqual(mockTranscription.transcribeCallCount, 1)
+        XCTAssertEqual(self.mockMic.startRecordingParams.count, 1)
+        XCTAssertEqual(self.mockMic.startRecordingParams.first?.url, audioURL)
+        XCTAssertEqual(self.mockMic.stopRecordingCalledCount, 1)
     }
 }

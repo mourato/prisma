@@ -147,6 +147,10 @@ public class TranscriptionClient: ObservableObject, TranscriptionService {
             throw error
         }
     }
+
+    deinit {
+        AppLogger.debug("TranscriptionClient deinitialized", category: .transcriptionEngine)
+    }
 }
 
 // MARK: - Errors

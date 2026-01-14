@@ -111,4 +111,14 @@ public actor RecordingActor {
     public func updateMeetingAudioPath(_ path: String) {
         self.currentMeeting?.audioFilePath = path
     }
+
+    public func reset() {
+        self.isRecording = false
+        self.isTranscribing = false
+        self.currentMeeting = nil
+        self.lastError = nil
+        self.micAudioURL = nil
+        self.systemAudioURL = nil
+        self.mergedAudioURL = nil
+    }
 }

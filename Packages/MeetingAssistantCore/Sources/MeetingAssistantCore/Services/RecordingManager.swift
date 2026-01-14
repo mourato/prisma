@@ -625,6 +625,19 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     func refreshServiceStatus() async {
         await self.checkServiceStatus()
     }
+
+    /// Resets the manager and actor state to idle.
+    public func reset() async {
+        await self.recordingActor.reset()
+        self.isRecording = false
+        self.isTranscribing = false
+        self.currentMeeting = nil
+        self.lastError = nil
+    }
+
+    deinit {
+        AppLogger.debug("RecordingManager deinitialized", category: .recordingManager)
+    }
 }
 
 // MARK: - Errors
