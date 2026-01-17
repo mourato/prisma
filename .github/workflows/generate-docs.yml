@@ -1,0 +1,27 @@
+name: Generate Documentation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Packages/MeetingAssistantCore/Sources/**/*.swift'
+      - '**/*.docc/**'
+  workflow_dispatch:
+
+jobs:
+  docs:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.app
+        
+      - name: Build Documentation
+        run: make docs
+        
+      - name: Upload Documentation
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-documentation
+          path: docs/api
