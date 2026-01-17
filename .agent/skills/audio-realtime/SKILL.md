@@ -1,10 +1,15 @@
+---
+name: audio-realtime
+description: Use when working with audio recording, AVAudioEngine, AVAudioSourceNode, SystemAudioRecorder, AudioBufferQueue, AudioRecorder, AudioRecordingWorker, or real-time audio processing. Covers critical performance constraints AND system architecture patterns.
+---
+
 # Real-Time Audio
 
 > **Conditional Skill** - Triggered when working with audio code
 
 ## Overview
 
-This skill addresses critical policies for real-time audio processing, where memory allocations and locks are especially sensitive.
+This skill addresses critical policies for real-time audio processing AND architectural patterns for the audio subsystem, where memory allocations and locks are especially sensitive.
 
 ## When to Use
 
@@ -15,8 +20,11 @@ Activate this skill when detecting:
 - `AudioRecorder`
 - `SystemAudioRecorder`
 - `AudioBufferQueue`
+- `AudioRecordingWorker`
 
-## Key Concepts
+---
+
+## Critical Constraints (Real-Time Audio)
 
 ### Zero Allocation Policy
 
@@ -101,24 +109,144 @@ final class AtomicCounter {
 }
 ```
 
-## Common Patterns
+### Sendable Closure Protocol
 
-### Audio Buffer Queue
+**CRITICAL**: Closures passed between threads (especially for callbacks) MUST be marked `@Sendable`.
 
 ```swift
-final class AudioBufferQueue {
-    private let queue = DispatchQueue(label: "com.meeting.audio.buffer", qos: .userInitiated)
-    private var buffers: [Data] = []
+// CORRECT
+typealias AudioCallback = @Sendable (AVAudioPCMBuffer) -> Void
 
-    // DON'T do this - allocates in callback
-    func processAudio(_ data: UnsafePointer<Float>, frameCount: UInt32) {
-        queue.async {
-            let copy = Data(bytes: data, count: Int(frameCount) * MemoryLayout<Float>.size)
-            self.buffers.append(copy)
-        }
+class SystemAudioRecorder {
+    var onAudioBuffer: AudioCallback?
+}
+```
+
+**Why**: Ensures compiler verification of thread safety and prevents capturing mutable non-thread-safe state.
+
+---
+
+## Audio Subsystem Architecture
+
+The audio recording system is designed for **high performance and low latency**, capturing both Microphone and System Audio (ScreenCaptureKit).
+
+### Component Responsibilities
+
+#### 1. SystemAudioRecorder (Producer)
+- **Role**: Captures system audio via `ScreenCaptureKit`.
+- **Concurrency**: Operates on dedicated background queue (`userInitiated`).
+- **Optimization**: Uses `nonisolated` callback property (`onAudioBuffer`) to push buffers directly to consumer without hopping to Main Actor.
+- **Safety**: `CallbackStorage` protected by `OSAllocatedUnfairLock` for thread-safe callback updates.
+
+```swift
+final class SystemAudioRecorder {
+    private let queue = DispatchQueue(label: "com.meeting.system-audio", qos: .userInitiated)
+    private let callbackLock = OSAllocatedUnfairLock<AudioCallback?>(initialState: nil)
+    
+    var onAudioBuffer: AudioCallback? {
+        get { callbackLock.withLock { $0 } }
+        set { callbackLock.withLock { $0 = newValue } }
     }
 }
 ```
+
+#### 2. AudioBufferQueue (Bridge)
+- **Role**: Thread-safe FIFO bridge between Push-based producer (SCK) and Pull-based consumer (AVAudioEngine).
+- **Structure**: Fixed-size Circular Buffer (Ring Buffer).
+- **Concurrency**: Uses `OSAllocatedUnfairLock` for extremely low overhead blocking (nanoseconds).
+- **Allocation**: Pre-allocates storage to ensure **Zero Allocations** during steady-state recording loop.
+
+#### 3. AudioRecorder (Consumer/Mixer)
+- **Role**: Manages the `AVAudioEngine` graph.
+- **Components**:
+    - `AVAudioSourceNode`: Pulls data from `AudioBufferQueue`.
+    - `AVAudioMixerNode`: Merges Mic and System audio.
+- **Optimization**: Uses `memcpy` (via `UnsafeMutableBufferPointer`) for audio buffer copying instead of naive loops, reducing CPU usage during high-frequency render callback (Hot Path).
+
+```swift
+let sourceNode = AVAudioSourceNode { [weak queue] _, _, frameCount, audioBufferList in
+    guard let queue = queue else { return noErr }
+    
+    let ablPointer = UnsafeMutableAudioBufferListPointer(audioBufferList)
+    guard let buffer = ablPointer.first else { return noErr }
+    
+    // Zero-copy pull from ring buffer
+    let samples = queue.dequeue(count: Int(frameCount))
+    let bytesToCopy = min(samples.count, Int(buffer.mDataByteSize)) * MemoryLayout<Float>.size
+    memcpy(buffer.mData, samples.baseAddress, bytesToCopy)
+    
+    return noErr
+}
+```
+
+#### 4. AudioRecordingWorker (Writer)
+- **Role**: Handles file writing and metering.
+- **Pattern**: **Worker Pattern** (Extracted from `AudioRecorder`).
+- **Concurrency**: Implemented as Swift **Actor** for automatic thread safety and state isolation.
+- **Optimization**: Processes buffers non-isolatedly when possible to minimize actor contention.
+
+```swift
+actor AudioRecordingWorker {
+    private var fileURL: URL?
+    private var audioFile: AVAudioFile?
+    
+    func write(buffer: AVAudioPCMBuffer) async throws {
+        guard let audioFile = audioFile else { return }
+        try audioFile.write(from: buffer)
+    }
+}
+```
+
+### Memory & Performance Policy
+
+- **Cycle Prevention**: All coordinators and long-lived services must use `[weak self]` in closures.
+- **Zero Allocation**: The audio hot path (Producer to Consumer) must favor pre-allocated buffers and avoid heap allocations during active recording.
+- **Locking**: `NSLock` is forbidden in the real-time audio thread (`AudioSourceNode`). `OSAllocatedUnfairLock` is the only permitted synchronization primitive there.
+- **Main Actor Isolation**: The audio hot path (callbacks) MUST NOT touch the Main Actor.
+
+### Data Flow Diagram
+
+```
+┌──────────────────────┐
+│ SystemAudioRecorder  │ (ScreenCaptureKit)
+│    (Producer)        │
+└──────────┬───────────┘
+           │ Push (@Sendable callback)
+           ▼
+┌──────────────────────┐
+│  AudioBufferQueue    │ (Ring Buffer, OSAllocatedUnfairLock)
+│     (Bridge)         │
+└──────────┬───────────┘
+           │ Pull (AVAudioSourceNode)
+           ▼
+┌──────────────────────┐
+│   AudioRecorder      │ (AVAudioEngine + Mixer)
+│   (Consumer/Mixer)   │
+└──────────┬───────────┘
+           │ Write
+           ▼
+┌──────────────────────┐
+│ AudioRecordingWorker │ (Actor, AVAudioFile)
+│     (Writer)         │
+└──────────────────────┘
+```
+
+---
+
+## Common Patterns
+
+### Efficient Copying
+
+```swift
+// Use memcpy via UnsafeMutableBufferPointer
+let destBuffer = UnsafeMutableBufferPointer<Float>(start: destPtr, count: frameCount)
+let sourceBuffer = UnsafeBufferPointer<Float>(start: sourcePtr, count: frameCount)
+
+let copiesToWrite = min(sourceBuffer.count, destBuffer.count)
+destBuffer.baseAddress?.update(from: sourceBuffer.baseAddress!, count: copiesToWrite)
+```
+
+---
 
 ## Common Pitfalls
 
@@ -126,6 +254,9 @@ final class AudioBufferQueue {
 2. **Temporary arrays** - `[Float](repeating:)` allocates
 3. **Error creation** - `throw MyError()` may allocate
 4. **Complex getters** - Avoid computed properties in callbacks
+5. **Forgot `@Sendable`** - Callbacks between threads must be `@Sendable`
+
+---
 
 ## References
 
