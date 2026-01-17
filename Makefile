@@ -5,7 +5,7 @@
 # with CI/CD pipelines and headless environments.
 # =============================================================================
 
-.PHONY: help build build-debug build-release test test-verbose lint lint-fix clean run run-release dmg setup xcodegen
+.PHONY: help build build-debug build-release test test-verbose lint lint-fix clean run run-release dmg setup xcodegen docs docs-preview docs-clean
 
 # Default target
 help:
@@ -49,6 +49,11 @@ help:
 	@echo "CI/CD Commands:"
 	@echo "  make ci-build       - Full CI build (lint + test + build-release)"
 	@echo "  make ci-test        - CI test run (no user interaction)"
+	@echo ""
+	@echo "Documentation:"
+	@echo "  make docs           - Build DocC documentation"
+	@echo "  make docs-preview   - Preview documentation locally"
+	@echo "  make docs-clean     - Clean documentation artifacts"
 
 # Configuration
 APP_NAME = MeetingAssistant
@@ -198,3 +203,22 @@ ci-build: lint test build-release
 
 ci-test: test
 	@echo -e "$(GREEN)✓ CI tests completed$(NC)"
+# Documentation
+docs:
+	@echo -e "$(BLUE)Building DocC documentation...$(NC)"
+	@xcodebuild docbuild \
+		-project "$(XCODEPROJ)" \
+		-scheme MeetingAssistantCore \
+		-destination 'platform=macOS' \
+		-derivedDataPath "$(DERIVED_DATA)" \
+		OTHER_DOCC_FLAGS="--transform-for-static-hosting --output-path $(PROJECT_DIR)/docs/api"
+	@echo -e "$(GREEN)✓ Documentation built at docs/api$(NC)"
+
+docs-preview:
+	@echo -e "$(BLUE)Previewing documentation...$(NC)"
+	@cd Packages/MeetingAssistantCore && swift package --disable-sandbox preview-documentation --target MeetingAssistantCore
+
+docs-clean:
+	@echo -e "$(YELLOW)Cleaning documentation...$(NC)"
+	@rm -rf "$(PROJECT_DIR)/docs/api"
+	@echo -e "$(GREEN)✓ Documentation cleaned$(NC)"
