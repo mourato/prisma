@@ -163,7 +163,7 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
 }
 
 /// Response from transcription API.
-public struct TranscriptionResponse: Codable {
+public struct TranscriptionResponse: Codable, Sendable {
     public let text: String
     public let language: String
     public let durationSeconds: Double
