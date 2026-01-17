@@ -48,6 +48,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var eventMonitor: Any?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Initialize Monitoring Services
+        CrashReporter.shared.setup()
+        PerformanceMonitor.shared.startMonitoring()
+
         self.setupMenuBar()
         self.setupContextMenu()
         self.setupEventMonitor()

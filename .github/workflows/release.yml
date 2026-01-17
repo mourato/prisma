@@ -1,0 +1,41 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build & Release
+    runs-on: macos-14
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Select Xcode 16
+        run: sudo xcode-select -s /Applications/Xcode_16.app
+        
+      - name: Install Dependencies
+        run: brew install swiftlint swiftformat
+        
+      - name: Build Release App
+        run: ./scripts/build-release.sh --ci
+        
+      - name: Create DMG
+        run: ./scripts/create-dmg.sh --ci
+        
+      - name: Upload DMG Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MeetingAssistant-DMG
+          path: dist/*.dmg
+          
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: dist/*.dmg
+          draft: true
+          prerelease: false
