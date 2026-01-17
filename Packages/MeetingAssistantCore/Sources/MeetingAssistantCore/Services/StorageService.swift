@@ -86,7 +86,7 @@ public final class FileSystemStorageService: StorageService {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
         let timestamp = formatter.string(from: meeting.startTime)
-        let appName = meeting.app.rawValue.replacingOccurrences(of: " ", with: "_")
+        let appName = InputSanitizer.sanitizeFilename(meeting.app.rawValue)
 
         var filename = "\(appName)_\(timestamp)"
 
@@ -208,7 +208,9 @@ public final class FileSystemStorageService: StorageService {
     /// Validates that a path is safe and within the app container.
     private func validatePath(_ path: String) throws -> URL {
         // 1. Check for obvious traversal patterns
-        guard !path.contains("..") else {
+        do {
+            try InputSanitizer.validatePathComponent(path)
+        } catch {
             AppLogger.warning("Path traversal attempt blocked", category: .databaseManager, extra: ["path": path])
             throw PathValidationError.pathTraversalDetected(path)
         }
