@@ -1,0 +1,1 @@
+await recordingManager.stopRecording()
