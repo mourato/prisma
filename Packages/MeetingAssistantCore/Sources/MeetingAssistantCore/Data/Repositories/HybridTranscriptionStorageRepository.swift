@@ -46,6 +46,13 @@ public final class HybridTranscriptionStorageRepository: TranscriptionStorageRep
         return coreDataResults + legacyResults
     }
 
+    public func fetchAllMetadata() async throws -> [DomainTranscriptionMetadata] {
+        let coreDataResults = try await coreDataRepo.fetchAllMetadata()
+        let legacyResults = try await legacyRepo.fetchAllMetadata()
+
+        return coreDataResults + legacyResults
+    }
+
     public func deleteTranscription(by id: UUID) async throws {
         // Tentar deletar do CoreData
         do {

@@ -23,7 +23,7 @@ class MockAudioRecorder: AudioRecordingService {
     var stopRecordingCalledCount = 0
 
     func startRecording(to outputURL: URL, retryCount: Int) async throws {
-        startRecordingParams.append((outputURL, retryCount))
+        self.startRecordingParams.append((outputURL, retryCount))
 
         if self.shouldFailStart {
             throw NSError(domain: "MockRecorder", code: 1, userInfo: [NSLocalizedDescriptionKey: "Mock failure"])
@@ -34,7 +34,7 @@ class MockAudioRecorder: AudioRecordingService {
     }
 
     func stopRecording() async -> URL? {
-        stopRecordingCalledCount += 1
+        self.stopRecordingCalledCount += 1
         self.stopRecordingCalled = true
         self.isRecording = false
         return self.currentRecordingURL
@@ -72,13 +72,13 @@ class MockTranscriptionClient: TranscriptionService {
     var lastTranscribeAudioURL: URL?
 
     func healthCheck() async throws -> Bool {
-        healthCheckCallCount += 1
+        self.healthCheckCallCount += 1
         if self.shouldFailHealthCheck { return false }
         return true
     }
 
     func fetchServiceStatus() async throws -> ServiceStatusResponse {
-        fetchServiceStatusCallCount += 1
+        self.fetchServiceStatusCallCount += 1
         return ServiceStatusResponse(
             status: "ready",
             modelState: "loaded",
@@ -93,8 +93,8 @@ class MockTranscriptionClient: TranscriptionService {
     }
 
     func transcribe(audioURL: URL) async throws -> TranscriptionResponse {
-        transcribeCallCount += 1
-        lastTranscribeAudioURL = audioURL
+        self.transcribeCallCount += 1
+        self.lastTranscribeAudioURL = audioURL
 
         if self.shouldFailTranscription {
             throw NSError(domain: "MockTranscription", code: 2, userInfo: [NSLocalizedDescriptionKey: "Transcription failed"])
@@ -123,8 +123,8 @@ class MockPostProcessingService: PostProcessingServiceProtocol {
     var lastProcessText: String?
 
     func processTranscription(_ text: String, with prompt: PostProcessingPrompt) async throws -> String {
-        processTranscriptionCallCount += 1
-        lastProcessText = text
+        self.processTranscriptionCallCount += 1
+        self.lastProcessText = text
 
         if self.shouldFail {
             throw PostProcessingError.apiError("Mock failure")
@@ -159,7 +159,7 @@ class MockStorageService: StorageService, @unchecked Sendable {
     var mockTranscriptions: [Transcription] = []
 
     func createRecordingURL(for meeting: Meeting, type: RecordingType) -> URL {
-        createRecordingURLParams.append((meeting, type))
+        self.createRecordingURLParams.append((meeting, type))
         self.createRecordingURLCalled = true
         return self.recordingsDirectory.appendingPathComponent("mock_\(type.rawValue).wav")
     }
@@ -173,8 +173,29 @@ class MockStorageService: StorageService, @unchecked Sendable {
     }
 
     func loadTranscriptions() async throws -> [Transcription] {
-        loadTranscriptionsCallCount += 1
-        return mockTranscriptions
+        self.loadTranscriptionsCallCount += 1
+        return self.mockTranscriptions
+    }
+
+    func loadAllMetadata() async throws -> [TranscriptionMetadata] {
+        self.mockTranscriptions.map { transcription in
+            TranscriptionMetadata(
+                id: transcription.id,
+                meetingId: transcription.meeting.id,
+                appName: transcription.meeting.appName,
+                appRawValue: transcription.meeting.app.rawValue,
+                startTime: transcription.meeting.startTime,
+                createdAt: transcription.createdAt,
+                previewText: transcription.preview,
+                language: transcription.language,
+                isPostProcessed: transcription.isPostProcessed,
+                duration: transcription.meeting.duration
+            )
+        }
+    }
+
+    func loadTranscription(by id: UUID) async throws -> Transcription? {
+        self.mockTranscriptions.first(where: { $0.id == id })
     }
 }
 
@@ -191,30 +212,30 @@ class MockNotificationService: NotificationServiceProtocol {
     var sentNotifications: [(title: String, body: String)] = []
 
     func requestAuthorization() {
-        requestAuthorizationCalled = true
+        self.requestAuthorizationCalled = true
     }
 
     func showRecordingStarted() {
-        showRecordingStartedCalled = true
-        pendingNotifications.append("recordingStarted")
+        self.showRecordingStartedCalled = true
+        self.pendingNotifications.append("recordingStarted")
     }
 
     func showRecordingStopped() {
-        showRecordingStoppedCalled = true
-        pendingNotifications.append("recordingStopped")
+        self.showRecordingStoppedCalled = true
+        self.pendingNotifications.append("recordingStopped")
     }
 
     func showTranscriptionCompleted() {
-        showTranscriptionCompletedCalled = true
-        pendingNotifications.append("transcriptionCompleted")
+        self.showTranscriptionCompletedCalled = true
+        self.pendingNotifications.append("transcriptionCompleted")
     }
 
     func showTranscriptionFailed() {
-        showTranscriptionFailedCalled = true
-        pendingNotifications.append("transcriptionFailed")
+        self.showTranscriptionFailedCalled = true
+        self.pendingNotifications.append("transcriptionFailed")
     }
 
     func sendNotification(title: String, body: String) {
-        sentNotifications.append((title, body))
+        self.sentNotifications.append((title, body))
     }
 }

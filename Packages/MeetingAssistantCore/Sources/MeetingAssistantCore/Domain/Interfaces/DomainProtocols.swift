@@ -97,8 +97,11 @@ public protocol TranscriptionStorageRepository: Sendable {
     /// Lista transcrições para reunião
     func fetchTranscriptions(for meetingId: UUID) async throws -> [TranscriptionEntity]
 
-    /// Lista todas as transcrições
+    /// Lista todas as transcrições (carregamento completo)
     func fetchAllTranscriptions() async throws -> [TranscriptionEntity]
+
+    /// Lista metadados de todas as transcrições (carregamento leve)
+    func fetchAllMetadata() async throws -> [DomainTranscriptionMetadata]
 
     /// Remove transcrição
     func deleteTranscription(by id: UUID) async throws
@@ -207,5 +210,43 @@ public struct DomainTranscriptionSegment: Identifiable, Codable, Hashable, Senda
         self.text = text
         self.startTime = startTime
         self.endTime = endTime
+    }
+}
+
+/// Metadados leve de uma transcrição para listagem eficiente
+public struct DomainTranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
+    public let id: UUID
+    public let meetingId: UUID
+    public let appName: String
+    public let appRawValue: String
+    public let startTime: Date
+    public let createdAt: Date
+    public let previewText: String
+    public let language: String
+    public let isPostProcessed: Bool
+    public let duration: Double
+
+    public init(
+        id: UUID,
+        meetingId: UUID,
+        appName: String,
+        appRawValue: String,
+        startTime: Date,
+        createdAt: Date,
+        previewText: String,
+        language: String,
+        isPostProcessed: Bool,
+        duration: Double
+    ) {
+        self.id = id
+        self.meetingId = meetingId
+        self.appName = appName
+        self.appRawValue = appRawValue
+        self.startTime = startTime
+        self.createdAt = createdAt
+        self.previewText = previewText
+        self.language = language
+        self.isPostProcessed = isPostProcessed
+        self.duration = duration
     }
 }

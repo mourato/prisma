@@ -26,6 +26,12 @@ public protocol StorageService: Sendable {
 
     /// Load all transcriptions from storage.
     func loadTranscriptions() async throws -> [Transcription]
+
+    /// Load lightweight metadata for all transcriptions.
+    func loadAllMetadata() async throws -> [TranscriptionMetadata]
+
+    /// Load a specific transcription by its ID.
+    func loadTranscription(by id: UUID) async throws -> Transcription?
 }
 
 // MARK: - Implementation
@@ -170,6 +176,69 @@ public final class FileSystemStorageService: StorageService {
             AppLogger.info("Loaded transcriptions", category: .databaseManager, extra: ["count": transcriptions.count])
             return transcriptions
         }.value
+    }
+
+    public func loadAllMetadata() async throws -> [TranscriptionMetadata] {
+        let transcriptsDir = self.transcriptsDirectory
+        return try await Task.detached(priority: .userInitiated) {
+            let fileManager = FileManager.default
+            let contents: [URL]
+            do {
+                contents = try fileManager.contentsOfDirectory(
+                    at: transcriptsDir,
+                    includingPropertiesForKeys: [.contentModificationDateKey],
+                    options: .skipsHiddenFiles
+                )
+            } catch {
+                return []
+            }
+
+            let jsonFiles = contents.filter { $0.pathExtension == "json" }
+            var metadataList: [TranscriptionMetadata] = []
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+
+            for file in jsonFiles {
+                if let data = try? Data(contentsOf: file),
+                   let meta = try? decoder.decode(MetadataDecoder.self, from: data)
+                {
+                    metadataList.append(TranscriptionMetadata(
+                        id: meta.id,
+                        meetingId: meta.meeting.id,
+                        appName: meta.meeting.app.rawValue,
+                        appRawValue: meta.meeting.app.rawValue,
+                        startTime: meta.meeting.startTime,
+                        createdAt: meta.createdAt,
+                        previewText: String(meta.text.prefix(100)),
+                        language: meta.language,
+                        isPostProcessed: meta.processedContent != nil,
+                        duration: meta.meeting.duration
+                    ))
+                }
+            }
+
+            metadataList.sort { $0.createdAt > $1.createdAt }
+            return metadataList
+        }.value
+    }
+
+    public func loadTranscription(by id: UUID) async throws -> Transcription? {
+        let url = self.transcriptsDirectory.appendingPathComponent("\(id.uuidString).json")
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+
+        return try await Task.detached(priority: .userInitiated) {
+            FileSystemStorageService.decodeTranscriptionSync(from: url, using: decoder)
+        }.value
+    }
+
+    private struct MetadataDecoder: Codable {
+        let id: UUID
+        let meeting: Meeting
+        let text: String
+        let createdAt: Date
+        let language: String
+        let processedContent: String?
     }
 
     private static func decodeTranscriptionSync(from file: URL, using decoder: JSONDecoder) -> Transcription? {
