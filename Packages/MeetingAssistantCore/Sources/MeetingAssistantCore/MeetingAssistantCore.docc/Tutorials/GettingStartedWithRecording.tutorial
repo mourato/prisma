@@ -1,0 +1,43 @@
+@Tutorial(time: 15) {
+    @Intro(title: "Getting Started with Recording") {
+        This tutorial walks you through setting up a basic audio recording session.
+    }
+    
+    @Section(title: "Initialize the Recording Manager") {
+        @Steps {
+            @Step {
+                Access the shared `RecordingManager` instance.
+                
+                @Code(name: "Initialize.swift", file: "getting-started-1.swift")
+            }
+            
+            @Step {
+                Request necessary permissions for Microphone and Screen Capture.
+                
+                @Code(name: "Permissions.swift", file: "getting-started-2.swift")
+            }
+        }
+     section}
+    
+    @Section(title: "Control the Recording Session") {
+        @Steps {
+            @Step {
+                Start the recording session.
+                
+                @Code(name: "StartRecording.swift", file: "getting-started-3.swift")
+            }
+            
+            @Step {
+                Monitor the recording state through the observation model.
+                
+                @Code(name: "MonitorState.swift", file: "getting-started-4.swift")
+            }
+            
+            @Step {
+                Stop the recording and handle the resulting file.
+                
+                @Code(name: "StopRecording.swift", file: "getting-started-5.swift")
+            }
+        }
+    }
+}

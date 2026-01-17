@@ -1,0 +1,31 @@
+@Tutorial(time: 20) {
+    @Intro(title: "Customizing Transcription Workflows") {
+        Learn how to extend the transcription capabilities by implementing custom AI providers.
+    }
+    
+    @Section(title: "Implementing a New AI Provider") {
+        @Steps {
+            @Step {
+                Create a class that conforms to the `AIProvider` protocol.
+                
+                @Code(name: "CustomProvider.swift", file: "transcription-1.swift")
+            }
+            
+            @Step {
+                Register your custom provider with the `TranscriptionClient`.
+                
+                @Code(name: "RegisterProvider.swift", file: "transcription-2.swift")
+            }
+        }
+    }
+    
+    @Section(title: "Advanced Transcription Settings") {
+        @Steps {
+            @Step {
+                Configure language detection and speaker diarization.
+                
+                @Code(name: "Settings.swift", file: "transcription-3.swift")
+            }
+        }
+    }
+}

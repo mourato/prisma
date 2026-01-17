@@ -35,6 +35,9 @@ MeetingAssistantCore follows **Clean Architecture** and **MVVM** principles to e
 - ``APIEndpoint``
 - ``NetworkError``
 
+## Tutorials
+- <doc:Tutorials>
+
 ## Articles
 - <doc:GettingStarted>
 - <doc:AudioRecordingWorkflow>
