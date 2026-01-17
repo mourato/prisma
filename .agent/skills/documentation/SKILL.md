@@ -1,61 +1,67 @@
-# Documentação com DocC
+---
+name: Documentation
+description: This skill should be used when working with "DocC", "documentation comments", "triple slash comments" (///), "API documentation", "Context7 MCP queries", or documenting Swift code with proper symbols and examples.
+---
 
-> **Skill Condicional** - Ativada quando trabalhando com documentação de APIs
+# Documentation with DocC
 
-## Visão Geral
+## Overview
 
-Guia para documentação consistente usando DocC (Documentation Compiler).
+Guide for consistent documentation using DocC (Documentation Compiler) and external library documentation via Context7 MCP.
 
-## Quando Usar
+## When to Use
 
-Ative esta skill quando detectar:
-- `///` comentários de documentação
-- `documentation:` parâmetros
-- `Symbol Graph` files
-- **Context7 MCP queries** - para consultar documentações de libraries externas
+Activate this skill when working with:
+- `///` documentation comments
+- DocC syntax and symbol documentation
+- API documentation generation
+- Context7 MCP queries for external library docs
+- Symbol Graph files
 
-## Conceitos-Chave
+## Key Concepts
 
 ### DocC Syntax
 
+Document public APIs with triple-slash comments and structured markup:
+
 ```swift
-/// Uma struct que representa uma gravação de reunião.
+/// A struct representing a meeting recording.
 ///
-/// Esta struct encapsula todos os metadados e conteúdo de uma gravação,
-/// incluindo identificação de falantes e alinhamento de timestamps.
+/// This struct encapsulates all metadata and content of a recording,
+/// including speaker identification and timestamp alignment.
 ///
-/// ## Uso
+/// ## Usage
 /// ```swift
 /// let recording = Recording(
 ///     id: UUID(),
-///     title: "Reunião de Equipe",
+///     title: "Team Meeting",
 ///     date: Date()
 /// )
 /// ```
 public struct Recording: Identifiable, Codable {
-    /// O identificador único da gravação.
+    /// The unique identifier of the recording.
     public let id: UUID
 
-    /// O título da reunião gravada.
+    /// The title of the recorded meeting.
     public let title: String
 
-    /// A data e hora em que a gravação foi iniciada.
+    /// The date and time when recording started.
     public let date: Date
 
-    /// A duração da gravação em segundos.
+    /// The duration of the recording in seconds.
     public let duration: TimeInterval
 
-    /// O texto transcrito da reunião.
+    /// The transcribed text of the meeting.
     public let transcription: String?
 
-    /// Inicializa uma nova gravação.
+    /// Initializes a new recording.
     ///
     /// - Parameters:
-    ///   - id: O identificador único. Se nil, um novo UUID será gerado.
-    ///   - title: O título da reunião.
-    ///   - date: A data da gravação.
-    ///   - duration: A duração em segundos.
-    ///   - transcription: Opcionalmente, o texto transcrito.
+    ///   - id: The unique identifier. If nil, a new UUID will be generated.
+    ///   - title: The meeting title.
+    ///   - date: The recording date.
+    ///   - duration: The duration in seconds.
+    ///   - transcription: Optionally, the transcribed text.
     public init(
         id: UUID? = nil,
         title: String,
@@ -70,10 +76,10 @@ public struct Recording: Identifiable, Codable {
         self.transcription = transcription
     }
 
-    /// Inicia a reprodução da gravação.
+    /// Starts playback of the recording.
     ///
-    /// - Throws: `RecordingError.notFound` se o arquivo não existir.
-    /// - Returns: O player de áudio configurado.
+    /// - Throws: `RecordingError.notFound` if file doesn't exist.
+    /// - Returns: The configured audio player.
     public func play() throws -> AudioPlayer {
         guard FileManager.default.fileExists(atPath: path) else {
             throw RecordingError.notFound
@@ -82,7 +88,7 @@ public struct Recording: Identifiable, Codable {
     }
 }
 
-/// Erros que podem ocorrer durante operações de gravação.
+/// Errors that can occur during recording operations.
 public enum RecordingError: Error, LocalizedError {
     case notFound
     case corruptedFile
@@ -91,19 +97,21 @@ public enum RecordingError: Error, LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .notFound:
-            return "O arquivo de gravação não foi encontrado."
+            return "The recording file was not found."
         case .corruptedFile:
-            return "O arquivo de gravação está corrompido."
+            return "The recording file is corrupted."
         case .permissionDenied:
-            return "Permissão negada para acessar o arquivo."
+            return "Permission denied to access the file."
         }
     }
 }
 ```
 
-## Organization
+## Code Organization
 
 ### MARK Comments
+
+Use `// MARK:` to organize code into logical sections:
 
 ```swift
 // MARK: - Properties
@@ -126,11 +134,6 @@ extension Recording: Codable {
     }
 }
 ```
-
-## Referências
-
-- [Meeting.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Models/Meeting.swift)
-- [Apple DocC Guide](https://developer.apple.com/documentation/docc)
 
 ---
 
@@ -165,7 +168,12 @@ mcp--context7--query-docs(
 
 ### Best Practices
 
-- Be specific in queries (use cases, not generic topics)
-- Verify doc dates - Context7 provides updated docs
-- Combine with existing project code
-- Validate examples in development environment
+- **Be specific** in queries (use cases, not generic topics)
+- **Verify doc dates** - Context7 provides updated docs
+- **Combine with existing code** - integrate with project patterns
+- **Validate examples** in development environment
+
+## References
+
+- [Meeting.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Models/Meeting.swift)
+- [Apple DocC Guide](https://developer.apple.com/documentation/docc)

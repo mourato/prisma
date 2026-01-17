@@ -1,6 +1,9 @@
-# Git Workflow
+---
+name: Git Workflow
+description: This skill should be used when the user mentions "git commit", "git branch", "pull request", "conventional commits", "branch naming", "squash commits", or needs guidance on version control best practices and proactive commit suggestions.
+---
 
-> **Conditional Skill** - Triggered when working with version control
+# Git Workflow
 
 ## Overview
 
@@ -8,12 +11,12 @@ Commit, branch, and pull request patterns for the Meeting Assistant project.
 
 ## When to Use
 
-Activate this skill when detecting:
-- `git commit`
-- `git branch`
+Activate this skill when working with:
+- Git commits and commit messages
+- Branch creation and naming
 - Pull requests
-- `.github/PULL_REQUEST_TEMPLATE.md`
-- Proactive commit suggestions (see "When to Suggest Commit" below)
+- Proactive commit suggestions
+- Version control workflows
 
 ## Key Concepts
 
@@ -39,6 +42,8 @@ feature/456-cloud-sync
 
 ### Commit Messages
 
+Follow the Conventional Commits specification:
+
 ```
 [type]: short description (max 50 chars)
 
@@ -51,8 +56,8 @@ Use complete sentences and explain the "why".
 Types: feat, fix, refactor, docs, test, chore, style, perf
 ```
 
+**Examples:**
 ```bash
-# Examples
 git commit -m "feat(audio): add noise cancellation filter"
 git commit -m "fix(settings): resolve API key persistence issue"
 git commit -m "docs: update AGENTS.md with new commands"
@@ -105,16 +110,9 @@ For advanced Git operations, see the [git-advanced-workflows](../git-advanced-wo
 - **Worktrees**: work on multiple branches simultaneously
 - **Reflog**: recover deleted commits
 
-## References
+## Proactive Commit Suggestions
 
-- [.github/PULL_REQUEST_TEMPLATE.md](../../.github/PULL_REQUEST_TEMPLATE.md)
-- [Conventional Commits](https://www.conventionalcommits.org)
-
----
-
-## When to Suggest Commit
-
-This skill also activates when proactive commit suggestions are needed. Trigger this section when:
+This skill also activates when proactive commit suggestions are needed. Trigger when:
 
 - Task completed with `attempt_completion`
 - Multiple files modified (5+ in a session)
@@ -134,12 +132,18 @@ This skill also activates when proactive commit suggestions are needed. Trigger 
 ### Example Suggestion Message
 
 ```
-**Modificações detectadas**: X arquivo(s) modificado(s), Y novo(s), Z deletado(s)
+**Detected modifications**: X file(s) modified, Y new, Z deleted
 
-Gostaria de fazer commit das alterações?
+Would you like to commit these changes?
 
-1. **Fazer commit agora** - Criar commit com mensagem descritiva
-2. **Ver diff primeiro** - Mostrar alterações antes de commitar
-3. **Adicionar mais tarde** - Adiar commit para após próximas mudanças
-4. **Verificar status** - Mostrar status completo do repositório
+1. **Commit now** - Create commit with descriptive message
+2. **View diff first** - Show changes before committing
+3. **Add later** - Defer commit until after next changes
+4. **Check status** - Show full repository status
 ```
+
+## References
+
+- [.github/PULL_REQUEST_TEMPLATE.md](../../.github/PULL_REQUEST_TEMPLATE.md)
+- [Conventional Commits](https://www.conventionalcommits.org)
+- [git-advanced-workflows](../git-advanced-workflows/SKILL.md) - Advanced Git techniques

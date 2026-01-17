@@ -1,37 +1,41 @@
-# Localização e Acessibilidade
+---
+name: Localization
+description: This skill should be used when working with "localization", "internationalization", "i18n", "Bundle.module", "NSLocalizedString", "accessibility", "VoiceOver", or implementing multilingual support in Swift Packages.
+---
 
-> **Skill Condicional** - Ativada quando trabalhando com interface de usuário
+# Localization and Accessibility
 
-## Visão Geral
+## Overview
 
-Guia completo de internacionalização (i18n) e acessibilidade (a11y) para o Meeting Assistant.
+Complete guide for internationalization (i18n) and accessibility (a11y) for the Meeting Assistant.
 
-## Quando Usar
+## When to Use
 
-Ative esta skill quando detectar:
-- `Bundle.module`
+Activate this skill when working with:
+- `Bundle.module` resource loading
 - `NSLocalizedString`
 - `Text("Key", bundle: .module)`
-- `accessibilityDescription`
-- `.accessibilityHint()`
-- `.accessibilityLabel()`
+- Accessibility modifiers
+- VoiceOver support
 
-## Conceitos-Chave
+## Key Concepts
 
-### Resource Loading
+### Resource Loading in Swift Packages
 
-**CRÍTICO**: Use `Bundle.module` em Swift Packages:
+**CRITICAL**: Use `Bundle.module` in Swift Packages:
 
 ```swift
-// ✅ CORRETO - Swift Package
+// ✅ CORRECT - Swift Package
 Text("settings_api_key_placeholder", bundle: .module)
 NSLocalizedString("menubar.accessibility.recording", bundle: .module, comment: "Recording status")
 
-// ❌ ERRADO - Bundle.main não funciona em frameworks
+// ❌ WRONG - Bundle.main doesn't work in frameworks
 Text("settings_api_key_placeholder", bundle: .main)
 ```
 
-### Bundle Safe Access
+### Safe Bundle Access
+
+Create a fallback for safer resource loading:
 
 ```swift
 extension Bundle {
@@ -43,50 +47,50 @@ extension Bundle {
     }
 }
 
-// Uso
+// Usage
 Text("key", bundle: .safeModule)
 ```
 
-## Localização
+## Localization Patterns
 
 ### String Management
 
-**NUNCA** hardcode strings de UI:
+**NEVER** hardcode UI strings:
 
 ```swift
-// ❌ ERRADO
-Text("Gravar")
+// ❌ WRONG
+Text("Record")
 
-// ✅ CORRETO
+// ✅ CORRECT
 Text("recording.start", bundle: .module)
 ```
 
 ### Key Convention
 
-Use `snake_case` descritivo:
+Use descriptive `snake_case` keys:
 
 ```swift
-// Boas chaves
-"recording.start"              // Iniciar gravação
-"recording.stop"               // Parar gravação
-"recording.in_progress"        // Gravação em andamento
-"settings.api_key.placeholder" // Placeholder da API key
+// Good keys
+"recording.start"              // Start recording
+"recording.stop"               // Stop recording
+"recording.in_progress"        // Recording in progress
+"settings.api_key.placeholder" // API key placeholder
 ```
 
-## Acessibilidade (VoiceOver)
+## Accessibility (VoiceOver)
 
-### Descrições de Propósito
+### Purpose Descriptions
 
-Descreva **o que a UI faz**, não apenas labels:
+Describe **what the UI does**, not just labels:
 
 ```swift
-// ❌ ERRADO - Label, não descrição
+// ❌ WRONG - Label, not description
 Button(action: {}) {
     Image(systemName: "mic.fill")
 }
-.accessibilityLabel("Microfone")
+.accessibilityLabel("Microphone")
 
-// ✅ CORRETO - Descrição de propósito
+// ✅ CORRECT - Purpose description
 Button(action: {}) {
     Image(systemName: "mic.fill")
 }
@@ -95,16 +99,18 @@ Button(action: {}) {
 .accessibilityAddTraits(.startsMediaSession)
 ```
 
-### Key Convention para Acessibilidade
+### Accessibility Key Convention
+
+Follow this pattern for consistent naming:
 
 ```swift
-// Padrão: componente.acao.accessibility
-"menubar.recording.start.accessibility" = "Iniciar gravação";
-"menubar.recording.stop.accessibility" = "Parar gravação";
-"menubar.recording.status.accessibility" = "Status da gravação";
+// Pattern: component.action.accessibility
+"menubar.recording.start.accessibility" = "Start recording";
+"menubar.recording.stop.accessibility" = "Stop recording";
+"menubar.recording.status.accessibility" = "Recording status";
 ```
 
-## Referências
+## References
 
 - [Localizable.strings](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Resources/en.lproj/Localizable.strings)
 - [Apple Accessibility Guide](https://developer.apple.com/documentation/accessibility)

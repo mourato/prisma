@@ -112,6 +112,17 @@ open ./build/Build/Products/Debug/AppName.app
 ```
 </verification_loop>
 
+<related_skills>
+## Related Skills
+
+For domain-specific guidance, see:
+- **[swiftui-patterns](../swiftui-patterns/SKILL.md)** - SwiftUI state management and view patterns
+- **[menubar](../menubar/SKILL.md)** - NSStatusItem and menu bar app patterns
+- **[audio-realtime](../audio-realtime/SKILL.md)** - Real-time audio processing constraints
+- **[localization](../localization/SKILL.md)** - i18n and accessibility patterns
+- **[swift-package-manager](../swift-package-manager/SKILL.md)** - SPM and Xcode project generation
+</related_skills>
+
 <reference_index>
 ## Domain Knowledge (in `references/`)
 **Architecture:** app-architecture, swiftui-patterns, concurrency
@@ -120,3 +131,4 @@ open ./build/Build/Products/Debug/AppName.app
 **Development:** project-scaffolding, cli-workflow, testing-tdd, testing-debugging
 **Polish:** design-system, macos-polish, security-code-signing
 </reference_index>
+

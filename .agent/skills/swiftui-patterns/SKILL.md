@@ -1,26 +1,28 @@
+---
+name: SwiftUI Patterns
+description: This skill should be used when working with SwiftUI views, "@State", "@StateObject", "@ObservedObject", "NavigationStack", view modifiers, or SwiftUI-specific patterns and best practices.
+---
+
 # SwiftUI Patterns
 
-> **Skill Condicional** - Ativada quando trabalhando com SwiftUI views
+## Overview
 
-## Visão Geral
+Recommended patterns for SwiftUI development in the Meeting Assistant project.
 
-Padrões recomendados para desenvolvimento SwiftUI no Meeting Assistant.
+## When to Use
 
-## Quando Usar
+Activate this skill when working with:
+- State property wrappers (`@State`, `@StateObject`, `@ObservedObject`)
+- Navigation (`NavigationStack`, `NavigationView`)
+- SwiftUI views and modifiers
+- View lifecycle and composition
 
-Ative esta skill quando detectar:
-- `@State`, `@StateObject`, `@ObservedObject`
-- `NavigationStack`, `NavigationView`
-- `View`, `some View`
-- `body: some View`
-- SwiftUI modifiers
-
-## Conceitos-Chave
+## Key Concepts
 
 ### State Management
 
 ```swift
-// ✅ CORRETO - @StateObject para owned reference types
+// ✅ CORRECT - @StateObject for owned reference types
 class RecordingViewModel: ObservableObject {
     @Published var isRecording = false
 }
@@ -35,17 +37,19 @@ struct RecordingView: View {
     }
 }
 
-// ❌ ERRADO - @State para referência compartilhada
+// ❌ WRONG - @State for shared reference
 struct BadView: View {
-    @State private var sharedService = SharedService() // Viola ownership
+    @State private var sharedService = SharedService() // Violates ownership
 }
 ```
 
 ### Navigation (iOS 16+)
 
+Use `NavigationStack` for type-safe navigation:
+
 ```swift
-// ✅ CORRETO - NavigationStack com typed path
-struct AppNavigation {
+// ✅ CORRECT - NavigationStack with typed path
+struct AppNavigation: View {
     @State private var navigationPath = NavigationPath()
 
     var body: some View {
@@ -69,18 +73,20 @@ enum Route: Hashable {
 }
 ```
 
-## Patterns Comuns
+## Common Patterns
 
 ### View Modifiers
 
+Group related modifiers and extract common chains:
+
 ```swift
-// Agrupar modifiers relacionados
+// Group related modifiers
 Text("Title")
     .font(.title)
     .fontWeight(.bold)
     .foregroundColor(.primary)
 
-// Extrair cadeia comum
+// Extract common chains
 extension View {
     func cardStyle() -> some View {
         self
@@ -92,17 +98,17 @@ extension View {
 }
 ```
 
-### Performance
+### Performance Optimization
 
 ```swift
-// Lazy loading para listas grandes
+// Lazy loading for large lists
 LazyVStack {
     ForEach(recordings) { recording in
         RecordingRow(recording: recording)
     }
 }
 
-// Identificação para views que precisam redraw
+// Identity for views that need redraw
 struct ContentView: View {
     @State private var items: [Item] = []
 
@@ -110,19 +116,19 @@ struct ContentView: View {
         List($items) { $item in
             ItemRow(item: $item)
         }
-        .id(items.id) // Força redraw quando ID muda
+        .id(items.id) // Force redraw when ID changes
     }
 }
 ```
 
-## Armadilhas Comuns
+## Common Pitfalls
 
-1. **State compartilhado** - Use `@StateObject`, não `@State` para injeção
-2. **NavigationView antigo** - Use `NavigationStack` no iOS 16+
-3. **Aninhamento profundo** - Extraia subviews
-4. **Bindings em loops** - Use `ForEach($items) { $item in }`
+1. **Shared state** - Use `@StateObject`, not `@State` for injection
+2. **Old NavigationView** - Use `NavigationStack` on iOS 16+
+3. **Deep nesting** - Extract subviews for clarity
+4. **Bindings in loops** - Use `ForEach($items) { $item in }`
 
-## Referências
+## References
 
 - [SettingsView.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Views/Settings/SettingsView.swift)
 - [TranscriptionListView.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Views/TranscriptionListView.swift)

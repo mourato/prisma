@@ -1,24 +1,29 @@
+---
+name: Swift Package Manager
+description: This skill should be used when working with "Package.swift", "SPM dependencies", "swift package", "Package.resolved", "make spm-proj", or Xcode project generation from Swift Packages.
+---
+
 # Swift Package Manager
 
-> **Skill Condicional** - Ativada quando trabalhando com dependências SPM
+## Overview
 
-## Visão Geral
+Guide for dependency management with Swift Package Manager and Xcode project generation.
 
-Guia para gerenciamento de dependências com Swift Package Manager e geração de projetos Xcode.
+## When to Use
 
-## Quando Usar
+Activate this skill when working with:
+- `Package.swift` configuration
+- Package dependency declarations
+- `swift package` commands
+- `Package.resolved` lock file
+- `make spm-proj` Xcode project generation
+- SPM dependency updates
 
-Ative esta skill quando detectar:
-- `Package.swift`
-- `.package(url:from:)` ou `.package(url:revision:)`
-- `swift package resolve`
-- `Package.resolved`
-- `make spm-proj`
-- Xcode project generation
-
-## Conceitos-Chave
+## Key Concepts
 
 ### Dependency Management
+
+Configure dependencies in `Package.swift`:
 
 ```swift
 // Package.swift
@@ -35,13 +40,13 @@ let package = Package(
         )
     ],
     dependencies: [
-        // Versão fixa para estabilidade
+        // Fixed version for stability
         .package(url: "https://github.com/apple/swift-log.git", from: "1.0.0"),
         
-        // Branch para desenvolvimento interno
+        // Branch for internal development
         .package(url: "https://github.com/team/internal-utils.git", branch: "main"),
         
-        // Revision específica para reprodução
+        // Specific revision for reproducibility
         .package(url: "https://github.com/alice/ocr.git", revision: "abc123def")
     ],
     targets: [
@@ -57,8 +62,10 @@ let package = Package(
 
 ### Reproducible Builds
 
+Commit `Package.resolved` for reproducible builds:
+
 ```bash
-# Commit Package.resolved para builds reproduzíveis
+# Lock dependencies to specific versions
 git add Package.resolved
 git commit -m "deps: lock swift-log to 1.4.2"
 ```
@@ -67,78 +74,78 @@ git commit -m "deps: lock swift-log to 1.4.2"
 
 ## Xcode Project Generation
 
-> **Motivação**: Para desenvolvedores sem experiência prévia em Swift, usar um arquivo `.xcodeproj` é a maneira mais visual e amigável de navegar pelo código, rodar a aplicação e usar ferramentas visuais como SwiftUI Previews.
+> **Motivation**: For developers without prior Swift experience, using an `.xcodeproj` file is the most visual and friendly way to navigate code, run the application, and use visual tools like SwiftUI Previews.
 
-### Por Que Gerar Projeto Xcode?
+### Why Generate Xcode Project?
 
-O projeto usa **Swift Package Manager (SPM)** como fonte da verdade. A estrutura de pastas e dependências são definidas no `Package.swift`.
+This project uses **Swift Package Manager (SPM)** as the source of truth. Folder structure and dependencies are defined in `Package.swift`.
 
-Para desenvolvimento dia-a-dia, geramos um arquivo `.xcodeproj` descartável. Isso permite:
-1. Navegação visual de arquivos
-2. Auto-complete e refatoração visual
-3. Uso de **SwiftUI Previews** (Hot Reload visual)
-4. Debugging visual com breakpoints
+For day-to-day development, we generate a disposable `.xcodeproj` file. This allows:
+1. Visual file navigation
+2. Auto-complete and visual refactoring
+3. **SwiftUI Previews** usage (visual hot reload)
+4. Visual debugging with breakpoints
 
-### Como Gerar o Projeto
+### How to Generate the Project
 
-Sempre que adicionar arquivos ou mudar dependências:
+Whenever you add files or change dependencies:
 
 ```bash
 make spm-proj
 ```
 
-Isso criará (ou atualizará) o arquivo `Packages/MeetingAssistantCore/MeetingAssistantCore.xcodeproj`.
+This will create (or update) the file `Packages/MeetingAssistantCore/MeetingAssistantCore.xcodeproj`.
 
-### Como Abrir e Usar
+### How to Open and Use
 
-1. Após gerar, abra o projeto:
+1. After generating, open the project:
    ```bash
    open Packages/MeetingAssistantCore/MeetingAssistantCore.xcodeproj
    ```
 
-2. **Para Rodar Previews (Hot Reload)**:
-   - Abra qualquer arquivo de View (ex: `MeetingView.swift`)
-   - No lado direito, você verá o "Canvas"
-   - Se estiver pausado, clique no ícone de "Refresh" ou pressione `Cmd + Option + P`
-   - Qualquer mudança no código reflete quase instantaneamente no Preview
+2. **To Run Previews (Hot Reload)**:
+   - Open any View file (e.g., `MeetingView.swift`)
+   - On the right side, you'll see the "Canvas"
+   - If paused, click the "Refresh" icon or press `Cmd + Option + P`
+   - Any code changes reflect almost instantly in the Preview
 
-### Solução de Problemas
+### Troubleshooting
 
-**O projeto não compila após gerar:**
-- Tente limpar o build: `Product > Clean Build Folder` (Cmd + Shift + K)
-- Se persistir, delete o projeto gerado e gere novamente:
+**Project doesn't compile after generation:**
+- Try cleaning the build: `Product > Clean Build Folder` (Cmd + Shift + K)
+- If it persists, delete the generated project and regenerate:
   ```bash
   rm -rf Packages/MeetingAssistantCore/MeetingAssistantCore.xcodeproj
   make spm-proj
   ```
 
-**Previews não funcionam:**
-- Certifique-se de que está rodando no simulador ou Mac (Designed for iPad)
-- Verifique se o scheme correto está selecionado
-- Tente fechar e reabrir o Canvas
+**Previews don't work:**
+- Make sure you're running on simulator or Mac (Designed for iPad)
+- Verify the correct scheme is selected
+- Try closing and reopening the Canvas
 
 ---
 
-## Commands Úteis
+## Useful Commands
 
 ```bash
-# Verificar dependências
+# Check dependencies
 swift package show-dependencies
 
-# Atualizar para latest
+# Update to latest versions
 swift package update
 
-# Gerar projeto Xcode
+# Generate Xcode project
 swift package generate-xcodeproj
 
-# Limpar cache de builds
+# Clean build cache
 swift package clean
 
-# Resolver dependências
+# Resolve dependencies
 swift package resolve
 ```
 
-## Referências
+## References
 
 - [Package.swift](Packages/MeetingAssistantCore/Package.swift)
 - [Swift Package Manager Documentation](https://developer.apple.com/documentation/swift_packages)
