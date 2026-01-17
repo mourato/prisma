@@ -1,5 +1,8 @@
 # Project Best Practices
 
+> **Última Atualização:** 2026-01-17
+> **Tags:** #BestPractices, #Audio, #Concurrency, #UI/UX, #Documentation
+
 ## High-Performance Audio (Real-Time)
 
 ### Zero Allocation Policy
@@ -23,6 +26,17 @@
 - **Rule**: Closures passed between threads (especially for callbacks) MUST be marked `@Sendable`.
 - **Why**: Ensures compiler verification of thread safety and prevents capturing mutable non-thread-safe state.
 
+## Documentation & Knowledge
+
+### DocC Adoption
+- **Rule**: Use documentação nativa DocC para frameworks e pacotes Swift.
+- **Scope**: Documente todas as APIs públicas (`public`), especialmente protocolos e configurações críticas.
+- **Format**: Utilize Markdown dentro dos comentários de documentação (`///`).
+
+### Protocol-Oriented Programming
+- **Rule**: Defina contratos via Protocolos antes de implementar.
+- **Benefit**: Facilita a criação de Mocks para testes e desacopla a implementação da interface.
+
 ## UI/UX Patterns
 
 ### Menu Bar Apps (NSStatusItem)
@@ -45,3 +59,8 @@
 - **Rule**: When the App target needs localized strings from a framework (e.g., `MeetingAssistantCore`), use a `public static var safeModule: Bundle` pattern.
 - **Implementation**: Use `#if SWIFT_PACKAGE` to conditionally return `Bundle.module` (SPM) or `Bundle.main` (Xcode).
 - **DRY**: Store the bundle in a `lazy var localizationBundle` to avoid repeated calls.
+
+## Referências Cruzadas
+- `docs/QUALITY_ASSURANCE.md`
+- `docs/TESTING_STRATEGY.md`
+- `docs/ARCHITECTURE.md`
