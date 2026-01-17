@@ -42,10 +42,16 @@ public final class FileSystemStorageService: StorageService {
         let configuredPath = UserDefaults.standard.string(forKey: Keys.recordingsDirectory) ?? ""
 
         if !configuredPath.isEmpty {
-            let url = URL(fileURLWithPath: configuredPath)
-            // Ensure it exists when accessed - creating directories is thread-safe on FileManager.default
-            try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-            return url
+            // Validate path before use
+            do {
+                let validatedURL = try self.validatePath(configuredPath)
+                // Ensure it exists when accessed - creating directories is thread-safe on FileManager.default
+                try? FileManager.default.createDirectory(at: validatedURL, withIntermediateDirectories: true)
+                return validatedURL
+            } catch {
+                AppLogger.error("Invalid recording directory path, using default", category: .databaseManager, error: error)
+                // Fall through to default
+            }
         }
         return self.defaultRecordingsDirectory
     }
@@ -178,5 +184,55 @@ public final class FileSystemStorageService: StorageService {
 
     deinit {
         AppLogger.debug("FileSystemStorageService deinitialized", category: .databaseManager)
+    }
+
+    // MARK: - Path Validation
+
+    private enum PathValidationError: Error, LocalizedError {
+        case pathTraversalDetected(String)
+        case invalidPath(String)
+        case outsideContainer(String)
+
+        var errorDescription: String? {
+            switch self {
+            case let .pathTraversalDetected(path):
+                "Security: Path traversal attempt detected - \(path)"
+            case let .invalidPath(path):
+                "Security: Invalid path format - \(path)"
+            case let .outsideContainer(path):
+                "Security: Path outside app container - \(path)"
+            }
+        }
+    }
+
+    /// Validates that a path is safe and within the app container.
+    private func validatePath(_ path: String) throws -> URL {
+        // 1. Check for obvious traversal patterns
+        guard !path.contains("..") else {
+            AppLogger.warning("Path traversal attempt blocked", category: .databaseManager, extra: ["path": path])
+            throw PathValidationError.pathTraversalDetected(path)
+        }
+
+        // 2. Resolve to canonical path
+        let url = URL(fileURLWithPath: path)
+        let resolvedPath = url.resolvingSymlinksInPath().path
+
+        // 3. Validate within app container (Application Support)
+        let appSupportURLs = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)
+        guard let appSupport = appSupportURLs.first else {
+            throw PathValidationError.invalidPath(path)
+        }
+
+        let containerPath = appSupport.appendingPathComponent("MeetingAssistant").path
+        guard resolvedPath.hasPrefix(containerPath) else {
+            AppLogger.warning("Path outside container blocked", category: .databaseManager, extra: [
+                "path": path,
+                "resolved": resolvedPath,
+                "container": containerPath,
+            ])
+            throw PathValidationError.outsideContainer(path)
+        }
+
+        return URL(fileURLWithPath: resolvedPath)
     }
 }

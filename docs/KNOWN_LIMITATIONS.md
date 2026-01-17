@@ -42,11 +42,9 @@ This document tracks known limitations for features and initiatives within the p
   * *Baseline*: Local measurement [2026-01-14] shows transitions typically under 50ms when transcription is not immediately queued.
 
 ### Security (Filesystem)
-* **Path Traversal Risk**: `recordingsDirectory` is read directly from `UserDefaults` without sanitization.
-  * *Context*: [2025-12-27] Identified during code review. While the App Sandbox mitigates system-wide damage, input validation should be added in future updates to prevent unrestricted writes within the container.
-  * *Status*: IN_PROGRESS
-  * *Start Date*: 2025-01-10
-  * *Fix Plan*: Implement path sanitization using `URL.resolvingSymlinksInPath()` and validate that resolved paths remain within the app's container directory before file operations.
+* **(RESOLVED) Path Traversal Risk**: `recordingsDirectory` now validates paths using `resolvingSymlinksInPath()` and container boundary checks.
+  * *Context*: [2025-12-27] Identified during code review. Fixed [2026-01-17] with path sanitization.
+  * *Implementation*: `validatePath()` method checks for `..` patterns, resolves symlinks, and ensures paths remain within the app container.
 
 * **Memory Safety (Unsafe Pointers)**: The optimized `AudioRecorder` uses `memset` and `UnsafeMutableBufferPointer` for performance.
   * *Context*: [2025-12-27] Replaced safe loop with fast copy. This introduces risk of buffer overflow if pointer arithmetic is ever flawed. Any changes to `createSystemSourceNode` or `PartialBufferState` must be peer-reviewed for correctness.
