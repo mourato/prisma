@@ -10,4 +10,13 @@ public enum LogCategory: String, CaseIterable {
 
     // Default fallback
     case general = "General"
+
+    // Monitoring & Observability
+    case audio = "Audio"
+    case transcription = "Transcription" // Replaces transcriptionEngine over time
+    case storage = "Storage" // General storage category
+    case network = "Network"
+    case performance = "Performance"
+    case health = "Health"
+    case security = "Security"
 }
