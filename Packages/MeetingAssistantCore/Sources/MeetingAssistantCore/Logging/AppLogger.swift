@@ -9,26 +9,34 @@ public enum AppLogger {
 
     // MARK: - Public API
 
-    /// Log a debug message (development only)
     public static func debug(_ message: String, category: LogCategory, extra: [String: Any] = [:]) {
         let logger = Logger(subsystem: subsystem, category: category.rawValue)
         let formattedMessage = self.format(message, extra: extra)
+        #if DEBUG
         logger.debug("\(formattedMessage, privacy: .public)")
-        // swiftlint:enable discouraged_optional_collection
+        #else
+        logger.debug("\(formattedMessage, privacy: .private)")
+        #endif
     }
 
-    /// Log an informational message (general events)
     public static func info(_ message: String, category: LogCategory, extra: [String: Any] = [:]) {
         let logger = Logger(subsystem: subsystem, category: category.rawValue)
         let formattedMessage = self.format(message, extra: extra)
+        #if DEBUG
         logger.info("\(formattedMessage, privacy: .public)")
+        #else
+        logger.info("\(formattedMessage, privacy: .private)")
+        #endif
     }
 
-    /// Log a warning message (potential issues)
     public static func warning(_ message: String, category: LogCategory, extra: [String: Any] = [:]) {
         let logger = Logger(subsystem: subsystem, category: category.rawValue)
         let formattedMessage = self.format(message, extra: extra)
+        #if DEBUG
         logger.warning("\(formattedMessage, privacy: .public)")
+        #else
+        logger.warning("\(formattedMessage, privacy: .private)")
+        #endif
     }
 
     /// Log an error (recoverable issues)
