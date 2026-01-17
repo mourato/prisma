@@ -61,5 +61,8 @@ O sistema de gravação é projetado para alta performance e baixa latência, ca
 - **Main Actor Isolation**: The audio hot path (callbacks) MUST NOT touch the Main Actor.
 
 ## 4. Referências Cruzadas
-- `docs/TESTING_STRATEGY.md`
-- `docs/BEST_PRACTICES.md`
+- `.agent/rules/testing.md`
+- `.agent/rules/architecture.md`
+- `.agent/skills/audio-realtime/SKILL.md`
+- `.agent/skills/quality-assurance/SKILL.md`
+
