@@ -50,5 +50,5 @@ This document tracks known limitations for features and initiatives within the p
   * *Context*: [2025-12-27] Replaced safe loop with fast copy. This introduces risk of buffer overflow if pointer arithmetic is ever flawed. Any changes to `createSystemSourceNode` or `PartialBufferState` must be peer-reviewed for correctness.
 
 ### Logging
-* **Privacy Level**: `AppLogger` is currently configured with `{ privacy: .public }` for all log levels to aid in debugging strict concurrency crashes.
-  * *Context*: [2025-12-27] This logs potentially sensitive metadata to the system console. Must be changed to `.private` or `.auto` before public App Store release.
+* **(RESOLVED) Privacy Level**: `AppLogger` has been updated to use `{ privacy: .private }` for non-critical logs in non-debug builds.
+  * *Context*: [2025-12-27] Initially logged potentially sensitive metadata as `.public`. Fixed [2026-01-17] by using `#if DEBUG` to toggle privacy levels. Critical errors and faults remain `.public` for diagnostics.
