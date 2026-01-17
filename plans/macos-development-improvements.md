@@ -122,9 +122,9 @@
 - [x] Criar script de code health check (Integrado no workflow de commit)
 
 #### 3.3 Development Tools
-- [ ] Adicionar `swift package generate-xcodeproj` workflow
-- [ ] Implementar hot reload para SwiftUI views
-- [ ] Criar debug scripts para audio troubleshooting
+- [x] Adicionar `swift package generate-xcodeproj` workflow (`make spm-proj`)
+- [x] Implementar hot reload para SwiftUI views (Documentado workflow de Previews)
+- [x] Criar debug scripts para audio troubleshooting (`scripts/debug-audio.sh`)
 - [x] Adicionar environment configurations (Debug/Release)
 
 ### Fase 4: Production Readiness (Local Distribution) - 2-3 semanas
@@ -139,14 +139,14 @@
 - [x] Migrar logging para `.private` privacy level
 
 #### 4.2 Local Release Engineering
-- [ ] Criar release pipeline com GitHub Actions (DMG build)
-- [ ] Adicionar crash reporting local (logs estruturados)
-- [ ] Documentar processo de instalação manual
+- [x] Criar release pipeline com GitHub Actions (DMG build)
+- [x] Adicionar crash reporting local (logs estruturados) (Salvos em `~/Library/Logs`)
+- [x] Documentar processo de instalação manual (`docs/INSTALLATION.md`)
 
 #### 4.3 Monitoring & Local Analytics
-- [ ] Adicionar structured logging com OSLog
-- [ ] Criar health checks para audio system
-- [ ] Adicionar performance monitoring local
+- [x] Adicionar structured logging com OSLog (Expandido com Categories)
+- [x] Criar health checks para audio system (`AudioHealthMonitor`)
+- [x] Adicionar performance monitoring local (`PerformanceMonitor`)
 
 ## Métricas de Sucesso
 
