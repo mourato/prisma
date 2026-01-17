@@ -168,6 +168,11 @@ xcodegen:
 	@xcodegen generate
 	@echo -e "$(GREEN)✓ Xcode project generated$(NC)"
 
+spm-proj:
+	@echo -e "$(BLUE)Generating Xcode project from SPM...$(NC)"
+	@echo -e "$(YELLOW)Note: 'swift package generate-xcodeproj' is deprecated. Using xcodegen as fallback/alternative for main app.$(NC)"
+	@$(MAKE) xcodegen
+
 # Profiling Commands
 profile: build-debug
 	@echo -e "$(BLUE)Running performance profiling (all)...$(NC)"
