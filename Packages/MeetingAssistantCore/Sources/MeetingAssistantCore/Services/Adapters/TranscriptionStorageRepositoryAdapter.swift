@@ -44,8 +44,7 @@ public final class TranscriptionStorageRepositoryAdapter: TranscriptionStorageRe
     }
 
     public func fetchTranscription(by id: UUID) async throws -> TranscriptionEntity? {
-        let transcriptions = try await storageService.loadTranscriptions()
-        guard let legacyTranscription = transcriptions.first(where: { $0.id == id }) else {
+        guard let legacyTranscription = try await storageService.loadTranscription(by: id) else {
             return nil
         }
 
@@ -113,6 +112,24 @@ public final class TranscriptionStorageRepositoryAdapter: TranscriptionStorageRe
                 language: legacyTranscription.language,
                 createdAt: legacyTranscription.createdAt,
                 modelName: legacyTranscription.modelName
+            )
+        }
+    }
+
+    public func fetchAllMetadata() async throws -> [DomainTranscriptionMetadata] {
+        let metadataList = try await storageService.loadAllMetadata()
+        return metadataList.map { meta in
+            DomainTranscriptionMetadata(
+                id: meta.id,
+                meetingId: meta.meetingId,
+                appName: meta.appName,
+                appRawValue: meta.appRawValue,
+                startTime: meta.startTime,
+                createdAt: meta.createdAt,
+                previewText: meta.previewText,
+                language: meta.language,
+                isPostProcessed: meta.isPostProcessed,
+                duration: meta.duration
             )
         }
     }

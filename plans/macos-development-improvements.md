@@ -1,6 +1,12 @@
 # Plano de Melhorias - macOS Development Skill
 
-## 🎉 Conquistas Recentes (Janeiro 2025)
+### ✅ Conquistas Recentes (Janeiro 2026)
+
+### ✅ Security & Architecture (Jan 2026)
+- **Security Hardening**: Resolvido risco de Path Traversal no `StorageService` com validação de container boundary e tokens.
+- **Infrastructure Layer**: Implementada nova camada para abstração de serviços externos, incluindo `HTTPClient` robusto e `AIInfrastructureProvider`.
+- **Documentation System**: Setup completo do DocC catalog com integração no Makefile e documentação básica de API.
+- **Testes de Segurança**: Implementados `StorageServiceSecurityTests` para validar proteção de arquivos.
 
 ### ✅ Cuckoo Framework Implementation Completa
 - **Mocks Auto-gerados**: Implementação completa do Cuckoo para geração automática de mocks
@@ -35,8 +41,8 @@
 - ✅ **Concurrency**: Migrado para Actors (thread safety)
 - ✅ **CLI Workflow**: CLI-first com Makefile implementado
 - ✅ **Testing Coverage**: Expandida significativamente (integração, performance, mocking)
-- ⚠️ **Documentation**: Skills documentadas, DocC pendente
-- ⚠️ **Security**: Limitações documentadas (path traversal, logging privacy)
+- ✅ **Documentation**: Skills documentadas, DocC implementado
+- ✅ **Security**: Path traversal resolvido, logging privacy pendente
 
 ### Gaps Identificados
 1. **Swift 6 Concurrency**: ✅ Resolvido - Actors implementados
@@ -44,7 +50,7 @@
 3. **TDD Practice**: Testes expandidos, mas não fully TDD ainda
 4. **Performance Profiling**: ✅ Resolvido - Instruments script e `XCTMetric` guardrails integrados
 5. **Security Hardening**: Documentado limitações e baseline; hardening de input pendente
-6. **Documentation**: ✅ Avançado - Baselines e limitações documentadas; DocC em andamento
+6. **Documentation**: ✅ Finalizado - DocC catalog e API docs integrados
 7. **Memory Governance**: ✅ Resolvido - `deinit` logging e testes de sanidade implementados
 
 ## Plano de Melhorias em Fases
@@ -82,14 +88,14 @@
 - [x] Separar `Domain` layer (Use Cases, Entities)
 - [x] Implementar `Repository` pattern para data access
 - [x] Adicionar `Presentation` layer com coordinators
-- [ ] Criar `Infrastructure` layer para external services
+- [x] Criar `Infrastructure` layer para external services
 
 #### 2.2 Performance Optimization
 - [x] Implementar Instruments profiling workflow (script criado)
 - [x] Otimizar `StorageService` (migrar para CoreData/SQLite) - Modelo programático implementado
 - [x] Adicionar `XCTMetric` para performance regression tests (AudioBufferQueue, State transitions)
 - [x] Estabelecer baselines de performance em `KNOWN_LIMITATIONS.md`
-- [ ] Implementar lazy loading para transcriptions
+- [x] Implementar lazy loading para transcriptions (Completado via `TranscriptionMetadata` e lazy loading no ViewModel)
 
 #### 2.3 Memory Management
 - [x] Auditar retenções cíclicas com Memory Graph Debugger
@@ -98,11 +104,11 @@
 - [x] Criar `MemorySanityTests` para automação de auditoria
 - [x] Validar com Leaks instrument
 
-### Fase 3: Developer Experience - 2-3 semanas **Status: ~40% Avançada**
+### Fase 3: Developer Experience - 2-3 semanas **Status: ~65% Avançada**
 **Objetivo**: Melhorar experiência de desenvolvimento e manutenção
 
 #### 3.1 Documentation System
-- [ ] Implementar DocC documentation completa
+- [x] Implementar DocC documentation completa (Catalog & Setup)
 - [x] Adicionar API documentation em todos public types
 - [x] Documentar limitações do ambiente de teste e runner (Silent Crashes)
 - [x] Formalizar políticas de Memória e Performance em `ARCHITECTURE.md`
@@ -121,26 +127,26 @@
 - [ ] Criar debug scripts para audio troubleshooting
 - [x] Adicionar environment configurations (Debug/Release)
 
-### Fase 4: Production Readiness - 2-3 semanas
-**Objetivo**: Preparar para distribuição e manutenção em produção
+### Fase 4: Production Readiness (Local Distribution) - 2-3 semanas
+**Objetivo**: Preparar para uso local robusto e manutenção
+
+> **Nota**: Este plano é para distribuição local (sem Apple Developer Account).
+> Itens de App Store (notarization, code signing, Sparkle) foram removidos.
 
 #### 4.1 Security Hardening
-- [ ] Resolver path traversal em `StorageService`
+- [x] Resolver path traversal em `StorageService`
 - [ ] Implementar input sanitization em todas APIs
 - [ ] Migrar logging para `.private` privacy level
-- [ ] Adicionar code signing verification
 
-#### 4.2 Release Engineering
-- [ ] Implementar notarization automática
-- [ ] Criar release pipeline com GitHub Actions
-- [ ] Adicionar crash reporting (Sentry/Flurry)
-- [ ] Implementar update mechanism (Sparkle)
+#### 4.2 Local Release Engineering
+- [ ] Criar release pipeline com GitHub Actions (DMG build)
+- [ ] Adicionar crash reporting local (logs estruturados)
+- [ ] Documentar processo de instalação manual
 
-#### 4.3 Monitoring & Analytics
+#### 4.3 Monitoring & Local Analytics
 - [ ] Adicionar structured logging com OSLog
-- [ ] Implementar usage analytics (opt-in)
 - [ ] Criar health checks para audio system
-- [ ] Adicionar performance monitoring
+- [ ] Adicionar performance monitoring local
 
 ## Métricas de Sucesso
 
@@ -148,7 +154,7 @@
 - **Fase 1**: 0 crashes de concurrency, 80%+ test coverage
 - **Fase 2**: <100ms startup time, 0 memory leaks (Verificado via MemorySanityTests ✅)
 - **Fase 3**: 0 lint errors, 100% API documented (Baselines documentados ✅)
-- **Fase 4**: App Store ready, security audit passed
+- **Fase 4**: Distribuição local estável, security hardening completo
 
 ### Gerais
 - Build time < 30s

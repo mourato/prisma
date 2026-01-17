@@ -53,6 +53,27 @@ public final class CoreDataTranscriptionStorageRepository: TranscriptionStorageR
         }
     }
 
+    public func fetchAllMetadata() async throws -> [DomainTranscriptionMetadata] {
+        try await self.stack.performBackgroundTask { context in
+            let request = TranscriptionMO.fetchRequest()
+            let results = try context.fetch(request)
+            return results.map { mo in
+                DomainTranscriptionMetadata(
+                    id: mo.id,
+                    meetingId: mo.meeting.id,
+                    appName: DomainMeetingApp(rawValue: mo.meeting.appRawValue)?.displayName ?? "Unknown",
+                    appRawValue: mo.meeting.appRawValue,
+                    startTime: mo.meeting.startTime,
+                    createdAt: mo.createdAt,
+                    previewText: String(mo.text.prefix(100)),
+                    language: mo.language,
+                    isPostProcessed: mo.processedContent != nil,
+                    duration: mo.meeting.endTime?.timeIntervalSince(mo.meeting.startTime) ?? 0
+                )
+            }
+        }
+    }
+
     public func deleteTranscription(by id: UUID) async throws {
         try await self.stack.performBackgroundTask { context in
             let request = TranscriptionMO.fetchRequest(forTranscriptionId: id)

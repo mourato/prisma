@@ -250,9 +250,9 @@ public struct TranscriptionsSettingsTab: View {
     }
 
     private var transcriptionsList: some View {
-        List(self.viewModel.filteredTranscriptions, selection: self.$viewModel.selectedTranscription) { transcription in
-            TranscriptionRowView(transcription: transcription)
-                .tag(transcription)
+        List(self.viewModel.filteredTranscriptions, selection: self.$viewModel.selectedId) { transcription in
+            TranscriptionRowView(metadata: transcription)
+                .tag(transcription.id)
                 .listRowSeparator(.visible, edges: .bottom)
         }
         .listStyle(.inset)
@@ -290,26 +290,48 @@ public struct TranscriptionsSettingsTab: View {
 // MARK: - Transcription Row View
 
 struct TranscriptionRowView: View {
-    let transcription: Transcription
+    let metadata: TranscriptionMetadata
+
+    private var appColor: Color {
+        MeetingApp(rawValue: self.metadata.appRawValue)?.color ?? .gray
+    }
+
+    private var appIcon: String {
+        MeetingApp(rawValue: self.metadata.appRawValue)?.icon ?? "questionmark.circle"
+    }
+
+    private var formattedDate: String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        formatter.locale = Locale(identifier: "pt_BR")
+        return formatter.string(from: self.metadata.createdAt)
+    }
+
+    private var formattedTime: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return formatter.string(from: self.metadata.createdAt)
+    }
 
     var body: some View {
         HStack(spacing: 12) {
             ZStack {
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(self.transcription.meeting.appColor.opacity(0.1))
+                    .fill(self.appColor.opacity(0.1))
                     .frame(width: 40, height: 40)
 
-                Image(systemName: self.transcription.meeting.appIcon)
+                Image(systemName: self.appIcon)
                     .font(.title3)
-                    .foregroundStyle(self.transcription.meeting.appColor)
+                    .foregroundStyle(self.appColor)
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(self.transcription.formattedDate)
+                Text(self.formattedDate)
                     .font(.body)
                     .fontWeight(.semibold)
 
-                Text(self.transcription.truncatedPreview)
+                Text(self.metadata.previewText)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -318,12 +340,12 @@ struct TranscriptionRowView: View {
             Spacer()
 
             VStack(alignment: .trailing, spacing: 4) {
-                Text(self.transcription.formattedTime)
+                Text(self.formattedTime)
                     .font(.caption2)
                     .monospacedDigit()
                     .foregroundStyle(.tertiary)
 
-                if self.transcription.isPostProcessed {
+                if self.metadata.isPostProcessed {
                     Image(systemName: "sparkles")
                         .font(.caption)
                         .foregroundStyle(SettingsDesignSystem.Colors.aiGradient)
