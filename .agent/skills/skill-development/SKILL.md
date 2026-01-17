@@ -617,6 +617,10 @@ Good for: Complex domains with validation utilities
 
 ## Additional Resources
 
+### Related Skills
+
+- **[skills-discovery](../skills-discovery/SKILL.md)** - Find and install existing skills before creating new ones
+
 ### Study These Skills
 
 Plugin-dev's skills demonstrate best practices:

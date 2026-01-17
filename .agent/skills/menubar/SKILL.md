@@ -1,25 +1,29 @@
+---
+name: Menu Bar Applications
+description: This skill should be used when working with "NSStatusItem", "NSStatusBar", "menu bar apps", "popover", or implementing macOS status bar functionality.
+---
+
 # Menu Bar Applications
 
-> **Skill Condicional** - Ativada quando trabalhando com NSStatusItem
+## Overview
 
-## Visão Geral
+Specific patterns for macOS menu bar applications using NSStatusItem.
 
-Padrões específicos para aplicações menu bar no macOS usando NSStatusItem.
+## When to Use
 
-## Quando Usar
-
-Ative esta skill quando detectar:
+Activate this skill when working with:
 - `NSStatusItem`
 - `NSStatusBar`
 - `NSMenu`
 - `NSStatusBarButton`
-- `popover`
+- `NSPopover`
+- Menu bar app development
 
-## Conceitos-Chave
+## Key Concepts
 
 ### Context Menu Behavior
 
-**Right-click** no `NSStatusItem` deve mostrar menu de contexto:
+**Right-click** on `NSStatusItem` should show context menu:
 
 ```swift
 class MenuBarController {
@@ -33,7 +37,7 @@ class MenuBarController {
     }
 
     @objc private func handleRightClick(_ sender: NSStatusBarButton) {
-        closePopover() // Fecha popover antes de mostrar menu
+        closePopover() // Close popover before showing menu
         showContextMenu(sender)
     }
 
@@ -46,7 +50,7 @@ class MenuBarController {
 
 ### Dynamic Menu Items
 
-Armazene referências para atualizar títulos:
+Store references to update titles dynamically:
 
 ```swift
 class MenuBarController {
@@ -89,7 +93,7 @@ class MenuBarController {
 
 ### State Reflection
 
-Atualize estado da UI junto:
+Update UI state together with icon and tooltip:
 
 ```swift
 func updateStatusIcon(isRecording: Bool) {
@@ -100,9 +104,9 @@ func updateStatusIcon(isRecording: Bool) {
 }
 ```
 
-## Patterns Comuns
+## Common Patterns
 
-### Menu Bar com Popover
+### Menu Bar with Popover
 
 ```swift
 final class MeetingAssistantMenuBar {
@@ -126,7 +130,7 @@ final class MeetingAssistantMenuBar {
             button.action = #selector(togglePopover)
             button.target = self
 
-            // Right-click para menu de contexto
+            // Right-click for context menu
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
         }
     }
@@ -142,14 +146,14 @@ final class MeetingAssistantMenuBar {
 }
 ```
 
-## Armadilhas Comuns
+## Common Pitfalls
 
-1. **Popover travado** - Sempre chame `closePopover()` antes de outras ações
-2. **Menu não atualiza** - Mantenha referências aos itens dinâmicos
-3. **Click fora** - Configure `popover.behavior = .transient`
-4. **Memory leaks** - Use `[weak self]` em closures
+1. **Stuck popover** - Always call `closePopover()` before other actions
+2. **Menu doesn't update** - Keep references to dynamic menu items
+3. **Click outside** - Configure `popover.behavior = .transient`
+4. **Memory leaks** - Use `[weak self]` in closures
 
-## Referências
+## References
 
 - [MenuBarView.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Views/MenuBarView.swift)
 - [Apple Status Bar Guide](https://developer.apple.com/documentation/appkit/nsstatusitem)
