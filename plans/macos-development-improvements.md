@@ -112,8 +112,8 @@
 - [x] Adicionar API documentation em todos public types
 - [x] Documentar limitações do ambiente de teste e runner (Silent Crashes)
 - [x] Formalizar políticas de Memória e Performance em `ARCHITECTURE.md`
-- [ ] Criar tutorials para workflows comuns
-- [ ] Gerar documentação automaticamente no CI
+- [x] Criar tutorials para workflows comuns
+- [x] Gerar documentação automaticamente no CI
 
 #### 3.2 Code Quality Automation
 - [x] Integrar SwiftLint + SwiftFormat no pre-commit
@@ -135,8 +135,8 @@
 
 #### 4.1 Security Hardening
 - [x] Resolver path traversal em `StorageService`
-- [ ] Implementar input sanitization em todas APIs
-- [ ] Migrar logging para `.private` privacy level
+- [x] Implementar input sanitization em todas APIs
+- [x] Migrar logging para `.private` privacy level
 
 #### 4.2 Local Release Engineering
 - [ ] Criar release pipeline com GitHub Actions (DMG build)
