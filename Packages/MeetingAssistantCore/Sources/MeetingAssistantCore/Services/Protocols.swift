@@ -49,7 +49,10 @@ public protocol TranscriptionService: ObservableObject {
     func fetchServiceStatus() async throws -> ServiceStatusResponse
 
     /// Transcribe an audio file.
-    func transcribe(audioURL: URL) async throws -> TranscriptionResponse
+    func transcribe(
+        audioURL: URL,
+        onProgress: (@Sendable (Double) -> Void)?
+    ) async throws -> TranscriptionResponse
 }
 
 // MARK: - Post-Processing Protocol

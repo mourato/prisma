@@ -1,14 +1,13 @@
 @preconcurrency import AVFoundation
 import Foundation
-import os.lock
 
 /// A thread-safe, fixed-size Circular Buffer (Ring Buffer) for `AVAudioPCMBuffer`.
 /// Designed for high-performance audio bridging between `ScreenCaptureKit` (Push) and `AVAudioSourceNode` (Pull).
-/// Uses `OSAllocatedUnfairLock` to minimize blocking overhead on the audio thread.
+/// Uses `NSLock` for thread safety.
 public final class AudioBufferQueue: @unchecked Sendable {
     // MARK: - State
 
-    private let lock = OSAllocatedUnfairLock()
+    private let lock = NSLock()
 
     // Fixed buffer storage
     private var bufferStorage: [AVAudioPCMBuffer?]
@@ -35,72 +34,70 @@ public final class AudioBufferQueue: @unchecked Sendable {
     /// Enqueues a buffer. STRICTLY NON-BLOCKING (spins/waits very briefly).
     /// If full, overwrites the oldest data (Drop Oldest strategy) to maintain real-time currency.
     public func enqueue(_ buffer: AVAudioPCMBuffer) {
-        self.lock.withLock {
-            if self.count >= self.capacity {
-                // Buffer full: Drop oldest (tail) to make space
-                // This ensures we always have fresh data and don't lag behind
-                self.bufferStorage[self.tail] = nil // Release ref
-                self.tail = (self.tail + 1) % self.capacity
-                self.count -= 1
-                self.droppedFrameCount += Int64(buffer.frameLength)
-            }
+        self.lock.lock()
+        defer { self.lock.unlock() }
 
-            // Write to head
-            self.bufferStorage[self.head] = buffer
-            self.head = (self.head + 1) % self.capacity
-            self.count += 1
+        if self.count >= self.capacity {
+            // Buffer full: Drop oldest (tail) to make space
+            // This ensures we always have fresh data and don't lag behind
+            self.bufferStorage[self.tail] = nil // Release ref
+            self.tail = (self.tail + 1) % self.capacity
+            self.count -= 1
+            self.droppedFrameCount += Int64(buffer.frameLength)
         }
+
+        // Write to head
+        self.bufferStorage[self.head] = buffer
+        self.head = (self.head + 1) % self.capacity
+        self.count += 1
     }
 
     /// Dequeues a buffer.
     /// - Returns: The next buffer, or nil if empty.
     public func dequeue() -> AVAudioPCMBuffer? {
-        self.lock.withLock {
-            guard !self.isEmptyInternal else {
-                return nil
-            }
+        self.lock.lock()
+        defer { self.lock.unlock() }
 
-            let buffer = self.bufferStorage[self.tail]
-
-            // self.bufferStorage[self.tail] = nil // Avoid dealloc on audio thread
-            self.tail = (self.tail + 1) % self.capacity
-            self.count -= 1
-
-            return buffer
+        guard !self.isEmpty else {
+            return nil
         }
+
+        let buffer = self.bufferStorage[self.tail]
+
+        self.bufferStorage[self.tail] = nil
+        self.tail = (self.tail + 1) % self.capacity
+        self.count -= 1
+
+        return buffer
     }
 
     /// Clears the queue.
     public func clear() {
-        self.lock.withLock {
-            for i in 0..<self.capacity {
-                self.bufferStorage[i] = nil
-            }
-            self.head = 0
-            self.tail = 0
-            self.count = 0
-            self.droppedFrameCount = 0
+        self.lock.lock()
+        defer { self.lock.unlock() }
+
+        for i in 0..<self.capacity {
+            self.bufferStorage[i] = nil
         }
+        self.head = 0
+        self.tail = 0
+        self.count = 0
+        self.droppedFrameCount = 0
     }
 
     /// Returns debug statistics (thread-safe).
     public var stats: (count: Int, dropped: Int64) {
-        self.lock.withLock {
-            (self.count, self.droppedFrameCount)
-        }
+        self.lock.lock()
+        defer { self.lock.unlock() }
+        return (self.count, self.droppedFrameCount)
     }
 
     /// Returns whether the queue is empty.
     // swiftlint:disable empty_count
     public var isEmpty: Bool {
-        self.lock.withLock {
-            self.count == 0
-        }
+        self.lock.lock()
+        defer { self.lock.unlock() }
+        return self.count == 0
     }
-
     // swiftlint:enable empty_count
-
-    private var isEmptyInternal: Bool {
-        self.isEmpty
-    }
 }

@@ -103,7 +103,11 @@ public struct AIConfiguration: Codable, Equatable, Sendable {
         do {
             try KeychainManager.store(self._legacyApiKey, for: .aiAPIKey)
         } catch {
-            AppLogger.error("Failed to store legacy API key in Keychain during migration", category: .general, error: error)
+            AppLogger.error(
+                "Failed to store legacy API key in Keychain during migration",
+                category: .general,
+                error: error
+            )
             // For migration scenarios, continuing without logging the error is acceptable
         }
 
@@ -129,6 +133,8 @@ public class AppSettingsStore: ObservableObject {
         static let selectedPromptId = "postProcessingSelectedPromptId"
         static let postProcessingEnabled = "postProcessingEnabled"
         static let isDiarizationEnabled = "isDiarizationEnabled"
+        static let minSpeakers = "minSpeakers"
+        static let maxSpeakers = "maxSpeakers"
         static let selectedLanguage = "selectedLanguage"
     }
 
@@ -179,6 +185,20 @@ public class AppSettingsStore: ObservableObject {
         }
     }
 
+    /// Minimum number of speakers for diarization.
+    @Published public var minSpeakers: Int {
+        didSet {
+            UserDefaults.standard.set(self.minSpeakers, forKey: Keys.minSpeakers)
+        }
+    }
+
+    /// Maximum number of speakers for diarization.
+    @Published public var maxSpeakers: Int {
+        didSet {
+            UserDefaults.standard.set(self.maxSpeakers, forKey: Keys.maxSpeakers)
+        }
+    }
+
     /// Selected audio format for recordings.
     @Published public var audioFormat: AudioFormat {
         didSet {
@@ -225,13 +245,9 @@ public class AppSettingsStore: ObservableObject {
             self.aiConfiguration = .default
         }
 
-        // Load AI enabled state
         self.aiEnabled = UserDefaults.standard.bool(forKey: Keys.aiEnabled)
-
-        // Load post-processing settings
-        self.systemPrompt =
-            UserDefaults.standard.string(forKey: Keys.systemPrompt)
-                ?? AIPromptTemplates.defaultSystemPrompt
+        self.systemPrompt = UserDefaults.standard.string(forKey: Keys.systemPrompt)
+            ?? AIPromptTemplates.defaultSystemPrompt
 
         if let data = UserDefaults.standard.data(forKey: Keys.userPrompts),
            let prompts = try? JSONDecoder().decode([PostProcessingPrompt].self, from: data)
@@ -241,43 +257,29 @@ public class AppSettingsStore: ObservableObject {
             self.userPrompts = []
         }
 
-        if let idString = UserDefaults.standard.string(forKey: Keys.selectedPromptId),
-           let id = UUID(uuidString: idString)
-        {
-            self.selectedPromptId = id
-        } else {
-            self.selectedPromptId = nil
-        }
-
         self.postProcessingEnabled = UserDefaults.standard.bool(forKey: Keys.postProcessingEnabled)
         self.isDiarizationEnabled = UserDefaults.standard.bool(forKey: Keys.isDiarizationEnabled)
 
-        // Initialize Audio Format
-        if let rawValue = UserDefaults.standard.string(forKey: PostProcessingKeys.audioFormat),
-           let format = AudioFormat(rawValue: rawValue)
-        {
-            self.audioFormat = format
-        } else {
-            self.audioFormat = .wav
-        }
+        let minS = UserDefaults.standard.integer(forKey: Keys.minSpeakers)
+        self.minSpeakers = minS == 0 ? 1 : minS
+        let maxS = UserDefaults.standard.integer(forKey: Keys.maxSpeakers)
+        self.maxSpeakers = maxS == 0 ? 10 : maxS
 
-        // Initialize Merge Setting
+        let rawFormat = UserDefaults.standard.string(forKey: PostProcessingKeys.audioFormat)
+        self.audioFormat = rawFormat.flatMap { AudioFormat(rawValue: $0) } ?? .m4a
+
+        self.selectedPromptId = UserDefaults.standard.string(forKey: Keys.selectedPromptId)
+            .flatMap { UUID(uuidString: $0) }
+
         if UserDefaults.standard.object(forKey: PostProcessingKeys.shouldMergeAudioFiles) == nil {
             self.shouldMergeAudioFiles = true
         } else {
             self.shouldMergeAudioFiles = UserDefaults.standard.bool(forKey: PostProcessingKeys.shouldMergeAudioFiles)
         }
 
-        // Initialize Language Setting
-        if let rawValue = UserDefaults.standard.string(forKey: Keys.selectedLanguage),
-           let language = AppLanguage(rawValue: rawValue)
-        {
-            self.selectedLanguage = language
-        } else {
-            self.selectedLanguage = .system
-        }
+        let rawLang = UserDefaults.standard.string(forKey: Keys.selectedLanguage)
+        self.selectedLanguage = rawLang.flatMap { AppLanguage(rawValue: $0) } ?? .system
 
-        // Ensure language is applied on startup
         self.applyLanguage(self.selectedLanguage)
     }
 
@@ -312,6 +314,8 @@ public class AppSettingsStore: ObservableObject {
         self.selectedPromptId = nil
         self.postProcessingEnabled = false
         self.isDiarizationEnabled = false
+        self.minSpeakers = 1
+        self.maxSpeakers = 10
     }
 
     // MARK: - Prompt Management

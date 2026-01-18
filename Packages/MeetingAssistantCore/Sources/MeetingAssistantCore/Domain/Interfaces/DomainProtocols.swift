@@ -54,7 +54,10 @@ public protocol TranscriptionRepository: Sendable {
     func fetchServiceStatus() async throws -> DomainServiceStatusResponse
 
     /// Transcreve arquivo de áudio
-    func transcribe(audioURL: URL) async throws -> DomainTranscriptionResponse
+    func transcribe(
+        audioURL: URL,
+        onProgress: (@Sendable (Double) -> Void)?
+    ) async throws -> DomainTranscriptionResponse
 }
 
 /// Protocolo para operações de pós-processamento

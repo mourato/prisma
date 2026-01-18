@@ -92,9 +92,20 @@ class MockTranscriptionClient: TranscriptionService {
         )
     }
 
-    func transcribe(audioURL: URL) async throws -> TranscriptionResponse {
+    func transcribe(
+        audioURL: URL,
+        onProgress: (@Sendable (Double) -> Void)? = nil
+    ) async throws -> TranscriptionResponse {
         self.transcribeCallCount += 1
         self.lastTranscribeAudioURL = audioURL
+
+        // Simulate progress updates if callback provided
+        if let onProgress {
+            onProgress(25.0)
+            onProgress(50.0)
+            onProgress(75.0)
+            onProgress(100.0)
+        }
 
         if self.shouldFailTranscription {
             throw NSError(domain: "MockTranscription", code: 2, userInfo: [NSLocalizedDescriptionKey: "Transcription failed"])

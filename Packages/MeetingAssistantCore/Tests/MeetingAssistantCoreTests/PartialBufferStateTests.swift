@@ -3,7 +3,7 @@
 import XCTest
 
 final class PartialBufferStateTests: XCTestCase {
-    var sut: PartialBufferState!
+    var sut: PartialBufferState?
 
     override func setUp() {
         super.setUp()
@@ -18,57 +18,63 @@ final class PartialBufferStateTests: XCTestCase {
     // MARK: - Initial State
 
     func testInitialState_HasNoPartialBuffer() {
-        XCTAssertFalse(self.sut.hasPartial)
-        XCTAssertEqual(self.sut.framesRemaining, 0)
+        guard let sut = self.sut else { return XCTFail("SUT not initialized") }
+        XCTAssertFalse(sut.hasPartial)
+        XCTAssertEqual(sut.framesRemaining, 0)
     }
 
     // MARK: - setBuffer
 
     func testSetBuffer_UpdatesState() throws {
+        guard let sut = self.sut else { return XCTFail("SUT not initialized") }
         let buffer = try createTestBuffer(frameCount: 100)
-        self.sut.setBuffer(buffer)
+        sut.setBuffer(buffer)
 
-        XCTAssertTrue(self.sut.hasPartial)
-        XCTAssertEqual(self.sut.framesRemaining, 100)
+        XCTAssertTrue(sut.hasPartial)
+        XCTAssertEqual(sut.framesRemaining, 100)
     }
 
     func testSetBuffer_WithOffset_UpdatesState() throws {
+        guard let sut = self.sut else { return XCTFail("SUT not initialized") }
         let buffer = try createTestBuffer(frameCount: 100)
-        self.sut.setBuffer(buffer, offset: 25)
+        sut.setBuffer(buffer, offset: 25)
 
-        XCTAssertTrue(self.sut.hasPartial)
-        XCTAssertEqual(self.sut.framesRemaining, 75)
+        XCTAssertTrue(sut.hasPartial)
+        XCTAssertEqual(sut.framesRemaining, 75)
     }
 
     func testSetBuffer_WithFullOffset_HasNoRemaining() throws {
+        guard let sut = self.sut else { return XCTFail("SUT not initialized") }
         let buffer = try createTestBuffer(frameCount: 100)
-        self.sut.setBuffer(buffer, offset: 100)
+        sut.setBuffer(buffer, offset: 100)
 
         // framesRemaining = 100 - 100 = 0
-        XCTAssertEqual(self.sut.framesRemaining, 0)
+        XCTAssertEqual(sut.framesRemaining, 0)
     }
 
     // MARK: - clear
 
     func testClear_ResetsState() throws {
+        guard let sut = self.sut else { return XCTFail("SUT not initialized") }
         let buffer = try createTestBuffer(frameCount: 100)
-        self.sut.setBuffer(buffer)
+        sut.setBuffer(buffer)
 
-        XCTAssertTrue(self.sut.hasPartial)
+        XCTAssertTrue(sut.hasPartial)
 
-        self.sut.clear()
+        sut.clear()
 
-        XCTAssertFalse(self.sut.hasPartial)
-        XCTAssertEqual(self.sut.framesRemaining, 0)
+        XCTAssertFalse(sut.hasPartial)
+        XCTAssertEqual(sut.framesRemaining, 0)
     }
 
     func testClear_WhenEmpty_RemainsEmpty() {
-        XCTAssertFalse(self.sut.hasPartial)
+        guard let sut = self.sut else { return XCTFail("SUT not initialized") }
+        XCTAssertFalse(sut.hasPartial)
 
-        self.sut.clear()
+        sut.clear()
 
-        XCTAssertFalse(self.sut.hasPartial)
-        XCTAssertEqual(self.sut.framesRemaining, 0)
+        XCTAssertFalse(sut.hasPartial)
+        XCTAssertEqual(sut.framesRemaining, 0)
     }
 
     // MARK: - Thread Safety (Basic)
@@ -79,16 +85,18 @@ final class PartialBufferStateTests: XCTestCase {
         let expectation = self.expectation(description: "Concurrent access")
         expectation.expectedFulfillmentCount = iterations * 2
 
+        guard let sut = self.sut else { return XCTFail("SUT not initialized") }
+
         // Multiple concurrent reads and writes
         for _ in 0..<iterations {
             DispatchQueue.global().async {
-                self.sut.setBuffer(buffer, offset: Int.random(in: 0..<100))
+                sut.setBuffer(buffer, offset: Int.random(in: 0..<100))
                 expectation.fulfill()
             }
 
             DispatchQueue.global().async {
-                _ = self.sut.framesRemaining
-                _ = self.sut.hasPartial
+                _ = sut.framesRemaining
+                _ = sut.hasPartial
                 expectation.fulfill()
             }
         }
@@ -116,7 +124,7 @@ final class PartialBufferStateTests: XCTestCase {
 
         // Baseline: Property access should be instantaneous
         measure(metrics: [XCTClockMetric()]) {
-            for _ in 0..<10000 {
+            for _ in 0..<10_000 {
                 _ = self.sut.hasPartial
                 _ = self.sut.framesRemaining
             }

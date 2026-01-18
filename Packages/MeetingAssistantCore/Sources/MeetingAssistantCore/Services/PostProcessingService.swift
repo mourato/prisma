@@ -23,7 +23,10 @@ public enum PostProcessingError: LocalizedError {
         case .invalidURL:
             NSLocalizedString("error.post_processing.invalid_url", bundle: .module, comment: "")
         case let .requestFailed(error):
-            String(format: NSLocalizedString("error.post_processing.request_failed", bundle: .module, comment: ""), error.localizedDescription)
+            String(
+                format: NSLocalizedString("error.post_processing.request_failed", bundle: .module, comment: ""),
+                error.localizedDescription
+            )
         case .invalidResponse:
             NSLocalizedString("error.post_processing.invalid_response", bundle: .module, comment: "")
         case let .apiError(message):
@@ -31,7 +34,10 @@ public enum PostProcessingError: LocalizedError {
         case .emptyTranscription:
             NSLocalizedString("error.post_processing.empty_transcription", bundle: .module, comment: "")
         case let .transcriptionTooLong(count):
-            String(format: NSLocalizedString("error.post_processing.transcription_too_long", bundle: .module, comment: ""), count)
+            String(
+                format: NSLocalizedString("error.post_processing.transcription_too_long", bundle: .module, comment: ""),
+                count
+            )
         }
     }
 }
@@ -195,7 +201,10 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
         // Retry on timeouts and connection issues
         if (error as NSError).domain == NSURLErrorDomain {
             let code = (error as NSError).code
-            if code == NSURLErrorTimedOut || code == NSURLErrorNetworkConnectionLost || code == NSURLErrorCannotConnectToHost {
+            if code == NSURLErrorTimedOut ||
+                code == NSURLErrorNetworkConnectionLost ||
+                code == NSURLErrorCannotConnectToHost
+            {
                 return true
             }
         }

@@ -8,7 +8,7 @@ import Foundation
 public final class PostProcessingRepositoryAdapter: PostProcessingRepository {
     private let postProcessingService: any PostProcessingServiceProtocol
 
-    public init(postProcessingService: PostProcessingServiceProtocol) {
+    public init(postProcessingService: any PostProcessingServiceProtocol) {
         self.postProcessingService = postProcessingService
     }
 
@@ -16,7 +16,10 @@ public final class PostProcessingRepositoryAdapter: PostProcessingRepository {
         try await self.postProcessingService.processTranscription(transcription)
     }
 
-    public func processTranscription(_ transcription: String, with prompt: DomainPostProcessingPrompt) async throws -> String {
+    public func processTranscription(
+        _ transcription: String,
+        with prompt: DomainPostProcessingPrompt
+    ) async throws -> String {
         // Converter DomainPostProcessingPrompt para PostProcessingPrompt (legado)
         let legacyPrompt = PostProcessingPrompt(
             id: prompt.id,

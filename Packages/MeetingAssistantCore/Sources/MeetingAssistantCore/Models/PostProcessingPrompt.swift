@@ -39,22 +39,14 @@ public extension PostProcessingPrompt {
     private enum PredefinedIDs {
         // MARK: - Fallback UUIDs (valid for all Swift versions)
 
-        // swiftlint:disable:next force_unwrapping
-        private static let fallbackMeetingNotes = UUID(
-            uuidString: "00000000-0000-0000-0000-000000000001"
-        )!
-        // swiftlint:disable:next force_unwrapping
-        private static let fallbackExecutiveSummary = UUID(
-            uuidString: "00000000-0000-0000-0000-000000000002"
-        )!
-        // swiftlint:disable:next force_unwrapping
-        private static let fallbackActionItems = UUID(
-            uuidString: "00000000-0000-0000-0000-000000000003"
-        )!
-        // swiftlint:disable:next force_unwrapping
-        private static let fallbackCleanTranscription = UUID(
-            uuidString: "00000000-0000-0000-0000-000000000004"
-        )!
+        private static func uuid(_ string: String) -> UUID {
+            UUID(uuidString: string) ?? UUID()
+        }
+
+        private static let fallbackMeetingNotes = uuid("00000000-0000-0000-0000-000000000001")
+        private static let fallbackExecutiveSummary = uuid("00000000-0000-0000-0000-000000000002")
+        private static let fallbackActionItems = uuid("00000000-0000-0000-0000-000000000003")
+        private static let fallbackCleanTranscription = uuid("00000000-0000-0000-0000-000000000004")
 
         static let meetingNotes: UUID = {
             guard let uuid = UUID(uuidString: "00000000-0000-0000-0000-000000000001") else {

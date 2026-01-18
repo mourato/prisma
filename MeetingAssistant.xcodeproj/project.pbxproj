@@ -8,13 +8,18 @@
 
 /* Begin PBXBuildFile section */
 		3F03DE0211159973516BB785 /* MeetingAssistantCore in Frameworks */ = {isa = PBXBuildFile; productRef = 38B4793F12BE4C852414ED2F /* MeetingAssistantCore */; };
+		67EFEA61F7E1C1B39F839DA8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 15415C8C013D084568C9F895 /* Assets.xcassets */; };
+		791585666AC34712B12EC196 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 833251DCBCC51B7EF6E85459 /* InfoPlist.strings */; };
 		7B35EE173CC9EBE38AADFF8B /* MeetingAssistantApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B2BBB31BDAF910C61928AC /* MeetingAssistantApp.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		00BF240857B0E7CEBE822856 /* MeetingAssistant.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MeetingAssistant.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0A8EF075303DE0711DC480BA /* pt-BR */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "pt-BR"; path = "pt-BR.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		15415C8C013D084568C9F895 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		35318EC4A95F6DC94F7B7E05 /* MeetingAssistantCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = MeetingAssistantCore; path = Packages/MeetingAssistantCore; sourceTree = SOURCE_ROOT; };
 		4394AB0636110AD9B3FCC8FB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		8C5560DF654F0B06D2610131 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		C8B2BBB31BDAF910C61928AC /* MeetingAssistantApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingAssistantApp.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -33,7 +38,9 @@
 		5CF343346B9D46E81A90DA29 /* App */ = {
 			isa = PBXGroup;
 			children = (
+				15415C8C013D084568C9F895 /* Assets.xcassets */,
 				4394AB0636110AD9B3FCC8FB /* Info.plist */,
+				833251DCBCC51B7EF6E85459 /* InfoPlist.strings */,
 				C8B2BBB31BDAF910C61928AC /* MeetingAssistantApp.swift */,
 			);
 			path = App;
@@ -72,6 +79,7 @@
 			buildConfigurationList = 9A03346E76FD2E307EEE752E /* Build configuration list for PBXNativeTarget "MeetingAssistant" */;
 			buildPhases = (
 				39619CA28397798BF02CF90D /* Sources */,
+				4406995276713BCE01038784 /* Resources */,
 				E73F3666792546EC762B746A /* Frameworks */,
 			);
 			buildRules = (
@@ -108,6 +116,7 @@
 			knownRegions = (
 				Base,
 				en,
+				"pt-BR",
 			);
 			mainGroup = 8605F8A74990CABBEFD1C8E6;
 			minimizedProjectReferenceProxies = 1;
@@ -123,6 +132,18 @@
 		};
 /* End PBXProject section */
 
+/* Begin PBXResourcesBuildPhase section */
+		4406995276713BCE01038784 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				67EFEA61F7E1C1B39F839DA8 /* Assets.xcassets in Resources */,
+				791585666AC34712B12EC196 /* InfoPlist.strings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		39619CA28397798BF02CF90D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -133,6 +154,18 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		833251DCBCC51B7EF6E85459 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				8C5560DF654F0B06D2610131 /* en */,
+				0A8EF075303DE0711DC480BA /* pt-BR */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		070AA0D888F49981B20F071D /* Release */ = {

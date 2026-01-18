@@ -487,7 +487,17 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         self.transcriptionStatus.updateProgress(
             phase: .processing, percentage: Constants.processingProgress
         )
-        return try await self.transcriptionClient.transcribe(audioURL: audioURL)
+        return try await self.transcriptionClient.transcribe(
+            audioURL: audioURL,
+            onProgress: { [weak self] percentage in
+                Task { @MainActor in
+                    self?.transcriptionStatus.updateProgress(
+                        phase: .processing,
+                        percentage: percentage
+                    )
+                }
+            }
+        )
     }
 
     private func applyPostProcessing(rawText: String) async -> (String?, UUID?, String?) {

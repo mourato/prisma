@@ -120,8 +120,12 @@ public class TranscriptionClient: ObservableObject, TranscriptionService {
 
     /// Transcribe an audio file.
     /// - Parameter audioURL: Path to the audio file (WAV, M4A, etc.)
+    /// - Parameter onProgress: Optional callback for transcription progress.
     /// - Returns: Transcription response from the service
-    public func transcribe(audioURL: URL) async throws -> TranscriptionResponse {
+    public func transcribe(
+        audioURL: URL,
+        onProgress: (@Sendable (Double) -> Void)? = nil
+    ) async throws -> TranscriptionResponse {
         AppLogger.info(
             "Transcribing file locally",
             category: .transcriptionEngine,
@@ -130,7 +134,10 @@ public class TranscriptionClient: ObservableObject, TranscriptionService {
 
         // Use LocalTranscriptionClient as the implementation provider.
         do {
-            let response = try await LocalTranscriptionClient.shared.transcribe(audioURL: audioURL)
+            let response = try await LocalTranscriptionClient.shared.transcribe(
+                audioURL: audioURL,
+                onProgress: onProgress
+            )
             AppLogger.info(
                 "Transcription completed info",
                 category: .transcriptionEngine,
@@ -171,7 +178,10 @@ public enum TranscriptionError: LocalizedError {
         case .invalidResponse:
             NSLocalizedString("error.transcription.invalid_response", bundle: .module, comment: "")
         case let .invalidURL(urlString):
-            String(format: NSLocalizedString("error.transcription.invalid_url", bundle: .module, comment: ""), urlString)
+            String(
+                format: NSLocalizedString("error.transcription.invalid_url", bundle: .module, comment: ""),
+                urlString
+            )
         case let .transcriptionFailed(message):
             String(format: NSLocalizedString("error.transcription.failed", bundle: .module, comment: ""), message)
         }

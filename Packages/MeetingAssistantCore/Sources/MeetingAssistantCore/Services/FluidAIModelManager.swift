@@ -1,5 +1,5 @@
 @preconcurrency import AVFoundation
-import FluidAudio
+@preconcurrency import FluidAudio
 import Foundation
 import os.log
 
@@ -61,12 +61,15 @@ class FluidAIModelManager: ObservableObject {
         self.logger.info("Loading Diarization models...")
 
         do {
-            let config = OfflineDiarizerConfig()
+            let config = OfflineDiarizerConfig.default
+                .withSpeakers(
+                    min: AppSettingsStore.shared.minSpeakers,
+                    max: AppSettingsStore.shared.maxSpeakers
+                )
             let manager = OfflineDiarizerManager(config: config)
             try await manager.prepareModels()
-
             self.diarizerManager = manager
-            self.logger.info("Diarization Manager initialized.")
+            self.logger.info("Diarization Manager initialized with constraints: \(AppSettingsStore.shared.minSpeakers)-\(AppSettingsStore.shared.maxSpeakers)")
         } catch {
             self.logger.error("Failed to load diarization models: \(error.localizedDescription)")
         }
@@ -81,20 +84,29 @@ class FluidAIModelManager: ObservableObject {
     }
 
     /// Perform speaker diarization on an audio file
-    func diarize(audioURL: URL) async throws -> [DiarizationSegment] {
+    func diarize(
+        audioURL: URL,
+        minSpeakers: Int? = nil,
+        maxSpeakers: Int? = nil
+    ) async throws -> [DiarizationSegment] {
         guard let manager = diarizerManager else {
             self.logger.warning("Diarizer not loaded, attempting to load...")
             await self.loadDiarizationModels()
             if self.diarizerManager == nil {
                 throw FluidError.diarizerNotLoaded
             }
-            return try await self.diarize(audioURL: audioURL)
+            return try await self.diarize(
+                audioURL: audioURL,
+                minSpeakers: minSpeakers,
+                maxSpeakers: maxSpeakers
+            )
         }
 
         self.logger.info("Diarizing audio file: \(audioURL.path)")
 
-        // FluidAudio Diarizer usually handles file reading internally for optimal performance
-        // based on the documentation example: let result = try await manager.process(url)
+        // If specific constraints provided, update manager config (assuming it supports it at runtime or we recreate)
+        // For simplicity, we use the ones set during loadModels which uses AppSettings.
+        // If we need runtime override, we'd rebuild the manager.
 
         let result = try await manager.process(audioURL)
 
@@ -116,23 +128,42 @@ class FluidAIModelManager: ObservableObject {
 
     /// Transcribe audio from a URL
     /// Returns: Tuple of (full text, segments)
-    func transcribe(audioURL: URL) async throws -> (text: String, segments: [AsrSegment]) {
+    func transcribe(
+        audioURL: URL,
+        progress: (@Sendable (Double) -> Void)? = nil
+    ) async throws -> (text: String, segments: [AsrSegment]) {
         guard let manager = asrManager, modelState == .loaded else {
             throw FluidError.modelNotLoaded
         }
 
         self.logger.info("Transcribing audio file: \(audioURL.path)")
 
+        // Monitor progress via stream if callback provided
+        let stream = await manager.transcriptionProgressStream
+        let progressTask = Task {
+            if let progress {
+                do {
+                    for try await p in stream {
+                        progress(p * 100.0) // Convert to percentage if needed
+                    }
+                } catch {
+                    // Progress stream failed, but we shouldn't fail transcription for this
+                }
+            }
+        }
+
         // Use the file-based API for automatic conversion
         let result = try await manager.transcribe(audioURL, source: .system)
+        progressTask.cancel()
 
         // Map library tokens to our internal struct
 
-        let mappedSegments = (result.tokenTimings ?? []).map { token in
-            AsrSegment(
-                text: token.token,
-                startTime: Double(token.startTime),
-                endTime: Double(token.endTime)
+        let mappedSegments = (result.tokenTimings ?? []).compactMap { (token: Any) -> AsrSegment? in
+            guard let timing = token as? TokenTiming else { return nil }
+            return AsrSegment(
+                text: timing.token,
+                startTime: Double(timing.startTime),
+                endTime: Double(timing.endTime)
             )
         }
 

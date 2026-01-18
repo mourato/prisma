@@ -10,11 +10,13 @@ public final class CrashReporter: Sendable {
     private init() {
         // Setup logs directory: ~/Library/Logs/MeetingAssistant/CrashReports
         let fileManager = FileManager.default
-        let libraryURL = fileManager.urls(for: .libraryDirectory, in: .userDomainMask).first!
+        // Safe unwrap with fallback to temporary directory if library is unavailable (unlikely)
+        let libraryURL = fileManager.urls(for: .libraryDirectory, in: .userDomainMask).first ?? fileManager.temporaryDirectory
         let logsURL = libraryURL.appendingPathComponent("Logs/MeetingAssistant/CrashReports")
         self.logDirectory = logsURL
 
-        try? fileManager.createDirectory(at: logsURL, withIntermediateDirectories: true)
+        // Create directory if it doesn't exist
+        try? fileManager.createDirectory(at: logsURL, withIntermediateDirectories: true, attributes: nil)
     }
 
     /// Installs the uncaught exception handler
