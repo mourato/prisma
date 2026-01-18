@@ -248,15 +248,27 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func quitApp() {
-        // Stop any ongoing recording before quitting
-        if self.recordingManager.isRecording {
-            Task {
-                await self.recordingManager.stopRecording(transcribe: false)
-                NSApp.terminate(nil)
-            }
-        } else {
-            NSApp.terminate(nil)
+        Task { @MainActor in
+            await self.performGracefulShutdown()
         }
+    }
+
+    private func performGracefulShutdown() async {
+        AppLogger.info("Starting graceful shutdown...", category: .recordingManager)
+
+        // 1. Stop any active recording without triggering transcription
+        if self.recordingManager.isRecording {
+            await self.recordingManager.stopRecording(transcribe: false)
+            // Brief delay to ensure file finalization completes
+            try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
+        }
+
+        // 2. Stop monitoring services
+        PerformanceMonitor.shared.stopMonitoring()
+        CrashReporter.shared.cleanup()
+
+        // 3. Terminate application
+        NSApp.terminate(nil)
     }
 
     // MARK: - Public Methods
