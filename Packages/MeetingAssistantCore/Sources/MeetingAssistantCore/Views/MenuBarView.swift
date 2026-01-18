@@ -129,7 +129,7 @@ public struct MenuBarView: View {
             }
 
             if self.viewModel.isRecording, let meeting = viewModel.currentMeeting {
-                MeetingCard(meeting: meeting)
+                MeetingCard(meeting: meeting, duration: self.viewModel.displayDuration)
             }
         }
         .padding()
@@ -230,6 +230,7 @@ public struct MenuBarView: View {
 /// Card showing current meeting info.
 struct MeetingCard: View {
     let meeting: Meeting
+    let duration: String
 
     var body: some View {
         HStack {
@@ -242,9 +243,10 @@ struct MeetingCard: View {
                     .font(.subheadline)
                     .fontWeight(.medium)
 
-                Text(self.meeting.formattedDuration)
+                Text(self.duration)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .monospacedDigit()
             }
 
             Spacer()

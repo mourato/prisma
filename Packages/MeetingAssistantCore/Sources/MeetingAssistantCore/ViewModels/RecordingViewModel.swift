@@ -17,7 +17,8 @@ public class RecordingViewModel: ObservableObject {
     @Published public var currentMeeting: Meeting?
     @Published public var isModelLoaded: Bool = false
     @Published public var selectedSource: RecordingSource = .all
-    // @Published public var permissionStatus: PermissionStatusManager // Refactored to use Child ViewModel
+    @Published public var displayDuration: String = "00:00"
+    private var timer: AnyCancellable?
 
     // MARK: - Child ViewModels
 
@@ -134,7 +135,15 @@ public class RecordingViewModel: ObservableObject {
 
         self.recordingManager.currentMeetingPublisher
             .receive(on: DispatchQueue.main)
-            .assign(to: &self.$currentMeeting)
+            .sink { [weak self] meeting in
+                self?.currentMeeting = meeting
+                if meeting != nil {
+                    self?.startTimer()
+                } else {
+                    self?.stopTimer()
+                }
+            }
+            .store(in: &self.cancellables)
 
         // Note: permissionStatus and transcriptionStatus are reference types (Classes),
         // so we don't necessarily need to re-assign them if the reference itself doesn't change.
@@ -153,5 +162,34 @@ public class RecordingViewModel: ObservableObject {
             .map { mic, screen in mic == .granted && screen == .granted }
             .receive(on: DispatchQueue.main)
             .assign(to: &self.$arePermissionsGranted)
+    }
+
+    private func startTimer() {
+        self.timer?.cancel()
+        self.timer = Timer.publish(every: 1, on: .main, in: .common)
+            .autoconnect()
+            .sink { [weak self] _ in
+                self?.updateDisplayDuration()
+            }
+    }
+
+    private func stopTimer() {
+        self.timer?.cancel()
+        self.timer = nil
+        self.displayDuration = "00:00"
+    }
+
+    private func updateDisplayDuration() {
+        guard let meeting = self.currentMeeting else { return }
+        let duration = Int(meeting.duration)
+        let hours = duration / 3600
+        let minutes = (duration % 3600) / 60
+        let seconds = duration % 60
+
+        if hours > 0 {
+            self.displayDuration = String(format: "%02d:%02d:%02d", hours, minutes, seconds)
+        } else {
+            self.displayDuration = String(format: "%02d:%02d", minutes, seconds)
+        }
     }
 }
