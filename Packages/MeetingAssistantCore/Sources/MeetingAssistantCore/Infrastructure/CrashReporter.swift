@@ -57,4 +57,10 @@ public final class CrashReporter: Sendable {
             print("Failed to write crash report: \(error)")
         }
     }
+
+    /// Performs any necessary cleanup before application termination
+    public func cleanup() {
+        // Currently just log, as NSSetUncaughtExceptionHandler doesn't need explicit removal
+        AppLogger.debug("CrashReporter cleanup completed", category: .health)
+    }
 }
