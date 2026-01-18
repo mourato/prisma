@@ -18,8 +18,12 @@ class LocalTranscriptionClient {
 
     /// Transcribe an audio file locally.
     /// - Parameter audioURL: Path to the audio file.
+    /// - Parameter onProgress: Optional callback for transcription progress.
     /// - Returns: TranscriptionResponse compatible with existing app logic.
-    func transcribe(audioURL: URL) async throws -> TranscriptionResponse {
+    func transcribe(
+        audioURL: URL,
+        onProgress: (@Sendable (Double) -> Void)? = nil
+    ) async throws -> TranscriptionResponse {
         self.logger.info("Starting local transcription for: \(audioURL.lastPathComponent)")
 
         // Ensure models are loaded
@@ -31,7 +35,10 @@ class LocalTranscriptionClient {
 
         // Perform transcription
         // Returns tuple (text, segments) -> conceptually "tokens" for alignment if they are small enough
-        let (text, segmentsFromASR) = try await manager.transcribe(audioURL: audioURL)
+        let (text, segmentsFromASR) = try await manager.transcribe(
+            audioURL: audioURL,
+            progress: onProgress
+        )
 
         var segments: [Transcription.Segment] = []
 
@@ -40,7 +47,11 @@ class LocalTranscriptionClient {
             // Perform diarization
             self.logger.info("Diarization enabled. Processing...")
             do {
-                let diarizationSegments = try await manager.diarize(audioURL: audioURL)
+                let diarizationSegments = try await manager.diarize(
+                    audioURL: audioURL,
+                    minSpeakers: AppSettingsStore.shared.minSpeakers,
+                    maxSpeakers: AppSettingsStore.shared.maxSpeakers
+                )
                 segments = self.merge(
                     text: text, asrSegments: segmentsFromASR, speakers: diarizationSegments
                 )

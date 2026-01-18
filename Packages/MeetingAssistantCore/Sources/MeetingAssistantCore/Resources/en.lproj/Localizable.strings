@@ -30,6 +30,8 @@
 "settings.ai.description" = "When enabled, transcriptions will be sent to an AI model for correction, formatting, and summarization.";
 "settings.ai.diarization" = "Identify Speakers (Beta)";
 "settings.ai.diarization_desc" = "Identifies who is speaking in the meeting. Significantly increases processing time.";
+"settings.ai.min_speakers" = "Min Speakers";
+"settings.ai.max_speakers" = "Max Speakers";
 "settings.ai.provider" = "Provider";
 "settings.ai.provider_label" = "AI Provider:";
 "settings.ai.api_config" = "API Configuration";

@@ -49,6 +49,39 @@ public struct AISettingsTab: View {
             Text(NSLocalizedString("settings.ai.diarization_desc", bundle: .safeModule, comment: ""))
                 .font(.caption)
                 .foregroundStyle(.secondary)
+
+            if self.viewModel.settings.isDiarizationEnabled {
+                Divider()
+                    .padding(.vertical, 2)
+
+                HStack {
+                    Stepper(
+                        value: self.$viewModel.settings.minSpeakers,
+                        in: 1...self.viewModel.settings.maxSpeakers
+                    ) {
+                        HStack {
+                            Text(NSLocalizedString("settings.ai.min_speakers", bundle: .safeModule, comment: ""))
+                            Spacer()
+                            Text("\(self.viewModel.settings.minSpeakers)")
+                                .fontWeight(.medium)
+                        }
+                    }
+                }
+
+                HStack {
+                    Stepper(
+                        value: self.$viewModel.settings.maxSpeakers,
+                        in: self.viewModel.settings.minSpeakers...20
+                    ) {
+                        HStack {
+                            Text(NSLocalizedString("settings.ai.max_speakers", bundle: .safeModule, comment: ""))
+                            Spacer()
+                            Text("\(self.viewModel.settings.maxSpeakers)")
+                                .fontWeight(.medium)
+                        }
+                    }
+                }
+            }
         }
     }
 

@@ -54,10 +54,12 @@ public enum EnvironmentConfig {
         public static var baseURL: URL {
             // Placeholder for future API configuration
             #if DEBUG
-            return URL(string: "https://api-dev.meetingassistant.com")!
+            let urlString = "https://api-dev.meetingassistant.com"
             #else
-            return URL(string: "https://api.meetingassistant.com")!
+            let urlString = "https://api.meetingassistant.com"
             #endif
+
+            return URL(string: urlString) ?? URL(string: "https://localhost")!
         }
     }
 }

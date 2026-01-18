@@ -41,7 +41,10 @@ public final class TranscribeAudioUseCase {
         // Transcrever áudio
         let response: DomainTranscriptionResponse
         do {
-            response = try await self.transcriptionRepository.transcribe(audioURL: audioURL)
+            response = try await self.transcriptionRepository.transcribe(
+                audioURL: audioURL,
+                onProgress: nil // No progress reporting from this use case for now
+            )
         } catch {
             throw DomainTranscriptionError.transcriptionFailed(error.localizedDescription)
         }

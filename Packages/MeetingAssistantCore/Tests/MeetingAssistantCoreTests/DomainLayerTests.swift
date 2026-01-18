@@ -1,35 +1,35 @@
 // DomainLayerTests - Testes unitários para os casos de uso do domínio
 // Usando Cuckoo para mocks automáticos
 
-import XCTest
 import Cuckoo
 @testable import MeetingAssistantCore
+import XCTest
 
 final class DomainLayerTests: XCTestCase {
-    var mockRecordingRepo: MockRecordingRepository!
-    var mockAudioFileRepo: MockAudioFileRepository!
-    var mockMeetingRepo: MockMeetingRepository!
-    var mockTranscriptionRepo: MockTranscriptionRepository!
-    var mockTranscriptionStorageRepo: MockTranscriptionStorageRepository!
-    var mockPostProcessingRepo: MockPostProcessingRepository!
+    var mockRecordingRepo: MockRecordingRepository?
+    var mockAudioFileRepo: MockAudioFileRepository?
+    var mockMeetingRepo: MockMeetingRepository?
+    var mockTranscriptionRepo: MockTranscriptionRepository?
+    var mockTranscriptionStorageRepo: MockTranscriptionStorageRepository?
+    var mockPostProcessingRepo: MockPostProcessingRepository?
 
     override func setUp() {
         super.setUp()
-        mockRecordingRepo = MockRecordingRepository()
-        mockAudioFileRepo = MockAudioFileRepository()
-        mockMeetingRepo = MockMeetingRepository()
-        mockTranscriptionRepo = MockTranscriptionRepository()
-        mockTranscriptionStorageRepo = MockTranscriptionStorageRepository()
-        mockPostProcessingRepo = MockPostProcessingRepository()
+        self.mockRecordingRepo = MockRecordingRepository()
+        self.mockAudioFileRepo = MockAudioFileRepository()
+        self.mockMeetingRepo = MockMeetingRepository()
+        self.mockTranscriptionRepo = MockTranscriptionRepository()
+        self.mockTranscriptionStorageRepo = MockTranscriptionStorageRepository()
+        self.mockPostProcessingRepo = MockPostProcessingRepository()
     }
 
     override func tearDown() {
-        mockRecordingRepo = nil
-        mockAudioFileRepo = nil
-        mockMeetingRepo = nil
-        mockTranscriptionRepo = nil
-        mockTranscriptionStorageRepo = nil
-        mockPostProcessingRepo = nil
+        self.mockRecordingRepo = nil
+        self.mockAudioFileRepo = nil
+        self.mockMeetingRepo = nil
+        self.mockTranscriptionRepo = nil
+        self.mockTranscriptionStorageRepo = nil
+        self.mockPostProcessingRepo = nil
         super.tearDown()
     }
 
@@ -37,6 +37,13 @@ final class DomainLayerTests: XCTestCase {
 
     func testStartRecordingSuccess() async throws {
         // Given
+        guard let mockRecordingRepo = self.mockRecordingRepo,
+              let mockAudioFileRepo = self.mockAudioFileRepo,
+              let mockMeetingRepo = self.mockMeetingRepo
+        else {
+            return XCTFail("Mocks not initialized")
+        }
+
         let useCase = StartRecordingUseCase(
             recordingRepository: mockRecordingRepo,
             audioFileRepository: mockAudioFileRepo,
@@ -68,6 +75,13 @@ final class DomainLayerTests: XCTestCase {
 
     func testStartRecordingPermissionDenied() async {
         // Given
+        guard let mockRecordingRepo = self.mockRecordingRepo,
+              let mockAudioFileRepo = self.mockAudioFileRepo,
+              let mockMeetingRepo = self.mockMeetingRepo
+        else {
+            return XCTFail("Mocks not initialized")
+        }
+
         let useCase = StartRecordingUseCase(
             recordingRepository: mockRecordingRepo,
             audioFileRepository: mockAudioFileRepo,
@@ -94,6 +108,13 @@ final class DomainLayerTests: XCTestCase {
 
     func testTranscribeAudioSuccess() async throws {
         // Given
+        guard let mockTranscriptionRepo = self.mockTranscriptionRepo,
+              let mockTranscriptionStorageRepo = self.mockTranscriptionStorageRepo,
+              let mockPostProcessingRepo = self.mockPostProcessingRepo
+        else {
+            return XCTFail("Mocks not initialized")
+        }
+
         let useCase = TranscribeAudioUseCase(
             transcriptionRepository: mockTranscriptionRepo,
             transcriptionStorageRepository: mockTranscriptionStorageRepo,
@@ -111,7 +132,12 @@ final class DomainLayerTests: XCTestCase {
 
         stub(mockTranscriptionRepo) { stub in
             when(stub.healthCheck()).then { _ in true }
-            when(stub.transcribe(audioURL: any())).thenReturn(response)
+            when(
+                stub.transcribe(
+                    audioURL: any(),
+                    onProgress: any(((@Sendable (Double) -> Void)?).self)
+                )
+            ).thenReturn(response)
         }
         stub(mockTranscriptionStorageRepo) { stub in
             when(stub.saveTranscription(any())).then { _ in }
@@ -124,7 +150,10 @@ final class DomainLayerTests: XCTestCase {
         XCTAssertEqual(transcription.text, "Hello world")
         XCTAssertEqual(transcription.meeting.id, meeting.id)
         verify(mockTranscriptionRepo).healthCheck()
-        verify(mockTranscriptionRepo).transcribe(audioURL: equal(to: audioURL))
+        verify(mockTranscriptionRepo).transcribe(
+            audioURL: equal(to: audioURL),
+            onProgress: any(((@Sendable (Double) -> Void)?).self)
+        )
         verify(mockTranscriptionStorageRepo).saveTranscription(any())
     }
 }

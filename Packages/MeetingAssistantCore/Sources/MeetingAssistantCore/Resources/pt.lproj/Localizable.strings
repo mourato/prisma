@@ -30,6 +30,8 @@
 "settings.ai.description" = "Quando habilitado, as transcrições serão enviadas para um modelo de IA para correção, formatação e resumo.";
 "settings.ai.diarization" = "Identificar Oradores (Beta)";
 "settings.ai.diarization_desc" = "Identifica quem está falando na reunião. Aumenta significativamente o tempo de processamento.";
+"settings.ai.min_speakers" = "Mín. de Oradores";
+"settings.ai.max_speakers" = "Máx. de Oradores";
 "settings.ai.provider" = "Provedor";
 "settings.ai.provider_label" = "Provedor de IA:";
 "settings.ai.api_config" = "Configuração da API";

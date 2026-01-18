@@ -24,8 +24,14 @@ public final class TranscriptionRepositoryAdapter: TranscriptionRepository {
         )
     }
 
-    public func transcribe(audioURL: URL) async throws -> DomainTranscriptionResponse {
-        let response = try await transcriptionClient.transcribe(audioURL: audioURL)
+    public func transcribe(
+        audioURL: URL,
+        onProgress: (@Sendable (Double) -> Void)?
+    ) async throws -> DomainTranscriptionResponse {
+        let response = try await transcriptionClient.transcribe(
+            audioURL: audioURL,
+            onProgress: onProgress
+        )
         return DomainTranscriptionResponse(
             text: response.text,
             segments: response.segments.map { segment in
