@@ -32,7 +32,7 @@ Below are the remaining improvements that would have **meaningful impact**.
 
 ---
 
-### 2. PostProcessingService Error Messages Localization (UX)
+### 2. PostProcessingService Error Messages Localization (UX) ✅ (DONE)
 
 **Current State**: Error messages in `PostProcessingError` are hardcoded in Portuguese.
 
@@ -52,7 +52,7 @@ case .noPromptSelected:
 
 ---
 
-### 3. TranscriptionError Localization (UX)
+### 3. TranscriptionError Localization (UX) ✅ (DONE)
 
 **Current State**: Same issue - hardcoded Portuguese strings.
 
@@ -119,7 +119,7 @@ case .serviceUnavailable:
 
 ---
 
-### 6. Info.plist Privacy Descriptions Language (UX/Compliance)
+### 6. Info.plist Privacy Descriptions Language (UX/Compliance) ✅ (DONE)
 
 **Current State**: Privacy descriptions are in Portuguese only.
 
@@ -199,15 +199,15 @@ static let requestTimeoutSeconds: TimeInterval = 120
 
 ## 📋 Prioritized Action List
 
-| # | Improvement | Impact | Effort | Priority |
-|---|-------------|--------|--------|----------|
-| 1 | Localize `PostProcessingError` messages | High (UX) | Low | ⭐⭐⭐ |
-| 2 | Localize `TranscriptionError` messages | High (UX) | Low | ⭐⭐⭐ |
-| 3 | Localize [Info.plist](file:///Users/usuario/Documents/Repos/my-meeting-assistant/App/Info.plist) privacy strings | High (Compliance) | Low | ⭐⭐⭐ |
-| 4 | AudioBufferQueue cleanup on stop | Medium (Perf) | Low | ⭐⭐ |
-| 5 | Graceful shutdown enhancement | Medium (Reliability) | Low | ⭐⭐ |
-| 6 | Add retry logic to PostProcessing | Medium (Reliability) | Medium | ⭐⭐ |
-| 7 | Migrate Storage to SQLite/GRDB | High (Perf) | Medium | ⭐ (future) |
+| # | Improvement | Impact | Effort | Priority | Status |
+|---|-------------|--------|--------|----------|--------|
+| 1 | Localize `PostProcessingError` messages | High (UX) | Low | ⭐⭐⭐ | ✅ Done |
+| 2 | Localize `TranscriptionError` messages | High (UX) | Low | ⭐⭐⭐ | ✅ Done |
+| 3 | Localize [Info.plist](file:///Users/usuario/Documents/Repos/my-meeting-assistant/App/Info.plist) privacy strings | High (Compliance) | Low | ⭐⭐⭐ | ✅ Done |
+| 4 | AudioBufferQueue cleanup on stop | Medium (Perf) | Low | ⭐⭐ | |
+| 5 | Graceful shutdown enhancement | Medium (Reliability) | Low | ⭐⭐ | |
+| 6 | Add retry logic to PostProcessing | Medium (Reliability) | Medium | ⭐⭐ | |
+| 7 | Migrate Storage to SQLite/GRDB | High (Perf) | Medium | ⭐ (future) | |
 
 ---
 
