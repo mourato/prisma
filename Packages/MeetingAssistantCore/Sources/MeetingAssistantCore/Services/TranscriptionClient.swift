@@ -165,15 +165,15 @@ public enum TranscriptionError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .serviceUnavailable:
-            "Serviço de transcrição não disponível"
+            NSLocalizedString("error.transcription.service_unavailable", bundle: .module, comment: "")
         case .warmupFailed:
-            "Falha ao pré-carregar modelo"
+            NSLocalizedString("error.transcription.warmup_failed", bundle: .module, comment: "")
         case .invalidResponse:
-            "Resposta inválida do serviço"
+            NSLocalizedString("error.transcription.invalid_response", bundle: .module, comment: "")
         case let .invalidURL(urlString):
-            "URL inválida: \(urlString)"
+            String(format: NSLocalizedString("error.transcription.invalid_url", bundle: .module, comment: ""), urlString)
         case let .transcriptionFailed(message):
-            "Falha na transcrição: \(message)"
+            String(format: NSLocalizedString("error.transcription.failed", bundle: .module, comment: ""), message)
         }
     }
 }
