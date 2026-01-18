@@ -282,10 +282,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             bundle: self.localizationBundle,
             comment: ""
         )
-        self.statusItem?.button?.image = NSImage(
-            systemSymbolName: iconName,
-            accessibilityDescription: accessibilityDesc
-        )
+
+        let config = NSImage.SymbolConfiguration(paletteColors: isRecording ? [.systemRed] : [.headerTextColor])
+        let image = NSImage(systemSymbolName: iconName, accessibilityDescription: accessibilityDesc)?
+            .withSymbolConfiguration(config)
+
+        self.statusItem?.button?.image = image
 
         // Update menu item title
         let key = isRecording ? "menubar.stop_recording" : "menubar.start_recording"
