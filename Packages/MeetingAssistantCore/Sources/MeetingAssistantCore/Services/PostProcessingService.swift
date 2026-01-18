@@ -17,21 +17,21 @@ public enum PostProcessingError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .noPromptSelected:
-            "Nenhum prompt de pós-processamento selecionado"
+            NSLocalizedString("error.post_processing.no_prompt_selected", bundle: .module, comment: "")
         case .noAPIConfigured:
-            "API de IA não configurada"
+            NSLocalizedString("error.post_processing.no_api_configured", bundle: .module, comment: "")
         case .invalidURL:
-            "URL da API inválida"
+            NSLocalizedString("error.post_processing.invalid_url", bundle: .module, comment: "")
         case let .requestFailed(error):
-            "Falha na requisição: \(error.localizedDescription)"
+            String(format: NSLocalizedString("error.post_processing.request_failed", bundle: .module, comment: ""), error.localizedDescription)
         case .invalidResponse:
-            "Resposta inválida da API"
+            NSLocalizedString("error.post_processing.invalid_response", bundle: .module, comment: "")
         case let .apiError(message):
-            "Erro da API: \(message)"
+            String(format: NSLocalizedString("error.post_processing.api_error", bundle: .module, comment: ""), message)
         case .emptyTranscription:
-            "A transcrição está vazia"
+            NSLocalizedString("error.post_processing.empty_transcription", bundle: .module, comment: "")
         case let .transcriptionTooLong(count):
-            "Transcrição muito longa (\(count) caracteres). Máximo permitido: 100.000"
+            String(format: NSLocalizedString("error.post_processing.transcription_too_long", bundle: .module, comment: ""), count)
         }
     }
 }

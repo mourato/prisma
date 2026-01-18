@@ -1,0 +1,4 @@
+/* Privacy Usage Descriptions */
+"NSMicrophoneUsageDescription" = "Meeting Assistant needs microphone access to capture audio when screen recording is not available.";
+"NSScreenCaptureUsageDescription" = "Meeting Assistant needs to capture system audio to record your video call meetings.";
+"NSHumanReadableCopyright" = "Copyright © 2024. All rights reserved.";

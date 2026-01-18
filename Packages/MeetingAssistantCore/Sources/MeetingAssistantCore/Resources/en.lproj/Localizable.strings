@@ -259,3 +259,19 @@
 
 /* Settings */
 "settings.title" = "Settings";
+/* Post-Processing Errors */
+"error.post_processing.no_prompt_selected" = "No post-processing prompt selected";
+"error.post_processing.no_api_configured" = "AI API not configured";
+"error.post_processing.invalid_url" = "Invalid API URL";
+"error.post_processing.request_failed" = "Request failed: %@";
+"error.post_processing.invalid_response" = "Invalid API response";
+"error.post_processing.api_error" = "API error: %@";
+"error.post_processing.empty_transcription" = "Transcription is empty";
+"error.post_processing.transcription_too_long" = "Transcription too long (%d characters). Maximum allowed: 100,000";
+
+/* Transcription Errors */
+"error.transcription.service_unavailable" = "Transcription service unavailable";
+"error.transcription.warmup_failed" = "Failed to preload model";
+"error.transcription.invalid_response" = "Invalid service response";
+"error.transcription.invalid_url" = "Invalid URL: %@";
+"error.transcription.failed" = "Transcription failed: %@";

@@ -259,3 +259,19 @@
 
 /* Settings */
 "settings.title" = "Configurações";
+/* Post-Processing Errors */
+"error.post_processing.no_prompt_selected" = "Nenhum prompt de pós-processamento selecionado";
+"error.post_processing.no_api_configured" = "API de IA não configurada";
+"error.post_processing.invalid_url" = "URL da API inválida";
+"error.post_processing.request_failed" = "Falha na requisição: %@";
+"error.post_processing.invalid_response" = "Resposta inválida da API";
+"error.post_processing.api_error" = "Erro da API: %@";
+"error.post_processing.empty_transcription" = "A transcrição está vazia";
+"error.post_processing.transcription_too_long" = "Transcrição muito longa (%d caracteres). Máximo permitido: 100.000";
+
+/* Transcription Errors */
+"error.transcription.service_unavailable" = "Serviço de transcrição não disponível";
+"error.transcription.warmup_failed" = "Falha ao pré-carregar modelo";
+"error.transcription.invalid_response" = "Resposta inválida do serviço";
+"error.transcription.invalid_url" = "URL inválida: %@";
+"error.transcription.failed" = "Falha na transcrição: %@";
