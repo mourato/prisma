@@ -72,7 +72,7 @@ case .serviceUnavailable:
 
 ---
 
-### 4. RecordingManager Memory Consideration (Performance)
+### 4. RecordingManager Memory Consideration (Performance) ✅ (DONE)
 
 **Current State**: `RecordingManager` is a singleton `.shared` that retains `RecordingActor`, `AudioRecorder`, `SystemAudioRecorder`, and service references for the app's entire lifecycle.
 
@@ -88,7 +88,7 @@ case .serviceUnavailable:
 
 ---
 
-### 5. App Graceful Shutdown Enhancement (Functionality)
+### 5. App Graceful Shutdown Enhancement (Functionality) ✅ (DONE)
 
 **Current State**: On `quitApp()`, if recording is active, we stop recording and then terminate.
 
@@ -168,7 +168,7 @@ static let requestTimeoutSeconds: TimeInterval = 120
 
 ---
 
-### 9. Add Retry Logic for AI Post-Processing (Reliability)
+### 9. Add Retry Logic for AI Post-Processing (Reliability) ✅ (DONE)
 
 **Current State**: `PostProcessingService` makes a single request. If it fails (timeout, rate limit), error is surfaced.
 
@@ -204,9 +204,9 @@ static let requestTimeoutSeconds: TimeInterval = 120
 | 1 | Localize `PostProcessingError` messages | High (UX) | Low | ⭐⭐⭐ | ✅ Done |
 | 2 | Localize `TranscriptionError` messages | High (UX) | Low | ⭐⭐⭐ | ✅ Done |
 | 3 | Localize [Info.plist](file:///Users/usuario/Documents/Repos/my-meeting-assistant/App/Info.plist) privacy strings | High (Compliance) | Low | ⭐⭐⭐ | ✅ Done |
-| 4 | AudioBufferQueue cleanup on stop | Medium (Perf) | Low | ⭐⭐ | |
-| 5 | Graceful shutdown enhancement | Medium (Reliability) | Low | ⭐⭐ | |
-| 6 | Add retry logic to PostProcessing | Medium (Reliability) | Medium | ⭐⭐ | |
+| 4 | AudioBufferQueue cleanup on stop | Medium (Perf) | Low | ⭐⭐ | ✅ Done |
+| 5 | Graceful shutdown enhancement | Medium (Reliability) | Low | ⭐⭐ | ✅ Done |
+| 6 | Add retry logic to PostProcessing | Medium (Reliability) | Medium | ⭐⭐ | ✅ Done |
 | 7 | Migrate Storage to SQLite/GRDB | High (Perf) | Medium | ⭐ (future) | |
 
 ---

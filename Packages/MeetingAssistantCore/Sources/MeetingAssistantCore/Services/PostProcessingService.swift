@@ -54,6 +54,10 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
         static let anthropicAPIVersion = "2023-06-01"
         /// Maximum input characters to prevent excessive API costs.
         static let maxInputCharacters = 100_000
+        /// Maximum retry attempts for recoverable errors.
+        static let maxRetryAttempts = 3
+        /// Base delay for exponential backoff (in nanoseconds).
+        static let baseRetryDelay: UInt64 = 1_000_000_000 // 1 second
     }
 
     @Published public private(set) var isProcessing = false
@@ -131,6 +135,38 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
         transcription: String,
         prompt: PostProcessingPrompt
     ) async throws -> String {
+        var lastError: Error?
+
+        for attempt in 0..<Constants.maxRetryAttempts {
+            do {
+                return try await self.performAIRequest(transcription: transcription, prompt: prompt)
+            } catch {
+                lastError = error
+
+                guard self.shouldRetry(error: error), attempt < Constants.maxRetryAttempts - 1 else {
+                    throw error
+                }
+
+                let multiplier = Int(pow(2.0, Double(attempt)))
+                let delay = Constants.baseRetryDelay * UInt64(multiplier)
+
+                AppLogger.warning(
+                    "AI request failed, retrying",
+                    category: .transcriptionEngine,
+                    extra: ["attempt": attempt + 1, "delay_ms": delay / 1_000_000]
+                )
+
+                try await Task.sleep(nanoseconds: delay)
+            }
+        }
+
+        throw lastError ?? PostProcessingError.invalidResponse
+    }
+
+    private func performAIRequest(
+        transcription: String,
+        prompt: PostProcessingPrompt
+    ) async throws -> String {
         let config = self.settings.aiConfiguration
         let apiKey = try self.getAPIKey()
         let url = try self.buildURL(for: config)
@@ -153,6 +189,30 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
         try self.validateHTTPResponse(response, data: data)
 
         return try self.parseSuccessResponse(data: data, provider: config.provider)
+    }
+
+    private func shouldRetry(error: Error) -> Bool {
+        // Retry on timeouts and connection issues
+        if (error as NSError).domain == NSURLErrorDomain {
+            let code = (error as NSError).code
+            if code == NSURLErrorTimedOut || code == NSURLErrorNetworkConnectionLost || code == NSURLErrorCannotConnectToHost {
+                return true
+            }
+        }
+
+        // Retry on rate limit (429) and server errors (5xx)
+        if case let PostProcessingError.apiError(message) = error {
+            if message.contains("429") || message.contains("HTTP 5") {
+                return true
+            }
+        }
+
+        // Retry on request failed (internal wrapper) if the underlying error is a timeout
+        if case let PostProcessingError.requestFailed(underlyingError) = error {
+            return self.shouldRetry(error: underlyingError)
+        }
+
+        return false
     }
 
     private func getAPIKey() throws -> String {
