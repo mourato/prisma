@@ -13,8 +13,8 @@ protocol MockAudioEngineProtocol {
 
     func attach(_ node: MockAudioNodeProtocol)
     func connect(_ source: MockAudioNodeProtocol,
-                  to destination: MockAudioMixerNodeProtocol,
-                  format: MockAudioFormatProtocol?)
+                 to destination: MockAudioMixerNodeProtocol,
+                 format: MockAudioFormatProtocol?)
     func prepare() throws
     func start() throws
     func stop()
@@ -104,8 +104,8 @@ final class MockAudioEngine: MockAudioEngineProtocol {
     }
 
     func connect(_ source: MockAudioNodeProtocol,
-                  to destination: MockAudioMixerNodeProtocol,
-                  format: MockAudioFormatProtocol?) {
+                 to destination: MockAudioMixerNodeProtocol,
+                 format: MockAudioFormatProtocol?) {
         connections.append((source, destination, format))
     }
 
