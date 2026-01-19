@@ -103,7 +103,7 @@ public class AISettingsViewModel: ObservableObject {
 
             let modelsResponse = try JSONDecoder().decode(LLMModelsResponse.self, from: data)
             availableModels = modelsResponse.data.sorted { $0.id < $1.id }
-            logger.info("Fetched \(self.availableModels.count) models from API")
+            logger.info("Fetched \(availableModels.count) models from API")
         } catch {
             logger.error("Failed to fetch models: \(error.localizedDescription)")
             modelsFetchError = error.localizedDescription

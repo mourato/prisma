@@ -108,51 +108,55 @@ final class PartialBufferStateTests: XCTestCase {
     // MARK: - Performance Tests
 
     func testPerformance_SetBufferOperation() throws {
+        guard let sut = self.sut else { return XCTFail("SUT not initialized") }
         let buffer = try createTestBuffer(frameCount: 2048)
 
         // Baseline: Set buffer operations should be very fast
         measure(metrics: [XCTClockMetric(), XCTMemoryMetric()]) {
             for _ in 0..<1000 {
-                self.sut.setBuffer(buffer, offset: Int.random(in: 0..<100))
+                sut.setBuffer(buffer, offset: Int.random(in: 0..<100))
             }
         }
     }
 
     func testPerformance_PropertyAccess() throws {
+        guard let sut = self.sut else { return XCTFail("SUT not initialized") }
         let buffer = try createTestBuffer(frameCount: 1024)
-        self.sut.setBuffer(buffer, offset: 50)
+        sut.setBuffer(buffer, offset: 50)
 
         // Baseline: Property access should be instantaneous
         measure(metrics: [XCTClockMetric()]) {
             for _ in 0..<10_000 {
-                _ = self.sut.hasPartial
-                _ = self.sut.framesRemaining
+                _ = sut.hasPartial
+                _ = sut.framesRemaining
             }
         }
     }
 
     func testPerformance_ClearOperation() throws {
+        guard let sut = self.sut else { return XCTFail("SUT not initialized") }
         let buffer = try createTestBuffer(frameCount: 1024)
 
         // Baseline: Clear operations should be very fast
         measure(metrics: [XCTClockMetric(), XCTMemoryMetric()]) {
             for _ in 0..<1000 {
-                self.sut.setBuffer(buffer)
-                self.sut.clear()
+                sut.setBuffer(buffer)
+                sut.clear()
             }
         }
     }
 
     func testPerformance_BufferStateTransitions() throws {
+        guard let sut = self.sut else { return XCTFail("SUT not initialized") }
         let buffer = try createTestBuffer(frameCount: 1024)
 
         // Baseline: State transitions should be efficient
         measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
             for _ in 0..<500 {
-                self.sut.setBuffer(buffer, offset: 100)
-                _ = self.sut.hasPartial
-                _ = self.sut.framesRemaining
-                self.sut.clear()
+                sut.setBuffer(buffer, offset: 100)
+                _ = sut.hasPartial
+                _ = sut.framesRemaining
+                sut.clear()
             }
         }
     }

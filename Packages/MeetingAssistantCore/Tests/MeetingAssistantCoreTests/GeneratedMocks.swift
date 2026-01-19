@@ -28,7 +28,7 @@ public class MockRecordingRepository: RecordingRepository, Cuckoo.ProtocolMock, 
             escapingParameters: (p0, p1),
             errorType: Swift.Error.self,
             superclassCall: Cuckoo.MockManager.crashOnProtocolSuperclassCall(),
-            defaultCall: self.__defaultImplStub!.startRecording(to: p0, retryCount: p1)
+            defaultCall: await self.__defaultImplStub!.startRecording(to: p0, retryCount: p1)
         )
     }
 
@@ -39,7 +39,7 @@ public class MockRecordingRepository: RecordingRepository, Cuckoo.ProtocolMock, 
             escapingParameters: (),
             errorType: Swift.Error.self,
             superclassCall: Cuckoo.MockManager.crashOnProtocolSuperclassCall(),
-            defaultCall: self.__defaultImplStub!.stopRecording()
+            defaultCall: await self.__defaultImplStub!.stopRecording()
         )
     }
 
@@ -49,7 +49,7 @@ public class MockRecordingRepository: RecordingRepository, Cuckoo.ProtocolMock, 
             parameters: (),
             escapingParameters: (),
             superclassCall: Cuckoo.MockManager.crashOnProtocolSuperclassCall(),
-            defaultCall: self.__defaultImplStub!.hasPermission()
+            defaultCall: await self.__defaultImplStub!.hasPermission()
         )
     }
 
@@ -59,7 +59,7 @@ public class MockRecordingRepository: RecordingRepository, Cuckoo.ProtocolMock, 
             parameters: (),
             escapingParameters: (),
             superclassCall: Cuckoo.MockManager.crashOnProtocolSuperclassCall(),
-            defaultCall: self.__defaultImplStub!.requestPermission()
+            defaultCall: await self.__defaultImplStub!.requestPermission()
         )
     }
 
@@ -79,7 +79,7 @@ public class MockRecordingRepository: RecordingRepository, Cuckoo.ProtocolMock, 
             parameters: (),
             escapingParameters: (),
             superclassCall: Cuckoo.MockManager.crashOnProtocolSuperclassCall(),
-            defaultCall: self.__defaultImplStub!.openSettings()
+            defaultCall: await self.__defaultImplStub!.openSettings()
         )
     }
 
@@ -273,7 +273,7 @@ public class MockAudioFileRepository: AudioFileRepository, Cuckoo.ProtocolMock, 
             escapingParameters: (p0, p1),
             errorType: Swift.Error.self,
             superclassCall: Cuckoo.MockManager.crashOnProtocolSuperclassCall(),
-            defaultCall: self.__defaultImplStub!.saveAudioFile(from: p0, to: p1)
+            defaultCall: await self.__defaultImplStub!.saveAudioFile(from: p0, to: p1)
         )
     }
 
@@ -284,7 +284,7 @@ public class MockAudioFileRepository: AudioFileRepository, Cuckoo.ProtocolMock, 
             escapingParameters: p0,
             errorType: Swift.Error.self,
             superclassCall: Cuckoo.MockManager.crashOnProtocolSuperclassCall(),
-            defaultCall: self.__defaultImplStub!.deleteAudioFile(at: p0)
+            defaultCall: await self.__defaultImplStub!.deleteAudioFile(at: p0)
         )
     }
 
@@ -315,7 +315,7 @@ public class MockAudioFileRepository: AudioFileRepository, Cuckoo.ProtocolMock, 
             escapingParameters: (),
             errorType: Swift.Error.self,
             superclassCall: Cuckoo.MockManager.crashOnProtocolSuperclassCall(),
-            defaultCall: self.__defaultImplStub!.listAudioFiles()
+            defaultCall: await self.__defaultImplStub!.listAudioFiles()
         )
     }
 
@@ -485,7 +485,7 @@ public class MockTranscriptionRepository: TranscriptionRepository, Cuckoo.Protoc
             escapingParameters: (),
             errorType: Swift.Error.self,
             superclassCall: Cuckoo.MockManager.crashOnProtocolSuperclassCall(),
-            defaultCall: self.__defaultImplStub!.healthCheck()
+            defaultCall: await self.__defaultImplStub!.healthCheck()
         )
     }
 
@@ -496,7 +496,7 @@ public class MockTranscriptionRepository: TranscriptionRepository, Cuckoo.Protoc
             escapingParameters: (),
             errorType: Swift.Error.self,
             superclassCall: Cuckoo.MockManager.crashOnProtocolSuperclassCall(),
-            defaultCall: self.__defaultImplStub!.fetchServiceStatus()
+            defaultCall: await self.__defaultImplStub!.fetchServiceStatus()
         )
     }
 
@@ -507,7 +507,7 @@ public class MockTranscriptionRepository: TranscriptionRepository, Cuckoo.Protoc
             escapingParameters: (p0, p1),
             errorType: Swift.Error.self,
             superclassCall: Cuckoo.MockManager.crashOnProtocolSuperclassCall(),
-            defaultCall: self.__defaultImplStub!.transcribe(audioURL: p0, onProgress: p1)
+            defaultCall: await self.__defaultImplStub!.transcribe(audioURL: p0, onProgress: p1)
         )
     }
 
@@ -629,7 +629,7 @@ public class MockPostProcessingRepository: PostProcessingRepository, Cuckoo.Prot
             escapingParameters: p0,
             errorType: Swift.Error.self,
             superclassCall: Cuckoo.MockManager.crashOnProtocolSuperclassCall(),
-            defaultCall: self.__defaultImplStub!.processTranscription(p0)
+            defaultCall: await self.__defaultImplStub!.processTranscription(p0)
         )
     }
 
@@ -640,7 +640,7 @@ public class MockPostProcessingRepository: PostProcessingRepository, Cuckoo.Prot
             escapingParameters: (p0, p1),
             errorType: Swift.Error.self,
             superclassCall: Cuckoo.MockManager.crashOnProtocolSuperclassCall(),
-            defaultCall: self.__defaultImplStub!.processTranscription(p0, with: p1)
+            defaultCall: await self.__defaultImplStub!.processTranscription(p0, with: p1)
         )
     }
 
@@ -738,7 +738,7 @@ public class MockMeetingRepository: MeetingRepository, Cuckoo.ProtocolMock, @unc
             escapingParameters: p0,
             errorType: Swift.Error.self,
             superclassCall: Cuckoo.MockManager.crashOnProtocolSuperclassCall(),
-            defaultCall: self.__defaultImplStub!.saveMeeting(p0)
+            defaultCall: await self.__defaultImplStub!.saveMeeting(p0)
         )
     }
 
@@ -749,7 +749,7 @@ public class MockMeetingRepository: MeetingRepository, Cuckoo.ProtocolMock, @unc
             escapingParameters: p0,
             errorType: Swift.Error.self,
             superclassCall: Cuckoo.MockManager.crashOnProtocolSuperclassCall(),
-            defaultCall: self.__defaultImplStub!.fetchMeeting(by: p0)
+            defaultCall: await self.__defaultImplStub!.fetchMeeting(by: p0)
         )
     }
 
@@ -760,7 +760,7 @@ public class MockMeetingRepository: MeetingRepository, Cuckoo.ProtocolMock, @unc
             escapingParameters: (),
             errorType: Swift.Error.self,
             superclassCall: Cuckoo.MockManager.crashOnProtocolSuperclassCall(),
-            defaultCall: self.__defaultImplStub!.fetchAllMeetings()
+            defaultCall: await self.__defaultImplStub!.fetchAllMeetings()
         )
     }
 
@@ -771,7 +771,7 @@ public class MockMeetingRepository: MeetingRepository, Cuckoo.ProtocolMock, @unc
             escapingParameters: p0,
             errorType: Swift.Error.self,
             superclassCall: Cuckoo.MockManager.crashOnProtocolSuperclassCall(),
-            defaultCall: self.__defaultImplStub!.deleteMeeting(by: p0)
+            defaultCall: await self.__defaultImplStub!.deleteMeeting(by: p0)
         )
     }
 
@@ -782,7 +782,7 @@ public class MockMeetingRepository: MeetingRepository, Cuckoo.ProtocolMock, @unc
             escapingParameters: p0,
             errorType: Swift.Error.self,
             superclassCall: Cuckoo.MockManager.crashOnProtocolSuperclassCall(),
-            defaultCall: self.__defaultImplStub!.updateMeeting(p0)
+            defaultCall: await self.__defaultImplStub!.updateMeeting(p0)
         )
     }
 
@@ -952,7 +952,7 @@ public class MockTranscriptionStorageRepository: TranscriptionStorageRepository,
             escapingParameters: p0,
             errorType: Swift.Error.self,
             superclassCall: Cuckoo.MockManager.crashOnProtocolSuperclassCall(),
-            defaultCall: self.__defaultImplStub!.saveTranscription(p0)
+            defaultCall: await self.__defaultImplStub!.saveTranscription(p0)
         )
     }
 
@@ -963,7 +963,7 @@ public class MockTranscriptionStorageRepository: TranscriptionStorageRepository,
             escapingParameters: p0,
             errorType: Swift.Error.self,
             superclassCall: Cuckoo.MockManager.crashOnProtocolSuperclassCall(),
-            defaultCall: self.__defaultImplStub!.fetchTranscription(by: p0)
+            defaultCall: await self.__defaultImplStub!.fetchTranscription(by: p0)
         )
     }
 
@@ -974,7 +974,7 @@ public class MockTranscriptionStorageRepository: TranscriptionStorageRepository,
             escapingParameters: p0,
             errorType: Swift.Error.self,
             superclassCall: Cuckoo.MockManager.crashOnProtocolSuperclassCall(),
-            defaultCall: self.__defaultImplStub!.fetchTranscriptions(for: p0)
+            defaultCall: await self.__defaultImplStub!.fetchTranscriptions(for: p0)
         )
     }
 
@@ -985,7 +985,7 @@ public class MockTranscriptionStorageRepository: TranscriptionStorageRepository,
             escapingParameters: (),
             errorType: Swift.Error.self,
             superclassCall: Cuckoo.MockManager.crashOnProtocolSuperclassCall(),
-            defaultCall: self.__defaultImplStub!.fetchAllTranscriptions()
+            defaultCall: await self.__defaultImplStub!.fetchAllTranscriptions()
         )
     }
 
@@ -996,7 +996,7 @@ public class MockTranscriptionStorageRepository: TranscriptionStorageRepository,
             escapingParameters: (),
             errorType: Swift.Error.self,
             superclassCall: Cuckoo.MockManager.crashOnProtocolSuperclassCall(),
-            defaultCall: self.__defaultImplStub!.fetchAllMetadata()
+            defaultCall: await self.__defaultImplStub!.fetchAllMetadata()
         )
     }
 
@@ -1007,7 +1007,7 @@ public class MockTranscriptionStorageRepository: TranscriptionStorageRepository,
             escapingParameters: p0,
             errorType: Swift.Error.self,
             superclassCall: Cuckoo.MockManager.crashOnProtocolSuperclassCall(),
-            defaultCall: self.__defaultImplStub!.deleteTranscription(by: p0)
+            defaultCall: await self.__defaultImplStub!.deleteTranscription(by: p0)
         )
     }
 
@@ -1018,7 +1018,7 @@ public class MockTranscriptionStorageRepository: TranscriptionStorageRepository,
             escapingParameters: p0,
             errorType: Swift.Error.self,
             superclassCall: Cuckoo.MockManager.crashOnProtocolSuperclassCall(),
-            defaultCall: self.__defaultImplStub!.updateTranscription(p0)
+            defaultCall: await self.__defaultImplStub!.updateTranscription(p0)
         )
     }
 

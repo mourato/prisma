@@ -216,21 +216,22 @@ final class AudioRecorderTests: XCTestCase {
 
         let outputURL = self.createTemporaryURL()
 
-        try await self.audioRecorder.startRecording(to: outputURL, source: .microphone, retryCount: 0)
+        try await audioRecorder.startRecording(to: outputURL, source: .microphone, retryCount: 0)
 
         // Verificar se engine está rodando (simulação de detecção)
-        XCTAssertTrue(self.mockEngine.isRunning)
+        XCTAssertTrue(mockEngine.isRunning)
     }
 
     // MARK: - Testes de Conectividade
 
     func testNodeConnections() async throws {
+        guard let audioRecorder = self.audioRecorder, let mockEngine = self.mockEngine else { return XCTFail("Components not initialized") }
         let outputURL = self.createTemporaryURL()
 
-        try await self.audioRecorder.startRecording(to: outputURL, source: .all, retryCount: 0)
+        try await audioRecorder.startRecording(to: outputURL, source: .all, retryCount: 0)
 
         // Verificar se conexões foram estabelecidas
-        XCTAssertTrue(self.mockEngine.isRunning)
+        XCTAssertTrue(mockEngine.isRunning)
     }
 
     // MARK: - Performance Tests
