@@ -28,9 +28,9 @@ public class RecordingViewModel: ObservableObject {
     // MARK: - Computed Properties
 
     public var statusText: String {
-        if self.isRecording {
+        if isRecording {
             "status.recording".localized
-        } else if self.isTranscribing {
+        } else if isTranscribing {
             "status.transcribing".localized
         } else {
             "status.waiting".localized
@@ -40,24 +40,24 @@ public class RecordingViewModel: ObservableObject {
     // MARK: - View Logic
 
     public var recordButtonTitle: String {
-        if self.isRecording {
+        if isRecording {
             return "menubar.stop_recording".localized
         }
 
-        return self.isModelLoaded
+        return isModelLoaded
             ? "menubar.start_recording".localized
             : "settings.transcriptions.loading".localized
     }
 
     public var recordButtonIcon: String {
-        if self.isRecording {
+        if isRecording {
             return "stop.fill"
         }
-        return self.isModelLoaded ? "record.circle" : "hourglass"
+        return isModelLoaded ? "record.circle" : "hourglass"
     }
 
     public var canStartRecording: Bool {
-        self.isModelLoaded
+        isModelLoaded
     }
 
     // MARK: - Initialization
@@ -68,9 +68,9 @@ public class RecordingViewModel: ObservableObject {
         self.recordingManager = recordingManager
 
         // Initialize child ViewModels
-        self.transcriptionViewModel = TranscriptionViewModel(status: recordingManager.transcriptionStatus)
+        transcriptionViewModel = TranscriptionViewModel(status: recordingManager.transcriptionStatus)
 
-        self.permissionViewModel = PermissionViewModel(
+        permissionViewModel = PermissionViewModel(
             manager: recordingManager.permissionStatus,
             requestMicrophone: { await recordingManager.requestPermission() },
             requestScreen: { await recordingManager.requestPermission() },
@@ -78,7 +78,7 @@ public class RecordingViewModel: ObservableObject {
             openScreenSettings: { recordingManager.openPermissionSettings() }
         )
 
-        self.setupBindings()
+        setupBindings()
     }
 
     // MARK: - Methods
@@ -92,48 +92,48 @@ public class RecordingViewModel: ObservableObject {
         // This implies main button is ALWAYS "Tudo" or "Default".
         // Let's support passing source.
         let sourceToUse = source ?? .all
-        self.selectedSource = sourceToUse // Sync UI state
-        await self.recordingManager.startRecording(source: sourceToUse)
+        selectedSource = sourceToUse // Sync UI state
+        await recordingManager.startRecording(source: sourceToUse)
     }
 
     public func stopRecording() async {
-        await self.recordingManager.stopRecording()
+        await recordingManager.stopRecording()
     }
 
     public func checkPermission() async {
-        await self.recordingManager.checkPermission()
+        await recordingManager.checkPermission()
     }
 
     public func requestPermission() async {
-        await self.recordingManager.requestPermission()
+        await recordingManager.requestPermission()
     }
 
     public func openMicrophoneSettings() {
-        self.recordingManager.openMicrophoneSettings()
+        recordingManager.openMicrophoneSettings()
     }
 
     public func openPermissionSettings() {
-        self.recordingManager.openPermissionSettings()
+        recordingManager.openPermissionSettings()
     }
 
     /// Import and transcribe an external audio file.
     /// - Parameter url: Path to the audio file (m4a, mp3, wav).
     public func transcribeFile(at url: URL) async {
-        await self.recordingManager.transcribeExternalAudio(from: url)
+        await recordingManager.transcribeExternalAudio(from: url)
     }
 
     // MARK: - Private Methods
 
     private func setupBindings() {
-        self.recordingManager.isRecordingPublisher
+        recordingManager.isRecordingPublisher
             .receive(on: DispatchQueue.main)
-            .assign(to: &self.$isRecording)
+            .assign(to: &$isRecording)
 
-        self.recordingManager.isTranscribingPublisher
+        recordingManager.isTranscribingPublisher
             .receive(on: DispatchQueue.main)
-            .assign(to: &self.$isTranscribing)
+            .assign(to: &$isTranscribing)
 
-        self.recordingManager.currentMeetingPublisher
+        recordingManager.currentMeetingPublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] meeting in
                 self?.currentMeeting = meeting
@@ -143,7 +143,7 @@ public class RecordingViewModel: ObservableObject {
                     self?.stopTimer()
                 }
             }
-            .store(in: &self.cancellables)
+            .store(in: &cancellables)
 
         // Note: permissionStatus and transcriptionStatus are reference types (Classes),
         // so we don't necessarily need to re-assign them if the reference itself doesn't change.
@@ -154,19 +154,19 @@ public class RecordingViewModel: ObservableObject {
         FluidAIModelManager.shared.$modelState
             .receive(on: DispatchQueue.main)
             .map { $0 == .loaded }
-            .assign(to: &self.$isModelLoaded)
+            .assign(to: &$isModelLoaded)
 
         // Observe permission state from child ViewModel
-        self.permissionViewModel.$microphoneState
-            .combineLatest(self.permissionViewModel.$screenState)
+        permissionViewModel.$microphoneState
+            .combineLatest(permissionViewModel.$screenState)
             .map { mic, screen in mic == .granted && screen == .granted }
             .receive(on: DispatchQueue.main)
-            .assign(to: &self.$arePermissionsGranted)
+            .assign(to: &$arePermissionsGranted)
     }
 
     private func startTimer() {
-        self.timer?.cancel()
-        self.timer = Timer.publish(every: 1, on: .main, in: .common)
+        timer?.cancel()
+        timer = Timer.publish(every: 1, on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] _ in
                 self?.updateDisplayDuration()
@@ -174,22 +174,22 @@ public class RecordingViewModel: ObservableObject {
     }
 
     private func stopTimer() {
-        self.timer?.cancel()
-        self.timer = nil
-        self.displayDuration = "00:00"
+        timer?.cancel()
+        timer = nil
+        displayDuration = "00:00"
     }
 
     private func updateDisplayDuration() {
-        guard let meeting = self.currentMeeting else { return }
+        guard let meeting = currentMeeting else { return }
         let duration = Int(meeting.duration)
         let hours = duration / 3600
         let minutes = (duration % 3600) / 60
         let seconds = duration % 60
 
         if hours > 0 {
-            self.displayDuration = String(format: "%02d:%02d:%02d", hours, minutes, seconds)
+            displayDuration = String(format: "%02d:%02d:%02d", hours, minutes, seconds)
         } else {
-            self.displayDuration = String(format: "%02d:%02d", minutes, seconds)
+            displayDuration = String(format: "%02d:%02d", minutes, seconds)
         }
     }
 }

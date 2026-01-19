@@ -39,6 +39,6 @@ public extension String {
     /// Localized string with format arguments.
     /// Usage: `"permissions.granted_count".localized(with: count)`
     func localized(with arguments: CVarArg...) -> String {
-        String(format: self.localized, arguments: arguments)
+        String(format: localized, arguments: arguments)
     }
 }

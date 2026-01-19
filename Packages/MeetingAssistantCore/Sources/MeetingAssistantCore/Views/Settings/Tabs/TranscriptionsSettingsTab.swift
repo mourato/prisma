@@ -20,25 +20,25 @@ public struct TranscriptionsSettingsTab: View {
 
     public var body: some View {
         VStack(spacing: 0) {
-            self.headerSection
+            headerSection
             Divider()
-            self.contentSection
+            contentSection
         }
         .task {
-            await self.viewModel.loadTranscriptions()
+            await viewModel.loadTranscriptions()
         }
         .alert(
             NSLocalizedString("settings.transcriptions.error_load", bundle: .safeModule, comment: ""),
             isPresented: Binding(
-                get: { self.viewModel.errorMessage != nil },
-                set: { if !$0 { self.viewModel.errorMessage = nil } }
+                get: { viewModel.errorMessage != nil },
+                set: { if !$0 { viewModel.errorMessage = nil } }
             )
         ) {
             Button("OK", role: .cancel) {
-                self.viewModel.errorMessage = nil
+                viewModel.errorMessage = nil
             }
         } message: {
-            if let errorMessage = self.viewModel.errorMessage {
+            if let errorMessage = viewModel.errorMessage {
                 Text(errorMessage)
             }
         }
@@ -55,7 +55,7 @@ public struct TranscriptionsSettingsTab: View {
                 Text(
                     String.localizedStringWithFormat(
                         NSLocalizedString("settings.transcriptions.items_found", bundle: .safeModule, comment: ""),
-                        self.viewModel.filteredTranscriptions.count
+                        viewModel.filteredTranscriptions.count
                     )
                 )
                 .font(.caption)
@@ -64,7 +64,7 @@ public struct TranscriptionsSettingsTab: View {
 
             Spacer()
 
-            Button(action: { self.viewModel.openRecordingsDirectory() }) {
+            Button(action: { viewModel.openRecordingsDirectory() }) {
                 Label(NSLocalizedString("settings.transcriptions.open_folder", bundle: .safeModule, comment: ""), systemImage: "folder")
             }
             .buttonStyle(.bordered)
@@ -77,10 +77,10 @@ public struct TranscriptionsSettingsTab: View {
 
     private var contentSection: some View {
         HSplitView {
-            self.leftPanel
+            leftPanel
                 .frame(minWidth: 280, idealWidth: 320, maxWidth: 450)
 
-            self.rightPanel
+            rightPanel
                 .frame(minWidth: 420)
                 .background(Color(NSColor.controlBackgroundColor).opacity(0.3))
         }
@@ -90,18 +90,18 @@ public struct TranscriptionsSettingsTab: View {
 
     private var leftPanel: some View {
         VStack(spacing: 0) {
-            self.dropZone
+            dropZone
                 .padding()
 
             Divider()
 
-            self.filtersSection
+            filtersSection
                 .padding(.horizontal)
                 .padding(.vertical, 12)
 
             Divider()
 
-            if self.viewModel.isLoading {
+            if viewModel.isLoading {
                 VStack {
                     Spacer()
                     ProgressView()
@@ -113,10 +113,10 @@ public struct TranscriptionsSettingsTab: View {
                     Spacer()
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if self.viewModel.filteredTranscriptions.isEmpty {
-                self.emptyState
+            } else if viewModel.filteredTranscriptions.isEmpty {
+                emptyState
             } else {
-                self.transcriptionsList
+                transcriptionsList
             }
         }
         .background(Color(NSColor.windowBackgroundColor))
@@ -135,16 +135,16 @@ public struct TranscriptionsSettingsTab: View {
                     .foregroundStyle(.secondary)
             }
 
-            self.sourceFilterPicker
+            sourceFilterPicker
 
-            self.dateFilterMenu
+            dateFilterMenu
         }
     }
 
     private var sourceFilterPicker: some View {
         Picker(
             NSLocalizedString("settings.transcriptions.source", bundle: .safeModule, comment: ""),
-            selection: self.$viewModel.sourceFilter
+            selection: $viewModel.sourceFilter
         ) {
             ForEach(RecordingSourceFilter.allCases, id: \.self) { filter in
                 Text(filter.displayName).tag(filter)
@@ -158,11 +158,11 @@ public struct TranscriptionsSettingsTab: View {
         Menu {
             ForEach(DateFilter.allCases, id: \.self) { filter in
                 Button {
-                    self.viewModel.dateFilter = filter
+                    viewModel.dateFilter = filter
                 } label: {
                     HStack {
                         Text(filter.displayName)
-                        if self.viewModel.dateFilter == filter {
+                        if viewModel.dateFilter == filter {
                             Image(systemName: "checkmark")
                         }
                     }
@@ -172,7 +172,7 @@ public struct TranscriptionsSettingsTab: View {
             HStack {
                 Image(systemName: "calendar")
                     .foregroundStyle(Color.accentColor)
-                Text(self.viewModel.dateFilter.displayName)
+                Text(viewModel.dateFilter.displayName)
                     .font(.subheadline)
                 Spacer()
                 Image(systemName: "chevron.down")
@@ -192,7 +192,7 @@ public struct TranscriptionsSettingsTab: View {
             Image(systemName: "tray.and.arrow.down.fill")
                 .font(.system(size: 28))
                 .foregroundStyle(SettingsDesignSystem.Colors.aiGradient)
-                .symbolEffect(.bounce, value: self.importViewModel.isDropTargeted)
+                .symbolEffect(.bounce, value: importViewModel.isDropTargeted)
 
             VStack(spacing: 4) {
                 Text(NSLocalizedString("settings.transcriptions.import", bundle: .safeModule, comment: ""))
@@ -209,20 +209,20 @@ public struct TranscriptionsSettingsTab: View {
         .background(
             RoundedRectangle(cornerRadius: 12)
                 .strokeBorder(
-                    self.importViewModel.isDropTargeted ? Color.accentColor : Color.secondary.opacity(0.2),
+                    importViewModel.isDropTargeted ? Color.accentColor : Color.secondary.opacity(0.2),
                     style: StrokeStyle(lineWidth: 2, dash: [4, 4])
                 )
                 .background(
-                    self.importViewModel.isDropTargeted
+                    importViewModel.isDropTargeted
                         ? Color.accentColor.opacity(0.1)
                         : Color.primary.opacity(0.02)
                 )
         )
         .onTapGesture {
-            self.importViewModel.selectAndImportFile()
+            importViewModel.selectAndImportFile()
         }
-        .onDrop(of: [.audio, .fileURL], isTargeted: self.$importViewModel.isDropTargeted) { providers in
-            self.importViewModel.handleDrop(providers: providers)
+        .onDrop(of: [.audio, .fileURL], isTargeted: $importViewModel.isDropTargeted) { providers in
+            importViewModel.handleDrop(providers: providers)
             return true
         }
     }
@@ -250,7 +250,7 @@ public struct TranscriptionsSettingsTab: View {
     }
 
     private var transcriptionsList: some View {
-        List(self.viewModel.filteredTranscriptions, selection: self.$viewModel.selectedId) { transcription in
+        List(viewModel.filteredTranscriptions, selection: $viewModel.selectedId) { transcription in
             TranscriptionRowView(metadata: transcription)
                 .tag(transcription.id)
                 .listRowSeparator(.visible, edges: .bottom)
@@ -262,10 +262,10 @@ public struct TranscriptionsSettingsTab: View {
 
     private var rightPanel: some View {
         Group {
-            if let selected = self.viewModel.selectedTranscription {
+            if let selected = viewModel.selectedTranscription {
                 TranscriptionDetailView(transcription: selected)
             } else {
-                self.noSelectionView
+                noSelectionView
             }
         }
     }
@@ -293,11 +293,11 @@ struct TranscriptionRowView: View {
     let metadata: TranscriptionMetadata
 
     private var appColor: Color {
-        MeetingApp(rawValue: self.metadata.appRawValue)?.color ?? .gray
+        MeetingApp(rawValue: metadata.appRawValue)?.color ?? .gray
     }
 
     private var appIcon: String {
-        MeetingApp(rawValue: self.metadata.appRawValue)?.icon ?? "questionmark.circle"
+        MeetingApp(rawValue: metadata.appRawValue)?.icon ?? "questionmark.circle"
     }
 
     private var formattedDate: String {
@@ -305,33 +305,33 @@ struct TranscriptionRowView: View {
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
         formatter.locale = Locale(identifier: "pt_BR")
-        return formatter.string(from: self.metadata.createdAt)
+        return formatter.string(from: metadata.createdAt)
     }
 
     private var formattedTime: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
-        return formatter.string(from: self.metadata.createdAt)
+        return formatter.string(from: metadata.createdAt)
     }
 
     var body: some View {
         HStack(spacing: 12) {
             ZStack {
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(self.appColor.opacity(0.1))
+                    .fill(appColor.opacity(0.1))
                     .frame(width: 40, height: 40)
 
-                Image(systemName: self.appIcon)
+                Image(systemName: appIcon)
                     .font(.title3)
-                    .foregroundStyle(self.appColor)
+                    .foregroundStyle(appColor)
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(self.formattedDate)
+                Text(formattedDate)
                     .font(.body)
                     .fontWeight(.semibold)
 
-                Text(self.metadata.previewText)
+                Text(metadata.previewText)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -340,12 +340,12 @@ struct TranscriptionRowView: View {
             Spacer()
 
             VStack(alignment: .trailing, spacing: 4) {
-                Text(self.formattedTime)
+                Text(formattedTime)
                     .font(.caption2)
                     .monospacedDigit()
                     .foregroundStyle(.tertiary)
 
-                if self.metadata.isPostProcessed {
+                if metadata.isPostProcessed {
                     Image(systemName: "sparkles")
                         .font(.caption)
                         .foregroundStyle(SettingsDesignSystem.Colors.aiGradient)

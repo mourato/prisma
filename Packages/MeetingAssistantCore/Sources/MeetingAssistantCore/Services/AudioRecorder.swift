@@ -28,7 +28,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
     @Published public private(set) var isRecording = false
     public var isRecordingPublisher: AnyPublisher<Bool, Never> {
-        self.$isRecording.eraseToAnyPublisher()
+        $isRecording.eraseToAnyPublisher()
     }
 
     @Published public private(set) var currentRecordingURL: URL?
@@ -63,14 +63,14 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
     init() {
         // Setup worker callbacks to bridge back to MainActor
-        self.worker.setOnPowerUpdate { [weak self] avg, peak in
+        worker.setOnPowerUpdate { [weak self] avg, peak in
             Task { @MainActor [weak self] in
                 self?.currentAveragePower = avg
                 self?.currentPeakPower = peak
             }
         }
 
-        self.worker.setOnError { [weak self] error in
+        worker.setOnError { [weak self] error in
             Task { @MainActor [weak self] in
                 self?.handleWorkerError(error)
             }
@@ -78,8 +78,8 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
         // Link System Recorder to Queue
         // Capture queue directly to avoid 'self' (MainActor) capture in background thread
-        let queue = self.systemAudioQueue
-        self.systemRecorder.onAudioBuffer = { @Sendable buffer in
+        let queue = systemAudioQueue
+        systemRecorder.onAudioBuffer = { @Sendable buffer in
             queue.enqueue(buffer)
         }
     }
@@ -89,7 +89,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     /// Start recording audio to the specified URL. (Protocol Conformance)
     /// Defaults to .all sources.
     public func startRecording(to outputURL: URL, retryCount: Int) async throws {
-        try await self.startRecording(to: outputURL, source: .all, retryCount: retryCount)
+        try await startRecording(to: outputURL, source: .all, retryCount: retryCount)
     }
 
     /// Start recording merged audio (Mic + System) to the specified URL.
@@ -99,7 +99,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     ///   - retryCount: Number of retries attempted so far.
     public func startRecording(to outputURL: URL, source: RecordingSource, retryCount: Int = 0) async throws {
         // Stop any existing recording first
-        await self.stopRecording()
+        await stopRecording()
 
         AppLogger.info(
             "Starting recording",
@@ -120,20 +120,20 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         // Start system capture with the matching rate ONLY if source includes system audio
         if source == .system || source == .all {
             AppLogger.debug("Starting system recorder...", category: .recordingManager)
-            try await self.systemRecorder.startRecording(to: outputURL, sampleRate: targetSampleRate)
+            try await systemRecorder.startRecording(to: outputURL, sampleRate: targetSampleRate)
         } else {
             AppLogger.debug("Skipping system recorder start (source: \(source.rawValue))", category: .recordingManager)
         }
 
         do {
-            try await self.setupAndStartEngine(
+            try await setupAndStartEngine(
                 writingTo: outputURL,
                 source: source,
                 retryCount: retryCount,
                 sampleRate: targetSampleRate
             )
         } catch {
-            await self.stopRecording()
+            await stopRecording()
             throw error
         }
     }
@@ -147,17 +147,17 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         sampleRate: Double
     ) async throws {
         AppLogger.debug("Setting up Audio Engine...", category: .recordingManager)
-        let engine = self.injectedEngine ?? AVAudioEngine()
+        let engine = injectedEngine ?? AVAudioEngine()
         let mixer = AVAudioMixerNode()
         engine.attach(mixer)
 
-        self.audioEngine = engine
-        self.mixerNode = mixer
+        audioEngine = engine
+        mixerNode = mixer
 
         AppLogger.debug("Configuring inputs...", category: .recordingManager)
-        try self.configureInputs(engine: engine, mixer: mixer, source: source, sampleRate: sampleRate)
+        try configureInputs(engine: engine, mixer: mixer, source: source, sampleRate: sampleRate)
         AppLogger.debug("Configuring worker...", category: .recordingManager)
-        try await self.configureWorker(writingTo: outputURL, mixer: mixer)
+        try await configureWorker(writingTo: outputURL, mixer: mixer)
 
         // Increase maximum frames per slice to avoid kAudioUnitErr_TooManyFramesToProcess (-10874)
         // when hardware or drivers send buffers larger than the default 512 frames.
@@ -178,8 +178,8 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         )
 
         AppLogger.debug("Starting engine...", category: .recordingManager)
-        try await self.startAudioEngine(engine, outputURL: outputURL, source: source, retryCount: retryCount)
-        self.currentRecordingURL = outputURL
+        try await startAudioEngine(engine, outputURL: outputURL, source: source, retryCount: retryCount)
+        currentRecordingURL = outputURL
         AppLogger.debug("Audio Engine setup complete.", category: .recordingManager)
     }
 
@@ -191,12 +191,12 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     ) throws {
         if source == .microphone || source == .all {
             AppLogger.debug("Connecting Microphone...", category: .recordingManager)
-            try self.connectMicrophone(to: engine, mixer: mixer)
+            try connectMicrophone(to: engine, mixer: mixer)
         }
 
         if source == .system || source == .all {
             AppLogger.debug("Connecting System Audio...", category: .recordingManager)
-            try self.connectSystemAudio(to: engine, mixer: mixer, sampleRate: sampleRate)
+            try connectSystemAudio(to: engine, mixer: mixer, sampleRate: sampleRate)
         }
 
         // Connect mixer to mainMixer without forcing a specific format.
@@ -247,12 +247,12 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     }
 
     private func connectSystemAudio(to engine: AVAudioEngine, mixer: AVAudioMixerNode, sampleRate: Double) throws {
-        let sourceNode = self.createSystemSourceNode(
-            queue: self.systemAudioQueue,
-            partialState: self.partialBufferState
+        let sourceNode = createSystemSourceNode(
+            queue: systemAudioQueue,
+            partialState: partialBufferState
         )
 
-        self.systemAudioSourceNode = sourceNode
+        systemAudioSourceNode = sourceNode
         engine.attach(sourceNode)
 
         guard let systemFormat = AVAudioFormat(
@@ -275,7 +275,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
         try await self.worker.start(writingTo: url, format: tapFormat, fileFormat: AppSettingsStore.shared.audioFormat)
 
-        let worker = self.worker
+        let worker = worker
         mixer.installTap(
             onBus: 0,
             bufferSize: Constants.tapBufferSize,
@@ -313,36 +313,36 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         }
 
         AppLogger.debug("Engine started. IsRunning: \(engine.isRunning)", category: .recordingManager)
-        self.isRecording = true
-        self.startValidationTimer(url: outputURL, source: source, retryCount: retryCount)
+        isRecording = true
+        startValidationTimer(url: outputURL, source: source, retryCount: retryCount)
         AppLogger.info("Audio engine started successfully", category: .recordingManager)
     }
 
     /// Stop recording and finalize the audio file.
     @discardableResult
     public func stopRecording() async -> URL? {
-        guard self.isRecording else { return self.currentRecordingURL }
+        guard isRecording else { return currentRecordingURL }
 
         AppLogger.info("Stopping recording...", category: .recordingManager)
 
         // Cancel validation timer
-        self.validationTimer?.invalidate()
-        self.validationTimer = nil
+        validationTimer?.invalidate()
+        validationTimer = nil
 
         // Stop Engine & System Capture
-        _ = await self.systemRecorder.stopRecording()
-        self.cleanupEngine()
+        _ = await systemRecorder.stopRecording()
+        cleanupEngine()
 
         // Finalize worker
-        let url = await self.worker.stop()
+        let url = await worker.stop()
 
         // Reset state
-        self.isRecording = false
-        self.currentAveragePower = -160.0
-        self.currentPeakPower = -160.0
+        isRecording = false
+        currentAveragePower = -160.0
+        currentPeakPower = -160.0
 
         // Log dropped frames before clearing (for diagnostics)
-        let queueStats = self.systemAudioQueue.stats
+        let queueStats = systemAudioQueue.stats
         if queueStats.dropped > 0 {
             AppLogger.warning(
                 "System audio frames dropped during session",
@@ -351,30 +351,30 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             )
         }
 
-        self.systemAudioQueue.clear()
-        self.partialBufferState.clear()
+        systemAudioQueue.clear()
+        partialBufferState.clear()
 
         if let url {
-            self.verifyFileIntegrity(url: url)
+            verifyFileIntegrity(url: url)
         }
 
         return url
     }
 
     private func cleanupEngine() {
-        if let mixer = self.mixerNode {
+        if let mixer = mixerNode {
             mixer.removeTap(onBus: 0)
         }
-        if let engine = self.audioEngine {
+        if let engine = audioEngine {
             if engine.isRunning {
                 engine.stop()
             }
             engine.reset() // Break connections
         }
 
-        self.audioEngine = nil
-        self.mixerNode = nil
-        self.systemAudioSourceNode = nil
+        audioEngine = nil
+        mixerNode = nil
+        systemAudioSourceNode = nil
     }
 
     // MARK: - Permission Checking
@@ -436,7 +436,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             return -50 // kAudio_ParamError
         }
 
-        return self.processAudioBuffers(frameCount: frameCount, audioBufferList: audioBufferList)
+        return processAudioBuffers(frameCount: frameCount, audioBufferList: audioBufferList)
     }
 
     /// Processes audio buffers by filling them with silence.
@@ -452,7 +452,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         let bufferCount = 2 // We know format is stereo
         let targetFrames = Int(frameCount)
 
-        self.fillBuffersWithSilence(buffers: buffers, bufferCount: bufferCount, targetFrames: targetFrames)
+        fillBuffersWithSilence(buffers: buffers, bufferCount: bufferCount, targetFrames: targetFrames)
 
         return noErr
     }
@@ -479,7 +479,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     // MARK: - Validation & Retry
 
     private func startValidationTimer(url: URL, source: RecordingSource, retryCount: Int) {
-        self.validationTimer = Timer.scheduledTimer(
+        validationTimer = Timer.scheduledTimer(
             withTimeInterval: Constants.validationInterval, repeats: false
         ) { @Sendable [weak self] _ in
             Task { @MainActor in
@@ -489,7 +489,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     }
 
     private func handleValidationTimeout(url: URL, source: RecordingSource, retryCount: Int) async {
-        let validationPassed = await self.worker.getHasReceivedValidBuffer()
+        let validationPassed = await worker.getHasReceivedValidBuffer()
 
         guard !validationPassed else {
             AppLogger.info("Recording validation successful", category: .recordingManager)
@@ -497,15 +497,15 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         }
 
         AppLogger.error("Recording validation failed - no valid buffers received", category: .recordingManager)
-        _ = await self.stopRecording()
+        _ = await stopRecording()
 
         if retryCount < Constants.maxRetries {
-            await self.retryRecording(to: url, source: source, retryCount: retryCount)
+            await retryRecording(to: url, source: source, retryCount: retryCount)
         } else {
             AppLogger.fault("Recording failed after retries", category: .recordingManager)
             let error = AudioRecorderError.recordingValidationFailed
             self.error = error
-            self.onRecordingError?(error)
+            onRecordingError?(error)
         }
     }
 
@@ -517,11 +517,11 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         )
         do {
             try await Task.sleep(nanoseconds: Constants.retryDelay)
-            try await self.startRecording(to: url, source: source, retryCount: retryCount + 1)
+            try await startRecording(to: url, source: source, retryCount: retryCount + 1)
         } catch {
             AppLogger.error("Retry failed", category: .recordingManager, error: error)
             self.error = error
-            self.onRecordingError?(error)
+            onRecordingError?(error)
         }
     }
 

@@ -50,7 +50,7 @@ public final class FileSystemStorageService: StorageService {
         if !configuredPath.isEmpty {
             // Validate path before use
             do {
-                let validatedURL = try self.validatePath(configuredPath)
+                let validatedURL = try validatePath(configuredPath)
                 // Ensure it exists when accessed - creating directories is thread-safe on FileManager.default
                 try? FileManager.default.createDirectory(at: validatedURL, withIntermediateDirectories: true)
                 return validatedURL
@@ -59,7 +59,7 @@ public final class FileSystemStorageService: StorageService {
                 // Fall through to default
             }
         }
-        return self.defaultRecordingsDirectory
+        return defaultRecordingsDirectory
     }
 
     private let defaultRecordingsDirectory: URL
@@ -73,16 +73,16 @@ public final class FileSystemStorageService: StorageService {
         }
 
         let baseDir = appSupport.appendingPathComponent("MeetingAssistant", isDirectory: true)
-        self.defaultRecordingsDirectory = baseDir.appendingPathComponent("recordings", isDirectory: true)
-        self.transcriptsDirectory = baseDir.appendingPathComponent("transcripts", isDirectory: true)
+        defaultRecordingsDirectory = baseDir.appendingPathComponent("recordings", isDirectory: true)
+        transcriptsDirectory = baseDir.appendingPathComponent("transcripts", isDirectory: true)
 
-        self.setupDirectories()
+        setupDirectories()
     }
 
     private func setupDirectories() {
         do {
-            try FileManager.default.createDirectory(at: self.defaultRecordingsDirectory, withIntermediateDirectories: true)
-            try FileManager.default.createDirectory(at: self.transcriptsDirectory, withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(at: defaultRecordingsDirectory, withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(at: transcriptsDirectory, withIntermediateDirectories: true)
         } catch {
             AppLogger.fault("Failed to create storage directories", category: .databaseManager, error: error)
         }
@@ -114,7 +114,7 @@ public final class FileSystemStorageService: StorageService {
             filename += ".\(fileExtension)"
         }
 
-        return self.recordingsDirectory.appendingPathComponent(filename)
+        return recordingsDirectory.appendingPathComponent(filename)
     }
 
     public func cleanupTemporaryFiles(urls: [URL]) {
@@ -132,7 +132,7 @@ public final class FileSystemStorageService: StorageService {
 
     public func saveTranscription(_ transcription: Transcription) async throws {
         let filename = "\(transcription.id.uuidString).json"
-        let url = self.transcriptsDirectory.appendingPathComponent(filename)
+        let url = transcriptsDirectory.appendingPathComponent(filename)
 
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
@@ -145,7 +145,7 @@ public final class FileSystemStorageService: StorageService {
     }
 
     public func loadTranscriptions() async throws -> [Transcription] {
-        let transcriptsDir = self.transcriptsDirectory
+        let transcriptsDir = transcriptsDirectory
         return try await Task.detached(priority: .userInitiated) {
             let fileManager = FileManager.default
             let contents: [URL]
@@ -179,7 +179,7 @@ public final class FileSystemStorageService: StorageService {
     }
 
     public func loadAllMetadata() async throws -> [TranscriptionMetadata] {
-        let transcriptsDir = self.transcriptsDirectory
+        let transcriptsDir = transcriptsDirectory
         return try await Task.detached(priority: .userInitiated) {
             let fileManager = FileManager.default
             let contents: [URL]
@@ -223,7 +223,7 @@ public final class FileSystemStorageService: StorageService {
     }
 
     public func loadTranscription(by id: UUID) async throws -> Transcription? {
-        let url = self.transcriptsDirectory.appendingPathComponent("\(id.uuidString).json")
+        let url = transcriptsDirectory.appendingPathComponent("\(id.uuidString).json")
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
 

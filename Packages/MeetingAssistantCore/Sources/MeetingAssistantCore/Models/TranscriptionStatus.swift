@@ -61,13 +61,13 @@ public class TranscriptionStatus: ObservableObject {
 
     /// Returns user-friendly status message.
     public var statusMessage: String {
-        switch (self.serviceState, self.modelState, self.phase) {
+        switch (serviceState, modelState, phase) {
         case (.disconnected, _, _):
             "Serviço desconectado"
         case (.connecting, _, _):
             "Conectando ao serviço..."
         case (.error, _, _):
-            self.lastError?.localizedDescription ?? "Erro de conexão"
+            lastError?.localizedDescription ?? "Erro de conexão"
         case (.connected, .downloading, _):
             "Baixando modelo (isso pode demorar)..."
         case (.connected, .loading, _):
@@ -81,13 +81,13 @@ public class TranscriptionStatus: ObservableObject {
         case (.connected, .loaded, .preparing):
             "Preparando áudio..."
         case (.connected, .loaded, .processing):
-            self.formattedProgress
+            formattedProgress
         case (.connected, .loaded, .postProcessing):
             "Processando resultado..."
         case (.connected, .loaded, .completed):
             "Transcrição concluída!"
         case (.connected, .loaded, .failed):
-            self.lastError?.localizedDescription ?? "Falha na transcrição"
+            lastError?.localizedDescription ?? "Falha na transcrição"
         default:
             "Status desconhecido"
         }
@@ -96,41 +96,41 @@ public class TranscriptionStatus: ObservableObject {
     /// Returns formatted progress string.
     private var formattedProgress: String {
         if let estimated = estimatedTimeRemaining, estimated > 0 {
-            return "Transcrevendo... \(Int(self.progressPercentage))% (~\(TimeFormatter.format(estimated)) restante)"
-        } else if self.progressPercentage > 0 {
-            return "Transcrevendo... \(Int(self.progressPercentage))%"
+            return "Transcrevendo... \(Int(progressPercentage))% (~\(TimeFormatter.format(estimated)) restante)"
+        } else if progressPercentage > 0 {
+            return "Transcrevendo... \(Int(progressPercentage))%"
         }
         return "Transcrevendo áudio..."
     }
 
     /// Whether system is ready for transcription.
     public var isReady: Bool {
-        self.serviceState == .connected && self.modelState == .loaded && self.phase == .idle
+        serviceState == .connected && modelState == .loaded && phase == .idle
     }
 
     /// Whether transcription is currently in progress.
     public var isProcessing: Bool {
-        [.preparing, .processing, .postProcessing].contains(self.phase)
+        [.preparing, .processing, .postProcessing].contains(phase)
     }
 
     /// Whether there's a blocking error.
     public var hasBlockingError: Bool {
-        self.serviceState == .error || self.serviceState == .disconnected || self.modelState == .error
+        serviceState == .error || serviceState == .disconnected || modelState == .error
     }
 
     // MARK: - Update Methods
 
     /// Update service connection state.
     public func updateServiceState(_ state: ServiceState) {
-        self.serviceState = state
+        serviceState = state
         if state == .connected {
-            self.lastHealthCheck = Date()
+            lastHealthCheck = Date()
         }
     }
 
     /// Update model loading state.
     public func updateModelState(_ state: ModelState, device: String? = nil) {
-        self.modelState = state
+        modelState = state
         if let device {
             self.device = device
         }
@@ -138,13 +138,13 @@ public class TranscriptionStatus: ObservableObject {
 
     /// Begins a new transcription session.
     public func beginTranscription(audioDuration: Double?) {
-        self.phase = .preparing
-        self.progressPercentage = 0.0
-        self.estimatedTimeRemaining = nil
-        self.audioDurationSeconds = audioDuration
-        self.processedDurationSeconds = 0.0
-        self.transcriptionStartTime = Date()
-        self.lastError = nil
+        phase = .preparing
+        progressPercentage = 0.0
+        estimatedTimeRemaining = nil
+        audioDurationSeconds = audioDuration
+        processedDurationSeconds = 0.0
+        transcriptionStartTime = Date()
+        lastError = nil
     }
 
     /// Updates transcription progress during processing.
@@ -156,53 +156,53 @@ public class TranscriptionStatus: ObservableObject {
         self.phase = phase
 
         if let percentage {
-            self.progressPercentage = min(max(percentage, 0.0), 100.0)
+            progressPercentage = min(max(percentage, 0.0), 100.0)
         }
 
         if let processed = processedSeconds {
-            self.processedDurationSeconds = processed
-            self.calculateEstimatedTime()
+            processedDurationSeconds = processed
+            calculateEstimatedTime()
         }
     }
 
     /// Marks transcription as completed.
     public func completeTranscription(success: Bool) {
-        self.phase = success ? .completed : .failed
-        self.progressPercentage = success ? 100.0 : self.progressPercentage
-        self.estimatedTimeRemaining = nil
-        self.transcriptionStartTime = nil
+        phase = success ? .completed : .failed
+        progressPercentage = success ? 100.0 : progressPercentage
+        estimatedTimeRemaining = nil
+        transcriptionStartTime = nil
     }
 
     /// Resets to idle state after completion.
     public func resetToIdle() {
-        self.phase = .idle
-        self.progressPercentage = 0.0
-        self.estimatedTimeRemaining = nil
-        self.audioDurationSeconds = nil
-        self.processedDurationSeconds = 0.0
-        self.transcriptionStartTime = nil
+        phase = .idle
+        progressPercentage = 0.0
+        estimatedTimeRemaining = nil
+        audioDurationSeconds = nil
+        processedDurationSeconds = 0.0
+        transcriptionStartTime = nil
     }
 
     /// Records an error that occurred.
     public func recordError(_ error: TranscriptionStatusError) {
-        self.lastError = error
-        self.lastErrorTime = Date()
+        lastError = error
+        lastErrorTime = Date()
 
         // Update state based on error type
         switch error {
         case .serviceUnavailable, .connectionFailed:
-            self.serviceState = .disconnected
+            serviceState = .disconnected
         case .modelLoadFailed:
-            self.modelState = .error
+            modelState = .error
         case .transcriptionFailed:
-            self.phase = .failed
+            phase = .failed
         }
     }
 
     /// Clears error state.
     public func clearError() {
-        self.lastError = nil
-        self.lastErrorTime = nil
+        lastError = nil
+        lastErrorTime = nil
     }
 
     // MARK: - Private Methods
@@ -213,23 +213,23 @@ public class TranscriptionStatus: ObservableObject {
               let audioDuration = audioDurationSeconds,
               processedDurationSeconds > 0
         else {
-            self.estimatedTimeRemaining = nil
+            estimatedTimeRemaining = nil
             return
         }
 
         let elapsed = Date().timeIntervalSince(startTime)
-        let processingSpeed = self.processedDurationSeconds / elapsed
+        let processingSpeed = processedDurationSeconds / elapsed
 
         guard processingSpeed > 0 else {
-            self.estimatedTimeRemaining = nil
+            estimatedTimeRemaining = nil
             return
         }
 
-        let remainingAudio = audioDuration - self.processedDurationSeconds
-        self.estimatedTimeRemaining = remainingAudio / processingSpeed
+        let remainingAudio = audioDuration - processedDurationSeconds
+        estimatedTimeRemaining = remainingAudio / processingSpeed
 
         // Update percentage based on processed duration
-        self.progressPercentage = (self.processedDurationSeconds / audioDuration) * 100.0
+        progressPercentage = (processedDurationSeconds / audioDuration) * 100.0
     }
 }
 

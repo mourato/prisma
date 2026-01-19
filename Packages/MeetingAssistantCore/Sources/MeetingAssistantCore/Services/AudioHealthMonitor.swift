@@ -12,7 +12,7 @@ public final class AudioHealthMonitor: Sendable {
         // 1. Check Permissions
         let authStatus = AVCaptureDevice.authorizationStatus(for: .audio)
         if authStatus != .authorized {
-            issues.append("Microphone permission status: \(self.authStatusCode(authStatus))")
+            issues.append("Microphone permission status: \(authStatusCode(authStatus))")
         }
 
         // 2. Check Input Availability

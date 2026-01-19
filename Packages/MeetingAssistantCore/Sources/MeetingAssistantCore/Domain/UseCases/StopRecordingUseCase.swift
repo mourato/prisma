@@ -29,7 +29,7 @@ public final class StopRecordingUseCase {
         // Atualizar reunião com horário de fim
         var updatedMeeting = meeting
         updatedMeeting.endTime = Date()
-        try await self.meetingRepository.updateMeeting(updatedMeeting)
+        try await meetingRepository.updateMeeting(updatedMeeting)
 
         return audioFileURL
     }

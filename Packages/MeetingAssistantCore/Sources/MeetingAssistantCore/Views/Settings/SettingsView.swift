@@ -21,20 +21,20 @@ public struct SettingsView: View {
     public init() {}
 
     public var body: some View {
-        NavigationSplitView(columnVisibility: self.$columnVisibility) {
-            self.sidebar
+        NavigationSplitView(columnVisibility: $columnVisibility) {
+            sidebar
         } detail: {
             ZStack {
                 Color(NSColor.windowBackgroundColor)
                     .ignoresSafeArea()
 
-                self.detailView
+                detailView
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
-            .animation(.spring(duration: 0.3), value: self.selectedSection)
+            .animation(.spring(duration: 0.3), value: selectedSection)
         }
         .navigationSplitViewStyle(.balanced)
-        .navigationTitle(self.selectedSection.title)
+        .navigationTitle(selectedSection.title)
         .frame(minWidth: LayoutConstants.windowWidth, minHeight: LayoutConstants.windowHeight)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -42,10 +42,10 @@ public struct SettingsView: View {
     // MARK: - Sidebar
 
     private var sidebar: some View {
-        List(selection: self.$selectedSection) {
+        List(selection: $selectedSection) {
             Section {
                 ForEach(SettingsSection.allCases) { section in
-                    self.sidebarItem(for: section)
+                    sidebarItem(for: section)
                         .tag(section)
                 }
             } header: {
@@ -73,11 +73,11 @@ public struct SettingsView: View {
         } icon: {
             Image(systemName: section.icon)
                 .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(self.selectedSection == section ? .white : Color.accentColor)
+                .foregroundStyle(selectedSection == section ? .white : Color.accentColor)
                 .frame(width: 24, height: 24)
                 .background(
                     RoundedRectangle(cornerRadius: 6)
-                        .fill(self.selectedSection == section ? Color.accentColor : Color.accentColor.opacity(0.1))
+                        .fill(selectedSection == section ? Color.accentColor : Color.accentColor.opacity(0.1))
                 )
         }
         .padding(.vertical, 2)
@@ -87,7 +87,7 @@ public struct SettingsView: View {
 
     @ViewBuilder
     private var detailView: some View {
-        switch self.selectedSection {
+        switch selectedSection {
         case .general:
             GeneralSettingsTab()
         case .transcriptions:

@@ -42,7 +42,7 @@ public struct SettingsCard<Content: View>: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: SettingsDesignSystem.Layout.itemSpacing) {
-            self.content
+            content
         }
         .padding(SettingsDesignSystem.Layout.cardPadding)
         .background(
@@ -79,14 +79,14 @@ public struct SettingsGroup<Content: View>: View {
                         .symbolEffect(.bounce, value: true)
                 }
 
-                Text(self.title)
+                Text(title)
                     .font(.system(.headline, design: .rounded))
                     .foregroundStyle(.primary)
             }
             .padding(.leading, 4)
 
             SettingsCard {
-                self.content
+                content
             }
         }
     }

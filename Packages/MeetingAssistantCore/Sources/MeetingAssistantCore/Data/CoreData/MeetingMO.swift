@@ -42,21 +42,21 @@ extension MeetingMO {
     /// Converte Managed Object para Domain Entity
     func toDomain() -> MeetingEntity {
         MeetingEntity(
-            id: self.id,
-            app: DomainMeetingApp(rawValue: self.appRawValue) ?? .unknown,
-            startTime: self.startTime,
-            endTime: self.endTime,
-            audioFilePath: self.audioFilePath
+            id: id,
+            app: DomainMeetingApp(rawValue: appRawValue) ?? .unknown,
+            startTime: startTime,
+            endTime: endTime,
+            audioFilePath: audioFilePath
         )
     }
 
     /// Atualiza Managed Object com dados da Domain Entity
     func update(from entity: MeetingEntity) {
-        self.id = entity.id
-        self.appRawValue = entity.app.rawValue
-        self.startTime = entity.startTime
-        self.endTime = entity.endTime
-        self.audioFilePath = entity.audioFilePath
+        id = entity.id
+        appRawValue = entity.app.rawValue
+        startTime = entity.startTime
+        endTime = entity.endTime
+        audioFilePath = entity.audioFilePath
     }
 
     /// Cria novo Managed Object a partir de Domain Entity

@@ -11,9 +11,9 @@ public struct ServiceSettingsTab: View {
     public var body: some View {
         ScrollView {
             VStack(spacing: SettingsDesignSystem.Layout.sectionSpacing) {
-                self.modelInfoSection
-                self.performanceSection
-                self.statusSection
+                modelInfoSection
+                performanceSection
+                statusSection
             }
             .padding()
         }
@@ -92,9 +92,9 @@ public struct ServiceSettingsTab: View {
 
                     HStack(spacing: 6) {
                         Circle()
-                            .fill(self.viewModel.transcriptionStatus.color)
+                            .fill(viewModel.transcriptionStatus.color)
                             .frame(width: 8, height: 8)
-                        Text(self.viewModel.transcriptionStatus.text)
+                        Text(viewModel.transcriptionStatus.text)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -102,15 +102,15 @@ public struct ServiceSettingsTab: View {
 
                 Spacer()
 
-                Button(action: { self.viewModel.testConnection() }) {
-                    if self.viewModel.transcriptionStatus == .testing {
+                Button(action: { viewModel.testConnection() }) {
+                    if viewModel.transcriptionStatus == .testing {
                         ProgressView().controlSize(.small)
                     } else {
                         Label(NSLocalizedString("settings.service.verify", bundle: .safeModule, comment: ""), systemImage: "arrow.clockwise")
                     }
                 }
                 .buttonStyle(.bordered)
-                .disabled(self.viewModel.transcriptionStatus == .testing)
+                .disabled(viewModel.transcriptionStatus == .testing)
             }
         }
     }

@@ -16,9 +16,9 @@ struct MeetingAssistantApp: App {
         WindowGroup(NSLocalizedString("settings.title", bundle: .main, comment: ""), id: "settings") {
             SettingsView()
                 .onAppear {
-                    NavigationService.shared.register(openWindow: self.openWindow)
+                    NavigationService.shared.register(openWindow: openWindow)
                     if AppSettingsStore.shared.showSettingsOnLaunch {
-                        self.openWindow(id: "settings")
+                        openWindow(id: "settings")
                     }
                 }
         }
@@ -26,7 +26,7 @@ struct MeetingAssistantApp: App {
         .commands {
             CommandGroup(replacing: .appSettings) {
                 Button(NSLocalizedString("settings.title", bundle: .main, comment: "") + "...") {
-                    self.openWindow(id: "settings")
+                    openWindow(id: "settings")
                     NSApp.activate(ignoringOtherApps: true)
                 }
                 .keyboardShortcut(",", modifiers: .command)
@@ -52,10 +52,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         CrashReporter.shared.setup()
         PerformanceMonitor.shared.startMonitoring()
 
-        self.setupMenuBar()
-        self.setupContextMenu()
-        self.setupEventMonitor()
-        self.setupGlobalShortcut()
+        setupMenuBar()
+        setupContextMenu()
+        setupEventMonitor()
+        setupGlobalShortcut()
 
         // Warmup transcription model
         Task {
@@ -110,63 +110,63 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Toggle recording state when global shortcut is activated.
     private func toggleRecording() async {
-        if self.recordingManager.isRecording {
-            await self.recordingManager.stopRecording(transcribe: true)
-            self.updateStatusIcon(isRecording: false)
+        if recordingManager.isRecording {
+            await recordingManager.stopRecording(transcribe: true)
+            updateStatusIcon(isRecording: false)
         } else {
-            await self.recordingManager.startRecording()
-            self.updateStatusIcon(isRecording: true)
+            await recordingManager.startRecording()
+            updateStatusIcon(isRecording: true)
         }
     }
 
     // MARK: - Menu Bar Setup
 
     private func setupMenuBar() {
-        self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
         if let button = statusItem?.button {
             button.image = NSImage(
                 systemSymbolName: "mic.circle", accessibilityDescription: NSLocalizedString("about.title", bundle: .main, comment: "")
             )
-            button.action = #selector(self.handleStatusItemClick)
+            button.action = #selector(handleStatusItemClick)
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
             button.target = self
         }
 
-        self.popover = NSPopover()
-        self.popover?.contentSize = NSSize(width: 320, height: 400)
-        self.popover?.behavior = .transient
-        self.popover?.contentViewController = NSHostingController(
+        popover = NSPopover()
+        popover?.contentSize = NSSize(width: 320, height: 400)
+        popover?.behavior = .transient
+        popover?.contentViewController = NSHostingController(
             rootView: MenuBarView()
-                .environmentObject(self.recordingManager)
+                .environmentObject(recordingManager)
         )
     }
 
     private func setupContextMenu() {
-        self.contextMenu = NSMenu()
+        contextMenu = NSMenu()
 
         // Start/Stop Recording
-        let startStopItem = self.createMenuItem(
+        let startStopItem = createMenuItem(
             key: "menubar.start_recording",
-            action: #selector(self.toggleRecordingFromMenu)
+            action: #selector(toggleRecordingFromMenu)
         )
-        self.startStopMenuItem = startStopItem
-        self.contextMenu?.addItem(startStopItem)
+        startStopMenuItem = startStopItem
+        contextMenu?.addItem(startStopItem)
 
-        self.contextMenu?.addItem(NSMenuItem.separator())
+        contextMenu?.addItem(NSMenuItem.separator())
 
-        self.contextMenu?.addItem(self.createMenuItem(
+        contextMenu?.addItem(createMenuItem(
             key: "menubar.settings",
-            action: #selector(self.openSettings),
+            action: #selector(openSettings),
             keyEquivalent: ","
         ))
-        self.contextMenu?.addItem(self.createMenuItem(
+        contextMenu?.addItem(createMenuItem(
             key: "menubar.check_updates",
-            action: #selector(self.checkForUpdates)
+            action: #selector(checkForUpdates)
         ))
-        self.contextMenu?.addItem(self.createMenuItem(
+        contextMenu?.addItem(createMenuItem(
             key: "menubar.quit",
-            action: #selector(self.quitApp),
+            action: #selector(quitApp),
             keyEquivalent: "q"
         ))
     }
@@ -177,7 +177,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         action: Selector,
         keyEquivalent: String = ""
     ) -> NSMenuItem {
-        let title = NSLocalizedString(key, bundle: self.localizationBundle, comment: "")
+        let title = NSLocalizedString(key, bundle: localizationBundle, comment: "")
         let item = NSMenuItem(title: title, action: action, keyEquivalent: keyEquivalent)
         item.target = self
         return item
@@ -185,7 +185,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func setupEventMonitor() {
         // Monitor for clicks outside popover to close it
-        self.eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [
+        eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [
             .leftMouseDown, .rightMouseDown,
         ]) { [weak self] _ in
             if self?.popover?.isShown == true {
@@ -200,9 +200,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         guard let event = NSApp.currentEvent else { return }
 
         if event.type == .rightMouseUp {
-            self.showContextMenu()
+            showContextMenu()
         } else {
-            self.togglePopover()
+            togglePopover()
         }
     }
 
@@ -223,12 +223,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         guard let menu = contextMenu, let button = statusItem?.button else { return }
 
         // Close popover if open
-        self.popover?.performClose(nil)
+        popover?.performClose(nil)
 
         // Show context menu
-        self.statusItem?.menu = menu
+        statusItem?.menu = menu
         button.performClick(nil)
-        self.statusItem?.menu = nil // Reset so left-click works again
+        statusItem?.menu = nil // Reset so left-click works again
     }
 
     // MARK: - Menu Actions
@@ -257,8 +257,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         AppLogger.info("Starting graceful shutdown...", category: .recordingManager)
 
         // 1. Stop any active recording without triggering transcription
-        if self.recordingManager.isRecording {
-            await self.recordingManager.stopRecording(transcribe: false)
+        if recordingManager.isRecording {
+            await recordingManager.stopRecording(transcribe: false)
             // Brief delay to ensure file finalization completes
             try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
         }
@@ -279,7 +279,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let accessibilityKey = isRecording ? "menubar.accessibility.recording" : "menubar.accessibility.idle"
         let accessibilityDesc = NSLocalizedString(
             accessibilityKey,
-            bundle: self.localizationBundle,
+            bundle: localizationBundle,
             comment: ""
         )
 
@@ -287,13 +287,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let image = NSImage(systemSymbolName: iconName, accessibilityDescription: accessibilityDesc)?
             .withSymbolConfiguration(config)
 
-        self.statusItem?.button?.image = image
+        statusItem?.button?.image = image
 
         // Update menu item title
         let key = isRecording ? "menubar.stop_recording" : "menubar.start_recording"
-        self.startStopMenuItem?.title = NSLocalizedString(
+        startStopMenuItem?.title = NSLocalizedString(
             key,
-            bundle: self.localizationBundle,
+            bundle: localizationBundle,
             comment: ""
         )
     }

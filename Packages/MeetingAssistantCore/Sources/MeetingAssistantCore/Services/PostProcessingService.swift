@@ -79,7 +79,7 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
     /// - Parameter transcription: The raw transcription text.
     /// - Returns: The processed text from the AI.
     public func processTranscription(_ transcription: String) async throws -> String {
-        guard self.settings.postProcessingEnabled else {
+        guard settings.postProcessingEnabled else {
             AppLogger.info("Post-processing disabled, skipping", category: .transcriptionEngine)
             return transcription
         }
@@ -88,7 +88,7 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
             throw PostProcessingError.noPromptSelected
         }
 
-        return try await self.processTranscription(transcription, with: prompt)
+        return try await processTranscription(transcription, with: prompt)
     }
 
     /// Processes a transcription using a specific prompt.
@@ -110,12 +110,12 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
             throw PostProcessingError.transcriptionTooLong(trimmedTranscription.count)
         }
 
-        guard self.settings.aiConfiguration.isValid else {
+        guard settings.aiConfiguration.isValid else {
             throw PostProcessingError.noAPIConfigured
         }
 
-        self.isProcessing = true
-        self.lastError = nil
+        isProcessing = true
+        lastError = nil
 
         defer { isProcessing = false }
 
@@ -128,7 +128,7 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
             throw error
         } catch {
             let processingError = PostProcessingError.requestFailed(error)
-            self.lastError = processingError
+            lastError = processingError
             throw processingError
         }
     }
@@ -145,11 +145,11 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
 
         for attempt in 0..<Constants.maxRetryAttempts {
             do {
-                return try await self.performAIRequest(transcription: transcription, prompt: prompt)
+                return try await performAIRequest(transcription: transcription, prompt: prompt)
             } catch {
                 lastError = error
 
-                guard self.shouldRetry(error: error), attempt < Constants.maxRetryAttempts - 1 else {
+                guard shouldRetry(error: error), attempt < Constants.maxRetryAttempts - 1 else {
                     throw error
                 }
 
@@ -173,17 +173,17 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
         transcription: String,
         prompt: PostProcessingPrompt
     ) async throws -> String {
-        let config = self.settings.aiConfiguration
-        let apiKey = try self.getAPIKey()
-        let url = try self.buildURL(for: config)
+        let config = settings.aiConfiguration
+        let apiKey = try getAPIKey()
+        let url = try buildURL(for: config)
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.timeoutInterval = Constants.requestTimeoutSeconds
 
-        self.configureAuthHeaders(for: &request, provider: config.provider, apiKey: apiKey)
-        try self.setRequestBody(for: &request, config: config, transcription: transcription, prompt: prompt)
+        configureAuthHeaders(for: &request, provider: config.provider, apiKey: apiKey)
+        try setRequestBody(for: &request, config: config, transcription: transcription, prompt: prompt)
 
         AppLogger.debug(
             "Sending post-processing request",
@@ -192,9 +192,9 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
         )
 
         let (data, response) = try await URLSession.shared.data(for: request)
-        try self.validateHTTPResponse(response, data: data)
+        try validateHTTPResponse(response, data: data)
 
-        return try self.parseSuccessResponse(data: data, provider: config.provider)
+        return try parseSuccessResponse(data: data, provider: config.provider)
     }
 
     private func shouldRetry(error: Error) -> Bool {
@@ -218,7 +218,7 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
 
         // Retry on request failed (internal wrapper) if the underlying error is a timeout
         if case let PostProcessingError.requestFailed(underlyingError) = error {
-            return self.shouldRetry(error: underlyingError)
+            return shouldRetry(error: underlyingError)
         }
 
         return false
@@ -234,7 +234,7 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
     }
 
     private func buildURL(for config: AIConfiguration) throws -> URL {
-        let endpoint = self.buildEndpoint(for: config.provider, baseURL: config.baseURL)
+        let endpoint = buildEndpoint(for: config.provider, baseURL: config.baseURL)
         guard let url = URL(string: endpoint) else {
             throw PostProcessingError.invalidURL
         }
@@ -261,7 +261,7 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
         transcription: String,
         prompt: PostProcessingPrompt
     ) throws {
-        let systemMessage = self.settings.systemPrompt
+        let systemMessage = settings.systemPrompt
         let userContent = AIPromptTemplates.userMessage(
             transcription: transcription,
             prompt: prompt.promptText

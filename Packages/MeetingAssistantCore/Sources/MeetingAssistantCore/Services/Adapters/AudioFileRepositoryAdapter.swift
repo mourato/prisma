@@ -29,11 +29,11 @@ public final class AudioFileRepositoryAdapter: AudioFileRepository {
             app: .importedFile,
             startTime: Date()
         )
-        return self.storageService.createRecordingURL(for: tempMeeting, type: .merged)
+        return storageService.createRecordingURL(for: tempMeeting, type: .merged)
     }
 
     public func listAudioFiles() async throws -> [URL] {
-        let recordingsDir = self.storageService.recordingsDirectory
+        let recordingsDir = storageService.recordingsDirectory
         let contents = try FileManager.default.contentsOfDirectory(
             at: recordingsDir,
             includingPropertiesForKeys: nil,

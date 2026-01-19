@@ -81,7 +81,7 @@ public enum AIPromptTemplates {
     /// - Parameter userInstructions: Custom instructions to embed.
     /// - Returns: Complete system prompt with embedded instructions.
     public static func systemPrompt(withUserInstructions userInstructions: String) -> String {
-        self.systemPromptTemplate.replacingOccurrences(
+        systemPromptTemplate.replacingOccurrences(
             of: "{{USER_INSTRUCTIONS}}",
             with: userInstructions
         )

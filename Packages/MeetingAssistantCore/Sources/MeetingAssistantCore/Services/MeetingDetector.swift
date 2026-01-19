@@ -21,22 +21,22 @@ public class MeetingDetector: ObservableObject {
     private let pollInterval: TimeInterval = 2.0
 
     private init() {
-        self.setupAppNotifications()
+        setupAppNotifications()
     }
 
     /// Start monitoring for meeting apps.
     func startMonitoring() {
-        guard !self.isMonitoring else { return }
+        guard !isMonitoring else { return }
 
-        self.logger.info("Starting meeting detection monitoring")
-        self.isMonitoring = true
+        logger.info("Starting meeting detection monitoring")
+        isMonitoring = true
 
         // Initial check
-        self.checkForMeetings()
+        checkForMeetings()
 
         // Periodic polling
-        self.monitoringTimer = Timer.scheduledTimer(
-            withTimeInterval: self.pollInterval,
+        monitoringTimer = Timer.scheduledTimer(
+            withTimeInterval: pollInterval,
             repeats: true
         ) { [weak self] _ in
             Task { @MainActor in
@@ -47,18 +47,18 @@ public class MeetingDetector: ObservableObject {
 
     /// Stop monitoring for meeting apps.
     func stopMonitoring() {
-        self.logger.info("Stopping meeting detection monitoring")
-        self.isMonitoring = false
-        self.monitoringTimer?.invalidate()
-        self.monitoringTimer = nil
-        self.detectedMeeting = nil
+        logger.info("Stopping meeting detection monitoring")
+        isMonitoring = false
+        monitoringTimer?.invalidate()
+        monitoringTimer = nil
+        detectedMeeting = nil
     }
 
     /// Check currently running apps for active meetings.
     private func checkForMeetings() {
         let runningApps = NSWorkspace.shared.runningApplications
 
-        for meetingApp in MeetingApp.allCases where self.isMeetingActive(meetingApp, in: runningApps) {
+        for meetingApp in MeetingApp.allCases where isMeetingActive(meetingApp, in: runningApps) {
             if self.detectedMeeting != meetingApp {
                 self.logger.info("Detected meeting: \(meetingApp.displayName)")
                 self.detectedMeeting = meetingApp
@@ -67,9 +67,9 @@ public class MeetingDetector: ObservableObject {
         }
 
         // No meeting detected
-        if self.detectedMeeting != nil {
-            self.logger.info("Meeting ended")
-            self.detectedMeeting = nil
+        if detectedMeeting != nil {
+            logger.info("Meeting ended")
+            detectedMeeting = nil
         }
     }
 
@@ -85,7 +85,7 @@ public class MeetingDetector: ObservableObject {
 
         // For browser-based meetings, check window titles
         if app == .googleMeet {
-            return self.checkBrowserWindowTitles(for: app.windowTitlePatterns)
+            return checkBrowserWindowTitles(for: app.windowTitlePatterns)
         }
 
         // For native apps, just check if running
@@ -132,7 +132,7 @@ public class MeetingDetector: ObservableObject {
                     self?.checkForMeetings()
                 }
             }
-            .store(in: &self.cancellables)
+            .store(in: &cancellables)
 
         // App terminated
         workspace.notificationCenter.publisher(for: NSWorkspace.didTerminateApplicationNotification)
@@ -144,6 +144,6 @@ public class MeetingDetector: ObservableObject {
                     self?.checkForMeetings()
                 }
             }
-            .store(in: &self.cancellables)
+            .store(in: &cancellables)
     }
 }

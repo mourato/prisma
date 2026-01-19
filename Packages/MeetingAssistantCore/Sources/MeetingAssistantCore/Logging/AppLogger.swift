@@ -11,7 +11,7 @@ public enum AppLogger {
 
     public static func debug(_ message: String, category: LogCategory, extra: [String: Any] = [:]) {
         let logger = Logger(subsystem: subsystem, category: category.rawValue)
-        let formattedMessage = self.format(message, extra: extra)
+        let formattedMessage = format(message, extra: extra)
         #if DEBUG
         logger.debug("\(formattedMessage, privacy: .public)")
         #else
@@ -21,7 +21,7 @@ public enum AppLogger {
 
     public static func info(_ message: String, category: LogCategory, extra: [String: Any] = [:]) {
         let logger = Logger(subsystem: subsystem, category: category.rawValue)
-        let formattedMessage = self.format(message, extra: extra)
+        let formattedMessage = format(message, extra: extra)
         #if DEBUG
         logger.info("\(formattedMessage, privacy: .public)")
         #else
@@ -31,7 +31,7 @@ public enum AppLogger {
 
     public static func warning(_ message: String, category: LogCategory, extra: [String: Any] = [:]) {
         let logger = Logger(subsystem: subsystem, category: category.rawValue)
-        let formattedMessage = self.format(message, extra: extra)
+        let formattedMessage = format(message, extra: extra)
         #if DEBUG
         logger.warning("\(formattedMessage, privacy: .public)")
         #else
@@ -48,7 +48,7 @@ public enum AppLogger {
             detailedMessage += " | Error: \(error.localizedDescription)"
         }
 
-        let formattedMessage = self.format(detailedMessage, extra: extra)
+        let formattedMessage = format(detailedMessage, extra: extra)
         logger.error("\(formattedMessage, privacy: .public)")
     }
 
@@ -61,7 +61,7 @@ public enum AppLogger {
             detailedMessage += " | Error: \(error.localizedDescription)"
         }
 
-        let formattedMessage = self.format(detailedMessage, extra: extra)
+        let formattedMessage = format(detailedMessage, extra: extra)
         logger.fault("\(formattedMessage, privacy: .public)")
     }
 

@@ -91,17 +91,17 @@ public struct AIConfiguration: Codable, Equatable, Sendable {
     /// Checks Keychain for API key presence.
     public var isValid: Bool {
         let hasApiKey = KeychainManager.exists(for: .aiAPIKey)
-        return hasApiKey && !self.baseURL.isEmpty
+        return hasApiKey && !baseURL.isEmpty
     }
 
     /// Migrate legacy API key from UserDefaults to Keychain.
     /// Should be called once during app initialization.
     mutating func migrateLegacyApiKeyIfNeeded() {
-        guard !self._legacyApiKey.isEmpty else { return }
+        guard !_legacyApiKey.isEmpty else { return }
 
         // Move to Keychain
         do {
-            try KeychainManager.store(self._legacyApiKey, for: .aiAPIKey)
+            try KeychainManager.store(_legacyApiKey, for: .aiAPIKey)
         } catch {
             AppLogger.error(
                 "Failed to store legacy API key in Keychain during migration",
@@ -112,7 +112,7 @@ public struct AIConfiguration: Codable, Equatable, Sendable {
         }
 
         // Clear from struct (will be saved to UserDefaults without the key)
-        self._legacyApiKey = ""
+        _legacyApiKey = ""
     }
 }
 
@@ -141,23 +141,23 @@ public class AppSettingsStore: ObservableObject {
     // MARK: - Published Properties
 
     @Published public var aiConfiguration: AIConfiguration {
-        didSet { self.save(self.aiConfiguration, forKey: Keys.aiConfiguration) }
+        didSet { save(aiConfiguration, forKey: Keys.aiConfiguration) }
     }
 
     @Published public var aiEnabled: Bool {
-        didSet { UserDefaults.standard.set(self.aiEnabled, forKey: Keys.aiEnabled) }
+        didSet { UserDefaults.standard.set(aiEnabled, forKey: Keys.aiEnabled) }
     }
 
     // MARK: - Post-Processing Properties
 
     /// Custom system prompt for post-processing.
     @Published public var systemPrompt: String {
-        didSet { UserDefaults.standard.set(self.systemPrompt, forKey: Keys.systemPrompt) }
+        didSet { UserDefaults.standard.set(systemPrompt, forKey: Keys.systemPrompt) }
     }
 
     /// User-created prompts for post-processing.
     @Published public var userPrompts: [PostProcessingPrompt] {
-        didSet { self.save(self.userPrompts, forKey: Keys.userPrompts) }
+        didSet { save(userPrompts, forKey: Keys.userPrompts) }
     }
 
     /// Currently selected prompt ID for post-processing.
@@ -174,35 +174,35 @@ public class AppSettingsStore: ObservableObject {
     /// Whether post-processing is enabled.
     @Published public var postProcessingEnabled: Bool {
         didSet {
-            UserDefaults.standard.set(self.postProcessingEnabled, forKey: Keys.postProcessingEnabled)
+            UserDefaults.standard.set(postProcessingEnabled, forKey: Keys.postProcessingEnabled)
         }
     }
 
     /// Whether speaker diarization is enabled.
     @Published public var isDiarizationEnabled: Bool {
         didSet {
-            UserDefaults.standard.set(self.isDiarizationEnabled, forKey: Keys.isDiarizationEnabled)
+            UserDefaults.standard.set(isDiarizationEnabled, forKey: Keys.isDiarizationEnabled)
         }
     }
 
     /// Minimum number of speakers for diarization.
     @Published public var minSpeakers: Int {
         didSet {
-            UserDefaults.standard.set(self.minSpeakers, forKey: Keys.minSpeakers)
+            UserDefaults.standard.set(minSpeakers, forKey: Keys.minSpeakers)
         }
     }
 
     /// Maximum number of speakers for diarization.
     @Published public var maxSpeakers: Int {
         didSet {
-            UserDefaults.standard.set(self.maxSpeakers, forKey: Keys.maxSpeakers)
+            UserDefaults.standard.set(maxSpeakers, forKey: Keys.maxSpeakers)
         }
     }
 
     /// Selected audio format for recordings.
     @Published public var audioFormat: AudioFormat {
         didSet {
-            UserDefaults.standard.set(self.audioFormat.rawValue, forKey: PostProcessingKeys.audioFormat)
+            UserDefaults.standard.set(audioFormat.rawValue, forKey: PostProcessingKeys.audioFormat)
         }
     }
 
@@ -210,27 +210,27 @@ public class AppSettingsStore: ObservableObject {
     /// Default: true
     @Published public var shouldMergeAudioFiles: Bool {
         didSet {
-            UserDefaults.standard.set(self.shouldMergeAudioFiles, forKey: PostProcessingKeys.shouldMergeAudioFiles)
+            UserDefaults.standard.set(shouldMergeAudioFiles, forKey: PostProcessingKeys.shouldMergeAudioFiles)
         }
     }
 
     /// Selected app language.
     @Published public var selectedLanguage: AppLanguage {
         didSet {
-            UserDefaults.standard.set(self.selectedLanguage.rawValue, forKey: Keys.selectedLanguage)
-            self.applyLanguage(self.selectedLanguage)
+            UserDefaults.standard.set(selectedLanguage.rawValue, forKey: Keys.selectedLanguage)
+            applyLanguage(selectedLanguage)
         }
     }
 
     /// All available prompts (predefined + user-created).
     public var allPrompts: [PostProcessingPrompt] {
-        PostProcessingPrompt.allPredefined + self.userPrompts
+        PostProcessingPrompt.allPredefined + userPrompts
     }
 
     /// Currently selected prompt.
     public var selectedPrompt: PostProcessingPrompt? {
         guard let id = selectedPromptId else { return nil }
-        return self.allPrompts.first { $0.id == id }
+        return allPrompts.first { $0.id == id }
     }
 
     // MARK: - Initialization
@@ -240,47 +240,47 @@ public class AppSettingsStore: ObservableObject {
         if let data = UserDefaults.standard.data(forKey: Keys.aiConfiguration),
            let config = try? JSONDecoder().decode(AIConfiguration.self, from: data)
         {
-            self.aiConfiguration = config
+            aiConfiguration = config
         } else {
-            self.aiConfiguration = .default
+            aiConfiguration = .default
         }
 
-        self.aiEnabled = UserDefaults.standard.bool(forKey: Keys.aiEnabled)
-        self.systemPrompt = UserDefaults.standard.string(forKey: Keys.systemPrompt)
+        aiEnabled = UserDefaults.standard.bool(forKey: Keys.aiEnabled)
+        systemPrompt = UserDefaults.standard.string(forKey: Keys.systemPrompt)
             ?? AIPromptTemplates.defaultSystemPrompt
 
         if let data = UserDefaults.standard.data(forKey: Keys.userPrompts),
            let prompts = try? JSONDecoder().decode([PostProcessingPrompt].self, from: data)
         {
-            self.userPrompts = prompts
+            userPrompts = prompts
         } else {
-            self.userPrompts = []
+            userPrompts = []
         }
 
-        self.postProcessingEnabled = UserDefaults.standard.bool(forKey: Keys.postProcessingEnabled)
-        self.isDiarizationEnabled = UserDefaults.standard.bool(forKey: Keys.isDiarizationEnabled)
+        postProcessingEnabled = UserDefaults.standard.bool(forKey: Keys.postProcessingEnabled)
+        isDiarizationEnabled = UserDefaults.standard.bool(forKey: Keys.isDiarizationEnabled)
 
         let minS = UserDefaults.standard.integer(forKey: Keys.minSpeakers)
-        self.minSpeakers = minS == 0 ? 1 : minS
+        minSpeakers = minS == 0 ? 1 : minS
         let maxS = UserDefaults.standard.integer(forKey: Keys.maxSpeakers)
-        self.maxSpeakers = maxS == 0 ? 10 : maxS
+        maxSpeakers = maxS == 0 ? 10 : maxS
 
         let rawFormat = UserDefaults.standard.string(forKey: PostProcessingKeys.audioFormat)
-        self.audioFormat = rawFormat.flatMap { AudioFormat(rawValue: $0) } ?? .m4a
+        audioFormat = rawFormat.flatMap { AudioFormat(rawValue: $0) } ?? .m4a
 
-        self.selectedPromptId = UserDefaults.standard.string(forKey: Keys.selectedPromptId)
+        selectedPromptId = UserDefaults.standard.string(forKey: Keys.selectedPromptId)
             .flatMap { UUID(uuidString: $0) }
 
         if UserDefaults.standard.object(forKey: PostProcessingKeys.shouldMergeAudioFiles) == nil {
-            self.shouldMergeAudioFiles = true
+            shouldMergeAudioFiles = true
         } else {
-            self.shouldMergeAudioFiles = UserDefaults.standard.bool(forKey: PostProcessingKeys.shouldMergeAudioFiles)
+            shouldMergeAudioFiles = UserDefaults.standard.bool(forKey: PostProcessingKeys.shouldMergeAudioFiles)
         }
 
         let rawLang = UserDefaults.standard.string(forKey: Keys.selectedLanguage)
-        self.selectedLanguage = rawLang.flatMap { AppLanguage(rawValue: $0) } ?? .system
+        selectedLanguage = rawLang.flatMap { AppLanguage(rawValue: $0) } ?? .system
 
-        self.applyLanguage(self.selectedLanguage)
+        applyLanguage(selectedLanguage)
     }
 
     // MARK: - Private Helpers
@@ -307,15 +307,15 @@ public class AppSettingsStore: ObservableObject {
 
     /// Reset all settings to defaults.
     public func resetToDefaults() {
-        self.aiConfiguration = .default
-        self.aiEnabled = false
-        self.systemPrompt = AIPromptTemplates.defaultSystemPrompt
-        self.userPrompts = []
-        self.selectedPromptId = nil
-        self.postProcessingEnabled = false
-        self.isDiarizationEnabled = false
-        self.minSpeakers = 1
-        self.maxSpeakers = 10
+        aiConfiguration = .default
+        aiEnabled = false
+        systemPrompt = AIPromptTemplates.defaultSystemPrompt
+        userPrompts = []
+        selectedPromptId = nil
+        postProcessingEnabled = false
+        isDiarizationEnabled = false
+        minSpeakers = 1
+        maxSpeakers = 10
     }
 
     // MARK: - Prompt Management
@@ -323,28 +323,28 @@ public class AppSettingsStore: ObservableObject {
     /// Adds a new user prompt.
     /// - Parameter prompt: The prompt to add.
     public func addPrompt(_ prompt: PostProcessingPrompt) {
-        self.userPrompts.append(prompt)
+        userPrompts.append(prompt)
     }
 
     /// Updates an existing user prompt.
     /// - Parameter prompt: The prompt with updated values.
     public func updatePrompt(_ prompt: PostProcessingPrompt) {
         guard let index = userPrompts.firstIndex(where: { $0.id == prompt.id }) else { return }
-        self.userPrompts[index] = prompt
+        userPrompts[index] = prompt
     }
 
     /// Deletes a user prompt by ID.
     /// - Parameter id: The ID of the prompt to delete.
     public func deletePrompt(id: UUID) {
-        self.userPrompts.removeAll { $0.id == id }
-        if self.selectedPromptId == id {
-            self.selectedPromptId = nil
+        userPrompts.removeAll { $0.id == id }
+        if selectedPromptId == id {
+            selectedPromptId = nil
         }
     }
 
     /// Resets the system prompt to default.
     public func resetSystemPrompt() {
-        self.systemPrompt = AIPromptTemplates.defaultSystemPrompt
+        systemPrompt = AIPromptTemplates.defaultSystemPrompt
     }
 }
 

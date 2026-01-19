@@ -14,8 +14,8 @@ public final class NotificationService {
 
     /// Request notification authorization from the user.
     public func requestAuthorization() {
-        guard self.isRunningAsAppBundle else {
-            self.logger.info("Running as CLI tool, skipping UNUserNotificationCenter authorization")
+        guard isRunningAsAppBundle else {
+            logger.info("Running as CLI tool, skipping UNUserNotificationCenter authorization")
             return
         }
 
@@ -33,12 +33,12 @@ public final class NotificationService {
 
     /// Send a local notification to the user.
     public func sendNotification(title: String, body: String) {
-        if self.isRunningAsAppBundle {
-            self.sendNotificationViaUserNotifications(title: title, body: body)
+        if isRunningAsAppBundle {
+            sendNotificationViaUserNotifications(title: title, body: body)
         } else {
             #if DEBUG
             // Fallback for development/CLI usage
-            self.sendNotificationViaAppleScript(title: title, body: body)
+            sendNotificationViaAppleScript(title: title, body: body)
             #endif
         }
     }
@@ -74,8 +74,8 @@ public final class NotificationService {
     /// Send notification using osascript as fallback.
     #if DEBUG
     private func sendNotificationViaAppleScript(title: String, body: String) {
-        let sanitizedTitle = self.sanitizeForAppleScript(title)
-        let sanitizedBody = self.sanitizeForAppleScript(body)
+        let sanitizedTitle = sanitizeForAppleScript(title)
+        let sanitizedBody = sanitizeForAppleScript(body)
 
         let script =
             "display notification \"\(sanitizedBody)\" with title \"\(sanitizedTitle)\" sound name \"default\""
@@ -87,7 +87,7 @@ public final class NotificationService {
         do {
             try process.run()
         } catch {
-            self.logger.error("Failed to send notification via osascript: \(error.localizedDescription)")
+            logger.error("Failed to send notification via osascript: \(error.localizedDescription)")
         }
     }
     #endif

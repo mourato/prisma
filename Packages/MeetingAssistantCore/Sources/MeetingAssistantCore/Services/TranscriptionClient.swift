@@ -52,7 +52,7 @@ public struct ServiceStatusResponse: Codable {
 
     /// Convert model state string to ModelState enum.
     public var modelStateEnum: ModelState {
-        switch self.modelState {
+        switch modelState {
         case "loaded": .loaded
         case "loading": .loading
         case "downloading": .downloading
@@ -85,7 +85,7 @@ public class TranscriptionClient: ObservableObject, TranscriptionService {
         // Local service is always "healthy" if the app is running,
         // unless the model failed to load.
         // We trigger a load check if needed.
-        if self.manager.modelState == .error {
+        if manager.modelState == .error {
             return false
         }
         return true
@@ -96,7 +96,7 @@ public class TranscriptionClient: ObservableObject, TranscriptionService {
     public func fetchServiceStatus() async throws -> ServiceStatusResponse {
         // Construct a response based on local manager state
 
-        let currentState = self.manager.modelState
+        let currentState = manager.modelState
         let isLoaded = currentState == .loaded
 
         // Map local state to the expected JSON response format
@@ -115,7 +115,7 @@ public class TranscriptionClient: ObservableObject, TranscriptionService {
 
     /// Warm up the model by pre-loading it.
     public func warmupModel() async throws {
-        await self.manager.loadModels()
+        await manager.loadModels()
     }
 
     /// Transcribe an audio file.
@@ -199,15 +199,15 @@ public struct UserDefaultsStorage<Value> {
 
     public init(wrappedValue: Value, _ key: String) {
         self.key = key
-        self.defaultValue = wrappedValue
+        defaultValue = wrappedValue
     }
 
     public var wrappedValue: Value {
         get {
-            UserDefaults.standard.object(forKey: self.key) as? Value ?? self.defaultValue
+            UserDefaults.standard.object(forKey: key) as? Value ?? defaultValue
         }
         set {
-            UserDefaults.standard.set(newValue, forKey: self.key)
+            UserDefaults.standard.set(newValue, forKey: key)
         }
     }
 }

@@ -11,33 +11,33 @@ public struct PostProcessingSettingsTab: View {
     public var body: some View {
         ScrollView {
             VStack(spacing: SettingsDesignSystem.Layout.sectionSpacing) {
-                self.enableToggleSection
+                enableToggleSection
 
-                if self.viewModel.settings.postProcessingEnabled {
-                    if self.viewModel.settings.aiConfiguration.isValid {
-                        self.systemPromptSection
-                        self.userPromptsSection
+                if viewModel.settings.postProcessingEnabled {
+                    if viewModel.settings.aiConfiguration.isValid {
+                        systemPromptSection
+                        userPromptsSection
                     } else {
-                        self.connectionWarningSection
+                        connectionWarningSection
                     }
                 }
             }
             .padding()
         }
-        .sheet(isPresented: self.$viewModel.showPromptEditor) {
+        .sheet(isPresented: $viewModel.showPromptEditor) {
             PromptEditorSheet(
-                prompt: self.viewModel.editingPrompt,
-                onSave: self.viewModel.handleSavePrompt,
-                onCancel: { self.viewModel.showPromptEditor = false }
+                prompt: viewModel.editingPrompt,
+                onSave: viewModel.handleSavePrompt,
+                onCancel: { viewModel.showPromptEditor = false }
             )
         }
-        .alert("settings.post_processing.delete_confirm_title".localized, isPresented: self.$viewModel.showDeleteConfirmation) {
+        .alert("settings.post_processing.delete_confirm_title".localized, isPresented: $viewModel.showDeleteConfirmation) {
             Button("common.cancel".localized, role: .cancel) {}
             Button("common.delete".localized, role: .destructive) {
-                self.viewModel.executeDelete()
+                viewModel.executeDelete()
             }
         } message: {
-            if let prompt = self.viewModel.promptToDelete {
+            if let prompt = viewModel.promptToDelete {
                 Text("settings.post_processing.delete_confirm_message".localized(with: prompt.title))
             }
         }
@@ -50,7 +50,7 @@ public struct PostProcessingSettingsTab: View {
             VStack(alignment: .leading, spacing: 8) {
                 Toggle(
                     NSLocalizedString("settings.post_processing.enabled", bundle: .safeModule, comment: ""),
-                    isOn: self.$viewModel.settings.postProcessingEnabled
+                    isOn: $viewModel.settings.postProcessingEnabled
                 )
                 .font(.headline)
 
@@ -98,13 +98,13 @@ public struct PostProcessingSettingsTab: View {
                     Spacer()
 
                     Button(NSLocalizedString("settings.post_processing.restore_default", bundle: .safeModule, comment: "")) {
-                        self.viewModel.resetSystemPrompt()
+                        viewModel.resetSystemPrompt()
                     }
                     .buttonStyle(.link)
                     .font(.caption)
                 }
 
-                TextEditor(text: self.$viewModel.settings.systemPrompt)
+                TextEditor(text: $viewModel.settings.systemPrompt)
                     .font(.system(.body, design: .monospaced))
                     .frame(minHeight: 120)
                     .padding(8)
@@ -125,8 +125,8 @@ public struct PostProcessingSettingsTab: View {
                     Spacer()
 
                     Button {
-                        self.viewModel.editingPrompt = nil
-                        self.viewModel.showPromptEditor = true
+                        viewModel.editingPrompt = nil
+                        viewModel.showPromptEditor = true
                     } label: {
                         Label(
                             NSLocalizedString("settings.post_processing.new_prompt", bundle: .safeModule, comment: ""),
@@ -139,14 +139,14 @@ public struct PostProcessingSettingsTab: View {
 
                 VStack(spacing: 8) {
                     ForEach(PostProcessingPrompt.allPredefined) { prompt in
-                        self.promptRow(prompt: prompt, isPredefined: true)
+                        promptRow(prompt: prompt, isPredefined: true)
                     }
 
-                    if !self.viewModel.settings.userPrompts.isEmpty {
+                    if !viewModel.settings.userPrompts.isEmpty {
                         Divider().padding(.vertical, 8)
 
-                        ForEach(self.viewModel.settings.userPrompts) { prompt in
-                            self.promptRow(prompt: prompt, isPredefined: false)
+                        ForEach(viewModel.settings.userPrompts) { prompt in
+                            promptRow(prompt: prompt, isPredefined: false)
                         }
                     }
                 }
@@ -157,27 +157,27 @@ public struct PostProcessingSettingsTab: View {
     // MARK: - Prompt Row
 
     private func promptRow(prompt: PostProcessingPrompt, isPredefined: Bool) -> some View {
-        let isSelected = self.viewModel.settings.selectedPromptId == prompt.id
+        let isSelected = viewModel.settings.selectedPromptId == prompt.id
 
         return HStack(spacing: 12) {
-            self.promptIcon(prompt: prompt, isSelected: isSelected)
-            self.promptInfo(prompt: prompt, isSelected: isSelected)
+            promptIcon(prompt: prompt, isSelected: isSelected)
+            promptInfo(prompt: prompt, isSelected: isSelected)
 
             Spacer()
 
             if isSelected {
-                self.selectionIndicator
+                selectionIndicator
             }
 
             if !isPredefined {
-                self.promptMenu(prompt: prompt)
+                promptMenu(prompt: prompt)
             }
         }
         .padding(10)
         .background(isSelected ? Color.accentColor.opacity(0.05) : Color.clear)
         .contentShape(Rectangle())
         .onTapGesture {
-            self.viewModel.selectPrompt(prompt.id)
+            viewModel.selectPrompt(prompt.id)
         }
     }
 
@@ -217,14 +217,14 @@ public struct PostProcessingSettingsTab: View {
     private func promptMenu(prompt: PostProcessingPrompt) -> some View {
         Menu {
             Button {
-                self.viewModel.editingPrompt = prompt
-                self.viewModel.showPromptEditor = true
+                viewModel.editingPrompt = prompt
+                viewModel.showPromptEditor = true
             } label: {
                 Label("settings.post_processing.edit".localized, systemImage: "pencil")
             }
 
             Button(role: .destructive) {
-                self.viewModel.confirmDeletePrompt(prompt)
+                viewModel.confirmDeletePrompt(prompt)
             } label: {
                 Label("settings.post_processing.delete".localized, systemImage: "trash")
             }

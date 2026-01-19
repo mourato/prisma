@@ -28,26 +28,26 @@ public final class AppCoordinator: Coordinator {
     // MARK: - Coordinator Protocol
 
     public func start() -> AnyView {
-        self.navigateToMain()
+        navigateToMain()
     }
 
     public func navigate(to route: AppRoute) {
         switch route {
         case .main:
-            self.navigateToMain()
+            navigateToMain()
         case let .settings(tab):
-            self.navigateToSettings(tab: tab)
+            navigateToSettings(tab: tab)
         case let .transcriptionDetails(transcription):
-            self.navigateToTranscriptionDetails(transcription)
+            navigateToTranscriptionDetails(transcription)
         case .permissionSetup:
-            self.navigateToPermissionSetup()
+            navigateToPermissionSetup()
         }
     }
 
     public func goBack() {
         // Implementar navegação para trás se necessário
         // Por enquanto, volta para main
-        self.navigate(to: .main)
+        navigate(to: .main)
     }
 
     public func dismiss() {
@@ -72,7 +72,7 @@ public final class AppCoordinator: Coordinator {
         )
         coordinator.parentCoordinator = self
 
-        self.childCoordinators.append(coordinator)
+        childCoordinators.append(coordinator)
 
         let settingsView = coordinator.start()
         return settingsView
@@ -85,7 +85,7 @@ public final class AppCoordinator: Coordinator {
 
     private func navigateToPermissionSetup() -> AnyView {
         let viewModel = PermissionViewModel(
-            manager: self.recordingManager.permissionStatus,
+            manager: recordingManager.permissionStatus,
             requestMicrophone: { [weak self] in await self?.recordingManager.requestPermission() },
             requestScreen: { [weak self] in await self?.recordingManager.requestPermission() },
             openMicrophoneSettings: { [weak self] in self?.recordingManager.openMicrophoneSettings() },
@@ -100,7 +100,7 @@ public final class AppCoordinator: Coordinator {
     /// Remove coordinator filho quando ele for dispensado
     func childCoordinatorDidFinish(_ coordinator: Coordinator) {
         if let index = childCoordinators.firstIndex(where: { $0 === coordinator }) {
-            self.childCoordinators.remove(at: index)
+            childCoordinators.remove(at: index)
         }
     }
 }

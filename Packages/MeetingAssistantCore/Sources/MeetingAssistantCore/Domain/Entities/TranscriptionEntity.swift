@@ -82,28 +82,28 @@ public struct TranscriptionEntity: Identifiable, Codable, Hashable, Sendable {
 
     /// Se esta transcrição foi pós-processada.
     public var isPostProcessed: Bool {
-        self.processedContent != nil
+        processedContent != nil
     }
 
     /// Contagem de palavras da transcrição.
     public var wordCount: Int {
-        self.text.split(separator: " ").count
+        text.split(separator: " ").count
     }
 
     /// Prévia do texto da transcrição (primeiros 100 chars).
     public var preview: String {
-        if self.text.count <= 100 {
-            return self.text
+        if text.count <= 100 {
+            return text
         }
-        return String(self.text.prefix(100)) + "..."
+        return String(text.prefix(100)) + "..."
     }
 
     /// Prévia curta para lista de exibição (primeiros 80 chars).
     public var truncatedPreview: String {
-        if self.text.count <= 80 {
-            return self.text
+        if text.count <= 80 {
+            return text
         }
-        return String(self.text.prefix(80)) + "..."
+        return String(text.prefix(80)) + "..."
     }
 
     /// Um segmento da transcrição associado a um speaker.

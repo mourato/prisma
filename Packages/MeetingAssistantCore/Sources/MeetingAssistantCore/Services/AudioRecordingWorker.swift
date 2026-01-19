@@ -17,7 +17,7 @@ actor AudioRecordingWorker {
     // Atomic state for validation
     private let _hasReceivedValidBuffer = ManagedAtomic<Bool>(false)
     var hasReceivedValidBuffer: Bool {
-        self._hasReceivedValidBuffer.load(ordering: .relaxed)
+        _hasReceivedValidBuffer.load(ordering: .relaxed)
     }
 
     // Callbacks - marked as Sendable since they are set from MainActor
@@ -43,36 +43,36 @@ actor AudioRecordingWorker {
     }
 
     private func setOnPowerUpdateIsolated(_ callback: (@Sendable (Float, Float) -> Void)?) {
-        self.onPowerUpdate = callback
+        onPowerUpdate = callback
     }
 
     private func setOnErrorIsolated(_ callback: (@Sendable (AudioRecorderError) -> Void)?) {
-        self.onError = callback
+        onError = callback
     }
 
     // MARK: - Property Accessors
 
     nonisolated func getHasReceivedValidBuffer() async -> Bool {
-        await self.getHasReceivedValidBufferIsolated()
+        await getHasReceivedValidBufferIsolated()
     }
 
     private func getHasReceivedValidBufferIsolated() -> Bool {
-        self.hasReceivedValidBuffer
+        hasReceivedValidBuffer
     }
 
     // MARK: - Lifecycle
 
     func start(writingTo url: URL, format: AVAudioFormat, fileFormat: AppSettingsStore.AudioFormat) async throws {
         // Reset state
-        self.audioFile = nil
-        self._hasReceivedValidBuffer.store(false, ordering: .relaxed)
+        audioFile = nil
+        _hasReceivedValidBuffer.store(false, ordering: .relaxed)
 
         // Cancel any existing processing task
-        self.processingTask?.cancel()
-        self.processingTask = nil
+        processingTask?.cancel()
+        processingTask = nil
 
         // Clear buffer queue
-        self.bufferQueue.clear()
+        bufferQueue.clear()
 
         // Prepare file
         if FileManager.default.fileExists(atPath: url.path) {
@@ -119,29 +119,29 @@ actor AudioRecordingWorker {
             commonFormat: commonFormat,
             interleaved: interleaved
         )
-        self.audioFile = file
-        self.currentURL = url
+        audioFile = file
+        currentURL = url
 
         // Start processing task
-        self.processingTask = Task {
+        processingTask = Task {
             await self.processBuffers()
         }
     }
 
     func stop() async -> URL? {
         // Cancel processing task
-        self.processingTask?.cancel()
-        self.processingTask = nil
+        processingTask?.cancel()
+        processingTask = nil
 
         // Wait for task to finish
-        await self.processingTask?.value
+        await processingTask?.value
 
         // Clear queue
-        self.bufferQueue.clear()
+        bufferQueue.clear()
 
-        let url = self.currentURL
-        self.audioFile = nil // Close file
-        self.currentURL = nil
+        let url = currentURL
+        audioFile = nil // Close file
+        currentURL = nil
 
         return url
     }
@@ -149,13 +149,13 @@ actor AudioRecordingWorker {
     // MARK: - Processing
 
     nonisolated func process(_ buffer: AVAudioPCMBuffer) {
-        self.bufferQueue.enqueue(buffer)
+        bufferQueue.enqueue(buffer)
     }
 
     private func processBuffers() async {
         while !Task.isCancelled {
-            if let buffer = self.bufferQueue.dequeue() {
-                self.processBufferInternal(buffer)
+            if let buffer = bufferQueue.dequeue() {
+                processBufferInternal(buffer)
             } else {
                 // Wait a bit before checking again
                 try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
@@ -164,7 +164,7 @@ actor AudioRecordingWorker {
     }
 
     private func processBufferInternal(_ buffer: AVAudioPCMBuffer) {
-        self.calculateMeters(from: buffer)
+        calculateMeters(from: buffer)
 
         // Lock removed; serialized by queue
 
@@ -173,9 +173,9 @@ actor AudioRecordingWorker {
 
         do {
             try audioFile.write(from: buffer)
-            self._hasReceivedValidBuffer.store(true, ordering: .relaxed)
+            _hasReceivedValidBuffer.store(true, ordering: .relaxed)
         } catch {
-            self.onError?(AudioRecorderError.fileWriteFailed(error))
+            onError?(AudioRecorderError.fileWriteFailed(error))
         }
     }
 
@@ -201,6 +201,6 @@ actor AudioRecordingWorker {
         let averagePowerDb = 20.0 * log10(max(rms, 0.000_001))
         let peakPowerDb = 20.0 * log10(max(peak, 0.000_001))
 
-        self.onPowerUpdate?(averagePowerDb, peakPowerDb)
+        onPowerUpdate?(averagePowerDb, peakPowerDb)
     }
 }

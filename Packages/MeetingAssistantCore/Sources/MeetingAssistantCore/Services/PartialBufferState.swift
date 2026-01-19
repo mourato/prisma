@@ -24,7 +24,7 @@ public final class PartialBufferState: @unchecked Sendable {
 
     /// Number of frames remaining in the current partial buffer.
     public var framesRemaining: Int {
-        self.lock.withLock {
+        lock.withLock {
             guard let buffer else { return 0 }
             return Int(buffer.frameLength) - self.readOffset
         }
@@ -32,7 +32,7 @@ public final class PartialBufferState: @unchecked Sendable {
 
     /// Whether there is a partial buffer with unconsumed frames.
     public var hasPartial: Bool {
-        self.lock.withLock {
+        lock.withLock {
             guard let buffer else { return false }
             return self.readOffset < Int(buffer.frameLength)
         }
@@ -43,7 +43,7 @@ public final class PartialBufferState: @unchecked Sendable {
     ///   - buffer: The audio buffer to consume from.
     ///   - offset: Starting offset (default 0).
     public func setBuffer(_ buffer: AVAudioPCMBuffer, offset: Int = 0) {
-        self.lock.withLock {
+        lock.withLock {
             self.buffer = buffer
             self.readOffset = offset
         }
@@ -61,7 +61,7 @@ public final class PartialBufferState: @unchecked Sendable {
         into destBuffers: UnsafeMutableAudioBufferListPointer,
         destOffset: Int
     ) -> Int {
-        self.lock.withLock {
+        lock.withLock {
             // CRITICAL: No I/O operations in audio callback path - can cause crashes
             guard let buffer, self.readOffset < Int(buffer.frameLength) else {
                 return 0
@@ -113,7 +113,7 @@ public final class PartialBufferState: @unchecked Sendable {
 
     /// Clears the partial buffer state.
     public func clear() {
-        self.lock.withLock {
+        lock.withLock {
             self.buffer = nil
             self.readOffset = 0
         }

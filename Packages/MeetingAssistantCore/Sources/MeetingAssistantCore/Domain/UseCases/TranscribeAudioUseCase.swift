@@ -34,14 +34,14 @@ public final class TranscribeAudioUseCase {
         postProcessingPrompt: DomainPostProcessingPrompt? = nil
     ) async throws -> TranscriptionEntity {
         // Verificar saúde do serviço
-        guard try await self.transcriptionRepository.healthCheck() else {
+        guard try await transcriptionRepository.healthCheck() else {
             throw TranscriptionError.serviceUnavailable
         }
 
         // Transcrever áudio
         let response: DomainTranscriptionResponse
         do {
-            response = try await self.transcriptionRepository.transcribe(
+            response = try await transcriptionRepository.transcribe(
                 audioURL: audioURL,
                 onProgress: nil // No progress reporting from this use case for now
             )
@@ -92,7 +92,7 @@ public final class TranscribeAudioUseCase {
         )
 
         // Salvar transcrição
-        try await self.transcriptionStorageRepository.saveTranscription(transcription)
+        try await transcriptionStorageRepository.saveTranscription(transcription)
 
         return transcription
     }

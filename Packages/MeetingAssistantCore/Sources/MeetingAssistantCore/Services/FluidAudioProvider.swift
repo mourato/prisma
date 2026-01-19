@@ -35,9 +35,9 @@ final class FluidAudioProvider: @unchecked Sendable {
     /// Prepares the FluidAudio models for transcription.
     /// - Parameter progressHandler: Optional callback for download progress (0.0 to 1.0)
     func prepare(progressHandler: (@Sendable (Double) -> Void)? = nil) async throws {
-        guard !self.isReady else { return }
+        guard !isReady else { return }
 
-        self.logger.info("Starting FluidAudio model preparation...")
+        logger.info("Starting FluidAudio model preparation...")
 
         do {
             // Download and load v3 (Multilingual) models
@@ -47,12 +47,12 @@ final class FluidAudioProvider: @unchecked Sendable {
             let manager = AsrManager(config: .default)
             try await manager.initialize(models: models)
 
-            self.asrManager = manager
-            self.isReady = true
+            asrManager = manager
+            isReady = true
 
-            self.logger.info("FluidAudio models ready")
+            logger.info("FluidAudio models ready")
         } catch {
-            self.logger.error("FluidAudio preparation failed: \(error.localizedDescription)")
+            logger.error("FluidAudio preparation failed: \(error.localizedDescription)")
             throw TranscriptionProviderError.preparationFailed(error.localizedDescription)
         }
     }
@@ -92,7 +92,7 @@ final class FluidAudioProvider: @unchecked Sendable {
             throw TranscriptionProviderError.modelNotLoaded
         }
 
-        self.logger.info("Transcribing file: \(audioURL.lastPathComponent)")
+        logger.info("Transcribing file: \(audioURL.lastPathComponent)")
 
         let result = try await manager.transcribe(audioURL, source: .system)
 
@@ -127,18 +127,18 @@ final class FluidAudioProvider: @unchecked Sendable {
 
         if FileManager.default.fileExists(atPath: v3CacheDir.path) {
             try FileManager.default.removeItem(at: v3CacheDir)
-            self.logger.info("FluidAudio cache cleared")
+            logger.info("FluidAudio cache cleared")
         }
 
-        self.isReady = false
-        self.asrManager = nil
+        isReady = false
+        asrManager = nil
     }
 
     // MARK: - Direct Access
 
     /// Provides direct access to the underlying AsrManager for advanced use cases.
     var underlyingManager: AsrManager? {
-        self.asrManager
+        asrManager
     }
 }
 

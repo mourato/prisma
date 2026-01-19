@@ -8,48 +8,48 @@ public class GeneralSettingsViewModel: ObservableObject {
 
     @Published public var autoStartRecording: Bool {
         didSet {
-            self.settingsStore.autoStartRecording = self.autoStartRecording
+            settingsStore.autoStartRecording = autoStartRecording
         }
     }
 
     @Published public var recordingsPath: String {
         didSet {
-            self.settingsStore.recordingsDirectory = self.recordingsPath
+            settingsStore.recordingsDirectory = recordingsPath
         }
     }
 
     @Published public var audioFormat: AppSettingsStore.AudioFormat {
         didSet {
-            self.settingsStore.audioFormat = self.audioFormat
+            settingsStore.audioFormat = audioFormat
         }
     }
 
     @Published public var shouldMergeAudioFiles: Bool {
         didSet {
-            self.settingsStore.shouldMergeAudioFiles = self.shouldMergeAudioFiles
+            settingsStore.shouldMergeAudioFiles = shouldMergeAudioFiles
         }
     }
 
     @Published public var selectedLanguage: AppLanguage {
         didSet {
-            self.settingsStore.selectedLanguage = self.selectedLanguage
+            settingsStore.selectedLanguage = selectedLanguage
         }
     }
 
     @Published public var showSettingsOnLaunch: Bool {
         didSet {
-            self.settingsStore.showSettingsOnLaunch = self.showSettingsOnLaunch
+            settingsStore.showSettingsOnLaunch = showSettingsOnLaunch
         }
     }
 
     public init(settingsStore: AppSettingsStore = .shared) {
         self.settingsStore = settingsStore
-        self.autoStartRecording = settingsStore.autoStartRecording
-        self.recordingsPath = settingsStore.recordingsDirectory
-        self.audioFormat = settingsStore.audioFormat
-        self.shouldMergeAudioFiles = settingsStore.shouldMergeAudioFiles
-        self.selectedLanguage = settingsStore.selectedLanguage
-        self.showSettingsOnLaunch = settingsStore.showSettingsOnLaunch
+        autoStartRecording = settingsStore.autoStartRecording
+        recordingsPath = settingsStore.recordingsDirectory
+        audioFormat = settingsStore.audioFormat
+        shouldMergeAudioFiles = settingsStore.shouldMergeAudioFiles
+        selectedLanguage = settingsStore.selectedLanguage
+        showSettingsOnLaunch = settingsStore.showSettingsOnLaunch
     }
 
     public func selectRecordingsDirectory() {
@@ -59,12 +59,12 @@ public class GeneralSettingsViewModel: ObservableObject {
         panel.allowsMultipleSelection = false
 
         // Use current path as starting point if valid
-        if !self.recordingsPath.isEmpty {
-            panel.directoryURL = URL(fileURLWithPath: self.recordingsPath)
+        if !recordingsPath.isEmpty {
+            panel.directoryURL = URL(fileURLWithPath: recordingsPath)
         }
 
         if panel.runModal() == .OK, let url = panel.url {
-            self.recordingsPath = url.path
+            recordingsPath = url.path
         }
     }
 }

@@ -24,7 +24,7 @@ public class NavigationService: ObservableObject {
             return
         }
 
-        if let openWindow = self.openWindow {
+        if let openWindow {
             openWindow(id: "settings")
             NSApp.activate(ignoringOtherApps: true)
         } else {

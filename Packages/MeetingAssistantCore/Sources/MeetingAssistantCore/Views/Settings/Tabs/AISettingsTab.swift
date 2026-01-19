@@ -12,12 +12,12 @@ public struct AISettingsTab: View {
     public var body: some View {
         ScrollView {
             VStack(spacing: SettingsDesignSystem.Layout.sectionSpacing) {
-                self.mainSection
+                mainSection
 
-                if self.viewModel.settings.aiEnabled {
-                    self.providerSection
-                    self.apiConfigurationSection
-                    self.connectionTestSection
+                if viewModel.settings.aiEnabled {
+                    providerSection
+                    apiConfigurationSection
+                    connectionTestSection
                 }
             }
             .padding()
@@ -31,7 +31,7 @@ public struct AISettingsTab: View {
         SettingsGroup(NSLocalizedString("settings.general.title", bundle: .safeModule, comment: ""), icon: "brain") {
             Toggle(
                 NSLocalizedString("settings.ai.enabled", bundle: .safeModule, comment: ""),
-                isOn: self.$viewModel.settings.aiEnabled
+                isOn: $viewModel.settings.aiEnabled
             )
 
             Text(NSLocalizedString("settings.ai.description", bundle: .safeModule, comment: ""))
@@ -43,26 +43,26 @@ public struct AISettingsTab: View {
 
             Toggle(
                 NSLocalizedString("settings.ai.diarization", bundle: .safeModule, comment: ""),
-                isOn: self.$viewModel.settings.isDiarizationEnabled
+                isOn: $viewModel.settings.isDiarizationEnabled
             )
 
             Text(NSLocalizedString("settings.ai.diarization_desc", bundle: .safeModule, comment: ""))
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            if self.viewModel.settings.isDiarizationEnabled {
+            if viewModel.settings.isDiarizationEnabled {
                 Divider()
                     .padding(.vertical, 2)
 
                 HStack {
                     Stepper(
-                        value: self.$viewModel.settings.minSpeakers,
-                        in: 1...self.viewModel.settings.maxSpeakers
+                        value: $viewModel.settings.minSpeakers,
+                        in: 1...viewModel.settings.maxSpeakers
                     ) {
                         HStack {
                             Text(NSLocalizedString("settings.ai.min_speakers", bundle: .safeModule, comment: ""))
                             Spacer()
-                            Text("\(self.viewModel.settings.minSpeakers)")
+                            Text("\(viewModel.settings.minSpeakers)")
                                 .fontWeight(.medium)
                         }
                     }
@@ -70,13 +70,13 @@ public struct AISettingsTab: View {
 
                 HStack {
                     Stepper(
-                        value: self.$viewModel.settings.maxSpeakers,
-                        in: self.viewModel.settings.minSpeakers...20
+                        value: $viewModel.settings.maxSpeakers,
+                        in: viewModel.settings.minSpeakers...20
                     ) {
                         HStack {
                             Text(NSLocalizedString("settings.ai.max_speakers", bundle: .safeModule, comment: ""))
                             Spacer()
-                            Text("\(self.viewModel.settings.maxSpeakers)")
+                            Text("\(viewModel.settings.maxSpeakers)")
                                 .fontWeight(.medium)
                         }
                     }
@@ -90,7 +90,7 @@ public struct AISettingsTab: View {
         SettingsGroup(NSLocalizedString("settings.ai.provider", bundle: .safeModule, comment: ""), icon: "server.rack") {
             Picker(
                 NSLocalizedString("settings.ai.provider_label", bundle: .safeModule, comment: ""),
-                selection: self.$viewModel.settings.aiConfiguration.provider
+                selection: $viewModel.settings.aiConfiguration.provider
             ) {
                 ForEach(AIProvider.allCases, id: \.self) { provider in
                     HStack {
@@ -101,11 +101,11 @@ public struct AISettingsTab: View {
                 }
             }
             .pickerStyle(.menu)
-            .onChange(of: self.viewModel.settings.aiConfiguration.provider) { _, newProvider in
+            .onChange(of: viewModel.settings.aiConfiguration.provider) { _, newProvider in
                 if newProvider != .custom {
-                    self.viewModel.settings.aiConfiguration.baseURL = newProvider.defaultBaseURL
+                    viewModel.settings.aiConfiguration.baseURL = newProvider.defaultBaseURL
                 }
-                self.viewModel.connectionStatus = .unknown
+                viewModel.connectionStatus = .unknown
             }
         }
     }
@@ -118,8 +118,8 @@ public struct AISettingsTab: View {
                     Text(NSLocalizedString("settings.ai.base_url", bundle: .safeModule, comment: ""))
                         .frame(width: 80, alignment: .leading)
                     TextField(
-                        self.viewModel.settings.aiConfiguration.provider.defaultBaseURL,
-                        text: self.$viewModel.settings.aiConfiguration.baseURL
+                        viewModel.settings.aiConfiguration.provider.defaultBaseURL,
+                        text: $viewModel.settings.aiConfiguration.baseURL
                     )
                     .textFieldStyle(.roundedBorder)
                 }
@@ -128,22 +128,22 @@ public struct AISettingsTab: View {
                     Text(NSLocalizedString("settings.ai.api_key", bundle: .safeModule, comment: ""))
                         .frame(width: 80, alignment: .leading)
                     Group {
-                        if self.viewModel.showAPIKey {
-                            TextField("sk-...", text: self.$viewModel.apiKeyText)
+                        if viewModel.showAPIKey {
+                            TextField("sk-...", text: $viewModel.apiKeyText)
                         } else {
-                            SecureField("sk-...", text: self.$viewModel.apiKeyText)
+                            SecureField("sk-...", text: $viewModel.apiKeyText)
                         }
                     }
                     .textFieldStyle(.roundedBorder)
 
                     Button {
-                        self.viewModel.showAPIKey.toggle()
+                        viewModel.showAPIKey.toggle()
                     } label: {
-                        Image(systemName: self.viewModel.showAPIKey ? "eye.slash" : "eye")
+                        Image(systemName: viewModel.showAPIKey ? "eye.slash" : "eye")
                     }
                     .buttonStyle(.borderless)
                     .help(
-                        self.viewModel.showAPIKey
+                        viewModel.showAPIKey
                             ? NSLocalizedString("settings.ai.hide_key", bundle: .safeModule, comment: "")
                             : NSLocalizedString("settings.ai.show_key", bundle: .safeModule, comment: "")
                     )
@@ -160,7 +160,7 @@ public struct AISettingsTab: View {
                 Divider()
                     .padding(.vertical, 4)
 
-                self.modelSelectionSection
+                modelSelectionSection
             }
         }
     }
@@ -174,15 +174,15 @@ public struct AISettingsTab: View {
                 Text(NSLocalizedString("settings.ai.model", bundle: .safeModule, comment: ""))
                     .frame(width: 80, alignment: .leading)
 
-                if self.viewModel.isLoadingModels {
+                if viewModel.isLoadingModels {
                     ProgressView()
                         .controlSize(.small)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                } else if !self.viewModel.availableModels.isEmpty {
-                    Picker("", selection: self.$viewModel.settings.aiConfiguration.selectedModel) {
+                } else if !viewModel.availableModels.isEmpty {
+                    Picker("", selection: $viewModel.settings.aiConfiguration.selectedModel) {
                         Text(NSLocalizedString("settings.ai.model_select", bundle: .safeModule, comment: ""))
                             .tag("")
-                        ForEach(self.viewModel.availableModels) { model in
+                        ForEach(viewModel.availableModels) { model in
                             Text(model.id).tag(model.id)
                         }
                     }
@@ -191,22 +191,22 @@ public struct AISettingsTab: View {
                 } else {
                     TextField(
                         "gpt-4o, claude-3-5-sonnet...",
-                        text: self.$viewModel.settings.aiConfiguration.selectedModel
+                        text: $viewModel.settings.aiConfiguration.selectedModel
                     )
                     .textFieldStyle(.roundedBorder)
                 }
 
                 Button {
-                    Task { await self.viewModel.fetchAvailableModels() }
+                    Task { await viewModel.fetchAvailableModels() }
                 } label: {
                     Image(systemName: "arrow.clockwise")
                 }
                 .buttonStyle(.borderless)
-                .disabled(self.viewModel.isLoadingModels || !self.viewModel.settings.aiConfiguration.isValid)
+                .disabled(viewModel.isLoadingModels || !viewModel.settings.aiConfiguration.isValid)
                 .help(NSLocalizedString("settings.ai.model_refresh", bundle: .safeModule, comment: ""))
             }
 
-            if let error = self.viewModel.modelsFetchError {
+            if let error = viewModel.modelsFetchError {
                 HStack(spacing: 4) {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundStyle(.yellow)
@@ -214,11 +214,11 @@ public struct AISettingsTab: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-            } else if !self.viewModel.availableModels.isEmpty {
+            } else if !viewModel.availableModels.isEmpty {
                 Text(
                     String(
                         format: NSLocalizedString("settings.ai.models_loaded", bundle: .safeModule, comment: ""),
-                        self.viewModel.availableModels.count
+                        viewModel.availableModels.count
                     )
                 )
                 .font(.caption)
@@ -236,10 +236,10 @@ public struct AISettingsTab: View {
         SettingsCard {
             HStack {
                 Button(action: {
-                    self.viewModel.testAPIConnection()
+                    viewModel.testAPIConnection()
                 }) {
                     HStack {
-                        if self.viewModel.connectionStatus == .testing {
+                        if viewModel.connectionStatus == .testing {
                             ProgressView()
                                 .controlSize(.small)
                                 .scaleEffect(0.7)
@@ -249,19 +249,19 @@ public struct AISettingsTab: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(
-                    !self.viewModel.settings.aiConfiguration.isValid ||
-                        self.viewModel.connectionStatus == .testing
+                    !viewModel.settings.aiConfiguration.isValid ||
+                        viewModel.connectionStatus == .testing
                 )
 
                 Spacer()
 
                 HStack(spacing: 8) {
                     Circle()
-                        .fill(self.viewModel.connectionStatus.color)
+                        .fill(viewModel.connectionStatus.color)
                         .frame(width: 8, height: 8)
-                        .symbolEffect(.pulse, isActive: self.viewModel.connectionStatus == .testing)
+                        .symbolEffect(.pulse, isActive: viewModel.connectionStatus == .testing)
 
-                    Text(self.viewModel.connectionStatus.text)
+                    Text(viewModel.connectionStatus.text)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }

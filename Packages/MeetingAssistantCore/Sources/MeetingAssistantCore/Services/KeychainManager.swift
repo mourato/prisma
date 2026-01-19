@@ -69,7 +69,7 @@ public enum KeychainManager {
         // Build query for existing item
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: self.serviceIdentifier,
+            kSecAttrService as String: serviceIdentifier,
             kSecAttrAccount as String: key.rawValue,
         ]
 
@@ -95,7 +95,7 @@ public enum KeychainManager {
     static func retrieve(for key: Key) throws -> String? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: self.serviceIdentifier,
+            kSecAttrService as String: serviceIdentifier,
             kSecAttrAccount as String: key.rawValue,
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne,
@@ -127,7 +127,7 @@ public enum KeychainManager {
     static func delete(for key: Key) throws {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: self.serviceIdentifier,
+            kSecAttrService as String: serviceIdentifier,
             kSecAttrAccount as String: key.rawValue,
         ]
 
@@ -145,7 +145,7 @@ public enum KeychainManager {
     static func exists(for key: Key) -> Bool {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: self.serviceIdentifier,
+            kSecAttrService as String: serviceIdentifier,
             kSecAttrAccount as String: key.rawValue,
             kSecReturnData as String: false,
         ]

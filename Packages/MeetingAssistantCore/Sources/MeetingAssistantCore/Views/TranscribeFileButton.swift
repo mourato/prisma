@@ -9,11 +9,11 @@ public struct TranscribeFileButton: View {
     }
 
     public var body: some View {
-        Button(action: self.selectAndTranscribeFile) {
+        Button(action: selectAndTranscribeFile) {
             Label("transcribe.import_audio".localized, systemImage: "doc.badge.arrow.up")
         }
         .buttonStyle(.bordered)
-        .disabled(self.viewModel.isTranscribing)
+        .disabled(viewModel.isTranscribing)
     }
 
     private func selectAndTranscribeFile() {
@@ -32,7 +32,7 @@ public struct TranscribeFileButton: View {
 
         if panel.runModal() == .OK, let url = panel.url {
             Task {
-                await self.viewModel.transcribeFile(at: url)
+                await viewModel.transcribeFile(at: url)
             }
         }
     }

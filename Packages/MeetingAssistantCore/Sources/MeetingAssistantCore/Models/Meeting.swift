@@ -101,8 +101,8 @@ public struct Meeting: Identifiable, Codable, Hashable, Sendable {
 
     /// Duration of the meeting in seconds.
     public var duration: TimeInterval {
-        let end = self.endTime ?? Date()
-        return end.timeIntervalSince(self.startTime)
+        let end = endTime ?? Date()
+        return end.timeIntervalSince(startTime)
     }
 
     /// Formatted duration string (e.g., "1h 23m").
@@ -118,7 +118,7 @@ public struct Meeting: Identifiable, Codable, Hashable, Sendable {
         }
     }
 
-    public var appName: String { self.app.displayName }
-    public var appIcon: String { self.app.icon }
-    public var appColor: Color { self.app.color }
+    public var appName: String { app.displayName }
+    public var appIcon: String { app.icon }
+    public var appColor: Color { app.color }
 }

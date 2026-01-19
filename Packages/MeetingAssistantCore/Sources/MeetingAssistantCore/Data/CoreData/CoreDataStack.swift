@@ -14,12 +14,12 @@ public final class CoreDataStack: Sendable {
 
     /// Contexto principal para operações na main thread
     public var mainContext: NSManagedObjectContext {
-        self.persistentContainer.viewContext
+        persistentContainer.viewContext
     }
 
     /// Cria novo contexto em background para operações assíncronas
     public var backgroundContext: NSManagedObjectContext {
-        let context = self.persistentContainer.newBackgroundContext()
+        let context = persistentContainer.newBackgroundContext()
         context.mergePolicy = NSMergePolicy.mergeByPropertyObjectTrump
         return context
     }
@@ -29,15 +29,15 @@ public final class CoreDataStack: Sendable {
     /// - Parameter inMemory: Se true, usa banco em memória (para testes)
     public init(name: String = "MeetingAssistant", inMemory: Bool = false) {
         let model = CoreDataModel.createManagedObjectModel()
-        self.persistentContainer = NSPersistentContainer(name: name, managedObjectModel: model)
+        persistentContainer = NSPersistentContainer(name: name, managedObjectModel: model)
 
         if inMemory {
             let description = NSPersistentStoreDescription()
             description.type = NSInMemoryStoreType
-            self.persistentContainer.persistentStoreDescriptions = [description]
+            persistentContainer.persistentStoreDescriptions = [description]
         }
 
-        self.persistentContainer.loadPersistentStores { [weak self] storeDescription, error in
+        persistentContainer.loadPersistentStores { [weak self] storeDescription, error in
             if let error {
                 self?.logger.error("Failed to load persistent stores: \(error.localizedDescription)")
                 fatalError("CoreData store failed to load: \(error.localizedDescription)")
@@ -47,8 +47,8 @@ public final class CoreDataStack: Sendable {
         }
 
         // Configurar contexto principal
-        self.mainContext.automaticallyMergesChangesFromParent = true
-        self.mainContext.mergePolicy = NSMergePolicy.mergeByPropertyObjectTrump
+        mainContext.automaticallyMergesChangesFromParent = true
+        mainContext.mergePolicy = NSMergePolicy.mergeByPropertyObjectTrump
     }
 
     /// Executa operação em background context de forma thread-safe
@@ -57,7 +57,7 @@ public final class CoreDataStack: Sendable {
     public func performBackgroundTask<T>(
         _ operation: @escaping (NSManagedObjectContext) async throws -> T
     ) async throws -> T {
-        let context = self.backgroundContext
+        let context = backgroundContext
 
         return try await operation(context)
     }
@@ -69,10 +69,10 @@ public final class CoreDataStack: Sendable {
 
         try context.save()
 
-        if context == self.mainContext {
-            self.logger.debug("Main context saved")
+        if context == mainContext {
+            logger.debug("Main context saved")
         } else {
-            self.logger.debug("Background context saved")
+            logger.debug("Background context saved")
         }
     }
 
@@ -86,13 +86,13 @@ public final class CoreDataStack: Sendable {
 
     /// Reseta o stack (útil para testes)
     public func reset() throws {
-        let stores = self.persistentContainer.persistentStoreCoordinator.persistentStores
+        let stores = persistentContainer.persistentStoreCoordinator.persistentStores
         for store in stores {
-            try self.persistentContainer.persistentStoreCoordinator.remove(store)
+            try persistentContainer.persistentStoreCoordinator.remove(store)
         }
 
         // Recarregar stores
-        try self.persistentContainer.persistentStoreCoordinator.addPersistentStore(
+        try persistentContainer.persistentStoreCoordinator.addPersistentStore(
             ofType: NSInMemoryStoreType,
             configurationName: nil,
             at: nil

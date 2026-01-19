@@ -8,7 +8,7 @@ public final class FluidAIProvider: AIInfrastructureProvider, Sendable {
     private let client: @MainActor () -> LocalTranscriptionClient
 
     public init() {
-        self.client = { @MainActor in LocalTranscriptionClient.shared }
+        client = { @MainActor in LocalTranscriptionClient.shared }
     }
 
     public func healthCheck() async throws -> Bool {

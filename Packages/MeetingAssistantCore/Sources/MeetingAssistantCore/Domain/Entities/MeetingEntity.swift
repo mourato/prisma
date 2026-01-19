@@ -90,8 +90,8 @@ public struct MeetingEntity: Identifiable, Codable, Hashable, Sendable {
 
     /// Duração da reunião em segundos.
     public var duration: TimeInterval {
-        let end = self.endTime ?? Date()
-        return end.timeIntervalSince(self.startTime)
+        let end = endTime ?? Date()
+        return end.timeIntervalSince(startTime)
     }
 
     /// String de duração formatada (ex: "1h 23m").
@@ -107,6 +107,6 @@ public struct MeetingEntity: Identifiable, Codable, Hashable, Sendable {
         }
     }
 
-    public var appName: String { self.app.displayName }
-    public var appIconName: String { self.app.iconName }
+    public var appName: String { app.displayName }
+    public var appIconName: String { app.iconName }
 }

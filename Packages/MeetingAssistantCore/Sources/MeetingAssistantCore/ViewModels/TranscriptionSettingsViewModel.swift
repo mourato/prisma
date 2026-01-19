@@ -13,7 +13,7 @@ public class TranscriptionSettingsViewModel: ObservableObject {
             if let id = selectedId {
                 Task { await self.loadFullTranscription(id: id) }
             } else {
-                self.selectedTranscription = nil
+                selectedTranscription = nil
             }
         }
     }
@@ -36,7 +36,7 @@ public class TranscriptionSettingsViewModel: ObservableObject {
     }
 
     public var filteredTranscriptions: [TranscriptionMetadata] {
-        self.transcriptions.filter { transcription in
+        transcriptions.filter { transcription in
             let matchesSource = self.matchesSourceFilter(transcription)
             let matchesDate = self.dateFilter.contains(transcription.createdAt)
             return matchesSource && matchesDate
@@ -44,7 +44,7 @@ public class TranscriptionSettingsViewModel: ObservableObject {
     }
 
     private func matchesSourceFilter(_ transcription: TranscriptionMetadata) -> Bool {
-        switch self.sourceFilter {
+        switch sourceFilter {
         case .all:
             true
         case .dictations:
@@ -55,25 +55,25 @@ public class TranscriptionSettingsViewModel: ObservableObject {
     }
 
     public func loadTranscriptions() async {
-        self.isLoading = true
+        isLoading = true
         do {
-            self.transcriptions = try await self.storage.loadAllMetadata()
+            transcriptions = try await storage.loadAllMetadata()
         } catch {
-            self.logger.error("Failed to load transcriptions: \(error.localizedDescription)")
-            self.errorMessage = "settings.transcriptions.error_load".localized
+            logger.error("Failed to load transcriptions: \(error.localizedDescription)")
+            errorMessage = "settings.transcriptions.error_load".localized
         }
-        self.isLoading = false
+        isLoading = false
     }
 
     public func loadFullTranscription(id: UUID) async {
         do {
-            self.selectedTranscription = try await self.storage.loadTranscription(by: id)
+            selectedTranscription = try await storage.loadTranscription(by: id)
         } catch {
-            self.logger.error("Failed to load full transcription: \(error.localizedDescription)")
+            logger.error("Failed to load full transcription: \(error.localizedDescription)")
         }
     }
 
     public func openRecordingsDirectory() {
-        NSWorkspace.shared.open(self.storage.recordingsDirectory)
+        NSWorkspace.shared.open(storage.recordingsDirectory)
     }
 }

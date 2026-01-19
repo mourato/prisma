@@ -17,7 +17,7 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
 
     @Published public private(set) var isRecording = false
     public var isRecordingPublisher: AnyPublisher<Bool, Never> {
-        self.$isRecording.eraseToAnyPublisher()
+        $isRecording.eraseToAnyPublisher()
     }
 
     // Legacy properties maintained for protocol conformance, but not used for file writing
@@ -62,7 +62,7 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
     // MARK: - Protocol Conformance
 
     public func startRecording(to outputURL: URL, retryCount: Int) async throws {
-        try await self.startRecording(to: outputURL, sampleRate: 48_000.0, retryCount: retryCount)
+        try await startRecording(to: outputURL, sampleRate: 48_000.0, retryCount: retryCount)
     }
 
     // MARK: - Configuration
@@ -94,51 +94,51 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
     /// Starts system audio capture.
     /// `outputURL` is ignored as this class no longer writes files, but kept for protocol conformance.
     public func startRecording(to outputURL: URL, sampleRate: Double = 48_000.0, retryCount: Int = 0) async throws {
-        guard !self.isRecording else {
+        guard !isRecording else {
             AppLogger.info("Already recording system audio", category: .recordingManager)
             return
         }
 
-        guard await self.hasPermission() else {
+        guard await hasPermission() else {
             throw SystemAudioRecorderError.permissionDenied
         }
 
         AppLogger.info("Starting system audio capture stream at \(sampleRate)Hz...", category: .recordingManager)
-        self.currentSampleRate = sampleRate
-        self.hasReceivedValidBuffer.store(false, ordering: .relaxed)
+        currentSampleRate = sampleRate
+        hasReceivedValidBuffer.store(false, ordering: .relaxed)
 
-        try await self.setupScreenCapture()
+        try await setupScreenCapture()
 
         do {
-            try await self.stream?.startCapture()
-            self.isRecording = true
-            self.startValidationTimer()
+            try await stream?.startCapture()
+            isRecording = true
+            startValidationTimer()
             AppLogger.info("System audio capture started successfully", category: .recordingManager)
         } catch {
             AppLogger.error("Failed to start screen capture", category: .recordingManager, error: error)
-            await self.cleanup()
+            await cleanup()
             throw SystemAudioRecorderError.failedToStartCapture(error)
         }
     }
 
     public func stopRecording() async -> URL? {
-        guard self.isRecording else { return nil }
+        guard isRecording else { return nil }
 
         AppLogger.info("Stopping system audio capture...", category: .recordingManager)
 
-        self.validationTimer?.invalidate()
-        self.validationTimer = nil
+        validationTimer?.invalidate()
+        validationTimer = nil
 
         if let stream {
             try? await stream.stopCapture()
         }
 
-        await self.cleanup()
+        await cleanup()
         return nil // No file produced by this class directly
     }
 
     public func openSettings() {
-        self.openScreenRecordingSettings()
+        openScreenRecordingSettings()
     }
 
     // MARK: - Permission Checking
@@ -176,39 +176,39 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
 
         config.capturesAudio = true
         config.excludesCurrentProcessAudio = true // Essential to avoid feedback loop if we play back
-        config.sampleRate = Int(self.currentSampleRate)
-        config.channelCount = self.channelCount
+        config.sampleRate = Int(currentSampleRate)
+        config.channelCount = channelCount
 
         // Minimal video
-        config.width = self.minVideoDimension
-        config.height = self.minVideoDimension
-        config.minimumFrameInterval = CMTime(value: 1, timescale: Int32(self.videoFrameRate))
+        config.width = minVideoDimension
+        config.height = minVideoDimension
+        config.minimumFrameInterval = CMTime(value: 1, timescale: Int32(videoFrameRate))
 
-        self.stream = SCStream(filter: filter, configuration: config, delegate: nil)
+        stream = SCStream(filter: filter, configuration: config, delegate: nil)
 
         let queue = DispatchQueue(label: "MeetingAssistant.systemAudioCapture", qos: .userInitiated)
-        self.audioCaptureQueue = queue
+        audioCaptureQueue = queue
 
         let output = SystemAudioStreamOutput(
             onBuffer: { @Sendable [weak self] buffer in
                 self?.handleBuffer(buffer)
             }
         )
-        self.streamOutput = output
-        self.streamOutputHolder = output // Keep strong reference to prevent deallocation
+        streamOutput = output
+        streamOutputHolder = output // Keep strong reference to prevent deallocation
 
-        try self.stream?.addStreamOutput(output, type: .audio, sampleHandlerQueue: queue)
+        try stream?.addStreamOutput(output, type: .audio, sampleHandlerQueue: queue)
     }
 
     private nonisolated func handleBuffer(_ buffer: AVAudioPCMBuffer) {
         // Mark validation
-        if !self.hasReceivedValidBuffer.load(ordering: .relaxed) {
-            self.hasReceivedValidBuffer.store(true, ordering: .relaxed)
+        if !hasReceivedValidBuffer.load(ordering: .relaxed) {
+            hasReceivedValidBuffer.store(true, ordering: .relaxed)
         }
 
         // Forward buffer to listener directly on capture queue
         // This avoids Main Thread overhead for high-frequency audio buffers
-        self.onAudioBuffer?(buffer)
+        onAudioBuffer?(buffer)
     }
 
     private func cleanup() async {
@@ -216,15 +216,15 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
             try? await activeStream.stopCapture()
         }
 
-        self.stream = nil
-        self.streamOutput = nil
-        self.audioCaptureQueue = nil
-        self.isRecording = false
-        self.hasReceivedValidBuffer.store(false, ordering: .relaxed)
+        stream = nil
+        streamOutput = nil
+        audioCaptureQueue = nil
+        isRecording = false
+        hasReceivedValidBuffer.store(false, ordering: .relaxed)
     }
 
     private func startValidationTimer() {
-        self.validationTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { @Sendable [weak self] _ in
+        validationTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { @Sendable [weak self] _ in
             Task { @MainActor in
                 await self?.handleValidationResult()
             }
@@ -232,7 +232,7 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
     }
 
     private func handleValidationResult() async {
-        let validationPassed = self.hasReceivedValidBuffer.load(ordering: .relaxed)
+        let validationPassed = hasReceivedValidBuffer.load(ordering: .relaxed)
         if !validationPassed {
             AppLogger.warning("System audio validation failed - no valid buffers received", category: .recordingManager)
             // We don't fail hard here for now, as system audio might just be silent,
@@ -258,7 +258,7 @@ private class SystemAudioStreamOutput: NSObject, SCStreamOutput {
         guard type == .audio, sampleBuffer.isValid else { return }
 
         guard let buffer = createPCMBuffer(from: sampleBuffer) else { return }
-        self.onBuffer(buffer)
+        onBuffer(buffer)
     }
 
     private func createPCMBuffer(from sampleBuffer: CMSampleBuffer) -> AVAudioPCMBuffer? {
