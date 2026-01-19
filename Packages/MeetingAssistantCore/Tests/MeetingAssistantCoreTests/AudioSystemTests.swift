@@ -175,6 +175,7 @@ final class AudioSystemTests: XCTestCase {
     // MARK: - Testes de Estado Consistente
 
     func testStateConsistency_AudioRecorderStateTransitions() async throws {
+        try XCTSkipIf(true, "Integration test requiring hardware")
         let outputURL = self.createTemporaryURL()
 
         // Estado inicial
@@ -447,6 +448,7 @@ final class AudioSystemTests: XCTestCase {
     // MARK: - Testes de Cleanup Adequado
 
     func testCleanup_AudioRecorderResourceCleanup() async throws {
+        try XCTSkipIf(true, "Integration test requiring hardware")
         let outputURL = self.createTemporaryURL()
 
         try await self.audioRecorder.startRecording(to: outputURL, source: .all, retryCount: 0)
