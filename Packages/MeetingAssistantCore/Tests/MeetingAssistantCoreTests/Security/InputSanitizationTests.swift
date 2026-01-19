@@ -6,7 +6,7 @@ final class InputSanitizationTests: XCTestCase {
         XCTAssertEqual(InputSanitizer.sanitizeFilename("test..doc"), "test__doc")
         XCTAssertEqual(InputSanitizer.sanitizeFilename("my/cool/file.txt"), "my_cool_file_txt")
         XCTAssertEqual(InputSanitizer.sanitizeFilename("   space   "), "space")
-        XCTAssertEqual(InputSanitizer.sanitizeFilename("../../../etc/passwd"), "___etc_passwd")
+        XCTAssertEqual(InputSanitizer.sanitizeFilename("../../../etc/passwd"), "_________etc_passwd")
     }
 
     func testValidatePathComponent() {
