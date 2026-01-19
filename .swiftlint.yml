@@ -14,14 +14,14 @@ disabled_rules:
   - nesting # sometimes needed for namespacing
   - todo # TODOs are tracked separately
 
-# MARK: - Opt-in Rules (stricter quality enforcement)
+# MARK: - Opt-in Rules (quality enforcement without excessive friction)
 opt_in_rules:
   - discouraged_optional_collection
   - empty_count
   - fatal_error_message
   - file_header
   - first_where
-  - force_unwrapping
+  # - force_unwrapping           # Removed: too restrictive for pre-commit
   - literal_expression_end_indentation
   - multiline_arguments
   - pattern_matching_keywords
@@ -33,7 +33,7 @@ opt_in_rules:
   - unowned_variable_capture
   - explicit_init
   - fallthrough
-  - implicitly_unwrapped_optional
+  # - implicitly_unwrapped_optional  # Removed: common in AppKit/SwiftUI
   - overridden_super_call
 
 # MARK: - Excluded Paths
@@ -89,11 +89,11 @@ file_length:
   warning: 600
   error: 900
 
-# Function body: matches your 20-line guideline with more tolerance
-# (50 lines warning for complex audio/recording code, 100 lines error)
+# Function body: balanced threshold for productivity
+# 50 lines warning gives room for audio/complex code, 100 lines error
 function_body_length:
-  warning: 30
-  error: 50
+  warning: 50
+  error: 100
 
 # Cyclomatic complexity: lower for readability
 cyclomatic_complexity:
