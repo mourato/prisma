@@ -414,8 +414,13 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         queue: AudioBufferQueue,
         partialState: PartialBufferState
     ) -> AVAudioSourceNode {
-        AVAudioSourceNode { @Sendable _, _, frameCount, audioBufferList -> OSStatus in
-            self.validateCallbackInputs(frameCount: frameCount, audioBufferList: audioBufferList)
+        AVAudioSourceNode { [queue, partialState] _, _, frameCount, audioBufferList -> OSStatus in
+            self.validateCallbackInputs(
+                frameCount: frameCount,
+                audioBufferList: audioBufferList,
+                queue: queue,
+                partialState: partialState
+            )
         }
     }
 
@@ -426,16 +431,20 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     /// - Returns: OSStatus error code; noErr if validation passes.
     private nonisolated func validateCallbackInputs(
         frameCount: UInt32,
-        audioBufferList: UnsafeMutablePointer<AudioBufferList>
+        audioBufferList: UnsafeMutablePointer<AudioBufferList>,
+        queue: AudioBufferQueue,
+        partialState: PartialBufferState
     ) -> OSStatus {
         guard frameCount > 0 else {
             return -50 // kAudio_ParamError
         }
 
-        // Primary validation performed by frameCount check.
-        // audioBufferList is non-optional in this context.
-
-        return processAudioBuffers(frameCount: frameCount, audioBufferList: audioBufferList)
+        return processAudioBuffers(
+            frameCount: frameCount,
+            audioBufferList: audioBufferList,
+            queue: queue,
+            partialState: partialState
+        )
     }
 
     /// Processes audio buffers by filling them with silence.
@@ -445,13 +454,54 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     /// - Returns: OSStatus indicating success (noErr) or failure.
     private nonisolated func processAudioBuffers(
         frameCount: UInt32,
-        audioBufferList: UnsafeMutablePointer<AudioBufferList>
+        audioBufferList: UnsafeMutablePointer<AudioBufferList>,
+        queue: AudioBufferQueue,
+        partialState: PartialBufferState
     ) -> OSStatus {
         let buffers = UnsafeMutableAudioBufferListPointer(audioBufferList)
-        let bufferCount = 2 // We know format is stereo
         let targetFrames = Int(frameCount)
+        var framesFilled = 0
 
-        fillBuffersWithSilence(buffers: buffers, bufferCount: bufferCount, targetFrames: targetFrames)
+        // 1. First, satisfy from partial state if something was left from previous cycle
+        if partialState.hasPartial {
+            framesFilled += partialState.consume(maxFrames: targetFrames, into: buffers, destOffset: 0)
+        }
+
+        // 2. Fill the rest from the queue
+        while framesFilled < targetFrames {
+            guard let nextBuffer = queue.dequeue() else {
+                break // No more data: stop filling and return noErr (filled with silence)
+            }
+
+            let framesToCopy = min(Int(nextBuffer.frameLength), targetFrames - framesFilled)
+
+            // Temporary partial state to copy the slice
+            let tempPartial = PartialBufferState()
+            tempPartial.setBuffer(nextBuffer)
+
+            let copied = tempPartial.consume(
+                maxFrames: framesToCopy,
+                into: buffers,
+                destOffset: framesFilled
+            )
+
+            framesFilled += copied
+
+            // If the buffer was only partially used, store it for next render cycle
+            if tempPartial.hasPartial {
+                partialState.setBuffer(nextBuffer, offset: Int(nextBuffer.frameLength) - tempPartial.framesRemaining)
+            }
+        }
+
+        // 3. Zero out any remaining frames to avoid noise/clicks
+        if framesFilled < targetFrames {
+            fillBuffersWithSilence(
+                buffers: buffers,
+                bufferCount: 2,
+                targetFrames: targetFrames - framesFilled,
+                destOffset: framesFilled
+            )
+        }
 
         return noErr
     }
@@ -464,13 +514,14 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     private nonisolated func fillBuffersWithSilence(
         buffers: UnsafeMutableAudioBufferListPointer,
         bufferCount: Int,
-        targetFrames: Int
+        targetFrames: Int,
+        destOffset: Int = 0
     ) {
         for ch in 0..<bufferCount {
             guard ch < 2 else { break }
             let destBuffer = buffers[ch]
             if let dest = destBuffer.mData?.assumingMemoryBound(to: Float.self) {
-                memset(dest, 0, targetFrames * MemoryLayout<Float>.size)
+                memset(dest.advanced(by: destOffset), 0, targetFrames * MemoryLayout<Float>.size)
             }
         }
     }
