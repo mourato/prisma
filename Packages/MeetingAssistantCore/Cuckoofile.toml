@@ -4,3 +4,4 @@ output = "Tests/MeetingAssistantCoreTests/GeneratedMocks.swift"
 sources = [
     "Sources/MeetingAssistantCore/Domain/Interfaces/DomainProtocols.swift",
 ]
+testableImports = ["MeetingAssistantCore"]
