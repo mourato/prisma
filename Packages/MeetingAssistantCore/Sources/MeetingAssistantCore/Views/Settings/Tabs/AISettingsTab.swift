@@ -54,30 +54,74 @@ public struct AISettingsTab: View {
                 Divider()
                     .padding(.vertical, 2)
 
-                HStack {
-                    Stepper(
-                        value: $viewModel.settings.minSpeakers,
-                        in: 1...viewModel.settings.maxSpeakers
-                    ) {
-                        HStack {
-                            Text(NSLocalizedString("settings.ai.min_speakers", bundle: .safeModule, comment: ""))
-                            Spacer()
-                            Text("\(viewModel.settings.minSpeakers)")
-                                .fontWeight(.medium)
+                VStack(spacing: 12) {
+                    HStack {
+                        Toggle(
+                            NSLocalizedString(
+                                "settings.ai.min_speakers", bundle: .safeModule, comment: ""
+                            ),
+                            isOn: Binding(
+                                get: { viewModel.settings.minSpeakers != nil },
+                                set: { isOn in
+                                    viewModel.settings.minSpeakers = isOn ? 1 : nil
+                                }
+                            )
+                        )
+                        .toggleStyle(.checkbox)
+
+                        Spacer()
+
+                        if let min = viewModel.settings.minSpeakers {
+                            Stepper(
+                                value: Binding(
+                                    get: { min },
+                                    set: { viewModel.settings.minSpeakers = $0 }
+                                ),
+                                in: 1...(viewModel.settings.maxSpeakers ?? 20)
+                            ) {
+                                Text("\(min)")
+                                    .fontWeight(.medium)
+                                    .frame(width: 24)
+                            }
+                        } else {
+                            Text("settings.ai.speakers_auto".localized)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
                     }
-                }
 
-                HStack {
-                    Stepper(
-                        value: $viewModel.settings.maxSpeakers,
-                        in: viewModel.settings.minSpeakers...20
-                    ) {
-                        HStack {
-                            Text(NSLocalizedString("settings.ai.max_speakers", bundle: .safeModule, comment: ""))
-                            Spacer()
-                            Text("\(viewModel.settings.maxSpeakers)")
-                                .fontWeight(.medium)
+                    HStack {
+                        Toggle(
+                            NSLocalizedString(
+                                "settings.ai.max_speakers", bundle: .safeModule, comment: ""
+                            ),
+                            isOn: Binding(
+                                get: { viewModel.settings.maxSpeakers != nil },
+                                set: { isOn in
+                                    viewModel.settings.maxSpeakers = isOn ? 10 : nil
+                                }
+                            )
+                        )
+                        .toggleStyle(.checkbox)
+
+                        Spacer()
+
+                        if let max = viewModel.settings.maxSpeakers {
+                            Stepper(
+                                value: Binding(
+                                    get: { max },
+                                    set: { viewModel.settings.maxSpeakers = $0 }
+                                ),
+                                in: (viewModel.settings.minSpeakers ?? 1)...20
+                            ) {
+                                Text("\(max)")
+                                    .fontWeight(.medium)
+                                    .frame(width: 24)
+                            }
+                        } else {
+                            Text("settings.ai.speakers_auto".localized)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
                     }
                 }

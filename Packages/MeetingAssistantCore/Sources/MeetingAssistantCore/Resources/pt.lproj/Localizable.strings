@@ -32,6 +32,7 @@
 "settings.ai.diarization_desc" = "Identifica quem está falando na reunião. Aumenta significativamente o tempo de processamento.";
 "settings.ai.min_speakers" = "Mín. de Oradores";
 "settings.ai.max_speakers" = "Máx. de Oradores";
+"settings.ai.speakers_auto" = "Auto";
 "settings.ai.provider" = "Provedor";
 "settings.ai.provider_label" = "Provedor de IA:";
 "settings.ai.api_config" = "Configuração da API";

@@ -13,6 +13,7 @@ public class TranscriptionViewModel: ObservableObject {
 
     public var statusMessage: String { status.statusMessage }
     public var progressPercentage: Double { status.progressPercentage }
+    public var currentStatus: TranscriptionStatus.State { status.currentStatus }
     public var estimatedTimeRemaining: TimeInterval? { status.estimatedTimeRemaining }
     public var isProcessing: Bool { status.isProcessing }
     public var hasBlockingError: Bool { status.hasBlockingError }

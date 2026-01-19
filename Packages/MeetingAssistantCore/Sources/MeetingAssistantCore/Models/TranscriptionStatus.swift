@@ -39,8 +39,19 @@ public class TranscriptionStatus: ObservableObject {
 
     // MARK: - Transcription Progress
 
+    /// Modern state representation for external observers.
+    public enum State: Equatable {
+        case idle
+        case preparing
+        case processing(progress: Double)
+        case postProcessing(progress: Double)
+        case completed
+        case failed(TranscriptionStatusError)
+    }
+
     @Published public private(set) var phase: TranscriptionPhase = .idle
     @Published public private(set) var progressPercentage: Double = 0.0
+    @Published public private(set) var currentStatus: State = .idle
     @Published public private(set) var estimatedTimeRemaining: TimeInterval?
     @Published public private(set) var audioDurationSeconds: Double?
     @Published public private(set) var processedDurationSeconds: Double = 0.0
@@ -139,6 +150,7 @@ public class TranscriptionStatus: ObservableObject {
     /// Begins a new transcription session.
     public func beginTranscription(audioDuration: Double?) {
         phase = .preparing
+        currentStatus = .preparing
         progressPercentage = 0.0
         estimatedTimeRemaining = nil
         audioDurationSeconds = audioDuration
@@ -159,6 +171,20 @@ public class TranscriptionStatus: ObservableObject {
             progressPercentage = min(max(percentage, 0.0), 100.0)
         }
 
+        // Update synthetic status
+        switch phase {
+        case .preparing:
+            currentStatus = .preparing
+        case .processing:
+            currentStatus = .processing(progress: progressPercentage)
+        case .postProcessing:
+            currentStatus = .postProcessing(progress: progressPercentage)
+        case .completed:
+            currentStatus = .completed
+        default:
+            break
+        }
+
         if let processed = processedSeconds {
             processedDurationSeconds = processed
             calculateEstimatedTime()
@@ -169,6 +195,7 @@ public class TranscriptionStatus: ObservableObject {
     public func completeTranscription(success: Bool) {
         phase = success ? .completed : .failed
         progressPercentage = success ? 100.0 : progressPercentage
+        currentStatus = success ? .completed : (lastError != nil ? .failed(lastError!) : .idle)
         estimatedTimeRemaining = nil
         transcriptionStartTime = nil
     }
@@ -176,6 +203,7 @@ public class TranscriptionStatus: ObservableObject {
     /// Resets to idle state after completion.
     public func resetToIdle() {
         phase = .idle
+        currentStatus = .idle
         progressPercentage = 0.0
         estimatedTimeRemaining = nil
         audioDurationSeconds = nil
@@ -187,6 +215,7 @@ public class TranscriptionStatus: ObservableObject {
     public func recordError(_ error: TranscriptionStatusError) {
         lastError = error
         lastErrorTime = Date()
+        currentStatus = .failed(error)
 
         // Update state based on error type
         switch error {
