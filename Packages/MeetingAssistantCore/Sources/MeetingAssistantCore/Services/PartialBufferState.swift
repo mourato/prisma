@@ -77,7 +77,7 @@ public final class PartialBufferState: @unchecked Sendable {
             // CRITICAL FIX: Don't access destBuffers.count as it may crash on uninitialized structure
             // Use the buffer's channel count and validate destBuffers access individually
             let bufferChannelCount = Int(buffer.format.channelCount)
-            let channelsToCopy = min(2, bufferChannelCount) // We know format is 2 channels (stereo)
+            let channelsToCopy = min(min(2, bufferChannelCount), destBuffers.count)
 
             // Copy each channel
             for ch in 0..<channelsToCopy {

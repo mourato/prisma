@@ -80,13 +80,18 @@ final class PartialBufferStateTests: XCTestCase {
     // MARK: - Thread Safety (Basic)
 
     func testConcurrentAccess_DoesNotCrash() throws {
-        try XCTSkipIf(true, "Crash under investigation - Signal 5")
+
         let buffer = try createTestBuffer(frameCount: 1000)
-        let iterations = 100
+        let iterations = 1000
         let expectation = self.expectation(description: "Concurrent access")
-        expectation.expectedFulfillmentCount = iterations * 2
+        // 3 operations per iteration
+        expectation.expectedFulfillmentCount = iterations * 3
 
         guard let sut = self.sut else { return XCTFail("SUT not initialized") }
+
+        // Setup a dummy destination buffer
+        let destBuffer = try createTestBuffer(frameCount: 100)
+        let audioBufferList = UnsafeMutableAudioBufferListPointer(destBuffer.mutableAudioBufferList)
 
         // Multiple concurrent reads and writes
         for _ in 0..<iterations {
@@ -100,9 +105,14 @@ final class PartialBufferStateTests: XCTestCase {
                 _ = sut.hasPartial
                 expectation.fulfill()
             }
+
+            DispatchQueue.global().async {
+                _ = sut.consume(maxFrames: 50, into: audioBufferList, destOffset: 0)
+                expectation.fulfill()
+            }
         }
 
-        wait(for: [expectation], timeout: 5.0)
+        wait(for: [expectation], timeout: 10.0)
         // If we get here without crash, the test passes
     }
 
@@ -168,31 +178,45 @@ final class PartialBufferStateTests: XCTestCase {
 
     // MARK: - Helpers
 
-    private func createTestBuffer(frameCount: AVAudioFrameCount) throws -> AVAudioPCMBuffer {
+    func testConsume_SourceStereo_DestMono_DoesNotCrash() throws {
+        guard let sut = self.sut else { return XCTFail("SUT not initialized") }
+
+        // Source: Stereo (2 channels)
+        let srcBuffer = try createTestBuffer(frames: 100, channels: 2)
+        sut.setBuffer(srcBuffer)
+
+        // Destination: Mono (1 channel)
+        let destBuffer = try createTestBuffer(frames: 100, channels: 1)
+        let audioBufferList = UnsafeMutableAudioBufferListPointer(destBuffer.mutableAudioBufferList)
+
+        // This should NOT crash
+        _ = sut.consume(maxFrames: 50, into: audioBufferList, destOffset: 0)
+    }
+
+    // MARK: - Helpers
+
+    private func createTestBuffer(
+        frames: AVAudioFrameCount = 1000,
+        channels: AVAudioChannelCount = 2
+    ) throws -> AVAudioPCMBuffer {
         guard let format = AVAudioFormat(
             commonFormat: .pcmFormatFloat32,
             sampleRate: 48_000,
-            channels: 2,
+            channels: channels,
             interleaved: false
         ) else {
             throw NSError(domain: "Test", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to create format"])
         }
 
-        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else {
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frames) else {
             throw NSError(domain: "Test", code: 2, userInfo: [NSLocalizedDescriptionKey: "Failed to create buffer"])
         }
 
-        buffer.frameLength = frameCount
-
-        // Fill with test data
-        if let channelData = buffer.floatChannelData {
-            for ch in 0..<Int(format.channelCount) {
-                for frame in 0..<Int(frameCount) {
-                    channelData[ch][frame] = Float(frame) / Float(frameCount)
-                }
-            }
-        }
-
+        buffer.frameLength = frames
         return buffer
+    }
+
+    private func createTestBuffer(frameCount: AVAudioFrameCount) throws -> AVAudioPCMBuffer {
+        return try createTestBuffer(frames: frameCount, channels: 2)
     }
 }
