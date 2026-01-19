@@ -76,7 +76,7 @@ public final class AudioBufferQueue: @unchecked Sendable {
     /// Internal isEmpty check - MUST only be called when lock is already held.
     /// Avoids deadlock since NSLock is non-reentrant.
     private var _isEmpty: Bool {
-        count == 0
+        isEmpty
     }
 
     /// Clears the queue.
