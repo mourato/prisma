@@ -414,7 +414,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         queue: AudioBufferQueue,
         partialState: PartialBufferState
     ) -> AVAudioSourceNode {
-        AVAudioSourceNode { @Sendable [queue, partialState] _, _, frameCount, audioBufferList -> OSStatus in
+        AVAudioSourceNode { @Sendable _, _, frameCount, audioBufferList -> OSStatus in
             self.validateCallbackInputs(frameCount: frameCount, audioBufferList: audioBufferList)
         }
     }
@@ -432,9 +432,8 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             return -50 // kAudio_ParamError
         }
 
-        guard audioBufferList != nil else {
-            return -50 // kAudio_ParamError
-        }
+        // Primary validation performed by frameCount check.
+        // audioBufferList is non-optional in this context.
 
         return processAudioBuffers(frameCount: frameCount, audioBufferList: audioBufferList)
     }
