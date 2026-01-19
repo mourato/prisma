@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Lint & Test
+    runs-on: macos-14
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Select Xcode 16
+        run: sudo xcode-select -s /Applications/Xcode_16.app
+        
+      - name: Install Tools
+        run: brew install swiftlint swiftformat
+        
+      - name: Lint
+        run: make lint
+        
+      - name: Check Formatting
+        run: swiftformat --lint --config .swiftformat App Packages/MeetingAssistantCore/Sources
+        
+      - name: Run Tests
+        run: make ci-test
+
+  danger:
+    name: Danger CI
+    if: github.event_name == 'pull_request'
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Select Xcode 16
+        run: sudo xcode-select -s /Applications/Xcode_16.app
+        
+      - name: Install Danger
+        run: brew install danger/tap/danger-swift
+        
+      - name: Run Danger
+        run: make danger
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

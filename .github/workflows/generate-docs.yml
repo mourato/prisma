@@ -2,7 +2,7 @@ name: Generate Documentation
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
     paths:
       - 'Packages/MeetingAssistantCore/Sources/**/*.swift'
       - '**/*.docc/**'
