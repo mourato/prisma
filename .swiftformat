@@ -62,7 +62,7 @@
 --ranges nospace
 
 # Insert explicit self
---self insert
+--self remove
 
 # Semicolons inline
 --semicolons inline
@@ -79,5 +79,5 @@
 # Wrap collections before first
 --wrapcollections beforefirst
 
-# Exclude build directories
---exclude .build,DerivedData,.swiftpm,dist
+# Exclude build directories and generated files
+--exclude .build,DerivedData,.swiftpm,dist,**/Tests/**,**/GeneratedMocks.swift
