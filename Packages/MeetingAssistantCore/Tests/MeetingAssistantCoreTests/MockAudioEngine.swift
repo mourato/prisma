@@ -12,7 +12,9 @@ protocol MockAudioEngineProtocol {
     var inputNode: MockAudioInputNodeProtocol { get }
 
     func attach(_ node: MockAudioNodeProtocol)
-    func connect(_ source: MockAudioNodeProtocol, to destination: MockAudioMixerNodeProtocol, format: MockAudioFormatProtocol?)
+    func connect(_ source: MockAudioNodeProtocol,
+                  to destination: MockAudioMixerNodeProtocol,
+                  format: MockAudioFormatProtocol?)
     func prepare() throws
     func start() throws
     func stop()
@@ -31,7 +33,10 @@ protocol MockAudioMixerNodeProtocol: MockAudioNodeProtocol {
     var outputVolume: Float { get set }
 
     func outputFormat(forBus bus: AVAudioNodeBus) -> MockAudioFormatProtocol
-    func installTap(onBus bus: AVAudioNodeBus, bufferSize: AVAudioFrameCount, format: MockAudioFormatProtocol?, block: @escaping AVAudioNodeTapBlock)
+    func installTap(onBus bus: AVAudioNodeBus,
+                    bufferSize: AVAudioFrameCount,
+                    format: MockAudioFormatProtocol?,
+                    block: @escaping AVAudioNodeTapBlock)
     func removeTap(onBus bus: AVAudioNodeBus)
 }
 
@@ -78,7 +83,9 @@ final class MockAudioEngine: MockAudioEngineProtocol {
     var inputNode: MockAudioInputNodeProtocol
 
     private var attachedNodes: [MockAudioNodeProtocol] = []
-    private var connections: [(source: MockAudioNodeProtocol, destination: MockAudioMixerNodeProtocol, format: MockAudioFormatProtocol?)] = []
+    private var connections: [(source: MockAudioNodeProtocol,
+                                destination: MockAudioMixerNodeProtocol,
+                                format: MockAudioFormatProtocol?)] = []
 
     // Controle de timing para testes determinísticos
     var shouldFailPrepare = false
@@ -96,13 +103,17 @@ final class MockAudioEngine: MockAudioEngineProtocol {
         attachedNodes.append(node)
     }
 
-    func connect(_ source: MockAudioNodeProtocol, to destination: MockAudioMixerNodeProtocol, format: MockAudioFormatProtocol?) {
+    func connect(_ source: MockAudioNodeProtocol,
+                  to destination: MockAudioMixerNodeProtocol,
+                  format: MockAudioFormatProtocol?) {
         connections.append((source, destination, format))
     }
 
     func prepare() throws {
         if shouldFailPrepare {
-            throw NSError(domain: "MockAudioEngine", code: -1, userInfo: [NSLocalizedDescriptionKey: "Mock prepare failure"])
+            throw NSError(domain: "MockAudioEngine",
+                          code: -1,
+                          userInfo: [NSLocalizedDescriptionKey: "Mock prepare failure"])
         }
 
         if prepareDelay > 0 {
@@ -112,7 +123,9 @@ final class MockAudioEngine: MockAudioEngineProtocol {
 
     func start() throws {
         if shouldFailStart {
-            throw NSError(domain: "MockAudioEngine", code: -2, userInfo: [NSLocalizedDescriptionKey: "Mock start failure"])
+            throw NSError(domain: "MockAudioEngine",
+                          code: -2,
+                          userInfo: [NSLocalizedDescriptionKey: "Mock start failure"])
         }
 
         if startDelay > 0 {
@@ -145,7 +158,10 @@ final class MockAudioMixerNode: MockAudioMixerNodeProtocol {
         MockAudioFormat(sampleRate: 48000, channelCount: 2, commonFormat: .pcmFormatFloat32, isInterleaved: false)
     }
 
-    func installTap(onBus bus: AVAudioNodeBus, bufferSize: AVAudioFrameCount, format: MockAudioFormatProtocol?, block: @escaping AVAudioNodeTapBlock) {
+    func installTap(onBus bus: AVAudioNodeBus,
+                    bufferSize: AVAudioFrameCount,
+                    format: MockAudioFormatProtocol?,
+                    block: @escaping AVAudioNodeTapBlock) {
         taps[bus] = block
     }
 
@@ -284,7 +300,10 @@ final class MockAudioEngineTests: XCTestCase {
     }
 
     func testConnectNodes() {
-        let format = MockAudioFormat(sampleRate: 48000, channelCount: 2, commonFormat: .pcmFormatFloat32, isInterleaved: false)
+        let format = MockAudioFormat(sampleRate: 48000,
+                                     channelCount: 2,
+                                     commonFormat: .pcmFormatFloat32,
+                                     isInterleaved: false)
         mockEngine.connect(mockSource, to: mockMixer, format: format)
         // Não há propriedade pública para verificar, mas não deve crash
     }
@@ -356,9 +375,9 @@ final class MockAudioEngineTests: XCTestCase {
         XCTAssertFalse(format.isInterleaved)
     }
 
-    func testMixerNodeTapInstallation() {
+    func testMixerNodeTapInstallation() throws {
         var tapCalled = false
-        let buffer = try! createTestBuffer(frameCount: 1024)
+        let buffer = try createTestBuffer(frameCount: 1024)
 
         mockMixer.installTap(onBus: 0, bufferSize: 2048, format: nil) { _, _ in
             tapCalled = true
@@ -368,9 +387,9 @@ final class MockAudioEngineTests: XCTestCase {
         XCTAssertTrue(tapCalled)
     }
 
-    func testMixerNodeTapRemoval() {
+    func testMixerNodeTapRemoval() throws {
         var tapCalled = false
-        let buffer = try! createTestBuffer(frameCount: 1024)
+        let buffer = try createTestBuffer(frameCount: 1024)
 
         mockMixer.installTap(onBus: 0, bufferSize: 2048, format: nil) { _, _ in
             tapCalled = true
@@ -382,7 +401,6 @@ final class MockAudioEngineTests: XCTestCase {
     }
 
     func testSourceNodeRenderCallback() throws {
-        try XCTSkipIf(true, "Crash Signal 11 - Unsafe pointer handling issues")
         var callbackCalled = false
         let sourceNode = MockAudioSourceNode { _, _, frameCount, audioBufferList in
             callbackCalled = true
@@ -391,7 +409,14 @@ final class MockAudioEngineTests: XCTestCase {
             return noErr
         }
 
-        let status = sourceNode.simulateRender(frameCount: 1024, audioBufferList: createDummyAudioBufferList())
+        let format = AVAudioFormat(standardFormatWithSampleRate: 48000, channels: 2)!
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 1024) else {
+            XCTFail("Failed to create buffer")
+            return
+        }
+        buffer.frameLength = 1024
+
+        let status = sourceNode.simulateRender(frameCount: 1024, audioBufferList: buffer.mutableAudioBufferList)
         XCTAssertEqual(status, noErr)
         XCTAssertTrue(callbackCalled)
     }
@@ -431,19 +456,5 @@ final class MockAudioEngineTests: XCTestCase {
         }
         buffer.frameLength = frameCount
         return buffer
-    }
-
-    private func createDummyAudioBufferList() -> UnsafeMutablePointer<AudioBufferList> {
-        let pointer = UnsafeMutablePointer<AudioBufferList>.allocate(capacity: 1)
-        pointer.pointee.mNumberBuffers = 2
-        withUnsafeMutablePointer(to: &pointer.pointee.mBuffers) { buffers in
-            buffers[0].mNumberChannels = 1
-            buffers[0].mDataByteSize = 4096
-            buffers[0].mData = UnsafeMutableRawPointer.allocate(byteCount: 4096, alignment: 1)
-            buffers[1].mNumberChannels = 1
-            buffers[1].mDataByteSize = 4096
-            buffers[1].mData = UnsafeMutableRawPointer.allocate(byteCount: 4096, alignment: 1)
-        }
-        return pointer
     }
 }
