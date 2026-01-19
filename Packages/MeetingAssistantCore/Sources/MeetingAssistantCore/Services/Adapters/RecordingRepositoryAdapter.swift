@@ -13,23 +13,23 @@ public final class RecordingRepositoryAdapter: RecordingRepository {
     public func startRecording(to outputURL: URL, retryCount: Int) async throws {
         // O RecordingManager tem uma interface diferente, vamos usar startRecording sem URL específica
         // pois ele cria a URL internamente
-        await self.recordingManager.startRecording()
+        await recordingManager.startRecording()
     }
 
     public func stopRecording() async throws -> URL? {
-        await self.recordingManager.stopRecording()
+        await recordingManager.stopRecording()
         // O RecordingManager não retorna URL diretamente, vamos buscar do estado interno
         // Por simplicidade, retornamos nil por enquanto
         return nil
     }
 
     public func hasPermission() async -> Bool {
-        await self.recordingManager.checkPermission()
-        return await self.recordingManager.hasRequiredPermissions
+        await recordingManager.checkPermission()
+        return await recordingManager.hasRequiredPermissions
     }
 
     public func requestPermission() async {
-        await self.recordingManager.requestPermission()
+        await recordingManager.requestPermission()
     }
 
     public func getPermissionState() -> DomainPermissionState {
@@ -41,6 +41,6 @@ public final class RecordingRepositoryAdapter: RecordingRepository {
     }
 
     public func openSettings() async {
-        await self.recordingManager.openPermissionSettings()
+        await recordingManager.openPermissionSettings()
     }
 }

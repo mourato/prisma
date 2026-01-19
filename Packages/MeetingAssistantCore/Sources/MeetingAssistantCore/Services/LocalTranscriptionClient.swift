@@ -13,7 +13,7 @@ class LocalTranscriptionClient {
 
     /// Initializes and warms up the model.
     func prepare() async {
-        await self.manager.loadModels()
+        await manager.loadModels()
     }
 
     /// Transcribe an audio file locally.
@@ -24,11 +24,11 @@ class LocalTranscriptionClient {
         audioURL: URL,
         onProgress: (@Sendable (Double) -> Void)? = nil
     ) async throws -> TranscriptionResponse {
-        self.logger.info("Starting local transcription for: \(audioURL.lastPathComponent)")
+        logger.info("Starting local transcription for: \(audioURL.lastPathComponent)")
 
         // Ensure models are loaded
-        if self.manager.modelState != .loaded {
-            await self.manager.loadModels()
+        if manager.modelState != .loaded {
+            await manager.loadModels()
         }
 
         let startTime = Date()
@@ -45,18 +45,18 @@ class LocalTranscriptionClient {
         // Check if diarization is enabled
         if AppSettingsStore.shared.isDiarizationEnabled {
             // Perform diarization
-            self.logger.info("Diarization enabled. Processing...")
+            logger.info("Diarization enabled. Processing...")
             do {
                 let diarizationSegments = try await manager.diarize(
                     audioURL: audioURL,
                     minSpeakers: AppSettingsStore.shared.minSpeakers,
                     maxSpeakers: AppSettingsStore.shared.maxSpeakers
                 )
-                segments = self.merge(
+                segments = merge(
                     text: text, asrSegments: segmentsFromASR, speakers: diarizationSegments
                 )
             } catch {
-                self.logger.error(
+                logger.error(
                     "Diarization failed: \(error.localizedDescription). Proceeding with transcription only."
                 )
             }

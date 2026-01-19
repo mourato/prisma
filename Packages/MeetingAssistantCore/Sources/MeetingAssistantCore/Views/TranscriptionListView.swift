@@ -7,25 +7,25 @@ struct TranscriptionListView: View {
 
     var body: some View {
         Group {
-            if self.transcriptions.isEmpty {
+            if transcriptions.isEmpty {
                 ContentUnavailableView(
                     "settings.transcriptions.empty_title".localized,
                     systemImage: "doc.text.magnifyingglass",
                     description: Text("settings.transcriptions.empty_desc".localized)
                 )
             } else {
-                self.transcriptionList
+                transcriptionList
             }
         }
         .onAppear {
-            self.loadTranscriptions()
+            loadTranscriptions()
         }
     }
 
     // The emptyState property is removed as its functionality is replaced by ContentUnavailableView directly in body.
 
     private var transcriptionList: some View {
-        List(self.transcriptions, selection: self.$selectedTranscription) { transcription in
+        List(transcriptions, selection: $selectedTranscription) { transcription in
             TranscriptionRow(transcription: transcription)
                 .tag(transcription)
                 .contextMenu {
@@ -39,7 +39,7 @@ struct TranscriptionListView: View {
 
     private func loadTranscriptions() {
         // TODO: Load from storage
-        self.transcriptions = []
+        transcriptions = []
     }
 }
 
@@ -49,22 +49,22 @@ struct TranscriptionRow: View {
 
     var body: some View {
         HStack {
-            Image(systemName: self.transcription.meeting.appIcon)
-                .foregroundStyle(self.transcription.meeting.appColor)
+            Image(systemName: transcription.meeting.appIcon)
+                .foregroundStyle(transcription.meeting.appColor)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(self.transcription.meeting.appName)
+                Text(transcription.meeting.appName)
                     .font(.subheadline)
                     .fontWeight(.medium)
 
-                Text(self.transcription.formattedDate)
+                Text(transcription.formattedDate)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
             Spacer()
 
-            Text(self.transcription.formattedDuration)
+            Text(transcription.formattedDuration)
                 .font(.caption)
                 .foregroundStyle(.tertiary)
         }

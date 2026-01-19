@@ -97,8 +97,8 @@ public struct PermissionInfo: Sendable {
 
     /// Updates the permission state with current timestamp.
     public mutating func updateState(_ newState: PermissionState) {
-        self.state = newState
-        self.lastChecked = Date()
+        state = newState
+        lastChecked = Date()
     }
 }
 
@@ -110,15 +110,15 @@ public class PermissionStatusManager: ObservableObject {
 
     /// Returns true if all required permissions are granted.
     public var allPermissionsGranted: Bool {
-        self.microphonePermission.state.isAuthorized
-            && self.screenRecordingPermission.state.isAuthorized
+        microphonePermission.state.isAuthorized
+            && screenRecordingPermission.state.isAuthorized
     }
 
     /// Returns the count of granted permissions.
     public var grantedCount: Int {
         var count = 0
-        if self.microphonePermission.state.isAuthorized { count += 1 }
-        if self.screenRecordingPermission.state.isAuthorized { count += 1 }
+        if microphonePermission.state.isAuthorized { count += 1 }
+        if screenRecordingPermission.state.isAuthorized { count += 1 }
         return count
     }
 
@@ -126,17 +126,17 @@ public class PermissionStatusManager: ObservableObject {
     public let totalPermissions = 2
 
     public init() {
-        self.microphonePermission = PermissionInfo(type: .microphone)
-        self.screenRecordingPermission = PermissionInfo(type: .screenRecording)
+        microphonePermission = PermissionInfo(type: .microphone)
+        screenRecordingPermission = PermissionInfo(type: .screenRecording)
     }
 
     /// Updates the microphone permission state.
     public func updateMicrophoneState(_ state: PermissionState) {
-        self.microphonePermission.updateState(state)
+        microphonePermission.updateState(state)
     }
 
     /// Updates the screen recording permission state.
     public func updateScreenRecordingState(_ state: PermissionState) {
-        self.screenRecordingPermission.updateState(state)
+        screenRecordingPermission.updateState(state)
     }
 }

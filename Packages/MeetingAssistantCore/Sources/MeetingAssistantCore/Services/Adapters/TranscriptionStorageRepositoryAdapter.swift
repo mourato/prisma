@@ -40,7 +40,7 @@ public final class TranscriptionStorageRepositoryAdapter: TranscriptionStorageRe
             modelName: transcription.modelName
         )
 
-        try await self.storageService.saveTranscription(legacyTranscription)
+        try await storageService.saveTranscription(legacyTranscription)
     }
 
     public func fetchTranscription(by id: UUID) async throws -> TranscriptionEntity? {
@@ -145,6 +145,6 @@ public final class TranscriptionStorageRepositoryAdapter: TranscriptionStorageRe
 
     public func updateTranscription(_ transcription: TranscriptionEntity) async throws {
         // Para atualizar, salvar novamente (o StorageService sobrescreve)
-        try await self.saveTranscription(transcription)
+        try await saveTranscription(transcription)
     }
 }

@@ -31,48 +31,48 @@ public class PermissionViewModel: ObservableObject {
         openMicrophoneSettings: @escaping () -> Void,
         openScreenSettings: @escaping () -> Void
     ) {
-        self.permissionManager = manager
-        self.requestMicrophoneAction = requestMicrophone
-        self.requestScreenAction = requestScreen
-        self.openMicrophoneSettingsAction = openMicrophoneSettings
-        self.openScreenSettingsAction = openScreenSettings
+        permissionManager = manager
+        requestMicrophoneAction = requestMicrophone
+        requestScreenAction = requestScreen
+        openMicrophoneSettingsAction = openMicrophoneSettings
+        openScreenSettingsAction = openScreenSettings
 
-        self.setupBindings()
+        setupBindings()
     }
 
     // MARK: - Actions
 
     public func requestMicrophonePermission() async {
-        await self.requestMicrophoneAction()
+        await requestMicrophoneAction()
     }
 
     public func requestScreenPermission() async {
-        await self.requestScreenAction()
+        await requestScreenAction()
     }
 
     public func openMicrophoneSystemSettings() {
-        self.openMicrophoneSettingsAction()
+        openMicrophoneSettingsAction()
     }
 
     public func openScreenSystemSettings() {
-        self.openScreenSettingsAction()
+        openScreenSettingsAction()
     }
 
     public var allPermissionsGranted: Bool {
-        self.microphoneState == .granted && self.screenState == .granted
+        microphoneState == .granted && screenState == .granted
     }
 
     // MARK: - Private
 
     private func setupBindings() {
-        self.permissionManager.$microphonePermission
+        permissionManager.$microphonePermission
             .map(\.state)
             .receive(on: DispatchQueue.main)
-            .assign(to: &self.$microphoneState)
+            .assign(to: &$microphoneState)
 
-        self.permissionManager.$screenRecordingPermission
+        permissionManager.$screenRecordingPermission
             .map(\.state)
             .receive(on: DispatchQueue.main)
-            .assign(to: &self.$screenState)
+            .assign(to: &$screenState)
     }
 }

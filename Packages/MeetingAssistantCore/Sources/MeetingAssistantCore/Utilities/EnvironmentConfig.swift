@@ -16,12 +16,12 @@ public enum AppEnvironment {
 
     /// Convenience property to check if the app is running in debug mode.
     public static var isDebug: Bool {
-        self.current == .debug
+        current == .debug
     }
 
     /// Convenience property to check if the app is running in release mode.
     public static var isRelease: Bool {
-        self.current == .release
+        current == .release
     }
 }
 

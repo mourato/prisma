@@ -26,7 +26,7 @@ public final class SettingsCoordinator: Coordinator {
         self.repositoryFactory = repositoryFactory
         self.recordingManager = recordingManager
         self.initialTab = initialTab
-        self.selectedTab = initialTab
+        selectedTab = initialTab
     }
 
     // MARK: - Coordinator Protocol
@@ -39,16 +39,16 @@ public final class SettingsCoordinator: Coordinator {
     public func navigate(to route: AppRoute) {
         switch route {
         case let .settings(tab):
-            self.selectedTab = tab
+            selectedTab = tab
         default:
             // Delegar para coordinator pai
-            self.parentCoordinator?.navigate(to: route)
+            parentCoordinator?.navigate(to: route)
         }
     }
 
     public func goBack() {
         // Voltar para tela principal
-        self.parentCoordinator?.navigate(to: .main)
+        parentCoordinator?.navigate(to: .main)
     }
 
     public func dismiss() {
@@ -62,12 +62,12 @@ public final class SettingsCoordinator: Coordinator {
 
     /// Navega para uma aba específica das configurações
     func navigateToTab(_ tab: AppRoute.SettingsTab) {
-        self.selectedTab = tab
+        selectedTab = tab
     }
 
     /// Retorna a aba atualmente selecionada
     var currentTab: AppRoute.SettingsTab {
-        self.selectedTab
+        selectedTab
     }
 }
 
@@ -92,14 +92,14 @@ public final class SettingsCoordinatorViewModel: ObservableObject {
         self.repositoryFactory = repositoryFactory
         self.recordingManager = recordingManager
         self.coordinator = coordinator
-        self.selectedTab = coordinator.currentTab
+        selectedTab = coordinator.currentTab
     }
 
     // MARK: - Tab Navigation
 
     func selectTab(_ tab: AppRoute.SettingsTab) {
-        self.selectedTab = tab
-        self.coordinator?.navigateToTab(tab)
+        selectedTab = tab
+        coordinator?.navigateToTab(tab)
     }
 
     // MARK: - View Models for Tabs
@@ -113,7 +113,7 @@ public final class SettingsCoordinatorViewModel: ObservableObject {
     }
 
     func transcriptionSettingsViewModel() -> TranscriptionSettingsViewModel {
-        TranscriptionSettingsViewModel(recordingManager: self.recordingManager)
+        TranscriptionSettingsViewModel(recordingManager: recordingManager)
     }
 
     func shortcutsSettingsViewModel() -> ShortcutSettingsViewModel {
@@ -127,6 +127,6 @@ public final class SettingsCoordinatorViewModel: ObservableObject {
     // MARK: - Actions
 
     func dismiss() {
-        self.coordinator?.dismiss()
+        coordinator?.dismiss()
     }
 }

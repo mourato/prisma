@@ -12,7 +12,7 @@ public final class TranscriptionRepositoryAdapter: TranscriptionRepository {
     }
 
     public func healthCheck() async throws -> Bool {
-        try await self.transcriptionClient.healthCheck()
+        try await transcriptionClient.healthCheck()
     }
 
     public func fetchServiceStatus() async throws -> DomainServiceStatusResponse {

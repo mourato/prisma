@@ -14,29 +14,29 @@ public class PostProcessingSettingsViewModel: ObservableObject {
     }
 
     public func handleSavePrompt(_ prompt: PostProcessingPrompt) {
-        if self.editingPrompt != nil {
-            self.settings.updatePrompt(prompt)
+        if editingPrompt != nil {
+            settings.updatePrompt(prompt)
         } else {
-            self.settings.addPrompt(prompt)
+            settings.addPrompt(prompt)
         }
-        self.showPromptEditor = false
+        showPromptEditor = false
     }
 
     public func confirmDeletePrompt(_ prompt: PostProcessingPrompt) {
-        self.promptToDelete = prompt
-        self.showDeleteConfirmation = true
+        promptToDelete = prompt
+        showDeleteConfirmation = true
     }
 
     public func executeDelete() {
-        if let prompt = self.promptToDelete {
-            self.settings.deletePrompt(id: prompt.id)
+        if let prompt = promptToDelete {
+            settings.deletePrompt(id: prompt.id)
         }
-        self.showDeleteConfirmation = false
-        self.promptToDelete = nil
+        showDeleteConfirmation = false
+        promptToDelete = nil
     }
 
     public func resetSystemPrompt() {
-        self.settings.resetSystemPrompt()
+        settings.resetSystemPrompt()
     }
 
     public func selectPrompt(_ id: UUID) {

@@ -11,11 +11,11 @@ public struct GeneralSettingsTab: View {
     public var body: some View {
         ScrollView {
             VStack(spacing: SettingsDesignSystem.Layout.sectionSpacing) {
-                self.languageSection
-                self.shortcutsSection
-                self.serviceSection
-                self.recordingSection
-                self.appsSection
+                languageSection
+                shortcutsSection
+                serviceSection
+                recordingSection
+                appsSection
             }
             .padding()
         }
@@ -31,7 +31,7 @@ public struct GeneralSettingsTab: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                Picker("", selection: self.$viewModel.selectedLanguage) {
+                Picker("", selection: $viewModel.selectedLanguage) {
                     ForEach(AppLanguage.allCases, id: \.self) { language in
                         Text(language.displayName).tag(language)
                     }
@@ -41,7 +41,7 @@ public struct GeneralSettingsTab: View {
                 .frame(maxWidth: 200)
                 .accessibilityLabel("settings.general.language".localized)
 
-                if self.viewModel.selectedLanguage != .system {
+                if viewModel.selectedLanguage != .system {
                     HStack(spacing: 6) {
                         Image(systemName: "arrow.clockwise")
                             .font(.caption)
@@ -60,14 +60,14 @@ public struct GeneralSettingsTab: View {
             VStack(alignment: .leading, spacing: 16) {
                 Toggle(
                     "settings.general.auto_start".localized,
-                    isOn: self.$viewModel.autoStartRecording
+                    isOn: $viewModel.autoStartRecording
                 )
 
                 Divider()
 
                 Toggle(
                     "settings.general.show_settings_on_launch".localized,
-                    isOn: self.$viewModel.showSettingsOnLaunch
+                    isOn: $viewModel.showSettingsOnLaunch
                 )
 
                 Divider()
@@ -80,12 +80,12 @@ public struct GeneralSettingsTab: View {
                     HStack {
                         TextField(
                             "settings.general.recordings_path_hint".localized,
-                            text: self.$viewModel.recordingsPath
+                            text: $viewModel.recordingsPath
                         )
                         .textFieldStyle(.roundedBorder)
 
                         Button("settings.general.choose".localized) {
-                            self.viewModel.selectRecordingsDirectory()
+                            viewModel.selectRecordingsDirectory()
                         }
                     }
                 }
@@ -98,7 +98,7 @@ public struct GeneralSettingsTab: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
 
-                    Picker("", selection: self.$viewModel.audioFormat) {
+                    Picker("", selection: $viewModel.audioFormat) {
                         ForEach(AppSettingsStore.AudioFormat.allCases, id: \.self) { format in
                             Text(format.displayName).tag(format)
                         }
@@ -111,7 +111,7 @@ public struct GeneralSettingsTab: View {
                 // Merge Toggle
                 Toggle(
                     "settings.general.merge_audio".localized,
-                    isOn: self.$viewModel.shouldMergeAudioFiles
+                    isOn: $viewModel.shouldMergeAudioFiles
                 )
             }
         }

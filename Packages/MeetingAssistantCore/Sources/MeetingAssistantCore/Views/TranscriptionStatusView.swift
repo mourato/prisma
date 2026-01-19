@@ -12,43 +12,43 @@ public struct TranscriptionStatusView: View {
 
     public var body: some View {
         VStack(spacing: 8) {
-            self.mainStatusRow
+            mainStatusRow
 
-            if self.isExpanded {
-                self.expandedDetails
+            if isExpanded {
+                expandedDetails
             }
         }
         .padding(12)
-        .background(self.statusBackground, in: RoundedRectangle(cornerRadius: 10))
-        .animation(.easeInOut(duration: 0.2), value: self.isExpanded)
-        .animation(.easeInOut(duration: 0.3), value: self.viewModel.phase)
+        .background(statusBackground, in: RoundedRectangle(cornerRadius: 10))
+        .animation(.easeInOut(duration: 0.2), value: isExpanded)
+        .animation(.easeInOut(duration: 0.3), value: viewModel.phase)
     }
 
     // MARK: - Main Status Row
 
     private var mainStatusRow: some View {
         HStack(spacing: 10) {
-            self.statusIcon
+            statusIcon
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(self.viewModel.statusMessage)
+                Text(viewModel.statusMessage)
                     .font(.subheadline)
                     .fontWeight(.medium)
-                    .foregroundStyle(self.statusTextColor)
+                    .foregroundStyle(statusTextColor)
 
-                if self.viewModel.isProcessing {
-                    self.progressBar
+                if viewModel.isProcessing {
+                    progressBar
                 }
             }
 
             Spacer()
 
-            self.chevronButton
+            chevronButton
         }
         .contentShape(Rectangle())
         .onTapGesture {
             withAnimation {
-                self.isExpanded.toggle()
+                isExpanded.toggle()
             }
         }
     }
@@ -58,18 +58,18 @@ public struct TranscriptionStatusView: View {
     private var statusIcon: some View {
         ZStack {
             Circle()
-                .fill(self.statusIconBackground)
+                .fill(statusIconBackground)
                 .frame(width: 28, height: 28)
 
-            self.statusIconImage
+            statusIconImage
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(self.statusIconColor)
+                .foregroundStyle(statusIconColor)
         }
     }
 
     private var statusIconImage: some View {
         Group {
-            switch (self.viewModel.serviceState, self.viewModel.modelState, self.viewModel.phase) {
+            switch (viewModel.serviceState, viewModel.modelState, viewModel.phase) {
             case (.disconnected, _, _), (.error, _, _):
                 Image(systemName: "xmark.circle.fill")
             case (.connecting, _, _):
@@ -111,10 +111,10 @@ public struct TranscriptionStatusView: View {
 
                     // Progress fill
                     Capsule()
-                        .fill(self.progressGradient)
+                        .fill(progressGradient)
                         .frame(
                             width: max(
-                                0, geometry.size.width * (self.viewModel.progressPercentage / 100.0)
+                                0, geometry.size.width * (viewModel.progressPercentage / 100.0)
                             ),
                             height: 4
                         )
@@ -123,7 +123,7 @@ public struct TranscriptionStatusView: View {
             .frame(height: 4)
 
             if let remaining = viewModel.estimatedTimeRemaining, remaining > 0 {
-                Text("transcription.time_remaining".localized(with: self.formatTime(remaining)))
+                Text("transcription.time_remaining".localized(with: formatTime(remaining)))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
@@ -136,19 +136,19 @@ public struct TranscriptionStatusView: View {
         VStack(alignment: .leading, spacing: 8) {
             Divider()
 
-            self.detailRow(label: "transcription.service".localized, value: self.serviceStateLabel)
-            self.detailRow(label: "transcription.model".localized, value: self.modelStateLabel)
-            self.detailRow(label: "transcription.device".localized, value: self.viewModel.device.uppercased())
+            detailRow(label: "transcription.service".localized, value: serviceStateLabel)
+            detailRow(label: "transcription.model".localized, value: modelStateLabel)
+            detailRow(label: "transcription.device".localized, value: viewModel.device.uppercased())
 
             if let error = viewModel.lastError {
-                self.errorRow(error: error)
+                errorRow(error: error)
             }
         }
         .transition(.opacity.combined(with: .move(edge: .top)))
     }
 
     private var serviceStateLabel: String {
-        switch self.viewModel.serviceState {
+        switch viewModel.serviceState {
         case .connected: "transcription.state.connected".localized
         case .connecting: "transcription.state.connecting".localized
         case .disconnected: "transcription.state.disconnected".localized
@@ -158,7 +158,7 @@ public struct TranscriptionStatusView: View {
     }
 
     private var modelStateLabel: String {
-        switch self.viewModel.modelState {
+        switch viewModel.modelState {
         case .loaded: "transcription.model_state.loaded".localized
         case .downloading: "transcription.model_state.downloading".localized
         case .loading: "transcription.model_state.loading".localized
@@ -200,7 +200,7 @@ public struct TranscriptionStatusView: View {
         Image(systemName: "chevron.down")
             .font(.caption)
             .foregroundStyle(.secondary)
-            .rotationEffect(.degrees(self.isExpanded ? 180 : 0))
+            .rotationEffect(.degrees(isExpanded ? 180 : 0))
             .accessibilityLabel("transcription.view.toggle_details".localized)
             .accessibilityAddTraits(.isButton)
     }
@@ -208,12 +208,12 @@ public struct TranscriptionStatusView: View {
     // MARK: - Styling Computed Properties
 
     private var statusBackground: some ShapeStyle {
-        switch (self.viewModel.serviceState, self.viewModel.hasBlockingError) {
+        switch (viewModel.serviceState, viewModel.hasBlockingError) {
         case (_, true):
             AnyShapeStyle(Color.red.opacity(0.1))
-        case (.connected, _) where self.viewModel.isProcessing:
+        case (.connected, _) where viewModel.isProcessing:
             AnyShapeStyle(Color.blue.opacity(0.1))
-        case (.connected, _) where self.viewModel.phase == .completed:
+        case (.connected, _) where viewModel.phase == .completed:
             AnyShapeStyle(Color.green.opacity(0.1))
         default:
             AnyShapeStyle(.ultraThinMaterial)
@@ -221,35 +221,35 @@ public struct TranscriptionStatusView: View {
     }
 
     private var statusTextColor: Color {
-        if self.viewModel.hasBlockingError {
+        if viewModel.hasBlockingError {
             return .red
-        } else if self.viewModel.isProcessing {
+        } else if viewModel.isProcessing {
             return .blue
-        } else if self.viewModel.phase == .completed {
+        } else if viewModel.phase == .completed {
             return .green
         }
         return .primary
     }
 
     private var statusIconBackground: Color {
-        if self.viewModel.hasBlockingError {
+        if viewModel.hasBlockingError {
             return .red.opacity(0.15)
-        } else if self.viewModel.isProcessing {
+        } else if viewModel.isProcessing {
             return .blue.opacity(0.15)
-        } else if self.viewModel.phase == .completed {
+        } else if viewModel.phase == .completed {
             return .green.opacity(0.15)
-        } else if self.viewModel.isReady {
+        } else if viewModel.isReady {
             return .green.opacity(0.15)
         }
         return .gray.opacity(0.15)
     }
 
     private var statusIconColor: Color {
-        if self.viewModel.hasBlockingError {
+        if viewModel.hasBlockingError {
             return .red
-        } else if self.viewModel.isProcessing {
+        } else if viewModel.isProcessing {
             return .blue
-        } else if self.viewModel.phase == .completed || self.viewModel.isReady {
+        } else if viewModel.phase == .completed || viewModel.isReady {
             return .green
         }
         return .gray
@@ -282,9 +282,9 @@ public struct CompactTranscriptionStatusView: View {
 
     public var body: some View {
         HStack(spacing: 6) {
-            self.statusDot
+            statusDot
 
-            Text(self.compactStatusText)
+            Text(compactStatusText)
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -292,31 +292,31 @@ public struct CompactTranscriptionStatusView: View {
 
     private var statusDot: some View {
         Circle()
-            .fill(self.dotColor)
+            .fill(dotColor)
             .frame(width: 8, height: 8)
             .overlay {
-                if self.viewModel.isProcessing || self.viewModel.modelState == .loading {
+                if viewModel.isProcessing || viewModel.modelState == .loading {
                     Circle()
-                        .stroke(self.dotColor.opacity(0.5), lineWidth: 1)
+                        .stroke(dotColor.opacity(0.5), lineWidth: 1)
                         .scaleEffect(1.5)
-                        .opacity(self.viewModel.isProcessing ? 1 : 0)
+                        .opacity(viewModel.isProcessing ? 1 : 0)
                 }
             }
     }
 
     private var dotColor: Color {
-        if self.viewModel.hasBlockingError {
+        if viewModel.hasBlockingError {
             return .red
-        } else if self.viewModel.isProcessing {
+        } else if viewModel.isProcessing {
             return .blue
-        } else if self.viewModel.isReady {
+        } else if viewModel.isReady {
             return .green
         }
         return .yellow
     }
 
     private var compactStatusText: String {
-        switch (self.viewModel.serviceState, self.viewModel.modelState, self.viewModel.phase) {
+        switch (viewModel.serviceState, viewModel.modelState, viewModel.phase) {
         case (.disconnected, _, _), (.error, _, _):
             return "transcription.compact.offline".localized
         case (.connecting, _, _):
@@ -328,9 +328,9 @@ public struct CompactTranscriptionStatusView: View {
         case (.connected, .loaded, .idle):
             return "transcription.compact.ready".localized
         case (.connected, .loaded, .processing):
-            if self.viewModel.progressPercentage > 0 {
+            if viewModel.progressPercentage > 0 {
                 return "transcription.compact.transcribing_percent"
-                    .localized(with: Int(self.viewModel.progressPercentage))
+                    .localized(with: Int(viewModel.progressPercentage))
             }
             return "transcription.compact.transcribing".localized
         case (.connected, .loaded, .completed):

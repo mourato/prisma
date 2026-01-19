@@ -10,7 +10,7 @@ public actor HTTPClient {
         timeout: TimeInterval = 30
     ) {
         self.session = session
-        self.defaultTimeout = timeout
+        defaultTimeout = timeout
     }
 
     public func request<T: Decodable>(
@@ -19,7 +19,7 @@ public actor HTTPClient {
     ) async throws -> T {
         var request = URLRequest(url: endpoint.url)
         request.httpMethod = endpoint.method.rawValue
-        request.timeoutInterval = endpoint.timeout ?? self.defaultTimeout
+        request.timeoutInterval = endpoint.timeout ?? defaultTimeout
 
         for (key, value) in endpoint.headers {
             request.setValue(value, forHTTPHeaderField: key)
@@ -57,7 +57,7 @@ public actor HTTPClient {
     ) async throws -> Data {
         var request = URLRequest(url: endpoint.url)
         request.httpMethod = endpoint.method.rawValue
-        request.timeoutInterval = endpoint.timeout ?? self.defaultTimeout
+        request.timeoutInterval = endpoint.timeout ?? defaultTimeout
 
         for (key, value) in endpoint.headers {
             request.setValue(value, forHTTPHeaderField: key)

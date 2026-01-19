@@ -55,7 +55,7 @@ public enum DateFilter: String, CaseIterable, Sendable {
 
     /// Checks if a date falls within the filter's range.
     public func contains(_ date: Date) -> Bool {
-        let range = self.dateRange
+        let range = dateRange
         return date >= range.start && date < range.end
     }
 }
@@ -69,55 +69,55 @@ private struct DateRangeCalculator {
     private let now = Date()
 
     func todayRange() -> (start: Date, end: Date) {
-        let start = self.calendar.startOfDay(for: self.now)
-        let end = self.calendar.date(byAdding: .day, value: 1, to: start) ?? self.now
+        let start = calendar.startOfDay(for: now)
+        let end = calendar.date(byAdding: .day, value: 1, to: start) ?? now
         return (start, end)
     }
 
     func yesterdayRange() -> (start: Date, end: Date) {
-        let todayStart = self.calendar.startOfDay(for: self.now)
-        let start = self.calendar.date(byAdding: .day, value: -1, to: todayStart) ?? self.now
+        let todayStart = calendar.startOfDay(for: now)
+        let start = calendar.date(byAdding: .day, value: -1, to: todayStart) ?? now
         return (start, todayStart)
     }
 
     func thisWeekRange() -> (start: Date, end: Date) {
-        let start = self.startOfCurrentWeek()
-        let end = self.endOfToday()
+        let start = startOfCurrentWeek()
+        let end = endOfToday()
         return (start, end)
     }
 
     func lastWeekRange() -> (start: Date, end: Date) {
-        let thisWeekStart = self.startOfCurrentWeek()
-        let start = self.calendar.date(byAdding: .weekOfYear, value: -1, to: thisWeekStart) ?? self.now
+        let thisWeekStart = startOfCurrentWeek()
+        let start = calendar.date(byAdding: .weekOfYear, value: -1, to: thisWeekStart) ?? now
         return (start, thisWeekStart)
     }
 
     func thisMonthRange() -> (start: Date, end: Date) {
-        let start = self.startOfCurrentMonth()
-        let end = self.endOfToday()
+        let start = startOfCurrentMonth()
+        let end = endOfToday()
         return (start, end)
     }
 
     func lastMonthRange() -> (start: Date, end: Date) {
-        let thisMonthStart = self.startOfCurrentMonth()
-        let start = self.calendar.date(byAdding: .month, value: -1, to: thisMonthStart) ?? self.now
+        let thisMonthStart = startOfCurrentMonth()
+        let start = calendar.date(byAdding: .month, value: -1, to: thisMonthStart) ?? now
         return (start, thisMonthStart)
     }
 
     // MARK: - Private Helpers
 
     private func startOfCurrentWeek() -> Date {
-        let components = self.calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: self.now)
-        return self.calendar.date(from: components) ?? self.now
+        let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)
+        return calendar.date(from: components) ?? now
     }
 
     private func startOfCurrentMonth() -> Date {
-        let components = self.calendar.dateComponents([.year, .month], from: self.now)
-        return self.calendar.date(from: components) ?? self.now
+        let components = calendar.dateComponents([.year, .month], from: now)
+        return calendar.date(from: components) ?? now
     }
 
     private func endOfToday() -> Date {
-        let todayStart = self.calendar.startOfDay(for: self.now)
-        return self.calendar.date(byAdding: .day, value: 1, to: todayStart) ?? self.now
+        let todayStart = calendar.startOfDay(for: now)
+        return calendar.date(byAdding: .day, value: 1, to: todayStart) ?? now
     }
 }

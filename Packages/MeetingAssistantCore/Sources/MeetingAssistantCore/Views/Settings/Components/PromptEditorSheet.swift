@@ -13,14 +13,14 @@ public struct PromptEditorSheet: View {
     private let onSave: (PostProcessingPrompt) -> Void
     private let onCancel: () -> Void
 
-    private var isEditing: Bool { self.existingPrompt != nil }
+    private var isEditing: Bool { existingPrompt != nil }
 
     public init(
         prompt: PostProcessingPrompt?,
         onSave: @escaping (PostProcessingPrompt) -> Void,
         onCancel: @escaping () -> Void
     ) {
-        self.existingPrompt = prompt
+        existingPrompt = prompt
         self.onSave = onSave
         self.onCancel = onCancel
 
@@ -33,17 +33,17 @@ public struct PromptEditorSheet: View {
     public var body: some View {
         VStack(spacing: 0) {
             // Header
-            self.header
+            header
 
             Divider()
 
             // Content
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    self.titleSection
-                    self.iconSection
-                    self.descriptionSection
-                    self.promptSection
+                    titleSection
+                    iconSection
+                    descriptionSection
+                    promptSection
                 }
                 .padding()
             }
@@ -51,7 +51,7 @@ public struct PromptEditorSheet: View {
             Divider()
 
             // Footer
-            self.footer
+            footer
         }
         .frame(width: 500, height: 550)
     }
@@ -60,7 +60,7 @@ public struct PromptEditorSheet: View {
 
     private var header: some View {
         HStack {
-            Text(self.isEditing ? "prompt.edit_title".localized : "prompt.new_title".localized)
+            Text(isEditing ? "prompt.edit_title".localized : "prompt.new_title".localized)
                 .font(.headline)
 
             Spacer()
@@ -77,7 +77,7 @@ public struct PromptEditorSheet: View {
                 .font(.subheadline)
                 .fontWeight(.medium)
 
-            TextField("prompt.title_placeholder".localized, text: self.$title)
+            TextField("prompt.title_placeholder".localized, text: $title)
                 .textFieldStyle(.roundedBorder)
         }
     }
@@ -93,7 +93,7 @@ public struct PromptEditorSheet: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ForEach(PostProcessingPrompt.availableIcons, id: \.self) { icon in
-                        self.iconButton(icon)
+                        iconButton(icon)
                     }
                 }
                 .padding(.vertical, 4)
@@ -102,10 +102,10 @@ public struct PromptEditorSheet: View {
     }
 
     private func iconButton(_ icon: String) -> some View {
-        let isSelected = self.selectedIcon == icon
+        let isSelected = selectedIcon == icon
 
         return Button {
-            self.selectedIcon = icon
+            selectedIcon = icon
         } label: {
             Image(systemName: icon)
                 .font(.title3)
@@ -137,7 +137,7 @@ public struct PromptEditorSheet: View {
                     .foregroundStyle(.secondary)
             }
 
-            TextField("prompt.description_placeholder".localized, text: self.$description)
+            TextField("prompt.description_placeholder".localized, text: $description)
                 .textFieldStyle(.roundedBorder)
         }
     }
@@ -154,7 +154,7 @@ public struct PromptEditorSheet: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            TextEditor(text: self.$promptText)
+            TextEditor(text: $promptText)
                 .font(.system(.body, design: .monospaced))
                 .frame(minHeight: 150)
                 .padding(8)
@@ -172,18 +172,18 @@ public struct PromptEditorSheet: View {
     private var footer: some View {
         HStack {
             Button("common.cancel".localized) {
-                self.onCancel()
+                onCancel()
             }
             .keyboardShortcut(.escape)
 
             Spacer()
 
-            Button(self.isEditing ? "common.save".localized : "common.create".localized) {
-                self.savePrompt()
+            Button(isEditing ? "common.save".localized : "common.create".localized) {
+                savePrompt()
             }
             .keyboardShortcut(.return)
             .buttonStyle(.borderedProminent)
-            .disabled(!self.isValid)
+            .disabled(!isValid)
         }
         .padding()
         .background(Color(NSColor.windowBackgroundColor))
@@ -192,8 +192,8 @@ public struct PromptEditorSheet: View {
     // MARK: - Validation
 
     private var isValid: Bool {
-        !self.title.trimmingCharacters(in: .whitespaces).isEmpty &&
-            !self.promptText.trimmingCharacters(in: .whitespaces).isEmpty
+        !title.trimmingCharacters(in: .whitespaces).isEmpty &&
+            !promptText.trimmingCharacters(in: .whitespaces).isEmpty
     }
 
     // MARK: - Actions
@@ -201,14 +201,14 @@ public struct PromptEditorSheet: View {
     private func savePrompt() {
         let prompt = PostProcessingPrompt(
             id: existingPrompt?.id ?? UUID(),
-            title: self.title.trimmingCharacters(in: .whitespaces),
-            promptText: self.promptText.trimmingCharacters(in: .whitespacesAndNewlines),
-            isActive: self.existingPrompt?.isActive ?? false,
-            icon: self.selectedIcon,
-            description: self.description.isEmpty ? nil : self.description.trimmingCharacters(in: .whitespaces),
+            title: title.trimmingCharacters(in: .whitespaces),
+            promptText: promptText.trimmingCharacters(in: .whitespacesAndNewlines),
+            isActive: existingPrompt?.isActive ?? false,
+            icon: selectedIcon,
+            description: description.isEmpty ? nil : description.trimmingCharacters(in: .whitespaces),
             isPredefined: false
         )
-        self.onSave(prompt)
+        onSave(prompt)
     }
 }
 

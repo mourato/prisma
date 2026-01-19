@@ -13,7 +13,7 @@ public final class CrashReporter: Sendable {
         // Safe unwrap with fallback to temporary directory if library is unavailable (unlikely)
         let libraryURL = fileManager.urls(for: .libraryDirectory, in: .userDomainMask).first ?? fileManager.temporaryDirectory
         let logsURL = libraryURL.appendingPathComponent("Logs/MeetingAssistant/CrashReports")
-        self.logDirectory = logsURL
+        logDirectory = logsURL
 
         // Create directory if it doesn't exist
         try? fileManager.createDirectory(at: logsURL, withIntermediateDirectories: true, attributes: nil)
@@ -29,13 +29,13 @@ public final class CrashReporter: Sendable {
         // We rely on macOS system crash reporter for signals (SIGSEGV, SIGABRT)
         // and this handler for NSExceptions (Objective-C exceptions, forced unwraps in mixed code).
 
-        AppLogger.info("CrashReporter installed. Logs at: \(self.logDirectory.path)", category: .health)
+        AppLogger.info("CrashReporter installed. Logs at: \(logDirectory.path)", category: .health)
     }
 
     private func handleException(_ exception: NSException) {
         let timestamp = ISO8601DateFormatter().string(from: Date())
         let filename = "crash-\(timestamp).log"
-        let fileURL = self.logDirectory.appendingPathComponent(filename)
+        let fileURL = logDirectory.appendingPathComponent(filename)
 
         let report = """
         CRASH REPORT - \(timestamp)

@@ -59,43 +59,43 @@ extension TranscriptionMO {
     /// Converte Managed Object para Domain Entity
     func toDomain() -> TranscriptionEntity {
         TranscriptionEntity(
-            id: self.id,
-            meeting: self.meeting.toDomain(),
-            segments: self.segments.map { $0.toDomain() },
-            text: self.text,
-            rawText: self.rawText,
-            processedContent: self.processedContent,
-            postProcessingPromptId: self.postProcessingPromptId,
-            postProcessingPromptTitle: self.postProcessingPromptTitle,
-            language: self.language,
-            createdAt: self.createdAt,
-            modelName: self.modelName
+            id: id,
+            meeting: meeting.toDomain(),
+            segments: segments.map { $0.toDomain() },
+            text: text,
+            rawText: rawText,
+            processedContent: processedContent,
+            postProcessingPromptId: postProcessingPromptId,
+            postProcessingPromptTitle: postProcessingPromptTitle,
+            language: language,
+            createdAt: createdAt,
+            modelName: modelName
         )
     }
 
     /// Atualiza Managed Object com dados da Domain Entity
     func update(from entity: TranscriptionEntity) {
-        self.id = entity.id
-        self.text = entity.text
-        self.rawText = entity.rawText
-        self.processedContent = entity.processedContent
-        self.postProcessingPromptId = entity.postProcessingPromptId
-        self.postProcessingPromptTitle = entity.postProcessingPromptTitle
-        self.language = entity.language
-        self.createdAt = entity.createdAt
-        self.modelName = entity.modelName
+        id = entity.id
+        text = entity.text
+        rawText = entity.rawText
+        processedContent = entity.processedContent
+        postProcessingPromptId = entity.postProcessingPromptId
+        postProcessingPromptTitle = entity.postProcessingPromptTitle
+        language = entity.language
+        createdAt = entity.createdAt
+        modelName = entity.modelName
 
         // Atualizar relacionamento com meeting
-        if let meetingMO = self.managedObjectContext?.object(with: self.meeting.objectID) as? MeetingMO {
-            self.meeting = meetingMO
+        if let meetingMO = managedObjectContext?.object(with: meeting.objectID) as? MeetingMO {
+            meeting = meetingMO
         }
 
         // Atualizar segmentos
-        self.segments.forEach { self.managedObjectContext?.delete($0) }
+        segments.forEach { self.managedObjectContext?.delete($0) }
         let newSegments = entity.segments.map {
             TranscriptionSegmentMO.create(from: $0, transcription: self, in: self.managedObjectContext!)
         }
-        self.segments = Set(newSegments)
+        segments = Set(newSegments)
     }
 
     /// Cria novo Managed Object a partir de Domain Entity

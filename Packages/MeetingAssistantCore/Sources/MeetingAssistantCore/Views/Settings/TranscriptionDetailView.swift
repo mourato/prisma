@@ -11,12 +11,12 @@ public struct TranscriptionDetailView: View {
     public var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                self.headerSection
+                headerSection
                 Divider()
-                self.transcriptSection
-                if self.transcription.isPostProcessed {
+                transcriptSection
+                if transcription.isPostProcessed {
                     Divider()
-                    self.originalTranscriptSection
+                    originalTranscriptSection
                 }
             }
             .padding()
@@ -28,7 +28,7 @@ public struct TranscriptionDetailView: View {
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text(self.transcription.formattedDate)
+                Text(transcription.formattedDate)
                     .font(.title2)
                     .fontWeight(.semibold)
 
@@ -46,18 +46,18 @@ public struct TranscriptionDetailView: View {
             }
 
             HStack(spacing: 8) {
-                self.statusBadge(text: "transcription.completed".localized, color: .green, icon: "checkmark.circle.fill")
-                self.statusBadge(text: self.transcription.meeting.appName, color: .blue, icon: "mic.fill")
-                if self.transcription.isPostProcessed {
-                    self.statusBadge(
-                        text: self.transcription.postProcessingPromptTitle ?? "transcription.processed".localized,
+                statusBadge(text: "transcription.completed".localized, color: .green, icon: "checkmark.circle.fill")
+                statusBadge(text: transcription.meeting.appName, color: .blue, icon: "mic.fill")
+                if transcription.isPostProcessed {
+                    statusBadge(
+                        text: transcription.postProcessingPromptTitle ?? "transcription.processed".localized,
                         color: .orange,
                         icon: "sparkles"
                     )
                 }
             }
 
-            Text("transcription.recorded_on".localized(with: self.transcription.formattedDate))
+            Text("transcription.recorded_on".localized(with: transcription.formattedDate))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -87,14 +87,14 @@ public struct TranscriptionDetailView: View {
 
                 Button {
                     NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(self.transcription.text, forType: .string)
+                    NSPasteboard.general.setString(transcription.text, forType: .string)
                 } label: {
                     Label("common.copy".localized, systemImage: "doc.on.doc")
                 }
                 .buttonStyle(.bordered)
             }
 
-            Text(self.transcription.text)
+            Text(transcription.text)
                 .font(.body)
                 .textSelection(.enabled)
                 .padding()
@@ -115,14 +115,14 @@ public struct TranscriptionDetailView: View {
 
                 Button {
                     NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(self.transcription.rawText, forType: .string)
+                    NSPasteboard.general.setString(transcription.rawText, forType: .string)
                 } label: {
                     Label("common.copy".localized, systemImage: "doc.on.doc")
                 }
                 .buttonStyle(.bordered)
             }
 
-            Text(self.transcription.rawText)
+            Text(transcription.rawText)
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .textSelection(.enabled)

@@ -53,31 +53,31 @@ public struct MenuBarView: View {
     @State private var isPermissionDismissed = false
 
     private var shouldShowPermissionStatus: Bool {
-        !self.viewModel.arePermissionsGranted || !self.isPermissionDismissed
+        !viewModel.arePermissionsGranted || !isPermissionDismissed
     }
 
     public var body: some View {
         VStack(spacing: 16) {
-            self.headerSection
+            headerSection
 
-            if self.shouldShowPermissionStatus {
-                self.permissionStatusSection
+            if shouldShowPermissionStatus {
+                permissionStatusSection
             }
 
-            self.statusSection
+            statusSection
 
             // Transcription service status indicator
-            TranscriptionStatusView(viewModel: self.viewModel.transcriptionViewModel)
+            TranscriptionStatusView(viewModel: viewModel.transcriptionViewModel)
 
-            self.controlButtons
+            controlButtons
         }
         .padding()
         .frame(minWidth: 300)
         .task {
-            await self.viewModel.checkPermission()
+            await viewModel.checkPermission()
         }
         .onAppear {
-            NavigationService.shared.register(openWindow: self.openWindow)
+            NavigationService.shared.register(openWindow: openWindow)
         }
     }
 
@@ -85,10 +85,10 @@ public struct MenuBarView: View {
 
     private var permissionStatusSection: some View {
         PermissionStatusView(
-            viewModel: self.viewModel.permissionViewModel,
+            viewModel: viewModel.permissionViewModel,
             onDismiss: {
                 withAnimation {
-                    self.isPermissionDismissed = true
+                    isPermissionDismissed = true
                 }
             }
         )
@@ -118,18 +118,18 @@ public struct MenuBarView: View {
         VStack(spacing: 8) {
             HStack {
                 Circle()
-                    .fill(self.viewModel.isRecording ? .red : .gray)
+                    .fill(viewModel.isRecording ? .red : .gray)
                     .frame(width: 10, height: 10)
 
-                Text(self.viewModel.statusText)
+                Text(viewModel.statusText)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
                 Spacer()
             }
 
-            if self.viewModel.isRecording, let meeting = viewModel.currentMeeting {
-                MeetingCard(meeting: meeting, duration: self.viewModel.displayDuration)
+            if viewModel.isRecording, let meeting = viewModel.currentMeeting {
+                MeetingCard(meeting: meeting, duration: viewModel.displayDuration)
             }
         }
         .padding()
@@ -138,11 +138,11 @@ public struct MenuBarView: View {
 
     private var controlButtons: some View {
         VStack {
-            if self.viewModel.isRecording {
-                Button(action: self.stopRecording) {
+            if viewModel.isRecording {
+                Button(action: stopRecording) {
                     Label(
-                        self.viewModel.recordButtonTitle,
-                        systemImage: self.viewModel.recordButtonIcon
+                        viewModel.recordButtonTitle,
+                        systemImage: viewModel.recordButtonIcon
                     )
                     .font(.headline)
                     .frame(maxWidth: .infinity, minHeight: 38)
@@ -154,35 +154,35 @@ public struct MenuBarView: View {
                 // Split Button for Start Recording
                 HStack(spacing: 0) {
                     // Main Action (Record All)
-                    Button(action: { self.startRecording(source: .all) }) {
+                    Button(action: { startRecording(source: .all) }) {
                         Label(
-                            self.viewModel.recordButtonTitle,
-                            systemImage: self.viewModel.recordButtonIcon
+                            viewModel.recordButtonTitle,
+                            systemImage: viewModel.recordButtonIcon
                         )
                         .font(.headline)
                         .frame(maxWidth: .infinity, minHeight: 38)
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.large)
-                    .disabled(!self.viewModel.canStartRecording)
+                    .disabled(!viewModel.canStartRecording)
 
                     // Dropdown Menu
                     Menu {
                         Section(NSLocalizedString("menubar.record_section", bundle: .safeModule, comment: "")) {
                             Button {
-                                self.startRecording(source: .all)
+                                startRecording(source: .all)
                             } label: {
                                 Label(RecordingSource.all.displayName, systemImage: "circle.circle.fill")
                             }
 
                             Button {
-                                self.startRecording(source: .microphone)
+                                startRecording(source: .microphone)
                             } label: {
                                 Label(RecordingSource.microphone.displayName, systemImage: "mic.fill")
                             }
 
                             Button {
-                                self.startRecording(source: .system)
+                                startRecording(source: .system)
                             } label: {
                                 Label(RecordingSource.system.displayName, systemImage: "display")
                             }
@@ -216,13 +216,13 @@ public struct MenuBarView: View {
 
     private func startRecording(source: RecordingSource = .all) {
         Task {
-            await self.viewModel.startRecording(source: source)
+            await viewModel.startRecording(source: source)
         }
     }
 
     private func stopRecording() {
         Task {
-            await self.viewModel.stopRecording()
+            await viewModel.stopRecording()
         }
     }
 }
@@ -234,16 +234,16 @@ struct MeetingCard: View {
 
     var body: some View {
         HStack {
-            Image(systemName: self.meeting.appIcon)
+            Image(systemName: meeting.appIcon)
                 .font(.title2)
-                .foregroundStyle(self.meeting.appColor)
+                .foregroundStyle(meeting.appColor)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(self.meeting.appName)
+                Text(meeting.appName)
                     .font(.subheadline)
                     .fontWeight(.medium)
 
-                Text(self.duration)
+                Text(duration)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .monospacedDigit()

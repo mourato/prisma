@@ -12,7 +12,7 @@ public class ServiceSettingsViewModel: ObservableObject {
     }
 
     public func testConnection() {
-        self.transcriptionStatus = .testing
+        transcriptionStatus = .testing
 
         Task {
             do {

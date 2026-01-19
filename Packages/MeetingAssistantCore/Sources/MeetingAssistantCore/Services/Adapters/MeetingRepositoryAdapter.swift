@@ -16,22 +16,22 @@ public actor MeetingRepositoryAdapter: MeetingRepository {
     }
 
     public func saveMeeting(_ meeting: MeetingEntity) async throws {
-        self.meetings[meeting.id] = meeting
+        meetings[meeting.id] = meeting
     }
 
     public func fetchMeeting(by id: UUID) async throws -> MeetingEntity? {
-        self.meetings[id]
+        meetings[id]
     }
 
     public func fetchAllMeetings() async throws -> [MeetingEntity] {
-        Array(self.meetings.values).sorted { $0.startTime > $1.startTime }
+        Array(meetings.values).sorted { $0.startTime > $1.startTime }
     }
 
     public func deleteMeeting(by id: UUID) async throws {
-        self.meetings.removeValue(forKey: id)
+        meetings.removeValue(forKey: id)
     }
 
     public func updateMeeting(_ meeting: MeetingEntity) async throws {
-        self.meetings[meeting.id] = meeting
+        meetings[meeting.id] = meeting
     }
 }

@@ -28,37 +28,37 @@ class FluidAIModelManager: ObservableObject {
 
     /// Loads the ASR models. Downloads them if not present.
     func loadModels() async {
-        guard self.modelState != .loaded, self.modelState != .loading else { return }
+        guard modelState != .loaded, modelState != .loading else { return }
 
-        self.modelState = .downloading
-        self.logger.info("Starting model download/load...")
+        modelState = .downloading
+        logger.info("Starting model download/load...")
 
         do {
             // Use v3 (Multilingual)
             let models = try await AsrModels.downloadAndLoad(version: .v3)
 
-            self.modelState = .loading
-            self.logger.info("Initializing ASR Manager...")
+            modelState = .loading
+            logger.info("Initializing ASR Manager...")
 
             // AsrManager initialization
             let manager = AsrManager(config: .default)
             try await manager.initialize(models: models)
 
-            self.asrManager = manager
-            self.modelState = .loaded
-            self.logger.info("ASR Manager initialized successfully.")
+            asrManager = manager
+            modelState = .loaded
+            logger.info("ASR Manager initialized successfully.")
 
         } catch {
-            self.logger.error("Failed to load models: \(error.localizedDescription)")
-            self.modelState = .error
+            logger.error("Failed to load models: \(error.localizedDescription)")
+            modelState = .error
         }
     }
 
     /// Loads the Diarization models.
     func loadDiarizationModels() async {
-        guard self.diarizerManager == nil else { return }
+        guard diarizerManager == nil else { return }
 
-        self.logger.info("Loading Diarization models...")
+        logger.info("Loading Diarization models...")
 
         do {
             let config = OfflineDiarizerConfig.default
@@ -68,10 +68,10 @@ class FluidAIModelManager: ObservableObject {
                 )
             let manager = OfflineDiarizerManager(config: config)
             try await manager.prepareModels()
-            self.diarizerManager = manager
-            self.logger.info("Diarization Manager initialized with constraints: \(AppSettingsStore.shared.minSpeakers)-\(AppSettingsStore.shared.maxSpeakers)")
+            diarizerManager = manager
+            logger.info("Diarization Manager initialized with constraints: \(AppSettingsStore.shared.minSpeakers)-\(AppSettingsStore.shared.maxSpeakers)")
         } catch {
-            self.logger.error("Failed to load diarization models: \(error.localizedDescription)")
+            logger.error("Failed to load diarization models: \(error.localizedDescription)")
         }
     }
 
@@ -90,19 +90,19 @@ class FluidAIModelManager: ObservableObject {
         maxSpeakers: Int? = nil
     ) async throws -> [DiarizationSegment] {
         guard let manager = diarizerManager else {
-            self.logger.warning("Diarizer not loaded, attempting to load...")
-            await self.loadDiarizationModels()
-            if self.diarizerManager == nil {
+            logger.warning("Diarizer not loaded, attempting to load...")
+            await loadDiarizationModels()
+            if diarizerManager == nil {
                 throw FluidError.diarizerNotLoaded
             }
-            return try await self.diarize(
+            return try await diarize(
                 audioURL: audioURL,
                 minSpeakers: minSpeakers,
                 maxSpeakers: maxSpeakers
             )
         }
 
-        self.logger.info("Diarizing audio file: \(audioURL.path)")
+        logger.info("Diarizing audio file: \(audioURL.path)")
 
         // If specific constraints provided, update manager config (assuming it supports it at runtime or we recreate)
         // For simplicity, we use the ones set during loadModels which uses AppSettings.
@@ -136,7 +136,7 @@ class FluidAIModelManager: ObservableObject {
             throw FluidError.modelNotLoaded
         }
 
-        self.logger.info("Transcribing audio file: \(audioURL.path)")
+        logger.info("Transcribing audio file: \(audioURL.path)")
 
         // Monitor progress via stream if callback provided
         let stream = await manager.transcriptionProgressStream

@@ -80,7 +80,7 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
 
     /// Whether this transcription was post-processed.
     public var isPostProcessed: Bool {
-        self.processedContent != nil
+        processedContent != nil
     }
 
     /// Cached formatter for transcription dates.
@@ -94,33 +94,33 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
 
     /// Formatted date string for display.
     public var formattedDate: String {
-        Self.dateFormatter.string(from: self.createdAt)
+        Self.dateFormatter.string(from: createdAt)
     }
 
     /// Duration from meeting data.
     public var formattedDuration: String {
-        self.meeting.formattedDuration
+        meeting.formattedDuration
     }
 
     /// Word count of transcription.
     public var wordCount: Int {
-        self.text.split(separator: " ").count
+        text.split(separator: " ").count
     }
 
     /// Preview of transcription text (first 100 chars).
     public var preview: String {
-        if self.text.count <= 100 {
-            return self.text
+        if text.count <= 100 {
+            return text
         }
-        return String(self.text.prefix(100)) + "..."
+        return String(text.prefix(100)) + "..."
     }
 
     /// Short preview for list display (first 80 chars).
     public var truncatedPreview: String {
-        if self.text.count <= 80 {
-            return self.text
+        if text.count <= 80 {
+            return text
         }
-        return String(self.text.prefix(80)) + "..."
+        return String(text.prefix(80)) + "..."
     }
 
     /// Cached time formatter for transcription times.
@@ -132,7 +132,7 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
 
     /// Formatted time string for display.
     public var formattedTime: String {
-        Self.timeFormatter.string(from: self.createdAt)
+        Self.timeFormatter.string(from: createdAt)
     }
 
     /// A segment of the transcription associated with a speaker.

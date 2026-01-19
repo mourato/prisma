@@ -26,39 +26,39 @@ public class AISettingsViewModel: ObservableObject {
         self.settings = settings
         self.keychain = keychain
         self.session = session
-        self.apiKeyText = (try? keychain.retrieve(for: .aiAPIKey)) ?? ""
+        apiKeyText = (try? keychain.retrieve(for: .aiAPIKey)) ?? ""
 
         // Reactive persistence for API Key
-        self.$apiKeyText
+        $apiKeyText
             .dropFirst()
             .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
             .sink { [weak self] newValue in
                 self?.persistAPIKey(newValue)
             }
-            .store(in: &self.cancellables)
+            .store(in: &cancellables)
     }
 
     private func persistAPIKey(_ value: String) {
         do {
             if !value.isEmpty {
-                try self.keychain.store(value, for: .aiAPIKey)
-                self.logger.info("API Key successfully persisted to Keychain")
+                try keychain.store(value, for: .aiAPIKey)
+                logger.info("API Key successfully persisted to Keychain")
             } else {
-                try self.keychain.delete(for: .aiAPIKey)
-                self.logger.info("API Key removed from Keychain")
+                try keychain.delete(for: .aiAPIKey)
+                logger.info("API Key removed from Keychain")
             }
         } catch {
-            self.logger.error("Failed to persist API key: \(error.localizedDescription)")
+            logger.error("Failed to persist API key: \(error.localizedDescription)")
         }
     }
 
     public func testAPIConnection() {
-        self.connectionStatus = .testing
-        self.availableModels = []
-        self.modelsFetchError = nil
+        connectionStatus = .testing
+        availableModels = []
+        modelsFetchError = nil
 
-        guard let url = self.validateURL(self.settings.aiConfiguration.baseURL) else {
-            self.connectionStatus = .failure("settings.ai.connection.invalid_url".localized)
+        guard let url = validateURL(settings.aiConfiguration.baseURL) else {
+            connectionStatus = .failure("settings.ai.connection.invalid_url".localized)
             return
         }
 
@@ -80,33 +80,33 @@ public class AISettingsViewModel: ObservableObject {
 
     /// Fetches available models from the LLM service's /models endpoint.
     public func fetchAvailableModels() async {
-        guard let baseURL = self.validateURL(self.settings.aiConfiguration.baseURL) else {
-            self.modelsFetchError = "settings.ai.connection.invalid_url".localized
+        guard let baseURL = validateURL(settings.aiConfiguration.baseURL) else {
+            modelsFetchError = "settings.ai.connection.invalid_url".localized
             return
         }
 
-        self.isLoadingModels = true
-        self.modelsFetchError = nil
+        isLoadingModels = true
+        modelsFetchError = nil
 
         defer { self.isLoadingModels = false }
 
         do {
-            let request = try self.buildModelsRequest(for: baseURL)
-            let (data, response) = try await self.session.data(for: request)
+            let request = try buildModelsRequest(for: baseURL)
+            let (data, response) = try await session.data(for: request)
 
             guard let httpResponse = response as? HTTPURLResponse,
                   (200...299).contains(httpResponse.statusCode)
             else {
-                self.modelsFetchError = "settings.ai.models.fetch_failed".localized
+                modelsFetchError = "settings.ai.models.fetch_failed".localized
                 return
             }
 
             let modelsResponse = try JSONDecoder().decode(LLMModelsResponse.self, from: data)
-            self.availableModels = modelsResponse.data.sorted { $0.id < $1.id }
-            self.logger.info("Fetched \(self.availableModels.count) models from API")
+            availableModels = modelsResponse.data.sorted { $0.id < $1.id }
+            logger.info("Fetched \(self.availableModels.count) models from API")
         } catch {
-            self.logger.error("Failed to fetch models: \(error.localizedDescription)")
-            self.modelsFetchError = error.localizedDescription
+            logger.error("Failed to fetch models: \(error.localizedDescription)")
+            modelsFetchError = error.localizedDescription
         }
     }
 
@@ -116,7 +116,7 @@ public class AISettingsViewModel: ObservableObject {
         request.httpMethod = "GET"
         request.timeoutInterval = 10
 
-        if let key = try? self.keychain.retrieve(for: .aiAPIKey), !key.isEmpty {
+        if let key = try? keychain.retrieve(for: .aiAPIKey), !key.isEmpty {
             request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
         }
         return request
@@ -134,7 +134,7 @@ public class AISettingsViewModel: ObservableObject {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.timeoutInterval = 5
-        if let key = try? self.keychain.retrieve(for: .aiAPIKey), !key.isEmpty {
+        if let key = try? keychain.retrieve(for: .aiAPIKey), !key.isEmpty {
             request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
         }
         return request
@@ -143,9 +143,9 @@ public class AISettingsViewModel: ObservableObject {
     private func handleTestResponse(_ response: URLResponse) {
         if let httpResponse = response as? HTTPURLResponse {
             let statusCode = httpResponse.statusCode
-            self.connectionStatus = (200...299).contains(statusCode) ? .success : .failure("HTTP \(statusCode)")
+            connectionStatus = (200...299).contains(statusCode) ? .success : .failure("HTTP \(statusCode)")
         } else {
-            self.connectionStatus = .failure("settings.ai.connection.invalid_response".localized)
+            connectionStatus = .failure("settings.ai.connection.invalid_response".localized)
         }
     }
 }

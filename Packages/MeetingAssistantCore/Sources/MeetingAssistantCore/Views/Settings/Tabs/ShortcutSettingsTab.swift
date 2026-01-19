@@ -44,7 +44,7 @@ public struct ShortcutSettingsTab: View {
                             .foregroundStyle(.secondary)
 
                         Button(action: {
-                            self.viewModel.resetShortcuts()
+                            viewModel.resetShortcuts()
                         }) {
                             Text(NSLocalizedString("settings.shortcuts.reset", bundle: .safeModule, comment: ""))
                         }

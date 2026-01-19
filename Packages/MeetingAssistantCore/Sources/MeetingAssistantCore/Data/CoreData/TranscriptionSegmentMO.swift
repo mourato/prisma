@@ -35,21 +35,21 @@ extension TranscriptionSegmentMO {
     /// Converte Managed Object para Domain Entity
     func toDomain() -> TranscriptionEntity.Segment {
         TranscriptionEntity.Segment(
-            id: self.id,
-            speaker: self.speaker,
-            text: self.text,
-            startTime: self.startTime,
-            endTime: self.endTime
+            id: id,
+            speaker: speaker,
+            text: text,
+            startTime: startTime,
+            endTime: endTime
         )
     }
 
     /// Atualiza Managed Object com dados da Domain Entity
     func update(from segment: TranscriptionEntity.Segment) {
-        self.id = segment.id
-        self.speaker = segment.speaker
-        self.text = segment.text
-        self.startTime = segment.startTime
-        self.endTime = segment.endTime
+        id = segment.id
+        speaker = segment.speaker
+        text = segment.text
+        startTime = segment.startTime
+        endTime = segment.endTime
     }
 
     /// Cria novo Managed Object a partir de Domain Entity

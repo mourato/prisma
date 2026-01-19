@@ -13,14 +13,14 @@ public final class CoreDataMeetingRepository: MeetingRepository {
     }
 
     public func saveMeeting(_ meeting: MeetingEntity) async throws {
-        try await self.stack.performBackgroundTask { context in
+        try await stack.performBackgroundTask { context in
             _ = MeetingMO.create(from: meeting, in: context)
             try context.save()
         }
     }
 
     public func fetchMeeting(by id: UUID) async throws -> MeetingEntity? {
-        try await self.stack.performBackgroundTask { context in
+        try await stack.performBackgroundTask { context in
             let request = MeetingMO.fetchRequest(for: id)
             let result = try context.fetch(request)
             return result.first?.toDomain()
@@ -28,7 +28,7 @@ public final class CoreDataMeetingRepository: MeetingRepository {
     }
 
     public func fetchAllMeetings() async throws -> [MeetingEntity] {
-        try await self.stack.performBackgroundTask { context in
+        try await stack.performBackgroundTask { context in
             let request = MeetingMO.fetchRequest()
             let results = try context.fetch(request)
             return results.map { $0.toDomain() }
@@ -36,7 +36,7 @@ public final class CoreDataMeetingRepository: MeetingRepository {
     }
 
     public func deleteMeeting(by id: UUID) async throws {
-        try await self.stack.performBackgroundTask { context in
+        try await stack.performBackgroundTask { context in
             let request = MeetingMO.fetchRequest(for: id)
             if let meetingMO = try context.fetch(request).first {
                 context.delete(meetingMO)
@@ -46,7 +46,7 @@ public final class CoreDataMeetingRepository: MeetingRepository {
     }
 
     public func updateMeeting(_ meeting: MeetingEntity) async throws {
-        try await self.stack.performBackgroundTask { context in
+        try await stack.performBackgroundTask { context in
             let request = MeetingMO.fetchRequest(for: meeting.id)
             if let meetingMO = try context.fetch(request).first {
                 meetingMO.update(from: meeting)

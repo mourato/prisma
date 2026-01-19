@@ -19,7 +19,7 @@ public final class AudioMerger {
     ///   - format: Target audio format (WAV or M4A).
     /// - Returns: URL of the merged file.
     public func mergeAudioFiles(inputURLs: [URL], to outputURL: URL, format: AppSettingsStore.AudioFormat) async throws -> URL {
-        self.logger.info("Merging \(inputURLs.count) audio files to: \(outputURL.path) (Format: \(format.displayName))")
+        logger.info("Merging \(inputURLs.count) audio files to: \(outputURL.path) (Format: \(format.displayName))")
 
         // Filter out non-existent files
         let existingURLs = inputURLs.filter { FileManager.default.fileExists(atPath: $0.path) }
@@ -38,14 +38,14 @@ public final class AudioMerger {
 
         // Add tracks (sequentially or mixed? implementation assumes mixing start at zero based on previous code)
         // Original code: inserts all at .zero. This creates a MIX.
-        try await self.buildComposition(composition, from: existingURLs)
+        try await buildComposition(composition, from: existingURLs)
 
         // Extract sample rate from first audio track to match source
-        let sampleRate = await self.extractSampleRate(from: composition) ?? 48_000.0
-        self.logger.info("Using sample rate: \(sampleRate)Hz for export")
+        let sampleRate = await extractSampleRate(from: composition) ?? 48_000.0
+        logger.info("Using sample rate: \(sampleRate)Hz for export")
 
         // Export using AVAssetWriter
-        try await self.export(composition: composition, to: outputURL, format: format, sampleRate: sampleRate)
+        try await export(composition: composition, to: outputURL, format: format, sampleRate: sampleRate)
 
         return outputURL
     }
@@ -72,7 +72,7 @@ public final class AudioMerger {
                     at: .zero
                 )
             } catch {
-                self.logger.warning("Failed to add track from \(url.lastPathComponent): \(error.localizedDescription)")
+                logger.warning("Failed to add track from \(url.lastPathComponent): \(error.localizedDescription)")
             }
         }
     }
@@ -87,7 +87,7 @@ public final class AudioMerger {
             let audioDesc = CMAudioFormatDescriptionGetStreamBasicDescription(formatDesc)
             return audioDesc?.pointee.mSampleRate
         } catch {
-            self.logger.warning("Failed to extract sample rate: \(error.localizedDescription)")
+            logger.warning("Failed to extract sample rate: \(error.localizedDescription)")
             return nil
         }
     }
@@ -156,7 +156,7 @@ public final class AudioMerger {
         sampleRate: Double
     ) throws -> (AVAssetWriter, AVAssetWriterInput) {
         let writer = try AVAssetWriter(outputURL: outputURL, fileType: format == .m4a ? .m4a : .wav)
-        let settings = self.getWriterSettings(for: format, sampleRate: sampleRate)
+        let settings = getWriterSettings(for: format, sampleRate: sampleRate)
         let input = AVAssetWriterInput(mediaType: .audio, outputSettings: settings)
 
         input.expectsMediaDataInRealTime = false

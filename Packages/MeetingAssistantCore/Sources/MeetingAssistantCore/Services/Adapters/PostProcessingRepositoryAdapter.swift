@@ -13,7 +13,7 @@ public final class PostProcessingRepositoryAdapter: PostProcessingRepository {
     }
 
     public func processTranscription(_ transcription: String) async throws -> String {
-        try await self.postProcessingService.processTranscription(transcription)
+        try await postProcessingService.processTranscription(transcription)
     }
 
     public func processTranscription(
@@ -27,6 +27,6 @@ public final class PostProcessingRepositoryAdapter: PostProcessingRepository {
             promptText: prompt.content,
             isActive: true
         )
-        return try await self.postProcessingService.processTranscription(transcription, with: legacyPrompt)
+        return try await postProcessingService.processTranscription(transcription, with: legacyPrompt)
     }
 }
