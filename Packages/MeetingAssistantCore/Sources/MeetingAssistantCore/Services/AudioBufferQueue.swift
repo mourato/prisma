@@ -58,7 +58,7 @@ public final class AudioBufferQueue: @unchecked Sendable {
         lock.lock()
         defer { self.lock.unlock() }
 
-        guard !isEmpty else {
+        guard !_isEmpty else {
             return nil
         }
 
@@ -69,6 +69,14 @@ public final class AudioBufferQueue: @unchecked Sendable {
         count -= 1
 
         return buffer
+    }
+
+    // MARK: - Private Helpers
+
+    /// Internal isEmpty check - MUST only be called when lock is already held.
+    /// Avoids deadlock since NSLock is non-reentrant.
+    private var _isEmpty: Bool {
+        count == 0
     }
 
     /// Clears the queue.

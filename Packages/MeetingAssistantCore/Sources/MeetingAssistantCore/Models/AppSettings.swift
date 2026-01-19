@@ -186,14 +186,14 @@ public class AppSettingsStore: ObservableObject {
     }
 
     /// Minimum number of speakers for diarization.
-    @Published public var minSpeakers: Int {
+    @Published public var minSpeakers: Int? {
         didSet {
             UserDefaults.standard.set(minSpeakers, forKey: Keys.minSpeakers)
         }
     }
 
     /// Maximum number of speakers for diarization.
-    @Published public var maxSpeakers: Int {
+    @Published public var maxSpeakers: Int? {
         didSet {
             UserDefaults.standard.set(maxSpeakers, forKey: Keys.maxSpeakers)
         }
@@ -260,10 +260,8 @@ public class AppSettingsStore: ObservableObject {
         postProcessingEnabled = UserDefaults.standard.bool(forKey: Keys.postProcessingEnabled)
         isDiarizationEnabled = UserDefaults.standard.bool(forKey: Keys.isDiarizationEnabled)
 
-        let minS = UserDefaults.standard.integer(forKey: Keys.minSpeakers)
-        minSpeakers = minS == 0 ? 1 : minS
-        let maxS = UserDefaults.standard.integer(forKey: Keys.maxSpeakers)
-        maxSpeakers = maxS == 0 ? 10 : maxS
+        minSpeakers = UserDefaults.standard.object(forKey: Keys.minSpeakers) as? Int
+        maxSpeakers = UserDefaults.standard.object(forKey: Keys.maxSpeakers) as? Int
 
         let rawFormat = UserDefaults.standard.string(forKey: PostProcessingKeys.audioFormat)
         audioFormat = rawFormat.flatMap { AudioFormat(rawValue: $0) } ?? .m4a
@@ -314,8 +312,8 @@ public class AppSettingsStore: ObservableObject {
         selectedPromptId = nil
         postProcessingEnabled = false
         isDiarizationEnabled = false
-        minSpeakers = 1
-        maxSpeakers = 10
+        minSpeakers = nil
+        maxSpeakers = nil
     }
 
     // MARK: - Prompt Management

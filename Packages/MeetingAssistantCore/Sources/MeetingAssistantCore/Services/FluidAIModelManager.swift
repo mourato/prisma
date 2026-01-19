@@ -55,25 +55,39 @@ class FluidAIModelManager: ObservableObject {
     }
 
     /// Loads the Diarization models.
-    func loadDiarizationModels() async {
-        guard diarizerManager == nil else { return }
+    func loadDiarizationModels(minSpeakers: Int? = nil, maxSpeakers: Int? = nil) async {
+        let min = minSpeakers ?? AppSettingsStore.shared.minSpeakers
+        let max = maxSpeakers ?? AppSettingsStore.shared.maxSpeakers
 
-        logger.info("Loading Diarization models...")
+        // Check if we already have a manager with these same constraints
+        if let currentManager = diarizerManager,
+           currentDiarizerMinSpeakers == min,
+           currentDiarizerMaxSpeakers == max
+        {
+            return
+        }
+
+        logger.info("Loading Diarization models with constraints: \(min ?? 0)-\(max ?? 0)...")
 
         do {
             let config = OfflineDiarizerConfig.default
-                .withSpeakers(
-                    min: AppSettingsStore.shared.minSpeakers,
-                    max: AppSettingsStore.shared.maxSpeakers
-                )
+                .withSpeakers(min: min, max: max)
+
             let manager = OfflineDiarizerManager(config: config)
             try await manager.prepareModels()
+
             diarizerManager = manager
-            logger.info("Diarization Manager initialized with constraints: \(AppSettingsStore.shared.minSpeakers)-\(AppSettingsStore.shared.maxSpeakers)")
+            currentDiarizerMinSpeakers = min
+            currentDiarizerMaxSpeakers = max
+
+            logger.info("Diarization Manager initialized successfully.")
         } catch {
             logger.error("Failed to load diarization models: \(error.localizedDescription)")
         }
     }
+
+    private var currentDiarizerMinSpeakers: Int?
+    private var currentDiarizerMaxSpeakers: Int?
 
     /// Structure to hold raw diarization result
     struct DiarizationSegment: Identifiable, Sendable {
@@ -89,17 +103,11 @@ class FluidAIModelManager: ObservableObject {
         minSpeakers: Int? = nil,
         maxSpeakers: Int? = nil
     ) async throws -> [DiarizationSegment] {
+        // Ensure models are loaded with the requested constraints
+        await loadDiarizationModels(minSpeakers: minSpeakers, maxSpeakers: maxSpeakers)
+
         guard let manager = diarizerManager else {
-            logger.warning("Diarizer not loaded, attempting to load...")
-            await loadDiarizationModels()
-            if diarizerManager == nil {
-                throw FluidError.diarizerNotLoaded
-            }
-            return try await diarize(
-                audioURL: audioURL,
-                minSpeakers: minSpeakers,
-                maxSpeakers: maxSpeakers
-            )
+            throw FluidError.diarizerNotLoaded
         }
 
         logger.info("Diarizing audio file: \(audioURL.path)")
