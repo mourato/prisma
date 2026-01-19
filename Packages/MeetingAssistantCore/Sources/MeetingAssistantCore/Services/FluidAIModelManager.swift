@@ -60,7 +60,7 @@ class FluidAIModelManager: ObservableObject {
         let max = maxSpeakers ?? AppSettingsStore.shared.maxSpeakers
 
         // Check if we already have a manager with these same constraints
-        if let currentManager = diarizerManager,
+        if diarizerManager != nil,
            currentDiarizerMinSpeakers == min,
            currentDiarizerMaxSpeakers == max
         {

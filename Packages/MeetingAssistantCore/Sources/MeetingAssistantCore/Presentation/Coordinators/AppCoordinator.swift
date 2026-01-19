@@ -57,6 +57,7 @@ public final class AppCoordinator: Coordinator {
 
     // MARK: - Navigation Methods
 
+    @discardableResult
     private func navigateToMain() -> AnyView {
         let viewModel = RecordingViewModel(recordingManager: recordingManager)
 
@@ -64,6 +65,7 @@ public final class AppCoordinator: Coordinator {
         return AnyView(mainView)
     }
 
+    @discardableResult
     private func navigateToSettings(tab: AppRoute.SettingsTab) -> AnyView {
         let coordinator = SettingsCoordinator(
             repositoryFactory: repositoryFactory,
@@ -78,11 +80,13 @@ public final class AppCoordinator: Coordinator {
         return settingsView
     }
 
+    @discardableResult
     private func navigateToTranscriptionDetails(_ transcription: Transcription) -> AnyView {
         let detailView = TranscriptionDetailView(transcription: transcription)
         return AnyView(detailView)
     }
 
+    @discardableResult
     private func navigateToPermissionSetup() -> AnyView {
         let viewModel = PermissionViewModel(
             manager: recordingManager.permissionStatus,
