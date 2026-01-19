@@ -76,7 +76,8 @@ public final class AudioBufferQueue: @unchecked Sendable {
     /// Internal isEmpty check - MUST only be called when lock is already held.
     /// Avoids deadlock since NSLock is non-reentrant.
     private var _isEmpty: Bool {
-        isEmpty
+        // swiftlint:disable:next empty_count
+        count == 0
     }
 
     /// Clears the queue.
@@ -101,11 +102,10 @@ public final class AudioBufferQueue: @unchecked Sendable {
     }
 
     /// Returns whether the queue is empty.
-    // swiftlint:disable empty_count
     public var isEmpty: Bool {
         lock.lock()
         defer { self.lock.unlock() }
+        // swiftlint:disable:next empty_count
         return count == 0
     }
-    // swiftlint:enable empty_count
 }
