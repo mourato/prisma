@@ -30,6 +30,49 @@ public struct TranscriptionEntity: Identifiable, Codable, Hashable, Sendable {
     public let modelName: String
 
     /// Inicializador completo com suporte a pós-processamento.
+    /// Configuração para inicialização flexível de TranscriptionEntity.
+    public struct Configuration: Sendable {
+        public var id: UUID = .init()
+        public var segments: [Segment] = []
+        public var text: String
+        public var rawText: String
+        public var processedContent: String?
+        public var postProcessingPromptId: UUID?
+        public var postProcessingPromptTitle: String?
+        public var language: String = "pt"
+        public var createdAt: Date = .init()
+        public var modelName: String = "parakeet-tdt-0.6b-v3"
+
+        public init(
+            text: String,
+            rawText: String? = nil,
+            segments: [Segment] = [],
+            language: String = "pt"
+        ) {
+            self.text = text
+            self.rawText = rawText ?? text
+            self.segments = segments
+            self.language = language
+        }
+    }
+
+    /// Inicializador principal usando Configuration para reduzir lista de argumentos.
+    public init(meeting: MeetingEntity, config: Configuration) {
+        id = config.id
+        self.meeting = meeting
+        segments = config.segments
+        text = config.text
+        rawText = config.rawText
+        processedContent = config.processedContent
+        postProcessingPromptId = config.postProcessingPromptId
+        postProcessingPromptTitle = config.postProcessingPromptTitle
+        language = config.language
+        createdAt = config.createdAt
+        modelName = config.modelName
+    }
+
+    /// Inicializador depreciado mantido para compatibilidade temporária (será removido).
+    @available(*, deprecated, message: "Use init(meeting:config:) instead")
     public init(
         id: UUID = UUID(),
         meeting: MeetingEntity,
@@ -43,20 +86,19 @@ public struct TranscriptionEntity: Identifiable, Codable, Hashable, Sendable {
         createdAt: Date = Date(),
         modelName: String = "parakeet-tdt-0.6b-v3"
     ) {
-        self.id = id
-        self.meeting = meeting
-        self.segments = segments
-        self.text = text
-        self.rawText = rawText
-        self.processedContent = processedContent
-        self.postProcessingPromptId = postProcessingPromptId
-        self.postProcessingPromptTitle = postProcessingPromptTitle
-        self.language = language
-        self.createdAt = createdAt
-        self.modelName = modelName
+        var config = Configuration(text: text, rawText: rawText, segments: segments, language: language)
+        config.id = id
+        config.processedContent = processedContent
+        config.postProcessingPromptId = postProcessingPromptId
+        config.postProcessingPromptTitle = postProcessingPromptTitle
+        config.createdAt = createdAt
+        config.modelName = modelName
+
+        self.init(meeting: meeting, config: config)
     }
 
     /// Inicializador de conveniência para compatibilidade retroativa (sem pós-processamento).
+    @available(*, deprecated, message: "Use init(meeting:config:) instead")
     public init(
         id: UUID = UUID(),
         meeting: MeetingEntity,
@@ -65,19 +107,12 @@ public struct TranscriptionEntity: Identifiable, Codable, Hashable, Sendable {
         createdAt: Date = Date(),
         modelName: String = "parakeet-tdt-0.6b-v3"
     ) {
-        self.init(
-            id: id,
-            meeting: meeting,
-            segments: [],
-            text: text,
-            rawText: text,
-            processedContent: nil,
-            postProcessingPromptId: nil,
-            postProcessingPromptTitle: nil,
-            language: language,
-            createdAt: createdAt,
-            modelName: modelName
-        )
+        var config = Configuration(text: text, rawText: text, language: language)
+        config.id = id
+        config.createdAt = createdAt
+        config.modelName = modelName
+
+        self.init(meeting: meeting, config: config)
     }
 
     /// Se esta transcrição foi pós-processada.
