@@ -31,7 +31,7 @@
 
 # MARK: - Numeric Readability (Improved)
 # Decimal: 1,000,000 (Standard) instead of 1,000,00 (Current 3,5)
---decimalgrouping 3,6
+--decimalgrouping 3,4
 --binarygrouping 4,8
 --hexgrouping 4,8
 --octalgrouping 4,8

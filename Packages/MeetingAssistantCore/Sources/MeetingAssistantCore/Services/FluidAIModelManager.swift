@@ -1,22 +1,35 @@
 @preconcurrency import AVFoundation
+import Combine
 @preconcurrency import FluidAudio
 import Foundation
 import os.log
 
 /// Manages the lifecycle of FluidAudio models (Download, Load, Initialize).
 @MainActor
-class FluidAIModelManager: ObservableObject {
-    static let shared = FluidAIModelManager()
+public protocol AIModelService: ObservableObject {
+    var modelState: FluidAIModelManager.ModelState { get }
+    var modelStatePublisher: AnyPublisher<FluidAIModelManager.ModelState, Never> { get }
+    func loadModels() async
+}
+
+/// Manages the lifecycle of FluidAudio models (Download, Load, Initialize).
+@MainActor
+public class FluidAIModelManager: ObservableObject, AIModelService {
+    public static let shared = FluidAIModelManager()
 
     private let logger = Logger(subsystem: "MeetingAssistant", category: "FluidAIModelManager")
 
-    @Published var modelState: ModelState = .unloaded
-    @Published var progress: Double = 0.0
+    @Published public var modelState: ModelState = .unloaded
+    public var modelStatePublisher: AnyPublisher<ModelState, Never> {
+        $modelState.eraseToAnyPublisher()
+    }
+
+    @Published public var progress: Double = 0.0
 
     private(set) var asrManager: AsrManager?
     private(set) var diarizerManager: OfflineDiarizerManager?
 
-    enum ModelState: String {
+    public enum ModelState: String {
         case unloaded
         case downloading
         case loading
@@ -27,7 +40,7 @@ class FluidAIModelManager: ObservableObject {
     private init() {}
 
     /// Loads the ASR models. Downloads them if not present.
-    func loadModels() async {
+    public func loadModels() async {
         guard modelState != .loaded, modelState != .loading else { return }
 
         modelState = .downloading
@@ -60,7 +73,7 @@ class FluidAIModelManager: ObservableObject {
         let max = maxSpeakers ?? AppSettingsStore.shared.maxSpeakers
 
         // Check if we already have a manager with these same constraints
-        if let currentManager = diarizerManager,
+        if diarizerManager != nil,
            currentDiarizerMinSpeakers == min,
            currentDiarizerMaxSpeakers == max
         {

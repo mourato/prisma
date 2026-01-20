@@ -108,8 +108,8 @@ public struct Meeting: Identifiable, Codable, Hashable, Sendable {
     /// Formatted duration string (e.g., "1h 23m").
     public var formattedDuration: String {
         let seconds = Int(duration)
-        let hours = seconds / 3600
-        let minutes = (seconds % 3600) / 60
+        let hours = seconds / 3_600
+        let minutes = (seconds % 3_600) / 60
 
         if hours > 0 {
             return "\(hours)h \(minutes)m"

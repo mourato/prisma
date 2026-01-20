@@ -8,7 +8,7 @@ final class AudioRecordingWorkerTests: XCTestCase {
         let worker = AudioRecordingWorker()
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("test_worker_perf_\(UUID().uuidString).wav")
 
-        guard let format = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 44100, channels: 2, interleaved: false) else {
+        guard let format = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 44_100, channels: 2, interleaved: false) else {
             XCTFail("Failed to create format")
             return
         }
@@ -25,8 +25,8 @@ final class AudioRecordingWorkerTests: XCTestCase {
         }
         wait(for: [setupExpectation], timeout: 5.0)
 
-        let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 1024)!
-        buffer.frameLength = 1024
+        let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 1_024)!
+        buffer.frameLength = 1_024
 
         print("### Measuring...")
         measure(metrics: [XCTClockMetric(), XCTCPUMetric()]) {

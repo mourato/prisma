@@ -15,21 +15,21 @@ final class DomainLayerTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        self.mockRecordingRepo = MockRecordingRepository()
-        self.mockAudioFileRepo = MockAudioFileRepository()
-        self.mockMeetingRepo = MockMeetingRepository()
-        self.mockTranscriptionRepo = MockTranscriptionRepository()
-        self.mockTranscriptionStorageRepo = MockTranscriptionStorageRepository()
-        self.mockPostProcessingRepo = MockPostProcessingRepository()
+        mockRecordingRepo = MockRecordingRepository()
+        mockAudioFileRepo = MockAudioFileRepository()
+        mockMeetingRepo = MockMeetingRepository()
+        mockTranscriptionRepo = MockTranscriptionRepository()
+        mockTranscriptionStorageRepo = MockTranscriptionStorageRepository()
+        mockPostProcessingRepo = MockPostProcessingRepository()
     }
 
     override func tearDown() {
-        self.mockRecordingRepo = nil
-        self.mockAudioFileRepo = nil
-        self.mockMeetingRepo = nil
-        self.mockTranscriptionRepo = nil
-        self.mockTranscriptionStorageRepo = nil
-        self.mockPostProcessingRepo = nil
+        mockRecordingRepo = nil
+        mockAudioFileRepo = nil
+        mockMeetingRepo = nil
+        mockTranscriptionRepo = nil
+        mockTranscriptionStorageRepo = nil
+        mockPostProcessingRepo = nil
         super.tearDown()
     }
 
@@ -37,9 +37,9 @@ final class DomainLayerTests: XCTestCase {
 
     func testStartRecordingSuccess() async throws {
         // Given
-        guard let mockRecordingRepo = self.mockRecordingRepo,
-              let mockAudioFileRepo = self.mockAudioFileRepo,
-              let mockMeetingRepo = self.mockMeetingRepo
+        guard let mockRecordingRepo,
+              let mockAudioFileRepo,
+              let mockMeetingRepo
         else {
             return XCTFail("Mocks not initialized")
         }
@@ -75,9 +75,9 @@ final class DomainLayerTests: XCTestCase {
 
     func testStartRecordingPermissionDenied() async {
         // Given
-        guard let mockRecordingRepo = self.mockRecordingRepo,
-              let mockAudioFileRepo = self.mockAudioFileRepo,
-              let mockMeetingRepo = self.mockMeetingRepo
+        guard let mockRecordingRepo,
+              let mockAudioFileRepo,
+              let mockMeetingRepo
         else {
             return XCTFail("Mocks not initialized")
         }
@@ -108,9 +108,9 @@ final class DomainLayerTests: XCTestCase {
 
     func testTranscribeAudioSuccess() async throws {
         // Given
-        guard let mockTranscriptionRepo = self.mockTranscriptionRepo,
-              let mockTranscriptionStorageRepo = self.mockTranscriptionStorageRepo,
-              let mockPostProcessingRepo = self.mockPostProcessingRepo
+        guard let mockTranscriptionRepo,
+              let mockTranscriptionStorageRepo,
+              let mockPostProcessingRepo
         else {
             return XCTFail("Mocks not initialized")
         }

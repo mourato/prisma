@@ -7,6 +7,7 @@ public class RecordingViewModel: ObservableObject {
     // MARK: - Dependencies
 
     private let recordingManager: any RecordingServiceProtocol
+    private let modelManager: any AIModelService
     private var cancellables = Set<AnyCancellable>()
 
     // MARK: - Published Properties
@@ -62,10 +63,12 @@ public class RecordingViewModel: ObservableObject {
 
     // MARK: - Initialization
 
-    // MARK: - Initialization
-
-    public init(recordingManager: some RecordingServiceProtocol) {
+    public init(
+        recordingManager: some RecordingServiceProtocol,
+        modelManager: some AIModelService = FluidAIModelManager.shared
+    ) {
         self.recordingManager = recordingManager
+        self.modelManager = modelManager
 
         // Initialize child ViewModels
         transcriptionViewModel = TranscriptionViewModel(status: recordingManager.transcriptionStatus)
@@ -151,9 +154,9 @@ public class RecordingViewModel: ObservableObject {
         // Assuming they are constant references in RecordingManager for now based on previous code.
 
         // Observe model state
-        FluidAIModelManager.shared.$modelState
+        modelManager.modelStatePublisher
             .receive(on: DispatchQueue.main)
-            .map { $0 == .loaded }
+            .map { $0 == FluidAIModelManager.ModelState.loaded }
             .assign(to: &$isModelLoaded)
 
         // Observe permission state from child ViewModel
@@ -182,8 +185,8 @@ public class RecordingViewModel: ObservableObject {
     private func updateDisplayDuration() {
         guard let meeting = currentMeeting else { return }
         let duration = Int(meeting.duration)
-        let hours = duration / 3600
-        let minutes = (duration % 3600) / 60
+        let hours = duration / 3_600
+        let minutes = (duration % 3_600) / 60
         let seconds = duration % 60
 
         if hours > 0 {

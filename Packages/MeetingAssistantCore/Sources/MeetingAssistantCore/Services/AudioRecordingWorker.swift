@@ -198,8 +198,8 @@ actor AudioRecordingWorker {
         }
 
         let rms = sqrt(sum / Float(frameLength / 10)) // adjust count
-        let averagePowerDb = 20.0 * log10(max(rms, 0.000_001))
-        let peakPowerDb = 20.0 * log10(max(peak, 0.000_001))
+        let averagePowerDb = 20.0 * log10(max(rms, 1e-6))
+        let peakPowerDb = 20.0 * log10(max(peak, 1e-6))
 
         onPowerUpdate?(averagePowerDb, peakPowerDb)
     }

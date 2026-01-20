@@ -16,8 +16,8 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
     // MARK: - Constants
 
-    private enum Constants {
-        static let tapBufferSize: AVAudioFrameCount = 2048
+    enum Constants {
+        static let tapBufferSize: AVAudioFrameCount = 2_048
         static let tapBusNumber: AVAudioNodeBus = 0
         static let outputSampleRate: Double = 48_000.0
         static let outputChannels: AVAudioChannelCount = 2
@@ -26,21 +26,21 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         static let maxRetries = 2
     }
 
-    @Published public private(set) var isRecording = false
+    @Published public internal(set) var isRecording = false
     public var isRecordingPublisher: AnyPublisher<Bool, Never> {
         $isRecording.eraseToAnyPublisher()
     }
 
-    @Published public private(set) var currentRecordingURL: URL?
-    @Published public private(set) var error: Error?
-    @Published public private(set) var currentAveragePower: Float = -160.0
-    @Published public private(set) var currentPeakPower: Float = -160.0
+    @Published public internal(set) var currentRecordingURL: URL?
+    @Published public internal(set) var error: Error?
+    @Published public internal(set) var currentAveragePower: Float = -160.0
+    @Published public internal(set) var currentPeakPower: Float = -160.0
 
     // MARK: - Audio Engine
 
-    private var audioEngine: AVAudioEngine?
-    private var mixerNode: AVAudioMixerNode?
-    private var systemAudioSourceNode: AVAudioSourceNode?
+    var audioEngine: AVAudioEngine?
+    var mixerNode: AVAudioMixerNode?
+    var systemAudioSourceNode: AVAudioSourceNode?
 
     // MARK: - Dependency Injection for Testing
 
@@ -48,17 +48,17 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
     // MARK: - System Audio Integration
 
-    private let systemRecorder = SystemAudioRecorder.shared
+    let systemRecorder = SystemAudioRecorder.shared
     // Non-isolated to allow background threads (SystemAudioRecorder) to enqueue without MainActor hopping
-    private nonisolated let systemAudioQueue = AudioBufferQueue(capacity: 200)
+    nonisolated let systemAudioQueue = AudioBufferQueue(capacity: 200)
     /// Tracks partially consumed buffers between render cycles to prevent frame loss
-    private nonisolated let partialBufferState = PartialBufferState()
+    nonisolated let partialBufferState = PartialBufferState()
 
     // MARK: - Worker & State
 
     /// Thread-safe worker that handles file writing and processing off the main actor.
-    private let worker = AudioRecordingWorker()
-    private var validationTimer: Timer?
+    let worker = AudioRecordingWorker()
+    var validationTimer: Timer?
     public var onRecordingError: (@Sendable (Error) -> Void)?
 
     init() {
@@ -162,7 +162,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         // Increase maximum frames per slice to avoid kAudioUnitErr_TooManyFramesToProcess (-10874)
         // when hardware or drivers send buffers larger than the default 512 frames.
         // Using 2048 to reduce HALC overload risk while still handling most buffer sizes.
-        let safeMaxFrames: AVAudioFrameCount = 2048
+        let safeMaxFrames: AVAudioFrameCount = 2_048
         engine.mainMixerNode.auAudioUnit.maximumFramesToRender = safeMaxFrames
         mixer.auAudioUnit.maximumFramesToRender = safeMaxFrames
         engine.outputNode.auAudioUnit.maximumFramesToRender = safeMaxFrames
@@ -400,183 +400,6 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     public func openSettings() {
         if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone") {
             NSWorkspace.shared.open(url)
-        }
-    }
-
-    // MARK: - Source Node Configuration
-
-    /// Creates an AVAudioSourceNode for system audio capture.
-    /// - Parameters:
-    ///   - queue: Thread-safe queue for audio buffers.
-    ///   - partialState: Tracks partially consumed buffers between render cycles.
-    /// - Returns: Configured AVAudioSourceNode ready for engine attachment.
-    private nonisolated func createSystemSourceNode(
-        queue: AudioBufferQueue,
-        partialState: PartialBufferState
-    ) -> AVAudioSourceNode {
-        AVAudioSourceNode { @Sendable [queue, partialState] _, _, frameCount, audioBufferList -> OSStatus in
-            self.validateCallbackInputs(frameCount: frameCount, audioBufferList: audioBufferList)
-        }
-    }
-
-    /// Validates callback inputs before processing audio data.
-    /// - Parameters:
-    ///   - frameCount: Number of frames requested.
-    ///   - audioBufferList: Pointer to audio buffer list structure.
-    /// - Returns: OSStatus error code; noErr if validation passes.
-    private nonisolated func validateCallbackInputs(
-        frameCount: UInt32,
-        audioBufferList: UnsafeMutablePointer<AudioBufferList>
-    ) -> OSStatus {
-        guard frameCount > 0 else {
-            return -50 // kAudio_ParamError
-        }
-
-        guard audioBufferList != nil else {
-            return -50 // kAudio_ParamError
-        }
-
-        return processAudioBuffers(frameCount: frameCount, audioBufferList: audioBufferList)
-    }
-
-    /// Processes audio buffers by filling them with silence.
-    /// - Parameters:
-    ///   - frameCount: Number of frames to process.
-    ///   - audioBufferList: Pointer to audio buffer list structure.
-    /// - Returns: OSStatus indicating success (noErr) or failure.
-    private nonisolated func processAudioBuffers(
-        frameCount: UInt32,
-        audioBufferList: UnsafeMutablePointer<AudioBufferList>
-    ) -> OSStatus {
-        let buffers = UnsafeMutableAudioBufferListPointer(audioBufferList)
-        let bufferCount = 2 // We know format is stereo
-        let targetFrames = Int(frameCount)
-
-        fillBuffersWithSilence(buffers: buffers, bufferCount: bufferCount, targetFrames: targetFrames)
-
-        return noErr
-    }
-
-    /// Fills audio buffers with silence (zeros).
-    /// - Parameters:
-    ///   - buffers: Pointer to mutable audio buffer list.
-    ///   - bufferCount: Number of buffers to process.
-    ///   - targetFrames: Number of frames to zero out.
-    private nonisolated func fillBuffersWithSilence(
-        buffers: UnsafeMutableAudioBufferListPointer,
-        bufferCount: Int,
-        targetFrames: Int
-    ) {
-        for ch in 0..<bufferCount {
-            guard ch < 2 else { break }
-            let destBuffer = buffers[ch]
-            if let dest = destBuffer.mData?.assumingMemoryBound(to: Float.self) {
-                memset(dest, 0, targetFrames * MemoryLayout<Float>.size)
-            }
-        }
-    }
-
-    // MARK: - Validation & Retry
-
-    private func startValidationTimer(url: URL, source: RecordingSource, retryCount: Int) {
-        validationTimer = Timer.scheduledTimer(
-            withTimeInterval: Constants.validationInterval, repeats: false
-        ) { @Sendable [weak self] _ in
-            Task { @MainActor in
-                await self?.handleValidationTimeout(url: url, source: source, retryCount: retryCount)
-            }
-        }
-    }
-
-    private func handleValidationTimeout(url: URL, source: RecordingSource, retryCount: Int) async {
-        let validationPassed = await worker.getHasReceivedValidBuffer()
-
-        guard !validationPassed else {
-            AppLogger.info("Recording validation successful", category: .recordingManager)
-            return
-        }
-
-        AppLogger.error("Recording validation failed - no valid buffers received", category: .recordingManager)
-        _ = await stopRecording()
-
-        if retryCount < Constants.maxRetries {
-            await retryRecording(to: url, source: source, retryCount: retryCount)
-        } else {
-            AppLogger.fault("Recording failed after retries", category: .recordingManager)
-            let error = AudioRecorderError.recordingValidationFailed
-            self.error = error
-            onRecordingError?(error)
-        }
-    }
-
-    private func retryRecording(to url: URL, source: RecordingSource, retryCount: Int) async {
-        AppLogger.info(
-            "Retrying recording",
-            category: .recordingManager,
-            extra: ["attempt": retryCount + 1, "max": Constants.maxRetries]
-        )
-        do {
-            try await Task.sleep(nanoseconds: Constants.retryDelay)
-            try await startRecording(to: url, source: source, retryCount: retryCount + 1)
-        } catch {
-            AppLogger.error("Retry failed", category: .recordingManager, error: error)
-            self.error = error
-            onRecordingError?(error)
-        }
-    }
-
-    private func handleWorkerError(_ error: Error) {
-        AppLogger.error("Worker error", category: .recordingManager, error: error)
-        self.error = error
-    }
-
-    private func verifyFileIntegrity(url: URL) {
-        let asset = AVAsset(url: url)
-        Task {
-            do {
-                let duration = try await asset.load(.duration)
-                AppLogger.info(
-                    "Recording saved",
-                    category: .recordingManager,
-                    extra: ["filename": url.lastPathComponent, "duration": duration.seconds]
-                )
-            } catch {
-                AppLogger.error("Verification failed", category: .recordingManager, error: error)
-            }
-        }
-    }
-}
-
-// MARK: - Errors
-
-public enum AudioRecorderError: LocalizedError {
-    case invalidInputFormat
-    case invalidRecordingFormat
-    case failedToCreateFile(Error)
-    case failedToCreateConverter
-    case failedToStartEngine(Error)
-    case audioConversionError(Error)
-    case fileWriteFailed(Error)
-    case recordingValidationFailed
-
-    public var errorDescription: String? {
-        switch self {
-        case .invalidInputFormat:
-            "Formato de entrada de áudio inválido do dispositivo"
-        case .invalidRecordingFormat:
-            "Falha ao criar formato de gravação"
-        case let .failedToCreateFile(error):
-            "Falha ao criar arquivo de áudio: \(error.localizedDescription)"
-        case .failedToCreateConverter:
-            "Falha ao criar conversor de formato de áudio"
-        case let .failedToStartEngine(error):
-            "Falha ao iniciar motor de áudio: \(error.localizedDescription)"
-        case let .audioConversionError(error):
-            "Falha na conversão de formato de áudio: \(error.localizedDescription)"
-        case let .fileWriteFailed(error):
-            "Falha ao gravar dados de áudio no arquivo: \(error.localizedDescription)"
-        case .recordingValidationFailed:
-            "A gravação falhou ao iniciar - nenhum áudio válido recebido do dispositivo"
         }
     }
 }
