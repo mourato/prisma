@@ -38,8 +38,6 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
     /// Callback for received audio buffers (Thread-safe, called on background queue)
     // MARK: - Public API
 
-    // MARK: - Public API
-
     /// Thread-safe storage for the audio buffer callback
     private class CallbackStorage: @unchecked Sendable {
         private let lock = OSAllocatedUnfairLock()
@@ -62,12 +60,12 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
     // MARK: - Protocol Conformance
 
     public func startRecording(to outputURL: URL, retryCount: Int) async throws {
-        try await startRecording(to: outputURL, sampleRate: 48_000.0, retryCount: retryCount)
+        try await startRecording(to: outputURL, sampleRate: 48000.0, retryCount: retryCount)
     }
 
     // MARK: - Configuration
 
-    private var currentSampleRate: Double = 48_000.0 // Configurable per recording session
+    private var currentSampleRate: Double = 48000.0 // Configurable per recording session
     private let channelCount: Int = 2 // Stereo capture for system audio
 
     private let minVideoDimension = 2
@@ -93,7 +91,7 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
 
     /// Starts system audio capture.
     /// `outputURL` is ignored as this class no longer writes files, but kept for protocol conformance.
-    public func startRecording(to outputURL: URL, sampleRate: Double = 48_000.0, retryCount: Int = 0) async throws {
+    public func startRecording(to outputURL: URL, sampleRate: Double = 48000.0, retryCount: Int = 0) async throws {
         guard !isRecording else {
             AppLogger.info("Already recording system audio", category: .recordingManager)
             return

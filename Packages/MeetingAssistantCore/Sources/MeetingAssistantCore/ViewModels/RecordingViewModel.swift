@@ -63,8 +63,6 @@ public class RecordingViewModel: ObservableObject {
 
     // MARK: - Initialization
 
-    // MARK: - Initialization
-
     public init(
         recordingManager: some RecordingServiceProtocol,
         modelManager: some AIModelService = FluidAIModelManager.shared
