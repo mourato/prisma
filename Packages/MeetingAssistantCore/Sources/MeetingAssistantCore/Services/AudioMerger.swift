@@ -41,7 +41,7 @@ public final class AudioMerger {
         try await buildComposition(composition, from: existingURLs)
 
         // Extract sample rate from first audio track to match source
-        let sampleRate = await extractSampleRate(from: composition) ?? 48_000.0
+        let sampleRate = await extractSampleRate(from: composition) ?? 48000.0
         logger.info("Using sample rate: \(sampleRate)Hz for export")
 
         // Export using AVAssetWriter
