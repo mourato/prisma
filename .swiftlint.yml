@@ -54,3 +54,6 @@ analyzer_rules:
   - unused_import
 
 reporter: "xcode"
+
+trailing_comma:
+  mandatory_comma: true

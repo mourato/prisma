@@ -115,8 +115,10 @@ extension AudioRecorder {
         targetFrames: Int,
         destOffset: Int = 0
     ) {
-        for ch in 0..<bufferCount {
-            guard ch < 2 else { break }
+        // Process up to the number of buffers requested or available, ensuring we don't go out of bounds
+        let channelsToProcess = min(bufferCount, buffers.count)
+
+        for ch in 0..<channelsToProcess {
             let destBuffer = buffers[ch]
             if let dest = destBuffer.mData?.assumingMemoryBound(to: Float.self) {
                 memset(dest.advanced(by: destOffset), 0, targetFrames * MemoryLayout<Float>.size)
