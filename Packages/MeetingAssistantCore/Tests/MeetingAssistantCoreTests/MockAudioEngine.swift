@@ -356,9 +356,9 @@ final class MockAudioEngineTests: XCTestCase {
         XCTAssertFalse(format.isInterleaved)
     }
 
-    func testMixerNodeTapInstallation() {
+    func testMixerNodeTapInstallation() throws {
         var tapCalled = false
-        let buffer = try! createTestBuffer(frameCount: 1_024)
+        let buffer = try createTestBuffer(frameCount: 1_024)
 
         mockMixer.installTap(onBus: 0, bufferSize: 2_048, format: nil) { _, _ in
             tapCalled = true
@@ -368,9 +368,9 @@ final class MockAudioEngineTests: XCTestCase {
         XCTAssertTrue(tapCalled)
     }
 
-    func testMixerNodeTapRemoval() {
+    func testMixerNodeTapRemoval() throws {
         var tapCalled = false
-        let buffer = try! createTestBuffer(frameCount: 1_024)
+        let buffer = try createTestBuffer(frameCount: 1_024)
 
         mockMixer.installTap(onBus: 0, bufferSize: 2_048, format: nil) { _, _ in
             tapCalled = true

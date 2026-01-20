@@ -13,29 +13,29 @@ final class AudioRecorderTests: XCTestCase {
         try await super.setUp()
 
         // Criar mocks
-        self.mockEngine = MockAudioEngine()
-        self.mockWorker = MockAudioRecordingWorker()
+        mockEngine = MockAudioEngine()
+        mockWorker = MockAudioRecordingWorker()
 
         // Injetar dependências - MockAudioEngine não é compatível com AVAudioEngine,
         // então criamos um wrapper ou usamos uma abordagem diferente
         // Por enquanto, vamos usar o AudioRecorder padrão e mockar outras dependências
-        self.audioRecorder = AudioRecorder()
+        audioRecorder = AudioRecorder()
     }
 
     override func tearDown() async throws {
-        if let recorder = self.audioRecorder {
+        if let recorder = audioRecorder {
             await recorder.stopRecording()
         }
-        self.audioRecorder = nil
-        self.mockEngine = nil
-        self.mockWorker = nil
+        audioRecorder = nil
+        mockEngine = nil
+        mockWorker = nil
         try await super.tearDown()
     }
 
     // MARK: - Testes de Estado Inicial
 
     func testInitialState() {
-        guard let audioRecorder = self.audioRecorder else { return XCTFail("AudioRecorder not initialized") }
+        guard let audioRecorder else { return XCTFail("AudioRecorder not initialized") }
         XCTAssertFalse(audioRecorder.isRecording)
         XCTAssertNil(audioRecorder.currentRecordingURL)
         XCTAssertNil(audioRecorder.error)
@@ -47,8 +47,8 @@ final class AudioRecorderTests: XCTestCase {
 
     func testStartRecordingMicrophoneOnly() async throws {
         try XCTSkipIf(true, "Requires hardware permissions - integration test")
-        guard let audioRecorder = self.audioRecorder, let mockEngine = self.mockEngine else { return XCTFail("Components not initialized") }
-        let outputURL = self.createTemporaryURL()
+        guard let audioRecorder, let mockEngine else { return XCTFail("Components not initialized") }
+        let outputURL = createTemporaryURL()
 
         try await audioRecorder.startRecording(to: outputURL, source: .microphone, retryCount: 0)
 
@@ -59,8 +59,8 @@ final class AudioRecorderTests: XCTestCase {
 
     func testStartRecordingSystemAudioOnly() async throws {
         try XCTSkipIf(true, "Requires hardware permissions - integration test")
-        guard let audioRecorder = self.audioRecorder, let mockEngine = self.mockEngine else { return XCTFail("Components not initialized") }
-        let outputURL = self.createTemporaryURL()
+        guard let audioRecorder, let mockEngine else { return XCTFail("Components not initialized") }
+        let outputURL = createTemporaryURL()
 
         try await audioRecorder.startRecording(to: outputURL, source: .system, retryCount: 0)
 
@@ -71,8 +71,8 @@ final class AudioRecorderTests: XCTestCase {
 
     func testStartRecordingAllSources() async throws {
         try XCTSkipIf(true, "Requires hardware permissions - integration test")
-        guard let audioRecorder = self.audioRecorder, let mockEngine = self.mockEngine else { return XCTFail("Components not initialized") }
-        let outputURL = self.createTemporaryURL()
+        guard let audioRecorder, let mockEngine else { return XCTFail("Components not initialized") }
+        let outputURL = createTemporaryURL()
 
         try await audioRecorder.startRecording(to: outputURL, source: .all, retryCount: 0)
 
@@ -83,9 +83,9 @@ final class AudioRecorderTests: XCTestCase {
 
     func testStartRecordingEngineFailure() async throws {
         try XCTSkipIf(true, "Requires hardware permissions - integration test")
-        guard let audioRecorder = self.audioRecorder, let mockEngine = self.mockEngine else { return XCTFail("Components not initialized") }
+        guard let audioRecorder, let mockEngine else { return XCTFail("Components not initialized") }
         mockEngine.shouldFailStart = true
-        let outputURL = self.createTemporaryURL()
+        let outputURL = createTemporaryURL()
 
         do {
             try await audioRecorder.startRecording(to: outputURL, source: .microphone, retryCount: 0)
@@ -100,8 +100,8 @@ final class AudioRecorderTests: XCTestCase {
 
     func testStopRecording() async throws {
         try XCTSkipIf(true, "Requires hardware permissions - integration test")
-        guard let audioRecorder = self.audioRecorder, let mockEngine = self.mockEngine else { return XCTFail("Components not initialized") }
-        let outputURL = self.createTemporaryURL()
+        guard let audioRecorder, let mockEngine else { return XCTFail("Components not initialized") }
+        let outputURL = createTemporaryURL()
 
         try await audioRecorder.startRecording(to: outputURL, source: .microphone, retryCount: 0)
         XCTAssertTrue(audioRecorder.isRecording)
@@ -115,7 +115,7 @@ final class AudioRecorderTests: XCTestCase {
     }
 
     func testStopRecordingWhenNotRecording() async {
-        guard let audioRecorder = self.audioRecorder else { return XCTFail("AudioRecorder not initialized") }
+        guard let audioRecorder else { return XCTFail("AudioRecorder not initialized") }
         let result = await audioRecorder.stopRecording()
         XCTAssertNil(result)
     }
@@ -124,8 +124,8 @@ final class AudioRecorderTests: XCTestCase {
 
     func testStateTransitions() async throws {
         try XCTSkipIf(true, "Requires hardware permissions - integration test")
-        guard let audioRecorder = self.audioRecorder else { return XCTFail("AudioRecorder not initialized") }
-        let outputURL = self.createTemporaryURL()
+        guard let audioRecorder else { return XCTFail("AudioRecorder not initialized") }
+        let outputURL = createTemporaryURL()
 
         // Estado inicial
         XCTAssertFalse(audioRecorder.isRecording)
@@ -146,11 +146,11 @@ final class AudioRecorderTests: XCTestCase {
 
     func testTimingControl() async throws {
         try XCTSkipIf(true, "Requires hardware permissions - integration test")
-        guard let audioRecorder = self.audioRecorder, let mockEngine = self.mockEngine else { return XCTFail("Components not initialized") }
+        guard let audioRecorder, let mockEngine else { return XCTFail("Components not initialized") }
         mockEngine.prepareDelay = 0.05
         mockEngine.startDelay = 0.05
 
-        let outputURL = self.createTemporaryURL()
+        let outputURL = createTemporaryURL()
         let startTime = Date()
 
         try await audioRecorder.startRecording(to: outputURL, source: .microphone, retryCount: 0)
@@ -163,8 +163,8 @@ final class AudioRecorderTests: XCTestCase {
 
     func testEngineStateValidation() async throws {
         try XCTSkipIf(true, "Requires hardware permissions - integration test")
-        guard let audioRecorder = self.audioRecorder, let mockEngine = self.mockEngine else { return XCTFail("Components not initialized") }
-        let outputURL = self.createTemporaryURL()
+        guard let audioRecorder, let mockEngine else { return XCTFail("Components not initialized") }
+        let outputURL = createTemporaryURL()
 
         try await audioRecorder.startRecording(to: outputURL, source: .microphone, retryCount: 0)
         XCTAssertTrue(mockEngine.isRunning)
@@ -177,9 +177,9 @@ final class AudioRecorderTests: XCTestCase {
 
     func testErrorPropagation() async throws {
         try XCTSkipIf(true, "Requires hardware permissions - integration test")
-        guard let audioRecorder = self.audioRecorder, let mockEngine = self.mockEngine else { return XCTFail("Components not initialized") }
+        guard let audioRecorder, let mockEngine else { return XCTFail("Components not initialized") }
         mockEngine.shouldFailPrepare = true
-        let outputURL = self.createTemporaryURL()
+        let outputURL = createTemporaryURL()
 
         do {
             try await audioRecorder.startRecording(to: outputURL, source: .microphone, retryCount: 0)
@@ -194,8 +194,8 @@ final class AudioRecorderTests: XCTestCase {
 
     func testTapInstallation() async throws {
         try XCTSkipIf(true, "Requires hardware permissions - integration test")
-        guard let audioRecorder = self.audioRecorder, let mockEngine = self.mockEngine else { return XCTFail("Components not initialized") }
-        let outputURL = self.createTemporaryURL()
+        guard let audioRecorder, let mockEngine else { return XCTFail("Components not initialized") }
+        let outputURL = createTemporaryURL()
 
         try await audioRecorder.startRecording(to: outputURL, source: .microphone, retryCount: 0)
 
@@ -206,8 +206,8 @@ final class AudioRecorderTests: XCTestCase {
 
     func testSourceNodeAttachment() async throws {
         try XCTSkipIf(true, "Requires hardware permissions - integration test")
-        guard let audioRecorder = self.audioRecorder, let mockEngine = self.mockEngine else { return XCTFail("Components not initialized") }
-        let outputURL = self.createTemporaryURL()
+        guard let audioRecorder, let mockEngine else { return XCTFail("Components not initialized") }
+        let outputURL = createTemporaryURL()
 
         try await audioRecorder.startRecording(to: outputURL, source: .system, retryCount: 0)
 
@@ -219,14 +219,14 @@ final class AudioRecorderTests: XCTestCase {
 
     func testHardwareSampleRateDetection() async throws {
         try XCTSkipIf(true, "Requires hardware permissions - integration test")
-        guard let audioRecorder = self.audioRecorder, let mockEngine = self.mockEngine else { return XCTFail("Components not initialized") }
+        guard let audioRecorder, let mockEngine else { return XCTFail("Components not initialized") }
         // Configurar mock para simular sample rate específica
         guard let mockOutputNode = mockEngine.outputNode as? MockAudioOutputNode else {
             return XCTFail("Failed to cast outputNode to MockAudioOutputNode")
         }
         mockOutputNode.outputFormatSampleRate = 44_100
 
-        let outputURL = self.createTemporaryURL()
+        let outputURL = createTemporaryURL()
 
         try await audioRecorder.startRecording(to: outputURL, source: .microphone, retryCount: 0)
 
@@ -238,8 +238,8 @@ final class AudioRecorderTests: XCTestCase {
 
     func testNodeConnections() async throws {
         try XCTSkipIf(true, "Requires hardware permissions - integration test")
-        guard let audioRecorder = self.audioRecorder, let mockEngine = self.mockEngine else { return XCTFail("Components not initialized") }
-        let outputURL = self.createTemporaryURL()
+        guard let audioRecorder, let mockEngine else { return XCTFail("Components not initialized") }
+        let outputURL = createTemporaryURL()
 
         try await audioRecorder.startRecording(to: outputURL, source: .all, retryCount: 0)
 
@@ -329,18 +329,18 @@ final class MockAudioRecordingWorker {
     var shouldFailStart = false
 
     func start(writingTo url: URL, format: AVAudioFormat, fileFormat: AppSettingsStore.AudioFormat) async throws {
-        if self.shouldFailStart {
+        if shouldFailStart {
             throw NSError(domain: "MockWorker", code: 1, userInfo: [NSLocalizedDescriptionKey: "Mock start failure"])
         }
 
-        self.startCalled = true
-        self.lastURL = url
-        self.lastFormat = format
+        startCalled = true
+        lastURL = url
+        lastFormat = format
     }
 
     func stop() async -> URL? {
-        self.stopCalled = true
-        return self.lastURL
+        stopCalled = true
+        return lastURL
     }
 
     func process(_ buffer: AVAudioPCMBuffer) {

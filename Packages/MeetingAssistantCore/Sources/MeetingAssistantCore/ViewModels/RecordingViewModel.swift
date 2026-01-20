@@ -185,8 +185,8 @@ public class RecordingViewModel: ObservableObject {
     private func updateDisplayDuration() {
         guard let meeting = currentMeeting else { return }
         let duration = Int(meeting.duration)
-        let hours = duration / 3600
-        let minutes = (duration % 3600) / 60
+        let hours = duration / 3_600
+        let minutes = (duration % 3_600) / 60
         let seconds = duration % 60
 
         if hours > 0 {

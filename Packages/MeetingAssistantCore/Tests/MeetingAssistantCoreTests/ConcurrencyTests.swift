@@ -1,7 +1,7 @@
-import XCTest
-import Combine
 import AVFoundation
+import Combine
 @testable import MeetingAssistantCore
+import XCTest
 
 final class ConcurrencyTests: XCTestCase {
     // MARK: - RecordingActor Isolation Tests
@@ -67,7 +67,7 @@ final class ConcurrencyTests: XCTestCase {
 
         // Create test URL and format
         let testURL = URL(fileURLWithPath: "/tmp/test_concurrency.m4a")
-        let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 2)!
+        let format = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 2)!
 
         do {
             try await worker.start(writingTo: testURL, format: format, fileFormat: .m4a)
@@ -81,8 +81,8 @@ final class ConcurrencyTests: XCTestCase {
             for i in 0..<20 {
                 group.addTask {
                     // Create a test buffer
-                    let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 1024)!
-                    buffer.frameLength = 1024
+                    let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 1_024)!
+                    buffer.frameLength = 1_024
 
                     // Fill with test data
                     if let channelData = buffer.floatChannelData {
@@ -130,16 +130,16 @@ final class ConcurrencyTests: XCTestCase {
         let tracker = CallbackTracker()
 
         // Set callbacks
-        worker.setOnPowerUpdate { avg, peak in
+        worker.setOnPowerUpdate { avg, _ in
             Task { await tracker.addPowerUpdate(avg) }
         }
 
-        worker.setOnError { error in
+        worker.setOnError { _ in
             Task { await tracker.incrementErrorCount() }
         }
 
         let testURL = URL(fileURLWithPath: "/tmp/test_callbacks.m4a")
-        let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 2)!
+        let format = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 2)!
 
         do {
             try await worker.start(writingTo: testURL, format: format, fileFormat: .m4a)
@@ -152,8 +152,8 @@ final class ConcurrencyTests: XCTestCase {
         await withTaskGroup(of: Void.self) { group in
             for _ in 0..<10 {
                 group.addTask {
-                    let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 1024)!
-                    buffer.frameLength = 1024
+                    let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 1_024)!
+                    buffer.frameLength = 1_024
 
                     if let channelData = buffer.floatChannelData {
                         for frame in 0..<Int(buffer.frameLength) {
