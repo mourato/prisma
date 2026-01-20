@@ -4,13 +4,13 @@ import XCTest
 
 @MainActor
 final class TranscriptionViewModelTests: XCTestCase {
-    var status: TranscriptionStatus!
-    var viewModel: TranscriptionViewModel!
-    var cancellables: Set<AnyCancellable>!
+    var status: TranscriptionStatus?
+    var viewModel: TranscriptionViewModel?
+    var cancellables: Set<AnyCancellable>?
 
     override func setUp() async throws {
         status = TranscriptionStatus()
-        viewModel = TranscriptionViewModel(status: status)
+        viewModel = TranscriptionViewModel(status: status!)
         cancellables = []
     }
 
@@ -20,14 +20,20 @@ final class TranscriptionViewModelTests: XCTestCase {
         cancellables = nil
     }
 
-    func testInitialState() {
+    func testInitialState() throws {
+        let viewModel = try XCTUnwrap(viewModel)
+
         XCTAssertEqual(viewModel.statusMessage, "Status desconhecido", "Initial status message should be 'Unknown'")
         XCTAssertEqual(viewModel.progressPercentage, 0.0)
         XCTAssertFalse(viewModel.isProcessing)
     }
 
-    func testStateUpdates() {
+    func testStateUpdates() throws {
         // Given
+        let viewModel = try XCTUnwrap(viewModel)
+        let status = try XCTUnwrap(status)
+        var cancellables = try XCTUnwrap(cancellables)
+
         let expectation = XCTestExpectation(description: "ViewModel updates on status change")
 
         viewModel.objectWillChange
@@ -47,8 +53,11 @@ final class TranscriptionViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.statusMessage, "Pronto para transcrever")
     }
 
-    func testProcessingState() {
+    func testProcessingState() throws {
         // Given
+        let viewModel = try XCTUnwrap(viewModel)
+        let status = try XCTUnwrap(status)
+
         status.updateServiceState(.connected)
         status.updateModelState(.loaded)
 
@@ -62,7 +71,11 @@ final class TranscriptionViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.statusMessage.contains("50%"))
     }
 
-    func testErrorState() {
+    func testErrorState() throws {
+        // Given
+        let viewModel = try XCTUnwrap(viewModel)
+        let status = try XCTUnwrap(status)
+
         // When
         status.recordError(.serviceUnavailable)
 

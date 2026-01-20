@@ -4,27 +4,34 @@ import XCTest
 
 @MainActor
 final class RecordingManagerTests: XCTestCase {
-    var manager: RecordingManager!
-    var mockMic: MockAudioRecorder!
-    var mockSystem: MockAudioRecorder!
-    var mockTranscription: MockTranscriptionClient!
-    var mockPostProcessing: MockPostProcessingService!
-    var mockStorage: MockStorageService!
+    var manager: RecordingManager?
+    var mockMic: MockAudioRecorder?
+    var mockSystem: MockAudioRecorder?
+    var mockTranscription: MockTranscriptionClient?
+    var mockPostProcessing: MockPostProcessingService?
+    var mockStorage: MockStorageService?
 
     override func setUp() async throws {
         try await super.setUp()
-        mockMic = MockAudioRecorder()
-        mockSystem = MockAudioRecorder()
-        mockTranscription = MockTranscriptionClient()
-        mockPostProcessing = MockPostProcessingService()
-        mockStorage = MockStorageService()
+        // Initialize mocks locally first to ensure they are available for manager init
+        let mic = MockAudioRecorder()
+        let system = MockAudioRecorder()
+        let transcription = MockTranscriptionClient()
+        let postProcessing = MockPostProcessingService()
+        let storage = MockStorageService()
+
+        mockMic = mic
+        mockSystem = system
+        mockTranscription = transcription
+        mockPostProcessing = postProcessing
+        mockStorage = storage
 
         manager = RecordingManager(
-            micRecorder: mockMic,
-            systemRecorder: mockSystem,
-            transcriptionClient: mockTranscription,
-            postProcessingService: mockPostProcessing,
-            storage: mockStorage
+            micRecorder: mic,
+            systemRecorder: system,
+            transcriptionClient: transcription,
+            postProcessingService: postProcessing,
+            storage: storage
         )
     }
 
@@ -40,18 +47,26 @@ final class RecordingManagerTests: XCTestCase {
 
     // MARK: - Basic Tests
 
-    func testInitialization() {
+    func testInitialization() throws {
+        let manager = try XCTUnwrap(manager)
         XCTAssertNotNil(manager)
         XCTAssertFalse(manager.isRecording)
         XCTAssertFalse(manager.isTranscribing)
     }
 
-    func testStorageServiceUsage() async {
+    func testStorageServiceUsage() async throws {
+        let manager = try XCTUnwrap(manager)
+        let mockStorage = try XCTUnwrap(mockStorage)
+
         await manager.startRecording()
         XCTAssertTrue(mockStorage.createRecordingURLCalled)
     }
 
-    func testCheckPermissions_WhenBothGranted() async {
+    func testCheckPermissions_WhenBothGranted() async throws {
+        let manager = try XCTUnwrap(manager)
+        let mockMic = try XCTUnwrap(mockMic)
+        let mockSystem = try XCTUnwrap(mockSystem)
+
         mockMic.permissionGranted = true
         mockSystem.permissionGranted = true
 
@@ -60,7 +75,11 @@ final class RecordingManagerTests: XCTestCase {
         XCTAssertTrue(manager.hasRequiredPermissions)
     }
 
-    func testCheckPermissions_WhenOneDenied() async {
+    func testCheckPermissions_WhenOneDenied() async throws {
+        let manager = try XCTUnwrap(manager)
+        let mockMic = try XCTUnwrap(mockMic)
+        let mockSystem = try XCTUnwrap(mockSystem)
+
         mockMic.permissionGranted = true
         mockSystem.permissionGranted = false
 
@@ -69,7 +88,11 @@ final class RecordingManagerTests: XCTestCase {
         XCTAssertFalse(manager.hasRequiredPermissions)
     }
 
-    func testStartRecording_Success() async {
+    func testStartRecording_Success() async throws {
+        let manager = try XCTUnwrap(manager)
+        let mockMic = try XCTUnwrap(mockMic)
+        let mockSystem = try XCTUnwrap(mockSystem)
+
         mockMic.permissionGranted = true
         mockSystem.permissionGranted = true
 
@@ -79,7 +102,10 @@ final class RecordingManagerTests: XCTestCase {
         XCTAssertTrue(mockMic.startRecordingCalled)
     }
 
-    func testStartRecording_FailsIfAlreadyRecording() async {
+    func testStartRecording_FailsIfAlreadyRecording() async throws {
+        let manager = try XCTUnwrap(manager)
+        let mockMic = try XCTUnwrap(mockMic)
+
         await manager.startRecording()
 
         mockMic.startRecordingCalled = false
@@ -91,8 +117,11 @@ final class RecordingManagerTests: XCTestCase {
 
     // MARK: - Error Handling Tests
 
-    func testStartRecording_FailsWhenSystemRecorderFails() async {
+    func testStartRecording_FailsWhenSystemRecorderFails() async throws {
         // Given
+        let mockMic = try XCTUnwrap(mockMic)
+        let mockSystem = try XCTUnwrap(mockSystem)
+
         mockMic.permissionGranted = true
         mockSystem.permissionGranted = true
         mockMic.shouldFailStart = true
@@ -107,8 +136,12 @@ final class RecordingManagerTests: XCTestCase {
         }
     }
 
-    func testStopRecording_HandlesErrorGracefully() async {
+    func testStopRecording_HandlesErrorGracefully() async throws {
         // Given
+        let manager = try XCTUnwrap(manager)
+        let mockMic = try XCTUnwrap(mockMic)
+        let mockSystem = try XCTUnwrap(mockSystem)
+
         mockMic.permissionGranted = true
         mockSystem.permissionGranted = true
 
@@ -123,6 +156,7 @@ final class RecordingManagerTests: XCTestCase {
 
     func testTranscription_FailsWithInvalidURL() async throws {
         // Given
+        let mockTranscription = try XCTUnwrap(mockTranscription)
         let invalidURL = URL(fileURLWithPath: "/nonexistent/path/file.m4a")
         mockTranscription.shouldFailTranscription = true
 
@@ -138,6 +172,8 @@ final class RecordingManagerTests: XCTestCase {
 
     func testMockStorageService_LoadTranscriptions() async throws {
         // Given
+        let mockStorage = try XCTUnwrap(mockStorage)
+
         let mockTranscription = Transcription(
             meeting: Meeting(app: .unknown),
             text: "Test transcription",
@@ -160,6 +196,7 @@ final class RecordingManagerTests: XCTestCase {
 
     func testMockTranscriptionClient_CallTracking() async throws {
         // Given
+        let mockTranscription = try XCTUnwrap(mockTranscription)
         let audioURL = URL(fileURLWithPath: "/tmp/test.m4a")
 
         // When
@@ -172,6 +209,7 @@ final class RecordingManagerTests: XCTestCase {
 
     func testMockAudioRecorder_CallTracking() async throws {
         // Given
+        let mockMic = try XCTUnwrap(mockMic)
         let audioURL = URL(fileURLWithPath: "/tmp/test.m4a")
 
         // When
