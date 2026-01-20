@@ -285,9 +285,9 @@ enum MockAudioFactory {
 import XCTest
 
 final class MockAudioEngineTests: XCTestCase {
-    var mockEngine: MockAudioEngine!
-    var mockMixer: MockAudioMixerNode!
-    var mockSource: MockAudioSourceNode!
+    var mockEngine: MockAudioEngine?
+    var mockMixer: MockAudioMixerNode?
+    var mockSource: MockAudioSourceNode?
 
     override func setUp() {
         super.setUp()
@@ -303,19 +303,26 @@ final class MockAudioEngineTests: XCTestCase {
         super.tearDown()
     }
 
-    func testInitialState() {
+    func testInitialState() throws {
+        let mockEngine = try XCTUnwrap(mockEngine)
         XCTAssertFalse(mockEngine.isRunning)
         XCTAssertNotNil(mockEngine.mainMixerNode)
         XCTAssertNotNil(mockEngine.outputNode)
         XCTAssertNotNil(mockEngine.inputNode)
     }
 
-    func testAttachNode() {
+    func testAttachNode() throws {
+        let mockEngine = try XCTUnwrap(mockEngine)
+        let mockSource = try XCTUnwrap(mockSource)
         mockEngine.attach(mockSource)
         // Não há propriedade pública para verificar, mas não deve crash
     }
 
-    func testConnectNodes() {
+    func testConnectNodes() throws {
+        let mockEngine = try XCTUnwrap(mockEngine)
+        let mockSource = try XCTUnwrap(mockSource)
+        let mockMixer = try XCTUnwrap(mockMixer)
+
         let format = MockAudioFormat(
             sampleRate: 48_000,
             channelCount: 2,
@@ -327,11 +334,13 @@ final class MockAudioEngineTests: XCTestCase {
     }
 
     func testPrepareSuccess() throws {
+        let mockEngine = try XCTUnwrap(mockEngine)
         try mockEngine.prepare()
         // Não deve lançar erro
     }
 
-    func testPrepareFailure() {
+    func testPrepareFailure() throws {
+        let mockEngine = try XCTUnwrap(mockEngine)
         mockEngine.shouldFailPrepare = true
 
         XCTAssertThrowsError(try mockEngine.prepare()) { error in
@@ -341,11 +350,13 @@ final class MockAudioEngineTests: XCTestCase {
     }
 
     func testStartSuccess() throws {
+        let mockEngine = try XCTUnwrap(mockEngine)
         try mockEngine.start()
         XCTAssertTrue(mockEngine.isRunning)
     }
 
-    func testStartFailure() {
+    func testStartFailure() throws {
+        let mockEngine = try XCTUnwrap(mockEngine)
         mockEngine.shouldFailStart = true
 
         XCTAssertThrowsError(try mockEngine.start()) { error in
@@ -356,6 +367,7 @@ final class MockAudioEngineTests: XCTestCase {
     }
 
     func testStop() throws {
+        let mockEngine = try XCTUnwrap(mockEngine)
         try mockEngine.start()
         XCTAssertTrue(mockEngine.isRunning)
 
@@ -364,6 +376,9 @@ final class MockAudioEngineTests: XCTestCase {
     }
 
     func testReset() throws {
+        let mockEngine = try XCTUnwrap(mockEngine)
+        let mockSource = try XCTUnwrap(mockSource)
+
         try mockEngine.start()
         mockEngine.attach(mockSource)
         XCTAssertTrue(mockEngine.isRunning)
@@ -373,6 +388,7 @@ final class MockAudioEngineTests: XCTestCase {
     }
 
     func testTimingControl() throws {
+        let mockEngine = try XCTUnwrap(mockEngine)
         mockEngine.prepareDelay = 0.1
         mockEngine.startDelay = 0.1
 
@@ -385,7 +401,8 @@ final class MockAudioEngineTests: XCTestCase {
         XCTAssertGreaterThan(elapsed, 0.15) // Pelo menos 200ms total
     }
 
-    func testMixerNodeOutputFormat() {
+    func testMixerNodeOutputFormat() throws {
+        let mockMixer = try XCTUnwrap(mockMixer)
         let format = mockMixer.outputFormat(forBus: 0)
         XCTAssertEqual(format.sampleRate, 48_000)
         XCTAssertEqual(format.channelCount, 2)
@@ -394,6 +411,7 @@ final class MockAudioEngineTests: XCTestCase {
     }
 
     func testMixerNodeTapInstallation() throws {
+        let mockMixer = try XCTUnwrap(mockMixer)
         var tapCalled = false
         let buffer = try createTestBuffer(frameCount: 1_024)
 
@@ -406,6 +424,7 @@ final class MockAudioEngineTests: XCTestCase {
     }
 
     func testMixerNodeTapRemoval() throws {
+        let mockMixer = try XCTUnwrap(mockMixer)
         var tapCalled = false
         let buffer = try createTestBuffer(frameCount: 1_024)
 
