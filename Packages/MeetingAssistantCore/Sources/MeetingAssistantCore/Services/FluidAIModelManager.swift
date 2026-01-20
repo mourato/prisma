@@ -1,22 +1,35 @@
 @preconcurrency import AVFoundation
+import Combine
 @preconcurrency import FluidAudio
 import Foundation
 import os.log
 
 /// Manages the lifecycle of FluidAudio models (Download, Load, Initialize).
 @MainActor
-class FluidAIModelManager: ObservableObject {
-    static let shared = FluidAIModelManager()
+public protocol AIModelService: ObservableObject {
+    var modelState: FluidAIModelManager.ModelState { get }
+    var modelStatePublisher: AnyPublisher<FluidAIModelManager.ModelState, Never> { get }
+    func loadModels() async
+}
+
+/// Manages the lifecycle of FluidAudio models (Download, Load, Initialize).
+@MainActor
+public class FluidAIModelManager: ObservableObject, AIModelService {
+    public static let shared = FluidAIModelManager()
 
     private let logger = Logger(subsystem: "MeetingAssistant", category: "FluidAIModelManager")
 
-    @Published var modelState: ModelState = .unloaded
-    @Published var progress: Double = 0.0
+    @Published public var modelState: ModelState = .unloaded
+    public var modelStatePublisher: AnyPublisher<ModelState, Never> {
+        $modelState.eraseToAnyPublisher()
+    }
+
+    @Published public var progress: Double = 0.0
 
     private(set) var asrManager: AsrManager?
     private(set) var diarizerManager: OfflineDiarizerManager?
 
-    enum ModelState: String {
+    public enum ModelState: String {
         case unloaded
         case downloading
         case loading
@@ -27,7 +40,7 @@ class FluidAIModelManager: ObservableObject {
     private init() {}
 
     /// Loads the ASR models. Downloads them if not present.
-    func loadModels() async {
+    public func loadModels() async {
         guard modelState != .loaded, modelState != .loading else { return }
 
         modelState = .downloading
@@ -181,13 +194,13 @@ class FluidAIModelManager: ObservableObject {
     private func convertTo16kHz(buffer: AVAudioPCMBuffer) throws -> AVAudioPCMBuffer {
         guard
             let targetFormat = AVAudioFormat(
-                commonFormat: .pcmFormatFloat32, sampleRate: 16_000, channels: 1, interleaved: false
+                commonFormat: .pcmFormatFloat32, sampleRate: 16000, channels: 1, interleaved: false
             )
         else {
             throw FluidError.conversionFailed
         }
 
-        if buffer.format.sampleRate == 16_000, buffer.format.channelCount == 1 {
+        if buffer.format.sampleRate == 16000, buffer.format.channelCount == 1 {
             return buffer
         }
 

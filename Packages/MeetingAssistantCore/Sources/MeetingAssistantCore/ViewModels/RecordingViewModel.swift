@@ -7,6 +7,7 @@ public class RecordingViewModel: ObservableObject {
     // MARK: - Dependencies
 
     private let recordingManager: any RecordingServiceProtocol
+    private let modelManager: any AIModelService
     private var cancellables = Set<AnyCancellable>()
 
     // MARK: - Published Properties
@@ -64,8 +65,12 @@ public class RecordingViewModel: ObservableObject {
 
     // MARK: - Initialization
 
-    public init(recordingManager: some RecordingServiceProtocol) {
+    public init(
+        recordingManager: some RecordingServiceProtocol,
+        modelManager: some AIModelService = FluidAIModelManager.shared
+    ) {
         self.recordingManager = recordingManager
+        self.modelManager = modelManager
 
         // Initialize child ViewModels
         transcriptionViewModel = TranscriptionViewModel(status: recordingManager.transcriptionStatus)
@@ -151,9 +156,9 @@ public class RecordingViewModel: ObservableObject {
         // Assuming they are constant references in RecordingManager for now based on previous code.
 
         // Observe model state
-        FluidAIModelManager.shared.$modelState
+        modelManager.modelStatePublisher
             .receive(on: DispatchQueue.main)
-            .map { $0 == .loaded }
+            .map { $0 == FluidAIModelManager.ModelState.loaded }
             .assign(to: &$isModelLoaded)
 
         // Observe permission state from child ViewModel
