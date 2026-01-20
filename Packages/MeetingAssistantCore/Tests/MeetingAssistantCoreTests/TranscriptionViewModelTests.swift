@@ -1,44 +1,44 @@
-import XCTest
 import Combine
 @testable import MeetingAssistantCore
+import XCTest
 
 @MainActor
 final class TranscriptionViewModelTests: XCTestCase {
     var status: TranscriptionStatus!
     var viewModel: TranscriptionViewModel!
     var cancellables: Set<AnyCancellable>!
-    
+
     override func setUp() async throws {
         status = TranscriptionStatus()
         viewModel = TranscriptionViewModel(status: status)
         cancellables = []
     }
-    
+
     override func tearDown() async throws {
         status = nil
         viewModel = nil
         cancellables = nil
     }
-    
+
     func testInitialState() {
         XCTAssertEqual(viewModel.statusMessage, "Status desconhecido", "Initial status message should be 'Unknown'")
         XCTAssertEqual(viewModel.progressPercentage, 0.0)
         XCTAssertFalse(viewModel.isProcessing)
     }
-    
+
     func testStateUpdates() {
         // Given
         let expectation = XCTestExpectation(description: "ViewModel updates on status change")
-        
+
         viewModel.objectWillChange
             .sink { expectation.fulfill() }
             .store(in: &cancellables)
-        
+
         // When
         status.updateServiceState(.connected)
         status.updateModelState(.loaded, device: "mps")
         status.resetToIdle()
-        
+
         // Then
         wait(for: [expectation], timeout: 1.0)
         XCTAssertEqual(viewModel.serviceState, .connected)
@@ -46,26 +46,26 @@ final class TranscriptionViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.isReady)
         XCTAssertEqual(viewModel.statusMessage, "Pronto para transcrever")
     }
-    
+
     func testProcessingState() {
         // Given
         status.updateServiceState(.connected)
         status.updateModelState(.loaded)
-        
+
         // When
         status.beginTranscription(audioDuration: 60)
         status.updateProgress(phase: .processing, percentage: 50.0)
-        
+
         // Then
         XCTAssertTrue(viewModel.isProcessing)
         XCTAssertEqual(viewModel.progressPercentage, 50.0)
         XCTAssertTrue(viewModel.statusMessage.contains("50%"))
     }
-    
+
     func testErrorState() {
         // When
         status.recordError(.serviceUnavailable)
-        
+
         // Then
         XCTAssertTrue(viewModel.hasBlockingError)
         XCTAssertEqual(viewModel.lastError, .serviceUnavailable)

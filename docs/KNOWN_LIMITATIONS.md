@@ -28,6 +28,8 @@ This document tracks known limitations for features and initiatives within the p
   * *Context*: [2025-12-27] Fixed by introducing `PartialBufferState` to track unconsumed frames across render cycles.
 
 ### Testing & Concurrency Validation
+* **(RESOLVED) AudioBufferQueue Deadlock (Issue #30)**: Tests used to hang at `testDequeue_EmptyQueueAfterDequeuing` due to a deadlock in `_isEmpty` calling `isEmpty` which re-acquired the lock (non-reentrant).
+  * *Context*: [2026-01-19] Fixed by using `state.withLock { $0.count == 0 }` directly in the `isEmpty` property and ensuring all lock access is single-acquisition.
 * **Concurrency Test Coverage**: Added comprehensive concurrency tests to validate thread safety and Actor isolation.
   * *Context*: [2026-01-10] Implemented `ConcurrencyTests.swift` with tests for `RecordingActor` isolation, `AudioRecordingWorker` concurrent buffer processing, and stress testing under high concurrency loads. Tests validate absence of race conditions and proper state consistency across multiple threads.
 * **XCTest Runner Instability (Background Environment)**: The XCTest runner in some background/headless environments (like CI or terminal-only sessions) may experience silent process exits when executing tests that combine `Swift Concurrency (Actors)`, `AVFoundation`, and `XCTest.measure` blocks.

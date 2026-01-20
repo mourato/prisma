@@ -35,10 +35,9 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
     /// Strong reference to prevent premature deallocation during capture
     private var streamOutputHolder: Any?
 
-    /// Callback for received audio buffers (Thread-safe, called on background queue)
     // MARK: - Public API
 
-    // MARK: - Public API
+    /// Callback for received audio buffers (Thread-safe, called on background queue)
 
     /// Thread-safe storage for the audio buffer callback
     private class CallbackStorage: @unchecked Sendable {

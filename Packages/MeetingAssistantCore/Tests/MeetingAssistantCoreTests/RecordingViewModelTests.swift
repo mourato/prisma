@@ -109,7 +109,7 @@ final class RecordingViewModelTests: XCTestCase {
         try XCTSkipIf(true, "Flaky performance test")
         // Baseline: Status text computation should be very fast
         measure(metrics: [XCTClockMetric()]) {
-            for _ in 0..<1000 {
+            for _ in 0..<1_000 {
                 _ = viewModel.statusText
             }
         }
