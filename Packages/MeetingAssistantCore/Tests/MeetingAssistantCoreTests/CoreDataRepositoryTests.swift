@@ -1,9 +1,9 @@
 // CoreDataRepositoryTests - Testes de integração para repositórios CoreData
 // Usa banco de dados em memória para isolamento
 
-import XCTest
 import CoreData
 @testable import MeetingAssistantCore
+import XCTest
 
 final class CoreDataRepositoryTests: XCTestCase {
     var stack: CoreDataStack!
@@ -85,7 +85,7 @@ final class CoreDataRepositoryTests: XCTestCase {
             id: UUID(),
             meeting: meeting,
             segments: [
-                TranscriptionEntity.Segment(speaker: "A", text: "Hi", startTime: 0, endTime: 1)
+                TranscriptionEntity.Segment(speaker: "A", text: "Hi", startTime: 0, endTime: 1),
             ],
             text: "Hi",
             rawText: "Hi"

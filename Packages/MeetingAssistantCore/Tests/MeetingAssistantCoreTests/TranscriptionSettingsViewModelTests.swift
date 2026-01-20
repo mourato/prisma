@@ -9,15 +9,15 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
     var cancellables: Set<AnyCancellable>!
 
     override func setUp() async throws {
-        self.storage = MockStorageService()
-        self.viewModel = TranscriptionSettingsViewModel(storage: self.storage)
-        self.cancellables = []
+        storage = MockStorageService()
+        viewModel = TranscriptionSettingsViewModel(storage: storage)
+        cancellables = []
     }
 
     override func tearDown() async throws {
-        self.storage = nil
-        self.viewModel = nil
-        self.cancellables = nil
+        storage = nil
+        viewModel = nil
+        cancellables = nil
     }
 
     func testLoadTranscriptions() async throws {
@@ -25,7 +25,7 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
         // Given
         let mockId1 = UUID()
         let mockId2 = UUID()
-        self.storage.mockTranscriptions = [
+        storage.mockTranscriptions = [
             Transcription(
                 id: mockId1,
                 meeting: Meeting(id: mockId1, app: .microsoftTeams, startTime: Date(), endTime: Date().addingTimeInterval(60)),
@@ -43,17 +43,17 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
         ]
 
         // When
-        await self.viewModel.loadTranscriptions()
+        await viewModel.loadTranscriptions()
 
         // Then
-        XCTAssertEqual(self.viewModel.transcriptions.count, 2)
-        XCTAssertEqual(self.viewModel.transcriptions[0].id, mockId1)
+        XCTAssertEqual(viewModel.transcriptions.count, 2)
+        XCTAssertEqual(viewModel.transcriptions[0].id, mockId1)
         // appRawValue for Teams is "microsoft-teams" (from MeetingApp enum)
-        XCTAssertEqual(self.viewModel.transcriptions[0].appRawValue, MeetingApp.microsoftTeams.rawValue)
-        XCTAssertEqual(self.viewModel.transcriptions[0].duration, 60)
-        XCTAssertEqual(self.viewModel.transcriptions[1].id, mockId2)
-        XCTAssertEqual(self.viewModel.transcriptions[1].appRawValue, MeetingApp.zoom.rawValue)
-        XCTAssertEqual(self.viewModel.transcriptions[1].duration, 120)
+        XCTAssertEqual(viewModel.transcriptions[0].appRawValue, MeetingApp.microsoftTeams.rawValue)
+        XCTAssertEqual(viewModel.transcriptions[0].duration, 60)
+        XCTAssertEqual(viewModel.transcriptions[1].id, mockId2)
+        XCTAssertEqual(viewModel.transcriptions[1].appRawValue, MeetingApp.zoom.rawValue)
+        XCTAssertEqual(viewModel.transcriptions[1].duration, 120)
     }
 
     func testSelectTranscriptionLoadsFullData() async {
@@ -66,19 +66,19 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
             text: "Hello",
             rawText: "Hello"
         )
-        self.storage.mockTranscriptions = [fullTranscription]
-        await self.viewModel.loadTranscriptions()
+        storage.mockTranscriptions = [fullTranscription]
+        await viewModel.loadTranscriptions()
 
         // When
-        self.viewModel.selectedId = mockId
+        viewModel.selectedId = mockId
 
         // Wait for async loading
         try? await Task.sleep(nanoseconds: 100_000_000) // 0.1s
 
         // Then
-        XCTAssertNotNil(self.viewModel.selectedTranscription)
-        XCTAssertEqual(self.viewModel.selectedTranscription?.id, mockId)
-        XCTAssertEqual(self.viewModel.selectedTranscription?.segments.count, 1)
+        XCTAssertNotNil(viewModel.selectedTranscription)
+        XCTAssertEqual(viewModel.selectedTranscription?.id, mockId)
+        XCTAssertEqual(viewModel.selectedTranscription?.segments.count, 1)
     }
 
     func testMatchSourceFilter() async {
@@ -110,21 +110,21 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
             duration: 120
         )
 
-        self.viewModel.transcriptions = [metadata1, metadata2]
+        viewModel.transcriptions = [metadata1, metadata2]
 
         // When/Then
         // Test .all
-        self.viewModel.sourceFilter = .all
-        XCTAssertEqual(self.viewModel.filteredTranscriptions.count, 2)
+        viewModel.sourceFilter = .all
+        XCTAssertEqual(viewModel.filteredTranscriptions.count, 2)
 
         // Test .dictations (appRawValue != importedFile)
-        self.viewModel.sourceFilter = .dictations
-        XCTAssertEqual(self.viewModel.filteredTranscriptions.count, 1)
-        XCTAssertEqual(self.viewModel.filteredTranscriptions.first?.id, mockId1)
+        viewModel.sourceFilter = .dictations
+        XCTAssertEqual(viewModel.filteredTranscriptions.count, 1)
+        XCTAssertEqual(viewModel.filteredTranscriptions.first?.id, mockId1)
 
         // Test .manualImports (appRawValue == importedFile)
-        self.viewModel.sourceFilter = .manualImports
-        XCTAssertEqual(self.viewModel.filteredTranscriptions.count, 1)
-        XCTAssertEqual(self.viewModel.filteredTranscriptions.first?.id, mockId2)
+        viewModel.sourceFilter = .manualImports
+        XCTAssertEqual(viewModel.filteredTranscriptions.count, 1)
+        XCTAssertEqual(viewModel.filteredTranscriptions.first?.id, mockId2)
     }
 }

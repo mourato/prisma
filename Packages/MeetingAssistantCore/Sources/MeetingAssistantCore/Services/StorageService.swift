@@ -166,7 +166,7 @@ public final class FileSystemStorageService: StorageService {
             decoder.dateDecodingStrategy = .iso8601
 
             for file in jsonFiles {
-                if let transcription = try? FileSystemStorageService.decodeTranscriptionSync(from: file, using: decoder) {
+                if let transcription = FileSystemStorageService.decodeTranscriptionSync(from: file, using: decoder) {
                     transcriptions.append(transcription)
                 }
             }
