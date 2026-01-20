@@ -7,22 +7,22 @@ final class AudioBufferQueueTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        self.sut = AudioBufferQueue(capacity: 5)
+        sut = AudioBufferQueue(capacity: 5)
     }
 
     override func tearDown() {
-        self.sut = nil
+        sut = nil
         super.tearDown()
     }
 
     // MARK: - Initial State
 
     func testInitialState_IsEmpty() {
-        XCTAssertTrue(self.sut.isEmpty)
+        XCTAssertTrue(sut.isEmpty)
     }
 
     func testInitialState_StatsAreZero() {
-        let stats = self.sut.stats
+        let stats = sut.stats
 
         XCTAssertEqual(stats.count, 0)
         XCTAssertEqual(stats.dropped, 0)
@@ -40,10 +40,10 @@ final class AudioBufferQueueTests: XCTestCase {
     func testEnqueue_IncreasesCount() throws {
         let buffer = try createTestBuffer(frameCount: 512)
 
-        self.sut.enqueue(buffer)
+        sut.enqueue(buffer)
 
-        XCTAssertFalse(self.sut.isEmpty)
-        XCTAssertEqual(self.sut.stats.count, 1)
+        XCTAssertFalse(sut.isEmpty)
+        XCTAssertEqual(sut.stats.count, 1)
     }
 
     func testEnqueue_MultipleBuffers_IncreasesCount() throws {
@@ -51,26 +51,26 @@ final class AudioBufferQueueTests: XCTestCase {
         let buffer2 = try createTestBuffer(frameCount: 512)
         let buffer3 = try createTestBuffer(frameCount: 512)
 
-        self.sut.enqueue(buffer1)
-        self.sut.enqueue(buffer2)
-        self.sut.enqueue(buffer3)
+        sut.enqueue(buffer1)
+        sut.enqueue(buffer2)
+        sut.enqueue(buffer3)
 
-        XCTAssertEqual(self.sut.stats.count, 3)
+        XCTAssertEqual(sut.stats.count, 3)
     }
 
     // MARK: - Dequeue
 
     func testDequeue_WhenEmpty_ReturnsNil() {
-        let result = self.sut.dequeue()
+        let result = sut.dequeue()
 
         XCTAssertNil(result)
     }
 
     func testDequeue_ReturnsBuffer() throws {
         let buffer = try createTestBuffer(frameCount: 512)
-        self.sut.enqueue(buffer)
+        sut.enqueue(buffer)
 
-        let result = self.sut.dequeue()
+        let result = sut.dequeue()
 
         XCTAssertNotNil(result)
         XCTAssertEqual(result?.frameLength, buffer.frameLength)
@@ -78,29 +78,29 @@ final class AudioBufferQueueTests: XCTestCase {
 
     func testDequeue_EmptyQueueAfterDequeuing() throws {
         let buffer = try createTestBuffer(frameCount: 512)
-        self.sut.enqueue(buffer)
+        sut.enqueue(buffer)
 
-        _ = self.sut.dequeue()
+        _ = sut.dequeue()
 
-        XCTAssertTrue(self.sut.isEmpty)
+        XCTAssertTrue(sut.isEmpty)
     }
 
     func testDequeue_MultipleBuffers_FIFOOrder() throws {
         let buffer1 = try createTestBuffer(frameCount: 256)
         let buffer2 = try createTestBuffer(frameCount: 512)
-        let buffer3 = try createTestBuffer(frameCount: 1024)
+        let buffer3 = try createTestBuffer(frameCount: 1_024)
 
-        self.sut.enqueue(buffer1)
-        self.sut.enqueue(buffer2)
-        self.sut.enqueue(buffer3)
+        sut.enqueue(buffer1)
+        sut.enqueue(buffer2)
+        sut.enqueue(buffer3)
 
-        let result1 = self.sut.dequeue()
-        let result2 = self.sut.dequeue()
-        let result3 = self.sut.dequeue()
+        let result1 = sut.dequeue()
+        let result2 = sut.dequeue()
+        let result3 = sut.dequeue()
 
         XCTAssertEqual(result1?.frameLength, 256)
         XCTAssertEqual(result2?.frameLength, 512)
-        XCTAssertEqual(result3?.frameLength, 1024)
+        XCTAssertEqual(result3?.frameLength, 1_024)
     }
 
     // MARK: - Buffer Overflow (Drop Oldest)
@@ -109,10 +109,10 @@ final class AudioBufferQueueTests: XCTestCase {
         let buffers = try (0..<6).map { try self.createTestBuffer(frameCount: AVAudioFrameCount($0 + 1) * 256) }
 
         for buffer in buffers {
-            self.sut.enqueue(buffer)
+            sut.enqueue(buffer)
         }
 
-        XCTAssertEqual(self.sut.stats.count, 5)
+        XCTAssertEqual(sut.stats.count, 5)
     }
 
     func testEnqueue_WhenFull_DropsOldestAndIncrementsDroppedCounter() throws {
@@ -120,15 +120,15 @@ final class AudioBufferQueueTests: XCTestCase {
 
         // Fill the queue to capacity
         for _ in 0..<5 {
-            self.sut.enqueue(buffer)
+            sut.enqueue(buffer)
         }
 
-        let statsBeforeOverflow = self.sut.stats
+        let statsBeforeOverflow = sut.stats
 
         // Add one more to trigger overflow
-        self.sut.enqueue(buffer)
+        sut.enqueue(buffer)
 
-        let statsAfterOverflow = self.sut.stats
+        let statsAfterOverflow = sut.stats
 
         XCTAssertEqual(statsAfterOverflow.count, 5)
         XCTAssertGreaterThan(statsAfterOverflow.dropped, statsBeforeOverflow.dropped)
@@ -138,20 +138,20 @@ final class AudioBufferQueueTests: XCTestCase {
 
     func testClear_ResetsQueue() throws {
         let buffer = try createTestBuffer(frameCount: 512)
-        self.sut.enqueue(buffer)
+        sut.enqueue(buffer)
 
-        self.sut.clear()
+        sut.clear()
 
-        XCTAssertTrue(self.sut.isEmpty)
-        XCTAssertEqual(self.sut.stats.count, 0)
-        XCTAssertEqual(self.sut.stats.dropped, 0)
+        XCTAssertTrue(sut.isEmpty)
+        XCTAssertEqual(sut.stats.count, 0)
+        XCTAssertEqual(sut.stats.dropped, 0)
     }
 
     func testClear_WhenEmpty_RemainsEmpty() {
-        self.sut.clear()
+        sut.clear()
 
-        XCTAssertTrue(self.sut.isEmpty)
-        XCTAssertEqual(self.sut.stats.count, 0)
+        XCTAssertTrue(sut.isEmpty)
+        XCTAssertEqual(sut.stats.count, 0)
     }
 
     // MARK: - Thread Safety
@@ -216,16 +216,16 @@ final class AudioBufferQueueTests: XCTestCase {
     func testStats_ReflectsCorrectCount() throws {
         let buffer = try createTestBuffer(frameCount: 512)
 
-        XCTAssertEqual(self.sut.stats.count, 0)
+        XCTAssertEqual(sut.stats.count, 0)
 
-        self.sut.enqueue(buffer)
-        XCTAssertEqual(self.sut.stats.count, 1)
+        sut.enqueue(buffer)
+        XCTAssertEqual(sut.stats.count, 1)
 
-        self.sut.enqueue(buffer)
-        XCTAssertEqual(self.sut.stats.count, 2)
+        sut.enqueue(buffer)
+        XCTAssertEqual(sut.stats.count, 2)
 
-        _ = self.sut.dequeue()
-        XCTAssertEqual(self.sut.stats.count, 1)
+        _ = sut.dequeue()
+        XCTAssertEqual(sut.stats.count, 1)
     }
 
     // MARK: - Performance Tests

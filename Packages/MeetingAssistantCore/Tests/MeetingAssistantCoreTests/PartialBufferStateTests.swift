@@ -7,18 +7,18 @@ final class PartialBufferStateTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        self.sut = PartialBufferState()
+        sut = PartialBufferState()
     }
 
     override func tearDown() {
-        self.sut = nil
+        sut = nil
         super.tearDown()
     }
 
     // MARK: - Initial State
 
     func testInitialState_HasNoPartialBuffer() {
-        guard let sut = self.sut else { return XCTFail("SUT not initialized") }
+        guard let sut else { return XCTFail("SUT not initialized") }
         XCTAssertFalse(sut.hasPartial)
         XCTAssertEqual(sut.framesRemaining, 0)
     }
@@ -26,7 +26,7 @@ final class PartialBufferStateTests: XCTestCase {
     // MARK: - setBuffer
 
     func testSetBuffer_UpdatesState() throws {
-        guard let sut = self.sut else { return XCTFail("SUT not initialized") }
+        guard let sut else { return XCTFail("SUT not initialized") }
         let buffer = try createTestBuffer(frameCount: 100)
         sut.setBuffer(buffer)
 
@@ -35,7 +35,7 @@ final class PartialBufferStateTests: XCTestCase {
     }
 
     func testSetBuffer_WithOffset_UpdatesState() throws {
-        guard let sut = self.sut else { return XCTFail("SUT not initialized") }
+        guard let sut else { return XCTFail("SUT not initialized") }
         let buffer = try createTestBuffer(frameCount: 100)
         sut.setBuffer(buffer, offset: 25)
 
@@ -44,7 +44,7 @@ final class PartialBufferStateTests: XCTestCase {
     }
 
     func testSetBuffer_WithFullOffset_HasNoRemaining() throws {
-        guard let sut = self.sut else { return XCTFail("SUT not initialized") }
+        guard let sut else { return XCTFail("SUT not initialized") }
         let buffer = try createTestBuffer(frameCount: 100)
         sut.setBuffer(buffer, offset: 100)
 
@@ -55,7 +55,7 @@ final class PartialBufferStateTests: XCTestCase {
     // MARK: - clear
 
     func testClear_ResetsState() throws {
-        guard let sut = self.sut else { return XCTFail("SUT not initialized") }
+        guard let sut else { return XCTFail("SUT not initialized") }
         let buffer = try createTestBuffer(frameCount: 100)
         sut.setBuffer(buffer)
 
@@ -68,7 +68,7 @@ final class PartialBufferStateTests: XCTestCase {
     }
 
     func testClear_WhenEmpty_RemainsEmpty() {
-        guard let sut = self.sut else { return XCTFail("SUT not initialized") }
+        guard let sut else { return XCTFail("SUT not initialized") }
         XCTAssertFalse(sut.hasPartial)
 
         sut.clear()
@@ -80,13 +80,17 @@ final class PartialBufferStateTests: XCTestCase {
     // MARK: - Thread Safety (Basic)
 
     func testConcurrentAccess_DoesNotCrash() throws {
-        try XCTSkipIf(true, "Crash under investigation - Signal 5")
-        let buffer = try createTestBuffer(frameCount: 1000)
-        let iterations = 100
-        let expectation = self.expectation(description: "Concurrent access")
-        expectation.expectedFulfillmentCount = iterations * 2
+        let buffer = try createTestBuffer(frameCount: 1_000)
+        let iterations = 1_000
+        let expectation = expectation(description: "Concurrent access")
+        // 3 operations per iteration
+        expectation.expectedFulfillmentCount = iterations * 3
 
-        guard let sut = self.sut else { return XCTFail("SUT not initialized") }
+        guard let sut else { return XCTFail("SUT not initialized") }
+
+        // Setup a dummy destination buffer
+        let destBuffer = try createTestBuffer(frameCount: 100)
+        let audioBufferList = UnsafeMutableAudioBufferListPointer(destBuffer.mutableAudioBufferList)
 
         // Multiple concurrent reads and writes
         for _ in 0..<iterations {
@@ -100,9 +104,14 @@ final class PartialBufferStateTests: XCTestCase {
                 _ = sut.hasPartial
                 expectation.fulfill()
             }
+
+            DispatchQueue.global().async {
+                _ = sut.consume(maxFrames: 50, into: audioBufferList, destOffset: 0)
+                expectation.fulfill()
+            }
         }
 
-        wait(for: [expectation], timeout: 5.0)
+        wait(for: [expectation], timeout: 10.0)
         // If we get here without crash, the test passes
     }
 
@@ -110,12 +119,12 @@ final class PartialBufferStateTests: XCTestCase {
 
     func testPerformance_SetBufferOperation() throws {
         try XCTSkipIf(true, "Unstable performance test")
-        guard let sut = self.sut else { return XCTFail("SUT not initialized") }
-        let buffer = try createTestBuffer(frameCount: 2048)
+        guard let sut else { return XCTFail("SUT not initialized") }
+        let buffer = try createTestBuffer(frameCount: 2_048)
 
         // Baseline: Set buffer operations should be very fast
         measure(metrics: [XCTClockMetric(), XCTMemoryMetric()]) {
-            for _ in 0..<1000 {
+            for _ in 0..<1_000 {
                 sut.setBuffer(buffer, offset: Int.random(in: 0..<100))
             }
         }
@@ -123,8 +132,8 @@ final class PartialBufferStateTests: XCTestCase {
 
     func testPerformance_PropertyAccess() throws {
         try XCTSkipIf(true, "Unstable performance test")
-        guard let sut = self.sut else { return XCTFail("SUT not initialized") }
-        let buffer = try createTestBuffer(frameCount: 1024)
+        guard let sut else { return XCTFail("SUT not initialized") }
+        let buffer = try createTestBuffer(frameCount: 1_024)
         sut.setBuffer(buffer, offset: 50)
 
         // Baseline: Property access should be instantaneous
@@ -138,12 +147,12 @@ final class PartialBufferStateTests: XCTestCase {
 
     func testPerformance_ClearOperation() throws {
         try XCTSkipIf(true, "Unstable performance test")
-        guard let sut = self.sut else { return XCTFail("SUT not initialized") }
-        let buffer = try createTestBuffer(frameCount: 1024)
+        guard let sut else { return XCTFail("SUT not initialized") }
+        let buffer = try createTestBuffer(frameCount: 1_024)
 
         // Baseline: Clear operations should be very fast
         measure(metrics: [XCTClockMetric(), XCTMemoryMetric()]) {
-            for _ in 0..<1000 {
+            for _ in 0..<1_000 {
                 sut.setBuffer(buffer)
                 sut.clear()
             }
@@ -152,8 +161,8 @@ final class PartialBufferStateTests: XCTestCase {
 
     func testPerformance_BufferStateTransitions() throws {
         try XCTSkipIf(true, "Unstable performance test")
-        guard let sut = self.sut else { return XCTFail("SUT not initialized") }
-        let buffer = try createTestBuffer(frameCount: 1024)
+        guard let sut else { return XCTFail("SUT not initialized") }
+        let buffer = try createTestBuffer(frameCount: 1_024)
 
         // Baseline: State transitions should be efficient
         measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
@@ -168,31 +177,45 @@ final class PartialBufferStateTests: XCTestCase {
 
     // MARK: - Helpers
 
-    private func createTestBuffer(frameCount: AVAudioFrameCount) throws -> AVAudioPCMBuffer {
+    func testConsume_SourceStereo_DestMono_DoesNotCrash() throws {
+        guard let sut else { return XCTFail("SUT not initialized") }
+
+        // Source: Stereo (2 channels)
+        let srcBuffer = try createTestBuffer(frames: 100, channels: 2)
+        sut.setBuffer(srcBuffer)
+
+        // Destination: Mono (1 channel)
+        let destBuffer = try createTestBuffer(frames: 100, channels: 1)
+        let audioBufferList = UnsafeMutableAudioBufferListPointer(destBuffer.mutableAudioBufferList)
+
+        // This should NOT crash
+        _ = sut.consume(maxFrames: 50, into: audioBufferList, destOffset: 0)
+    }
+
+    // MARK: - Helpers
+
+    private func createTestBuffer(
+        frames: AVAudioFrameCount = 1_000,
+        channels: AVAudioChannelCount = 2
+    ) throws -> AVAudioPCMBuffer {
         guard let format = AVAudioFormat(
             commonFormat: .pcmFormatFloat32,
             sampleRate: 48_000,
-            channels: 2,
+            channels: channels,
             interleaved: false
         ) else {
             throw NSError(domain: "Test", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to create format"])
         }
 
-        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else {
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frames) else {
             throw NSError(domain: "Test", code: 2, userInfo: [NSLocalizedDescriptionKey: "Failed to create buffer"])
         }
 
-        buffer.frameLength = frameCount
-
-        // Fill with test data
-        if let channelData = buffer.floatChannelData {
-            for ch in 0..<Int(format.channelCount) {
-                for frame in 0..<Int(frameCount) {
-                    channelData[ch][frame] = Float(frame) / Float(frameCount)
-                }
-            }
-        }
-
+        buffer.frameLength = frames
         return buffer
+    }
+
+    private func createTestBuffer(frameCount: AVAudioFrameCount) throws -> AVAudioPCMBuffer {
+        try createTestBuffer(frames: frameCount, channels: 2)
     }
 }
