@@ -118,4 +118,53 @@ public final class PartialBufferState: @unchecked Sendable {
             self.readOffset = 0
         }
     }
+
+    // MARK: - Static Helpers
+
+    /// Static helper to copy frames from a source buffer into a destination buffer list.
+    /// Does not use or modify any instance state. Essential for avoiding heap allocations
+    /// in real-time audio render callbacks.
+    /// - Parameters:
+    ///   - buffer: The source audio buffer.
+    ///   - srcOffset: The offset within the source buffer to start copying from.
+    ///   - maxFrames: Maximum number of frames to copy.
+    ///   - destBuffers: The destination buffer list pointer.
+    ///   - destOffset: The offset within the destination buffer to start writing.
+    /// - Returns: Number of frames actually copied.
+    public static func copy(
+        from buffer: AVAudioPCMBuffer,
+        srcOffset: Int,
+        maxFrames: Int,
+        into destBuffers: UnsafeMutableAudioBufferListPointer,
+        destOffset: Int
+    ) -> Int {
+        let available = Int(buffer.frameLength) - srcOffset
+        let framesToCopy = min(maxFrames, available)
+
+        guard framesToCopy > 0, let srcChannels = buffer.floatChannelData else {
+            return 0
+        }
+
+        let bufferChannelCount = Int(buffer.format.channelCount)
+        let channelsToCopy = min(min(2, bufferChannelCount), destBuffers.count)
+
+        for ch in 0..<channelsToCopy {
+            guard ch < 2 else { break }
+            let destBuffer = destBuffers[ch]
+            guard destBuffer.mData != nil, destBuffer.mDataByteSize > 0 else {
+                continue
+            }
+            let src = srcChannels[ch].advanced(by: srcOffset)
+
+            if let destStart = destBuffer.mData?.assumingMemoryBound(to: Float.self) {
+                let destPtr = UnsafeMutableBufferPointer(
+                    start: destStart.advanced(by: destOffset),
+                    count: framesToCopy
+                )
+                let srcPtr = UnsafeBufferPointer(start: src, count: framesToCopy)
+                _ = destPtr.initialize(from: srcPtr)
+            }
+        }
+        return framesToCopy
+    }
 }

@@ -19,7 +19,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     private enum Constants {
         static let tapBufferSize: AVAudioFrameCount = 2048
         static let tapBusNumber: AVAudioNodeBus = 0
-        static let outputSampleRate: Double = 48_000.0
+        static let outputSampleRate: Double = 48000.0
         static let outputChannels: AVAudioChannelCount = 2
         static let validationInterval: TimeInterval = 1.5
         static let retryDelay: UInt64 = 500_000_000 // 500ms
@@ -475,11 +475,9 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
             let framesToCopy = min(Int(nextBuffer.frameLength), targetFrames - framesFilled)
 
-            // Temporary partial state to copy the slice
-            let tempPartial = PartialBufferState()
-            tempPartial.setBuffer(nextBuffer)
-
-            let copied = tempPartial.consume(
+            let copied = PartialBufferState.copy(
+                from: nextBuffer,
+                srcOffset: 0,
                 maxFrames: framesToCopy,
                 into: buffers,
                 destOffset: framesFilled
@@ -488,8 +486,8 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             framesFilled += copied
 
             // If the buffer was only partially used, store it for next render cycle
-            if tempPartial.hasPartial {
-                partialState.setBuffer(nextBuffer, offset: Int(nextBuffer.frameLength) - tempPartial.framesRemaining)
+            if copied < Int(nextBuffer.frameLength) {
+                partialState.setBuffer(nextBuffer, offset: copied)
             }
         }
 
