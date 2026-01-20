@@ -3,14 +3,27 @@ name: CI
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.agent/**'
   pull_request:
     branches: [main, dev]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.agent/**'
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
     name: Lint & Test
     runs-on: macos-14
+    timeout-minutes: 15
     
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -20,6 +33,17 @@ jobs:
         with:
           xcode-version: '16.2'
 
+      - name: Cache Homebrew packages
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
+        with:
+          path: |
+            ~/Library/Caches/Homebrew
+            /usr/local/Cellar
+            /opt/homebrew/Cellar
+          key: ${{ runner.os }}-homebrew-swiftlint-swiftformat-${{ hashFiles('.github/workflows/ci.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-homebrew-swiftlint-swiftformat-
+            ${{ runner.os }}-homebrew-
         
       - name: Install Tools
         run: brew install swiftlint swiftformat
@@ -35,8 +59,10 @@ jobs:
 
   danger:
     name: Danger CI
+    needs: test
     if: github.event_name == 'pull_request'
     runs-on: macos-14
+    timeout-minutes: 10
     permissions:
       pull-requests: write
       contents: read
@@ -52,6 +78,17 @@ jobs:
         with:
           xcode-version: '16.2'
 
+      - name: Cache Homebrew packages
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
+        with:
+          path: |
+            ~/Library/Caches/Homebrew
+            /usr/local/Cellar
+            /opt/homebrew/Cellar
+          key: ${{ runner.os }}-homebrew-danger-${{ hashFiles('.github/workflows/ci.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-homebrew-danger-
+            ${{ runner.os }}-homebrew-
         
       - name: Install Danger
         run: brew install danger/tap/danger-swift
