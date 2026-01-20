@@ -12,7 +12,11 @@ protocol MockAudioEngineProtocol {
     var inputNode: MockAudioInputNodeProtocol { get }
 
     func attach(_ node: MockAudioNodeProtocol)
-    func connect(_ source: MockAudioNodeProtocol, to destination: MockAudioMixerNodeProtocol, format: MockAudioFormatProtocol?)
+    func connect(
+        _ source: MockAudioNodeProtocol,
+        to destination: MockAudioMixerNodeProtocol,
+        format: MockAudioFormatProtocol?
+    )
     func prepare() throws
     func start() throws
     func stop()
@@ -31,7 +35,12 @@ protocol MockAudioMixerNodeProtocol: MockAudioNodeProtocol {
     var outputVolume: Float { get set }
 
     func outputFormat(forBus bus: AVAudioNodeBus) -> MockAudioFormatProtocol
-    func installTap(onBus bus: AVAudioNodeBus, bufferSize: AVAudioFrameCount, format: MockAudioFormatProtocol?, block: @escaping AVAudioNodeTapBlock)
+    func installTap(
+        onBus bus: AVAudioNodeBus,
+        bufferSize: AVAudioFrameCount,
+        format: MockAudioFormatProtocol?,
+        block: @escaping AVAudioNodeTapBlock
+    )
     func removeTap(onBus bus: AVAudioNodeBus)
 }
 
@@ -78,7 +87,13 @@ final class MockAudioEngine: MockAudioEngineProtocol {
     var inputNode: MockAudioInputNodeProtocol
 
     private var attachedNodes: [MockAudioNodeProtocol] = []
-    private var connections: [(source: MockAudioNodeProtocol, destination: MockAudioMixerNodeProtocol, format: MockAudioFormatProtocol?)] = []
+    private struct MockConnection {
+        let source: MockAudioNodeProtocol
+        let destination: MockAudioMixerNodeProtocol
+        let format: MockAudioFormatProtocol?
+    }
+
+    private var connections: [MockConnection] = []
 
     // Controle de timing para testes determinísticos
     var shouldFailPrepare = false
@@ -96,13 +111,21 @@ final class MockAudioEngine: MockAudioEngineProtocol {
         attachedNodes.append(node)
     }
 
-    func connect(_ source: MockAudioNodeProtocol, to destination: MockAudioMixerNodeProtocol, format: MockAudioFormatProtocol?) {
-        connections.append((source, destination, format))
+    func connect(
+        _ source: MockAudioNodeProtocol,
+        to destination: MockAudioMixerNodeProtocol,
+        format: MockAudioFormatProtocol?
+    ) {
+        connections.append(MockConnection(source: source, destination: destination, format: format))
     }
 
     func prepare() throws {
         if shouldFailPrepare {
-            throw NSError(domain: "MockAudioEngine", code: -1, userInfo: [NSLocalizedDescriptionKey: "Mock prepare failure"])
+            throw NSError(
+                domain: "MockAudioEngine",
+                code: -1,
+                userInfo: [NSLocalizedDescriptionKey: "Mock prepare failure"]
+            )
         }
 
         if prepareDelay > 0 {
@@ -112,7 +135,11 @@ final class MockAudioEngine: MockAudioEngineProtocol {
 
     func start() throws {
         if shouldFailStart {
-            throw NSError(domain: "MockAudioEngine", code: -2, userInfo: [NSLocalizedDescriptionKey: "Mock start failure"])
+            throw NSError(
+                domain: "MockAudioEngine",
+                code: -2,
+                userInfo: [NSLocalizedDescriptionKey: "Mock start failure"]
+            )
         }
 
         if startDelay > 0 {
@@ -145,7 +172,12 @@ final class MockAudioMixerNode: MockAudioMixerNodeProtocol {
         MockAudioFormat(sampleRate: 48_000, channelCount: 2, commonFormat: .pcmFormatFloat32, isInterleaved: false)
     }
 
-    func installTap(onBus bus: AVAudioNodeBus, bufferSize: AVAudioFrameCount, format: MockAudioFormatProtocol?, block: @escaping AVAudioNodeTapBlock) {
+    func installTap(
+        onBus bus: AVAudioNodeBus,
+        bufferSize: AVAudioFrameCount,
+        format: MockAudioFormatProtocol?,
+        block: @escaping AVAudioNodeTapBlock
+    ) {
         taps[bus] = block
     }
 
@@ -253,9 +285,9 @@ enum MockAudioFactory {
 import XCTest
 
 final class MockAudioEngineTests: XCTestCase {
-    var mockEngine: MockAudioEngine!
-    var mockMixer: MockAudioMixerNode!
-    var mockSource: MockAudioSourceNode!
+    var mockEngine: MockAudioEngine?
+    var mockMixer: MockAudioMixerNode?
+    var mockSource: MockAudioSourceNode?
 
     override func setUp() {
         super.setUp()
@@ -271,30 +303,44 @@ final class MockAudioEngineTests: XCTestCase {
         super.tearDown()
     }
 
-    func testInitialState() {
+    func testInitialState() throws {
+        let mockEngine = try XCTUnwrap(mockEngine)
         XCTAssertFalse(mockEngine.isRunning)
         XCTAssertNotNil(mockEngine.mainMixerNode)
         XCTAssertNotNil(mockEngine.outputNode)
         XCTAssertNotNil(mockEngine.inputNode)
     }
 
-    func testAttachNode() {
+    func testAttachNode() throws {
+        let mockEngine = try XCTUnwrap(mockEngine)
+        let mockSource = try XCTUnwrap(mockSource)
         mockEngine.attach(mockSource)
         // Não há propriedade pública para verificar, mas não deve crash
     }
 
-    func testConnectNodes() {
-        let format = MockAudioFormat(sampleRate: 48_000, channelCount: 2, commonFormat: .pcmFormatFloat32, isInterleaved: false)
+    func testConnectNodes() throws {
+        let mockEngine = try XCTUnwrap(mockEngine)
+        let mockSource = try XCTUnwrap(mockSource)
+        let mockMixer = try XCTUnwrap(mockMixer)
+
+        let format = MockAudioFormat(
+            sampleRate: 48_000,
+            channelCount: 2,
+            commonFormat: .pcmFormatFloat32,
+            isInterleaved: false
+        )
         mockEngine.connect(mockSource, to: mockMixer, format: format)
         // Não há propriedade pública para verificar, mas não deve crash
     }
 
     func testPrepareSuccess() throws {
+        let mockEngine = try XCTUnwrap(mockEngine)
         try mockEngine.prepare()
         // Não deve lançar erro
     }
 
-    func testPrepareFailure() {
+    func testPrepareFailure() throws {
+        let mockEngine = try XCTUnwrap(mockEngine)
         mockEngine.shouldFailPrepare = true
 
         XCTAssertThrowsError(try mockEngine.prepare()) { error in
@@ -304,11 +350,13 @@ final class MockAudioEngineTests: XCTestCase {
     }
 
     func testStartSuccess() throws {
+        let mockEngine = try XCTUnwrap(mockEngine)
         try mockEngine.start()
         XCTAssertTrue(mockEngine.isRunning)
     }
 
-    func testStartFailure() {
+    func testStartFailure() throws {
+        let mockEngine = try XCTUnwrap(mockEngine)
         mockEngine.shouldFailStart = true
 
         XCTAssertThrowsError(try mockEngine.start()) { error in
@@ -319,6 +367,7 @@ final class MockAudioEngineTests: XCTestCase {
     }
 
     func testStop() throws {
+        let mockEngine = try XCTUnwrap(mockEngine)
         try mockEngine.start()
         XCTAssertTrue(mockEngine.isRunning)
 
@@ -327,6 +376,9 @@ final class MockAudioEngineTests: XCTestCase {
     }
 
     func testReset() throws {
+        let mockEngine = try XCTUnwrap(mockEngine)
+        let mockSource = try XCTUnwrap(mockSource)
+
         try mockEngine.start()
         mockEngine.attach(mockSource)
         XCTAssertTrue(mockEngine.isRunning)
@@ -336,6 +388,7 @@ final class MockAudioEngineTests: XCTestCase {
     }
 
     func testTimingControl() throws {
+        let mockEngine = try XCTUnwrap(mockEngine)
         mockEngine.prepareDelay = 0.1
         mockEngine.startDelay = 0.1
 
@@ -348,7 +401,8 @@ final class MockAudioEngineTests: XCTestCase {
         XCTAssertGreaterThan(elapsed, 0.15) // Pelo menos 200ms total
     }
 
-    func testMixerNodeOutputFormat() {
+    func testMixerNodeOutputFormat() throws {
+        let mockMixer = try XCTUnwrap(mockMixer)
         let format = mockMixer.outputFormat(forBus: 0)
         XCTAssertEqual(format.sampleRate, 48_000)
         XCTAssertEqual(format.channelCount, 2)
@@ -357,6 +411,7 @@ final class MockAudioEngineTests: XCTestCase {
     }
 
     func testMixerNodeTapInstallation() throws {
+        let mockMixer = try XCTUnwrap(mockMixer)
         var tapCalled = false
         let buffer = try createTestBuffer(frameCount: 1_024)
 
@@ -369,6 +424,7 @@ final class MockAudioEngineTests: XCTestCase {
     }
 
     func testMixerNodeTapRemoval() throws {
+        let mockMixer = try XCTUnwrap(mockMixer)
         var tapCalled = false
         let buffer = try createTestBuffer(frameCount: 1_024)
 
