@@ -87,9 +87,9 @@ final class MockAudioEngine: MockAudioEngineProtocol {
     var startDelay: TimeInterval = 0
 
     init() {
-        self.mainMixerNode = MockAudioMixerNode()
-        self.outputNode = MockAudioOutputNode()
-        self.inputNode = MockAudioInputNode()
+        mainMixerNode = MockAudioMixerNode()
+        outputNode = MockAudioOutputNode()
+        inputNode = MockAudioInputNode()
     }
 
     func attach(_ node: MockAudioNodeProtocol) {
@@ -142,7 +142,7 @@ final class MockAudioMixerNode: MockAudioMixerNodeProtocol {
     private var taps: [AVAudioNodeBus: AVAudioNodeTapBlock] = [:]
 
     func outputFormat(forBus bus: AVAudioNodeBus) -> MockAudioFormatProtocol {
-        MockAudioFormat(sampleRate: 48000, channelCount: 2, commonFormat: .pcmFormatFloat32, isInterleaved: false)
+        MockAudioFormat(sampleRate: 48_000, channelCount: 2, commonFormat: .pcmFormatFloat32, isInterleaved: false)
     }
 
     func installTap(onBus bus: AVAudioNodeBus, bufferSize: AVAudioFrameCount, format: MockAudioFormatProtocol?, block: @escaping AVAudioNodeTapBlock) {
@@ -185,7 +185,7 @@ final class MockAudioSourceNode: MockAudioSourceNodeProtocol {
 final class MockAudioInputNode: MockAudioInputNodeProtocol {
     var auAudioUnit: MockAUAudioUnitProtocol = MockAUAudioUnit()
 
-    var inputFormatSampleRate: Double = 48000
+    var inputFormatSampleRate: Double = 48_000
     var inputFormatChannels: AVAudioChannelCount = 1
     var inputFormatCommonFormat: AVAudioCommonFormat = .pcmFormatFloat32
 
@@ -204,7 +204,7 @@ final class MockAudioInputNode: MockAudioInputNodeProtocol {
 final class MockAudioOutputNode: MockAudioOutputNodeProtocol {
     var auAudioUnit: MockAUAudioUnitProtocol = MockAUAudioUnit()
 
-    var outputFormatSampleRate: Double = 48000
+    var outputFormatSampleRate: Double = 48_000
     var outputFormatChannels: AVAudioChannelCount = 2
 
     func outputFormat(forBus bus: AVAudioNodeBus) -> MockAudioFormatProtocol {
@@ -284,7 +284,7 @@ final class MockAudioEngineTests: XCTestCase {
     }
 
     func testConnectNodes() {
-        let format = MockAudioFormat(sampleRate: 48000, channelCount: 2, commonFormat: .pcmFormatFloat32, isInterleaved: false)
+        let format = MockAudioFormat(sampleRate: 48_000, channelCount: 2, commonFormat: .pcmFormatFloat32, isInterleaved: false)
         mockEngine.connect(mockSource, to: mockMixer, format: format)
         // Não há propriedade pública para verificar, mas não deve crash
     }
@@ -350,7 +350,7 @@ final class MockAudioEngineTests: XCTestCase {
 
     func testMixerNodeOutputFormat() {
         let format = mockMixer.outputFormat(forBus: 0)
-        XCTAssertEqual(format.sampleRate, 48000)
+        XCTAssertEqual(format.sampleRate, 48_000)
         XCTAssertEqual(format.channelCount, 2)
         XCTAssertEqual(format.commonFormat, .pcmFormatFloat32)
         XCTAssertFalse(format.isInterleaved)
@@ -358,9 +358,9 @@ final class MockAudioEngineTests: XCTestCase {
 
     func testMixerNodeTapInstallation() {
         var tapCalled = false
-        let buffer = try! createTestBuffer(frameCount: 1024)
+        let buffer = try! createTestBuffer(frameCount: 1_024)
 
-        mockMixer.installTap(onBus: 0, bufferSize: 2048, format: nil) { _, _ in
+        mockMixer.installTap(onBus: 0, bufferSize: 2_048, format: nil) { _, _ in
             tapCalled = true
         }
 
@@ -370,9 +370,9 @@ final class MockAudioEngineTests: XCTestCase {
 
     func testMixerNodeTapRemoval() {
         var tapCalled = false
-        let buffer = try! createTestBuffer(frameCount: 1024)
+        let buffer = try! createTestBuffer(frameCount: 1_024)
 
-        mockMixer.installTap(onBus: 0, bufferSize: 2048, format: nil) { _, _ in
+        mockMixer.installTap(onBus: 0, bufferSize: 2_048, format: nil) { _, _ in
             tapCalled = true
         }
 
@@ -382,7 +382,6 @@ final class MockAudioEngineTests: XCTestCase {
     }
 
     func testSourceNodeRenderCallback() throws {
-        try XCTSkipIf(true, "Crash Signal 11 - Unsafe pointer handling issues")
         var callbackCalled = false
         let sourceNode = MockAudioSourceNode { _, _, frameCount, audioBufferList in
             callbackCalled = true
@@ -391,7 +390,14 @@ final class MockAudioEngineTests: XCTestCase {
             return noErr
         }
 
-        let status = sourceNode.simulateRender(frameCount: 1024, audioBufferList: createDummyAudioBufferList())
+        let format = AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 2)!
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 1_024) else {
+            XCTFail("Failed to create test buffer")
+            return
+        }
+        buffer.frameLength = 1_024
+
+        let status = sourceNode.simulateRender(frameCount: 1_024, audioBufferList: buffer.mutableAudioBufferList)
         XCTAssertEqual(status, noErr)
         XCTAssertTrue(callbackCalled)
     }
@@ -400,7 +406,7 @@ final class MockAudioEngineTests: XCTestCase {
         let inputNode = MockAudioInputNode()
         let format = inputNode.inputFormat(forBus: 0)
 
-        XCTAssertEqual(format.sampleRate, 48000)
+        XCTAssertEqual(format.sampleRate, 48_000)
         XCTAssertEqual(format.channelCount, 1)
         XCTAssertEqual(format.commonFormat, .pcmFormatFloat32)
     }
@@ -409,7 +415,7 @@ final class MockAudioEngineTests: XCTestCase {
         let outputNode = MockAudioOutputNode()
         let format = outputNode.outputFormat(forBus: 0)
 
-        XCTAssertEqual(format.sampleRate, 48000)
+        XCTAssertEqual(format.sampleRate, 48_000)
         XCTAssertEqual(format.channelCount, 2)
         XCTAssertEqual(format.commonFormat, .pcmFormatFloat32)
     }
@@ -418,32 +424,18 @@ final class MockAudioEngineTests: XCTestCase {
         let auUnit = MockAUAudioUnit()
         XCTAssertEqual(auUnit.maximumFramesToRender, 512)
 
-        auUnit.maximumFramesToRender = 2048
-        XCTAssertEqual(auUnit.maximumFramesToRender, 2048)
+        auUnit.maximumFramesToRender = 2_048
+        XCTAssertEqual(auUnit.maximumFramesToRender, 2_048)
     }
 
     // MARK: - Helpers
 
     private func createTestBuffer(frameCount: AVAudioFrameCount) throws -> AVAudioPCMBuffer {
-        let format = AVAudioFormat(standardFormatWithSampleRate: 48000, channels: 2)!
+        let format = AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 2)!
         guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else {
             throw NSError(domain: "Test", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to create buffer"])
         }
         buffer.frameLength = frameCount
         return buffer
-    }
-
-    private func createDummyAudioBufferList() -> UnsafeMutablePointer<AudioBufferList> {
-        let pointer = UnsafeMutablePointer<AudioBufferList>.allocate(capacity: 1)
-        pointer.pointee.mNumberBuffers = 2
-        withUnsafeMutablePointer(to: &pointer.pointee.mBuffers) { buffers in
-            buffers[0].mNumberChannels = 1
-            buffers[0].mDataByteSize = 4096
-            buffers[0].mData = UnsafeMutableRawPointer.allocate(byteCount: 4096, alignment: 1)
-            buffers[1].mNumberChannels = 1
-            buffers[1].mDataByteSize = 4096
-            buffers[1].mData = UnsafeMutableRawPointer.allocate(byteCount: 4096, alignment: 1)
-        }
-        return pointer
     }
 }

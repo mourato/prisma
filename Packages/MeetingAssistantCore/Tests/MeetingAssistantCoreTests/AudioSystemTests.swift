@@ -22,37 +22,37 @@ final class AudioSystemTests: XCTestCase {
         try await super.setUp()
 
         // Inicializar componentes reais para testes de integração
-        self.audioRecorder = AudioRecorder.shared
-        self.systemRecorder = SystemAudioRecorder.shared
-        self.bufferQueue = AudioBufferQueue(capacity: 50)
-        self.recordingWorker = AudioRecordingWorker()
+        audioRecorder = AudioRecorder.shared
+        systemRecorder = SystemAudioRecorder.shared
+        bufferQueue = AudioBufferQueue(capacity: 50)
+        recordingWorker = AudioRecordingWorker()
 
         // Mocks para RecordingManager
-        self.mockTranscription = MockTranscriptionClient()
-        self.mockPostProcessing = MockPostProcessingService()
-        self.mockStorage = MockStorageService()
+        mockTranscription = MockTranscriptionClient()
+        mockPostProcessing = MockPostProcessingService()
+        mockStorage = MockStorageService()
 
-        self.recordingManager = RecordingManager(
-            transcriptionClient: self.mockTranscription,
-            postProcessingService: self.mockPostProcessing,
-            storage: self.mockStorage
+        recordingManager = RecordingManager(
+            transcriptionClient: mockTranscription,
+            postProcessingService: mockPostProcessing,
+            storage: mockStorage
         )
     }
 
     override func tearDown() async throws {
         // Cleanup
-        _ = await self.audioRecorder.stopRecording()
-        _ = await self.systemRecorder.stopRecording()
-        self.recordingWorker = nil
-        self.bufferQueue.clear()
+        _ = await audioRecorder.stopRecording()
+        _ = await systemRecorder.stopRecording()
+        recordingWorker = nil
+        bufferQueue.clear()
 
-        self.audioRecorder = nil
-        self.systemRecorder = nil
-        self.bufferQueue = nil
-        self.recordingManager = nil
-        self.mockTranscription = nil
-        self.mockPostProcessing = nil
-        self.mockStorage = nil
+        audioRecorder = nil
+        systemRecorder = nil
+        bufferQueue = nil
+        recordingManager = nil
+        mockTranscription = nil
+        mockPostProcessing = nil
+        mockStorage = nil
 
         try await super.tearDown()
     }
@@ -61,15 +61,15 @@ final class AudioSystemTests: XCTestCase {
 
     func testAudioRecorderIntegration_WithSystemAudio() async throws {
         // Skip test if running in CI or without screen recording permissions
-        guard await self.systemRecorder.hasPermission() else {
+        guard await systemRecorder.hasPermission() else {
             throw XCTSkip("Screen recording permission not available")
         }
 
         // Given
-        let outputURL = self.createTemporaryURL()
+        let outputURL = createTemporaryURL()
 
         // When
-        try await self.audioRecorder.startRecording(to: outputURL, source: .all, retryCount: 0)
+        try await audioRecorder.startRecording(to: outputURL, source: .all, retryCount: 0)
 
         // Pequena pausa para estabilizar
         try await Task.sleep(nanoseconds: 100_000_000) // 0.1s
@@ -79,12 +79,12 @@ final class AudioSystemTests: XCTestCase {
         // Then
         XCTAssertNotNil(stoppedURL)
         XCTAssertEqual(stoppedURL, outputURL)
-        XCTAssertFalse(self.audioRecorder.isRecording)
+        XCTAssertFalse(audioRecorder.isRecording)
     }
 
     func testSystemAudioRecorder_BufferCallbackIntegration() async throws {
         // Skip test if running in CI or without screen recording permissions
-        guard await self.systemRecorder.hasPermission() else {
+        guard await systemRecorder.hasPermission() else {
             throw XCTSkip("Screen recording permission not available")
         }
 
@@ -92,7 +92,7 @@ final class AudioSystemTests: XCTestCase {
         let receivedBuffers = AtomicArray<AVAudioPCMBuffer>()
         let expectation = expectation(description: "Buffer callback received")
 
-        self.systemRecorder.onAudioBuffer = { @Sendable buffer in
+        systemRecorder.onAudioBuffer = { @Sendable buffer in
             receivedBuffers.append(buffer)
             if receivedBuffers.count >= 3 {
                 expectation.fulfill()
@@ -100,21 +100,21 @@ final class AudioSystemTests: XCTestCase {
         }
 
         // When
-        try await self.systemRecorder.startRecording(to: self.createTemporaryURL(), sampleRate: 48_000.0)
+        try await systemRecorder.startRecording(to: createTemporaryURL(), sampleRate: 48000.0)
 
         // Wait for buffers or timeout
         await fulfillment(of: [expectation], timeout: 2.0)
 
-        _ = await self.systemRecorder.stopRecording()
+        _ = await systemRecorder.stopRecording()
 
         // Then
         XCTAssertGreaterThan(receivedBuffers.count, 0, "Should have received audio buffers")
-        XCTAssertFalse(self.systemRecorder.isRecording)
+        XCTAssertFalse(systemRecorder.isRecording)
     }
 
     func testAudioBufferQueue_IntegrationWithSystemRecorder() async throws {
         // Skip test if running in CI or without screen recording permissions
-        guard await self.systemRecorder.hasPermission() else {
+        guard await systemRecorder.hasPermission() else {
             throw XCTSkip("Screen recording permission not available")
         }
 
@@ -123,7 +123,7 @@ final class AudioSystemTests: XCTestCase {
         let expectation = expectation(description: "Buffers enqueued")
         expectation.expectedFulfillmentCount = 5
 
-        self.systemRecorder.onAudioBuffer = { @Sendable [bufferQueue = self.bufferQueue!] buffer in
+        systemRecorder.onAudioBuffer = { @Sendable [bufferQueue = self.bufferQueue!] buffer in
             bufferQueue.enqueue(buffer)
             let count = enqueuedCount.increment()
             if count >= 5 {
@@ -132,21 +132,21 @@ final class AudioSystemTests: XCTestCase {
         }
 
         // When
-        try await self.systemRecorder.startRecording(to: self.createTemporaryURL(), sampleRate: 48_000.0)
+        try await systemRecorder.startRecording(to: createTemporaryURL(), sampleRate: 48000.0)
 
         await fulfillment(of: [expectation], timeout: 2.0)
 
-        _ = await self.systemRecorder.stopRecording()
+        _ = await systemRecorder.stopRecording()
 
         // Then
-        XCTAssertGreaterThanOrEqual(self.bufferQueue.stats.count, 5)
-        XCTAssertEqual(self.bufferQueue.stats.dropped, 0) // Não deve ter perdido buffers inicialmente
+        XCTAssertGreaterThanOrEqual(bufferQueue.stats.count, 5)
+        XCTAssertEqual(bufferQueue.stats.dropped, 0) // Não deve ter perdido buffers inicialmente
     }
 
     func testAudioRecordingWorker_BufferProcessingIntegration() async throws {
         // Given
-        let outputURL = self.createTemporaryURL()
-        let format = AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 2)!
+        let outputURL = createTemporaryURL()
+        let format = AVAudioFormat(standardFormatWithSampleRate: 48000, channels: 2)!
 
         try await recordingWorker.start(writingTo: outputURL, format: format, fileFormat: .wav)
 
@@ -155,7 +155,7 @@ final class AudioSystemTests: XCTestCase {
 
         // When
         for buffer in testBuffers {
-            self.recordingWorker.process(buffer)
+            recordingWorker.process(buffer)
         }
 
         try await Task.sleep(nanoseconds: 200_000_000) // Aguardar processamento
@@ -176,59 +176,59 @@ final class AudioSystemTests: XCTestCase {
 
     func testStateConsistency_AudioRecorderStateTransitions() async throws {
         try XCTSkipIf(true, "Integration test requiring hardware")
-        let outputURL = self.createTemporaryURL()
+        let outputURL = createTemporaryURL()
 
         // Estado inicial
-        XCTAssertFalse(self.audioRecorder.isRecording)
-        XCTAssertNil(self.audioRecorder.currentRecordingURL)
+        XCTAssertFalse(audioRecorder.isRecording)
+        XCTAssertNil(audioRecorder.currentRecordingURL)
 
         // Iniciar gravação
-        try await self.audioRecorder.startRecording(to: outputURL, source: .microphone, retryCount: 0)
+        try await audioRecorder.startRecording(to: outputURL, source: .microphone, retryCount: 0)
 
-        XCTAssertTrue(self.audioRecorder.isRecording)
-        XCTAssertEqual(self.audioRecorder.currentRecordingURL, outputURL)
+        XCTAssertTrue(audioRecorder.isRecording)
+        XCTAssertEqual(audioRecorder.currentRecordingURL, outputURL)
 
         // Parar gravação
         let stoppedURL = await audioRecorder.stopRecording()
 
-        XCTAssertFalse(self.audioRecorder.isRecording)
+        XCTAssertFalse(audioRecorder.isRecording)
         XCTAssertEqual(stoppedURL, outputURL)
-        XCTAssertNil(self.audioRecorder.currentRecordingURL)
+        XCTAssertNil(audioRecorder.currentRecordingURL)
     }
 
     func testStateConsistency_BufferQueueStatsAccuracy() throws {
         let buffer = try createTestBuffer(frameCount: 512)
 
         // Estado inicial
-        XCTAssertEqual(self.bufferQueue.stats.count, 0)
-        XCTAssertEqual(self.bufferQueue.stats.dropped, 0)
+        XCTAssertEqual(bufferQueue.stats.count, 0)
+        XCTAssertEqual(bufferQueue.stats.dropped, 0)
 
         // Enqueue
-        self.bufferQueue.enqueue(buffer)
-        XCTAssertEqual(self.bufferQueue.stats.count, 1)
+        bufferQueue.enqueue(buffer)
+        XCTAssertEqual(bufferQueue.stats.count, 1)
 
         // Dequeue
-        let dequeued = self.bufferQueue.dequeue()
+        let dequeued = bufferQueue.dequeue()
         XCTAssertNotNil(dequeued)
-        XCTAssertEqual(self.bufferQueue.stats.count, 0)
+        XCTAssertEqual(bufferQueue.stats.count, 0)
 
         // Clear
-        self.bufferQueue.enqueue(buffer)
-        self.bufferQueue.clear()
-        XCTAssertEqual(self.bufferQueue.stats.count, 0)
-        XCTAssertEqual(self.bufferQueue.stats.dropped, 0)
+        bufferQueue.enqueue(buffer)
+        bufferQueue.clear()
+        XCTAssertEqual(bufferQueue.stats.count, 0)
+        XCTAssertEqual(bufferQueue.stats.dropped, 0)
     }
 
     // MARK: - Testes de Error Handling
 
     func testErrorHandling_AudioRecorderInvalidFormat() async {
-        let outputURL = self.createTemporaryURL()
+        let outputURL = createTemporaryURL()
 
         // Simular erro através de configuração inválida
         // Nota: Testes reais de erro são difíceis sem mocks específicos
         do {
-            try await self.audioRecorder.startRecording(to: outputURL, source: .all, retryCount: 0)
-            _ = await self.audioRecorder.stopRecording()
+            try await audioRecorder.startRecording(to: outputURL, source: .all, retryCount: 0)
+            _ = await audioRecorder.stopRecording()
             // Se chegou aqui, não houve erro crítico
         } catch {
             // Erros são esperados em alguns ambientes de teste
@@ -325,7 +325,7 @@ final class AudioSystemTests: XCTestCase {
      }
 
      func testPerformance_BufferQueueHighThroughput() throws {
-         let buffers = try (0..<100).map { _ in try self.createTestBuffer(frameCount: 1024) }
+         let buffers = try (0..<100).map { _ in try self.createTestBuffer(frameCount: 1_024) }
 
          measure(metrics: [XCTClockMetric(), XCTCPUMetric()]) {
              for buffer in buffers {
@@ -343,7 +343,7 @@ final class AudioSystemTests: XCTestCase {
      func testPerformance_BufferProcessingIntegration() {
          let outputURL = self.createTemporaryURL()
          let format = AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 2)!
-         let testBuffers = try! self.createTestBuffers(count: 50, frameCount: 1024)
+         let testBuffers = try! self.createTestBuffers(count: 50, frameCount: 1_024)
 
          // Baseline: Buffer processing should complete within reasonable time limits
          measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
@@ -414,7 +414,7 @@ final class AudioSystemTests: XCTestCase {
     /* Commented out due to test runner instability
      func testPerformance_BufferQueueOverflowHandling() throws {
          let smallQueue = AudioBufferQueue(capacity: 10)
-         let buffer = try createTestBuffer(frameCount: 1024)
+         let buffer = try createTestBuffer(frameCount: 1_024)
 
          // Baseline: Overflow handling should be efficient even under high load
          measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
@@ -449,18 +449,18 @@ final class AudioSystemTests: XCTestCase {
 
     func testCleanup_AudioRecorderResourceCleanup() async throws {
         try XCTSkipIf(true, "Integration test requiring hardware")
-        let outputURL = self.createTemporaryURL()
+        let outputURL = createTemporaryURL()
 
-        try await self.audioRecorder.startRecording(to: outputURL, source: .all, retryCount: 0)
-        XCTAssertTrue(self.audioRecorder.isRecording)
+        try await audioRecorder.startRecording(to: outputURL, source: .all, retryCount: 0)
+        XCTAssertTrue(audioRecorder.isRecording)
 
-        _ = await self.audioRecorder.stopRecording()
+        _ = await audioRecorder.stopRecording()
 
         // Verificar estado limpo
-        XCTAssertFalse(self.audioRecorder.isRecording)
-        XCTAssertNil(self.audioRecorder.currentRecordingURL)
-        XCTAssertEqual(self.audioRecorder.currentAveragePower, -160.0)
-        XCTAssertEqual(self.audioRecorder.currentPeakPower, -160.0)
+        XCTAssertFalse(audioRecorder.isRecording)
+        XCTAssertNil(audioRecorder.currentRecordingURL)
+        XCTAssertEqual(audioRecorder.currentAveragePower, -160.0)
+        XCTAssertEqual(audioRecorder.currentPeakPower, -160.0)
     }
 
     func testCleanup_BufferQueueCompleteClear() throws {
@@ -468,27 +468,27 @@ final class AudioSystemTests: XCTestCase {
 
         // Preencher queue
         for _ in 0..<10 {
-            self.bufferQueue.enqueue(buffer)
+            bufferQueue.enqueue(buffer)
         }
 
-        XCTAssertGreaterThan(self.bufferQueue.stats.count, 0)
+        XCTAssertGreaterThan(bufferQueue.stats.count, 0)
 
         // Clear
-        self.bufferQueue.clear()
+        bufferQueue.clear()
 
-        XCTAssertTrue(self.bufferQueue.isEmpty)
-        XCTAssertEqual(self.bufferQueue.stats.count, 0)
-        XCTAssertEqual(self.bufferQueue.stats.dropped, 0)
+        XCTAssertTrue(bufferQueue.isEmpty)
+        XCTAssertEqual(bufferQueue.stats.count, 0)
+        XCTAssertEqual(bufferQueue.stats.dropped, 0)
     }
 
     func testCleanup_RecordingWorkerFileClosure() async throws {
-        let outputURL = self.createTemporaryURL()
-        let format = AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 2)!
+        let outputURL = createTemporaryURL()
+        let format = AVAudioFormat(standardFormatWithSampleRate: 48000, channels: 2)!
 
         try await recordingWorker.start(writingTo: outputURL, format: format, fileFormat: .wav)
 
         let testBuffer = try createTestBuffer(frameCount: 1024)
-        self.recordingWorker.process(testBuffer)
+        recordingWorker.process(testBuffer)
 
         let finalURL = await recordingWorker.stop()
 
@@ -510,7 +510,7 @@ final class AudioSystemTests: XCTestCase {
     private func createTestBuffer(frameCount: AVAudioFrameCount) throws -> AVAudioPCMBuffer {
         guard let format = AVAudioFormat(
             commonFormat: .pcmFormatFloat32,
-            sampleRate: 48_000,
+            sampleRate: 48000,
             channels: 2,
             interleaved: false
         ) else {
@@ -548,15 +548,15 @@ private final class AtomicArray<Element>: @unchecked Sendable {
     private var storage: [Element] = []
 
     var count: Int {
-        self.lock.withLock { self.storage.count }
+        lock.withLock { self.storage.count }
     }
 
     func append(_ element: Element) {
-        self.lock.withLock { self.storage.append(element) }
+        lock.withLock { self.storage.append(element) }
     }
 
     func getElements() -> [Element] {
-        self.lock.withLock { self.storage }
+        lock.withLock { self.storage }
     }
 }
 
@@ -566,13 +566,13 @@ private final class ThreadSafeCounter: @unchecked Sendable {
     private var value: Int = 0
 
     func increment() -> Int {
-        self.lock.withLock {
+        lock.withLock {
             self.value += 1
             return self.value
         }
     }
 
     var currentValue: Int {
-        self.lock.withLock { self.value }
+        lock.withLock { self.value }
     }
 }
