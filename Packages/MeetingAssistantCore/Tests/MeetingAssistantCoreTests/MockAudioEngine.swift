@@ -87,11 +87,13 @@ final class MockAudioEngine: MockAudioEngineProtocol {
     var inputNode: MockAudioInputNodeProtocol
 
     private var attachedNodes: [MockAudioNodeProtocol] = []
-    private var connections: [(
-        source: MockAudioNodeProtocol,
-        destination: MockAudioMixerNodeProtocol,
-        format: MockAudioFormatProtocol?
-    )] = []
+    private struct MockConnection {
+        let source: MockAudioNodeProtocol
+        let destination: MockAudioMixerNodeProtocol
+        let format: MockAudioFormatProtocol?
+    }
+
+    private var connections: [MockConnection] = []
 
     // Controle de timing para testes determinísticos
     var shouldFailPrepare = false
@@ -114,7 +116,7 @@ final class MockAudioEngine: MockAudioEngineProtocol {
         to destination: MockAudioMixerNodeProtocol,
         format: MockAudioFormatProtocol?
     ) {
-        connections.append((source, destination, format))
+        connections.append(MockConnection(source: source, destination: destination, format: format))
     }
 
     func prepare() throws {
