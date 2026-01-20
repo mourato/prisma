@@ -414,7 +414,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         queue: AudioBufferQueue,
         partialState: PartialBufferState
     ) -> AVAudioSourceNode {
-        AVAudioSourceNode { [queue, partialState] _, _, frameCount, audioBufferList -> OSStatus in
+        AVAudioSourceNode { @Sendable [queue, partialState] _, _, frameCount, audioBufferList -> OSStatus in
             self.validateCallbackInputs(
                 frameCount: frameCount,
                 audioBufferList: audioBufferList,
