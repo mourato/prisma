@@ -39,12 +39,13 @@ cyclomatic_complexity:
   error: 25
 
 included:
-  - Sources
-  - Tests
+  - App
+  - Packages
 
 excluded:
   - Sources/RepoBar/API/Generated
   - "*/Generated/*"
+  - "**/GeneratedMocks.swift"
   - .build
   - docs
 
