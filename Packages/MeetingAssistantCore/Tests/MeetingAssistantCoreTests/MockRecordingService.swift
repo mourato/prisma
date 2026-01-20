@@ -16,9 +16,9 @@ class MockRecordingService: RecordingServiceProtocol {
     var isTranscribingSubject = PassthroughSubject<Bool, Never>()
     var currentMeetingSubject = PassthroughSubject<Meeting?, Never>()
 
-    var isRecordingPublisher: AnyPublisher<Bool, Never> { self.isRecordingSubject.eraseToAnyPublisher() }
-    var isTranscribingPublisher: AnyPublisher<Bool, Never> { self.isTranscribingSubject.eraseToAnyPublisher() }
-    var currentMeetingPublisher: AnyPublisher<Meeting?, Never> { self.currentMeetingSubject.eraseToAnyPublisher() }
+    var isRecordingPublisher: AnyPublisher<Bool, Never> { isRecordingSubject.eraseToAnyPublisher() }
+    var isTranscribingPublisher: AnyPublisher<Bool, Never> { isTranscribingSubject.eraseToAnyPublisher() }
+    var currentMeetingPublisher: AnyPublisher<Meeting?, Never> { currentMeetingSubject.eraseToAnyPublisher() }
 
     // Track calls
     var startRecordingCalled = false
@@ -30,42 +30,42 @@ class MockRecordingService: RecordingServiceProtocol {
     var transcribeExternalAudioCalled = false
 
     func startRecording(source: RecordingSource) async {
-        self.startRecordingCalled = true
-        self.isRecording = true
-        self.isRecordingSubject.send(true)
+        startRecordingCalled = true
+        isRecording = true
+        isRecordingSubject.send(true)
     }
 
     func stopRecording() async {
-        self.stopRecordingCalled = true
-        self.isRecording = false
-        self.isRecordingSubject.send(false)
+        stopRecordingCalled = true
+        isRecording = false
+        isRecordingSubject.send(false)
     }
 
     func checkPermission() async {
-        self.checkPermissionCalled = true
+        checkPermissionCalled = true
     }
 
     func requestPermission() async {
-        self.requestPermissionCalled = true
+        requestPermissionCalled = true
     }
 
     func openMicrophoneSettings() {
-        self.openMicrophoneSettingsCalled = true
+        openMicrophoneSettingsCalled = true
     }
 
     func openPermissionSettings() {
-        self.openPermissionSettingsCalled = true
+        openPermissionSettingsCalled = true
     }
 
     func transcribeExternalAudio(from audioURL: URL) async {
-        self.transcribeExternalAudioCalled = true
+        transcribeExternalAudioCalled = true
     }
 
     // Test helper
     func simulateState(recording: Bool, transcribing: Bool) {
-        self.isRecording = recording
-        self.isTranscribing = transcribing
-        self.isRecordingSubject.send(recording)
-        self.isTranscribingSubject.send(transcribing)
+        isRecording = recording
+        isTranscribing = transcribing
+        isRecordingSubject.send(recording)
+        isTranscribingSubject.send(transcribing)
     }
 }

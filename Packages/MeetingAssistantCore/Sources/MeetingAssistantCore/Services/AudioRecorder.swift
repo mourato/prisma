@@ -17,9 +17,9 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     // MARK: - Constants
 
     enum Constants {
-        static let tapBufferSize: AVAudioFrameCount = 2048
+        static let tapBufferSize: AVAudioFrameCount = 2_048
         static let tapBusNumber: AVAudioNodeBus = 0
-        static let outputSampleRate: Double = 48000.0
+        static let outputSampleRate: Double = 48_000.0
         static let outputChannels: AVAudioChannelCount = 2
         static let validationInterval: TimeInterval = 1.5
         static let retryDelay: UInt64 = 500_000_000 // 500ms
@@ -162,7 +162,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         // Increase maximum frames per slice to avoid kAudioUnitErr_TooManyFramesToProcess (-10874)
         // when hardware or drivers send buffers larger than the default 512 frames.
         // Using 2048 to reduce HALC overload risk while still handling most buffer sizes.
-        let safeMaxFrames: AVAudioFrameCount = 2048
+        let safeMaxFrames: AVAudioFrameCount = 2_048
         engine.mainMixerNode.auAudioUnit.maximumFramesToRender = safeMaxFrames
         mixer.auAudioUnit.maximumFramesToRender = safeMaxFrames
         engine.outputNode.auAudioUnit.maximumFramesToRender = safeMaxFrames

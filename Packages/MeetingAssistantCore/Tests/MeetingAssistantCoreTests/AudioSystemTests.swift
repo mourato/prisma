@@ -100,7 +100,7 @@ final class AudioSystemTests: XCTestCase {
         }
 
         // When
-        try await systemRecorder.startRecording(to: createTemporaryURL(), sampleRate: 48000.0)
+        try await systemRecorder.startRecording(to: createTemporaryURL(), sampleRate: 48_000.0)
 
         // Wait for buffers or timeout
         await fulfillment(of: [expectation], timeout: 2.0)
@@ -132,7 +132,7 @@ final class AudioSystemTests: XCTestCase {
         }
 
         // When
-        try await systemRecorder.startRecording(to: createTemporaryURL(), sampleRate: 48000.0)
+        try await systemRecorder.startRecording(to: createTemporaryURL(), sampleRate: 48_000.0)
 
         await fulfillment(of: [expectation], timeout: 2.0)
 
@@ -146,12 +146,12 @@ final class AudioSystemTests: XCTestCase {
     func testAudioRecordingWorker_BufferProcessingIntegration() async throws {
         // Given
         let outputURL = createTemporaryURL()
-        let format = AVAudioFormat(standardFormatWithSampleRate: 48000, channels: 2)!
+        let format = AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 2)!
 
         try await recordingWorker.start(writingTo: outputURL, format: format, fileFormat: .wav)
 
         // Simular buffers do AudioRecorder
-        let testBuffers = try createTestBuffers(count: 10, frameCount: 1024)
+        let testBuffers = try createTestBuffers(count: 10, frameCount: 1_024)
 
         // When
         for buffer in testBuffers {
@@ -278,13 +278,13 @@ final class AudioSystemTests: XCTestCase {
         XCTAssertNotNil(first)
         XCTAssertNotNil(second)
         XCTAssertEqual(first?.frameLength, 768) // 3rd buffer (index 2)
-        XCTAssertEqual(second?.frameLength, 1024) // 4th buffer (index 3)
+        XCTAssertEqual(second?.frameLength, 1_024) // 4th buffer (index 3)
     }
 
     // MARK: - Testes de Thread Safety
 
     func testThreadSafety_BufferQueueConcurrentAccess() throws {
-        let buffer = try createTestBuffer(frameCount: 1024)
+        let buffer = try createTestBuffer(frameCount: 1_024)
         let iterations = 50
         let expectation = expectation(description: "Concurrent operations")
         expectation.expectedFulfillmentCount = iterations * 3
@@ -343,7 +343,7 @@ final class AudioSystemTests: XCTestCase {
      func testPerformance_BufferProcessingIntegration() {
          let outputURL = self.createTemporaryURL()
          let format = AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 2)!
-         let testBuffers = try! self.createTestBuffers(count: 50, frameCount: 1_024)
+         let testBuffers = try self.createTestBuffers(count: 50, frameCount: 1_024)
 
          // Baseline: Buffer processing should complete within reasonable time limits
          measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
@@ -483,11 +483,11 @@ final class AudioSystemTests: XCTestCase {
 
     func testCleanup_RecordingWorkerFileClosure() async throws {
         let outputURL = createTemporaryURL()
-        let format = AVAudioFormat(standardFormatWithSampleRate: 48000, channels: 2)!
+        let format = AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 2)!
 
         try await recordingWorker.start(writingTo: outputURL, format: format, fileFormat: .wav)
 
-        let testBuffer = try createTestBuffer(frameCount: 1024)
+        let testBuffer = try createTestBuffer(frameCount: 1_024)
         recordingWorker.process(testBuffer)
 
         let finalURL = await recordingWorker.stop()
@@ -510,7 +510,7 @@ final class AudioSystemTests: XCTestCase {
     private func createTestBuffer(frameCount: AVAudioFrameCount) throws -> AVAudioPCMBuffer {
         guard let format = AVAudioFormat(
             commonFormat: .pcmFormatFloat32,
-            sampleRate: 48000,
+            sampleRate: 48_000,
             channels: 2,
             interleaved: false
         ) else {
