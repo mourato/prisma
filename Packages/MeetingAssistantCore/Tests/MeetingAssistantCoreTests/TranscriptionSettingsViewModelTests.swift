@@ -21,7 +21,6 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
     }
 
     func testLoadTranscriptions() async throws {
-        try XCTSkipIf(true, "Flaky floating point comparison")
         // Given
         let mockId1 = UUID()
         let mockId2 = UUID()
@@ -50,10 +49,10 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.transcriptions[0].id, mockId1)
         // appRawValue for Teams is "microsoft-teams" (from MeetingApp enum)
         XCTAssertEqual(viewModel.transcriptions[0].appRawValue, MeetingApp.microsoftTeams.rawValue)
-        XCTAssertEqual(viewModel.transcriptions[0].duration, 60)
+        XCTAssertEqual(viewModel.transcriptions[0].duration, 60, accuracy: 0.1)
         XCTAssertEqual(viewModel.transcriptions[1].id, mockId2)
         XCTAssertEqual(viewModel.transcriptions[1].appRawValue, MeetingApp.zoom.rawValue)
-        XCTAssertEqual(viewModel.transcriptions[1].duration, 120)
+        XCTAssertEqual(viewModel.transcriptions[1].duration, 120, accuracy: 0.1)
     }
 
     func testSelectTranscriptionLoadsFullData() async {
