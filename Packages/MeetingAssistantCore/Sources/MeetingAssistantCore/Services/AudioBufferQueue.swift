@@ -1,24 +1,23 @@
 @preconcurrency import AVFoundation
 import Foundation
+import os.lock
 
 /// A thread-safe, fixed-size Circular Buffer (Ring Buffer) for `AVAudioPCMBuffer`.
 /// Designed for high-performance audio bridging between `ScreenCaptureKit` (Push) and `AVAudioSourceNode` (Pull).
-/// Uses `NSLock` for thread safety.
+/// Uses `OSAllocatedUnfairLock` for real-time safe thread safety.
 public final class AudioBufferQueue: @unchecked Sendable {
     // MARK: - State
 
-    private let lock = NSLock()
+    private struct State {
+        var bufferStorage: [AVAudioPCMBuffer?]
+        var head: Int = 0 // Write index
+        var tail: Int = 0 // Read index
+        var count: Int = 0 // Current items
+        var droppedFrameCount: Int64 = 0
+    }
 
-    // Fixed buffer storage
-    private var bufferStorage: [AVAudioPCMBuffer?]
+    private let state: OSAllocatedUnfairLock<State>
     private let capacity: Int
-
-    // Ring indices
-    private var head: Int = 0 // Write index
-    private var tail: Int = 0 // Read index
-    private var count: Int = 0 // Current items
-
-    private var droppedFrameCount: Int64 = 0
 
     // MARK: - Lifecycle
 
@@ -26,7 +25,8 @@ public final class AudioBufferQueue: @unchecked Sendable {
     /// - Parameter capacity: Maximum number of buffers to hold. Default is 50 (~5-10s depending on buffer size).
     public init(capacity: Int = 50) {
         self.capacity = capacity
-        bufferStorage = Array(repeating: nil, count: capacity)
+        let initialStorage = [AVAudioPCMBuffer?](repeating: nil, count: capacity)
+        state = OSAllocatedUnfairLock(initialState: State(bufferStorage: initialStorage))
     }
 
     // MARK: - Public API
@@ -34,78 +34,63 @@ public final class AudioBufferQueue: @unchecked Sendable {
     /// Enqueues a buffer. STRICTLY NON-BLOCKING (spins/waits very briefly).
     /// If full, overwrites the oldest data (Drop Oldest strategy) to maintain real-time currency.
     public func enqueue(_ buffer: AVAudioPCMBuffer) {
-        lock.lock()
-        defer { self.lock.unlock() }
+        state.withLock { state in
+            if state.count >= capacity {
+                // Buffer full: Drop oldest (tail) to make space
+                // This ensures we always have fresh data and don't lag behind
+                state.bufferStorage[state.tail] = nil // Release ref
+                state.tail = (state.tail + 1) % capacity
+                state.count -= 1
+                state.droppedFrameCount += Int64(buffer.frameLength)
+            }
 
-        if count >= capacity {
-            // Buffer full: Drop oldest (tail) to make space
-            // This ensures we always have fresh data and don't lag behind
-            bufferStorage[tail] = nil // Release ref
-            tail = (tail + 1) % capacity
-            count -= 1
-            droppedFrameCount += Int64(buffer.frameLength)
+            // Write to head
+            state.bufferStorage[state.head] = buffer
+            state.head = (state.head + 1) % capacity
+            state.count += 1
         }
-
-        // Write to head
-        bufferStorage[head] = buffer
-        head = (head + 1) % capacity
-        count += 1
     }
 
     /// Dequeues a buffer.
     /// - Returns: The next buffer, or nil if empty.
     public func dequeue() -> AVAudioPCMBuffer? {
-        lock.lock()
-        defer { self.lock.unlock() }
+        state.withLock { state in
+            guard state.count > 0 else {
+                return nil
+            }
 
-        guard !_isEmpty else {
-            return nil
+            let buffer = state.bufferStorage[state.tail]
+
+            state.bufferStorage[state.tail] = nil
+            state.tail = (state.tail + 1) % capacity
+            state.count -= 1
+
+            return buffer
         }
-
-        let buffer = bufferStorage[tail]
-
-        bufferStorage[tail] = nil
-        tail = (tail + 1) % capacity
-        count -= 1
-
-        return buffer
     }
 
     // MARK: - Private Helpers
 
-    /// Internal isEmpty check - MUST only be called when lock is already held.
-    /// Avoids deadlock since NSLock is non-reentrant.
-    private var _isEmpty: Bool {
-        // swiftlint:disable:next empty_count
-        count == 0
-    }
-
     /// Clears the queue.
     public func clear() {
-        lock.lock()
-        defer { self.lock.unlock() }
-
-        for i in 0..<capacity {
-            bufferStorage[i] = nil
+        state.withLock { state in
+            for i in 0..<capacity {
+                state.bufferStorage[i] = nil
+            }
+            state.head = 0
+            state.tail = 0
+            state.count = 0
+            state.droppedFrameCount = 0
         }
-        head = 0
-        tail = 0
-        count = 0
-        droppedFrameCount = 0
     }
 
     /// Returns debug statistics (thread-safe).
     public var stats: (count: Int, dropped: Int64) {
-        lock.lock()
-        defer { self.lock.unlock() }
-        return (count, droppedFrameCount)
+        state.withLock { ($0.count, $0.droppedFrameCount) }
     }
 
     /// Returns whether the queue is empty.
     public var isEmpty: Bool {
-        lock.lock()
-        defer { self.lock.unlock() }
-        // swiftlint:disable:next empty_count
-        return count == 0
+        state.withLock { $0.count == 0 }
     }
 }
