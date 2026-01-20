@@ -37,6 +37,11 @@ jobs:
     name: Danger CI
     if: github.event_name == 'pull_request'
     runs-on: macos-14
+    permissions:
+      pull-requests: write
+      contents: read
+      statuses: write
+      issues: write
     steps:
       - uses: actions/checkout@v4
         with:
