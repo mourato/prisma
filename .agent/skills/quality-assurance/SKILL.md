@@ -222,6 +222,59 @@ jobs:
 
 ---
 
+## External Quality Gates
+
+### Codacy
+
+**Purpose**: Cloud-based code quality analysis for pull requests.
+
+**Common Warnings**:
+- Vertical alignment of function parameters
+- Code complexity metrics
+- Duplicate code detection
+- Security vulnerabilities
+- Code style inconsistencies
+
+**Resolution Workflow**:
+1. Check Codacy report in PR comments/checks
+2. Address warnings locally with SwiftFormat/SwiftLint first
+3. If Codacy-specific (not caught by local tools), adjust manually
+4. Re-run CI to validate fixes
+
+**Configuration**: 
+- Codacy rules are managed via web dashboard at [codacy.com](https://www.codacy.com)
+- Local `.codacy.yml` can override specific rules (if present in project)
+
+**When to Override**: 
+Codacy warnings can be ignored/suppressed if:
+- Already handled by SwiftLint/SwiftFormat with different enforcement
+- False positive (document reasoning in PR comment)
+- Style choice justified by team consensus and documented
+
+**Example Fix**:
+```swift
+// ❌ Codacy Warning: "Vertical alignment of parameters"
+func processAudio(
+  format: AVAudioFormat,
+     sampleRate: Double,
+  channels: Int
+) { }
+
+// ✅ Fixed: Consistent alignment
+func processAudio(
+    format: AVAudioFormat,
+    sampleRate: Double,
+    channels: Int
+) { }
+```
+
+**Priority**: 
+- 🔴 **Critical/Security**: Must fix before merge
+- 🟡 **Code Quality**: Should fix unless justified
+- 🔵 **Style**: Can be overridden with team consensus
+
+---
+
 ## Setup for New Developers
 
 When cloning the repository:

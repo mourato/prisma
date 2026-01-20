@@ -233,6 +233,80 @@ actor AudioRecordingWorker {
 
 ---
 
+## Testing Audio Components
+
+### Mock Audio Engine Pattern
+
+Ao testar componentes de áudio, sempre valide alocações e bounds antes de unsafe operations:
+
+```swift
+// ✅ CORRETO - Safe pointer handling em testes
+class MockAudioEngine {
+    func testRenderCallback() {
+        let frameCount: AVAudioFrameCount = 512
+        let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 1)!
+        
+        // 1. Alocar buffer ANTES do callback
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else {
+            XCTFail("Failed to allocate buffer")
+            return
+        }
+        buffer.frameLength = frameCount
+        
+        // 2. Validar ponteiros antes de usar
+        let ablPtr = UnsafeMutableAudioBufferListPointer(buffer.mutableAudioBufferList)
+        guard let channelData = ablPtr.first else {
+            XCTFail("No channel data")
+            return
+        }
+        
+        // 3. Bounds check SEMPRE
+        let safeCount = min(Int(frameCount), Int(channelData.mDataByteSize) / MemoryLayout<Float>.size)
+        
+        // 4. Processar apenas safeCount frames
+        let floatPtr = channelData.mData?.assumingMemoryBound(to: Float.self)
+        // Safe to use floatPtr[0..<safeCount]
+    }
+}
+```
+
+### Common Test Crashes
+
+**Signal 11 (SIGSEGV)**:
+- **Causa**: Acesso a ponteiro inválido ou buffer não alocado
+- **Solução**: Sempre alocar `AVAudioPCMBuffer` ANTES de passar para callbacks
+- **Validação**: Use `XCTAssertNotNil` para validar alocações antes de unsafe casts
+
+**Exemplo de fix real (Issue #26)**:
+```swift
+// ❌ ANTES - Crash em testSourceNodeRenderCallback
+let ablPtr = UnsafeMutableAudioBufferListPointer(audioBufferList)
+let buffer = ablPtr.first!  // Force unwrap sem validação
+
+// ✅ DEPOIS - Safe com validação
+guard let ablPtr = UnsafeMutableAudioBufferListPointer(audioBufferList).first else {
+    XCTFail("Expected audio buffer")
+    return noErr
+}
+let safeFrameCount = min(requestedFrames, ablPtr.mDataByteSize / MemoryLayout<Float>.size)
+```
+
+### Skipping Unstable Tests
+
+Para testes com comportamento não-determinístico (ex: performance, concorrência extrema):
+
+```swift
+func testHighConcurrencyScenario() throws {
+    #if ENABLE_UNSTABLE_TESTS
+    // Test implementation
+    #else
+    throw XCTSkip("Unstable test - enable with ENABLE_UNSTABLE_TESTS flag")
+    #endif
+}
+```
+
+---
+
 ## Common Patterns
 
 ### Efficient Copying
