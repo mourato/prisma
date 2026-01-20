@@ -186,7 +186,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupEventMonitor() {
         // Monitor for clicks outside popover to close it
         eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [
-            .leftMouseDown, .rightMouseDown
+            .leftMouseDown, .rightMouseDown,
         ]) { [weak self] _ in
             if self?.popover?.isShown == true {
                 self?.popover?.performClose(nil)
