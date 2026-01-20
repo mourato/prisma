@@ -10,3 +10,23 @@ trigger: always_on
 - Use `XCTMetric` para estabelecer performance baselines em operações críticas (ex: audio hot path)
 - Use `expectation` para testes assíncronos; evite `sleep()` arbitrário
 - Para Protocol-First design, gere mocks automaticamente e centralize em `GeneratedMocks.swift`
+
+## Mock Generation com Cuckoo
+
+- Use `make mocks` para regenerar mocks após mudanças em protocolos
+- Mocks são gerados via `CuckooGenerator` configurado em `Cuckoofile.toml`
+- **CRÍTICO**: Métodos `async` em mocks DEVEM ter `await` nos stubs:
+  ```swift
+  // ✅ CORRETO
+  stub(mock) { mock in
+      when(mock.process()).thenReturn(await defaultValue())
+  }
+  
+  // ❌ INCORRETO - Erro de compilação
+  stub(mock) { mock in
+      when(mock.process()).thenReturn(defaultValue())
+  }
+  ```
+- Ao modificar protocolos mockados, sempre execute `make mocks` antes de rodar testes
+- Problemas com unwrapping forçado em testes podem indicar mocks desatualizados
+- Se testes falharem após mudanças em protocols, verifique primeiro se `GeneratedMocks.swift` está atualizado
