@@ -49,7 +49,7 @@ public struct FloatingRecordingIndicatorView: View {
                 AudioVisualizer(
                     audioMeter: audioMonitor.audioMeter,
                     barCount: 16,
-                    maxHeight: 24
+                    maxHeight: 44
                 )
                 .frame(width: 120)
             }
@@ -61,7 +61,7 @@ public struct FloatingRecordingIndicatorView: View {
             }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 8)
+        .padding(.vertical, 16)
         .background(Color.black.opacity(0.85))
         .clipShape(Capsule())
         .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
@@ -88,7 +88,7 @@ public struct FloatingRecordingIndicatorView: View {
             }
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 6)
+        .padding(.vertical, 12)
         .background(Color.black.opacity(0.85))
         .clipShape(Capsule())
         .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 3)

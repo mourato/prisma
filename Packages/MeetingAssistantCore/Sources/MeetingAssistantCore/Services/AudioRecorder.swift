@@ -112,23 +112,31 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             extra: ["path": outputURL.path, "source": source.rawValue]
         )
 
-        // 1. Determine Hardware Sample Rate
-        // We query a temporary engine to know what the hardware (MainMixer/Output) expects.
-        // This ensures we capture System Audio at the same rate, avoiding heavy SRC or -10874 errors.
-        let tempEngine = AVAudioEngine()
-        let hardwareSampleRate = tempEngine.outputNode.outputFormat(forBus: 0).sampleRate
-        let targetSampleRate = (hardwareSampleRate > 0) ? hardwareSampleRate : Constants.outputSampleRate
-
-        AppLogger.info("Detected Hardware Sample Rate: \(targetSampleRate)", category: .recordingManager)
-
-        // 1.5. Check Microphone Permissions if needed
+        // 1. Check Microphone Permissions first if needed
         if (source == .microphone || source == .all) && AVCaptureDevice.authorizationStatus(for: .audio) != .authorized {
             AppLogger.error("Microphone permission denied. Cannot start recording.", category: .recordingManager)
             throw AudioRecorderError.permissionDenied
         }
 
-        // 2. Start Capture
-        // Start system capture with the matching rate ONLY if source includes system audio
+        // 2. Prepare Engine & Input Device
+        // We initialize the engine EARLY to select the preferred input device.
+        // This updates the hardware state (sample rate/channels) BEFORE we query it.
+        let engine = injectedEngine ?? AVAudioEngine()
+        audioEngine = engine // Retain generic reference
+
+        if source == .microphone || source == .all {
+            await selectPreferredInputDevice(engine: engine)
+        }
+
+        // 3. Determine Hardware Sample Rate
+        // Query the ACTUAL engine's output node after device selection.
+        let hardwareSampleRate = engine.outputNode.outputFormat(forBus: 0).sampleRate
+        let targetSampleRate = (hardwareSampleRate > 0) ? hardwareSampleRate : Constants.outputSampleRate
+
+        AppLogger.info("Detected Hardware Sample Rate: \(targetSampleRate)", category: .recordingManager)
+
+        // 4. Start Capture
+        // Start system capture with the matching rate
         if source == .system || source == .all {
             AppLogger.debug("Starting system recorder...", category: .recordingManager)
             try await systemRecorder.startRecording(to: outputURL, sampleRate: targetSampleRate)
@@ -136,7 +144,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             AppLogger.debug("Skipping system recorder start (source: \(source.rawValue))", category: .recordingManager)
         }
 
-        // 2.5. Mute system output if enabled
+        // 5. Mute system output if enabled
         if AppSettingsStore.shared.muteOutputDuringRecording {
             wasMutedBeforeRecording = muteController.isMuted()
             if !wasMutedBeforeRecording {
@@ -145,7 +153,8 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         }
 
         do {
-            try await setupAndStartEngine(
+            try await setupGraphAndStart(
+                engine: engine,
                 writingTo: outputURL,
                 source: source,
                 retryCount: retryCount,
@@ -159,23 +168,21 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
     // MARK: - Engine Setup Helpers
 
-    private func setupAndStartEngine(
+    private func setupGraphAndStart(
+        engine: AVAudioEngine,
         writingTo outputURL: URL,
         source: RecordingSource,
         retryCount: Int,
         sampleRate: Double
     ) async throws {
         AppLogger.debug("Setting up Audio Engine...", category: .recordingManager)
-        let engine = injectedEngine ?? AVAudioEngine()
+
         let mixer = AVAudioMixerNode()
         engine.attach(mixer)
 
-        audioEngine = engine
         mixerNode = mixer
 
-        if source == .microphone || source == .all {
-            await selectPreferredInputDevice(engine: engine)
-        }
+        // Note: Input Device already selected in startRecording
 
         AppLogger.debug("Configuring inputs...", category: .recordingManager)
         try configureInputs(engine: engine, mixer: mixer, source: source, sampleRate: sampleRate)
