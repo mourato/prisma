@@ -70,23 +70,33 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
     }
 
     /// Loads the Diarization models.
-    func loadDiarizationModels(minSpeakers: Int? = nil, maxSpeakers: Int? = nil) async {
+    func loadDiarizationModels(
+        minSpeakers: Int? = nil,
+        maxSpeakers: Int? = nil,
+        numSpeakers: Int? = nil
+    ) async {
         let min = minSpeakers ?? AppSettingsStore.shared.minSpeakers
         let max = maxSpeakers ?? AppSettingsStore.shared.maxSpeakers
+        let num = numSpeakers ?? AppSettingsStore.shared.numSpeakers
 
         // Check if we already have a manager with these same constraints
         if diarizerManager != nil,
            currentDiarizerMinSpeakers == min,
-           currentDiarizerMaxSpeakers == max
+           currentDiarizerMaxSpeakers == max,
+           currentDiarizerNumSpeakers == num
         {
             return
         }
 
-        logger.info("Loading Diarization models with constraints: \(min ?? 0)-\(max ?? 0)...")
+        logger.info("Loading Diarization models with constraints: min=\(min ?? 0), max=\(max ?? 0), num=\(num ?? 0)...")
 
         do {
-            let config = OfflineDiarizerConfig.default
+            var config = OfflineDiarizerConfig.default
                 .withSpeakers(min: min, max: max)
+
+            if let num {
+                config = config.withSpeakers(count: num)
+            }
 
             let manager = OfflineDiarizerManager(config: config)
             try await manager.prepareModels()
@@ -94,6 +104,7 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
             diarizerManager = manager
             currentDiarizerMinSpeakers = min
             currentDiarizerMaxSpeakers = max
+            currentDiarizerNumSpeakers = num
 
             isDiarizationLoaded = true
 
@@ -139,6 +150,7 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
         diarizerManager = nil
         currentDiarizerMinSpeakers = nil
         currentDiarizerMaxSpeakers = nil
+        currentDiarizerNumSpeakers = nil
         isDiarizationLoaded = false
 
         // Remove from disk
@@ -164,6 +176,7 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
 
     private var currentDiarizerMinSpeakers: Int?
     private var currentDiarizerMaxSpeakers: Int?
+    private var currentDiarizerNumSpeakers: Int?
 
     /// Structure to hold raw diarization result
     struct DiarizationSegment: Identifiable, Sendable {
@@ -177,10 +190,15 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
     func diarize(
         audioURL: URL,
         minSpeakers: Int? = nil,
-        maxSpeakers: Int? = nil
+        maxSpeakers: Int? = nil,
+        numSpeakers: Int? = nil
     ) async throws -> [DiarizationSegment] {
         // Ensure models are loaded with the requested constraints
-        await loadDiarizationModels(minSpeakers: minSpeakers, maxSpeakers: maxSpeakers)
+        await loadDiarizationModels(
+            minSpeakers: minSpeakers,
+            maxSpeakers: maxSpeakers,
+            numSpeakers: numSpeakers
+        )
 
         guard let manager = diarizerManager else {
             throw FluidError.diarizerNotLoaded
