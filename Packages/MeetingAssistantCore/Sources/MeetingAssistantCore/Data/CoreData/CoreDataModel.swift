@@ -143,6 +143,29 @@ public enum CoreDataModel {
         transcriptionModelNameAttribute.attributeType = .stringAttributeType
         transcriptionModelNameAttribute.isOptional = false
 
+        // New Metadata Fields
+        let transcriptionInputSourceAttribute = NSAttributeDescription()
+        transcriptionInputSourceAttribute.name = "inputSource"
+        transcriptionInputSourceAttribute.attributeType = .stringAttributeType
+        transcriptionInputSourceAttribute.isOptional = true
+
+        let transcriptionDurationAttribute = NSAttributeDescription()
+        transcriptionDurationAttribute.name = "transcriptionDuration"
+        transcriptionDurationAttribute.attributeType = .doubleAttributeType
+        transcriptionDurationAttribute.isOptional = false
+        transcriptionDurationAttribute.defaultValue = 0.0
+
+        let postProcessingDurationAttribute = NSAttributeDescription()
+        postProcessingDurationAttribute.name = "postProcessingDuration"
+        postProcessingDurationAttribute.attributeType = .doubleAttributeType
+        postProcessingDurationAttribute.isOptional = false
+        postProcessingDurationAttribute.defaultValue = 0.0
+
+        let postProcessingModelAttribute = NSAttributeDescription()
+        postProcessingModelAttribute.name = "postProcessingModel"
+        postProcessingModelAttribute.attributeType = .stringAttributeType
+        postProcessingModelAttribute.isOptional = true
+
         transcriptionEntity.properties = [
             transcriptionIdAttribute,
             transcriptionTextAttribute,
@@ -153,6 +176,10 @@ public enum CoreDataModel {
             transcriptionLanguageAttribute,
             transcriptionCreatedAtAttribute,
             transcriptionModelNameAttribute,
+            transcriptionInputSourceAttribute,
+            transcriptionDurationAttribute,
+            postProcessingDurationAttribute,
+            postProcessingModelAttribute,
         ]
 
         // Relacionamentos

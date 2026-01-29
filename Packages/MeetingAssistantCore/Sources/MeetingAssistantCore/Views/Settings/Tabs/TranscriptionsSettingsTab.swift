@@ -264,6 +264,7 @@ public struct TranscriptionsSettingsTab: View {
                             transcriptionDetail: viewModel.selectedId == transcription.id ? viewModel.selectedTranscription : nil,
                             isExpanded: viewModel.selectedId == transcription.id,
                             audioURL: transcription.audioFilePath != nil ? URL(fileURLWithPath: transcription.audioFilePath!) : nil,
+                            availablePrompts: viewModel.availablePrompts,
                             onToggleExpand: {
                                 withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                                     if viewModel.selectedId == transcription.id {
@@ -304,19 +305,19 @@ public struct TranscriptionsSettingsTab: View {
 
     private func handleTranscriptionAction(_ action: TranscriptionCardView.TranscriptionAction, for metadata: TranscriptionMetadata) {
         switch action {
-        case .copy:
-            if let transcription = viewModel.selectedTranscription {
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(transcription.text, forType: .string)
+        case let .copy(text):
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(text, forType: .string)
+        case let .reprocess(prompt):
+            if let transcription = viewModel.selectedTranscription, transcription.id == metadata.id {
+                Task {
+                    await viewModel.applyPostProcessing(prompt: prompt, to: transcription)
+                }
             }
-        case .download:
-            // TODO: Implement export
-            break
-        case .reprocess:
-            // This is handled via the menu in the card, but we could trigger it here
-            break
         case .info:
-            // TODO: Show details panel
+            // Info is handled locally in the view via popover, this likely won't be called if logic is in view
+            // But if we wanted to show a global panel, we'd do it here.
+            // Since we implemented popover in card, this case might be unused or for logging.
             break
         case .delete:
             Task {

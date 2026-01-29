@@ -29,6 +29,12 @@ public struct TranscriptionEntity: Identifiable, Codable, Hashable, Sendable {
     public let createdAt: Date
     public let modelName: String
 
+    // New Metadata Fields
+    public let inputSource: String?
+    public let transcriptionDuration: Double
+    public let postProcessingDuration: Double
+    public let postProcessingModel: String?
+
     /// Inicializador completo com suporte a pós-processamento.
     /// Configuração para inicialização flexível de TranscriptionEntity.
     public struct Configuration: Sendable {
@@ -42,6 +48,10 @@ public struct TranscriptionEntity: Identifiable, Codable, Hashable, Sendable {
         public var language: String = "pt"
         public var createdAt: Date = .init()
         public var modelName: String = "parakeet-tdt-0.6b-v3"
+        public var inputSource: String?
+        public var transcriptionDuration: Double = 0
+        public var postProcessingDuration: Double = 0
+        public var postProcessingModel: String?
 
         public init(
             text: String,
@@ -69,6 +79,10 @@ public struct TranscriptionEntity: Identifiable, Codable, Hashable, Sendable {
         language = config.language
         createdAt = config.createdAt
         modelName = config.modelName
+        inputSource = config.inputSource
+        transcriptionDuration = config.transcriptionDuration
+        postProcessingDuration = config.postProcessingDuration
+        postProcessingModel = config.postProcessingModel
     }
 
     /// Inicializador depreciado mantido para compatibilidade temporária (será removido).

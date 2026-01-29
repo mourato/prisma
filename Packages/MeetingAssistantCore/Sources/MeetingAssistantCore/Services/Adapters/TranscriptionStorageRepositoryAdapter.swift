@@ -37,7 +37,11 @@ public final class TranscriptionStorageRepositoryAdapter: TranscriptionStorageRe
             postProcessingPromptTitle: transcription.postProcessingPromptTitle,
             language: transcription.language,
             createdAt: transcription.createdAt,
-            modelName: transcription.modelName
+            modelName: transcription.modelName,
+            inputSource: transcription.inputSource,
+            transcriptionDuration: transcription.transcriptionDuration,
+            postProcessingDuration: transcription.postProcessingDuration,
+            postProcessingModel: transcription.postProcessingModel
         )
 
         try await storageService.saveTranscription(legacyTranscription)
@@ -48,34 +52,46 @@ public final class TranscriptionStorageRepositoryAdapter: TranscriptionStorageRe
             return nil
         }
 
-        // Converter Transcription (antiga) para TranscriptionEntity
-        return TranscriptionEntity(
-            id: legacyTranscription.id,
-            meeting: MeetingEntity(
-                id: legacyTranscription.meeting.id,
-                app: DomainMeetingApp(rawValue: legacyTranscription.meeting.app.rawValue) ?? .unknown,
-                startTime: legacyTranscription.meeting.startTime,
-                endTime: legacyTranscription.meeting.endTime,
-                audioFilePath: legacyTranscription.meeting.audioFilePath
-            ),
-            segments: legacyTranscription.segments.map { segment in
-                TranscriptionEntity.Segment(
-                    id: segment.id,
-                    speaker: segment.speaker,
-                    text: segment.text,
-                    startTime: segment.startTime,
-                    endTime: segment.endTime
-                )
-            },
+        return convertToEntity(legacyTranscription)
+    }
+
+    private func convertToEntity(_ legacyTranscription: Transcription) -> TranscriptionEntity {
+        let meetingEntity = MeetingEntity(
+            id: legacyTranscription.meeting.id,
+            app: DomainMeetingApp(rawValue: legacyTranscription.meeting.app.rawValue) ?? .unknown,
+            startTime: legacyTranscription.meeting.startTime,
+            endTime: legacyTranscription.meeting.endTime,
+            audioFilePath: legacyTranscription.meeting.audioFilePath
+        )
+
+        let segments = legacyTranscription.segments.map { segment in
+            TranscriptionEntity.Segment(
+                id: segment.id,
+                speaker: segment.speaker,
+                text: segment.text,
+                startTime: segment.startTime,
+                endTime: segment.endTime
+            )
+        }
+
+        var config = TranscriptionEntity.Configuration(
             text: legacyTranscription.text,
             rawText: legacyTranscription.rawText,
-            processedContent: legacyTranscription.processedContent,
-            postProcessingPromptId: legacyTranscription.postProcessingPromptId,
-            postProcessingPromptTitle: legacyTranscription.postProcessingPromptTitle,
-            language: legacyTranscription.language,
-            createdAt: legacyTranscription.createdAt,
-            modelName: legacyTranscription.modelName
+            segments: segments,
+            language: legacyTranscription.language
         )
+        config.id = legacyTranscription.id
+        config.processedContent = legacyTranscription.processedContent
+        config.postProcessingPromptId = legacyTranscription.postProcessingPromptId
+        config.postProcessingPromptTitle = legacyTranscription.postProcessingPromptTitle
+        config.createdAt = legacyTranscription.createdAt
+        config.modelName = legacyTranscription.modelName
+        config.inputSource = legacyTranscription.inputSource
+        config.transcriptionDuration = legacyTranscription.transcriptionDuration
+        config.postProcessingDuration = legacyTranscription.postProcessingDuration
+        config.postProcessingModel = legacyTranscription.postProcessingModel
+
+        return TranscriptionEntity(meeting: meetingEntity, config: config)
     }
 
     public func fetchTranscriptions(for meetingId: UUID) async throws -> [TranscriptionEntity] {
@@ -85,35 +101,7 @@ public final class TranscriptionStorageRepositoryAdapter: TranscriptionStorageRe
 
     public func fetchAllTranscriptions() async throws -> [TranscriptionEntity] {
         let legacyTranscriptions = try await storageService.loadTranscriptions()
-        return legacyTranscriptions.map { legacyTranscription in
-            TranscriptionEntity(
-                id: legacyTranscription.id,
-                meeting: MeetingEntity(
-                    id: legacyTranscription.meeting.id,
-                    app: DomainMeetingApp(rawValue: legacyTranscription.meeting.app.rawValue) ?? .unknown,
-                    startTime: legacyTranscription.meeting.startTime,
-                    endTime: legacyTranscription.meeting.endTime,
-                    audioFilePath: legacyTranscription.meeting.audioFilePath
-                ),
-                segments: legacyTranscription.segments.map { segment in
-                    TranscriptionEntity.Segment(
-                        id: segment.id,
-                        speaker: segment.speaker,
-                        text: segment.text,
-                        startTime: segment.startTime,
-                        endTime: segment.endTime
-                    )
-                },
-                text: legacyTranscription.text,
-                rawText: legacyTranscription.rawText,
-                processedContent: legacyTranscription.processedContent,
-                postProcessingPromptId: legacyTranscription.postProcessingPromptId,
-                postProcessingPromptTitle: legacyTranscription.postProcessingPromptTitle,
-                language: legacyTranscription.language,
-                createdAt: legacyTranscription.createdAt,
-                modelName: legacyTranscription.modelName
-            )
-        }
+        return legacyTranscriptions.map { convertToEntity($0) }
     }
 
     public func fetchAllMetadata() async throws -> [DomainTranscriptionMetadata] {

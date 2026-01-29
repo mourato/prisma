@@ -6,6 +6,7 @@ public struct TranscriptionCardView: View {
     let transcriptionDetail: Transcription?
     let isExpanded: Bool
     let audioURL: URL?
+    let availablePrompts: [PostProcessingPrompt]
     let onToggleExpand: () -> Void
     let onAction: (TranscriptionAction) -> Void
 
@@ -14,6 +15,7 @@ public struct TranscriptionCardView: View {
         transcriptionDetail: Transcription? = nil,
         isExpanded: Bool,
         audioURL: URL?,
+        availablePrompts: [PostProcessingPrompt] = [],
         onToggleExpand: @escaping () -> Void,
         onAction: @escaping (TranscriptionAction) -> Void
     ) {
@@ -21,16 +23,17 @@ public struct TranscriptionCardView: View {
         self.transcriptionDetail = transcriptionDetail
         self.isExpanded = isExpanded
         self.audioURL = audioURL
+        self.availablePrompts = availablePrompts
         self.onToggleExpand = onToggleExpand
         self.onAction = onAction
     }
 
     @State private var selectedTab: TranscriptionTab = .aiProcessed
+    @State private var showInfoPopover = false
 
     public enum TranscriptionAction {
-        case copy
-        case download
-        case reprocess
+        case copy(text: String)
+        case reprocess(prompt: PostProcessingPrompt)
         case info
         case delete
     }
@@ -93,8 +96,9 @@ public struct TranscriptionCardView: View {
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            // Audio Player
+            // Audio Player (resized to ~1/3 width)
             TranscriptionAudioPlayerView(audioURL: audioURL)
+                .frame(maxWidth: 250) // Approx 1/3 of a typical card width, or usage of GeometryReader up hierarchy
 
             // Tabs and Actions
             HStack {
@@ -112,13 +116,66 @@ public struct TranscriptionCardView: View {
 
                 // Actions
                 HStack(spacing: 12) {
-                    actionButton(icon: "doc.on.doc", action: .copy)
-                    actionButton(icon: "arrow.down.circle", action: .download)
-                    actionButton(icon: "arrow.clockwise", action: .reprocess)
-                    actionButton(icon: "info.circle", action: .info)
+                    // Copy (Context Aware)
+                    Button {
+                        onAction(.copy(text: currentText))
+                    } label: {
+                        Image(systemName: "doc.on.doc")
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help("common.copy".localized)
+
+                    // Redo Post-Processing
+                    Menu {
+                        ForEach(availablePrompts) { prompt in
+                            Button(prompt.title) {
+                                onAction(.reprocess(prompt: prompt))
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "arrow.clockwise") // User asked for rotating right arrow
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                    }
+                    .menuStyle(.borderlessButton)
+                    .help("Redo Post-processing")
+                    .fixedSize() // Prevent menu chevron if possible or accept it
+
+                    // Info
+                    Button {
+                        showInfoPopover.toggle()
+                    } label: {
+                        Image(systemName: "info.circle")
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .popover(isPresented: $showInfoPopover) {
+                        if let details = transcriptionDetail {
+                            TranscriptionInfoPopover(transcription: details)
+                        } else {
+                            Text("Loading details...")
+                                .padding()
+                        }
+                    }
+
+                    // Delete
                     actionButton(icon: "trash", action: .delete, isDestructive: true)
                 }
             }
+        }
+    }
+
+    private var currentText: String {
+        switch selectedTab {
+        case .aiProcessed:
+            transcriptionDetail?.processedContent ?? transcriptionDetail?.text ?? transcription.previewText
+        case .original:
+            transcriptionDetail?.rawText ?? transcription.previewText
+        case .segmented:
+            transcriptionDetail?.segments.map { "\($0.speaker): \($0.text)" }.joined(separator: "\n\n") ?? ""
         }
     }
 

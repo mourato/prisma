@@ -82,47 +82,63 @@ actor AudioRecordingWorker {
         }
 
         // Create Audio Settings based on format
-        let settings: [String: Any]
-        let commonFormat: AVAudioCommonFormat
-        let interleaved: Bool
-
-        switch fileFormat {
-        case .m4a:
-            settings = [
-                AVFormatIDKey: kAudioFormatMPEG4AAC,
-                AVSampleRateKey: format.sampleRate,
-                AVNumberOfChannelsKey: 2,
-                AVEncoderBitRateKey: 128_000,
-                AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue,
-            ]
-            commonFormat = .pcmFormatFloat32
-            interleaved = false
-
-        case .wav:
-            // Linear PCM 32-bit Float (High Quality, larger size)
-            // Using Float32 matches the engine's internal format, avoiding conversion overhead
-            settings = [
-                AVFormatIDKey: kAudioFormatLinearPCM,
-                AVSampleRateKey: format.sampleRate,
-                AVNumberOfChannelsKey: 2,
-                AVLinearPCMBitDepthKey: 32,
-                AVLinearPCMIsFloatKey: true,
-                AVLinearPCMIsBigEndianKey: false,
-                AVLinearPCMIsNonInterleaved: false,
-            ]
-            commonFormat = .pcmFormatFloat32
-            interleaved = false // AVAudioFile handles interleaving for us if needed, but we provide non-interleaved buffers
+        // Helper to generate settings
+        func createSettings(for targetFormat: AppSettingsStore.AudioFormat) -> ([String: Any], AVAudioCommonFormat, Bool) {
+            switch targetFormat {
+            case .m4a:
+                // Minimal AAC Settings
+                (
+                    [
+                        AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
+                        AVSampleRateKey: format.sampleRate,
+                        AVNumberOfChannelsKey: 2,
+                        AVEncoderBitRateKey: 128_000,
+                    ],
+                    .pcmFormatFloat32,
+                    false
+                )
+            case .wav:
+                (
+                    [
+                        AVFormatIDKey: kAudioFormatLinearPCM,
+                        AVSampleRateKey: format.sampleRate,
+                        AVNumberOfChannelsKey: 2,
+                        AVLinearPCMBitDepthKey: 32,
+                        AVLinearPCMIsFloatKey: true,
+                        AVLinearPCMIsBigEndianKey: false,
+                        AVLinearPCMIsNonInterleaved: false,
+                    ],
+                    .pcmFormatFloat32,
+                    false
+                )
+            }
         }
 
-        // Create Audio File
-        let file = try AVAudioFile(
-            forWriting: url,
-            settings: settings,
-            commonFormat: commonFormat,
-            interleaved: interleaved
-        )
-        audioFile = file
-        currentURL = url
+        // Try to create file with requested format, fallback to WAV on failure
+        do {
+            let (settings, commonFormat, interleaved) = createSettings(for: fileFormat)
+            audioFile = try AVAudioFile(
+                forWriting: url,
+                settings: settings,
+                commonFormat: commonFormat,
+                interleaved: interleaved
+            )
+            currentURL = url
+        } catch {
+            print("Failed to initialize audio file with format \(fileFormat): \(error). Falling back to WAV.")
+            // Fallback to WAV
+            // Note: If original URL ended in .m4a, this might create a confusing file, but it will work.
+            // Ideally we should change the extension, but we can't easily change the URL here as it's passed in.
+            // coreaudiod will handle valid WAV headers in .m4a files usually, or we just accept it for now.
+            let (wavSettings, wavCommon, wavInterleaved) = createSettings(for: .wav)
+            audioFile = try AVAudioFile(
+                forWriting: url,
+                settings: wavSettings,
+                commonFormat: wavCommon,
+                interleaved: wavInterleaved
+            )
+            currentURL = url
+        }
 
         // Start processing task
         processingTask = Task {
