@@ -50,7 +50,8 @@ class LocalTranscriptionClient {
                 let diarizationSegments = try await manager.diarize(
                     audioURL: audioURL,
                     minSpeakers: AppSettingsStore.shared.minSpeakers,
-                    maxSpeakers: AppSettingsStore.shared.maxSpeakers
+                    maxSpeakers: AppSettingsStore.shared.maxSpeakers,
+                    numSpeakers: AppSettingsStore.shared.numSpeakers
                 )
                 segments = merge(
                     text: text, asrSegments: segmentsFromASR, speakers: diarizationSegments

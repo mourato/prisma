@@ -135,6 +135,7 @@ public class AppSettingsStore: ObservableObject {
         static let isDiarizationEnabled = "isDiarizationEnabled"
         static let minSpeakers = "minSpeakers"
         static let maxSpeakers = "maxSpeakers"
+        static let numSpeakers = "numSpeakers"
         static let selectedLanguage = "selectedLanguage"
     }
 
@@ -196,6 +197,13 @@ public class AppSettingsStore: ObservableObject {
     @Published public var maxSpeakers: Int? {
         didSet {
             UserDefaults.standard.set(maxSpeakers, forKey: Keys.maxSpeakers)
+        }
+    }
+
+    /// Fixed number of speakers for diarization.
+    @Published public var numSpeakers: Int? {
+        didSet {
+            UserDefaults.standard.set(numSpeakers, forKey: Keys.numSpeakers)
         }
     }
 
@@ -262,6 +270,7 @@ public class AppSettingsStore: ObservableObject {
 
         minSpeakers = UserDefaults.standard.object(forKey: Keys.minSpeakers) as? Int
         maxSpeakers = UserDefaults.standard.object(forKey: Keys.maxSpeakers) as? Int
+        numSpeakers = UserDefaults.standard.object(forKey: Keys.numSpeakers) as? Int
 
         let rawFormat = UserDefaults.standard.string(forKey: PostProcessingKeys.audioFormat)
         audioFormat = rawFormat.flatMap { AudioFormat(rawValue: $0) } ?? .m4a
@@ -314,6 +323,7 @@ public class AppSettingsStore: ObservableObject {
         isDiarizationEnabled = false
         minSpeakers = nil
         maxSpeakers = nil
+        numSpeakers = nil
     }
 
     // MARK: - Prompt Management
