@@ -137,6 +137,8 @@ public class AppSettingsStore: ObservableObject {
         static let maxSpeakers = "maxSpeakers"
         static let numSpeakers = "numSpeakers"
         static let selectedLanguage = "selectedLanguage"
+        static let audioDevicePriority = "audioDevicePriority"
+        static let muteOutputDuringRecording = "muteOutputDuringRecording"
     }
 
     // MARK: - Published Properties
@@ -230,6 +232,16 @@ public class AppSettingsStore: ObservableObject {
         }
     }
 
+    /// Ordered list of audio device UIDs by priority.
+    @Published public var audioDevicePriority: [String] {
+        didSet { save(audioDevicePriority, forKey: Keys.audioDevicePriority) }
+    }
+
+    /// Whether to mute system audio output while recording is in progress.
+    @Published public var muteOutputDuringRecording: Bool {
+        didSet { UserDefaults.standard.set(muteOutputDuringRecording, forKey: Keys.muteOutputDuringRecording) }
+    }
+
     /// All available prompts (predefined + user-created).
     public var allPrompts: [PostProcessingPrompt] {
         PostProcessingPrompt.allPredefined + userPrompts
@@ -287,6 +299,9 @@ public class AppSettingsStore: ObservableObject {
         let rawLang = UserDefaults.standard.string(forKey: Keys.selectedLanguage)
         selectedLanguage = rawLang.flatMap { AppLanguage(rawValue: $0) } ?? .system
 
+        audioDevicePriority = UserDefaults.standard.stringArray(forKey: Keys.audioDevicePriority) ?? []
+        muteOutputDuringRecording = UserDefaults.standard.bool(forKey: Keys.muteOutputDuringRecording)
+
         applyLanguage(selectedLanguage)
     }
 
@@ -324,6 +339,8 @@ public class AppSettingsStore: ObservableObject {
         minSpeakers = nil
         maxSpeakers = nil
         numSpeakers = nil
+        audioDevicePriority = []
+        muteOutputDuringRecording = false
     }
 
     // MARK: - Prompt Management

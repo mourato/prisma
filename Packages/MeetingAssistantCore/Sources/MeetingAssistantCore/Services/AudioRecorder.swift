@@ -61,6 +61,10 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     var validationTimer: Timer?
     public var onRecordingError: (@Sendable (Error) -> Void)?
 
+    private let muteController = SystemAudioMuteController.shared
+    private var wasMutedBeforeRecording = false
+    private let deviceManager = AudioDeviceManager()
+
     init() {
         // Setup worker callbacks to bridge back to MainActor
         worker.setOnPowerUpdate { [weak self] avg, peak in
@@ -131,6 +135,14 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             AppLogger.debug("Skipping system recorder start (source: \(source.rawValue))", category: .recordingManager)
         }
 
+        // 2.5. Mute system output if enabled
+        if AppSettingsStore.shared.muteOutputDuringRecording {
+            wasMutedBeforeRecording = muteController.isMuted()
+            if !wasMutedBeforeRecording {
+                try? muteController.setMuted(true)
+            }
+        }
+
         do {
             try await setupAndStartEngine(
                 writingTo: outputURL,
@@ -159,6 +171,10 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
         audioEngine = engine
         mixerNode = mixer
+
+        if source == .microphone || source == .all {
+            await selectPreferredInputDevice(engine: engine)
+        }
 
         AppLogger.debug("Configuring inputs...", category: .recordingManager)
         try configureInputs(engine: engine, mixer: mixer, source: source, sampleRate: sampleRate)
@@ -336,6 +352,11 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         _ = await systemRecorder.stopRecording()
         cleanupEngine()
 
+        // Restore audio output if we muted it
+        if AppSettingsStore.shared.muteOutputDuringRecording, !wasMutedBeforeRecording {
+            try? muteController.setMuted(false)
+        }
+
         // Finalize worker
         let url = await worker.stop()
 
@@ -403,6 +424,47 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     public func openSettings() {
         if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone") {
             NSWorkspace.shared.open(url)
+        }
+    }
+
+    // MARK: - Private Helpers (Issue #35)
+
+    private func selectPreferredInputDevice(engine: AVAudioEngine) async {
+        let priorityList = AppSettingsStore.shared.audioDevicePriority
+        guard !priorityList.isEmpty else { return }
+
+        // Find the first available device from the priority list
+        var deviceID: AudioObjectID?
+        for uid in priorityList {
+            if let id = deviceManager.getAudioDeviceID(for: uid) {
+                deviceID = id
+                break
+            }
+        }
+
+        guard let id = deviceID else {
+            AppLogger.debug("No preferred input device from priority list is available. Using system default.", category: .recordingManager)
+            return
+        }
+
+        // Apply device to the input node
+        let inputNode = engine.inputNode
+        var deviceIDToSet = id
+        let size = UInt32(MemoryLayout<AudioObjectID>.size)
+
+        let status = AudioUnitSetProperty(
+            inputNode.audioUnit!,
+            kAudioOutputUnitProperty_CurrentDevice,
+            kAudioUnitScope_Global,
+            0,
+            &deviceIDToSet,
+            size
+        )
+
+        if status != noErr {
+            AppLogger.warning("Failed to set preferred input device", category: .recordingManager, extra: ["status": status, "deviceID": id])
+        } else {
+            AppLogger.info("Set preferred input device", category: .recordingManager, extra: ["deviceID": id])
         }
     }
 }
