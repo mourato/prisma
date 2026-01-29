@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 import SwiftUI
 
@@ -10,8 +11,17 @@ public class PostProcessingSettingsViewModel: ObservableObject {
     @Published public var promptToDelete: PostProcessingPrompt?
     @Published public var showSystemPromptEditor = false
 
+    private var cancellables = Set<AnyCancellable>()
+
     public init(settings: AppSettingsStore = .shared) {
         self.settings = settings
+
+        // Forward settings changes to this ViewModel's observers to ensure UI refreshes
+        settings.objectWillChange
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
     }
 
     public func handleSavePrompt(_ prompt: PostProcessingPrompt) {
