@@ -299,6 +299,32 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         }
     }
 
+    /// Cancel recording and discard audio files.
+    public func cancelRecording() async {
+        guard isRecording else { return }
+
+        AppLogger.info("Cancelling recording...", category: .recordingManager)
+
+        // Stop recorders
+        _ = await micRecorder.stopRecording()
+        _ = await systemRecorder.stopRecording()
+
+        // Cleanup temporary files
+        await cleanupTemporaryFiles()
+
+        // Also cleanup merged file if it exists
+        if let mergedURL = await getMergedAudioURL() {
+            try? FileManager.default.removeItem(at: mergedURL)
+            setMergedAudioURL(nil)
+        }
+
+        // Reset state
+        isRecording = false
+        currentMeeting = nil
+
+        AppLogger.info("Recording cancelled and files discarded", category: .recordingManager)
+    }
+
     /// Transcribe an externally recorded audio file.
     /// - Parameter audioURL: Path to the audio file (m4a, mp3, wav).
     public func transcribeExternalAudio(from audioURL: URL) async {
@@ -401,24 +427,40 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         let settings = AppSettingsStore.shared
 
         if settings.shouldMergeAudioFiles {
-            AppLogger.info("Merging audio files...", category: .recordingManager)
             var inputURLs: [URL] = []
             if let micURL { inputURLs.append(micURL) }
             if let sysURL { inputURLs.append(sysURL) }
 
-            let finalURL = try await audioMerger.mergeAudioFiles(
-                inputURLs: inputURLs,
-                to: outputURL,
-                format: settings.audioFormat
-            )
+            // If we have 2 files, we definitely need to merge (mix them)
+            // If we have 1 file, we only need to "merge" (export) if it's not already at the output URL OR if we want to ensure format compliance
+            if inputURLs.count >= 2 {
+                AppLogger.info("Merging \(inputURLs.count) audio files...", category: .recordingManager)
+                let finalURL = try await audioMerger.mergeAudioFiles(
+                    inputURLs: inputURLs,
+                    to: outputURL,
+                    format: settings.audioFormat
+                )
+                await cleanupTemporaryFiles()
+                return finalURL
+            } else if let singleURL = inputURLs.first {
+                AppLogger.info("Single audio source recorded. Skipping merge and using: \(singleURL.lastPathComponent)", category: .recordingManager)
 
-            await cleanupTemporaryFiles()
-            AppLogger.info(
-                "Audio merge complete",
-                category: .recordingManager,
-                extra: ["finalURL": finalURL.lastPathComponent]
-            )
-            return finalURL
+                // If the single file is already our output URL, we are done
+                if singleURL == outputURL {
+                    await cleanupTemporaryFiles()
+                    return outputURL
+                }
+
+                // Otherwise move it to output location
+                if FileManager.default.fileExists(atPath: outputURL.path) {
+                    try FileManager.default.removeItem(at: outputURL)
+                }
+                try FileManager.default.moveItem(at: singleURL, to: outputURL)
+                await cleanupTemporaryFiles()
+                return outputURL
+            } else {
+                throw RecordingManagerError.noInputFiles
+            }
         } else {
             AppLogger.info(
                 "Audio merge disabled. Using microphone recording as primary.",
