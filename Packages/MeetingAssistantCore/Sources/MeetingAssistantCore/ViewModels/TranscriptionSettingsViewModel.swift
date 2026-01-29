@@ -13,7 +13,9 @@ public class TranscriptionSettingsViewModel: ObservableObject {
             if let id = selectedId {
                 Task { await self.loadFullTranscription(id: id) }
             } else {
-                selectedTranscription = nil
+                Task {
+                    self.selectedTranscription = nil
+                }
             }
         }
     }
