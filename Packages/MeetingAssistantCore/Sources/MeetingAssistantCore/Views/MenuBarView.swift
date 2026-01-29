@@ -115,25 +115,29 @@ public struct MenuBarView: View {
     }
 
     private var statusSection: some View {
-        VStack(spacing: 8) {
-            HStack {
-                Circle()
-                    .fill(viewModel.isRecording ? .red : .gray)
-                    .frame(width: 10, height: 10)
+        Group {
+            if let statusText = viewModel.statusText {
+                VStack(spacing: 8) {
+                    HStack {
+                        Circle()
+                            .fill(viewModel.isRecording ? .red : .gray)
+                            .frame(width: 10, height: 10)
 
-                Text(viewModel.statusText)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                        Text(statusText)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
 
-                Spacer()
-            }
+                        Spacer()
+                    }
 
-            if viewModel.isRecording, let meeting = viewModel.currentMeeting {
-                MeetingCard(meeting: meeting, duration: viewModel.displayDuration)
+                    if viewModel.isRecording, let meeting = viewModel.currentMeeting {
+                        MeetingCard(meeting: meeting, duration: viewModel.displayDuration)
+                    }
+                }
+                .padding()
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
             }
         }
-        .padding()
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
     }
 
     private var controlButtons: some View {
@@ -145,68 +149,21 @@ public struct MenuBarView: View {
                         systemImage: viewModel.recordButtonIcon
                     )
                     .font(.headline)
-                    .frame(maxWidth: .infinity, minHeight: 38)
+                    .frame(maxWidth: .infinity, minHeight: 44)
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .tint(.red)
+                .buttonStyle(.plain)
+                .background(Color.red)
+                .foregroundColor(.white)
+                .clipShape(Capsule())
             } else {
-                // Split Button for Start Recording
-                HStack(spacing: 0) {
-                    // Main Action (Record All)
-                    Button(action: { startRecording(source: .all) }) {
-                        Label(
-                            viewModel.recordButtonTitle,
-                            systemImage: viewModel.recordButtonIcon
-                        )
-                        .font(.headline)
-                        .frame(maxWidth: .infinity, minHeight: 38)
+                RecordingButton(
+                    title: viewModel.recordButtonTitle,
+                    icon: viewModel.isModelLoaded ? "waveform" : viewModel.recordButtonIcon,
+                    isDisabled: !viewModel.canStartRecording,
+                    onStart: { source in
+                        startRecording(source: source)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
-                    .disabled(!viewModel.canStartRecording)
-
-                    // Dropdown Menu
-                    Menu {
-                        Section(NSLocalizedString("menubar.record_section", bundle: .safeModule, comment: "")) {
-                            Button {
-                                startRecording(source: .all)
-                            } label: {
-                                Label(RecordingSource.all.displayName, systemImage: "circle.circle.fill")
-                            }
-
-                            Button {
-                                startRecording(source: .microphone)
-                            } label: {
-                                Label(RecordingSource.microphone.displayName, systemImage: "mic.fill")
-                            }
-
-                            Button {
-                                startRecording(source: .system)
-                            } label: {
-                                Label(RecordingSource.system.displayName, systemImage: "display")
-                            }
-                        }
-                    } label: {
-                        Image(systemName: "chevron.down")
-                            .frame(width: 20, height: 38) // Match height
-                            .contentShape(Rectangle())
-                    }
-                    .menuStyle(.borderlessButton)
-                    .frame(width: 30) // Fixed width for chevron area
-                    .background(Color.accentColor) // Match main button style
-                    .cornerRadius(6) // Only corners on right?
-                    // Basic styling to make it look joined
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
-                    .overlay(
-                        Rectangle()
-                            .frame(width: 1)
-                            .foregroundColor(Color.black.opacity(0.2)),
-                        alignment: .leading
-                    )
-                }
-                // Apply common container styling to the HStack to make it look like one pill
-                .padding(0)
+                )
             }
         }
         .padding(.top, 4)
