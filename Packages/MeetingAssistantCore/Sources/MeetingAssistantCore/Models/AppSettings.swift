@@ -139,6 +139,7 @@ public class AppSettingsStore: ObservableObject {
         static let selectedLanguage = "selectedLanguage"
         static let audioDevicePriority = "audioDevicePriority"
         static let muteOutputDuringRecording = "muteOutputDuringRecording"
+        static let deletedPromptIds = "postProcessingDeletedPromptIds"
     }
 
     // MARK: - Published Properties
@@ -161,6 +162,11 @@ public class AppSettingsStore: ObservableObject {
     /// User-created prompts for post-processing.
     @Published public var userPrompts: [PostProcessingPrompt] {
         didSet { save(userPrompts, forKey: Keys.userPrompts) }
+    }
+
+    /// Predefined prompt IDs that the user has explicitly deleted.
+    @Published public var deletedPromptIds: Set<UUID> {
+        didSet { save(deletedPromptIds, forKey: Keys.deletedPromptIds) }
     }
 
     /// Currently selected prompt ID for post-processing.
@@ -242,9 +248,19 @@ public class AppSettingsStore: ObservableObject {
         didSet { UserDefaults.standard.set(muteOutputDuringRecording, forKey: Keys.muteOutputDuringRecording) }
     }
 
-    /// All available prompts (predefined + user-created).
+    /// All available prompts (predefined + user-created), filtered by deleted and overrides.
     public var allPrompts: [PostProcessingPrompt] {
-        PostProcessingPrompt.allPredefined + userPrompts
+        // 1. Start with predefined prompts that are NOT deleted
+        let activePredefined = PostProcessingPrompt.allPredefined.filter { !deletedPromptIds.contains($0.id) }
+
+        // 2. Identify which predefined prompts have user overrides (same ID in userPrompts)
+        let overrideIds = Set(userPrompts.map(\.id))
+
+        // 3. Filter predefined prompts that are NOT overridden
+        let remainingPredefined = activePredefined.filter { !overrideIds.contains($0.id) }
+
+        // 4. Return combined list: predefined (not overridden) + all user prompts (including overrides)
+        return remainingPredefined + userPrompts
     }
 
     /// Currently selected prompt.
@@ -275,6 +291,14 @@ public class AppSettingsStore: ObservableObject {
             userPrompts = prompts
         } else {
             userPrompts = []
+        }
+
+        if let data = UserDefaults.standard.data(forKey: Keys.deletedPromptIds),
+           let ids = try? JSONDecoder().decode(Set<UUID>.self, from: data)
+        {
+            deletedPromptIds = ids
+        } else {
+            deletedPromptIds = []
         }
 
         postProcessingEnabled = UserDefaults.standard.bool(forKey: Keys.postProcessingEnabled)
@@ -333,6 +357,7 @@ public class AppSettingsStore: ObservableObject {
         aiEnabled = false
         systemPrompt = AIPromptTemplates.defaultSystemPrompt
         userPrompts = []
+        deletedPromptIds = []
         selectedPromptId = nil
         postProcessingEnabled = false
         isDiarizationEnabled = false
@@ -351,17 +376,31 @@ public class AppSettingsStore: ObservableObject {
         userPrompts.append(prompt)
     }
 
-    /// Updates an existing user prompt.
+    /// Updates an existing user prompt or creates a new override if it's predefined.
     /// - Parameter prompt: The prompt with updated values.
     public func updatePrompt(_ prompt: PostProcessingPrompt) {
-        guard let index = userPrompts.firstIndex(where: { $0.id == prompt.id }) else { return }
-        userPrompts[index] = prompt
+        // Ensure it's not in the deleted list if we are updating/overriding it
+        deletedPromptIds.remove(prompt.id)
+
+        if let index = userPrompts.firstIndex(where: { $0.id == prompt.id }) {
+            userPrompts[index] = prompt
+        } else {
+            // This is either a new prompt or a first-time override of a predefined prompt
+            userPrompts.append(prompt)
+        }
     }
 
-    /// Deletes a user prompt by ID.
+    /// Deletes a prompt by ID.
     /// - Parameter id: The ID of the prompt to delete.
     public func deletePrompt(id: UUID) {
+        // If it's a predefined prompt, mark it as deleted
+        if PostProcessingPrompt.allPredefined.contains(where: { $0.id == id }) {
+            deletedPromptIds.insert(id)
+        }
+
+        // Always remove from userPrompts if present
         userPrompts.removeAll { $0.id == id }
+
         if selectedPromptId == id {
             selectedPromptId = nil
         }

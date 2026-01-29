@@ -152,16 +152,8 @@ public struct PostProcessingSettingsTab: View {
                 }
 
                 VStack(spacing: 8) {
-                    ForEach(PostProcessingPrompt.allPredefined) { prompt in
-                        promptRow(prompt: prompt, isPredefined: true)
-                    }
-
-                    if !viewModel.settings.userPrompts.isEmpty {
-                        Divider().padding(.vertical, 8)
-
-                        ForEach(viewModel.settings.userPrompts) { prompt in
-                            promptRow(prompt: prompt, isPredefined: false)
-                        }
+                    ForEach(viewModel.settings.allPrompts) { prompt in
+                        promptRow(prompt: prompt)
                     }
                 }
             }
@@ -170,7 +162,7 @@ public struct PostProcessingSettingsTab: View {
 
     // MARK: - Prompt Row
 
-    private func promptRow(prompt: PostProcessingPrompt, isPredefined: Bool) -> some View {
+    private func promptRow(prompt: PostProcessingPrompt) -> some View {
         let isSelected = viewModel.settings.selectedPromptId == prompt.id
 
         return Button {
@@ -186,7 +178,7 @@ public struct PostProcessingSettingsTab: View {
                     selectionIndicator(isSelected: isSelected)
                 }
 
-                promptMenu(prompt: prompt, isPredefined: isPredefined, isSelected: isSelected)
+                promptMenu(prompt: prompt, isSelected: isSelected)
             }
             .padding(10)
             .contentShape(Rectangle())
@@ -199,7 +191,7 @@ public struct PostProcessingSettingsTab: View {
                 .stroke(isSelected ? Color.accentColor.opacity(0.3) : Color.clear, lineWidth: 1)
         )
         .contextMenu {
-            promptMenuContent(prompt: prompt, isPredefined: isPredefined, isSelected: isSelected)
+            promptMenuContent(prompt: prompt, isSelected: isSelected)
         }
     }
 
@@ -236,9 +228,9 @@ public struct PostProcessingSettingsTab: View {
             .symbolEffect(.bounce, value: isSelected)
     }
 
-    private func promptMenu(prompt: PostProcessingPrompt, isPredefined: Bool, isSelected: Bool) -> some View {
+    private func promptMenu(prompt: PostProcessingPrompt, isSelected: Bool) -> some View {
         Menu {
-            promptMenuContent(prompt: prompt, isPredefined: isPredefined, isSelected: isSelected)
+            promptMenuContent(prompt: prompt, isSelected: isSelected)
         } label: {
             Image(systemName: "ellipsis.circle")
                 .foregroundStyle(.secondary)
@@ -250,7 +242,7 @@ public struct PostProcessingSettingsTab: View {
     }
 
     @ViewBuilder
-    private func promptMenuContent(prompt: PostProcessingPrompt, isPredefined: Bool, isSelected: Bool) -> some View {
+    private func promptMenuContent(prompt: PostProcessingPrompt, isSelected: Bool) -> some View {
         Button {
             viewModel.selectPrompt(prompt.id, forceSelect: true)
         } label: {
@@ -259,39 +251,29 @@ public struct PostProcessingSettingsTab: View {
 
         Divider()
 
-        if isPredefined {
-            Button {
+        Button {
+            if prompt.isPredefined {
                 viewModel.prepareCopy(of: prompt, asDuplicate: false)
-            } label: {
-                Label("settings.post_processing.edit".localized, systemImage: "pencil")
-            }
-
-            Button {
-                viewModel.prepareCopy(of: prompt, asDuplicate: true)
-            } label: {
-                Label("settings.post_processing.duplicate".localized, systemImage: "plus.square.on.square")
-            }
-        } else {
-            Button {
+            } else {
                 viewModel.editingPrompt = prompt
                 viewModel.showPromptEditor = true
-            } label: {
-                Label("settings.post_processing.edit".localized, systemImage: "pencil")
             }
+        } label: {
+            Label("settings.post_processing.edit".localized, systemImage: "pencil")
+        }
 
-            Button {
-                viewModel.prepareCopy(of: prompt, asDuplicate: true)
-            } label: {
-                Label("settings.post_processing.duplicate".localized, systemImage: "plus.square.on.square")
-            }
+        Button {
+            viewModel.prepareCopy(of: prompt, asDuplicate: true)
+        } label: {
+            Label("settings.post_processing.duplicate".localized, systemImage: "plus.square.on.square")
+        }
 
-            Divider()
+        Divider()
 
-            Button(role: .destructive) {
-                viewModel.confirmDeletePrompt(prompt)
-            } label: {
-                Label("settings.post_processing.delete".localized, systemImage: "trash")
-            }
+        Button(role: .destructive) {
+            viewModel.confirmDeletePrompt(prompt)
+        } label: {
+            Label("settings.post_processing.delete".localized, systemImage: "trash")
         }
     }
 }

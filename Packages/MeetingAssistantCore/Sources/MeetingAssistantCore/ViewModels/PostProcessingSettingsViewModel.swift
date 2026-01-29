@@ -57,11 +57,13 @@ public class PostProcessingSettingsViewModel: ObservableObject {
             newTitle = "\(prompt.title) (\("settings.post_processing.duplicate".localized))"
         }
 
-        // Force a new ID and make it non-predefined
+        // Use original ID if NOT duplicating, otherwise force a new ID.
+        // Also make it non-predefined so it can be edited.
         let newPrompt = PostProcessingPrompt(
+            id: asDuplicate ? UUID() : prompt.id,
             title: newTitle,
             promptText: prompt.promptText,
-            isActive: false,
+            isActive: prompt.isActive,
             icon: prompt.icon,
             description: prompt.description,
             isPredefined: false
