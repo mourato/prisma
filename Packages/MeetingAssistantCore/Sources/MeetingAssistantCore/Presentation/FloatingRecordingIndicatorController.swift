@@ -68,7 +68,8 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
             defer: false
         )
 
-        panel.level = .floating
+        panel.level = .screenSaver
+        panel.ignoresMouseEvents = true
         panel.isFloatingPanel = true
         panel.hidesOnDeactivate = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
@@ -111,8 +112,10 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
             context.duration = 0.15
             panel.animator().alphaValue = 0
         } completionHandler: { [weak self] in
-            self?.panel?.close()
-            self?.panel = nil
+            Task { @MainActor in
+                self?.panel?.close()
+                self?.panel = nil
+            }
         }
 
         isVisible = false
