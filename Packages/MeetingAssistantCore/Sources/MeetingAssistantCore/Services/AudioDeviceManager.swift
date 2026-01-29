@@ -109,11 +109,11 @@ public final class AudioDeviceManager: ObservableObject {
                 mElement: kAudioObjectPropertyElementMain
             )
 
-            var uidString: CFString = "" as CFString
-            var uidSize = UInt32(MemoryLayout<CFString>.size)
+            var uidString: Unmanaged<CFString>?
+            var uidSize = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
             let status = AudioObjectGetPropertyData(deviceID, &nameAddress, 0, nil, &uidSize, &uidString)
 
-            if status == noErr, (uidString as String) == uid {
+            if status == noErr, let deviceUID = uidString?.takeRetainedValue(), (deviceUID as String) == uid {
                 return deviceID
             }
         }

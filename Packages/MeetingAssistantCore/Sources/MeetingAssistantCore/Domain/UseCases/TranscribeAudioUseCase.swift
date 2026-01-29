@@ -72,8 +72,9 @@ public final class TranscribeAudioUseCase {
         }
 
         // Criar entidade de transcrição
-        let transcription = TranscriptionEntity(
-            meeting: meeting,
+        var config = TranscriptionEntity.Configuration(
+            text: processedContent ?? response.text,
+            rawText: response.text,
             segments: response.segments.map { segment in
                 TranscriptionEntity.Segment(
                     speaker: segment.speaker,
@@ -82,13 +83,16 @@ public final class TranscribeAudioUseCase {
                     endTime: segment.endTime
                 )
             },
-            text: processedContent ?? response.text,
-            rawText: response.text,
-            processedContent: processedContent,
-            postProcessingPromptId: promptId,
-            postProcessingPromptTitle: promptTitle,
-            language: response.language,
-            modelName: response.model
+            language: response.language
+        )
+        config.processedContent = processedContent
+        config.postProcessingPromptId = promptId
+        config.postProcessingPromptTitle = promptTitle
+        config.modelName = response.model
+
+        let transcription = TranscriptionEntity(
+            meeting: meeting,
+            config: config
         )
 
         // Salvar transcrição

@@ -40,7 +40,7 @@ public class ServiceSettingsViewModel: ObservableObject {
 
     public func deleteASRModels() {
         Task {
-            await FluidAIModelManager.shared.deleteASRModels()
+            FluidAIModelManager.shared.deleteASRModels()
         }
     }
 
@@ -52,7 +52,7 @@ public class ServiceSettingsViewModel: ObservableObject {
 
     public func deleteDiarizationModels() {
         Task {
-            await FluidAIModelManager.shared.deleteDiarizationModels()
+            FluidAIModelManager.shared.deleteDiarizationModels()
         }
     }
 }
