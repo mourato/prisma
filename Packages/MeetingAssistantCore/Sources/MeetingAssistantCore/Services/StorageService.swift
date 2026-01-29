@@ -212,7 +212,8 @@ public final class FileSystemStorageService: StorageService {
                         previewText: String(meta.text.prefix(100)),
                         language: meta.language,
                         isPostProcessed: meta.processedContent != nil,
-                        duration: meta.meeting.duration
+                        duration: meta.meeting.duration,
+                        audioFilePath: meta.meeting.audioFilePath
                     ))
                 }
             }

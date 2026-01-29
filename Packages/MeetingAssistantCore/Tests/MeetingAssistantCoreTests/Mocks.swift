@@ -200,7 +200,8 @@ class MockStorageService: StorageService, @unchecked Sendable {
                 previewText: transcription.preview,
                 language: transcription.language,
                 isPostProcessed: transcription.isPostProcessed,
-                duration: transcription.meeting.duration
+                duration: transcription.meeting.duration,
+                audioFilePath: transcription.meeting.audioFilePath
             )
         }
     }
