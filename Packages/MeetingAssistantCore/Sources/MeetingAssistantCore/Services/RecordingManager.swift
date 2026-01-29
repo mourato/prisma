@@ -429,10 +429,12 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
                 throw RecordingManagerError.noInputFiles
             }
 
-            if FileManager.default.fileExists(atPath: outputURL.path) {
-                try FileManager.default.removeItem(at: outputURL)
+            if sourceURL != outputURL {
+                if FileManager.default.fileExists(atPath: outputURL.path) {
+                    try FileManager.default.removeItem(at: outputURL)
+                }
+                try FileManager.default.moveItem(at: sourceURL, to: outputURL)
             }
-            try FileManager.default.moveItem(at: sourceURL, to: outputURL)
 
             await cleanupTemporaryFiles()
             return outputURL

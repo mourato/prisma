@@ -14,8 +14,9 @@ actor AudioRecordingWorker {
     private var audioFile: AVAudioFile?
     private var currentURL: URL?
 
-    // Atomic state for validation
+    // Atomic state for validation and lifecycle
     private let _hasReceivedValidBuffer = ManagedAtomic<Bool>(false)
+    private let _isStopping = ManagedAtomic<Bool>(false)
     var hasReceivedValidBuffer: Bool {
         _hasReceivedValidBuffer.load(ordering: .relaxed)
     }
@@ -66,6 +67,7 @@ actor AudioRecordingWorker {
         // Reset state
         audioFile = nil
         _hasReceivedValidBuffer.store(false, ordering: .relaxed)
+        _isStopping.store(false, ordering: .relaxed)
 
         // Cancel any existing processing task
         processingTask?.cancel()
@@ -129,12 +131,12 @@ actor AudioRecordingWorker {
     }
 
     func stop() async -> URL? {
-        // Cancel processing task
-        processingTask?.cancel()
-        processingTask = nil
+        // Mark as stopping but don't cancel yet - allow loop to drain queue
+        _isStopping.store(true, ordering: .relaxed)
 
-        // Wait for task to finish
+        // Wait for task to finish processing remaining buffers
         await processingTask?.value
+        processingTask = nil
 
         // Clear queue
         bufferQueue.clear()
@@ -153,10 +155,14 @@ actor AudioRecordingWorker {
     }
 
     private func processBuffers() async {
-        while !Task.isCancelled {
+        while true {
             if let buffer = bufferQueue.dequeue() {
                 processBufferInternal(buffer)
             } else {
+                // If queue is empty AND we are stopping, we can exit the loop
+                if _isStopping.load(ordering: .relaxed) || Task.isCancelled {
+                    break
+                }
                 // Wait a bit before checking again
                 try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
             }
