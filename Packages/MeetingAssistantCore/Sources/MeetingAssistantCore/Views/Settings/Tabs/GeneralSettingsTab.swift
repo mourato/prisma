@@ -1,10 +1,12 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 // MARK: - General Settings Tab
 
 /// Tab for general app settings like recording preferences and monitored apps.
 public struct GeneralSettingsTab: View {
     @StateObject private var viewModel = GeneralSettingsViewModel()
+    @State private var draggingDevice: AudioInputDevice?
 
     public init() {}
 
@@ -15,6 +17,7 @@ public struct GeneralSettingsTab: View {
                 shortcutsSection
                 serviceSection
                 recordingSection
+                audioDevicesSection
                 appsSection
             }
             .padding()
@@ -118,6 +121,75 @@ public struct GeneralSettingsTab: View {
     }
 
     @ViewBuilder
+    private var audioDevicesSection: some View {
+        SettingsGroup("settings.general.audio_devices".localized, icon: "mic.fill") {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("settings.general.audio_devices_desc".localized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                VStack(spacing: 8) {
+                    ForEach(viewModel.availableDevices) { device in
+                        HStack(spacing: 12) {
+                            Image(systemName: device.isAvailable ? "mic" : "mic.slash")
+                                .foregroundStyle(device.isAvailable ? .primary : .secondary)
+                                .frame(width: 20)
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(device.name)
+                                    .font(.body)
+                                    .foregroundStyle(device.isAvailable ? .primary : .secondary)
+                                if device.isDefault {
+                                    Text("settings.general.device_default".localized)
+                                        .font(.caption2)
+                                        .foregroundStyle(.blue)
+                                }
+                            }
+
+                            Spacer()
+
+                            if !device.isAvailable {
+                                Text("settings.general.device_unavailable".localized)
+                                    .font(.caption2)
+                                    .foregroundStyle(.red)
+                            }
+
+                            Image(systemName: "line.3.horizontal")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(8)
+                        .background(Color.primary.opacity(0.03))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .onDrag {
+                            draggingDevice = device
+                            return NSItemProvider(object: device.id as NSString)
+                        }
+                        .onDrop(of: [.text], delegate: DeviceDropDelegate(
+                            item: device,
+                            listData: $viewModel.availableDevices,
+                            current: $draggingDevice,
+                            onMove: viewModel.moveDevice
+                        ))
+                    }
+                }
+
+                Divider()
+
+                Toggle(
+                    "settings.general.mute_output_during_recording".localized,
+                    isOn: $viewModel.muteOutputDuringRecording
+                )
+                .font(.body)
+
+                Text("settings.general.mute_output_desc".localized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    @ViewBuilder
     private var appsSection: some View {
         SettingsGroup("settings.general.monitored_apps".localized, icon: "app.badge") {
             VStack(alignment: .leading, spacing: 12) {
@@ -165,4 +237,31 @@ public struct GeneralSettingsTab: View {
 
 #Preview {
     GeneralSettingsTab()
+}
+
+// MARK: - Drop Delegate (Issue #35)
+
+struct DeviceDropDelegate: DropDelegate {
+    let item: AudioInputDevice
+    @Binding var listData: [AudioInputDevice]
+    @Binding var current: AudioInputDevice?
+    var onMove: (IndexSet, Int) -> Void
+
+    func performDrop(info: DropInfo) -> Bool {
+        current = nil
+        return true
+    }
+
+    func dropEntered(info: DropInfo) {
+        guard let current,
+              current != item,
+              let from = listData.firstIndex(of: current),
+              let to = listData.firstIndex(of: item) else { return }
+
+        if listData[to] != current {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                onMove(IndexSet(integer: from), to > from ? to + 1 : to)
+            }
+        }
+    }
 }

@@ -244,6 +244,12 @@
 "settings.general.language.english" = "English";
 "settings.general.language.portuguese" = "Português";
 "settings.general.language_restart_required" = "Restart required to apply language change.";
+"settings.general.audio_devices" = "Audio Devices";
+"settings.general.audio_devices_desc" = "Drag to reorder devices by priority. The first available device will be used automatically.";
+"settings.general.device_unavailable" = "Unavailable";
+"settings.general.device_default" = "Default";
+"settings.general.mute_output_during_recording" = "Mute Output During Recording";
+"settings.general.mute_output_desc" = "Mutes system audio while a recording is in progress.";
 
 /* Transcribe File */
 "transcribe.import_audio" = "Import Audio";
