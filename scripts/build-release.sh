@@ -7,6 +7,7 @@
 # =============================================================================
 
 set -e
+set -o pipefail
 
 # Configuration
 APP_NAME="MeetingAssistant"
