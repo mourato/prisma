@@ -65,6 +65,7 @@ public struct GeneralSettingsTab: View {
                     "settings.general.auto_start".localized,
                     isOn: $viewModel.autoStartRecording
                 )
+                .toggleStyle(.switch)
 
                 Divider()
 
@@ -72,6 +73,7 @@ public struct GeneralSettingsTab: View {
                     "settings.general.show_settings_on_launch".localized,
                     isOn: $viewModel.showSettingsOnLaunch
                 )
+                .toggleStyle(.switch)
 
                 Divider()
 
@@ -116,6 +118,7 @@ public struct GeneralSettingsTab: View {
                     "settings.general.merge_audio".localized,
                     isOn: $viewModel.shouldMergeAudioFiles
                 )
+                .toggleStyle(.switch)
             }
         }
     }
@@ -181,6 +184,7 @@ public struct GeneralSettingsTab: View {
                     isOn: $viewModel.muteOutputDuringRecording
                 )
                 .font(.body)
+                .toggleStyle(.switch)
 
                 Text("settings.general.mute_output_desc".localized)
                     .font(.caption)
