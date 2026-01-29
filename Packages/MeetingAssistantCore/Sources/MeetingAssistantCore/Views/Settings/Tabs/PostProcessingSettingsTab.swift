@@ -10,7 +10,7 @@ public struct PostProcessingSettingsTab: View {
 
     public var body: some View {
         ScrollView {
-            VStack(spacing: SettingsDesignSystem.Layout.sectionSpacing) {
+            VStack(alignment: .leading, spacing: SettingsDesignSystem.Layout.sectionSpacing) {
                 enableToggleSection
 
                 if viewModel.settings.postProcessingEnabled {
@@ -23,6 +23,7 @@ public struct PostProcessingSettingsTab: View {
                 }
             }
             .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .sheet(isPresented: $viewModel.showPromptEditor) {
             PromptEditorSheet(

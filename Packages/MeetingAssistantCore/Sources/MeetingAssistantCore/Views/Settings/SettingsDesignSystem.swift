@@ -55,6 +55,7 @@ public struct SettingsCard<Content: View>: View {
         )
         .background(.ultraThinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: SettingsDesignSystem.Layout.cardCornerRadius))
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -88,6 +89,8 @@ public struct SettingsGroup<Content: View>: View {
             SettingsCard {
                 content
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

@@ -12,7 +12,7 @@ public struct GeneralSettingsTab: View {
 
     public var body: some View {
         ScrollView {
-            VStack(spacing: SettingsDesignSystem.Layout.sectionSpacing) {
+            VStack(alignment: .leading, spacing: SettingsDesignSystem.Layout.sectionSpacing) {
                 languageSection
                 serviceSection
                 recordingSection
@@ -20,6 +20,7 @@ public struct GeneralSettingsTab: View {
                 appsSection
             }
             .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 

@@ -12,7 +12,7 @@ public struct ShortcutSettingsTab: View {
 
     public var body: some View {
         ScrollView {
-            VStack(spacing: SettingsDesignSystem.Layout.sectionSpacing) {
+            VStack(alignment: .leading, spacing: SettingsDesignSystem.Layout.sectionSpacing) {
                 headerSection
                 recordingControlsSection
                 tipsSection
@@ -21,6 +21,7 @@ public struct ShortcutSettingsTab: View {
                 resetSection
             }
             .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
