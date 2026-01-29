@@ -5,10 +5,21 @@ import SwiftUI
 public struct FloatingRecordingIndicatorView: View {
     @ObservedObject var audioMonitor: AudioLevelMonitor
     let style: RecordingIndicatorStyle
+    let onStop: @Sendable () -> Void
+    let onCancel: @Sendable () -> Void
 
-    public init(audioMonitor: AudioLevelMonitor, style: RecordingIndicatorStyle) {
+    @State private var isHovering = false
+
+    public init(
+        audioMonitor: AudioLevelMonitor,
+        style: RecordingIndicatorStyle,
+        onStop: @escaping @Sendable () -> Void,
+        onCancel: @escaping @Sendable () -> Void
+    ) {
         self.audioMonitor = audioMonitor
         self.style = style
+        self.onStop = onStop
+        self.onCancel = onCancel
     }
 
     public var body: some View {
@@ -22,20 +33,33 @@ public struct FloatingRecordingIndicatorView: View {
                 EmptyView()
             }
         }
+        .onHover { hovering in
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                isHovering = hovering
+            }
+        }
     }
 
     // MARK: - Classic Style
 
     /// Full waveform view similar to SuperWhisper's "Classic" style.
     private var classicWaveformView: some View {
-        HStack(spacing: 8) {
-            recordingDot
-            waveformCanvas
-                .frame(width: 160)
+        ZStack {
+            HStack(spacing: 8) {
+                recordingDot
+                waveformCanvas
+                    .frame(width: 160)
+            }
+            .opacity(isHovering ? 0.3 : 1.0)
+
+            if isHovering {
+                controlsOverlay
+                    .transition(.scale(scale: 0.9).combined(with: .opacity))
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
-        .background(.ultraThinMaterial)
+        .background(Color.black.opacity(0.85))
         .clipShape(Capsule())
         .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
     }
@@ -44,18 +68,47 @@ public struct FloatingRecordingIndicatorView: View {
 
     /// Compact pill view similar to SuperWhisper's "Mini" style.
     private var miniWaveformView: some View {
-        HStack(spacing: 6) {
-            recordingDot
-            miniWaveformBars
+        ZStack {
+            HStack(spacing: 6) {
+                recordingDot
+                miniWaveformBars
+            }
+            .opacity(isHovering ? 0.3 : 1.0)
+
+            if isHovering {
+                controlsOverlay
+                    .transition(.scale(scale: 0.9).combined(with: .opacity))
+            }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
-        .background(.ultraThinMaterial)
+        .background(Color.black.opacity(0.85))
         .clipShape(Capsule())
         .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 3)
     }
 
     // MARK: - Shared Components
+
+    /// Control buttons overlay shown on hover.
+    private var controlsOverlay: some View {
+        HStack(spacing: 24) {
+            Button(action: onStop) {
+                Image(systemName: "stop.fill")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.white)
+            }
+            .buttonStyle(.plain)
+            .help("Stop and Transcribe")
+
+            Button(action: onCancel) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.white.opacity(0.8))
+            }
+            .buttonStyle(.plain)
+            .help("Cancel and Discard")
+        }
+    }
 
     /// Pulsing red dot indicating active recording.
     private var recordingDot: some View {
@@ -153,7 +206,9 @@ private struct PulsingModifier: ViewModifier {
     let monitor = AudioLevelMonitor()
     return FloatingRecordingIndicatorView(
         audioMonitor: monitor,
-        style: .classic
+        style: .classic,
+        onStop: {},
+        onCancel: {}
     )
     .padding()
     .background(Color.gray.opacity(0.3))
@@ -163,7 +218,9 @@ private struct PulsingModifier: ViewModifier {
     let monitor = AudioLevelMonitor()
     return FloatingRecordingIndicatorView(
         audioMonitor: monitor,
-        style: .mini
+        style: .mini,
+        onStop: {},
+        onCancel: {}
     )
     .padding()
     .background(Color.gray.opacity(0.3))
