@@ -183,7 +183,7 @@ public struct PostProcessingSettingsTab: View {
                 Spacer()
 
                 if isSelected {
-                    selectionIndicator
+                    selectionIndicator(isSelected: isSelected)
                 }
 
                 promptMenu(prompt: prompt, isPredefined: isPredefined, isSelected: isSelected)
@@ -230,10 +230,10 @@ public struct PostProcessingSettingsTab: View {
         }
     }
 
-    private var selectionIndicator: some View {
+    private func selectionIndicator(isSelected: Bool) -> some View {
         Image(systemName: "checkmark.circle.fill")
             .foregroundStyle(.green)
-            .symbolEffect(.bounce, value: true)
+            .symbolEffect(.bounce, value: isSelected)
     }
 
     private func promptMenu(prompt: PostProcessingPrompt, isPredefined: Bool, isSelected: Bool) -> some View {
