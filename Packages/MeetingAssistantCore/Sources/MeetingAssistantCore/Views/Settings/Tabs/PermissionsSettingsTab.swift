@@ -8,7 +8,7 @@ public struct PermissionsSettingsTab: View {
 
     public var body: some View {
         ScrollView {
-            VStack(spacing: SettingsDesignSystem.Layout.sectionSpacing) {
+            VStack(alignment: .leading, spacing: SettingsDesignSystem.Layout.sectionSpacing) {
                 SettingsGroup(NSLocalizedString("settings.permissions.about", bundle: .safeModule, comment: ""), icon: "info.circle") {
                     Text(NSLocalizedString("settings.permissions.description", bundle: .safeModule, comment: ""))
                         .font(.callout)
@@ -28,6 +28,7 @@ public struct PermissionsSettingsTab: View {
                 }
             }
             .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .task {
             await RecordingManager.shared.checkPermission()

@@ -11,7 +11,7 @@ public struct AISettingsTab: View {
 
     public var body: some View {
         ScrollView {
-            VStack(spacing: SettingsDesignSystem.Layout.sectionSpacing) {
+            VStack(alignment: .leading, spacing: SettingsDesignSystem.Layout.sectionSpacing) {
                 mainSection
 
                 if viewModel.settings.aiEnabled {
@@ -21,6 +21,7 @@ public struct AISettingsTab: View {
                 }
             }
             .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 

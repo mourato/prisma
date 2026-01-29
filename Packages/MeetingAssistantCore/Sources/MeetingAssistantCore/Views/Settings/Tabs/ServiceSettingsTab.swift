@@ -10,12 +10,13 @@ public struct ServiceSettingsTab: View {
 
     public var body: some View {
         ScrollView {
-            VStack(spacing: SettingsDesignSystem.Layout.sectionSpacing) {
+            VStack(alignment: .leading, spacing: SettingsDesignSystem.Layout.sectionSpacing) {
                 modelInfoSection
                 performanceSection
                 statusSection
             }
             .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
