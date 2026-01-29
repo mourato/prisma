@@ -25,12 +25,13 @@ public class PostProcessingSettingsViewModel: ObservableObject {
     }
 
     public func handleSavePrompt(_ prompt: PostProcessingPrompt) {
-        if editingPrompt != nil {
+        if settings.userPrompts.contains(where: { $0.id == prompt.id }) {
             settings.updatePrompt(prompt)
         } else {
             settings.addPrompt(prompt)
         }
         showPromptEditor = false
+        editingPrompt = nil
     }
 
     public func confirmDeletePrompt(_ prompt: PostProcessingPrompt) {
@@ -50,12 +51,15 @@ public class PostProcessingSettingsViewModel: ObservableObject {
         settings.resetSystemPrompt()
     }
 
-    public func duplicatePrompt(_ prompt: PostProcessingPrompt) {
-        var copy = prompt
-        copy.title = "\(prompt.title) (\("settings.post_processing.duplicate".localized))"
+    public func prepareCopy(of prompt: PostProcessingPrompt, asDuplicate: Bool) {
+        var newTitle = prompt.title
+        if asDuplicate {
+            newTitle = "\(prompt.title) (\("settings.post_processing.duplicate".localized))"
+        }
+
         // Force a new ID and make it non-predefined
         let newPrompt = PostProcessingPrompt(
-            title: copy.title,
+            title: newTitle,
             promptText: prompt.promptText,
             isActive: false,
             icon: prompt.icon,

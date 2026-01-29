@@ -261,13 +261,13 @@ public struct PostProcessingSettingsTab: View {
 
         if isPredefined {
             Button {
-                viewModel.duplicatePrompt(prompt)
+                viewModel.prepareCopy(of: prompt, asDuplicate: false)
             } label: {
                 Label("settings.post_processing.edit".localized, systemImage: "pencil")
             }
 
             Button {
-                viewModel.duplicatePrompt(prompt)
+                viewModel.prepareCopy(of: prompt, asDuplicate: true)
             } label: {
                 Label("settings.post_processing.duplicate".localized, systemImage: "plus.square.on.square")
             }
@@ -280,7 +280,7 @@ public struct PostProcessingSettingsTab: View {
             }
 
             Button {
-                viewModel.duplicatePrompt(prompt)
+                viewModel.prepareCopy(of: prompt, asDuplicate: true)
             } label: {
                 Label("settings.post_processing.duplicate".localized, systemImage: "plus.square.on.square")
             }
