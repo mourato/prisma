@@ -116,6 +116,12 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
         AppLogger.info("Detected Hardware Sample Rate: \(targetSampleRate)", category: .recordingManager)
 
+        // 1.5. Check Microphone Permissions if needed
+        if (source == .microphone || source == .all) && AVCaptureDevice.authorizationStatus(for: .audio) != .authorized {
+            AppLogger.error("Microphone permission denied. Cannot start recording.", category: .recordingManager)
+            throw AudioRecorderError.permissionDenied
+        }
+
         // 2. Start Capture
         // Start system capture with the matching rate ONLY if source includes system audio
         if source == .system || source == .all {
@@ -212,11 +218,8 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     private func connectMicrophone(to engine: AVAudioEngine, mixer: AVAudioMixerNode) throws {
         let status = AVCaptureDevice.authorizationStatus(for: .audio)
         guard status == .authorized else {
-            AppLogger.warning(
-                "Microphone permission not authorized (status: \(status.rawValue)). Skipping microphone connection.",
-                category: .recordingManager
-            )
-            return
+            // This should already be caught by the check in startRecording, but just in case:
+            throw AudioRecorderError.permissionDenied
         }
 
         let inputNode = engine.inputNode

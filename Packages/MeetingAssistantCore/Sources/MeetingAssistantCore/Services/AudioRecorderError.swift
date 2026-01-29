@@ -9,6 +9,7 @@ public enum AudioRecorderError: LocalizedError {
     case audioConversionError(Error)
     case fileWriteFailed(Error)
     case recordingValidationFailed
+    case permissionDenied
 
     public var errorDescription: String? {
         switch self {
@@ -28,6 +29,8 @@ public enum AudioRecorderError: LocalizedError {
             "Falha ao gravar dados de áudio no arquivo: \(error.localizedDescription)"
         case .recordingValidationFailed:
             "A gravação falhou ao iniciar - nenhum áudio válido recebido do dispositivo"
+        case .permissionDenied:
+            "Permissão de microfone negada. Habilite nas Ajustes do Sistema para gravar."
         }
     }
 }
