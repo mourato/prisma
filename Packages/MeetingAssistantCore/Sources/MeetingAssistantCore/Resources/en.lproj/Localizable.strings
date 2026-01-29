@@ -97,6 +97,26 @@
 "settings.shortcuts.toggle_recording_desc" = "Starts or stops the current recording";
 "settings.shortcuts.reset" = "Reset to Default Shortcuts";
 
+/* Keyboard Controls (New Tab) */
+"settings.section.shortcuts" = "Keyboard Controls";
+"settings.shortcuts.header_desc" = "Choose your preferred keyboard keys for starting recordings. Press only these keys to begin recording.";
+"settings.shortcuts.recording_controls" = "Recording Controls";
+"settings.shortcuts.activation_mode" = "Activation Mode";
+"settings.shortcuts.activation_mode.hold_or_toggle" = "Hold or Toggle";
+"settings.shortcuts.activation_mode.toggle" = "Toggle";
+"settings.shortcuts.activation_mode.hold" = "Hold";
+"settings.shortcuts.activation_mode.double_tap" = "Double Tap";
+"settings.shortcuts.activation_mode_desc" = "Configure how shortcut keys activate: Hold or Toggle (auto-detects), Toggle (press once), Hold (record while pressed), or Double Tap (tap twice quickly).";
+"settings.shortcuts.tips_title" = "Tips";
+"settings.shortcuts.fn_key_title" = "Using the Fn key";
+"settings.shortcuts.fn_key_desc" = "To use the Fn key alone:\n• Open System Settings → Keyboard\n• Click \"Press 🌐 key to\" dropdown\n• Select \"Do Nothing\"\n• This allows the app to detect the Fn key press";
+"settings.shortcuts.use_escape" = "Use Escape to cancel recording";
+"settings.shortcuts.try_keys" = "Try Your Keys";
+"settings.shortcuts.try_keys_hint" = "Click in the text box below first.";
+"settings.shortcuts.key.not_specified" = "Not specified";
+"settings.shortcuts.key.custom" = "Record shortcut...";
+"settings.shortcuts.custom_shortcut" = "Custom Shortcut:";
+
 /* Permissions Settings */
 "settings.permissions.title" = "Permissions";
 "settings.permissions.about" = "About Permissions";
