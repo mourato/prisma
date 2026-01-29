@@ -45,9 +45,7 @@ xcodebuild -project "${XCODEPROJ}" \
     -configuration Release \
     -derivedDataPath "${DERIVED_DATA}" \
     -destination 'platform=macOS' \
-    -enableThreadSanitizer YES \
-    build \
-    2>&1 | grep -E "(Compiling|Linking|Signing|BUILD|error:|warning:)" | head -30
+    build
 
 # Check build result
 BUILD_DIR="${DERIVED_DATA}/Build/Products/Release"
