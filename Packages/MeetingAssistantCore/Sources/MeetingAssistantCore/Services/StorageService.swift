@@ -150,7 +150,7 @@ public final class FileSystemStorageService: StorageService {
 
     public func loadTranscriptions() async throws -> [Transcription] {
         let transcriptsDir = transcriptsDirectory
-        return try await Task.detached(priority: .userInitiated) {
+        return await Task.detached(priority: .userInitiated) {
             let fileManager = FileManager.default
             let contents: [URL]
             do {
@@ -184,7 +184,7 @@ public final class FileSystemStorageService: StorageService {
 
     public func loadAllMetadata() async throws -> [TranscriptionMetadata] {
         let transcriptsDir = transcriptsDirectory
-        return try await Task.detached(priority: .userInitiated) {
+        return await Task.detached(priority: .userInitiated) {
             let fileManager = FileManager.default
             let contents: [URL]
             do {
@@ -232,7 +232,7 @@ public final class FileSystemStorageService: StorageService {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
 
-        return try await Task.detached(priority: .userInitiated) {
+        return await Task.detached(priority: .userInitiated) {
             FileSystemStorageService.decodeTranscriptionSync(from: url, using: decoder)
         }.value
     }
