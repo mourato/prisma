@@ -84,7 +84,7 @@ public extension PostProcessingPrompt {
     /// Predefined prompt for generating meeting notes.
     static let meetingNotes = PostProcessingPrompt(
         id: PredefinedIDs.meetingNotes,
-        title: "Notas de Reunião",
+        title: "prompt.meeting_notes.title".localized,
         promptText: """
         Analise a transcrição e gere notas de reunião estruturadas com:
         - Participantes mencionados
@@ -95,28 +95,28 @@ public extension PostProcessingPrompt {
         Mantenha um formato limpo e profissional.
         """,
         icon: "note.text",
-        description: "Gera notas de reunião estruturadas",
+        description: "prompt.meeting_notes.description".localized,
         isPredefined: true
     )
 
     /// Predefined prompt for executive summary.
     static let executiveSummary = PostProcessingPrompt(
         id: PredefinedIDs.executiveSummary,
-        title: "Resumo Executivo",
+        title: "prompt.executive_summary.title".localized,
         promptText: """
         Crie um resumo executivo conciso da reunião em 3-5 parágrafos.
         Foque nos pontos mais importantes e nas conclusões principais.
         Use linguagem clara e objetiva, apropriada para stakeholders.
         """,
         icon: "doc.text.magnifyingglass",
-        description: "Cria um resumo executivo conciso",
+        description: "prompt.executive_summary.description".localized,
         isPredefined: true
     )
 
     /// Predefined prompt for extracting action items.
     static let actionItems = PostProcessingPrompt(
         id: PredefinedIDs.actionItems,
-        title: "Action Items",
+        title: "prompt.action_items.title".localized,
         promptText: """
         Extraia todos os action items e próximos passos mencionados na reunião.
         Para cada item, identifique (quando disponível):
@@ -127,14 +127,14 @@ public extension PostProcessingPrompt {
         Liste em formato de checklist.
         """,
         icon: "checklist",
-        description: "Extrai tarefas e próximos passos",
+        description: "prompt.action_items.description".localized,
         isPredefined: true
     )
 
     /// Predefined prompt for clean transcription.
     static let cleanTranscription = PostProcessingPrompt(
         id: PredefinedIDs.cleanTranscription,
-        title: "Transcrição Limpa",
+        title: "prompt.clean_transcription.title".localized,
         promptText: """
         Limpe a transcrição removendo:
         - Hesitações e palavras de preenchimento (uh, uhm, é...)
@@ -145,7 +145,7 @@ public extension PostProcessingPrompt {
         Não altere o significado ou adicione informações.
         """,
         icon: "text.badge.checkmark",
-        description: "Remove hesitações e corrige erros de fala",
+        description: "prompt.clean_transcription.description".localized,
         isPredefined: true
     )
 

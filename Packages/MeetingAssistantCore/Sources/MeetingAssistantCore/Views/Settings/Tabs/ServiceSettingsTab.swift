@@ -69,7 +69,7 @@ public struct ServiceSettingsTab: View {
                                         .foregroundStyle(.red)
                                 }
                                 .buttonStyle(.borderless)
-                                .help("Delete Model")
+                                .help(NSLocalizedString("settings.service.delete_model", bundle: .safeModule, comment: ""))
                             } else if viewModel.modelState == .downloading || viewModel.modelState == .loading {
                                 ProgressView()
                                     .controlSize(.small)
@@ -82,7 +82,7 @@ public struct ServiceSettingsTab: View {
                                         .foregroundStyle(.blue)
                                 }
                                 .buttonStyle(.borderless)
-                                .help("Download Model")
+                                .help(NSLocalizedString("settings.service.download_model", bundle: .safeModule, comment: ""))
                             }
                         }
                     }
@@ -91,16 +91,20 @@ public struct ServiceSettingsTab: View {
 
                     // Diarization Model
                     GridRow {
-                        Text("Diarization")
+                        Text(NSLocalizedString("settings.service.diarization", bundle: .safeModule, comment: ""))
                             .foregroundStyle(.secondary)
 
                         HStack {
                             VStack(alignment: .leading) {
                                 Text("Pyannote 3.1")
                                     .fontWeight(.medium)
-                                Text(viewModel.isDiarizationLoaded ? "Installed" : "Not Installed")
-                                    .font(.caption2)
-                                    .foregroundStyle(viewModel.isDiarizationLoaded ? .green : .secondary)
+                                Text(
+                                    viewModel.isDiarizationLoaded
+                                        ? NSLocalizedString("settings.service.installed", bundle: .safeModule, comment: "")
+                                        : NSLocalizedString("settings.service.not_installed", bundle: .safeModule, comment: "")
+                                )
+                                .font(.caption2)
+                                .foregroundStyle(viewModel.isDiarizationLoaded ? .green : .secondary)
                             }
 
                             Spacer()
@@ -113,7 +117,7 @@ public struct ServiceSettingsTab: View {
                                         .foregroundStyle(.red)
                                 }
                                 .buttonStyle(.borderless)
-                                .help("Delete Model")
+                                .help(NSLocalizedString("settings.service.delete_model", bundle: .safeModule, comment: ""))
                             } else {
                                 Button {
                                     Task { await FluidAIModelManager.shared.loadDiarizationModels() }
@@ -123,7 +127,7 @@ public struct ServiceSettingsTab: View {
                                         .foregroundStyle(.blue)
                                 }
                                 .buttonStyle(.borderless)
-                                .help("Download Model")
+                                .help(NSLocalizedString("settings.service.download_model", bundle: .safeModule, comment: ""))
                             }
                         }
                     }
@@ -180,13 +184,19 @@ public struct ServiceSettingsTab: View {
 
                 Spacer()
 
-                Button(action: { viewModel.testConnection() }) {
-                    if viewModel.transcriptionStatus == .testing {
-                        ProgressView().controlSize(.small)
-                    } else {
-                        Label(NSLocalizedString("settings.service.verify", bundle: .safeModule, comment: ""), systemImage: "arrow.clockwise")
+                Button(
+                    action: { viewModel.testConnection() },
+                    label: {
+                        if viewModel.transcriptionStatus == .testing {
+                            ProgressView().controlSize(.small)
+                        } else {
+                            Label(
+                                NSLocalizedString("settings.service.verify", bundle: .safeModule, comment: ""),
+                                systemImage: "arrow.clockwise"
+                            )
+                        }
                     }
-                }
+                )
                 .buttonStyle(.bordered)
                 .disabled(viewModel.transcriptionStatus == .testing)
             }

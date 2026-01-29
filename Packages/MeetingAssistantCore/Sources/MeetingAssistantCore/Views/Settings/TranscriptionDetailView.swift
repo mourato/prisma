@@ -88,7 +88,7 @@ public struct TranscriptionDetailView: View {
 
     private var aiActionsMenu: some View {
         Menu {
-            Section("AI Post-Processing") {
+            Section("transcription.ai_post_processing".localized) {
                 ForEach(PostProcessingPrompt.allPredefined) { prompt in
                     Button {
                         onApplyPrompt(prompt)
@@ -98,7 +98,7 @@ public struct TranscriptionDetailView: View {
                 }
             }
         } label: {
-            Label("AI Actions", systemImage: "sparkles")
+            Label("transcription.ai_actions".localized, systemImage: "sparkles")
                 .symbolEffect(.pulse, options: .repeating, value: isProcessing)
         }
         .buttonStyle(.bordered)
@@ -109,7 +109,7 @@ public struct TranscriptionDetailView: View {
         VStack(spacing: 16) {
             ProgressView()
                 .controlSize(.large)
-            Text("Aguarde, processando com IA...")
+            Text("transcription.processing_overlay_hint".localized)
                 .font(.headline)
                 .foregroundStyle(.secondary)
         }

@@ -212,9 +212,9 @@ public struct AISettingsTab: View {
                         .frame(width: 80, alignment: .leading)
                     Group {
                         if viewModel.showAPIKey {
-                            TextField("sk-...", text: $viewModel.apiKeyText)
+                            TextField(NSLocalizedString("settings.ai.api_key_placeholder", bundle: .safeModule, comment: ""), text: $viewModel.apiKeyText)
                         } else {
-                            SecureField("sk-...", text: $viewModel.apiKeyText)
+                            SecureField(NSLocalizedString("settings.ai.api_key_placeholder", bundle: .safeModule, comment: ""), text: $viewModel.apiKeyText)
                         }
                     }
                     .textFieldStyle(.roundedBorder)
@@ -273,7 +273,7 @@ public struct AISettingsTab: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 } else {
                     TextField(
-                        "gpt-4o, claude-3-5-sonnet...",
+                        NSLocalizedString("settings.ai.model_placeholder", bundle: .safeModule, comment: ""),
                         text: $viewModel.settings.aiConfiguration.selectedModel
                     )
                     .textFieldStyle(.roundedBorder)
