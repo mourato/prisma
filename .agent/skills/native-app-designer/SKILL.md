@@ -85,9 +85,101 @@ Elite native app designer specializing in breathtaking, human-centered applicati
 - Use SF Symbols with weight matching
 - Support dark mode with semantic colors
 
+## macOS Glassmorphism Patterns
+
+### Floating Indicators
+
+Create floating UI elements using capsule shapes with material blur:
+
+```swift
+HStack(spacing: 8) {
+    recordingDot
+    waveformCanvas
+}
+.padding(.horizontal, 16)
+.padding(.vertical, 8)
+.background(.ultraThinMaterial)
+.clipShape(Capsule())
+.shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
+```
+
+### Shadow Guidelines
+- **Floating elements**: `color: .black.opacity(0.15), radius: 8, x: 0, y: 4`
+- **Subtle cards**: `color: .black.opacity(0.1), radius: 4, x: 0, y: 2`
+- **Elevated panels**: `color: .black.opacity(0.2), radius: 12, x: 0, y: 6`
+
+### Pulsing Active State
+
+Use subtle pulsing to indicate active/recording states:
+
+```swift
+struct PulsingModifier: ViewModifier {
+    @State private var isPulsing = false
+    
+    func body(content: Content) -> some View {
+        content
+            .opacity(isPulsing ? 0.5 : 1.0)
+            .scaleEffect(isPulsing ? 0.85 : 1.0)
+            .animation(
+                .easeInOut(duration: 0.8)
+                    .repeatForever(autoreverses: true),
+                value: isPulsing
+            )
+            .onAppear { isPulsing = true }
+    }
+}
+
+// Usage
+Circle()
+    .fill(Color.red)
+    .frame(width: 8, height: 8)
+    .modifier(PulsingModifier())
+```
+
+### Waveform Visualization Styles
+
+Two styles for audio visualization:
+- **Classic**: Full waveform canvas (use DSWaveformImageViews or custom)
+- **Mini**: Simplified animated bars
+
+```swift
+// Mini bars - simplified visualization
+HStack(spacing: 2) {
+    ForEach(0..<7, id: \.self) { index in
+        RoundedRectangle(cornerRadius: 1)
+            .fill(Color.white)
+            .frame(width: 2, height: barHeight(for: index))
+            .animation(.easeOut(duration: 0.08), value: amplitude)
+    }
+}
+```
+
+## Window Layer Patterns
+
+### Always-Visible Overlays
+
+For floating indicators that must appear above all windows (including fullscreen apps):
+
+```swift
+// Use NSPanel with high window level
+let panel = NSPanel(...)
+panel.level = .screenSaver  // Above Status Bar, works in fullscreen
+panel.styleMask = [.borderless, .nonactivatingPanel]
+panel.isOpaque = false
+panel.backgroundColor = .clear
+panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+```
+
+**Window Level Reference** (lowest to highest):
+1. `.normal` - Standard windows
+2. `.floating` - Utility panels
+3. `.statusBar` - Status bar level
+4. `.modalPanel` - Modal dialogs
+5. `.screenSaver` - ⭐ Use for always-visible indicators
+
 ---
 
 **Technical references for deep dives:**
-- `/references/swiftui-patterns.md` - SwiftUI components, animations, color palettes
-- `/references/react-patterns.md` - React/Vue patterns, Framer Motion
-- `/references/custom-shaders.md` - Metal and WebGL shaders for unique effects
+- [FloatingRecordingIndicatorView.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Views/Components/FloatingRecordingIndicatorView.swift)
+- [RecordingButton.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Views/Components/RecordingButton.swift)
+- [SettingsDesignSystem.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Views/Settings/SettingsDesignSystem.swift)

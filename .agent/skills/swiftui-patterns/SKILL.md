@@ -1,6 +1,6 @@
 ---
 name: SwiftUI Patterns
-description: This skill should be used when working with SwiftUI views, "@State", "@StateObject", "@ObservedObject", "NavigationStack", view modifiers, or SwiftUI-specific patterns and best practices.
+description: This skill should be used when working with SwiftUI views, "@State", "@StateObject", "@ObservedObject", "NavigationStack", "SettingsDesignSystem", "SettingsToggle", "SettingsGroup", "SettingsCard", view modifiers, settings tab layouts, or SwiftUI-specific patterns and best practices.
 ---
 
 # SwiftUI Patterns
@@ -121,12 +121,124 @@ struct ContentView: View {
 }
 ```
 
+## Settings UI Patterns
+
+### Settings Design System
+
+Use the project's `SettingsDesignSystem` for consistent macOS settings interfaces:
+
+```swift
+// Use SettingsGroup for labeled sections
+SettingsGroup("Recording", icon: "recordingtape") {
+    SettingsToggle(
+        "Auto-start recording",
+        description: "Optional description text",
+        isOn: $viewModel.autoStart
+    )
+    
+    Divider()
+    
+    // Additional content
+}
+
+// Use SettingsCard for unlabeled containers
+SettingsCard {
+    HStack {
+        Text("Format")
+        Spacer()
+        Picker("", selection: $format) { ... }
+    }
+}
+```
+
+### Toggle vs Checkbox
+
+**Always use toggles (switches) instead of checkboxes** when there is no separate "Save" button:
+
+```swift
+// ✅ CORRECT - Toggle for immediate-effect settings
+SettingsToggle("Enable feature", isOn: $viewModel.isEnabled)
+
+// ❌ WRONG - Checkbox for settings without explicit save
+Toggle(isOn: $isEnabled) {
+    Text("Enable feature")
+}
+.toggleStyle(.checkbox) // Misleading UX
+```
+
+##### Rationale
+Checkboxes imply form-based interaction where changes are batched and saved together. Toggles communicate immediate effect, matching SwiftUI's two-way binding behavior.
+
+### Left-Aligned Layouts
+
+Settings content should be **left-aligned**, not centered:
+
+```swift
+// ✅ CORRECT - Left-aligned content
+VStack(alignment: .leading, spacing: 20) {
+    section1
+    section2
+}
+.padding()
+.frame(maxWidth: .infinity, alignment: .leading)
+
+// ❌ WRONG - Centered content
+VStack {
+    section1
+    section2
+}
+.padding()
+// Default center alignment
+```
+
+### Compound Buttons with Dropdown
+
+Create unified buttons with integrated dropdown using custom Menu:
+
+```swift
+HStack(spacing: 0) {
+    // Main action button
+    Button { onStart(.all) } label: {
+        HStack(spacing: 8) {
+            Image(systemName: "waveform")
+            Text("Start Recording")
+        }
+        .frame(maxWidth: .infinity, height: 44)
+        .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    
+    // Divider
+    Rectangle()
+        .fill(Color.white.opacity(0.3))
+        .frame(width: 1, height: 24)
+    
+    // Dropdown with hidden indicator
+    Menu {
+        // Menu items
+    } label: {
+        Color.clear
+            .frame(width: 44, height: 44)
+            .contentShape(Rectangle())
+    }
+    .menuIndicator(.hidden)
+    .overlay {
+        Image(systemName: "chevron.down")
+            .allowsHitTesting(false)
+    }
+}
+.background(Color.blue)
+.clipShape(Capsule())
+```
+
 ## Common Pitfalls
 
 1. **Shared state** - Use `@StateObject`, not `@State` for injection
 2. **Old NavigationView** - Use `NavigationStack` on iOS 16+
 3. **Deep nesting** - Extract subviews for clarity
 4. **Bindings in loops** - Use `ForEach($items) { $item in }`
+5. **Centered settings** - Use `.leading` alignment and `frame(maxWidth: .infinity, alignment: .leading)`
+6. **Checkboxes for settings** - Use `SettingsToggle` or `.toggleStyle(.switch)`
 
 ## References
 

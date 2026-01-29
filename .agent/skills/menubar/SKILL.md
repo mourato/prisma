@@ -146,14 +146,118 @@ final class MeetingAssistantMenuBar {
 }
 ```
 
+## Floating Panel Patterns
+
+### Always-Visible Recording Indicator
+
+Create floating panels that remain visible above all windows:
+
+```swift
+final class FloatingRecordingIndicatorController {
+    private var panel: NSPanel?
+    
+    func show(with hostingView: NSView) {
+        let panel = NSPanel(
+            contentRect: .zero,
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
+        
+        // Critical settings for always-visible behavior
+        panel.level = .screenSaver       // Above full-screen apps
+        panel.isOpaque = false
+        panel.backgroundColor = .clear
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        panel.hasShadow = false           // SwiftUI handles shadows
+        
+        panel.contentView = hostingView
+        panel.orderFrontRegardless()
+        self.panel = panel
+    }
+    
+    func updatePosition(_ position: IndicatorPosition) {
+        guard let screen = NSScreen.main, let panel = panel else { return }
+        let screenFrame = screen.visibleFrame
+        // Calculate position and set panel frame...
+    }
+}
+```
+
+### Window Level Reference
+
+From lowest to highest priority:
+1. `.normal` - Standard app windows
+2. `.floating` - Utility panels, inspectors
+3. `.statusBar` - Menu bar level
+4. `.modalPanel` - Modal sheets
+5. `.screenSaver` - ⭐ **Best for always-visible indicators**
+
+## Reactive State Observation
+
+### Observing Recording State
+
+Use Combine to reactively show/hide floating indicators:
+
+```swift
+@MainActor
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    private var recordingManager: RecordingManager!
+    private var indicatorController: FloatingRecordingIndicatorController!
+    private var cancellables = Set<AnyCancellable>()
+    
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        observeRecordingState()
+    }
+    
+    private func observeRecordingState() {
+        recordingManager.$isRecording
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] isRecording in
+                if isRecording {
+                    self?.showFloatingIndicator()
+                } else {
+                    self?.hideFloatingIndicator()
+                }
+            }
+            .store(in: &cancellables)
+    }
+}
+```
+
+### Critical Pattern: Decouple Trigger from UI
+
+The recording can start from multiple sources (menu bar, shortcut, API). The floating indicator should **observe state**, not be triggered directly:
+
+```swift
+// ❌ WRONG - Indicator tied to specific trigger
+func menuBarStartRecording() {
+    recordingManager.startRecording()
+    showFloatingIndicator()  // Missed if recording starts via shortcut!
+}
+
+// ✅ CORRECT - Indicator observes state reactively
+init() {
+    recordingManager.$isRecording
+        .sink { [weak self] isRecording in
+            isRecording ? self?.show() : self?.hide()
+        }
+        .store(in: &cancellables)
+}
+```
+
 ## Common Pitfalls
 
 1. **Stuck popover** - Always call `closePopover()` before other actions
 2. **Menu doesn't update** - Keep references to dynamic menu items
 3. **Click outside** - Configure `popover.behavior = .transient`
 4. **Memory leaks** - Use `[weak self]` in closures
+5. **Indicator not visible** - Use `.screenSaver` window level, not `.floating`
+6. **Indicator tied to trigger** - Observe state reactively via Combine
 
 ## References
 
 - [MenuBarView.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Views/MenuBarView.swift)
+- [FloatingRecordingIndicatorView.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Views/Components/FloatingRecordingIndicatorView.swift)
 - [Apple Status Bar Guide](https://developer.apple.com/documentation/appkit/nsstatusitem)
+
