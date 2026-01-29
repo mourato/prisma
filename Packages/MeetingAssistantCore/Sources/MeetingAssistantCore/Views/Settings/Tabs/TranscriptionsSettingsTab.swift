@@ -78,10 +78,10 @@ public struct TranscriptionsSettingsTab: View {
     private var contentSection: some View {
         HSplitView {
             leftPanel
-                .frame(minWidth: 280, idealWidth: 320, maxWidth: 450)
+                .frame(minWidth: 220, idealWidth: 320, maxWidth: 450)
 
             rightPanel
-                .frame(minWidth: 420)
+                .frame(minWidth: 300)
                 .background(Color(NSColor.controlBackgroundColor).opacity(0.3))
         }
     }
