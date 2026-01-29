@@ -39,9 +39,11 @@
 "settings.ai.api_config" = "API Configuration";
 "settings.ai.base_url" = "Base URL:";
 "settings.ai.api_key" = "API Key:";
+"settings.ai.api_key_placeholder" = "sk-...";
 "settings.ai.keychain_secure" = "Key securely stored in Keychain";
 "settings.ai.model" = "Model:";
 "settings.ai.model_select" = "Select a model...";
+"settings.ai.model_placeholder" = "gpt-4o, claude-3-5-sonnet...";
 "settings.ai.model_refresh" = "Refresh available models";
 "settings.ai.models_loaded" = "%d models available";
 "settings.ai.model_hint" = "Test connection to load available models";
@@ -88,6 +90,11 @@
 "settings.service.no_internet" = "Real-time transcription without internet";
 "settings.service.status" = "Service Status";
 "settings.service.verify" = "Verify";
+"settings.service.diarization" = "Diarization";
+"settings.service.installed" = "Installed";
+"settings.service.not_installed" = "Not Installed";
+"settings.service.delete_model" = "Delete Model";
+"settings.service.download_model" = "Download Model";
 
 /* Shortcut Settings */
 "settings.shortcuts.title" = "Shortcuts";
@@ -122,6 +129,7 @@
 "settings.permissions.about" = "About Permissions";
 "settings.permissions.description" = "Meeting Assistant needs access to microphone and screen recording to capture meeting audio and identify active applications.";
 "settings.permissions.status" = "Permissions Status";
+"permissions.warning" = "Some permissions are required to record meetings.";
 
 /* Transcriptions Settings */
 "settings.transcriptions.title" = "Transcriptions";
@@ -179,6 +187,8 @@
 
 /* Transcription Status */
 "transcription.time_remaining" = "~%@ remaining";
+"transcription.view.toggle_details" = "Toggle details";
+"transcription.error.click_retry" = "Click to retry";
 "transcription.service" = "Service";
 "transcription.model" = "Model";
 "transcription.device" = "Device";
@@ -187,6 +197,9 @@
 "transcription.recorded_on" = "Recorded on %@";
 "transcription.title" = "Transcription";
 "transcription.original_title" = "Original Transcription";
+"transcription.ai_actions" = "AI Actions";
+"transcription.ai_post_processing" = "AI Post-Processing";
+"transcription.processing_overlay_hint" = "Please wait, processing with AI...";
 
 /* Transcription Service States */
 "transcription.state.connected" = "Connected";
@@ -239,11 +252,16 @@
 /* Errors */
 "error.unknown" = "Unknown error";
 
-/* Connection Status */
 "connection.status.unknown" = "Not tested";
 "connection.status.testing" = "Testing...";
 "connection.status.success" = "Connected";
 "connection.status.failure" = "Failed";
+
+/* Service Status */
+"settings.service.status.not_tested" = "Not tested";
+"settings.service.status.testing" = "Testing...";
+"settings.service.status.connected" = "Connected";
+"settings.service.status.failed" = "Failed";
 
 /* Filters */
 "filter.source.all" = "All";
@@ -310,3 +328,13 @@
 "error.transcription.invalid_response" = "Invalid service response";
 "error.transcription.invalid_url" = "Invalid URL: %@";
 "error.transcription.failed" = "Transcription failed: %@";
+
+/* AI Prompts */
+"prompt.meeting_notes.title" = "Meeting Notes";
+"prompt.meeting_notes.description" = "Generates structured meeting notes";
+"prompt.executive_summary.title" = "Executive Summary";
+"prompt.executive_summary.description" = "Creates a concise executive summary";
+"prompt.action_items.title" = "Action Items";
+"prompt.action_items.description" = "Extracts tasks and next steps";
+"prompt.clean_transcription.title" = "Clean Transcription";
+"prompt.clean_transcription.description" = "Removes hesitations and corrects speech errors";

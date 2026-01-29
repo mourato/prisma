@@ -39,9 +39,11 @@
 "settings.ai.api_config" = "Configuração da API";
 "settings.ai.base_url" = "URL Base:";
 "settings.ai.api_key" = "Chave API:";
+"settings.ai.api_key_placeholder" = "sk-...";
 "settings.ai.keychain_secure" = "Chave armazenada com segurança no Keychain";
 "settings.ai.model" = "Modelo:";
 "settings.ai.model_select" = "Selecionar modelo...";
+"settings.ai.model_placeholder" = "gpt-4o, claude-3-5-sonnet...";
 "settings.ai.model_refresh" = "Atualizar modelos disponíveis";
 "settings.ai.models_loaded" = "%d modelos disponíveis";
 "settings.ai.model_hint" = "Teste a conexão para carregar os modelos disponíveis";
@@ -88,6 +90,11 @@
 "settings.service.no_internet" = "Transcrição em tempo real sem internet";
 "settings.service.status" = "Estado do Serviço";
 "settings.service.verify" = "Verificar";
+"settings.service.diarization" = "Diarização";
+"settings.service.installed" = "Instalado";
+"settings.service.not_installed" = "Não instalado";
+"settings.service.delete_model" = "Excluir Modelo";
+"settings.service.download_model" = "Baixar Modelo";
 
 /* Shortcut Settings */
 "settings.shortcuts.title" = "Atalhos";
@@ -122,6 +129,7 @@
 "settings.permissions.about" = "Sobre Permissões";
 "settings.permissions.description" = "O Meeting Assistant precisa de acesso ao microfone e à gravação de tela para capturar o áudio das suas reuniões e identificar os aplicativos ativos.";
 "settings.permissions.status" = "Status das Permissões";
+"permissions.warning" = "Algumas permissões são necessárias para gravar reuniões.";
 
 /* Transcriptions Settings */
 "settings.transcriptions.title" = "Transcrições";
@@ -179,6 +187,8 @@
 
 /* Transcription Status */
 "transcription.time_remaining" = "~%@ restante";
+"transcription.view.toggle_details" = "Alternar detalhes";
+"transcription.error.click_retry" = "Clique para tentar novamente";
 "transcription.service" = "Serviço";
 "transcription.model" = "Modelo";
 "transcription.device" = "Dispositivo";
@@ -187,6 +197,9 @@
 "transcription.recorded_on" = "Gravado em %@";
 "transcription.title" = "Transcrição";
 "transcription.original_title" = "Transcrição Original";
+"transcription.ai_actions" = "Ações de IA";
+"transcription.ai_post_processing" = "Pós-Processamento com IA";
+"transcription.processing_overlay_hint" = "Aguarde, processando com IA...";
 
 /* Transcription Service States */
 "transcription.state.connected" = "Conectado";
@@ -239,11 +252,16 @@
 /* Errors */
 "error.unknown" = "Erro desconhecido";
 
-/* Connection Status */
 "connection.status.unknown" = "Não testado";
 "connection.status.testing" = "Testando...";
 "connection.status.success" = "Conectado";
 "connection.status.failure" = "Falha";
+
+/* Service Status */
+"settings.service.status.not_tested" = "Não testado";
+"settings.service.status.testing" = "Testando...";
+"settings.service.status.connected" = "Conectado";
+"settings.service.status.failed" = "Falha";
 
 /* Filters */
 "filter.source.all" = "Todas";
@@ -310,3 +328,13 @@
 "error.transcription.invalid_response" = "Resposta inválida do serviço";
 "error.transcription.invalid_url" = "URL inválida: %@";
 "error.transcription.failed" = "Falha na transcrição: %@";
+
+/* AI Prompts */
+"prompt.meeting_notes.title" = "Notas de Reunião";
+"prompt.meeting_notes.description" = "Gera notas de reunião estruturadas";
+"prompt.executive_summary.title" = "Resumo Executivo";
+"prompt.executive_summary.description" = "Cria um resumo executivo conciso";
+"prompt.action_items.title" = "Action Items";
+"prompt.action_items.description" = "Extrai tarefas e próximos passos";
+"prompt.clean_transcription.title" = "Transcrição Limpa";
+"prompt.clean_transcription.description" = "Remove hesitações e corrige erros de fala";
