@@ -20,6 +20,7 @@ let package = Package(
         .package(url: "https://github.com/sindresorhus/KeyboardShortcuts", from: "2.0.0"),
         .package(url: "https://github.com/apple/swift-atomics.git", .upToNextMajor(from: "1.2.0")),
         .package(url: "https://github.com/Brightify/Cuckoo.git", from: "2.0.0"),
+        .package(url: "https://github.com/dmrschmidt/DSWaveformImage", from: "14.0.0"),
     ],
     targets: [
         .target(
@@ -28,6 +29,7 @@ let package = Package(
                 .product(name: "FluidAudio", package: "FluidAudio"),
                 .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
                 .product(name: "Atomics", package: "swift-atomics"),
+                .product(name: "DSWaveformImageViews", package: "DSWaveformImage"),
             ],
             resources: [
                 .process("Resources"),

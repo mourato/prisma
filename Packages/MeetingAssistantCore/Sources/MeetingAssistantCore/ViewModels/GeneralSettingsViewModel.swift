@@ -49,6 +49,24 @@ public class GeneralSettingsViewModel: ObservableObject {
         }
     }
 
+    @Published public var recordingIndicatorEnabled: Bool {
+        didSet {
+            settingsStore.recordingIndicatorEnabled = recordingIndicatorEnabled
+        }
+    }
+
+    @Published public var recordingIndicatorStyle: RecordingIndicatorStyle {
+        didSet {
+            settingsStore.recordingIndicatorStyle = recordingIndicatorStyle
+        }
+    }
+
+    @Published public var recordingIndicatorPosition: RecordingIndicatorPosition {
+        didSet {
+            settingsStore.recordingIndicatorPosition = recordingIndicatorPosition
+        }
+    }
+
     @Published public var availableDevices: [AudioInputDevice] = []
 
     private let deviceManager = AudioDeviceManager()
@@ -63,6 +81,9 @@ public class GeneralSettingsViewModel: ObservableObject {
         selectedLanguage = settingsStore.selectedLanguage
         showSettingsOnLaunch = settingsStore.showSettingsOnLaunch
         muteOutputDuringRecording = settingsStore.muteOutputDuringRecording
+        recordingIndicatorEnabled = settingsStore.recordingIndicatorEnabled
+        recordingIndicatorStyle = settingsStore.recordingIndicatorStyle
+        recordingIndicatorPosition = settingsStore.recordingIndicatorPosition
 
         setupDeviceObservation()
     }

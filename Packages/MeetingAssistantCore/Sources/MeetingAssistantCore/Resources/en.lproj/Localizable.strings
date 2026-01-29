@@ -338,3 +338,14 @@
 "prompt.action_items.description" = "Extracts tasks and next steps";
 "prompt.clean_transcription.title" = "Clean Transcription";
 "prompt.clean_transcription.description" = "Removes hesitations and corrects speech errors";
+
+/* Recording Indicator Settings */
+"settings.general.recording_indicator" = "Recording Indicator";
+"settings.general.recording_indicator.enabled" = "Show floating indicator while recording";
+"settings.general.recording_indicator.style" = "Style";
+"settings.general.recording_indicator.style.classic" = "Classic";
+"settings.general.recording_indicator.style.mini" = "Mini";
+"settings.general.recording_indicator.style.none" = "None";
+"settings.general.recording_indicator.position" = "Position";
+"settings.general.recording_indicator.position.top" = "Top";
+"settings.general.recording_indicator.position.bottom" = "Bottom";
