@@ -97,6 +97,26 @@
 "settings.shortcuts.toggle_recording_desc" = "Inicia ou encerra a gravação atual";
 "settings.shortcuts.reset" = "Resetar para atalhos padrão";
 
+/* Keyboard Controls (New Tab) */
+"settings.section.shortcuts" = "Controles de Teclado";
+"settings.shortcuts.header_desc" = "Escolha suas teclas preferidas para iniciar gravações. Pressione apenas essas teclas para começar a gravar.";
+"settings.shortcuts.recording_controls" = "Controles de Gravação";
+"settings.shortcuts.activation_mode" = "Modo de Ativação";
+"settings.shortcuts.activation_mode.hold_or_toggle" = "Segurar ou Alternar";
+"settings.shortcuts.activation_mode.toggle" = "Alternar";
+"settings.shortcuts.activation_mode.hold" = "Segurar";
+"settings.shortcuts.activation_mode.double_tap" = "Toque Duplo";
+"settings.shortcuts.activation_mode_desc" = "Configure como as teclas de atalho ativam: Segurar ou Alternar (auto-detecta), Alternar (pressione uma vez), Segurar (grave enquanto pressionado), ou Toque Duplo (toque duas vezes rapidamente).";
+"settings.shortcuts.tips_title" = "Dicas";
+"settings.shortcuts.fn_key_title" = "Usando a tecla Fn";
+"settings.shortcuts.fn_key_desc" = "Para usar a tecla Fn sozinha:\n• Abra Configurações do Sistema → Teclado\n• Clique no dropdown \"Pressionar tecla 🌐 para\"\n• Selecione \"Não fazer nada\"\n• Isso permite que o app detecte a tecla Fn";
+"settings.shortcuts.use_escape" = "Usar Escape para cancelar gravação";
+"settings.shortcuts.try_keys" = "Teste suas Teclas";
+"settings.shortcuts.try_keys_hint" = "Clique na caixa de texto abaixo primeiro.";
+"settings.shortcuts.key.not_specified" = "Não especificado";
+"settings.shortcuts.key.custom" = "Gravar atalho...";
+"settings.shortcuts.custom_shortcut" = "Atalho Personalizado:";
+
 /* Permissions Settings */
 "settings.permissions.title" = "Permissões";
 "settings.permissions.about" = "Sobre Permissões";

@@ -90,6 +90,8 @@ public struct SettingsView: View {
         switch selectedSection {
         case .general:
             GeneralSettingsTab()
+        case .shortcuts:
+            ShortcutSettingsTab()
         case .transcriptions:
             TranscriptionsSettingsTab()
         case .postProcessing:

@@ -57,6 +57,89 @@ public enum AppLanguage: String, CaseIterable, Codable, Sendable {
     }
 }
 
+// MARK: - Shortcut Activation Mode
+
+/// Modes for how keyboard shortcuts activate recording.
+public enum ShortcutActivationMode: String, CaseIterable, Codable, Sendable {
+    case holdOrToggle
+    case toggle
+    case hold
+    case doubleTap
+
+    public var localizedName: String {
+        switch self {
+        case .holdOrToggle:
+            NSLocalizedString("settings.shortcuts.activation_mode.hold_or_toggle", bundle: .safeModule, comment: "")
+        case .toggle:
+            NSLocalizedString("settings.shortcuts.activation_mode.toggle", bundle: .safeModule, comment: "")
+        case .hold:
+            NSLocalizedString("settings.shortcuts.activation_mode.hold", bundle: .safeModule, comment: "")
+        case .doubleTap:
+            NSLocalizedString("settings.shortcuts.activation_mode.double_tap", bundle: .safeModule, comment: "")
+        }
+    }
+}
+
+// MARK: - Preset Shortcut Key
+
+/// Predefined shortcut keys for quick recording activation.
+/// Based on Spokenly's keyboard controls interface.
+public enum PresetShortcutKey: String, CaseIterable, Codable, Sendable {
+    case notSpecified
+    case rightCommand
+    case rightOption
+    case rightShift
+    case rightControl
+    case optionCommand
+    case controlCommand
+    case controlOption
+    case shiftCommand
+    case optionShift
+    case controlShift
+    case fn
+    case custom
+
+    public var displayName: String {
+        switch self {
+        case .notSpecified:
+            NSLocalizedString("settings.shortcuts.key.not_specified", bundle: .safeModule, comment: "")
+        case .rightCommand:
+            "Right ⌘"
+        case .rightOption:
+            "Right ⌥"
+        case .rightShift:
+            "Right ⇧"
+        case .rightControl:
+            "Right ⌃"
+        case .optionCommand:
+            "⌥ + ⌘"
+        case .controlCommand:
+            "⌃ + ⌘"
+        case .controlOption:
+            "⌃ + ⌥"
+        case .shiftCommand:
+            "⇧ + ⌘"
+        case .optionShift:
+            "⌥ + ⇧"
+        case .controlShift:
+            "⌃ + ⇧"
+        case .fn:
+            "Fn"
+        case .custom:
+            NSLocalizedString("settings.shortcuts.key.custom", bundle: .safeModule, comment: "")
+        }
+    }
+
+    /// SF Symbol icon for the key
+    public var icon: String? {
+        switch self {
+        case .fn: "fn"
+        case .custom: "keyboard"
+        default: nil
+        }
+    }
+}
+
 /// Configuration for AI model post-processing.
 /// NOTE: API key is stored securely in Keychain, not in this struct.
 public struct AIConfiguration: Codable, Equatable, Sendable {
@@ -140,6 +223,9 @@ public class AppSettingsStore: ObservableObject {
         static let audioDevicePriority = "audioDevicePriority"
         static let muteOutputDuringRecording = "muteOutputDuringRecording"
         static let deletedPromptIds = "postProcessingDeletedPromptIds"
+        static let shortcutActivationMode = "shortcutActivationMode"
+        static let useEscapeToCancelRecording = "useEscapeToCancelRecording"
+        static let selectedPresetKey = "selectedPresetKey"
     }
 
     // MARK: - Published Properties
@@ -248,6 +334,21 @@ public class AppSettingsStore: ObservableObject {
         didSet { UserDefaults.standard.set(muteOutputDuringRecording, forKey: Keys.muteOutputDuringRecording) }
     }
 
+    /// How keyboard shortcuts activate recording.
+    @Published public var shortcutActivationMode: ShortcutActivationMode {
+        didSet { UserDefaults.standard.set(shortcutActivationMode.rawValue, forKey: Keys.shortcutActivationMode) }
+    }
+
+    /// Whether pressing Escape cancels recording.
+    @Published public var useEscapeToCancelRecording: Bool {
+        didSet { UserDefaults.standard.set(useEscapeToCancelRecording, forKey: Keys.useEscapeToCancelRecording) }
+    }
+
+    /// Selected preset shortcut key for recording activation.
+    @Published public var selectedPresetKey: PresetShortcutKey {
+        didSet { UserDefaults.standard.set(selectedPresetKey.rawValue, forKey: Keys.selectedPresetKey) }
+    }
+
     /// All available prompts (predefined + user-created), filtered by deleted and overrides.
     public var allPrompts: [PostProcessingPrompt] {
         // 1. Start with predefined prompts that are NOT deleted
@@ -326,6 +427,13 @@ public class AppSettingsStore: ObservableObject {
         audioDevicePriority = UserDefaults.standard.stringArray(forKey: Keys.audioDevicePriority) ?? []
         muteOutputDuringRecording = UserDefaults.standard.bool(forKey: Keys.muteOutputDuringRecording)
 
+        let rawActivationMode = UserDefaults.standard.string(forKey: Keys.shortcutActivationMode)
+        shortcutActivationMode = rawActivationMode.flatMap { ShortcutActivationMode(rawValue: $0) } ?? .holdOrToggle
+        useEscapeToCancelRecording = UserDefaults.standard.bool(forKey: Keys.useEscapeToCancelRecording)
+
+        let rawPresetKey = UserDefaults.standard.string(forKey: Keys.selectedPresetKey)
+        selectedPresetKey = rawPresetKey.flatMap { PresetShortcutKey(rawValue: $0) } ?? .fn
+
         applyLanguage(selectedLanguage)
     }
 
@@ -366,6 +474,9 @@ public class AppSettingsStore: ObservableObject {
         numSpeakers = nil
         audioDevicePriority = []
         muteOutputDuringRecording = false
+        shortcutActivationMode = .holdOrToggle
+        useEscapeToCancelRecording = false
+        selectedPresetKey = .fn
     }
 
     // MARK: - Prompt Management

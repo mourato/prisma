@@ -14,7 +14,6 @@ public struct GeneralSettingsTab: View {
         ScrollView {
             VStack(spacing: SettingsDesignSystem.Layout.sectionSpacing) {
                 languageSection
-                shortcutsSection
                 serviceSection
                 recordingSection
                 audioDevicesSection
@@ -222,11 +221,6 @@ public struct GeneralSettingsTab: View {
                 }
             }
         }
-    }
-
-    @ViewBuilder
-    private var shortcutsSection: some View {
-        ShortcutSettingsTab()
     }
 
     @ViewBuilder
