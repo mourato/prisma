@@ -94,7 +94,8 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
             previewText: "",
             language: "en",
             isPostProcessed: false,
-            duration: 60
+            duration: 60,
+            audioFilePath: nil
         )
         let metadata2 = TranscriptionMetadata(
             id: mockId2,
@@ -106,7 +107,8 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
             previewText: "",
             language: "en",
             isPostProcessed: false,
-            duration: 120
+            duration: 120,
+            audioFilePath: nil
         )
 
         viewModel.transcriptions = [metadata1, metadata2]
