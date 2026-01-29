@@ -263,7 +263,15 @@ public struct TranscriptionsSettingsTab: View {
     private var rightPanel: some View {
         Group {
             if let selected = viewModel.selectedTranscription {
-                TranscriptionDetailView(transcription: selected)
+                TranscriptionDetailView(
+                    transcription: selected,
+                    isProcessing: viewModel.isProcessingAI,
+                    onApplyPrompt: { prompt in
+                        Task {
+                            await viewModel.applyPostProcessing(prompt: prompt, to: selected)
+                        }
+                    }
+                )
             } else {
                 noSelectionView
             }

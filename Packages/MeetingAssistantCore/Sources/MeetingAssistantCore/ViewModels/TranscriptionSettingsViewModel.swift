@@ -18,6 +18,8 @@ public class TranscriptionSettingsViewModel: ObservableObject {
         }
     }
 
+    @Published public var isProcessingAI = false
+
     @Published public var isLoading = true
     @Published public var sourceFilter: RecordingSourceFilter = .all
     @Published public var dateFilter: DateFilter = .allEntries
@@ -75,5 +77,45 @@ public class TranscriptionSettingsViewModel: ObservableObject {
 
     public func openRecordingsDirectory() {
         NSWorkspace.shared.open(storage.recordingsDirectory)
+    }
+
+    public func applyPostProcessing(prompt: PostProcessingPrompt, to transcription: Transcription) async {
+        guard !isProcessingAI else { return }
+
+        isProcessingAI = true
+        defer { isProcessingAI = false }
+
+        do {
+            let processedText = try await PostProcessingService.shared.processTranscription(
+                transcription.rawText,
+                with: prompt
+            )
+
+            let updatedTranscription = Transcription(
+                id: transcription.id,
+                meeting: transcription.meeting,
+                segments: transcription.segments,
+                text: transcription.text,
+                rawText: transcription.rawText,
+                processedContent: processedText,
+                postProcessingPromptId: prompt.id,
+                postProcessingPromptTitle: prompt.title,
+                language: transcription.language,
+                createdAt: transcription.createdAt,
+                modelName: transcription.modelName
+            )
+
+            try await storage.saveTranscription(updatedTranscription)
+
+            // Update local state
+            selectedTranscription = updatedTranscription
+
+            // Refresh metadata to show the "sparkles" icon in the list if needed
+            await loadTranscriptions()
+
+        } catch {
+            logger.error("Failed to apply post-processing: \(error.localizedDescription)")
+            errorMessage = error.localizedDescription
+        }
     }
 }
