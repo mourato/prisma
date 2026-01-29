@@ -28,13 +28,13 @@ public class RecordingViewModel: ObservableObject {
 
     // MARK: - Computed Properties
 
-    public var statusText: String {
+    public var statusText: String? {
         if isRecording {
             "status.recording".localized
         } else if isTranscribing {
             "status.transcribing".localized
         } else {
-            "status.waiting".localized
+            nil
         }
     }
 

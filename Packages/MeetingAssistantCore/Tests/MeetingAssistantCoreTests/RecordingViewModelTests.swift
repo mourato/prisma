@@ -24,7 +24,7 @@ final class RecordingViewModelTests: XCTestCase {
     func testInitialState() {
         XCTAssertFalse(viewModel.isRecording)
         XCTAssertFalse(viewModel.isTranscribing)
-        XCTAssertEqual(viewModel.statusText, "status.waiting".localized)
+        XCTAssertNil(viewModel.statusText)
         XCTAssertFalse(viewModel.transcriptionViewModel.progressPercentage > 0)
     }
 
