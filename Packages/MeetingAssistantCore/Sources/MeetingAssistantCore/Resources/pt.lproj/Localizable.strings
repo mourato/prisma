@@ -349,3 +349,6 @@
 "settings.general.recording_indicator.position" = "Posição";
 "settings.general.recording_indicator.position.top" = "Topo";
 "settings.general.recording_indicator.position.bottom" = "Rodapé";
+"settings.transcriptions.today" = "Hoje";
+"settings.transcriptions.yesterday" = "Ontem";
+"transcription.no_segments" = "Nenhum segmento disponível";

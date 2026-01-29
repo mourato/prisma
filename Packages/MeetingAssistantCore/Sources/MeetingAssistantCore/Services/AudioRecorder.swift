@@ -71,7 +71,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             Task { @MainActor [weak self] in
                 self?.currentAveragePower = avg
                 self?.currentPeakPower = peak
-                // AppLogger.debug("Power update: \(avg) dB", category: .recordingManager)
+                print("Power update: \(avg) dB")
             }
         }
 
@@ -179,6 +179,15 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
         AppLogger.debug("Configuring inputs...", category: .recordingManager)
         try configureInputs(engine: engine, mixer: mixer, source: source, sampleRate: sampleRate)
+
+        // Log current input device for debugging silene
+        if let inputUnit = engine.inputNode.audioUnit {
+            var deviceID: AudioObjectID = 0
+            var size = UInt32(MemoryLayout<AudioObjectID>.size)
+            AudioUnitGetProperty(inputUnit, kAudioOutputUnitProperty_CurrentDevice, kAudioUnitScope_Global, 0, &deviceID, &size)
+            AppLogger.info("Using Audio Input Device ID: \(deviceID)", category: .recordingManager)
+        }
+
         AppLogger.debug("Configuring worker...", category: .recordingManager)
         try await configureWorker(writingTo: outputURL, mixer: mixer)
 
@@ -257,12 +266,15 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
         guard inputFormat.commonFormat == .pcmFormatFloat32 else {
             AppLogger.warning(
-                "Microphone input format is not Float32. Skipping connection.",
+                "Microphone input format is not Float32 (\(inputFormat.commonFormat.rawValue)). Switching to conversion.",
                 category: .recordingManager
             )
+            // Instead of skipping, we should let AVAudioEngine handle it or log it clearly
+            engine.connect(inputNode, to: mixer, format: inputFormat)
             return
         }
 
+        AppLogger.debug("Connecting Microphone with format: \(inputFormat)", category: .recordingManager)
         engine.connect(inputNode, to: mixer, format: inputFormat)
     }
 
@@ -301,6 +313,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             bufferSize: Constants.tapBufferSize,
             format: tapFormat // Request exact same format to avoid conversion overhead
         ) { @Sendable buffer, _ in
+            print("Received buffer: \(buffer.frameLength) frames")
             worker.process(buffer)
         }
     }

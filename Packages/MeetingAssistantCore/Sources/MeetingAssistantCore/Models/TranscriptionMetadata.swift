@@ -12,6 +12,7 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
     public let language: String
     public let isPostProcessed: Bool
     public let duration: TimeInterval
+    public let audioFilePath: String?
 
     public init(
         id: UUID,
@@ -23,7 +24,8 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
         previewText: String,
         language: String,
         isPostProcessed: Bool,
-        duration: TimeInterval
+        duration: TimeInterval,
+        audioFilePath: String?
     ) {
         self.id = id
         self.meetingId = meetingId
@@ -35,5 +37,6 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
         self.language = language
         self.isPostProcessed = isPostProcessed
         self.duration = duration
+        self.audioFilePath = audioFilePath
     }
 }

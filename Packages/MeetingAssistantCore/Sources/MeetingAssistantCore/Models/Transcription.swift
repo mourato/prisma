@@ -83,6 +83,12 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
         processedContent != nil
     }
 
+    /// URL to the audio recording file (if available).
+    public var audioURL: URL? {
+        guard let path = meeting.audioFilePath else { return nil }
+        return URL(fileURLWithPath: path)
+    }
+
     /// Cached formatter for transcription dates.
     private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()

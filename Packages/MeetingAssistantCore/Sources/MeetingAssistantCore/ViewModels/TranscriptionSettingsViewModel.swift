@@ -47,6 +47,18 @@ public class TranscriptionSettingsViewModel: ObservableObject {
         }
     }
 
+    /// Transcriptions grouped by date (start of day) for section headers.
+    public var groupedTranscriptions: [Date: [TranscriptionMetadata]] {
+        Dictionary(grouping: filteredTranscriptions) { metadata in
+            Calendar.current.startOfDay(for: metadata.createdAt)
+        }
+    }
+
+    /// Sorted list of dates for the group headers.
+    public var sortedGroupDates: [Date] {
+        groupedTranscriptions.keys.sorted(by: >)
+    }
+
     private func matchesSourceFilter(_ transcription: TranscriptionMetadata) -> Bool {
         switch sourceFilter {
         case .all:
@@ -118,6 +130,19 @@ public class TranscriptionSettingsViewModel: ObservableObject {
         } catch {
             logger.error("Failed to apply post-processing: \(error.localizedDescription)")
             errorMessage = error.localizedDescription
+        }
+    }
+
+    public func deleteTranscription(_ metadata: TranscriptionMetadata) async {
+        do {
+            try await storage.deleteTranscription(by: metadata.id)
+            if selectedId == metadata.id {
+                selectedId = nil
+            }
+            await loadTranscriptions()
+        } catch {
+            logger.error("Failed to delete transcription: \(error.localizedDescription)")
+            errorMessage = "Failed to delete: \(error.localizedDescription)"
         }
     }
 }
