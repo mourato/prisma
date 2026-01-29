@@ -58,12 +58,16 @@ public struct AISettingsTab: View {
                     HStack {
                         Toggle(
                             NSLocalizedString(
-                                "settings.ai.min_speakers", bundle: .safeModule, comment: ""
+                                "settings.ai.num_speakers", bundle: .safeModule, comment: ""
                             ),
                             isOn: Binding(
-                                get: { viewModel.settings.minSpeakers != nil },
+                                get: { viewModel.settings.numSpeakers != nil },
                                 set: { isOn in
-                                    viewModel.settings.minSpeakers = isOn ? 1 : nil
+                                    viewModel.settings.numSpeakers = isOn ? 2 : nil
+                                    if isOn {
+                                        viewModel.settings.minSpeakers = nil
+                                        viewModel.settings.maxSpeakers = nil
+                                    }
                                 }
                             )
                         )
@@ -71,15 +75,15 @@ public struct AISettingsTab: View {
 
                         Spacer()
 
-                        if let min = viewModel.settings.minSpeakers {
+                        if let num = viewModel.settings.numSpeakers {
                             Stepper(
                                 value: Binding(
-                                    get: { min },
-                                    set: { viewModel.settings.minSpeakers = $0 }
+                                    get: { num },
+                                    set: { viewModel.settings.numSpeakers = $0 }
                                 ),
-                                in: 1...(viewModel.settings.maxSpeakers ?? 20)
+                                in: 1...20
                             ) {
-                                Text("\(min)")
+                                Text("\(num)")
                                     .fontWeight(.medium)
                                     .frame(width: 24)
                             }
@@ -90,38 +94,75 @@ public struct AISettingsTab: View {
                         }
                     }
 
-                    HStack {
-                        Toggle(
-                            NSLocalizedString(
-                                "settings.ai.max_speakers", bundle: .safeModule, comment: ""
-                            ),
-                            isOn: Binding(
-                                get: { viewModel.settings.maxSpeakers != nil },
-                                set: { isOn in
-                                    viewModel.settings.maxSpeakers = isOn ? 10 : nil
-                                }
-                            )
-                        )
-                        .toggleStyle(.checkbox)
-
-                        Spacer()
-
-                        if let max = viewModel.settings.maxSpeakers {
-                            Stepper(
-                                value: Binding(
-                                    get: { max },
-                                    set: { viewModel.settings.maxSpeakers = $0 }
+                    if viewModel.settings.numSpeakers == nil {
+                        HStack {
+                            Toggle(
+                                NSLocalizedString(
+                                    "settings.ai.min_speakers", bundle: .safeModule, comment: ""
                                 ),
-                                in: (viewModel.settings.minSpeakers ?? 1)...20
-                            ) {
-                                Text("\(max)")
-                                    .fontWeight(.medium)
-                                    .frame(width: 24)
+                                isOn: Binding(
+                                    get: { viewModel.settings.minSpeakers != nil },
+                                    set: { isOn in
+                                        viewModel.settings.minSpeakers = isOn ? 1 : nil
+                                    }
+                                )
+                            )
+                            .toggleStyle(.checkbox)
+
+                            Spacer()
+
+                            if let min = viewModel.settings.minSpeakers {
+                                Stepper(
+                                    value: Binding(
+                                        get: { min },
+                                        set: { viewModel.settings.minSpeakers = $0 }
+                                    ),
+                                    in: 1...(viewModel.settings.maxSpeakers ?? 20)
+                                ) {
+                                    Text("\(min)")
+                                        .fontWeight(.medium)
+                                        .frame(width: 24)
+                                }
+                            } else {
+                                Text("settings.ai.speakers_auto".localized)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
                             }
-                        } else {
-                            Text("settings.ai.speakers_auto".localized)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                        }
+
+                        HStack {
+                            Toggle(
+                                NSLocalizedString(
+                                    "settings.ai.max_speakers", bundle: .safeModule, comment: ""
+                                ),
+                                isOn: Binding(
+                                    get: { viewModel.settings.maxSpeakers != nil },
+                                    set: { isOn in
+                                        viewModel.settings.maxSpeakers = isOn ? 10 : nil
+                                    }
+                                )
+                            )
+                            .toggleStyle(.checkbox)
+
+                            Spacer()
+
+                            if let max = viewModel.settings.maxSpeakers {
+                                Stepper(
+                                    value: Binding(
+                                        get: { max },
+                                        set: { viewModel.settings.maxSpeakers = $0 }
+                                    ),
+                                    in: (viewModel.settings.minSpeakers ?? 1)...20
+                                ) {
+                                    Text("\(max)")
+                                        .fontWeight(.medium)
+                                        .frame(width: 24)
+                                }
+                            } else {
+                                Text("settings.ai.speakers_auto".localized)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                     }
                 }
