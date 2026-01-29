@@ -16,6 +16,7 @@ public struct GeneralSettingsTab: View {
                 languageSection
                 serviceSection
                 recordingSection
+                recordingIndicatorSection
                 audioDevicesSection
                 appsSection
             }
@@ -125,6 +126,58 @@ public struct GeneralSettingsTab: View {
                     "settings.general.merge_audio".localized,
                     isOn: $viewModel.shouldMergeAudioFiles
                 )
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var recordingIndicatorSection: some View {
+        SettingsGroup("settings.general.recording_indicator".localized, icon: "waveform") {
+            VStack(alignment: .leading, spacing: 16) {
+                SettingsToggle(
+                    "settings.general.recording_indicator.enabled".localized,
+                    isOn: $viewModel.recordingIndicatorEnabled
+                )
+
+                if viewModel.recordingIndicatorEnabled {
+                    Divider()
+
+                    HStack {
+                        Text("settings.general.recording_indicator.style".localized)
+                            .font(.body)
+                            .foregroundStyle(.primary)
+
+                        Spacer()
+
+                        Picker("", selection: $viewModel.recordingIndicatorStyle) {
+                            ForEach(RecordingIndicatorStyle.allCases, id: \.self) { style in
+                                Text(style.displayName).tag(style)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                        .frame(width: 200)
+                    }
+
+                    Divider()
+
+                    HStack {
+                        Text("settings.general.recording_indicator.position".localized)
+                            .font(.body)
+                            .foregroundStyle(.primary)
+
+                        Spacer()
+
+                        Picker("", selection: $viewModel.recordingIndicatorPosition) {
+                            ForEach(RecordingIndicatorPosition.allCases, id: \.self) { position in
+                                Text(position.displayName).tag(position)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                        .frame(width: 200)
+                    }
+                }
             }
         }
     }

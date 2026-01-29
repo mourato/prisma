@@ -80,6 +80,41 @@ public enum ShortcutActivationMode: String, CaseIterable, Codable, Sendable {
     }
 }
 
+// MARK: - Recording Indicator Configuration
+
+/// Style options for the floating recording indicator.
+public enum RecordingIndicatorStyle: String, CaseIterable, Codable, Sendable {
+    case classic
+    case mini
+    case none
+
+    public var displayName: String {
+        switch self {
+        case .classic:
+            NSLocalizedString("settings.general.recording_indicator.style.classic", bundle: .safeModule, comment: "")
+        case .mini:
+            NSLocalizedString("settings.general.recording_indicator.style.mini", bundle: .safeModule, comment: "")
+        case .none:
+            NSLocalizedString("settings.general.recording_indicator.style.none", bundle: .safeModule, comment: "")
+        }
+    }
+}
+
+/// Position for the floating recording indicator on screen.
+public enum RecordingIndicatorPosition: String, CaseIterable, Codable, Sendable {
+    case top
+    case bottom
+
+    public var displayName: String {
+        switch self {
+        case .top:
+            NSLocalizedString("settings.general.recording_indicator.position.top", bundle: .safeModule, comment: "")
+        case .bottom:
+            NSLocalizedString("settings.general.recording_indicator.position.bottom", bundle: .safeModule, comment: "")
+        }
+    }
+}
+
 // MARK: - Preset Shortcut Key
 
 /// Predefined shortcut keys for quick recording activation.
@@ -226,6 +261,9 @@ public class AppSettingsStore: ObservableObject {
         static let shortcutActivationMode = "shortcutActivationMode"
         static let useEscapeToCancelRecording = "useEscapeToCancelRecording"
         static let selectedPresetKey = "selectedPresetKey"
+        static let recordingIndicatorEnabled = "recordingIndicatorEnabled"
+        static let recordingIndicatorStyle = "recordingIndicatorStyle"
+        static let recordingIndicatorPosition = "recordingIndicatorPosition"
     }
 
     // MARK: - Published Properties
@@ -349,6 +387,23 @@ public class AppSettingsStore: ObservableObject {
         didSet { UserDefaults.standard.set(selectedPresetKey.rawValue, forKey: Keys.selectedPresetKey) }
     }
 
+    // MARK: - Recording Indicator Properties
+
+    /// Whether the floating recording indicator is enabled.
+    @Published public var recordingIndicatorEnabled: Bool {
+        didSet { UserDefaults.standard.set(recordingIndicatorEnabled, forKey: Keys.recordingIndicatorEnabled) }
+    }
+
+    /// Style of the floating recording indicator.
+    @Published public var recordingIndicatorStyle: RecordingIndicatorStyle {
+        didSet { UserDefaults.standard.set(recordingIndicatorStyle.rawValue, forKey: Keys.recordingIndicatorStyle) }
+    }
+
+    /// Position of the floating recording indicator on screen.
+    @Published public var recordingIndicatorPosition: RecordingIndicatorPosition {
+        didSet { UserDefaults.standard.set(recordingIndicatorPosition.rawValue, forKey: Keys.recordingIndicatorPosition) }
+    }
+
     /// All available prompts (predefined + user-created), filtered by deleted and overrides.
     public var allPrompts: [PostProcessingPrompt] {
         // 1. Start with predefined prompts that are NOT deleted
@@ -434,6 +489,13 @@ public class AppSettingsStore: ObservableObject {
         let rawPresetKey = UserDefaults.standard.string(forKey: Keys.selectedPresetKey)
         selectedPresetKey = rawPresetKey.flatMap { PresetShortcutKey(rawValue: $0) } ?? .fn
 
+        // Load recording indicator settings
+        recordingIndicatorEnabled = UserDefaults.standard.bool(forKey: Keys.recordingIndicatorEnabled)
+        let rawIndicatorStyle = UserDefaults.standard.string(forKey: Keys.recordingIndicatorStyle)
+        recordingIndicatorStyle = rawIndicatorStyle.flatMap { RecordingIndicatorStyle(rawValue: $0) } ?? .mini
+        let rawIndicatorPosition = UserDefaults.standard.string(forKey: Keys.recordingIndicatorPosition)
+        recordingIndicatorPosition = rawIndicatorPosition.flatMap { RecordingIndicatorPosition(rawValue: $0) } ?? .bottom
+
         applyLanguage(selectedLanguage)
     }
 
@@ -477,6 +539,9 @@ public class AppSettingsStore: ObservableObject {
         shortcutActivationMode = .holdOrToggle
         useEscapeToCancelRecording = false
         selectedPresetKey = .fn
+        recordingIndicatorEnabled = false
+        recordingIndicatorStyle = .mini
+        recordingIndicatorPosition = .bottom
     }
 
     // MARK: - Prompt Management

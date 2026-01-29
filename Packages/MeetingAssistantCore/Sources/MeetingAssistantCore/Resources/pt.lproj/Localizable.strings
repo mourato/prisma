@@ -338,3 +338,14 @@
 "prompt.action_items.description" = "Extrai tarefas e próximos passos";
 "prompt.clean_transcription.title" = "Transcrição Limpa";
 "prompt.clean_transcription.description" = "Remove hesitações e corrige erros de fala";
+
+/* Recording Indicator Settings */
+"settings.general.recording_indicator" = "Indicador de Gravação";
+"settings.general.recording_indicator.enabled" = "Mostrar indicador flutuante durante gravação";
+"settings.general.recording_indicator.style" = "Estilo";
+"settings.general.recording_indicator.style.classic" = "Clássico";
+"settings.general.recording_indicator.style.mini" = "Mini";
+"settings.general.recording_indicator.style.none" = "Nenhum";
+"settings.general.recording_indicator.position" = "Posição";
+"settings.general.recording_indicator.position.top" = "Topo";
+"settings.general.recording_indicator.position.bottom" = "Rodapé";

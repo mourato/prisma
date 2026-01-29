@@ -46,6 +46,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var recordingManager: RecordingManager = .shared
     private lazy var localizationBundle: Bundle = .safeModule
     private var eventMonitor: Any?
+    private lazy var floatingIndicatorController = FloatingRecordingIndicatorController()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Initialize Monitoring Services
@@ -296,5 +297,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             bundle: localizationBundle,
             comment: ""
         )
+
+        // Show/hide floating recording indicator
+        if isRecording {
+            floatingIndicatorController.show()
+        } else {
+            floatingIndicatorController.hide()
+        }
     }
 }
