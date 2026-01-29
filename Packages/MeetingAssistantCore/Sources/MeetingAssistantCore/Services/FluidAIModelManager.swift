@@ -95,7 +95,7 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
                 .withSpeakers(min: min, max: max)
 
             if let num {
-                config = config.withSpeakers(count: num)
+                config = config.withSpeakers(exactly: num)
             }
 
             let manager = OfflineDiarizerManager(config: config)
