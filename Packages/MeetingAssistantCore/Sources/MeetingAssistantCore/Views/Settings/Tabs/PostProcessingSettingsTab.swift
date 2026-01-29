@@ -31,6 +31,14 @@ public struct PostProcessingSettingsTab: View {
                 onCancel: { viewModel.showPromptEditor = false }
             )
         }
+        .sheet(isPresented: $viewModel.showSystemPromptEditor) {
+            SystemPromptEditorSheet(
+                initialPrompt: viewModel.settings.systemPrompt,
+                onSave: viewModel.handleSaveSystemPrompt,
+                onCancel: { viewModel.showSystemPromptEditor = false },
+                onRestoreDefault: { viewModel.resetSystemPrompt() }
+            )
+        }
         .alert("settings.post_processing.delete_confirm_title".localized, isPresented: $viewModel.showDeleteConfirmation) {
             Button("common.cancel".localized, role: .cancel) {}
             Button("common.delete".localized, role: .destructive) {
@@ -53,6 +61,7 @@ public struct PostProcessingSettingsTab: View {
                     isOn: $viewModel.settings.postProcessingEnabled
                 )
                 .font(.headline)
+                .toggleStyle(.switch)
 
                 Text(NSLocalizedString("settings.post_processing.description", bundle: .safeModule, comment: ""))
                     .font(.caption)
@@ -91,25 +100,30 @@ public struct PostProcessingSettingsTab: View {
         SettingsGroup(NSLocalizedString("settings.post_processing.system_prompt", bundle: .safeModule, comment: ""), icon: "terminal.fill") {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Text(NSLocalizedString("settings.post_processing.base_instructions", bundle: .safeModule, comment: ""))
-                        .font(.subheadline)
-                        .fontWeight(.medium)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(NSLocalizedString("settings.post_processing.base_instructions", bundle: .safeModule, comment: ""))
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+
+                        Text(viewModel.settings.systemPrompt)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                    }
 
                     Spacer()
 
-                    Button(NSLocalizedString("settings.post_processing.restore_default", bundle: .safeModule, comment: "")) {
-                        viewModel.resetSystemPrompt()
+                    Button {
+                        viewModel.showSystemPromptEditor = true
+                    } label: {
+                        Label(
+                            NSLocalizedString("settings.post_processing.edit_system_guidelines", bundle: .safeModule, comment: ""),
+                            systemImage: "pencil"
+                        )
                     }
-                    .buttonStyle(.link)
-                    .font(.caption)
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
                 }
-
-                TextEditor(text: $viewModel.settings.systemPrompt)
-                    .font(.system(.body, design: .monospaced))
-                    .frame(minHeight: 120)
-                    .padding(8)
-                    .background(Color.primary.opacity(0.03))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
             }
         }
     }
@@ -159,25 +173,33 @@ public struct PostProcessingSettingsTab: View {
     private func promptRow(prompt: PostProcessingPrompt, isPredefined: Bool) -> some View {
         let isSelected = viewModel.settings.selectedPromptId == prompt.id
 
-        return HStack(spacing: 12) {
-            promptIcon(prompt: prompt, isSelected: isSelected)
-            promptInfo(prompt: prompt, isSelected: isSelected)
-
-            Spacer()
-
-            if isSelected {
-                selectionIndicator
-            }
-
-            if !isPredefined {
-                promptMenu(prompt: prompt)
-            }
-        }
-        .padding(10)
-        .background(isSelected ? Color.accentColor.opacity(0.05) : Color.clear)
-        .contentShape(Rectangle())
-        .onTapGesture {
+        return Button {
             viewModel.selectPrompt(prompt.id)
+        } label: {
+            HStack(spacing: 12) {
+                promptIcon(prompt: prompt, isSelected: isSelected)
+                promptInfo(prompt: prompt, isSelected: isSelected)
+
+                Spacer()
+
+                if isSelected {
+                    selectionIndicator
+                }
+
+                promptMenu(prompt: prompt, isPredefined: isPredefined, isSelected: isSelected)
+            }
+            .padding(10)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .background(isSelected ? Color.accentColor.opacity(0.08) : Color.clear)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(isSelected ? Color.accentColor.opacity(0.3) : Color.clear, lineWidth: 1)
+        )
+        .contextMenu {
+            promptMenuContent(prompt: prompt, isPredefined: isPredefined, isSelected: isSelected)
         }
     }
 
@@ -214,8 +236,42 @@ public struct PostProcessingSettingsTab: View {
             .symbolEffect(.bounce, value: true)
     }
 
-    private func promptMenu(prompt: PostProcessingPrompt) -> some View {
+    private func promptMenu(prompt: PostProcessingPrompt, isPredefined: Bool, isSelected: Bool) -> some View {
         Menu {
+            promptMenuContent(prompt: prompt, isPredefined: isPredefined, isSelected: isSelected)
+        } label: {
+            Image(systemName: "ellipsis.circle")
+                .foregroundStyle(.secondary)
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        // Prevent click on menu from triggering the row button
+        .highPriorityGesture(TapGesture())
+    }
+
+    @ViewBuilder
+    private func promptMenuContent(prompt: PostProcessingPrompt, isPredefined: Bool, isSelected: Bool) -> some View {
+        Button {
+            viewModel.selectPrompt(prompt.id, forceSelect: true)
+        } label: {
+            Label("settings.post_processing.select".localized, systemImage: isSelected ? "checkmark.circle.fill" : "circle")
+        }
+
+        Divider()
+
+        if isPredefined {
+            Button {
+                viewModel.duplicatePrompt(prompt)
+            } label: {
+                Label("settings.post_processing.edit".localized, systemImage: "pencil")
+            }
+
+            Button {
+                viewModel.duplicatePrompt(prompt)
+            } label: {
+                Label("settings.post_processing.duplicate".localized, systemImage: "plus.square.on.square")
+            }
+        } else {
             Button {
                 viewModel.editingPrompt = prompt
                 viewModel.showPromptEditor = true
@@ -223,17 +279,20 @@ public struct PostProcessingSettingsTab: View {
                 Label("settings.post_processing.edit".localized, systemImage: "pencil")
             }
 
+            Button {
+                viewModel.duplicatePrompt(prompt)
+            } label: {
+                Label("settings.post_processing.duplicate".localized, systemImage: "plus.square.on.square")
+            }
+
+            Divider()
+
             Button(role: .destructive) {
                 viewModel.confirmDeletePrompt(prompt)
             } label: {
                 Label("settings.post_processing.delete".localized, systemImage: "trash")
             }
-        } label: {
-            Image(systemName: "ellipsis.circle")
-                .foregroundStyle(.secondary)
         }
-        .menuStyle(.borderlessButton)
-        .fixedSize()
     }
 }
 

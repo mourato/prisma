@@ -70,6 +70,11 @@
 "settings.post_processing.delete" = "Delete";
 "settings.post_processing.delete_confirm_title" = "Delete Prompt?";
 "settings.post_processing.delete_confirm_message" = "Are you sure you want to delete the prompt \"%@\"? This action cannot be undone.";
+"settings.post_processing.edit_system_guidelines" = "Edit Guidelines";
+"settings.post_processing.system_prompt_editor_title" = "System Guidelines";
+"settings.post_processing.duplicate" = "Duplicate";
+"settings.post_processing.select" = "Activate";
+"settings.post_processing.is_active" = "Active";
 
 /* Service Settings */
 "settings.service.title" = "Service";
