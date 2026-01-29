@@ -68,7 +68,8 @@ public final class CoreDataTranscriptionStorageRepository: TranscriptionStorageR
                     previewText: String(mo.text.prefix(100)),
                     language: mo.language,
                     isPostProcessed: mo.processedContent != nil,
-                    duration: mo.meeting.endTime?.timeIntervalSince(mo.meeting.startTime) ?? 0
+                    duration: mo.meeting.endTime?.timeIntervalSince(mo.meeting.startTime) ?? 0,
+                    audioFilePath: mo.meeting.audioFilePath
                 )
             }
         }

@@ -191,21 +191,29 @@ actor AudioRecordingWorker {
         let frameLength = Int(buffer.frameLength)
         guard channelCount > 0, frameLength > 0 else { return }
 
-        let channel = channelData[0]
-        var sum: Float = 0.0
-        var peak: Float = 0.0
+        var maxRMS: Float = 0.0
+        var maxPeak: Float = 0.0
 
-        // Downsample for metering (inspect every 10th sample)
-        for frame in stride(from: 0, to: frameLength, by: 10) {
-            let sample = channel[frame]
-            let absSample = abs(sample)
-            if absSample > peak { peak = absSample }
-            sum += sample * sample
+        // Check all channels to find sound (in case mic is not on channel 0)
+        for ch in 0..<channelCount {
+            let channel = channelData[ch]
+            var sum: Float = 0.0
+            var peak: Float = 0.0
+
+            for frame in stride(from: 0, to: frameLength, by: 10) {
+                let sample = abs(channel[frame])
+                if sample > peak { peak = sample }
+                sum += sample * sample
+            }
+
+            let rms = sqrt(sum / Float(frameLength / 10))
+            if rms > maxRMS { maxRMS = rms }
+            if peak > maxPeak { maxPeak = peak }
         }
 
-        let rms = sqrt(sum / Float(frameLength / 10)) // adjust count
-        let averagePowerDb = 20.0 * log10(max(rms, 1e-6))
-        let peakPowerDb = 20.0 * log10(max(peak, 1e-6))
+        // Use a wider range for metering to capture more subtle sounds
+        let averagePowerDb = 20.0 * log10(max(maxRMS, 1e-10))
+        let peakPowerDb = 20.0 * log10(max(maxPeak, 1e-10))
 
         onPowerUpdate?(averagePowerDb, peakPowerDb)
     }

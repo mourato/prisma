@@ -228,6 +228,7 @@ public struct DomainTranscriptionMetadata: Identifiable, Codable, Hashable, Send
     public let language: String
     public let isPostProcessed: Bool
     public let duration: Double
+    public let audioFilePath: String?
 
     public init(
         id: UUID,
@@ -239,7 +240,8 @@ public struct DomainTranscriptionMetadata: Identifiable, Codable, Hashable, Send
         previewText: String,
         language: String,
         isPostProcessed: Bool,
-        duration: Double
+        duration: Double,
+        audioFilePath: String?
     ) {
         self.id = id
         self.meetingId = meetingId
@@ -251,5 +253,6 @@ public struct DomainTranscriptionMetadata: Identifiable, Codable, Hashable, Send
         self.language = language
         self.isPostProcessed = isPostProcessed
         self.duration = duration
+        self.audioFilePath = audioFilePath
     }
 }

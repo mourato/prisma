@@ -76,28 +76,27 @@ public struct TranscriptionsSettingsTab: View {
     // MARK: - Content Section
 
     private var contentSection: some View {
-        HSplitView {
-            leftPanel
-                .frame(minWidth: 220, idealWidth: 320, maxWidth: 450)
-
-            rightPanel
-                .frame(minWidth: 300)
-                .background(Color(NSColor.controlBackgroundColor).opacity(0.3))
-        }
+        leftPanel
+            .frame(maxWidth: .infinity)
     }
 
     // MARK: - Left Panel
 
     private var leftPanel: some View {
         VStack(spacing: 0) {
-            dropZone
-                .padding()
+            VStack(spacing: 20) {
+                dropZone
 
-            Divider()
+                HStack(spacing: 16) {
+                    sourceFilterPicker
+                        .frame(maxWidth: .infinity)
 
-            filtersSection
-                .padding(.horizontal)
-                .padding(.vertical, 12)
+                    dateFilterMenu
+                        .frame(width: 140)
+                }
+            }
+            .padding(24)
+            .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
 
             Divider()
 
@@ -250,12 +249,80 @@ public struct TranscriptionsSettingsTab: View {
     }
 
     private var transcriptionsList: some View {
-        List(viewModel.filteredTranscriptions, selection: $viewModel.selectedId) { transcription in
-            TranscriptionRowView(metadata: transcription)
-                .tag(transcription.id)
-                .listRowSeparator(.visible, edges: .bottom)
+        List(selection: $viewModel.selectedId) {
+            ForEach(viewModel.sortedGroupDates, id: \.self) { date in
+                Section(header: Text(formatHeaderDate(date))
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 16)
+                    .padding(.bottom, 8))
+                {
+                    ForEach(viewModel.groupedTranscriptions[date] ?? []) { transcription in
+                        TranscriptionCardView(
+                            transcription: transcription,
+                            transcriptionDetail: viewModel.selectedId == transcription.id ? viewModel.selectedTranscription : nil,
+                            isExpanded: viewModel.selectedId == transcription.id,
+                            audioURL: transcription.audioFilePath != nil ? URL(fileURLWithPath: transcription.audioFilePath!) : nil,
+                            onToggleExpand: {
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                    if viewModel.selectedId == transcription.id {
+                                        viewModel.selectedId = nil
+                                    } else {
+                                        viewModel.selectedId = transcription.id
+                                    }
+                                }
+                            },
+                            onAction: { action in
+                                handleTranscriptionAction(action, for: transcription)
+                            }
+                        )
+                        .tag(transcription.id)
+                        .listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 12, trailing: 16))
+                    }
+                }
+            }
         }
-        .listStyle(.inset)
+        .listStyle(.plain)
+    }
+
+    private func formatHeaderDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        formatter.locale = Locale(identifier: "pt_BR")
+
+        if Calendar.current.isDateInToday(date) {
+            return "settings.transcriptions.today".localized
+        } else if Calendar.current.isDateInYesterday(date) {
+            return "settings.transcriptions.yesterday".localized
+        }
+
+        return formatter.string(from: date)
+    }
+
+    private func handleTranscriptionAction(_ action: TranscriptionCardView.TranscriptionAction, for metadata: TranscriptionMetadata) {
+        switch action {
+        case .copy:
+            if let transcription = viewModel.selectedTranscription {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(transcription.text, forType: .string)
+            }
+        case .download:
+            // TODO: Implement export
+            break
+        case .reprocess:
+            // This is handled via the menu in the card, but we could trigger it here
+            break
+        case .info:
+            // TODO: Show details panel
+            break
+        case .delete:
+            Task {
+                await viewModel.deleteTranscription(metadata)
+            }
+        }
     }
 
     // MARK: - Right Panel
