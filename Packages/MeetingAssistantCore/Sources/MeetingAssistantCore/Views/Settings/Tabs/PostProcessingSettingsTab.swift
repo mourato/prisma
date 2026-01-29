@@ -57,16 +57,11 @@ public struct PostProcessingSettingsTab: View {
     private var enableToggleSection: some View {
         SettingsCard {
             VStack(alignment: .leading, spacing: 8) {
-                Toggle(
+                SettingsToggle(
                     NSLocalizedString("settings.post_processing.enabled", bundle: .safeModule, comment: ""),
+                    description: NSLocalizedString("settings.post_processing.description", bundle: .safeModule, comment: ""),
                     isOn: $viewModel.settings.postProcessingEnabled
                 )
-                .font(.headline)
-                .toggleStyle(.switch)
-
-                Text(NSLocalizedString("settings.post_processing.description", bundle: .safeModule, comment: ""))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
         }
     }

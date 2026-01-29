@@ -94,3 +94,43 @@ public struct SettingsGroup<Content: View>: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
+
+/// A standard toggle row with title on the left and switch on the right.
+public struct SettingsToggle: View {
+    let title: String
+    let description: String?
+    @Binding var isOn: Bool
+
+    public init(_ title: String, description: String? = nil, isOn: Binding<Bool>) {
+        self.title = title
+        self.description = description
+        _isOn = isOn
+    }
+
+    public var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.body)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if let description {
+                    Text(description)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            Spacer()
+
+            Toggle("", isOn: $isOn)
+                .labelsHidden()
+                .toggleStyle(.switch)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            isOn.toggle()
+        }
+    }
+}

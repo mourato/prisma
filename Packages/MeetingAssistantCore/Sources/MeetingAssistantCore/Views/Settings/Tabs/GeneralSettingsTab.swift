@@ -34,14 +34,22 @@ public struct GeneralSettingsTab: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                Picker("", selection: $viewModel.selectedLanguage) {
-                    ForEach(AppLanguage.allCases, id: \.self) { language in
-                        Text(language.displayName).tag(language)
+                HStack {
+                    Text("settings.general.language".localized)
+                        .font(.body)
+
+                    Spacer()
+
+                    Picker("", selection: $viewModel.selectedLanguage) {
+                        ForEach(AppLanguage.allCases, id: \.self) { language in
+                            Text(language.displayName).tag(language)
+                        }
                     }
+                    .labelsHidden()
+                    .pickerStyle(.menu)
+                    .frame(width: 200)
+                    .accessibilityLabel("settings.general.language".localized)
                 }
-                .labelsHidden()
-                .pickerStyle(.menu)
-                .frame(maxWidth: 200)
                 .accessibilityLabel("settings.general.language".localized)
 
                 if viewModel.selectedLanguage != .system {
@@ -61,19 +69,17 @@ public struct GeneralSettingsTab: View {
     private var recordingSection: some View {
         SettingsGroup("settings.general.recording".localized, icon: "recordingtape") {
             VStack(alignment: .leading, spacing: 16) {
-                Toggle(
+                SettingsToggle(
                     "settings.general.auto_start".localized,
                     isOn: $viewModel.autoStartRecording
                 )
-                .toggleStyle(.switch)
 
                 Divider()
 
-                Toggle(
+                SettingsToggle(
                     "settings.general.show_settings_on_launch".localized,
                     isOn: $viewModel.showSettingsOnLaunch
                 )
-                .toggleStyle(.switch)
 
                 Divider()
 
@@ -97,28 +103,28 @@ public struct GeneralSettingsTab: View {
 
                 Divider()
 
-                // Audio Format
-                VStack(alignment: .leading, spacing: 8) {
+                HStack {
                     Text("settings.general.audio_format".localized)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .font(.body)
+                        .foregroundStyle(.primary)
+
+                    Spacer()
 
                     Picker("", selection: $viewModel.audioFormat) {
                         ForEach(AppSettingsStore.AudioFormat.allCases, id: \.self) { format in
                             Text(format.displayName).tag(format)
                         }
                     }
-                    .labelsHidden() // Label is above
+                    .labelsHidden()
                     .pickerStyle(.menu)
-                    .frame(maxWidth: 200)
+                    .frame(width: 200)
                 }
 
                 // Merge Toggle
-                Toggle(
+                SettingsToggle(
                     "settings.general.merge_audio".localized,
                     isOn: $viewModel.shouldMergeAudioFiles
                 )
-                .toggleStyle(.switch)
             }
         }
     }
@@ -179,16 +185,11 @@ public struct GeneralSettingsTab: View {
 
                 Divider()
 
-                Toggle(
+                SettingsToggle(
                     "settings.general.mute_output_during_recording".localized,
+                    description: "settings.general.mute_output_desc".localized,
                     isOn: $viewModel.muteOutputDuringRecording
                 )
-                .font(.body)
-                .toggleStyle(.switch)
-
-                Text("settings.general.mute_output_desc".localized)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
         }
     }

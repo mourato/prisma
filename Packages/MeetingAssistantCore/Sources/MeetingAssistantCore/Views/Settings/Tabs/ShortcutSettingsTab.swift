@@ -142,11 +142,10 @@ public struct ShortcutSettingsTab: View {
     @ViewBuilder
     private var optionsSection: some View {
         SettingsCard {
-            Toggle(
+            SettingsToggle(
                 NSLocalizedString("settings.shortcuts.use_escape", bundle: .safeModule, comment: ""),
                 isOn: $viewModel.useEscapeToCancelRecording
             )
-            .toggleStyle(.switch)
         }
     }
 

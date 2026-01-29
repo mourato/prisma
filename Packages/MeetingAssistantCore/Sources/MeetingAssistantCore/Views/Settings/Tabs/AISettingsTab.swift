@@ -30,28 +30,20 @@ public struct AISettingsTab: View {
     @ViewBuilder
     private var mainSection: some View {
         SettingsGroup(NSLocalizedString("settings.general.title", bundle: .safeModule, comment: ""), icon: "brain") {
-            Toggle(
+            SettingsToggle(
                 NSLocalizedString("settings.ai.enabled", bundle: .safeModule, comment: ""),
+                description: NSLocalizedString("settings.ai.description", bundle: .safeModule, comment: ""),
                 isOn: $viewModel.settings.aiEnabled
             )
-            .toggleStyle(.switch)
-
-            Text(NSLocalizedString("settings.ai.description", bundle: .safeModule, comment: ""))
-                .font(.caption)
-                .foregroundStyle(.secondary)
 
             Divider()
                 .padding(.vertical, 4)
 
-            Toggle(
+            SettingsToggle(
                 NSLocalizedString("settings.ai.diarization", bundle: .safeModule, comment: ""),
+                description: NSLocalizedString("settings.ai.diarization_desc", bundle: .safeModule, comment: ""),
                 isOn: $viewModel.settings.isDiarizationEnabled
             )
-            .toggleStyle(.switch)
-
-            Text(NSLocalizedString("settings.ai.diarization_desc", bundle: .safeModule, comment: ""))
-                .font(.caption)
-                .foregroundStyle(.secondary)
 
             if viewModel.settings.isDiarizationEnabled {
                 Divider()
@@ -59,22 +51,7 @@ public struct AISettingsTab: View {
 
                 VStack(spacing: 12) {
                     HStack {
-                        Toggle(
-                            NSLocalizedString(
-                                "settings.ai.num_speakers", bundle: .safeModule, comment: ""
-                            ),
-                            isOn: Binding(
-                                get: { viewModel.settings.numSpeakers != nil },
-                                set: { isOn in
-                                    viewModel.settings.numSpeakers = isOn ? 2 : nil
-                                    if isOn {
-                                        viewModel.settings.minSpeakers = nil
-                                        viewModel.settings.maxSpeakers = nil
-                                    }
-                                }
-                            )
-                        )
-                        .toggleStyle(.switch)
+                        Text(NSLocalizedString("settings.ai.num_speakers", bundle: .safeModule, comment: ""))
 
                         Spacer()
 
@@ -95,22 +72,27 @@ public struct AISettingsTab: View {
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
+
+                        Toggle(
+                            "",
+                            isOn: Binding(
+                                get: { viewModel.settings.numSpeakers != nil },
+                                set: { isOn in
+                                    viewModel.settings.numSpeakers = isOn ? 2 : nil
+                                    if isOn {
+                                        viewModel.settings.minSpeakers = nil
+                                        viewModel.settings.maxSpeakers = nil
+                                    }
+                                }
+                            )
+                        )
+                        .labelsHidden()
+                        .toggleStyle(.switch)
                     }
 
                     if viewModel.settings.numSpeakers == nil {
                         HStack {
-                            Toggle(
-                                NSLocalizedString(
-                                    "settings.ai.min_speakers", bundle: .safeModule, comment: ""
-                                ),
-                                isOn: Binding(
-                                    get: { viewModel.settings.minSpeakers != nil },
-                                    set: { isOn in
-                                        viewModel.settings.minSpeakers = isOn ? 1 : nil
-                                    }
-                                )
-                            )
-                            .toggleStyle(.switch)
+                            Text(NSLocalizedString("settings.ai.min_speakers", bundle: .safeModule, comment: ""))
 
                             Spacer()
 
@@ -131,21 +113,22 @@ public struct AISettingsTab: View {
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
-                        }
 
-                        HStack {
                             Toggle(
-                                NSLocalizedString(
-                                    "settings.ai.max_speakers", bundle: .safeModule, comment: ""
-                                ),
+                                "",
                                 isOn: Binding(
-                                    get: { viewModel.settings.maxSpeakers != nil },
+                                    get: { viewModel.settings.minSpeakers != nil },
                                     set: { isOn in
-                                        viewModel.settings.maxSpeakers = isOn ? 10 : nil
+                                        viewModel.settings.minSpeakers = isOn ? 1 : nil
                                     }
                                 )
                             )
+                            .labelsHidden()
                             .toggleStyle(.switch)
+                        }
+
+                        HStack {
+                            Text(NSLocalizedString("settings.ai.max_speakers", bundle: .safeModule, comment: ""))
 
                             Spacer()
 
@@ -166,6 +149,18 @@ public struct AISettingsTab: View {
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
+
+                            Toggle(
+                                "",
+                                isOn: Binding(
+                                    get: { viewModel.settings.maxSpeakers != nil },
+                                    set: { isOn in
+                                        viewModel.settings.maxSpeakers = isOn ? 10 : nil
+                                    }
+                                )
+                            )
+                            .labelsHidden()
+                            .toggleStyle(.switch)
                         }
                     }
                 }
