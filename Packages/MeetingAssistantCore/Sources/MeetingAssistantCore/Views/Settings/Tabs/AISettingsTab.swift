@@ -34,6 +34,7 @@ public struct AISettingsTab: View {
                 NSLocalizedString("settings.ai.enabled", bundle: .safeModule, comment: ""),
                 isOn: $viewModel.settings.aiEnabled
             )
+            .toggleStyle(.switch)
 
             Text(NSLocalizedString("settings.ai.description", bundle: .safeModule, comment: ""))
                 .font(.caption)
@@ -46,6 +47,7 @@ public struct AISettingsTab: View {
                 NSLocalizedString("settings.ai.diarization", bundle: .safeModule, comment: ""),
                 isOn: $viewModel.settings.isDiarizationEnabled
             )
+            .toggleStyle(.switch)
 
             Text(NSLocalizedString("settings.ai.diarization_desc", bundle: .safeModule, comment: ""))
                 .font(.caption)
@@ -72,7 +74,7 @@ public struct AISettingsTab: View {
                                 }
                             )
                         )
-                        .toggleStyle(.checkbox)
+                        .toggleStyle(.switch)
 
                         Spacer()
 
@@ -108,7 +110,7 @@ public struct AISettingsTab: View {
                                     }
                                 )
                             )
-                            .toggleStyle(.checkbox)
+                            .toggleStyle(.switch)
 
                             Spacer()
 
@@ -143,7 +145,7 @@ public struct AISettingsTab: View {
                                     }
                                 )
                             )
-                            .toggleStyle(.checkbox)
+                            .toggleStyle(.switch)
 
                             Spacer()
 
