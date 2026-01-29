@@ -22,7 +22,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         static let panelWidth: CGFloat = 220
         static let panelHeightClassic: CGFloat = 44
         static let panelHeightMini: CGFloat = 32
-        static let screenPadding: CGFloat = 20
+        static let screenPadding: CGFloat = 40
     }
 
     // MARK: - Initialization
@@ -69,7 +69,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         )
 
         panel.level = .screenSaver
-        panel.ignoresMouseEvents = true
+        panel.ignoresMouseEvents = false
         panel.isFloatingPanel = true
         panel.hidesOnDeactivate = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
@@ -81,7 +81,17 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         // Set content view
         let indicatorView = FloatingRecordingIndicatorView(
             audioMonitor: audioMonitor,
-            style: settingsStore.recordingIndicatorStyle
+            style: settingsStore.recordingIndicatorStyle,
+            onStop: {
+                Task { @MainActor in
+                    await RecordingManager.shared.stopRecording()
+                }
+            },
+            onCancel: {
+                Task { @MainActor in
+                    await RecordingManager.shared.cancelRecording()
+                }
+            }
         )
         panel.contentView = NSHostingView(rootView: indicatorView)
 
