@@ -129,7 +129,8 @@ public final class TranscriptionStorageRepositoryAdapter: TranscriptionStorageRe
                 previewText: meta.previewText,
                 language: meta.language,
                 isPostProcessed: meta.isPostProcessed,
-                duration: meta.duration
+                duration: meta.duration,
+                audioFilePath: nil
             )
         }
     }
