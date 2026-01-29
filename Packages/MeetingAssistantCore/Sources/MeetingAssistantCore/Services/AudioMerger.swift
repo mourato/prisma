@@ -19,8 +19,6 @@ public final class AudioMerger {
     ///   - format: Target audio format (WAV or M4A).
     /// - Returns: URL of the merged file.
     public func mergeAudioFiles(inputURLs: [URL], to outputURL: URL, format: AppSettingsStore.AudioFormat) async throws -> URL {
-        logger.info("Merging \(inputURLs.count) audio files to: \(outputURL.path) (Format: \(format.displayName))")
-
         // Filter out non-existent files
         let existingURLs = inputURLs.filter { FileManager.default.fileExists(atPath: $0.path) }
 
@@ -28,8 +26,30 @@ public final class AudioMerger {
             throw AudioMergerError.noInputFiles
         }
 
-        // Remove existing output file
-        if FileManager.default.fileExists(atPath: outputURL.path) {
+        // Optimization: If there's only one existing file and it's already at the output URL,
+        // we don't need to do anything (unless format conversion is needed, but AudioRecorder already saves in the correct format).
+        if existingURLs.count == 1 {
+            let sourceURL = existingURLs[0]
+            if sourceURL == outputURL {
+                logger.info("Single input file already at destination. Skipping merge.")
+                return outputURL
+            }
+
+            // If it's a different location but same format, just move it
+            if sourceURL.pathExtension == outputURL.pathExtension {
+                logger.info("Moving single input file to destination: \(outputURL.path)")
+                if FileManager.default.fileExists(atPath: outputURL.path) {
+                    try FileManager.default.removeItem(at: outputURL)
+                }
+                try FileManager.default.moveItem(at: sourceURL, to: outputURL)
+                return outputURL
+            }
+        }
+
+        logger.info("Merging \(existingURLs.count) audio files to: \(outputURL.path) (Format: \(format.displayName))")
+
+        // Remove existing output file (only if it's NOT one of our inputs)
+        if FileManager.default.fileExists(atPath: outputURL.path), !existingURLs.contains(outputURL) {
             try FileManager.default.removeItem(at: outputURL)
         }
 
