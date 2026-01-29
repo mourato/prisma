@@ -31,7 +31,11 @@ public protocol StorageService: Sendable {
     func loadAllMetadata() async throws -> [TranscriptionMetadata]
 
     /// Load a specific transcription by its ID.
+    /// Load a specific transcription by its ID.
     func loadTranscription(by id: UUID) async throws -> Transcription?
+
+    /// Delete a transcription by its ID.
+    func deleteTranscription(by id: UUID) async throws
 }
 
 // MARK: - Implementation
@@ -230,6 +234,20 @@ public final class FileSystemStorageService: StorageService {
 
         return try await Task.detached(priority: .userInitiated) {
             FileSystemStorageService.decodeTranscriptionSync(from: url, using: decoder)
+        }.value
+    }
+
+    public func deleteTranscription(by id: UUID) async throws {
+        let filename = "\(id.uuidString).json"
+        let url = transcriptsDirectory.appendingPathComponent(filename)
+
+        try await Task.detached(priority: .userInitiated) {
+            if FileManager.default.fileExists(atPath: url.path) {
+                try FileManager.default.removeItem(at: url)
+                AppLogger.info("Deleted transcription", category: .databaseManager, extra: ["filename": filename])
+            } else {
+                AppLogger.warning("Transcription file not found to delete", category: .databaseManager, extra: ["filename": filename])
+            }
         }.value
     }
 

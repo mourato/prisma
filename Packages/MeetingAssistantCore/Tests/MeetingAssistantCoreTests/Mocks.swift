@@ -209,6 +209,10 @@ class MockStorageService: StorageService, @unchecked Sendable {
     func loadTranscription(by id: UUID) async throws -> Transcription? {
         mockTranscriptions.first(where: { $0.id == id })
     }
+
+    func deleteTranscription(by id: UUID) async throws {
+        mockTranscriptions.removeAll(where: { $0.id == id })
+    }
 }
 
 // MARK: - Mock Notification Service
