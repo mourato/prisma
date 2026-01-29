@@ -1,14 +1,28 @@
+import Combine
 import Foundation
 import SwiftUI
 
 @MainActor
 public class ServiceSettingsViewModel: ObservableObject {
     @Published public var transcriptionStatus: ConnectionStatus = .unknown
+    @Published public var modelState: FluidAIModelManager.ModelState = .unloaded
+    @Published public var isDiarizationLoaded: Bool = false
 
     private let transcriptionClient: TranscriptionClient
+    private var cancellables = Set<AnyCancellable>()
 
     public init(transcriptionClient: TranscriptionClient = .shared) {
         self.transcriptionClient = transcriptionClient
+
+        FluidAIModelManager.shared.$modelState
+            .receive(on: DispatchQueue.main)
+            .assign(to: \.modelState, on: self)
+            .store(in: &cancellables)
+
+        FluidAIModelManager.shared.$isDiarizationLoaded
+            .receive(on: DispatchQueue.main)
+            .assign(to: \.isDiarizationLoaded, on: self)
+            .store(in: &cancellables)
     }
 
     public func testConnection() {
@@ -21,6 +35,24 @@ public class ServiceSettingsViewModel: ObservableObject {
             } catch {
                 self.transcriptionStatus = .failure(error.localizedDescription)
             }
+        }
+    }
+
+    public func deleteASRModels() {
+        Task {
+            await FluidAIModelManager.shared.deleteASRModels()
+        }
+    }
+
+    public func downloadASRModels() {
+        Task {
+            await FluidAIModelManager.shared.loadModels()
+        }
+    }
+
+    public func deleteDiarizationModels() {
+        Task {
+            await FluidAIModelManager.shared.deleteDiarizationModels()
         }
     }
 }

@@ -43,13 +43,90 @@ public struct ServiceSettingsTab: View {
 
                 Divider().padding(.vertical, 4)
 
-                Grid(alignment: .leading, horizontalSpacing: 20, verticalSpacing: 8) {
+                Grid(alignment: .leading, horizontalSpacing: 20, verticalSpacing: 12) {
+                    // ASR Model
                     GridRow {
                         Text(NSLocalizedString("settings.service.model", bundle: .safeModule, comment: ""))
                             .foregroundStyle(.secondary)
-                        Text("Parakeet TDT 0.6B v3")
-                            .fontWeight(.medium)
+
+                        HStack {
+                            VStack(alignment: .leading) {
+                                Text("Parakeet TDT 0.6B v3")
+                                    .fontWeight(.medium)
+                                Text(modelStatusText)
+                                    .font(.caption2)
+                                    .foregroundStyle(modelStatusColor)
+                            }
+
+                            Spacer()
+
+                            if viewModel.modelState == .loaded {
+                                Button(role: .destructive) {
+                                    viewModel.deleteASRModels()
+                                } label: {
+                                    Image(systemName: "trash")
+                                        .foregroundStyle(.red)
+                                }
+                                .buttonStyle(.borderless)
+                                .help("Delete Model")
+                            } else if viewModel.modelState == .downloading || viewModel.modelState == .loading {
+                                ProgressView()
+                                    .controlSize(.small)
+                            } else {
+                                Button {
+                                    viewModel.downloadASRModels()
+                                } label: {
+                                    Image(systemName: "arrow.down.circle")
+                                        .font(.title3)
+                                        .foregroundStyle(.blue)
+                                }
+                                .buttonStyle(.borderless)
+                                .help("Download Model")
+                            }
+                        }
                     }
+
+                    Divider()
+
+                    // Diarization Model
+                    GridRow {
+                        Text("Diarization")
+                            .foregroundStyle(.secondary)
+
+                        HStack {
+                            VStack(alignment: .leading) {
+                                Text("Pyannote 3.1")
+                                    .fontWeight(.medium)
+                                Text(viewModel.isDiarizationLoaded ? "Installed" : "Not Installed")
+                                    .font(.caption2)
+                                    .foregroundStyle(viewModel.isDiarizationLoaded ? .green : .secondary)
+                            }
+
+                            Spacer()
+
+                            if viewModel.isDiarizationLoaded {
+                                Button(role: .destructive) {
+                                    viewModel.deleteDiarizationModels()
+                                } label: {
+                                    Image(systemName: "trash")
+                                        .foregroundStyle(.red)
+                                }
+                                .buttonStyle(.borderless)
+                                .help("Delete Model")
+                            } else {
+                                Button {
+                                    Task { await FluidAIModelManager.shared.loadDiarizationModels() }
+                                } label: {
+                                    Image(systemName: "arrow.down.circle")
+                                        .font(.title3)
+                                        .foregroundStyle(.blue)
+                                }
+                                .buttonStyle(.borderless)
+                                .help("Download Model")
+                            }
+                        }
+                    }
+
                     GridRow {
                         Text(NSLocalizedString("settings.service.languages", bundle: .safeModule, comment: ""))
                             .foregroundStyle(.secondary)
@@ -112,6 +189,24 @@ public struct ServiceSettingsTab: View {
                 .buttonStyle(.bordered)
                 .disabled(viewModel.transcriptionStatus == .testing)
             }
+        }
+    }
+
+    private var modelStatusText: String {
+        switch viewModel.modelState {
+        case .loaded: NSLocalizedString("transcription.model_state.loaded", bundle: .safeModule, comment: "")
+        case .downloading: NSLocalizedString("transcription.model_state.downloading", bundle: .safeModule, comment: "")
+        case .loading: NSLocalizedString("transcription.model_state.loading", bundle: .safeModule, comment: "")
+        case .unloaded: NSLocalizedString("transcription.model_state.unloaded", bundle: .safeModule, comment: "")
+        case .error: NSLocalizedString("transcription.model_state.error", bundle: .safeModule, comment: "")
+        }
+    }
+
+    private var modelStatusColor: Color {
+        switch viewModel.modelState {
+        case .loaded: .green
+        case .downloading, .loading: .orange
+        case .unloaded, .error: .secondary
         }
     }
 }

@@ -26,6 +26,8 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
 
     @Published public var progress: Double = 0.0
 
+    @Published public var isDiarizationLoaded: Bool = false
+
     private(set) var asrManager: AsrManager?
     private(set) var diarizerManager: OfflineDiarizerManager?
 
@@ -93,9 +95,70 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
             currentDiarizerMinSpeakers = min
             currentDiarizerMaxSpeakers = max
 
+            isDiarizationLoaded = true
+
             logger.info("Diarization Manager initialized successfully.")
         } catch {
             logger.error("Failed to load diarization models: \(error.localizedDescription)")
+            isDiarizationLoaded = false
+        }
+    }
+
+    /// Deletes the downloaded ASR models from disk and unloads from memory.
+    public func deleteASRModels() {
+        guard modelState != .downloading, modelState != .loading else { return }
+
+        // Unload from memory
+        asrManager = nil
+        modelState = .unloaded
+
+        // Remove from disk
+        let fileManager = FileManager.default
+        guard let supportDir = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return }
+        let modelsDir = supportDir.appendingPathComponent("FluidAudio/Models")
+
+        do {
+            if fileManager.fileExists(atPath: modelsDir.path) {
+                let contents = try fileManager.contentsOfDirectory(at: modelsDir, includingPropertiesForKeys: nil)
+                for url in contents {
+                    // Safe heuristic: delete known ASR model folders
+                    if url.lastPathComponent.contains("parakeet") {
+                        try fileManager.removeItem(at: url)
+                        logger.info("Deleted ASR model: \(url.lastPathComponent)")
+                    }
+                }
+            }
+        } catch {
+            logger.error("Failed to delete ASR models: \(error.localizedDescription)")
+        }
+    }
+
+    /// Deletes the downloaded diarization models from disk and unloads from memory.
+    public func deleteDiarizationModels() {
+        // Unload from memory
+        diarizerManager = nil
+        currentDiarizerMinSpeakers = nil
+        currentDiarizerMaxSpeakers = nil
+        isDiarizationLoaded = false
+
+        // Remove from disk
+        let fileManager = FileManager.default
+        guard let supportDir = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return }
+        let modelsDir = supportDir.appendingPathComponent("FluidAudio/Models")
+
+        do {
+            if fileManager.fileExists(atPath: modelsDir.path) {
+                let contents = try fileManager.contentsOfDirectory(at: modelsDir, includingPropertiesForKeys: nil)
+                for url in contents {
+                    // Safe heuristic: delete known Diarization model folders (pyannote)
+                    if url.lastPathComponent.contains("pyannote") || url.lastPathComponent.contains("segmentation") {
+                        try fileManager.removeItem(at: url)
+                        logger.info("Deleted Diarization model: \(url.lastPathComponent)")
+                    }
+                }
+            }
+        } catch {
+            logger.error("Failed to delete Diarization models: \(error.localizedDescription)")
         }
     }
 
