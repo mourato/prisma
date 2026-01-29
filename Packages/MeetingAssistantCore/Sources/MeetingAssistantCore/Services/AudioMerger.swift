@@ -140,6 +140,12 @@ public final class AudioMerger {
         ]
 
         let tracks = try await composition.loadTracks(withMediaType: .audio)
+
+        // Safety check: ensure we have at least one audio track to avoid NSInvalidArgumentException
+        guard !tracks.isEmpty else {
+            throw AudioMergerError.noValidTracks
+        }
+
         let output = AVAssetReaderAudioMixOutput(audioTracks: tracks, audioSettings: settings)
 
         guard reader.canAdd(output) else {

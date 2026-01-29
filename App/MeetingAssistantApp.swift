@@ -1,3 +1,4 @@
+import Combine
 import KeyboardShortcuts
 import MeetingAssistantCore
 import SwiftUI
@@ -47,6 +48,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var localizationBundle: Bundle = .safeModule
     private var eventMonitor: Any?
     private lazy var floatingIndicatorController = FloatingRecordingIndicatorController()
+    private var cancellables = Set<AnyCancellable>()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Initialize Monitoring Services
@@ -57,6 +59,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         setupContextMenu()
         setupEventMonitor()
         setupGlobalShortcut()
+        setupRecordingObservation()
 
         // Warmup transcription model
         Task {
@@ -109,14 +112,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    private func setupRecordingObservation() {
+        recordingManager.isRecordingPublisher
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] isRecording in
+                self?.updateStatusIcon(isRecording: isRecording)
+            }
+            .store(in: &cancellables)
+    }
+
     /// Toggle recording state when global shortcut is activated.
     private func toggleRecording() async {
         if recordingManager.isRecording {
             await recordingManager.stopRecording(transcribe: true)
-            updateStatusIcon(isRecording: false)
         } else {
             await recordingManager.startRecording()
-            updateStatusIcon(isRecording: true)
         }
     }
 
