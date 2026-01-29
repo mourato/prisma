@@ -27,6 +27,12 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
     public let createdAt: Date
     public let modelName: String
 
+    // New Metadata Fields
+    public let inputSource: String?
+    public let transcriptionDuration: Double
+    public let postProcessingDuration: Double
+    public let postProcessingModel: String?
+
     /// Full initializer with post-processing support.
     public init(
         id: UUID = UUID(),
@@ -39,7 +45,11 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
         postProcessingPromptTitle: String? = nil,
         language: String = "pt",
         createdAt: Date = Date(),
-        modelName: String = "parakeet-tdt-0.6b-v3"
+        modelName: String = "parakeet-tdt-0.6b-v3",
+        inputSource: String? = nil,
+        transcriptionDuration: Double = 0,
+        postProcessingDuration: Double = 0,
+        postProcessingModel: String? = nil
     ) {
         self.id = id
         self.meeting = meeting
@@ -52,6 +62,10 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
         self.language = language
         self.createdAt = createdAt
         self.modelName = modelName
+        self.inputSource = inputSource
+        self.transcriptionDuration = transcriptionDuration
+        self.postProcessingDuration = postProcessingDuration
+        self.postProcessingModel = postProcessingModel
     }
 
     /// Convenience initializer for backward compatibility (no post-processing).

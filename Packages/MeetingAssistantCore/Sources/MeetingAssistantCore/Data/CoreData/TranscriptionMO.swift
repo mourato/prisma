@@ -19,6 +19,12 @@ public final class TranscriptionMO: NSManagedObject {
     @NSManaged public var createdAt: Date
     @NSManaged public var modelName: String
 
+    // New Metadata Fields
+    @NSManaged public var inputSource: String?
+    @NSManaged public var transcriptionDuration: Double
+    @NSManaged public var postProcessingDuration: Double
+    @NSManaged public var postProcessingModel: String?
+
     // Relacionamentos
     @NSManaged public var meeting: MeetingMO
     @NSManaged public var segments: Set<TranscriptionSegmentMO>
@@ -58,19 +64,24 @@ public extension TranscriptionMO {
 extension TranscriptionMO {
     /// Converte Managed Object para Domain Entity
     func toDomain() -> TranscriptionEntity {
-        TranscriptionEntity(
-            id: id,
-            meeting: meeting.toDomain(),
-            segments: segments.map { $0.toDomain() },
+        var config = TranscriptionEntity.Configuration(
             text: text,
             rawText: rawText,
-            processedContent: processedContent,
-            postProcessingPromptId: postProcessingPromptId,
-            postProcessingPromptTitle: postProcessingPromptTitle,
-            language: language,
-            createdAt: createdAt,
-            modelName: modelName
+            segments: segments.map { $0.toDomain() },
+            language: language
         )
+        config.id = id
+        config.processedContent = processedContent
+        config.postProcessingPromptId = postProcessingPromptId
+        config.postProcessingPromptTitle = postProcessingPromptTitle
+        config.createdAt = createdAt
+        config.modelName = modelName
+        config.inputSource = inputSource
+        config.transcriptionDuration = transcriptionDuration
+        config.postProcessingDuration = postProcessingDuration
+        config.postProcessingModel = postProcessingModel
+
+        return TranscriptionEntity(meeting: meeting.toDomain(), config: config)
     }
 
     /// Atualiza Managed Object com dados da Domain Entity
@@ -84,6 +95,10 @@ extension TranscriptionMO {
         language = entity.language
         createdAt = entity.createdAt
         modelName = entity.modelName
+        inputSource = entity.inputSource
+        transcriptionDuration = entity.transcriptionDuration
+        postProcessingDuration = entity.postProcessingDuration
+        postProcessingModel = entity.postProcessingModel
 
         // Atualizar relacionamento com meeting
         if let meetingMO = managedObjectContext?.object(with: meeting.objectID) as? MeetingMO {
@@ -110,6 +125,10 @@ extension TranscriptionMO {
         transcriptionMO.language = entity.language
         transcriptionMO.createdAt = entity.createdAt
         transcriptionMO.modelName = entity.modelName
+        transcriptionMO.inputSource = entity.inputSource
+        transcriptionMO.transcriptionDuration = entity.transcriptionDuration
+        transcriptionMO.postProcessingDuration = entity.postProcessingDuration
+        transcriptionMO.postProcessingModel = entity.postProcessingModel
         transcriptionMO.meeting = meeting
 
         // Criar segmentos

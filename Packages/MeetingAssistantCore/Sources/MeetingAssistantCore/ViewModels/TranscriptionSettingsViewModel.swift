@@ -73,7 +73,11 @@ public class TranscriptionSettingsViewModel: ObservableObject {
     public func loadTranscriptions() async {
         isLoading = true
         do {
-            transcriptions = try await storage.loadAllMetadata()
+            let allTranscriptions = try await storage.loadAllMetadata()
+            // Filter out items with errors or verify integrity if needed.
+            // Assuming errors in capture manifest as 0 duration or specific metadata flags if we had them.
+            // For now, ensuring we don't show items that are clearly failed (e.g. 0 duration and no text)
+            transcriptions = allTranscriptions.filter { !($0.duration == 0 && $0.previewText.isEmpty) }
         } catch {
             logger.error("Failed to load transcriptions: \(error.localizedDescription)")
             errorMessage = "settings.transcriptions.error_load".localized
@@ -93,10 +97,15 @@ public class TranscriptionSettingsViewModel: ObservableObject {
         NSWorkspace.shared.open(storage.recordingsDirectory)
     }
 
+    public var availablePrompts: [PostProcessingPrompt] {
+        AppSettingsStore.shared.allPrompts
+    }
+
     public func applyPostProcessing(prompt: PostProcessingPrompt, to transcription: Transcription) async {
         guard !isProcessingAI else { return }
 
         isProcessingAI = true
+        let startTime = Date()
         defer { isProcessingAI = false }
 
         do {
@@ -104,6 +113,10 @@ public class TranscriptionSettingsViewModel: ObservableObject {
                 transcription.rawText,
                 with: prompt
             )
+
+            let duration = Date().timeIntervalSince(startTime)
+            let config = AppSettingsStore.shared.aiConfiguration
+            let modelUsed = config.selectedModel
 
             let updatedTranscription = Transcription(
                 id: transcription.id,
@@ -116,7 +129,11 @@ public class TranscriptionSettingsViewModel: ObservableObject {
                 postProcessingPromptTitle: prompt.title,
                 language: transcription.language,
                 createdAt: transcription.createdAt,
-                modelName: transcription.modelName
+                modelName: transcription.modelName,
+                inputSource: transcription.inputSource,
+                transcriptionDuration: transcription.transcriptionDuration,
+                postProcessingDuration: duration,
+                postProcessingModel: modelUsed
             )
 
             try await storage.saveTranscription(updatedTranscription)

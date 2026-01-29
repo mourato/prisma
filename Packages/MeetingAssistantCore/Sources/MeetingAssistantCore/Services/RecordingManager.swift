@@ -21,6 +21,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     @Published public private(set) var currentMeeting: Meeting?
     @Published public private(set) var lastError: Error?
     @Published public private(set) var hasRequiredPermissions = false
+    private var currentRecordingSource: RecordingSource = .all
 
     // MARK: - Protocol Publishers
 
@@ -170,6 +171,8 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             AppLogger.info("Attempted to start recording but already recording", category: .recordingManager)
             return
         }
+
+        currentRecordingSource = source
 
         do {
             let meeting = createMeeting()
@@ -495,12 +498,21 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             let (processedContent, promptId, promptTitle) = await applyPostProcessing(
                 rawText: response.text)
 
+            // Determine input source display string
+            let sourceDisplay = switch currentRecordingSource {
+            case .microphone: "Microphone"
+            case .system: "System Audio"
+            case .all: "Microphone & System"
+            }
+
             let transcription = try await createAndSaveTranscription(
                 meeting: meeting,
                 response: response,
                 processedContent: processedContent,
                 promptId: promptId,
-                promptTitle: promptTitle
+                promptTitle: promptTitle,
+                inputSource: sourceDisplay,
+                transcriptionDuration: response.durationSeconds
             )
 
             transcriptionStatus.completeTranscription(success: true)
@@ -580,7 +592,9 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         response: TranscriptionResponse,
         processedContent: String?,
         promptId: UUID?,
-        promptTitle: String?
+        promptTitle: String?,
+        inputSource: String,
+        transcriptionDuration: Double
     ) async throws -> Transcription {
         let transcription = Transcription(
             meeting: meeting,
@@ -590,7 +604,11 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             postProcessingPromptId: promptId,
             postProcessingPromptTitle: promptTitle,
             language: response.language,
-            modelName: response.model
+            modelName: response.model,
+            inputSource: inputSource,
+            transcriptionDuration: transcriptionDuration,
+            postProcessingDuration: 0, // Initial processing doesn't have post-processing duration unless we time it
+            postProcessingModel: promptId != nil ? AppSettingsStore.shared.aiConfiguration.selectedModel : nil
         )
 
         let logMessageSuffix =
