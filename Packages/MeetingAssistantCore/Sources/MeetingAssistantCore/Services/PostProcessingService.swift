@@ -174,7 +174,7 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
         prompt: PostProcessingPrompt
     ) async throws -> String {
         let config = settings.aiConfiguration
-        let apiKey = try getAPIKey()
+        let apiKey = try getAPIKey(for: config.provider)
         let url = try buildURL(for: config)
 
         var request = URLRequest(url: url)
@@ -224,8 +224,8 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
         return false
     }
 
-    private func getAPIKey() throws -> String {
-        guard let apiKey = try? KeychainManager.retrieve(for: .aiAPIKey),
+    private func getAPIKey(for provider: AIProvider) throws -> String {
+        guard let apiKey = try? KeychainManager.retrieveAPIKey(for: provider),
               !apiKey.isEmpty
         else {
             throw PostProcessingError.noAPIConfigured

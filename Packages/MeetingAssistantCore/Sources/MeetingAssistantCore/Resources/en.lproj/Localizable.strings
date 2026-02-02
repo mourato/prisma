@@ -357,6 +357,7 @@
 "settings.general.recording_indicator.position" = "Position";
 "settings.general.recording_indicator.position.top" = "Top";
 "settings.general.recording_indicator.position.bottom" = "Bottom";
+"recording_indicator.silence_warning" = "No microphone audio detected";
 "settings.transcriptions.today" = "Today";
 "settings.transcriptions.yesterday" = "Yesterday";
 "transcription.no_segments" = "No segments available";

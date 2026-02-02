@@ -29,6 +29,10 @@ public enum KeychainManager {
     /// Known keys for Keychain storage.
     public enum Key: String {
         case aiAPIKey = "ai_api_key"
+        case aiAPIKeyOpenAI = "ai_api_key_openai"
+        case aiAPIKeyAnthropic = "ai_api_key_anthropic"
+        case aiAPIKeyGroq = "ai_api_key_groq"
+        case aiAPIKeyCustom = "ai_api_key_custom"
     }
 
     // MARK: - Errors
@@ -152,5 +156,44 @@ public enum KeychainManager {
 
         let status = SecItemCopyMatching(query as CFDictionary, nil)
         return status == errSecSuccess
+    }
+
+    // MARK: - Provider-specific helpers
+
+    static func apiKeyKey(for provider: AIProvider) -> Key {
+        switch provider {
+        case .openai:
+            .aiAPIKeyOpenAI
+        case .anthropic:
+            .aiAPIKeyAnthropic
+        case .groq:
+            .aiAPIKeyGroq
+        case .custom:
+            .aiAPIKeyCustom
+        }
+    }
+
+    static func retrieveAPIKey(for provider: AIProvider) throws -> String? {
+        let providerKey = apiKeyKey(for: provider)
+        if let value = try retrieve(for: providerKey), !value.isEmpty {
+            return value
+        }
+
+        // Legacy fallback
+        if let legacyValue = try retrieve(for: .aiAPIKey), !legacyValue.isEmpty {
+            try store(legacyValue, for: providerKey)
+            try delete(for: .aiAPIKey)
+            return legacyValue
+        }
+
+        return nil
+    }
+
+    static func existsAPIKey(for provider: AIProvider) -> Bool {
+        let providerKey = apiKeyKey(for: provider)
+        if exists(for: providerKey) {
+            return true
+        }
+        return exists(for: .aiAPIKey)
     }
 }
