@@ -55,6 +55,12 @@
 "settings.ai.connection.success" = "Connected";
 "settings.ai.connection.invalid_url" = "Invalid URL";
 "settings.ai.connection.invalid_response" = "Invalid Response";
+"settings.ai.connection.not_connected" = "No internet connection";
+"settings.ai.connection.timed_out" = "Connection timed out";
+"settings.ai.connection.host_not_found" = "Server hostname not found";
+"settings.ai.connection.cannot_connect" = "Unable to connect to server";
+"settings.ai.connection.secure_failed" = "Secure connection failed";
+"settings.ai.connection.network_lost" = "Network connection lost";
 
 /* Post-Processing Settings */
 "settings.post_processing.title" = "Post-Processing";
@@ -127,9 +133,9 @@
 /* Permissions Settings */
 "settings.permissions.title" = "Permissions";
 "settings.permissions.about" = "About Permissions";
-"settings.permissions.description" = "Meeting Assistant needs access to microphone and screen recording to capture meeting audio and identify active applications.";
+"settings.permissions.description" = "Meeting Assistant needs microphone access to record dictation. Screen recording is only required for system audio capture.";
 "settings.permissions.status" = "Permissions Status";
-"permissions.warning" = "Some permissions are required to record meetings.";
+"permissions.warning" = "Some permissions are required depending on what you record.";
 
 /* Transcriptions Settings */
 "settings.transcriptions.title" = "Transcriptions";
@@ -168,7 +174,7 @@
 
 /* Permission Status View */
 "permissions.system_title" = "System Permissions";
-"permissions.granted_count" = "%d/2 granted";
+"permissions.granted_count" = "%d/%d granted";
 "permissions.required_warning" = "Some permissions are required to record meetings.";
 "permissions.request" = "Request";
 "permissions.configure" = "Configure";
@@ -289,6 +295,8 @@
 "settings.general.language_restart_required" = "Restart required to apply language change.";
 "settings.general.audio_devices" = "Audio Devices";
 "settings.general.audio_devices_desc" = "Drag to reorder devices by priority. The first available device will be used automatically.";
+"settings.general.use_system_default_input" = "Use system default input";
+"settings.general.use_system_default_input_desc" = "When enabled, the app uses the macOS default input device and ignores the custom priority list.";
 "settings.general.device_unavailable" = "Unavailable";
 "settings.general.device_default" = "Default";
 "settings.general.mute_output_during_recording" = "Mute Output During Recording";

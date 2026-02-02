@@ -24,12 +24,12 @@ public final class RecordingRepositoryAdapter: RecordingRepository {
     }
 
     public func hasPermission() async -> Bool {
-        await recordingManager.checkPermission()
+        await recordingManager.checkPermission(for: .microphone)
         return await recordingManager.hasRequiredPermissions
     }
 
     public func requestPermission() async {
-        await recordingManager.requestPermission()
+        await recordingManager.requestPermission(for: .microphone)
     }
 
     public func getPermissionState() -> DomainPermissionState {

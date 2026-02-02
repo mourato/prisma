@@ -17,4 +17,47 @@ public enum RecordingSource: String, CaseIterable, Sendable {
             "All Sources (Mic + System)" // "Todos (Mic + Sistema)"
         }
     }
+
+    public var requiredPermissionTypes: [PermissionType] {
+        switch self {
+        case .microphone:
+            [.microphone]
+        case .system:
+            [.screenRecording]
+        case .all:
+            [.microphone, .screenRecording]
+        }
+    }
+
+    public var requiresMicrophonePermission: Bool {
+        requiredPermissionTypes.contains(.microphone)
+    }
+
+    public var requiresScreenRecordingPermission: Bool {
+        requiredPermissionTypes.contains(.screenRecording)
+    }
+
+    public func requiredPermissionsGranted(
+        microphone: PermissionState,
+        screenRecording: PermissionState
+    ) -> Bool {
+        requiredPermissionsGranted(
+            microphone: microphone.isAuthorized,
+            screenRecording: screenRecording.isAuthorized
+        )
+    }
+
+    public func requiredPermissionsGranted(
+        microphone: Bool,
+        screenRecording: Bool
+    ) -> Bool {
+        switch self {
+        case .microphone:
+            microphone
+        case .system:
+            screenRecording
+        case .all:
+            microphone && screenRecording
+        }
+    }
 }

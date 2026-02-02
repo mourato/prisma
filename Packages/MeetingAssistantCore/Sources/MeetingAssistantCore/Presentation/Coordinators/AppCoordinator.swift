@@ -90,12 +90,12 @@ public final class AppCoordinator: Coordinator {
     private func navigateToPermissionSetup() -> AnyView {
         let viewModel = PermissionViewModel(
             manager: recordingManager.permissionStatus,
-            requestMicrophone: { [weak self] in await self?.recordingManager.requestPermission() },
-            requestScreen: { [weak self] in await self?.recordingManager.requestPermission() },
+            requestMicrophone: { [weak self] in await self?.recordingManager.requestPermission(for: .microphone) },
+            requestScreen: { [weak self] in await self?.recordingManager.requestPermission(for: .system) },
             openMicrophoneSettings: { [weak self] in self?.recordingManager.openMicrophoneSettings() },
             openScreenSettings: { [weak self] in self?.recordingManager.openPermissionSettings() }
         )
-        let permissionView = PermissionStatusView(viewModel: viewModel)
+        let permissionView = PermissionStatusView(viewModel: viewModel, requiredSource: .all)
         return AnyView(permissionView)
     }
 

@@ -12,7 +12,7 @@ struct RecordingButton: View {
         HStack(spacing: 0) {
             // Main Button Area
             Button {
-                onStart(.all)
+                onStart(.microphone)
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: icon)

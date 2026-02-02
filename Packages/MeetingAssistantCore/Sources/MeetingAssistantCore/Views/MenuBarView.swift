@@ -86,6 +86,7 @@ public struct MenuBarView: View {
     private var permissionStatusSection: some View {
         PermissionStatusView(
             viewModel: viewModel.permissionViewModel,
+            requiredSource: viewModel.selectedSource,
             onDismiss: {
                 withAnimation {
                     isPermissionDismissed = true
@@ -171,7 +172,7 @@ public struct MenuBarView: View {
 
     // MARK: - Actions
 
-    private func startRecording(source: RecordingSource = .all) {
+    private func startRecording(source: RecordingSource = .microphone) {
         Task {
             await viewModel.startRecording(source: source)
         }
