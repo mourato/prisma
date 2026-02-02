@@ -21,11 +21,20 @@ public final class AudioLevelMonitor: ObservableObject {
 
     /// Current audio meter levels (0...1 normalized).
     @Published public private(set) var audioMeter: AudioMeter = .zero
+    /// Whether the monitor detected prolonged silence from the microphone.
+    @Published public private(set) var isSilenceWarningVisible = false
 
     // MARK: - Configuration
 
     /// Interval for sampling audio levels.
     private let samplingInterval: TimeInterval
+    /// Accumulated time spent below the silence threshold.
+    private var silenceElapsed: TimeInterval = 0
+
+    private enum Constants {
+        static let silenceThresholdDb: Float = -80
+        static let silenceDurationSeconds: TimeInterval = 4
+    }
 
     // MARK: - Private State
 
@@ -53,6 +62,8 @@ public final class AudioLevelMonitor: ObservableObject {
     /// Called when recording starts.
     public func startMonitoring() {
         audioMeter = .zero
+        isSilenceWarningVisible = false
+        silenceElapsed = 0
 
         timer = Timer.publish(every: samplingInterval, on: .main, in: .common)
             .autoconnect()
@@ -67,6 +78,14 @@ public final class AudioLevelMonitor: ObservableObject {
         timer?.cancel()
         timer = nil
         audioMeter = .zero
+        isSilenceWarningVisible = false
+        silenceElapsed = 0
+    }
+
+    /// Dismiss the silence warning until silence is detected again.
+    public func dismissSilenceWarning() {
+        isSilenceWarningVisible = false
+        silenceElapsed = 0
     }
 
     // MARK: - Private Helpers
@@ -78,6 +97,8 @@ public final class AudioLevelMonitor: ObservableObject {
         let averageDB = recorder.currentAveragePower
         let peakDB = recorder.currentPeakPower
 
+        updateSilenceWarning(with: averageDB)
+
         // Normalize from dB to 0...1 range
         let normalizedAverage = normalizeDecibels(averageDB, minDB: -60, maxDB: 0)
         let normalizedPeak = normalizeDecibels(peakDB, minDB: -60, maxDB: 0)
@@ -86,6 +107,18 @@ public final class AudioLevelMonitor: ObservableObject {
             averagePower: Double(normalizedAverage),
             peakPower: Double(normalizedPeak)
         )
+    }
+
+    private func updateSilenceWarning(with averageDB: Float) {
+        if averageDB <= Constants.silenceThresholdDb {
+            silenceElapsed += samplingInterval
+            if silenceElapsed >= Constants.silenceDurationSeconds {
+                isSilenceWarningVisible = true
+            }
+        } else {
+            silenceElapsed = 0
+            isSilenceWarningVisible = false
+        }
     }
 
     /// Normalizes a decibel value to the 0...1 range.

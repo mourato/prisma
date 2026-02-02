@@ -59,6 +59,11 @@ public struct FloatingRecordingIndicatorView: View {
                 controlsOverlay
                     .transition(.scale(scale: 0.9).combined(with: .opacity))
             }
+
+            if audioMonitor.isSilenceWarningVisible {
+                silenceWarningOverlay
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 16)
@@ -85,6 +90,11 @@ public struct FloatingRecordingIndicatorView: View {
             if isHovering {
                 controlsOverlay
                     .transition(.scale(scale: 0.9).combined(with: .opacity))
+            }
+
+            if audioMonitor.isSilenceWarningVisible {
+                silenceWarningOverlay
+                    .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
         .padding(.horizontal, 12)
@@ -115,6 +125,26 @@ public struct FloatingRecordingIndicatorView: View {
             .buttonStyle(.plain)
             .help("Cancel and Discard")
         }
+    }
+
+    /// Warning overlay shown when microphone input appears silent.
+    private var silenceWarningOverlay: some View {
+        Text("recording_indicator.silence_warning".localized)
+            .font(.caption.bold())
+            .foregroundStyle(.white)
+            .multilineTextAlignment(.center)
+            .lineLimit(nil)
+            .fixedSize(horizontal: true, vertical: true)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(Color.red.opacity(0.9))
+            .clipShape(Capsule())
+            .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                onCancel()
+                audioMonitor.dismissSilenceWarning()
+            }
     }
 
     /// Pulsing red dot indicating active recording.
