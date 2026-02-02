@@ -217,12 +217,12 @@ ci-test: test
 # Documentation
 docs:
 	@echo -e "$(BLUE)Building DocC documentation...$(NC)"
-	@xcodebuild docbuild \
-		-project "$(XCODEPROJ)" \
-		-scheme MeetingAssistantCore \
-		-destination 'platform=macOS' \
-		-derivedDataPath "$(DERIVED_DATA)" \
-		OTHER_DOCC_FLAGS="--transform-for-static-hosting --output-path $(PROJECT_DIR)/docs/api"
+	@cd Packages/MeetingAssistantCore && \
+		swift package --allow-writing-to-directory "$(PROJECT_DIR)/docs/api" \
+		generate-documentation \
+		--target MeetingAssistantCore \
+		--transform-for-static-hosting \
+		--output-path "$(PROJECT_DIR)/docs/api"
 	@echo -e "$(GREEN)✓ Documentation built at docs/api$(NC)"
 
 docs-preview:

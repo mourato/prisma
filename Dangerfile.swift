@@ -19,7 +19,7 @@ if additions > 500 {
 }
 
 // 2. Check for test coverage
-let hasTestChanges = (danger.git.modifiedFiles + danger.git.createdFiles).any { $0.contains("Tests") }
+let hasTestChanges = (danger.git.modifiedFiles + danger.git.createdFiles).contains(where: { $0.contains("Tests") })
 if !swiftFiles.isEmpty, !hasTestChanges {
     warn("This PR modifies Swift files but doesn't include any test changes. Consider adding tests for new functionality.")
 }
