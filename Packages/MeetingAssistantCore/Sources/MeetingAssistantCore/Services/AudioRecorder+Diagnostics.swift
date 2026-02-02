@@ -1,3 +1,4 @@
+import Atomics
 @preconcurrency import AVFoundation
 import Foundation
 
