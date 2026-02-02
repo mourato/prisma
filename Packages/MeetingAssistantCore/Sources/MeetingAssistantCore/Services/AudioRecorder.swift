@@ -64,14 +64,14 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
     private let muteController = SystemAudioMuteController.shared
     private var wasMutedBeforeRecording = false
-    private let deviceManager = AudioDeviceManager()
-    private var micDiagnosticsTimer: Timer?
-    private var isMicDiagnosticsTapInstalled = false
-    private let micDiagnosticsPeakBits = ManagedAtomic<UInt32>(0)
-    private var micProbeWorker: AudioRecordingWorker?
-    private var micProbeStopTask: Task<Void, Never>?
-    private var micRecorderProbe: AVAudioRecorder?
-    private var micRecorderProbeStopTask: Task<Void, Never>?
+    let deviceManager = AudioDeviceManager()
+    var micDiagnosticsTimer: Timer?
+    var isMicDiagnosticsTapInstalled = false
+    let micDiagnosticsPeakBits = ManagedAtomic<UInt32>(0)
+    var micProbeWorker: AudioRecordingWorker?
+    var micProbeStopTask: Task<Void, Never>?
+    var micRecorderProbe: AVAudioRecorder?
+    var micRecorderProbeStopTask: Task<Void, Never>?
     private var fallbackRecorder: AVAudioRecorder?
     private var fallbackMeterTimer: Timer?
 
