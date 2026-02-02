@@ -11,6 +11,7 @@
 		67EFEA61F7E1C1B39F839DA8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 15415C8C013D084568C9F895 /* Assets.xcassets */; };
 		791585666AC34712B12EC196 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 833251DCBCC51B7EF6E85459 /* InfoPlist.strings */; };
 		7B35EE173CC9EBE38AADFF8B /* MeetingAssistantApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B2BBB31BDAF910C61928AC /* MeetingAssistantApp.swift */; };
+		ED78B9DB44D9C2C412DE3ECD /* GlobalShortcutController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A99BC45676052C0208825CE2 /* GlobalShortcutController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -20,6 +21,7 @@
 		35318EC4A95F6DC94F7B7E05 /* MeetingAssistantCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = MeetingAssistantCore; path = Packages/MeetingAssistantCore; sourceTree = SOURCE_ROOT; };
 		4394AB0636110AD9B3FCC8FB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		8C5560DF654F0B06D2610131 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		A99BC45676052C0208825CE2 /* GlobalShortcutController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalShortcutController.swift; sourceTree = "<group>"; };
 		C8B2BBB31BDAF910C61928AC /* MeetingAssistantApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingAssistantApp.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -39,6 +41,7 @@
 			isa = PBXGroup;
 			children = (
 				15415C8C013D084568C9F895 /* Assets.xcassets */,
+				A99BC45676052C0208825CE2 /* GlobalShortcutController.swift */,
 				4394AB0636110AD9B3FCC8FB /* Info.plist */,
 				833251DCBCC51B7EF6E85459 /* InfoPlist.strings */,
 				C8B2BBB31BDAF910C61928AC /* MeetingAssistantApp.swift */,
@@ -149,6 +152,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				ED78B9DB44D9C2C412DE3ECD /* GlobalShortcutController.swift in Sources */,
 				7B35EE173CC9EBE38AADFF8B /* MeetingAssistantApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
