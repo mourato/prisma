@@ -1,5 +1,4 @@
 import Combine
-import KeyboardShortcuts
 import MeetingAssistantCore
 import SwiftUI
 
@@ -48,6 +47,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var localizationBundle: Bundle = .safeModule
     private var eventMonitor: Any?
     private lazy var floatingIndicatorController = FloatingRecordingIndicatorController()
+    private lazy var globalShortcutController = GlobalShortcutController(recordingManager: RecordingManager.shared)
     private var cancellables = Set<AnyCancellable>()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -58,7 +58,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         setupMenuBar()
         setupContextMenu()
         setupEventMonitor()
-        setupGlobalShortcut()
+        globalShortcutController.start()
         setupRecordingObservation()
 
         // Warmup transcription model
@@ -99,17 +99,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Prevent app from prompting to open a new document.
     func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool {
         false
-    }
-
-    // MARK: - Global Shortcut Setup
-
-    private func setupGlobalShortcut() {
-        // Configure shortcut callback to toggle recording
-        KeyboardShortcuts.onKeyUp(for: .toggleRecording) { [weak self] in
-            Task { @MainActor in
-                await self?.toggleRecording()
-            }
-        }
     }
 
     private func setupRecordingObservation() {
