@@ -82,6 +82,17 @@ if [ ! -d "${XCODEPROJ}" ]; then
     exit 1
 fi
 
+# Auto-enable verbose output in CI for better diagnostics
+if [ "${CI:-}" = "true" ] && [ $VERBOSE -eq 0 ]; then
+    VERBOSE=1
+fi
+
+# Enable Swift backtraces on crashes in CI
+if [ "${CI:-}" = "true" ]; then
+    export SWIFT_BACKTRACE=enable
+    export SWIFT_BACKTRACE_MODE=full
+fi
+
 # Build test command - use swift test for package tests
 if [ -n "$TEST_FILE" ]; then
     TEST_CMD="cd \"${PROJECT_DIR}/Packages/MeetingAssistantCore\" && swift test --filter ${TEST_FILE}"
