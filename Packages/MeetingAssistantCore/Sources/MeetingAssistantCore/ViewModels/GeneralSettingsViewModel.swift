@@ -49,6 +49,12 @@ public class GeneralSettingsViewModel: ObservableObject {
         }
     }
 
+    @Published public var useSystemDefaultInput: Bool {
+        didSet {
+            settingsStore.useSystemDefaultInput = useSystemDefaultInput
+        }
+    }
+
     @Published public var recordingIndicatorEnabled: Bool {
         didSet {
             settingsStore.recordingIndicatorEnabled = recordingIndicatorEnabled
@@ -81,6 +87,7 @@ public class GeneralSettingsViewModel: ObservableObject {
         selectedLanguage = settingsStore.selectedLanguage
         showSettingsOnLaunch = settingsStore.showSettingsOnLaunch
         muteOutputDuringRecording = settingsStore.muteOutputDuringRecording
+        useSystemDefaultInput = settingsStore.useSystemDefaultInput
         recordingIndicatorEnabled = settingsStore.recordingIndicatorEnabled
         recordingIndicatorStyle = settingsStore.recordingIndicatorStyle
         recordingIndicatorPosition = settingsStore.recordingIndicatorPosition

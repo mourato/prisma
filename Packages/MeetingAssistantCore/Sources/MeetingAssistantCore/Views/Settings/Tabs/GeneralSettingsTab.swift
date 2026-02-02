@@ -186,53 +186,61 @@ public struct GeneralSettingsTab: View {
     private var audioDevicesSection: some View {
         SettingsGroup("settings.general.audio_devices".localized, icon: "mic.fill") {
             VStack(alignment: .leading, spacing: 12) {
-                Text("settings.general.audio_devices_desc".localized)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                SettingsToggle(
+                    "settings.general.use_system_default_input".localized,
+                    description: "settings.general.use_system_default_input_desc".localized,
+                    isOn: $viewModel.useSystemDefaultInput
+                )
 
-                VStack(spacing: 8) {
-                    ForEach(viewModel.availableDevices) { device in
-                        HStack(spacing: 12) {
-                            Image(systemName: device.isAvailable ? "mic" : "mic.slash")
-                                .foregroundStyle(device.isAvailable ? .primary : .secondary)
-                                .frame(width: 20)
+                if !viewModel.useSystemDefaultInput {
+                    Text("settings.general.audio_devices_desc".localized)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
 
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(device.name)
-                                    .font(.body)
+                    VStack(spacing: 8) {
+                        ForEach(viewModel.availableDevices) { device in
+                            HStack(spacing: 12) {
+                                Image(systemName: device.isAvailable ? "mic" : "mic.slash")
                                     .foregroundStyle(device.isAvailable ? .primary : .secondary)
-                                if device.isDefault {
-                                    Text("settings.general.device_default".localized)
-                                        .font(.caption2)
-                                        .foregroundStyle(.blue)
+                                    .frame(width: 20)
+
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(device.name)
+                                        .font(.body)
+                                        .foregroundStyle(device.isAvailable ? .primary : .secondary)
+                                    if device.isDefault {
+                                        Text("settings.general.device_default".localized)
+                                            .font(.caption2)
+                                            .foregroundStyle(.blue)
+                                    }
                                 }
+
+                                Spacer()
+
+                                if !device.isAvailable {
+                                    Text("settings.general.device_unavailable".localized)
+                                        .font(.caption2)
+                                        .foregroundStyle(.red)
+                                }
+
+                                Image(systemName: "line.3.horizontal")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
                             }
-
-                            Spacer()
-
-                            if !device.isAvailable {
-                                Text("settings.general.device_unavailable".localized)
-                                    .font(.caption2)
-                                    .foregroundStyle(.red)
+                            .padding(8)
+                            .background(Color.primary.opacity(0.03))
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .onDrag {
+                                draggingDevice = device
+                                return NSItemProvider(object: device.id as NSString)
                             }
-
-                            Image(systemName: "line.3.horizontal")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            .onDrop(of: [.text], delegate: DeviceDropDelegate(
+                                item: device,
+                                listData: $viewModel.availableDevices,
+                                current: $draggingDevice,
+                                onMove: viewModel.moveDevice
+                            ))
                         }
-                        .padding(8)
-                        .background(Color.primary.opacity(0.03))
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                        .onDrag {
-                            draggingDevice = device
-                            return NSItemProvider(object: device.id as NSString)
-                        }
-                        .onDrop(of: [.text], delegate: DeviceDropDelegate(
-                            item: device,
-                            listData: $viewModel.availableDevices,
-                            current: $draggingDevice,
-                            onMove: viewModel.moveDevice
-                        ))
                     }
                 }
 
