@@ -24,6 +24,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         static let validationInterval: TimeInterval = 1.5
         static let retryDelay: UInt64 = 500_000_000 // 500ms
         static let maxRetries = 2
+        static let micDiagnosticsEnabled = true
     }
 
     @Published public internal(set) var isRecording = false
@@ -64,6 +65,15 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     private let muteController = SystemAudioMuteController.shared
     private var wasMutedBeforeRecording = false
     private let deviceManager = AudioDeviceManager()
+    private var micDiagnosticsTimer: Timer?
+    private var isMicDiagnosticsTapInstalled = false
+    private let micDiagnosticsPeakBits = ManagedAtomic<UInt32>(0)
+    private var micProbeWorker: AudioRecordingWorker?
+    private var micProbeStopTask: Task<Void, Never>?
+    private var micRecorderProbe: AVAudioRecorder?
+    private var micRecorderProbeStopTask: Task<Void, Never>?
+    private var fallbackRecorder: AVAudioRecorder?
+    private var fallbackMeterTimer: Timer?
 
     init() {
         // Setup worker callbacks to bridge back to MainActor
@@ -118,14 +128,21 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             throw AudioRecorderError.permissionDenied
         }
 
-        // 2. Prepare Engine & Input Device
+        if source == .microphone {
+            try startFallbackRecorder(to: outputURL)
+            currentRecordingURL = outputURL
+            return
+        }
+
+        // 2. Prepare Engine & Input Device (system/all only)
         // We initialize the engine EARLY to select the preferred input device.
         // This updates the hardware state (sample rate/channels) BEFORE we query it.
         let engine = injectedEngine ?? AVAudioEngine()
         audioEngine = engine // Retain generic reference
 
-        if source == .microphone || source == .all {
+        if source == .all {
             await selectPreferredInputDevice(engine: engine)
+            configureInputIO(for: engine.inputNode)
         }
 
         // 3. Determine Hardware Sample Rate
@@ -283,6 +300,10 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
         AppLogger.debug("Connecting Microphone with format: \(inputFormat)", category: .recordingManager)
         engine.connect(inputNode, to: mixer, format: inputFormat)
+
+        if Constants.micDiagnosticsEnabled {
+            startMicDiagnostics(for: inputNode)
+        }
     }
 
     private func connectSystemAudio(to engine: AVAudioEngine, mixer: AVAudioMixerNode, sampleRate: Double) throws {
@@ -369,6 +390,14 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         validationTimer?.invalidate()
         validationTimer = nil
 
+        if let recorder = fallbackRecorder {
+            stopFallbackRecorder(recorder)
+            isRecording = false
+            currentAveragePower = -160.0
+            currentPeakPower = -160.0
+            return currentRecordingURL
+        }
+
         // Stop Engine & System Capture
         _ = await systemRecorder.stopRecording()
         cleanupEngine()
@@ -415,6 +444,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         systemAudioSourceNode = nil
 
         if let engine = audioEngine {
+            stopMicDiagnostics(for: engine.inputNode)
             if engine.isRunning {
                 engine.stop()
             }
@@ -422,6 +452,41 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
             audioEngine = nil
         }
+    }
+
+    private func startFallbackRecorder(to outputURL: URL) throws {
+        let settings: [String: Any] = [
+            AVFormatIDKey: kAudioFormatMPEG4AAC,
+            AVSampleRateKey: 48_000,
+            AVNumberOfChannelsKey: 1,
+            AVEncoderBitRateKey: 128_000,
+        ]
+
+        let recorder = try AVAudioRecorder(url: outputURL, settings: settings)
+        recorder.isMeteringEnabled = true
+        recorder.record()
+        fallbackRecorder = recorder
+        isRecording = true
+
+        fallbackMeterTimer?.invalidate()
+        fallbackMeterTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            guard let self, let recorder = fallbackRecorder else { return }
+            recorder.updateMeters()
+            currentAveragePower = recorder.averagePower(forChannel: 0)
+            currentPeakPower = recorder.peakPower(forChannel: 0)
+        }
+
+        AppLogger.info("Fallback mic recorder started", category: .recordingManager, extra: ["path": outputURL.path])
+    }
+
+    private func stopFallbackRecorder(_ recorder: AVAudioRecorder) {
+        fallbackMeterTimer?.invalidate()
+        fallbackMeterTimer = nil
+
+        recorder.stop()
+        fallbackRecorder = nil
+
+        AppLogger.info("Fallback mic recorder stopped", category: .recordingManager, extra: ["path": recorder.url.path])
     }
 
     // MARK: - Permission Checking
@@ -453,6 +518,43 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     // MARK: - Private Helpers (Issue #35)
 
     private func selectPreferredInputDevice(engine: AVAudioEngine) async {
+        if AppSettingsStore.shared.useSystemDefaultInput {
+            let inputNode = engine.inputNode
+            guard let defaultDeviceID = deviceManager.getDefaultInputDeviceID() else {
+                AppLogger.warning(
+                    "Failed to resolve system default input device ID",
+                    category: .recordingManager
+                )
+                return
+            }
+
+            var deviceIDToSet = defaultDeviceID
+            let size = UInt32(MemoryLayout<AudioObjectID>.size)
+            let status = AudioUnitSetProperty(
+                inputNode.audioUnit!,
+                kAudioOutputUnitProperty_CurrentDevice,
+                kAudioUnitScope_Global,
+                0,
+                &deviceIDToSet,
+                size
+            )
+
+            if status != noErr {
+                AppLogger.warning(
+                    "Failed to set system default input device",
+                    category: .recordingManager,
+                    extra: ["status": status, "deviceID": defaultDeviceID]
+                )
+            } else {
+                AppLogger.info(
+                    "Using system default input device",
+                    category: .recordingManager,
+                    extra: ["deviceID": defaultDeviceID]
+                )
+            }
+            logDeviceDiagnostics(for: defaultDeviceID, label: "systemDefault")
+            return
+        }
         let priorityList = AppSettingsStore.shared.audioDevicePriority
         guard !priorityList.isEmpty else { return }
 
@@ -488,6 +590,48 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             AppLogger.warning("Failed to set preferred input device", category: .recordingManager, extra: ["status": status, "deviceID": id])
         } else {
             AppLogger.info("Set preferred input device", category: .recordingManager, extra: ["deviceID": id])
+        }
+        logDeviceDiagnostics(for: id, label: "priority")
+    }
+
+    private func configureInputIO(for inputNode: AVAudioInputNode) {
+        guard let audioUnit = inputNode.audioUnit else { return }
+
+        var enable: UInt32 = 1
+        let size = UInt32(MemoryLayout<UInt32>.size)
+
+        let inputStatus = AudioUnitSetProperty(
+            audioUnit,
+            kAudioOutputUnitProperty_EnableIO,
+            kAudioUnitScope_Input,
+            1,
+            &enable,
+            size
+        )
+
+        if inputStatus != noErr {
+            AppLogger.warning(
+                "Failed to enable input on audio unit",
+                category: .recordingManager,
+                extra: ["status": inputStatus]
+            )
+        }
+
+        let outputStatus = AudioUnitSetProperty(
+            audioUnit,
+            kAudioOutputUnitProperty_EnableIO,
+            kAudioUnitScope_Output,
+            0,
+            &enable,
+            size
+        )
+
+        if outputStatus != noErr {
+            AppLogger.warning(
+                "Failed to enable output on audio unit",
+                category: .recordingManager,
+                extra: ["status": outputStatus]
+            )
         }
     }
 }
