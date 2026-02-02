@@ -378,7 +378,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             try? muteController.setMuted(false)
         }
 
-        // Finalize worker
+        // Finalize worker - wait for all buffers to be processed
         let url = await worker.stop()
 
         // Reset state
@@ -410,16 +410,18 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         if let mixer = mixerNode {
             mixer.removeTap(onBus: 0)
         }
+
+        mixerNode = nil
+        systemAudioSourceNode = nil
+
         if let engine = audioEngine {
             if engine.isRunning {
                 engine.stop()
             }
-            engine.reset() // Break connections
-        }
+            engine.reset()
 
-        audioEngine = nil
-        mixerNode = nil
-        systemAudioSourceNode = nil
+            audioEngine = nil
+        }
     }
 
     // MARK: - Permission Checking
