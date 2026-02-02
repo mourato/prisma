@@ -208,7 +208,7 @@ public struct AIConfiguration: Codable, Equatable, Sendable {
     /// Check if configuration is valid for making API calls.
     /// Checks Keychain for API key presence.
     public var isValid: Bool {
-        let hasApiKey = KeychainManager.exists(for: .aiAPIKey)
+        let hasApiKey = KeychainManager.existsAPIKey(for: provider)
         return hasApiKey && !baseURL.isEmpty
     }
 
@@ -219,7 +219,8 @@ public struct AIConfiguration: Codable, Equatable, Sendable {
 
         // Move to Keychain
         do {
-            try KeychainManager.store(_legacyApiKey, for: .aiAPIKey)
+            let providerKey = KeychainManager.apiKeyKey(for: provider)
+            try KeychainManager.store(_legacyApiKey, for: providerKey)
         } catch {
             AppLogger.error(
                 "Failed to store legacy API key in Keychain during migration",
@@ -256,6 +257,7 @@ public class AppSettingsStore: ObservableObject {
         static let numSpeakers = "numSpeakers"
         static let selectedLanguage = "selectedLanguage"
         static let audioDevicePriority = "audioDevicePriority"
+        static let useSystemDefaultInput = "useSystemDefaultInput"
         static let muteOutputDuringRecording = "muteOutputDuringRecording"
         static let deletedPromptIds = "postProcessingDeletedPromptIds"
         static let shortcutActivationMode = "shortcutActivationMode"
@@ -365,6 +367,11 @@ public class AppSettingsStore: ObservableObject {
     /// Ordered list of audio device UIDs by priority.
     @Published public var audioDevicePriority: [String] {
         didSet { save(audioDevicePriority, forKey: Keys.audioDevicePriority) }
+    }
+
+    /// Whether to use the system default input device instead of a custom priority list.
+    @Published public var useSystemDefaultInput: Bool {
+        didSet { UserDefaults.standard.set(useSystemDefaultInput, forKey: Keys.useSystemDefaultInput) }
     }
 
     /// Whether to mute system audio output while recording is in progress.
@@ -480,6 +487,11 @@ public class AppSettingsStore: ObservableObject {
         selectedLanguage = rawLang.flatMap { AppLanguage(rawValue: $0) } ?? .system
 
         audioDevicePriority = UserDefaults.standard.stringArray(forKey: Keys.audioDevicePriority) ?? []
+        if UserDefaults.standard.object(forKey: Keys.useSystemDefaultInput) == nil {
+            useSystemDefaultInput = true
+        } else {
+            useSystemDefaultInput = UserDefaults.standard.bool(forKey: Keys.useSystemDefaultInput)
+        }
         muteOutputDuringRecording = UserDefaults.standard.bool(forKey: Keys.muteOutputDuringRecording)
 
         let rawActivationMode = UserDefaults.standard.string(forKey: Keys.shortcutActivationMode)
@@ -535,6 +547,7 @@ public class AppSettingsStore: ObservableObject {
         maxSpeakers = nil
         numSpeakers = nil
         audioDevicePriority = []
+        useSystemDefaultInput = true
         muteOutputDuringRecording = false
         shortcutActivationMode = .holdOrToggle
         useEscapeToCancelRecording = false

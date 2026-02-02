@@ -26,7 +26,7 @@ public class AISettingsViewModel: ObservableObject {
         self.settings = settings
         self.keychain = keychain
         self.session = session
-        apiKeyText = (try? keychain.retrieve(for: .aiAPIKey)) ?? ""
+        apiKeyText = loadAPIKeyForCurrentProvider() ?? ""
 
         // Reactive persistence for API Key
         $apiKeyText
@@ -36,19 +36,37 @@ public class AISettingsViewModel: ObservableObject {
                 self?.persistAPIKey(newValue)
             }
             .store(in: &cancellables)
+
+        settings.$aiConfiguration
+            .map(\.provider)
+            .removeDuplicates()
+            .sink { [weak self] _ in
+                self?.apiKeyText = self?.loadAPIKeyForCurrentProvider() ?? ""
+            }
+            .store(in: &cancellables)
     }
 
     private func persistAPIKey(_ value: String) {
+        let providerKey = KeychainManager.apiKeyKey(for: settings.aiConfiguration.provider)
         do {
             if !value.isEmpty {
-                try keychain.store(value, for: .aiAPIKey)
+                try keychain.store(value, for: providerKey)
                 logger.info("API Key successfully persisted to Keychain")
             } else {
-                try keychain.delete(for: .aiAPIKey)
+                try keychain.delete(for: providerKey)
                 logger.info("API Key removed from Keychain")
             }
         } catch {
             logger.error("Failed to persist API key: \(error.localizedDescription)")
+        }
+    }
+
+    private func loadAPIKeyForCurrentProvider() -> String? {
+        do {
+            return try KeychainManager.retrieveAPIKey(for: settings.aiConfiguration.provider)
+        } catch {
+            logger.error("Failed to load API key: \(error.localizedDescription)")
+            return nil
         }
     }
 
@@ -73,7 +91,7 @@ public class AISettingsViewModel: ObservableObject {
                     await self.fetchAvailableModels()
                 }
             } catch {
-                self.connectionStatus = .failure(error.localizedDescription)
+                self.connectionStatus = .failure(self.connectionErrorMessage(from: error))
             }
         }
     }
@@ -117,7 +135,7 @@ public class AISettingsViewModel: ObservableObject {
         request.httpMethod = "GET"
         request.timeoutInterval = 10
 
-        if let key = try? keychain.retrieve(for: .aiAPIKey), !key.isEmpty {
+        if let key = try? KeychainManager.retrieveAPIKey(for: settings.aiConfiguration.provider), !key.isEmpty {
             request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
         }
         return request
@@ -135,7 +153,7 @@ public class AISettingsViewModel: ObservableObject {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.timeoutInterval = 5
-        if let key = try? keychain.retrieve(for: .aiAPIKey), !key.isEmpty {
+        if let key = try? KeychainManager.retrieveAPIKey(for: settings.aiConfiguration.provider), !key.isEmpty {
             request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
         }
         return request
@@ -148,5 +166,27 @@ public class AISettingsViewModel: ObservableObject {
         } else {
             connectionStatus = .failure("settings.ai.connection.invalid_response".localized)
         }
+    }
+
+    private func connectionErrorMessage(from error: Error) -> String {
+        if let urlError = error as? URLError {
+            switch urlError.code {
+            case .notConnectedToInternet:
+                return "settings.ai.connection.not_connected".localized
+            case .timedOut:
+                return "settings.ai.connection.timed_out".localized
+            case .cannotFindHost:
+                return "settings.ai.connection.host_not_found".localized
+            case .cannotConnectToHost:
+                return "settings.ai.connection.cannot_connect".localized
+            case .secureConnectionFailed:
+                return "settings.ai.connection.secure_failed".localized
+            case .networkConnectionLost:
+                return "settings.ai.connection.network_lost".localized
+            default:
+                return urlError.localizedDescription
+            }
+        }
+        return error.localizedDescription
     }
 }
