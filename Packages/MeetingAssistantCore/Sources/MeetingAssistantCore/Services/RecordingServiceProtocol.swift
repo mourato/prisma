@@ -21,7 +21,9 @@ public protocol RecordingServiceProtocol: AnyObject {
     func stopRecording() async
     func transcribeExternalAudio(from audioURL: URL) async
     func checkPermission() async
+    func checkPermission(for source: RecordingSource) async
     func requestPermission() async
+    func requestPermission(for source: RecordingSource) async
     func openMicrophoneSettings()
     func openPermissionSettings()
 }

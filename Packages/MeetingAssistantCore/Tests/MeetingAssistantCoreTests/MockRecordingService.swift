@@ -25,6 +25,8 @@ class MockRecordingService: RecordingServiceProtocol {
     var stopRecordingCalled = false
     var checkPermissionCalled = false
     var requestPermissionCalled = false
+    var requestPermissionSource: RecordingSource?
+    var checkPermissionSource: RecordingSource?
     var openMicrophoneSettingsCalled = false
     var openPermissionSettingsCalled = false
     var transcribeExternalAudioCalled = false
@@ -45,8 +47,18 @@ class MockRecordingService: RecordingServiceProtocol {
         checkPermissionCalled = true
     }
 
+    func checkPermission(for source: RecordingSource) async {
+        checkPermissionCalled = true
+        checkPermissionSource = source
+    }
+
     func requestPermission() async {
         requestPermissionCalled = true
+    }
+
+    func requestPermission(for source: RecordingSource) async {
+        requestPermissionCalled = true
+        requestPermissionSource = source
     }
 
     func openMicrophoneSettings() {

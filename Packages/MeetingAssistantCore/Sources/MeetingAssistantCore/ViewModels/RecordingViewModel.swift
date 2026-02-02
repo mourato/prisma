@@ -17,7 +17,7 @@ public class RecordingViewModel: ObservableObject {
     @Published public var arePermissionsGranted: Bool = false
     @Published public var currentMeeting: Meeting?
     @Published public var isModelLoaded: Bool = false
-    @Published public var selectedSource: RecordingSource = .all
+    @Published public var selectedSource: RecordingSource = .microphone
     @Published public var displayDuration: String = "00:00"
     private var timer: AnyCancellable?
 
@@ -75,8 +75,8 @@ public class RecordingViewModel: ObservableObject {
 
         permissionViewModel = PermissionViewModel(
             manager: recordingManager.permissionStatus,
-            requestMicrophone: { await recordingManager.requestPermission() },
-            requestScreen: { await recordingManager.requestPermission() },
+            requestMicrophone: { await recordingManager.requestPermission(for: .microphone) },
+            requestScreen: { await recordingManager.requestPermission(for: .system) },
             openMicrophoneSettings: { recordingManager.openMicrophoneSettings() },
             openScreenSettings: { recordingManager.openPermissionSettings() }
         )
@@ -94,7 +94,7 @@ public class RecordingViewModel: ObservableObject {
         // User said: "se eu clicar no botão em si, ele inicia a gravação de tudo... mas se eu clicar no canto direito, posso escolher..."
         // This implies main button is ALWAYS "Tudo" or "Default".
         // Let's support passing source.
-        let sourceToUse = source ?? .all
+        let sourceToUse = source ?? .microphone
         selectedSource = sourceToUse // Sync UI state
         await recordingManager.startRecording(source: sourceToUse)
     }
@@ -104,11 +104,11 @@ public class RecordingViewModel: ObservableObject {
     }
 
     public func checkPermission() async {
-        await recordingManager.checkPermission()
+        await recordingManager.checkPermission(for: selectedSource)
     }
 
     public func requestPermission() async {
-        await recordingManager.requestPermission()
+        await recordingManager.requestPermission(for: selectedSource)
     }
 
     public func openMicrophoneSettings() {
@@ -161,8 +161,13 @@ public class RecordingViewModel: ObservableObject {
 
         // Observe permission state from child ViewModel
         permissionViewModel.$microphoneState
-            .combineLatest(permissionViewModel.$screenState)
-            .map { mic, screen in mic == .granted && screen == .granted }
+            .combineLatest(permissionViewModel.$screenState, $selectedSource)
+            .map { mic, screen, source in
+                source.requiredPermissionsGranted(
+                    microphone: mic,
+                    screenRecording: screen
+                )
+            }
             .receive(on: DispatchQueue.main)
             .assign(to: &$arePermissionsGranted)
     }

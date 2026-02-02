@@ -10,8 +10,8 @@ public struct PermissionsSettingsTab: View {
         let recordingManager = RecordingManager.shared
         _viewModel = State(initialValue: PermissionViewModel(
             manager: recordingManager.permissionStatus,
-            requestMicrophone: { await recordingManager.requestPermission() },
-            requestScreen: { await recordingManager.requestPermission() },
+            requestMicrophone: { await recordingManager.requestPermission(for: .microphone) },
+            requestScreen: { await recordingManager.requestPermission(for: .system) },
             openMicrophoneSettings: { recordingManager.openMicrophoneSettings() },
             openScreenSettings: { recordingManager.openPermissionSettings() }
         ))
@@ -27,7 +27,7 @@ public struct PermissionsSettingsTab: View {
                 }
 
                 SettingsGroup(NSLocalizedString("settings.permissions.status", bundle: .safeModule, comment: ""), icon: "checkmark.shield") {
-                    PermissionStatusView(viewModel: viewModel)
+                    PermissionStatusView(viewModel: viewModel, requiredSource: .all)
                         .padding(.top, 4)
                 }
             }

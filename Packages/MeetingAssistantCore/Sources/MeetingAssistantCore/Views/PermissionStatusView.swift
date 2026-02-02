@@ -6,11 +6,17 @@ import SwiftUI
 /// Shows each permission type with an icon and its current authorization state.
 public struct PermissionStatusView: View {
     @ObservedObject var viewModel: PermissionViewModel
+    private let requiredSource: RecordingSource
 
     public var onDismiss: (() -> Void)?
 
-    public init(viewModel: PermissionViewModel, onDismiss: (() -> Void)? = nil) {
+    public init(
+        viewModel: PermissionViewModel,
+        requiredSource: RecordingSource = .all,
+        onDismiss: (() -> Void)? = nil
+    ) {
         self.viewModel = viewModel
+        self.requiredSource = requiredSource
         self.onDismiss = onDismiss
     }
 
@@ -34,7 +40,7 @@ public struct PermissionStatusView: View {
                 )
             }
 
-            if !allPermissionsGranted {
+            if !requiredPermissionsGranted {
                 permissionWarning
             }
         }
@@ -49,15 +55,29 @@ public struct PermissionStatusView: View {
         )
     }
 
-    private var allPermissionsGranted: Bool {
-        viewModel.microphoneState == .granted && viewModel.screenState == .granted
+    private var requiredPermissions: [PermissionType] {
+        requiredSource.requiredPermissionTypes
+    }
+
+    private var requiredPermissionsGranted: Bool {
+        requiredSource.requiredPermissionsGranted(
+            microphone: viewModel.microphoneState,
+            screenRecording: viewModel.screenState
+        )
     }
 
     private var grantedCount: Int {
         var count = 0
-        if viewModel.microphoneState == .granted { count += 1 }
-        if viewModel.screenState == .granted { count += 1 }
+        for permission in requiredPermissions {
+            if permissionState(for: permission).isAuthorized {
+                count += 1
+            }
+        }
         return count
+    }
+
+    private var requiredCount: Int {
+        requiredPermissions.count
     }
 
     // MARK: - Header Section
@@ -73,7 +93,7 @@ public struct PermissionStatusView: View {
                     .font(.subheadline)
                     .fontWeight(.semibold)
 
-                Text("permissions.granted_count".localized(with: grantedCount))
+                Text("permissions.granted_count".localized(with: grantedCount, requiredCount))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -86,7 +106,7 @@ public struct PermissionStatusView: View {
 
     @ViewBuilder
     private var statusBadge: some View {
-        if allPermissionsGranted {
+        if requiredPermissionsGranted {
             Button(action: { onDismiss?() }) {
                 Text(NSLocalizedString("common.ok", bundle: .safeModule, comment: ""))
                     .font(.caption2)
@@ -130,7 +150,7 @@ public struct PermissionStatusView: View {
     // MARK: - Computed Properties
 
     private var backgroundGradient: LinearGradient {
-        if allPermissionsGranted {
+        if requiredPermissionsGranted {
             LinearGradient(
                 colors: [
                     Color.green.opacity(0.05),
@@ -152,13 +172,22 @@ public struct PermissionStatusView: View {
     }
 
     private var borderColor: Color {
-        allPermissionsGranted
+        requiredPermissionsGranted
             ? Color.green.opacity(0.2)
             : Color.orange.opacity(0.3)
     }
 
     private var headerIconColor: Color {
-        allPermissionsGranted ? .green : .orange
+        requiredPermissionsGranted ? .green : .orange
+    }
+
+    private func permissionState(for type: PermissionType) -> PermissionState {
+        switch type {
+        case .microphone:
+            viewModel.microphoneState
+        case .screenRecording:
+            viewModel.screenState
+        }
     }
 }
 

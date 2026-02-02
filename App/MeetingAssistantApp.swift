@@ -126,7 +126,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if recordingManager.isRecording {
             await recordingManager.stopRecording(transcribe: true)
         } else {
-            await recordingManager.startRecording()
+            await recordingManager.startRecording(source: .microphone)
         }
     }
 

@@ -21,7 +21,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     @Published public private(set) var currentMeeting: Meeting?
     @Published public private(set) var lastError: Error?
     @Published public private(set) var hasRequiredPermissions = false
-    private var currentRecordingSource: RecordingSource = .all
+    private var currentRecordingSource: RecordingSource = .microphone
 
     // MARK: - Protocol Publishers
 
@@ -131,6 +131,10 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     }
 
     public func checkPermission() async {
+        await checkPermission(for: currentRecordingSource)
+    }
+
+    public func checkPermission(for source: RecordingSource) async {
         let micPermission = await micRecorder.hasPermission()
         let screenPermission = await systemRecorder.hasPermission()
 
@@ -141,15 +145,28 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         permissionStatus.updateMicrophoneState(micState)
         permissionStatus.updateScreenRecordingState(screenState)
 
-        await recordingActor.setPermissions(micPermission && screenPermission)
+        let hasPermissions = source.requiredPermissionsGranted(
+            microphone: micPermission,
+            screenRecording: screenPermission
+        )
+
+        await recordingActor.setPermissions(hasPermissions)
         hasRequiredPermissions = await recordingActor.permissionsState
     }
 
-    /// Request permissions (Screen Recording + Microphone).
+    /// Request permissions required for the provided source.
     public func requestPermission() async {
-        await micRecorder.requestPermission()
-        await systemRecorder.requestPermission()
-        await checkPermission()
+        await requestPermission(for: currentRecordingSource)
+    }
+
+    public func requestPermission(for source: RecordingSource) async {
+        if source.requiresMicrophonePermission {
+            await micRecorder.requestPermission()
+        }
+        if source.requiresScreenRecordingPermission {
+            await systemRecorder.requestPermission()
+        }
+        await checkPermission(for: source)
     }
 
     /// Open System Preferences to Screen Recording settings.
@@ -166,7 +183,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
     /// Start recording audio for a meeting.
     /// - Parameter source: The audio source to record.
-    public func startRecording(source: RecordingSource = .all) async {
+    public func startRecording(source: RecordingSource = .microphone) async {
         guard !isRecording else {
             AppLogger.info("Attempted to start recording but already recording", category: .recordingManager)
             return
@@ -386,7 +403,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
                 Task { @MainActor in
                     let isCurrentlyRecording = self?.isRecording ?? false
                     if detected != nil, !isCurrentlyRecording {
-                        await self?.startRecording()
+                        await self?.startRecording(source: .microphone)
                     } else if detected == nil, isCurrentlyRecording {
                         await self?.stopRecording()
                     }

@@ -55,6 +55,12 @@
 "settings.ai.connection.success" = "Conectado";
 "settings.ai.connection.invalid_url" = "URL inválida";
 "settings.ai.connection.invalid_response" = "Resposta inválida";
+"settings.ai.connection.not_connected" = "Sem conexão com a internet";
+"settings.ai.connection.timed_out" = "Tempo de conexão esgotado";
+"settings.ai.connection.host_not_found" = "Hostname do servidor não encontrado";
+"settings.ai.connection.cannot_connect" = "Não foi possível conectar ao servidor";
+"settings.ai.connection.secure_failed" = "Falha na conexão segura";
+"settings.ai.connection.network_lost" = "Conexão de rede perdida";
 
 /* Post-Processing Settings */
 "settings.post_processing.title" = "Pós-Processamento";
@@ -127,9 +133,9 @@
 /* Permissions Settings */
 "settings.permissions.title" = "Permissões";
 "settings.permissions.about" = "Sobre Permissões";
-"settings.permissions.description" = "O Meeting Assistant precisa de acesso ao microfone e à gravação de tela para capturar o áudio das suas reuniões e identificar os aplicativos ativos.";
+"settings.permissions.description" = "O Meeting Assistant precisa de acesso ao microfone para gravar ditados. A gravação de tela é necessária apenas para capturar áudio do sistema.";
 "settings.permissions.status" = "Status das Permissões";
-"permissions.warning" = "Algumas permissões são necessárias para gravar reuniões.";
+"permissions.warning" = "Algumas permissões são necessárias dependendo do que você grava.";
 
 /* Transcriptions Settings */
 "settings.transcriptions.title" = "Transcrições";
@@ -168,7 +174,7 @@
 
 /* Permission Status View */
 "permissions.system_title" = "Permissões do Sistema";
-"permissions.granted_count" = "%d/2 concedidas";
+"permissions.granted_count" = "%d/%d concedidas";
 "permissions.required_warning" = "Algumas permissões são necessárias para gravar reuniões.";
 "permissions.request" = "Solicitar";
 "permissions.configure" = "Configurar";
@@ -289,6 +295,8 @@
 "settings.general.language_restart_required" = "Reinicialização necessária para aplicar mudança de idioma.";
 "settings.general.audio_devices" = "Dispositivos de Áudio";
 "settings.general.audio_devices_desc" = "Arraste para reordenar os dispositivos por prioridade. O primeiro dispositivo disponível será usado automaticamente.";
+"settings.general.use_system_default_input" = "Usar input padrão do sistema";
+"settings.general.use_system_default_input_desc" = "Quando ativado, o app usa o dispositivo de entrada padrão do macOS e ignora a lista de prioridade personalizada.";
 "settings.general.device_unavailable" = "Indisponível";
 "settings.general.device_default" = "Padrão";
 "settings.general.mute_output_during_recording" = "Silenciar Saída Durante Gravação";
