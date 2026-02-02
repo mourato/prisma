@@ -144,11 +144,11 @@ public final class AudioDeviceManager: ObservableObject {
             mElement: kAudioObjectPropertyElementMain
         )
 
-        var name: CFString = "" as CFString
-        var size = UInt32(MemoryLayout<CFString>.size)
+        var name: Unmanaged<CFString>?
+        var size = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
         let status = AudioObjectGetPropertyData(id, &address, 0, nil, &size, &name)
-        guard status == noErr else { return nil }
-        return name as String
+        guard status == noErr, let name else { return nil }
+        return name.takeRetainedValue() as String
     }
 
     public nonisolated func getDeviceUID(for id: AudioObjectID) -> String? {
@@ -158,11 +158,11 @@ public final class AudioDeviceManager: ObservableObject {
             mElement: kAudioObjectPropertyElementMain
         )
 
-        var uid: CFString = "" as CFString
-        var size = UInt32(MemoryLayout<CFString>.size)
+        var uid: Unmanaged<CFString>?
+        var size = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
         let status = AudioObjectGetPropertyData(id, &address, 0, nil, &size, &uid)
-        guard status == noErr else { return nil }
-        return uid as String
+        guard status == noErr, let uid else { return nil }
+        return uid.takeRetainedValue() as String
     }
 
     public nonisolated func getInputChannelCount(for id: AudioObjectID) -> Int? {
