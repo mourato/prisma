@@ -197,14 +197,16 @@ public struct AISettingsTab: View {
     private var apiConfigurationSection: some View {
         SettingsGroup(NSLocalizedString("settings.ai.api_config", bundle: .safeModule, comment: ""), icon: "key.fill") {
             VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Text(NSLocalizedString("settings.ai.base_url", bundle: .safeModule, comment: ""))
-                        .frame(width: 80, alignment: .leading)
-                    TextField(
-                        viewModel.settings.aiConfiguration.provider.defaultBaseURL,
-                        text: $viewModel.settings.aiConfiguration.baseURL
-                    )
-                    .textFieldStyle(.roundedBorder)
+                if viewModel.settings.aiConfiguration.provider == .custom {
+                    HStack {
+                        Text(NSLocalizedString("settings.ai.base_url", bundle: .safeModule, comment: ""))
+                            .frame(width: 80, alignment: .leading)
+                        TextField(
+                            viewModel.settings.aiConfiguration.provider.defaultBaseURL,
+                            text: $viewModel.settings.aiConfiguration.baseURL
+                        )
+                        .textFieldStyle(.roundedBorder)
+                    }
                 }
 
                 HStack {
@@ -317,36 +319,48 @@ public struct AISettingsTab: View {
     @ViewBuilder
     private var connectionTestSection: some View {
         SettingsCard {
-            HStack {
-                Button(action: {
-                    viewModel.testAPIConnection()
-                }) {
-                    HStack {
-                        if viewModel.connectionStatus == .testing {
-                            ProgressView()
-                                .controlSize(.small)
-                                .scaleEffect(0.7)
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Button(action: {
+                        viewModel.testAPIConnection()
+                    }) {
+                        HStack {
+                            if viewModel.connectionStatus == .testing {
+                                ProgressView()
+                                    .controlSize(.small)
+                                    .scaleEffect(0.7)
+                            }
+                            Text(NSLocalizedString("settings.ai.test_connection", bundle: .safeModule, comment: ""))
                         }
-                        Text(NSLocalizedString("settings.ai.test_connection", bundle: .safeModule, comment: ""))
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(
+                        !viewModel.settings.aiConfiguration.isValid ||
+                            viewModel.connectionStatus == .testing
+                    )
+
+                    Spacer()
+
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(viewModel.connectionStatus.color)
+                            .frame(width: 8, height: 8)
+                            .symbolEffect(.pulse, isActive: viewModel.connectionStatus == .testing)
+
+                        Text(viewModel.connectionStatus.text)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
                     }
                 }
-                .buttonStyle(.borderedProminent)
-                .disabled(
-                    !viewModel.settings.aiConfiguration.isValid ||
-                        viewModel.connectionStatus == .testing
-                )
 
-                Spacer()
-
-                HStack(spacing: 8) {
-                    Circle()
-                        .fill(viewModel.connectionStatus.color)
-                        .frame(width: 8, height: 8)
-                        .symbolEffect(.pulse, isActive: viewModel.connectionStatus == .testing)
-
-                    Text(viewModel.connectionStatus.text)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                if let detail = viewModel.connectionStatus.detail, !detail.isEmpty {
+                    HStack(spacing: 6) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.yellow)
+                        Text(detail)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
         }
