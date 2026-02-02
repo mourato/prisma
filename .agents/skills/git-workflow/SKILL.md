@@ -142,6 +142,10 @@ Would you like to commit these changes?
 4. **Check status** - Show full repository status
 ```
 
+## User-Specific Requirement
+
+When the user explicitly asks to commit changes, always split the work into multiple smaller commits, grouping related changes logically.
+
 ## References
 
 - [.github/PULL_REQUEST_TEMPLATE.md](../../.github/PULL_REQUEST_TEMPLATE.md)
