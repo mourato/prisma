@@ -30,4 +30,13 @@ public enum ConnectionStatus: Equatable {
             "settings.service.status.failed".localized
         }
     }
+
+    public var detail: String? {
+        switch self {
+        case let .failure(message):
+            message
+        case .unknown, .testing, .success:
+            nil
+        }
+    }
 }
