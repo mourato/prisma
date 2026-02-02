@@ -154,11 +154,12 @@ actor AudioRecordingWorker {
         await processingTask?.value
         processingTask = nil
 
-        // Clear queue
+        // Clear queue after task completes
         bufferQueue.clear()
 
+        // Close file safely
         let url = currentURL
-        audioFile = nil // Close file
+        audioFile = nil
         currentURL = nil
 
         return url

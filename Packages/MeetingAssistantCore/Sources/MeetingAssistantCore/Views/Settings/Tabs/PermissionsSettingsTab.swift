@@ -4,7 +4,18 @@ import SwiftUI
 
 /// Tab for managing app permissions (microphone, screen recording).
 public struct PermissionsSettingsTab: View {
-    public init() {}
+    @State private var viewModel: PermissionViewModel
+
+    public init() {
+        let recordingManager = RecordingManager.shared
+        _viewModel = State(initialValue: PermissionViewModel(
+            manager: recordingManager.permissionStatus,
+            requestMicrophone: { await recordingManager.requestPermission() },
+            requestScreen: { await recordingManager.requestPermission() },
+            openMicrophoneSettings: { recordingManager.openMicrophoneSettings() },
+            openScreenSettings: { recordingManager.openPermissionSettings() }
+        ))
+    }
 
     public var body: some View {
         ScrollView {
@@ -16,13 +27,6 @@ public struct PermissionsSettingsTab: View {
                 }
 
                 SettingsGroup(NSLocalizedString("settings.permissions.status", bundle: .safeModule, comment: ""), icon: "checkmark.shield") {
-                    let viewModel = PermissionViewModel(
-                        manager: RecordingManager.shared.permissionStatus,
-                        requestMicrophone: { await RecordingManager.shared.requestPermission() },
-                        requestScreen: { await RecordingManager.shared.requestPermission() },
-                        openMicrophoneSettings: { RecordingManager.shared.openMicrophoneSettings() },
-                        openScreenSettings: { RecordingManager.shared.openPermissionSettings() }
-                    )
                     PermissionStatusView(viewModel: viewModel)
                         .padding(.top, 4)
                 }
