@@ -470,10 +470,9 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
         fallbackMeterTimer?.invalidate()
         fallbackMeterTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
-            guard let self, let recorder = fallbackRecorder else { return }
-            recorder.updateMeters()
-            currentAveragePower = recorder.averagePower(forChannel: 0)
-            currentPeakPower = recorder.peakPower(forChannel: 0)
+            Task { @MainActor in
+                self?.updateFallbackMeters()
+            }
         }
 
         AppLogger.info("Fallback mic recorder started", category: .recordingManager, extra: ["path": outputURL.path])
@@ -487,6 +486,14 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         fallbackRecorder = nil
 
         AppLogger.info("Fallback mic recorder stopped", category: .recordingManager, extra: ["path": recorder.url.path])
+    }
+
+    @MainActor
+    private func updateFallbackMeters() {
+        guard let recorder = fallbackRecorder else { return }
+        recorder.updateMeters()
+        currentAveragePower = recorder.averagePower(forChannel: 0)
+        currentPeakPower = recorder.peakPower(forChannel: 0)
     }
 
     // MARK: - Permission Checking

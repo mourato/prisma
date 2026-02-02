@@ -124,7 +124,9 @@ extension AudioRecorder {
 
             micProbeStopTask = Task {
                 try? await Task.sleep(nanoseconds: 4_000_000_000)
-                await self.stopMicProbeRecording()
+                await MainActor.run {
+                    self.stopMicProbeRecording()
+                }
             }
         }
 
@@ -198,7 +200,9 @@ extension AudioRecorder {
 
             micRecorderProbeStopTask = Task {
                 try? await Task.sleep(nanoseconds: 4_000_000_000)
-                await self.stopAvAudioRecorderProbe()
+                await MainActor.run {
+                    self.stopAvAudioRecorderProbe()
+                }
             }
         } catch {
             AppLogger.error("Mic recorder probe failed to start", category: .recordingManager, error: error)
