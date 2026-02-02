@@ -111,10 +111,16 @@ DURATION=$((END_TIME - START_TIME))
 echo ""
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
-# Check if our tests actually failed by looking for failure patterns
-if echo "$TEST_OUTPUT" | grep -q "failed\|error:"; then
+# Print output in verbose mode or on failure for CI visibility
+if [ $VERBOSE -eq 1 ] || [ $EXIT_CODE -ne 0 ]; then
+    echo ""
+    echo "$TEST_OUTPUT"
+fi
+
+# Rely on exit code for pass/fail
+if [ $EXIT_CODE -ne 0 ]; then
     echo -e "${RED}✗ Tests failed!${NC} (${DURATION}s)"
-    exit 1
+    exit $EXIT_CODE
 else
     echo -e "${GREEN}✓ All tests passed!${NC} (${DURATION}s)"
 fi
