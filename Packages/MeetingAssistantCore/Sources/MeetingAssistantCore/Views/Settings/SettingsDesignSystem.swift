@@ -12,6 +12,12 @@ public enum SettingsDesignSystem {
         public static let cardBackground = Color(NSColor.controlBackgroundColor).opacity(0.5)
 
         public static let iconHighlight = Color.blue
+
+        public static let aiGradient = LinearGradient(
+            colors: [Color.purple, Color.blue],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
     }
 
     // MARK: - Layout Constants
