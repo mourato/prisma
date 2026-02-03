@@ -5,6 +5,7 @@ import OSLog
 public final class MetricsDashboardViewModel: ObservableObject {
     @Published public private(set) var summary: MetricsDashboardSummary
     @Published public private(set) var weekdayBuckets: [MetricsWeekdayBucket] = []
+    @Published public private(set) var hourlyBuckets: [MetricsHourlyBucket] = []
 
     @Published public var dateFilter: DateFilter = .allEntries {
         didSet {
@@ -68,5 +69,6 @@ public final class MetricsDashboardViewModel: ObservableObject {
             baselineTypingWordsPerMinute: baselineTypingWordsPerMinute
         )
         weekdayBuckets = MetricsAggregator.computeWeekdayBuckets(metadata: filtered)
+        hourlyBuckets = MetricsAggregator.computeHourlyBuckets(metadata: filtered)
     }
 }

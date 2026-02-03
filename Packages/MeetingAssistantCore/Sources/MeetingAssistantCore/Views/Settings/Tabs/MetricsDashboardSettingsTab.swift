@@ -24,7 +24,9 @@ public struct MetricsDashboardSettingsTab: View {
                     emptyStateSection
                 } else {
                     summarySection
+
                     weekdayPeaksSection
+                    hourlyPeaksSection
                 }
             }
             .padding()
@@ -114,6 +116,23 @@ public struct MetricsDashboardSettingsTab: View {
                 .foregroundStyle(Color.accentColor.gradient)
                 .cornerRadius(4)
             }
+            .chartYAxis {
+                AxisMarks(position: .leading)
+            }
+            .frame(height: 220)
+        }
+    }
+
+    private var hourlyPeaksSection: some View {
+        SettingsGroup("metrics.peaks.hourly.title".localized, icon: "clock.arrow.circlepath") {
+            Chart(viewModel.hourlyBuckets) { bucket in
+                BarMark(
+                    x: .value("hour", bucket.hour),
+                    y: .value("count", bucket.count)
+                )
+                .foregroundStyle(Color.accentColor.gradient)
+            }
+            .chartXScale(domain: 0...23)
             .chartYAxis {
                 AxisMarks(position: .leading)
             }

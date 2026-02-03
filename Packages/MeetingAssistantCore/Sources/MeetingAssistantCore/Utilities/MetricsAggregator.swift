@@ -37,6 +37,18 @@ public struct MetricsWeekdayBucket: Equatable, Identifiable, Sendable {
     }
 }
 
+public struct MetricsHourlyBucket: Equatable, Identifiable, Sendable {
+    public let hour: Int
+    public let count: Int
+
+    public var id: Int { hour }
+
+    public init(hour: Int, count: Int) {
+        self.hour = hour
+        self.count = count
+    }
+}
+
 public enum MetricsAggregator {
     public static func computeSummary(
         metadata: [TranscriptionMetadata],
@@ -89,6 +101,23 @@ public enum MetricsAggregator {
 
         return (0..<7).map { offset in
             ((calendar.firstWeekday - 1 + offset) % 7) + 1
+        }
+    }
+
+    public static func computeHourlyBuckets(
+        metadata: [TranscriptionMetadata],
+        calendar: Calendar = .current
+    ) -> [MetricsHourlyBucket] {
+        var hourCounts: [Int: Int] = [:]
+        hourCounts.reserveCapacity(24)
+
+        for item in metadata {
+            let hour = calendar.component(.hour, from: item.startTime)
+            hourCounts[hour, default: 0] += 1
+        }
+
+        return (0..<24).map { hour in
+            MetricsHourlyBucket(hour: hour, count: hourCounts[hour, default: 0])
         }
     }
 }
