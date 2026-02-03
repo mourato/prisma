@@ -1,3 +1,4 @@
+import AppKit
 import Combine
 import KeyboardShortcuts
 import MeetingAssistantCore
@@ -231,13 +232,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         keyEquivalent: String = "",
         shortcutName: KeyboardShortcuts.Name? = nil
     ) -> NSMenuItem {
-        var title = NSLocalizedString(key, bundle: localizationBundle, comment: "")
+        let title = NSLocalizedString(key, bundle: localizationBundle, comment: "")
+        let item = NSMenuItem(title: title, action: action, keyEquivalent: keyEquivalent)
 
         if let shortcutName, let shortcut = KeyboardShortcuts.Shortcut(name: shortcutName) {
-            title += " [\(shortcut.description)]"
+            // Extract key equivalent from description by stripping modifier symbols
+            var keyEquivalent = shortcut.description
+            let modifierSymbols = ["⌘", "⌥", "⌃", "⇧"]
+            for symbol in modifierSymbols {
+                keyEquivalent = keyEquivalent.replacingOccurrences(of: symbol, with: "")
+            }
+            item.keyEquivalent = keyEquivalent.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+            item.keyEquivalentModifierMask = shortcut.modifiers
         }
 
-        let item = NSMenuItem(title: title, action: action, keyEquivalent: keyEquivalent)
         item.target = self
         return item
     }
@@ -262,11 +270,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func updateMenuItem(_ item: NSMenuItem?, key: String, shortcutName: KeyboardShortcuts.Name) {
-        var title = NSLocalizedString(key, bundle: localizationBundle, comment: "")
-        if let shortcut = KeyboardShortcuts.Shortcut(name: shortcutName) {
-            title += " [\(shortcut.description)]"
-        }
+        let title = NSLocalizedString(key, bundle: localizationBundle, comment: "")
         item?.title = title
+
+        if let shortcut = KeyboardShortcuts.Shortcut(name: shortcutName) {
+            // Extract key equivalent from description by stripping modifier symbols
+            var keyEquivalent = shortcut.description
+            let modifierSymbols = ["⌘", "⌥", "⌃", "⇧"]
+            for symbol in modifierSymbols {
+                keyEquivalent = keyEquivalent.replacingOccurrences(of: symbol, with: "")
+            }
+            item?.keyEquivalent = keyEquivalent.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+            item?.keyEquivalentModifierMask = shortcut.modifiers
+        }
     }
 
     private func setupEventMonitor() {
