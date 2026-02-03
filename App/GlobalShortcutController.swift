@@ -36,6 +36,7 @@ final class GlobalShortcutController {
     func start() {
         setupKeyboardShortcutHandlers()
         observeSettings()
+        refreshCustomShortcutRegistration()
         refreshEventMonitors()
     }
 
@@ -64,6 +65,7 @@ final class GlobalShortcutController {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.resetShortcutState()
+                self?.refreshCustomShortcutRegistration()
                 self?.refreshEventMonitors()
             }
             .store(in: &cancellables)
@@ -97,6 +99,15 @@ final class GlobalShortcutController {
             installKeyDownMonitors()
         } else {
             removeKeyDownMonitors()
+        }
+    }
+
+    private func refreshCustomShortcutRegistration() {
+        switch settings.selectedPresetKey {
+        case .custom:
+            KeyboardShortcuts.enable(.toggleRecording)
+        default:
+            KeyboardShortcuts.disable(.toggleRecording)
         }
     }
 

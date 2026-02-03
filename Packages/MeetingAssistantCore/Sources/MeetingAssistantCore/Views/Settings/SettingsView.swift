@@ -92,8 +92,6 @@ public struct SettingsView: View {
             GeneralSettingsTab()
         case .assistant:
             AssistantSettingsTab()
-        case .shortcuts:
-            ShortcutSettingsTab()
         case .transcriptions:
             TranscriptionsSettingsTab()
         case .aiModels:

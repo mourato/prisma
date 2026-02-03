@@ -7,6 +7,7 @@ import UniformTypeIdentifiers
 public struct GeneralSettingsTab: View {
     @StateObject private var viewModel = GeneralSettingsViewModel()
     @State private var draggingDevice: AudioInputDevice?
+    @StateObject private var shortcutsViewModel = ShortcutSettingsViewModel()
 
     public init() {}
 
@@ -16,6 +17,7 @@ public struct GeneralSettingsTab: View {
                 languageSection
                 serviceSection
                 recordingSection
+                keyboardControlsSection
                 transcriptDeliverySection
                 recordingIndicatorSection
                 audioDevicesSection
@@ -149,6 +151,11 @@ public struct GeneralSettingsTab: View {
                 )
             }
         }
+    }
+
+    @ViewBuilder
+    private var keyboardControlsSection: some View {
+        RecordingKeyboardControlsSection(viewModel: shortcutsViewModel)
     }
 
     @ViewBuilder
