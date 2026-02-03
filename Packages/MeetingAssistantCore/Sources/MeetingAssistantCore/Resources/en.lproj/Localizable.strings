@@ -381,6 +381,8 @@
 
 /* Menu Bar */
 "menubar.record_section" = "Record...";
+"menubar.start_meeting" = "Start Meeting Recording";
+"menubar.start_assistant" = "Start Assistant";
 
 /* Settings */
 "settings.title" = "Settings";
