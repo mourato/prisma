@@ -259,8 +259,7 @@ public struct TranscriptionsSettingsTab: View {
                     .fontWeight(.bold)
                     .foregroundStyle(.secondary)
                     .padding(.top, 16)
-                    .padding(.bottom, 8))
-                {
+                    .padding(.bottom, 8)) {
                     ForEach(viewModel.groupedTranscriptions[date] ?? []) { transcription in
                         TranscriptionCardView(
                             transcription: transcription,
