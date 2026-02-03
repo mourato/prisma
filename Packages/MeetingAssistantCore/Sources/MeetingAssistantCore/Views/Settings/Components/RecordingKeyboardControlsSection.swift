@@ -13,7 +13,6 @@ public struct RecordingKeyboardControlsSection: View {
         VStack(alignment: .leading, spacing: SettingsDesignSystem.Layout.sectionSpacing) {
             headerSection
             recordingControlsSection
-            tipsSection
             optionsSection
             testKeysSection
             resetSection
@@ -107,32 +106,6 @@ public struct RecordingKeyboardControlsSection: View {
                 Text(NSLocalizedString("settings.shortcuts.activation_mode_desc", bundle: .safeModule, comment: ""))
                     .font(.caption)
                     .foregroundStyle(.tertiary)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var tipsSection: some View {
-        SettingsGroup(
-            NSLocalizedString("settings.shortcuts.tips_title", bundle: .safeModule, comment: ""),
-            icon: "lightbulb"
-        ) {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .top, spacing: 8) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
-                        .font(.subheadline)
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(NSLocalizedString("settings.shortcuts.fn_key_title", bundle: .safeModule, comment: ""))
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-
-                        Text(NSLocalizedString("settings.shortcuts.fn_key_desc", bundle: .safeModule, comment: ""))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
             }
         }
     }
