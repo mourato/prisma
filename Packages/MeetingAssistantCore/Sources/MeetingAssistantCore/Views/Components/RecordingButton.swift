@@ -38,7 +38,7 @@ struct RecordingButton: View {
             dropdownButton
         }
         .foregroundColor(.white)
-        .background(isDisabled ? Color.gray : Color.blue)
+        .background(isDisabled ? Color.gray : SettingsDesignSystem.Colors.accent)
         .clipShape(Capsule())
         .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
     }

@@ -162,7 +162,7 @@ public struct FloatingRecordingIndicatorView: View {
     /// Dot indicating recording or processing.
     private var statusDot: some View {
         Circle()
-            .fill(isRecordingMode ? Color.red : Color.blue)
+            .fill(isRecordingMode ? Color.red : SettingsDesignSystem.Colors.accent)
             .frame(width: 8, height: 8)
             .modifier(PulsingModifier(isActive: isRecordingMode, speed: isRecordingMode ? 0.9 : 1.4))
     }

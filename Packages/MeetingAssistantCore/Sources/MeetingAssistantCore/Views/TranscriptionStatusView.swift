@@ -212,7 +212,7 @@ public struct TranscriptionStatusView: View {
         case (_, true):
             AnyShapeStyle(Color.red.opacity(0.1))
         case (.connected, _) where viewModel.isProcessing:
-            AnyShapeStyle(Color.blue.opacity(0.1))
+            AnyShapeStyle(SettingsDesignSystem.Colors.accent.opacity(0.1))
         case (.connected, _) where viewModel.phase == .completed:
             AnyShapeStyle(Color.green.opacity(0.1))
         default:
@@ -224,7 +224,7 @@ public struct TranscriptionStatusView: View {
         if viewModel.hasBlockingError {
             return .red
         } else if viewModel.isProcessing {
-            return .blue
+            return SettingsDesignSystem.Colors.accent
         } else if viewModel.phase == .completed {
             return .green
         }
@@ -235,7 +235,7 @@ public struct TranscriptionStatusView: View {
         if viewModel.hasBlockingError {
             return .red.opacity(0.15)
         } else if viewModel.isProcessing {
-            return .blue.opacity(0.15)
+            return SettingsDesignSystem.Colors.accent.opacity(0.15)
         } else if viewModel.phase == .completed {
             return .green.opacity(0.15)
         } else if viewModel.isReady {
@@ -248,7 +248,7 @@ public struct TranscriptionStatusView: View {
         if viewModel.hasBlockingError {
             return .red
         } else if viewModel.isProcessing {
-            return .blue
+            return SettingsDesignSystem.Colors.accent
         } else if viewModel.phase == .completed || viewModel.isReady {
             return .green
         }
@@ -257,7 +257,7 @@ public struct TranscriptionStatusView: View {
 
     private var progressGradient: LinearGradient {
         LinearGradient(
-            colors: [.blue, .cyan],
+            colors: [SettingsDesignSystem.Colors.accent, SettingsDesignSystem.Colors.secondaryAccent],
             startPoint: .leading,
             endPoint: .trailing
         )
@@ -308,7 +308,7 @@ public struct CompactTranscriptionStatusView: View {
         if viewModel.hasBlockingError {
             return .red
         } else if viewModel.isProcessing {
-            return .blue
+            return SettingsDesignSystem.Colors.accent
         } else if viewModel.isReady {
             return .green
         }
