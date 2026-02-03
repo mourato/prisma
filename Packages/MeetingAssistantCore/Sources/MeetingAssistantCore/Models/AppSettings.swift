@@ -573,6 +573,9 @@ public class AppSettingsStore: ObservableObject {
         shortcutActivationMode = .holdOrToggle
         useEscapeToCancelRecording = false
         selectedPresetKey = .fn
+        assistantShortcutActivationMode = .holdOrToggle
+        assistantUseEscapeToCancelRecording = false
+        assistantSelectedPresetKey = .rightOption
         recordingIndicatorEnabled = false
         recordingIndicatorStyle = .mini
         recordingIndicatorPosition = .bottom
