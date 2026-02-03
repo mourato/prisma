@@ -20,7 +20,6 @@ let package = Package(
         .package(url: "https://github.com/FluidInference/FluidAudio.git", exact: "0.10.0"),
         .package(url: "https://github.com/sindresorhus/KeyboardShortcuts", from: "2.0.0"),
         .package(url: "https://github.com/apple/swift-atomics.git", .upToNextMajor(from: "1.2.0")),
-        .package(url: "https://github.com/Brightify/Cuckoo.git", from: "2.0.0"),
         .package(url: "https://github.com/swiftlang/swift-syntax.git", exact: "602.0.0"),
     ],
     targets: [
@@ -55,7 +54,6 @@ let package = Package(
             name: "MeetingAssistantCoreTests",
             dependencies: [
                 "MeetingAssistantCore",
-                .product(name: "Cuckoo", package: "Cuckoo"),
             ],
             path: "Tests/MeetingAssistantCoreTests"
         ),
