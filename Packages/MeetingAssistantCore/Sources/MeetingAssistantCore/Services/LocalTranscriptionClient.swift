@@ -128,8 +128,7 @@ class LocalTranscriptionClient {
     }
 
     private func makeSegment(from batch: [FluidAIModelManager.AsrSegment], speaker: String)
-        -> Transcription.Segment?
-    {
+        -> Transcription.Segment? {
         guard !batch.isEmpty else { return nil }
 
         let segmentText = batch.map(\.text).joined(separator: "").trimmingCharacters(

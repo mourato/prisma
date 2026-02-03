@@ -204,8 +204,7 @@ public final class FileSystemStorageService: StorageService {
 
             for file in jsonFiles {
                 if let data = try? Data(contentsOf: file),
-                   let meta = try? decoder.decode(MetadataDecoder.self, from: data)
-                {
+                   let meta = try? decoder.decode(MetadataDecoder.self, from: data) {
                     metadataList.append(TranscriptionMetadata(
                         id: meta.id,
                         meetingId: meta.meeting.id,
