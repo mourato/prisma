@@ -65,6 +65,8 @@ Text("Record")
 Text("recording.start", bundle: .module)
 ```
 
+Ao adicionar ou remover textos na interface, é importante tratar eles de maneira adequada: ou cuidando da correta localização ou fazendo a sanitização do que for removido.
+
 ### Key Convention
 
 Use descriptive `snake_case` keys:
