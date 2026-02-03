@@ -63,7 +63,6 @@ public struct SettingsView: View {
         )
     }
 
-    @ViewBuilder
     private func sidebarItem(for section: SettingsSection) -> some View {
         Label {
             Text(section.title)

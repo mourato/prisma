@@ -118,7 +118,15 @@ public struct Meeting: Identifiable, Codable, Hashable, Sendable {
         }
     }
 
-    public var appName: String { app.displayName }
-    public var appIcon: String { app.icon }
-    public var appColor: Color { app.color }
+    public var appName: String {
+        app.displayName
+    }
+
+    public var appIcon: String {
+        app.icon
+    }
+
+    public var appColor: Color {
+        app.color
+    }
 }

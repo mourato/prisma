@@ -4,7 +4,7 @@ import Foundation
 public final class FluidAIProvider: AIInfrastructureProvider, Sendable {
     public let providerName: String = "FluidAudio (Local)"
 
-    // We use a non-isolated task to access the MainActor-isolated client
+    /// We use a non-isolated task to access the MainActor-isolated client
     private let client: @MainActor () -> LocalTranscriptionClient
 
     public init() {

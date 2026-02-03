@@ -13,7 +13,9 @@ public struct PromptEditorSheet: View {
     private let onSave: (PostProcessingPrompt) -> Void
     private let onCancel: () -> Void
 
-    private var isEditing: Bool { existingPrompt != nil }
+    private var isEditing: Bool {
+        existingPrompt != nil
+    }
 
     public init(
         prompt: PostProcessingPrompt?,

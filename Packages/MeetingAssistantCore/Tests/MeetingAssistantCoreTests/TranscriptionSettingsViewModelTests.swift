@@ -20,7 +20,7 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
         cancellables = nil
     }
 
-    func testLoadTranscriptions() async throws {
+    func testLoadTranscriptions() async {
         // Given
         let mockId1 = UUID()
         let mockId2 = UUID()
@@ -80,7 +80,7 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.selectedTranscription?.segments.count, 1)
     }
 
-    func testMatchSourceFilter() async {
+    func testMatchSourceFilter() {
         // Given
         let mockId1 = UUID()
         let mockId2 = UUID()

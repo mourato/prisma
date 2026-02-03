@@ -107,6 +107,11 @@ public struct MeetingEntity: Identifiable, Codable, Hashable, Sendable {
         }
     }
 
-    public var appName: String { app.displayName }
-    public var appIconName: String { app.iconName }
+    public var appName: String {
+        app.displayName
+    }
+
+    public var appIconName: String {
+        app.iconName
+    }
 }

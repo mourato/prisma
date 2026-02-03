@@ -247,7 +247,6 @@ struct PermissionRowView: View {
 
     // MARK: - Status Indicator
 
-    @ViewBuilder
     private var statusIndicator: some View {
         HStack(spacing: 8) {
             // Status icon with animation

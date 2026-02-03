@@ -185,7 +185,7 @@ final class MockAudioMixerNode: MockAudioMixerNodeProtocol {
         taps.removeValue(forKey: bus)
     }
 
-    // Método para simular chamada de tap em testes
+    /// Método para simular chamada de tap em testes
     func simulateTap(onBus bus: AVAudioNodeBus, buffer: AVAudioPCMBuffer, when: AVAudioTime?) {
         if let tapBlock = taps[bus] {
             tapBlock(buffer, when ?? AVAudioTime(hostTime: 0))
@@ -204,7 +204,7 @@ final class MockAudioSourceNode: MockAudioSourceNodeProtocol {
         self.renderBlock = renderBlock
     }
 
-    // Método para simular render callback em testes
+    /// Método para simular render callback em testes
     func simulateRender(frameCount: UInt32, audioBufferList: UnsafeMutablePointer<AudioBufferList>) -> OSStatus {
         var isSilence = ObjCBool(false)
         var timeStamp = AudioTimeStamp()
@@ -446,7 +446,7 @@ final class MockAudioEngineTests: XCTestCase {
             return noErr
         }
 
-        let format = AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 2)!
+        let format = try XCTUnwrap(AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 2))
         guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 1_024) else {
             XCTFail("Failed to create test buffer")
             return

@@ -182,9 +182,9 @@ public struct AIConfiguration: Codable, Equatable, Sendable {
     public var baseURL: String
     public var selectedModel: String
 
-    // NOTE: apiKey is NOT stored here - it's in Keychain.
-    // This field exists only for Codable compatibility and migration.
-    // It will always be empty after migration.
+    /// NOTE: apiKey is NOT stored here - it's in Keychain.
+    /// This field exists only for Codable compatibility and migration.
+    /// It will always be empty after migration.
     private var _legacyApiKey: String = ""
 
     enum CodingKeys: String, CodingKey {

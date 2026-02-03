@@ -3,7 +3,7 @@ import UniformTypeIdentifiers
 
 // MARK: - General Settings Tab
 
-/// Tab for general app settings like recording preferences and monitored apps.
+// Tab for general app settings like recording preferences and monitored apps.
 
 public struct GeneralSettingsTab: View {
     @StateObject private var viewModel = GeneralSettingsViewModel()

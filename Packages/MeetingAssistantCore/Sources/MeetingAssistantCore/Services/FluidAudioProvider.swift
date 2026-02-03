@@ -18,7 +18,9 @@ final class FluidAudioProvider: @unchecked Sendable {
 
     let name = "FluidAudio (Apple Silicon)"
 
-    var isAvailable: Bool { true }
+    var isAvailable: Bool {
+        true
+    }
 
     private let logger = Logger(subsystem: "MeetingAssistant", category: "FluidAudioProvider")
     private var asrManager: AsrManager?
@@ -151,8 +153,13 @@ final class FluidAudioProvider: @unchecked Sendable {
 @MainActor
 final class FluidAudioProvider: @unchecked Sendable {
     let name = "FluidAudio (Apple Silicon Only)"
-    var isAvailable: Bool { false }
-    var isReady: Bool { false }
+    var isAvailable: Bool {
+        false
+    }
+
+    var isReady: Bool {
+        false
+    }
 
     static let shared = FluidAudioProvider()
 
@@ -170,7 +177,9 @@ final class FluidAudioProvider: @unchecked Sendable {
         throw TranscriptionProviderError.unsupportedPlatform
     }
 
-    func modelsExistOnDisk() -> Bool { false }
+    func modelsExistOnDisk() -> Bool {
+        false
+    }
 
     func clearCache() throws {
         // No-op on Intel

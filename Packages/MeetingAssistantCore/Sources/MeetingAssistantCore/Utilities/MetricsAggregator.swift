@@ -29,7 +29,9 @@ public struct MetricsWeekdayBucket: Equatable, Identifiable, Sendable {
     public let weekday: Int
     public let words: Int
 
-    public var id: Int { weekday }
+    public var id: Int {
+        weekday
+    }
 
     public init(weekday: Int, words: Int) {
         self.weekday = weekday
@@ -41,7 +43,9 @@ public struct MetricsHourlyBucket: Equatable, Identifiable, Sendable {
     public let hour: Int
     public let count: Int
 
-    public var id: Int { hour }
+    public var id: Int {
+        hour
+    }
 
     public init(hour: Int, count: Int) {
         self.hour = hour

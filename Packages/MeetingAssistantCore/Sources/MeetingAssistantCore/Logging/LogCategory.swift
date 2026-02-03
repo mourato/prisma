@@ -9,7 +9,7 @@ public enum LogCategory: String, CaseIterable {
     case networkService = "NetworkService"
     case uiController = "UIController"
 
-    // Default fallback
+    /// Default fallback
     case general = "General"
 
     // Monitoring & Observability

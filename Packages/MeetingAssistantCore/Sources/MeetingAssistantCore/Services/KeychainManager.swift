@@ -15,8 +15,13 @@ public struct DefaultKeychainProvider: KeychainProvider {
         try KeychainManager.store(value, for: key)
     }
 
-    public func retrieve(for key: KeychainManager.Key) throws -> String? { try KeychainManager.retrieve(for: key) }
-    public func delete(for key: KeychainManager.Key) throws { try KeychainManager.delete(for: key) }
+    public func retrieve(for key: KeychainManager.Key) throws -> String? {
+        try KeychainManager.retrieve(for: key)
+    }
+
+    public func delete(for key: KeychainManager.Key) throws {
+        try KeychainManager.delete(for: key)
+    }
 }
 
 public enum KeychainManager {

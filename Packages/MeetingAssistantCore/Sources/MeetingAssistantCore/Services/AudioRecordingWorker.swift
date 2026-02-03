@@ -25,10 +25,10 @@ actor AudioRecordingWorker {
     private var onPowerUpdate: (@Sendable (Float, Float) -> Void)?
     private var onError: (@Sendable (AudioRecorderError) -> Void)?
 
-    // Non-isolated buffer queue for synchronous enqueue from tap
+    /// Non-isolated buffer queue for synchronous enqueue from tap
     private nonisolated let bufferQueue = AudioBufferQueue(capacity: 100)
 
-    // Processing task
+    /// Processing task
     private var processingTask: Task<Void, Never>?
 
     init() {}
@@ -81,8 +81,8 @@ actor AudioRecordingWorker {
             try FileManager.default.removeItem(at: url)
         }
 
-        // Create Audio Settings based on format
-        // Helper to generate settings
+        /// Create Audio Settings based on format
+        /// Helper to generate settings
         func createSettings(for targetFormat: AppSettingsStore.AudioFormat) -> ([String: Any], AVAudioCommonFormat, Bool) {
             switch targetFormat {
             case .m4a:

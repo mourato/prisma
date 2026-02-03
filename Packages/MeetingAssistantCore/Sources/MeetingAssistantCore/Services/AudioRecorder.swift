@@ -50,7 +50,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     // MARK: - System Audio Integration
 
     let systemRecorder = SystemAudioRecorder.shared
-    // Non-isolated to allow background threads (SystemAudioRecorder) to enqueue without MainActor hopping
+    /// Non-isolated to allow background threads (SystemAudioRecorder) to enqueue without MainActor hopping
     nonisolated let systemAudioQueue = AudioBufferQueue(capacity: 200)
     /// Tracks partially consumed buffers between render cycles to prevent frame loss
     nonisolated let partialBufferState = PartialBufferState()

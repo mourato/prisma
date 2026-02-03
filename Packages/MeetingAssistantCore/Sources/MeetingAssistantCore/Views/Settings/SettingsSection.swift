@@ -10,7 +10,9 @@ public enum SettingsSection: String, CaseIterable, Identifiable {
     case aiModels
     case permissions
 
-    public var id: String { rawValue }
+    public var id: String {
+        rawValue
+    }
 
     public var title: String {
         switch self {

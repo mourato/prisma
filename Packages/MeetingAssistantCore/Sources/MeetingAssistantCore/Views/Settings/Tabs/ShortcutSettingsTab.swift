@@ -27,7 +27,6 @@ public struct ShortcutSettingsTab: View {
 
     // MARK: - Header Section
 
-    @ViewBuilder
     private var headerSection: some View {
         Text(NSLocalizedString("settings.shortcuts.header_desc", bundle: .safeModule, comment: ""))
             .font(.subheadline)
@@ -37,7 +36,6 @@ public struct ShortcutSettingsTab: View {
 
     // MARK: - Recording Controls Section
 
-    @ViewBuilder
     private var recordingControlsSection: some View {
         SettingsGroup(
             NSLocalizedString("settings.shortcuts.recording_controls", bundle: .safeModule, comment: ""),
@@ -111,7 +109,6 @@ public struct ShortcutSettingsTab: View {
 
     // MARK: - Tips Section
 
-    @ViewBuilder
     private var tipsSection: some View {
         SettingsGroup(
             NSLocalizedString("settings.shortcuts.tips_title", bundle: .safeModule, comment: ""),
@@ -139,7 +136,6 @@ public struct ShortcutSettingsTab: View {
 
     // MARK: - Options Section
 
-    @ViewBuilder
     private var optionsSection: some View {
         SettingsCard {
             SettingsToggle(
@@ -151,7 +147,6 @@ public struct ShortcutSettingsTab: View {
 
     // MARK: - Test Keys Section
 
-    @ViewBuilder
     private var testKeysSection: some View {
         SettingsGroup(
             NSLocalizedString("settings.shortcuts.try_keys", bundle: .safeModule, comment: ""),
@@ -178,7 +173,6 @@ public struct ShortcutSettingsTab: View {
 
     // MARK: - Reset Section
 
-    @ViewBuilder
     private var resetSection: some View {
         SettingsCard {
             HStack {
