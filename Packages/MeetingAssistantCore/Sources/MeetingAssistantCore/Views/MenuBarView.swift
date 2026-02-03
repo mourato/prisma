@@ -77,7 +77,7 @@ public struct MenuBarView: View {
         HStack {
             Image(systemName: "waveform.circle.fill")
                 .font(.title)
-                .foregroundStyle(.blue)
+                .foregroundStyle(SettingsDesignSystem.Colors.accent)
 
             Text(NSLocalizedString("about.title", bundle: .safeModule, comment: ""))
                 .font(.headline)

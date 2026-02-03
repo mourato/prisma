@@ -5,16 +5,16 @@ public enum SettingsDesignSystem {
     // MARK: - Colors & Gradients
 
     public enum Colors {
-        public static let accent = Color.accentColor
-        public static let secondaryAccent = Color.blue
+        public static let accent = Color(red: 1.0, green: 0.44, blue: 0.0) // Warm saturated orange
+        public static let secondaryAccent = Color(red: 1.0, green: 0.55, blue: 0.1)
 
         public static let glassBackground = Color(NSColor.windowBackgroundColor).opacity(0.7)
         public static let cardBackground = Color(NSColor.controlBackgroundColor).opacity(0.5)
 
-        public static let iconHighlight = Color.blue
+        public static let iconHighlight = accent
 
         public static let aiGradient = LinearGradient(
-            colors: [Color.purple, Color.blue],
+            colors: [Color.orange, Color.red],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
