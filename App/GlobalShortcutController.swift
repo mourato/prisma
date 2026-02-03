@@ -23,7 +23,7 @@ final class GlobalShortcutController {
     private let presetState = ShortcutActivationState()
 
     private let holdThreshold: TimeInterval = 0.35
-    private let doubleTapInterval: TimeInterval = 0.35
+    private let doubleTapInterval: TimeInterval = 0.5
 
     init(
         recordingManager: RecordingManager,
@@ -237,13 +237,7 @@ final class GlobalShortcutController {
                 await recordingManager.startRecording(source: .microphone)
             }
         case .doubleTap:
-            let now = Date()
-            if let lastTapTime, now.timeIntervalSince(lastTapTime) <= doubleTapInterval {
-                self.lastTapTime = nil
-                await toggleRecording()
-            } else {
-                lastTapTime = now
-            }
+            break
         }
     }
 
@@ -266,7 +260,15 @@ final class GlobalShortcutController {
                 }
             }
             resetHoldState()
-        case .toggle, .doubleTap:
+        case .doubleTap:
+            let now = Date()
+            if let lastTapTime, now.timeIntervalSince(lastTapTime) <= doubleTapInterval {
+                self.lastTapTime = nil
+                await toggleRecording()
+            } else {
+                lastTapTime = now
+            }
+        case .toggle:
             break
         }
     }

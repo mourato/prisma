@@ -23,7 +23,7 @@ final class AssistantShortcutController {
     private let presetState = ShortcutActivationState()
 
     private let holdThreshold: TimeInterval = 0.35
-    private let doubleTapInterval: TimeInterval = 0.35
+    private let doubleTapInterval: TimeInterval = 0.5
 
     init(
         assistantService: AssistantVoiceCommandService,
@@ -237,13 +237,7 @@ final class AssistantShortcutController {
                 await assistantService.startRecording()
             }
         case .doubleTap:
-            let now = Date()
-            if let lastTapTime, now.timeIntervalSince(lastTapTime) <= doubleTapInterval {
-                self.lastTapTime = nil
-                await toggleAssistant()
-            } else {
-                lastTapTime = now
-            }
+            break
         }
     }
 
@@ -266,7 +260,15 @@ final class AssistantShortcutController {
                 }
             }
             resetHoldState()
-        case .toggle, .doubleTap:
+        case .doubleTap:
+            let now = Date()
+            if let lastTapTime, now.timeIntervalSince(lastTapTime) <= doubleTapInterval {
+                self.lastTapTime = nil
+                await toggleAssistant()
+            } else {
+                lastTapTime = now
+            }
+        case .toggle:
             break
         }
     }
