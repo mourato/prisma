@@ -4,12 +4,15 @@ disabled_rules:
   - identifier_name
   - line_length
   - opening_brace
+  - implicitly_unwrapped_optional
+  - blanket_disable_command
+  - superfluous_disable_command
+  - orphaned_doc_comment
 
 opt_in_rules:
   - empty_string
   - explicit_init
   - redundant_nil_coalescing
-  - implicitly_unwrapped_optional
   - fatal_error_message
   - first_where
   - number_separator
