@@ -455,7 +455,8 @@ public class AppSettingsStore: ObservableObject {
     private init() {
         // Load AI configuration
         if let data = UserDefaults.standard.data(forKey: Keys.aiConfiguration),
-           let config = try? JSONDecoder().decode(AIConfiguration.self, from: data) {
+           let config = try? JSONDecoder().decode(AIConfiguration.self, from: data)
+        {
             aiConfiguration = config
         } else {
             aiConfiguration = .default
@@ -465,14 +466,16 @@ public class AppSettingsStore: ObservableObject {
             ?? AIPromptTemplates.defaultSystemPrompt
 
         if let data = UserDefaults.standard.data(forKey: Keys.userPrompts),
-           let prompts = try? JSONDecoder().decode([PostProcessingPrompt].self, from: data) {
+           let prompts = try? JSONDecoder().decode([PostProcessingPrompt].self, from: data)
+        {
             userPrompts = prompts
         } else {
             userPrompts = []
         }
 
         if let data = UserDefaults.standard.data(forKey: Keys.deletedPromptIds),
-           let ids = try? JSONDecoder().decode(Set<UUID>.self, from: data) {
+           let ids = try? JSONDecoder().decode(Set<UUID>.self, from: data)
+        {
             deletedPromptIds = ids
         } else {
             deletedPromptIds = []
