@@ -6,6 +6,7 @@ import SwiftUI
 public enum FloatingRecordingIndicatorMode: Sendable {
     case recording
     case processing
+    case error(message: String)
 }
 
 /// Controller that manages the floating recording indicator window.
@@ -53,14 +54,13 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
     /// Automatically reads style and position from settings.
     /// - Parameter mode: Whether to present recording or processing visuals.
     public func show(mode: FloatingRecordingIndicatorMode = .recording) {
-        guard settingsStore.recordingIndicatorEnabled else { return }
-        guard settingsStore.recordingIndicatorStyle != .none else { return }
+        guard shouldShowIndicator(for: mode) else { return }
         currentMode = mode
 
         let shouldCreatePanel = panel == nil
 
         // Create the panel
-        let panelHeight = panelHeight(for: settingsStore.recordingIndicatorStyle)
+        let panelHeight = panelHeight(for: settingsStore.recordingIndicatorStyle, mode: mode)
         let contentRect = NSRect(
             x: 0,
             y: 0,
@@ -136,6 +136,14 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         updateContent()
     }
 
+    public func showError(_ message: String, autoHideAfter delay: TimeInterval = 3.0) {
+        show(mode: .error(message: message))
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            self?.hide()
+        }
+    }
+
     /// Update indicator position without recreating the panel.
     public func updatePosition() {
         guard let panel else { return }
@@ -195,17 +203,36 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
             audioMonitor.startMonitoring()
         case .processing:
             audioMonitor.stopMonitoring()
+        case .error:
+            audioMonitor.stopMonitoring()
         }
     }
 
-    private func panelHeight(for style: RecordingIndicatorStyle) -> CGFloat {
-        switch style {
-        case .classic:
+    private func panelHeight(
+        for style: RecordingIndicatorStyle,
+        mode: FloatingRecordingIndicatorMode
+    ) -> CGFloat {
+        switch mode {
+        case .error:
             Constants.panelHeightClassic
-        case .mini:
-            Constants.panelHeightMini
-        case .none:
-            0
+        case .recording, .processing:
+            switch style {
+            case .classic:
+                Constants.panelHeightClassic
+            case .mini:
+                Constants.panelHeightMini
+            case .none:
+                Constants.panelHeightMini
+            }
+        }
+    }
+
+    private func shouldShowIndicator(for mode: FloatingRecordingIndicatorMode) -> Bool {
+        switch mode {
+        case .error:
+            true
+        case .recording, .processing:
+            settingsStore.recordingIndicatorEnabled && settingsStore.recordingIndicatorStyle != .none
         }
     }
 

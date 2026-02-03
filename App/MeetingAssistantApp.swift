@@ -48,6 +48,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var eventMonitor: Any?
     private lazy var floatingIndicatorController = FloatingRecordingIndicatorController()
     private lazy var globalShortcutController = GlobalShortcutController(recordingManager: RecordingManager.shared)
+    private lazy var assistantVoiceCommandService = AssistantVoiceCommandService(
+        indicator: floatingIndicatorController
+    )
+    private lazy var assistantShortcutController = AssistantShortcutController(
+        assistantService: assistantVoiceCommandService
+    )
     private var cancellables = Set<AnyCancellable>()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -59,6 +65,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         setupContextMenu()
         setupEventMonitor()
         globalShortcutController.start()
+        assistantShortcutController.start()
         setupRecordingObservation()
 
         // Warmup transcription model

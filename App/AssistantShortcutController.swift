@@ -4,8 +4,8 @@ import KeyboardShortcuts
 import MeetingAssistantCore
 
 @MainActor
-final class GlobalShortcutController {
-    private let recordingManager: RecordingManager
+final class AssistantShortcutController {
+    private let assistantService: AssistantVoiceCommandService
     private let settings: AppSettingsStore
     private var cancellables = Set<AnyCancellable>()
 
@@ -26,10 +26,10 @@ final class GlobalShortcutController {
     private let doubleTapInterval: TimeInterval = 0.35
 
     init(
-        recordingManager: RecordingManager,
+        assistantService: AssistantVoiceCommandService,
         settings: AppSettingsStore = .shared
     ) {
-        self.recordingManager = recordingManager
+        self.assistantService = assistantService
         self.settings = settings
     }
 
@@ -46,13 +46,13 @@ final class GlobalShortcutController {
     }
 
     private func setupKeyboardShortcutHandlers() {
-        KeyboardShortcuts.onKeyDown(for: .toggleRecording) { [weak self] in
+        KeyboardShortcuts.onKeyDown(for: .assistantCommand) { [weak self] in
             Task { @MainActor in
                 await self?.handleCustomShortcutDown()
             }
         }
 
-        KeyboardShortcuts.onKeyUp(for: .toggleRecording) { [weak self] in
+        KeyboardShortcuts.onKeyUp(for: .assistantCommand) { [weak self] in
             Task { @MainActor in
                 await self?.handleCustomShortcutUp()
             }
@@ -60,7 +60,7 @@ final class GlobalShortcutController {
     }
 
     private func observeSettings() {
-        settings.$selectedPresetKey
+        settings.$assistantSelectedPresetKey
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.resetShortcutState()
@@ -68,14 +68,14 @@ final class GlobalShortcutController {
             }
             .store(in: &cancellables)
 
-        settings.$shortcutActivationMode
+        settings.$assistantShortcutActivationMode
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.resetShortcutState()
             }
             .store(in: &cancellables)
 
-        settings.$useEscapeToCancelRecording
+        settings.$assistantUseEscapeToCancelRecording
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.refreshEventMonitors()
@@ -84,8 +84,8 @@ final class GlobalShortcutController {
     }
 
     private func refreshEventMonitors() {
-        let needsModifierMonitoring = settings.selectedPresetKey.requiresModifierMonitoring
-        let needsEscapeMonitoring = settings.useEscapeToCancelRecording
+        let needsModifierMonitoring = settings.assistantSelectedPresetKey.requiresModifierMonitoring
+        let needsEscapeMonitoring = settings.assistantUseEscapeToCancelRecording
 
         if needsModifierMonitoring {
             installFlagsChangedMonitors()
@@ -160,11 +160,11 @@ final class GlobalShortcutController {
     }
 
     private func handleFlagsChanged(_ event: NSEvent) {
-        guard settings.selectedPresetKey.requiresModifierMonitoring else {
+        guard settings.assistantSelectedPresetKey.requiresModifierMonitoring else {
             return
         }
 
-        let isActive = isPresetActive(settings.selectedPresetKey, event: event)
+        let isActive = presetState.isPresetActive(settings.assistantSelectedPresetKey, event: event)
 
         if isActive, !isPresetPressed {
             isPresetPressed = true
@@ -180,7 +180,7 @@ final class GlobalShortcutController {
     }
 
     private func handleKeyDown(_ event: NSEvent) {
-        guard settings.useEscapeToCancelRecording else {
+        guard settings.assistantUseEscapeToCancelRecording else {
             return
         }
 
@@ -189,16 +189,16 @@ final class GlobalShortcutController {
         }
 
         Task { @MainActor in
-            guard self.recordingManager.isRecording else {
+            guard self.assistantService.isRecording else {
                 return
             }
 
-            await self.recordingManager.stopRecording(transcribe: false)
+            await self.assistantService.cancelRecording()
         }
     }
 
     private func handleCustomShortcutDown() async {
-        guard settings.selectedPresetKey == .custom else {
+        guard settings.assistantSelectedPresetKey == .custom else {
             return
         }
 
@@ -206,7 +206,7 @@ final class GlobalShortcutController {
     }
 
     private func handleCustomShortcutUp() async {
-        guard settings.selectedPresetKey == .custom else {
+        guard settings.assistantSelectedPresetKey == .custom else {
             return
         }
 
@@ -214,33 +214,33 @@ final class GlobalShortcutController {
     }
 
     private func handleShortcutDown() async {
-        switch settings.shortcutActivationMode {
+        switch settings.assistantShortcutActivationMode {
         case .toggle:
-            await toggleRecording()
+            await toggleAssistant()
         case .hold:
             shortcutPressStartTime = Date()
-            shortcutWasRecordingAtPress = recordingManager.isRecording
-            if !recordingManager.isRecording {
+            shortcutWasRecordingAtPress = assistantService.isRecording
+            if !assistantService.isRecording {
                 shortcutStartedRecording = true
-                await recordingManager.startRecording(source: .microphone)
+                await assistantService.startRecording()
             } else {
                 shortcutStartedRecording = false
             }
         case .holdOrToggle:
             shortcutPressStartTime = Date()
-            shortcutWasRecordingAtPress = recordingManager.isRecording
-            if recordingManager.isRecording {
-                await recordingManager.stopRecording()
+            shortcutWasRecordingAtPress = assistantService.isRecording
+            if assistantService.isRecording {
+                await assistantService.stopAndProcess()
                 shortcutStartedRecording = false
             } else {
                 shortcutStartedRecording = true
-                await recordingManager.startRecording(source: .microphone)
+                await assistantService.startRecording()
             }
         case .doubleTap:
             let now = Date()
             if let lastTapTime, now.timeIntervalSince(lastTapTime) <= doubleTapInterval {
                 self.lastTapTime = nil
-                await toggleRecording()
+                await toggleAssistant()
             } else {
                 lastTapTime = now
             }
@@ -248,10 +248,10 @@ final class GlobalShortcutController {
     }
 
     private func handleShortcutUp() async {
-        switch settings.shortcutActivationMode {
+        switch settings.assistantShortcutActivationMode {
         case .hold:
             if shortcutStartedRecording {
-                await recordingManager.stopRecording()
+                await assistantService.stopAndProcess()
             }
             resetHoldState()
         case .holdOrToggle:
@@ -262,7 +262,7 @@ final class GlobalShortcutController {
             if !shortcutWasRecordingAtPress {
                 let heldDuration = Date().timeIntervalSince(startTime)
                 if heldDuration >= holdThreshold, shortcutStartedRecording {
-                    await recordingManager.stopRecording()
+                    await assistantService.stopAndProcess()
                 }
             }
             resetHoldState()
@@ -271,11 +271,11 @@ final class GlobalShortcutController {
         }
     }
 
-    private func toggleRecording() async {
-        if recordingManager.isRecording {
-            await recordingManager.stopRecording()
+    private func toggleAssistant() async {
+        if assistantService.isRecording {
+            await assistantService.stopAndProcess()
         } else {
-            await recordingManager.startRecording(source: .microphone)
+            await assistantService.startRecording()
         }
     }
 
@@ -289,11 +289,6 @@ final class GlobalShortcutController {
         isPresetPressed = false
         lastTapTime = nil
         resetHoldState()
-
         presetState.reset()
-    }
-
-    private func isPresetActive(_ preset: PresetShortcutKey, event: NSEvent) -> Bool {
-        presetState.isPresetActive(preset, event: event)
     }
 }
