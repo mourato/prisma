@@ -390,6 +390,11 @@
 "menubar.record_section" = "Gravar...";
 "menubar.start_meeting" = "Iniciar Gravação de Reunião";
 "menubar.start_assistant" = "Iniciar Assistant";
+"menubar.dictate" = "Ditar";
+"menubar.stop_dictation" = "Parar Ditado";
+"menubar.record_meeting" = "Gravar Reunião";
+"menubar.assistant" = "Assistant";
+"menubar.stop_assistant" = "Parar Assistant";
 
 /* Settings */
 "settings.title" = "Configurações";

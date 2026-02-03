@@ -46,7 +46,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
     private var popover: NSPopover?
     private var contextMenu: NSMenu?
-    private var startStopMenuItem: NSMenuItem?
+    private var dictateMenuItem: NSMenuItem?
+    private var recordMeetingMenuItem: NSMenuItem?
+    private var assistantMenuItem: NSMenuItem?
     private lazy var recordingManager: RecordingManager = .shared
     private lazy var localizationBundle: Bundle = .safeModule
     private var eventMonitor: Any?
@@ -71,6 +73,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         globalShortcutController.start()
         assistantShortcutController.start()
         setupRecordingObservation()
+        updateMenuTitles() // Initial update
 
         // Warmup transcription model
         Task {
@@ -119,11 +122,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func setupRecordingObservation() {
         recordingManager.isRecordingPublisher
-            .combineLatest(recordingManager.isTranscribingPublisher)
+            .combineLatest(
+                recordingManager.isTranscribingPublisher,
+                assistantVoiceCommandService.$isRecording
+            )
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] isRecording, isTranscribing in
-                self?.updateStatusIcon(isRecording: isRecording)
-                self?.updateFloatingIndicator(isRecording: isRecording, isTranscribing: isTranscribing)
+            .sink { [weak self] isRecording, isTranscribing, isAssistantRecording in
+                self?.updateStatusIcon(isRecording: isRecording || isAssistantRecording)
+                self?.updateFloatingIndicator(isRecording: isRecording || isAssistantRecording, isTranscribing: isTranscribing)
+                self?.updateMenuTitles()
             }
             .store(in: &cancellables)
     }
@@ -171,29 +178,32 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupContextMenu() {
         contextMenu = NSMenu()
 
-        // Start/Stop Recording (Mic Only)
-        let startStopItem = createMenuItem(
-            key: "menubar.start_recording",
+        // Dictate (Mic Only)
+        let dictateItem = createMenuItem(
+            key: "menubar.dictate",
             action: #selector(toggleRecordingFromMenu),
-            keyEquivalent: "d" // Assuming Cmd+Shift+D or similar global, but context menu shows local shortcuts.
-            // User requested showing the configured shortcut. Since global shortcuts are handled by GlobalShortcutController,
-            // displaying them here requires fetching the configured key.
-            // For now, let's add the menu items.
+            shortcutName: .toggleRecording
         )
-        startStopMenuItem = startStopItem
-        contextMenu?.addItem(startStopItem)
-
-        // Start Meeting (Recorder)
-        contextMenu?.addItem(createMenuItem(
-            key: "menubar.start_meeting",
-            action: #selector(startMeetingFromMenu)
-        ))
-
-        // Start Assistant
-        contextMenu?.addItem(createMenuItem(
-            key: "menubar.start_assistant",
-            action: #selector(startAssistantFromMenu)
-        ))
+        dictateMenuItem = dictateItem
+        contextMenu?.addItem(dictateItem)
+ 
+        // Record Meeting (Recorder)
+        let meetingItem = createMenuItem(
+            key: "menubar.record_meeting",
+            action: #selector(startMeetingFromMenu),
+            shortcutName: .startMeeting
+        )
+        recordMeetingMenuItem = meetingItem
+        contextMenu?.addItem(meetingItem)
+ 
+        // Assistant
+        let assistantItem = createMenuItem(
+            key: "menubar.assistant",
+            action: #selector(startAssistantFromMenu),
+            shortcutName: .assistantCommand
+        )
+        assistantMenuItem = assistantItem
+        contextMenu?.addItem(assistantItem)
 
         contextMenu?.addItem(NSMenuItem.separator())
 
@@ -217,12 +227,45 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func createMenuItem(
         key: String,
         action: Selector,
-        keyEquivalent: String = ""
+        keyEquivalent: String = "",
+        shortcutName: KeyboardShortcuts.Name? = nil
     ) -> NSMenuItem {
-        let title = NSLocalizedString(key, bundle: localizationBundle, comment: "")
+        var title = NSLocalizedString(key, bundle: localizationBundle, comment: "")
+        
+        if let shortcutName = shortcutName, let shortcut = KeyboardShortcuts.Shortcut(name: shortcutName) {
+            title += " [\(shortcut.description)]"
+        }
+        
         let item = NSMenuItem(title: title, action: action, keyEquivalent: keyEquivalent)
         item.target = self
         return item
+    }
+ 
+    private func updateMenuTitles() {
+        // Update Dictate Item
+        let isRecording = recordingManager.isRecording
+        let recordingSource = recordingManager.recordingSource
+        let isAssistantRecording = assistantVoiceCommandService.isRecording
+ 
+        // Update Dictate
+        let dictateKey = (isRecording && recordingSource == .microphone) ? "menubar.stop_dictation" : "menubar.dictate"
+        updateMenuItem(dictateMenuItem, key: dictateKey, shortcutName: .toggleRecording)
+ 
+        // Update Meeting
+        let meetingKey = (isRecording && (recordingSource == .system || recordingSource == .merged)) ? "menubar.stop_recording" : "menubar.record_meeting"
+        updateMenuItem(recordMeetingMenuItem, key: meetingKey, shortcutName: .startMeeting)
+ 
+        // Update Assistant
+        let assistantKey = isAssistantRecording ? "menubar.stop_assistant" : "menubar.assistant"
+        updateMenuItem(assistantMenuItem, key: assistantKey, shortcutName: .assistantCommand)
+    }
+ 
+    private func updateMenuItem(_ item: NSMenuItem?, key: String, shortcutName: KeyboardShortcuts.Name) {
+        var title = NSLocalizedString(key, bundle: localizationBundle, comment: "")
+        if let shortcut = KeyboardShortcuts.Shortcut(name: shortcutName) {
+            title += " [\(shortcut.description)]"
+        }
+        item?.title = title
     }
 
     private func setupEventMonitor() {
@@ -263,7 +306,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func showContextMenu() {
         guard let menu = contextMenu, let button = statusItem?.button else { return }
-
+ 
+        // Update shortcuts/titles before showing
+        updateMenuTitles()
+ 
         // Close popover if open
         popover?.performClose(nil)
 
@@ -294,7 +340,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func startAssistantFromMenu() {
-        Task { await assistantVoiceCommandService.startRecording() }
+        Task {
+            if assistantVoiceCommandService.isRecording {
+                await assistantVoiceCommandService.stopAndProcess()
+            } else {
+                await assistantVoiceCommandService.startRecording()
+            }
+        }
     }
 
     @objc private func checkForUpdates() {
@@ -347,20 +399,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             bundle: localizationBundle,
             comment: ""
         )
-
+ 
         let config = NSImage.SymbolConfiguration(paletteColors: isRecording ? [.systemRed] : [.headerTextColor])
         let image = NSImage(systemSymbolName: iconName, accessibilityDescription: accessibilityDesc)?
             .withSymbolConfiguration(config)
-
+ 
         statusItem?.button?.image = image
-
-        // Update menu item title
-        let key = isRecording ? "menubar.stop_recording" : "menubar.start_recording"
-        startStopMenuItem?.title = NSLocalizedString(
-            key,
-            bundle: localizationBundle,
-            comment: ""
-        )
     }
 
     private func updateFloatingIndicator(isRecording: Bool, isTranscribing: Bool) {

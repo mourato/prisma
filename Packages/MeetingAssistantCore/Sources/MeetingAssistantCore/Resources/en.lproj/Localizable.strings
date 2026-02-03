@@ -390,6 +390,11 @@
 "menubar.record_section" = "Record...";
 "menubar.start_meeting" = "Start Meeting Recording";
 "menubar.start_assistant" = "Start Assistant";
+"menubar.dictate" = "Dictate";
+"menubar.stop_dictation" = "Stop Dictation";
+"menubar.record_meeting" = "Record Meeting";
+"menubar.assistant" = "Assistant";
+"menubar.stop_assistant" = "Stop Assistant";
 
 /* Settings */
 "settings.title" = "Settings";
