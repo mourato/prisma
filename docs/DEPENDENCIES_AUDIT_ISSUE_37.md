@@ -8,7 +8,8 @@ Escopo: **todas** as dependências (runtime, testes, tooling local, CI/CD e scri
 
 - SwiftPM:
   - `Packages/MeetingAssistantCore/Package.swift` (dependências diretas)
-  - `Packages/MeetingAssistantCore/.build/workspace-state.json` + `Packages/MeetingAssistantCore/.build/checkouts/` (dependências resolvidas/transitivas existentes no workspace local)
+  - `Packages/MeetingAssistantCore/Package.resolved` (pins de topo)
+  - `Packages/MeetingAssistantCore/.build/workspace-state.json` + `Packages/MeetingAssistantCore/.build/checkouts/` (checkouts presentes no workspace local)
 - Projeto/Build:
   - `MeetingAssistant.xcodeproj/project.pbxproj`
   - `Makefile`
@@ -18,8 +19,7 @@ Escopo: **todas** as dependências (runtime, testes, tooling local, CI/CD e scri
   - `.github/workflows/release.yml`
   - `.github/workflows/generate-docs.yml`
 
-> Observação: o repositório não contém `Package.resolved` no root nem dentro de `Packages/MeetingAssistantCore/`.
-> Para este relatório, a lista “resolvida/transitiva” foi extraída do `workspace-state.json` presente em `.build` (quando existente).
+> Observação: `Package.resolved` **não lista transitivas**. Para transitivas/checkouts, usei o `workspace-state.json` quando disponível — ele pode ficar **stale** (ex.: checkouts antigos em `.build`). A fonte de verdade para “o que o projeto declara” é o `Package.swift`.
 
 ---
 
@@ -35,12 +35,12 @@ Escopo: **todas** as dependências (runtime, testes, tooling local, CI/CD e scri
   - Evidência: `import KeyboardShortcuts` em `App/GlobalShortcutController.swift`, `App/AssistantShortcutController.swift` e uso no Core (settings).
 - **swift-atomics** (`1.3.0`) — runtime (concorrência/estado em pipeline de áudio)
   - Evidência: `import Atomics` + `ManagedAtomic` em `Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Services/SystemAudioRecorder.swift`, `Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Services/AudioRecordingWorker.swift`, `Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Services/AudioRecorder.swift`.
-- **Cuckoo** (`2.2.0`) — **test-only** (mocks)
-  - Evidência: `import Cuckoo` em `Packages/MeetingAssistantCore/Tests/MeetingAssistantCoreTests/*` e alvo `testTarget` em `Packages/MeetingAssistantCore/Package.swift`.
+- **swift-syntax** (`602.0.0`) — build-time (Swift Macros para mocks)
+  - Evidência: target macro `MeetingAssistantCoreMockingMacros` em `Packages/MeetingAssistantCore/Package.swift`.
 
-#### SwiftPM (resolvidas/transitivas no workspace)
+#### SwiftPM (checkouts/transitivas presentes no workspace)
 
-> Essas dependências entram **indiretamente** via SwiftPM (por dependência de dependências). Não há “import” no app/core necessariamente, mas são necessárias enquanto a dependência “pai” existir.
+> Abaixo estão dependências que aparecem em `.build` como checkouts. Elas podem entrar indiretamente via SwiftPM **ou** podem ser resíduos de resoluções anteriores (stale).
 
 - AEXML (`4.7.0`)
 - FileKit (`6.1.0`)
@@ -51,7 +51,6 @@ Escopo: **todas** as dependências (runtime, testes, tooling local, CI/CD e scri
 - TOMLKit (`0.6.0`)
 - XcodeProj (`9.7.2`)
 - swift-argument-parser (`1.7.0`)
-- swift-syntax (`602.0.0`)
 
 #### Tooling local / scripts
 
@@ -61,7 +60,7 @@ Escopo: **todas** as dependências (runtime, testes, tooling local, CI/CD e scri
 - **SwiftLint** — lint
   - Evidência: `Makefile` (`make lint`) e `scripts/lint.sh`, `scripts/lint-fix.sh`, `scripts/code-health-check.sh`, `scripts/hooks/pre-commit`.
 - **PR heuristics (script)** — checagens leves em PR (warnings)
-  - Evidência: `scripts/pr-checks.sh` (substitui as regras do antigo Dangerfile).
+  - Evidência: `scripts/pr-checks.sh`.
 - Ferramentas Apple (ambiente)
   - `xcodebuild`, `codesign`, `hdiutil` (usadas por `Makefile`/scripts e workflows).
 
@@ -77,17 +76,20 @@ Escopo: **todas** as dependências (runtime, testes, tooling local, CI/CD e scri
 
 ### Não usadas (candidatas fortes)
 
-- No estado atual, **nenhuma dependência SwiftPM direta** aparece como “declarada e não usada”.
+- **Cuckoo** (test-only) — **removido** do projeto nesta branch.
+  - Remoções aplicadas: dependência no `Package.swift`, mocks gerados, configs (`Cuckoofile.*`) e target `make mocks`.
+  - Observação: checkouts antigos ainda podem aparecer em `Packages/MeetingAssistantCore/.build/` até um `swift package reset` (ou limpeza da pasta `.build`).
 
 ---
 
 ### Subutilizadas (avaliar caso a caso)
 
-> Abaixo são candidatas com potencial de remoção, mas exigem decisão de produto/processo. A recomendação é conservadora: **não remover sem alternativa clara + validação**.
+> Candidatas com potencial de remoção, mas exigem decisão de produto/processo. Recomenda-se ser conservador: **não remover sem alternativa clara + validação**.
 
-- **Cuckoo (test-only)**
-  - Sinal: grande árvore de transitivas (Stencil, PathKit, XcodeProj, swift-syntax, etc.) para dar suporte a geração/mocks.
-  - Direção sugerida (longo prazo): POC com Swift Macros para mocking e adoção progressiva.
+- **swift-syntax**
+  - Uso atual: exclusivamente para suportar Swift Macros (mocks) no Core.
+  - Trade-off: removeu o Cuckoo (e tooling), mas adiciona um pacote grande ao grafo de build.
+  - Direção sugerida: manter enquanto a estratégia de mocks via macros for padrão; revisitar se quisermos tornar mocking **test-only** (isolando o uso de `@GenerateMock` para fora do target principal ou adotando outra abordagem).
 
 - **swift-atomics**
   - Uso atual: flags/contadores simples (`ManagedAtomic<Bool>`, `ManagedAtomic<UInt32>`), mas em hot paths de áudio.
@@ -104,22 +106,23 @@ Escopo: **todas** as dependências (runtime, testes, tooling local, CI/CD e scri
 - Impacto: job de release mais rápido e com menos variabilidade.
 
 2) **Decisão sobre XcodeGen** (assumir `.xcodeproj` como fonte de verdade)
-- Implementado: removi `project.yml` e referências a XcodeGen (Makefile/README/scripts/AGENTS).
-- Impacto: menos ambiguidade para novos devs; risco é drift manual do `.xcodeproj` (mitigado por revisão/CI).
+- Implementado: removi `project.yml` e referências a XcodeGen.
+- Impacto: menos ambiguidade; risco de drift manual do `.xcodeproj` (mitigado por revisão/CI).
 
 ### Fase 2 — Redução de custo de CI & build
 
 3) **Aposentar Danger-Swift**
 - Implementado: removi `Dangerfile.swift`, os targets do `Makefile` e o job do Danger no CI.
-- Substituição: lint/format como gate (`STRICT_LINT=1 make lint`) + `scripts/pr-checks.sh` emitindo warnings (PR grande, sem testes, prints, TODO/FIXME, force unwrap, doc pública).
-- Impacto: reduz dependência de Homebrew + Danger, mantendo o “bom senso” via warnings e um gate objetivo via lint.
+- Substituição: lint/format como gate (`STRICT_LINT=1 make lint`) + `scripts/pr-checks.sh` emitindo warnings.
+- Impacto: menos setup no CI; gate objetivo sem ficar excessivamente restritivo.
 
 ### Fase 3 — Refatoração estrutural (longo prazo)
 
 4) **Estratégia de testes (substituição do Cuckoo)**
-- Implementado (POC): adicionados os targets `MeetingAssistantCoreMocking`/`MeetingAssistantCoreMockingMacros` e um teste exemplo (`StartRecordingUseCaseMacroMockingTests`).
-- Nota: essa POC adiciona `swift-syntax` como dependência direta; `Cuckoo` permanece por enquanto (migração progressiva, sem reescrever testes antigos).
+- Implementado: mocks via Swift Macros (`@GenerateMock`) + migração dos testes que dependiam de Cuckoo.
+- Removido: Cuckoo, mocks gerados e tooling/configs.
+- Impacto: reduz tooling de mocks e facilita evolução incremental dos testes; custo é uma dependência de build (`swift-syntax`).
 
 5) **Manutenção da concorrência**
 - Sugestão: manter `swift-atomics` por enquanto.
-- Impacto: evita risco em pipeline de áudio; revisitar quando houver janela para testes de estresse/TSan e/ou mudanças de arquitetura.
+- Impacto: evita risco em pipeline de áudio; revisitar com janela para testes de estresse/TSan.
