@@ -200,7 +200,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             return
         }
 
-        guard RecordingExclusivityCoordinator.shared.beginRecording() else {
+        guard await RecordingExclusivityCoordinator.shared.beginRecording() else {
             AppLogger.info("Recording start blocked by exclusivity coordinator", category: .recordingManager)
             return
         }
@@ -232,7 +232,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             ])
 
         } catch {
-            RecordingExclusivityCoordinator.shared.endRecording()
+            await RecordingExclusivityCoordinator.shared.endRecording()
             await handleStartRecordingError(error)
         }
     }
@@ -316,7 +316,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             // Update meeting
             currentMeeting?.endTime = Date()
             isRecording = false
-            RecordingExclusivityCoordinator.shared.endRecording()
+            await RecordingExclusivityCoordinator.shared.endRecording()
 
             AppLogger.info("Recording stopped", category: .recordingManager, extra: [
                 "micURL": micURL?.lastPathComponent ?? "nil",
@@ -334,7 +334,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             AppLogger.error("Failed to stop recording cleanly", category: .recordingManager, error: error)
             lastError = error
             isRecording = false
-            RecordingExclusivityCoordinator.shared.endRecording()
+            await RecordingExclusivityCoordinator.shared.endRecording()
         }
     }
 
@@ -360,7 +360,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         // Reset state
         isRecording = false
         currentMeeting = nil
-        RecordingExclusivityCoordinator.shared.endRecording()
+        await RecordingExclusivityCoordinator.shared.endRecording()
 
         AppLogger.info("Recording cancelled and files discarded", category: .recordingManager)
     }
