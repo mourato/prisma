@@ -1,27 +1,52 @@
 # MARK: - Project Configuration
+
 --swiftversion 6.0
 
 # MARK: - File Management
-# Exclude build artifacts and generated code only. 
-# RECOMMENDED: Do NOT exclude Tests folder manually; allow formatter to keep tests clean.
+
+# Exclude build artifacts and generated code only
+
+# RECOMMENDED: Do NOT exclude Tests folder manually; allow formatter to keep tests clean
+
 --exclude .build,DerivedData,.swiftpm,dist,**/GeneratedMocks.swift,**/Generated/**
 
+# MARK: - Disabled Rules (Aligned with SwiftLint)
+
+# line_length → disable wrap + set maxwidth to 0 (no automatic line wrapping)
+
+--disable wrap
+--maxwidth 0
+
+# opening_brace → disable braces rule
+
+--disable braces
+
+# Other style preferences we don't want enforced
+
+--disable blankLinesAtEndOfScope
+--disable blankLinesAtStartOfScope
+
 # MARK: - Code Style (Clean Code)
+
 # Indentation
+
 --indent 4
 --allman false
 --indentcase false
 --ifdef noindent
 
 # Semicolons & Commas
+
 --semicolons never
 --commas always
 --trimwhitespace always
 
 # Self Usage (KISS - Only explicit when mandatory)
+
 --self remove
 
 # Functions & Closures
+
 --wraparguments before-first
 --wrapcollections before-first
 --stripunusedargs closure-only
@@ -30,7 +55,9 @@
 --empty void
 
 # MARK: - Numeric Readability (Improved)
+
 # Decimal: 1,000,000 (Standard) instead of 1,000,00 (Current 3,5)
+
 --decimalgrouping 3,4
 --binarygrouping 4,8
 --hexgrouping 4,8
@@ -41,6 +68,7 @@
 --hexliteralcase lowercase
 
 # MARK: - Syntax adjustments
+
 --elseposition same-line
 --ranges nospace
 --linebreaks lf
