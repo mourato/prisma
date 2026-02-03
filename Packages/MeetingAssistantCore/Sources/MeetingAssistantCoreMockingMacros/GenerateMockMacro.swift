@@ -47,7 +47,6 @@ public struct GenerateMockMacro: PeerMacro {
                         """
                     )
                 )
-            } else {
                 members.append(
                     DeclSyntax(
                         """
@@ -107,13 +106,14 @@ private struct ParameterDecl {
     let type: String
 
     init(from parameter: FunctionParameterSyntax) {
-        if let firstName = parameter.firstName?.text, firstName != "_" {
+        let firstName = parameter.firstName.text
+        if firstName != "_" {
             externalName = firstName
         } else {
             externalName = nil
         }
 
-        internalName = parameter.secondName?.text ?? parameter.firstName?.text ?? "_"
+        internalName = parameter.secondName?.text ?? firstName
         type = parameter.type.trimmedDescription
     }
 }
@@ -164,7 +164,6 @@ private func functionBodySource(
 
     let recordLine = if paramDecls.isEmpty {
         "\(functionName)CallCount += 1"
-    } else {
         "\(functionName)Calls.append(\(argsTupleValue))"
     }
 
