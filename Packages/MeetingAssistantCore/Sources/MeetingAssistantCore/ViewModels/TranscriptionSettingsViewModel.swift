@@ -24,7 +24,7 @@ public class TranscriptionSettingsViewModel: ObservableObject {
 
     @Published public var isLoading = true
     @Published public var sourceFilter: RecordingSourceFilter = .all
-    @Published public var dateFilter: DateFilter = .allEntries
+    @Published public var dateFilter: DateFilter = .today
     @Published public var errorMessage: String?
 
     private let storage: StorageService
