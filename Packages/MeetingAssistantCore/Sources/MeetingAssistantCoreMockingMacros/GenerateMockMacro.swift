@@ -162,9 +162,11 @@ private func functionBodySource(
     let asyncKeyword = signature.effectSpecifiers?.asyncSpecifier != nil
     let throwsKeyword = signature.effectSpecifiers?.throwsClause != nil
 
-    let recordLine = if paramDecls.isEmpty {
-        "\(functionName)CallCount += 1"
-        "\(functionName)Calls.append(\(argsTupleValue))"
+    let recordLine: String
+    if paramDecls.isEmpty {
+        recordLine = "\(functionName)CallCount += 1"
+    } else {
+        recordLine = "\(functionName)Calls.append(\(argsTupleValue))"
     }
 
     let callArgs = paramDecls.map(\.internalName).joined(separator: ", ")
