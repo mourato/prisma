@@ -47,6 +47,8 @@ excluded:
   - "*/Generated/*"
   - "**/GeneratedMocks.swift"
   - .build
+  - "**/.build/**"
+  - Packages/MeetingAssistantCore/.build
   - docs
 
 analyzer_rules:

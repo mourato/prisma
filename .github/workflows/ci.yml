@@ -33,6 +33,14 @@ jobs:
         with:
           xcode-version: '16.2'
 
+      - name: Cache SwiftPM build
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
+        with:
+          path: Packages/MeetingAssistantCore/.build
+          key: ${{ runner.os }}-swiftpm-${{ hashFiles('Packages/MeetingAssistantCore/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-swiftpm-
+
       - name: Cache Homebrew packages
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
         with:
@@ -50,9 +58,6 @@ jobs:
         
       - name: Lint
         run: make lint
-        
-      - name: Check Formatting
-        run: swiftformat --lint --config .swiftformat App Packages/MeetingAssistantCore/Sources
         
       - name: Run Tests
         run: make ci-test

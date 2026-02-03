@@ -82,8 +82,8 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
 
     deinit {
         if let stream {
-            Task.detached { [stream] in
-                try? await stream.stopCapture()
+            Task { [weak stream] in
+                try? await stream?.stopCapture()
             }
         }
     }
