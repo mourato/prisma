@@ -34,6 +34,13 @@
 "settings.general.recordings_path" = "Recordings folder:";
 "settings.general.audio_format" = "Audio Format";
 "settings.general.merge_audio" = "Merge audio files after recording";
+
+/* Storage Settings */
+"settings.general.storage" = "Storage";
+"settings.general.auto_delete" = "Automatically delete old transcriptions";
+"settings.general.auto_delete_desc" = "Removes transcriptions older than the specified period to save disk space.";
+"settings.general.days_format" = "%d days";
+
 "settings.general.transcript_delivery" = "Transcript Delivery";
 "settings.general.auto_copy_transcription" = "Auto-copy transcriptions to clipboard";
 "settings.general.auto_copy_transcription_desc" = "Copies the post-processed text when available, otherwise the raw transcription.";
