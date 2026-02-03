@@ -36,6 +36,7 @@ final class AssistantShortcutController {
     func start() {
         setupKeyboardShortcutHandlers()
         observeSettings()
+        refreshCustomShortcutRegistration()
         refreshEventMonitors()
     }
 
@@ -64,6 +65,7 @@ final class AssistantShortcutController {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.resetShortcutState()
+                self?.refreshCustomShortcutRegistration()
                 self?.refreshEventMonitors()
             }
             .store(in: &cancellables)
@@ -97,6 +99,15 @@ final class AssistantShortcutController {
             installKeyDownMonitors()
         } else {
             removeKeyDownMonitors()
+        }
+    }
+
+    private func refreshCustomShortcutRegistration() {
+        switch settings.assistantSelectedPresetKey {
+        case .custom:
+            KeyboardShortcuts.enable(.assistantCommand)
+        default:
+            KeyboardShortcuts.disable(.assistantCommand)
         }
     }
 

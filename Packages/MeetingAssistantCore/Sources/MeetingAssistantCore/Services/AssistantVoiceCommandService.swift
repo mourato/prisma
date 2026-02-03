@@ -33,14 +33,13 @@ public final class AssistantVoiceCommandService: ObservableObject {
     public func startRecording() async {
         guard !isRecording, !isProcessing else { return }
 
-        guard RecordingExclusivityCoordinator.shared.beginAssistant() else {
-            AppLogger.info("Assistant recording start blocked by exclusivity coordinator", category: .assistant)
+        guard !recordingManager.isRecording else {
+            AppLogger.info("Assistant start blocked because Recording is active", category: .assistant)
             return
         }
 
-        guard !recordingManager.isRecording else {
-            RecordingExclusivityCoordinator.shared.endAssistant()
-            showError(.recordingInProgress)
+        guard RecordingExclusivityCoordinator.shared.beginAssistant() else {
+            AppLogger.info("Assistant recording start blocked by exclusivity coordinator", category: .assistant)
             return
         }
 

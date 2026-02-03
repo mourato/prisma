@@ -28,7 +28,6 @@ public class ShortcutSettingsViewModel: ObservableObject {
         selectedPresetKey = settings.selectedPresetKey
 
         setupBindings()
-        applyCustomShortcutRegistration(selectedPresetKey: selectedPresetKey)
     }
 
     // MARK: - Private Setup
@@ -57,18 +56,8 @@ public class ShortcutSettingsViewModel: ObservableObject {
                 self?.settings.selectedPresetKey = newValue
                 // When user selects custom, show the recorder
                 self?.isRecordingCustomShortcut = (newValue == .custom)
-                self?.applyCustomShortcutRegistration(selectedPresetKey: newValue)
             }
             .store(in: &cancellables)
-    }
-
-    private func applyCustomShortcutRegistration(selectedPresetKey: PresetShortcutKey) {
-        switch selectedPresetKey {
-        case .custom:
-            KeyboardShortcuts.enable(.toggleRecording)
-        default:
-            KeyboardShortcuts.disable(.toggleRecording)
-        }
     }
 
     // MARK: - Public Methods
@@ -80,6 +69,5 @@ public class ShortcutSettingsViewModel: ObservableObject {
         useEscapeToCancelRecording = false
         selectedPresetKey = .fn
         isRecordingCustomShortcut = false
-        applyCustomShortcutRegistration(selectedPresetKey: selectedPresetKey)
     }
 }
