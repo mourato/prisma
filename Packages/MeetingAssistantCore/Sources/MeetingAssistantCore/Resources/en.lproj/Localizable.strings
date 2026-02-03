@@ -16,6 +16,8 @@
 "settings.general.recordings_path" = "Recordings folder:";
 "settings.general.audio_format" = "Audio Format";
 "settings.general.merge_audio" = "Merge audio files after recording";
+"settings.general.auto_copy_transcription" = "Auto-copy transcriptions to clipboard";
+"settings.general.auto_copy_transcription_desc" = "Copies the post-processed text when available, otherwise the raw transcription.";
 "settings.general.recordings_path_hint" = "Path";
 "settings.general.choose" = "Choose...";
 "settings.general.monitored_apps" = "Monitored Apps";
@@ -369,4 +371,5 @@
 "recording_indicator.silence_warning" = "No microphone audio detected";
 "settings.transcriptions.today" = "Today";
 "settings.transcriptions.yesterday" = "Yesterday";
+"transcription.empty_fallback" = "No transcription available";
 "transcription.no_segments" = "No segments available";
