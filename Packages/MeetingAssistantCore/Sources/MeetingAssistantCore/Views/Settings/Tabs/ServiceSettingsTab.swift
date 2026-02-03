@@ -18,6 +18,9 @@ public struct ServiceSettingsTab: View {
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .task {
+            viewModel.testConnection()
+        }
     }
 
     private var modelInfoSection: some View {

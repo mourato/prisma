@@ -29,9 +29,7 @@ public struct SettingsView: View {
                     .ignoresSafeArea()
 
                 detailView
-                    .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
-            .animation(.spring(duration: 0.3), value: selectedSection)
         }
         .navigationSplitViewStyle(.balanced)
         .navigationTitle(selectedSection.title)

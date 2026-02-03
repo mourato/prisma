@@ -11,13 +11,7 @@ public enum SettingsDesignSystem {
         public static let glassBackground = Color(NSColor.windowBackgroundColor).opacity(0.7)
         public static let cardBackground = Color(NSColor.controlBackgroundColor).opacity(0.5)
 
-        public static var aiGradient: LinearGradient {
-            LinearGradient(
-                colors: [.purple, .blue, .cyan],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        }
+        public static let iconHighlight = Color.blue
     }
 
     // MARK: - Layout Constants
@@ -76,7 +70,7 @@ public struct SettingsGroup<Content: View>: View {
             HStack(spacing: 8) {
                 if let icon {
                     Image(systemName: icon)
-                        .foregroundStyle(SettingsDesignSystem.Colors.aiGradient)
+                        .foregroundStyle(SettingsDesignSystem.Colors.iconHighlight)
                         .symbolEffect(.bounce, value: true)
                 }
 
