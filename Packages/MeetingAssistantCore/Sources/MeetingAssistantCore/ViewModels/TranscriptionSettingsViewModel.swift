@@ -162,4 +162,36 @@ public class TranscriptionSettingsViewModel: ObservableObject {
             errorMessage = "Failed to delete: \(error.localizedDescription)"
         }
     }
+
+    public func retryTranscription(for metadata: TranscriptionMetadata) async {
+        guard !recordingManager.isTranscribing else {
+            return
+        }
+
+        do {
+            guard let transcription = try await storage.loadTranscription(by: metadata.id) else {
+                errorMessage = "transcription.retry.missing_transcription".localized
+                return
+            }
+
+            guard let audioURL = transcription.audioURL else {
+                errorMessage = "transcription.retry.missing_audio".localized
+                return
+            }
+
+            guard FileManager.default.fileExists(atPath: audioURL.path) else {
+                errorMessage = "transcription.retry.missing_audio".localized
+                return
+            }
+
+            await recordingManager.retryTranscription(for: transcription)
+            await loadTranscriptions()
+            if selectedId == metadata.id {
+                await loadFullTranscription(id: metadata.id)
+            }
+        } catch {
+            logger.error("Failed to retry transcription: \(error.localizedDescription)")
+            errorMessage = error.localizedDescription
+        }
+    }
 }

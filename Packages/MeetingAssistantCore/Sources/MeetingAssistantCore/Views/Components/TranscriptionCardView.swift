@@ -34,6 +34,7 @@ public struct TranscriptionCardView: View {
     public enum TranscriptionAction {
         case copy(text: String)
         case reprocess(prompt: PostProcessingPrompt)
+        case retryTranscription
         case info
         case delete
     }
@@ -148,6 +149,18 @@ public struct TranscriptionCardView: View {
                     .menuStyle(.borderlessButton)
                     .help("transcription.actions.redo_post_processing".localized)
                     .fixedSize() // Prevent menu chevron if possible or accept it
+
+                    // Retry Transcription
+                    Button {
+                        onAction(.retryTranscription)
+                    } label: {
+                        Image(systemName: "arrow.clockwise.circle")
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help("transcription.actions.retry_transcription".localized)
+                    .disabled(audioURL == nil)
 
                     // Info
                     Button {

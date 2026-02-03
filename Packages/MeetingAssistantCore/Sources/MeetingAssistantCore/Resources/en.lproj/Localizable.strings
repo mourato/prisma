@@ -217,6 +217,9 @@
 "transcription.tab.original" = "Original";
 "transcription.tab.segmented" = "Segmented";
 "transcription.actions.redo_post_processing" = "Redo Post-processing";
+"transcription.actions.retry_transcription" = "Retry transcription";
+"transcription.retry.missing_audio" = "Original audio file not found.";
+"transcription.retry.missing_transcription" = "Transcription not found.";
 
 /* Transcription Service States */
 "transcription.state.connected" = "Connected";

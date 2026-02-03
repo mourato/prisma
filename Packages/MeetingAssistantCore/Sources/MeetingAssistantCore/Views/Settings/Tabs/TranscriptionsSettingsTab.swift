@@ -64,9 +64,12 @@ public struct TranscriptionsSettingsTab: View {
 
             Spacer()
 
-            Button(action: { viewModel.openRecordingsDirectory() }) {
-                Label(NSLocalizedString("settings.transcriptions.open_folder", bundle: .safeModule, comment: ""), systemImage: "folder")
-            }
+            Button(
+                action: { viewModel.openRecordingsDirectory() },
+                label: {
+                    Label(NSLocalizedString("settings.transcriptions.open_folder", bundle: .safeModule, comment: ""), systemImage: "folder")
+                }
+            )
             .buttonStyle(.bordered)
         }
         .padding()
@@ -319,6 +322,10 @@ public struct TranscriptionsSettingsTab: View {
             // But if we wanted to show a global panel, we'd do it here.
             // Since we implemented popover in card, this case might be unused or for logging.
             break
+        case .retryTranscription:
+            Task {
+                await viewModel.retryTranscription(for: metadata)
+            }
         case .delete:
             Task {
                 await viewModel.deleteTranscription(metadata)
