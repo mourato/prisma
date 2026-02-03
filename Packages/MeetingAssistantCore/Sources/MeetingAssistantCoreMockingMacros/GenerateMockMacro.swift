@@ -28,63 +28,89 @@ public struct GenerateMockMacro: PeerMacro {
             let params = signature.parameterClause.parameters
             let paramDecls: [ParameterDecl] = params.map { ParameterDecl(from: $0) }
 
-            let argsTupleTypealiasName = "\(functionName.prefix(1).uppercased())\(functionName.dropFirst())Args"
-            let argsTupleType = tupleType(from: paramDecls)
-            let argsTupleValue = tupleValue(from: paramDecls)
+            let key = functionKey(name: functionName, parameters: paramDecls)
+            let keyPascal = pascalCase(from: key)
+
+            let argsTypealiasName = "\(keyPascal)Args"
 
             if !paramDecls.isEmpty {
+                let argsType = argsTypeString(from: paramDecls)
+                let argsValue = argsValueString(from: paramDecls)
+
                 members.append(
                     DeclSyntax(
                         """
-                        typealias \(raw: argsTupleTypealiasName) = \(raw: argsTupleType)
+                        typealias \(raw: argsTypealiasName) = \(raw: argsType)
                         """
                     )
                 )
+
                 members.append(
                     DeclSyntax(
                         """
-                        private(set) var \(raw: functionName)Calls: [\(raw: argsTupleTypealiasName)] = []
+                        private(set) var \(raw: key)Calls: [\(raw: argsTypealiasName)] = []
                         """
                     )
                 )
+
                 members.append(
                     DeclSyntax(
                         """
-                        private(set) var \(raw: functionName)CallCount: Int = 0
+                        var \(raw: key)Handler: (\(raw: handlerTypeString(from: signature, parameters: paramDecls)))?
                         """
                     )
                 )
+
+                members.append(
+                    DeclSyntax(
+                        """
+                        \(raw: functionSignatureSource(from: functionDecl)) {
+                            \(raw: key)Calls.append(\(raw: argsValue))
+                            guard let handler = \(raw: key)Handler else {
+                                fatalError("Unhandled call to \(raw: functionName)")
+                            }
+                            \(raw: handlerCallSource(signature: signature, callArgs: callArgsString(from: paramDecls)))
+                        }
+                        """
+                    )
+                )
+
+                continue
             }
 
-            let handlerType = functionHandlerType(from: signature, parameters: paramDecls)
+            // Zero-parameter function
             members.append(
                 DeclSyntax(
                     """
-                    var \(raw: functionName)Handler: \(raw: handlerType)?
+                    private(set) var \(raw: key)CallCount: Int = 0
                     """
                 )
             )
 
-            let functionSignatureSource = functionSignatureSource(from: functionDecl)
-            let functionBody = functionBodySource(
-                functionName: functionName,
-                signature: signature,
-                paramDecls: paramDecls,
-                argsTupleValue: argsTupleValue
+            members.append(
+                DeclSyntax(
+                    """
+                    var \(raw: key)Handler: (\(raw: handlerTypeString(from: signature, parameters: paramDecls)))?
+                    """
+                )
             )
 
             members.append(
                 DeclSyntax(
                     """
-                    \(raw: functionSignatureSource) {
-                    \(raw: functionBody)
+                    \(raw: functionSignatureSource(from: functionDecl)) {
+                        \(raw: key)CallCount += 1
+                        guard let handler = \(raw: key)Handler else {
+                            fatalError("Unhandled call to \(raw: functionName)")
+                        }
+                        \(raw: handlerCallSource(signature: signature, callArgs: callArgsString(from: paramDecls)))
                     }
                     """
                 )
             )
         }
 
-        let memberBlock = members.map(\.description).joined(separator: "\n\n")
+        let memberBlock = members.map { $0.description }.joined(separator: "\n\n")
 
         return [
             DeclSyntax(
@@ -116,10 +142,46 @@ private struct ParameterDecl {
         internalName = parameter.secondName?.text ?? firstName
         type = parameter.type.trimmedDescription
     }
+
+    var labelForKey: String {
+        if let externalName {
+            return externalName
+        }
+        return internalName
+    }
 }
 
-private func tupleType(from params: [ParameterDecl]) -> String {
-    if params.isEmpty { return "Void" }
+private func functionKey(name: String, parameters: [ParameterDecl]) -> String {
+    if parameters.isEmpty {
+        return name
+    }
+
+    let labels = parameters
+        .map(\.labelForKey)
+        .map { $0 == "_" ? "arg" : $0 }
+        .map { $0.replacingOccurrences(of: "-", with: "_") }
+
+    return ([name] + labels).joined(separator: "_")
+}
+
+private func pascalCase(from key: String) -> String {
+    let parts = key.split(separator: "_").map(String.init)
+    let transformed = parts.map { part in
+        guard let first = part.first else { return part }
+        return String(first).uppercased() + part.dropFirst()
+    }
+    return transformed.joined()
+}
+
+private func argsTypeString(from params: [ParameterDecl]) -> String {
+    if params.isEmpty {
+        return "Void"
+    }
+
+    if params.count == 1 {
+        return params[0].type
+    }
+
     let pieces = params.map { p in
         let label = p.externalName ?? p.internalName
         return "\(label): \(p.type)"
@@ -127,8 +189,15 @@ private func tupleType(from params: [ParameterDecl]) -> String {
     return "(\(pieces.joined(separator: ", ")))"
 }
 
-private func tupleValue(from params: [ParameterDecl]) -> String {
-    if params.isEmpty { return "()" }
+private func argsValueString(from params: [ParameterDecl]) -> String {
+    if params.isEmpty {
+        return "()"
+    }
+
+    if params.count == 1 {
+        return params[0].internalName
+    }
+
     let pieces = params.map { p in
         let label = p.externalName ?? p.internalName
         return "\(label): \(p.internalName)"
@@ -136,7 +205,11 @@ private func tupleValue(from params: [ParameterDecl]) -> String {
     return "(\(pieces.joined(separator: ", ")))"
 }
 
-private func functionHandlerType(from signature: FunctionSignatureSyntax, parameters: [ParameterDecl]) -> String {
+private func callArgsString(from params: [ParameterDecl]) -> String {
+    params.map(\.internalName).joined(separator: ", ")
+}
+
+private func handlerTypeString(from signature: FunctionSignatureSyntax, parameters: [ParameterDecl]) -> String {
     let paramTypes = parameters.map(\.type).joined(separator: ", ")
     let paramsSource = "(\(paramTypes))"
 
@@ -153,40 +226,18 @@ private func functionSignatureSource(from functionDecl: FunctionDeclSyntax) -> S
     return "func \(name)\(signature)"
 }
 
-private func functionBodySource(
-    functionName: String,
-    signature: FunctionSignatureSyntax,
-    paramDecls: [ParameterDecl],
-    argsTupleValue: String
-) -> String {
+private func handlerCallSource(signature: FunctionSignatureSyntax, callArgs: String) -> String {
     let asyncKeyword = signature.effectSpecifiers?.asyncSpecifier != nil
     let throwsKeyword = signature.effectSpecifiers?.throwsClause != nil
 
-    let recordLine: String
-    if paramDecls.isEmpty {
-        recordLine = "\(functionName)CallCount += 1"
-    } else {
-        recordLine = "\(functionName)Calls.append(\(argsTupleValue))"
-    }
-
-    let callArgs = paramDecls.map(\.internalName).joined(separator: ", ")
-
-    let handlerCall = switch (asyncKeyword, throwsKeyword) {
+    switch (asyncKeyword, throwsKeyword) {
     case (true, true):
-        "return try await handler(\(callArgs))"
+        return "return try await handler(\(callArgs))"
     case (true, false):
-        "return await handler(\(callArgs))"
+        return "return await handler(\(callArgs))"
     case (false, true):
-        "return try handler(\(callArgs))"
+        return "return try handler(\(callArgs))"
     case (false, false):
-        "return handler(\(callArgs))"
+        return "return handler(\(callArgs))"
     }
-
-    return """
-    \(recordLine)
-    guard let handler = \(functionName)Handler else {
-        fatalError("Unhandled call to \(functionName)")
-    }
-    \(handlerCall)
-    """
 }
