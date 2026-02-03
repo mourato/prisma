@@ -107,8 +107,6 @@ public struct PermissionStatusView: View {
             }
 
             Spacer()
-
-            statusBadge
         }
     }
 
