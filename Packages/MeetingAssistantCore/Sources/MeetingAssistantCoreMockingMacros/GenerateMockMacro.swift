@@ -1,7 +1,7 @@
+import Foundation
 import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
-import Foundation
 
 public struct GenerateMockMacro: PeerMacro {
     public static func expansion(
@@ -17,31 +17,38 @@ public struct GenerateMockMacro: PeerMacro {
         let mockName = "MacroMock\(protocolName)"
 
         var members: [DeclSyntax] = []
+        var overloadCounts: [String: Int] = [:]
 
         for member in protocolDecl.memberBlock.members {
             guard let functionDecl = member.decl.as(FunctionDeclSyntax.self) else {
                 continue
             }
 
-            let signature = functionDecl.signature
             let functionName = functionDecl.name.text
+            let signature = functionDecl.signature
+
+            let overloadIndex = (overloadCounts[functionName] ?? 0) + 1
+            overloadCounts[functionName] = overloadIndex
+
+            let suffix = overloadIndex == 1 ? "" : "_\(overloadIndex)"
+            let id = "\(functionName)\(suffix)"
 
             let params = signature.parameterClause.parameters
-            let paramDecls: [ParameterDecl] = params.map { ParameterDecl(from: $0) }
+            let paramDecls: [ParameterDecl] = params.enumerated().map { index, param in
+                ParameterDecl(from: param, position: index + 1)
+            }
 
-            let key = functionKey(name: functionName, parameters: paramDecls)
-            let keyPascal = pascalCase(from: key)
-
-            let argsTypealiasName = "\(keyPascal)Args"
+            let argsTypeName = "\(pascalCase(functionName))\(overloadIndex == 1 ? "" : String(overloadIndex))Args"
+            let returnType = signature.returnClause?.type.trimmedDescription ?? "Void"
 
             if !paramDecls.isEmpty {
-                let argsType = argsTypeString(from: paramDecls)
-                let argsValue = argsValueString(from: paramDecls)
+                let argsStruct = argsStructDecl(name: argsTypeName, params: paramDecls)
+                members.append(argsStruct)
 
                 members.append(
                     DeclSyntax(
                         """
-                        typealias \(raw: argsTypealiasName) = \(raw: argsType)
+                        private(set) var \(raw: id)Calls: [\(raw: argsTypeName)] = []
                         """
                     )
                 )
@@ -49,15 +56,7 @@ public struct GenerateMockMacro: PeerMacro {
                 members.append(
                     DeclSyntax(
                         """
-                        private(set) var \(raw: key)Calls: [\(raw: argsTypealiasName)] = []
-                        """
-                    )
-                )
-
-                members.append(
-                    DeclSyntax(
-                        """
-                        var \(raw: key)Handler: (\(raw: handlerTypeString(from: signature, parameters: paramDecls)))?
+                        var \(raw: id)Handler: (\(raw: handlerTypeString(signature: signature, parameters: paramDecls)))?
                         """
                     )
                 )
@@ -66,11 +65,11 @@ public struct GenerateMockMacro: PeerMacro {
                     DeclSyntax(
                         """
                         \(raw: functionSignatureSource(from: functionDecl)) {
-                            \(raw: key)Calls.append(\(raw: argsValue))
-                            guard let handler = \(raw: key)Handler else {
+                            \(raw: id)Calls.append(.init(\(raw: argsInitArgs(params: paramDecls))))
+                            guard let handler = \(raw: id)Handler else {
                                 fatalError("Unhandled call to \(raw: functionName)")
                             }
-                            \(raw: handlerCallSource(signature: signature, callArgs: callArgsString(from: paramDecls)))
+                            \(raw: handlerCallSource(signature: signature, returnType: returnType, callArgs: callArgsString(from: paramDecls)))
                         }
                         """
                     )
@@ -79,11 +78,10 @@ public struct GenerateMockMacro: PeerMacro {
                 continue
             }
 
-            // Zero-parameter function
             members.append(
                 DeclSyntax(
                     """
-                    private(set) var \(raw: key)CallCount: Int = 0
+                    private(set) var \(raw: id)CallCount: Int = 0
                     """
                 )
             )
@@ -91,7 +89,7 @@ public struct GenerateMockMacro: PeerMacro {
             members.append(
                 DeclSyntax(
                     """
-                    var \(raw: key)Handler: (\(raw: handlerTypeString(from: signature, parameters: paramDecls)))?
+                    var \(raw: id)Handler: (\(raw: handlerTypeString(signature: signature, parameters: paramDecls)))?
                     """
                 )
             )
@@ -100,11 +98,11 @@ public struct GenerateMockMacro: PeerMacro {
                 DeclSyntax(
                     """
                     \(raw: functionSignatureSource(from: functionDecl)) {
-                        \(raw: key)CallCount += 1
-                        guard let handler = \(raw: key)Handler else {
+                        \(raw: id)CallCount += 1
+                        guard let handler = \(raw: id)Handler else {
                             fatalError("Unhandled call to \(raw: functionName)")
                         }
-                        \(raw: handlerCallSource(signature: signature, callArgs: callArgsString(from: paramDecls)))
+                        \(raw: handlerCallSource(signature: signature, returnType: returnType, callArgs: callArgsString(from: paramDecls)))
                     }
                     """
                 )
@@ -128,89 +126,59 @@ public struct GenerateMockMacro: PeerMacro {
 }
 
 private struct ParameterDecl {
-    let externalName: String?
+    let name: String
     let internalName: String
     let type: String
 
-    init(from parameter: FunctionParameterSyntax) {
+    init(from parameter: FunctionParameterSyntax, position: Int) {
         let firstName = parameter.firstName.text
-        if firstName != "_" {
-            externalName = firstName
+        let secondName = parameter.secondName?.text
+
+        let internalName = secondName ?? firstName
+        if internalName == "_" {
+            self.internalName = "arg\(position)"
         } else {
-            externalName = nil
+            self.internalName = internalName
         }
 
-        internalName = parameter.secondName?.text ?? firstName
-        type = parameter.type.trimmedDescription
-    }
-
-    var labelForKey: String {
-        if let externalName {
-            return externalName
-        }
-        return internalName
+        // Prefer the internal name for recorded args.
+        self.name = self.internalName
+        self.type = parameter.type.trimmedDescription
     }
 }
 
-private func functionKey(name: String, parameters: [ParameterDecl]) -> String {
-    if parameters.isEmpty {
-        return name
-    }
-
-    let labels = parameters
-        .map(\.labelForKey)
-        .map { $0 == "_" ? "arg" : $0 }
-        .map { $0.replacingOccurrences(of: "-", with: "_") }
-
-    return ([name] + labels).joined(separator: "_")
-}
-
-private func pascalCase(from key: String) -> String {
-    let parts = key.split(separator: "_").map(String.init)
-    let transformed = parts.map { part in
+private func pascalCase(_ input: String) -> String {
+    guard !input.isEmpty else { return input }
+    let parts = input.split(separator: "_").map(String.init)
+    return parts.map { part in
         guard let first = part.first else { return part }
         return String(first).uppercased() + part.dropFirst()
-    }
-    return transformed.joined()
+    }.joined()
 }
 
-private func argsTypeString(from params: [ParameterDecl]) -> String {
-    if params.isEmpty {
-        return "Void"
-    }
+private func argsStructDecl(name: String, params: [ParameterDecl]) -> DeclSyntax {
+    let properties = params
+        .map { "let \($0.name): \($0.type)" }
+        .joined(separator: "\n")
 
-    if params.count == 1 {
-        return params[0].type
-    }
-
-    let pieces = params.map { p in
-        let label = p.externalName ?? p.internalName
-        return "\(label): \(p.type)"
-    }
-    return "(\(pieces.joined(separator: ", ")))"
+    return DeclSyntax(
+        """
+        struct \(raw: name) {
+            \(raw: properties)
+        }
+        """
+    )
 }
 
-private func argsValueString(from params: [ParameterDecl]) -> String {
-    if params.isEmpty {
-        return "()"
-    }
-
-    if params.count == 1 {
-        return params[0].internalName
-    }
-
-    let pieces = params.map { p in
-        let label = p.externalName ?? p.internalName
-        return "\(label): \(p.internalName)"
-    }
-    return "(\(pieces.joined(separator: ", ")))"
+private func argsInitArgs(params: [ParameterDecl]) -> String {
+    params.map { "\($0.name): \($0.internalName)" }.joined(separator: ", ")
 }
 
 private func callArgsString(from params: [ParameterDecl]) -> String {
     params.map(\.internalName).joined(separator: ", ")
 }
 
-private func handlerTypeString(from signature: FunctionSignatureSyntax, parameters: [ParameterDecl]) -> String {
+private func handlerTypeString(signature: FunctionSignatureSyntax, parameters: [ParameterDecl]) -> String {
     let paramTypes = parameters.map(\.type).joined(separator: ", ")
     let paramsSource = "(\(paramTypes))"
 
@@ -227,18 +195,16 @@ private func functionSignatureSource(from functionDecl: FunctionDeclSyntax) -> S
     return "func \(name)\(signature)"
 }
 
-private func handlerCallSource(signature: FunctionSignatureSyntax, callArgs: String) -> String {
+private func handlerCallSource(signature: FunctionSignatureSyntax, returnType: String, callArgs: String) -> String {
     let asyncKeyword = signature.effectSpecifiers?.asyncSpecifier != nil
     let throwsKeyword = signature.effectSpecifiers?.throwsClause != nil
 
-    switch (asyncKeyword, throwsKeyword) {
-    case (true, true):
-        return "return try await handler(\(callArgs))"
-    case (true, false):
-        return "return await handler(\(callArgs))"
-    case (false, true):
-        return "return try handler(\(callArgs))"
-    case (false, false):
-        return "return handler(\(callArgs))"
+    let awaitKeyword = asyncKeyword ? " await" : ""
+    let tryKeyword = throwsKeyword ? "try " : ""
+
+    if returnType == "Void" {
+        return "\(tryKeyword)\(awaitKeyword) handler(\(callArgs))".replacingOccurrences(of: "  ", with: " ")
     }
+
+    return "return \(tryKeyword)\(awaitKeyword) handler(\(callArgs))".replacingOccurrences(of: "  ", with: " ")
 }
