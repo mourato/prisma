@@ -2,7 +2,7 @@ import Foundation
 @testable import MeetingAssistantCore
 import XCTest
 
-final class TranscribeAudioUseCasePostProcessingMacroMockingTests: XCTestCase {
+final class TranscribeAudioUseCasePostProcessingTests: XCTestCase {
     func testExecuteWithPrompt_UsesPromptOverloadAndStoresProcessedText() async throws {
         let transcriptionRepository = MeetingAssistantCore.MacroMockTranscriptionRepository()
         let storageRepository = MeetingAssistantCore.MacroMockTranscriptionStorageRepository()
