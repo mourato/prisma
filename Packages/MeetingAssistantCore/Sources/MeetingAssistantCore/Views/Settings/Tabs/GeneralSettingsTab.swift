@@ -126,6 +126,14 @@ public struct GeneralSettingsTab: View {
                     "settings.general.merge_audio".localized,
                     isOn: $viewModel.shouldMergeAudioFiles
                 )
+
+                Divider()
+
+                SettingsToggle(
+                    "settings.general.auto_copy_transcription".localized,
+                    description: "settings.general.auto_copy_transcription_desc".localized,
+                    isOn: $viewModel.autoCopyTranscriptionToClipboard
+                )
             }
         }
     }

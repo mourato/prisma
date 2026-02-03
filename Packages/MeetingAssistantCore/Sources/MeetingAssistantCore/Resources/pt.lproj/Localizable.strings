@@ -16,6 +16,8 @@
 "settings.general.recordings_path" = "Pasta de gravações:";
 "settings.general.audio_format" = "Formato de Áudio";
 "settings.general.merge_audio" = "Mesclar arquivos de áudio ao finalizar";
+"settings.general.auto_copy_transcription" = "Copiar transcrições automaticamente para a área de transferência";
+"settings.general.auto_copy_transcription_desc" = "Copia o texto pós-processado quando disponível; caso contrário, a transcrição bruta.";
 "settings.general.recordings_path_hint" = "Caminho";
 "settings.general.choose" = "Escolher...";
 "settings.general.monitored_apps" = "Apps Monitorados";
@@ -369,4 +371,5 @@
 "recording_indicator.silence_warning" = "Nenhum áudio do microfone detectado";
 "settings.transcriptions.today" = "Hoje";
 "settings.transcriptions.yesterday" = "Ontem";
+"transcription.empty_fallback" = "Nenhuma transcrição disponível";
 "transcription.no_segments" = "Nenhum segmento disponível";

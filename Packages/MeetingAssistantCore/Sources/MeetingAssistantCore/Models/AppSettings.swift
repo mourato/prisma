@@ -601,6 +601,7 @@ public extension AppSettingsStore {
         static let recordingsDirectory = "recordingsDirectory"
         static let autoStartRecording = "autoStartRecording"
         static let showSettingsOnLaunch = "showSettingsOnLaunch"
+        static let autoCopyTranscriptionToClipboard = "autoCopyTranscriptionToClipboard"
     }
 
     /// Configured path for saving recordings.
@@ -620,6 +621,18 @@ public extension AppSettingsStore {
     var showSettingsOnLaunch: Bool {
         get { UserDefaults.standard.bool(forKey: GeneralKeys.showSettingsOnLaunch) }
         set { UserDefaults.standard.set(newValue, forKey: GeneralKeys.showSettingsOnLaunch) }
+    }
+
+    /// Whether to automatically copy the latest transcription to the clipboard.
+    /// Default: true
+    var autoCopyTranscriptionToClipboard: Bool {
+        get {
+            if UserDefaults.standard.object(forKey: GeneralKeys.autoCopyTranscriptionToClipboard) == nil {
+                return true
+            }
+            return UserDefaults.standard.bool(forKey: GeneralKeys.autoCopyTranscriptionToClipboard)
+        }
+        set { UserDefaults.standard.set(newValue, forKey: GeneralKeys.autoCopyTranscriptionToClipboard) }
     }
 
     // MARK: - Post-Processing Extension
