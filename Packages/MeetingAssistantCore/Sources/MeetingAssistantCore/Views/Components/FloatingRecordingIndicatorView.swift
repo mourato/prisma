@@ -47,7 +47,7 @@ public struct FloatingRecordingIndicatorView: View {
     /// Full waveform view similar to SuperWhisper's "Classic" style.
     private var classicWaveformView: some View {
         ZStack {
-            HStack(spacing: 8) {
+            HStack(spacing: 4) {
                 statusDot
                 AudioVisualizer(
                     audioMeter: audioMonitor.audioMeter,
@@ -70,8 +70,8 @@ public struct FloatingRecordingIndicatorView: View {
             }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 16)
-        .background(Color.black.opacity(0.85))
+        .padding(.vertical, 8)
+        .background(Color.black.opacity(0.95))
         .clipShape(Capsule())
         .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
     }
@@ -102,9 +102,9 @@ public struct FloatingRecordingIndicatorView: View {
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(Color.black.opacity(0.85))
+        .background(Color.black.opacity(0.95))
         .clipShape(Capsule())
         .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 3)
     }
@@ -172,7 +172,7 @@ struct AudioVisualizer: View {
     let audioMeter: AudioMeter
     let mode: AudioVisualizerMode
     let barCount: Int
-    let minHeight: CGFloat = 4
+    let minHeight: CGFloat = 2.5
     let maxHeight: CGFloat
     let barWidth: CGFloat = 2.5
     let barSpacing: CGFloat = 2.0
@@ -228,7 +228,7 @@ struct AudioVisualizer: View {
                     .frame(width: barWidth, height: barHeights[index])
             }
         }
-        .frame(height: maxHeight, alignment: .bottom)
+        .frame(height: maxHeight, alignment: .center)
         .onChange(of: audioMeter) { _, newValue in
             updateBars(with: Float(newValue.averagePower))
         }
@@ -244,7 +244,7 @@ struct AudioVisualizer: View {
                         .frame(width: barWidth, height: processingHeight(for: index, time: time))
                 }
             }
-            .frame(height: maxHeight, alignment: .bottom)
+            .frame(height: maxHeight, alignment: .center)
         }
     }
 
