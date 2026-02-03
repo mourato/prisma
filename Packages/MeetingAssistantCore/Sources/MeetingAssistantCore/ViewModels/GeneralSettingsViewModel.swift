@@ -85,6 +85,18 @@ public class GeneralSettingsViewModel: ObservableObject {
         }
     }
 
+    @Published public var autoDeleteTranscriptions: Bool {
+        didSet {
+            settingsStore.autoDeleteTranscriptions = autoDeleteTranscriptions
+        }
+    }
+
+    @Published public var autoDeletePeriodDays: Int {
+        didSet {
+            settingsStore.autoDeletePeriodDays = autoDeletePeriodDays
+        }
+    }
+
     @Published public var availableDevices: [AudioInputDevice] = []
 
     private let deviceManager = AudioDeviceManager()
@@ -104,7 +116,10 @@ public class GeneralSettingsViewModel: ObservableObject {
         useSystemDefaultInput = settingsStore.useSystemDefaultInput
         recordingIndicatorEnabled = settingsStore.recordingIndicatorEnabled
         recordingIndicatorStyle = settingsStore.recordingIndicatorStyle
+        recordingIndicatorStyle = settingsStore.recordingIndicatorStyle
         recordingIndicatorPosition = settingsStore.recordingIndicatorPosition
+        autoDeleteTranscriptions = settingsStore.autoDeleteTranscriptions
+        autoDeletePeriodDays = settingsStore.autoDeletePeriodDays
 
         setupDeviceObservation()
     }

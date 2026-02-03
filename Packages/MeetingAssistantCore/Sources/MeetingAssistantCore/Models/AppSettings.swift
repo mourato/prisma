@@ -268,6 +268,8 @@ public class AppSettingsStore: ObservableObject {
         static let recordingIndicatorEnabled = "recordingIndicatorEnabled"
         static let recordingIndicatorStyle = "recordingIndicatorStyle"
         static let recordingIndicatorPosition = "recordingIndicatorPosition"
+        static let autoDeleteTranscriptions = "autoDeleteTranscriptions"
+        static let autoDeletePeriodDays = "autoDeletePeriodDays"
     }
 
     // MARK: - Published Properties
@@ -429,6 +431,16 @@ public class AppSettingsStore: ObservableObject {
         didSet { UserDefaults.standard.set(recordingIndicatorPosition.rawValue, forKey: Keys.recordingIndicatorPosition) }
     }
 
+    /// Whether auto-delete of old transcriptions is enabled.
+    @Published public var autoDeleteTranscriptions: Bool {
+        didSet { UserDefaults.standard.set(autoDeleteTranscriptions, forKey: Keys.autoDeleteTranscriptions) }
+    }
+
+    /// Number of days to keep transcriptions before auto-deleting.
+    @Published public var autoDeletePeriodDays: Int {
+        didSet { UserDefaults.standard.set(autoDeletePeriodDays, forKey: Keys.autoDeletePeriodDays) }
+    }
+
     /// All available prompts (predefined + user-created), filtered by deleted and overrides.
     public var allPrompts: [PostProcessingPrompt] {
         // 1. Start with predefined prompts that are NOT deleted
@@ -533,6 +545,10 @@ public class AppSettingsStore: ObservableObject {
         let rawIndicatorPosition = UserDefaults.standard.string(forKey: Keys.recordingIndicatorPosition)
         recordingIndicatorPosition = rawIndicatorPosition.flatMap { RecordingIndicatorPosition(rawValue: $0) } ?? .bottom
 
+        autoDeleteTranscriptions = UserDefaults.standard.bool(forKey: Keys.autoDeleteTranscriptions)
+        let rawDays = UserDefaults.standard.object(forKey: Keys.autoDeletePeriodDays) as? Int
+        autoDeletePeriodDays = rawDays ?? 30
+
         applyLanguage(selectedLanguage)
     }
 
@@ -582,6 +598,8 @@ public class AppSettingsStore: ObservableObject {
         recordingIndicatorEnabled = false
         recordingIndicatorStyle = .mini
         recordingIndicatorPosition = .bottom
+        autoDeleteTranscriptions = false
+        autoDeletePeriodDays = 30
     }
 
     // MARK: - Prompt Management

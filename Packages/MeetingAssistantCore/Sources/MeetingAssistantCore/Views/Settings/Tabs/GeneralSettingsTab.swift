@@ -17,6 +17,7 @@ public struct GeneralSettingsTab: View {
                 languageSection
                 serviceSection
                 recordingSection
+                storageSection
                 keyboardControlsSection
                 transcriptDeliverySection
                 recordingIndicatorSection
@@ -84,26 +85,6 @@ public struct GeneralSettingsTab: View {
                     "settings.general.show_settings_on_launch".localized,
                     isOn: $viewModel.showSettingsOnLaunch
                 )
-
-                Divider()
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("settings.general.recordings_path".localized)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-
-                    HStack {
-                        TextField(
-                            "settings.general.recordings_path_hint".localized,
-                            text: $viewModel.recordingsPath
-                        )
-                        .textFieldStyle(.roundedBorder)
-
-                        Button("settings.general.choose".localized) {
-                            viewModel.selectRecordingsDirectory()
-                        }
-                    }
-                }
 
                 Divider()
 
@@ -204,6 +185,43 @@ public struct GeneralSettingsTab: View {
                         .labelsHidden()
                         .pickerStyle(.menu)
                         .frame(width: 200)
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var storageSection: some View {
+        SettingsGroup("settings.general.storage".localized, icon: "externaldrive.fill") {
+            VStack(alignment: .leading, spacing: 16) {
+                SettingsToggle(
+                    "settings.general.auto_delete".localized,
+                    description: "settings.general.auto_delete_desc".localized,
+                    isOn: $viewModel.autoDeleteTranscriptions
+                )
+
+                if viewModel.autoDeleteTranscriptions {
+                    Divider()
+
+                    HStack {
+                        Text("settings.general.auto_delete_period".localized)
+                            .font(.body)
+                            .foregroundStyle(.primary)
+
+                        Spacer()
+
+                        Picker("", selection: $viewModel.autoDeletePeriodDays) {
+                            Text("7 days").tag(7)
+                            Text("14 days").tag(14)
+                            Text("30 days").tag(30)
+                            Text("90 days").tag(90)
+                            Text("180 days").tag(180)
+                            Text("365 days").tag(365)
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                        .frame(width: 150)
                     }
                 }
             }
