@@ -12,9 +12,6 @@ This file provides guidelines and AI agents working on this codebase. See `.agen
 ## Build Commands
 
 ```bash
-# Generate Xcode project (required after modifying project.yml)
-make xcodegen
-
 # Build Debug (CLI-first)
 make build
 

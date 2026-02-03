@@ -2,9 +2,16 @@
 
 import Foundation
 
+#if DEBUG
+import MeetingAssistantCoreMocking
+#endif
+
 // MARK: - Recording Domain Protocols
 
 /// Protocolo para operações de gravação de áudio
+#if DEBUG
+@GenerateMock
+#endif
 public protocol RecordingRepository: Sendable {
     /// Inicia gravação para URL especificada
     func startRecording(to outputURL: URL, retryCount: Int) async throws
@@ -26,6 +33,9 @@ public protocol RecordingRepository: Sendable {
 }
 
 /// Protocolo para operações de arquivo de áudio
+#if DEBUG
+@GenerateMock
+#endif
 public protocol AudioFileRepository: Sendable {
     /// Salva arquivo de áudio
     func saveAudioFile(from sourceURL: URL, to destinationURL: URL) async throws
@@ -46,6 +56,9 @@ public protocol AudioFileRepository: Sendable {
 // MARK: - Transcription Domain Protocols
 
 /// Protocolo para operações de transcrição
+#if DEBUG
+@GenerateMock
+#endif
 public protocol TranscriptionRepository: Sendable {
     /// Verifica saúde do serviço
     func healthCheck() async throws -> Bool
@@ -61,6 +74,9 @@ public protocol TranscriptionRepository: Sendable {
 }
 
 /// Protocolo para operações de pós-processamento
+#if DEBUG
+@GenerateMock
+#endif
 public protocol PostProcessingRepository: Sendable {
     /// Processa texto de transcrição usando prompt selecionado
     func processTranscription(_ transcription: String) async throws -> String
@@ -72,6 +88,9 @@ public protocol PostProcessingRepository: Sendable {
 // MARK: - Storage Domain Protocols
 
 /// Protocolo para operações de armazenamento de reuniões
+#if DEBUG
+@GenerateMock
+#endif
 public protocol MeetingRepository: Sendable {
     /// Salva reunião
     func saveMeeting(_ meeting: MeetingEntity) async throws
@@ -90,6 +109,9 @@ public protocol MeetingRepository: Sendable {
 }
 
 /// Protocolo para operações de armazenamento de transcrições
+#if DEBUG
+@GenerateMock
+#endif
 public protocol TranscriptionStorageRepository: Sendable {
     /// Salva transcrição
     func saveTranscription(_ transcription: TranscriptionEntity) async throws

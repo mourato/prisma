@@ -1,7 +1,0 @@
-output = "Tests/MeetingAssistantCoreTests/GeneratedMocks.swift"
-
-[modules.MeetingAssistantCore]
-sources = [
-    "Sources/MeetingAssistantCore/Domain/Interfaces/DomainProtocols.swift",
-]
-testableImports = ["MeetingAssistantCore"]
