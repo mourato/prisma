@@ -212,8 +212,10 @@
 /* Permission Types */
 "permission.type.microphone" = "Microfone";
 "permission.type.screen_recording" = "Gravação de Tela";
+"permission.type.accessibility" = "Acessibilidade";
 "permission.type.microphone.desc" = "Necessário para capturar sua voz durante reuniões.";
 "permission.type.screen_recording.desc" = "Necessário para capturar o áudio do sistema (participantes).";
+"permission.type.accessibility.desc" = "Necessário para ler e substituir o texto selecionado em outros apps.";
 
 /* Transcription Status */
 "transcription.time_remaining" = "~%@ restante";

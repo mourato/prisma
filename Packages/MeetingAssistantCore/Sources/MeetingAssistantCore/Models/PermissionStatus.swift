@@ -47,6 +47,7 @@ public enum PermissionState: String, Sendable {
 public enum PermissionType: String, CaseIterable, Sendable {
     case microphone
     case screenRecording
+    case accessibility
 
     /// Localized display name for the permission type.
     public var displayName: String {
@@ -55,6 +56,8 @@ public enum PermissionType: String, CaseIterable, Sendable {
             "permission.type.microphone".localized
         case .screenRecording:
             "permission.type.screen_recording".localized
+        case .accessibility:
+            "permission.type.accessibility".localized
         }
     }
 
@@ -65,6 +68,8 @@ public enum PermissionType: String, CaseIterable, Sendable {
             "mic.fill"
         case .screenRecording:
             "tv.fill"
+        case .accessibility:
+            "accessibility"
         }
     }
 
@@ -75,6 +80,8 @@ public enum PermissionType: String, CaseIterable, Sendable {
             "permission.type.microphone.desc".localized
         case .screenRecording:
             "permission.type.screen_recording.desc".localized
+        case .accessibility:
+            "permission.type.accessibility.desc".localized
         }
     }
 }
@@ -107,11 +114,13 @@ public struct PermissionInfo: Sendable {
 public class PermissionStatusManager: ObservableObject {
     @Published public private(set) var microphonePermission: PermissionInfo
     @Published public private(set) var screenRecordingPermission: PermissionInfo
+    @Published public private(set) var accessibilityPermission: PermissionInfo
 
     /// Returns true if all required permissions are granted.
     public var allPermissionsGranted: Bool {
         microphonePermission.state.isAuthorized
             && screenRecordingPermission.state.isAuthorized
+            && accessibilityPermission.state.isAuthorized
     }
 
     /// Returns the count of granted permissions.
@@ -119,15 +128,17 @@ public class PermissionStatusManager: ObservableObject {
         var count = 0
         if microphonePermission.state.isAuthorized { count += 1 }
         if screenRecordingPermission.state.isAuthorized { count += 1 }
+        if accessibilityPermission.state.isAuthorized { count += 1 }
         return count
     }
 
     /// Total number of required permissions.
-    public let totalPermissions = 2
+    public let totalPermissions = 3
 
     public init() {
         microphonePermission = PermissionInfo(type: .microphone)
         screenRecordingPermission = PermissionInfo(type: .screenRecording)
+        accessibilityPermission = PermissionInfo(type: .accessibility)
     }
 
     /// Updates the microphone permission state.
@@ -138,5 +149,9 @@ public class PermissionStatusManager: ObservableObject {
     /// Updates the screen recording permission state.
     public func updateScreenRecordingState(_ state: PermissionState) {
         screenRecordingPermission.updateState(state)
+    }
+
+    public func updateAccessibilityState(_ state: PermissionState) {
+        accessibilityPermission.updateState(state)
     }
 }

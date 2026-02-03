@@ -93,7 +93,9 @@ public final class AppCoordinator: Coordinator {
             requestMicrophone: { [weak self] in await self?.recordingManager.requestPermission(for: .microphone) },
             requestScreen: { [weak self] in await self?.recordingManager.requestPermission(for: .system) },
             openMicrophoneSettings: { [weak self] in self?.recordingManager.openMicrophoneSettings() },
-            openScreenSettings: { [weak self] in self?.recordingManager.openPermissionSettings() }
+            openScreenSettings: { [weak self] in self?.recordingManager.openPermissionSettings() },
+            requestAccessibility: { [weak self] in self?.recordingManager.requestAccessibilityPermission() },
+            openAccessibilitySettings: { [weak self] in self?.recordingManager.openAccessibilitySettings() }
         )
         let permissionView = PermissionStatusView(viewModel: viewModel, requiredSource: .all)
         return AnyView(permissionView)

@@ -212,8 +212,10 @@
 /* Permission Types */
 "permission.type.microphone" = "Microphone";
 "permission.type.screen_recording" = "Screen Recording";
+"permission.type.accessibility" = "Accessibility";
 "permission.type.microphone.desc" = "Required to capture your voice during meetings.";
 "permission.type.screen_recording.desc" = "Required to capture system audio (participants).";
+"permission.type.accessibility.desc" = "Required to read and replace the selected text in other apps.";
 
 /* Transcription Status */
 "transcription.time_remaining" = "~%@ remaining";

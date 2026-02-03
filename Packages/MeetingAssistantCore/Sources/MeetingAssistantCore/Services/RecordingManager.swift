@@ -137,6 +137,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     public func checkPermission(for source: RecordingSource) async {
         let micPermission = await micRecorder.hasPermission()
         let screenPermission = await systemRecorder.hasPermission()
+        let accessibilityState = AccessibilityPermissionService.currentState()
 
         // Update individual permission states using detailed state methods
         let micState = micRecorder.getPermissionState()
@@ -144,6 +145,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
         permissionStatus.updateMicrophoneState(micState)
         permissionStatus.updateScreenRecordingState(screenState)
+        permissionStatus.updateAccessibilityState(accessibilityState)
 
         let hasPermissions = source.requiredPermissionsGranted(
             microphone: micPermission,
@@ -177,6 +179,15 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     /// Open System Preferences to Microphone settings.
     public func openMicrophoneSettings() {
         micRecorder.openSettings()
+    }
+
+    public func requestAccessibilityPermission() {
+        AccessibilityPermissionService.requestPermission()
+        permissionStatus.updateAccessibilityState(AccessibilityPermissionService.currentState())
+    }
+
+    public func openAccessibilitySettings() {
+        AccessibilityPermissionService.openSystemSettings()
     }
 
     // MARK: - Public API

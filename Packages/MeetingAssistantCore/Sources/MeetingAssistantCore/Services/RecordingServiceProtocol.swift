@@ -26,4 +26,6 @@ public protocol RecordingServiceProtocol: AnyObject {
     func requestPermission(for source: RecordingSource) async
     func openMicrophoneSettings()
     func openPermissionSettings()
+    func requestAccessibilityPermission()
+    func openAccessibilitySettings()
 }

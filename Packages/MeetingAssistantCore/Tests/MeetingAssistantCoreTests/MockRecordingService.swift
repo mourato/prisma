@@ -29,6 +29,8 @@ class MockRecordingService: RecordingServiceProtocol {
     var checkPermissionSource: RecordingSource?
     var openMicrophoneSettingsCalled = false
     var openPermissionSettingsCalled = false
+    var requestAccessibilityPermissionCalled = false
+    var openAccessibilitySettingsCalled = false
     var transcribeExternalAudioCalled = false
 
     func startRecording(source: RecordingSource) async {
@@ -67,6 +69,14 @@ class MockRecordingService: RecordingServiceProtocol {
 
     func openPermissionSettings() {
         openPermissionSettingsCalled = true
+    }
+
+    func requestAccessibilityPermission() {
+        requestAccessibilityPermissionCalled = true
+    }
+
+    func openAccessibilitySettings() {
+        openAccessibilitySettingsCalled = true
     }
 
     func transcribeExternalAudio(from audioURL: URL) async {
