@@ -232,6 +232,7 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
             if code == NSURLErrorTimedOut ||
                 code == NSURLErrorNetworkConnectionLost ||
                 code == NSURLErrorCannotConnectToHost
+            // swiftlint:disable:next opening_brace
             {
                 return true
             }

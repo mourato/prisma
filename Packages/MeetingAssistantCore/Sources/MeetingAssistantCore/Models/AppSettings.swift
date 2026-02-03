@@ -456,6 +456,7 @@ public class AppSettingsStore: ObservableObject {
         // Load AI configuration
         if let data = UserDefaults.standard.data(forKey: Keys.aiConfiguration),
            let config = try? JSONDecoder().decode(AIConfiguration.self, from: data)
+        // swiftlint:disable:next opening_brace
         {
             aiConfiguration = config
         } else {
@@ -467,6 +468,7 @@ public class AppSettingsStore: ObservableObject {
 
         if let data = UserDefaults.standard.data(forKey: Keys.userPrompts),
            let prompts = try? JSONDecoder().decode([PostProcessingPrompt].self, from: data)
+        // swiftlint:disable:next opening_brace
         {
             userPrompts = prompts
         } else {
@@ -475,6 +477,7 @@ public class AppSettingsStore: ObservableObject {
 
         if let data = UserDefaults.standard.data(forKey: Keys.deletedPromptIds),
            let ids = try? JSONDecoder().decode(Set<UUID>.self, from: data)
+        // swiftlint:disable:next opening_brace
         {
             deletedPromptIds = ids
         } else {
