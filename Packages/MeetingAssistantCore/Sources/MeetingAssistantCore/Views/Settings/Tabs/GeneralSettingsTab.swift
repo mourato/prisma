@@ -53,6 +53,17 @@ public struct GeneralSettingsTab: View {
                     }
                 }
 
+                // App Theme
+                SettingsGroup("settings.general.theme".localized, icon: "paintpalette.fill") {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("settings.general.theme_desc".localized)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        SettingsThemePicker(selection: $viewModel.appAccentColor)
+                    }
+                }
+
                 ServiceSettingsTab()
 
                 // Recording

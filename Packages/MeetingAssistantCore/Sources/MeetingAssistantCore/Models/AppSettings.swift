@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import SwiftUI
 
 // MARK: - AI Provider Configuration
 
@@ -116,33 +117,54 @@ public enum RecordingIndicatorPosition: String, CaseIterable, Codable, Sendable 
     }
 }
 
-// MARK: - Assistant Screen Border Configuration
+// MARK: - App Theme Configuration
 
-/// Available colors for the Assistant mode screen border.
-public enum AssistantBorderColor: String, CaseIterable, Codable, Sendable {
-    case green
-    case blue
-    case purple
-    case pink
+/// Available colors for the application's accent theme.
+public enum AppThemeColor: String, CaseIterable, Codable, Sendable {
+    case system
     case orange
-    case yellow
     case red
+    case pink
+    case purple
+    case blue
     case cyan
+    case green
+    case yellow
 
     /// The NSColor representation for use in AppKit.
     public var nsColor: NSColor {
         switch self {
-        case .green: .systemGreen
-        case .blue: .systemBlue
-        case .purple: .systemPurple
-        case .pink: .systemPink
+        case .system: .controlAccentColor
         case .orange: .systemOrange
-        case .yellow: .systemYellow
         case .red: .systemRed
+        case .pink: .systemPink
+        case .purple: .systemPurple
+        case .blue: .systemBlue
         case .cyan: .systemCyan
+        case .green: .systemGreen
+        case .yellow: .systemYellow
+        }
+    }
+
+    /// A color that contrasts well with the theme color, for use as text or icons on top of it.
+    public var adaptiveForegroundColor: Color {
+        switch self {
+        case .system:
+            // Dynamic check for system accent color luminance if needed, 
+            // but usually system colors work well with adaptive themes.
+            // For macOS system accent, white usually works best on most except yellow.
+            return .white
+        case .yellow, .cyan: return .black
+        default: return .white
         }
     }
 }
+
+// MARK: - Assistant Screen Border Configuration
+
+/// Available colors for the Assistant mode screen border.
+/// Reuses AppThemeColor logic for consistency.
+public typealias AssistantBorderColor = AppThemeColor
 
 /// Style options for the Assistant mode screen border feedback.
 public enum AssistantBorderStyle: String, CaseIterable, Codable, Sendable {
@@ -316,6 +338,7 @@ public class AppSettingsStore: ObservableObject {
         static let recordingIndicatorPosition = "recordingIndicatorPosition"
         static let autoDeleteTranscriptions = "autoDeleteTranscriptions"
         static let autoDeletePeriodDays = "autoDeletePeriodDays"
+        static let appAccentColor = "appAccentColor"
     }
 
     // MARK: - Published Properties
@@ -497,6 +520,11 @@ public class AppSettingsStore: ObservableObject {
         didSet { UserDefaults.standard.set(autoDeletePeriodDays, forKey: Keys.autoDeletePeriodDays) }
     }
 
+    /// Primary accent color for the application.
+    @Published public var appAccentColor: AppThemeColor {
+        didSet { UserDefaults.standard.set(appAccentColor.rawValue, forKey: Keys.appAccentColor) }
+    }
+
     /// All available prompts (predefined + user-created), filtered by deleted and overrides.
     public var allPrompts: [PostProcessingPrompt] {
         // 1. Start with predefined prompts that are NOT deleted
@@ -611,6 +639,9 @@ public class AppSettingsStore: ObservableObject {
         let rawDays = UserDefaults.standard.object(forKey: Keys.autoDeletePeriodDays) as? Int
         autoDeletePeriodDays = rawDays ?? 30
 
+        let rawAccentColor = UserDefaults.standard.string(forKey: Keys.appAccentColor)
+        appAccentColor = rawAccentColor.flatMap { AppThemeColor(rawValue: $0) } ?? .system
+
         applyLanguage(selectedLanguage)
     }
 
@@ -664,6 +695,7 @@ public class AppSettingsStore: ObservableObject {
         recordingIndicatorPosition = .bottom
         autoDeleteTranscriptions = false
         autoDeletePeriodDays = 30
+        appAccentColor = .system
     }
 
     // MARK: - Prompt Management
