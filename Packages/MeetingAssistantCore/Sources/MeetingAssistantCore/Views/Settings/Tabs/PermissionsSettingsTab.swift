@@ -13,7 +13,9 @@ public struct PermissionsSettingsTab: View {
             requestMicrophone: { await recordingManager.requestPermission(for: .microphone) },
             requestScreen: { await recordingManager.requestPermission(for: .system) },
             openMicrophoneSettings: { recordingManager.openMicrophoneSettings() },
-            openScreenSettings: { recordingManager.openPermissionSettings() }
+            openScreenSettings: { recordingManager.openPermissionSettings() },
+            requestAccessibility: { recordingManager.requestAccessibilityPermission() },
+            openAccessibilitySettings: { recordingManager.openAccessibilitySettings() }
         ))
     }
 

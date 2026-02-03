@@ -12,8 +12,10 @@ public class PermissionViewModel: ObservableObject {
     // Better: Inject a closure or protocol for requests to decouple.
     private let requestMicrophoneAction: () async -> Void
     private let requestScreenAction: () async -> Void
+    private let requestAccessibilityAction: () -> Void
     private let openMicrophoneSettingsAction: () -> Void
     private let openScreenSettingsAction: () -> Void
+    private let openAccessibilitySettingsAction: () -> Void
 
     private var cancellables = Set<AnyCancellable>()
 
@@ -21,6 +23,7 @@ public class PermissionViewModel: ObservableObject {
 
     @Published public private(set) var microphoneState: PermissionState = .notDetermined
     @Published public private(set) var screenState: PermissionState = .notDetermined
+    @Published public private(set) var accessibilityState: PermissionState = .notDetermined
 
     // MARK: - Init
 
@@ -29,13 +32,17 @@ public class PermissionViewModel: ObservableObject {
         requestMicrophone: @escaping () async -> Void,
         requestScreen: @escaping () async -> Void,
         openMicrophoneSettings: @escaping () -> Void,
-        openScreenSettings: @escaping () -> Void
+        openScreenSettings: @escaping () -> Void,
+        requestAccessibility: @escaping () -> Void,
+        openAccessibilitySettings: @escaping () -> Void
     ) {
         permissionManager = manager
         requestMicrophoneAction = requestMicrophone
         requestScreenAction = requestScreen
         openMicrophoneSettingsAction = openMicrophoneSettings
         openScreenSettingsAction = openScreenSettings
+        requestAccessibilityAction = requestAccessibility
+        openAccessibilitySettingsAction = openAccessibilitySettings
 
         setupBindings()
     }
@@ -58,8 +65,16 @@ public class PermissionViewModel: ObservableObject {
         openScreenSettingsAction()
     }
 
+    public func requestAccessibilityPermission() {
+        requestAccessibilityAction()
+    }
+
+    public func openAccessibilitySystemSettings() {
+        openAccessibilitySettingsAction()
+    }
+
     public var allPermissionsGranted: Bool {
-        microphoneState == .granted && screenState == .granted
+        microphoneState == .granted && screenState == .granted && accessibilityState == .granted
     }
 
     // MARK: - Private
@@ -74,5 +89,10 @@ public class PermissionViewModel: ObservableObject {
             .map(\.state)
             .receive(on: DispatchQueue.main)
             .assign(to: &$screenState)
+
+        permissionManager.$accessibilityPermission
+            .map(\.state)
+            .receive(on: DispatchQueue.main)
+            .assign(to: &$accessibilityState)
     }
 }

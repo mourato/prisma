@@ -38,6 +38,14 @@ public struct PermissionStatusView: View {
                     onRequest: { Task { await viewModel.requestScreenPermission() } },
                     onOpenSettings: { viewModel.openScreenSystemSettings() }
                 )
+
+                PermissionRowView(
+                    permission: PermissionInfo(
+                        type: .accessibility, state: viewModel.accessibilityState
+                    ),
+                    onRequest: { viewModel.requestAccessibilityPermission() },
+                    onOpenSettings: { viewModel.openAccessibilitySystemSettings() }
+                )
             }
 
             if !requiredPermissionsGranted {
@@ -56,14 +64,14 @@ public struct PermissionStatusView: View {
     }
 
     private var requiredPermissions: [PermissionType] {
-        requiredSource.requiredPermissionTypes
+        requiredSource.requiredPermissionTypes + [.accessibility]
     }
 
     private var requiredPermissionsGranted: Bool {
         requiredSource.requiredPermissionsGranted(
             microphone: viewModel.microphoneState,
             screenRecording: viewModel.screenState
-        )
+        ) && viewModel.accessibilityState.isAuthorized
     }
 
     private var grantedCount: Int {
@@ -187,6 +195,8 @@ public struct PermissionStatusView: View {
             viewModel.microphoneState
         case .screenRecording:
             viewModel.screenState
+        case .accessibility:
+            viewModel.accessibilityState
         }
     }
 }
@@ -337,6 +347,10 @@ public struct CompactPermissionStatusView: View {
             CompactPermissionIndicator(
                 permission: permissionManager.screenRecordingPermission
             )
+
+            CompactPermissionIndicator(
+                permission: permissionManager.accessibilityPermission
+            )
         }
     }
 }
@@ -401,13 +415,16 @@ struct CompactPermissionIndicator: View {
     let manager = PermissionStatusManager()
     manager.updateMicrophoneState(.granted)
     manager.updateScreenRecordingState(.granted)
+    manager.updateAccessibilityState(.granted)
 
     let vm = PermissionViewModel(
         manager: manager,
         requestMicrophone: {},
         requestScreen: {},
         openMicrophoneSettings: {},
-        openScreenSettings: {}
+        openScreenSettings: {},
+        requestAccessibility: {},
+        openAccessibilitySettings: {}
     )
 
     return PermissionStatusView(viewModel: vm)
@@ -419,13 +436,16 @@ struct CompactPermissionIndicator: View {
     let manager = PermissionStatusManager()
     manager.updateMicrophoneState(.granted)
     manager.updateScreenRecordingState(.denied)
+    manager.updateAccessibilityState(.notDetermined)
 
     let vm = PermissionViewModel(
         manager: manager,
         requestMicrophone: {},
         requestScreen: {},
         openMicrophoneSettings: {},
-        openScreenSettings: {}
+        openScreenSettings: {},
+        requestAccessibility: {},
+        openAccessibilitySettings: {}
     )
 
     return PermissionStatusView(viewModel: vm)
@@ -441,7 +461,9 @@ struct CompactPermissionIndicator: View {
         requestMicrophone: {},
         requestScreen: {},
         openMicrophoneSettings: {},
-        openScreenSettings: {}
+        openScreenSettings: {},
+        requestAccessibility: {},
+        openAccessibilitySettings: {}
     )
 
     return PermissionStatusView(viewModel: vm)
@@ -453,6 +475,7 @@ struct CompactPermissionIndicator: View {
     let manager = PermissionStatusManager()
     manager.updateMicrophoneState(.granted)
     manager.updateScreenRecordingState(.notDetermined)
+    manager.updateAccessibilityState(.denied)
 
     return CompactPermissionStatusView(permissionManager: manager)
         .padding()
