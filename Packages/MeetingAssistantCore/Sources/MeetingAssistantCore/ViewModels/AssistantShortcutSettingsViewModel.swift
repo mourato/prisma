@@ -21,7 +21,6 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
         isRecordingCustomShortcut = settings.assistantSelectedPresetKey == .custom
 
         setupBindings()
-        applyCustomShortcutRegistration(selectedPresetKey: selectedPresetKey)
     }
 
     private func setupBindings() {
@@ -44,18 +43,8 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
             .sink { [weak self] newValue in
                 self?.settings.assistantSelectedPresetKey = newValue
                 self?.isRecordingCustomShortcut = (newValue == .custom)
-                self?.applyCustomShortcutRegistration(selectedPresetKey: newValue)
             }
             .store(in: &cancellables)
-    }
-
-    private func applyCustomShortcutRegistration(selectedPresetKey: PresetShortcutKey) {
-        switch selectedPresetKey {
-        case .custom:
-            KeyboardShortcuts.enable(.assistantCommand)
-        default:
-            KeyboardShortcuts.disable(.assistantCommand)
-        }
     }
 
     public func resetShortcuts() {
@@ -64,6 +53,5 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
         useEscapeToCancelRecording = false
         selectedPresetKey = .rightOption
         isRecordingCustomShortcut = false
-        applyCustomShortcutRegistration(selectedPresetKey: selectedPresetKey)
     }
 }
