@@ -1,4 +1,5 @@
 import Charts
+import Combine
 import SwiftUI
 
 public struct MetricsDashboardSettingsTab: View {
@@ -31,6 +32,9 @@ public struct MetricsDashboardSettingsTab: View {
         }
         .task {
             await viewModel.load()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .meetingAssistantTranscriptionSaved)) { _ in
+            Task { await viewModel.refresh() }
         }
     }
 

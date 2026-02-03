@@ -18,6 +18,7 @@ public final class MetricsDashboardViewModel: ObservableObject {
     private let storage: StorageService
     private let logger = Logger(subsystem: "MeetingAssistant", category: "MetricsDashboardViewModel")
     private var allMetadata: [TranscriptionMetadata] = []
+    private var isRefreshing = false
 
     private let baselineTypingWordsPerMinute: Double = 35
 
@@ -30,7 +31,21 @@ public final class MetricsDashboardViewModel: ObservableObject {
     }
 
     public func load() async {
-        isLoading = true
+        await refresh(showLoadingIndicator: true)
+    }
+
+    public func refresh() async {
+        await refresh(showLoadingIndicator: false)
+    }
+
+    private func refresh(showLoadingIndicator: Bool) async {
+        guard !isRefreshing else { return }
+        isRefreshing = true
+        defer { isRefreshing = false }
+
+        if showLoadingIndicator {
+            isLoading = true
+        }
         errorMessage = nil
 
         do {
@@ -41,7 +56,9 @@ public final class MetricsDashboardViewModel: ObservableObject {
             errorMessage = "metrics.error.load".localized
         }
 
-        isLoading = false
+        if showLoadingIndicator {
+            isLoading = false
+        }
     }
 
     private func recompute() {
