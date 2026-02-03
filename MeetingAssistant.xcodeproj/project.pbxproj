@@ -11,6 +11,8 @@
 		67EFEA61F7E1C1B39F839DA8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 15415C8C013D084568C9F895 /* Assets.xcassets */; };
 		791585666AC34712B12EC196 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 833251DCBCC51B7EF6E85459 /* InfoPlist.strings */; };
 		7B35EE173CC9EBE38AADFF8B /* MeetingAssistantApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B2BBB31BDAF910C61928AC /* MeetingAssistantApp.swift */; };
+		877BEA3C0E9773EBC0A16F12 /* AssistantShortcutController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D178191AE0776297CC554F27 /* AssistantShortcutController.swift */; };
+		C168721DD2EEDC8FFEA9C871 /* ShortcutActivationState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68C13E254122EFE84388105A /* ShortcutActivationState.swift */; };
 		ED78B9DB44D9C2C412DE3ECD /* GlobalShortcutController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A99BC45676052C0208825CE2 /* GlobalShortcutController.swift */; };
 /* End PBXBuildFile section */
 
@@ -20,9 +22,11 @@
 		15415C8C013D084568C9F895 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		35318EC4A95F6DC94F7B7E05 /* MeetingAssistantCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = MeetingAssistantCore; path = Packages/MeetingAssistantCore; sourceTree = SOURCE_ROOT; };
 		4394AB0636110AD9B3FCC8FB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		68C13E254122EFE84388105A /* ShortcutActivationState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutActivationState.swift; sourceTree = "<group>"; };
 		8C5560DF654F0B06D2610131 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		A99BC45676052C0208825CE2 /* GlobalShortcutController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalShortcutController.swift; sourceTree = "<group>"; };
 		C8B2BBB31BDAF910C61928AC /* MeetingAssistantApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingAssistantApp.swift; sourceTree = "<group>"; };
+		D178191AE0776297CC554F27 /* AssistantShortcutController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantShortcutController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -41,10 +45,12 @@
 			isa = PBXGroup;
 			children = (
 				15415C8C013D084568C9F895 /* Assets.xcassets */,
+				D178191AE0776297CC554F27 /* AssistantShortcutController.swift */,
 				A99BC45676052C0208825CE2 /* GlobalShortcutController.swift */,
 				4394AB0636110AD9B3FCC8FB /* Info.plist */,
 				833251DCBCC51B7EF6E85459 /* InfoPlist.strings */,
 				C8B2BBB31BDAF910C61928AC /* MeetingAssistantApp.swift */,
+				68C13E254122EFE84388105A /* ShortcutActivationState.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -152,8 +158,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				877BEA3C0E9773EBC0A16F12 /* AssistantShortcutController.swift in Sources */,
 				ED78B9DB44D9C2C412DE3ECD /* GlobalShortcutController.swift in Sources */,
 				7B35EE173CC9EBE38AADFF8B /* MeetingAssistantApp.swift in Sources */,
+				C168721DD2EEDC8FFEA9C871 /* ShortcutActivationState.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
