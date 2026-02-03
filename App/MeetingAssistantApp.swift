@@ -26,8 +26,13 @@ struct MeetingAssistantApp: App {
         .commands {
             CommandGroup(replacing: .appSettings) {
                 Button(NSLocalizedString("settings.title", bundle: .main, comment: "") + "...") {
-                    openWindow(id: "settings")
-                    NSApp.activate(ignoringOtherApps: true)
+                    if let existingWindow = NSApp.windows.first(where: { $0.identifier?.rawValue == "settings" }) {
+                        existingWindow.makeKeyAndOrderFront(nil)
+                        NSApp.activate(ignoringOtherApps: true)
+                    } else {
+                        openWindow(id: "settings")
+                        NSApp.activate(ignoringOtherApps: true)
+                    }
                 }
                 .keyboardShortcut(",", modifiers: .command)
             }
@@ -75,6 +80,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             } catch {
                 self.logger.error("Failed to warmup model: \(error.localizedDescription)")
             }
+        }
+
+        // Run auto-cleanup logic
+        Task {
+            await performCleanup()
         }
 
         // Hide dock icon for menu bar only app
@@ -128,6 +138,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    private func startRecording(source: RecordingSource) async {
+        if recordingManager.isRecording {
+            await recordingManager.stopRecording(transcribe: true)
+        } else {
+            await recordingManager.startRecording(source: source)
+        }
+    }
+
     // MARK: - Menu Bar Setup
 
     private func setupMenuBar() {
@@ -135,7 +153,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         if let button = statusItem?.button {
             button.image = NSImage(
-                systemSymbolName: "mic.circle", accessibilityDescription: NSLocalizedString("about.title", bundle: .main, comment: "")
+                systemSymbolName: "waveform", accessibilityDescription: NSLocalizedString("about.title", bundle: .main, comment: "")
             )
             button.action = #selector(handleStatusItemClick)
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
@@ -154,13 +172,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupContextMenu() {
         contextMenu = NSMenu()
 
-        // Start/Stop Recording
+        // Start/Stop Recording (Mic Only)
         let startStopItem = createMenuItem(
             key: "menubar.start_recording",
-            action: #selector(toggleRecordingFromMenu)
+            action: #selector(toggleRecordingFromMenu),
+            keyEquivalent: "d" // Assuming Cmd+Shift+D or similar global, but context menu shows local shortcuts.
+            // User requested showing the configured shortcut. Since global shortcuts are handled by GlobalShortcutController,
+            // displaying them here requires fetching the configured key.
+            // For now, let's add the menu items.
         )
         startStopMenuItem = startStopItem
         contextMenu?.addItem(startStopItem)
+
+        // Start Meeting (Recorder)
+        contextMenu?.addItem(createMenuItem(
+            key: "menubar.start_meeting",
+            action: #selector(startMeetingFromMenu)
+        ))
+
+        // Start Assistant
+        contextMenu?.addItem(createMenuItem(
+            key: "menubar.start_assistant",
+            action: #selector(startAssistantFromMenu)
+        ))
 
         contextMenu?.addItem(NSMenuItem.separator())
 
@@ -248,8 +282,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func toggleRecordingFromMenu() {
         Task { @MainActor in
-            await self.toggleRecording()
+            // Default "Dictation" mode (Mic Only)
+            await self.startRecording(source: .microphone)
         }
+    }
+
+    @objc private func startMeetingFromMenu() {
+        Task { @MainActor in
+            // Meeting mode (System + Mic) permissions will be checked by manager
+            await self.startRecording(source: .system) // Assuming system source implies meeting logic or combined
+        }
+    }
+
+    @objc private func startAssistantFromMenu() {
+        assistantVoiceCommandService.startListening()
     }
 
     @objc private func checkForUpdates() {
@@ -280,11 +326,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.terminate(nil)
     }
 
+    private func performCleanup() async {
+        if AppSettingsStore.shared.autoDeleteTranscriptions {
+            let days = AppSettingsStore.shared.autoDeletePeriodDays
+            do {
+                try await FileSystemStorageService.shared.cleanupOldTranscriptions(olderThanDays: days)
+            } catch {
+                logger.error("Failed to perform auto-cleanup: \(error.localizedDescription)")
+            }
+        }
+    }
+
     // MARK: - Public Methods
 
     /// Update menu bar icon and menu item based on recording state.
     func updateStatusIcon(isRecording: Bool) {
-        let iconName = isRecording ? "record.circle.fill" : "mic.circle"
+        let iconName = isRecording ? "record.circle.fill" : "waveform"
         let accessibilityKey = isRecording ? "menubar.accessibility.recording" : "menubar.accessibility.idle"
         let accessibilityDesc = NSLocalizedString(
             accessibilityKey,

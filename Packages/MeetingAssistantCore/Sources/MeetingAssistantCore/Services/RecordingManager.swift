@@ -315,6 +315,13 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
             // Update meeting
             currentMeeting?.endTime = Date()
+
+            // Issue #2: Start transcribing state BEFORE stopping recording state
+            // to prevent the UI from hiding the indicator during audio merging gap.
+            if transcribe {
+                isTranscribing = true
+            }
+
             isRecording = false
             await RecordingExclusivityCoordinator.shared.endRecording()
 
@@ -334,6 +341,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             AppLogger.error("Failed to stop recording cleanly", category: .recordingManager, error: error)
             lastError = error
             isRecording = false
+            isTranscribing = false
             await RecordingExclusivityCoordinator.shared.endRecording()
         }
     }
@@ -524,7 +532,9 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     }
 
     private func transcribeRecording(audioURL: URL, meeting: Meeting) async {
-        isTranscribing = true
+        // isTranscribing is already set by stopRecording to bridge the UI gap
+        if !isTranscribing { isTranscribing = true }
+
         let audioDuration = await getAudioDuration(from: audioURL)
         transcriptionStatus.beginTranscription(audioDuration: audioDuration)
 

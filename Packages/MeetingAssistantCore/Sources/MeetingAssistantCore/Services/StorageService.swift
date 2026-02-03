@@ -36,6 +36,9 @@ public protocol StorageService: Sendable {
 
     /// Delete a transcription by its ID.
     func deleteTranscription(by id: UUID) async throws
+
+    /// Delete transcriptions older than the specified number of days.
+    func cleanupOldTranscriptions(olderThanDays days: Int) async throws
 }
 
 // MARK: - Implementation
@@ -208,8 +211,7 @@ public final class FileSystemStorageService: StorageService {
 
             for file in jsonFiles {
                 if let data = try? Data(contentsOf: file),
-                   let meta = try? decoder.decode(MetadataDecoder.self, from: data)
-                {
+                   let meta = try? decoder.decode(MetadataDecoder.self, from: data) {
                     let wordCount = FileSystemStorageService.wordCount(for: meta.text)
                     metadataList.append(TranscriptionMetadata(
                         id: meta.id,
@@ -223,7 +225,8 @@ public final class FileSystemStorageService: StorageService {
                         language: meta.language,
                         isPostProcessed: meta.processedContent != nil,
                         duration: meta.meeting.duration,
-                        audioFilePath: meta.meeting.audioFilePath
+                        audioFilePath: meta.meeting.audioFilePath,
+                        inputSource: meta.inputSource
                     ))
                 }
             }
@@ -264,6 +267,7 @@ public final class FileSystemStorageService: StorageService {
         let createdAt: Date
         let language: String
         let processedContent: String?
+        let inputSource: String?
     }
 
     private static func decodeTranscriptionSync(from file: URL, using decoder: JSONDecoder) -> Transcription? {
