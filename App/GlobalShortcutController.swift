@@ -58,6 +58,12 @@ final class GlobalShortcutController {
                 await self?.handleCustomShortcutUp()
             }
         }
+
+        KeyboardShortcuts.onKeyUp(for: .startMeeting) { [weak self] in
+            Task { @MainActor in
+                await self?.toggleMeetingRecording()
+            }
+        }
     }
 
     private func observeSettings() {
@@ -289,6 +295,15 @@ final class GlobalShortcutController {
             await recordingManager.stopRecording()
         } else {
             await recordingManager.startRecording(source: .microphone)
+        }
+    }
+
+    private func toggleMeetingRecording() async {
+        if recordingManager.isRecording {
+            await recordingManager.stopRecording()
+        } else {
+            // Meeting shortcut starts System Audio recording (or Merged if preferred in future)
+            await recordingManager.startRecording(source: .system)
         }
     }
 
