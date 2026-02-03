@@ -84,6 +84,7 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
            currentDiarizerMinSpeakers == min,
            currentDiarizerMaxSpeakers == max,
            currentDiarizerNumSpeakers == num
+        // swiftlint:disable:next opening_brace
         {
             return
         }
