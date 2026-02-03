@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 
 // MARK: - AI Provider Configuration
@@ -111,6 +112,49 @@ public enum RecordingIndicatorPosition: String, CaseIterable, Codable, Sendable 
             NSLocalizedString("settings.general.recording_indicator.position.top", bundle: .safeModule, comment: "")
         case .bottom:
             NSLocalizedString("settings.general.recording_indicator.position.bottom", bundle: .safeModule, comment: "")
+        }
+    }
+}
+
+// MARK: - Assistant Screen Border Configuration
+
+/// Available colors for the Assistant mode screen border.
+public enum AssistantBorderColor: String, CaseIterable, Codable, Sendable {
+    case green
+    case blue
+    case purple
+    case pink
+    case orange
+    case yellow
+    case red
+    case cyan
+
+    /// The NSColor representation for use in AppKit.
+    public var nsColor: NSColor {
+        switch self {
+        case .green: .systemGreen
+        case .blue: .systemBlue
+        case .purple: .systemPurple
+        case .pink: .systemPink
+        case .orange: .systemOrange
+        case .yellow: .systemYellow
+        case .red: .systemRed
+        case .cyan: .systemCyan
+        }
+    }
+}
+
+/// Style options for the Assistant mode screen border feedback.
+public enum AssistantBorderStyle: String, CaseIterable, Codable, Sendable {
+    case stroke
+    case glow
+
+    public var displayName: String {
+        switch self {
+        case .stroke:
+            NSLocalizedString("settings.assistant.border_style.stroke", bundle: .safeModule, comment: "")
+        case .glow:
+            NSLocalizedString("settings.assistant.border_style.glow", bundle: .safeModule, comment: "")
         }
     }
 }
@@ -265,6 +309,8 @@ public class AppSettingsStore: ObservableObject {
         static let assistantShortcutActivationMode = "assistantShortcutActivationMode"
         static let assistantUseEscapeToCancelRecording = "assistantUseEscapeToCancelRecording"
         static let assistantSelectedPresetKey = "assistantSelectedPresetKey"
+        static let assistantBorderColor = "assistantBorderColor"
+        static let assistantBorderStyle = "assistantBorderStyle"
         static let recordingIndicatorEnabled = "recordingIndicatorEnabled"
         static let recordingIndicatorStyle = "recordingIndicatorStyle"
         static let recordingIndicatorPosition = "recordingIndicatorPosition"
@@ -414,6 +460,16 @@ public class AppSettingsStore: ObservableObject {
         didSet { UserDefaults.standard.set(assistantSelectedPresetKey.rawValue, forKey: Keys.assistantSelectedPresetKey) }
     }
 
+    /// Color for the Assistant mode screen border.
+    @Published public var assistantBorderColor: AssistantBorderColor {
+        didSet { UserDefaults.standard.set(assistantBorderColor.rawValue, forKey: Keys.assistantBorderColor) }
+    }
+
+    /// Style for the Assistant mode screen border (stroke or glow).
+    @Published public var assistantBorderStyle: AssistantBorderStyle {
+        didSet { UserDefaults.standard.set(assistantBorderStyle.rawValue, forKey: Keys.assistantBorderStyle) }
+    }
+
     // MARK: - Recording Indicator Properties
 
     /// Whether the floating recording indicator is enabled.
@@ -538,6 +594,12 @@ public class AppSettingsStore: ObservableObject {
         let rawAssistantPresetKey = UserDefaults.standard.string(forKey: Keys.assistantSelectedPresetKey)
         assistantSelectedPresetKey = rawAssistantPresetKey.flatMap { PresetShortcutKey(rawValue: $0) } ?? .rightOption
 
+        // Load assistant border settings
+        let rawBorderColor = UserDefaults.standard.string(forKey: Keys.assistantBorderColor)
+        assistantBorderColor = rawBorderColor.flatMap { AssistantBorderColor(rawValue: $0) } ?? .green
+        let rawBorderStyle = UserDefaults.standard.string(forKey: Keys.assistantBorderStyle)
+        assistantBorderStyle = rawBorderStyle.flatMap { AssistantBorderStyle(rawValue: $0) } ?? .stroke
+
         // Load recording indicator settings
         recordingIndicatorEnabled = UserDefaults.standard.bool(forKey: Keys.recordingIndicatorEnabled)
         let rawIndicatorStyle = UserDefaults.standard.string(forKey: Keys.recordingIndicatorStyle)
@@ -595,6 +657,8 @@ public class AppSettingsStore: ObservableObject {
         assistantShortcutActivationMode = .holdOrToggle
         assistantUseEscapeToCancelRecording = false
         assistantSelectedPresetKey = .rightOption
+        assistantBorderColor = .green
+        assistantBorderStyle = .stroke
         recordingIndicatorEnabled = false
         recordingIndicatorStyle = .mini
         recordingIndicatorPosition = .bottom
