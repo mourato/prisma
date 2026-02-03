@@ -34,6 +34,13 @@
 "settings.general.recordings_path" = "Pasta de gravações:";
 "settings.general.audio_format" = "Formato de Áudio";
 "settings.general.merge_audio" = "Mesclar arquivos de áudio ao finalizar";
+
+/* Storage Settings */
+"settings.general.storage" = "Armazenamento";
+"settings.general.auto_delete" = "Excluir transcrições antigas automaticamente";
+"settings.general.auto_delete_desc" = "Remove transcrições mais antigas que o período especificado para economizar espaço em disco.";
+"settings.general.days_format" = "%d dias";
+
 "settings.general.transcript_delivery" = "Entrega da Transcrição";
 "settings.general.auto_copy_transcription" = "Copiar transcrições automaticamente para a área de transferência";
 "settings.general.auto_copy_transcription_desc" = "Copia o texto pós-processado quando disponível; caso contrário, a transcrição bruta.";
