@@ -117,8 +117,8 @@ Escopo: **todas** as dependências (runtime, testes, tooling local, CI/CD e scri
 ### Fase 3 — Refatoração estrutural (longo prazo)
 
 4) **Estratégia de testes (substituição do Cuckoo)**
-- Próximo passo sugerido: POC com Swift Macros e criação de novos testes já no novo approach.
-- Impacto: redução gradual do grafo de dependências; requer investimento inicial de engenharia.
+- Implementado (POC): adicionados os targets `MeetingAssistantCoreMocking`/`MeetingAssistantCoreMockingMacros` e um teste exemplo (`StartRecordingUseCaseMacroMockingTests`).
+- Nota: essa POC adiciona `swift-syntax` como dependência direta; `Cuckoo` permanece por enquanto (migração progressiva, sem reescrever testes antigos).
 
 5) **Manutenção da concorrência**
 - Sugestão: manter `swift-atomics` por enquanto.
