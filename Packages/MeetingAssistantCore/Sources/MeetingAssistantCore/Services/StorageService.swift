@@ -47,6 +47,10 @@ public final class FileSystemStorageService: StorageService {
         static let recordingsDirectory = "recordingsDirectory"
     }
 
+    private static func wordCount(for text: String) -> Int {
+        text.split(whereSeparator: \.isWhitespace).count
+    }
+
     public var recordingsDirectory: URL {
         // Read directly from UserDefaults to avoid MainActor isolation issues with AppSettingsStore
         let configuredPath = UserDefaults.standard.string(forKey: Keys.recordingsDirectory) ?? ""
@@ -207,6 +211,7 @@ public final class FileSystemStorageService: StorageService {
                    let meta = try? decoder.decode(MetadataDecoder.self, from: data)
                 // swiftlint:disable:next opening_brace
                 {
+                    let wordCount = FileSystemStorageService.wordCount(for: meta.text)
                     metadataList.append(TranscriptionMetadata(
                         id: meta.id,
                         meetingId: meta.meeting.id,
@@ -215,6 +220,7 @@ public final class FileSystemStorageService: StorageService {
                         startTime: meta.meeting.startTime,
                         createdAt: meta.createdAt,
                         previewText: String(meta.text.prefix(100)),
+                        wordCount: wordCount,
                         language: meta.language,
                         isPostProcessed: meta.processedContent != nil,
                         duration: meta.meeting.duration,

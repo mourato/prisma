@@ -693,6 +693,11 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         )
 
         try await storage.saveTranscription(transcription)
+        NotificationCenter.default.post(
+            name: .meetingAssistantTranscriptionSaved,
+            object: nil,
+            userInfo: [AppNotifications.UserInfoKey.transcriptionId: transcription.id]
+        )
         return transcription
     }
 

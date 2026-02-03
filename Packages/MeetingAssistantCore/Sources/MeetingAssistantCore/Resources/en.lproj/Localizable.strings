@@ -1,4 +1,5 @@
 /* Sidebar Sections */
+"settings.section.metrics" = "Dashboard";
 "settings.section.general" = "General";
 "settings.section.transcriptions" = "Transcriptions";
 "settings.section.shortcuts" = "Shortcuts";
@@ -7,6 +8,22 @@
 "settings.section.post_processing" = "Post-Processing";
 "settings.section.service" = "Service";
 "settings.section.permissions" = "Permissions";
+
+/* Metrics Dashboard */
+"metrics.title" = "Dashboard";
+"metrics.subtitle" = "Insights based on your transcriptions.";
+"metrics.filters.title" = "Filters";
+"metrics.filters.period" = "Period";
+"metrics.summary.sessions" = "Sessions";
+"metrics.summary.sessions_detail" = "sessions recorded";
+"metrics.summary.words" = "Words";
+"metrics.summary.words_detail" = "words transcribed";
+"metrics.summary.time_saved" = "Time Saved";
+"metrics.summary.time_saved_detail" = "vs. typing by hand";
+"metrics.peaks.weekday.title" = "Weekday Peaks";
+"metrics.empty.title" = "No data yet";
+"metrics.empty.subtitle" = "Start your first recording to unlock insights.";
+"metrics.error.load" = "Failed to load dashboard data.";
 
 
 /* General Settings */

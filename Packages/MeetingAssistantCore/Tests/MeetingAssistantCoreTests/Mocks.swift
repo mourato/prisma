@@ -198,6 +198,7 @@ class MockStorageService: StorageService, @unchecked Sendable {
                 startTime: transcription.meeting.startTime,
                 createdAt: transcription.createdAt,
                 previewText: transcription.preview,
+                wordCount: transcription.wordCount,
                 language: transcription.language,
                 isPostProcessed: transcription.isPostProcessed,
                 duration: transcription.meeting.duration,
