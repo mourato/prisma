@@ -1,4 +1,3 @@
-import AppKit
 import AVFoundation
 import Combine
 import Foundation
@@ -539,7 +538,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
                 postProcessing: postProcessing
             )
 
-            copyTranscriptionToClipboardIfNeeded(transcription)
+            TranscriptionDeliveryService.deliver(transcription: transcription)
 
             transcriptionStatus.completeTranscription(success: true)
             notifySuccess(for: transcription)
@@ -684,20 +683,6 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         let body = "\(transcription.meeting.appName): \(transcription.wordCount) palavras \(suffix)"
 
         notificationService.sendNotification(title: "Transcrição Concluída", body: body)
-    }
-
-    private func copyTranscriptionToClipboardIfNeeded(_ transcription: Transcription) {
-        guard AppSettingsStore.shared.autoCopyTranscriptionToClipboard else { return }
-
-        let candidate = transcription.processedContent?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let textToCopy: String = if let candidate, !candidate.isEmpty {
-            candidate
-        } else {
-            transcription.rawText
-        }
-
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(textToCopy, forType: .string)
     }
 
     private func handleTranscriptionError(_ error: Error) {
