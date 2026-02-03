@@ -511,9 +511,17 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         do {
             try await performHealthCheck()
 
+            let transcriptionStart = Date()
             let response = try await performTranscription(audioURL: audioURL)
-            let (processedContent, promptId, promptTitle) = await applyPostProcessing(
-                rawText: response.text)
+            let transcriptionProcessingDuration = Date().timeIntervalSince(transcriptionStart)
+
+            let postProcessing = await applyPostProcessing(rawText: response.text)
+
+            var meetingForTranscription = meeting
+            if meetingForTranscription.endTime == nil, let audioDuration {
+                meetingForTranscription.endTime = meetingForTranscription.startTime
+                    .addingTimeInterval(audioDuration)
+            }
 
             // Determine input source display string
             let sourceDisplay = switch currentRecordingSource {
@@ -523,13 +531,11 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             }
 
             let transcription = try await createAndSaveTranscription(
-                meeting: meeting,
+                meeting: meetingForTranscription,
                 response: response,
-                processedContent: processedContent,
-                promptId: promptId,
-                promptTitle: promptTitle,
                 inputSource: sourceDisplay,
-                transcriptionDuration: response.durationSeconds
+                transcriptionDuration: transcriptionProcessingDuration,
+                postProcessing: postProcessing
             )
 
             transcriptionStatus.completeTranscription(success: true)
@@ -571,7 +577,15 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         )
     }
 
-    private func applyPostProcessing(rawText: String) async -> (String?, UUID?, String?) {
+    private struct PostProcessingResult {
+        let processedContent: String?
+        let promptId: UUID?
+        let promptTitle: String?
+        let duration: Double
+        let model: String?
+    }
+
+    private func applyPostProcessing(rawText: String) async -> PostProcessingResult {
         transcriptionStatus.updateProgress(
             phase: .postProcessing, percentage: Constants.postProcessingProgress
         )
@@ -581,7 +595,13 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
               settings.aiConfiguration.isValid,
               let prompt = settings.selectedPrompt
         else {
-            return (nil, nil, nil)
+            return PostProcessingResult(
+                processedContent: nil,
+                promptId: nil,
+                promptTitle: nil,
+                duration: 0,
+                model: nil
+            )
         }
 
         transcriptionStatus.updateProgress(
@@ -589,43 +609,56 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         )
 
         do {
+            let startTime = Date()
             let processed = try await postProcessingService.processTranscription(
                 rawText, with: prompt
             )
+            let duration = Date().timeIntervalSince(startTime)
+            let model = settings.aiConfiguration.selectedModel
             AppLogger.info("Post-processing complete", category: .recordingManager, extra: ["prompt": prompt.title])
-            return (processed, prompt.id, prompt.title)
+            return PostProcessingResult(
+                processedContent: processed,
+                promptId: prompt.id,
+                promptTitle: prompt.title,
+                duration: duration,
+                model: model
+            )
         } catch {
             AppLogger.error(
                 "Post-processing failed, using raw transcription",
                 category: .recordingManager,
                 error: error
             )
-            return (nil, nil, nil)
+            return PostProcessingResult(
+                processedContent: nil,
+                promptId: nil,
+                promptTitle: nil,
+                duration: 0,
+                model: nil
+            )
         }
     }
 
     private func createAndSaveTranscription(
         meeting: Meeting,
         response: TranscriptionResponse,
-        processedContent: String?,
-        promptId: UUID?,
-        promptTitle: String?,
         inputSource: String,
-        transcriptionDuration: Double
+        transcriptionDuration: Double,
+        postProcessing: PostProcessingResult
     ) async throws -> Transcription {
         let transcription = Transcription(
             meeting: meeting,
-            text: processedContent ?? response.text,
+            text: postProcessing.processedContent ?? response.text,
             rawText: response.text,
-            processedContent: processedContent,
-            postProcessingPromptId: promptId,
-            postProcessingPromptTitle: promptTitle,
+            processedContent: postProcessing.processedContent,
+            postProcessingPromptId: postProcessing.promptId,
+            postProcessingPromptTitle: postProcessing.promptTitle,
             language: response.language,
             modelName: response.model,
             inputSource: inputSource,
             transcriptionDuration: transcriptionDuration,
-            postProcessingDuration: 0, // Initial processing doesn't have post-processing duration unless we time it
-            postProcessingModel: promptId != nil ? AppSettingsStore.shared.aiConfiguration.selectedModel : nil
+            postProcessingDuration: postProcessing.duration,
+            postProcessingModel: postProcessing.model
         )
 
         let logMessageSuffix =

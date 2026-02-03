@@ -38,14 +38,20 @@ public struct TranscriptionCardView: View {
         case delete
     }
 
-    public enum TranscriptionTab: String, CaseIterable {
-        case aiProcessed = "AI Processed"
-        case original = "Original"
-        case segmented = "Segmented"
+    public enum TranscriptionTab: CaseIterable {
+        case aiProcessed
+        case original
+        case segmented
 
         var localized: String {
-            // TODO: Localize
-            rawValue
+            switch self {
+            case .aiProcessed:
+                "transcription.tab.ai_processed".localized
+            case .original:
+                "transcription.tab.original".localized
+            case .segmented:
+                "transcription.tab.segmented".localized
+            }
         }
     }
 
@@ -140,7 +146,7 @@ public struct TranscriptionCardView: View {
                             .foregroundStyle(.secondary)
                     }
                     .menuStyle(.borderlessButton)
-                    .help("Redo Post-processing")
+                    .help("transcription.actions.redo_post_processing".localized)
                     .fixedSize() // Prevent menu chevron if possible or accept it
 
                     // Info
@@ -156,7 +162,7 @@ public struct TranscriptionCardView: View {
                         if let details = transcriptionDetail {
                             TranscriptionInfoPopover(transcription: details)
                         } else {
-                            Text("Loading details...")
+                            Text("transcription.info.loading".localized)
                                 .padding()
                         }
                     }

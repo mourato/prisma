@@ -1,3 +1,4 @@
+import Foundation
 import SwiftUI
 
 /// Popover view displaying detailed metadata about a transcription.
@@ -6,18 +7,33 @@ struct TranscriptionInfoPopover: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Recording Details")
+            Text("transcription.info.title".localized)
                 .font(.headline)
                 .padding(.bottom, 4)
 
             // Recording Section
             VStack(alignment: .leading, spacing: 8) {
-                Text("Recording")
+                Text("transcription.info.recording".localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                InfoRow(icon: "mic.fill", label: transcription.inputSource ?? "Unknown Input", value: formatDuration(transcription.transcriptionDuration))
-                InfoRow(icon: "waveform", label: transcription.modelName, value: formatDuration(transcription.transcriptionDuration))
+                InfoRow(
+                    icon: "mic.fill",
+                    label: transcription.inputSource ?? "transcription.info.unknown_input".localized,
+                    value: formatDuration(transcription.meeting.duration)
+                )
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("transcription.info.transcription".localized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                InfoRow(
+                    icon: "waveform",
+                    label: transcription.modelName,
+                    value: formatDuration(transcription.transcriptionDuration)
+                )
             }
 
             Divider()
@@ -25,14 +41,14 @@ struct TranscriptionInfoPopover: View {
             // Post-Processing Section (if available)
             if let processedModel = transcription.postProcessingModel {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Post-Processing")
+                    Text("transcription.info.post_processing".localized)
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
                     InfoRow(icon: "sparkles", label: processedModel, value: formatDuration(transcription.postProcessingDuration))
                 }
             } else {
-                Text("No post-processing applied")
+                Text("transcription.info.no_post_processing".localized)
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
@@ -42,8 +58,16 @@ struct TranscriptionInfoPopover: View {
     }
 
     private func formatDuration(_ duration: Double) -> String {
-        if duration == 0 { return "-" }
-        return String(format: "%.1fs", duration)
+        if duration <= 0 { return "-" }
+        if duration < 60 {
+            return String(format: "%.1fs", duration)
+        }
+
+        let formatter = DateComponentsFormatter()
+        formatter.allowedUnits = duration >= 3_600 ? [.hour, .minute, .second] : [.minute, .second]
+        formatter.zeroFormattingBehavior = .pad
+
+        return formatter.string(from: duration) ?? String(format: "%.0fs", duration)
     }
 }
 

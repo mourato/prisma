@@ -83,7 +83,7 @@ final class RecordingManagerTests: XCTestCase {
         mockMic.permissionGranted = true
         mockSystem.permissionGranted = false
 
-        await manager.checkPermission()
+        await manager.checkPermission(for: .all)
 
         XCTAssertFalse(manager.hasRequiredPermissions)
     }

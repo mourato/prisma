@@ -204,6 +204,17 @@
 "transcription.ai_actions" = "AI Actions";
 "transcription.ai_post_processing" = "AI Post-Processing";
 "transcription.processing_overlay_hint" = "Please wait, processing with AI...";
+"transcription.info.title" = "Recording Details";
+"transcription.info.recording" = "Recording";
+"transcription.info.transcription" = "Transcription";
+"transcription.info.post_processing" = "Post-Processing";
+"transcription.info.no_post_processing" = "No post-processing applied";
+"transcription.info.unknown_input" = "Unknown Input";
+"transcription.info.loading" = "Loading details...";
+"transcription.tab.ai_processed" = "AI Processed";
+"transcription.tab.original" = "Original";
+"transcription.tab.segmented" = "Segmented";
+"transcription.actions.redo_post_processing" = "Redo Post-processing";
 
 /* Transcription Service States */
 "transcription.state.connected" = "Connected";

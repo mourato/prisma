@@ -204,6 +204,17 @@
 "transcription.ai_actions" = "Ações de IA";
 "transcription.ai_post_processing" = "Pós-Processamento com IA";
 "transcription.processing_overlay_hint" = "Aguarde, processando com IA...";
+"transcription.info.title" = "Detalhes da gravação";
+"transcription.info.recording" = "Gravação";
+"transcription.info.transcription" = "Transcrição";
+"transcription.info.post_processing" = "Pós-processamento";
+"transcription.info.no_post_processing" = "Sem pós-processamento aplicado";
+"transcription.info.unknown_input" = "Entrada desconhecida";
+"transcription.info.loading" = "Carregando detalhes...";
+"transcription.tab.ai_processed" = "Processado por IA";
+"transcription.tab.original" = "Original";
+"transcription.tab.segmented" = "Segmentado";
+"transcription.actions.redo_post_processing" = "Refazer pós-processamento";
 
 /* Transcription Service States */
 "transcription.state.connected" = "Conectado";
