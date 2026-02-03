@@ -15,7 +15,7 @@ private enum LayoutConstants {
 /// Settings view for app configuration.
 /// Uses sidebar navigation pattern similar to macOS System Settings.
 public struct SettingsView: View {
-    @State private var selectedSection: SettingsSection = .general
+    @State private var selectedSection: SettingsSection = .metrics
     @State private var columnVisibility = NavigationSplitViewVisibility.all
 
     public init() {}
@@ -88,6 +88,8 @@ public struct SettingsView: View {
     @ViewBuilder
     private var detailView: some View {
         switch selectedSection {
+        case .metrics:
+            MetricsDashboardSettingsTab()
         case .general:
             GeneralSettingsTab()
         case .assistant:
