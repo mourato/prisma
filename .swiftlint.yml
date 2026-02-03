@@ -2,6 +2,8 @@ disabled_rules:
   - nesting
   - todo
   - identifier_name
+  - line_length
+  - opening_brace
 
 opt_in_rules:
   - empty_string
@@ -13,13 +15,6 @@ opt_in_rules:
   - number_separator
   - unneeded_parentheses_in_closure_argument
   - vertical_parameter_alignment_on_call
-
-line_length:
-  warning: 140
-  error: 200
-  ignores_function_declarations: true
-  ignores_comments: true
-  ignores_urls: true
 
 file_length:
   warning: 600
