@@ -103,9 +103,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func setupRecordingObservation() {
         recordingManager.isRecordingPublisher
+            .combineLatest(recordingManager.isTranscribingPublisher)
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] isRecording in
+            .sink { [weak self] isRecording, isTranscribing in
                 self?.updateStatusIcon(isRecording: isRecording)
+                self?.updateFloatingIndicator(isRecording: isRecording, isTranscribing: isTranscribing)
             }
             .store(in: &cancellables)
     }
@@ -296,10 +298,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             bundle: localizationBundle,
             comment: ""
         )
+    }
 
-        // Show/hide floating recording indicator
+    private func updateFloatingIndicator(isRecording: Bool, isTranscribing: Bool) {
         if isRecording {
-            floatingIndicatorController.show()
+            floatingIndicatorController.show(mode: .recording)
+        } else if isTranscribing {
+            floatingIndicatorController.show(mode: .processing)
         } else {
             floatingIndicatorController.hide()
         }

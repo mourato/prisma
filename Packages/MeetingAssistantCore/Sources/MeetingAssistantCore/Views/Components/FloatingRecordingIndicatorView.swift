@@ -1,9 +1,10 @@
 import SwiftUI
 
-/// Floating indicator view that shows real-time audio waveforms during recording.
+/// Floating indicator view that shows audio waveforms during recording or processing.
 public struct FloatingRecordingIndicatorView: View {
     @ObservedObject var audioMonitor: AudioLevelMonitor
     let style: RecordingIndicatorStyle
+    let mode: FloatingRecordingIndicatorMode
     let onStop: @Sendable () -> Void
     let onCancel: @Sendable () -> Void
 
@@ -12,11 +13,13 @@ public struct FloatingRecordingIndicatorView: View {
     public init(
         audioMonitor: AudioLevelMonitor,
         style: RecordingIndicatorStyle,
+        mode: FloatingRecordingIndicatorMode,
         onStop: @escaping @Sendable () -> Void,
         onCancel: @escaping @Sendable () -> Void
     ) {
         self.audioMonitor = audioMonitor
         self.style = style
+        self.mode = mode
         self.onStop = onStop
         self.onCancel = onCancel
     }
@@ -45,9 +48,10 @@ public struct FloatingRecordingIndicatorView: View {
     private var classicWaveformView: some View {
         ZStack {
             HStack(spacing: 8) {
-                recordingDot
+                statusDot
                 AudioVisualizer(
                     audioMeter: audioMonitor.audioMeter,
+                    mode: mode == .recording ? .recording : .processing,
                     barCount: 16,
                     maxHeight: 24
                 )
@@ -55,12 +59,12 @@ public struct FloatingRecordingIndicatorView: View {
             }
             .opacity(isHovering ? 0.3 : 1.0)
 
-            if isHovering {
+            if isHovering, mode == .recording {
                 controlsOverlay
                     .transition(.scale(scale: 0.9).combined(with: .opacity))
             }
 
-            if audioMonitor.isSilenceWarningVisible {
+            if mode == .recording, audioMonitor.isSilenceWarningVisible {
                 silenceWarningOverlay
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
@@ -78,21 +82,22 @@ public struct FloatingRecordingIndicatorView: View {
     private var miniWaveformView: some View {
         ZStack {
             HStack(spacing: 6) {
-                recordingDot
+                statusDot
                 AudioVisualizer(
                     audioMeter: audioMonitor.audioMeter,
+                    mode: mode == .recording ? .recording : .processing,
                     barCount: 7,
                     maxHeight: 16
                 )
             }
             .opacity(isHovering ? 0.3 : 1.0)
 
-            if isHovering {
+            if isHovering, mode == .recording {
                 controlsOverlay
                     .transition(.scale(scale: 0.9).combined(with: .opacity))
             }
 
-            if audioMonitor.isSilenceWarningVisible {
+            if mode == .recording, audioMonitor.isSilenceWarningVisible {
                 silenceWarningOverlay
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
@@ -147,19 +152,25 @@ public struct FloatingRecordingIndicatorView: View {
             }
     }
 
-    /// Pulsing red dot indicating active recording.
-    private var recordingDot: some View {
+    /// Dot indicating recording or processing.
+    private var statusDot: some View {
         Circle()
-            .fill(Color.red)
+            .fill(mode == .recording ? Color.red : Color.blue)
             .frame(width: 8, height: 8)
-            .modifier(PulsingModifier())
+            .modifier(PulsingModifier(isActive: mode == .recording, speed: mode == .recording ? 0.9 : 1.4))
     }
 }
 
 // MARK: - Audio Visualizer (Native implementation based on VoiceInk)
 
+enum AudioVisualizerMode: Sendable {
+    case recording
+    case processing
+}
+
 struct AudioVisualizer: View {
     let audioMeter: AudioMeter
+    let mode: AudioVisualizerMode
     let barCount: Int
     let minHeight: CGFloat = 4
     let maxHeight: CGFloat
@@ -168,17 +179,30 @@ struct AudioVisualizer: View {
     let hardThreshold: Double = 0.05
 
     private let sensitivityMultipliers: [Double]
+    private let phaseOffsets: [Double]
+    private let secondaryOffsets: [Double]
+    private let amplitudeScales: [Double]
 
     @State private var barHeights: [CGFloat]
     @State private var targetHeights: [CGFloat]
 
-    init(audioMeter: AudioMeter, barCount: Int, maxHeight: CGFloat) {
+    init(audioMeter: AudioMeter, mode: AudioVisualizerMode, barCount: Int, maxHeight: CGFloat) {
         self.audioMeter = audioMeter
+        self.mode = mode
         self.barCount = barCount
         self.maxHeight = maxHeight
 
         sensitivityMultipliers = (0..<barCount).map { _ in
             Double.random(in: 0.6...1.4)
+        }
+        phaseOffsets = (0..<barCount).map { _ in
+            Double.random(in: 0...Double.pi * 2)
+        }
+        secondaryOffsets = (0..<barCount).map { _ in
+            Double.random(in: 0...Double.pi * 2)
+        }
+        amplitudeScales = (0..<barCount).map { _ in
+            Double.random(in: 0.75...1.1)
         }
 
         _barHeights = State(initialValue: Array(repeating: 4, count: barCount))
@@ -186,6 +210,17 @@ struct AudioVisualizer: View {
     }
 
     var body: some View {
+        Group {
+            switch mode {
+            case .recording:
+                recordingBars
+            case .processing:
+                processingBars
+            }
+        }
+    }
+
+    private var recordingBars: some View {
         HStack(spacing: barSpacing) {
             ForEach(0..<barCount, id: \.self) { index in
                 RoundedRectangle(cornerRadius: 1.2)
@@ -197,6 +232,28 @@ struct AudioVisualizer: View {
         .onChange(of: audioMeter) { _, newValue in
             updateBars(with: Float(newValue.averagePower))
         }
+    }
+
+    private var processingBars: some View {
+        TimelineView(.animation) { timeline in
+            let time = timeline.date.timeIntervalSinceReferenceDate
+            HStack(spacing: barSpacing) {
+                ForEach(0..<barCount, id: \.self) { index in
+                    RoundedRectangle(cornerRadius: 1.2)
+                        .fill(Color.white)
+                        .frame(width: barWidth, height: processingHeight(for: index, time: time))
+                }
+            }
+            .frame(height: maxHeight, alignment: .bottom)
+        }
+    }
+
+    private func processingHeight(for index: Int, time: TimeInterval) -> CGFloat {
+        let base = (sin(time * 2.4 + phaseOffsets[index]) + 1) / 2
+        let modulation = (sin(time * 0.9 + secondaryOffsets[index]) + 1) / 2
+        let blended = (0.35 + 0.65 * base) * (0.6 + 0.4 * modulation) * amplitudeScales[index]
+        let clamped = min(1.0, max(0.0, blended))
+        return minHeight + CGFloat(clamped) * (maxHeight - minHeight)
     }
 
     private func updateBars(with audioLevel: Float) {
@@ -237,23 +294,27 @@ struct AudioVisualizer: View {
 
 /// Modifier that adds a subtle pulsing animation.
 private struct PulsingModifier: ViewModifier {
+    let isActive: Bool
+    let speed: Double
     @State private var isPulsing = false
 
     func body(content: Content) -> some View {
         content
-            .opacity(isPulsing ? 0.5 : 1.0)
-            .scaleEffect(isPulsing ? 0.85 : 1.0)
-            .animation(
-                .easeInOut(duration: 0.8)
-                    .repeatForever(autoreverses: true),
-                value: isPulsing
-            )
-            .onAppear {
-                isPulsing = true
-            }
-            .onDisappear {
-                isPulsing = false
-            }
+            .opacity(isPulsing ? 0.6 : 1.0)
+            .scaleEffect(isPulsing ? 1.15 : 1.0)
+            .onAppear { updateAnimation() }
+            .onChange(of: isActive) { _, _ in updateAnimation() }
+            .onChange(of: speed) { _, _ in updateAnimation() }
+    }
+
+    private func updateAnimation() {
+        guard isActive else {
+            isPulsing = false
+            return
+        }
+        withAnimation(.easeInOut(duration: speed).repeatForever(autoreverses: true)) {
+            isPulsing = true
+        }
     }
 }
 
@@ -264,6 +325,7 @@ private struct PulsingModifier: ViewModifier {
     return FloatingRecordingIndicatorView(
         audioMonitor: monitor,
         style: .classic,
+        mode: .recording,
         onStop: {},
         onCancel: {}
     )
@@ -276,6 +338,7 @@ private struct PulsingModifier: ViewModifier {
     return FloatingRecordingIndicatorView(
         audioMonitor: monitor,
         style: .mini,
+        mode: .recording,
         onStop: {},
         onCancel: {}
     )
