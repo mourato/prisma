@@ -43,7 +43,6 @@ my-meeting-assistant/
 │       │       └── Resources/     # Localization (en, pt)
 │       └── Tests/
 ├── MeetingAssistant.xcodeproj     # Xcode project
-├── project.yml                    # XcodeGen specification
 └── scripts/                       # Build utilities
     ├── build-release.sh           # Build Release via xcodebuild
     ├── create-dmg.sh              # Create DMG installer
@@ -69,14 +68,6 @@ my-meeting-assistant/
 ./scripts/create-dmg.sh
 ```
 
-### Regenerar Projeto Xcode
-
-Se você modificar `project.yml`, regenere o projeto:
-
-```bash
-xcodegen generate
-```
-
 > **Nota**: Na primeira vez que iniciar a transcrição, o app fará o download automático do modelo Parakeet TDT (~600MB). Isso pode levar alguns minutos dependendo da conexão.
 
 ## Permissões Necessárias
@@ -91,7 +82,7 @@ O app solicitará acesso em: **System Settings → Privacy & Security**
 ## Tecnologias
 
 - **Frontend/App**: Swift 6.0, SwiftUI, ScreenCaptureKit
-- **Build**: Xcode + XcodeGen
+- **Build**: Xcode
 - **Quality**: SwiftLint, SwiftFormat
 - **AI Core**: [FluidAudio SDK](https://github.com/FluidInference/FluidAudio)
 - **Model**: Parakeet TDT 0.6B v3 (CoreML optimized for ANE)

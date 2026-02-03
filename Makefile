@@ -5,7 +5,7 @@
 # with CI/CD pipelines and headless environments.
 # =============================================================================
 
-.PHONY: help build build-debug build-release test test-verbose lint lint-fix clean run run-release dmg setup xcodegen docs docs-preview docs-clean
+.PHONY: help build build-debug build-release test test-verbose lint lint-fix clean run run-release dmg setup docs docs-preview docs-clean
 
 # Default target
 help:
@@ -25,8 +25,6 @@ help:
 	@echo "  make lint           - Run linting checks"
 	@echo "  make lint-fix       - Auto-fix linting issues"
 	@echo "  make health         - Run comprehensive code health check"
-	@echo "  make danger         - Run Danger-Swift checks (CI mode)"
-	@echo "  make danger-local   - Run Danger-Swift checks against local changes"
 	@echo ""
 	@echo "Run Commands:"
 	@echo "  make run            - Build and run debug version"
@@ -44,7 +42,6 @@ help:
 	@echo "Maintenance:"
 	@echo "  make clean          - Clean build artifacts"
 	@echo "  make setup          - Install development dependencies"
-	@echo "  make xcodegen       - Generate Xcode project from project.yml"
 	@echo ""
 	@echo "CI/CD Commands:"
 	@echo "  make ci-build       - Full CI build (lint + test + build-release)"
@@ -126,14 +123,6 @@ health:
 	@echo -e "$(BLUE)Running code health check...$(NC)"
 	@./scripts/code-health-check.sh
 
-danger:
-	@echo -e "$(BLUE)Running Danger-Swift...$(NC)"
-	@danger-swift ci
-
-danger-local:
-	@echo -e "$(BLUE)Running Danger-Swift (local)...$(NC)"
-	@danger-swift local
-
 # Run Commands
 run: build-debug
 	@echo -e "$(YELLOW)Launching $(APP_NAME) (Debug)...$(NC)"
@@ -163,16 +152,6 @@ setup:
 	@brew install swiftformat || echo "SwiftFormat already installed"
 	@echo -e "$(GREEN)✓ Setup completed$(NC)"
 
-xcodegen:
-	@echo -e "$(BLUE)Generating Xcode project...$(NC)"
-	@xcodegen generate
-	@echo -e "$(GREEN)✓ Xcode project generated$(NC)"
-
-spm-proj:
-	@echo -e "$(BLUE)Generating Xcode project from SPM...$(NC)"
-	@echo -e "$(YELLOW)Note: 'swift package generate-xcodeproj' is deprecated. Using xcodegen as fallback/alternative for main app.$(NC)"
-	@$(MAKE) xcodegen
-
 # Profiling Commands
 profile: build-debug
 	@echo -e "$(BLUE)Running performance profiling (all)...$(NC)"
@@ -189,6 +168,7 @@ profile-memory: build-debug
 profile-animation: build-debug
 	@echo -e "$(BLUE)Running animation profiling...$(NC)"
 	@./scripts/profile-performance.sh --animation
+
 
 # Mock Generation
 mocks:
