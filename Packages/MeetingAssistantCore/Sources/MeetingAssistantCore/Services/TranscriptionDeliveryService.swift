@@ -29,7 +29,7 @@ struct TranscriptionDeliveryService {
     }
 
     private static func pasteTranscriptionIntoActiveApp() {
-        guard AXIsProcessTrusted() else {
+        guard AccessibilityPermissionService.isTrusted() else {
             AppLogger.error(
                 "Accessibility permission missing for auto-paste",
                 category: .recordingManager
