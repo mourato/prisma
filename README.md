@@ -96,6 +96,13 @@ O app solicitará acesso em: **System Settings → Privacy & Security**
 - **AI Core**: [FluidAudio SDK](https://github.com/FluidInference/FluidAudio)
 - **Model**: Parakeet TDT 0.6B v3 (CoreML optimized for ANE)
 
+## Qualidade e Hooks
+
+- **Instalar hooks do projeto**: `./scripts/setup-hooks.sh`
+- **Pre-commit**: lint/format é opcional. Para habilitar, use `RUN_LINT=1 git commit ...`
+- **Pre-push**: roda `make test` e bloqueia push se falhar. Para pular, use `SKIP_TESTS=1 git push`
+- **Lint manual**: `make lint` (não bloqueante por padrão). Para tornar estrito: `STRICT_LINT=1 make lint`
+
 ## Troubleshooting
 
 **O modelo demora para carregar?**
