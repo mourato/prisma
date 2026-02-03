@@ -31,7 +31,7 @@ echo ""
 # Check if xcodeproj exists
 if [ ! -d "${XCODEPROJ}" ]; then
     echo -e "${RED}Error: Xcode project not found at ${XCODEPROJ}${NC}"
-    echo -e "${YELLOW}Run 'xcodegen generate' first to create the project.${NC}"
+    echo -e "${YELLOW}Ensure you are in the repo root and that MeetingAssistant.xcodeproj exists.${NC}"
     exit 1
 fi
 

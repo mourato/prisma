@@ -209,7 +209,6 @@ public final class FileSystemStorageService: StorageService {
             for file in jsonFiles {
                 if let data = try? Data(contentsOf: file),
                    let meta = try? decoder.decode(MetadataDecoder.self, from: data)
-                // swiftlint:disable:next opening_brace
                 {
                     let wordCount = FileSystemStorageService.wordCount(for: meta.text)
                     metadataList.append(TranscriptionMetadata(

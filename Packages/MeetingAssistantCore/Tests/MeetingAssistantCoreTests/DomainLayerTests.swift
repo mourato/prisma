@@ -1,26 +1,25 @@
 // DomainLayerTests - Testes unitários para os casos de uso do domínio
-// Usando Cuckoo para mocks automáticos
+// Usando MacroMocks (@GenerateMock) para mocks
 
-import Cuckoo
 @testable import MeetingAssistantCore
 import XCTest
 
 final class DomainLayerTests: XCTestCase {
-    var mockRecordingRepo: MockRecordingRepository?
-    var mockAudioFileRepo: MockAudioFileRepository?
-    var mockMeetingRepo: MockMeetingRepository?
-    var mockTranscriptionRepo: MockTranscriptionRepository?
-    var mockTranscriptionStorageRepo: MockTranscriptionStorageRepository?
-    var mockPostProcessingRepo: MockPostProcessingRepository?
+    var mockRecordingRepo: MeetingAssistantCore.MacroMockRecordingRepository?
+    var mockAudioFileRepo: MeetingAssistantCore.MacroMockAudioFileRepository?
+    var mockMeetingRepo: MeetingAssistantCore.MacroMockMeetingRepository?
+    var mockTranscriptionRepo: MeetingAssistantCore.MacroMockTranscriptionRepository?
+    var mockTranscriptionStorageRepo: MeetingAssistantCore.MacroMockTranscriptionStorageRepository?
+    var mockPostProcessingRepo: MeetingAssistantCore.MacroMockPostProcessingRepository?
 
     override func setUp() {
         super.setUp()
-        mockRecordingRepo = MockRecordingRepository()
-        mockAudioFileRepo = MockAudioFileRepository()
-        mockMeetingRepo = MockMeetingRepository()
-        mockTranscriptionRepo = MockTranscriptionRepository()
-        mockTranscriptionStorageRepo = MockTranscriptionStorageRepository()
-        mockPostProcessingRepo = MockPostProcessingRepository()
+        mockRecordingRepo = MeetingAssistantCore.MacroMockRecordingRepository()
+        mockAudioFileRepo = MeetingAssistantCore.MacroMockAudioFileRepository()
+        mockMeetingRepo = MeetingAssistantCore.MacroMockMeetingRepository()
+        mockTranscriptionRepo = MeetingAssistantCore.MacroMockTranscriptionRepository()
+        mockTranscriptionStorageRepo = MeetingAssistantCore.MacroMockTranscriptionStorageRepository()
+        mockPostProcessingRepo = MeetingAssistantCore.MacroMockPostProcessingRepository()
     }
 
     override func tearDown() {
@@ -52,25 +51,21 @@ final class DomainLayerTests: XCTestCase {
         let meeting = MeetingEntity(app: .googleMeet)
         let expectedURL = URL(fileURLWithPath: "/tmp/test.wav")
 
-        stub(mockRecordingRepo) { stub in
-            when(stub.hasPermission()).then { _ in true }
-            when(stub.startRecording(to: any(), retryCount: any())).then { _ in }
-        }
-        stub(mockAudioFileRepo) { stub in
-            when(stub.generateAudioFileURL(for: any())).thenReturn(expectedURL)
-        }
-        stub(mockMeetingRepo) { stub in
-            when(stub.updateMeeting(any())).then { _ in }
-        }
+        mockRecordingRepo.hasPermissionHandler = { () async -> Bool in true }
+        mockRecordingRepo.startRecordingHandler = { _, _ in }
+        mockAudioFileRepo.generateAudioFileURLHandler = { _ in expectedURL }
+        mockMeetingRepo.updateMeetingHandler = { _ in }
 
         // When
         let resultURL = try await useCase.execute(for: meeting)
 
         // Then
         XCTAssertEqual(resultURL, expectedURL)
-        verify(mockRecordingRepo).hasPermission()
-        verify(mockRecordingRepo).startRecording(to: equal(to: expectedURL), retryCount: 3)
-        verify(mockMeetingRepo).updateMeeting(any())
+        XCTAssertEqual(mockRecordingRepo.hasPermissionCallCount, 1)
+        XCTAssertEqual(mockRecordingRepo.startRecordingCalls.count, 1)
+        XCTAssertEqual(mockRecordingRepo.startRecordingCalls.first?.outputURL, expectedURL)
+        XCTAssertEqual(mockRecordingRepo.startRecordingCalls.first?.retryCount, 3)
+        XCTAssertEqual(mockMeetingRepo.updateMeetingCalls.count, 1)
     }
 
     func testStartRecordingPermissionDenied() async {
@@ -89,9 +84,7 @@ final class DomainLayerTests: XCTestCase {
         )
         let meeting = MeetingEntity(app: .googleMeet)
 
-        stub(mockRecordingRepo) { stub in
-            when(stub.hasPermission()).then { _ in false }
-        }
+        mockRecordingRepo.hasPermissionHandler = { () async -> Bool in false }
 
         // When/Then
         do {
@@ -130,18 +123,9 @@ final class DomainLayerTests: XCTestCase {
             processedAt: "now"
         )
 
-        stub(mockTranscriptionRepo) { stub in
-            when(stub.healthCheck()).then { _ in true }
-            when(
-                stub.transcribe(
-                    audioURL: any(),
-                    onProgress: any(((@Sendable (Double) -> Void)?).self)
-                )
-            ).thenReturn(response)
-        }
-        stub(mockTranscriptionStorageRepo) { stub in
-            when(stub.saveTranscription(any())).then { _ in }
-        }
+        mockTranscriptionRepo.healthCheckHandler = { () async throws -> Bool in true }
+        mockTranscriptionRepo.transcribeHandler = { _, _ in response }
+        mockTranscriptionStorageRepo.saveTranscriptionHandler = { _ in }
 
         // When
         let transcription = try await useCase.execute(audioURL: audioURL, meeting: meeting)
@@ -149,11 +133,9 @@ final class DomainLayerTests: XCTestCase {
         // Then
         XCTAssertEqual(transcription.text, "Hello world")
         XCTAssertEqual(transcription.meeting.id, meeting.id)
-        verify(mockTranscriptionRepo).healthCheck()
-        verify(mockTranscriptionRepo).transcribe(
-            audioURL: equal(to: audioURL),
-            onProgress: any(((@Sendable (Double) -> Void)?).self)
-        )
-        verify(mockTranscriptionStorageRepo).saveTranscription(any())
+        XCTAssertEqual(mockTranscriptionRepo.healthCheckCallCount, 1)
+        XCTAssertEqual(mockTranscriptionRepo.transcribeCalls.count, 1)
+        XCTAssertEqual(mockTranscriptionRepo.transcribeCalls.first?.audioURL, audioURL)
+        XCTAssertEqual(mockTranscriptionStorageRepo.saveTranscriptionCalls.count, 1)
     }
 }

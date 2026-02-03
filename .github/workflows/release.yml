@@ -19,10 +19,6 @@ jobs:
         with:
           xcode-version: '16.2'
 
-        
-      - name: Install Dependencies
-        run: brew install swiftlint swiftformat
-        
       - name: Build Release App
         run: ./scripts/build-release.sh --ci
         
