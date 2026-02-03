@@ -263,25 +263,34 @@ public struct TranscriptionsSettingsTab: View {
                         .padding(.bottom, 8)
                 ) {
                     ForEach(viewModel.groupedTranscriptions[date] ?? []) { transcription in
-                        TranscriptionCardView(
-                            transcription: transcription,
-                            transcriptionDetail: viewModel.selectedId == transcription.id ? viewModel.selectedTranscription : nil,
-                            isExpanded: viewModel.selectedId == transcription.id,
-                            audioURL: transcription.audioFilePath != nil ? URL(fileURLWithPath: transcription.audioFilePath!) : nil,
-                            availablePrompts: viewModel.availablePrompts,
-                            onToggleExpand: {
-                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                    if viewModel.selectedId == transcription.id {
-                                        viewModel.selectedId = nil
-                                    } else {
-                                        viewModel.selectedId = transcription.id
+                        HStack(alignment: .top, spacing: 16) {
+                            Text(formatTime(transcription.createdAt))
+                                .font(.system(.body, design: .monospaced))
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.secondary)
+                                .padding(.top, 12) // Align with card content
+                                .frame(width: 50, alignment: .trailing)
+
+                            TranscriptionCardView(
+                                transcription: transcription,
+                                transcriptionDetail: viewModel.selectedId == transcription.id ? viewModel.selectedTranscription : nil,
+                                isExpanded: viewModel.selectedId == transcription.id,
+                                audioURL: transcription.audioFilePath != nil ? URL(fileURLWithPath: transcription.audioFilePath!) : nil,
+                                availablePrompts: viewModel.availablePrompts,
+                                onToggleExpand: {
+                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                        if viewModel.selectedId == transcription.id {
+                                            viewModel.selectedId = nil
+                                        } else {
+                                            viewModel.selectedId = transcription.id
+                                        }
                                     }
+                                },
+                                onAction: { action in
+                                    handleTranscriptionAction(action, for: transcription)
                                 }
-                            },
-                            onAction: { action in
-                                handleTranscriptionAction(action, for: transcription)
-                            }
-                        )
+                            )
+                        }
                         .tag(transcription.id)
                         .listRowSeparator(.hidden)
                         .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 12, trailing: 16))
@@ -304,6 +313,12 @@ public struct TranscriptionsSettingsTab: View {
             return "settings.transcriptions.yesterday".localized
         }
 
+        return formatter.string(from: date)
+    }
+
+    private func formatTime(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
         return formatter.string(from: date)
     }
 
