@@ -158,6 +158,13 @@
 "assistant.error.recording_in_progress" = "A recording is in progress. Stop it before using Assistant.";
 "assistant.error.processing_failed" = "Unable to process the Assistant command.";
 
+/* Assistant Visual Feedback */
+"settings.assistant.visual_feedback" = "Visual Feedback";
+"settings.assistant.border_color" = "Border Color";
+"settings.assistant.border_style" = "Border Style";
+"settings.assistant.border_style.stroke" = "Stroke";
+"settings.assistant.border_style.glow" = "Glow";
+
 /* Keyboard Controls (New Tab) */
 "settings.section.shortcuts" = "Keyboard Controls";
 "settings.shortcuts.header_desc" = "Choose your preferred keyboard keys for starting recordings. Press only these keys to begin recording.";

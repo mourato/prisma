@@ -1,13 +1,14 @@
 import AppKit
 import SwiftUI
 
-/// Controller that manages a green border overlay around the active screen
+/// Controller that manages a colored border overlay around the active screen
 /// to provide visual feedback when the Assistant mode is active.
 @MainActor
 public final class AssistantScreenBorderController {
     // MARK: - Properties
 
     private var borderWindow: NSWindow?
+    private let settingsStore: AppSettingsStore
 
     /// Whether the border is currently visible.
     public private(set) var isVisible = false
@@ -16,17 +17,19 @@ public final class AssistantScreenBorderController {
 
     private enum Constants {
         static let borderWidth: CGFloat = 10
-        static let borderColor = NSColor.systemGreen
+        static let glowRadius: CGFloat = 20
         static let animationDuration: TimeInterval = 0.2
     }
 
     // MARK: - Initialization
 
-    public init() {}
+    public init(settingsStore: AppSettingsStore = .shared) {
+        self.settingsStore = settingsStore
+    }
 
     // MARK: - Public API
 
-    /// Show the green border around the active screen.
+    /// Show the border around the active screen using configured color and style.
     public func show() {
         guard !isVisible else { return }
 
@@ -50,10 +53,15 @@ public final class AssistantScreenBorderController {
         window.hasShadow = false
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
 
-        // Create the border view using SwiftUI
+        // Create the border view using SwiftUI with current settings
+        let borderColor = Color(settingsStore.assistantBorderColor.nsColor)
+        let borderStyle = settingsStore.assistantBorderStyle
+
         let borderView = AssistantScreenBorderView(
             borderWidth: Constants.borderWidth,
-            borderColor: Color(Constants.borderColor)
+            glowRadius: Constants.glowRadius,
+            borderColor: borderColor,
+            style: borderStyle
         )
         window.contentView = NSHostingView(rootView: borderView)
 
@@ -71,7 +79,7 @@ public final class AssistantScreenBorderController {
         isVisible = true
     }
 
-    /// Hide the green border overlay.
+    /// Hide the border overlay.
     public func hide() {
         guard let window = borderWindow else { return }
 
@@ -91,17 +99,52 @@ public final class AssistantScreenBorderController {
 
 // MARK: - Border View
 
-/// SwiftUI view that renders a border around the entire screen.
+/// SwiftUI view that renders a border or glow effect around the entire screen.
 private struct AssistantScreenBorderView: View {
     let borderWidth: CGFloat
+    let glowRadius: CGFloat
     let borderColor: Color
+    let style: AssistantBorderStyle
 
     var body: some View {
         GeometryReader { geometry in
-            Rectangle()
-                .stroke(borderColor, lineWidth: borderWidth)
-                .frame(width: geometry.size.width, height: geometry.size.height)
+            switch style {
+            case .stroke:
+                strokeBorder(size: geometry.size)
+            case .glow:
+                glowBorder(size: geometry.size)
+            }
         }
         .ignoresSafeArea()
+    }
+
+    /// Renders a solid stroke border around the screen.
+    @ViewBuilder
+    private func strokeBorder(size: CGSize) -> some View {
+        Rectangle()
+            .stroke(borderColor, lineWidth: borderWidth)
+            .frame(width: size.width, height: size.height)
+    }
+
+    /// Renders an inner glow effect (equivalent to CSS box-shadow: inset).
+    @ViewBuilder
+    private func glowBorder(size: CGSize) -> some View {
+        ZStack {
+            // Multiple layered rectangles to create the glow effect
+            ForEach(0..<3, id: \.self) { layer in
+                Rectangle()
+                    .stroke(
+                        borderColor.opacity(0.6 - Double(layer) * 0.15),
+                        lineWidth: borderWidth + CGFloat(layer) * 4
+                    )
+                    .blur(radius: CGFloat(layer) * 6 + 2)
+            }
+
+            // Core bright border
+            Rectangle()
+                .stroke(borderColor, lineWidth: borderWidth / 2)
+                .blur(radius: 1)
+        }
+        .frame(width: size.width, height: size.height)
     }
 }

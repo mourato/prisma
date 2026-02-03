@@ -158,6 +158,13 @@
 "assistant.error.recording_in_progress" = "Há uma gravação em andamento. Finalize antes de usar o Assistant.";
 "assistant.error.processing_failed" = "Não foi possível processar o comando do Assistant.";
 
+/* Assistant Visual Feedback */
+"settings.assistant.visual_feedback" = "Feedback Visual";
+"settings.assistant.border_color" = "Cor da Borda";
+"settings.assistant.border_style" = "Estilo da Borda";
+"settings.assistant.border_style.stroke" = "Linha";
+"settings.assistant.border_style.glow" = "Brilho";
+
 /* Keyboard Controls (New Tab) */
 "settings.section.shortcuts" = "Controles de Teclado";
 "settings.shortcuts.header_desc" = "Escolha suas teclas preferidas para iniciar gravações. Pressione apenas essas teclas para começar a gravar.";
