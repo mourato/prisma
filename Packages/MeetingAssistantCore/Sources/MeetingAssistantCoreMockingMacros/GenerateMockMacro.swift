@@ -1,6 +1,7 @@
 import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
+import Foundation
 
 public struct GenerateMockMacro: PeerMacro {
     public static func expansion(
