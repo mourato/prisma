@@ -83,7 +83,8 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
         if diarizerManager != nil,
            currentDiarizerMinSpeakers == min,
            currentDiarizerMaxSpeakers == max,
-           currentDiarizerNumSpeakers == num {
+           currentDiarizerNumSpeakers == num
+        {
             return
         }
 
