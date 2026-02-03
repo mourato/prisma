@@ -18,6 +18,7 @@ public struct SettingsView: View {
     @State private var selectedSection: SettingsSection = .metrics
     @State private var columnVisibility = NavigationSplitViewVisibility.all
 
+    @MainActor
     public init() {}
 
     public var body: some View {
@@ -83,6 +84,7 @@ public struct SettingsView: View {
 
     // MARK: - Detail View
 
+    @MainActor
     @ViewBuilder
     private var detailView: some View {
         switch selectedSection {

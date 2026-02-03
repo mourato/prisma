@@ -6,6 +6,7 @@ import SwiftUI
 public struct ServiceSettingsTab: View {
     @StateObject private var viewModel = ServiceSettingsViewModel()
 
+    @MainActor
     public init() {}
 
     public var body: some View {

@@ -202,7 +202,8 @@ class MockStorageService: StorageService, @unchecked Sendable {
                 language: transcription.language,
                 isPostProcessed: transcription.isPostProcessed,
                 duration: transcription.meeting.duration,
-                audioFilePath: transcription.meeting.audioFilePath
+                audioFilePath: transcription.meeting.audioFilePath,
+                inputSource: transcription.inputSource
             )
         }
     }
@@ -213,6 +214,10 @@ class MockStorageService: StorageService, @unchecked Sendable {
 
     func deleteTranscription(by id: UUID) async throws {
         mockTranscriptions.removeAll(where: { $0.id == id })
+    }
+
+    func cleanupOldTranscriptions(olderThanDays days: Int) async throws {
+        // Mock implementation
     }
 }
 

@@ -5,6 +5,7 @@ import SwiftUI
 public struct MetricsDashboardSettingsTab: View {
     @StateObject private var viewModel = MetricsDashboardViewModel()
 
+    @MainActor
     public init() {}
 
     public var body: some View {

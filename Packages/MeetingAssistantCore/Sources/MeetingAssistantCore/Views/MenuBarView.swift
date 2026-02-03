@@ -86,7 +86,7 @@ public struct MenuBarView: View {
     private var permissionStatusSection: some View {
         PermissionStatusView(
             viewModel: viewModel.permissionViewModel,
-            viewModel: viewModel.permissionViewModel,
+
             requiredSource: .microphone,
             onDismiss: {
                 withAnimation {

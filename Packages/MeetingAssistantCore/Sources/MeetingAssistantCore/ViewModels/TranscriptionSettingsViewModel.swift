@@ -62,7 +62,7 @@ public class TranscriptionSettingsViewModel: ObservableObject {
     private func matchesSourceFilter(_ transcription: TranscriptionMetadata) -> Bool {
         switch sourceFilter {
         case .all:
-            true
+            return true
         case .dictations:
             // Dictation = Microphone source AND not imported file
             if transcription.appRawValue == MeetingApp.importedFile.rawValue { return false }
@@ -73,7 +73,7 @@ public class TranscriptionSettingsViewModel: ObservableObject {
             if transcription.appRawValue == MeetingApp.importedFile.rawValue { return false }
             return transcription.inputSource != "Microphone"
         case .manualImports:
-            transcription.appRawValue == MeetingApp.importedFile.rawValue
+            return transcription.appRawValue == MeetingApp.importedFile.rawValue
         }
     }
 
