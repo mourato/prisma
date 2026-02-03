@@ -92,7 +92,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
             }
 
             let prompt = PostProcessingPrompt(
-                title: "Assistant Command",
+                title: NSLocalizedString("assistant.prompt_title", bundle: .safeModule, comment: ""),
                 promptText: command
             )
 

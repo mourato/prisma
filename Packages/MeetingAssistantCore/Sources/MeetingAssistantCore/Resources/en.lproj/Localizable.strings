@@ -419,3 +419,13 @@
 "settings.transcriptions.yesterday" = "Yesterday";
 "transcription.empty_fallback" = "No transcription available";
 "transcription.no_segments" = "No segments available";
+
+/* Notifications */
+"notification.transcription_completed" = "Transcription Completed";
+"notification.transcription_failed" = "Transcription Failed";
+"notification.transcription_body" = "%@: %d words %@";
+"notification.transcription_processed" = "(processed)";
+"notification.transcription_transcribed" = "transcribed";
+
+/* Assistant */
+"assistant.prompt_title" = "Assistant Command";

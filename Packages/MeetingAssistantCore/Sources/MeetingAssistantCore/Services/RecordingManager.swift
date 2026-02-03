@@ -714,10 +714,19 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     private func notifySuccess(for transcription: Transcription) {
         let suffix =
             transcription.isPostProcessed
-                ? "(\(transcription.postProcessingPromptTitle ?? "processado"))" : "transcritas"
-        let body = "\(transcription.meeting.appName): \(transcription.wordCount) palavras \(suffix)"
+                ? NSLocalizedString("notification.transcription_processed", bundle: .safeModule, comment: "")
+                : NSLocalizedString("notification.transcription_transcribed", bundle: .safeModule, comment: "")
+        let body = String(
+            format: NSLocalizedString("notification.transcription_body", bundle: .safeModule, comment: ""),
+            transcription.meeting.appName,
+            transcription.wordCount,
+            suffix
+        )
 
-        notificationService.sendNotification(title: "Transcrição Concluída", body: body)
+        notificationService.sendNotification(
+            title: NSLocalizedString("notification.transcription_completed", bundle: .safeModule, comment: ""),
+            body: body
+        )
     }
 
     private func handleTranscriptionError(_ error: Error) {
@@ -728,7 +737,8 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         transcriptionStatus.completeTranscription(success: false)
 
         notificationService.sendNotification(
-            title: "Falha na Transcrição", body: error.localizedDescription
+            title: NSLocalizedString("notification.transcription_failed", bundle: .safeModule, comment: ""),
+            body: error.localizedDescription
         )
     }
 
