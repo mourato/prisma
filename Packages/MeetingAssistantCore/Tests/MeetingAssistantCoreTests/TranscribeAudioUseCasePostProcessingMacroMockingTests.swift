@@ -15,8 +15,7 @@ final class TranscribeAudioUseCasePostProcessingMacroMockingTests: XCTestCase {
             language: "en",
             durationSeconds: 1.0,
             model: "test-model",
-            processedAt: "now",
-            segments: []
+            processedAt: "now"
         )
         transcriptionRepository.transcribeHandler = { _, _ in response }
 
