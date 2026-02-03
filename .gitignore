@@ -60,6 +60,7 @@ Package.resolved
 # Note: We DO track Packages/MeetingAssistantCore/ (our local package)
 # but ignore the .build folders inside
 Packages/*/.build/
+Packages/*/.home/
 
 # Environment
 .env
@@ -73,6 +74,7 @@ logs/
 tmp/
 temp/
 scratch/
+.tmp/
 *.processed.wav
 
 # Build artifacts
