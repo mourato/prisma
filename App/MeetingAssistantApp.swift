@@ -295,7 +295,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func startAssistantFromMenu() {
-        assistantVoiceCommandService.startListening()
+        Task { await assistantVoiceCommandService.startRecording() }
     }
 
     @objc private func checkForUpdates() {

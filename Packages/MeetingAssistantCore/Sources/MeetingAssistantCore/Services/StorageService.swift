@@ -283,7 +283,7 @@ public final class FileSystemStorageService: StorageService {
         let knownAudioPaths = Set(allMetadata.compactMap(\.audioFilePath))
 
         // Use a detached task for file system operations to avoid blocking
-        try await Task.detached(priority: .background) {
+        await Task.detached(priority: .background) {
             let fileManager = FileManager.default
             // Re-construct directories inside task to be safe, or capture 'recordingsDirectory'
             // We need to resolve recordingsDirectory. Safest is to hardcode or pass it in.
