@@ -26,13 +26,18 @@ public struct FloatingRecordingIndicatorView: View {
 
     public var body: some View {
         Group {
-            switch style {
-            case .classic:
-                classicWaveformView
-            case .mini:
-                miniWaveformView
-            case .none:
-                EmptyView()
+            switch mode {
+            case .error:
+                errorView
+            case .recording, .processing:
+                switch style {
+                case .classic:
+                    classicWaveformView
+                case .mini:
+                    miniWaveformView
+                case .none:
+                    EmptyView()
+                }
             }
         }
         .onHover { hovering in
@@ -46,12 +51,13 @@ public struct FloatingRecordingIndicatorView: View {
 
     /// Full waveform view similar to SuperWhisper's "Classic" style.
     private var classicWaveformView: some View {
-        ZStack {
+        let visualizerMode = visualizerModeForIndicator
+        return ZStack {
             HStack(spacing: 4) {
                 statusDot
                 AudioVisualizer(
                     audioMeter: audioMonitor.audioMeter,
-                    mode: mode == .recording ? .recording : .processing,
+                    mode: visualizerMode,
                     barCount: 16,
                     maxHeight: 24
                 )
@@ -59,12 +65,12 @@ public struct FloatingRecordingIndicatorView: View {
             }
             .opacity(isHovering ? 0.3 : 1.0)
 
-            if isHovering, mode == .recording {
+            if isHovering, isRecordingMode {
                 controlsOverlay
                     .transition(.scale(scale: 0.9).combined(with: .opacity))
             }
 
-            if mode == .recording, audioMonitor.isSilenceWarningVisible {
+            if isRecordingMode, audioMonitor.isSilenceWarningVisible {
                 silenceWarningOverlay
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
@@ -80,24 +86,25 @@ public struct FloatingRecordingIndicatorView: View {
 
     /// Compact pill view similar to SuperWhisper's "Mini" style.
     private var miniWaveformView: some View {
-        ZStack {
+        let visualizerMode = visualizerModeForIndicator
+        return ZStack {
             HStack(spacing: 6) {
                 statusDot
                 AudioVisualizer(
                     audioMeter: audioMonitor.audioMeter,
-                    mode: mode == .recording ? .recording : .processing,
+                    mode: visualizerMode,
                     barCount: 7,
                     maxHeight: 16
                 )
             }
             .opacity(isHovering ? 0.3 : 1.0)
 
-            if isHovering, mode == .recording {
+            if isHovering, isRecordingMode {
                 controlsOverlay
                     .transition(.scale(scale: 0.9).combined(with: .opacity))
             }
 
-            if mode == .recording, audioMonitor.isSilenceWarningVisible {
+            if isRecordingMode, audioMonitor.isSilenceWarningVisible {
                 silenceWarningOverlay
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
@@ -155,9 +162,51 @@ public struct FloatingRecordingIndicatorView: View {
     /// Dot indicating recording or processing.
     private var statusDot: some View {
         Circle()
-            .fill(mode == .recording ? Color.red : Color.blue)
+            .fill(isRecordingMode ? Color.red : Color.blue)
             .frame(width: 8, height: 8)
-            .modifier(PulsingModifier(isActive: mode == .recording, speed: mode == .recording ? 0.9 : 1.4))
+            .modifier(PulsingModifier(isActive: isRecordingMode, speed: isRecordingMode ? 0.9 : 1.4))
+    }
+
+    private var isRecordingMode: Bool {
+        if case .recording = mode {
+            return true
+        }
+        return false
+    }
+
+    private var visualizerModeForIndicator: AudioVisualizerMode {
+        if case .recording = mode {
+            return .recording
+        }
+        return .processing
+    }
+
+    private var errorView: some View {
+        let message = errorMessage ?? "Error"
+
+        return HStack(spacing: 8) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.white)
+                .font(.system(size: 12, weight: .bold))
+
+            Text(message)
+                .font(.caption.bold())
+                .foregroundStyle(.white)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(Color.red.opacity(0.95))
+        .clipShape(Capsule())
+        .shadow(color: .black.opacity(0.2), radius: 6, x: 0, y: 3)
+    }
+
+    private var errorMessage: String? {
+        guard case let .error(message) = mode else {
+            return nil
+        }
+        return message
     }
 }
 

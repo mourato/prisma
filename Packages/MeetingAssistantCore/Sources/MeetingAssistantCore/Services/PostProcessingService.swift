@@ -100,6 +100,18 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
         _ transcription: String,
         with prompt: PostProcessingPrompt
     ) async throws -> String {
+        try await processTranscription(
+            transcription,
+            with: prompt,
+            systemPromptOverride: nil
+        )
+    }
+
+    public func processTranscription(
+        _ transcription: String,
+        with prompt: PostProcessingPrompt,
+        systemPromptOverride: String?
+    ) async throws -> String {
         // Input validation
         let trimmedTranscription = transcription.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedTranscription.isEmpty else {
@@ -120,7 +132,11 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
         defer { isProcessing = false }
 
         do {
-            let result = try await sendToAI(transcription: transcription, prompt: prompt)
+            let result = try await sendToAI(
+                transcription: transcription,
+                prompt: prompt,
+                systemPromptOverride: systemPromptOverride
+            )
             AppLogger.info("Post-processing completed", category: .transcriptionEngine)
             return result
         } catch let error as PostProcessingError {
@@ -139,13 +155,18 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
 
     private func sendToAI(
         transcription: String,
-        prompt: PostProcessingPrompt
+        prompt: PostProcessingPrompt,
+        systemPromptOverride: String?
     ) async throws -> String {
         var lastError: Error?
 
         for attempt in 0..<Constants.maxRetryAttempts {
             do {
-                return try await performAIRequest(transcription: transcription, prompt: prompt)
+                return try await performAIRequest(
+                    transcription: transcription,
+                    prompt: prompt,
+                    systemPromptOverride: systemPromptOverride
+                )
             } catch {
                 lastError = error
 
@@ -171,7 +192,8 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
 
     private func performAIRequest(
         transcription: String,
-        prompt: PostProcessingPrompt
+        prompt: PostProcessingPrompt,
+        systemPromptOverride: String?
     ) async throws -> String {
         let config = settings.aiConfiguration
         let apiKey = try getAPIKey(for: config.provider)
@@ -183,7 +205,13 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
         request.timeoutInterval = Constants.requestTimeoutSeconds
 
         configureAuthHeaders(for: &request, provider: config.provider, apiKey: apiKey)
-        try setRequestBody(for: &request, config: config, transcription: transcription, prompt: prompt)
+        try setRequestBody(
+            for: &request,
+            config: config,
+            transcription: transcription,
+            prompt: prompt,
+            systemPromptOverride: systemPromptOverride
+        )
 
         AppLogger.debug(
             "Sending post-processing request",
@@ -259,9 +287,10 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
         for request: inout URLRequest,
         config: AIConfiguration,
         transcription: String,
-        prompt: PostProcessingPrompt
+        prompt: PostProcessingPrompt,
+        systemPromptOverride: String?
     ) throws {
-        let systemMessage = settings.systemPrompt
+        let systemMessage = systemPromptOverride ?? settings.systemPrompt
         let userContent = AIPromptTemplates.userMessage(
             transcription: transcription,
             prompt: prompt.promptText

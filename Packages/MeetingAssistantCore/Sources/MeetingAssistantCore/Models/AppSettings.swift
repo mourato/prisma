@@ -262,6 +262,9 @@ public class AppSettingsStore: ObservableObject {
         static let shortcutActivationMode = "shortcutActivationMode"
         static let useEscapeToCancelRecording = "useEscapeToCancelRecording"
         static let selectedPresetKey = "selectedPresetKey"
+        static let assistantShortcutActivationMode = "assistantShortcutActivationMode"
+        static let assistantUseEscapeToCancelRecording = "assistantUseEscapeToCancelRecording"
+        static let assistantSelectedPresetKey = "assistantSelectedPresetKey"
         static let recordingIndicatorEnabled = "recordingIndicatorEnabled"
         static let recordingIndicatorStyle = "recordingIndicatorStyle"
         static let recordingIndicatorPosition = "recordingIndicatorPosition"
@@ -389,6 +392,26 @@ public class AppSettingsStore: ObservableObject {
         didSet { UserDefaults.standard.set(selectedPresetKey.rawValue, forKey: Keys.selectedPresetKey) }
     }
 
+    /// How keyboard shortcuts activate Assistant commands.
+    @Published public var assistantShortcutActivationMode: ShortcutActivationMode {
+        didSet {
+            UserDefaults.standard.set(
+                assistantShortcutActivationMode.rawValue,
+                forKey: Keys.assistantShortcutActivationMode
+            )
+        }
+    }
+
+    /// Whether pressing Escape cancels Assistant recording.
+    @Published public var assistantUseEscapeToCancelRecording: Bool {
+        didSet { UserDefaults.standard.set(assistantUseEscapeToCancelRecording, forKey: Keys.assistantUseEscapeToCancelRecording) }
+    }
+
+    /// Selected preset shortcut key for Assistant activation.
+    @Published public var assistantSelectedPresetKey: PresetShortcutKey {
+        didSet { UserDefaults.standard.set(assistantSelectedPresetKey.rawValue, forKey: Keys.assistantSelectedPresetKey) }
+    }
+
     // MARK: - Recording Indicator Properties
 
     /// Whether the floating recording indicator is enabled.
@@ -494,6 +517,14 @@ public class AppSettingsStore: ObservableObject {
 
         let rawPresetKey = UserDefaults.standard.string(forKey: Keys.selectedPresetKey)
         selectedPresetKey = rawPresetKey.flatMap { PresetShortcutKey(rawValue: $0) } ?? .fn
+
+        let rawAssistantActivation = UserDefaults.standard.string(forKey: Keys.assistantShortcutActivationMode)
+        assistantShortcutActivationMode = rawAssistantActivation
+            .flatMap { ShortcutActivationMode(rawValue: $0) } ?? .holdOrToggle
+        assistantUseEscapeToCancelRecording = UserDefaults.standard.bool(forKey: Keys.assistantUseEscapeToCancelRecording)
+
+        let rawAssistantPresetKey = UserDefaults.standard.string(forKey: Keys.assistantSelectedPresetKey)
+        assistantSelectedPresetKey = rawAssistantPresetKey.flatMap { PresetShortcutKey(rawValue: $0) } ?? .rightOption
 
         // Load recording indicator settings
         recordingIndicatorEnabled = UserDefaults.standard.bool(forKey: Keys.recordingIndicatorEnabled)

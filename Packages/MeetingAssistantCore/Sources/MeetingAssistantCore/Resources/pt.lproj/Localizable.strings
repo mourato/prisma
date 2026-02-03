@@ -2,6 +2,7 @@
 "settings.section.general" = "Geral";
 "settings.section.transcriptions" = "Transcrições";
 "settings.section.shortcuts" = "Atalhos";
+"settings.section.assistant" = "Assistant";
 "settings.section.ai" = "IA e Pós-Processamento";
 "settings.section.post_processing" = "Pós-Processamento";
 "settings.section.service" = "Serviço";
@@ -111,6 +112,27 @@
 "settings.shortcuts.toggle_recording" = "Alternar Gravação";
 "settings.shortcuts.toggle_recording_desc" = "Inicia ou encerra a gravação atual";
 "settings.shortcuts.reset" = "Resetar para atalhos padrão";
+"settings.assistant.header_desc" = "Configure o atalho do Assistant para editar o texto selecionado com comandos de voz em qualquer app.";
+"settings.assistant.controls" = "Atalho do Assistant";
+"settings.assistant.toggle_command" = "Iniciar/Parar Assistant";
+"settings.assistant.toggle_command_desc" = "Segure ou alterne para gravar um comando de voz para o texto selecionado";
+"settings.assistant.custom_shortcut" = "Atalho Personalizado:";
+"settings.assistant.activation_mode_desc" = "Configure como as teclas de atalho ativam: Segurar ou Alternar (auto-detecta), Alternar (pressione uma vez), Segurar (grave enquanto pressionado), ou Toque Duplo (toque duas vezes rapidamente).";
+"settings.assistant.tips_title" = "Dicas";
+"settings.assistant.fn_key_title" = "Usando a tecla Fn";
+"settings.assistant.fn_key_desc" = "Para usar a tecla Fn sozinha:\n• Abra Configurações do Sistema → Teclado\n• Clique no dropdown \"Pressionar tecla 🌐 para\"\n• Selecione \"Não fazer nada\"\n• Isso permite que o app detecte a tecla Fn";
+"settings.assistant.use_escape" = "Usar Escape para cancelar a gravação do Assistant";
+"settings.assistant.try_keys" = "Teste suas Teclas";
+"settings.assistant.try_keys_hint" = "Clique na caixa de texto abaixo primeiro.";
+"settings.assistant.reset" = "Restaurar atalho padrão";
+"assistant.error.microphone_permission" = "Permissão de microfone necessária para usar o Assistant.";
+"assistant.error.accessibility_permission" = "Permissão de Acessibilidade necessária para editar o texto selecionado.";
+"assistant.error.no_selection" = "Nenhum texto selecionado no app ativo.";
+"assistant.error.empty_command" = "Comando de voz vazio. Tente novamente.";
+"assistant.error.start_failed" = "Não foi possível iniciar a gravação do Assistant.";
+"assistant.error.stop_failed" = "Não foi possível finalizar a gravação do Assistant.";
+"assistant.error.recording_in_progress" = "Há uma gravação em andamento. Finalize antes de usar o Assistant.";
+"assistant.error.processing_failed" = "Não foi possível processar o comando do Assistant.";
 
 /* Keyboard Controls (New Tab) */
 "settings.section.shortcuts" = "Controles de Teclado";
