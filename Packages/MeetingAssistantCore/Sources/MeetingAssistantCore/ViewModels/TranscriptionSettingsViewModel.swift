@@ -64,7 +64,14 @@ public class TranscriptionSettingsViewModel: ObservableObject {
         case .all:
             true
         case .dictations:
-            transcription.appRawValue != MeetingApp.importedFile.rawValue
+            // Dictation = Microphone source AND not imported file
+            if transcription.appRawValue == MeetingApp.importedFile.rawValue { return false }
+            return transcription.inputSource == "Microphone"
+        case .meetings:
+            // Meetings = System Audio or Merged
+            // Or anything that is NOT Microphone and NOT imported
+            if transcription.appRawValue == MeetingApp.importedFile.rawValue { return false }
+            return transcription.inputSource != "Microphone"
         case .manualImports:
             transcription.appRawValue == MeetingApp.importedFile.rawValue
         }

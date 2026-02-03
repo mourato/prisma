@@ -193,7 +193,7 @@ public struct TranscriptionsSettingsTab: View {
         VStack(spacing: 12) {
             Image(systemName: "tray.and.arrow.down.fill")
                 .font(.system(size: 28))
-                .foregroundStyle(SettingsDesignSystem.Colors.aiGradient)
+                .foregroundStyle(SettingsDesignSystem.Colors.iconHighlight)
                 .symbolEffect(.bounce, value: importViewModel.isDropTargeted)
 
             VStack(spacing: 4) {
@@ -405,6 +405,10 @@ struct TranscriptionRowView: View {
         return metadata.previewText
     }
 
+    private var isFallbackText: Bool {
+        metadata.previewText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
     var body: some View {
         HStack(spacing: 12) {
             ZStack {
@@ -423,8 +427,8 @@ struct TranscriptionRowView: View {
                     .fontWeight(.semibold)
 
                 Text(previewText)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(isFallbackText ? .caption.italic() : .caption)
+                    .foregroundStyle(isFallbackText ? .tertiary : .secondary)
                     .lineLimit(1)
             }
 
@@ -439,7 +443,7 @@ struct TranscriptionRowView: View {
                 if metadata.isPostProcessed {
                     Image(systemName: "sparkles")
                         .font(.caption)
-                        .foregroundStyle(SettingsDesignSystem.Colors.aiGradient)
+                        .foregroundStyle(SettingsDesignSystem.Colors.iconHighlight)
                 }
             }
         }

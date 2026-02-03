@@ -14,6 +14,7 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
     public let isPostProcessed: Bool
     public let duration: TimeInterval
     public let audioFilePath: String?
+    public let inputSource: String?
 
     private enum CodingKeys: String, CodingKey {
         case id
@@ -28,6 +29,7 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
         case isPostProcessed
         case duration
         case audioFilePath
+        case inputSource
     }
 
     public init(
@@ -42,7 +44,8 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
         language: String,
         isPostProcessed: Bool,
         duration: TimeInterval,
-        audioFilePath: String?
+        audioFilePath: String?,
+        inputSource: String?
     ) {
         self.id = id
         self.meetingId = meetingId
@@ -56,6 +59,7 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
         self.isPostProcessed = isPostProcessed
         self.duration = duration
         self.audioFilePath = audioFilePath
+        self.inputSource = inputSource
     }
 
     public init(from decoder: Decoder) throws {
@@ -73,6 +77,7 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
         let isPostProcessed = try container.decode(Bool.self, forKey: .isPostProcessed)
         let duration = try container.decode(TimeInterval.self, forKey: .duration)
         let audioFilePath = try container.decodeIfPresent(String.self, forKey: .audioFilePath)
+        let inputSource = try container.decodeIfPresent(String.self, forKey: .inputSource)
 
         self.init(
             id: id,
@@ -86,7 +91,8 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
             language: language,
             isPostProcessed: isPostProcessed,
             duration: duration,
-            audioFilePath: audioFilePath
+            audioFilePath: audioFilePath,
+            inputSource: inputSource
         )
     }
 }
