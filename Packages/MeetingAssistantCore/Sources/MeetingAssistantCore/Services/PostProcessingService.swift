@@ -231,8 +231,7 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
             let code = (error as NSError).code
             if code == NSURLErrorTimedOut ||
                 code == NSURLErrorNetworkConnectionLost ||
-                code == NSURLErrorCannotConnectToHost
-            {
+                code == NSURLErrorCannotConnectToHost {
                 return true
             }
         }

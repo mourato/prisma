@@ -17,8 +17,7 @@ public extension Bundle {
         if let languages = UserDefaults.standard.array(forKey: "AppleLanguages") as? [String],
            let preferredLang = languages.first,
            let path = baseBundle.path(forResource: preferredLang, ofType: "lproj"),
-           let localizedBundle = Bundle(path: path)
-        {
+           let localizedBundle = Bundle(path: path) {
             return localizedBundle
         }
 
