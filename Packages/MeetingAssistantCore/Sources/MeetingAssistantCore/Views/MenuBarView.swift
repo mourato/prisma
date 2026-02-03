@@ -50,19 +50,9 @@ public struct MenuBarView: View {
         _viewModel = StateObject(wrappedValue: viewModel ?? RecordingViewModel(recordingManager: RecordingManager.shared))
     }
 
-    @State private var isPermissionDismissed = false
-
-    private var shouldShowPermissionStatus: Bool {
-        !viewModel.arePermissionsGranted || !isPermissionDismissed
-    }
-
     public var body: some View {
         VStack(spacing: 16) {
             headerSection
-
-            if shouldShowPermissionStatus {
-                permissionStatusSection
-            }
 
             statusSection
 
@@ -79,21 +69,6 @@ public struct MenuBarView: View {
         .onAppear {
             NavigationService.shared.register(openWindow: openWindow)
         }
-    }
-
-    // MARK: - Permission Status Section
-
-    private var permissionStatusSection: some View {
-        PermissionStatusView(
-            viewModel: viewModel.permissionViewModel,
-
-            requiredSource: .microphone,
-            onDismiss: {
-                withAnimation {
-                    isPermissionDismissed = true
-                }
-            }
-        )
     }
 
     // MARK: - Sections
