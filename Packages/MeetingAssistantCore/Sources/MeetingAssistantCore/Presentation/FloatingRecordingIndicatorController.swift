@@ -2,6 +2,12 @@ import AppKit
 import Combine
 import SwiftUI
 
+/// Mode for the floating indicator.
+public enum FloatingRecordingIndicatorMode: Sendable {
+    case recording
+    case processing
+}
+
 /// Controller that manages the floating recording indicator window.
 /// Uses NSPanel to create a non-activating floating overlay.
 @MainActor
@@ -12,6 +18,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
     private let audioMonitor: AudioLevelMonitor
     private let settingsStore: AppSettingsStore
     private var cancellables = Set<AnyCancellable>()
+    private var currentMode: FloatingRecordingIndicatorMode = .recording
 
     /// Whether the indicator is currently visible.
     @Published public private(set) var isVisible = false
@@ -44,13 +51,13 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
 
     /// Show the floating indicator.
     /// Automatically reads style and position from settings.
-    public func show() {
+    /// - Parameter mode: Whether to present recording or processing visuals.
+    public func show(mode: FloatingRecordingIndicatorMode = .recording) {
         guard settingsStore.recordingIndicatorEnabled else { return }
         guard settingsStore.recordingIndicatorStyle != .none else { return }
-        guard panel == nil else { return }
+        currentMode = mode
 
-        // Start monitoring audio levels
-        audioMonitor.startMonitoring()
+        let shouldCreatePanel = panel == nil
 
         // Create the panel
         let panelHeight = panelHeight(for: settingsStore.recordingIndicatorStyle)
@@ -61,52 +68,43 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
             height: panelHeight
         )
 
-        let panel = NSPanel(
+        let panel = panel ?? NSPanel(
             contentRect: contentRect,
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
         )
 
-        panel.level = .screenSaver
-        panel.ignoresMouseEvents = false
-        panel.isFloatingPanel = true
-        panel.hidesOnDeactivate = false
-        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
-        panel.isOpaque = false
-        panel.backgroundColor = .clear
-        panel.hasShadow = false
-        panel.isMovableByWindowBackground = true
+        if shouldCreatePanel {
+            panel.level = .screenSaver
+            panel.ignoresMouseEvents = false
+            panel.isFloatingPanel = true
+            panel.hidesOnDeactivate = false
+            panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
+            panel.isOpaque = false
+            panel.backgroundColor = .clear
+            panel.hasShadow = false
+            panel.isMovableByWindowBackground = true
 
-        // Set content view
-        let indicatorView = FloatingRecordingIndicatorView(
-            audioMonitor: audioMonitor,
-            style: settingsStore.recordingIndicatorStyle,
-            onStop: {
-                Task { @MainActor in
-                    await RecordingManager.shared.stopRecording()
-                }
-            },
-            onCancel: {
-                Task { @MainActor in
-                    await RecordingManager.shared.cancelRecording()
-                }
-            }
-        )
-        panel.contentView = NSHostingView(rootView: indicatorView)
+            self.panel = panel
+        }
+
+        updateMode(mode)
+        updateContent()
 
         // Position the panel
         positionPanel(panel, at: settingsStore.recordingIndicatorPosition)
 
-        // Show with fade-in animation
-        panel.alphaValue = 0
-        panel.orderFront(nil)
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.2
-            panel.animator().alphaValue = 1
+        if shouldCreatePanel {
+            // Show with fade-in animation
+            panel.alphaValue = 0
+            panel.orderFront(nil)
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.2
+                panel.animator().alphaValue = 1
+            }
         }
 
-        self.panel = panel
         isVisible = true
     }
 
@@ -129,6 +127,13 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         }
 
         isVisible = false
+    }
+
+    /// Update the floating indicator mode without recreating the panel.
+    public func update(mode: FloatingRecordingIndicatorMode) {
+        guard isVisible else { return }
+        updateMode(mode)
+        updateContent()
     }
 
     /// Update indicator position without recreating the panel.
@@ -156,10 +161,41 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
                 // Recreate panel with new style
                 hide()
                 if newStyle != .none {
-                    show()
+                    show(mode: currentMode)
                 }
             }
             .store(in: &cancellables)
+    }
+
+    private func updateContent() {
+        guard let panel else { return }
+        let indicatorView = FloatingRecordingIndicatorView(
+            audioMonitor: audioMonitor,
+            style: settingsStore.recordingIndicatorStyle,
+            mode: currentMode,
+            onStop: {
+                Task { @MainActor in
+                    await RecordingManager.shared.stopRecording()
+                }
+            },
+            onCancel: {
+                Task { @MainActor in
+                    await RecordingManager.shared.cancelRecording()
+                }
+            }
+        )
+        panel.contentView = NSHostingView(rootView: indicatorView)
+    }
+
+    private func updateMode(_ mode: FloatingRecordingIndicatorMode) {
+        currentMode = mode
+        switch mode {
+        case .recording:
+            audioMonitor.stopMonitoring()
+            audioMonitor.startMonitoring()
+        case .processing:
+            audioMonitor.stopMonitoring()
+        }
     }
 
     private func panelHeight(for style: RecordingIndicatorStyle) -> CGFloat {
