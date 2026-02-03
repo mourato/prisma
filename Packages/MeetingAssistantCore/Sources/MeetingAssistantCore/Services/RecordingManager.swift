@@ -21,7 +21,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     @Published public private(set) var currentMeeting: Meeting?
     @Published public private(set) var lastError: Error?
     @Published public private(set) var hasRequiredPermissions = false
-    private var currentRecordingSource: RecordingSource = .microphone
+    @Published public private(set) var recordingSource: RecordingSource = .microphone
 
     // MARK: - Protocol Publishers
 
@@ -131,7 +131,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     }
 
     public func checkPermission() async {
-        await checkPermission(for: currentRecordingSource)
+        await checkPermission(for: recordingSource)
     }
 
     public func checkPermission(for source: RecordingSource) async {
@@ -158,7 +158,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
     /// Request permissions required for the provided source.
     public func requestPermission() async {
-        await requestPermission(for: currentRecordingSource)
+        await requestPermission(for: recordingSource)
     }
 
     public func requestPermission(for source: RecordingSource) async {
@@ -205,7 +205,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             return
         }
 
-        currentRecordingSource = source
+        recordingSource = source
 
         do {
             let meeting = createMeeting()
@@ -554,7 +554,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             }
 
             // Determine input source display string
-            let sourceDisplay = switch currentRecordingSource {
+            let sourceDisplay = switch recordingSource {
             case .microphone: "Microphone"
             case .system: "System Audio"
             case .all: "Microphone & System"

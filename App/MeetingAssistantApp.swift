@@ -1,4 +1,5 @@
 import Combine
+import KeyboardShortcuts
 import MeetingAssistantCore
 import os
 import SwiftUI
@@ -186,7 +187,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         )
         dictateMenuItem = dictateItem
         contextMenu?.addItem(dictateItem)
- 
+
         // Record Meeting (Recorder)
         let meetingItem = createMenuItem(
             key: "menubar.record_meeting",
@@ -195,7 +196,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         )
         recordMeetingMenuItem = meetingItem
         contextMenu?.addItem(meetingItem)
- 
+
         // Assistant
         let assistantItem = createMenuItem(
             key: "menubar.assistant",
@@ -231,35 +232,35 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         shortcutName: KeyboardShortcuts.Name? = nil
     ) -> NSMenuItem {
         var title = NSLocalizedString(key, bundle: localizationBundle, comment: "")
-        
-        if let shortcutName = shortcutName, let shortcut = KeyboardShortcuts.Shortcut(name: shortcutName) {
+
+        if let shortcutName, let shortcut = KeyboardShortcuts.Shortcut(name: shortcutName) {
             title += " [\(shortcut.description)]"
         }
-        
+
         let item = NSMenuItem(title: title, action: action, keyEquivalent: keyEquivalent)
         item.target = self
         return item
     }
- 
+
     private func updateMenuTitles() {
         // Update Dictate Item
         let isRecording = recordingManager.isRecording
         let recordingSource = recordingManager.recordingSource
         let isAssistantRecording = assistantVoiceCommandService.isRecording
- 
+
         // Update Dictate
         let dictateKey = (isRecording && recordingSource == .microphone) ? "menubar.stop_dictation" : "menubar.dictate"
         updateMenuItem(dictateMenuItem, key: dictateKey, shortcutName: .toggleRecording)
- 
+
         // Update Meeting
         let meetingKey = (isRecording && (recordingSource == .system || recordingSource == .merged)) ? "menubar.stop_recording" : "menubar.record_meeting"
         updateMenuItem(recordMeetingMenuItem, key: meetingKey, shortcutName: .startMeeting)
- 
+
         // Update Assistant
         let assistantKey = isAssistantRecording ? "menubar.stop_assistant" : "menubar.assistant"
         updateMenuItem(assistantMenuItem, key: assistantKey, shortcutName: .assistantCommand)
     }
- 
+
     private func updateMenuItem(_ item: NSMenuItem?, key: String, shortcutName: KeyboardShortcuts.Name) {
         var title = NSLocalizedString(key, bundle: localizationBundle, comment: "")
         if let shortcut = KeyboardShortcuts.Shortcut(name: shortcutName) {
@@ -306,10 +307,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func showContextMenu() {
         guard let menu = contextMenu, let button = statusItem?.button else { return }
- 
+
         // Update shortcuts/titles before showing
         updateMenuTitles()
- 
+
         // Close popover if open
         popover?.performClose(nil)
 
@@ -399,11 +400,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             bundle: localizationBundle,
             comment: ""
         )
- 
+
         let config = NSImage.SymbolConfiguration(paletteColors: isRecording ? [.systemRed] : [.headerTextColor])
         let image = NSImage(systemSymbolName: iconName, accessibilityDescription: accessibilityDesc)?
             .withSymbolConfiguration(config)
- 
+
         statusItem?.button?.image = image
     }
 
