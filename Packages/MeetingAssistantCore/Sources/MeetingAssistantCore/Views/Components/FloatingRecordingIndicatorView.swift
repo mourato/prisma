@@ -49,7 +49,7 @@ public struct FloatingRecordingIndicatorView: View {
                 AudioVisualizer(
                     audioMeter: audioMonitor.audioMeter,
                     barCount: 16,
-                    maxHeight: 44
+                    maxHeight: 24
                 )
                 .frame(width: 120)
             }
@@ -193,6 +193,7 @@ struct AudioVisualizer: View {
                     .frame(width: barWidth, height: barHeights[index])
             }
         }
+        .frame(height: maxHeight, alignment: .bottom)
         .onChange(of: audioMeter) { _, newValue in
             updateBars(with: Float(newValue.averagePower))
         }

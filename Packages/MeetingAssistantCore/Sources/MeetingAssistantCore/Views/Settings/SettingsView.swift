@@ -94,8 +94,6 @@ public struct SettingsView: View {
             ShortcutSettingsTab()
         case .transcriptions:
             TranscriptionsSettingsTab()
-        case .postProcessing:
-            PostProcessingSettingsTab()
         case .aiModels:
             AISettingsTab()
         case .permissions:

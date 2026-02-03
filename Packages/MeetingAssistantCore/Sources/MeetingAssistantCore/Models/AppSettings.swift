@@ -246,7 +246,6 @@ public class AppSettingsStore: ObservableObject {
 
     private enum Keys {
         static let aiConfiguration = "aiConfiguration"
-        static let aiEnabled = "aiPostProcessingEnabled"
         static let systemPrompt = "postProcessingSystemPrompt"
         static let userPrompts = "postProcessingUserPrompts"
         static let selectedPromptId = "postProcessingSelectedPromptId"
@@ -272,10 +271,6 @@ public class AppSettingsStore: ObservableObject {
 
     @Published public var aiConfiguration: AIConfiguration {
         didSet { save(aiConfiguration, forKey: Keys.aiConfiguration) }
-    }
-
-    @Published public var aiEnabled: Bool {
-        didSet { UserDefaults.standard.set(aiEnabled, forKey: Keys.aiEnabled) }
     }
 
     // MARK: - Post-Processing Properties
@@ -444,7 +439,6 @@ public class AppSettingsStore: ObservableObject {
             aiConfiguration = .default
         }
 
-        aiEnabled = UserDefaults.standard.bool(forKey: Keys.aiEnabled)
         systemPrompt = UserDefaults.standard.string(forKey: Keys.systemPrompt)
             ?? AIPromptTemplates.defaultSystemPrompt
 
@@ -536,7 +530,6 @@ public class AppSettingsStore: ObservableObject {
     /// Reset all settings to defaults.
     public func resetToDefaults() {
         aiConfiguration = .default
-        aiEnabled = false
         systemPrompt = AIPromptTemplates.defaultSystemPrompt
         userPrompts = []
         deletedPromptIds = []

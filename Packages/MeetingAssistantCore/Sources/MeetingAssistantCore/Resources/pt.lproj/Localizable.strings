@@ -2,7 +2,7 @@
 "settings.section.general" = "Geral";
 "settings.section.transcriptions" = "Transcrições";
 "settings.section.shortcuts" = "Atalhos";
-"settings.section.ai" = "IA";
+"settings.section.ai" = "IA e Pós-Processamento";
 "settings.section.post_processing" = "Pós-Processamento";
 "settings.section.service" = "Serviço";
 "settings.section.permissions" = "Permissões";
@@ -26,8 +26,6 @@
 
 /* AI Settings */
 "settings.ai.title" = "Modelos de IA";
-"settings.ai.enabled" = "Habilitar processamento de transcrições com IA";
-"settings.ai.description" = "Quando habilitado, as transcrições serão enviadas para um modelo de IA para correção, formatação e resumo.";
 "settings.ai.diarization" = "Identificar Oradores (Beta)";
 "settings.ai.diarization_desc" = "Identifica quem está falando na reunião. Aumenta significativamente o tempo de processamento.";
 "settings.ai.min_speakers" = "Mín. de Oradores";
@@ -67,7 +65,7 @@
 "settings.post_processing.enabled" = "Habilitar Pós-Processamento com IA";
 "settings.post_processing.description" = "Quando habilitado, as transcrições serão automaticamente processadas por IA para gerar resumos e correções.";
 "settings.post_processing.warning_title" = "Conexão com IA não configurada";
-"settings.post_processing.warning_desc" = "Acesse a aba \"IA\" para configurar um provedor e ativar este recurso.";
+"settings.post_processing.warning_desc" = "Configure um provedor e um modelo acima para ativar este recurso.";
 "settings.post_processing.system_prompt" = "Diretrizes do Sistema";
 "settings.post_processing.base_instructions" = "Instruções Base";
 "settings.post_processing.restore_default" = "Restaurar Padrão";
