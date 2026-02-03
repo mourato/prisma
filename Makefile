@@ -170,24 +170,6 @@ profile-animation: build-debug
 	@./scripts/profile-performance.sh --animation
 
 
-# Mock Generation
-mocks:
-	@echo -e "$(BLUE)Generating Cuckoo mocks...$(NC)"
-	@cd Packages/MeetingAssistantCore && \
-	if [ -f "/tmp/Cuckoo/.build/release/CuckooGenerator" ]; then \
-		/tmp/Cuckoo/.build/release/CuckooGenerator --configuration Cuckoofile.toml; \
-		echo -e "$(GREEN)✓ Cuckoo mocks generated (release build)$(NC)"; \
-	elif [ -f "/tmp/Cuckoo/.build/debug/CuckooGenerator" ]; then \
-		/tmp/Cuckoo/.build/debug/CuckooGenerator --configuration Cuckoofile.toml; \
-		echo -e "$(GREEN)✓ Cuckoo mocks generated (debug build)$(NC)"; \
-	else \
-		echo -e "$(YELLOW)⚠️  CuckooGenerator not found in /tmp/Cuckoo/.build/$(NC)"; \
-		echo -e "$(YELLOW)   Building Cuckoo...$(NC)"; \
-		rm -rf /tmp/Cuckoo && git clone https://github.com/Brightify/Cuckoo.git /tmp/Cuckoo && cd /tmp/Cuckoo && swift build -c release; \
-		/tmp/Cuckoo/.build/release/CuckooGenerator --configuration Cuckoofile.toml; \
-		echo -e "$(GREEN)✓ Cuckoo mocks generated (fresh build)$(NC)"; \
-	fi
-
 # CI/CD Commands
 ci-build: lint test build-release
 	@echo -e "$(GREEN)✓ CI build completed successfully$(NC)"

@@ -1,2 +1,0 @@
-input_files = Sources/MeetingAssistantCore/Domain/Interfaces/DomainProtocols.swift
-output_file = Tests/MeetingAssistantCoreTests/GeneratedMocks.swift
