@@ -86,6 +86,22 @@ public struct RecordingKeyboardControlsSection: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
 
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(NSLocalizedString("settings.shortcuts.start_meeting", bundle: .safeModule, value: "Start Meeting", comment: "Shortcut title"))
+                            .font(.body)
+                            .fontWeight(.medium)
+                        Text(NSLocalizedString("settings.shortcuts.start_meeting_desc", bundle: .safeModule, value: "Start recording system audio immediately", comment: "Shortcut description"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    KeyboardShortcuts.Recorder(for: .startMeeting)
+                }
+                .padding(.vertical, 8)
+
                 Divider()
 
                 Text(NSLocalizedString("settings.shortcuts.activation_mode_desc", bundle: .safeModule, comment: ""))
@@ -149,8 +165,6 @@ public struct RecordingKeyboardControlsSection: View {
                 TextField("", text: $viewModel.testKeysInput)
                     .textFieldStyle(.roundedBorder)
                     .frame(height: 80)
-                    .disabled(true)
-                    .opacity(0.5)
             }
         }
     }
