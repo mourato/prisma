@@ -204,20 +204,13 @@ public struct GeneralSettingsTab: View {
                 if viewModel.autoDeleteTranscriptions {
                     Divider()
 
-                    HStack {
-                        Text("settings.general.auto_delete_period".localized)
-                            .font(.body)
-                            .foregroundStyle(.primary)
-
-                        Spacer()
-
                         Picker("", selection: $viewModel.autoDeletePeriodDays) {
-                            Text("7 days").tag(7)
-                            Text("14 days").tag(14)
-                            Text("30 days").tag(30)
-                            Text("90 days").tag(90)
-                            Text("180 days").tag(180)
-                            Text("365 days").tag(365)
+                            Text(String(format: NSLocalizedString("settings.general.days_format", bundle: .safeModule, comment: ""), 7)).tag(7)
+                            Text(String(format: NSLocalizedString("settings.general.days_format", bundle: .safeModule, comment: ""), 14)).tag(14)
+                            Text(String(format: NSLocalizedString("settings.general.days_format", bundle: .safeModule, comment: ""), 30)).tag(30)
+                            Text(String(format: NSLocalizedString("settings.general.days_format", bundle: .safeModule, comment: ""), 90)).tag(90)
+                            Text(String(format: NSLocalizedString("settings.general.days_format", bundle: .safeModule, comment: ""), 180)).tag(180)
+                            Text(String(format: NSLocalizedString("settings.general.days_format", bundle: .safeModule, comment: ""), 365)).tag(365)
                         }
                         .labelsHidden()
                         .pickerStyle(.menu)
