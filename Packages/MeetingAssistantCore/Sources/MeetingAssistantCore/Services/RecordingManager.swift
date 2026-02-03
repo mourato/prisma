@@ -809,3 +809,108 @@ public enum AudioImportError: LocalizedError {
         }
     }
 }
+
+// MARK: - Retry Transcription
+
+extension RecordingManager {
+    /// Retry transcription for an existing entry using the currently active model.
+    /// - Parameter transcription: Existing transcription to overwrite with new results.
+    public func retryTranscription(for transcription: Transcription) async {
+        guard !isTranscribing else {
+            AppLogger.info("Already transcribing", category: .recordingManager)
+            return
+        }
+
+        guard let audioURL = resolveRetryAudioURL(for: transcription) else { return }
+
+        await runRetryTranscription(audioURL: audioURL, transcription: transcription)
+    }
+
+    private func resolveRetryAudioURL(for transcription: Transcription) -> URL? {
+        guard let audioURL = transcription.audioURL else {
+            AppLogger.error(
+                "Audio file missing for retry",
+                category: .recordingManager,
+                extra: ["id": transcription.id.uuidString]
+            )
+            lastError = AudioImportError.fileNotFound
+            return nil
+        }
+
+        guard FileManager.default.fileExists(atPath: audioURL.path) else {
+            AppLogger.error(
+                "Audio file not found for retry",
+                category: .recordingManager,
+                extra: ["path": audioURL.path]
+            )
+            lastError = AudioImportError.fileNotFound
+            return nil
+        }
+
+        return audioURL
+    }
+
+    private func runRetryTranscription(audioURL: URL, transcription: Transcription) async {
+        isTranscribing = true
+        let audioDuration = await getAudioDuration(from: audioURL)
+        transcriptionStatus.beginTranscription(audioDuration: audioDuration)
+
+        do {
+            let updated = try await performRetryTranscription(
+                audioURL: audioURL,
+                transcription: transcription,
+                audioDuration: audioDuration
+            )
+            try await storage.saveTranscription(updated)
+            transcriptionStatus.completeTranscription(success: true)
+            notifySuccess(for: updated)
+            scheduleStatusReset()
+        } catch {
+            handleTranscriptionError(error)
+        }
+
+        isTranscribing = false
+    }
+
+    private func performRetryTranscription(
+        audioURL: URL,
+        transcription: Transcription,
+        audioDuration: Double?
+    ) async throws -> Transcription {
+        try await performHealthCheck()
+
+        let transcriptionStart = Date()
+        let response = try await performTranscription(audioURL: audioURL)
+        let transcriptionProcessingDuration = Date().timeIntervalSince(transcriptionStart)
+
+        let postProcessing = await applyPostProcessing(rawText: response.text)
+        let meeting = updatedMeeting(for: transcription.meeting, audioDuration: audioDuration)
+
+        return Transcription(
+            id: transcription.id,
+            meeting: meeting,
+            segments: response.segments,
+            text: postProcessing.processedContent ?? response.text,
+            rawText: response.text,
+            processedContent: postProcessing.processedContent,
+            postProcessingPromptId: postProcessing.promptId,
+            postProcessingPromptTitle: postProcessing.promptTitle,
+            language: response.language,
+            createdAt: transcription.createdAt,
+            modelName: response.model,
+            inputSource: transcription.inputSource,
+            transcriptionDuration: transcriptionProcessingDuration,
+            postProcessingDuration: postProcessing.duration,
+            postProcessingModel: postProcessing.model
+        )
+    }
+
+    private func updatedMeeting(for meeting: Meeting, audioDuration: Double?) -> Meeting {
+        guard let audioDuration else { return meeting }
+        guard meeting.endTime == nil else { return meeting }
+
+        var updatedMeeting = meeting
+        updatedMeeting.endTime = meeting.startTime.addingTimeInterval(audioDuration)
+        return updatedMeeting
+    }
+}

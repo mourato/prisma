@@ -161,7 +161,7 @@ public struct TranscriptionDetailView: View {
     private func contentBox(title: String, text: String, isOriginal: Bool, showSparkles: Bool = false) -> some View {
         let displayText = transcriptionDisplayText(text)
 
-        VStack(alignment: .leading, spacing: 12) {
+        return VStack(alignment: .leading, spacing: 12) {
             HStack {
                 HStack(spacing: 6) {
                     if showSparkles {

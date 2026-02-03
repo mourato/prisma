@@ -217,6 +217,9 @@
 "transcription.tab.original" = "Original";
 "transcription.tab.segmented" = "Segmentado";
 "transcription.actions.redo_post_processing" = "Refazer pós-processamento";
+"transcription.actions.retry_transcription" = "Refazer transcrição";
+"transcription.retry.missing_audio" = "Arquivo de áudio original não encontrado.";
+"transcription.retry.missing_transcription" = "Transcrição não encontrada.";
 
 /* Transcription Service States */
 "transcription.state.connected" = "Conectado";
