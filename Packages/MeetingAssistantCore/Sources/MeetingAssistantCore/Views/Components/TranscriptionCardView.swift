@@ -86,7 +86,7 @@ public struct TranscriptionCardView: View {
 
     private var collapsedContent: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(transcription.previewText)
+            Text(displayText(transcription.previewText))
                 .font(.body)
                 .lineLimit(2)
                 .foregroundStyle(.primary)
@@ -189,9 +189,9 @@ public struct TranscriptionCardView: View {
     private var contentView: some View {
         switch selectedTab {
         case .aiProcessed:
-            Text(transcriptionDetail?.processedContent ?? transcriptionDetail?.text ?? transcription.previewText)
+            Text(displayText(transcriptionDetail?.processedContent ?? transcriptionDetail?.text ?? transcription.previewText))
         case .original:
-            Text(transcriptionDetail?.rawText ?? transcription.previewText)
+            Text(displayText(transcriptionDetail?.rawText ?? transcription.previewText))
         case .segmented:
             if let segments = transcriptionDetail?.segments, !segments.isEmpty {
                 VStack(alignment: .leading, spacing: 12) {
@@ -210,6 +210,14 @@ public struct TranscriptionCardView: View {
                     .foregroundStyle(.secondary)
             }
         }
+    }
+
+    private func displayText(_ text: String) -> String {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            return "transcription.empty_fallback".localized
+        }
+        return text
     }
 
     private func actionButton(icon: String, action: TranscriptionAction, isDestructive: Bool = false) -> some View {
