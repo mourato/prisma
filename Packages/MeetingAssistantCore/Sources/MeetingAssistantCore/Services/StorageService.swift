@@ -211,7 +211,8 @@ public final class FileSystemStorageService: StorageService {
 
             for file in jsonFiles {
                 if let data = try? Data(contentsOf: file),
-                   let meta = try? decoder.decode(MetadataDecoder.self, from: data) {
+                   let meta = try? decoder.decode(MetadataDecoder.self, from: data)
+                {
                     let wordCount = FileSystemStorageService.wordCount(for: meta.text)
                     metadataList.append(TranscriptionMetadata(
                         id: meta.id,
@@ -256,6 +257,71 @@ public final class FileSystemStorageService: StorageService {
                 AppLogger.info("Deleted transcription", category: .databaseManager, extra: ["filename": filename])
             } else {
                 AppLogger.warning("Transcription file not found to delete", category: .databaseManager, extra: ["filename": filename])
+            }
+        }.value
+    }
+
+    public func cleanupOldTranscriptions(olderThanDays days: Int) async throws {
+        let allMetadata = try await loadAllMetadata()
+        let cutoffDate = Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? Date()
+
+        let toDelete = allMetadata.filter { $0.createdAt < cutoffDate }
+
+        for item in toDelete {
+            try await deleteTranscription(by: item.id)
+        }
+
+        if !toDelete.isEmpty {
+            AppLogger.info("Cleanup completed", category: .databaseManager, extra: ["deletedCount": toDelete.count])
+        }
+
+        try? await cleanupOrphanedRecordings()
+    }
+
+    public func cleanupOrphanedRecordings() async throws {
+        let allMetadata = try await loadAllMetadata()
+        let knownAudioPaths = Set(allMetadata.compactMap(\.audioFilePath))
+
+        // Use a detached task for file system operations to avoid blocking
+        try await Task.detached(priority: .background) {
+            let fileManager = FileManager.default
+            // Re-construct directories inside task to be safe, or capture 'recordingsDirectory'
+            // We need to resolve recordingsDirectory. Safest is to hardcode or pass it in.
+            // But since 'self' capture might sendable issue, let's assume we can access a static or recalculate.
+            // For now, let's use the known path structure: "Recordings" in documents.
+            guard let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+            let recordingsDir = docs.appendingPathComponent("Recordings")
+
+            // Enum all files in recordings dir
+            guard let files = try? fileManager.contentsOfDirectory(at: recordingsDir, includingPropertiesForKeys: [.creationDateKey]) else { return }
+
+            var deletedCount = 0
+
+            for file in files {
+                // Check if file is an audio file (wav, m4a)
+                let ext = file.pathExtension.lowercased()
+                if ["wav", "m4a"].contains(ext) {
+                    if !knownAudioPaths.contains(file.path) {
+                        // Safe guard: only delete if older than 24h
+                        if let attr = try? fileManager.attributesOfItem(atPath: file.path),
+                           let creationDate = attr[.creationDate] as? Date,
+                           Date().timeIntervalSince(creationDate) > 86_400
+                        { // 24 hours
+
+                            do {
+                                try fileManager.removeItem(at: file)
+                                deletedCount += 1
+                                AppLogger.info("Deleted orphaned recording", category: .databaseManager, extra: ["filename": file.lastPathComponent])
+                            } catch {
+                                AppLogger.error("Failed to delete orphan", category: .databaseManager, error: error)
+                            }
+                        }
+                    }
+                }
+            }
+
+            if deletedCount > 0 {
+                AppLogger.info("Orphan cleanup completed", category: .databaseManager, extra: ["deletedCount": deletedCount])
             }
         }.value
     }
