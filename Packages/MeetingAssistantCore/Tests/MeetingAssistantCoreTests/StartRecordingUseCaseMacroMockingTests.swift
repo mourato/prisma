@@ -4,9 +4,9 @@ import XCTest
 
 final class StartRecordingUseCaseMacroMockingTests: XCTestCase {
     func testExecuteSuccess_UsesRepositoriesAndUpdatesMeeting() async throws {
-        let recordingRepository = MockRecordingRepository()
-        let audioFileRepository = MockAudioFileRepository()
-        let meetingRepository = MockMeetingRepository()
+        let recordingRepository = MeetingAssistantCore.MacroMockRecordingRepository()
+        let audioFileRepository = MeetingAssistantCore.MacroMockAudioFileRepository()
+        let meetingRepository = MeetingAssistantCore.MacroMockMeetingRepository()
 
         recordingRepository.hasPermissionHandler = { () async -> Bool in true }
         recordingRepository.startRecordingHandler = { _, _ in }

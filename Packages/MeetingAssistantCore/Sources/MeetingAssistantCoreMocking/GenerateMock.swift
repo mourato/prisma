@@ -1,4 +1,4 @@
-@attached(peer, names: prefixed(Mock))
+@attached(peer, names: prefixed(MacroMock))
 public macro GenerateMock() = #externalMacro(
     module: "MeetingAssistantCoreMockingMacros",
     type: "GenerateMockMacro"

@@ -13,7 +13,7 @@ public struct GenerateMockMacro: PeerMacro {
         }
 
         let protocolName = protocolDecl.name.text
-        let mockName = "Mock\(protocolName)"
+        let mockName = "MacroMock\(protocolName)"
 
         var members: [DeclSyntax] = []
 
