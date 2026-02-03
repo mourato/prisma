@@ -419,3 +419,13 @@
 "settings.transcriptions.yesterday" = "Ontem";
 "transcription.empty_fallback" = "Nenhuma transcrição disponível";
 "transcription.no_segments" = "Nenhum segmento disponível";
+
+/* Notificações */
+"notification.transcription_completed" = "Transcrição Concluída";
+"notification.transcription_failed" = "Falha na Transcrição";
+"notification.transcription_body" = "%@: %d palavras %@";
+"notification.transcription_processed" = "(processado)";
+"notification.transcription_transcribed" = "transcritas";
+
+/* Assistant */
+"assistant.prompt_title" = "Comando do Assistant";
