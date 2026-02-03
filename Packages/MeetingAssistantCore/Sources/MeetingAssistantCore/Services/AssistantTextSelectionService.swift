@@ -5,9 +5,36 @@ import Foundation
 
 @MainActor
 public final class AssistantTextSelectionService {
+    /// Represents a deep copy of pasteboard content at a specific point in time.
+    /// This stores actual data values rather than references to NSPasteboardItem,
+    /// which become invalid after pasteboard changes.
     struct PasteboardSnapshot {
-        let items: [NSPasteboardItem]
+        /// Each item contains a dictionary mapping UTType identifiers to their data.
+        let itemsData: [[(NSPasteboard.PasteboardType, Data)]]
         let changeCount: Int
+
+        /// Creates a snapshot by deep-copying all data from the current pasteboard items.
+        static func capture(from pasteboard: NSPasteboard) -> PasteboardSnapshot {
+            var itemsData: [[(NSPasteboard.PasteboardType, Data)]] = []
+
+            for item in pasteboard.pasteboardItems ?? [] {
+                var itemData: [(NSPasteboard.PasteboardType, Data)] = []
+                for type in item.types {
+                    if let data = item.data(forType: type) {
+                        itemData.append((type, data))
+                    }
+                }
+                if !itemData.isEmpty {
+                    itemsData.append(itemData)
+                }
+            }
+
+            return PasteboardSnapshot(itemsData: itemsData, changeCount: pasteboard.changeCount)
+        }
+
+        var isEmpty: Bool {
+            itemsData.isEmpty
+        }
     }
 
     private let pasteboard: NSPasteboard
@@ -21,10 +48,7 @@ public final class AssistantTextSelectionService {
             throw AssistantVoiceCommandError.accessibilityPermissionRequired
         }
 
-        let snapshot = PasteboardSnapshot(
-            items: pasteboard.pasteboardItems ?? [],
-            changeCount: pasteboard.changeCount
-        )
+        let snapshot = PasteboardSnapshot.capture(from: pasteboard)
 
         simulateCopy()
 
@@ -61,8 +85,20 @@ public final class AssistantTextSelectionService {
 
     private func restorePasteboard(_ snapshot: PasteboardSnapshot) {
         pasteboard.clearContents()
-        if !snapshot.items.isEmpty {
-            pasteboard.writeObjects(snapshot.items)
+        guard !snapshot.isEmpty else { return }
+
+        // Recreate fresh NSPasteboardItem objects from the captured data
+        var newItems: [NSPasteboardItem] = []
+        for itemData in snapshot.itemsData {
+            let newItem = NSPasteboardItem()
+            for (type, data) in itemData {
+                newItem.setData(data, forType: type)
+            }
+            newItems.append(newItem)
+        }
+
+        if !newItems.isEmpty {
+            pasteboard.writeObjects(newItems)
         }
     }
 
