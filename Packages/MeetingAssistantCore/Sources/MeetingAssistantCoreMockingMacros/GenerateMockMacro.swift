@@ -109,7 +109,7 @@ public struct GenerateMockMacro: PeerMacro {
             )
         }
 
-        let memberBlock = members.map { $0.description }.joined(separator: "\n\n")
+        let memberBlock = members.map(\.description).joined(separator: "\n\n")
 
         return [
             DeclSyntax(
@@ -142,8 +142,8 @@ private struct ParameterDecl {
         }
 
         // Prefer the internal name for recorded args.
-        self.name = self.internalName
-        self.type = parameter.type.trimmedDescription
+        name = self.internalName
+        type = parameter.type.trimmedDescription
     }
 }
 
