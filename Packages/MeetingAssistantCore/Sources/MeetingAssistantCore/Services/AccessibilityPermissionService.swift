@@ -1,21 +1,16 @@
 import AppKit
+@preconcurrency import ApplicationServices
 import Foundation
-
-@_silgen_name("AXIsProcessTrusted")
-private func AXIsProcessTrusted() -> Bool
-
-@_silgen_name("AXIsProcessTrustedWithOptions")
-private func AXIsProcessTrustedWithOptions(_ options: CFDictionary?) -> Bool
 
 @MainActor
 public enum AccessibilityPermissionService {
     public static func currentState() -> PermissionState {
-        AXIsProcessTrusted() ? .granted : .denied
+        isTrusted() ? .granted : .denied
     }
 
     public static func requestPermission() {
         let options = ["AXTrustedCheckOptionPrompt" as CFString: true] as CFDictionary
-        AXIsProcessTrustedWithOptions(options)
+        _ = AXIsProcessTrustedWithOptions(options)
     }
 
     public static func openSystemSettings() {
@@ -23,6 +18,12 @@ public enum AccessibilityPermissionService {
             string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
         ) {
             NSWorkspace.shared.open(url)
+        }
+    }
+
+    public static func isTrusted() -> Bool {
+        withUnsafeCurrentTask { _ in
+            AXIsProcessTrusted()
         }
     }
 }

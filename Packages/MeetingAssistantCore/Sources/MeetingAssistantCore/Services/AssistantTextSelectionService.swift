@@ -78,12 +78,11 @@ public final class AssistantTextSelectionService {
     }
 
     private func hasAccessibilityPermission() -> Bool {
-        if AXIsProcessTrusted() {
+        if AccessibilityPermissionService.isTrusted() {
             return true
         }
 
-        let options = [kAXTrustedCheckOptionPrompt.takeRetainedValue(): true] as CFDictionary
-        AXIsProcessTrustedWithOptions(options)
+        AccessibilityPermissionService.requestPermission()
         return false
     }
 
