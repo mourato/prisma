@@ -3,6 +3,7 @@ import Foundation
 /// Application log categories for grouping logs in Console.app
 public enum LogCategory: String, CaseIterable {
     case recordingManager = "RecordingManager"
+    case assistant = "Assistant"
     case transcriptionEngine = "TranscriptionEngine"
     case databaseManager = "DatabaseManager"
     case networkService = "NetworkService"

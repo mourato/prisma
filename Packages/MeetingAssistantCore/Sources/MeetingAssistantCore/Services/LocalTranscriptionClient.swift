@@ -128,7 +128,9 @@ class LocalTranscriptionClient {
     }
 
     private func makeSegment(from batch: [FluidAIModelManager.AsrSegment], speaker: String)
-        -> Transcription.Segment? {
+        -> Transcription.Segment?
+    // swiftlint:disable:next opening_brace
+    {
         guard !batch.isEmpty else { return nil }
 
         let segmentText = batch.map(\.text).joined(separator: "").trimmingCharacters(

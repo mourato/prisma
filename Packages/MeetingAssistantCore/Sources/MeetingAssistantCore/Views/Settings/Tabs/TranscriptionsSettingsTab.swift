@@ -254,12 +254,14 @@ public struct TranscriptionsSettingsTab: View {
     private var transcriptionsList: some View {
         List(selection: $viewModel.selectedId) {
             ForEach(viewModel.sortedGroupDates, id: \.self) { date in
-                Section(header: Text(formatHeaderDate(date))
-                    .font(.caption)
-                    .fontWeight(.bold)
-                    .foregroundStyle(.secondary)
-                    .padding(.top, 16)
-                    .padding(.bottom, 8)) {
+                Section(
+                    header: Text(formatHeaderDate(date))
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 16)
+                        .padding(.bottom, 8)
+                ) {
                     ForEach(viewModel.groupedTranscriptions[date] ?? []) { transcription in
                         TranscriptionCardView(
                             transcription: transcription,

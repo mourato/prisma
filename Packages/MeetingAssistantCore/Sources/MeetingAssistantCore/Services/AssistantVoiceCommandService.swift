@@ -34,7 +34,12 @@ public final class AssistantVoiceCommandService: ObservableObject {
         guard !isRecording, !isProcessing else { return }
 
         guard !recordingManager.isRecording else {
-            showError(.recordingInProgress)
+            AppLogger.info("Assistant start blocked because Recording is active", category: .assistant)
+            return
+        }
+
+        guard await RecordingExclusivityCoordinator.shared.beginAssistant() else {
+            AppLogger.info("Assistant recording start blocked by exclusivity coordinator", category: .assistant)
             return
         }
 
@@ -44,6 +49,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
         }
 
         guard await audioRecorder.hasPermission() else {
+            await RecordingExclusivityCoordinator.shared.endAssistant()
             showError(.microphonePermissionRequired)
             return
         }
@@ -56,6 +62,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
             isRecording = true
             indicator.show(mode: .recording)
         } catch {
+            await RecordingExclusivityCoordinator.shared.endAssistant()
             showError(.failedToStartRecording)
         }
     }
@@ -69,6 +76,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
 
         let recordingURL = await audioRecorder.stopRecording()
         isRecording = false
+        await RecordingExclusivityCoordinator.shared.endAssistant()
 
         do {
             guard let recordingURL else {
@@ -119,6 +127,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
         _ = await audioRecorder.stopRecording()
         isRecording = false
         isProcessing = false
+        await RecordingExclusivityCoordinator.shared.endAssistant()
         indicator.hide()
         cleanupRecordingFile(currentRecordingURL)
         currentRecordingURL = nil
