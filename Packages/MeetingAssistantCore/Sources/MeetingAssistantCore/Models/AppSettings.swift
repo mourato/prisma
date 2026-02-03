@@ -602,6 +602,7 @@ public extension AppSettingsStore {
         static let autoStartRecording = "autoStartRecording"
         static let showSettingsOnLaunch = "showSettingsOnLaunch"
         static let autoCopyTranscriptionToClipboard = "autoCopyTranscriptionToClipboard"
+        static let autoPasteTranscriptionToActiveApp = "autoPasteTranscriptionToActiveApp"
     }
 
     /// Configured path for saving recordings.
@@ -633,6 +634,13 @@ public extension AppSettingsStore {
             return UserDefaults.standard.bool(forKey: GeneralKeys.autoCopyTranscriptionToClipboard)
         }
         set { UserDefaults.standard.set(newValue, forKey: GeneralKeys.autoCopyTranscriptionToClipboard) }
+    }
+
+    /// Whether to automatically paste the latest transcription into the active app.
+    /// Default: false
+    var autoPasteTranscriptionToActiveApp: Bool {
+        get { UserDefaults.standard.bool(forKey: GeneralKeys.autoPasteTranscriptionToActiveApp) }
+        set { UserDefaults.standard.set(newValue, forKey: GeneralKeys.autoPasteTranscriptionToActiveApp) }
     }
 
     // MARK: - Post-Processing Extension

@@ -16,6 +16,7 @@ public struct GeneralSettingsTab: View {
                 languageSection
                 serviceSection
                 recordingSection
+                transcriptDeliverySection
                 recordingIndicatorSection
                 audioDevicesSection
                 appsSection
@@ -126,13 +127,25 @@ public struct GeneralSettingsTab: View {
                     "settings.general.merge_audio".localized,
                     isOn: $viewModel.shouldMergeAudioFiles
                 )
+            }
+        }
+    }
 
-                Divider()
-
+    @ViewBuilder
+    private var transcriptDeliverySection: some View {
+        SettingsGroup("settings.general.transcript_delivery".localized, icon: "paperplane.fill") {
+            VStack(alignment: .leading, spacing: 16) {
                 SettingsToggle(
                     "settings.general.auto_copy_transcription".localized,
                     description: "settings.general.auto_copy_transcription_desc".localized,
                     isOn: $viewModel.autoCopyTranscriptionToClipboard
+                )
+
+                Divider()
+
+                SettingsToggle(
+                    "settings.general.auto_paste_transcription".localized,
+                    isOn: $viewModel.autoPasteTranscriptionToActiveApp
                 )
             }
         }

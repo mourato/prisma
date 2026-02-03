@@ -49,6 +49,12 @@ public class GeneralSettingsViewModel: ObservableObject {
         }
     }
 
+    @Published public var autoPasteTranscriptionToActiveApp: Bool {
+        didSet {
+            settingsStore.autoPasteTranscriptionToActiveApp = autoPasteTranscriptionToActiveApp
+        }
+    }
+
     @Published public var muteOutputDuringRecording: Bool {
         didSet {
             settingsStore.muteOutputDuringRecording = muteOutputDuringRecording
@@ -93,6 +99,7 @@ public class GeneralSettingsViewModel: ObservableObject {
         selectedLanguage = settingsStore.selectedLanguage
         showSettingsOnLaunch = settingsStore.showSettingsOnLaunch
         autoCopyTranscriptionToClipboard = settingsStore.autoCopyTranscriptionToClipboard
+        autoPasteTranscriptionToActiveApp = settingsStore.autoPasteTranscriptionToActiveApp
         muteOutputDuringRecording = settingsStore.muteOutputDuringRecording
         useSystemDefaultInput = settingsStore.useSystemDefaultInput
         recordingIndicatorEnabled = settingsStore.recordingIndicatorEnabled

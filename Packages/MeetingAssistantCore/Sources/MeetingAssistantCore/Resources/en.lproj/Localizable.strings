@@ -16,8 +16,10 @@
 "settings.general.recordings_path" = "Recordings folder:";
 "settings.general.audio_format" = "Audio Format";
 "settings.general.merge_audio" = "Merge audio files after recording";
+"settings.general.transcript_delivery" = "Transcript Delivery";
 "settings.general.auto_copy_transcription" = "Auto-copy transcriptions to clipboard";
 "settings.general.auto_copy_transcription_desc" = "Copies the post-processed text when available, otherwise the raw transcription.";
+"settings.general.auto_paste_transcription" = "Auto paste transcript into the active app";
 "settings.general.recordings_path_hint" = "Path";
 "settings.general.choose" = "Choose...";
 "settings.general.monitored_apps" = "Monitored Apps";
