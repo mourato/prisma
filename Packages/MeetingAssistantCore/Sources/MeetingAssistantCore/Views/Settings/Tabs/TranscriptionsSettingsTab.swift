@@ -390,6 +390,14 @@ struct TranscriptionRowView: View {
         return formatter.string(from: metadata.createdAt)
     }
 
+    private var previewText: String {
+        let trimmed = metadata.previewText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            return "transcription.empty_fallback".localized
+        }
+        return metadata.previewText
+    }
+
     var body: some View {
         HStack(spacing: 12) {
             ZStack {
@@ -407,7 +415,7 @@ struct TranscriptionRowView: View {
                     .font(.body)
                     .fontWeight(.semibold)
 
-                Text(metadata.previewText)
+                Text(previewText)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)

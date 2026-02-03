@@ -159,6 +159,8 @@ public struct TranscriptionDetailView: View {
     }
 
     private func contentBox(title: String, text: String, isOriginal: Bool, showSparkles: Bool = false) -> some View {
+        let displayText = transcriptionDisplayText(text)
+
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 HStack(spacing: 6) {
@@ -181,7 +183,7 @@ public struct TranscriptionDetailView: View {
                 .buttonStyle(.bordered)
             }
 
-            Text(text)
+            Text(displayText)
                 .font(.body)
                 .textSelection(.enabled)
                 .padding()
@@ -191,5 +193,13 @@ public struct TranscriptionDetailView: View {
                     in: RoundedRectangle(cornerRadius: 8)
                 )
         }
+    }
+
+    private func transcriptionDisplayText(_ text: String) -> String {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            return "transcription.empty_fallback".localized
+        }
+        return text
     }
 }
