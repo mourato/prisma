@@ -26,6 +26,10 @@
 "metrics.error.load" = "Falha ao carregar os dados do dashboard.";
 
 
+"settings.general.theme" = "Tema do Aplicativo";
+"settings.general.theme.system" = "Sistema";
+"settings.general.theme_desc" = "Personalize a aparência do aplicativo com sua cor de destaque favorita.";
+
 /* General Settings */
 "settings.general.title" = "Geral";
 "settings.general.recording" = "Gravação";
