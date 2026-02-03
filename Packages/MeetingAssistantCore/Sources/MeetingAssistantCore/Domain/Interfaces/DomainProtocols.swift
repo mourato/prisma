@@ -56,6 +56,9 @@ public protocol AudioFileRepository: Sendable {
 // MARK: - Transcription Domain Protocols
 
 /// Protocolo para operações de transcrição
+#if DEBUG
+@GenerateMock
+#endif
 public protocol TranscriptionRepository: Sendable {
     /// Verifica saúde do serviço
     func healthCheck() async throws -> Bool
@@ -71,6 +74,9 @@ public protocol TranscriptionRepository: Sendable {
 }
 
 /// Protocolo para operações de pós-processamento
+#if DEBUG
+@GenerateMock
+#endif
 public protocol PostProcessingRepository: Sendable {
     /// Processa texto de transcrição usando prompt selecionado
     func processTranscription(_ transcription: String) async throws -> String
@@ -103,6 +109,9 @@ public protocol MeetingRepository: Sendable {
 }
 
 /// Protocolo para operações de armazenamento de transcrições
+#if DEBUG
+@GenerateMock
+#endif
 public protocol TranscriptionStorageRepository: Sendable {
     /// Salva transcrição
     func saveTranscription(_ transcription: TranscriptionEntity) async throws
