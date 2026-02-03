@@ -119,7 +119,6 @@ private struct AssistantScreenBorderView: View {
     }
 
     /// Renders a solid stroke border around the screen.
-    @ViewBuilder
     private func strokeBorder(size: CGSize) -> some View {
         Rectangle()
             .stroke(borderColor, lineWidth: borderWidth)
@@ -127,7 +126,6 @@ private struct AssistantScreenBorderView: View {
     }
 
     /// Renders an inner glow effect (equivalent to CSS box-shadow: inset).
-    @ViewBuilder
     private func glowBorder(size: CGSize) -> some View {
         ZStack {
             // Multiple layered rectangles to create the glow effect
