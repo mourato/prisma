@@ -2,9 +2,16 @@
 
 import Foundation
 
+#if DEBUG
+import MeetingAssistantCoreMocking
+#endif
+
 // MARK: - Recording Domain Protocols
 
 /// Protocolo para operações de gravação de áudio
+#if DEBUG
+@GenerateMock
+#endif
 public protocol RecordingRepository: Sendable {
     /// Inicia gravação para URL especificada
     func startRecording(to outputURL: URL, retryCount: Int) async throws
@@ -26,6 +33,9 @@ public protocol RecordingRepository: Sendable {
 }
 
 /// Protocolo para operações de arquivo de áudio
+#if DEBUG
+@GenerateMock
+#endif
 public protocol AudioFileRepository: Sendable {
     /// Salva arquivo de áudio
     func saveAudioFile(from sourceURL: URL, to destinationURL: URL) async throws
@@ -72,6 +82,9 @@ public protocol PostProcessingRepository: Sendable {
 // MARK: - Storage Domain Protocols
 
 /// Protocolo para operações de armazenamento de reuniões
+#if DEBUG
+@GenerateMock
+#endif
 public protocol MeetingRepository: Sendable {
     /// Salva reunião
     func saveMeeting(_ meeting: MeetingEntity) async throws
