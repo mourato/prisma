@@ -11,6 +11,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
     private let recordingManager: RecordingManager
     private let indicator: FloatingRecordingIndicatorController
     private let selectionService: AssistantTextSelectionService
+    private let screenBorder: AssistantScreenBorderController
 
     private var currentRecordingURL: URL?
 
@@ -20,7 +21,8 @@ public final class AssistantVoiceCommandService: ObservableObject {
         postProcessingService: PostProcessingService = .shared,
         recordingManager: RecordingManager = .shared,
         indicator: FloatingRecordingIndicatorController = FloatingRecordingIndicatorController(),
-        selectionService: AssistantTextSelectionService = AssistantTextSelectionService()
+        selectionService: AssistantTextSelectionService = AssistantTextSelectionService(),
+        screenBorder: AssistantScreenBorderController = AssistantScreenBorderController()
     ) {
         self.audioRecorder = audioRecorder
         self.transcriptionClient = transcriptionClient
@@ -28,6 +30,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
         self.recordingManager = recordingManager
         self.indicator = indicator
         self.selectionService = selectionService
+        self.screenBorder = screenBorder
     }
 
     public func startRecording() async {
@@ -61,6 +64,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
             try await audioRecorder.startRecording(to: outputURL, source: .microphone)
             isRecording = true
             indicator.show(mode: .recording)
+            screenBorder.show()
         } catch {
             await RecordingExclusivityCoordinator.shared.endAssistant()
             showError(.failedToStartRecording)
@@ -108,6 +112,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
             )
 
             indicator.hide()
+            screenBorder.hide()
         } catch let error as AssistantVoiceCommandError {
             showError(error)
         } catch let error as PostProcessingError {
@@ -117,6 +122,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
         }
 
         isProcessing = false
+        screenBorder.hide()
         cleanupRecordingFile(recordingURL ?? currentRecordingURL)
         currentRecordingURL = nil
     }
@@ -129,6 +135,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
         isProcessing = false
         await RecordingExclusivityCoordinator.shared.endAssistant()
         indicator.hide()
+        screenBorder.hide()
         cleanupRecordingFile(currentRecordingURL)
         currentRecordingURL = nil
     }
