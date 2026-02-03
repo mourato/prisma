@@ -20,46 +20,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
-    name: Test
-    runs-on: macos-14
-    timeout-minutes: 15
-    
-    steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      
-      - name: Set up Xcode
-        uses: maxim-lobanov/setup-xcode@c51a66b42363123fa82a6cfe02c60af4281dab93 # v1
-        with:
-          xcode-version: '16.2'
-
-      - name: Cache SwiftPM build
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
-        with:
-          path: Packages/MeetingAssistantCore/.build
-          key: ${{ runner.os }}-swiftpm-${{ hashFiles('Packages/MeetingAssistantCore/Package.resolved') }}
-          restore-keys: |
-            ${{ runner.os }}-swiftpm-
-
-      - name: Run Tests
-        run: make ci-test
-
-  danger:
-    name: Danger CI
-    needs: test
-    if: github.event_name == 'pull_request'
+  lint:
+    name: Lint
     runs-on: macos-14
     timeout-minutes: 10
-    permissions:
-      pull-requests: write
-      contents: read
-      statuses: write
-      issues: write
+
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
-      
+
       - name: Set up Xcode
         uses: maxim-lobanov/setup-xcode@c51a66b42363123fa82a6cfe02c60af4281dab93 # v1
         with:
@@ -72,15 +42,42 @@ jobs:
             ~/Library/Caches/Homebrew
             /usr/local/Cellar
             /opt/homebrew/Cellar
-          key: ${{ runner.os }}-homebrew-danger-${{ hashFiles('.github/workflows/ci.yml') }}
+          key: ${{ runner.os }}-homebrew-lint-${{ hashFiles('.github/workflows/ci.yml') }}
           restore-keys: |
-            ${{ runner.os }}-homebrew-danger-
+            ${{ runner.os }}-homebrew-lint-
             ${{ runner.os }}-homebrew-
-        
-      - name: Install Danger
-        run: brew install danger/tap/danger-swift
-        
-      - name: Run Danger
-        run: make danger
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install SwiftLint/SwiftFormat
+        run: brew install swiftlint swiftformat
+
+      - name: Run Lint (strict)
+        run: STRICT_LINT=1 make lint
+
+      - name: PR heuristics (warnings only)
+        if: github.event_name == 'pull_request'
+        run: ./scripts/pr-checks.sh
+
+  test:
+    name: Test
+    needs: lint
+    runs-on: macos-14
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Set up Xcode
+        uses: maxim-lobanov/setup-xcode@c51a66b42363123fa82a6cfe02c60af4281dab93 # v1
+        with:
+          xcode-version: '16.2'
+
+      - name: Cache SwiftPM build
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
+        with:
+          path: Packages/MeetingAssistantCore/.build
+          key: ${{ runner.os }}-swiftpm-${{ hashFiles('Packages/MeetingAssistantCore/Package.swift', 'Packages/MeetingAssistantCore/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-swiftpm-
+
+      - name: Run Tests
+        run: make ci-test
