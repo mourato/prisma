@@ -234,19 +234,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     ) -> NSMenuItem {
         let title = NSLocalizedString(key, bundle: localizationBundle, comment: "")
         let item = NSMenuItem(title: title, action: action, keyEquivalent: keyEquivalent)
+        item.target = self
 
-        if let shortcutName, let shortcut = KeyboardShortcuts.Shortcut(name: shortcutName) {
-            // Extract key equivalent from description by stripping modifier symbols
-            var keyEquivalent = shortcut.description
-            let modifierSymbols = ["⌘", "⌥", "⌃", "⇧"]
-            for symbol in modifierSymbols {
-                keyEquivalent = keyEquivalent.replacingOccurrences(of: symbol, with: "")
-            }
-            item.keyEquivalent = keyEquivalent.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-            item.keyEquivalentModifierMask = shortcut.modifiers
+        if let shortcutName {
+            applyShortcut(to: item, title: title, shortcutName: shortcutName)
         }
 
-        item.target = self
         return item
     }
 
@@ -271,17 +264,50 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func updateMenuItem(_ item: NSMenuItem?, key: String, shortcutName: KeyboardShortcuts.Name) {
         let title = NSLocalizedString(key, bundle: localizationBundle, comment: "")
-        item?.title = title
+        if let item = item {
+            applyShortcut(to: item, title: title, shortcutName: shortcutName)
+        }
+    }
 
-        if let shortcut = KeyboardShortcuts.Shortcut(name: shortcutName) {
+    private func applyShortcut(to item: NSMenuItem, title: String, shortcutName: KeyboardShortcuts.Name) {
+        let settings = AppSettingsStore.shared
+        var presetString: String? = nil
+        var isCustom = false
+
+        if shortcutName == .toggleRecording {
+            if settings.selectedPresetKey != .custom && settings.selectedPresetKey != .notSpecified {
+                presetString = settings.selectedPresetKey.displayName
+            } else {
+                isCustom = true
+            }
+        } else if shortcutName == .assistantCommand {
+            if settings.assistantSelectedPresetKey != .custom && settings.assistantSelectedPresetKey != .notSpecified {
+                presetString = settings.assistantSelectedPresetKey.displayName
+            } else {
+                isCustom = true
+            }
+        } else if shortcutName == .startMeeting {
+            isCustom = true
+        }
+
+        if let presetString = presetString {
+            item.title = "\(title) [\(presetString)]"
+            item.keyEquivalent = ""
+            item.keyEquivalentModifierMask = []
+        } else if isCustom, let shortcut = KeyboardShortcuts.Shortcut(name: shortcutName) {
+            item.title = title
             // Extract key equivalent from description by stripping modifier symbols
             var keyEquivalent = shortcut.description
             let modifierSymbols = ["⌘", "⌥", "⌃", "⇧"]
             for symbol in modifierSymbols {
                 keyEquivalent = keyEquivalent.replacingOccurrences(of: symbol, with: "")
             }
-            item?.keyEquivalent = keyEquivalent.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-            item?.keyEquivalentModifierMask = shortcut.modifiers
+            item.keyEquivalent = keyEquivalent.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+            item.keyEquivalentModifierMask = shortcut.modifiers
+        } else {
+            item.title = title
+            item.keyEquivalent = ""
+            item.keyEquivalentModifierMask = []
         }
     }
 
