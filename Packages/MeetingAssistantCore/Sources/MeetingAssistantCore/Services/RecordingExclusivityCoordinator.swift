@@ -1,10 +1,9 @@
 import Foundation
 
-@MainActor
-public final class RecordingExclusivityCoordinator: ObservableObject {
+public actor RecordingExclusivityCoordinator {
     public static let shared = RecordingExclusivityCoordinator()
 
-    @Published public private(set) var activeMode: ActiveMode?
+    private var activeMode: ActiveMode?
 
     public enum ActiveMode: String, Sendable {
         case recording

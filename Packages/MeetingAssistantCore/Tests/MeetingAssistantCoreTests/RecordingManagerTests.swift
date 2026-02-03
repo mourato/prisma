@@ -40,8 +40,8 @@ final class RecordingManagerTests: XCTestCase {
             await manager.cancelRecording()
         }
 
-        RecordingExclusivityCoordinator.shared.endRecording()
-        RecordingExclusivityCoordinator.shared.endAssistant()
+        await RecordingExclusivityCoordinator.shared.endRecording()
+        await RecordingExclusivityCoordinator.shared.endAssistant()
 
         manager = nil
         mockMic = nil
