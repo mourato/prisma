@@ -1,4 +1,5 @@
 /* Sidebar Sections */
+"settings.section.metrics" = "Dashboard";
 "settings.section.general" = "Geral";
 "settings.section.transcriptions" = "Transcrições";
 "settings.section.shortcuts" = "Atalhos";
@@ -7,6 +8,22 @@
 "settings.section.post_processing" = "Pós-Processamento";
 "settings.section.service" = "Serviço";
 "settings.section.permissions" = "Permissões";
+
+/* Metrics Dashboard */
+"metrics.title" = "Dashboard";
+"metrics.subtitle" = "Insights com base nas suas transcrições.";
+"metrics.filters.title" = "Filtros";
+"metrics.filters.period" = "Período";
+"metrics.summary.sessions" = "Sessões";
+"metrics.summary.sessions_detail" = "sessões gravadas";
+"metrics.summary.words" = "Palavras";
+"metrics.summary.words_detail" = "palavras transcritas";
+"metrics.summary.time_saved" = "Tempo economizado";
+"metrics.summary.time_saved_detail" = "vs. digitar manualmente";
+"metrics.peaks.weekday.title" = "Picos por dia da semana";
+"metrics.empty.title" = "Sem dados ainda";
+"metrics.empty.subtitle" = "Faça sua primeira gravação para liberar insights.";
+"metrics.error.load" = "Falha ao carregar os dados do dashboard.";
 
 
 /* General Settings */

@@ -9,6 +9,7 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
     public let startTime: Date
     public let createdAt: Date
     public let previewText: String
+    public let wordCount: Int
     public let language: String
     public let isPostProcessed: Bool
     public let duration: TimeInterval
@@ -22,6 +23,7 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
         startTime: Date,
         createdAt: Date,
         previewText: String,
+        wordCount: Int,
         language: String,
         isPostProcessed: Bool,
         duration: TimeInterval,
@@ -34,6 +36,7 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
         self.startTime = startTime
         self.createdAt = createdAt
         self.previewText = previewText
+        self.wordCount = wordCount
         self.language = language
         self.isPostProcessed = isPostProcessed
         self.duration = duration
