@@ -253,7 +253,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         updateMenuItem(dictateMenuItem, key: dictateKey, shortcutName: .toggleRecording)
 
         // Update Meeting
-        let meetingKey = (isRecording && (recordingSource == .system || recordingSource == .merged)) ? "menubar.stop_recording" : "menubar.record_meeting"
+        let meetingKey = (isRecording && (recordingSource == .system || recordingSource == .all)) ? "menubar.stop_recording" : "menubar.record_meeting"
         updateMenuItem(recordMeetingMenuItem, key: meetingKey, shortcutName: .startMeeting)
 
         // Update Assistant
