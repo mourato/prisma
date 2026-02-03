@@ -24,7 +24,8 @@ public final class NotificationService {
         ) { [weak self] granted, error in
             if let error {
                 self?.logger.error(
-                    "Notification authorization failed: \(error.localizedDescription)")
+                    "Notification authorization failed: \(error.localizedDescription)"
+                )
             } else if !granted {
                 self?.logger.warning("Notification authorization denied by user")
             }
@@ -71,7 +72,7 @@ public final class NotificationService {
         }
     }
 
-    /// Send notification using osascript as fallback.
+    // Send notification using osascript as fallback.
     #if DEBUG
     private func sendNotificationViaAppleScript(title: String, body: String) {
         let sanitizedTitle = sanitizeForAppleScript(title)

@@ -13,7 +13,7 @@ public final class TranscriptionSegmentMO: NSManagedObject {
     @NSManaged public var startTime: Double
     @NSManaged public var endTime: Double
 
-    // Relacionamentos
+    /// Relacionamentos
     @NSManaged public var transcription: TranscriptionMO
 }
 

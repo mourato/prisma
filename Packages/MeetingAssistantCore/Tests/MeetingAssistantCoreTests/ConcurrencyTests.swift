@@ -62,12 +62,12 @@ final class ConcurrencyTests: XCTestCase {
 
     // MARK: - AudioRecordingWorker Concurrency Tests
 
-    func testAudioRecordingWorker_BufferProcessingConcurrency() async {
+    func testAudioRecordingWorker_BufferProcessingConcurrency() async throws {
         let worker = AudioRecordingWorker()
 
         // Create test URL and format
         let testURL = URL(fileURLWithPath: "/tmp/test_concurrency.m4a")
-        let format = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 2)!
+        let format = try XCTUnwrap(AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 2))
 
         do {
             try await worker.start(writingTo: testURL, format: format, fileFormat: .m4a)
@@ -107,7 +107,7 @@ final class ConcurrencyTests: XCTestCase {
         try? FileManager.default.removeItem(at: testURL)
     }
 
-    func testAudioRecordingWorker_CallbackConcurrency() async {
+    func testAudioRecordingWorker_CallbackConcurrency() async throws {
         let worker = AudioRecordingWorker()
 
         actor CallbackTracker {
@@ -139,7 +139,7 @@ final class ConcurrencyTests: XCTestCase {
         }
 
         let testURL = URL(fileURLWithPath: "/tmp/test_callbacks.m4a")
-        let format = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 2)!
+        let format = try XCTUnwrap(AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 2))
 
         do {
             try await worker.start(writingTo: testURL, format: format, fileFormat: .m4a)
@@ -215,7 +215,7 @@ final class ConcurrencyTests: XCTestCase {
 
     // MARK: - Performance Tests for Concurrency
 
-    func testPerformance_ConcurrentActorAccess() async {
+    func testPerformance_ConcurrentActorAccess() {
         let actor = RecordingActor()
 
         measure(metrics: [XCTClockMetric(), XCTCPUMetric()]) {

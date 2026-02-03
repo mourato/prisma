@@ -37,7 +37,7 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
 
     // MARK: - Public API
 
-    /// Callback for received audio buffers (Thread-safe, called on background queue)
+    // Callback for received audio buffers (Thread-safe, called on background queue)
 
     /// Thread-safe storage for the audio buffer callback
     private class CallbackStorage: @unchecked Sendable {
@@ -245,7 +245,7 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
 // MARK: - Stream Output Handler
 
 private class SystemAudioStreamOutput: NSObject, SCStreamOutput {
-    // private let logger: Logger // Removed unused
+    /// private let logger: Logger // Removed unused
     private let onBuffer: @Sendable (AVAudioPCMBuffer) -> Void
 
     init(onBuffer: @escaping (@Sendable (AVAudioPCMBuffer) -> Void)) {

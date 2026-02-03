@@ -30,7 +30,7 @@ public protocol AudioRecordingService: ObservableObject {
     func openSettings()
 }
 
-// Default implementation for retryCount (since it's not always needed)
+/// Default implementation for retryCount (since it's not always needed)
 public extension AudioRecordingService {
     func startRecording(to outputURL: URL) async throws {
         try await startRecording(to: outputURL, retryCount: 0)

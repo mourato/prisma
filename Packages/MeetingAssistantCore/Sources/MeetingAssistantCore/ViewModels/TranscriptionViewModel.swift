@@ -11,17 +11,49 @@ public class TranscriptionViewModel: ObservableObject {
 
     // MARK: - Published Properties for UI (Computed Proxies)
 
-    public var statusMessage: String { status.statusMessage }
-    public var progressPercentage: Double { status.progressPercentage }
-    public var currentStatus: TranscriptionStatus.State { status.currentStatus }
-    public var estimatedTimeRemaining: TimeInterval? { status.estimatedTimeRemaining }
-    public var isProcessing: Bool { status.isProcessing }
-    public var hasBlockingError: Bool { status.hasBlockingError }
-    public var phase: TranscriptionPhase { status.phase }
-    public var serviceState: ServiceState { status.serviceState }
-    public var modelState: ModelState { status.modelState }
-    public var lastError: TranscriptionStatusError? { status.lastError }
-    public var device: String { status.device }
+    public var statusMessage: String {
+        status.statusMessage
+    }
+
+    public var progressPercentage: Double {
+        status.progressPercentage
+    }
+
+    public var currentStatus: TranscriptionStatus.State {
+        status.currentStatus
+    }
+
+    public var estimatedTimeRemaining: TimeInterval? {
+        status.estimatedTimeRemaining
+    }
+
+    public var isProcessing: Bool {
+        status.isProcessing
+    }
+
+    public var hasBlockingError: Bool {
+        status.hasBlockingError
+    }
+
+    public var phase: TranscriptionPhase {
+        status.phase
+    }
+
+    public var serviceState: ServiceState {
+        status.serviceState
+    }
+
+    public var modelState: ModelState {
+        status.modelState
+    }
+
+    public var lastError: TranscriptionStatusError? {
+        status.lastError
+    }
+
+    public var device: String {
+        status.device
+    }
 
     // MARK: - Computed Properties
 

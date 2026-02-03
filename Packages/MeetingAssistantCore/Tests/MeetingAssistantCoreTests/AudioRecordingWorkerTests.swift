@@ -3,7 +3,7 @@ import AVFoundation
 import XCTest
 
 final class AudioRecordingWorkerTests: XCTestCase {
-    func testPerformance_BufferProcessing_Guardrail() {
+    func testPerformance_BufferProcessing_Guardrail() throws {
         print("### testPerformance_BufferProcessing_Guardrail START ###")
         let worker = AudioRecordingWorker()
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("test_worker_perf_\(UUID().uuidString).wav")
@@ -25,7 +25,7 @@ final class AudioRecordingWorkerTests: XCTestCase {
         }
         wait(for: [setupExpectation], timeout: 5.0)
 
-        let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 1_024)!
+        let buffer = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 1_024))
         buffer.frameLength = 1_024
 
         print("### Measuring...")

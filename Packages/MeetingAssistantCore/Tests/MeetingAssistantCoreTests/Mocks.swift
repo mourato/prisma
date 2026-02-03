@@ -6,7 +6,9 @@ import MeetingAssistantCore
 
 class MockAudioRecorder: AudioRecordingService {
     @Published var isRecording = false
-    var isRecordingPublisher: AnyPublisher<Bool, Never> { $isRecording.eraseToAnyPublisher() }
+    var isRecordingPublisher: AnyPublisher<Bool, Never> {
+        $isRecording.eraseToAnyPublisher()
+    }
 
     var currentRecordingURL: URL?
     var error: Error?
@@ -125,7 +127,9 @@ class MockTranscriptionClient: TranscriptionService {
 @MainActor
 class MockPostProcessingService: PostProcessingServiceProtocol {
     @Published var isProcessing = false
-    var isProcessingPublisher: AnyPublisher<Bool, Never> { $isProcessing.eraseToAnyPublisher() }
+    var isProcessingPublisher: AnyPublisher<Bool, Never> {
+        $isProcessing.eraseToAnyPublisher()
+    }
 
     var lastError: PostProcessingError?
 
@@ -166,7 +170,7 @@ class MockStorageService: StorageService, @unchecked Sendable {
     var createRecordingURLParams: [(meeting: Meeting, type: RecordingType)] = []
     var loadTranscriptionsCallCount = 0
 
-    // Mock data for testing
+    /// Mock data for testing
     var mockTranscriptions: [Transcription] = []
 
     func createRecordingURL(for meeting: Meeting, type: RecordingType) -> URL {

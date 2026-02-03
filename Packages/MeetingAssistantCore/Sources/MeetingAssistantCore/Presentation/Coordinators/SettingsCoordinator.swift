@@ -13,7 +13,7 @@ public final class SettingsCoordinator: Coordinator {
     private let recordingManager: RecordingManager
     private let initialTab: AppRoute.SettingsTab
 
-    // Estado da navegação
+    /// Estado da navegação
     @Published private var selectedTab: AppRoute.SettingsTab
 
     // MARK: - Initialization

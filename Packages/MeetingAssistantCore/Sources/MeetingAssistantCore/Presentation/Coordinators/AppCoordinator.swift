@@ -76,8 +76,7 @@ public final class AppCoordinator: Coordinator {
 
         childCoordinators.append(coordinator)
 
-        let settingsView = coordinator.start()
-        return settingsView
+        return coordinator.start()
     }
 
     @discardableResult

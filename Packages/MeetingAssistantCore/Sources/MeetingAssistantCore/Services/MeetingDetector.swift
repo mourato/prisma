@@ -17,7 +17,7 @@ public class MeetingDetector: ObservableObject {
     private var monitoringTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
 
-    // Poll interval in seconds
+    /// Poll interval in seconds
     private let pollInterval: TimeInterval = 2.0
 
     private init() {

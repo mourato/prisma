@@ -185,8 +185,7 @@ public final class AudioDeviceManager: ObservableObject {
         guard dataStatus == noErr else { return nil }
 
         let audioBufferList = UnsafeMutableAudioBufferListPointer(bufferListPointer)
-        let channels = audioBufferList.reduce(0) { $0 + Int($1.mNumberChannels) }
-        return channels
+        return audioBufferList.reduce(0) { $0 + Int($1.mNumberChannels) }
     }
 
     public nonisolated func getInputVolume(for id: AudioObjectID) -> Float? {

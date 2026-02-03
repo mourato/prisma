@@ -19,7 +19,6 @@ public struct RecordingKeyboardControlsSection: View {
         }
     }
 
-    @ViewBuilder
     private var headerSection: some View {
         Text(NSLocalizedString("settings.shortcuts.header_desc", bundle: .safeModule, comment: ""))
             .font(.subheadline)
@@ -27,7 +26,6 @@ public struct RecordingKeyboardControlsSection: View {
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    @ViewBuilder
     private var recordingControlsSection: some View {
         SettingsGroup(
             NSLocalizedString("settings.shortcuts.recording_controls", bundle: .safeModule, comment: ""),
@@ -110,7 +108,6 @@ public struct RecordingKeyboardControlsSection: View {
         }
     }
 
-    @ViewBuilder
     private var optionsSection: some View {
         SettingsCard {
             SettingsToggle(
@@ -120,7 +117,6 @@ public struct RecordingKeyboardControlsSection: View {
         }
     }
 
-    @ViewBuilder
     private var testKeysSection: some View {
         SettingsGroup(
             NSLocalizedString("settings.shortcuts.try_keys", bundle: .safeModule, comment: ""),
@@ -142,7 +138,6 @@ public struct RecordingKeyboardControlsSection: View {
         }
     }
 
-    @ViewBuilder
     private var resetSection: some View {
         SettingsCard {
             HStack {

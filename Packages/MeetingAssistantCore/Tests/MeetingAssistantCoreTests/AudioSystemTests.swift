@@ -146,7 +146,7 @@ final class AudioSystemTests: XCTestCase {
     func testAudioRecordingWorker_BufferProcessingIntegration() async throws {
         // Given
         let outputURL = createTemporaryURL()
-        let format = AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 2)!
+        let format = try XCTUnwrap(AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 2))
 
         try await recordingWorker.start(writingTo: outputURL, format: format, fileFormat: .wav)
 
@@ -164,10 +164,10 @@ final class AudioSystemTests: XCTestCase {
 
         // Then
         XCTAssertNotNil(finalURL)
-        XCTAssertTrue(FileManager.default.fileExists(atPath: finalURL!.path))
+        XCTAssertTrue(try FileManager.default.fileExists(atPath: XCTUnwrap(finalURL?.path)))
 
         // Verificar se arquivo tem conteúdo
-        let asset = AVAsset(url: finalURL!)
+        let asset = try AVAsset(url: XCTUnwrap(finalURL))
         let duration = try await asset.load(.duration)
         XCTAssertGreaterThan(duration.seconds, 0)
     }
@@ -483,7 +483,7 @@ final class AudioSystemTests: XCTestCase {
 
     func testCleanup_RecordingWorkerFileClosure() async throws {
         let outputURL = createTemporaryURL()
-        let format = AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 2)!
+        let format = try XCTUnwrap(AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 2))
 
         try await recordingWorker.start(writingTo: outputURL, format: format, fileFormat: .wav)
 
@@ -493,7 +493,7 @@ final class AudioSystemTests: XCTestCase {
         let finalURL = await recordingWorker.stop()
 
         XCTAssertNotNil(finalURL)
-        XCTAssertTrue(FileManager.default.fileExists(atPath: finalURL!.path))
+        XCTAssertTrue(try FileManager.default.fileExists(atPath: XCTUnwrap(finalURL?.path)))
 
         // Worker deve estar completamente limpo
         // (não há propriedades públicas para verificar, mas arquivo deve existir)

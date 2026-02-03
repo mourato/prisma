@@ -54,7 +54,6 @@ public struct AISettingsTab: View {
 
     // MARK: - Sections
 
-    @ViewBuilder
     private var mainSection: some View {
         SettingsGroup(NSLocalizedString("settings.general.title", bundle: .safeModule, comment: ""), icon: "brain") {
             SettingsToggle(
@@ -195,7 +194,6 @@ public struct AISettingsTab: View {
         }
     }
 
-    @ViewBuilder
     private var providerSection: some View {
         SettingsGroup(NSLocalizedString("settings.ai.provider", bundle: .safeModule, comment: ""), icon: "server.rack") {
             Picker(
@@ -220,7 +218,6 @@ public struct AISettingsTab: View {
         }
     }
 
-    @ViewBuilder
     private var apiConfigurationSection: some View {
         SettingsGroup(NSLocalizedString("settings.ai.api_config", bundle: .safeModule, comment: ""), icon: "key.fill") {
             VStack(alignment: .leading, spacing: 12) {
@@ -279,7 +276,6 @@ public struct AISettingsTab: View {
 
     // MARK: - Model Selection
 
-    @ViewBuilder
     private var modelSelectionSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
@@ -343,7 +339,6 @@ public struct AISettingsTab: View {
         }
     }
 
-    @ViewBuilder
     private var connectionTestSection: some View {
         SettingsCard {
             VStack(alignment: .leading, spacing: 8) {

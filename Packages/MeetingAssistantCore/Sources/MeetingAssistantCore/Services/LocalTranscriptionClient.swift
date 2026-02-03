@@ -133,7 +133,8 @@ class LocalTranscriptionClient {
         guard !batch.isEmpty else { return nil }
 
         let segmentText = batch.map(\.text).joined(separator: "").trimmingCharacters(
-            in: .whitespaces)
+            in: .whitespaces
+        )
         guard !segmentText.isEmpty else { return nil }
 
         let start = batch.first.map(\.startTime) ?? 0

@@ -77,5 +77,5 @@ public enum AppRoute {
 
 // MARK: - Type Aliases
 
-/// Type alias para facilitar uso do Coordinator base
-/// Note: AppCoordinator is now a concrete class, not just a typealias
+// Type alias para facilitar uso do Coordinator base
+// Note: AppCoordinator is now a concrete class, not just a typealias

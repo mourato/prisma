@@ -20,7 +20,6 @@ public struct AssistantSettingsTab: View {
         }
     }
 
-    @ViewBuilder
     private var headerSection: some View {
         Text(NSLocalizedString("settings.assistant.header_desc", bundle: .safeModule, comment: ""))
             .font(.subheadline)
@@ -28,7 +27,6 @@ public struct AssistantSettingsTab: View {
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    @ViewBuilder
     private var assistantControlsSection: some View {
         SettingsGroup(
             NSLocalizedString("settings.assistant.controls", bundle: .safeModule, comment: ""),
@@ -95,7 +93,6 @@ public struct AssistantSettingsTab: View {
         }
     }
 
-    @ViewBuilder
     private var optionsSection: some View {
         SettingsCard {
             SettingsToggle(
@@ -105,7 +102,6 @@ public struct AssistantSettingsTab: View {
         }
     }
 
-    @ViewBuilder
     private var testKeysSection: some View {
         SettingsGroup(
             NSLocalizedString("settings.assistant.try_keys", bundle: .safeModule, comment: ""),
@@ -127,7 +123,6 @@ public struct AssistantSettingsTab: View {
         }
     }
 
-    @ViewBuilder
     private var resetSection: some View {
         SettingsCard {
             HStack {

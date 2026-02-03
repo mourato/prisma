@@ -61,7 +61,9 @@ protocol TranscriptionProvider: AnyObject, Sendable {
 // MARK: - Default Implementations
 
 extension TranscriptionProvider {
-    func modelsExistOnDisk() -> Bool { false }
+    func modelsExistOnDisk() -> Bool {
+        false
+    }
 
     func clearCache() async throws {
         // Default: no-op

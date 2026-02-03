@@ -1,7 +1,6 @@
 import Combine
-import XCTest
-
 @testable import MeetingAssistantCore
+import XCTest
 
 @MainActor
 final class RecordingViewModelTests: XCTestCase {
@@ -72,12 +71,13 @@ final class RecordingViewModelTests: XCTestCase {
         // Mock service has a transcriptionStatus.
         XCTAssertTrue(
             viewModel.transcriptionViewModel.statusMessage
-                == mockService.transcriptionStatus.statusMessage)
+                == mockService.transcriptionStatus.statusMessage
+        )
     }
 
     // MARK: - Performance Tests
 
-    func testPerformance_StartRecordingOperation() async throws {
+    func testPerformance_StartRecordingOperation() throws {
         try XCTSkipIf(true, "Flaky performance test - Race condition in measure block")
         // Baseline: UI operations should be fast
         measure(metrics: [XCTClockMetric(), XCTCPUMetric()]) {
@@ -115,7 +115,7 @@ final class RecordingViewModelTests: XCTestCase {
         }
     }
 
-    func testPerformance_StateUpdates() async throws {
+    func testPerformance_StateUpdates() throws {
         try XCTSkipIf(true, "Flaky performance test")
         // Baseline: State updates through Combine should be efficient
         measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {

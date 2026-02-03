@@ -290,7 +290,8 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
         }
 
         let targetFrameCapacity = AVAudioFrameCount(
-            Double(buffer.frameLength) * targetFormat.sampleRate / buffer.format.sampleRate)
+            Double(buffer.frameLength) * targetFormat.sampleRate / buffer.format.sampleRate
+        )
 
         guard
             let targetBuffer = AVAudioPCMBuffer(

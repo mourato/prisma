@@ -13,7 +13,7 @@ public final class MeetingMO: NSManagedObject {
     @NSManaged public var endTime: Date?
     @NSManaged public var audioFilePath: String?
 
-    // Relacionamentos
+    /// Relacionamentos
     @NSManaged public var transcriptions: Set<TranscriptionMO>
 }
 

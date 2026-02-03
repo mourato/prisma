@@ -16,9 +16,17 @@ class MockRecordingService: RecordingServiceProtocol {
     var isTranscribingSubject = PassthroughSubject<Bool, Never>()
     var currentMeetingSubject = PassthroughSubject<Meeting?, Never>()
 
-    var isRecordingPublisher: AnyPublisher<Bool, Never> { isRecordingSubject.eraseToAnyPublisher() }
-    var isTranscribingPublisher: AnyPublisher<Bool, Never> { isTranscribingSubject.eraseToAnyPublisher() }
-    var currentMeetingPublisher: AnyPublisher<Meeting?, Never> { currentMeetingSubject.eraseToAnyPublisher() }
+    var isRecordingPublisher: AnyPublisher<Bool, Never> {
+        isRecordingSubject.eraseToAnyPublisher()
+    }
+
+    var isTranscribingPublisher: AnyPublisher<Bool, Never> {
+        isTranscribingSubject.eraseToAnyPublisher()
+    }
+
+    var currentMeetingPublisher: AnyPublisher<Meeting?, Never> {
+        currentMeetingSubject.eraseToAnyPublisher()
+    }
 
     // Track calls
     var startRecordingCalled = false
@@ -83,7 +91,7 @@ class MockRecordingService: RecordingServiceProtocol {
         transcribeExternalAudioCalled = true
     }
 
-    // Test helper
+    /// Test helper
     func simulateState(recording: Bool, transcribing: Bool) {
         isRecording = recording
         isTranscribing = transcribing
