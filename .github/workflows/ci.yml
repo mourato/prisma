@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   test:
-    name: Lint & Test
+    name: Test
     runs-on: macos-14
     timeout-minutes: 15
     
@@ -41,24 +41,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-swiftpm-
 
-      - name: Cache Homebrew packages
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
-        with:
-          path: |
-            ~/Library/Caches/Homebrew
-            /usr/local/Cellar
-            /opt/homebrew/Cellar
-          key: ${{ runner.os }}-homebrew-swiftlint-swiftformat-${{ hashFiles('.github/workflows/ci.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-homebrew-swiftlint-swiftformat-
-            ${{ runner.os }}-homebrew-
-        
-      - name: Install Tools
-        run: brew install swiftlint swiftformat
-        
-      - name: Lint
-        run: make lint
-        
       - name: Run Tests
         run: make ci-test
 

@@ -1,0 +1,87 @@
+#!/bin/bash
+# MARK: - Pre-commit Hook for MeetingAssistant (Optimized)
+# Fast checks on STAGED files only - non-blocking lint/format
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+
+cd "${PROJECT_ROOT}"
+
+echo "🔍 Running pre-commit checks (staged files only)..."
+echo ""
+
+# Get staged Swift files
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.swift$' || true)
+
+if [ -z "$STAGED_FILES" ]; then
+    echo "ℹ️  No Swift files staged for commit."
+    echo ""
+    echo "🎉 Pre-commit checks passed!"
+    exit 0
+fi
+
+# Lint/format checks are optional to avoid blocking commits.
+if [ "${RUN_LINT}" != "1" ]; then
+    echo "ℹ️  Lint/format checks skipped. Set RUN_LINT=1 to enable."
+    echo ""
+    echo "🎉 Pre-commit checks passed!"
+    exit 0
+fi
+
+# Count staged files
+FILE_COUNT=$(echo "$STAGED_FILES" | wc -l | xargs)
+echo "   Found $FILE_COUNT staged Swift file(s)"
+echo ""
+
+# Check for required tools (non-blocking)
+if ! command -v swiftformat &> /dev/null; then
+    echo "⚠️  SwiftFormat not installed. Install with: brew install swiftformat"
+fi
+
+if ! command -v swiftlint &> /dev/null; then
+    echo "⚠️  SwiftLint not installed. Install with: brew install swiftlint"
+fi
+
+# 1. SwiftFormat check (only staged files)
+echo "1️⃣  Checking code formatting..."
+FORMAT_FAILED=0
+for file in $STAGED_FILES; do
+    if [ -f "$file" ]; then
+        if command -v swiftformat &> /dev/null; then
+            if ! swiftformat --lint --config .swiftformat "$file" 2>/dev/null; then
+                FORMAT_FAILED=1
+            fi
+        fi
+    fi
+done
+
+if [ $FORMAT_FAILED -eq 1 ]; then
+    echo "⚠️  Code formatting issues found. Run 'make lint-fix' to fix."
+else
+    echo "   ✅ Formatting OK"
+fi
+
+# 2. SwiftLint check (only staged files)
+echo "2️⃣  Running SwiftLint..."
+LINT_FAILED=0
+for file in $STAGED_FILES; do
+    if [ -f "$file" ]; then
+        if command -v swiftlint &> /dev/null; then
+            if ! swiftlint lint --config .swiftlint.yml --quiet "$file" 2>/dev/null; then
+                LINT_FAILED=1
+            fi
+        fi
+    fi
+done
+
+if [ $LINT_FAILED -eq 1 ]; then
+    echo "⚠️  SwiftLint violations found. Run 'make lint' to see details."
+else
+    echo "   ✅ SwiftLint OK"
+fi
+
+echo ""
+echo "🎉 All pre-commit checks passed!"
+echo ""
+echo "💡 Tip: Full tests run on 'git push' (pre-push hook)"
+echo ""

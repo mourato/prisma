@@ -1,0 +1,13 @@
+#!/bin/bash
+# MARK: - Pre-push Hook for MeetingAssistant
+# Ensures tests pass before pushing. Set SKIP_TESTS=1 to bypass.
+
+set -e
+
+if [ "${SKIP_TESTS}" = "1" ]; then
+    echo "⚠️  SKIP_TESTS=1 set. Skipping tests."
+    exit 0
+fi
+
+echo "🧪 Running tests before push..."
+make test
