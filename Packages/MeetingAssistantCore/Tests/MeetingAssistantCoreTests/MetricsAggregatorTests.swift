@@ -22,7 +22,8 @@ final class MetricsAggregatorTests: XCTestCase {
                 language: "pt",
                 isPostProcessed: false,
                 duration: 60,
-                audioFilePath: nil
+                audioFilePath: nil,
+                inputSource: "Microphone"
             ),
             TranscriptionMetadata(
                 id: UUID(),
@@ -36,7 +37,8 @@ final class MetricsAggregatorTests: XCTestCase {
                 language: "pt",
                 isPostProcessed: false,
                 duration: 30,
-                audioFilePath: nil
+                audioFilePath: nil,
+                inputSource: "Microphone"
             ),
         ]
 
@@ -73,7 +75,8 @@ final class MetricsAggregatorTests: XCTestCase {
                 language: "pt",
                 isPostProcessed: false,
                 duration: 10,
-                audioFilePath: nil
+                audioFilePath: nil,
+                inputSource: "Microphone"
             ),
             TranscriptionMetadata(
                 id: UUID(),
@@ -87,7 +90,8 @@ final class MetricsAggregatorTests: XCTestCase {
                 language: "pt",
                 isPostProcessed: false,
                 duration: 10,
-                audioFilePath: nil
+                audioFilePath: nil,
+                inputSource: "Microphone"
             ),
         ]
 
