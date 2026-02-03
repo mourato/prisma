@@ -11,7 +11,6 @@ public struct AssistantSettingsTab: View {
             VStack(alignment: .leading, spacing: SettingsDesignSystem.Layout.sectionSpacing) {
                 headerSection
                 assistantControlsSection
-                tipsSection
                 optionsSection
                 testKeysSection
                 resetSection
@@ -97,32 +96,6 @@ public struct AssistantSettingsTab: View {
     }
 
     @ViewBuilder
-    private var tipsSection: some View {
-        SettingsGroup(
-            NSLocalizedString("settings.assistant.tips_title", bundle: .safeModule, comment: ""),
-            icon: "lightbulb"
-        ) {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .top, spacing: 8) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
-                        .font(.subheadline)
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(NSLocalizedString("settings.assistant.fn_key_title", bundle: .safeModule, comment: ""))
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-
-                        Text(NSLocalizedString("settings.assistant.fn_key_desc", bundle: .safeModule, comment: ""))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-        }
-    }
-
-    @ViewBuilder
     private var optionsSection: some View {
         SettingsCard {
             SettingsToggle(
@@ -150,8 +123,6 @@ public struct AssistantSettingsTab: View {
                 TextField("", text: $viewModel.testKeysInput)
                     .textFieldStyle(.roundedBorder)
                     .frame(height: 80)
-                    .disabled(true)
-                    .opacity(0.5)
             }
         }
     }
