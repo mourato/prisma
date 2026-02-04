@@ -37,6 +37,15 @@ public enum AIProvider: String, CaseIterable, Codable, Sendable {
         case .custom: "server.rack"
         }
     }
+
+    public var apiKeyURL: URL? {
+        switch self {
+        case .openai: URL(string: "https://platform.openai.com/api-keys")
+        case .anthropic: URL(string: "https://console.anthropic.com/settings/keys")
+        case .groq: URL(string: "https://console.groq.com/keys")
+        case .custom: nil
+        }
+    }
 }
 
 // MARK: - App Language Configuration
@@ -342,22 +351,13 @@ public enum PresetShortcutKey: String, CaseIterable, Codable, Sendable {
     }
 }
 
-/// Configuration for AI model post-processing.
-/// NOTE: API key is stored securely in Keychain, not in this struct.
 public struct AIConfiguration: Codable, Equatable, Sendable {
     public var provider: AIProvider
     public var baseURL: String
     public var selectedModel: String
 
-    /// NOTE: apiKey is NOT stored here - it's in Keychain.
-    /// This field exists only for Codable compatibility and migration.
-    /// It will always be empty after migration.
+    /// Legacy API key for migration purposes only.
     private var _legacyApiKey: String = ""
-
-    enum CodingKeys: String, CodingKey {
-        case provider, baseURL, selectedModel
-        case _legacyApiKey = "apiKey" // For migration from old format
-    }
 
     public init(provider: AIProvider, baseURL: String, selectedModel: String) {
         self.provider = provider
@@ -365,40 +365,30 @@ public struct AIConfiguration: Codable, Equatable, Sendable {
         self.selectedModel = selectedModel
     }
 
-    /// Default configuration with empty values.
     public static let `default` = AIConfiguration(
         provider: .openai,
         baseURL: AIProvider.openai.defaultBaseURL,
         selectedModel: ""
     )
 
-    /// Check if configuration is valid for making API calls.
-    /// Checks Keychain for API key presence.
     public var isValid: Bool {
         let hasApiKey = KeychainManager.existsAPIKey(for: provider)
         return hasApiKey && !baseURL.isEmpty
     }
 
-    /// Migrate legacy API key from UserDefaults to Keychain.
-    /// Should be called once during app initialization.
-    mutating func migrateLegacyApiKeyIfNeeded() {
-        guard !_legacyApiKey.isEmpty else { return }
+    /// Returns a copy of the configuration with the legacy key cleared.
+    public var withoutLegacyKey: AIConfiguration {
+        var copy = self
+        copy._legacyApiKey = ""
+        return copy
+    }
 
-        // Move to Keychain
-        do {
-            let providerKey = KeychainManager.apiKeyKey(for: provider)
-            try KeychainManager.store(_legacyApiKey, for: providerKey)
-        } catch {
-            AppLogger.error(
-                "Failed to store legacy API key in Keychain during migration",
-                category: .general,
-                error: error
-            )
-            // For migration scenarios, continuing without logging the error is acceptable
-        }
+    /// Internal accessor for migration logic.
+    internal var legacyApiKey: String { _legacyApiKey }
 
-        // Clear from struct (will be saved to UserDefaults without the key)
-        _legacyApiKey = ""
+    enum CodingKeys: String, CodingKey {
+        case provider, baseURL, selectedModel
+        case _legacyApiKey = "apiKey"
     }
 }
 
@@ -682,7 +672,14 @@ public class AppSettingsStore: ObservableObject {
         if let data = UserDefaults.standard.data(forKey: Keys.aiConfiguration),
            let config = try? JSONDecoder().decode(AIConfiguration.self, from: data)
         {
-            aiConfiguration = config
+            if !config.legacyApiKey.isEmpty {
+                // Migrate to Keychain
+                let providerKey = KeychainManager.apiKeyKey(for: config.provider)
+                try? KeychainManager.store(config.legacyApiKey, for: providerKey)
+                aiConfiguration = config.withoutLegacyKey
+            } else {
+                aiConfiguration = config
+            }
         } else {
             aiConfiguration = .default
         }
