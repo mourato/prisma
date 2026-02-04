@@ -17,9 +17,7 @@ public struct AISettingsTab: View {
                 mainSection
 
                 if postProcessingViewModel.settings.postProcessingEnabled {
-                    providerSection
-                    apiConfigurationSection
-                    connectionTestSection
+                    aiProviderIntegrationCard
                     postProcessingSection
                 }
             }
@@ -278,197 +276,175 @@ public struct AISettingsTab: View {
         }
     }
 
-    private var providerSection: some View {
-        SettingsGroup(NSLocalizedString("settings.ai.provider", bundle: .safeModule, comment: ""), icon: "server.rack") {
-            Picker(
-                NSLocalizedString("settings.ai.provider_label", bundle: .safeModule, comment: ""),
-                selection: $viewModel.settings.aiConfiguration.provider
-            ) {
-                ForEach(AIProvider.allCases, id: \.self) { provider in
+    // MARK: - AI Provider Integration Card
+
+    private var aiProviderIntegrationCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(NSLocalizedString("settings.ai.api_config", bundle: .safeModule, comment: ""))
+                .font(.system(.headline, design: .rounded))
+                .foregroundStyle(.primary)
+                .padding(.leading, 4)
+
+            SettingsCard {
+                VStack(spacing: 0) {
+                    // Provider Row
                     HStack {
-                        Image(systemName: provider.icon)
-                        Text(provider.displayName)
-                    }
-                    .tag(provider)
-                }
-            }
-            .pickerStyle(.menu)
-            .onChange(of: viewModel.settings.aiConfiguration.provider) { _, newProvider in
-                if newProvider != .custom {
-                    viewModel.settings.aiConfiguration.baseURL = newProvider.defaultBaseURL
-                }
-                viewModel.connectionStatus = .unknown
-            }
-        }
-    }
-
-    private var apiConfigurationSection: some View {
-        SettingsGroup(NSLocalizedString("settings.ai.api_config", bundle: .safeModule, comment: ""), icon: "key.fill") {
-            VStack(alignment: .leading, spacing: 12) {
-                if viewModel.settings.aiConfiguration.provider == .custom {
-                    HStack {
-                        Text(NSLocalizedString("settings.ai.base_url", bundle: .safeModule, comment: ""))
-                            .frame(width: 80, alignment: .leading)
-                        TextField(
-                            viewModel.settings.aiConfiguration.provider.defaultBaseURL,
-                            text: $viewModel.settings.aiConfiguration.baseURL
-                        )
-                        .textFieldStyle(.roundedBorder)
-                    }
-                }
-
-                HStack {
-                    Text(NSLocalizedString("settings.ai.api_key", bundle: .safeModule, comment: ""))
-                        .frame(width: 80, alignment: .leading)
-                    Group {
-                        if viewModel.showAPIKey {
-                            TextField(NSLocalizedString("settings.ai.api_key_placeholder", bundle: .safeModule, comment: ""), text: $viewModel.apiKeyText)
-                        } else {
-                            SecureField(NSLocalizedString("settings.ai.api_key_placeholder", bundle: .safeModule, comment: ""), text: $viewModel.apiKeyText)
-                        }
-                    }
-                    .textFieldStyle(.roundedBorder)
-
-                    Button {
-                        viewModel.showAPIKey.toggle()
-                    } label: {
-                        Image(systemName: viewModel.showAPIKey ? "eye.slash" : "eye")
-                    }
-                    .buttonStyle(.borderless)
-                    .help(
-                        viewModel.showAPIKey
-                            ? NSLocalizedString("settings.ai.hide_key", bundle: .safeModule, comment: "")
-                            : NSLocalizedString("settings.ai.show_key", bundle: .safeModule, comment: "")
-                    )
-                }
-
-                HStack {
-                    Image(systemName: "lock.shield.fill")
-                        .foregroundStyle(.green)
-                    Text(NSLocalizedString("settings.ai.keychain_secure", bundle: .safeModule, comment: ""))
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-
-                Divider()
-                    .padding(.vertical, 4)
-
-                modelSelectionSection
-            }
-        }
-    }
-
-    // MARK: - Model Selection
-
-    private var modelSelectionSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text(NSLocalizedString("settings.ai.model", bundle: .safeModule, comment: ""))
-                    .frame(width: 80, alignment: .leading)
-
-                if viewModel.isLoadingModels {
-                    ProgressView()
-                        .controlSize(.small)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                } else if !viewModel.availableModels.isEmpty {
-                    Picker("", selection: $viewModel.settings.aiConfiguration.selectedModel) {
-                        Text(NSLocalizedString("settings.ai.model_select", bundle: .safeModule, comment: ""))
-                            .tag("")
-                        ForEach(viewModel.availableModels) { model in
-                            Text(model.id).tag(model.id)
-                        }
-                    }
-                    .labelsHidden()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                } else {
-                    TextField(
-                        NSLocalizedString("settings.ai.model_placeholder", bundle: .safeModule, comment: ""),
-                        text: $viewModel.settings.aiConfiguration.selectedModel
-                    )
-                    .textFieldStyle(.roundedBorder)
-                }
-
-                Button {
-                    Task { await viewModel.fetchAvailableModels() }
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                }
-                .buttonStyle(.borderless)
-                .disabled(viewModel.isLoadingModels || !viewModel.settings.aiConfiguration.isValid)
-                .help(NSLocalizedString("settings.ai.model_refresh", bundle: .safeModule, comment: ""))
-            }
-
-            if let error = viewModel.modelsFetchError {
-                HStack(spacing: 4) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.yellow)
-                    Text(error)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            } else if !viewModel.availableModels.isEmpty {
-                Text(
-                    String(
-                        format: NSLocalizedString("settings.ai.models_loaded", bundle: .safeModule, comment: ""),
-                        viewModel.availableModels.count
-                    )
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            } else {
-                Text(NSLocalizedString("settings.ai.model_hint", bundle: .safeModule, comment: ""))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    private var connectionTestSection: some View {
-        SettingsCard {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Button(action: {
-                        viewModel.testAPIConnection()
-                    }) {
-                        HStack {
-                            if viewModel.connectionStatus == .testing {
-                                ProgressView()
-                                    .controlSize(.small)
-                                    .scaleEffect(0.7)
+                        Text(NSLocalizedString("settings.ai.provider", bundle: .safeModule, comment: ""))
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        HStack(spacing: 8) {
+                            Picker("", selection: $viewModel.settings.aiConfiguration.provider) {
+                                ForEach(AIProvider.allCases, id: \.self) { provider in
+                                    Text(provider.displayName).tag(provider)
+                                }
                             }
-                            Text(NSLocalizedString("settings.ai.test_connection", bundle: .safeModule, comment: ""))
+                            .pickerStyle(.menu)
+                            .labelsHidden()
+                            .fixedSize()
+                            .onChange(of: viewModel.settings.aiConfiguration.provider) { _, newProvider in
+                                if newProvider != .custom {
+                                    viewModel.settings.aiConfiguration.baseURL = newProvider.defaultBaseURL
+                                }
+                                viewModel.connectionStatus = .unknown
+                            }
+
+                            if viewModel.connectionStatus == .success {
+                                HStack(spacing: 4) {
+                                    Circle()
+                                        .fill(.green)
+                                        .frame(width: 8, height: 8)
+                                    Text(NSLocalizedString("settings.ai.connection.success", bundle: .safeModule, comment: ""))
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
                         }
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(SettingsDesignSystem.Colors.accent)
-                    .disabled(
-                        !viewModel.settings.aiConfiguration.isValid ||
-                            viewModel.connectionStatus == .testing
-                    )
+                    .padding(.vertical, 8)
+
+                    Divider()
+
+                    // Model Row
+                    HStack {
+                        Text(NSLocalizedString("settings.ai.model", bundle: .safeModule, comment: ""))
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        if viewModel.isLoadingModels {
+                            ProgressView()
+                                .controlSize(.small)
+                        } else if !viewModel.availableModels.isEmpty {
+                            Picker("", selection: $viewModel.settings.aiConfiguration.selectedModel) {
+                                Text(NSLocalizedString("settings.ai.model_select", bundle: .safeModule, comment: ""))
+                                    .tag("")
+                                ForEach(viewModel.availableModels) { model in
+                                    Text(model.id).tag(model.id)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                            .labelsHidden()
+                            .fixedSize()
+                        } else {
+                            TextField(
+                                NSLocalizedString("settings.ai.model_placeholder", bundle: .safeModule, comment: ""),
+                                text: $viewModel.settings.aiConfiguration.selectedModel
+                            )
+                            .textFieldStyle(.plain)
+                            .multilineTextAlignment(.trailing)
+                            .frame(maxWidth: 200)
+                        }
+                    }
+                    .padding(.vertical, 8)
+
+                    Divider()
+
+                    // API Key Row
+                    HStack {
+                        Text(NSLocalizedString("settings.ai.api_key", bundle: .safeModule, comment: ""))
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        if KeychainManager.existsAPIKey(for: viewModel.settings.aiConfiguration.provider) && viewModel.connectionStatus == .success {
+                            HStack(spacing: 12) {
+                                Text("••••••••")
+                                    .foregroundStyle(.secondary)
+                                Button(NSLocalizedString("settings.ai.remove_key", bundle: .safeModule, comment: "")) {
+                                    viewModel.removeAPIKey()
+                                }
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
+                            }
+                        } else {
+                            TextField(NSLocalizedString("settings.ai.api_key_placeholder", bundle: .safeModule, comment: ""), text: $viewModel.apiKeyText)
+                                .textFieldStyle(.plain)
+                                .multilineTextAlignment(.trailing)
+                                .frame(maxWidth: 300)
+                        }
+                    }
+                    .padding(.vertical, 8)
+
+                    if let detail = viewModel.connectionStatus.detail, !detail.isEmpty, viewModel.connectionStatus != .success {
+                        HStack(spacing: 6) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundStyle(.yellow)
+                            Text(detail)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                        }
+                        .padding(.top, 4)
+                    }
+
+                    if let actionError = viewModel.actionError {
+                        HStack(spacing: 6) {
+                            Image(systemName: "exclamationmark.octagon.fill")
+                                .foregroundStyle(.red)
+                            Text(actionError)
+                                .font(.caption)
+                                .foregroundStyle(.red)
+                            Spacer()
+                        }
+                        .padding(.top, 4)
+                    }
+                }
+
+                HStack {
+                    if let url = viewModel.settings.aiConfiguration.provider.apiKeyURL {
+                        Button {
+                            NSWorkspace.shared.open(url)
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "key.fill")
+                                Text(NSLocalizedString("settings.ai.get_api_key", bundle: .safeModule, comment: ""))
+                                    .font(.system(size: 11, weight: .medium))
+                            }
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.blue.opacity(0.1))
+                            .foregroundStyle(.blue)
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                        }
+                        .buttonStyle(.plain)
+                    }
 
                     Spacer()
 
-                    HStack(spacing: 8) {
-                        Circle()
-                            .fill(viewModel.connectionStatus.color)
-                            .frame(width: 8, height: 8)
-                            .symbolEffect(.pulse, isActive: viewModel.connectionStatus == .testing)
-
-                        Text(viewModel.connectionStatus.text)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                    if viewModel.connectionStatus != .success || !KeychainManager.existsAPIKey(for: viewModel.settings.aiConfiguration.provider) {
+                        Button {
+                            viewModel.testAPIConnection()
+                        } label: {
+                            if viewModel.connectionStatus == .testing {
+                                ProgressView()
+                                    .controlSize(.small)
+                                    .scaleEffect(0.6)
+                            } else {
+                                Text(NSLocalizedString("settings.ai.verify_and_save", bundle: .safeModule, comment: ""))
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .disabled(viewModel.apiKeyText.isEmpty || viewModel.connectionStatus == .testing)
                     }
                 }
-
-                if let detail = viewModel.connectionStatus.detail, !detail.isEmpty {
-                    HStack(spacing: 6) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.yellow)
-                        Text(detail)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
+                .padding(.top, 8)
             }
         }
     }

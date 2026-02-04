@@ -80,6 +80,10 @@
 "settings.ai.model_hint" = "Teste a conexão para carregar os modelos disponíveis";
 "settings.ai.models.fetch_failed" = "Falha ao buscar modelos";
 "settings.ai.test_connection" = "Testar Conexão";
+"settings.ai.verify_and_save" = "Verificar e Salvar";
+"settings.ai.get_api_key" = "Obter Chave de API";
+"settings.ai.remove_key" = "Remover";
+"settings.ai.remove_failed" = "Falha ao remover a chave de API. Verifique as permissões do Keychain.";
 "settings.ai.hide_key" = "Ocultar chave";
 "settings.ai.show_key" = "Mostrar chave";
 "settings.ai.connection.testing" = "Testando...";
