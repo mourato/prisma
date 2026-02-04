@@ -150,12 +150,12 @@ public enum AppThemeColor: String, CaseIterable, Codable, Sendable {
     public var adaptiveForegroundColor: Color {
         switch self {
         case .system:
-            // Dynamic check for system accent color luminance if needed, 
+            // Dynamic check for system accent color luminance if needed,
             // but usually system colors work well with adaptive themes.
             // For macOS system accent, white usually works best on most except yellow.
-            return .white
-        case .yellow, .cyan: return .black
-        default: return .white
+            .white
+        case .yellow, .cyan: .black
+        default: .white
         }
     }
 }
@@ -444,7 +444,7 @@ public class AppSettingsStore: ObservableObject {
         static let soundFeedbackEnabled = "soundFeedbackEnabled"
         static let recordingStartSound = "recordingStartSound"
         static let recordingStopSound = "recordingStopSound"
-        // App Visibility
+        /// App Visibility
         static let showInDock = "showInDock"
     }
 
@@ -652,7 +652,6 @@ public class AppSettingsStore: ObservableObject {
     /// Whether to show the app icon in the Dock (allows Cmd+Tab switching).
     @Published public var showInDock: Bool {
         didSet { UserDefaults.standard.set(showInDock, forKey: Keys.showInDock) }
-    }
     }
 
     /// All available prompts (predefined + user-created), filtered by deleted and overrides.

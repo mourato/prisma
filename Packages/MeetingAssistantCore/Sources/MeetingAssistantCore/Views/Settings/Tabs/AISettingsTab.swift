@@ -265,7 +265,7 @@ public struct AISettingsTab: View {
         case .loadingASR, .loadingDiarization:
             Image(systemName: "gearshape.circle.fill")
                 .foregroundStyle(.orange)
-                .symbolEffect(.rotate)
+                .symbolEffect(.pulse)
                 .accessibilityLabel(NSLocalizedString("settings.ai.loading", bundle: .safeModule, comment: ""))
         case .ready:
             Image(systemName: "checkmark.circle.fill")
