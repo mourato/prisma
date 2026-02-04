@@ -76,7 +76,7 @@ public class AISettingsViewModel: ObservableObject {
         do {
             if !value.isEmpty {
                 try keychain.store(value, for: providerKey)
-                logger.info("API Key successfully persisted to Keychain for \(settings.aiConfiguration.provider.displayName)")
+                logger.info("API Key successfully persisted to Keychain for \(self.settings.aiConfiguration.provider.displayName)")
             } else {
                 try keychain.delete(for: providerKey)
                 logger.info("API Key removed from Keychain for \(self.settings.aiConfiguration.provider.displayName)")
@@ -90,7 +90,7 @@ public class AISettingsViewModel: ObservableObject {
 
     private func loadAPIKeyForCurrentProvider() -> String? {
         do {
-            return try KeychainManager.retrieveAPIKey(for: settings.aiConfiguration.provider)
+            return try KeychainManager.retrieveAPIKey(for: self.settings.aiConfiguration.provider)
         } catch {
             logger.error("Failed to load API key: \(error.localizedDescription)")
             return nil
@@ -102,7 +102,7 @@ public class AISettingsViewModel: ObservableObject {
         availableModels = []
         modelsFetchError = nil
 
-        guard let url = validateURL(settings.aiConfiguration.baseURL) else {
+        guard let url = validateURL(self.settings.aiConfiguration.baseURL) else {
             connectionStatus = .failure("settings.ai.connection.invalid_url".localized)
             return
         }
@@ -131,7 +131,7 @@ public class AISettingsViewModel: ObservableObject {
 
     /// Fetches available models from the LLM service's /models endpoint.
     public func fetchAvailableModels() async {
-        guard let baseURL = validateURL(settings.aiConfiguration.baseURL) else {
+        guard let baseURL = validateURL(self.settings.aiConfiguration.baseURL) else {
             modelsFetchError = "settings.ai.connection.invalid_url".localized
             return
         }
@@ -186,7 +186,7 @@ public class AISettingsViewModel: ObservableObject {
         request.httpMethod = "GET"
         request.timeoutInterval = 10
 
-        if let key = try? KeychainManager.retrieveAPIKey(for: settings.aiConfiguration.provider), !key.isEmpty {
+        if let key = try? KeychainManager.retrieveAPIKey(for: self.settings.aiConfiguration.provider), !key.isEmpty {
             request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
         }
         return request
