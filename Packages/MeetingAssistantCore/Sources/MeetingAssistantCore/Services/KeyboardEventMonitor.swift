@@ -23,12 +23,12 @@ public final class KeyboardEventMonitor {
     /// Starts monitoring events.
     public func start() {
         stop()
-        
+
         // Add global monitor (for events when app is inactive)
         globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: mask) { [weak self] event in
             self?.handler(event)
         }
-        
+
         // Add local monitor (for events when app is active)
         localMonitor = NSEvent.addLocalMonitorForEvents(matching: mask) { [weak self] event in
             self?.handler(event)
@@ -42,7 +42,7 @@ public final class KeyboardEventMonitor {
             NSEvent.removeMonitor(monitor)
             globalMonitor = nil
         }
-        
+
         if let monitor = localMonitor {
             NSEvent.removeMonitor(monitor)
             localMonitor = nil

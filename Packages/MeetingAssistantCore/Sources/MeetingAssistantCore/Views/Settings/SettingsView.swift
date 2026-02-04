@@ -70,6 +70,7 @@ public struct SettingsView: View {
             max: LayoutConstants.sidebarMaxWidth
         )
     }
+
     // MARK: - Detail View
 
     @MainActor
@@ -80,6 +81,12 @@ public struct SettingsView: View {
             MetricsDashboardSettingsTab()
         case .general:
             GeneralSettingsTab()
+        case .dictation:
+            DictationSettingsTab()
+        case .meetings:
+            MeetingSettingsTab()
+        case .audio:
+            AudioSettingsTab()
         case .assistant:
             AssistantSettingsTab()
         case .transcriptions:

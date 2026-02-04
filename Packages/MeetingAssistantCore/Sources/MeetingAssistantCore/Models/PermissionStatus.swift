@@ -3,7 +3,6 @@ import SwiftUI
 
 // MARK: - Permission Status Model
 
-
 // MARK: - Constants
 
 public enum PermissionConstants {
@@ -130,45 +129,45 @@ public enum PermissionAction {
 }
 
 @MainActor
-extension PermissionInfo {
-    public var actionType: PermissionAction {
+public extension PermissionInfo {
+    var actionType: PermissionAction {
         switch state {
         case .notDetermined:
-            return .request
+            .request
         case .denied, .restricted:
             // Special handling for accessibility which is often just a checkbox in system settings
             // but we want to treat the initial "denied" state (which is the default before checking)
             // as a requestable action if appropriate.
             // Based on previous logic: if accessibility, show "Request" button style.
-            return type == .accessibility ? .request : .openSettings
+            type == .accessibility ? .request : .openSettings
         case .granted:
-            return .none
+            .none
         }
     }
 
-    public var statusColor: Color {
+    var statusColor: Color {
         switch state {
         case .granted:
-            return SettingsDesignSystem.Colors.success
+            SettingsDesignSystem.Colors.success
         case .denied:
-            return SettingsDesignSystem.Colors.error
+            SettingsDesignSystem.Colors.error
         case .notDetermined:
-            return SettingsDesignSystem.Colors.warning
+            SettingsDesignSystem.Colors.warning
         case .restricted:
-            return SettingsDesignSystem.Colors.neutral
+            SettingsDesignSystem.Colors.neutral
         }
     }
 
-    public var iconBackgroundColor: Color {
+    var iconBackgroundColor: Color {
         statusColor.opacity(0.15)
     }
 
-    public var iconForegroundColor: Color {
+    var iconForegroundColor: Color {
         switch state {
         case .notDetermined:
-            return SettingsDesignSystem.Colors.accent
+            SettingsDesignSystem.Colors.accent
         default:
-            return statusColor
+            statusColor
         }
     }
 }

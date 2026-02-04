@@ -75,9 +75,9 @@ public final class AudioDeviceManager: ObservableObject {
 
     @MainActor
     private func updateDevices(_ devices: [AudioInputDevice]) {
-        guard self.availableInputDevices != devices else { return }
-        
-        self.availableInputDevices = devices
+        guard availableInputDevices != devices else { return }
+
+        availableInputDevices = devices
 
         AppLogger.debug(
             "Refreshed audio input devices",
@@ -88,7 +88,7 @@ public final class AudioDeviceManager: ObservableObject {
 
     /// Check if a specific device (by UID) is currently available.
     public func isDeviceAvailable(_ uid: String) -> Bool {
-        return availableInputDevices.contains { $0.id == uid }
+        availableInputDevices.contains { $0.id == uid }
     }
 
     /// Retrieve the Core Audio device ID for a given unique UID.

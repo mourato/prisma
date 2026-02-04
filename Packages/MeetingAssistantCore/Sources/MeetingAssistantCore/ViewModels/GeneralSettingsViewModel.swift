@@ -1,9 +1,9 @@
 import AppKit
 import Combine
 import Foundation
-import SwiftUI
-import ServiceManagement
 import os
+import ServiceManagement
+import SwiftUI
 
 @MainActor
 public class GeneralSettingsViewModel: ObservableObject {
@@ -135,7 +135,7 @@ public class GeneralSettingsViewModel: ObservableObject {
         didSet {
             // Avoid infinite loop if we revert the state
             guard launchAtLogin != settingsStore.launchAtLogin else { return }
-            
+
             settingsStore.launchAtLogin = launchAtLogin
             updateLaunchAtLogin(launchAtLogin)
         }
@@ -248,7 +248,7 @@ public class GeneralSettingsViewModel: ObservableObject {
             }
         } catch {
             Self.logger.error("Failed to update launch at login: \(error.localizedDescription)")
-            
+
             // Revert state on failure
             DispatchQueue.main.async { [weak self] in
                 self?.launchAtLogin = !enabled

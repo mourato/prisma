@@ -52,10 +52,10 @@ public enum SettingsDesignSystem {
         public static let cardPadding: CGFloat = 16
         public static let sectionSpacing: CGFloat = 20
         public static let itemSpacing: CGFloat = 12
-        
+
         public static let heroCornerRadius: CGFloat = 16
         public static let heroPadding: CGFloat = 24
-        
+
         public static let maxTextFieldWidth: CGFloat = 300
         public static let maxPickerWidth: CGFloat = 200
         public static let maxCompactTextFieldWidth: CGFloat = 200

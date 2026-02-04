@@ -1,12 +1,12 @@
 /* Sidebar Sections */
 "settings.section.metrics" = "Dashboard";
 "settings.section.general" = "Geral";
+"settings.section.dictation" = "Ditado";
+"settings.section.meetings" = "Reuniões";
+"settings.section.audio" = "Áudio e Som";
 "settings.section.transcriptions" = "Transcrições";
-"settings.section.shortcuts" = "Atalhos";
 "settings.section.assistant" = "Assistant";
 "settings.section.ai" = "Aprimoramentos";
-"settings.section.post_processing" = "Pós-Processamento";
-"settings.section.service" = "Serviço";
 "settings.section.permissions" = "Permissões";
 
 /* Metrics Dashboard */
@@ -167,7 +167,11 @@
 "settings.service.download_model" = "Baixar Modelo";
 
 /* Shortcut Settings */
-"settings.shortcuts.title" = "Atalhos";
+"settings.shortcuts.title" = "Controles de Teclado";
+"settings.shortcuts.dictation" = "Atalho de Ditado";
+"settings.shortcuts.dictation_desc" = "Tecla para iniciar/parar uma sessão rápida de ditado";
+"settings.shortcuts.meeting" = "Atalho de Reunião";
+"settings.shortcuts.meeting_desc" = "Tecla para iniciar/parar a gravação de uma reunião";
 "settings.shortcuts.global" = "Atalhos Globais";
 "settings.shortcuts.description" = "Configure atalhos de teclado para controlar o aplicativo com agilidade, mesmo em segundo plano.";
 "settings.shortcuts.toggle_recording" = "Alternar Gravação";
