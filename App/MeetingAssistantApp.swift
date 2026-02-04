@@ -63,6 +63,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         assistantService: assistantVoiceCommandService
     )
     private var cancellables = Set<AnyCancellable>()
+    private var dockObserver: AnyCancellable?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Initialize Monitoring Services
@@ -91,8 +92,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             await performCleanup()
         }
 
-        // Hide dock icon for menu bar only app
-        NSApp.setActivationPolicy(.accessory)
+        // Set initial activation policy based on user settings
+        applyDockVisibility(AppSettingsStore.shared.showInDock)
+
+        // Observe changes to dock visibility setting
+        dockObserver = AppSettingsStore.shared.$showInDock
+            .dropFirst() // Skip initial value (already applied above)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] showInDock in
+                self?.applyDockVisibility(showInDock)
+            }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -458,5 +467,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             floatingIndicatorController.hide()
         }
+    }
+
+    /// Applies the dock visibility setting by changing the app's activation policy.
+    /// - Parameter showInDock: If true, shows the app in Dock and Cmd+Tab switcher.
+    private func applyDockVisibility(_ showInDock: Bool) {
+        let policy: NSApplication.ActivationPolicy = showInDock ? .regular : .accessory
+        NSApp.setActivationPolicy(policy)
+        logger.info("Activation policy set to: \(showInDock ? "regular (dock)" : "accessory (menu bar only)")")
     }
 }

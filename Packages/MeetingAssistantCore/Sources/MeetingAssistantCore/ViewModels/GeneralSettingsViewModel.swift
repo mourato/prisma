@@ -103,6 +103,12 @@ public class GeneralSettingsViewModel: ObservableObject {
         }
     }
 
+    @Published public var showInDock: Bool {
+        didSet {
+            settingsStore.showInDock = showInDock
+        }
+    }
+
     @Published public var availableDevices: [AudioInputDevice] = []
 
     private let deviceManager = AudioDeviceManager()
@@ -127,6 +133,7 @@ public class GeneralSettingsViewModel: ObservableObject {
         autoDeleteTranscriptions = settingsStore.autoDeleteTranscriptions
         autoDeletePeriodDays = settingsStore.autoDeletePeriodDays
         appAccentColor = settingsStore.appAccentColor
+        showInDock = settingsStore.showInDock
 
         setupDeviceObservation()
     }

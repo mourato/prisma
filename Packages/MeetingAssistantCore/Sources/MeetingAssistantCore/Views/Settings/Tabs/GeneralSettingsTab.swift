@@ -105,6 +105,15 @@ public struct GeneralSettingsTab: View {
                             "settings.general.merge_audio".localized,
                             isOn: $viewModel.shouldMergeAudioFiles
                         )
+
+                        Divider()
+
+                        // Show in Dock Toggle
+                        SettingsToggle(
+                            "settings.general.show_in_dock".localized,
+                            description: "settings.general.show_in_dock_desc".localized,
+                            isOn: $viewModel.showInDock
+                        )
                     }
                 }
 

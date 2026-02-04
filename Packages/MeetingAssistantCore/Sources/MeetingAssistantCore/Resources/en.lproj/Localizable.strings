@@ -454,3 +454,7 @@
 
 /* Assistant */
 "assistant.prompt_title" = "Assistant Command";
+
+/* App Visibility Settings */
+"settings.general.show_in_dock" = "Show in Dock";
+"settings.general.show_in_dock_desc" = "Display the app icon in the Dock and allow Cmd+Tab switching.";
