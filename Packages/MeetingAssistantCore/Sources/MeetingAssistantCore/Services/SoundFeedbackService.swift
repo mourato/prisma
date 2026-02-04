@@ -38,6 +38,8 @@ public final class SoundFeedbackService {
 
     // MARK: - Private Helpers
 
+    private var currentSound: NSSound?
+
     /// Play the specified sound using NSSound.
     /// Non-blocking playback that does not interfere with recording.
     private func play(_ sound: SoundFeedbackSound) {
@@ -46,8 +48,9 @@ public final class SoundFeedbackService {
         // NSSound uses the system's output device and does not interfere with recording
         if let nsSound = NSSound(named: NSSound.Name(soundName)) {
             // Stop any previous playback to avoid overlapping sounds
-            nsSound.stop()
-            nsSound.play()
+            currentSound?.stop()
+            currentSound = nsSound
+            currentSound?.play()
         } else {
             AppLogger.warning(
                 "Failed to load system sound",
