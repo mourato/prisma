@@ -25,9 +25,9 @@ Este documento descreve as limitações técnicas e de design identificadas no p
 - **API Key Persistence**: A chave de API agora é persistida no Keychain apenas após uma verificação de conexão bem-sucedida ("Verify and Save"). Mudanças feitas no texto sem verificação são perdidas ao trocar de aba ou fechar o app. (Contexto: evitar persistência de chaves inválidas ou parciais, fevereiro/2026)
 - **Impacto**: Melhora a integridade do Keychain, mas exige uma ação explícita do usuário para salvar novas chaves.
 ## 7. Plaintext API Key in Memory
-- **Plaintext API Key**: O `AISettingsViewModel` mantém o texto da chave de API em uma propriedade `@Published String` (`apiKeyText`). Embora a UI use `SecureField` para máscara, a string reside em plaintext na RAM enquanto o ViewModel estiver ativo. (Contexto: facilidade de bind bidirecional com SwiftUI, fevereiro/2026)
-- **Impacto**: Moderado/Alto. Se o processo for inspecionado ou a memória for dumpada, a chave pode ser recuperada em texto puro.
+- **Plaintext API Key**: O `AISettingsViewModel` mantém o texto da chave de API em uma propriedade `@Published String` (`apiKeyText`) durante a edição. Após a confirmação ("Verify and Save"), a string é limpa da memória. (Status: Mitigado em fev/2026, mas inerente ao binding de String do SwiftUI).
+- **Impacto**: Baixo/Moderado. A exposição é limitada apenas ao momento de digitação.
 
-## 8. Keychain Access on View Body
-- **Keychain Access**: Algumas Views de configuração acessam o `KeychainManager` diretamente dentro do bloco `body` para verificar a existência de chaves. O acesso ao Keychain é uma operação de I/O que pode ser lenta.
-- **Impacto**: Baixo/Médio. Pode causar pequenos travamentos (stutter) na UI ao navegar ou interagir com componentes reativos na aba de Enhancements.
+## 8. Custom Provider Verification Requirement
+- **Custom Provider Verification**: A verificação de conexão para provedores customizados exige que o endpoint `/v1/models` (ou equivalente sufixado a URL base) esteja disponível e retorne 200 OK. Provedores que suportam apenas endpoints de chat completation mas bloqueiam listing de modelos irão falhar na verificação.
+- **Impacto**: Limita a compatibilidade com backends muito restritivos ou proxies de API mínimos.
