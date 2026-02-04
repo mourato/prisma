@@ -949,4 +949,14 @@ extension RecordingManager {
         updatedMeeting.endTime = meeting.startTime.addingTimeInterval(audioDuration)
         return updatedMeeting
     }
+
+    // MARK: - Menu Helpers
+
+    public var dictationMenuKey: String {
+        (isRecording && recordingSource == .microphone) ? "menubar.stop_dictation" : "menubar.dictate"
+    }
+
+    public var meetingMenuKey: String {
+        (isRecording && (recordingSource == .system || recordingSource == .all)) ? "menubar.stop_recording" : "menubar.record_meeting"
+    }
 }

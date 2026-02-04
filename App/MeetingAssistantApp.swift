@@ -147,14 +147,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// Toggle recording state when global shortcut is activated.
-    private func toggleRecording() async {
-        if recordingManager.isRecording {
-            await recordingManager.stopRecording(transcribe: true)
-        } else {
-            await recordingManager.startRecording(source: .microphone)
-        }
-    }
-
     private func startRecording(source: RecordingSource) async {
         if recordingManager.isRecording {
             await recordingManager.stopRecording(transcribe: true)
@@ -193,7 +185,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let dictateItem = createMenuItem(
             key: "menubar.dictate",
             action: #selector(toggleRecordingFromMenu),
-            shortcutName: .toggleRecording
+            shortcutName: .dictationToggle
         )
         dictateMenuItem = dictateItem
         contextMenu?.addItem(dictateItem)
@@ -202,7 +194,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let meetingItem = createMenuItem(
             key: "menubar.record_meeting",
             action: #selector(startMeetingFromMenu),
-            shortcutName: .startMeeting
+            shortcutName: .meetingToggle
         )
         recordMeetingMenuItem = meetingItem
         contextMenu?.addItem(meetingItem)
@@ -253,20 +245,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func updateMenuTitles() {
-        // Update Dictate Item
-        let isRecording = recordingManager.isRecording
-        let recordingSource = recordingManager.recordingSource
-        let isAssistantRecording = assistantVoiceCommandService.isRecording
-
         // Update Dictate
-        let dictateKey = (isRecording && recordingSource == .microphone) ? "menubar.stop_dictation" : "menubar.dictate"
-        updateMenuItem(dictateMenuItem, key: dictateKey, shortcutName: .toggleRecording)
+        let dictateKey = recordingManager.dictationMenuKey
+        updateMenuItem(dictateMenuItem, key: dictateKey, shortcutName: .dictationToggle)
 
         // Update Meeting
-        let meetingKey = (isRecording && (recordingSource == .system || recordingSource == .all)) ? "menubar.stop_recording" : "menubar.record_meeting"
-        updateMenuItem(recordMeetingMenuItem, key: meetingKey, shortcutName: .startMeeting)
+        let meetingKey = recordingManager.meetingMenuKey
+        updateMenuItem(recordMeetingMenuItem, key: meetingKey, shortcutName: .meetingToggle)
 
         // Update Assistant
+        let isAssistantRecording = assistantVoiceCommandService.isRecording
         let assistantKey = isAssistantRecording ? "menubar.stop_assistant" : "menubar.assistant"
         updateMenuItem(assistantMenuItem, key: assistantKey, shortcutName: .assistantCommand)
     }
@@ -283,9 +271,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         var presetString: String? = nil
         var isCustom = false
 
-        if shortcutName == .toggleRecording {
-            if settings.selectedPresetKey != .custom, settings.selectedPresetKey != .notSpecified {
-                presetString = settings.selectedPresetKey.displayName
+        if shortcutName == .dictationToggle {
+            if settings.dictationSelectedPresetKey != .custom, settings.dictationSelectedPresetKey != .notSpecified {
+                presetString = settings.dictationSelectedPresetKey.displayName
             } else {
                 isCustom = true
             }
@@ -295,8 +283,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             } else {
                 isCustom = true
             }
-        } else if shortcutName == .startMeeting {
-            isCustom = true
+        } else if shortcutName == .meetingToggle {
+            if settings.meetingSelectedPresetKey != .custom, settings.meetingSelectedPresetKey != .notSpecified {
+                presetString = settings.meetingSelectedPresetKey.displayName
+            } else {
+                isCustom = true
+            }
         }
 
         if let presetString {
@@ -305,13 +297,32 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             item.keyEquivalentModifierMask = []
         } else if isCustom, let shortcut = KeyboardShortcuts.Shortcut(name: shortcutName) {
             item.title = title
-            // Extract key equivalent from description by stripping modifier symbols
-            var keyEquivalent = shortcut.description
+            
+            // Robust key equivalent handling
+            let desc = shortcut.description
             let modifierSymbols = ["⌘", "⌥", "⌃", "⇧"]
+            var cleanKey = desc
             for symbol in modifierSymbols {
-                keyEquivalent = keyEquivalent.replacingOccurrences(of: symbol, with: "")
+                cleanKey = cleanKey.replacingOccurrences(of: symbol, with: "")
             }
-            item.keyEquivalent = keyEquivalent.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+            cleanKey = cleanKey.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            
+            // Map special key descriptions back to NSMenuItem key equivalents
+            switch cleanKey {
+            case "space": item.keyEquivalent = " "
+            case "return", "enter": item.keyEquivalent = "\r"
+            case "tab": item.keyEquivalent = "\t"
+            case "backspace", "delete": item.keyEquivalent = String(UnicodeScalar(NSBackspaceCharacter)!)
+            case "escape", "esc": item.keyEquivalent = "\u{1b}"
+            case "left": item.keyEquivalent = String(UnicodeScalar(NSLeftArrowFunctionKey)!)
+            case "right": item.keyEquivalent = String(UnicodeScalar(NSRightArrowFunctionKey)!)
+            case "up": item.keyEquivalent = String(UnicodeScalar(NSUpArrowFunctionKey)!)
+            case "down": item.keyEquivalent = String(UnicodeScalar(NSDownArrowFunctionKey)!)
+            default:
+                // For regular keys, use the first character of the stripped string
+                item.keyEquivalent = String(cleanKey.prefix(1))
+            }
+            
             item.keyEquivalentModifierMask = shortcut.modifiers
         } else {
             item.title = title
