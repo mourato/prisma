@@ -52,16 +52,7 @@ public struct PermissionStatusView: View {
                 permissionWarning
             }
         }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(backgroundGradient)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(borderColor, lineWidth: 1)
-        )
-    }
+    } // body
 
     private var requiredPermissions: [PermissionType] {
         requiredSource.requiredPermissionTypes + [.accessibility]
@@ -92,7 +83,7 @@ public struct PermissionStatusView: View {
 
     private var headerSection: some View {
         HStack {
-            Image(systemName: "shield.checkered")
+            Image(systemName: PermissionConstants.Icons.shieldCheckered)
                 .font(.title2)
                 .foregroundStyle(headerIconColor)
 
@@ -121,20 +112,20 @@ public struct PermissionStatusView: View {
                     .padding(.vertical, 4)
                     .background(
                         Capsule()
-                            .fill(Color.green)
+                            .fill(SettingsDesignSystem.Colors.success)
                     )
                     .foregroundColor(.white)
             }
             .buttonStyle(.plain)
         } else {
-            Image(systemName: "exclamationmark")
+            Image(systemName: PermissionConstants.Icons.exclamationMark)
                 .font(.caption2)
                 .fontWeight(.bold)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
                 .background(
                     Capsule()
-                        .fill(Color.orange)
+                        .fill(SettingsDesignSystem.Colors.warning)
                 )
                 .foregroundColor(.white)
         }
@@ -142,8 +133,8 @@ public struct PermissionStatusView: View {
 
     private var permissionWarning: some View {
         HStack(spacing: 6) {
-            Image(systemName: "exclamationmark.triangle")
-                .foregroundStyle(.orange)
+            Image(systemName: PermissionConstants.Icons.exclamationMarkTriangle)
+                .foregroundStyle(SettingsDesignSystem.Colors.warning)
                 .font(.caption)
 
             Text("permissions.warning".localized)
@@ -184,7 +175,7 @@ public struct PermissionStatusView: View {
     }
 
     private var headerIconColor: Color {
-        requiredPermissionsGranted ? .green : .orange
+        requiredPermissionsGranted ? SettingsDesignSystem.Colors.success : SettingsDesignSystem.Colors.warning
     }
 
     private func permissionState(for type: PermissionType) -> PermissionState {
@@ -212,12 +203,12 @@ struct PermissionRowView: View {
             // Permission type icon
             ZStack {
                 Circle()
-                    .fill(iconBackgroundColor)
+                    .fill(permission.iconBackgroundColor)
                     .frame(width: 36, height: 36)
 
                 Image(systemName: permission.type.iconName)
                     .font(.system(size: 16))
-                    .foregroundStyle(iconForegroundColor)
+                    .foregroundStyle(permission.iconForegroundColor)
             }
 
             // Permission info
@@ -252,7 +243,7 @@ struct PermissionRowView: View {
             // Status icon with animation
             Image(systemName: permission.state.iconName)
                 .font(.title3)
-                .foregroundStyle(statusColor)
+                .foregroundStyle(permission.statusColor)
                 .symbolEffect(
                     .pulse, options: .nonRepeating, isActive: permission.state == .notDetermined
                 )
@@ -266,8 +257,8 @@ struct PermissionRowView: View {
 
     @ViewBuilder
     private var actionButton: some View {
-        switch permission.state {
-        case .notDetermined:
+        switch permission.actionType {
+        case .request:
             Button("permissions.request".localized) {
                 onRequest()
             }
@@ -275,54 +266,18 @@ struct PermissionRowView: View {
             .controlSize(.small)
             .tint(SettingsDesignSystem.Colors.accent)
 
-        case .denied, .restricted:
+        case .openSettings:
             Button("permissions.configure".localized) {
                 onOpenSettings()
             }
             .buttonStyle(.bordered)
             .controlSize(.small)
 
-        case .granted:
+        case .none:
             EmptyView()
         }
     }
 
-    // MARK: - Computed Properties
-
-    private var iconBackgroundColor: Color {
-        switch permission.state {
-        case .granted:
-            Color.green.opacity(0.15)
-        case .denied, .restricted:
-            Color.red.opacity(0.15)
-        case .notDetermined:
-            SettingsDesignSystem.Colors.accent.opacity(0.15)
-        }
-    }
-
-    private var iconForegroundColor: Color {
-        switch permission.state {
-        case .granted:
-            .green
-        case .denied, .restricted:
-            .red
-        case .notDetermined:
-            SettingsDesignSystem.Colors.accent
-        }
-    }
-
-    private var statusColor: Color {
-        switch permission.state {
-        case .granted:
-            .green
-        case .denied:
-            .red
-        case .notDetermined:
-            .orange
-        case .restricted:
-            .gray
-        }
-    }
 }
 
 // MARK: - Compact Permission Status View
@@ -360,50 +315,21 @@ struct CompactPermissionIndicator: View {
         HStack(spacing: 4) {
             Image(systemName: permission.type.iconName)
                 .font(.caption)
-                .foregroundStyle(iconColor)
+                .foregroundStyle(permission.state.isAuthorized ? .primary : .secondary)
 
             Image(systemName: permission.state.iconName)
                 .font(.caption2)
-                .foregroundStyle(statusColor)
+                .foregroundStyle(permission.statusColor)
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
         .background(
             Capsule()
-                .fill(backgroundColor)
+                .fill(permission.statusColor.opacity(0.1))
         )
         .help("\(permission.type.displayName): \(permission.state.displayName)")
     }
 
-    private var iconColor: Color {
-        permission.state.isAuthorized ? .primary : .secondary
-    }
-
-    private var statusColor: Color {
-        switch permission.state {
-        case .granted:
-            .green
-        case .denied:
-            .red
-        case .notDetermined:
-            .orange
-        case .restricted:
-            .gray
-        }
-    }
-
-    private var backgroundColor: Color {
-        switch permission.state {
-        case .granted:
-            Color.green.opacity(0.1)
-        case .denied:
-            Color.red.opacity(0.1)
-        case .notDetermined:
-            Color.orange.opacity(0.1)
-        case .restricted:
-            Color.gray.opacity(0.1)
-        }
-    }
 }
 
 // MARK: - Previews

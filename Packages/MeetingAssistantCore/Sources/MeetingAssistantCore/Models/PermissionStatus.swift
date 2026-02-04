@@ -1,6 +1,18 @@
 import Foundation
+import SwiftUI
 
 // MARK: - Permission Status Model
+
+
+// MARK: - Constants
+
+public enum PermissionConstants {
+    public enum Icons {
+        public static let shieldCheckered = "shield.checkered"
+        public static let exclamationMark = "exclamationmark"
+        public static let exclamationMarkTriangle = "exclamationmark.triangle"
+    }
+}
 
 /// Represents the authorization status of a specific permission.
 public enum PermissionState: String, Sendable {
@@ -106,6 +118,58 @@ public struct PermissionInfo: Sendable {
     public mutating func updateState(_ newState: PermissionState) {
         state = newState
         lastChecked = Date()
+    }
+}
+
+// MARK: - UI Extensions
+
+public enum PermissionAction {
+    case request
+    case openSettings
+    case none
+}
+
+@MainActor
+extension PermissionInfo {
+    public var actionType: PermissionAction {
+        switch state {
+        case .notDetermined:
+            return .request
+        case .denied, .restricted:
+            // Special handling for accessibility which is often just a checkbox in system settings
+            // but we want to treat the initial "denied" state (which is the default before checking)
+            // as a requestable action if appropriate.
+            // Based on previous logic: if accessibility, show "Request" button style.
+            return type == .accessibility ? .request : .openSettings
+        case .granted:
+            return .none
+        }
+    }
+
+    public var statusColor: Color {
+        switch state {
+        case .granted:
+            return SettingsDesignSystem.Colors.success
+        case .denied:
+            return SettingsDesignSystem.Colors.error
+        case .notDetermined:
+            return SettingsDesignSystem.Colors.warning
+        case .restricted:
+            return SettingsDesignSystem.Colors.neutral
+        }
+    }
+
+    public var iconBackgroundColor: Color {
+        statusColor.opacity(0.15)
+    }
+
+    public var iconForegroundColor: Color {
+        switch state {
+        case .notDetermined:
+            return SettingsDesignSystem.Colors.accent
+        default:
+            return statusColor
+        }
     }
 }
 
