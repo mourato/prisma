@@ -1,6 +1,37 @@
 ---
 name: audio-realtime
-description: Use when working with audio recording, AVAudioEngine, AVAudioSourceNode, SystemAudioRecorder, AudioBufferQueue, AudioRecorder, AudioRecordingWorker, or real-time audio processing. Covers critical performance constraints AND system architecture patterns.
+description: Core principles for real-time audio processing. Covers thread safety, deadlock prevention, and performance-critical constraints for low-latency audio capture and processing.
+---
+
+# Real-Time Audio Processing
+
+## Overview
+
+Rules and best practices for managing audio engines and buffers in a real-time, multi-threaded context.
+
+## Core Principles
+
+### 1. Thread Safety & Deadlock Prevention
+**CRITICAL**: Audio properties and buffer queues are often accessed across multiple threads.
+- **Computed Properties**: Computed properties that acquire locks (e.g., `isEmpty`) can cause deadlocks. Prefer simple, lock-safe implementations.
+- **Lock Management**: Use `OSAllocatedUnfairLock` correctly. Never nest locks or acquire multiple locks simultaneously unless a strict hierarchy is maintained.
+- **Strict Isolation**: Use `@MainActor` for UI-bound states while keeping the audio hot path decoupled.
+
+### 2. High-Priority Constraints
+The audio render thread is high-priority and time-constrained.
+- **Avoid Blocking**: Never perform I/O, networking, or heavy allocation on the render thread.
+- **Lock-Free Patterns**: Use lock-free ring buffers (atomic increment/decrement) where possible to avoid priority inversion.
+
+## Key Components
+
+### AudioBufferQueue
+- Maintain thread-safe access for appending and consuming samples.
+- Ensure `isEmpty` and `count` are safe to call during the recording lifecycle.
+
+### AudioRecorder & Engine
+- Manage life-cycle transitions (Start, Stop, Pause) transitionally.
+- Handle engine failures gracefully without hanging the UI or the background thread.
+
 ---
 
 # Real-Time Audio

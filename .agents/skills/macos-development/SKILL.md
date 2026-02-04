@@ -1,7 +1,31 @@
 ---
 name: macos-development
-description: Build professional native macOS apps in Swift with SwiftUI and AppKit. Applies modern Swift 6+ best practices, concurrency patterns, and full lifecycle management (build, debug, test, optimize, ship). CLI-only workflow.
+description: Core principles for macOS application development using SwiftUI and AppKit. Covers life-cycle management, memory safety, and platform integration. Use when building UI or managing application state.
 ---
+
+# macOS Development Standards
+
+## Overview
+
+Guidelines for building robust, modern macOS applications with a focus on efficiency and platform consistency.
+
+## 1. Memory & Lifecycle
+
+- **Ownership**: Choose between `struct` (value types) for data and `class` (reference types) for identity and shared state.
+- **Capture Groups**: Use `[weak self]` in closures that create strong reference cycles (e.g., escaping closures, timers).
+- **Initialization**: Implement `deinit` to release system resources (file handles, observers, hardware taps) explicitly.
+- **View Lifecycle**: Manage state carefully within SwiftUI (`onAppear`, `onDisappear`) or AppKit (`viewWillAppear`, `viewDidDisappear`).
+
+## 2. Platform Integration
+
+- **Appearance**: Support standard macOS appearance modes (Light/Dark) and use system colors where possible.
+- **Accessibility**: Ensure all interactive elements have labels and support VoiceOver.
+- **Sandbox**: Adhere to App Sandbox requirements; manage entitlements and user-selected files correctly.
+
+## 3. Best Practices
+
+- **Resource Usage**: Monitor CPU and energy impact, especially for background recording or processing tasks.
+- **Interactivity**: Use standard macOS patterns for menus, popovers, and shortcuts to maintain user familiarity.
 
 <essential_principles>
 ## How We Work

@@ -1,9 +1,32 @@
+```
 ---
 name: quality-assurance
-description: Use when setting up or running SwiftLint, SwiftFormat, pre-commit hooks, Danger Swift, code quality automation, CI/CD integration, or discussing automated code quality checks.
+description: Quality assurance standards including testing methodologies, mocking, and build verification. Use when writing tests or verifying task completeness.
 ---
 
-# Quality Assurance & Automation
+# Quality Assurance Standards
+
+## Overview
+
+Requirements for maintaining high stability and confidence through rigorous testing and verification.
+
+## 1. Testing Methodology
+
+- **Unit Isolation**: Isolate unit tests by mocking all external dependencies (Networking, Storage, Hardware).
+- **Coverage**: Maintain high coverage for critical business logic in the Core and Domain layers.
+- **Performance Baselines**: Use `XCTMetric` to measure and establish baselines for time-sensitive paths (e.g., audio buffer processing).
+
+## 2. Mocking & Mocks
+
+- **Protocol-First**: Design protocols for all services to allow for easy mocking.
+- **Verification**: Use mocks to verify side effects and correct property interactions.
+- **Reset**: Implement `reset()` methods on actors or managers to ensure isolation between tests.
+
+## 3. Verification & CI
+
+- **Build Pre-Check**: **MANDATORY**: Run `make build` and `make test` before any commit.
+- **Automated Checks**: Ensure linting (`make lint`) passes without warnings.
+- **Manual Verification**: Document manual verification steps in walkthroughs for UI-heavy or hardware-dependent features.
 
 > **Conditional Skill** - Triggered when working with code quality tools
 

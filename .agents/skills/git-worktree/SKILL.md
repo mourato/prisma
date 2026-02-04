@@ -7,12 +7,16 @@ description:  Master Git Worktrees for parallel development. Includes the pro "B
 
 Git worktrees allow you to check out multiple branches of the same repository into different directories at the same time. This is a game-changer for multitasking, reviewing PRs without context switching, and maintaining long-running experiments.
 
+### Mandate: Worktree-First Development
+**Worktrees are now the mandatory way to perform any file modifications in this project.** 
+
 ## 1. Core Concepts
 
 Normally, a Git repo has one "working tree" (where your files are). With worktrees, you can attach multiple working trees to a single `.git` repository.
 
 **When to use:**
 
+* ALWAYS create a new worktree for every new task/conversation that involves code or documentation changes.
 * You're working on `feature-A` and need to fix a critical bug on `main` *right now*.
 * You want to run the app on `release/v1` and `release/v2` simultaneously.
 * You need to review a coworker's complex PR but don't want to mess up your current uncommitted state.
@@ -63,8 +67,9 @@ my-project/           # The root folder
 # Checkout existing branch to new folder
 git worktree add ./hotfix-login fix/login-issue
 
-# Create NEW branch in new folder
-git worktree add -b feature/new-ui ./new-ui main
+# Create NEW branch in new folder (Standard Project Command)
+# Assuming you are at the project root and have a 'main/' folder
+git worktree add -b feature/your-feature ../your-feature main
 ```
 
 ### Listing & Removing

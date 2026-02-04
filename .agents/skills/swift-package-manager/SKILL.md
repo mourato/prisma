@@ -1,13 +1,28 @@
 ---
-name: Swift Package Manager
-description: This skill should be used when working with "Package.swift", "SPM dependencies", "swift package", "Package.resolved", "make spm-proj", or Xcode project generation from Swift Packages.
+name: swift-package-manager
+description: Dependency management using Swift Package Manager (SPM). Covers package definition, dependency versioning, and local package maintenance. Use when managing external libraries.
 ---
 
-# Swift Package Manager
+# Dependency Management (SPM)
 
 ## Overview
 
-Guide for dependency management with Swift Package Manager and Xcode project generation.
+Guidelines for using Swift Package Manager to manage internal and external codebase dependencies.
+
+## 1. Philosophy
+
+- **Minimize Dependencies**: Each external package adds maintenance risk and build time. Audit carefully before adding.
+- **Standard Tool**: Use SPM as the exclusive dependency manager for the project.
+
+## 2. Versioning
+
+- **Explicit Versions**: Avoid using wildcard versions or branches. Use semantic versioning requirements like `.upToNextMajor`.
+- **Auditing**: Periodically check for dependency updates and security vulnerabilities.
+
+## 3. Local Packages
+
+- **Modularity**: Break down core logic into local SPM packages (e.g., `MeetingAssistantCore`) to improve build times and separation of concerns.
+- **Search Paths**: Ensure local package references in `Package.swift` are relative and correctly managed.
 
 ## When to Use
 

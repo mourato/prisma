@@ -199,11 +199,13 @@ git bisect start HEAD v2.1.0
 git bisect run npm test
 ```
 
-### Workflow 4: Multi-Branch Development
+### Workflow 4: Multi-Branch Development (Standard Task Initialization)
+
+**CRITICAL**: This is the mandatory entry point for any feature or fix.
 
 ```bash
 # Main project directory
-cd ~/projects/myapp
+cd ~/projects/myapp/main
 
 # Create worktree for urgent bugfix
 git worktree add ../myapp-hotfix hotfix/critical-bug

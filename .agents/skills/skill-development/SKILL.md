@@ -657,21 +657,41 @@ To create a skill for your plugin:
 Focus on strong trigger descriptions, progressive disclosure, and imperative writing style for effective skills that load when needed and provide targeted guidance.
 
 ---
+name: skill-development
+description: Methodology for creating and maintaining AI agent skills. Includes best practices for progressive disclosure, tool integration, and using Agent Skills for research.
+---
 
-## Agent Skills MCP Integration
+# Skill Development Methodology
 
-Use Agent Skills MCP to get up-to-date best practices for skill development.
+## Overview
 
-### When to Use Agent Skills MCP
+Guidelines for developing sustainable, effective skills that enhance the capabilities of AI coding assistants.
 
-- Creating new skills for the project
-- Modifying or improving existing skills
-- Following skill development patterns and conventions
-- Structuring skill documentation
+## 1. Core Principles
 
-### How to Query
+- **Progressive Disclosure**: Start with a clear summary and provide deep dives only in relevant sections.
+- **Trigger-Based**: Use clear trigger phrases in the YAML frontmatter to help assistants load the right context.
+- **Agnostic Logic**: While tools may be specific, the logic and patterns described should be as broadly applicable as possible.
 
-Use `mcp--agent-skills--SearchAgentSkills` to find relevant information:
+## 2. Research with Agent Skills
+
+**CRITICAL**: Utilize the `Agent Skills` toolset to research existing patterns and ensure consistency across the codebase.
+
+### When to use Agent Skills
+- Before creating a new skill to check if a similar one exists.
+- To find best practices for skill structure and documentation.
+- To validate that a proposed skill aligns with project conventions.
+
+### Integration
+- Use search capabilities (e.g., `SearchAgentSkills`) to explore the existing registry.
+- Maintain consistency with established naming and categorization conventions.
+
+## 3. Structure & Syntax
+
+- **YAML Frontmatter**: Every skill MUST have a `name` and a `description`.
+- **Hierarchical Headers**: Use Markdown headers logically (H1 for title, H2 for main sections, etc.).
+- **Code Examples**: Provide concise, actionable code blocks featuring correct patterns (and anti-patterns).
+d relevant information:
 
 ```bash
 mcp--agent-skills--SearchAgentSkills(
