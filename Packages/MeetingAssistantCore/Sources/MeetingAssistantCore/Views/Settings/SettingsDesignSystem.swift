@@ -31,6 +31,12 @@ public enum SettingsDesignSystem {
             endPoint: .bottomTrailing
         )
 
+        public static let dashboardHeroGradient = LinearGradient(
+            colors: [Color(red: 0.1, green: 0.4, blue: 0.9), Color(red: 0.1, green: 0.6, blue: 1.0)],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+
         public static let success = Color.green
         public static let warning = Color.orange
         public static let error = Color.red
@@ -44,6 +50,9 @@ public enum SettingsDesignSystem {
         public static let cardPadding: CGFloat = 16
         public static let sectionSpacing: CGFloat = 20
         public static let itemSpacing: CGFloat = 12
+        
+        public static let heroCornerRadius: CGFloat = 16
+        public static let heroPadding: CGFloat = 24
         
         public static let maxTextFieldWidth: CGFloat = 300
         public static let maxPickerWidth: CGFloat = 200
