@@ -216,68 +216,108 @@ public struct GeneralSettingsTab: View {
                         )
 
                         if viewModel.soundFeedbackEnabled {
-                            Divider()
+                             Divider()
+-
+-                            // Start Recording Sound
+-                            HStack {
+-                                Text("settings.general.sound_feedback.start_sound".localized)
+-                                    .font(.body)
+-                                    .foregroundStyle(.primary)
+-
+-                                Spacer()
+-
+-                                Picker("", selection: $viewModel.recordingStartSound) {
+-                                    ForEach(SoundFeedbackSound.allCases, id: \.self) { sound in
+-                                        Text(sound.displayName).tag(sound)
+-                                    }
+-                                }
+-                                .labelsHidden()
+-                                .pickerStyle(.menu)
+-                                .frame(width: 150)
+-
+-                                Button {
+-                                    SoundFeedbackService.shared.preview(viewModel.recordingStartSound)
+-                                } label: {
+-                                    Image(systemName: "play.circle.fill")
+-                                        .font(.title3)
+-                                }
+-                                .buttonStyle(.borderless)
+-                                .disabled(viewModel.recordingStartSound == .none)
+-                                .accessibilityLabel("settings.general.sound_feedback.preview".localized)
+-                            }
+-
++                            soundPickerRow(
++                                title: "settings.general.sound_feedback.start_sound".localized,
++                                selection: $viewModel.recordingStartSound
++                            )
++                            
+                             Divider()
 
-                            // Start Recording Sound
-                            HStack {
-                                Text("settings.general.sound_feedback.start_sound".localized)
-                                    .font(.body)
-                                    .foregroundStyle(.primary)
-
-                                Spacer()
-
-                                Picker("", selection: $viewModel.recordingStartSound) {
-                                    ForEach(SoundFeedbackSound.allCases, id: \.self) { sound in
-                                        Text(sound.displayName).tag(sound)
-                                    }
-                                }
-                                .labelsHidden()
-                                .pickerStyle(.menu)
-                                .frame(width: 150)
-
-                                Button {
-                                    SoundFeedbackService.shared.preview(viewModel.recordingStartSound)
-                                } label: {
-                                    Image(systemName: "play.circle.fill")
-                                        .font(.title3)
-                                }
-                                .buttonStyle(.borderless)
-                                .disabled(viewModel.recordingStartSound == .none)
-                                .accessibilityLabel("settings.general.sound_feedback.preview".localized)
-                            }
-
-                            Divider()
-
-                            // Stop Recording Sound
-                            HStack {
-                                Text("settings.general.sound_feedback.stop_sound".localized)
-                                    .font(.body)
-                                    .foregroundStyle(.primary)
-
-                                Spacer()
-
-                                Picker("", selection: $viewModel.recordingStopSound) {
-                                    ForEach(SoundFeedbackSound.allCases, id: \.self) { sound in
-                                        Text(sound.displayName).tag(sound)
-                                    }
-                                }
-                                .labelsHidden()
-                                .pickerStyle(.menu)
-                                .frame(width: 150)
-
-                                Button {
-                                    SoundFeedbackService.shared.preview(viewModel.recordingStopSound)
-                                } label: {
-                                    Image(systemName: "play.circle.fill")
-                                        .font(.title3)
-                                }
-                                .buttonStyle(.borderless)
-                                .disabled(viewModel.recordingStopSound == .none)
-                                .accessibilityLabel("settings.general.sound_feedback.preview".localized)
-                            }
-                        }
-                    }
-                }
+-                            // Stop Recording Sound
+-                            HStack {
+-                                Text("settings.general.sound_feedback.stop_sound".localized)
+-                                    .font(.body)
+-                                    .foregroundStyle(.primary)
+-
+-                                Spacer()
+-
+-                                Picker("", selection: $viewModel.recordingStopSound) {
+-                                    ForEach(SoundFeedbackSound.allCases, id: \.self) { sound in
+-                                        Text(sound.displayName).tag(sound)
+-                                    }
+-                                }
+-                                .labelsHidden()
+-                                .pickerStyle(.menu)
+-                                .frame(width: 150)
+-
+-                                Button {
+-                                    SoundFeedbackService.shared.preview(viewModel.recordingStopSound)
+-                                } label: {
+-                                    Image(systemName: "play.circle.fill")
+-                                        .font(.title3)
+-                                }
+-                                .buttonStyle(.borderless)
+-                                .disabled(viewModel.recordingStopSound == .none)
+-                                .accessibilityLabel("settings.general.sound_feedback.preview".localized)
+-                            }
++                            soundPickerRow(
++                                title: "settings.general.sound_feedback.stop_sound".localized,
++                                selection: $viewModel.recordingStopSound
++                            )
+                         }
+                     }
+                 }
++
++    // MARK: - Helper Views
++
++    private func soundPickerRow(title: String, selection: Binding<SoundFeedbackSound>) -> some View {
++        HStack {
++            Text(title)
++                .font(.body)
++                .foregroundStyle(.primary)
++
++            Spacer()
++
++            Picker("", selection: selection) {
++                ForEach(SoundFeedbackSound.allCases, id: \.self) { sound in
++                    Text(sound.displayName).tag(sound)
++                }
++            }
++            .labelsHidden()
++            .pickerStyle(.menu)
++            .frame(width: 150)
++
++            Button {
++                SoundFeedbackService.shared.preview(selection.wrappedValue)
++            } label: {
++                Image(systemName: "play.circle.fill")
++                    .font(.title3)
++            }
++            .buttonStyle(.borderless)
++            .disabled(selection.wrappedValue == .none)
++            .accessibilityLabel("settings.general.sound_feedback.preview".localized)
++        }
++    }
 
                 // Audio Devices
                 SettingsGroup("settings.general.audio_devices".localized, icon: "mic.fill") {
