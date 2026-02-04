@@ -46,8 +46,13 @@ public struct SettingsView: View {
         List(selection: $selectedSection) {
             Section {
                 ForEach(SettingsSection.allCases) { section in
-                    SidebarItemView(section: section, isSelected: selectedSection == section)
-                        .tag(section)
+                    SidebarItemView(
+                        section: section,
+                        isSelected: selectedSection == section,
+                        accentColor: SettingsDesignSystem.Colors.accent,
+                        onAccentColor: SettingsDesignSystem.Colors.onAccent
+                    )
+                    .tag(section)
                 }
             } header: {
                 Text(NSLocalizedString("about.title", bundle: .safeModule, comment: ""))
@@ -92,6 +97,8 @@ public struct SettingsView: View {
 private struct SidebarItemView: View {
     let section: SettingsSection
     let isSelected: Bool
+    let accentColor: Color
+    let onAccentColor: Color
 
     var body: some View {
         Label {
@@ -101,12 +108,13 @@ private struct SidebarItemView: View {
         } icon: {
             ZStack {
                 RoundedRectangle(cornerRadius: 6)
-                    .fill(SettingsDesignSystem.Colors.accent)
+                    .fill(accentColor)
                     .opacity(isSelected ? 1.0 : 0.1)
 
                 Image(systemName: section.icon)
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(isSelected ? SettingsDesignSystem.Colors.onAccent : SettingsDesignSystem.Colors.accent)
+                    .aspectRatio(contentMode: .fit)
+                    .foregroundStyle(isSelected ? onAccentColor : accentColor)
             }
             .frame(width: 24, height: 24)
         }
