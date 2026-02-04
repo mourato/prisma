@@ -10,7 +10,7 @@ final class MemorySanityTests: XCTestCase {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        weak var weakObject = object
+        weak let weakObject = object
         XCTAssertNotNil(weakObject, "Object should not be nil before deallocation check", file: file, line: line)
 
         // This closure is needed to ensure the local strong reference is gone
@@ -26,7 +26,7 @@ final class MemorySanityTests: XCTestCase {
             postProcessingService: MockPostProcessingService(),
             storage: MockStorageService()
         )
-        weak var weakManager = manager
+        weak let weakManager = manager
 
         XCTAssertNotNil(weakManager)
 
@@ -42,7 +42,7 @@ final class MemorySanityTests: XCTestCase {
     func testPostProcessingServicePersistence() async {
         // Given
         var service: PostProcessingService? = PostProcessingService.shared
-        weak var weakService = service
+        weak let weakService = service
 
         XCTAssertNotNil(weakService)
 
@@ -58,7 +58,7 @@ final class MemorySanityTests: XCTestCase {
     func testTranscriptionClientPersistence() async {
         // Given
         var client: TranscriptionClient? = TranscriptionClient.shared
-        weak var weakClient = client
+        weak let weakClient = client
 
         XCTAssertNotNil(weakClient)
 
