@@ -46,7 +46,7 @@ public struct SettingsView: View {
         List(selection: $selectedSection) {
             Section {
                 ForEach(SettingsSection.allCases) { section in
-                    sidebarItem(for: section)
+                    SidebarItemView(section: section, isSelected: selectedSection == section)
                         .tag(section)
                 }
             } header: {
@@ -65,25 +65,6 @@ public struct SettingsView: View {
             max: LayoutConstants.sidebarMaxWidth
         )
     }
-
-    private func sidebarItem(for section: SettingsSection) -> some View {
-        Label {
-            Text(section.title)
-                .font(.body)
-                .padding(.leading, 4)
-        } icon: {
-            Image(systemName: section.icon)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(selectedSection == section ? SettingsDesignSystem.Colors.onAccent : SettingsDesignSystem.Colors.accent)
-                .frame(width: 24, height: 24)
-                .background(
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(selectedSection == section ? SettingsDesignSystem.Colors.accent : SettingsDesignSystem.Colors.accent.opacity(0.1))
-                )
-        }
-        .padding(.vertical, 2)
-    }
-
     // MARK: - Detail View
 
     @MainActor
@@ -103,6 +84,33 @@ public struct SettingsView: View {
         case .permissions:
             PermissionsSettingsTab()
         }
+    }
+}
+
+// MARK: - Sidebar Item View
+
+private struct SidebarItemView: View {
+    let section: SettingsSection
+    let isSelected: Bool
+
+    var body: some View {
+        Label {
+            Text(section.title)
+                .font(.body)
+                .padding(.leading, 4)
+        } icon: {
+            ZStack {
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(SettingsDesignSystem.Colors.accent)
+                    .opacity(isSelected ? 1.0 : 0.1)
+
+                Image(systemName: section.icon)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(isSelected ? SettingsDesignSystem.Colors.onAccent : SettingsDesignSystem.Colors.accent)
+            }
+            .frame(width: 24, height: 24)
+        }
+        .padding(.vertical, 2)
     }
 }
 
