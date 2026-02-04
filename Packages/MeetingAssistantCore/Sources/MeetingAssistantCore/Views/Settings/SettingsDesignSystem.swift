@@ -1,4 +1,4 @@
-import SwiftUI
+ import SwiftUI
 
 /// Design system for the Settings module, following macOS 26 Tahoe aesthetic.
 public enum SettingsDesignSystem {
