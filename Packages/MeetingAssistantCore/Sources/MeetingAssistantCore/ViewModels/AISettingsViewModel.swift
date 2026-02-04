@@ -10,6 +10,8 @@ public class AISettingsViewModel: ObservableObject {
     @Published public var apiKeyText = ""
     @Published public var isKeySaved = false
     @Published public var connectionStatus: ConnectionStatus = .unknown
+    @Published public var showVerifyButton = true
+    @Published public var showGetApiKeyButton = true
     @Published public var availableModels: [LLMModel] = []
     @Published public var isLoadingModels = false
     @Published public var modelsFetchError: String?
@@ -35,17 +37,25 @@ public class AISettingsViewModel: ObservableObject {
             .map(\.provider)
             .removeDuplicates()
             .sink { [weak self] provider in
-                self?.apiKeyText = "" // Don't preload plaintext key if it's already saved
+                self?.apiKeyText = "" 
                 self?.isKeySaved = KeychainManager.existsAPIKey(for: provider)
                 self?.connectionStatus = .unknown
+                self?.updateUIStates()
             }
             .store(in: &cancellables)
         
         // Initial state
         isKeySaved = KeychainManager.existsAPIKey(for: settings.aiConfiguration.provider)
+        updateUIStates()
         if isKeySaved {
-            connectionStatus = .success // Assume success if key exists for preloading models
+            connectionStatus = .success 
         }
+    }
+
+    private func updateUIStates() {
+        let isVerified = connectionStatus == .success
+        showVerifyButton = !isKeySaved || !isVerified
+        showGetApiKeyButton = !isVerified && settings.aiConfiguration.provider.apiKeyURL != nil
     }
 
     private func persistAPIKey(_ value: String) throws {
@@ -96,6 +106,7 @@ public class AISettingsViewModel: ObservableObject {
                     try self.persistAPIKey(apiKeyText)
                     self.isKeySaved = true
                     self.apiKeyText = "" // Clear plaintext from memory
+                    self.updateUIStates()
                     await self.fetchAvailableModels()
                 }
             } catch {
@@ -147,6 +158,7 @@ public class AISettingsViewModel: ObservableObject {
             apiKeyText = ""
             isKeySaved = false
             connectionStatus = .unknown
+            updateUIStates()
             availableModels = []
             logger.info("API Key removed from Keychain for \(self.settings.aiConfiguration.provider.displayName)")
         } catch {
@@ -176,9 +188,12 @@ public class AISettingsViewModel: ObservableObject {
     }
 
     private func buildTestRequest(for url: URL, apiKey: String) throws -> URLRequest {
-        var request = URLRequest(url: url)
+        // Append "models" to the base URL for verification, as most providers (OpenAI, Groq, Anthropic) 
+        // return 404 on the base URL but successfully list models on /models.
+        let validationURL = url.appendingPathComponent("models")
+        var request = URLRequest(url: validationURL)
         request.httpMethod = "GET"
-        request.timeoutInterval = 5
+        request.timeoutInterval = 10 
         if !apiKey.isEmpty {
             request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         }
@@ -192,6 +207,7 @@ public class AISettingsViewModel: ObservableObject {
         } else {
             connectionStatus = .failure("settings.ai.connection.invalid_response".localized)
         }
+        updateUIStates()
     }
 
     private func connectionErrorMessage(from error: Error) -> String {

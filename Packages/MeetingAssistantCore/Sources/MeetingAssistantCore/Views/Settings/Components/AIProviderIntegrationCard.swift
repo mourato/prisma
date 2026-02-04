@@ -10,7 +10,7 @@ public struct AIProviderIntegrationCard: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: SettingsDesignSystem.Layout.itemSpacing) {
-            Text(NSLocalizedString("settings.ai.api_config", bundle: .safeModule, comment: ""))
+            Text("settings.ai.api_config".localized)
                 .font(.system(.headline, design: .rounded))
                 .foregroundStyle(.primary)
                 .padding(.leading, 4)
@@ -45,7 +45,7 @@ public struct AIProviderIntegrationCard: View {
 
     private var providerRow: some View {
         HStack {
-            Text(NSLocalizedString("settings.ai.provider", bundle: .safeModule, comment: ""))
+            Text("settings.ai.provider".localized)
                 .foregroundStyle(.secondary)
             Spacer()
             HStack(spacing: 8) {
@@ -69,7 +69,7 @@ public struct AIProviderIntegrationCard: View {
                         Circle()
                             .fill(.green)
                             .frame(width: 8, height: 8)
-                        Text(NSLocalizedString("settings.ai.connection.success", bundle: .safeModule, comment: ""))
+                        Text("settings.ai.connection.success".localized)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -81,7 +81,7 @@ public struct AIProviderIntegrationCard: View {
 
     private var modelRow: some View {
         HStack {
-            Text(NSLocalizedString("settings.ai.model", bundle: .safeModule, comment: ""))
+            Text("settings.ai.model".localized)
                 .foregroundStyle(.secondary)
             Spacer()
             if viewModel.isLoadingModels {
@@ -89,7 +89,7 @@ public struct AIProviderIntegrationCard: View {
                     .controlSize(.small)
             } else if !viewModel.availableModels.isEmpty {
                 Picker("", selection: $viewModel.settings.aiConfiguration.selectedModel) {
-                    Text(NSLocalizedString("settings.ai.model_select", bundle: .safeModule, comment: ""))
+                    Text("settings.ai.model_select".localized)
                         .tag("")
                     ForEach(viewModel.availableModels) { model in
                         Text(model.id).tag(model.id)
@@ -98,14 +98,15 @@ public struct AIProviderIntegrationCard: View {
                 .pickerStyle(.menu)
                 .labelsHidden()
                 .fixedSize()
+                .frame(maxWidth: SettingsDesignSystem.Layout.maxPickerWidth)
             } else {
                 TextField(
-                    NSLocalizedString("settings.ai.model_placeholder", bundle: .safeModule, comment: ""),
+                    "settings.ai.model_placeholder".localized,
                     text: $viewModel.settings.aiConfiguration.selectedModel
                 )
                 .textFieldStyle(.plain)
                 .multilineTextAlignment(.trailing)
-                .frame(maxWidth: 200)
+                .frame(maxWidth: SettingsDesignSystem.Layout.maxCompactTextFieldWidth)
             }
         }
         .padding(.vertical, 8)
@@ -113,7 +114,7 @@ public struct AIProviderIntegrationCard: View {
 
     private var baseURLRow: some View {
         HStack {
-            Text(NSLocalizedString("settings.ai.base_url", bundle: .safeModule, comment: ""))
+            Text("settings.ai.base_url".localized)
                 .foregroundStyle(.secondary)
             Spacer()
             TextField(
@@ -122,22 +123,20 @@ public struct AIProviderIntegrationCard: View {
             )
             .textFieldStyle(.plain)
             .multilineTextAlignment(.trailing)
-            .frame(maxWidth: 300)
+            .frame(maxWidth: SettingsDesignSystem.Layout.maxTextFieldWidth)
         }
         .padding(.vertical, 8)
     }
 
     private var apiKeyRow: some View {
         HStack {
-            Text(NSLocalizedString("settings.ai.api_key", bundle: .safeModule, comment: ""))
+            Text("settings.ai.api_key".localized)
                 .foregroundStyle(.secondary)
             Spacer()
             
-            let keyExists = viewModel.isKeySaved
-            
-            if keyExists && viewModel.connectionStatus == .success {
+            if viewModel.isKeySaved {
                 HStack(spacing: 8) {
-                    Text(NSLocalizedString("settings.ai.keychain_secure", bundle: .safeModule, comment: ""))
+                    Text("settings.ai.keychain_secure".localized)
                         .font(.caption)
                         .foregroundStyle(.green)
                     
@@ -148,31 +147,16 @@ public struct AIProviderIntegrationCard: View {
                     Button {
                         viewModel.removeAPIKey()
                     } label: {
-                        Text(NSLocalizedString("settings.ai.remove_key", bundle: .safeModule, comment: ""))
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                }
-            } else if keyExists && viewModel.connectionStatus == .unknown {
-                HStack(spacing: 8) {
-                    SecureField(NSLocalizedString("settings.ai.api_key_placeholder", bundle: .safeModule, comment: ""), text: $viewModel.apiKeyText)
-                        .textFieldStyle(.plain)
-                        .multilineTextAlignment(.trailing)
-                        .frame(maxWidth: 200)
-                    
-                    Button {
-                        viewModel.removeAPIKey()
-                    } label: {
-                        Text(NSLocalizedString("settings.ai.remove_key", bundle: .safeModule, comment: ""))
+                        Text("settings.ai.remove_key".localized)
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
                 }
             } else {
-                SecureField(NSLocalizedString("settings.ai.api_key_placeholder", bundle: .safeModule, comment: ""), text: $viewModel.apiKeyText)
+                SecureField("settings.ai.api_key_placeholder".localized, text: $viewModel.apiKeyText)
                     .textFieldStyle(.plain)
                     .multilineTextAlignment(.trailing)
-                    .frame(maxWidth: 250)
+                    .frame(maxWidth: SettingsDesignSystem.Layout.maxCompactTextFieldWidth)
             }
         }
         .padding(.vertical, 8)
@@ -203,18 +187,14 @@ public struct AIProviderIntegrationCard: View {
     }
 
     private var footerActions: some View {
-        let provider = viewModel.settings.aiConfiguration.provider
-        let keyExists = viewModel.isKeySaved
-        let isVerified = viewModel.connectionStatus == .success
-        
-        return HStack {
-            if let url = provider.apiKeyURL, !isVerified {
+        HStack {
+            if viewModel.showGetApiKeyButton, let url = viewModel.settings.aiConfiguration.provider.apiKeyURL {
                 Button {
                     NSWorkspace.shared.open(url)
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "key.fill")
-                        Text(NSLocalizedString("settings.ai.get_api_key", bundle: .safeModule, comment: ""))
+                        Text("settings.ai.get_api_key".localized)
                             .font(.system(size: 11, weight: .medium))
                     }
                     .padding(.horizontal, 8)
@@ -228,7 +208,7 @@ public struct AIProviderIntegrationCard: View {
 
             Spacer()
 
-            if !isVerified || !keyExists {
+            if viewModel.showVerifyButton {
                 Button {
                     viewModel.testAPIConnection()
                 } label: {
@@ -237,7 +217,7 @@ public struct AIProviderIntegrationCard: View {
                             .controlSize(.small)
                             .scaleEffect(0.6)
                     } else {
-                        Text(NSLocalizedString("settings.ai.verify_and_save", bundle: .safeModule, comment: ""))
+                        Text("settings.ai.verify_and_save".localized)
                     }
                 }
                 .buttonStyle(.bordered)

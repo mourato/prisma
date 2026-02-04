@@ -24,3 +24,10 @@ Este documento descreve as limitações técnicas e de design identificadas no p
 ## 6. API Key Persistence on Success Only
 - **API Key Persistence**: A chave de API agora é persistida no Keychain apenas após uma verificação de conexão bem-sucedida ("Verify and Save"). Mudanças feitas no texto sem verificação são perdidas ao trocar de aba ou fechar o app. (Contexto: evitar persistência de chaves inválidas ou parciais, fevereiro/2026)
 - **Impacto**: Melhora a integridade do Keychain, mas exige uma ação explícita do usuário para salvar novas chaves.
+## 7. Plaintext API Key in Memory
+- **Plaintext API Key**: O `AISettingsViewModel` mantém o texto da chave de API em uma propriedade `@Published String` (`apiKeyText`). Embora a UI use `SecureField` para máscara, a string reside em plaintext na RAM enquanto o ViewModel estiver ativo. (Contexto: facilidade de bind bidirecional com SwiftUI, fevereiro/2026)
+- **Impacto**: Moderado/Alto. Se o processo for inspecionado ou a memória for dumpada, a chave pode ser recuperada em texto puro.
+
+## 8. Keychain Access on View Body
+- **Keychain Access**: Algumas Views de configuração acessam o `KeychainManager` diretamente dentro do bloco `body` para verificar a existência de chaves. O acesso ao Keychain é uma operação de I/O que pode ser lenta.
+- **Impacto**: Baixo/Médio. Pode causar pequenos travamentos (stutter) na UI ao navegar ou interagir com componentes reativos na aba de Enhancements.

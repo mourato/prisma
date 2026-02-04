@@ -157,7 +157,7 @@ public struct PromptEditorSheet: View {
                 .foregroundStyle(.secondary)
 
             TextEditor(text: $promptText)
-                .font(.system(.body, design: .monospaced))
+                .font(.body)
                 .frame(minHeight: 150)
                 .padding(8)
                 .background(Color(NSColor.textBackgroundColor))
