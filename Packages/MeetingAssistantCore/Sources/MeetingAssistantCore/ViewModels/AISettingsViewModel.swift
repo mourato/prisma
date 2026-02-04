@@ -36,6 +36,7 @@ public class AISettingsViewModel: ObservableObject {
         settings.$aiConfiguration
             .map(\.provider)
             .removeDuplicates()
+            .dropFirst() // Skip initial value to avoid clearing selection on tab switch
             .sink { [weak self] provider in
                 self?.apiKeyText = "" 
                 self?.isKeySaved = KeychainManager.existsAPIKey(for: provider)
