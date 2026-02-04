@@ -1,6 +1,6 @@
 ---
-name: Menu Bar Applications
-description: This skill should be used when working with "NSStatusItem", "NSStatusBar", "menu bar apps", "popover", or implementing macOS status bar functionality.
+name: menubar
+description: This skill should be used when working with NSStatusItem, macOS menu bar applications, popovers, or floating panels.
 ---
 
 # Menu Bar Applications

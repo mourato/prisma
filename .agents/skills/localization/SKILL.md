@@ -1,6 +1,6 @@
 ---
-name: Localization
-description: This skill should be used when working with "localization", "internationalization", "i18n", "Bundle.module", "NSLocalizedString", "accessibility", "VoiceOver", or implementing multilingual support in Swift Packages.
+name: localization
+description: This skill should be used when working with localization, accessibility, VoiceOver, or multilingual support in Swift Packages.
 ---
 
 # Localization and Accessibility

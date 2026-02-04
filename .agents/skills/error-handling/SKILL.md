@@ -1,6 +1,6 @@
 ---
 name: error-handling
-description: Patterns for robust error management. Covers custom Error types, structured propagation, and logging. Use when implementing operations that can fail.
+description: This skill should be used when implementing robust error management, custom error types, or structured error propagation and logging.
 ---
 
 # Error Handling & Propagation

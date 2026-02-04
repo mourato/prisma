@@ -1,8 +1,6 @@
 ---
-name: Documentation
-description: This skill should be used when working with "DocC", "documentation comments", "triple slash comments" (///), "API documentation", "Context7 MCP queries", or documenting Swift code with proper symbols and examples.
 name: documentation
-description: Standards for codebase documentation using DocC and context7 for external library research. Use when writing comments, technical docs, or researching APIs.
+description: This skill should be used when working with Documentation, DocC, MARK comments, resource loading, or documentation research via context7.
 ---
 
 # Documentation Standards

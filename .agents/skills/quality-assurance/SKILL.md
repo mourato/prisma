@@ -1,7 +1,7 @@
 ```
 ---
 name: quality-assurance
-description: Quality assurance standards including testing methodologies, mocking, and build verification. Use when writing tests or verifying task completeness.
+description: This skill should be used when writing unit tests, mocking dependencies, or verifying task completeness with automated checks.
 ---
 
 # Quality Assurance Standards

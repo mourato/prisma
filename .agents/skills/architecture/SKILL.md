@@ -1,6 +1,6 @@
 ---
 name: architecture
-description: Core architectural principles including MVVM, Clean Architecture, Dependency Injection, and Protocol-Oriented Programming. Use when designing new modules or refactoring existing ones.
+description: This skill should be used when designing new modules, refactoring existing ones, or applying MVVM, Clean Architecture, and Dependency Injection principles.
 ---
 
 # Architecture Principles

@@ -1,6 +1,6 @@
 ---
 name: git-worktree
-description:  Master Git Worktrees for parallel development. Includes the pro "Bare Repository" setup, handling dependencies, and managing multiple active branches simultaneously.
+description: This skill should be used when using Git Worktrees for parallel development, managing multiple active branches, or handling dependencies in a worktree-first workflow.
 ---
 
 # Git Worktree Skill

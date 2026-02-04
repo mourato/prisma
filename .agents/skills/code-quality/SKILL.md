@@ -1,6 +1,6 @@
 ---
 name: code-quality
-description: General code quality standards including naming conventions, function size, and best practices for readability and maintainability. Use during development and code review.
+description: This skill should be used when applying naming conventions, maintaining code readability, or refactoring for better maintainability.
 ---
 
 # Code Quality Standards

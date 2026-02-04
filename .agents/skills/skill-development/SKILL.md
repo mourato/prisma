@@ -1,7 +1,6 @@
 ---
-name: Skill Development
-description: This skill should be used when the user wants to "create a skill", "add a skill to plugin", "write a new skill", "improve skill description", "organize skill content", or needs guidance on skill structure, progressive disclosure, or skill development best practices for Claude Code plugins. Also use Agent Skills MCP to search for skill development best practices and patterns.
-version: 0.2.0
+name: skill-development
+description: This skill should be used when developing, refactoring, or optimizing Agent Skills.
 ---
 
 # Skill Development for Claude Code Plugins
@@ -654,67 +653,3 @@ To create a skill for your plugin:
 7. **Test**: Verify skill loads on expected triggers
 8. **Iterate**: Improve based on usage
 
-Focus on strong trigger descriptions, progressive disclosure, and imperative writing style for effective skills that load when needed and provide targeted guidance.
-
----
-name: skill-development
-description: Methodology for creating and maintaining AI agent skills. Includes best practices for progressive disclosure, tool integration, and using Agent Skills for research.
----
-
-# Skill Development Methodology
-
-## Overview
-
-Guidelines for developing sustainable, effective skills that enhance the capabilities of AI coding assistants.
-
-## 1. Core Principles
-
-- **Progressive Disclosure**: Start with a clear summary and provide deep dives only in relevant sections.
-- **Trigger-Based**: Use clear trigger phrases in the YAML frontmatter to help assistants load the right context.
-- **Agnostic Logic**: While tools may be specific, the logic and patterns described should be as broadly applicable as possible.
-
-## 2. Research with Agent Skills
-
-**CRITICAL**: Utilize the `Agent Skills` toolset to research existing patterns and ensure consistency across the codebase.
-
-### When to use Agent Skills
-- Before creating a new skill to check if a similar one exists.
-- To find best practices for skill structure and documentation.
-- To validate that a proposed skill aligns with project conventions.
-
-### Integration
-- Use search capabilities (e.g., `SearchAgentSkills`) to explore the existing registry.
-- Maintain consistency with established naming and categorization conventions.
-
-## 3. Structure & Syntax
-
-- **YAML Frontmatter**: Every skill MUST have a `name` and a `description`.
-- **Hierarchical Headers**: Use Markdown headers logically (H1 for title, H2 for main sections, etc.).
-- **Code Examples**: Provide concise, actionable code blocks featuring correct patterns (and anti-patterns).
-d relevant information:
-
-```bash
-mcp--agent-skills--SearchAgentSkills(
-  query: "skill development best practices structure"
-)
-```
-
-### Development Workflow with Agent Skills
-
-```mermaid
-graph TD
-    A[Create/modify skill] --> B[Consult mcp--agent-skills--SearchAgentSkills]
-    C[Need guidance] --> B
-    B --> D{Found relevant docs?}
-    D -->|Yes| E[Use Agent Skills guidance]
-    D -->|No| F[Use local skill-development/SKILL.md]
-    E --> G[Implement with best practices]
-    F --> G
-```
-
-### Skill Development Principles
-
-1. **Progressive Disclosure**: Keep SKILL.md lean, move details to references/
-2. **Trigger Phrases**: Use specific third-person descriptions in frontmatter
-3. **Imperative Form**: Write instructions in imperative mood
-4. **Resources**: Include scripts/, references/, and assets/ when appropriate

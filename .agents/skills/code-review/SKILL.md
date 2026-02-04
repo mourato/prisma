@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: Para fazer uma análise crítica (performance, UX, segurança, concorrência, testes) e pragmática do código alterado antes do push final.
+description: This skill should be used when conducting code reviews, analyzing performance, UX, security, or concurrency in new changes.
 ---
 
 # Code Review (Meeting Assistant)

@@ -1,6 +1,6 @@
 ---
 name: concurrency
-description: Advanced concurrency patterns in Swift. Covers async/await, actors, MainActor isolation, and deadlock prevention. Use when managing parallel execution or thread safety.
+description: This skill should be used when managing parallel execution, thread safety, async/await, actors, or MainActor isolation.
 ---
 
 # Concurrency & Thread Safety

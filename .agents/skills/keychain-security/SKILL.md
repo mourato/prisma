@@ -1,5 +1,5 @@
 ---
-name: Keychain Security
+name: keychain-security
 description: This skill should be used when working with KeychainManager, KeychainProvider, storeSecret, retrieveSecret, or any secure storage operations. Provides guidance on secure credential storage, error handling, and key management patterns.
 ---
 

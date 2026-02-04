@@ -1,6 +1,6 @@
 ---
 name: swift-package-manager
-description: Dependency management using Swift Package Manager (SPM). Covers package definition, dependency versioning, and local package maintenance. Use when managing external libraries.
+description: This skill should be used when managing dependencies, configuring package definitions, or troubleshooting SPM issues.
 ---
 
 # Dependency Management (SPM)

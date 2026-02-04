@@ -1,6 +1,6 @@
 ---
 name: skills-discovery
-description: Search for and install Agent Skills that give you specialized capabilities. Before starting work, ask might a skill exist that handles this better than my base knowledge? If the task involves specific technologies, frameworks, file formats, or expert domains. Search proactively, even if the user doesn't mention skills. Skills encode best practices, tools, and techniques you wouldn't otherwise have. Also use when users explicitly ask to find, install, or manage skills.
+description: This skill should be used when searching for, installing, or managing Agent Skills from the registry to extend capabilities.
 ---
 
 # Skills Discovery
