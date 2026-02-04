@@ -81,6 +81,7 @@ final class AudioSystemPerformanceTests: XCTestCase {
         try skipIfCIEnvironment()
         let buffer = try createTestBuffer(frameCount: 512)
         let iterations = 100
+        let queue = bufferQueue! // Capture local reference
 
         measure {
             let group = DispatchGroup()
@@ -88,13 +89,13 @@ final class AudioSystemPerformanceTests: XCTestCase {
             for _ in 0..<iterations {
                 group.enter()
                 DispatchQueue.global().async {
-                    self.bufferQueue.enqueue(buffer)
+                    queue.enqueue(buffer)
                     group.leave()
                 }
 
                 group.enter()
                 DispatchQueue.global().async {
-                    _ = self.bufferQueue.dequeue()
+                    _ = queue.dequeue()
                     group.leave()
                 }
             }

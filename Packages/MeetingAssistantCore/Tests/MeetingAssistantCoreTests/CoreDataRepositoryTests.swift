@@ -81,15 +81,14 @@ final class CoreDataRepositoryTests: XCTestCase {
         let meeting = MeetingEntity(app: .googleMeet)
         try await meetingRepo.saveMeeting(meeting)
 
-        let transcription = TranscriptionEntity(
-            id: UUID(),
-            meeting: meeting,
+        let config = TranscriptionEntity.Configuration(
+            text: "Hi",
+            rawText: "Hi",
             segments: [
                 TranscriptionEntity.Segment(speaker: "A", text: "Hi", startTime: 0, endTime: 1),
-            ],
-            text: "Hi",
-            rawText: "Hi"
+            ]
         )
+        let transcription = TranscriptionEntity(meeting: meeting, config: config)
 
         // When
         try await transcriptionRepo.saveTranscription(transcription)
@@ -108,8 +107,10 @@ final class CoreDataRepositoryTests: XCTestCase {
         let meeting = MeetingEntity(app: .googleMeet)
         try await meetingRepo.saveMeeting(meeting)
 
-        let t1 = TranscriptionEntity(meeting: meeting, text: "T1", rawText: "T1")
-        let t2 = TranscriptionEntity(meeting: meeting, text: "T2", rawText: "T2")
+        let config1 = TranscriptionEntity.Configuration(text: "T1", rawText: "T1")
+        let config2 = TranscriptionEntity.Configuration(text: "T2", rawText: "T2")
+        let t1 = TranscriptionEntity(meeting: meeting, config: config1)
+        let t2 = TranscriptionEntity(meeting: meeting, config: config2)
         try await transcriptionRepo.saveTranscription(t1)
         try await transcriptionRepo.saveTranscription(t2)
 
