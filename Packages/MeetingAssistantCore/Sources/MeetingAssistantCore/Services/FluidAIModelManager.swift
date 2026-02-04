@@ -9,7 +9,11 @@ import os.log
 public protocol AIModelService: ObservableObject {
     var modelState: FluidAIModelManager.ModelState { get }
     var modelStatePublisher: AnyPublisher<FluidAIModelManager.ModelState, Never> { get }
+    var downloadPhase: FluidAIModelManager.DownloadPhase { get }
+    var lastError: String? { get }
     func loadModels() async
+    func loadDiarizationModels() async
+    func retryFailedModels() async
 }
 
 /// Manages the lifecycle of FluidAudio models (Download, Load, Initialize).
@@ -39,6 +43,48 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
         case error
     }
 
+    /// Detailed phase tracking for UI progress feedback
+    public enum DownloadPhase: Equatable {
+        case idle
+        case downloadingASR
+        case loadingASR
+        case downloadingDiarization
+        case loadingDiarization
+        case ready
+        case failed(String)
+
+        public var isInProgress: Bool {
+            switch self {
+            case .downloadingASR, .loadingASR, .downloadingDiarization, .loadingDiarization:
+                return true
+            default:
+                return false
+            }
+        }
+
+        public var localizedDescription: String {
+            switch self {
+            case .idle:
+                return NSLocalizedString("settings.ai.phase_idle", bundle: .safeModule, comment: "")
+            case .downloadingASR:
+                return NSLocalizedString("settings.ai.downloading_asr", bundle: .safeModule, comment: "")
+            case .loadingASR:
+                return NSLocalizedString("settings.ai.loading_asr", bundle: .safeModule, comment: "")
+            case .downloadingDiarization:
+                return NSLocalizedString("settings.ai.downloading_diarization", bundle: .safeModule, comment: "")
+            case .loadingDiarization:
+                return NSLocalizedString("settings.ai.loading_diarization", bundle: .safeModule, comment: "")
+            case .ready:
+                return NSLocalizedString("settings.ai.models_ready", bundle: .safeModule, comment: "")
+            case .failed(let error):
+                return String(format: NSLocalizedString("settings.ai.download_failed", bundle: .safeModule, comment: ""), error)
+            }
+        }
+    }
+
+    @Published public var downloadPhase: DownloadPhase = .idle
+    @Published public var lastError: String?
+
     private init() {}
 
     /// Loads the ASR models. Downloads them if not present.
@@ -46,6 +92,8 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
         guard modelState != .loaded, modelState != .loading else { return }
 
         modelState = .downloading
+        downloadPhase = .downloadingASR
+        lastError = nil
         logger.info("Starting model download/load...")
 
         do {
@@ -53,6 +101,7 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
             let models = try await AsrModels.downloadAndLoad(version: .v3)
 
             modelState = .loading
+            downloadPhase = .loadingASR
             logger.info("Initializing ASR Manager...")
 
             // AsrManager initialization
@@ -61,15 +110,44 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
 
             asrManager = manager
             modelState = .loaded
+            updateReadyState()
             logger.info("ASR Manager initialized successfully.")
 
         } catch {
-            logger.error("Failed to load models: \(error.localizedDescription)")
+            let errorMessage = error.localizedDescription
+            logger.error("Failed to load models: \(errorMessage)")
             modelState = .error
+            downloadPhase = .failed(errorMessage)
+            lastError = errorMessage
+        }
+    }
+
+    /// Unified retry method that attempts to load failed components.
+    public func retryFailedModels() async {
+        if case .failed = downloadPhase {
+            // Check if ASR is missing or failed
+            if modelState == .error || modelState == .unloaded {
+                await loadModels()
+            }
+            
+            // If ASR is ready or just loaded successfully, and diarization is still failing/missing
+            if (modelState == .loaded || modelState == .loading) && !isDiarizationLoaded {
+                await loadDiarizationModels()
+            }
         }
     }
 
     /// Loads the Diarization models.
+    /// Public version without parameters for protocol conformance.
+    public func loadDiarizationModels() async {
+        await loadDiarizationModels(
+            minSpeakers: nil,
+            maxSpeakers: nil,
+            numSpeakers: nil
+        )
+    }
+
+    /// Loads the Diarization models with optional speaker constraints.
     func loadDiarizationModels(
         minSpeakers: Int? = nil,
         maxSpeakers: Int? = nil,
@@ -85,9 +163,15 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
            currentDiarizerMaxSpeakers == max,
            currentDiarizerNumSpeakers == num
         {
+            // Already loaded with same constraints, ensure phase reflects ready state
+            if downloadPhase != .ready {
+                updateReadyState()
+            }
             return
         }
 
+        downloadPhase = .downloadingDiarization
+        lastError = nil
         logger.info("Loading Diarization models with constraints: min=\(min ?? 0), max=\(max ?? 0), num=\(num ?? 0)...")
 
         do {
@@ -99,6 +183,8 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
             }
 
             let manager = OfflineDiarizerManager(config: config)
+
+            downloadPhase = .loadingDiarization
             try await manager.prepareModels()
 
             diarizerManager = manager
@@ -107,11 +193,22 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
             currentDiarizerNumSpeakers = num
 
             isDiarizationLoaded = true
+            updateReadyState()
 
             logger.info("Diarization Manager initialized successfully.")
         } catch {
-            logger.error("Failed to load diarization models: \(error.localizedDescription)")
+            let errorMessage = error.localizedDescription
+            logger.error("Failed to load diarization models: \(errorMessage)")
             isDiarizationLoaded = false
+            downloadPhase = .failed(errorMessage)
+            lastError = errorMessage
+        }
+    }
+
+    private func updateReadyState() {
+        let isDiarizationEnabled = AppSettingsStore.shared.isDiarizationEnabled
+        if modelState == .loaded && (!isDiarizationEnabled || isDiarizationLoaded) {
+            downloadPhase = .ready
         }
     }
 
