@@ -26,8 +26,8 @@ public struct MetricsDashboardSettingsTab: View {
                 } else {
                     summarySection
 
-                    weekdayPeaksSection
                     hourlyPeaksSection
+                    weekdayPeaksSection
                 }
             }
             .padding()
