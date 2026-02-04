@@ -311,139 +311,142 @@ final class AudioSystemTests: XCTestCase {
     }
 
     // MARK: - Testes de Performance
+    // NOTE: Performance tests skip by default. Run with: RUN_PERFORMANCE_TESTS=1 swift test
+    // Or enable manually by removing XCTSkipIf
 
-    /* Commented out due to test runner instability
-     func testPerformance_BufferQueueEnqueueDequeue() throws {
-         let buffer = try createTestBuffer(frameCount: 2048)
+    func testPerformance_BufferQueueEnqueueDequeue() throws {
+        try XCTSkipIf(ProcessInfo.processInfo.environment["RUN_PERFORMANCE_TESTS"] == nil, "Skipped - set RUN_PERFORMANCE_TESTS=1 to run")
+        let buffer = try createTestBuffer(frameCount: 2048)
 
-         measure(metrics: [XCTClockMetric(), XCTMemoryMetric()]) {
-             for _ in 0..<1000 {
-                 self.bufferQueue.enqueue(buffer)
-                 _ = self.bufferQueue.dequeue()
-             }
-         }
-     }
+        measure(metrics: [XCTClockMetric(), XCTMemoryMetric()]) {
+            for _ in 0..<1000 {
+                self.bufferQueue.enqueue(buffer)
+                _ = self.bufferQueue.dequeue()
+            }
+        }
+    }
 
-     func testPerformance_BufferQueueHighThroughput() throws {
-         let buffers = try (0..<100).map { _ in try self.createTestBuffer(frameCount: 1_024) }
+    func testPerformance_BufferQueueHighThroughput() throws {
+        try XCTSkipIf(ProcessInfo.processInfo.environment["RUN_PERFORMANCE_TESTS"] == nil, "Skipped - set RUN_PERFORMANCE_TESTS=1 to run")
+        let buffers = try (0..<100).map { _ in try self.createTestBuffer(frameCount: 1_024) }
 
-         measure(metrics: [XCTClockMetric(), XCTCPUMetric()]) {
-             for buffer in buffers {
-                 self.bufferQueue.enqueue(buffer)
-             }
+        measure(metrics: [XCTClockMetric(), XCTCPUMetric()]) {
+            for buffer in buffers {
+                self.bufferQueue.enqueue(buffer)
+            }
 
-             while !self.bufferQueue.isEmpty {
-                 _ = self.bufferQueue.dequeue()
-             }
-         }
-     }
-     */
+            while !self.bufferQueue.isEmpty {
+                _ = self.bufferQueue.dequeue()
+            }
+        }
+    }
 
-    /* Commented out due to test runner instability
-     func testPerformance_BufferProcessingIntegration() {
-         let outputURL = self.createTemporaryURL()
-         let format = AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 2)!
-         let testBuffers = try self.createTestBuffers(count: 50, frameCount: 1_024)
+    func testPerformance_BufferProcessingIntegration() throws {
+        try XCTSkipIf(ProcessInfo.processInfo.environment["RUN_PERFORMANCE_TESTS"] == nil, "Skipped - set RUN_PERFORMANCE_TESTS=1 to run")
+        let outputURL = createTemporaryURL()
+        guard let format = AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 2) else {
+            throw XCTSkip("Failed to create audio format")
+        }
+        let testBuffers = try createTestBuffers(count: 50, frameCount: 1_024)
 
-         // Baseline: Buffer processing should complete within reasonable time limits
-         measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
-             let exp = expectation(description: "Process integration")
-             Task {
-                 try? await self.recordingWorker.start(writingTo: outputURL, format: format, fileFormat: .wav)
+        // Baseline: Buffer processing should complete within reasonable time limits
+        measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
+            let exp = expectation(description: "Process integration")
+            Task {
+                try? await self.recordingWorker.start(writingTo: outputURL, format: format, fileFormat: .wav)
 
-                 for buffer in testBuffers {
-                     self.recordingWorker.process(buffer)
-                 }
+                for buffer in testBuffers {
+                    self.recordingWorker.process(buffer)
+                }
 
-                 _ = await self.recordingWorker.stop()
-                 exp.fulfill()
-             }
-             wait(for: [exp], timeout: 10.0)
-         }
-     }
-     */
+                _ = await self.recordingWorker.stop()
+                exp.fulfill()
+            }
+            wait(for: [exp], timeout: 10.0)
+        }
+    }
 
-    /* Commented out due to test runner instability
-     func testPerformance_AudioRecordingStartStop() {
-         let outputURL = self.createTemporaryURL()
+    func testPerformance_AudioRecordingStartStop() throws {
+        try XCTSkipIf(ProcessInfo.processInfo.environment["RUN_PERFORMANCE_TESTS"] == nil, "Skipped - set RUN_PERFORMANCE_TESTS=1 to run")
+        try XCTSkipIf(true, "Requires hardware - run manually in Xcode")
+        let outputURL = createTemporaryURL()
 
-         // Baseline: Recording operations should be fast and not consume excessive resources
-         measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
-             let exp = expectation(description: "Start stop")
-             Task {
-                 try? await self.audioRecorder.startRecording(to: outputURL, source: .microphone, retryCount: 0)
-                 _ = await self.audioRecorder.stopRecording()
-                 exp.fulfill()
-             }
-             wait(for: [exp], timeout: 5.0)
-         }
-     }
-     */
+        // Baseline: Recording operations should be fast and not consume excessive resources
+        measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
+            let exp = expectation(description: "Start stop")
+            Task {
+                try? await self.audioRecorder.startRecording(to: outputURL, source: .microphone, retryCount: 0)
+                _ = await self.audioRecorder.stopRecording()
+                exp.fulfill()
+            }
+            wait(for: [exp], timeout: 5.0)
+        }
+    }
 
-    /* Commented out due to test runner instability
-     func testPerformance_SystemAudioBufferCallback() async throws {
-         // Skip test if running in CI or without screen recording permissions
-         guard await self.systemRecorder.hasPermission() else {
-             throw XCTSkip("Screen recording permission not available")
-         }
+    func testPerformance_SystemAudioBufferCallback() async throws {
+        try XCTSkipIf(ProcessInfo.processInfo.environment["RUN_PERFORMANCE_TESTS"] == nil, "Skipped - set RUN_PERFORMANCE_TESTS=1 to run")
+        // Skip test if running in CI or without screen recording permissions
+        guard await systemRecorder.hasPermission() else {
+            throw XCTSkip("Screen recording permission not available")
+        }
 
-         let receivedBuffers = AtomicArray<AVAudioPCMBuffer>()
-         let outputURL = self.createTemporaryURL()
+        let receivedBuffers = AtomicArray<AVAudioPCMBuffer>()
+        let outputURL = createTemporaryURL()
 
-         self.systemRecorder.onAudioBuffer = { @Sendable buffer in
-             receivedBuffers.append(buffer)
-         }
+        systemRecorder.onAudioBuffer = { @Sendable buffer in
+            receivedBuffers.append(buffer)
+        }
 
-         // Baseline: Buffer callbacks should be processed efficiently
-         measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
-             Task {
-                 try await self.systemRecorder.startRecording(to: outputURL, sampleRate: 48_000.0)
+        // Baseline: Buffer callbacks should be processed efficiently
+        measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
+            let exp = expectation(description: "Buffer callback")
+            Task {
+                try? await self.systemRecorder.startRecording(to: outputURL, sampleRate: 48_000.0)
 
-                 // Wait for some buffers to be processed
-                 try await Task.sleep(nanoseconds: 500_000_000) // 0.5s
+                // Wait for some buffers to be processed
+                try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s
 
-                 _ = await self.systemRecorder.stopRecording()
-             }
-         }
+                _ = await self.systemRecorder.stopRecording()
+                exp.fulfill()
+            }
+            wait(for: [exp], timeout: 5.0)
+        }
 
-         // Verify we received buffers
-         XCTAssertGreaterThan(receivedBuffers.count, 0)
-     }
-     */
+        // Verify we received buffers
+        XCTAssertGreaterThan(receivedBuffers.count, 0)
+    }
 
-    /* Commented out due to test runner instability
-     func testPerformance_BufferQueueOverflowHandling() throws {
-         let smallQueue = AudioBufferQueue(capacity: 10)
-         let buffer = try createTestBuffer(frameCount: 1_024)
+    func testPerformance_BufferQueueOverflowHandling() throws {
+        try XCTSkipIf(ProcessInfo.processInfo.environment["RUN_PERFORMANCE_TESTS"] == nil, "Skipped - set RUN_PERFORMANCE_TESTS=1 to run")
+        let smallQueue = AudioBufferQueue(capacity: 10)
+        let buffer = try createTestBuffer(frameCount: 1_024)
 
-         // Baseline: Overflow handling should be efficient even under high load
-         measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
-             // Fill queue beyond capacity multiple times
-             for _ in 0..<200 { // 20x capacity
-                 smallQueue.enqueue(buffer)
-             }
-         }
+        // Baseline: Overflow handling should be efficient even under high load
+        measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
+            // Fill queue beyond capacity multiple times
+            for _ in 0..<200 { // 20x capacity
+                smallQueue.enqueue(buffer)
+            }
+        }
 
-         // Verify overflow behavior
-         XCTAssertEqual(smallQueue.stats.count, 10) // Should maintain capacity
-         XCTAssertGreaterThan(smallQueue.stats.dropped, 0) // Should have dropped buffers
-     }
-     */
+        // Verify overflow behavior
+        XCTAssertEqual(smallQueue.stats.count, 10) // Should maintain capacity
+        XCTAssertGreaterThan(smallQueue.stats.dropped, 0) // Should have dropped buffers
+    }
 
-    /* Commented out due to test runner instability
-     func testPerformance_RecordingManagerStateTransitions() {
-         // Baseline: State transitions should be fast
-         measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
-             let exp = expectation(description: "State transitions")
-             Task {
-                 await self.recordingManager.startRecording()
-                 await self.recordingManager.stopRecording()
-                 exp.fulfill()
-             }
-             wait(for: [exp], timeout: 5.0)
-         }
-     }
-     */
+    func testPerformance_RecordingManagerStateTransitions() throws {
+        try XCTSkipIf(ProcessInfo.processInfo.environment["RUN_PERFORMANCE_TESTS"] == nil, "Skipped - set RUN_PERFORMANCE_TESTS=1 to run")
+        // Baseline: State transitions should be fast
+        measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
+            let exp = expectation(description: "State transitions")
+            Task {
+                await self.recordingManager.startRecording()
+                await self.recordingManager.stopRecording()
+                exp.fulfill()
+            }
+            wait(for: [exp], timeout: 5.0)
+        }
+    }
 
     // MARK: - Testes de Cleanup Adequado
 
