@@ -85,10 +85,10 @@ public struct SettingsView: View {
             DictationSettingsTab()
         case .meetings:
             MeetingSettingsTab()
-        case .audio:
-            AudioSettingsTab()
         case .assistant:
             AssistantSettingsTab()
+        case .audio:
+            AudioSettingsTab()
         case .transcriptions:
             TranscriptionsSettingsTab()
         case .enhancements:

@@ -7,8 +7,8 @@ public enum SettingsSection: String, CaseIterable, Identifiable {
     case general
     case dictation
     case meetings
-    case audio
     case assistant
+    case audio
     case transcriptions
     case enhancements
     case permissions

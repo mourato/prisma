@@ -66,6 +66,15 @@
 "settings.general.monitored_apps" = "Monitored Apps";
 "settings.general.monitored_apps_desc" = "The application automatically monitors these applications to start/stop recordings.";
 "settings.general.monitoring_active" = "Active monitoring";
+
+"settings.meetings.workflow" = "Workflow";
+"settings.general.days" = "Days";
+"settings.general.keep_for" = "Keep for";
+"settings.general.theme_color" = "Theme Color";
+"settings.general.appearance" = "Appearance";
+"settings.general.app_behavior" = "App Behavior";
+"settings.storage.cleanup_now" = "Run Cleanup Now";
+"settings.storage.cleanup_success" = "Cleanup completed successfully.";
 "meeting.app.imported" = "Imported File";
 "meeting.app.unknown" = "Unknown";
 

@@ -142,6 +142,8 @@ public class GeneralSettingsViewModel: ObservableObject {
     }
 
     @Published public var availableDevices: [AudioInputDevice] = []
+    @Published public var showCleanupSuccessAlert = false
+    @Published public var cleanupError: String? = nil
 
     private let deviceManager = AudioDeviceManager()
     private var cancellables = Set<AnyCancellable>()
@@ -252,6 +254,44 @@ public class GeneralSettingsViewModel: ObservableObject {
             // Revert state on failure
             DispatchQueue.main.async { [weak self] in
                 self?.launchAtLogin = !enabled
+            }
+        }
+    }
+
+    public func performCleanup() {
+        let fileManager = FileManager.default
+        let url = URL(fileURLWithPath: recordingsPath)
+        let days = autoDeletePeriodDays
+
+        guard let cutoffDate = Calendar.current.date(byAdding: .day, value: -days, to: Date()) else {
+            return
+        }
+
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            do {
+                let resourceKeys: [URLResourceKey] = [.creationDateKey, .isDirectoryKey]
+                let files = try fileManager.contentsOfDirectory(at: url, includingPropertiesForKeys: resourceKeys, options: .skipsHiddenFiles)
+
+                for fileURL in files {
+                    let resourceValues = try fileURL.resourceValues(forKeys: Set(resourceKeys))
+                    if let isDirectory = resourceValues.isDirectory, isDirectory {
+                        continue
+                    }
+
+                    if let creationDate = resourceValues.creationDate, creationDate < cutoffDate {
+                        try fileManager.removeItem(at: fileURL)
+                        Self.logger.info("Deleted old recording: \(fileURL.lastPathComponent)")
+                    }
+                }
+
+                DispatchQueue.main.async {
+                    self?.showCleanupSuccessAlert = true
+                }
+            } catch {
+                Self.logger.error("Failed to perform cleanup: \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    self?.cleanupError = error.localizedDescription
+                }
             }
         }
     }
