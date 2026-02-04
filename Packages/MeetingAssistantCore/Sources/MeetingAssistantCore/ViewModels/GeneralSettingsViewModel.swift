@@ -128,8 +128,6 @@ public class GeneralSettingsViewModel: ObservableObject {
             settingsStore.showInDock = showInDock
         }
     }
-        }
-    }
 
     @Published public var availableDevices: [AudioInputDevice] = []
 
