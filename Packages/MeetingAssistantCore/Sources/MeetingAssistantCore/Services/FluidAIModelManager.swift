@@ -13,6 +13,7 @@ public protocol AIModelService: ObservableObject {
     var lastError: String? { get }
     func loadModels() async
     func loadDiarizationModels() async
+    func retryFailedModels() async
 }
 
 /// Manages the lifecycle of FluidAudio models (Download, Load, Initialize).
@@ -109,7 +110,7 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
 
             asrManager = manager
             modelState = .loaded
-            downloadPhase = .ready
+            updateReadyState()
             logger.info("ASR Manager initialized successfully.")
 
         } catch {
@@ -118,6 +119,21 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
             modelState = .error
             downloadPhase = .failed(errorMessage)
             lastError = errorMessage
+        }
+    }
+
+    /// Unified retry method that attempts to load failed components.
+    public func retryFailedModels() async {
+        if case .failed = downloadPhase {
+            // Check if ASR is missing or failed
+            if modelState == .error || modelState == .unloaded {
+                await loadModels()
+            }
+            
+            // If ASR is ready or just loaded successfully, and diarization is still failing/missing
+            if (modelState == .loaded || modelState == .loading) && !isDiarizationLoaded {
+                await loadDiarizationModels()
+            }
         }
     }
 
@@ -149,7 +165,7 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
         {
             // Already loaded with same constraints, ensure phase reflects ready state
             if downloadPhase != .ready {
-                downloadPhase = .ready
+                updateReadyState()
             }
             return
         }
@@ -177,7 +193,7 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
             currentDiarizerNumSpeakers = num
 
             isDiarizationLoaded = true
-            downloadPhase = .ready
+            updateReadyState()
 
             logger.info("Diarization Manager initialized successfully.")
         } catch {
@@ -186,6 +202,13 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
             isDiarizationLoaded = false
             downloadPhase = .failed(errorMessage)
             lastError = errorMessage
+        }
+    }
+
+    private func updateReadyState() {
+        let isDiarizationEnabled = AppSettingsStore.shared.isDiarizationEnabled
+        if modelState == .loaded && (!isDiarizationEnabled || isDiarizationLoaded) {
+            downloadPhase = .ready
         }
     }
 
