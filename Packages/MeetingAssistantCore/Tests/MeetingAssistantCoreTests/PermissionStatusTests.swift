@@ -1,0 +1,38 @@
+import XCTest
+@testable import MeetingAssistantCore
+import SwiftUI
+
+@MainActor
+final class PermissionStatusTests: XCTestCase {
+
+    func testPermissionActionType() {
+        // Microphone
+        let mic = PermissionInfo(type: .microphone, state: .notDetermined)
+        XCTAssertEqual(mic.actionType, .request)
+
+        var micDenied = PermissionInfo(type: .microphone, state: .denied)
+        XCTAssertEqual(micDenied.actionType, .openSettings)
+
+        // Accessibility
+        let access = PermissionInfo(type: .accessibility, state: .notDetermined)
+        XCTAssertEqual(access.actionType, .request)
+
+        var accessDenied = PermissionInfo(type: .accessibility, state: .denied)
+        XCTAssertEqual(accessDenied.actionType, .request, "Accessibility denied should still prompt Request action")
+        
+        // Granted
+        let granted = PermissionInfo(type: .microphone, state: .granted)
+        XCTAssertEqual(granted.actionType, .none)
+    }
+
+    func testPermissionColors() {
+        let granted = PermissionInfo(type: .microphone, state: .granted)
+        XCTAssertEqual(granted.statusColor, SettingsDesignSystem.Colors.success)
+
+        let denied = PermissionInfo(type: .microphone, state: .denied)
+        XCTAssertEqual(denied.statusColor, SettingsDesignSystem.Colors.error)
+
+        let notDetermined = PermissionInfo(type: .microphone, state: .notDetermined)
+        XCTAssertEqual(notDetermined.statusColor, SettingsDesignSystem.Colors.warning)
+    }
+}
