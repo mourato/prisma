@@ -1,40 +1,45 @@
 ---
 name: Git Workflow
-description: This skill should be used when the user mentions "git commit", "git branch", "pull request", "conventional commits", "branch naming", "squash commits", or needs guidance on version control best practices and proactive commit suggestions.
+description: Master the Git workflow for the Meeting Assistant project, including mandatory worktree-first development, conventional commits, and proactive commit suggestions. Use when managing branches, commits, and pull requests.
 ---
 
 # Git Workflow
 
 ## Overview
 
-Commit, branch, and pull request patterns for the Meeting Assistant project.
+Comprehensive Git patterns for branch management, commit standards, and pull requests in the Meeting Assistant project.
 
 ## When to Use
 
-Activate this skill when working with:
-- Git commits and commit messages
-- Branch creation and naming
-- Pull requests
-- Proactive commit suggestions
-- Version control workflows
+Activate this skill whenever you are:
+- Starting a new task or conversation that requires code changes.
+- Preparing to commit changes or create a pull request.
+- Managing branches or historical repository state.
+- Following the mandatory Worktree-first development workflow.
 
 ## Core Principles
 
-### 1. Pre-Commit Build Verification
-**CRITICAL**: Before creating ANY commit, you MUST verify that the project builds successfully.
-- Run `make build` (or `make build-debug`) in the terminal.
-- If the build fails, **DO NOT COMMIT**. Fix the errors first.
-- If you are modifying a specific module, ensure its tests pass with `make test`.
+### 1. Mandatory Worktree Workflow
+**CRITICAL**: Every session that results in file modifications MUST follow the standard lifecycle described in the **[task-lifecycle](../task-lifecycle/SKILL.md)** skill.
+1. **Branching**: Create a NEW branch based on `main`.
+2. **Worktree Creation**: Create a new Git Worktree and switch to it.
+3. **Verification**: Always run `make build` and `make test` before merging.
 
 ### 2. Atomic Commits
 Break your work into small, self-contained units.
-- **One task = One (or more) Commits**: Do not combine refactoring, bug fixes, and new features in a single commit.
-- **Commit Early & Often**: Do not wait until the entire feature is done. Commit each logical step (e.g., "add view model", "implement view", "connect service").
-- **Green State**: Ensure every commit leaves the repo in a buildable state.
+- **One task = One (or more) Commits**: Do not combine refactoring, bug fixes, and new features.
+- **Commit Early & Often**: Capture each logical step (e.g., "add view model", "implement view").
+- **Green State**: Every commit must leave the repository in a buildable and testable state.
+
+### 3. Pre-Commit Verification
+**CRITICAL**: Before creating ANY commit, you MUST verify project health.
+- Run `make build` (or `make build-debug`).
+- Ensure relevant tests pass with `make test`.
+- Do NOT commit broken code.
 
 ## Key Concepts
 
-### Branch Naming
+### Branch Naming Convention
 
 ```bash
 # Features
@@ -47,123 +52,66 @@ fix/menubar-crash
 
 # Experiments
 experiment/new-transcription-engine
-experiment/ai-enhancements
 
-# Specific issues
+# Issue-bound
 fix/123-audio-dropout
 feature/456-cloud-sync
 ```
 
-### Commit Messages
+### Commit Messages (Conventional Commits)
 
-Follow the Conventional Commits specification:
+Follow the standard `[type](scope): description` pattern:
 
-```
-[type]: short description (max 50 chars)
+```text
+[type](scope): short description (max 50 chars)
 
-Optional body with more detailed description.
-Use complete sentences and explain the "why".
-
-- List of changes if needed
-- Reference issues: #123
+Optional body explaining the "why" behind the change.
+Use complete sentences and reference issues: #123.
 
 Types: feat, fix, refactor, docs, test, chore, style, perf
 ```
 
 **Examples:**
+- `feat(audio): add noise cancellation filter`
+- `fix(settings): resolve API key persistence issue`
+- `refactor(transcription): simplify buffer management`
+
+### Proactive Commit Suggestions
+
+Suggest committing changes automatically when:
+1. **Task Completed**: After finishing a significant unit of work.
+2. **Multiple Modifications**: After modifying 5 or more files in a session.
+3. **Context Shift**: Before starting a fundamental change or a new task.
+4. **Config/API Changes**: After updating critical configuration files or public APIs.
+
+## Practical Workflows
+
+### Standard Task Initialization
+
 ```bash
-git commit -m "feat(audio): add noise cancellation filter"
-git commit -m "fix(settings): resolve API key persistence issue"
-git commit -m "docs: update AGENTS.md with new commands"
-git commit -m "refactor(transcription): simplify buffer management"
+# From the main directory
+git worktree add -b feature/my-new-feature ../my-new-feature main
+cd ../my-new-feature
+# Execute changes here
 ```
 
 ### Pull Requests
 
-Use the template `.github/PULL_REQUEST_TEMPLATE.md`:
-
-```markdown
-## Description
-<!-- What was modified and why -->
-
-## Checklist
-- [ ] **Build Passed** (`make build`)
-- [ ] Tests passed
-- [ ] Lint passed
+Always use the project PR template and ensure:
+- [ ] Build Passed (`make build`)
+- [ ] Tests passed (`make test`)
+- [ ] Lint passed (`make lint`)
 - [ ] Documentation updated
-- [ ] Breaking changes documented
-
-## Screenshots (if applicable)
-```
-
-## Common Patterns
-
-### Squash Commits
-
-```bash
-# Before merging, squash related commits
-git rebase -i HEAD~n
-# Change "pick" to "squash" for related commits
-```
-
-### Issue Correlation
-
-```bash
-# Close issue automatically
-git commit -m "feat(audio): add recording capability
-
-Closes #123"
-```
 
 ## Advanced Techniques
 
-For advanced Git operations, see the [git-advanced-workflows](../git-advanced-workflows/SKILL.md) skill:
-
-- **Interactive rebase**: pick, reword, squash, fixup, drop
-- **Cherry-picking**: single and range commits
-- **Git bisect**: binary search for bugs
-- **Worktrees**: work on multiple branches simultaneously
-- **Reflog**: recover deleted commits
-
-## Proactive Commit Suggestions
-
-This skill also activates when proactive commit suggestions are needed. Trigger when:
-
-- Task completed with `attempt_completion`
-- Multiple files modified (5+ in a session)
-- Before starting a new significant task
-- After creating new files or modifying config files
-
-### Suggested Workflow
-
-1. **Verify Build**: Run `make build` to ensure no errors.
-2. Check `git status` to see modified files
-3. Use `ask_followup_question` to offer commit options:
-   - Commit now with descriptive message
-   - View diff first
-   - Defer for later
-   - Check full status
-3. Execute user's choice or record for later
-
-### Example Suggestion Message
-
-```
-**Detected modifications**: X file(s) modified, Y new, Z deleted
-
-Would you like to commit these changes?
-
-1. **Commit now** - Create commit with descriptive message
-2. **View diff first** - Show changes before committing
-3. **Add later** - Defer commit until after next changes
-4. **Check status** - Show full repository status
-```
-
-## User-Specific Requirement
-
-When the user explicitly asks to commit changes, always split the work into multiple smaller commits, grouping related changes logically.
+For complex Git operations, see the **[git-advanced-workflows](../git-advanced-workflows/SKILL.md)** skill:
+- Interactive rebase (squashing, reordering)
+- Cherry-picking specific commits
+- Troubleshooting with `git bisect`
+- History recovery with `reflog`
 
 ## References
 
 - [.github/PULL_REQUEST_TEMPLATE.md](../../.github/PULL_REQUEST_TEMPLATE.md)
-- [Conventional Commits](https://www.conventionalcommits.org)
-- [git-advanced-workflows](../git-advanced-workflows/SKILL.md) - Advanced Git techniques
+- [Conventional Commits Specification](https://www.conventionalcommits.org)

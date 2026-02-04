@@ -1,13 +1,23 @@
 # AGENTS.md - Meeting Assistant Development Guide
 
-This file provides guidelines and AI agents working on this codebase. See `.agent/rules/` and `.agent/skills/` for detailed instructions.
+This file provides the primary operational standards for all AI agents and developers.
 
-## Architecture Overview
+## 🚨 MANDATORY: Task Initialization & Lifecycle
 
-### Rules vs Skills
+Every coding task MUST follow the **Worktree-First** workflow to ensure environment isolation and repository integrity. **This is the first step of any interaction involving code changes.**
 
-- **Rules (`.agent/rules/`)**: Always-on guidelines applied to all tasks
-- **Skills (`.agent/skills/`)**: Conditional guides loaded based on context
+1. **New Branch**: Create a new branch based on `main`.
+2. **Setup Worktree**: Create a new Git Worktree for the task.
+3. **Execution**: Implement all changes and verification in the isolated worktree directory.
+4. **Cleanup**: Merge back to `main` and delete the worktree.
+
+For detailed steps and commands, see the **[task-lifecycle](.agents/skills/task-lifecycle/SKILL.md)** skill.
+
+---
+
+## 🏗 Project Architecture
+
+The project uses a **Skill-Based Architecture**. All logic and patterns are documented in tool-agnostic skills.
 
 ## Build Commands
 
@@ -37,12 +47,14 @@ make run      # Launch app
 This project uses a CLI-first development approach with xcodebuild. While Xcode IDE is still supported for debugging and UI design, all builds, tests, and releases are performed via command line for consistency and CI/CD compatibility.
 
 **Quick Start:**
+
 ```bash
 make setup    # One-time setup
 make          # Build and verify (default: debug build)
 ```
 
 **Common Workflows:**
+
 - **Development:** `make build && make run`
 - **Testing:** `make test`
 - **Release:** `make lint && make test && make build-release && make dmg`
@@ -83,11 +95,25 @@ make test-verbose
 make ci-test
 ```
 
-## Rules Index (Always-On)
+## Worktree-First Development (Mandatory)
 
-Rules are applied to all tasks automatically. See `.agent/rules/README.md` for the full index.
+To ensure workspace isolation and maintain a clean `main` branch, all file modifications MUST follow this workflow:
 
-| Rule | Description |
+1. **Initialize Task**: Create a new branch and Git Worktree.
+
+   ```bash
+   git worktree add -b <branch-name> ../<branch-name> main
+   ```
+
+2. **Implement**: Perform all changes within the new worktree folder.
+3. **Verify**: Run `make test` and `make build` in the worktree.
+4. **Finalize**:
+   - Merge to `main`.
+   - Cleanup: `rm -rf ../<branch-name> && git worktree prune`.
+   - Delete branch: `git branch -D <branch-name>`.
+
+For detailed instructions, see the **[git-workflow skill](.agent/skills/git-workflow/SKILL.md)** and **[git-worktree skill](.agent/skills/git-worktree/SKILL.md)**.
+
 |------|-------------|
 | [architecture.md](.agent/rules/architecture.md) | MVVM or Clean Architecture patterns |
 | [clean-code.md](.agent/rules/clean-code.md) | Code quality and function guidelines |
@@ -127,16 +153,19 @@ Skills are loaded when specific contexts are detected. See `.agent/skills/` for 
 ## Code Style Summary
 
 ### Naming
+
 - Variables/functions: `lowerCamelCase`
 - Types: `UpperCamelCase`
 - Constants: `kConstantName` or `lowerCamelCase` for local
 - Avoid abbreviations except: `id`, `ui`, `ai`, `ok`, `at`, `to`
 
 ### Imports
+
 - Order alphabetically (e.g., `CoreML, Foundation, OSLog`)
 - Group framework imports before local imports
 
 ### Formatting (SwiftFormat)
+
 - 4 spaces indentation
 - K&R braces (else on same line)
 - Always use trailing commas

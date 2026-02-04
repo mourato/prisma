@@ -1,22 +1,41 @@
 ---
 name: Documentation
 description: This skill should be used when working with "DocC", "documentation comments", "triple slash comments" (///), "API documentation", "Context7 MCP queries", or documenting Swift code with proper symbols and examples.
+name: documentation
+description: Standards for codebase documentation using DocC and context7 for external library research. Use when writing comments, technical docs, or researching APIs.
 ---
 
-# Documentation with DocC
+# Documentation Standards
 
 ## Overview
 
-Guide for consistent documentation using DocC (Documentation Compiler) and external library documentation via Context7 MCP.
+Detailed guidance on documenting Swift code and using external tools to research library dependencies.
 
-## When to Use
+## 1. DocC Best Practices
 
-Activate this skill when working with:
-- `///` documentation comments
-- DocC syntax and symbol documentation
-- API documentation generation
-- Context7 MCP queries for external library docs
-- Symbol Graph files
+- **Triple-Slash**: Use `///` for all public API documentation.
+- **Format**: Follow standard Swift documentation format (Summary, Parameters, Returns, Throws).
+- **Auto-Generation**: Ensure documentation is structured to be compatible with DocC generation.
+
+## 2. External Research (context7)
+
+**CRITICAL**: Use the `context7` toolset to access up-to-date documentation for libraries and frameworks.
+
+### When to use context7
+- When working with unfamiliar libraries or frameworks.
+- When seeking code examples for specific third-party APIs.
+- When verifying implementation best practices for external dependencies.
+
+### Workflow
+1. **Resolve ID**: Use `resolve-library-id` from `context7` to find the correct library identifier.
+2. **Query**: Use `query-docs` to ask specific implementation questions.
+3. **Validate**: Always test and validate code snippets obtained from documentation in the project context.
+
+## 3. Tool-Agnostic Principles
+
+- **Clear Intent**: Documentation should explain the "Why" (intent, trade-offs) rather than just the "What".
+- **Living Docs**: Keep `README.md` and `AGENTS.md` updated as the architecture evolves.
+- **Known Limitations**: Document technical debt and constraints in dedicated files.
 
 ## Key Concepts
 
