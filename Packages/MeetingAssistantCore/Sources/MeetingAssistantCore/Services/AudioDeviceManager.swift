@@ -71,6 +71,8 @@ public final class AudioDeviceManager: ObservableObject {
 
     @MainActor
     private func updateDevices(_ devices: [AudioInputDevice]) {
+        guard self.availableInputDevices != devices else { return }
+        
         self.availableInputDevices = devices
 
         AppLogger.debug(
