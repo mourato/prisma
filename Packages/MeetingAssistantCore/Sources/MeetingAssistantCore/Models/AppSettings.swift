@@ -181,6 +181,107 @@ public enum AssistantBorderStyle: String, CaseIterable, Codable, Sendable {
     }
 }
 
+// MARK: - Sound Feedback Configuration
+
+/// Available sounds for recording feedback notifications.
+/// Uses macOS built-in system sounds. Extensible for future custom sounds.
+public enum SoundFeedbackSound: String, CaseIterable, Codable, Sendable {
+    case none
+    // macOS System Sounds
+    case glass
+    case ping
+    case pop
+    case purr
+    case submarine
+    case tink
+    case basso
+    case blow
+    case bottle
+    case frog
+    case funk
+    case hero
+    case morse
+    case sosumi
+
+    /// Localized display name for the sound.
+    public var displayName: String {
+        switch self {
+        case .none:
+            NSLocalizedString("settings.general.sound_feedback.sound.none", bundle: .safeModule, comment: "")
+        case .glass:
+            "Glass"
+        case .ping:
+            "Ping"
+        case .pop:
+            "Pop"
+        case .purr:
+            "Purr"
+        case .submarine:
+            "Submarine"
+        case .tink:
+            "Tink"
+        case .basso:
+            "Basso"
+        case .blow:
+            "Blow"
+        case .bottle:
+            "Bottle"
+        case .frog:
+            "Frog"
+        case .funk:
+            "Funk"
+        case .hero:
+            "Hero"
+        case .morse:
+            "Morse"
+        case .sosumi:
+            "Sosumi"
+        }
+    }
+
+    /// The macOS system sound name for NSSound.
+    /// Returns nil for `.none` or custom sounds.
+    public var systemSoundName: String? {
+        switch self {
+        case .none:
+            nil
+        case .glass:
+            "Glass"
+        case .ping:
+            "Ping"
+        case .pop:
+            "Pop"
+        case .purr:
+            "Purr"
+        case .submarine:
+            "Submarine"
+        case .tink:
+            "Tink"
+        case .basso:
+            "Basso"
+        case .blow:
+            "Blow"
+        case .bottle:
+            "Bottle"
+        case .frog:
+            "Frog"
+        case .funk:
+            "Funk"
+        case .hero:
+            "Hero"
+        case .morse:
+            "Morse"
+        case .sosumi:
+            "Sosumi"
+        }
+    }
+
+    /// Whether this is a system sound (vs. custom bundled sound).
+    public var isSystemSound: Bool {
+        self != .none
+    }
+}
+
 // MARK: - Preset Shortcut Key
 
 /// Predefined shortcut keys for quick recording activation.
@@ -339,6 +440,10 @@ public class AppSettingsStore: ObservableObject {
         static let autoDeleteTranscriptions = "autoDeleteTranscriptions"
         static let autoDeletePeriodDays = "autoDeletePeriodDays"
         static let appAccentColor = "appAccentColor"
+        // Sound Feedback
+        static let soundFeedbackEnabled = "soundFeedbackEnabled"
+        static let recordingStartSound = "recordingStartSound"
+        static let recordingStopSound = "recordingStopSound"
     }
 
     // MARK: - Published Properties
@@ -525,6 +630,23 @@ public class AppSettingsStore: ObservableObject {
         didSet { UserDefaults.standard.set(appAccentColor.rawValue, forKey: Keys.appAccentColor) }
     }
 
+    // MARK: - Sound Feedback Properties
+
+    /// Whether sound feedback for recording events is enabled.
+    @Published public var soundFeedbackEnabled: Bool {
+        didSet { UserDefaults.standard.set(soundFeedbackEnabled, forKey: Keys.soundFeedbackEnabled) }
+    }
+
+    /// Sound to play when recording starts.
+    @Published public var recordingStartSound: SoundFeedbackSound {
+        didSet { UserDefaults.standard.set(recordingStartSound.rawValue, forKey: Keys.recordingStartSound) }
+    }
+
+    /// Sound to play when recording stops.
+    @Published public var recordingStopSound: SoundFeedbackSound {
+        didSet { UserDefaults.standard.set(recordingStopSound.rawValue, forKey: Keys.recordingStopSound) }
+    }
+
     /// All available prompts (predefined + user-created), filtered by deleted and overrides.
     public var allPrompts: [PostProcessingPrompt] {
         // 1. Start with predefined prompts that are NOT deleted
@@ -642,6 +764,13 @@ public class AppSettingsStore: ObservableObject {
         let rawAccentColor = UserDefaults.standard.string(forKey: Keys.appAccentColor)
         appAccentColor = rawAccentColor.flatMap { AppThemeColor(rawValue: $0) } ?? .system
 
+        // Load sound feedback settings
+        soundFeedbackEnabled = UserDefaults.standard.bool(forKey: Keys.soundFeedbackEnabled)
+        let rawStartSound = UserDefaults.standard.string(forKey: Keys.recordingStartSound)
+        recordingStartSound = rawStartSound.flatMap { SoundFeedbackSound(rawValue: $0) } ?? .pop
+        let rawStopSound = UserDefaults.standard.string(forKey: Keys.recordingStopSound)
+        recordingStopSound = rawStopSound.flatMap { SoundFeedbackSound(rawValue: $0) } ?? .glass
+
         applyLanguage(selectedLanguage)
     }
 
@@ -696,6 +825,9 @@ public class AppSettingsStore: ObservableObject {
         autoDeleteTranscriptions = false
         autoDeletePeriodDays = 30
         appAccentColor = .system
+        soundFeedbackEnabled = false
+        recordingStartSound = .pop
+        recordingStopSound = .glass
     }
 
     // MARK: - Prompt Management

@@ -454,3 +454,12 @@
 
 /* Assistant */
 "assistant.prompt_title" = "Assistant Command";
+
+/* Sound Feedback Settings */
+"settings.general.sound_feedback" = "Sound Feedback";
+"settings.general.sound_feedback.enabled" = "Enable sound notifications for recording events";
+"settings.general.sound_feedback.enabled_desc" = "Play a sound when starting or stopping recordings.";
+"settings.general.sound_feedback.start_sound" = "Start Sound";
+"settings.general.sound_feedback.stop_sound" = "Stop Sound";
+"settings.general.sound_feedback.preview" = "Preview sound";
+"settings.general.sound_feedback.sound.none" = "None";
