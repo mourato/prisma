@@ -21,13 +21,13 @@ public final class MetricsDashboardViewModel: ObservableObject {
     private var allMetadata: [TranscriptionMetadata] = []
     private var isRefreshing = false
 
-    private let baselineTypingWordsPerMinute: Double = 35
+    private static let DEFAULT_BASELINE_WPM: Double = 35
 
     public init(storage: StorageService = FileSystemStorageService.shared) {
         self.storage = storage
         summary = MetricsAggregator.computeSummary(
             metadata: [],
-            baselineTypingWordsPerMinute: baselineTypingWordsPerMinute
+            baselineTypingWordsPerMinute: Self.DEFAULT_BASELINE_WPM
         )
     }
 
@@ -66,7 +66,7 @@ public final class MetricsDashboardViewModel: ObservableObject {
         let filtered = allMetadata.filter { dateFilter.contains($0.startTime) }
         summary = MetricsAggregator.computeSummary(
             metadata: filtered,
-            baselineTypingWordsPerMinute: baselineTypingWordsPerMinute
+            baselineTypingWordsPerMinute: Self.DEFAULT_BASELINE_WPM
         )
         weekdayBuckets = MetricsAggregator.computeWeekdayBuckets(metadata: filtered)
         hourlyBuckets = MetricsAggregator.computeHourlyBuckets(metadata: filtered)
