@@ -18,6 +18,20 @@ Activate this skill when working with:
 - Proactive commit suggestions
 - Version control workflows
 
+## Core Principles
+
+### 1. Pre-Commit Build Verification
+**CRITICAL**: Before creating ANY commit, you MUST verify that the project builds successfully.
+- Run `make build` (or `make build-debug`) in the terminal.
+- If the build fails, **DO NOT COMMIT**. Fix the errors first.
+- If you are modifying a specific module, ensure its tests pass with `make test`.
+
+### 2. Atomic Commits
+Break your work into small, self-contained units.
+- **One task = One (or more) Commits**: Do not combine refactoring, bug fixes, and new features in a single commit.
+- **Commit Early & Often**: Do not wait until the entire feature is done. Commit each logical step (e.g., "add view model", "implement view", "connect service").
+- **Green State**: Ensure every commit leaves the repo in a buildable state.
+
 ## Key Concepts
 
 ### Branch Naming
@@ -73,6 +87,7 @@ Use the template `.github/PULL_REQUEST_TEMPLATE.md`:
 <!-- What was modified and why -->
 
 ## Checklist
+- [ ] **Build Passed** (`make build`)
 - [ ] Tests passed
 - [ ] Lint passed
 - [ ] Documentation updated
@@ -121,8 +136,9 @@ This skill also activates when proactive commit suggestions are needed. Trigger 
 
 ### Suggested Workflow
 
-1. Check `git status` to see modified files
-2. Use `ask_followup_question` to offer commit options:
+1. **Verify Build**: Run `make build` to ensure no errors.
+2. Check `git status` to see modified files
+3. Use `ask_followup_question` to offer commit options:
    - Commit now with descriptive message
    - View diff first
    - Defer for later
