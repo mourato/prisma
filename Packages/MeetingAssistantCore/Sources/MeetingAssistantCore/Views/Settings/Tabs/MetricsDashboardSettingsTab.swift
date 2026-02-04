@@ -94,7 +94,7 @@ public struct MetricsDashboardSettingsTab: View {
                 title: "metrics.summary.words".localized,
                 value: Formatters.formattedNumber(viewModel.summary.wordsDictated),
                 detail: "metrics.summary.words_detail".localized,
-                tint: Color.accentColor
+                tint: SettingsDesignSystem.Colors.accent
             )
 
             MetricStatCard(
@@ -114,7 +114,7 @@ public struct MetricsDashboardSettingsTab: View {
                     x: .value("weekday", weekdayLabel(for: bucket.weekday)),
                     y: .value("words", bucket.words)
                 )
-                .foregroundStyle(Color.accentColor.gradient)
+                .foregroundStyle(SettingsDesignSystem.Colors.accent.gradient)
                 .cornerRadius(4)
             }
             .chartYAxis {
@@ -131,7 +131,7 @@ public struct MetricsDashboardSettingsTab: View {
                     x: .value("hour", bucket.hour),
                     y: .value("count", bucket.count)
                 )
-                .foregroundStyle(Color.accentColor.gradient)
+                .foregroundStyle(SettingsDesignSystem.Colors.accent.gradient)
             }
             .chartXScale(domain: 0...23)
             .chartYAxis {
