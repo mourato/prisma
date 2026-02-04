@@ -55,7 +55,12 @@ public struct MetricsDashboardSettingsTab: View {
         .padding(SettingsDesignSystem.Layout.heroPadding)
         .background(SettingsDesignSystem.Colors.dashboardHeroGradient)
         .clipShape(RoundedRectangle(cornerRadius: SettingsDesignSystem.Layout.heroCornerRadius, style: .continuous))
-        .shadow(color: Color.blue.opacity(0.2), radius: 10, x: 0, y: 5)
+        .shadow(
+            color: SettingsDesignSystem.Colors.accent.opacity(0.2),
+            radius: SettingsDesignSystem.Layout.shadowRadius,
+            x: SettingsDesignSystem.Layout.shadowX,
+            y: SettingsDesignSystem.Layout.shadowY
+        )
     }
 
     private var filtersSection: some View {
@@ -159,7 +164,7 @@ public struct MetricsDashboardSettingsTab: View {
             .chartYAxis {
                 AxisMarks(position: .leading)
             }
-            .frame(height: 220)
+            .frame(height: SettingsDesignSystem.Layout.chartHeight)
         }
     }
 
@@ -176,7 +181,7 @@ public struct MetricsDashboardSettingsTab: View {
             .chartYAxis {
                 AxisMarks(position: .leading)
             }
-            .frame(height: 220)
+            .frame(height: SettingsDesignSystem.Layout.chartHeight)
         }
     }
 

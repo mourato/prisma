@@ -1,4 +1,4 @@
- import SwiftUI
+import SwiftUI
 
 /// Design system for the Settings module, following macOS 26 Tahoe aesthetic.
 public enum SettingsDesignSystem {
@@ -59,6 +59,14 @@ public enum SettingsDesignSystem {
         public static let maxTextFieldWidth: CGFloat = 300
         public static let maxPickerWidth: CGFloat = 200
         public static let maxCompactTextFieldWidth: CGFloat = 200
+
+        public static let chartHeight: CGFloat = 220
+        public static let indentation: CGFloat = 24
+        public static let smallPadding: CGFloat = 4
+
+        public static let shadowRadius: CGFloat = 10
+        public static let shadowX: CGFloat = 0
+        public static let shadowY: CGFloat = 5
     }
 }
 

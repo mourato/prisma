@@ -53,6 +53,9 @@ public struct SettingsView: View {
                         onAccentColor: SettingsDesignSystem.Colors.onAccent
                     )
                     .tag(section)
+                    .listRowBackground(
+                        selectedSection == section ? SettingsDesignSystem.Colors.accent : nil
+                    )
                 }
             } header: {
                 Text(NSLocalizedString("about.title", bundle: .safeModule, comment: ""))
@@ -112,6 +115,7 @@ private struct SidebarItemView: View {
             Text(section.title)
                 .font(.body)
                 .padding(.leading, 4)
+                .foregroundStyle(isSelected ? onAccentColor : .primary)
         } icon: {
             ZStack {
                 RoundedRectangle(cornerRadius: 6)

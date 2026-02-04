@@ -39,21 +39,12 @@ public struct GeneralSettingsTab: View {
                 // Appearance
                 SettingsGroup("settings.general.appearance".localized, icon: "paintbrush.fill") {
                     VStack(alignment: .leading, spacing: 16) {
-                        HStack {
+                        VStack(alignment: .leading, spacing: 8) {
                             Text("settings.general.theme_color".localized)
                                 .font(.body)
                                 .foregroundStyle(.primary)
 
-                            Spacer()
-
-                            Picker("", selection: $viewModel.appAccentColor) {
-                                ForEach(AppThemeColor.allCases, id: \.self) { color in
-                                    Text(color.rawValue.capitalized).tag(color)
-                                }
-                            }
-                            .labelsHidden()
-                            .pickerStyle(.menu)
-                            .frame(width: 150)
+                            SettingsThemePicker(selection: $viewModel.appAccentColor)
                         }
 
                         Divider()
@@ -72,7 +63,7 @@ public struct GeneralSettingsTab: View {
                             }
                             .labelsHidden()
                             .pickerStyle(.menu)
-                            .frame(width: 150)
+                            .frame(width: SettingsDesignSystem.Layout.maxPickerWidth)
                         }
                     }
                 }
@@ -149,7 +140,7 @@ public struct GeneralSettingsTab: View {
                                             .monospacedDigit()
                                     }
                                 }
-                                .padding(.leading, 24)
+                                .padding(.leading, SettingsDesignSystem.Layout.indentation)
 
                                 Button {
                                     viewModel.performCleanup()
@@ -158,8 +149,8 @@ public struct GeneralSettingsTab: View {
                                         .frame(maxWidth: .infinity)
                                 }
                                 .buttonStyle(.bordered)
-                                .padding(.leading, 24)
-                                .padding(.top, 4)
+                                .padding(.leading, SettingsDesignSystem.Layout.indentation)
+                                .padding(.top, SettingsDesignSystem.Layout.smallPadding)
                             }
                         }
                     }
