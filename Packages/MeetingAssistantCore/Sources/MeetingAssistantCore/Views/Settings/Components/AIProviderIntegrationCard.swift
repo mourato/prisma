@@ -49,6 +49,17 @@ public struct AIProviderIntegrationCard: View {
                 .foregroundStyle(.secondary)
             Spacer()
             HStack(spacing: 8) {
+                if viewModel.connectionStatus == .success {
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(.green)
+                            .frame(width: 8, height: 8)
+                        Text("settings.ai.connection.success".localized)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
                 Picker("", selection: $viewModel.settings.aiConfiguration.provider) {
                     ForEach(AIProvider.allCases, id: \.self) { provider in
                         Text(provider.displayName).tag(provider)
@@ -60,18 +71,6 @@ public struct AIProviderIntegrationCard: View {
                 .onChange(of: viewModel.settings.aiConfiguration.provider) { _, newProvider in
                     if newProvider != .custom {
                         viewModel.settings.aiConfiguration.baseURL = newProvider.defaultBaseURL
-                    }
-                    viewModel.connectionStatus = .unknown
-                }
-
-                if viewModel.connectionStatus == .success {
-                    HStack(spacing: 4) {
-                        Circle()
-                            .fill(.green)
-                            .frame(width: 8, height: 8)
-                        Text("settings.ai.connection.success".localized)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
                     }
                 }
             }
@@ -101,7 +100,7 @@ public struct AIProviderIntegrationCard: View {
                 .frame(maxWidth: SettingsDesignSystem.Layout.maxPickerWidth)
             } else {
                 TextField(
-                    "settings.ai.model_placeholder".localized,
+                    "",
                     text: $viewModel.settings.aiConfiguration.selectedModel
                 )
                 .textFieldStyle(.plain)
