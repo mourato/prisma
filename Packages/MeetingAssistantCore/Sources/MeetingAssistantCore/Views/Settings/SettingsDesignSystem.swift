@@ -21,7 +21,9 @@ public enum SettingsDesignSystem {
         public static let glassBackground = Color(NSColor.windowBackgroundColor).opacity(0.7)
         public static let cardBackground = Color(NSColor.controlBackgroundColor).opacity(0.5)
 
-        public static var iconHighlight: Color { accent }
+        public static var iconHighlight: Color {
+            accent
+        }
 
         public static let aiGradient = LinearGradient(
             colors: [Color.orange, Color.red],
