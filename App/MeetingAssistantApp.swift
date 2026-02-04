@@ -273,7 +273,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func updateMenuItem(_ item: NSMenuItem?, key: String, shortcutName: KeyboardShortcuts.Name) {
         let title = NSLocalizedString(key, bundle: localizationBundle, comment: "")
-        if let item = item {
+        if let item {
             applyShortcut(to: item, title: title, shortcutName: shortcutName)
         }
     }
@@ -284,13 +284,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         var isCustom = false
 
         if shortcutName == .toggleRecording {
-            if settings.selectedPresetKey != .custom && settings.selectedPresetKey != .notSpecified {
+            if settings.selectedPresetKey != .custom, settings.selectedPresetKey != .notSpecified {
                 presetString = settings.selectedPresetKey.displayName
             } else {
                 isCustom = true
             }
         } else if shortcutName == .assistantCommand {
-            if settings.assistantSelectedPresetKey != .custom && settings.assistantSelectedPresetKey != .notSpecified {
+            if settings.assistantSelectedPresetKey != .custom, settings.assistantSelectedPresetKey != .notSpecified {
                 presetString = settings.assistantSelectedPresetKey.displayName
             } else {
                 isCustom = true
@@ -299,7 +299,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             isCustom = true
         }
 
-        if let presetString = presetString {
+        if let presetString {
             item.title = "\(title) [\(presetString)]"
             item.keyEquivalent = ""
             item.keyEquivalentModifierMask = []

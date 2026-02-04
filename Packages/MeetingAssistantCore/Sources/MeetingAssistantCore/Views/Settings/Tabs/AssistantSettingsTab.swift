@@ -134,7 +134,6 @@ public struct AssistantSettingsTab: View {
         }
     }
 
-
     private var optionsSection: some View {
         SettingsCard {
             SettingsToggle(

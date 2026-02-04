@@ -56,28 +56,28 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
         public var isInProgress: Bool {
             switch self {
             case .downloadingASR, .loadingASR, .downloadingDiarization, .loadingDiarization:
-                return true
+                true
             default:
-                return false
+                false
             }
         }
 
         public var localizedDescription: String {
             switch self {
             case .idle:
-                return NSLocalizedString("settings.ai.phase_idle", bundle: .safeModule, comment: "")
+                NSLocalizedString("settings.ai.phase_idle", bundle: .safeModule, comment: "")
             case .downloadingASR:
-                return NSLocalizedString("settings.ai.downloading_asr", bundle: .safeModule, comment: "")
+                NSLocalizedString("settings.ai.downloading_asr", bundle: .safeModule, comment: "")
             case .loadingASR:
-                return NSLocalizedString("settings.ai.loading_asr", bundle: .safeModule, comment: "")
+                NSLocalizedString("settings.ai.loading_asr", bundle: .safeModule, comment: "")
             case .downloadingDiarization:
-                return NSLocalizedString("settings.ai.downloading_diarization", bundle: .safeModule, comment: "")
+                NSLocalizedString("settings.ai.downloading_diarization", bundle: .safeModule, comment: "")
             case .loadingDiarization:
-                return NSLocalizedString("settings.ai.loading_diarization", bundle: .safeModule, comment: "")
+                NSLocalizedString("settings.ai.loading_diarization", bundle: .safeModule, comment: "")
             case .ready:
-                return NSLocalizedString("settings.ai.models_ready", bundle: .safeModule, comment: "")
-            case .failed(let error):
-                return String(format: NSLocalizedString("settings.ai.download_failed", bundle: .safeModule, comment: ""), error)
+                NSLocalizedString("settings.ai.models_ready", bundle: .safeModule, comment: "")
+            case let .failed(error):
+                String(format: NSLocalizedString("settings.ai.download_failed", bundle: .safeModule, comment: ""), error)
             }
         }
     }
@@ -129,9 +129,9 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
             if modelState == .error || modelState == .unloaded {
                 await loadModels()
             }
-            
+
             // If ASR is ready or just loaded successfully, and diarization is still failing/missing
-            if (modelState == .loaded || modelState == .loading) && !isDiarizationLoaded {
+            if modelState == .loaded || modelState == .loading, !isDiarizationLoaded {
                 await loadDiarizationModels()
             }
         }
@@ -207,7 +207,7 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
 
     private func updateReadyState() {
         let isDiarizationEnabled = AppSettingsStore.shared.isDiarizationEnabled
-        if modelState == .loaded && (!isDiarizationEnabled || isDiarizationLoaded) {
+        if modelState == .loaded, !isDiarizationEnabled || isDiarizationLoaded {
             downloadPhase = .ready
         }
     }
