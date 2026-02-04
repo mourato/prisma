@@ -123,6 +123,14 @@ public class GeneralSettingsViewModel: ObservableObject {
         }
     }
 
+    @Published public var showInDock: Bool {
+        didSet {
+            settingsStore.showInDock = showInDock
+        }
+    }
+        }
+    }
+
     @Published public var availableDevices: [AudioInputDevice] = []
 
     private let deviceManager = AudioDeviceManager()
@@ -150,6 +158,7 @@ public class GeneralSettingsViewModel: ObservableObject {
         soundFeedbackEnabled = settingsStore.soundFeedbackEnabled
         recordingStartSound = settingsStore.recordingStartSound
         recordingStopSound = settingsStore.recordingStopSound
+        showInDock = settingsStore.showInDock
 
         setupDeviceObservation()
     }
