@@ -104,6 +104,12 @@
 "settings.ai.retry" = "Tentar novamente";
 "settings.ai.please_wait" = "Isso pode levar alguns minutos na primeira execução";
 
+/* Accessibility Labels */
+"settings.ai.downloading" = "Baixando";
+"settings.ai.loading" = "Carregando";
+"settings.ai.ready" = "Pronto";
+"settings.ai.failed" = "Falha";
+
 /* Post-Processing Settings */
 "settings.post_processing.title" = "Pós-Processamento";
 "settings.post_processing.enabled" = "Habilitar Pós-Processamento com IA";

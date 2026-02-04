@@ -231,7 +231,7 @@ public struct AISettingsTab: View {
                     } else if case .failed = phase {
                         Button {
                             Task {
-                                await modelManager.loadDiarizationModels()
+                                await modelManager.retryFailedModels()
                             }
                         } label: {
                             Text(NSLocalizedString("settings.ai.retry", bundle: .safeModule, comment: ""))
@@ -241,6 +241,7 @@ public struct AISettingsTab: View {
                     } else if phase == .ready {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(.green)
+                            .accessibilityLabel(NSLocalizedString("settings.ai.ready", bundle: .safeModule, comment: ""))
                     }
                 }
             }
@@ -255,20 +256,25 @@ public struct AISettingsTab: View {
         case .idle:
             Image(systemName: "circle.dashed")
                 .foregroundStyle(.secondary)
+                .accessibilityLabel(NSLocalizedString("settings.ai.phase_idle", bundle: .safeModule, comment: ""))
         case .downloadingASR, .downloadingDiarization:
             Image(systemName: "arrow.down.circle.fill")
                 .foregroundStyle(.blue)
                 .symbolEffect(.pulse)
+                .accessibilityLabel(NSLocalizedString("settings.ai.downloading", bundle: .safeModule, comment: ""))
         case .loadingASR, .loadingDiarization:
             Image(systemName: "gearshape.circle.fill")
                 .foregroundStyle(.orange)
                 .symbolEffect(.rotate)
+                .accessibilityLabel(NSLocalizedString("settings.ai.loading", bundle: .safeModule, comment: ""))
         case .ready:
             Image(systemName: "checkmark.circle.fill")
                 .foregroundStyle(.green)
+                .accessibilityLabel(NSLocalizedString("settings.ai.ready", bundle: .safeModule, comment: ""))
         case .failed:
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundStyle(.red)
+                .accessibilityLabel(NSLocalizedString("settings.ai.failed", bundle: .safeModule, comment: ""))
         }
     }
 
