@@ -24,9 +24,7 @@ public final class AudioDeviceManager: ObservableObject {
     @Published public private(set) var availableInputDevices: [AudioInputDevice] = []
 
     public init() {
-        Task { @MainActor in
-            refreshDevices()
-        }
+        refreshDevices()
 
         // Setup observers for device changes
         NotificationCenter.default.addObserver(
@@ -34,9 +32,7 @@ public final class AudioDeviceManager: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
-                self?.refreshDevices()
-            }
+            self?.refreshDevices()
         }
 
         NotificationCenter.default.addObserver(
@@ -44,31 +40,38 @@ public final class AudioDeviceManager: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
-                self?.refreshDevices()
-            }
+            self?.refreshDevices()
         }
     }
 
     /// Explicitly refresh the list of available devices.
-    @MainActor
+    /// Performs discovery on a background thread to avoid blocking the UI.
     public func refreshDevices() {
-        let discoverySession = AVCaptureDevice.DiscoverySession(
-            deviceTypes: [.microphone, .external],
-            mediaType: .audio,
-            position: .unspecified
-        )
-
-        let defaultInput = AVCaptureDevice.default(for: .audio)
-
-        availableInputDevices = discoverySession.devices.map { device in
-            AudioInputDevice(
-                id: device.uniqueID,
-                name: device.localizedName,
-                isDefault: device.uniqueID == defaultInput?.uniqueID,
-                isAvailable: true
+        Task.detached(priority: .userInitiated) { [weak self] in
+            let discoverySession = AVCaptureDevice.DiscoverySession(
+                deviceTypes: [.microphone, .external],
+                mediaType: .audio,
+                position: .unspecified
             )
+
+            let defaultInput = AVCaptureDevice.default(for: .audio)
+
+            let devices = discoverySession.devices.map { device in
+                AudioInputDevice(
+                    id: device.uniqueID,
+                    name: device.localizedName,
+                    isDefault: device.uniqueID == defaultInput?.uniqueID,
+                    isAvailable: true
+                )
+            }
+
+            await self?.updateDevices(devices)
         }
+    }
+
+    @MainActor
+    private func updateDevices(_ devices: [AudioInputDevice]) {
+        self.availableInputDevices = devices
 
         AppLogger.debug(
             "Refreshed audio input devices",
