@@ -103,6 +103,26 @@ public class GeneralSettingsViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Sound Feedback Properties
+
+    @Published public var soundFeedbackEnabled: Bool {
+        didSet {
+            settingsStore.soundFeedbackEnabled = soundFeedbackEnabled
+        }
+    }
+
+    @Published public var recordingStartSound: SoundFeedbackSound {
+        didSet {
+            settingsStore.recordingStartSound = recordingStartSound
+        }
+    }
+
+    @Published public var recordingStopSound: SoundFeedbackSound {
+        didSet {
+            settingsStore.recordingStopSound = recordingStopSound
+        }
+    }
+
     @Published public var availableDevices: [AudioInputDevice] = []
 
     private let deviceManager = AudioDeviceManager()
@@ -127,6 +147,9 @@ public class GeneralSettingsViewModel: ObservableObject {
         autoDeleteTranscriptions = settingsStore.autoDeleteTranscriptions
         autoDeletePeriodDays = settingsStore.autoDeletePeriodDays
         appAccentColor = settingsStore.appAccentColor
+        soundFeedbackEnabled = settingsStore.soundFeedbackEnabled
+        recordingStartSound = settingsStore.recordingStartSound
+        recordingStopSound = settingsStore.recordingStopSound
 
         setupDeviceObservation()
     }

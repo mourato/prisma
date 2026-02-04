@@ -225,6 +225,9 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             isRecording = true
             currentMeeting?.audioFilePath = outputURL.path
 
+            // Play start recording sound feedback
+            SoundFeedbackService.shared.playRecordingStartSound()
+
             AppLogger.info("Recording started successfully", category: .recordingManager, extra: [
                 "app": meeting.app.displayName,
                 "url": outputURL.lastPathComponent,
@@ -324,6 +327,9 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
             isRecording = false
             await RecordingExclusivityCoordinator.shared.endRecording()
+
+            // Play stop recording sound feedback
+            SoundFeedbackService.shared.playRecordingStopSound()
 
             AppLogger.info("Recording stopped", category: .recordingManager, extra: [
                 "micURL": micURL?.lastPathComponent ?? "nil",

@@ -206,6 +206,79 @@ public struct GeneralSettingsTab: View {
                     }
                 }
 
+                // Sound Feedback
+                SettingsGroup("settings.general.sound_feedback".localized, icon: "speaker.wave.2.fill") {
+                    VStack(alignment: .leading, spacing: 16) {
+                        SettingsToggle(
+                            "settings.general.sound_feedback.enabled".localized,
+                            description: "settings.general.sound_feedback.enabled_desc".localized,
+                            isOn: $viewModel.soundFeedbackEnabled
+                        )
+
+                        if viewModel.soundFeedbackEnabled {
+                            Divider()
+
+                            // Start Recording Sound
+                            HStack {
+                                Text("settings.general.sound_feedback.start_sound".localized)
+                                    .font(.body)
+                                    .foregroundStyle(.primary)
+
+                                Spacer()
+
+                                Picker("", selection: $viewModel.recordingStartSound) {
+                                    ForEach(SoundFeedbackSound.allCases, id: \.self) { sound in
+                                        Text(sound.displayName).tag(sound)
+                                    }
+                                }
+                                .labelsHidden()
+                                .pickerStyle(.menu)
+                                .frame(width: 150)
+
+                                Button {
+                                    SoundFeedbackService.shared.preview(viewModel.recordingStartSound)
+                                } label: {
+                                    Image(systemName: "play.circle.fill")
+                                        .font(.title3)
+                                }
+                                .buttonStyle(.borderless)
+                                .disabled(viewModel.recordingStartSound == .none)
+                                .accessibilityLabel("settings.general.sound_feedback.preview".localized)
+                            }
+
+                            Divider()
+
+                            // Stop Recording Sound
+                            HStack {
+                                Text("settings.general.sound_feedback.stop_sound".localized)
+                                    .font(.body)
+                                    .foregroundStyle(.primary)
+
+                                Spacer()
+
+                                Picker("", selection: $viewModel.recordingStopSound) {
+                                    ForEach(SoundFeedbackSound.allCases, id: \.self) { sound in
+                                        Text(sound.displayName).tag(sound)
+                                    }
+                                }
+                                .labelsHidden()
+                                .pickerStyle(.menu)
+                                .frame(width: 150)
+
+                                Button {
+                                    SoundFeedbackService.shared.preview(viewModel.recordingStopSound)
+                                } label: {
+                                    Image(systemName: "play.circle.fill")
+                                        .font(.title3)
+                                }
+                                .buttonStyle(.borderless)
+                                .disabled(viewModel.recordingStopSound == .none)
+                                .accessibilityLabel("settings.general.sound_feedback.preview".localized)
+                            }
+                        }
+                    }
+                }
+
                 // Audio Devices
                 SettingsGroup("settings.general.audio_devices".localized, icon: "mic.fill") {
                     VStack(alignment: .leading, spacing: 12) {
