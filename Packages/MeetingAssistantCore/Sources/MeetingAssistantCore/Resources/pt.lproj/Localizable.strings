@@ -21,6 +21,7 @@
 "metrics.summary.time_saved" = "Tempo economizado";
 "metrics.summary.time_saved_detail" = "vs. digitar manualmente";
 "metrics.peaks.weekday.title" = "Picos por dia da semana";
+"metrics.peaks.hourly.title" = "Picos por horário";
 "metrics.empty.title" = "Sem dados ainda";
 "metrics.empty.subtitle" = "Faça sua primeira gravação para liberar insights.";
 "metrics.error.load" = "Não foi possível carregar os dados do dashboard.";

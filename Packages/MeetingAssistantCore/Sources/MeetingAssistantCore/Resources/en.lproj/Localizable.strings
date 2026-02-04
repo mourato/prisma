@@ -21,6 +21,7 @@
 "metrics.summary.time_saved" = "Time Saved";
 "metrics.summary.time_saved_detail" = "vs. typing by hand";
 "metrics.peaks.weekday.title" = "Weekday Peaks";
+"metrics.peaks.hourly.title" = "Hourly Peaks";
 "metrics.empty.title" = "No data yet";
 "metrics.empty.subtitle" = "Start your first recording to unlock insights.";
 "metrics.error.load" = "Failed to load dashboard data.";
