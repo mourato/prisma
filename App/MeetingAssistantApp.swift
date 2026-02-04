@@ -297,7 +297,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             item.keyEquivalentModifierMask = []
         } else if isCustom, let shortcut = KeyboardShortcuts.Shortcut(name: shortcutName) {
             item.title = title
-            
+
             // Robust key equivalent handling
             let desc = shortcut.description
             let modifierSymbols = ["⌘", "⌥", "⌃", "⇧"]
@@ -306,7 +306,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 cleanKey = cleanKey.replacingOccurrences(of: symbol, with: "")
             }
             cleanKey = cleanKey.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-            
+
             // Map special key descriptions back to NSMenuItem key equivalents
             switch cleanKey {
             case "space": item.keyEquivalent = " "
@@ -322,7 +322,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 // For regular keys, use the first character of the stripped string
                 item.keyEquivalent = String(cleanKey.prefix(1))
             }
-            
+
             item.keyEquivalentModifierMask = shortcut.modifiers
         } else {
             item.title = title

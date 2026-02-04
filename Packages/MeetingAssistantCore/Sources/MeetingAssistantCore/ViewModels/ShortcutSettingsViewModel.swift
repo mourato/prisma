@@ -15,6 +15,8 @@ public class ShortcutSettingsViewModel: ObservableObject {
     @Published public var activationMode: ShortcutActivationMode
     @Published public var useEscapeToCancelRecording: Bool
     @Published public var selectedPresetKey: PresetShortcutKey
+    @Published public var dictationSelectedPresetKey: PresetShortcutKey
+    @Published public var meetingSelectedPresetKey: PresetShortcutKey
     @Published public var testKeysInput: String = ""
 
     /// Whether the user is recording a custom shortcut
@@ -26,6 +28,8 @@ public class ShortcutSettingsViewModel: ObservableObject {
         activationMode = settings.shortcutActivationMode
         useEscapeToCancelRecording = settings.useEscapeToCancelRecording
         selectedPresetKey = settings.selectedPresetKey
+        dictationSelectedPresetKey = settings.dictationSelectedPresetKey
+        meetingSelectedPresetKey = settings.meetingSelectedPresetKey
 
         setupBindings()
     }
@@ -58,6 +62,22 @@ public class ShortcutSettingsViewModel: ObservableObject {
                 self?.isRecordingCustomShortcut = (newValue == .custom)
             }
             .store(in: &cancellables)
+
+        // Sync Dictation preset
+        $dictationSelectedPresetKey
+            .dropFirst()
+            .sink { [weak self] newValue in
+                self?.settings.dictationSelectedPresetKey = newValue
+            }
+            .store(in: &cancellables)
+
+        // Sync Meeting preset
+        $meetingSelectedPresetKey
+            .dropFirst()
+            .sink { [weak self] newValue in
+                self?.settings.meetingSelectedPresetKey = newValue
+            }
+            .store(in: &cancellables)
     }
 
     // MARK: - Public Methods
@@ -65,9 +85,13 @@ public class ShortcutSettingsViewModel: ObservableObject {
     /// Resets all keyboard shortcuts to their default values.
     public func resetShortcuts() {
         KeyboardShortcuts.reset(.toggleRecording)
+        KeyboardShortcuts.reset(.dictationToggle)
+        KeyboardShortcuts.reset(.meetingToggle)
         activationMode = .holdOrToggle
         useEscapeToCancelRecording = false
         selectedPresetKey = .fn
+        dictationSelectedPresetKey = .fn
+        meetingSelectedPresetKey = .notSpecified
         isRecordingCustomShortcut = false
     }
 }

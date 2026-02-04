@@ -1,12 +1,12 @@
 /* Sidebar Sections */
 "settings.section.metrics" = "Dashboard";
 "settings.section.general" = "General";
+"settings.section.dictation" = "Dictation";
+"settings.section.meetings" = "Meetings";
+"settings.section.audio" = "Audio & Sound";
 "settings.section.transcriptions" = "Transcriptions";
-"settings.section.shortcuts" = "Shortcuts";
 "settings.section.assistant" = "Assistant";
 "settings.section.ai" = "Enhancements";
-"settings.section.post_processing" = "Post-Processing";
-"settings.section.service" = "Service";
 "settings.section.permissions" = "Permissions";
 
 /* Metrics Dashboard */
@@ -167,7 +167,11 @@
 "settings.service.download_model" = "Download Model";
 
 /* Shortcut Settings */
-"settings.shortcuts.title" = "Shortcuts";
+"settings.shortcuts.title" = "Keyboard Controls";
+"settings.shortcuts.dictation" = "Dictation Shortcut";
+"settings.shortcuts.dictation_desc" = "Key to start/stop a quick dictation session";
+"settings.shortcuts.meeting" = "Meeting Shortcut";
+"settings.shortcuts.meeting_desc" = "Key to start/stop recording a meeting";
 "settings.shortcuts.global" = "Global Shortcuts";
 "settings.shortcuts.description" = "Configure keyboard shortcuts to control the app quickly, even in the background.";
 "settings.shortcuts.toggle_recording" = "Toggle Recording";

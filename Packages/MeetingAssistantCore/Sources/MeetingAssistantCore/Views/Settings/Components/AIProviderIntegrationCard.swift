@@ -26,7 +26,7 @@ public struct AIProviderIntegrationCard: View {
                         Divider()
                         baseURLRow
                     }
-                    
+
                     if let detail = viewModel.connectionStatus.detail, !detail.isEmpty, viewModel.connectionStatus != .success {
                         connectionDetailRow(detail)
                     }
@@ -131,13 +131,13 @@ public struct AIProviderIntegrationCard: View {
             Text("settings.ai.api_key".localized)
                 .foregroundStyle(.secondary)
             Spacer()
-            
+
             if viewModel.isKeySaved {
                 HStack(spacing: 8) {
                     Text("settings.ai.keychain_secure".localized)
                         .font(.caption)
                         .foregroundStyle(.green)
-                    
+
                     Image(systemName: "lock.fill")
                         .font(.caption)
                         .foregroundStyle(.green)

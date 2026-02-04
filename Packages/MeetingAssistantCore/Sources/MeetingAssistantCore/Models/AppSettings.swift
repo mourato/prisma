@@ -384,7 +384,9 @@ public struct AIConfiguration: Codable, Equatable, Sendable {
     }
 
     /// Internal accessor for migration logic.
-    internal var legacyApiKey: String { _legacyApiKey }
+    var legacyApiKey: String {
+        _legacyApiKey
+    }
 
     enum CodingKeys: String, CodingKey {
         case provider, baseURL, selectedModel
@@ -419,6 +421,8 @@ public class AppSettingsStore: ObservableObject {
         static let shortcutActivationMode = "shortcutActivationMode"
         static let useEscapeToCancelRecording = "useEscapeToCancelRecording"
         static let selectedPresetKey = "selectedPresetKey"
+        static let dictationSelectedPresetKey = "dictationSelectedPresetKey"
+        static let meetingSelectedPresetKey = "meetingSelectedPresetKey"
         static let assistantShortcutActivationMode = "assistantShortcutActivationMode"
         static let assistantUseEscapeToCancelRecording = "assistantUseEscapeToCancelRecording"
         static let assistantSelectedPresetKey = "assistantSelectedPresetKey"
@@ -558,6 +562,16 @@ public class AppSettingsStore: ObservableObject {
     /// Selected preset shortcut key for recording activation.
     @Published public var selectedPresetKey: PresetShortcutKey {
         didSet { UserDefaults.standard.set(selectedPresetKey.rawValue, forKey: Keys.selectedPresetKey) }
+    }
+
+    /// Selected preset shortcut key for Dictation activation.
+    @Published public var dictationSelectedPresetKey: PresetShortcutKey {
+        didSet { UserDefaults.standard.set(dictationSelectedPresetKey.rawValue, forKey: Keys.dictationSelectedPresetKey) }
+    }
+
+    /// Selected preset shortcut key for Meetings activation.
+    @Published public var meetingSelectedPresetKey: PresetShortcutKey {
+        didSet { UserDefaults.standard.set(meetingSelectedPresetKey.rawValue, forKey: Keys.meetingSelectedPresetKey) }
     }
 
     /// How keyboard shortcuts activate Assistant commands.
@@ -739,6 +753,12 @@ public class AppSettingsStore: ObservableObject {
 
         let rawPresetKey = UserDefaults.standard.string(forKey: Keys.selectedPresetKey)
         selectedPresetKey = rawPresetKey.flatMap { PresetShortcutKey(rawValue: $0) } ?? .fn
+
+        let rawDictationKey = UserDefaults.standard.string(forKey: Keys.dictationSelectedPresetKey)
+        dictationSelectedPresetKey = rawDictationKey.flatMap { PresetShortcutKey(rawValue: $0) } ?? (rawPresetKey.flatMap { PresetShortcutKey(rawValue: $0) } ?? .fn)
+
+        let rawMeetingKey = UserDefaults.standard.string(forKey: Keys.meetingSelectedPresetKey)
+        meetingSelectedPresetKey = rawMeetingKey.flatMap { PresetShortcutKey(rawValue: $0) } ?? .notSpecified
 
         let rawAssistantActivation = UserDefaults.standard.string(forKey: Keys.assistantShortcutActivationMode)
         assistantShortcutActivationMode = rawAssistantActivation
