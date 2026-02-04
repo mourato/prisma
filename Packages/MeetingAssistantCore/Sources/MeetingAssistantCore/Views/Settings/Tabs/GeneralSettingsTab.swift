@@ -108,6 +108,14 @@ public struct GeneralSettingsTab: View {
 
                         Divider()
 
+                        // Launch at Login Toggle
+                        SettingsToggle(
+                            "settings.general.launch_at_login".localized,
+                            isOn: $viewModel.launchAtLogin
+                        )
+
+                        Divider()
+
                         // Show in Dock Toggle
                         SettingsToggle(
                             "settings.general.show_in_dock".localized,
