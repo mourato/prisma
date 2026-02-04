@@ -30,6 +30,11 @@ public enum SettingsDesignSystem {
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
+
+        public static let success = Color.green
+        public static let warning = Color.orange
+        public static let error = Color.red
+        public static let neutral = Color.gray
     }
 
     // MARK: - Layout Constants
