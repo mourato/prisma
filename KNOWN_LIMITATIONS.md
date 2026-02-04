@@ -13,3 +13,7 @@ Este documento descreve as limitações técnicas e de design identificadas no p
 ## 3. Assistant depende de Clipboard e Acessibilidade
 - **Assistant depende de Clipboard e Acessibilidade**: O Assistant usa copiar/colar via clipboard para capturar o texto selecionado e substituir o conteúdo. Em alguns apps, o comando de copiar pode não atualizar o clipboard (ou pode ser bloqueado), o que impede o fluxo de edição. (Contexto: integração via atalhos de sistema sem APIs privadas, fevereiro/2026)
 - **Impacto**: Pode falhar ao capturar/substituir texto em apps restritivos ou quando a permissão de Acessibilidade não foi concedida.
+
+## 4. Design System Singleton Dependency
+- **Design System Singleton Dependency**: O `SettingsDesignSystem` utiliza propriedades estáticas que acessam o singleton `AppSettingsStore.shared` diretamente. Isso cria um acoplamento oculto e dificulta a testabilidade e o uso de diferentes temas em contextos isolados (ex: previews ou múltiplas janelas).
+- **Impacto**: Arquitetura menos flexível e maior dificuldade em implementar "Theme Previews" sem afetar o estado global do app.
