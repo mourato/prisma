@@ -73,4 +73,5 @@ final class RecordingViewModelTests: XCTestCase {
             viewModel.transcriptionViewModel.statusMessage
                 == mockService.transcriptionStatus.statusMessage
         )
+    }
 }
