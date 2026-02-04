@@ -93,6 +93,17 @@
 "settings.ai.connection.secure_failed" = "Falha na conexão segura";
 "settings.ai.connection.network_lost" = "Conexão de rede perdida";
 
+/* AI Model Download Progress */
+"settings.ai.phase_idle" = "Aguardando início...";
+"settings.ai.downloading_asr" = "Baixando modelo de reconhecimento de fala...";
+"settings.ai.loading_asr" = "Carregando modelo de reconhecimento de fala...";
+"settings.ai.downloading_diarization" = "Baixando modelo de identificação de oradores...";
+"settings.ai.loading_diarization" = "Carregando modelo de identificação de oradores...";
+"settings.ai.models_ready" = "Modelos prontos";
+"settings.ai.download_failed" = "Falha no download: %@";
+"settings.ai.retry" = "Tentar novamente";
+"settings.ai.please_wait" = "Isso pode levar alguns minutos na primeira execução";
+
 /* Post-Processing Settings */
 "settings.post_processing.title" = "Pós-Processamento";
 "settings.post_processing.enabled" = "Habilitar Pós-Processamento com IA";
