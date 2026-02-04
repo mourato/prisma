@@ -15,6 +15,7 @@ private enum LayoutConstants {
 /// Settings view for app configuration.
 /// Uses sidebar navigation pattern similar to macOS System Settings.
 public struct SettingsView: View {
+    @ObservedObject private var settings = AppSettingsStore.shared
     @State private var selectedSection: SettingsSection = .metrics
     @State private var columnVisibility = NavigationSplitViewVisibility.all
 
@@ -31,6 +32,7 @@ public struct SettingsView: View {
 
                 detailView
             }
+            .tint(SettingsDesignSystem.Colors.accent)
         }
         .navigationSplitViewStyle(.balanced)
         .navigationTitle(selectedSection.title)
@@ -72,7 +74,7 @@ public struct SettingsView: View {
         } icon: {
             Image(systemName: section.icon)
                 .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(selectedSection == section ? .white : SettingsDesignSystem.Colors.accent)
+                .foregroundStyle(selectedSection == section ? SettingsDesignSystem.Colors.onAccent : SettingsDesignSystem.Colors.accent)
                 .frame(width: 24, height: 24)
                 .background(
                     RoundedRectangle(cornerRadius: 6)

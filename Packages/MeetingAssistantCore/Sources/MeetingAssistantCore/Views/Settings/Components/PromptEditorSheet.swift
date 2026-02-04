@@ -111,13 +111,13 @@ public struct PromptEditorSheet: View {
         } label: {
             Image(systemName: icon)
                 .font(.title3)
-                .foregroundStyle(isSelected ? .white : .primary)
+                .foregroundStyle(isSelected ? SettingsDesignSystem.Colors.onAccent : .primary)
                 .frame(width: 36, height: 36)
-                .background(isSelected ? Color.accentColor : Color(NSColor.controlBackgroundColor))
+                .background(isSelected ? SettingsDesignSystem.Colors.accent : Color(NSColor.controlBackgroundColor))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)
-                        .stroke(isSelected ? Color.accentColor : Color(NSColor.separatorColor), lineWidth: 1)
+                        .stroke(isSelected ? SettingsDesignSystem.Colors.accent : Color(NSColor.separatorColor), lineWidth: 1)
                 )
         }
         .buttonStyle(.plain)
@@ -185,6 +185,7 @@ public struct PromptEditorSheet: View {
             }
             .keyboardShortcut(.return)
             .buttonStyle(.borderedProminent)
+            .tint(SettingsDesignSystem.Colors.accent)
             .disabled(!isValid)
         }
         .padding()

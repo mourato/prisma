@@ -273,7 +273,7 @@ struct PermissionRowView: View {
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.small)
-            .tint(.blue)
+            .tint(SettingsDesignSystem.Colors.accent)
 
         case .denied, .restricted:
             Button("permissions.configure".localized) {
@@ -296,7 +296,7 @@ struct PermissionRowView: View {
         case .denied, .restricted:
             Color.red.opacity(0.15)
         case .notDetermined:
-            Color.blue.opacity(0.15)
+            SettingsDesignSystem.Colors.accent.opacity(0.15)
         }
     }
 
@@ -307,7 +307,7 @@ struct PermissionRowView: View {
         case .denied, .restricted:
             .red
         case .notDetermined:
-            .blue
+            SettingsDesignSystem.Colors.accent
         }
     }
 
