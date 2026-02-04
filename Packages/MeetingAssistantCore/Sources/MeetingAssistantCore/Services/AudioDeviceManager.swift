@@ -82,12 +82,7 @@ public final class AudioDeviceManager: ObservableObject {
 
     /// Check if a specific device (by UID) is currently available.
     public func isDeviceAvailable(_ uid: String) -> Bool {
-        let discoverySession = AVCaptureDevice.DiscoverySession(
-            deviceTypes: [.microphone, .external],
-            mediaType: .audio,
-            position: .unspecified
-        )
-        return discoverySession.devices.contains { $0.uniqueID == uid }
+        return availableInputDevices.contains { $0.id == uid }
     }
 
     /// Retrieve the Core Audio device ID for a given unique UID.
