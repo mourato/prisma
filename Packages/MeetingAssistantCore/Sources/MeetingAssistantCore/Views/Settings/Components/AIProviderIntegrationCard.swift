@@ -83,21 +83,7 @@ public struct AIProviderIntegrationCard: View {
             Text("settings.ai.model".localized)
                 .foregroundStyle(.secondary)
             Spacer()
-            if viewModel.isLoadingModels {
-                ProgressView()
-                    .controlSize(.small)
-            } else if !viewModel.availableModels.isEmpty {
-                Picker("", selection: $viewModel.settings.aiConfiguration.selectedModel) {
-                    Text("settings.ai.model_select".localized)
-                        .tag("")
-                    ForEach(viewModel.availableModels) { model in
-                        Text(model.id).tag(model.id)
-                    }
-                }
-                .pickerStyle(.menu)
-                .labelsHidden()
-                .frame(maxWidth: SettingsDesignSystem.Layout.maxPickerWidth)
-            } else {
+            if viewModel.settings.aiConfiguration.provider == .custom {
                 TextField(
                     "",
                     text: $viewModel.settings.aiConfiguration.selectedModel
@@ -105,6 +91,23 @@ public struct AIProviderIntegrationCard: View {
                 .textFieldStyle(.plain)
                 .multilineTextAlignment(.trailing)
                 .frame(maxWidth: SettingsDesignSystem.Layout.maxCompactTextFieldWidth)
+            } else {
+                Picker("", selection: $viewModel.settings.aiConfiguration.selectedModel) {
+                    if viewModel.isLoadingModels {
+                        Text("settings.ai.loading".localized).tag("")
+                    } else if viewModel.availableModels.isEmpty {
+                        Text("settings.ai.no_models".localized).tag("")
+                    } else {
+                        Text("settings.ai.model_select".localized).tag("")
+                        ForEach(viewModel.availableModels) { model in
+                            Text(model.id).tag(model.id)
+                        }
+                    }
+                }
+                .pickerStyle(.menu)
+                .labelsHidden()
+                .frame(maxWidth: SettingsDesignSystem.Layout.maxPickerWidth)
+                .disabled(viewModel.isLoadingModels || viewModel.availableModels.isEmpty)
             }
         }
         .padding(.vertical, 8)
