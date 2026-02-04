@@ -5,28 +5,33 @@ import XCTest
 /// Testes unitários para AudioRecorder usando MockAudioEngine
 @MainActor
 final class AudioRecorderTests: XCTestCase {
-    var audioRecorder: AudioRecorder?
+    // Lazy initialization to avoid blocking in setUp
+    private var _audioRecorder: AudioRecorder?
+    var audioRecorder: AudioRecorder? {
+        get {
+            if _audioRecorder == nil {
+                _audioRecorder = AudioRecorder()
+            }
+            return _audioRecorder
+        }
+        set { _audioRecorder = newValue }
+    }
     var mockEngine: MockAudioEngine?
     var mockWorker: MockAudioRecordingWorker?
 
     override func setUp() async throws {
         try await super.setUp()
-
-        // Criar mocks
+        // Create mocks - DO NOT initialize AudioRecorder here as it may block
         mockEngine = MockAudioEngine()
         mockWorker = MockAudioRecordingWorker()
-
-        // Injetar dependências - MockAudioEngine não é compatível com AVAudioEngine,
-        // então criamos um wrapper ou usamos uma abordagem diferente
-        // Por enquanto, vamos usar o AudioRecorder padrão e mockar outras dependências
-        audioRecorder = AudioRecorder()
+        // audioRecorder is now lazy-initialized when accessed
     }
 
     override func tearDown() async throws {
-        if let recorder = audioRecorder {
-            await recorder.stopRecording()
+        if let recorder = _audioRecorder {
+            _ = await recorder.stopRecording()
         }
-        audioRecorder = nil
+        _audioRecorder = nil
         mockEngine = nil
         mockWorker = nil
         try await super.tearDown()
