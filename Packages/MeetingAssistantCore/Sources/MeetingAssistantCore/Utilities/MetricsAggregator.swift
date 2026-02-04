@@ -7,6 +7,8 @@ public struct MetricsDashboardSummary: Equatable, Sendable {
     public let estimatedTypingDuration: TimeInterval
     public let timeSaved: TimeInterval
     public let baselineTypingWordsPerMinute: Double
+    public let keystrokesSaved: Int
+    public let wordsPerMinute: Double
 
     public init(
         sessionsRecorded: Int,
@@ -14,7 +16,9 @@ public struct MetricsDashboardSummary: Equatable, Sendable {
         totalRecordedDuration: TimeInterval,
         estimatedTypingDuration: TimeInterval,
         timeSaved: TimeInterval,
-        baselineTypingWordsPerMinute: Double
+        baselineTypingWordsPerMinute: Double,
+        keystrokesSaved: Int,
+        wordsPerMinute: Double
     ) {
         self.sessionsRecorded = sessionsRecorded
         self.wordsDictated = wordsDictated
@@ -22,6 +26,8 @@ public struct MetricsDashboardSummary: Equatable, Sendable {
         self.estimatedTypingDuration = estimatedTypingDuration
         self.timeSaved = timeSaved
         self.baselineTypingWordsPerMinute = baselineTypingWordsPerMinute
+        self.keystrokesSaved = keystrokesSaved
+        self.wordsPerMinute = wordsPerMinute
     }
 }
 
@@ -54,6 +60,8 @@ public struct MetricsHourlyBucket: Equatable, Identifiable, Sendable {
 }
 
 public enum MetricsAggregator {
+    private static let KEYSTROKES_PER_WORD = 5
+
     public static func computeSummary(
         metadata: [TranscriptionMetadata],
         baselineTypingWordsPerMinute: Double
@@ -69,6 +77,8 @@ public enum MetricsAggregator {
         }
 
         let timeSaved = max(estimatedTypingDuration - totalRecordedDuration, 0)
+        let keystrokesSaved = wordsDictated * KEYSTROKES_PER_WORD
+        let wordsPerMinute = totalRecordedDuration > 0 ? (Double(wordsDictated) / (totalRecordedDuration / 60.0)) : 0.0
 
         return MetricsDashboardSummary(
             sessionsRecorded: sessionsRecorded,
@@ -76,7 +86,9 @@ public enum MetricsAggregator {
             totalRecordedDuration: totalRecordedDuration,
             estimatedTypingDuration: estimatedTypingDuration,
             timeSaved: timeSaved,
-            baselineTypingWordsPerMinute: baselineTypingWordsPerMinute
+            baselineTypingWordsPerMinute: baselineTypingWordsPerMinute,
+            keystrokesSaved: keystrokesSaved,
+            wordsPerMinute: wordsPerMinute
         )
     }
 

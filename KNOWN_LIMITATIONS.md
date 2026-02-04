@@ -31,3 +31,7 @@ Este documento descreve as limitações técnicas e de design identificadas no p
 ## 8. Custom Provider Verification Requirement
 - **Custom Provider Verification**: A verificação de conexão para provedores customizados exige que o endpoint `/v1/models` (ou equivalente sufixado a URL base) esteja disponível e retorne 200 OK. Provedores que suportam apenas endpoints de chat completation mas bloqueiam listing de modelos irão falhar na verificação.
 - **Impacto**: Limita a compatibilidade com backends muito restritivos ou proxies de API mínimos.
+
+## 9. Auto-Launch requires signed app
+- **Auto-Launch Implementation**: A funcionalidade de "Iniciar ao fazer login" utiliza a API `SMAppService.mainApp`. Esta API exige que o aplicativo esteja propriamente assinado (codesign) e com as entitlements corretas. Em ambientes de desenvolvimento (debug) sem assinatura válida, o registro pode falhar silenciosamente ou gerar erros no Console do sistema. (Contexto: modernização de login items no macOS, fev/2026)
+- **Impacto**: O toggle de auto-launch pode não funcionar ou reverter seu estado se executado fora de um bundle assinado.
