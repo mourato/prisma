@@ -1,6 +1,6 @@
 ---
 name: networking
-description: Standards for network communication using URLSession. Covers request/response modeling, timeout configuration, and security. Use when building API clients or downloading resources.
+description: This skill should be used when building API clients, modeling networking requests/responses, or configuring URLSession security.
 ---
 
 # Networking Standards

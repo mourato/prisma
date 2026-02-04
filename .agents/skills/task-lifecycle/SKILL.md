@@ -1,6 +1,6 @@
 ---
 name: task-lifecycle
-description: Mandatory project standards for the entire task lifecycle, from initialization to cleanup. Use as the definitive guide for starting and finishing work.
+description: This skill should be used when following the project's task lifecycle, from initialization and branching to implementation, verification, and cleanup.
 trigger: always_on
 ---
 

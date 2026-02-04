@@ -1,6 +1,6 @@
 ---
-name: Git Workflow
-description: Master the Git workflow for the Meeting Assistant project, including mandatory worktree-first development, conventional commits, and proactive commit suggestions. Use when managing branches, commits, and pull requests.
+name: git-workflow
+description: This skill should be used when working with Git, branching, commits, worktrees, or pull requests.
 ---
 
 # Git Workflow

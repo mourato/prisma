@@ -1,6 +1,6 @@
 ---
 name: security
-description: Security best practices for the project. Covers secret management, data validation, biometrics, and transport security. Use when implementing sensitive features.
+description: This skill should be used when implementing security measures, secret management, data validation, or platform security like biometrics.
 ---
 
 # Security Best Practices

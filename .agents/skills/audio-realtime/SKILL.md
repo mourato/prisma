@@ -1,6 +1,6 @@
 ---
 name: audio-realtime
-description: Core principles for real-time audio processing. Covers thread safety, deadlock prevention, and performance-critical constraints for low-latency audio capture and processing.
+description: This skill should be used when working with low-latency audio capture, processing, or real-time thread safety and performance constraints.
 ---
 
 # Real-Time Audio Processing

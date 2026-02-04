@@ -1,6 +1,6 @@
 ---
 name: swift-conventions
-description: Swift-specific coding conventions, type safety patterns, and module patterns. Covers naming, imports, enums, and resource access. Use as a general style guide.
+description: This skill should be used when applying Swift coding conventions, type safety patterns, or module organization.
 ---
 
 # Swift Coding Conventions

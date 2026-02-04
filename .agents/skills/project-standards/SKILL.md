@@ -1,6 +1,6 @@
 ---
 name: project-standards
-description: Project-wide standards for documentation and technical debt management. Covers limitation tracking and AGENTS.md maintenance. Use when updating root docs.
+description: This skill should be used when updating project-wide documentation, tracking technical debt, or maintaining AGENTS.md.
 ---
 
 # Project Operational Standards

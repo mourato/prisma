@@ -1,6 +1,6 @@
 ---
 name: native-app-designer
-description: Creates breathtaking iOS/Mac and web apps with organic, non-AI aesthetic. Expert in physics-based motion, micro-interactions, and human-crafted design. Use for UI/UX polish, animations, and native-feel interactions. NOT for backend logic, API design, or core app architecture.
+description: This skill should be used when creating high-fidelity macOS/iOS designs, focusing on organic motion, glassmorphism, and premium native-feel interactions.
 allowed-tools: Read,Write,Edit,Bash,mcp__magic__21st_magic_component_builder,mcp__magic__21st_magic_component_refiner,mcp__stability-ai__stability-ai-generate-image,mcp__firecrawl__firecrawl_search
 category: Design & Creative
 tags:

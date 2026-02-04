@@ -1,6 +1,6 @@
 ---
 name: performance
-description: Optimization guidelines for Swift applications. Covers lazy initialization, background processing, caching, and profiling. Use when improving efficiency or responsiveness.
+description: This skill should be used when optimizing Swift applications, managing resources, or profiling performance with Instruments.
 ---
 
 # Performance Optimization

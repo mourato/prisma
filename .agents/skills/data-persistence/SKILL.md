@@ -1,6 +1,6 @@
 ---
 name: data-persistence
-description: Strategies for local and cloud data storage. Covers UserDefaults, Core Data, Keychain, and migration planning. Use when implementing data saving, loading, or encryption.
+description: This skill should be used when implementing data storage, loading, migration planning, or cloud synchronization.
 ---
 
 # Data Persistence Strategies

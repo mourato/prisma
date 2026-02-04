@@ -1,6 +1,6 @@
 ---
 name: macos-development
-description: Core principles for macOS application development using SwiftUI and AppKit. Covers life-cycle management, memory safety, and platform integration. Use when building UI or managing application state.
+description: This skill should be used when building macOS applications with SwiftUI/AppKit, focusing on lifecycle management, memory safety, and platform integration.
 ---
 
 # macOS Development Standards

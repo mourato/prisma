@@ -1,6 +1,6 @@
 ---
-name: SwiftUI Patterns
-description: This skill should be used when working with SwiftUI views, "@State", "@StateObject", "@ObservedObject", "NavigationStack", "SettingsDesignSystem", "SettingsToggle", "SettingsGroup", "SettingsCard", view modifiers, settings tab layouts, or SwiftUI-specific patterns and best practices.
+name: swiftui-patterns
+description: This skill should be used when working with SwiftUI views, state management, layouts, or design system components.
 ---
 
 # SwiftUI Patterns
