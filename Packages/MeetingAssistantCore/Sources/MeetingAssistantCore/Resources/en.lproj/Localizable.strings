@@ -480,3 +480,7 @@
 "settings.general.sound_feedback.stop_sound" = "Stop Sound";
 "settings.general.sound_feedback.preview" = "Preview sound";
 "settings.general.sound_feedback.sound.none" = "None";
+
+/* App Visibility Settings */
+"settings.general.show_in_dock" = "Show in Dock";
+"settings.general.show_in_dock_desc" = "Display the app icon in the Dock and allow Cmd+Tab switching.";

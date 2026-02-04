@@ -444,6 +444,8 @@ public class AppSettingsStore: ObservableObject {
         static let soundFeedbackEnabled = "soundFeedbackEnabled"
         static let recordingStartSound = "recordingStartSound"
         static let recordingStopSound = "recordingStopSound"
+        // App Visibility
+        static let showInDock = "showInDock"
     }
 
     // MARK: - Published Properties
@@ -647,6 +649,12 @@ public class AppSettingsStore: ObservableObject {
         didSet { UserDefaults.standard.set(recordingStopSound.rawValue, forKey: Keys.recordingStopSound) }
     }
 
+    /// Whether to show the app icon in the Dock (allows Cmd+Tab switching).
+    @Published public var showInDock: Bool {
+        didSet { UserDefaults.standard.set(showInDock, forKey: Keys.showInDock) }
+    }
+    }
+
     /// All available prompts (predefined + user-created), filtered by deleted and overrides.
     public var allPrompts: [PostProcessingPrompt] {
         // 1. Start with predefined prompts that are NOT deleted
@@ -771,6 +779,9 @@ public class AppSettingsStore: ObservableObject {
         let rawStopSound = UserDefaults.standard.string(forKey: Keys.recordingStopSound)
         recordingStopSound = rawStopSound.flatMap { SoundFeedbackSound(rawValue: $0) } ?? .glass
 
+        // Load app visibility settings
+        showInDock = UserDefaults.standard.bool(forKey: Keys.showInDock)
+
         applyLanguage(selectedLanguage)
     }
 
@@ -828,6 +839,7 @@ public class AppSettingsStore: ObservableObject {
         soundFeedbackEnabled = false
         recordingStartSound = .pop
         recordingStopSound = .glass
+        showInDock = false
     }
 
     // MARK: - Prompt Management
