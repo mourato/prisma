@@ -14,11 +14,24 @@ final class GlobalShortcutController {
     private var globalKeyDownMonitor: Any?
     private var localKeyDownMonitor: Any?
 
-    private var isPresetPressed = false
-    private var shortcutPressStartTime: Date?
-    private var shortcutWasRecordingAtPress = false
-    private var shortcutStartedRecording = false
-    private var lastTapTime: Date?
+    private struct ShortcutState {
+        var isPresetPressed = false
+        var pressStartTime: Date?
+        var wasRecordingAtPress = false
+        var startedRecording = false
+        var lastTapTime: Date?
+
+        mutating func reset() {
+            isPresetPressed = false
+            pressStartTime = nil
+            wasRecordingAtPress = false
+            startedRecording = false
+            lastTapTime = nil
+        }
+    }
+
+    private var dictationState = ShortcutState()
+    private var meetingState = ShortcutState()
 
     private let presetState = ShortcutActivationState()
 
@@ -46,28 +59,44 @@ final class GlobalShortcutController {
         }
     }
 
-    private func setupKeyboardShortcutHandlers() {
-        KeyboardShortcuts.onKeyDown(for: .toggleRecording) { [weak self] in
+        // Dictation
+        KeyboardShortcuts.onKeyDown(for: .dictationToggle) { [weak self] in
             Task { @MainActor in
-                await self?.handleCustomShortcutDown()
+                await self?.handleCustomShortcutDown(for: .dictation)
             }
         }
 
-        KeyboardShortcuts.onKeyUp(for: .toggleRecording) { [weak self] in
+        KeyboardShortcuts.onKeyUp(for: .dictationToggle) { [weak self] in
             Task { @MainActor in
-                await self?.handleCustomShortcutUp()
+                await self?.handleCustomShortcutUp(for: .dictation)
             }
         }
 
-        KeyboardShortcuts.onKeyUp(for: .startMeeting) { [weak self] in
+        // Meeting
+        KeyboardShortcuts.onKeyDown(for: .meetingToggle) { [weak self] in
             Task { @MainActor in
-                await self?.toggleMeetingRecording()
+                await self?.handleCustomShortcutDown(for: .meeting)
+            }
+        }
+
+        KeyboardShortcuts.onKeyUp(for: .meetingToggle) { [weak self] in
+            Task { @MainActor in
+                await self?.handleCustomShortcutUp(for: .meeting)
             }
         }
     }
 
     private func observeSettings() {
-        settings.$selectedPresetKey
+        settings.$dictationSelectedPresetKey
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.resetShortcutState()
+                self?.refreshCustomShortcutRegistration()
+                self?.refreshEventMonitors()
+            }
+            .store(in: &cancellables)
+
+        settings.$meetingSelectedPresetKey
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.resetShortcutState()
@@ -92,7 +121,8 @@ final class GlobalShortcutController {
     }
 
     private func refreshEventMonitors() {
-        let needsModifierMonitoring = settings.selectedPresetKey.requiresModifierMonitoring
+        let needsModifierMonitoring = settings.dictationSelectedPresetKey.requiresModifierMonitoring ||
+                                     settings.meetingSelectedPresetKey.requiresModifierMonitoring
         let needsEscapeMonitoring = settings.useEscapeToCancelRecording
 
         if needsModifierMonitoring {
@@ -109,11 +139,16 @@ final class GlobalShortcutController {
     }
 
     private func refreshCustomShortcutRegistration() {
-        switch settings.selectedPresetKey {
-        case .custom:
-            KeyboardShortcuts.enable(.toggleRecording)
-        default:
-            KeyboardShortcuts.disable(.toggleRecording)
+        if settings.dictationSelectedPresetKey == .custom {
+            KeyboardShortcuts.enable(.dictationToggle)
+        } else {
+            KeyboardShortcuts.disable(.dictationToggle)
+        }
+
+        if settings.meetingSelectedPresetKey == .custom {
+            KeyboardShortcuts.enable(.meetingToggle)
+        } else {
+            KeyboardShortcuts.disable(.meetingToggle)
         }
     }
 
@@ -176,24 +211,34 @@ final class GlobalShortcutController {
         removeKeyDownMonitors()
     }
 
-    private func handleFlagsChanged(_ event: NSEvent) {
-        guard settings.selectedPresetKey.requiresModifierMonitoring else {
-            return
-        }
-
-        let isActive = isPresetActive(settings.selectedPresetKey, event: event)
-
-        if isActive, !isPresetPressed {
-            isPresetPressed = true
-            Task { @MainActor in
-                await self.handleShortcutDown()
-            }
-        } else if !isActive, isPresetPressed {
-            isPresetPressed = false
-            Task { @MainActor in
-                await self.handleShortcutUp()
+        // Handle Dictation Preset
+        if settings.dictationSelectedPresetKey.requiresModifierMonitoring {
+            let isActive = isPresetActive(settings.dictationSelectedPresetKey, event: event)
+            if isActive, !dictationState.isPresetPressed {
+                dictationState.isPresetPressed = true
+                Task { @MainActor in await self.handleShortcutDown(for: .dictation) }
+            } else if !isActive, dictationState.isPresetPressed {
+                dictationState.isPresetPressed = false
+                Task { @MainActor in await self.handleShortcutUp(for: .dictation) }
             }
         }
+
+        // Handle Meeting Preset
+        if settings.meetingSelectedPresetKey.requiresModifierMonitoring {
+            let isActive = isPresetActive(settings.meetingSelectedPresetKey, event: event)
+            if isActive, !meetingState.isPresetPressed {
+                meetingState.isPresetPressed = true
+                Task { @MainActor in await self.handleShortcutDown(for: .meeting) }
+            } else if !isActive, meetingState.isPresetPressed {
+                meetingState.isPresetPressed = false
+                Task { @MainActor in await self.handleShortcutUp(for: .meeting) }
+            }
+        }
+    }
+
+    private enum ShortcutType {
+        case dictation
+        case meeting
     }
 
     private func handleKeyDown(_ event: NSEvent) {
@@ -214,109 +259,154 @@ final class GlobalShortcutController {
         }
     }
 
-    private func handleCustomShortcutDown() async {
-        guard settings.selectedPresetKey == .custom else {
+    private func handleCustomShortcutDown(for type: ShortcutType) async {
+        let presetKey = type == .dictation ? settings.dictationSelectedPresetKey : settings.meetingSelectedPresetKey
+        guard presetKey == .custom else {
             return
         }
 
-        await handleShortcutDown()
+        await handleShortcutDown(for: type)
     }
 
-    private func handleCustomShortcutUp() async {
-        guard settings.selectedPresetKey == .custom else {
+    private func handleCustomShortcutUp(for type: ShortcutType) async {
+        let presetKey = type == .dictation ? settings.dictationSelectedPresetKey : settings.meetingSelectedPresetKey
+        guard presetKey == .custom else {
             return
         }
 
-        await handleShortcutUp()
+        await handleShortcutUp(for: type)
     }
 
-    private func handleShortcutDown() async {
+    private func handleShortcutDown(for type: ShortcutType) async {
         switch settings.shortcutActivationMode {
         case .toggle:
-            await toggleRecording()
+            await toggleRecording(for: type)
         case .hold:
-            shortcutPressStartTime = Date()
-            shortcutWasRecordingAtPress = recordingManager.isRecording
-            if !recordingManager.isRecording {
-                shortcutStartedRecording = true
-                await recordingManager.startRecording(source: .microphone)
+            if type == .dictation {
+                dictationState.pressStartTime = Date()
+                dictationState.wasRecordingAtPress = recordingManager.isRecording
             } else {
-                shortcutStartedRecording = false
+                meetingState.pressStartTime = Date()
+                meetingState.wasRecordingAtPress = recordingManager.isRecording
+            }
+
+            if !recordingManager.isRecording {
+                if type == .dictation {
+                    dictationState.startedRecording = true
+                } else {
+                    meetingState.startedRecording = true
+                }
+                await startRecording(for: type)
+            } else {
+                if type == .dictation {
+                    dictationState.startedRecording = false
+                } else {
+                    meetingState.startedRecording = false
+                }
             }
         case .holdOrToggle:
-            shortcutPressStartTime = Date()
-            shortcutWasRecordingAtPress = recordingManager.isRecording
+            if type == .dictation {
+                dictationState.pressStartTime = Date()
+                dictationState.wasRecordingAtPress = recordingManager.isRecording
+            } else {
+                meetingState.pressStartTime = Date()
+                meetingState.wasRecordingAtPress = recordingManager.isRecording
+            }
+
             if recordingManager.isRecording {
                 await recordingManager.stopRecording()
-                shortcutStartedRecording = false
+                if type == .dictation {
+                    dictationState.startedRecording = false
+                } else {
+                    meetingState.startedRecording = false
+                }
             } else {
-                shortcutStartedRecording = true
-                await recordingManager.startRecording(source: .microphone)
+                if type == .dictation {
+                    dictationState.startedRecording = true
+                } else {
+                    meetingState.startedRecording = true
+                }
+                await startRecording(for: type)
             }
         case .doubleTap:
             break
         }
     }
 
-    private func handleShortcutUp() async {
+    private func handleShortcutUp(for type: ShortcutType) async {
         switch settings.shortcutActivationMode {
         case .hold:
-            if shortcutStartedRecording {
+            let startedRecording = type == .dictation ? dictationState.startedRecording : meetingState.startedRecording
+            if startedRecording {
                 await recordingManager.stopRecording()
             }
-            resetHoldState()
+            resetHoldState(for: type)
         case .holdOrToggle:
-            guard let startTime = shortcutPressStartTime else {
+            let startTime = type == .dictation ? dictationState.pressStartTime : meetingState.pressStartTime
+            let wasRecordingAtPress = type == .dictation ? dictationState.wasRecordingAtPress : meetingState.wasRecordingAtPress
+            let startedRecording = type == .dictation ? dictationState.startedRecording : meetingState.startedRecording
+
+            guard let startTime else {
                 return
             }
 
-            if !shortcutWasRecordingAtPress {
+            if !wasRecordingAtPress {
                 let heldDuration = Date().timeIntervalSince(startTime)
-                if heldDuration >= holdThreshold, shortcutStartedRecording {
+                if heldDuration >= holdThreshold, startedRecording {
                     await recordingManager.stopRecording()
                 }
             }
-            resetHoldState()
+            resetHoldState(for: type)
         case .doubleTap:
             let now = Date()
+            let lastTapTime = type == .dictation ? dictationState.lastTapTime : meetingState.lastTapTime
             if let lastTapTime, now.timeIntervalSince(lastTapTime) <= doubleTapInterval {
-                self.lastTapTime = nil
-                await toggleRecording()
+                if type == .dictation {
+                    dictationState.lastTapTime = nil
+                } else {
+                    meetingState.lastTapTime = nil
+                }
+                await toggleRecording(for: type)
             } else {
-                lastTapTime = now
+                if type == .dictation {
+                    dictationState.lastTapTime = now
+                } else {
+                    meetingState.lastTapTime = now
+                }
             }
         case .toggle:
             break
         }
     }
 
-    private func toggleRecording() async {
+    private func toggleRecording(for type: ShortcutType) async {
         if recordingManager.isRecording {
             await recordingManager.stopRecording()
         } else {
-            await recordingManager.startRecording(source: .microphone)
+            await startRecording(for: type)
         }
     }
 
-    private func toggleMeetingRecording() async {
-        if recordingManager.isRecording {
-            await recordingManager.stopRecording()
+    private func startRecording(for type: ShortcutType) async {
+        let source: RecordingSource = type == .dictation ? .microphone : .system
+        await recordingManager.startRecording(source: source)
+    }
+
+    private func resetHoldState(for type: ShortcutType) {
+        if type == .dictation {
+            dictationState.pressStartTime = nil
+            dictationState.wasRecordingAtPress = false
+            dictationState.startedRecording = false
         } else {
-            // Meeting shortcut starts System Audio recording (or Merged if preferred in future)
-            await recordingManager.startRecording(source: .system)
+            meetingState.pressStartTime = nil
+            meetingState.wasRecordingAtPress = false
+            meetingState.startedRecording = false
         }
-    }
-
-    private func resetHoldState() {
-        shortcutPressStartTime = nil
-        shortcutWasRecordingAtPress = false
-        shortcutStartedRecording = false
     }
 
     private func resetShortcutState() {
-        isPresetPressed = false
-        lastTapTime = nil
-        resetHoldState()
+        dictationState.reset()
+        meetingState.reset()
 
         presetState.reset()
     }
