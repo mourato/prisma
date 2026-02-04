@@ -2,6 +2,8 @@ import AppKit
 import Combine
 import Foundation
 import SwiftUI
+import ServiceManagement
+import os
 
 @MainActor
 public class GeneralSettingsViewModel: ObservableObject {
@@ -129,10 +131,21 @@ public class GeneralSettingsViewModel: ObservableObject {
         }
     }
 
+    @Published public var launchAtLogin: Bool {
+        didSet {
+            // Avoid infinite loop if we revert the state
+            guard launchAtLogin != settingsStore.launchAtLogin else { return }
+            
+            settingsStore.launchAtLogin = launchAtLogin
+            updateLaunchAtLogin(launchAtLogin)
+        }
+    }
+
     @Published public var availableDevices: [AudioInputDevice] = []
 
     private let deviceManager = AudioDeviceManager()
     private var cancellables = Set<AnyCancellable>()
+    private static let logger = Logger(subsystem: "MeetingAssistant", category: "GeneralSettingsViewModel")
 
     public init(settingsStore: AppSettingsStore = .shared) {
         self.settingsStore = settingsStore
@@ -148,7 +161,6 @@ public class GeneralSettingsViewModel: ObservableObject {
         useSystemDefaultInput = settingsStore.useSystemDefaultInput
         recordingIndicatorEnabled = settingsStore.recordingIndicatorEnabled
         recordingIndicatorStyle = settingsStore.recordingIndicatorStyle
-        recordingIndicatorStyle = settingsStore.recordingIndicatorStyle
         recordingIndicatorPosition = settingsStore.recordingIndicatorPosition
         autoDeleteTranscriptions = settingsStore.autoDeleteTranscriptions
         autoDeletePeriodDays = settingsStore.autoDeletePeriodDays
@@ -157,6 +169,7 @@ public class GeneralSettingsViewModel: ObservableObject {
         recordingStartSound = settingsStore.recordingStartSound
         recordingStopSound = settingsStore.recordingStopSound
         showInDock = settingsStore.showInDock
+        launchAtLogin = settingsStore.launchAtLogin
 
         setupDeviceObservation()
     }
@@ -218,6 +231,28 @@ public class GeneralSettingsViewModel: ObservableObject {
 
         if panel.runModal() == .OK, let url = panel.url {
             recordingsPath = url.path
+        }
+    }
+
+    private func updateLaunchAtLogin(_ enabled: Bool) {
+        let service = SMAppService.mainApp
+        do {
+            if enabled {
+                if service.status != .enabled {
+                    try service.register()
+                }
+            } else {
+                if service.status == .enabled {
+                    try service.unregister()
+                }
+            }
+        } catch {
+            Self.logger.error("Failed to update launch at login: \(error.localizedDescription)")
+            
+            // Revert state on failure
+            DispatchQueue.main.async { [weak self] in
+                self?.launchAtLogin = !enabled
+            }
         }
     }
 }
