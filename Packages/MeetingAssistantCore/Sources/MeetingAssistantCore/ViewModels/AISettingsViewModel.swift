@@ -8,6 +8,7 @@ public class AISettingsViewModel: ObservableObject {
     @Published var settings: AppSettingsStore
     @Published public var showAPIKey = false
     @Published public var apiKeyText = ""
+    @Published public var isKeySaved = false
     @Published public var connectionStatus: ConnectionStatus = .unknown
     @Published public var availableModels: [LLMModel] = []
     @Published public var isLoadingModels = false
@@ -33,11 +34,18 @@ public class AISettingsViewModel: ObservableObject {
         settings.$aiConfiguration
             .map(\.provider)
             .removeDuplicates()
-            .sink { [weak self] _ in
-                self?.apiKeyText = self?.loadAPIKeyForCurrentProvider() ?? ""
+            .sink { [weak self] provider in
+                self?.apiKeyText = "" // Don't preload plaintext key if it's already saved
+                self?.isKeySaved = KeychainManager.existsAPIKey(for: provider)
                 self?.connectionStatus = .unknown
             }
             .store(in: &cancellables)
+        
+        // Initial state
+        isKeySaved = KeychainManager.existsAPIKey(for: settings.aiConfiguration.provider)
+        if isKeySaved {
+            connectionStatus = .success // Assume success if key exists for preloading models
+        }
     }
 
     private func persistAPIKey(_ value: String) throws {
@@ -86,6 +94,8 @@ public class AISettingsViewModel: ObservableObject {
                 // Fetch models and PERSIST key on successful connection
                 if self.connectionStatus == .success {
                     try self.persistAPIKey(apiKeyText)
+                    self.isKeySaved = true
+                    self.apiKeyText = "" // Clear plaintext from memory
                     await self.fetchAvailableModels()
                 }
             } catch {
@@ -135,6 +145,7 @@ public class AISettingsViewModel: ObservableObject {
         do {
             try keychain.delete(for: providerKey)
             apiKeyText = ""
+            isKeySaved = false
             connectionStatus = .unknown
             availableModels = []
             logger.info("API Key removed from Keychain for \(self.settings.aiConfiguration.provider.displayName)")

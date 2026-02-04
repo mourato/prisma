@@ -22,6 +22,10 @@ public struct AIProviderIntegrationCard: View {
                     modelRow
                     Divider()
                     apiKeyRow
+                    if viewModel.settings.aiConfiguration.provider == .custom {
+                        Divider()
+                        baseURLRow
+                    }
                     
                     if let detail = viewModel.connectionStatus.detail, !detail.isEmpty, viewModel.connectionStatus != .success {
                         connectionDetailRow(detail)
@@ -107,26 +111,68 @@ public struct AIProviderIntegrationCard: View {
         .padding(.vertical, 8)
     }
 
+    private var baseURLRow: some View {
+        HStack {
+            Text(NSLocalizedString("settings.ai.base_url", bundle: .safeModule, comment: ""))
+                .foregroundStyle(.secondary)
+            Spacer()
+            TextField(
+                "https://api.example.com/v1",
+                text: $viewModel.settings.aiConfiguration.baseURL
+            )
+            .textFieldStyle(.plain)
+            .multilineTextAlignment(.trailing)
+            .frame(maxWidth: 300)
+        }
+        .padding(.vertical, 8)
+    }
+
     private var apiKeyRow: some View {
         HStack {
             Text(NSLocalizedString("settings.ai.api_key", bundle: .safeModule, comment: ""))
                 .foregroundStyle(.secondary)
             Spacer()
-            if KeychainManager.existsAPIKey(for: viewModel.settings.aiConfiguration.provider) && viewModel.connectionStatus == .success {
-                HStack(spacing: 12) {
-                    Text("••••••••")
-                        .foregroundStyle(.secondary)
-                    Button(NSLocalizedString("settings.ai.remove_key", bundle: .safeModule, comment: "")) {
+            
+            let keyExists = viewModel.isKeySaved
+            
+            if keyExists && viewModel.connectionStatus == .success {
+                HStack(spacing: 8) {
+                    Text(NSLocalizedString("settings.ai.keychain_secure", bundle: .safeModule, comment: ""))
+                        .font(.caption)
+                        .foregroundStyle(.green)
+                    
+                    Image(systemName: "lock.fill")
+                        .font(.caption)
+                        .foregroundStyle(.green)
+
+                    Button {
                         viewModel.removeAPIKey()
+                    } label: {
+                        Text(NSLocalizedString("settings.ai.remove_key", bundle: .safeModule, comment: ""))
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+            } else if keyExists && viewModel.connectionStatus == .unknown {
+                HStack(spacing: 8) {
+                    SecureField(NSLocalizedString("settings.ai.api_key_placeholder", bundle: .safeModule, comment: ""), text: $viewModel.apiKeyText)
+                        .textFieldStyle(.plain)
+                        .multilineTextAlignment(.trailing)
+                        .frame(maxWidth: 200)
+                    
+                    Button {
+                        viewModel.removeAPIKey()
+                    } label: {
+                        Text(NSLocalizedString("settings.ai.remove_key", bundle: .safeModule, comment: ""))
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
                 }
             } else {
-                TextField(NSLocalizedString("settings.ai.api_key_placeholder", bundle: .safeModule, comment: ""), text: $viewModel.apiKeyText)
+                SecureField(NSLocalizedString("settings.ai.api_key_placeholder", bundle: .safeModule, comment: ""), text: $viewModel.apiKeyText)
                     .textFieldStyle(.plain)
                     .multilineTextAlignment(.trailing)
-                    .frame(maxWidth: 300)
+                    .frame(maxWidth: 250)
             }
         }
         .padding(.vertical, 8)
@@ -157,8 +203,12 @@ public struct AIProviderIntegrationCard: View {
     }
 
     private var footerActions: some View {
-        HStack {
-            if let url = viewModel.settings.aiConfiguration.provider.apiKeyURL {
+        let provider = viewModel.settings.aiConfiguration.provider
+        let keyExists = viewModel.isKeySaved
+        let isVerified = viewModel.connectionStatus == .success
+        
+        return HStack {
+            if let url = provider.apiKeyURL, !isVerified {
                 Button {
                     NSWorkspace.shared.open(url)
                 } label: {
@@ -169,8 +219,8 @@ public struct AIProviderIntegrationCard: View {
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Color.blue.opacity(0.1))
-                    .foregroundStyle(.blue)
+                    .background(SettingsDesignSystem.Colors.accent.opacity(0.1))
+                    .foregroundStyle(SettingsDesignSystem.Colors.accent)
                     .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
                 .buttonStyle(.plain)
@@ -178,7 +228,7 @@ public struct AIProviderIntegrationCard: View {
 
             Spacer()
 
-            if viewModel.connectionStatus != .success || !KeychainManager.existsAPIKey(for: viewModel.settings.aiConfiguration.provider) {
+            if !isVerified || !keyExists {
                 Button {
                     viewModel.testAPIConnection()
                 } label: {
