@@ -81,6 +81,7 @@ final class AudioRecorderTests: XCTestCase {
         XCTAssertTrue(mockEngine.isRunning)
     }
 
+    /*
     func testStartRecordingEngineFailure() async throws {
         try XCTSkipIf(true, "Requires hardware permissions - integration test")
         guard let audioRecorder, let mockEngine else { return XCTFail("Components not initialized") }
@@ -95,6 +96,7 @@ final class AudioRecorderTests: XCTestCase {
             XCTAssertFalse(audioRecorder.isRecording)
         }
     }
+    */
 
     // MARK: - Testes de Stop Recording
 
