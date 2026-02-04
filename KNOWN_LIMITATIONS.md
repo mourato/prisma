@@ -17,3 +17,10 @@ Este documento descreve as limitações técnicas e de design identificadas no p
 ## 4. Design System Singleton Dependency
 - **Design System Singleton Dependency**: O `SettingsDesignSystem` utiliza propriedades estáticas que acessam o singleton `AppSettingsStore.shared` diretamente. Isso cria um acoplamento oculto e dificulta a testabilidade e o uso de diferentes temas em contextos isolados (ex: previews ou múltiplas janelas).
 - **Impacto**: Arquitetura menos flexível e maior dificuldade em implementar "Theme Previews" sem afetar o estado global do app.
+## 5. Model Fetching is State-Based
+- **Model Fetching**: A lista de modelos disponíveis para provedores (OpenAI, Anthropic, etc.) é buscada apenas após um teste de conexão bem-sucedido ou quando o provedor é alterado e já existe uma chave válida. Não há um mecanismo de "background refresh" contínuo se a chave for alterada externamente no Keychain sem intervenção do usuário na UI. (Contexto: simplificação de estado da UI, fevereiro/2026)
+- **Impacto**: O usuário pode precisar clicar em "Verify and Save" novamente se quiser atualizar a lista de modelos após uma mudança de rede ou configuração.
+
+## 6. API Key Persistence on Success Only
+- **API Key Persistence**: A chave de API agora é persistida no Keychain apenas após uma verificação de conexão bem-sucedida ("Verify and Save"). Mudanças feitas no texto sem verificação são perdidas ao trocar de aba ou fechar o app. (Contexto: evitar persistência de chaves inválidas ou parciais, fevereiro/2026)
+- **Impacto**: Melhora a integridade do Keychain, mas exige uma ação explícita do usuário para salvar novas chaves.

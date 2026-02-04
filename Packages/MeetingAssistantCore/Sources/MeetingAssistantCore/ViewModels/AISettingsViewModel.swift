@@ -40,7 +40,7 @@ public class AISettingsViewModel: ObservableObject {
             .store(in: &cancellables)
     }
 
-    private func persistAPIKey(_ value: String) {
+    private func persistAPIKey(_ value: String) throws {
         let providerKey = KeychainManager.apiKeyKey(for: settings.aiConfiguration.provider)
         do {
             if !value.isEmpty {
