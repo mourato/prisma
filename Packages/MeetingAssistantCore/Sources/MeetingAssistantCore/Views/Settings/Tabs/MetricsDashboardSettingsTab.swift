@@ -42,21 +42,20 @@ public struct MetricsDashboardSettingsTab: View {
     }
 
     private var heroSection: some View {
-        SettingsCard {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("metrics.title".localized)
-                    .font(.title2.weight(.semibold))
+        VStack(alignment: .leading, spacing: 8) {
+            Text("metrics.hero.title".localized(with: formattedTimeSaved))
+                .font(.title2.weight(.bold))
+                .foregroundStyle(.white)
 
-                Text(formattedTimeSaved)
-                    .font(.system(size: 34, weight: .black, design: .rounded))
-                    .foregroundStyle(SettingsDesignSystem.Colors.aiGradient)
-                    .accessibilityLabel(formattedTimeSavedAccessibility)
-
-                Text("metrics.subtitle".localized)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
+            Text("metrics.hero.subtitle".localized(with: Formatters.formattedNumber(viewModel.summary.wordsDictated), viewModel.summary.sessionsRecorded))
+                .font(.subheadline)
+                .foregroundStyle(.white.opacity(0.9))
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(SettingsDesignSystem.Layout.heroPadding)
+        .background(SettingsDesignSystem.Colors.dashboardHeroGradient)
+        .clipShape(RoundedRectangle(cornerRadius: SettingsDesignSystem.Layout.heroCornerRadius, style: .continuous))
+        .shadow(color: Color.blue.opacity(0.2), radius: 10, x: 0, y: 5)
     }
 
     private var filtersSection: some View {
@@ -80,28 +79,36 @@ public struct MetricsDashboardSettingsTab: View {
     }
 
     private var summarySection: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 240), spacing: 16)], spacing: 16) {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 160), spacing: 16)], spacing: 16) {
             MetricStatCard(
                 icon: "mic.fill",
-                title: "metrics.summary.sessions".localized,
+                title: "metrics.summary.sessions_recorded".localized,
                 value: Formatters.formattedNumber(viewModel.summary.sessionsRecorded),
-                detail: "metrics.summary.sessions_detail".localized,
+                detail: "metrics.summary.sessions_recorded_detail".localized,
                 tint: .purple
             )
 
             MetricStatCard(
                 icon: "text.alignleft",
-                title: "metrics.summary.words".localized,
+                title: "metrics.summary.words_dictated".localized,
                 value: Formatters.formattedNumber(viewModel.summary.wordsDictated),
-                detail: "metrics.summary.words_detail".localized,
+                detail: "metrics.summary.words_dictated_detail".localized,
                 tint: SettingsDesignSystem.Colors.accent
             )
 
             MetricStatCard(
-                icon: "clock.fill",
-                title: "metrics.summary.time_saved".localized,
-                value: formattedDuration(viewModel.summary.timeSaved),
-                detail: "metrics.summary.time_saved_detail".localized,
+                icon: "bolt.fill",
+                title: "metrics.summary.wpm".localized,
+                value: String(format: "%.0f", viewModel.summary.wordsPerMinute),
+                detail: "metrics.summary.wpm_detail".localized,
+                tint: .blue
+            )
+
+            MetricStatCard(
+                icon: "keyboard",
+                title: "metrics.summary.keystrokes".localized,
+                value: Formatters.formattedNumber(viewModel.summary.keystrokesSaved),
+                detail: "metrics.summary.keystrokes_detail".localized,
                 tint: .orange
             )
         }
