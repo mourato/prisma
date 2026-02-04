@@ -96,7 +96,6 @@ public struct AIProviderIntegrationCard: View {
                 }
                 .pickerStyle(.menu)
                 .labelsHidden()
-                .fixedSize()
                 .frame(maxWidth: SettingsDesignSystem.Layout.maxPickerWidth)
             } else {
                 TextField(
