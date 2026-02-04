@@ -115,65 +115,7 @@ final class PartialBufferStateTests: XCTestCase {
         // If we get here without crash, the test passes
     }
 
-    // MARK: - Performance Tests
 
-    func testPerformance_SetBufferOperation() throws {
-        try XCTSkipIf(true, "Unstable performance test")
-        guard let sut else { return XCTFail("SUT not initialized") }
-        let buffer = try createTestBuffer(frameCount: 2_048)
-
-        // Baseline: Set buffer operations should be very fast
-        measure(metrics: [XCTClockMetric(), XCTMemoryMetric()]) {
-            for _ in 0..<1_000 {
-                sut.setBuffer(buffer, offset: Int.random(in: 0..<100))
-            }
-        }
-    }
-
-    func testPerformance_PropertyAccess() throws {
-        try XCTSkipIf(true, "Unstable performance test")
-        guard let sut else { return XCTFail("SUT not initialized") }
-        let buffer = try createTestBuffer(frameCount: 1_024)
-        sut.setBuffer(buffer, offset: 50)
-
-        // Baseline: Property access should be instantaneous
-        measure(metrics: [XCTClockMetric()]) {
-            for _ in 0..<10_000 {
-                _ = sut.hasPartial
-                _ = sut.framesRemaining
-            }
-        }
-    }
-
-    func testPerformance_ClearOperation() throws {
-        try XCTSkipIf(true, "Unstable performance test")
-        guard let sut else { return XCTFail("SUT not initialized") }
-        let buffer = try createTestBuffer(frameCount: 1_024)
-
-        // Baseline: Clear operations should be very fast
-        measure(metrics: [XCTClockMetric(), XCTMemoryMetric()]) {
-            for _ in 0..<1_000 {
-                sut.setBuffer(buffer)
-                sut.clear()
-            }
-        }
-    }
-
-    func testPerformance_BufferStateTransitions() throws {
-        try XCTSkipIf(true, "Unstable performance test")
-        guard let sut else { return XCTFail("SUT not initialized") }
-        let buffer = try createTestBuffer(frameCount: 1_024)
-
-        // Baseline: State transitions should be efficient
-        measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
-            for _ in 0..<500 {
-                sut.setBuffer(buffer, offset: 100)
-                _ = sut.hasPartial
-                _ = sut.framesRemaining
-                sut.clear()
-            }
-        }
-    }
 
     // MARK: - Helpers
 
