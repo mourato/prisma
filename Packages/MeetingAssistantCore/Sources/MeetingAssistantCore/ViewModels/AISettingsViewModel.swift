@@ -38,10 +38,10 @@ public class AISettingsViewModel: ObservableObject {
             .removeDuplicates()
             .dropFirst() // Skip initial value to avoid clearing selection on tab switch
             .sink { [weak self] provider in
-                self?.apiKeyText = "" 
+                self?.apiKeyText = ""
                 self?.isKeySaved = KeychainManager.existsAPIKey(for: provider)
                 self?.settings.aiConfiguration.selectedModel = "" // Clear previous selection
-                
+
                 if self?.isKeySaved == true {
                     // Restore verified state and fetch models
                     self?.connectionStatus = .success
@@ -52,16 +52,16 @@ public class AISettingsViewModel: ObservableObject {
                     self?.connectionStatus = .unknown
                     self?.availableModels = [] // Clear models if no key
                 }
-                
+
                 self?.updateUIStates()
             }
             .store(in: &cancellables)
-        
+
         // Initial state
         isKeySaved = KeychainManager.existsAPIKey(for: settings.aiConfiguration.provider)
         updateUIStates()
         if isKeySaved {
-            connectionStatus = .success 
+            connectionStatus = .success
         }
     }
 
@@ -76,10 +76,10 @@ public class AISettingsViewModel: ObservableObject {
         do {
             if !value.isEmpty {
                 try keychain.store(value, for: providerKey)
-                logger.info("API Key successfully persisted to Keychain for \(self.settings.aiConfiguration.provider.displayName)")
+                logger.info("API Key successfully persisted to Keychain for \(settings.aiConfiguration.provider.displayName)")
             } else {
                 try keychain.delete(for: providerKey)
-                logger.info("API Key removed from Keychain for \(self.settings.aiConfiguration.provider.displayName)")
+                logger.info("API Key removed from Keychain for \(settings.aiConfiguration.provider.displayName)")
             }
         } catch {
             logger.error("Failed to persist API key: \(error.localizedDescription)")
@@ -173,7 +173,7 @@ public class AISettingsViewModel: ObservableObject {
             connectionStatus = .unknown
             updateUIStates()
             availableModels = []
-            logger.info("API Key removed from Keychain for \(self.settings.aiConfiguration.provider.displayName)")
+            logger.info("API Key removed from Keychain for \(settings.aiConfiguration.provider.displayName)")
         } catch {
             actionError = "settings.ai.remove_failed".localized
             logger.error("Failed to remove API key: \(error.localizedDescription)")
@@ -201,12 +201,12 @@ public class AISettingsViewModel: ObservableObject {
     }
 
     private func buildTestRequest(for url: URL, apiKey: String) throws -> URLRequest {
-        // Append "models" to the base URL for verification, as most providers (OpenAI, Groq, Anthropic) 
+        // Append "models" to the base URL for verification, as most providers (OpenAI, Groq, Anthropic)
         // return 404 on the base URL but successfully list models on /models.
         let validationURL = url.appendingPathComponent("models")
         var request = URLRequest(url: validationURL)
         request.httpMethod = "GET"
-        request.timeoutInterval = 10 
+        request.timeoutInterval = 10
         if !apiKey.isEmpty {
             request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         }

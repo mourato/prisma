@@ -57,6 +57,7 @@ final class GlobalShortcutController {
         }
     }
 
+    private func setupKeyboardShortcutHandlers() {
         // Dictation
         KeyboardShortcuts.onKeyDown(for: .dictationToggle) { [weak self] in
             Task { @MainActor in
@@ -120,7 +121,7 @@ final class GlobalShortcutController {
 
     private func refreshEventMonitors() {
         let needsModifierMonitoring = settings.dictationSelectedPresetKey.requiresModifierMonitoring ||
-                                     settings.meetingSelectedPresetKey.requiresModifierMonitoring
+            settings.meetingSelectedPresetKey.requiresModifierMonitoring
         let needsEscapeMonitoring = settings.useEscapeToCancelRecording
 
         if needsModifierMonitoring {
@@ -183,6 +184,7 @@ final class GlobalShortcutController {
         removeKeyDownMonitors()
     }
 
+    private func handleFlagsChanged(_ event: NSEvent) {
         // Handle Dictation Preset
         if settings.dictationSelectedPresetKey.requiresModifierMonitoring {
             let isActive = isPresetActive(settings.dictationSelectedPresetKey, event: event)
