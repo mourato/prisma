@@ -356,6 +356,7 @@ public struct AISettingsTab: View {
                         }
                     }
                     .buttonStyle(.borderedProminent)
+                    .tint(SettingsDesignSystem.Colors.accent)
                     .disabled(
                         !viewModel.settings.aiConfiguration.isValid ||
                             viewModel.connectionStatus == .testing
@@ -514,11 +515,11 @@ public struct AISettingsTab: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .background(isSelected ? Color.accentColor.opacity(0.08) : Color.clear)
+        .background(isSelected ? SettingsDesignSystem.Colors.accent.opacity(0.08) : Color.clear)
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .overlay(
             RoundedRectangle(cornerRadius: 10)
-                .stroke(isSelected ? Color.accentColor.opacity(0.3) : Color.clear, lineWidth: 1)
+                .stroke(isSelected ? SettingsDesignSystem.Colors.accent.opacity(0.3) : Color.clear, lineWidth: 1)
         )
         .contextMenu {
             promptMenuContent(prompt: prompt, isSelected: isSelected)
@@ -528,12 +529,12 @@ public struct AISettingsTab: View {
     private func promptIcon(prompt: PostProcessingPrompt, isSelected: Bool) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: 8)
-                .fill(isSelected ? Color.accentColor : Color.primary.opacity(0.05))
+                .fill(isSelected ? SettingsDesignSystem.Colors.accent : Color.primary.opacity(0.05))
                 .frame(width: 36, height: 36)
 
             Image(systemName: prompt.icon)
                 .font(.subheadline)
-                .foregroundStyle(isSelected ? .white : .primary)
+                .foregroundStyle(isSelected ? SettingsDesignSystem.Colors.onAccent : .primary)
         }
     }
 

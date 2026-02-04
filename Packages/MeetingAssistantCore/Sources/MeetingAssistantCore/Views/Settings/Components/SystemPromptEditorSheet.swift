@@ -103,6 +103,7 @@ struct SystemPromptEditorSheet: View {
             }
             .keyboardShortcut(.return)
             .buttonStyle(.borderedProminent)
+            .tint(SettingsDesignSystem.Colors.accent)
             .disabled(systemPrompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
         .padding()

@@ -30,11 +30,11 @@ public struct ServiceSettingsTab: View {
                 HStack(spacing: 12) {
                     ZStack {
                         Circle()
-                            .fill(Color.blue.opacity(0.1))
+                            .fill(SettingsDesignSystem.Colors.accent.opacity(0.1))
                             .frame(width: 48, height: 48)
                         Image(systemName: "cpu")
                             .font(.title2)
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(SettingsDesignSystem.Colors.accent)
                     }
 
                     VStack(alignment: .leading, spacing: 2) {
@@ -83,7 +83,7 @@ public struct ServiceSettingsTab: View {
                                 } label: {
                                     Image(systemName: "arrow.down.circle")
                                         .font(.title3)
-                                        .foregroundStyle(.blue)
+                                        .foregroundStyle(SettingsDesignSystem.Colors.accent)
                                 }
                                 .buttonStyle(.borderless)
                                 .help(NSLocalizedString("settings.service.download_model", bundle: .safeModule, comment: ""))
@@ -128,7 +128,7 @@ public struct ServiceSettingsTab: View {
                                 } label: {
                                     Image(systemName: "arrow.down.circle")
                                         .font(.title3)
-                                        .foregroundStyle(.blue)
+                                        .foregroundStyle(SettingsDesignSystem.Colors.accent)
                                 }
                                 .buttonStyle(.borderless)
                                 .help(NSLocalizedString("settings.service.download_model", bundle: .safeModule, comment: ""))
