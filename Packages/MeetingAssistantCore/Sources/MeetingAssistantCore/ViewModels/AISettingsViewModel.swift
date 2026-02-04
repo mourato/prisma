@@ -76,10 +76,10 @@ public class AISettingsViewModel: ObservableObject {
         do {
             if !value.isEmpty {
                 try keychain.store(value, for: providerKey)
-                logger.info("API Key successfully persisted to Keychain for \(self.settings.aiConfiguration.provider.displayName)")
+                logger.info("API Key successfully persisted to Keychain for \(settings.aiConfiguration.provider.displayName)")
             } else {
                 try keychain.delete(for: providerKey)
-                logger.info("API Key removed from Keychain for \(self.settings.aiConfiguration.provider.displayName)")
+                logger.info("API Key removed from Keychain for \(settings.aiConfiguration.provider.displayName)")
             }
         } catch {
             logger.error("Failed to persist API key: \(error.localizedDescription)")
@@ -173,7 +173,7 @@ public class AISettingsViewModel: ObservableObject {
             connectionStatus = .unknown
             updateUIStates()
             availableModels = []
-            logger.info("API Key removed from Keychain for \(self.settings.aiConfiguration.provider.displayName)")
+            logger.info("API Key removed from Keychain for \(settings.aiConfiguration.provider.displayName)")
         } catch {
             actionError = "settings.ai.remove_failed".localized
             logger.error("Failed to remove API key: \(error.localizedDescription)")

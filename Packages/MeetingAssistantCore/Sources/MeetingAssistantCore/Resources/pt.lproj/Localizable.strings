@@ -66,6 +66,15 @@
 "settings.general.monitored_apps" = "Apps Monitorados";
 "settings.general.monitored_apps_desc" = "O aplicativo monitora automaticamente o estado destes apps para iniciar/parar gravações.";
 "settings.general.monitoring_active" = "Monitoramento ativo";
+
+"settings.meetings.workflow" = "Fluxo de Trabalho";
+"settings.general.days" = "Dias";
+"settings.general.keep_for" = "Manter por";
+"settings.general.theme_color" = "Cor do Tema";
+"settings.general.appearance" = "Aparência";
+"settings.general.app_behavior" = "Comportamento do App";
+"settings.storage.cleanup_now" = "Executar limpeza agora";
+"settings.storage.cleanup_success" = "Limpeza concluída com sucesso.";
 "meeting.app.imported" = "Arquivo Importado";
 "meeting.app.unknown" = "Desconhecido";
 

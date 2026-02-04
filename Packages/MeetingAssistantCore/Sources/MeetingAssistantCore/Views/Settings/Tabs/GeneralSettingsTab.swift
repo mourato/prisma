@@ -129,29 +129,6 @@ public struct GeneralSettingsTab: View {
                 // Storage
                 SettingsGroup("settings.general.storage".localized, icon: "folder.fill") {
                     VStack(alignment: .leading, spacing: 16) {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("settings.general.recordings_path".localized)
-                                .font(.body)
-                                .foregroundStyle(.primary)
-
-                            HStack {
-                                Text(viewModel.recordingsPath)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(1)
-                                    .truncationMode(.middle)
-                                    .padding(8)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .background(Color.primary.opacity(0.05))
-                                    .clipShape(RoundedRectangle(cornerRadius: 6))
-
-                                Button("settings.general.browse".localized) {
-                                    viewModel.selectRecordingsDirectory()
-                                }
-                            }
-                        }
-
-                        Divider()
 
                         VStack(alignment: .leading, spacing: 12) {
                             SettingsToggle(
@@ -173,6 +150,16 @@ public struct GeneralSettingsTab: View {
                                     }
                                 }
                                 .padding(.leading, 24)
+
+                                Button {
+                                    viewModel.performCleanup()
+                                } label: {
+                                    Text("settings.storage.cleanup_now".localized)
+                                        .frame(maxWidth: .infinity)
+                                }
+                                .buttonStyle(.bordered)
+                                .padding(.leading, 24)
+                                .padding(.top, 4)
                             }
                         }
                     }
@@ -180,6 +167,21 @@ public struct GeneralSettingsTab: View {
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .alert("settings.general.storage".localized, isPresented: $viewModel.showCleanupSuccessAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("settings.storage.cleanup_success".localized)
+        }
+        .alert("Error", isPresented: Binding(
+            get: { viewModel.cleanupError != nil },
+            set: { if !$0 { viewModel.cleanupError = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            if let error = viewModel.cleanupError {
+                Text(error)
+            }
         }
     }
 }
