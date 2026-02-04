@@ -72,13 +72,15 @@ public class AISettingsViewModel: ObservableObject {
     }
 
     private func persistAPIKey(_ value: String) throws {
-        let providerKey = KeychainManager.apiKeyKey(for: self.settings.aiConfiguration.provider)
+        let providerKey = KeychainManager.apiKeyKey(for: settings.aiConfiguration.provider)
         do {
             if !value.isEmpty {
                 try keychain.store(value, for: providerKey)
+                // swiftformat:disable:next redundantSelf
                 logger.info("API Key successfully persisted to Keychain for \(self.settings.aiConfiguration.provider.displayName)")
             } else {
                 try keychain.delete(for: providerKey)
+                // swiftformat:disable:next redundantSelf
                 logger.info("API Key removed from Keychain for \(self.settings.aiConfiguration.provider.displayName)")
             }
         } catch {
@@ -90,7 +92,7 @@ public class AISettingsViewModel: ObservableObject {
 
     private func loadAPIKeyForCurrentProvider() -> String? {
         do {
-            return try KeychainManager.retrieveAPIKey(for: self.settings.aiConfiguration.provider)
+            return try KeychainManager.retrieveAPIKey(for: settings.aiConfiguration.provider)
         } catch {
             logger.error("Failed to load API key: \(error.localizedDescription)")
             return nil
@@ -102,7 +104,7 @@ public class AISettingsViewModel: ObservableObject {
         availableModels = []
         modelsFetchError = nil
 
-        guard let url = validateURL(self.settings.aiConfiguration.baseURL) else {
+        guard let url = validateURL(settings.aiConfiguration.baseURL) else {
             connectionStatus = .failure("settings.ai.connection.invalid_url".localized)
             return
         }
@@ -110,7 +112,7 @@ public class AISettingsViewModel: ObservableObject {
         Task {
             do {
                 // Use the text from the UI for testing
-                let request = try self.buildTestRequest(for: url, apiKey: apiKeyText)
+                let request = try self.buildTestRequest(for: url, apiKey: self.apiKeyText)
                 let (_, response) = try await self.session.data(for: request)
                 self.handleTestResponse(response)
 
@@ -131,7 +133,7 @@ public class AISettingsViewModel: ObservableObject {
 
     /// Fetches available models from the LLM service's /models endpoint.
     public func fetchAvailableModels() async {
-        guard let baseURL = validateURL(self.settings.aiConfiguration.baseURL) else {
+        guard let baseURL = validateURL(settings.aiConfiguration.baseURL) else {
             modelsFetchError = "settings.ai.connection.invalid_url".localized
             return
         }
@@ -165,7 +167,7 @@ public class AISettingsViewModel: ObservableObject {
     /// Removes the API key for the current provider from the Keychain.
     public func removeAPIKey() {
         actionError = nil
-        let providerKey = KeychainManager.apiKeyKey(for: self.settings.aiConfiguration.provider)
+        let providerKey = KeychainManager.apiKeyKey(for: settings.aiConfiguration.provider)
         do {
             try keychain.delete(for: providerKey)
             apiKeyText = ""
@@ -173,6 +175,7 @@ public class AISettingsViewModel: ObservableObject {
             connectionStatus = .unknown
             updateUIStates()
             availableModels = []
+            // swiftformat:disable:next redundantSelf
             logger.info("API Key removed from Keychain for \(self.settings.aiConfiguration.provider.displayName)")
         } catch {
             actionError = "settings.ai.remove_failed".localized
@@ -186,7 +189,7 @@ public class AISettingsViewModel: ObservableObject {
         request.httpMethod = "GET"
         request.timeoutInterval = 10
 
-        if let key = try? KeychainManager.retrieveAPIKey(for: self.settings.aiConfiguration.provider), !key.isEmpty {
+        if let key = try? KeychainManager.retrieveAPIKey(for: settings.aiConfiguration.provider), !key.isEmpty {
             request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
         }
         return request
