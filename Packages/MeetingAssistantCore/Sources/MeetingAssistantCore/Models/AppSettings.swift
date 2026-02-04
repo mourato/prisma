@@ -339,6 +339,7 @@ public class AppSettingsStore: ObservableObject {
         static let autoDeleteTranscriptions = "autoDeleteTranscriptions"
         static let autoDeletePeriodDays = "autoDeletePeriodDays"
         static let appAccentColor = "appAccentColor"
+        static let showInDock = "showInDock"
     }
 
     // MARK: - Published Properties
@@ -525,6 +526,11 @@ public class AppSettingsStore: ObservableObject {
         didSet { UserDefaults.standard.set(appAccentColor.rawValue, forKey: Keys.appAccentColor) }
     }
 
+    /// Whether to show the app icon in the Dock (allows Cmd+Tab switching).
+    @Published public var showInDock: Bool {
+        didSet { UserDefaults.standard.set(showInDock, forKey: Keys.showInDock) }
+    }
+
     /// All available prompts (predefined + user-created), filtered by deleted and overrides.
     public var allPrompts: [PostProcessingPrompt] {
         // 1. Start with predefined prompts that are NOT deleted
@@ -642,6 +648,8 @@ public class AppSettingsStore: ObservableObject {
         let rawAccentColor = UserDefaults.standard.string(forKey: Keys.appAccentColor)
         appAccentColor = rawAccentColor.flatMap { AppThemeColor(rawValue: $0) } ?? .system
 
+        showInDock = UserDefaults.standard.bool(forKey: Keys.showInDock)
+
         applyLanguage(selectedLanguage)
     }
 
@@ -696,6 +704,7 @@ public class AppSettingsStore: ObservableObject {
         autoDeleteTranscriptions = false
         autoDeletePeriodDays = 30
         appAccentColor = .system
+        showInDock = false
     }
 
     // MARK: - Prompt Management
