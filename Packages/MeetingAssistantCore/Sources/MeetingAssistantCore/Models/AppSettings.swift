@@ -835,6 +835,7 @@ public class AppSettingsStore: ObservableObject {
         soundFeedbackEnabled = false
         recordingStartSound = .pop
         recordingStopSound = .glass
+        launchAtLogin = false
         showInDock = false
     }
 
@@ -891,6 +892,7 @@ public extension AppSettingsStore {
         static let showSettingsOnLaunch = "showSettingsOnLaunch"
         static let autoCopyTranscriptionToClipboard = "autoCopyTranscriptionToClipboard"
         static let autoPasteTranscriptionToActiveApp = "autoPasteTranscriptionToActiveApp"
+        static let launchAtLogin = "launchAtLogin"
     }
 
     /// Configured path for saving recordings.
@@ -929,6 +931,12 @@ public extension AppSettingsStore {
     var autoPasteTranscriptionToActiveApp: Bool {
         get { UserDefaults.standard.bool(forKey: GeneralKeys.autoPasteTranscriptionToActiveApp) }
         set { UserDefaults.standard.set(newValue, forKey: GeneralKeys.autoPasteTranscriptionToActiveApp) }
+    }
+
+    /// Whether the app should launch automatically at login.
+    var launchAtLogin: Bool {
+        get { UserDefaults.standard.bool(forKey: GeneralKeys.launchAtLogin) }
+        set { UserDefaults.standard.set(newValue, forKey: GeneralKeys.launchAtLogin) }
     }
 
     // MARK: - Post-Processing Extension

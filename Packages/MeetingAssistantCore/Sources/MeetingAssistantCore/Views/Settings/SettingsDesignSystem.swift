@@ -31,11 +31,13 @@ public enum SettingsDesignSystem {
             endPoint: .bottomTrailing
         )
 
-        public static let dashboardHeroGradient = LinearGradient(
-            colors: [Color(red: 0.1, green: 0.4, blue: 0.9), Color(red: 0.1, green: 0.6, blue: 1.0)],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
+        public static var dashboardHeroGradient: LinearGradient {
+            LinearGradient(
+                colors: [accent.opacity(0.8), accent],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
 
         public static let success = Color.green
         public static let warning = Color.orange
