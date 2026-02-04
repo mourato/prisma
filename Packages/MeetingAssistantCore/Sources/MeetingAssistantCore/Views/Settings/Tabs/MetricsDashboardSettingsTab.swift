@@ -79,39 +79,71 @@ public struct MetricsDashboardSettingsTab: View {
     }
 
     private var summarySection: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 160), spacing: 16)], spacing: 16) {
-            MetricStatCard(
-                icon: "mic.fill",
-                title: "metrics.summary.sessions_recorded".localized,
-                value: Formatters.formattedNumber(viewModel.summary.sessionsRecorded),
-                detail: "metrics.summary.sessions_recorded_detail".localized,
-                tint: .purple
-            )
+        ViewThatFits(in: .horizontal) {
+            // Wide: 4 columns, 1 row
+            Grid(horizontalSpacing: 16, verticalSpacing: 16) {
+                GridRow {
+                    sessionCard
+                    wordsCard
+                    wpmCard
+                    keystrokesCard
+                }
+            }
+            .frame(maxWidth: .infinity)
 
-            MetricStatCard(
-                icon: "text.alignleft",
-                title: "metrics.summary.words_dictated".localized,
-                value: Formatters.formattedNumber(viewModel.summary.wordsDictated),
-                detail: "metrics.summary.words_dictated_detail".localized,
-                tint: SettingsDesignSystem.Colors.accent
-            )
-
-            MetricStatCard(
-                icon: "bolt.fill",
-                title: "metrics.summary.wpm".localized,
-                value: String(format: "%.0f", viewModel.summary.wordsPerMinute),
-                detail: "metrics.summary.wpm_detail".localized,
-                tint: .blue
-            )
-
-            MetricStatCard(
-                icon: "keyboard",
-                title: "metrics.summary.keystrokes".localized,
-                value: Formatters.formattedNumber(viewModel.summary.keystrokesSaved),
-                detail: "metrics.summary.keystrokes_detail".localized,
-                tint: .orange
-            )
+            // Narrow/Minimum: 2 columns, 2 rows
+            Grid(horizontalSpacing: 16, verticalSpacing: 16) {
+                GridRow {
+                    sessionCard
+                    wordsCard
+                }
+                GridRow {
+                    wpmCard
+                    keystrokesCard
+                }
+            }
+            .frame(maxWidth: .infinity)
         }
+    }
+
+    private var sessionCard: some View {
+        MetricStatCard(
+            icon: "mic.fill",
+            title: "metrics.summary.sessions_recorded".localized,
+            value: Formatters.formattedNumber(viewModel.summary.sessionsRecorded),
+            detail: "metrics.summary.sessions_recorded_detail".localized,
+            tint: .purple
+        )
+    }
+
+    private var wordsCard: some View {
+        MetricStatCard(
+            icon: "text.alignleft",
+            title: "metrics.summary.words_dictated".localized,
+            value: Formatters.formattedNumber(viewModel.summary.wordsDictated),
+            detail: "metrics.summary.words_dictated_detail".localized,
+            tint: SettingsDesignSystem.Colors.accent
+        )
+    }
+
+    private var wpmCard: some View {
+        MetricStatCard(
+            icon: "bolt.fill",
+            title: "metrics.summary.wpm".localized,
+            value: String(format: "%.0f", viewModel.summary.wordsPerMinute),
+            detail: "metrics.summary.wpm_detail".localized,
+            tint: .blue
+        )
+    }
+
+    private var keystrokesCard: some View {
+        MetricStatCard(
+            icon: "keyboard",
+            title: "metrics.summary.keystrokes".localized,
+            value: Formatters.formattedNumber(viewModel.summary.keystrokesSaved),
+            detail: "metrics.summary.keystrokes_detail".localized,
+            tint: .orange
+        )
     }
 
     private var weekdayPeaksSection: some View {
@@ -219,7 +251,9 @@ private struct MetricStatCard: View {
 
                 Spacer(minLength: 0)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
