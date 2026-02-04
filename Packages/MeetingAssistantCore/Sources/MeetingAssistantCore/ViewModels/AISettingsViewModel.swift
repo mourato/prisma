@@ -39,7 +39,19 @@ public class AISettingsViewModel: ObservableObject {
             .sink { [weak self] provider in
                 self?.apiKeyText = "" 
                 self?.isKeySaved = KeychainManager.existsAPIKey(for: provider)
-                self?.connectionStatus = .unknown
+                self?.settings.aiConfiguration.selectedModel = "" // Clear previous selection
+                
+                if self?.isKeySaved == true {
+                    // Restore verified state and fetch models
+                    self?.connectionStatus = .success
+                    Task {
+                        await self?.fetchAvailableModels()
+                    }
+                } else {
+                    self?.connectionStatus = .unknown
+                    self?.availableModels = [] // Clear models if no key
+                }
+                
                 self?.updateUIStates()
             }
             .store(in: &cancellables)
