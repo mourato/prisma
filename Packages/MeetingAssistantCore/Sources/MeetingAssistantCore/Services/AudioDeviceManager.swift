@@ -32,7 +32,9 @@ public final class AudioDeviceManager: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.refreshDevices()
+            Task { @MainActor in
+                self?.refreshDevices()
+            }
         }
 
         NotificationCenter.default.addObserver(
@@ -40,7 +42,9 @@ public final class AudioDeviceManager: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.refreshDevices()
+            Task { @MainActor in
+                self?.refreshDevices()
+            }
         }
     }
 
