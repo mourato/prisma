@@ -12,6 +12,7 @@ public class AISettingsViewModel: ObservableObject {
     @Published public var availableModels: [LLMModel] = []
     @Published public var isLoadingModels = false
     @Published public var modelsFetchError: String?
+    @Published public var actionError: String?
 
     private let logger = Logger(subsystem: "MeetingAssistant", category: "AISettingsViewModel")
     private let keychain: KeychainProvider
@@ -26,22 +27,15 @@ public class AISettingsViewModel: ObservableObject {
         self.settings = settings
         self.keychain = keychain
         self.session = session
+        // Initial load for current provider
         apiKeyText = loadAPIKeyForCurrentProvider() ?? ""
-
-        // Reactive persistence for API Key
-        $apiKeyText
-            .dropFirst()
-            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
-            .sink { [weak self] newValue in
-                self?.persistAPIKey(newValue)
-            }
-            .store(in: &cancellables)
 
         settings.$aiConfiguration
             .map(\.provider)
             .removeDuplicates()
             .sink { [weak self] _ in
                 self?.apiKeyText = self?.loadAPIKeyForCurrentProvider() ?? ""
+                self?.connectionStatus = .unknown
             }
             .store(in: &cancellables)
     }
@@ -51,13 +45,15 @@ public class AISettingsViewModel: ObservableObject {
         do {
             if !value.isEmpty {
                 try keychain.store(value, for: providerKey)
-                logger.info("API Key successfully persisted to Keychain")
+                logger.info("API Key successfully persisted to Keychain for \(self.settings.aiConfiguration.provider.displayName)")
             } else {
                 try keychain.delete(for: providerKey)
-                logger.info("API Key removed from Keychain")
+                logger.info("API Key removed from Keychain for \(self.settings.aiConfiguration.provider.displayName)")
             }
         } catch {
             logger.error("Failed to persist API key: \(error.localizedDescription)")
+            // We'll handle visual feedback in the verify/remove methods
+            throw error
         }
     }
 
@@ -82,16 +78,19 @@ public class AISettingsViewModel: ObservableObject {
 
         Task {
             do {
-                let request = try self.buildTestRequest(for: url)
+                // Use the text from the UI for testing
+                let request = try self.buildTestRequest(for: url, apiKey: apiKeyText)
                 let (_, response) = try await self.session.data(for: request)
                 self.handleTestResponse(response)
 
-                // Fetch models on successful connection
+                // Fetch models and PERSIST key on successful connection
                 if self.connectionStatus == .success {
+                    try self.persistAPIKey(apiKeyText)
                     await self.fetchAvailableModels()
                 }
             } catch {
                 self.connectionStatus = .failure(self.connectionErrorMessage(from: error))
+                logger.error("Connection test failed: \(error.localizedDescription)")
             }
         }
     }
@@ -129,6 +128,22 @@ public class AISettingsViewModel: ObservableObject {
         }
     }
 
+    /// Removes the API key for the current provider from the Keychain.
+    public func removeAPIKey() {
+        actionError = nil
+        let providerKey = KeychainManager.apiKeyKey(for: settings.aiConfiguration.provider)
+        do {
+            try keychain.delete(for: providerKey)
+            apiKeyText = ""
+            connectionStatus = .unknown
+            availableModels = []
+            logger.info("API Key removed from Keychain for \(self.settings.aiConfiguration.provider.displayName)")
+        } catch {
+            actionError = "settings.ai.remove_failed".localized
+            logger.error("Failed to remove API key: \(error.localizedDescription)")
+        }
+    }
+
     private func buildModelsRequest(for baseURL: URL) throws -> URLRequest {
         let modelsURL = baseURL.appendingPathComponent("models")
         var request = URLRequest(url: modelsURL)
@@ -149,12 +164,12 @@ public class AISettingsViewModel: ObservableObject {
         return url
     }
 
-    private func buildTestRequest(for url: URL) throws -> URLRequest {
+    private func buildTestRequest(for url: URL, apiKey: String) throws -> URLRequest {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.timeoutInterval = 5
-        if let key = try? KeychainManager.retrieveAPIKey(for: settings.aiConfiguration.provider), !key.isEmpty {
-            request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+        if !apiKey.isEmpty {
+            request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         }
         return request
     }

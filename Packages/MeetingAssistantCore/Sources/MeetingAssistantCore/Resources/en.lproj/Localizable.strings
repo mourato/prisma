@@ -80,6 +80,10 @@
 "settings.ai.model_hint" = "Test connection to load available models";
 "settings.ai.models.fetch_failed" = "Failed to fetch models";
 "settings.ai.test_connection" = "Test Connection";
+"settings.ai.verify_and_save" = "Verify and Save";
+"settings.ai.get_api_key" = "Get API Key";
+"settings.ai.remove_key" = "Remove";
+"settings.ai.remove_failed" = "Failed to remove API key. Please check Keychain permissions.";
 "settings.ai.hide_key" = "Hide Key";
 "settings.ai.show_key" = "Show Key";
 "settings.ai.connection.testing" = "Testing...";
