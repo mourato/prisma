@@ -4,7 +4,7 @@ import SwiftUI
 // MARK: - AI Settings Tab
 
 /// Tab for configuring AI post-processing settings.
-public struct AISettingsTab: View {
+public struct EnhancementsSettingsTab: View {
     @StateObject private var viewModel = AISettingsViewModel(settings: .shared)
     @StateObject private var postProcessingViewModel = PostProcessingSettingsViewModel()
     @ObservedObject private var modelManager = FluidAIModelManager.shared
@@ -54,10 +54,10 @@ public struct AISettingsTab: View {
     // MARK: - Sections
 
     private var mainSection: some View {
-        SettingsGroup(NSLocalizedString("settings.general.title", bundle: .safeModule, comment: ""), icon: "brain") {
+        SettingsGroup("settings.general.title".localized, icon: "brain") {
             SettingsToggle(
-                NSLocalizedString("settings.post_processing.enabled", bundle: .safeModule, comment: ""),
-                description: NSLocalizedString("settings.post_processing.description", bundle: .safeModule, comment: ""),
+                "settings.post_processing.enabled".localized,
+                description: "settings.post_processing.description".localized,
                 isOn: $postProcessingViewModel.settings.postProcessingEnabled
             )
 
@@ -65,8 +65,8 @@ public struct AISettingsTab: View {
                 .padding(.vertical, 4)
 
             SettingsToggle(
-                NSLocalizedString("settings.ai.diarization", bundle: .safeModule, comment: ""),
-                description: NSLocalizedString("settings.ai.diarization_desc", bundle: .safeModule, comment: ""),
+                "settings.ai.diarization".localized,
+                description: "settings.ai.diarization_desc".localized,
                 isOn: $viewModel.settings.isDiarizationEnabled
             )
 
@@ -78,7 +78,7 @@ public struct AISettingsTab: View {
 
                 VStack(spacing: 12) {
                     HStack {
-                        Text(NSLocalizedString("settings.ai.num_speakers", bundle: .safeModule, comment: ""))
+                        Text("settings.ai.num_speakers".localized)
 
                         Spacer()
 
@@ -119,7 +119,7 @@ public struct AISettingsTab: View {
 
                     if viewModel.settings.numSpeakers == nil {
                         HStack {
-                            Text(NSLocalizedString("settings.ai.min_speakers", bundle: .safeModule, comment: ""))
+                            Text("settings.ai.min_speakers".localized)
 
                             Spacer()
 
@@ -155,7 +155,7 @@ public struct AISettingsTab: View {
                         }
 
                         HStack {
-                            Text(NSLocalizedString("settings.ai.max_speakers", bundle: .safeModule, comment: ""))
+                            Text("settings.ai.max_speakers".localized)
 
                             Spacer()
 
@@ -215,7 +215,7 @@ public struct AISettingsTab: View {
                             .fontWeight(.medium)
 
                         if phase.isInProgress {
-                            Text(NSLocalizedString("settings.ai.please_wait", bundle: .safeModule, comment: ""))
+                            Text("settings.ai.please_wait".localized)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -232,14 +232,14 @@ public struct AISettingsTab: View {
                                 await modelManager.retryFailedModels()
                             }
                         } label: {
-                            Text(NSLocalizedString("settings.ai.retry", bundle: .safeModule, comment: ""))
+                            Text("settings.ai.retry".localized)
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
                     } else if phase == .ready {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(.green)
-                            .accessibilityLabel(NSLocalizedString("settings.ai.ready", bundle: .safeModule, comment: ""))
+                            .accessibilityLabel("settings.ai.ready".localized)
                     }
                 }
             }
@@ -254,25 +254,25 @@ public struct AISettingsTab: View {
         case .idle:
             Image(systemName: "circle.dashed")
                 .foregroundStyle(.secondary)
-                .accessibilityLabel(NSLocalizedString("settings.ai.phase_idle", bundle: .safeModule, comment: ""))
+                .accessibilityLabel("settings.ai.phase_idle".localized)
         case .downloadingASR, .downloadingDiarization:
             Image(systemName: "arrow.down.circle.fill")
                 .foregroundStyle(.blue)
                 .symbolEffect(.pulse)
-                .accessibilityLabel(NSLocalizedString("settings.ai.downloading", bundle: .safeModule, comment: ""))
+                .accessibilityLabel("settings.ai.downloading".localized)
         case .loadingASR, .loadingDiarization:
             Image(systemName: "gearshape.circle.fill")
                 .foregroundStyle(.orange)
                 .symbolEffect(.pulse)
-                .accessibilityLabel(NSLocalizedString("settings.ai.loading", bundle: .safeModule, comment: ""))
+                .accessibilityLabel("settings.ai.loading".localized)
         case .ready:
             Image(systemName: "checkmark.circle.fill")
                 .foregroundStyle(.green)
-                .accessibilityLabel(NSLocalizedString("settings.ai.ready", bundle: .safeModule, comment: ""))
+                .accessibilityLabel("settings.ai.ready".localized)
         case .failed:
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundStyle(.red)
-                .accessibilityLabel(NSLocalizedString("settings.ai.failed", bundle: .safeModule, comment: ""))
+                .accessibilityLabel("settings.ai.failed".localized)
         }
     }
 
@@ -301,10 +301,10 @@ public struct AISettingsTab: View {
                 .foregroundStyle(.yellow)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(NSLocalizedString("settings.post_processing.warning_title", bundle: .safeModule, comment: ""))
+                Text("settings.post_processing.warning_title".localized)
                     .font(.headline)
 
-                Text(NSLocalizedString("settings.post_processing.warning_desc", bundle: .safeModule, comment: ""))
+                Text("settings.post_processing.warning_desc".localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -321,11 +321,11 @@ public struct AISettingsTab: View {
     }
 
     private var systemPromptSection: some View {
-        SettingsGroup(NSLocalizedString("settings.post_processing.system_prompt", bundle: .safeModule, comment: ""), icon: "terminal.fill") {
+        SettingsGroup("settings.post_processing.system_prompt".localized, icon: "terminal.fill") {
             VStack(alignment: .leading, spacing: SettingsDesignSystem.Layout.itemSpacing) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(NSLocalizedString("settings.post_processing.base_instructions", bundle: .safeModule, comment: ""))
+                        Text("settings.post_processing.base_instructions".localized)
                             .font(.subheadline)
                             .fontWeight(.medium)
 
@@ -341,7 +341,7 @@ public struct AISettingsTab: View {
                         postProcessingViewModel.showSystemPromptEditor = true
                     } label: {
                         Label(
-                            NSLocalizedString("settings.post_processing.edit_system_guidelines", bundle: .safeModule, comment: ""),
+                            "settings.post_processing.edit_system_guidelines".localized,
                             systemImage: "pencil"
                         )
                     }
@@ -353,10 +353,10 @@ public struct AISettingsTab: View {
     }
 
     private var userPromptsSection: some View {
-        SettingsGroup(NSLocalizedString("settings.post_processing.prompts", bundle: .safeModule, comment: ""), icon: "sparkles") {
+        SettingsGroup("settings.post_processing.prompts".localized, icon: "sparkles") {
             VStack(alignment: .leading, spacing: SettingsDesignSystem.Layout.cardPadding) {
                 HStack {
-                    Text(NSLocalizedString("settings.post_processing.choose_active", bundle: .safeModule, comment: ""))
+                    Text("settings.post_processing.choose_active".localized)
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
@@ -367,7 +367,7 @@ public struct AISettingsTab: View {
                         postProcessingViewModel.showPromptEditor = true
                     } label: {
                         Label(
-                            NSLocalizedString("settings.post_processing.new_prompt", bundle: .safeModule, comment: ""),
+                            "settings.post_processing.new_prompt".localized,
                             systemImage: "plus"
                         )
                     }
@@ -503,9 +503,9 @@ public struct AISettingsTab: View {
 }
 
 #Preview {
-    AISettingsTab()
+    EnhancementsSettingsTab()
 }
 
 #Preview {
-    AISettingsTab()
+    EnhancementsSettingsTab()
 }

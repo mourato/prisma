@@ -7,7 +7,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable {
     case general
     case assistant
     case transcriptions
-    case aiModels
+    case enhancements
     case permissions
 
     public var id: String {
@@ -20,7 +20,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable {
         case .general: NSLocalizedString("settings.section.general", bundle: .safeModule, comment: "")
         case .assistant: NSLocalizedString("settings.section.assistant", bundle: .safeModule, comment: "")
         case .transcriptions: NSLocalizedString("settings.section.transcriptions", bundle: .safeModule, comment: "")
-        case .aiModels: NSLocalizedString("settings.section.ai", bundle: .safeModule, comment: "")
+        case .enhancements: NSLocalizedString("settings.section.ai", bundle: .safeModule, comment: "")
         case .permissions: NSLocalizedString("settings.section.permissions", bundle: .safeModule, comment: "")
         }
     }
@@ -31,7 +31,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable {
         case .general: "gear"
         case .assistant: "sparkles"
         case .transcriptions: "doc.text"
-        case .aiModels: "brain"
+        case .enhancements: "wand.and.stars"
         case .permissions: "lock.shield"
         }
     }

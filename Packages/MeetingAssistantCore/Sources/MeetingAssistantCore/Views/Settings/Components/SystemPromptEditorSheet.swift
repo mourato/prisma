@@ -50,11 +50,14 @@ struct SystemPromptEditorSheet: View {
 
             Button("settings.post_processing.restore_default".localized) {
                 onRestoreDefault()
-                // Update local state if needed? Actually the view model will handle it and re-open or the restore will trigger a refresh.
-                // But typically restore default should probably update the local state too if we want immediate feedback.
             }
-            .buttonStyle(.link)
-            .font(.caption)
+            .buttonStyle(.plain)
+            .foregroundStyle(SettingsDesignSystem.Colors.accent)
+            .font(.system(size: 11, weight: .medium))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(SettingsDesignSystem.Colors.accent.opacity(0.1))
+            .clipShape(RoundedRectangle(cornerRadius: 6))
         }
         .padding()
         .background(Color(NSColor.windowBackgroundColor))
@@ -76,7 +79,7 @@ struct SystemPromptEditorSheet: View {
 
     private var editorSection: some View {
         TextEditor(text: $systemPrompt)
-            .font(.system(.body, design: .monospaced))
+            .font(.body)
             .frame(minHeight: 250)
             .padding(8)
             .background(Color(NSColor.textBackgroundColor))

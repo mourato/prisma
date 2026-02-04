@@ -4,7 +4,7 @@
 "settings.section.transcriptions" = "Transcrições";
 "settings.section.shortcuts" = "Atalhos";
 "settings.section.assistant" = "Assistant";
-"settings.section.ai" = "IA e Pós-Processamento";
+"settings.section.ai" = "Aprimoramentos";
 "settings.section.post_processing" = "Pós-Processamento";
 "settings.section.service" = "Serviço";
 "settings.section.permissions" = "Permissões";
@@ -58,7 +58,7 @@
 "meeting.app.unknown" = "Desconhecido";
 
 /* AI Settings */
-"settings.ai.title" = "Modelos de IA";
+"settings.ai.title" = "Aprimoramentos";
 "settings.ai.diarization" = "Identificar Oradores (Beta)";
 "settings.ai.diarization_desc" = "Identifica quem está falando na reunião. Aumenta significativamente o tempo de processamento.";
 "settings.ai.min_speakers" = "Mín. de Oradores";

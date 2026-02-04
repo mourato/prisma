@@ -84,8 +84,8 @@ public struct SettingsView: View {
             AssistantSettingsTab()
         case .transcriptions:
             TranscriptionsSettingsTab()
-        case .aiModels:
-            AISettingsTab()
+        case .enhancements:
+            EnhancementsSettingsTab()
         case .permissions:
             PermissionsSettingsTab()
         }
