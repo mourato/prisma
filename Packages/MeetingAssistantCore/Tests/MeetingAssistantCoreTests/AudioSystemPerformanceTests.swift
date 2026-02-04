@@ -2,19 +2,7 @@
 @testable import MeetingAssistantCore
 import XCTest
 
-/// Performance tests for the audio system.
-/// Isolated in a separate file to allow independent execution.
-///
-/// ⚠️ IMPORTANT: These tests must be run via Xcode, NOT swift test.
-/// The SPM test runner hangs when running these tests.
-///
-/// To run in Xcode:
-/// 1. Open the project in Xcode
-/// 2. Select the test target
-/// 3. Run tests with Cmd+U or navigate to AudioSystemPerformanceTests
-///
-/// To enable in CI (if SPM issues are resolved), set:
-/// RUN_PERFORMANCE_TESTS=1
+/// Performance tests for the audio buffer queue.
 final class AudioSystemPerformanceTests: XCTestCase {
     var bufferQueue: AudioBufferQueue!
 
@@ -33,7 +21,6 @@ final class AudioSystemPerformanceTests: XCTestCase {
 
     /// Tests enqueue/dequeue performance with 1000 operations
     func testPerformance_BufferQueueEnqueueDequeue() throws {
-        try skipIfCIEnvironment()
         let buffer = try createTestBuffer(frameCount: 2048)
 
         measure {
@@ -46,7 +33,6 @@ final class AudioSystemPerformanceTests: XCTestCase {
 
     /// Tests high throughput with 100 buffers
     func testPerformance_BufferQueueHighThroughput() throws {
-        try skipIfCIEnvironment()
         let buffers = try (0..<100).map { _ in try self.createTestBuffer(frameCount: 1_024) }
 
         measure {
@@ -62,7 +48,6 @@ final class AudioSystemPerformanceTests: XCTestCase {
 
     /// Tests overflow handling with 200 buffers on a capacity-10 queue
     func testPerformance_BufferQueueOverflowHandling() throws {
-        try skipIfCIEnvironment()
         let smallQueue = AudioBufferQueue(capacity: 10)
         let buffer = try createTestBuffer(frameCount: 1_024)
 
@@ -78,7 +63,6 @@ final class AudioSystemPerformanceTests: XCTestCase {
 
     /// Tests concurrent enqueue/dequeue operations
     func testPerformance_ConcurrentOperations() throws {
-        try skipIfCIEnvironment()
         let buffer = try createTestBuffer(frameCount: 512)
         let iterations = 100
         let queue = bufferQueue! // Capture local reference
@@ -106,7 +90,6 @@ final class AudioSystemPerformanceTests: XCTestCase {
 
     /// Tests stats access performance
     func testPerformance_StatsAccess() throws {
-        try skipIfCIEnvironment()
         let buffer = try createTestBuffer(frameCount: 512)
 
         for _ in 0..<25 {
@@ -123,7 +106,6 @@ final class AudioSystemPerformanceTests: XCTestCase {
 
     /// Tests clear operation performance
     func testPerformance_ClearOperation() throws {
-        try skipIfCIEnvironment()
         let buffer = try createTestBuffer(frameCount: 512)
 
         measure {
@@ -138,7 +120,6 @@ final class AudioSystemPerformanceTests: XCTestCase {
 
     /// Tests buffer creation performance (baseline)
     func testPerformance_BufferCreation() throws {
-        try skipIfCIEnvironment()
 
         measure {
             for _ in 0..<100 {
@@ -147,14 +128,7 @@ final class AudioSystemPerformanceTests: XCTestCase {
         }
     }
 
-    // MARK: - Skip Helper
 
-    private func skipIfCIEnvironment() throws {
-        // Skip by default unless explicitly enabled
-        // SPM test runner hangs - run via Xcode instead
-        let isEnabled = ProcessInfo.processInfo.environment["RUN_PERFORMANCE_TESTS"] != nil
-        try XCTSkipUnless(isEnabled, "Performance tests disabled. Run via Xcode or set RUN_PERFORMANCE_TESTS=1")
-    }
 
     // MARK: - Buffer Helpers
 
