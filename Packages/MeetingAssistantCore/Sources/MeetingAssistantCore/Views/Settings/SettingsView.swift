@@ -56,6 +56,7 @@ public struct SettingsView: View {
             }
         }
         .listStyle(.sidebar)
+        .tint(SettingsDesignSystem.Colors.accent)
         .navigationSplitViewColumnWidth(
             min: LayoutConstants.sidebarMinWidth,
             ideal: LayoutConstants.sidebarIdealWidth,
@@ -71,11 +72,11 @@ public struct SettingsView: View {
         } icon: {
             Image(systemName: section.icon)
                 .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(selectedSection == section ? .white : Color.accentColor)
+                .foregroundStyle(selectedSection == section ? .white : SettingsDesignSystem.Colors.accent)
                 .frame(width: 24, height: 24)
                 .background(
                     RoundedRectangle(cornerRadius: 6)
-                        .fill(selectedSection == section ? Color.accentColor : Color.accentColor.opacity(0.1))
+                        .fill(selectedSection == section ? SettingsDesignSystem.Colors.accent : SettingsDesignSystem.Colors.accent.opacity(0.1))
                 )
         }
         .padding(.vertical, 2)
