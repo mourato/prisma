@@ -9,10 +9,8 @@ final class GlobalShortcutController {
     private let settings: AppSettingsStore
     private var cancellables = Set<AnyCancellable>()
 
-    private var globalFlagsMonitor: Any?
-    private var localFlagsMonitor: Any?
-    private var globalKeyDownMonitor: Any?
-    private var localKeyDownMonitor: Any?
+    private var flagsMonitor: KeyboardEventMonitor?
+    private var keyDownMonitor: KeyboardEventMonitor?
 
     private struct ShortcutState {
         var isPresetPressed = false
@@ -153,57 +151,31 @@ final class GlobalShortcutController {
     }
 
     private func installFlagsChangedMonitors() {
-        if globalFlagsMonitor == nil {
-            globalFlagsMonitor = NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
+        if flagsMonitor == nil {
+            flagsMonitor = KeyboardEventMonitor(mask: .flagsChanged) { [weak self] event in
                 self?.handleFlagsChanged(event)
             }
-        }
-
-        if localFlagsMonitor == nil {
-            localFlagsMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
-                self?.handleFlagsChanged(event)
-                return event
-            }
+            flagsMonitor?.start()
         }
     }
 
     private func removeFlagsChangedMonitors() {
-        if let monitor = globalFlagsMonitor {
-            NSEvent.removeMonitor(monitor)
-            globalFlagsMonitor = nil
-        }
-
-        if let monitor = localFlagsMonitor {
-            NSEvent.removeMonitor(monitor)
-            localFlagsMonitor = nil
-        }
+        flagsMonitor?.stop()
+        flagsMonitor = nil
     }
 
     private func installKeyDownMonitors() {
-        if globalKeyDownMonitor == nil {
-            globalKeyDownMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+        if keyDownMonitor == nil {
+            keyDownMonitor = KeyboardEventMonitor(mask: .keyDown) { [weak self] event in
                 self?.handleKeyDown(event)
             }
-        }
-
-        if localKeyDownMonitor == nil {
-            localKeyDownMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-                self?.handleKeyDown(event)
-                return event
-            }
+            keyDownMonitor?.start()
         }
     }
 
     private func removeKeyDownMonitors() {
-        if let monitor = globalKeyDownMonitor {
-            NSEvent.removeMonitor(monitor)
-            globalKeyDownMonitor = nil
-        }
-
-        if let monitor = localKeyDownMonitor {
-            NSEvent.removeMonitor(monitor)
-            localKeyDownMonitor = nil
-        }
+        keyDownMonitor?.stop()
+        keyDownMonitor = nil
     }
 
     private func removeEventMonitors() {
