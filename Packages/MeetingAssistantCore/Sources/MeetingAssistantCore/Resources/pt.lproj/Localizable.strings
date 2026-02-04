@@ -23,7 +23,17 @@
 "metrics.peaks.weekday.title" = "Picos por dia da semana";
 "metrics.empty.title" = "Sem dados ainda";
 "metrics.empty.subtitle" = "Faça sua primeira gravação para liberar insights.";
-"metrics.error.load" = "Falha ao carregar os dados do dashboard.";
+"metrics.error.load" = "Não foi possível carregar os dados do dashboard.";
+"metrics.hero.title" = "Você economizou %@ com o Meeting Assistant";
+"metrics.hero.subtitle" = "Ditou %1$@ palavras em %2$d sessões.";
+"metrics.summary.sessions_recorded" = "Sessões Gravadas";
+"metrics.summary.sessions_recorded_detail" = "sessões completadas";
+"metrics.summary.words_dictated" = "Palavras Ditadas";
+"metrics.summary.words_dictated_detail" = "palavras geradas";
+"metrics.summary.wpm" = "Palavras Por Minuto";
+"metrics.summary.wpm_detail" = "vs. digitando à mão";
+"metrics.summary.keystrokes" = "Teclas Economizadas";
+"metrics.summary.keystrokes_detail" = "menos toques no teclado";
 
 
 "settings.general.theme" = "Tema do Aplicativo";
@@ -38,6 +48,7 @@
 "settings.general.recordings_path" = "Pasta de gravações:";
 "settings.general.audio_format" = "Formato de Áudio";
 "settings.general.merge_audio" = "Mesclar arquivos de áudio ao finalizar";
+"settings.general.launch_at_login" = "Iniciar ao fazer login";
 
 /* Storage Settings */
 "settings.general.storage" = "Armazenamento";

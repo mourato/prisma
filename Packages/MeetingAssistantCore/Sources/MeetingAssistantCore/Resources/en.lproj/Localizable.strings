@@ -24,6 +24,16 @@
 "metrics.empty.title" = "No data yet";
 "metrics.empty.subtitle" = "Start your first recording to unlock insights.";
 "metrics.error.load" = "Failed to load dashboard data.";
+"metrics.hero.title" = "You have saved %@ with Meeting Assistant";
+"metrics.hero.subtitle" = "Dictated %1$@ words across %2$d sessions.";
+"metrics.summary.sessions_recorded" = "Sessions Recorded";
+"metrics.summary.sessions_recorded_detail" = "sessions completed";
+"metrics.summary.words_dictated" = "Words Dictated";
+"metrics.summary.words_dictated_detail" = "words generated";
+"metrics.summary.wpm" = "Words Per Minute";
+"metrics.summary.wpm_detail" = "vs. typing by hand";
+"metrics.summary.keystrokes" = "Keystrokes Saved";
+"metrics.summary.keystrokes_detail" = "fewer keystrokes";
 
 
 "settings.general.theme" = "App Theme";
@@ -38,6 +48,7 @@
 "settings.general.recordings_path" = "Recordings folder:";
 "settings.general.audio_format" = "Audio Format";
 "settings.general.merge_audio" = "Merge audio files after recording";
+"settings.general.launch_at_login" = "Launch at login";
 
 /* Storage Settings */
 "settings.general.storage" = "Storage";
