@@ -93,6 +93,23 @@
 "settings.ai.connection.secure_failed" = "Secure connection failed";
 "settings.ai.connection.network_lost" = "Network connection lost";
 
+/* AI Model Download Progress */
+"settings.ai.phase_idle" = "Waiting to start...";
+"settings.ai.downloading_asr" = "Downloading speech recognition model...";
+"settings.ai.loading_asr" = "Loading speech recognition model...";
+"settings.ai.downloading_diarization" = "Downloading speaker identification model...";
+"settings.ai.loading_diarization" = "Loading speaker identification model...";
+"settings.ai.models_ready" = "Models ready";
+"settings.ai.download_failed" = "Download failed: %@";
+"settings.ai.retry" = "Retry";
+"settings.ai.please_wait" = "This may take a few minutes on first run";
+
+/* Accessibility Labels */
+"settings.ai.downloading" = "Downloading";
+"settings.ai.loading" = "Loading";
+"settings.ai.ready" = "Ready";
+"settings.ai.failed" = "Failed";
+
 /* Post-Processing Settings */
 "settings.post_processing.title" = "Post-Processing";
 "settings.post_processing.enabled" = "Enable AI Post-Processing";

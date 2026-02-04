@@ -7,6 +7,7 @@ import SwiftUI
 public struct AISettingsTab: View {
     @StateObject private var viewModel = AISettingsViewModel(settings: .shared)
     @StateObject private var postProcessingViewModel = PostProcessingSettingsViewModel()
+    @ObservedObject private var modelManager = FluidAIModelManager.shared
 
     public init() {}
 
@@ -72,6 +73,8 @@ public struct AISettingsTab: View {
             )
 
             if viewModel.settings.isDiarizationEnabled {
+                modelStatusSection
+
                 Divider()
                     .padding(.vertical, 2)
 
@@ -191,6 +194,87 @@ public struct AISettingsTab: View {
                     }
                 }
             }
+        }
+    }
+
+    // MARK: - Model Status Section
+
+    @ViewBuilder
+    private var modelStatusSection: some View {
+        let phase = modelManager.downloadPhase
+
+        // Only show when there's activity or an error
+        if phase.isInProgress || phase == .ready || modelManager.lastError != nil {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 12) {
+                    // Phase icon
+                    phaseIcon(for: phase)
+                        .frame(width: 24, height: 24)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(phase.localizedDescription)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+
+                        if phase.isInProgress {
+                            Text(NSLocalizedString("settings.ai.please_wait", bundle: .safeModule, comment: ""))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    Spacer()
+
+                    if phase.isInProgress {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else if case .failed = phase {
+                        Button {
+                            Task {
+                                await modelManager.retryFailedModels()
+                            }
+                        } label: {
+                            Text(NSLocalizedString("settings.ai.retry", bundle: .safeModule, comment: ""))
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                    } else if phase == .ready {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                            .accessibilityLabel(NSLocalizedString("settings.ai.ready", bundle: .safeModule, comment: ""))
+                    }
+                }
+            }
+            .padding(.vertical, 4)
+            .animation(.easeInOut(duration: 0.2), value: phase)
+        }
+    }
+
+    @ViewBuilder
+    private func phaseIcon(for phase: FluidAIModelManager.DownloadPhase) -> some View {
+        switch phase {
+        case .idle:
+            Image(systemName: "circle.dashed")
+                .foregroundStyle(.secondary)
+                .accessibilityLabel(NSLocalizedString("settings.ai.phase_idle", bundle: .safeModule, comment: ""))
+        case .downloadingASR, .downloadingDiarization:
+            Image(systemName: "arrow.down.circle.fill")
+                .foregroundStyle(.blue)
+                .symbolEffect(.pulse)
+                .accessibilityLabel(NSLocalizedString("settings.ai.downloading", bundle: .safeModule, comment: ""))
+        case .loadingASR, .loadingDiarization:
+            Image(systemName: "gearshape.circle.fill")
+                .foregroundStyle(.orange)
+                .symbolEffect(.rotate)
+                .accessibilityLabel(NSLocalizedString("settings.ai.loading", bundle: .safeModule, comment: ""))
+        case .ready:
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundStyle(.green)
+                .accessibilityLabel(NSLocalizedString("settings.ai.ready", bundle: .safeModule, comment: ""))
+        case .failed:
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.red)
+                .accessibilityLabel(NSLocalizedString("settings.ai.failed", bundle: .safeModule, comment: ""))
         }
     }
 
