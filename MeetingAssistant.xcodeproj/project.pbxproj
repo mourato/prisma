@@ -14,8 +14,22 @@
 		877BEA3C0E9773EBC0A16F12 /* AssistantShortcutController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D178191AE0776297CC554F27 /* AssistantShortcutController.swift */; };
 		C168721DD2EEDC8FFEA9C871 /* ShortcutActivationState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68C13E254122EFE84388105A /* ShortcutActivationState.swift */; };
 		ED78B9DB44D9C2C412DE3ECD /* GlobalShortcutController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A99BC45676052C0208825CE2 /* GlobalShortcutController.swift */; };
+		A1A1A11211159973516BB785 /* MeetingAssistantCore in Frameworks */ = {isa = PBXBuildFile; productRef = 38B4793F12BE4C852414ED2F /* MeetingAssistantCore */; };
+		A1A1A10411159973516BB785 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A1A10111159973516BB785 /* main.swift */; };
+		A1A1A10511159973516BB785 /* MeetingAssistantAIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A1A10211159973516BB785 /* MeetingAssistantAIService.swift */; };
+		A1A1A10611159973516BB785 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = A1A1A10311159973516BB785 /* Info.plist */; };
+		A1A1A11411159973516BB785 /* MeetingAssistantAI.xpc in Embed XPCServices */ = {isa = PBXBuildFile; fileRef = A1A1A11311159973516BB785 /* MeetingAssistantAI.xpc */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		A1A1A10F11159973516BB785 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3B630421A8CCC5559DA541DB /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A1A1A10711159973516BB785;
+			remoteInfo = MeetingAssistantAI;
+		};
+/* End PBXContainerItemProxy section */
 /* Begin PBXFileReference section */
 		00BF240857B0E7CEBE822856 /* MeetingAssistant.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MeetingAssistant.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0A8EF075303DE0711DC480BA /* pt-BR */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "pt-BR"; path = "pt-BR.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
@@ -27,14 +41,39 @@
 		A99BC45676052C0208825CE2 /* GlobalShortcutController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalShortcutController.swift; sourceTree = "<group>"; };
 		C8B2BBB31BDAF910C61928AC /* MeetingAssistantApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingAssistantApp.swift; sourceTree = "<group>"; };
 		D178191AE0776297CC554F27 /* AssistantShortcutController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantShortcutController.swift; sourceTree = "<group>"; };
+		A1A1A11311159973516BB785 /* MeetingAssistantAI.xpc */ = {isa = PBXFileReference; explicitFileType = wrapper.xpc-service; includeInIndex = 0; path = MeetingAssistantAI.xpc; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1A1A10111159973516BB785 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		A1A1A10211159973516BB785 /* MeetingAssistantAIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingAssistantAIService.swift; sourceTree = "<group>"; };
+		A1A1A10311159973516BB785 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		A1A1A11011159973516BB785 /* Embed XPCServices */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				A1A1A11411159973516BB785 /* MeetingAssistantAI.xpc in Embed XPCServices */,
+			);
+			name = "Embed XPCServices";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 /* Begin PBXFrameworksBuildPhase section */
 		E73F3666792546EC762B746A /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				3F03DE0211159973516BB785 /* MeetingAssistantCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1A1A10911159973516BB785 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1A1A11211159973516BB785 /* MeetingAssistantCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -58,6 +97,7 @@
 		8605F8A74990CABBEFD1C8E6 = {
 			isa = PBXGroup;
 			children = (
+				A1A1A11111159973516BB785 /* MeetingAssistantAI */,
 				5CF343346B9D46E81A90DA29 /* App */,
 				F8A567EC1E4740D1F221AE22 /* Packages */,
 				C4222C81F32E97FC44443933 /* Products */,
@@ -80,6 +120,32 @@
 			path = Packages;
 			sourceTree = "<group>";
 		};
+		A1A1A11111159973516BB785 /* MeetingAssistantAI */ = {
+			isa = PBXGroup;
+			children = (
+				A1A1A11111159973516BB785_res /* Resources */,
+				A1A1A11111159973516BB785_src /* Sources */,
+			);
+			path = MeetingAssistantAI;
+			sourceTree = "<group>";
+		};
+		A1A1A11111159973516BB785_res /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				A1A1A10311159973516BB785 /* Info.plist */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		A1A1A11111159973516BB785_src /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				A1A1A10211159973516BB785 /* MeetingAssistantAIService.swift */,
+				A1A1A10111159973516BB785 /* main.swift */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -90,10 +156,12 @@
 				39619CA28397798BF02CF90D /* Sources */,
 				4406995276713BCE01038784 /* Resources */,
 				E73F3666792546EC762B746A /* Frameworks */,
-			);
+							A1A1A11011159973516BB785 /* Embed XPCServices */,
+);
 			buildRules = (
 			);
 			dependencies = (
+				A1A1A10E11159973516BB785 /* PBXTargetDependency */,
 			);
 			name = MeetingAssistant;
 			packageProductDependencies = (
@@ -102,6 +170,23 @@
 			productName = MeetingAssistant;
 			productReference = 00BF240857B0E7CEBE822856 /* MeetingAssistant.app */;
 			productType = "com.apple.product-type.application";
+		};
+		A1A1A10711159973516BB785 /* MeetingAssistantAI */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1A1A10D11159973516BB785 /* Build configuration list for PBXNativeTarget "MeetingAssistantAI" */;
+			buildPhases = (
+				A1A1A10811159973516BB785 /* Sources */,
+				A1A1A10A11159973516BB785 /* Resources */,
+				A1A1A10911159973516BB785 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MeetingAssistantAI;
+			productName = MeetingAssistantAI;
+			productReference = A1A1A11311159973516BB785 /* MeetingAssistantAI.xpc */;
+			productType = "com.apple.product-type.xpc-service";
 		};
 /* End PBXNativeTarget section */
 
@@ -136,6 +221,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
+				A1A1A10711159973516BB785 /* MeetingAssistantAI */,
 				5D68C60BA1C59CB2A79D13F0 /* MeetingAssistant */,
 			);
 		};
@@ -148,6 +234,14 @@
 			files = (
 				67EFEA61F7E1C1B39F839DA8 /* Assets.xcassets in Resources */,
 				791585666AC34712B12EC196 /* InfoPlist.strings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1A1A10A11159973516BB785 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1A1A10611159973516BB785 /* Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -165,8 +259,24 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A1A1A10811159973516BB785 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1A1A10511159973516BB785 /* MeetingAssistantAIService.swift in Sources */,
+				A1A1A10411159973516BB785 /* main.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		A1A1A10E11159973516BB785 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A1A1A10711159973516BB785 /* MeetingAssistantAI */;
+			targetProxy = A1A1A10F11159973516BB785 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 /* Begin PBXVariantGroup section */
 		833251DCBCC51B7EF6E85459 /* InfoPlist.strings */ = {
 			isa = PBXVariantGroup;
@@ -339,6 +449,42 @@
 			};
 			name = Release;
 		};
+		A1A1A10B11159973516BB785 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = MeetingAssistantAI/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.mourato.my-meeting-assistant.ai-service;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		A1A1A10C11159973516BB785 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = MeetingAssistantAI/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.mourato.my-meeting-assistant.ai-service;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -359,6 +505,15 @@
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
+		};
+		A1A1A10D11159973516BB785 /* Build configuration list for PBXNativeTarget "MeetingAssistantAI" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1A1A10B11159973516BB785 /* Debug */,
+				A1A1A10C11159973516BB785 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 
