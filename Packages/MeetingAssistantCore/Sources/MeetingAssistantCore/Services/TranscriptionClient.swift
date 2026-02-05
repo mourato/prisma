@@ -70,69 +70,99 @@ public struct ServiceStatusResponse: Codable {
 public class TranscriptionClient: ObservableObject, TranscriptionService {
     public static let shared = TranscriptionClient()
 
-    private let manager = FluidAIModelManager.shared
+    private let logger = Logger(subsystem: "MeetingAssistant", category: "TranscriptionClient")
 
-    // We observe the manager to update our synthetic "ServiceStatus" if needed,
-    // but the fetchServiceStatus() method is pull-based, so we can just compute it on demand.
-
-    private init() {
-        // NOTE: Model loading is now deferred to first transcription or explicit warmupModel() call
-        // to prevent main thread starvation during app startup.
+    /// The underlying transcription implementation based on feature flags.
+    private enum TranscriptionImplementation {
+        case xpc
+        case local
     }
 
-    /// Check if the transcription service is healthy (delegates to XPC).
+    private var transcriptionImplementation: TranscriptionImplementation {
+        FeatureFlags.useXPCService ? .xpc : .local
+    }
+
+    private init() {}
+
+    /// Check if the transcription service is healthy.
     public func healthCheck() async throws -> Bool {
-        do {
-            let status = try await MeetingAssistantAIClient.shared.fetchServiceStatus()
-            return status.status == "healthy"
-        } catch {
-            return false
+        switch transcriptionImplementation {
+        case .xpc:
+            do {
+                let status = try await MeetingAssistantAIClient.shared.fetchServiceStatus()
+                return status.status == "healthy"
+            } catch {
+                return false
+            }
+        case .local:
+            return FluidAIModelManager.shared.modelState == .loaded
         }
     }
 
-    /// Fetch detailed service status from XPC service.
-    /// - Returns: ServiceStatusResponse with comprehensive service information.
+    /// Fetch detailed service status.
     public func fetchServiceStatus() async throws -> ServiceStatusResponse {
-        let xpcStatus = try await MeetingAssistantAIClient.shared.fetchServiceStatus()
-        
-        // Map XPC status to ServiceStatusResponse
-        return ServiceStatusResponse(
-            status: xpcStatus.status,
-            modelState: xpcStatus.modelState,
-            modelLoaded: xpcStatus.modelLoaded,
-            device: xpcStatus.device,
-            modelName: xpcStatus.modelName,
-            uptimeSeconds: xpcStatus.uptimeSeconds,
-            lastTranscriptionTime: nil,
-            totalTranscriptions: 0,
-            totalAudioProcessedSeconds: 0
-        )
+        switch transcriptionImplementation {
+        case .xpc:
+            let xpcStatus = try await MeetingAssistantAIClient.shared.fetchServiceStatus()
+            return ServiceStatusResponse(
+                status: xpcStatus.status,
+                modelState: xpcStatus.modelState,
+                modelLoaded: xpcStatus.modelLoaded,
+                device: xpcStatus.device,
+                modelName: xpcStatus.modelName,
+                uptimeSeconds: xpcStatus.uptimeSeconds,
+                lastTranscriptionTime: nil,
+                totalTranscriptions: 0,
+                totalAudioProcessedSeconds: 0
+            )
+        case .local:
+            let state = FluidAIModelManager.shared.modelState
+            return ServiceStatusResponse(
+                status: state == .error ? "unhealthy" : "healthy",
+                modelState: state.rawValue,
+                modelLoaded: state == .loaded,
+                device: "ANE",
+                modelName: "parakeet-tdt-0.6b-v3-coreml",
+                uptimeSeconds: 0,
+                lastTranscriptionTime: nil,
+                totalTranscriptions: 0,
+                totalAudioProcessedSeconds: 0
+            )
+        }
     }
 
-    /// Warm up the model inside the XPC process.
+    /// Warm up the transcription model.
     public func warmupModel() async throws {
-        try await MeetingAssistantAIClient.shared.warmupModel()
+        switch transcriptionImplementation {
+        case .xpc:
+            try await MeetingAssistantAIClient.shared.warmupModel()
+        case .local:
+            await FluidAIModelManager.shared.loadModels()
+        }
     }
 
     /// Transcribe an audio file.
-    /// - Parameter audioURL: Path to the audio file (WAV, M4A, etc.)
-    /// - Parameter onProgress: Optional callback for transcription progress.
-    /// - Returns: Transcription response from the service
     public func transcribe(
         audioURL: URL,
         onProgress: (@Sendable (Double) -> Void)? = nil
     ) async throws -> TranscriptionResponse {
         AppLogger.info(
-            "Transcribing file locally",
+            "Transcribing file",
             category: .transcriptionEngine,
-            extra: ["filename": audioURL.lastPathComponent]
+            extra: ["filename": audioURL.lastPathComponent, "implementation": transcriptionImplementation == .xpc ? "XPC" : "local"]
         )
 
-        // Use MeetingAssistantAIClient (XPC) as the implementation provider.
+        switch transcriptionImplementation {
+        case .xpc:
+            return try await transcribeViaXPC(audioURL: audioURL, onProgress: onProgress)
+        case .local:
+            return try await transcribeLocally(audioURL: audioURL, onProgress: onProgress)
+        }
+    }
+
+    private func transcribeViaXPC(audioURL: URL, onProgress: (@Sendable (Double) -> Void)?) async throws -> TranscriptionResponse {
         do {
-            let response = try await MeetingAssistantAIClient.shared.transcribe(
-                audioURL: audioURL
-            )
+            let response = try await MeetingAssistantAIClient.shared.transcribe(audioURL: audioURL)
             AppLogger.info(
                 "Transcription completed via XPC",
                 category: .transcriptionEngine,
@@ -141,7 +171,30 @@ public class TranscriptionClient: ObservableObject, TranscriptionService {
             return response
         } catch {
             AppLogger.error(
-                "Transcription failed",
+                "Transcription failed via XPC",
+                category: .transcriptionEngine,
+                error: error,
+                extra: ["filename": audioURL.lastPathComponent]
+            )
+            throw error
+        }
+    }
+
+    private func transcribeLocally(audioURL: URL, onProgress: (@Sendable (Double) -> Void)?) async throws -> TranscriptionResponse {
+        do {
+            let response = try await LocalTranscriptionClient.shared.transcribe(
+                audioURL: audioURL,
+                onProgress: onProgress
+            )
+            AppLogger.info(
+                "Transcription completed locally",
+                category: .transcriptionEngine,
+                extra: ["words": response.text.split(separator: " ").count]
+            )
+            return response
+        } catch {
+            AppLogger.error(
+                "Transcription failed locally",
                 category: .transcriptionEngine,
                 error: error,
                 extra: ["filename": audioURL.lastPathComponent]
