@@ -129,4 +129,9 @@ public struct Meeting: Identifiable, Codable, Hashable, Sendable {
     public var appColor: Color {
         app.color
     }
+
+    /// Indicates if the meeting represents a dictation (unknown app source).
+    public var isDictation: Bool {
+        app == .unknown
+    }
 }
