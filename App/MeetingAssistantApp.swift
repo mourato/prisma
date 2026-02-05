@@ -77,9 +77,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         assistantShortcutController.start()
         setupRecordingObservation()
         updateMenuTitles() // Initial update
-
+ 
         // Warmup transcription model
-        Task {
+        Task { @MainActor in
             do {
                 try await TranscriptionClient.shared.warmupModel()
             } catch {
