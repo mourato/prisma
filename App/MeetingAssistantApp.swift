@@ -135,12 +135,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         recordingManager.isRecordingPublisher
             .combineLatest(
                 recordingManager.isTranscribingPublisher,
-                assistantVoiceCommandService.$isRecording
+                assistantVoiceCommandService.$isRecording,
+                recordingManager.currentMeetingPublisher
             )
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] isRecording, isTranscribing, isAssistantRecording in
+            .sink { [weak self] isRecording, isTranscribing, isAssistantRecording, currentMeeting in
                 self?.updateStatusIcon(isRecording: isRecording || isAssistantRecording)
-                self?.updateFloatingIndicator(isRecording: isRecording || isAssistantRecording, isTranscribing: isTranscribing)
+                self?.updateFloatingIndicator(
+                    isRecording: isRecording || isAssistantRecording,
+                    isTranscribing: isTranscribing,
+                    meetingType: currentMeeting?.type
+                )
                 self?.updateMenuTitles()
             }
             .store(in: &cancellables)
@@ -470,11 +475,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem?.button?.image = image
     }
 
-    private func updateFloatingIndicator(isRecording: Bool, isTranscribing: Bool) {
+    private func updateFloatingIndicator(isRecording: Bool, isTranscribing: Bool, meetingType: MeetingType? = nil) {
         if isRecording {
-            floatingIndicatorController.show(mode: .recording)
+            floatingIndicatorController.show(mode: .recording, type: meetingType)
         } else if isTranscribing {
-            floatingIndicatorController.show(mode: .processing)
+            floatingIndicatorController.show(mode: .processing, type: meetingType)
         } else {
             floatingIndicatorController.hide()
         }

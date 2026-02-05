@@ -18,12 +18,17 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
     @Published public private(set) var isRecording = false
     @Published public private(set) var isTranscribing = false
+    @Published public private(set) var meetingState: MeetingState = .idle
     @Published public private(set) var currentMeeting: Meeting?
     @Published public private(set) var lastError: Error?
     @Published public private(set) var hasRequiredPermissions = false
     @Published public private(set) var recordingSource: RecordingSource = .microphone
 
     // MARK: - Protocol Publishers
+
+    public var meetingStatePublisher: AnyPublisher<MeetingState, Never> {
+        $meetingState.eraseToAnyPublisher()
+    }
 
     public var isRecordingPublisher: AnyPublisher<Bool, Never> {
         $isRecording.eraseToAnyPublisher()
@@ -193,8 +198,10 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     // MARK: - Public API
 
     /// Start recording audio for a meeting.
-    /// - Parameter source: The audio source to record.
-    public func startRecording(source: RecordingSource = .microphone) async {
+    /// - Parameters:
+    ///   - source: The audio source to record.
+    ///   - type: The type of meeting (defaults to .general for backward compatibility).
+    public func startRecording(source: RecordingSource = .microphone, type: MeetingType = .general) async {
         guard !isRecording else {
             AppLogger.info("Attempted to start recording but already recording", category: .recordingManager)
             return
@@ -207,8 +214,9 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
         recordingSource = source
 
+
         do {
-            let meeting = createMeeting()
+            let meeting = createMeeting(type: type)
             currentMeeting = meeting
 
             // We only need one output URL because AudioRecorder handles mixing
@@ -223,6 +231,8 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             try await startRecorder(to: outputURL, source: source)
 
             isRecording = true
+            meetingState = .recording // Sync state
+            currentMeeting?.state = .recording // Sync entity state
             currentMeeting?.audioFilePath = outputURL.path
 
             // Play start recording sound feedback
@@ -258,9 +268,9 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         }
     }
 
-    private func createMeeting() -> Meeting {
+    private func createMeeting(type: MeetingType) -> Meeting {
         let app = meetingDetector.detectedMeeting ?? .unknown
-        return Meeting(app: app)
+        return Meeting(app: app, type: type, state: .recording)
     }
 
     private func generateRecordingPaths(for meeting: Meeting) async throws -> (URL, URL) {
@@ -323,6 +333,11 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             // to prevent the UI from hiding the indicator during audio merging gap.
             if transcribe {
                 isTranscribing = true
+                meetingState = .processing(.transcribing) // Sync state
+                currentMeeting?.state = .processing(.transcribing) // Sync entity state
+            } else {
+                 meetingState = .idle
+                 currentMeeting?.state = .completed
             }
 
             isRecording = false
@@ -341,6 +356,8 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             // Transcribe if requested
             if transcribe, let meeting = currentMeeting {
                 await transcribeRecording(audioURL: finalURL, meeting: meeting)
+            } else {
+                 currentMeeting = nil // Clear current meeting if done
             }
 
         } catch {
@@ -348,6 +365,8 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             lastError = error
             isRecording = false
             isTranscribing = false
+            meetingState = .failed(error.localizedDescription) // Sync state
+            currentMeeting?.state = .failed(error.localizedDescription) // Sync entity state
             await RecordingExclusivityCoordinator.shared.endRecording()
         }
     }
@@ -539,7 +558,11 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
     private func transcribeRecording(audioURL: URL, meeting: Meeting) async {
         // isTranscribing is already set by stopRecording to bridge the UI gap
-        if !isTranscribing { isTranscribing = true }
+        if !isTranscribing { 
+            isTranscribing = true 
+            meetingState = .processing(.transcribing)
+            currentMeeting?.state = .processing(.transcribing)
+        }
 
         let audioDuration = await getAudioDuration(from: audioURL)
         transcriptionStatus.beginTranscription(audioDuration: audioDuration)
@@ -551,13 +574,22 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             let response = try await performTranscription(audioURL: audioURL)
             let transcriptionProcessingDuration = Date().timeIntervalSince(transcriptionStart)
 
+            // Transition to summarization/post-processing state
+            meetingState = .processing(.summarizing)
+            currentMeeting?.state = .processing(.summarizing)
+
             let postProcessing = await applyPostProcessing(rawText: response.text)
+
+            // Transition to generating output state
+             meetingState = .processing(.generatingOutput)
+             currentMeeting?.state = .processing(.generatingOutput)
 
             var meetingForTranscription = meeting
             if meetingForTranscription.endTime == nil, let audioDuration {
                 meetingForTranscription.endTime = meetingForTranscription.startTime
                     .addingTimeInterval(audioDuration)
             }
+            meetingForTranscription.state = .completed // Final state for the meeting entity
 
             // Determine input source display string
             let sourceDisplay = switch recordingSource {
@@ -582,9 +614,12 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
         } catch {
             handleTranscriptionError(error)
+             meetingState = .failed(error.localizedDescription)
+             currentMeeting?.state = .failed(error.localizedDescription)
         }
 
         isTranscribing = false
+        meetingState = .idle
         currentMeeting = nil
     }
 
