@@ -35,7 +35,7 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
     private(set) var asrManager: AsrManager?
     private(set) var diarizerManager: OfflineDiarizerManager?
 
-    public enum ModelState: String {
+    public enum ModelState: String, Sendable {
         case unloaded
         case downloading
         case loading
@@ -44,7 +44,7 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
     }
 
     /// Detailed phase tracking for UI progress feedback
-    public enum DownloadPhase: Equatable {
+    public enum DownloadPhase: Equatable, Sendable {
         case idle
         case downloadingASR
         case loadingASR

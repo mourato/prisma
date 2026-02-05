@@ -2,6 +2,7 @@ import Foundation
 
 /// Protocol for the MeetingAssistant XPC Service.
 /// This service handles heavy AI processing (Diarization, Transcription).
+@MainActor
 @objc(MeetingAssistantXPCProtocol)
 public protocol MeetingAssistantXPCProtocol {
     
@@ -13,16 +14,16 @@ public protocol MeetingAssistantXPCProtocol {
     func transcribe(
         audioURL: URL,
         settingsData: Data,
-        withReply reply: @escaping (Data?, Error?) -> Void
+        withReply reply: @escaping @Sendable (Data?, Error?) -> Void
     )
     
     /// Fetches the current status of the AI service.
     /// - Parameter reply: Callback with JSON encoded `MeetingAssistantXPCModels.ServiceStatus` or error.
-    func fetchServiceStatus(withReply reply: @escaping (Data?, Error?) -> Void)
+    func fetchServiceStatus(withReply reply: @escaping @Sendable (Data?, Error?) -> Void)
     
     /// Warms up the models inside the XPC process.
     /// - Parameter reply: Callback indicating success or error.
-    func warmupModel(withReply reply: @escaping (Error?) -> Void)
+    func warmupModel(withReply reply: @escaping @Sendable (Error?) -> Void)
 }
 
 /// Constants for XPC Service

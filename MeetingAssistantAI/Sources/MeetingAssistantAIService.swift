@@ -3,16 +3,17 @@ import MeetingAssistantCore
 import os.log
 
 /// Implementation of the MeetingAssistant XPC Service.
-class MeetingAssistantAIService: NSObject, MeetingAssistantXPCProtocol {
+@MainActor
+final class MeetingAssistantAIService: NSObject, MeetingAssistantXPCProtocol {
     
-    private let logger = Logger(subsystem: "com.mourato.my-meeting-assistant.ai-service", category: "AIService")
+    private static let logger = Logger(subsystem: "com.mourato.my-meeting-assistant.ai-service", category: "AIService")
     
     func transcribe(
         audioURL: URL,
         settingsData: Data,
-        withReply reply: @escaping (Data?, Error?) -> Void
+        withReply reply: @escaping @Sendable (Data?, Error?) -> Void
     ) {
-        logger.info("XPC Request: Transcribe \(audioURL.lastPathComponent)")
+        Self.logger.info("XPC Request: Transcribe \(audioURL.lastPathComponent)")
         
         Task {
             do {
@@ -34,17 +35,16 @@ class MeetingAssistantAIService: NSObject, MeetingAssistantXPCProtocol {
                 reply(data, nil)
                 
             } catch {
-                logger.error("XPC Transcription failed: \(error.localizedDescription)")
+                Self.logger.error("XPC Transcription failed: \(error.localizedDescription)")
                 reply(nil, error)
             }
         }
     }
     
-    func fetchServiceStatus(withReply reply: @escaping (Data?, Error?) -> Void) {
+    func fetchServiceStatus(withReply reply: @escaping @Sendable (Data?, Error?) -> Void) {
         Task {
             do {
-                let manager = FluidAIModelManager.shared
-                let currentState = manager.modelState
+                let currentState = await FluidAIModelManager.shared.modelState
                 
                 let status = MeetingAssistantXPCModels.ServiceStatus(
                     status: currentState == .error ? "unhealthy" : "healthy",
@@ -64,14 +64,10 @@ class MeetingAssistantAIService: NSObject, MeetingAssistantXPCProtocol {
         }
     }
     
-    func warmupModel(withReply reply: @escaping (Error?) -> Void) {
+    func warmupModel(withReply reply: @escaping @Sendable (Error?) -> Void) {
         Task {
-            do {
-                await FluidAIModelManager.shared.loadModels()
-                reply(nil)
-            } catch {
-                reply(error)
-            }
+            await FluidAIModelManager.shared.loadModels()
+            reply(nil)
         }
     }
 }

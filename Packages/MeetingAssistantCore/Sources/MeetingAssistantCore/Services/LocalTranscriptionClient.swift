@@ -3,8 +3,8 @@ import os.log
 
 /// Client for local transcription using FluidAudio.
 @MainActor
-class LocalTranscriptionClient {
-    static let shared = LocalTranscriptionClient()
+public class LocalTranscriptionClient {
+    public static let shared = LocalTranscriptionClient()
 
     private let logger = Logger(subsystem: "MeetingAssistant", category: "LocalTranscriptionClient")
     private let manager = FluidAIModelManager.shared
@@ -12,7 +12,7 @@ class LocalTranscriptionClient {
     private init() {}
 
     /// Initializes and warms up the model.
-    func prepare() async {
+    public func prepare() async {
         await manager.loadModels()
     }
 
@@ -20,7 +20,7 @@ class LocalTranscriptionClient {
     /// - Parameter audioURL: Path to the audio file.
     /// - Parameter onProgress: Optional callback for transcription progress.
     /// - Returns: TranscriptionResponse compatible with existing app logic.
-    func transcribe(
+    public func transcribe(
         audioURL: URL,
         isDiarizationEnabled: Bool? = nil,
         minSpeakers: Int? = nil,

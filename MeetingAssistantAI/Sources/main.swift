@@ -2,7 +2,8 @@ import Foundation
 import MeetingAssistantCore
 
 /// Delegate for the XPC Service to handle incoming connections.
-class AIServiceDelegate: NSObject, NSXPCListenerDelegate {
+@MainActor
+class AIServiceDelegate: NSObject, @preconcurrency NSXPCListenerDelegate {
     func listener(_ listener: NSXPCListener, shouldAcceptNewConnection newConnection: NSXPCConnection) -> Bool {
         
         // Use the protocol defined in MeetingAssistantCore
