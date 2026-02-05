@@ -19,17 +19,17 @@ public class AISettingsViewModel: ObservableObject {
 
     private let logger = Logger(subsystem: "MeetingAssistant", category: "AISettingsViewModel")
     private let keychain: KeychainProvider
-    private let session: URLSession
+    private let llmService: LLMService
     private var cancellables = Set<AnyCancellable>()
 
     public init(
         settings: AppSettingsStore,
         keychain: KeychainProvider = DefaultKeychainProvider(),
-        session: URLSession = .shared
+        llmService: LLMService = DefaultLLMService()
     ) {
         self.settings = settings
         self.keychain = keychain
-        self.session = session
+        self.llmService = llmService
         // Initial load for current provider
         apiKeyText = loadAPIKeyForCurrentProvider() ?? ""
 
@@ -108,25 +108,28 @@ public class AISettingsViewModel: ObservableObject {
         availableModels = []
         modelsFetchError = nil
 
-        guard let url = validateURL(settings.aiConfiguration.baseURL) else {
+        guard let url = llmService.validateURL(settings.aiConfiguration.baseURL) else {
             connectionStatus = .failure("settings.ai.connection.invalid_url".localized)
             return
         }
 
         Task {
             do {
-                // Use the text from the UI for testing
-                let request = try self.buildTestRequest(for: url, apiKey: self.apiKeyText)
-                let (_, response) = try await self.session.data(for: request)
-                self.handleTestResponse(response)
+                let success = try await llmService.testConnection(
+                    baseURL: url,
+                    apiKey: apiKeyText
+                )
 
-                // Fetch models and PERSIST key on successful connection
-                if self.connectionStatus == .success {
+                if success {
+                    self.connectionStatus = .success
                     try self.persistAPIKey(apiKeyText)
                     self.isKeySaved = true
                     self.apiKeyText = "" // Clear plaintext from memory
                     self.updateUIStates()
                     await self.fetchAvailableModels()
+                } else {
+                    self.connectionStatus = .failure("settings.ai.connection.invalid_response".localized)
+                    self.updateUIStates()
                 }
             } catch {
                 self.connectionStatus = .failure(self.connectionErrorMessage(from: error))
@@ -137,7 +140,7 @@ public class AISettingsViewModel: ObservableObject {
 
     /// Fetches available models from the LLM service's /models endpoint.
     public func fetchAvailableModels() async {
-        guard let baseURL = validateURL(settings.aiConfiguration.baseURL) else {
+        guard let baseURL = llmService.validateURL(settings.aiConfiguration.baseURL) else {
             modelsFetchError = "settings.ai.connection.invalid_url".localized
             return
         }
@@ -148,18 +151,11 @@ public class AISettingsViewModel: ObservableObject {
         defer { self.isLoadingModels = false }
 
         do {
-            let request = try buildModelsRequest(for: baseURL)
-            let (data, response) = try await session.data(for: request)
-
-            guard let httpResponse = response as? HTTPURLResponse,
-                  (200...299).contains(httpResponse.statusCode)
-            else {
-                modelsFetchError = "settings.ai.models.fetch_failed".localized
-                return
-            }
-
-            let modelsResponse = try JSONDecoder().decode(LLMModelsResponse.self, from: data)
-            availableModels = modelsResponse.data.sorted { $0.id < $1.id }
+            availableModels = try await llmService.fetchAvailableModels(
+                baseURL: baseURL,
+                apiKey: apiKeyText.isEmpty ? (loadAPIKeyForCurrentProvider() ?? "") : apiKeyText,
+                provider: settings.aiConfiguration.provider
+            )
             // swiftformat:disable:next redundantSelf
             self.logger.info("Fetched \(self.availableModels.count) models from API")
         } catch {
@@ -187,48 +183,7 @@ public class AISettingsViewModel: ObservableObject {
         }
     }
 
-    private func buildModelsRequest(for baseURL: URL) throws -> URLRequest {
-        let modelsURL = baseURL.appendingPathComponent("models")
-        var request = URLRequest(url: modelsURL)
-        request.httpMethod = "GET"
-        request.timeoutInterval = 10
 
-        if let key = try? keychain.retrieveAPIKey(for: settings.aiConfiguration.provider), !key.isEmpty {
-            request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
-        }
-        return request
-    }
-
-    private func validateURL(_ urlString: String) -> URL? {
-        guard let url = URL(string: urlString),
-              let scheme = url.scheme,
-              ["http", "https"].contains(scheme.lowercased())
-        else { return nil }
-        return url
-    }
-
-    private func buildTestRequest(for url: URL, apiKey: String) throws -> URLRequest {
-        // Append "models" to the base URL for verification, as most providers (OpenAI, Groq, Anthropic)
-        // return 404 on the base URL but successfully list models on /models.
-        let validationURL = url.appendingPathComponent("models")
-        var request = URLRequest(url: validationURL)
-        request.httpMethod = "GET"
-        request.timeoutInterval = 10
-        if !apiKey.isEmpty {
-            request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        }
-        return request
-    }
-
-    private func handleTestResponse(_ response: URLResponse) {
-        if let httpResponse = response as? HTTPURLResponse {
-            let statusCode = httpResponse.statusCode
-            connectionStatus = (200...299).contains(statusCode) ? .success : .failure("HTTP \(statusCode)")
-        } else {
-            connectionStatus = .failure("settings.ai.connection.invalid_response".localized)
-        }
-        updateUIStates()
-    }
 
     private func connectionErrorMessage(from error: Error) -> String {
         if let urlError = error as? URLError {
