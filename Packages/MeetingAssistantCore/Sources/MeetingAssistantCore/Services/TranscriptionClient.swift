@@ -80,42 +80,38 @@ public class TranscriptionClient: ObservableObject, TranscriptionService {
         // to prevent main thread starvation during app startup.
     }
 
-    /// Check if the transcription service is healthy (local model manager).
+    /// Check if the transcription service is healthy (delegates to XPC).
     public func healthCheck() async throws -> Bool {
-        // Local service is always "healthy" if the app is running,
-        // unless the model failed to load.
-        // We trigger a load check if needed.
-        if manager.modelState == .error {
+        do {
+            let status = try await MeetingAssistantAIClient.shared.fetchServiceStatus()
+            return status.status == "healthy"
+        } catch {
             return false
         }
-        return true
     }
 
-    /// Fetch detailed service status.
+    /// Fetch detailed service status from XPC service.
     /// - Returns: ServiceStatusResponse with comprehensive service information.
     public func fetchServiceStatus() async throws -> ServiceStatusResponse {
-        // Construct a response based on local manager state
-
-        let currentState = manager.modelState
-        let isLoaded = currentState == .loaded
-
-        // Map local state to the expected JSON response format
+        let xpcStatus = try await MeetingAssistantAIClient.shared.fetchServiceStatus()
+        
+        // Map XPC status to ServiceStatusResponse
         return ServiceStatusResponse(
-            status: currentState == .error ? "unhealthy" : "healthy",
-            modelState: currentState.rawValue,
-            modelLoaded: isLoaded,
-            device: "ANE", // FluidAudio uses Apple Neural Engine
-            modelName: "parakeet-tdt-0.6b-v3",
-            uptimeSeconds: 0,
+            status: xpcStatus.status,
+            modelState: xpcStatus.modelState,
+            modelLoaded: xpcStatus.modelLoaded,
+            device: xpcStatus.device,
+            modelName: xpcStatus.modelName,
+            uptimeSeconds: xpcStatus.uptimeSeconds,
             lastTranscriptionTime: nil,
             totalTranscriptions: 0,
             totalAudioProcessedSeconds: 0
         )
     }
 
-    /// Warm up the model by pre-loading it.
+    /// Warm up the model inside the XPC process.
     public func warmupModel() async throws {
-        await manager.loadModels()
+        try await MeetingAssistantAIClient.shared.warmupModel()
     }
 
     /// Transcribe an audio file.
@@ -132,14 +128,13 @@ public class TranscriptionClient: ObservableObject, TranscriptionService {
             extra: ["filename": audioURL.lastPathComponent]
         )
 
-        // Use LocalTranscriptionClient as the implementation provider.
+        // Use MeetingAssistantAIClient (XPC) as the implementation provider.
         do {
-            let response = try await LocalTranscriptionClient.shared.transcribe(
-                audioURL: audioURL,
-                onProgress: onProgress
+            let response = try await MeetingAssistantAIClient.shared.transcribe(
+                audioURL: audioURL
             )
             AppLogger.info(
-                "Transcription completed info",
+                "Transcription completed via XPC",
                 category: .transcriptionEngine,
                 extra: ["words": response.text.split(separator: " ").count]
             )

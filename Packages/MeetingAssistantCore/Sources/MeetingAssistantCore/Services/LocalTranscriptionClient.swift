@@ -22,6 +22,10 @@ class LocalTranscriptionClient {
     /// - Returns: TranscriptionResponse compatible with existing app logic.
     func transcribe(
         audioURL: URL,
+        isDiarizationEnabled: Bool? = nil,
+        minSpeakers: Int? = nil,
+        maxSpeakers: Int? = nil,
+        numSpeakers: Int? = nil,
         onProgress: (@Sendable (Double) -> Void)? = nil
     ) async throws -> TranscriptionResponse {
         logger.info("Starting local transcription for: \(audioURL.lastPathComponent)")
@@ -34,7 +38,6 @@ class LocalTranscriptionClient {
         let startTime = Date()
 
         // Perform transcription
-        // Returns tuple (text, segments) -> conceptually "tokens" for alignment if they are small enough
         let (text, segmentsFromASR) = try await manager.transcribe(
             audioURL: audioURL,
             progress: onProgress
@@ -42,16 +45,22 @@ class LocalTranscriptionClient {
 
         var segments: [Transcription.Segment] = []
 
+        // Use passed settings or fallback to singleton (for app-process usage)
+        let diarizationEnabled = isDiarizationEnabled ?? AppSettingsStore.shared.isDiarizationEnabled
+        let minS = minSpeakers ?? AppSettingsStore.shared.minSpeakers
+        let maxS = maxSpeakers ?? AppSettingsStore.shared.maxSpeakers
+        let numS = numSpeakers ?? AppSettingsStore.shared.numSpeakers
+
         // Check if diarization is enabled
-        if AppSettingsStore.shared.isDiarizationEnabled {
+        if diarizationEnabled {
             // Perform diarization
             logger.info("Diarization enabled. Processing...")
             do {
                 let diarizationSegments = try await manager.diarize(
                     audioURL: audioURL,
-                    minSpeakers: AppSettingsStore.shared.minSpeakers,
-                    maxSpeakers: AppSettingsStore.shared.maxSpeakers,
-                    numSpeakers: AppSettingsStore.shared.numSpeakers
+                    minSpeakers: minS,
+                    maxSpeakers: maxS,
+                    numSpeakers: numS
                 )
                 segments = merge(
                     text: text, asrSegments: segmentsFromASR, speakers: diarizationSegments
