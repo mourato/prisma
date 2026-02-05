@@ -55,6 +55,41 @@ public struct MarkdownRenderer: Sendable {
         return markdown
     }
 
+    /// Renders a meeting summary using a user-defined template.
+    /// - Parameters:
+    ///   - template: The Markdown template with placeholders.
+    ///   - meeting: The meeting entity.
+    ///   - transcription: The associated transcription.
+    /// - Returns: A Markdown string with placeholders replaced.
+    public func renderWithTemplate(_ template: String, meeting: Meeting, transcription: Transcription) -> String {
+        var output = template
+
+        // Replace standard placeholders
+        output = output.replacingOccurrences(of: "{{title}}", with: meetingTitle(for: meeting))
+        output = output.replacingOccurrences(of: "{{date}}", with: formatDate(meeting.startTime))
+        output = output.replacingOccurrences(of: "{{duration}}", with: meeting.formattedDuration)
+        output = output.replacingOccurrences(of: "{{type}}", with: meeting.type.displayName)
+        output = output.replacingOccurrences(of: "{{app}}", with: meeting.app.displayName)
+        output = output.replacingOccurrences(of: "{{summary}}", with: transcription.processedContent ?? "")
+        
+        // Handle optional Transcription block if user wants it
+        // Check if {{transcription}} is used
+        if output.contains("{{transcription}}") {
+             var transcriptionText = ""
+             if !transcription.segments.isEmpty {
+                 for segment in transcription.segments {
+                     let time = formatTime(segment.startTime)
+                     transcriptionText += "**\(segment.speaker)** (\(time)):\n\(segment.text)\n\n"
+                 }
+             } else {
+                 transcriptionText = transcription.text
+             }
+             output = output.replacingOccurrences(of: "{{transcription}}", with: transcriptionText)
+        }
+
+        return output
+    }
+
     // MARK: - Helpers
 
     private func meetingTitle(for meeting: Meeting) -> String {

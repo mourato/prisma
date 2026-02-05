@@ -3,7 +3,7 @@
 import Foundation
 
 /// Caso de uso para transcrever arquivo de áudio
-public final class TranscribeAudioUseCase {
+public final class TranscribeAudioUseCase: Sendable {
     private let transcriptionRepository: TranscriptionRepository
     private let transcriptionStorageRepository: TranscriptionStorageRepository
     private let postProcessingRepository: PostProcessingRepository?
@@ -31,7 +31,8 @@ public final class TranscribeAudioUseCase {
         audioURL: URL,
         meeting: MeetingEntity,
         applyPostProcessing: Bool = false,
-        postProcessingPrompt: DomainPostProcessingPrompt? = nil
+        postProcessingPrompt: DomainPostProcessingPrompt? = nil,
+        availablePrompts: [DomainPostProcessingPrompt] = []
     ) async throws -> TranscriptionEntity {
         // Verificar saúde do serviço
         guard try await transcriptionRepository.healthCheck() else {
@@ -53,19 +54,37 @@ public final class TranscribeAudioUseCase {
         var processedContent: String?
         var promptId: UUID?
         var promptTitle: String?
+        var meetingType: String?
 
         if applyPostProcessing, let postProcessingRepo = postProcessingRepository {
             do {
                 if let prompt = postProcessingPrompt {
+                    // Prompt específico fornecido
                     processedContent = try await postProcessingRepo.processTranscription(response.text, with: prompt)
                     promptId = prompt.id
                     promptTitle = prompt.title
                 } else {
-                    processedContent = try await postProcessingRepo.processTranscription(response.text)
+                    // Autodetecção ou Prompt Geral
+                    if !availablePrompts.isEmpty {
+                        let classification = try await classifyMeeting(text: response.text, repository: postProcessingRepo)
+                        meetingType = classification
+                        
+                        // Tentar encontrar prompt correspondente ao tipo
+                        if let type = classification,
+                           let match = findPrompt(for: type, in: availablePrompts) {
+                                processedContent = try await postProcessingRepo.processTranscription(response.text, with: match)
+                                promptId = match.id
+                                promptTitle = match.title
+                           } else {
+                               // Fallback
+                               processedContent = try await postProcessingRepo.processTranscription(response.text)
+                           }
+                    } else {
+                        processedContent = try await postProcessingRepo.processTranscription(response.text)
+                    }
                 }
             } catch {
                 // Pós-processamento falhou, mas transcrição foi bem-sucedida
-                // Não falhar o caso de uso inteiro por isso
                 // swiftlint:disable:next disallow_print_and_nslog
                 print("Post-processing failed: \(error)")
             }
@@ -89,6 +108,7 @@ public final class TranscribeAudioUseCase {
         config.postProcessingPromptId = promptId
         config.postProcessingPromptTitle = promptTitle
         config.modelName = response.model
+        config.meetingType = meetingType
 
         let transcription = TranscriptionEntity(
             meeting: meeting,
@@ -99,6 +119,36 @@ public final class TranscribeAudioUseCase {
         try await transcriptionStorageRepository.saveTranscription(transcription)
 
         return transcription
+    }
+
+
+    // MARK: - Private Helpers
+
+    private func classifyMeeting(text: String, repository: PostProcessingRepository) async throws -> String? {
+        let classifierPrompt = DomainPostProcessingPrompt(
+            id: UUID(),
+            title: "Classifier",
+            content: """
+            Analise a transcrição e classifique o tipo de reunião.
+            Responda APENAS com o JSON no seguinte formato:
+            { "type": "VALOR" }
+            Valores possíveis: standup, presentation, design_review, one_on_one, planning, general.
+            """,
+            isDefault: false
+        )
+        
+        let jsonString = try await repository.processTranscription(text, with: classifierPrompt)
+        
+        guard let data = jsonString.data(using: .utf8),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: String],
+              let type = json["type"] else {
+            return nil
+        }
+        return type
+    }
+    
+    private func findPrompt(for type: String, in prompts: [DomainPostProcessingPrompt]) -> DomainPostProcessingPrompt? {
+        return prompts.first { $0.title.localizedCaseInsensitiveContains(type) }
     }
 }
 
