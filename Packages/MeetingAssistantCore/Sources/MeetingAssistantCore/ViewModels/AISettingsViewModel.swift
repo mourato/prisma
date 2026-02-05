@@ -38,30 +38,34 @@ public class AISettingsViewModel: ObservableObject {
             .removeDuplicates()
             .dropFirst() // Skip initial value to avoid clearing selection on tab switch
             .sink { [weak self] provider in
-                self?.apiKeyText = ""
-                self?.isKeySaved = KeychainManager.existsAPIKey(for: provider)
-                self?.settings.updateSelectedModel("") // Clear previous selection (properly triggers didSet)
+                guard let self = self else { return }
+                self.apiKeyText = ""
+                self.isKeySaved = self.keychain.existsAPIKey(for: provider)
+                self.settings.updateSelectedModel("") // Clear previous selection (properly triggers didSet)
 
-                if self?.isKeySaved == true {
+                if self.isKeySaved {
                     // Restore verified state and fetch models
-                    self?.connectionStatus = .success
+                    self.connectionStatus = .success
                     Task {
-                        await self?.fetchAvailableModels()
+                        await self.fetchAvailableModels()
                     }
                 } else {
-                    self?.connectionStatus = .unknown
-                    self?.availableModels = [] // Clear models if no key
+                    self.connectionStatus = .unknown
+                    self.availableModels = [] // Clear models if no key
                 }
 
-                self?.updateUIStates()
+                self.updateUIStates()
             }
             .store(in: &cancellables)
 
         // Initial state
-        isKeySaved = KeychainManager.existsAPIKey(for: settings.aiConfiguration.provider)
+        isKeySaved = keychain.existsAPIKey(for: settings.aiConfiguration.provider)
         updateUIStates()
         if isKeySaved {
             connectionStatus = .success
+            Task {
+                await fetchAvailableModels()
+            }
         }
     }
 
@@ -92,7 +96,7 @@ public class AISettingsViewModel: ObservableObject {
 
     private func loadAPIKeyForCurrentProvider() -> String? {
         do {
-            return try KeychainManager.retrieveAPIKey(for: settings.aiConfiguration.provider)
+            return try keychain.retrieveAPIKey(for: settings.aiConfiguration.provider)
         } catch {
             logger.error("Failed to load API key: \(error.localizedDescription)")
             return nil
@@ -189,7 +193,7 @@ public class AISettingsViewModel: ObservableObject {
         request.httpMethod = "GET"
         request.timeoutInterval = 10
 
-        if let key = try? KeychainManager.retrieveAPIKey(for: settings.aiConfiguration.provider), !key.isEmpty {
+        if let key = try? keychain.retrieveAPIKey(for: settings.aiConfiguration.provider), !key.isEmpty {
             request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
         }
         return request
