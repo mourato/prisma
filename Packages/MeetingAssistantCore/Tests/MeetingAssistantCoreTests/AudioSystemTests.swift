@@ -322,7 +322,6 @@ final class AudioSystemTests: XCTestCase {
     // Performance tests have been moved to AudioSystemPerformanceTests.swift
     // Run with: swift test --filter "AudioSystemPerformanceTests"
 
-
     // MARK: - Testes de Cleanup Adequado
 
     func testCleanup_AudioRecorderResourceCleanup() async throws {

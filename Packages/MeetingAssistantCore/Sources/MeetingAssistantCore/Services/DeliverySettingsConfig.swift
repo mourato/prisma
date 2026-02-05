@@ -7,6 +7,6 @@ public protocol DeliverySettingsConfig {
     var autoPasteTranscriptionToActiveApp: Bool { get }
 }
 
-// Extend existing AppSettingsStore to conform to the protocol directly.
-// This avoids needing wrapper code since the properties match.
+/// Extend existing AppSettingsStore to conform to the protocol directly.
+/// This avoids needing wrapper code since the properties match.
 extension AppSettingsStore: DeliverySettingsConfig {}

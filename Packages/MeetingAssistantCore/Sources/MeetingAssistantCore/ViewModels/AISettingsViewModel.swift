@@ -40,7 +40,7 @@ public class AISettingsViewModel: ObservableObject {
             .sink { [weak self] provider in
                 self?.apiKeyText = ""
                 self?.isKeySaved = KeychainManager.existsAPIKey(for: provider)
-                self?.settings.aiConfiguration.selectedModel = "" // Clear previous selection
+                self?.settings.updateSelectedModel("") // Clear previous selection (properly triggers didSet)
 
                 if self?.isKeySaved == true {
                     // Restore verified state and fetch models

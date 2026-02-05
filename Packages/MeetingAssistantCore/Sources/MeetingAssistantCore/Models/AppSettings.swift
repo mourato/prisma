@@ -448,6 +448,30 @@ public class AppSettingsStore: ObservableObject {
         didSet { save(aiConfiguration, forKey: Keys.aiConfiguration) }
     }
 
+    // MARK: - AI Configuration Helpers
+
+    /// Updates the selected model for the current AI provider.
+    /// This properly triggers the @Published didSet to persist changes.
+    public func updateSelectedModel(_ model: String) {
+        var config = aiConfiguration
+        config.selectedModel = model
+        aiConfiguration = config
+    }
+
+    /// Updates the AI configuration for a specific provider.
+    /// Properly triggers the @Published didSet to persist changes.
+    public func updateAIConfiguration(provider: AIProvider, baseURL: String? = nil, selectedModel: String? = nil) {
+        var config = aiConfiguration
+        config.provider = provider
+        if let baseURL {
+            config.baseURL = baseURL
+        }
+        if let selectedModel {
+            config.selectedModel = selectedModel
+        }
+        aiConfiguration = config
+    }
+
     // MARK: - Post-Processing Properties
 
     /// Custom system prompt for post-processing.

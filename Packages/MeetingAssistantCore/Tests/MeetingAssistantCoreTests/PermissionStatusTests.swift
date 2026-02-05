@@ -19,7 +19,7 @@ final class PermissionStatusTests: XCTestCase {
 
         let accessDenied = PermissionInfo(type: .accessibility, state: .denied)
         XCTAssertEqual(accessDenied.actionType, .request, "Accessibility denied should still prompt Request action")
-        
+
         // Granted
         let granted = PermissionInfo(type: .microphone, state: .granted)
         XCTAssertEqual(granted.actionType, .none)

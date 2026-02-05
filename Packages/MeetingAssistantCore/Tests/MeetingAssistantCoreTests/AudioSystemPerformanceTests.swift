@@ -21,10 +21,10 @@ final class AudioSystemPerformanceTests: XCTestCase {
 
     /// Tests enqueue/dequeue performance with 1000 operations
     func testPerformance_BufferQueueEnqueueDequeue() throws {
-        let buffer = try createTestBuffer(frameCount: 2048)
+        let buffer = try createTestBuffer(frameCount: 2_048)
 
         measure {
-            for _ in 0..<1000 {
+            for _ in 0..<1_000 {
                 self.bufferQueue.enqueue(buffer)
                 _ = self.bufferQueue.dequeue()
             }
@@ -97,7 +97,7 @@ final class AudioSystemPerformanceTests: XCTestCase {
         }
 
         measure {
-            for _ in 0..<10000 {
+            for _ in 0..<10_000 {
                 _ = self.bufferQueue.stats
                 _ = self.bufferQueue.isEmpty
             }
@@ -127,8 +127,6 @@ final class AudioSystemPerformanceTests: XCTestCase {
             }
         }
     }
-
-
 
     // MARK: - Buffer Helpers
 

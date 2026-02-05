@@ -124,7 +124,7 @@ public struct MenuBarView: View {
                     Text(NSLocalizedString("menubar.meeting.type_label", bundle: .safeModule, comment: ""))
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    
+
                     Picker(NSLocalizedString("menubar.meeting.type_picker", bundle: .safeModule, comment: ""), selection: $viewModel.selectedMeetingType) {
                         ForEach(MeetingType.allCases, id: \.self) { type in
                             Text(type.displayName).tag(type)
@@ -135,7 +135,6 @@ public struct MenuBarView: View {
                 }
                 .padding(.horizontal, 4)
             }
-
 
             if viewModel.isRecording {
                 Button(action: stopRecording) {

@@ -222,7 +222,6 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         isStarting = true
         defer { isStarting = false }
 
-
         do {
             let meeting = createMeeting(type: type)
             currentMeeting = meeting
@@ -339,8 +338,8 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
                 meetingState = .processing(.transcribing) // Sync state
                 currentMeeting?.state = .processing(.transcribing) // Sync entity state
             } else {
-                 meetingState = .idle
-                 currentMeeting?.state = .completed
+                meetingState = .idle
+                currentMeeting?.state = .completed
             }
 
             isRecording = false
@@ -360,7 +359,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             if transcribe, let meeting = currentMeeting {
                 await transcribeRecording(audioURL: finalURL, meeting: meeting)
             } else {
-                 currentMeeting = nil // Clear current meeting if done
+                currentMeeting = nil // Clear current meeting if done
             }
 
         } catch {
@@ -561,8 +560,8 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
     private func transcribeRecording(audioURL: URL, meeting: Meeting) async {
         // isTranscribing is already set by stopRecording to bridge the UI gap
-        if !isTranscribing { 
-            isTranscribing = true 
+        if !isTranscribing {
+            isTranscribing = true
             meetingState = .processing(.transcribing)
             currentMeeting?.state = .processing(.transcribing)
         }
@@ -584,8 +583,8 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             let postProcessing = await applyPostProcessing(rawText: response.text)
 
             // Transition to generating output state
-             meetingState = .processing(.generatingOutput)
-             currentMeeting?.state = .processing(.generatingOutput)
+            meetingState = .processing(.generatingOutput)
+            currentMeeting?.state = .processing(.generatingOutput)
 
             var meetingForTranscription = meeting
             if meetingForTranscription.endTime == nil, let audioDuration {
@@ -617,8 +616,8 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
         } catch {
             handleTranscriptionError(error)
-             meetingState = .failed(error.localizedDescription)
-             currentMeeting?.state = .failed(error.localizedDescription)
+            meetingState = .failed(error.localizedDescription)
+            currentMeeting?.state = .failed(error.localizedDescription)
         }
 
         isTranscribing = false
@@ -685,13 +684,13 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         // or the default strategy if none is selected.
         let type = currentMeeting?.type ?? .general
         let prompt: PostProcessingPrompt
-        
+
         if type != .general, type != .autodetect {
-             let strategy = PromptService.shared.strategy(for: type)
-             prompt = strategy.promptObject()
-             AppLogger.info("Using context-aware prompt for type: \(type.displayName)", category: .transcriptionEngine)
+            let strategy = PromptService.shared.strategy(for: type)
+            prompt = strategy.promptObject()
+            AppLogger.info("Using context-aware prompt for type: \(type.displayName)", category: .transcriptionEngine)
         } else {
-             prompt = settings.selectedPrompt ?? PromptService.shared.strategy(for: .general).promptObject()
+            prompt = settings.selectedPrompt ?? PromptService.shared.strategy(for: .general).promptObject()
         }
 
         transcriptionStatus.updateProgress(

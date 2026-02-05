@@ -143,7 +143,7 @@ public class GeneralSettingsViewModel: ObservableObject {
 
     @Published public var availableDevices: [AudioInputDevice] = []
     @Published public var showCleanupSuccessAlert = false
-    @Published public var cleanupError: String? = nil
+    @Published public var cleanupError: String?
 
     private let deviceManager = AudioDeviceManager()
     private var cancellables = Set<AnyCancellable>()

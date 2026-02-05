@@ -1,15 +1,15 @@
 import Foundation
 
 /// Centralized data structures for XPC communication.
-public struct MeetingAssistantXPCModels {
-    
+public enum MeetingAssistantXPCModels {
+
     /// Settings passed from the app to the XPC service.
     public struct AppSettings: Codable, Sendable {
         public var diarization: Bool
         public var minSpeakers: Int
         public var maxSpeakers: Int
         public var numSpeakers: Int
-        
+
         public init(diarization: Bool, minSpeakers: Int, maxSpeakers: Int, numSpeakers: Int) {
             self.diarization = diarization
             self.minSpeakers = minSpeakers
@@ -17,7 +17,7 @@ public struct MeetingAssistantXPCModels {
             self.numSpeakers = numSpeakers
         }
     }
-    
+
     /// Service status information returned by the XPC service.
     public struct ServiceStatus: Codable, Sendable {
         public let status: String
@@ -26,7 +26,7 @@ public struct MeetingAssistantXPCModels {
         public let device: String
         public let modelName: String
         public let uptimeSeconds: Double
-        
+
         public init(status: String, modelState: String, modelLoaded: Bool, device: String, modelName: String, uptimeSeconds: Double) {
             self.status = status
             self.modelState = modelState

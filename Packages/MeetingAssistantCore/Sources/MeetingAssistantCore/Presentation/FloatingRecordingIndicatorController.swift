@@ -58,7 +58,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
     public func show(mode: FloatingRecordingIndicatorMode = .recording, type: MeetingType? = nil) {
         guard shouldShowIndicator(for: mode) else { return }
         currentMode = mode
-        self.meetingType = type
+        meetingType = type
 
         let shouldCreatePanel = panel == nil
 
