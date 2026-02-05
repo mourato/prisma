@@ -515,4 +515,13 @@
 
 /* App Visibility Settings */
 "settings.general.show_in_dock" = "Mostrar no Dock";
-"settings.general.show_in_dock_desc" = "Exibir o ícone do app no Dock e permitir alternar com Cmd+Tab.";
+/* Export */
+"export.header.meeting_title" = "Reunião no %1$@ - %2$@";
+"export.section.metadata" = "Metadados";
+"export.label.date" = "Data";
+"export.label.duration" = "Duração";
+"export.label.type" = "Tipo";
+"export.label.app" = "App";
+"export.section.ai_summary" = "Resumo IA";
+"export.section.transcription" = "Transcrição";
+"export.filename.prefix" = "Reuniao";
