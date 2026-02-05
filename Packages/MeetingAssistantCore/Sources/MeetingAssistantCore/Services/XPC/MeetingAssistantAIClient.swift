@@ -1,16 +1,16 @@
 import Foundation
 import OSLog
- 
+
 private let meetingAssistantAIClientLogger = Logger(subsystem: "MeetingAssistant", category: "AIClient")
 
 private final class ContinuationGate<T: Sendable>: @unchecked Sendable {
     private let lock = NSLock()
     private var continuation: CheckedContinuation<T, Error>?
-    
+
     init(_ continuation: CheckedContinuation<T, Error>) {
         self.continuation = continuation
     }
-    
+
     func resume(returning value: T) {
         lock.lock()
         defer { lock.unlock() }
@@ -18,7 +18,7 @@ private final class ContinuationGate<T: Sendable>: @unchecked Sendable {
         self.continuation = nil
         continuation.resume(returning: value)
     }
-    
+
     func resume(throwing error: Error) {
         lock.lock()
         defer { lock.unlock() }
@@ -28,9 +28,9 @@ private final class ContinuationGate<T: Sendable>: @unchecked Sendable {
     }
 }
 
-private func makeXPCProxyErrorHandler<T: Sendable>(
+private func makeXPCProxyErrorHandler(
     context: String,
-    gate: ContinuationGate<T>
+    gate: ContinuationGate<some Sendable>
 ) -> @Sendable (Error) -> Void {
     { error in
         meetingAssistantAIClientLogger.error(
@@ -44,14 +44,19 @@ private func makeXPCProxyErrorHandler<T: Sendable>(
 @MainActor
 public class MeetingAssistantAIClient {
     public static let shared = MeetingAssistantAIClient()
-    
+
     private var connection: NSXPCConnection?
-    
+
     private init() {
         // Connection is setup lazily upon first use
     }
-    
+
     private func setupConnection() {
+        guard FeatureFlags.useXPCService else {
+            meetingAssistantAIClientLogger.warning("Attempted to setup XPC connection but useXPCService is false")
+            return
+        }
+
         // Use anonymous XPC connection - launchd will find the embedded service
         let conn = NSXPCConnection(serviceName: MeetingAssistantXPCConstants.serviceName)
         conn.remoteObjectInterface = NSXPCInterface(with: MeetingAssistantXPCProtocol.self)
@@ -68,17 +73,27 @@ public class MeetingAssistantAIClient {
         }
 
         conn.resume()
-        self.connection = conn
+        connection = conn
         meetingAssistantAIClientLogger.info("XPC Connection setup with service name: \(MeetingAssistantXPCConstants.serviceName)")
     }
-    
+
     /// Transcribes an audio file using the XPC Service.
     public func transcribe(audioURL: URL) async throws -> TranscriptionResponse {
-        guard let connection = connection else {
+        guard FeatureFlags.useXPCService else {
+            throw TranscriptionError.serviceUnavailable
+        }
+
+        guard let connection else {
             setupConnection()
+
+            // Re-check after setup attempt
+            if connection == nil {
+                throw TranscriptionError.serviceUnavailable
+            }
+
             return try await transcribe(audioURL: audioURL)
         }
-        
+
         // Prepare settings from AppSettingsStore using shared model
         let store = AppSettingsStore.shared
         let settings = MeetingAssistantXPCModels.AppSettings(
@@ -88,30 +103,30 @@ public class MeetingAssistantAIClient {
             numSpeakers: store.numSpeakers ?? 0
         )
         let settingsData = try JSONEncoder().encode(settings)
-        
+
         return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<TranscriptionResponse, Error>) in
             let gate = ContinuationGate(continuation)
-            
+
             let proxy = connection.remoteObjectProxyWithErrorHandler(
                 makeXPCProxyErrorHandler(context: "Transcribe", gate: gate)
             ) as? MeetingAssistantXPCProtocol
-            
+
             guard let service = proxy else {
                 gate.resume(throwing: TranscriptionError.serviceUnavailable)
                 return
             }
-            
+
             service.transcribe(audioURL: audioURL, settingsData: settingsData) { data, error in
-                if let error = error {
+                if let error {
                     gate.resume(throwing: error)
                     return
                 }
-                
-                guard let data = data else {
+
+                guard let data else {
                     gate.resume(throwing: TranscriptionError.invalidResponse)
                     return
                 }
-                
+
                 do {
                     let response = try JSONDecoder().decode(TranscriptionResponse.self, from: data)
                     gate.resume(returning: response)
@@ -121,54 +136,64 @@ public class MeetingAssistantAIClient {
             }
         }
     }
-    
+
     /// Fetches the status of the AI service with timeout.
     public func fetchServiceStatus(timeout: TimeInterval = 5.0) async throws -> MeetingAssistantXPCModels.ServiceStatus {
         meetingAssistantAIClientLogger.info("Fetching service status...")
-        
-        guard let connection = connection else {
+
+        guard FeatureFlags.useXPCService else {
+            throw TranscriptionError.serviceUnavailable
+        }
+
+        guard let connection else {
             meetingAssistantAIClientLogger.info("No existing connection, setting up...")
             setupConnection()
+
+            // Re-check after setup attempt
+            if connection == nil {
+                throw TranscriptionError.serviceUnavailable
+            }
+
             // Small delay to allow connection to establish
             try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
             return try await fetchServiceStatus(timeout: timeout)
         }
-        
+
         return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<MeetingAssistantXPCModels.ServiceStatus, Error>) in
             let gate = ContinuationGate(continuation)
-            
+
             // Set up timeout
             let timeoutTask = Task {
                 try? await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
                 gate.resume(throwing: TranscriptionError.serviceUnavailable)
             }
-            
+
             let proxy = connection.remoteObjectProxyWithErrorHandler(
                 makeXPCProxyErrorHandler(context: "Status", gate: gate)
             ) as? MeetingAssistantXPCProtocol
-            
+
             guard let service = proxy else {
                 timeoutTask.cancel()
                 gate.resume(throwing: TranscriptionError.serviceUnavailable)
                 return
             }
-            
+
             meetingAssistantAIClientLogger.info("Sending fetchServiceStatus request...")
-            
+
             service.fetchServiceStatus { data, error in
                 timeoutTask.cancel()
-                
-                if let error = error {
+
+                if let error {
                     meetingAssistantAIClientLogger.error("Service status fetch failed: \(error.localizedDescription)")
                     gate.resume(throwing: error)
                     return
                 }
-                
-                guard let data = data else {
+
+                guard let data else {
                     gate.resume(throwing: TranscriptionError.invalidResponse)
                     return
                 }
-                
+
                 do {
                     let status = try JSONDecoder().decode(MeetingAssistantXPCModels.ServiceStatus.self, from: data)
                     meetingAssistantAIClientLogger.info("Service status received: \(status.status)")
@@ -179,28 +204,38 @@ public class MeetingAssistantAIClient {
             }
         }
     }
-    
+
     /// Warms up the models in the XPC service.
     public func warmupModel() async throws {
-        guard let connection = connection else {
+        guard FeatureFlags.useXPCService else {
+            throw TranscriptionError.serviceUnavailable
+        }
+
+        guard let connection else {
             setupConnection()
+
+            // Re-check after setup attempt
+            if connection == nil {
+                throw TranscriptionError.serviceUnavailable
+            }
+
             return try await warmupModel()
         }
-        
+
         return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             let gate = ContinuationGate(continuation)
-            
+
             let proxy = connection.remoteObjectProxyWithErrorHandler(
                 makeXPCProxyErrorHandler(context: "Warmup", gate: gate)
             ) as? MeetingAssistantXPCProtocol
-            
+
             guard let service = proxy else {
                 gate.resume(throwing: TranscriptionError.serviceUnavailable)
                 return
             }
-            
+
             service.warmupModel { error in
-                if let error = error {
+                if let error {
                     gate.resume(throwing: error)
                 } else {
                     gate.resume(returning: ())

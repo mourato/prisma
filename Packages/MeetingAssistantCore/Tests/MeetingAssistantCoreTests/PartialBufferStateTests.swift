@@ -115,8 +115,6 @@ final class PartialBufferStateTests: XCTestCase {
         // If we get here without crash, the test passes
     }
 
-
-
     // MARK: - Helpers
 
     func testConsume_SourceStereo_DestMono_DoesNotCrash() throws {

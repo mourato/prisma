@@ -77,7 +77,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         assistantShortcutController.start()
         setupRecordingObservation()
         updateMenuTitles() // Initial update
- 
+
         // Warmup transcription model
         Task { @MainActor in
             do {
@@ -273,7 +273,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func applyShortcut(to item: NSMenuItem, title: String, shortcutName: KeyboardShortcuts.Name) {
         let settings = AppSettingsStore.shared
-        var presetString: String? = nil
+        var presetString: String?
         var isCustom = false
 
         if shortcutName == .dictationToggle {

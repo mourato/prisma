@@ -65,7 +65,7 @@ public struct FloatingRecordingIndicatorView: View {
                     maxHeight: 24
                 )
                 .frame(width: 120)
-                
+
                 if let type = meetingType, isRecordingMode {
                     Image(systemName: type.iconName)
                         .font(.caption)

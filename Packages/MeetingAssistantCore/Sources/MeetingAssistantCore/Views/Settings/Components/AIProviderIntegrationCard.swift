@@ -4,6 +4,18 @@ import SwiftUI
 public struct AIProviderIntegrationCard: View {
     @ObservedObject var viewModel: AISettingsViewModel
 
+    /// Binding that properly triggers persistence when selectedModel changes.
+    /// Using direct struct mutation ($viewModel.settings.aiConfiguration.selectedModel)
+    /// does NOT trigger @Published didSet because structs are value types.
+    private var selectedModelBinding: Binding<String> {
+        Binding(
+            get: { viewModel.settings.aiConfiguration.selectedModel },
+            set: { newValue in
+                viewModel.settings.updateSelectedModel(newValue)
+            }
+        )
+    }
+
     public init(viewModel: AISettingsViewModel) {
         self.viewModel = viewModel
     }
@@ -92,7 +104,7 @@ public struct AIProviderIntegrationCard: View {
                 .multilineTextAlignment(.trailing)
                 .frame(maxWidth: SettingsDesignSystem.Layout.maxCompactTextFieldWidth)
             } else {
-                Picker("", selection: $viewModel.settings.aiConfiguration.selectedModel) {
+                Picker("", selection: selectedModelBinding) {
                     if viewModel.isLoadingModels {
                         Text("settings.ai.loading".localized).tag("")
                     } else if viewModel.availableModels.isEmpty {
