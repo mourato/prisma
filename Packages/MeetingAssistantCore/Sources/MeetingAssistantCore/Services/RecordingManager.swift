@@ -61,6 +61,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
     private var cancellables = Set<AnyCancellable>()
     private var statusCheckTask: Task<Void, Never>?
+    private var isStarting = false
 
     // MARK: - Computed Properties for Actor State
 
@@ -213,6 +214,11 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         }
 
         recordingSource = source
+
+        // Prevent re-entrancy during async setup
+        guard !isStarting else { return }
+        isStarting = true
+        defer { isStarting = false }
 
 
         do {
