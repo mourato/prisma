@@ -15,9 +15,9 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       
       - name: Set up Xcode
-        uses: maxim-lobanov/setup-xcode@c51a66b42363123fa82a6cfe02c60af4281dab93 # v1
+        uses: maxim-lobanov/setup-xcode@c51a66b42381c6a2d118f10c2a9c7b7a5b3e6d0e # v1
         with:
-          xcode-version: '16.2'
+          xcode-version: 'latest-stable'
 
         
       - name: Build Documentation

@@ -31,21 +31,17 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Xcode
-        uses: maxim-lobanov/setup-xcode@c51a66b42363123fa82a6cfe02c60af4281dab93 # v1
+        uses: maxim-lobanov/setup-xcode@c51a66b42381c6a2d118f10c2a9c7b7a5b3e6d0e # v1
         with:
-          xcode-version: '16.2'
+          xcode-version: 'latest-stable'
 
       - name: Cache Homebrew packages
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
         with:
-          path: |
-            ~/Library/Caches/Homebrew
-            /usr/local/Cellar
-            /opt/homebrew/Cellar
+          path: ~/Library/Caches/Homebrew
           key: ${{ runner.os }}-homebrew-lint-${{ hashFiles('.github/workflows/ci.yml') }}
           restore-keys: |
             ${{ runner.os }}-homebrew-lint-
-            ${{ runner.os }}-homebrew-
 
       - name: Install SwiftLint/SwiftFormat
         run: brew install swiftlint swiftformat
@@ -59,7 +55,6 @@ jobs:
 
   test:
     name: Test
-    needs: lint
     runs-on: macos-14
     timeout-minutes: 15
 
@@ -67,14 +62,16 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Set up Xcode
-        uses: maxim-lobanov/setup-xcode@c51a66b42363123fa82a6cfe02c60af4281dab93 # v1
+        uses: maxim-lobanov/setup-xcode@c51a66b42381c6a2d118f10c2a9c7b7a5b3e6d0e # v1
         with:
-          xcode-version: '16.2'
+          xcode-version: 'latest-stable'
 
       - name: Cache SwiftPM build
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
         with:
-          path: Packages/MeetingAssistantCore/.build
+          path: |
+            Packages/MeetingAssistantCore/.build
+            ~/Library/Caches/Homebrew
           key: ${{ runner.os }}-swiftpm-${{ hashFiles('Packages/MeetingAssistantCore/Package.swift', 'Packages/MeetingAssistantCore/Package.resolved') }}
           restore-keys: |
             ${{ runner.os }}-swiftpm-
