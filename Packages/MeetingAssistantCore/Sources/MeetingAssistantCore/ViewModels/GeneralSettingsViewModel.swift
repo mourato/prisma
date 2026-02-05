@@ -147,7 +147,7 @@ public class GeneralSettingsViewModel: ObservableObject {
 
     private let deviceManager = AudioDeviceManager()
     private var cancellables = Set<AnyCancellable>()
-    private static let logger = Logger(subsystem: "MeetingAssistant", category: "GeneralSettingsViewModel")
+    private nonisolated static let logger = Logger(subsystem: "MeetingAssistant", category: "GeneralSettingsViewModel")
 
     public init(settingsStore: AppSettingsStore = .shared) {
         self.settingsStore = settingsStore
@@ -259,7 +259,6 @@ public class GeneralSettingsViewModel: ObservableObject {
     }
 
     public func performCleanup() {
-        let fileManager = FileManager.default
         let url = URL(fileURLWithPath: recordingsPath)
         let days = autoDeletePeriodDays
 
@@ -268,6 +267,7 @@ public class GeneralSettingsViewModel: ObservableObject {
         }
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let fileManager = FileManager.default
             do {
                 let resourceKeys: [URLResourceKey] = [.creationDateKey, .isDirectoryKey]
                 let files = try fileManager.contentsOfDirectory(at: url, includingPropertiesForKeys: resourceKeys, options: .skipsHiddenFiles)
