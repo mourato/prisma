@@ -25,6 +25,11 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         static let retryDelay: UInt64 = 500_000_000 // 500ms
         static let maxRetries = 2
         static let micDiagnosticsEnabled = true
+        static let engineStartTimeout: UInt64 = 10_000_000_000 // 10 seconds
+        static let fallbackSampleRate: Double = 48_000.0
+        static let fallbackChannels: Int = 1
+        static let fallbackBitRate: Int = 128_000
+        static let fallbackMeterUpdateInterval: TimeInterval = 0.1
     }
 
     @Published public internal(set) var isRecording = false
@@ -361,7 +366,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             }
 
             group.addTask {
-                try await Task.sleep(nanoseconds: 10_000_000_000)
+                try await Task.sleep(nanoseconds: Constants.engineStartTimeout)
                 throw AudioRecorderError.failedToStartEngine(NSError(
                     domain: "AudioRecorder",
                     code: -1,
@@ -457,9 +462,9 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     private func startFallbackRecorder(to outputURL: URL) throws {
         let settings: [String: Any] = [
             AVFormatIDKey: kAudioFormatMPEG4AAC,
-            AVSampleRateKey: 48_000,
-            AVNumberOfChannelsKey: 1,
-            AVEncoderBitRateKey: 128_000,
+            AVSampleRateKey: Constants.fallbackSampleRate,
+            AVNumberOfChannelsKey: Constants.fallbackChannels,
+            AVEncoderBitRateKey: Constants.fallbackBitRate,
         ]
 
         let recorder = try AVAudioRecorder(url: outputURL, settings: settings)
@@ -469,7 +474,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         isRecording = true
 
         fallbackMeterTimer?.invalidate()
-        fallbackMeterTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+        fallbackMeterTimer = Timer.scheduledTimer(withTimeInterval: Constants.fallbackMeterUpdateInterval, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 self?.updateFallbackMeters()
             }

@@ -229,11 +229,6 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             let audioURL = storage.createRecordingURL(for: meeting, type: .merged)
             setMergedAudioURL(audioURL)
             let outputURL = audioURL
-
-            // guard let outputURL = audioURL else {
-            //    throw RecordingManagerError.noOutputPath
-            // }
-
             try await startRecorder(to: outputURL, source: source)
 
             isRecording = true
