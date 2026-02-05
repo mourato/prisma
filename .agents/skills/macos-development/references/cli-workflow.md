@@ -559,37 +559,23 @@ xcodebuild -project MyApp.xcodeproj -scheme MyApp -configuration Release -derive
 </complete_workflow>
 
 <helper_script>
-Create a build script for convenience:
+The project includes a robust `Makefile` for these tasks.
 
 ```bash
-#!/bin/bash
-# build.sh
+# Build (Debug) - No auto-formatting
+make build
 
-PROJECT="MyApp.xcodeproj"
-SCHEME="MyApp"
-CONFIG="${1:-Debug}"
+# Format code explicitly
+make format
 
-echo "Building $SCHEME ($CONFIG)..."
+# Run tests (Standard)
+make test
 
-xcodebuild -project "$PROJECT" \
-    -scheme "$SCHEME" \
-    -configuration "$CONFIG" \
-    -derivedDataPath ./build \
-    build 2>&1 | tee build.log | grep -E "error:|warning:|BUILD"
+# Run tests (Strict Concurrency) - Catches Swift 6 issues
+make test-strict
 
-if [ ${PIPESTATUS[0]} -eq 0 ]; then
-    echo "✓ Build succeeded"
-    echo "App: ./build/Build/Products/$CONFIG/$SCHEME.app"
-else
-    echo "✗ Build failed - see build.log"
-    exit 1
-fi
-```
-
-```bash
-chmod +x build.sh
-./build.sh        # Debug build
-./build.sh Release  # Release build
+# Run tests (Xcode parity) - Matches IDE behavior
+make test-xcode
 ```
 </helper_script>
 

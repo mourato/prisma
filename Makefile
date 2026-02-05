@@ -19,6 +19,8 @@ help:
 	@echo ""
 	@echo "Test Commands:"
 	@echo "  make test           - Run all tests"
+	@echo "  make test-strict    - Run tests with strict concurrency checking"
+	@echo "  make test-xcode     - Run tests using xcodebuild (IDE parity)"
 	@echo "  make test-verbose   - Run tests with verbose output"
 	@echo ""
 	@echo "Code Quality:"
@@ -69,8 +71,9 @@ NC = \033[0m
 # Build Commands
 build: build-debug
 
-build-debug: format
+build-debug:
 	@echo -e "$(BLUE)Building $(APP_NAME) (Debug)...$(NC)"
+	@echo -e "$(YELLOW)Note: Auto-formatting is disabled. Run 'make format' explicitly if needed.$(NC)"
 	@xcodebuild -project "$(XCODEPROJ)" \
 		-scheme "$(APP_NAME)" \
 		-configuration Debug \
@@ -100,6 +103,23 @@ test:
 test-verbose:
 	@echo -e "$(BLUE)Running tests (verbose)...$(NC)"
 	@./scripts/run-tests.sh --verbose
+
+test-strict:
+	@echo -e "$(BLUE)Running tests (Strict Concurrency)...$(NC)"
+	@./scripts/run-tests.sh --strict
+
+test-xcode:
+	@echo -e "$(BLUE)Running tests (Xcodebuild)...$(NC)"
+	@xcodebuild -project "$(XCODEPROJ)" \
+		-scheme "$(APP_NAME)" \
+		-derivedDataPath "$(DERIVED_DATA)" \
+		-destination 'platform=macOS' \
+		test \
+		| xcpretty || xcodebuild -project "$(XCODEPROJ)" \
+		-scheme "$(APP_NAME)" \
+		-derivedDataPath "$(DERIVED_DATA)" \
+		-destination 'platform=macOS' \
+		test
 
 # Code Quality
 lint:
