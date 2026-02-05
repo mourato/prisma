@@ -6,6 +6,15 @@ public extension Bundle {
     /// Returns a bundle that works safely across SPM, Xcode IDE, and Test environments.
     /// Avoids `Bundle.module` which can cause `fatalError` during bundle loading.
     static var safeModule: Bundle {
+        #if SWIFT_PACKAGE
+        // Detect if running via `swift test` (CLI) vs `xcodebuild` (Xcode)
+        // Xcode usually sets specific environment variables.
+        let isXcode = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+        if !isXcode {
+             return applyLanguageOverride(to: Bundle.module)
+        }
+        #endif
+
         let bundleName = "MeetingAssistantCore_MeetingAssistantCore"
         
         // 1. Candidates for finding the resource bundle
