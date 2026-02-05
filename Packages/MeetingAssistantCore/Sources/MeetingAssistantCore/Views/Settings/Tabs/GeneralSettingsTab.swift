@@ -146,7 +146,6 @@ public struct GeneralSettingsTab: View {
                                     viewModel.performCleanup()
                                 } label: {
                                     Text("settings.storage.cleanup_now".localized)
-                                        .frame(maxWidth: .infinity)
                                 }
                                 .buttonStyle(.bordered)
                                 .padding(.leading, SettingsDesignSystem.Layout.indentation)

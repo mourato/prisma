@@ -9,6 +9,10 @@ struct TranscriptionDeliveryService {
         transcription: Transcription,
         settings: AppSettingsStore = .shared
     ) {
+        // Only allow auto-copy/paste for dictations (unknown app source).
+        // Meeting recordings and imported files should not trigger this.
+        guard transcription.meeting.app == .unknown else { return }
+
         guard settings.autoCopyTranscriptionToClipboard || settings.autoPasteTranscriptionToActiveApp else { return }
 
         let textToCopy = transcriptionDeliveryText(from: transcription)
