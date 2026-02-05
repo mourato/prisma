@@ -1,25 +1,37 @@
 import XCTest
 @testable import MeetingAssistantCore
 
+// Mock for PasteboardService
+final class MockPasteboardService: PasteboardServiceProtocol {
+    var storedString: String?
+    
+    func clearContents() {
+        storedString = nil
+    }
+    
+    func setString(_ string: String, forType dataType: NSPasteboard.PasteboardType) {
+        storedString = string
+    }
+}
+
+// Mock for DeliverySettingsConfig
+struct MockDeliverySettings: DeliverySettingsConfig {
+    var autoCopyTranscriptionToClipboard: Bool
+    var autoPasteTranscriptionToActiveApp: Bool
+}
+
 @MainActor
 final class TranscriptionDeliveryServiceTests: XCTestCase {
     
-    // Save original settings to restore after tests
-    private var originalAutoCopy: Bool = false
-    private var originalAutoPaste: Bool = false
+    // Constants to avoid magic strings
+    private let kMeetingText = "Detected meeting text"
+    private let kDictationText = "Dictation text"
+    private let kImportedText = "Imported text"
+    
+    private var mockPasteboard: MockPasteboardService!
     
     override func setUp() async throws {
-        originalAutoCopy = AppSettingsStore.shared.autoCopyTranscriptionToClipboard
-        originalAutoPaste = AppSettingsStore.shared.autoPasteTranscriptionToActiveApp
-        
-        // Setup default test state: Auto copy ON, Auto paste OFF (to avoid accessibility checks)
-        AppSettingsStore.shared.autoCopyTranscriptionToClipboard = true
-        AppSettingsStore.shared.autoPasteTranscriptionToActiveApp = false
-    }
-    
-    override func tearDown() async throws {
-        AppSettingsStore.shared.autoCopyTranscriptionToClipboard = originalAutoCopy
-        AppSettingsStore.shared.autoPasteTranscriptionToActiveApp = originalAutoPaste
+        mockPasteboard = MockPasteboardService()
     }
     
     func testDeliver_WithMeetingApp_DoesNotCopyToClipboard() {
@@ -27,37 +39,47 @@ final class TranscriptionDeliveryServiceTests: XCTestCase {
         let meeting = Meeting(app: .googleMeet)
         let transcription = Transcription(
             meeting: meeting,
-            text: "Detected meeting text",
-            rawText: "Detected meeting text"
+            text: kMeetingText,
+            rawText: kMeetingText
+        )
+        let settings = MockDeliverySettings(
+            autoCopyTranscriptionToClipboard: true,
+            autoPasteTranscriptionToActiveApp: false
         )
         
-        NSPasteboard.general.clearContents()
-        
         // When
-        TranscriptionDeliveryService.deliver(transcription: transcription)
+        TranscriptionDeliveryService.deliver(
+            transcription: transcription,
+            settings: settings,
+            pasteboard: mockPasteboard
+        )
         
         // Then
-        let clipboardContent = NSPasteboard.general.string(forType: .string)
-        XCTAssertNil(clipboardContent, "Clipboard should be empty for Meeting Apps")
+        XCTAssertNil(mockPasteboard.storedString, "Clipboard should be empty for Meeting Apps")
     }
     
-    func testDeliver_WithUnknownApp_CopiesToClipboard() {
+    func testDeliver_IsDictation_CopiesToClipboard() {
         // Given
         let meeting = Meeting(app: .unknown)
         let transcription = Transcription(
             meeting: meeting,
-            text: "Dictation text",
-            rawText: "Dictation text"
+            text: kDictationText,
+            rawText: kDictationText
+        )
+        let settings = MockDeliverySettings(
+            autoCopyTranscriptionToClipboard: true,
+            autoPasteTranscriptionToActiveApp: false
         )
         
-        NSPasteboard.general.clearContents()
-        
         // When
-        TranscriptionDeliveryService.deliver(transcription: transcription)
+        TranscriptionDeliveryService.deliver(
+            transcription: transcription,
+            settings: settings,
+            pasteboard: mockPasteboard
+        )
         
         // Then
-        let clipboardContent = NSPasteboard.general.string(forType: .string)
-        XCTAssertEqual(clipboardContent, "Dictation text", "Clipboard should contain text for Dictation (Unknown App)")
+        XCTAssertEqual(mockPasteboard.storedString, kDictationText, "Clipboard should contain text for Dictation")
     }
     
     func testDeliver_WithImportedFile_DoesNotCopyToClipboard() {
@@ -65,17 +87,46 @@ final class TranscriptionDeliveryServiceTests: XCTestCase {
         let meeting = Meeting(app: .importedFile)
         let transcription = Transcription(
             meeting: meeting,
-            text: "Imported text",
-            rawText: "Imported text"
+            text: kImportedText,
+            rawText: kImportedText
+        )
+        let settings = MockDeliverySettings(
+            autoCopyTranscriptionToClipboard: true,
+            autoPasteTranscriptionToActiveApp: false
         )
         
-        NSPasteboard.general.clearContents()
-        
         // When
-        TranscriptionDeliveryService.deliver(transcription: transcription)
+        TranscriptionDeliveryService.deliver(
+            transcription: transcription,
+            settings: settings,
+            pasteboard: mockPasteboard
+        )
         
         // Then
-        let clipboardContent = NSPasteboard.general.string(forType: .string)
-        XCTAssertNil(clipboardContent, "Clipboard should be empty for Imported Files")
+        XCTAssertNil(mockPasteboard.storedString, "Clipboard should be empty for Imported Files")
+    }
+    
+    func testDeliver_SettingsDisabled_DoesNotCopyToClipboard() {
+        // Given
+        let meeting = Meeting(app: .unknown)
+        let transcription = Transcription(
+            meeting: meeting,
+            text: kDictationText,
+            rawText: kDictationText
+        )
+        let settings = MockDeliverySettings(
+            autoCopyTranscriptionToClipboard: false,
+            autoPasteTranscriptionToActiveApp: false
+        )
+        
+        // When
+        TranscriptionDeliveryService.deliver(
+            transcription: transcription,
+            settings: settings,
+            pasteboard: mockPasteboard
+        )
+        
+        // Then
+        XCTAssertNil(mockPasteboard.storedString, "Clipboard should be empty when settings are disabled")
     }
 }
