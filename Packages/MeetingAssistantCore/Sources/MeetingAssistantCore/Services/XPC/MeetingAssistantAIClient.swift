@@ -52,22 +52,24 @@ public class MeetingAssistantAIClient {
     }
     
     private func setupConnection() {
+        // Use anonymous XPC connection - launchd will find the embedded service
         let conn = NSXPCConnection(serviceName: MeetingAssistantXPCConstants.serviceName)
         conn.remoteObjectInterface = NSXPCInterface(with: MeetingAssistantXPCProtocol.self)
-        
+
         conn.interruptionHandler = {
             meetingAssistantAIClientLogger.error("XPC Connection Interrupted")
         }
-        
+
         conn.invalidationHandler = { [weak self] in
             meetingAssistantAIClientLogger.error("XPC Connection Invalidated")
             Task { @MainActor in
                 self?.connection = nil
             }
         }
-        
+
         conn.resume()
         self.connection = conn
+        meetingAssistantAIClientLogger.info("XPC Connection setup with service name: \(MeetingAssistantXPCConstants.serviceName)")
     }
     
     /// Transcribes an audio file using the XPC Service.
@@ -120,27 +122,44 @@ public class MeetingAssistantAIClient {
         }
     }
     
-    /// Fetches the status of the AI service.
-    public func fetchServiceStatus() async throws -> MeetingAssistantXPCModels.ServiceStatus {
+    /// Fetches the status of the AI service with timeout.
+    public func fetchServiceStatus(timeout: TimeInterval = 5.0) async throws -> MeetingAssistantXPCModels.ServiceStatus {
+        meetingAssistantAIClientLogger.info("Fetching service status...")
+        
         guard let connection = connection else {
+            meetingAssistantAIClientLogger.info("No existing connection, setting up...")
             setupConnection()
-            return try await fetchServiceStatus()
+            // Small delay to allow connection to establish
+            try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
+            return try await fetchServiceStatus(timeout: timeout)
         }
         
         return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<MeetingAssistantXPCModels.ServiceStatus, Error>) in
             let gate = ContinuationGate(continuation)
+            
+            // Set up timeout
+            let timeoutTask = Task {
+                try? await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
+                gate.resume(throwing: TranscriptionError.serviceUnavailable)
+            }
             
             let proxy = connection.remoteObjectProxyWithErrorHandler(
                 makeXPCProxyErrorHandler(context: "Status", gate: gate)
             ) as? MeetingAssistantXPCProtocol
             
             guard let service = proxy else {
+                timeoutTask.cancel()
                 gate.resume(throwing: TranscriptionError.serviceUnavailable)
                 return
             }
             
+            meetingAssistantAIClientLogger.info("Sending fetchServiceStatus request...")
+            
             service.fetchServiceStatus { data, error in
+                timeoutTask.cancel()
+                
                 if let error = error {
+                    meetingAssistantAIClientLogger.error("Service status fetch failed: \(error.localizedDescription)")
                     gate.resume(throwing: error)
                     return
                 }
@@ -152,6 +171,7 @@ public class MeetingAssistantAIClient {
                 
                 do {
                     let status = try JSONDecoder().decode(MeetingAssistantXPCModels.ServiceStatus.self, from: data)
+                    meetingAssistantAIClientLogger.info("Service status received: \(status.status)")
                     gate.resume(returning: status)
                 } catch {
                     gate.resume(throwing: error)

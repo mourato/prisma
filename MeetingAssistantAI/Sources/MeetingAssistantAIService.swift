@@ -3,25 +3,22 @@ import MeetingAssistantCore
 import os.log
 
 /// Implementation of the MeetingAssistant XPC Service.
-@MainActor
 final class MeetingAssistantAIService: NSObject, MeetingAssistantXPCProtocol {
-    
+
     private static let logger = Logger(subsystem: "com.mourato.my-meeting-assistant.ai-service", category: "AIService")
-    
+
     func transcribe(
         audioURL: URL,
         settingsData: Data,
         withReply reply: @escaping @Sendable (Data?, Error?) -> Void
     ) {
-        Self.logger.info("XPC Request: Transcribe \(audioURL.lastPathComponent)")
-        
-        Task {
+        MeetingAssistantAIService.logger.info("XPC Request: Transcribe \(audioURL.lastPathComponent)")
+
+        Task { @MainActor in
             do {
-                // Decode settings using shared model
                 let decoder = JSONDecoder()
                 let settings = try decoder.decode(MeetingAssistantXPCModels.AppSettings.self, from: settingsData)
-                
-                // Perform transcription in the XPC process
+
                 let result = try await LocalTranscriptionClient.shared.transcribe(
                     audioURL: audioURL,
                     isDiarizationEnabled: settings.diarization,
@@ -29,43 +26,47 @@ final class MeetingAssistantAIService: NSObject, MeetingAssistantXPCProtocol {
                     maxSpeakers: settings.maxSpeakers,
                     numSpeakers: settings.numSpeakers
                 )
-                
+
                 let encoder = JSONEncoder()
                 let data = try encoder.encode(result)
                 reply(data, nil)
-                
+
             } catch {
-                Self.logger.error("XPC Transcription failed: \(error.localizedDescription)")
+                MeetingAssistantAIService.logger.error("XPC Transcription failed: \(error.localizedDescription)")
                 reply(nil, error)
             }
         }
     }
-    
+
     func fetchServiceStatus(withReply reply: @escaping @Sendable (Data?, Error?) -> Void) {
-        Task {
+        Task { @MainActor in
             do {
+                MeetingAssistantAIService.logger.info("Fetching service status...")
                 let currentState = await FluidAIModelManager.shared.modelState
-                
+                MeetingAssistantAIService.logger.info("Model state: \(currentState.rawValue)")
+
                 let status = MeetingAssistantXPCModels.ServiceStatus(
                     status: currentState == .error ? "unhealthy" : "healthy",
                     modelState: currentState.rawValue,
                     modelLoaded: currentState == .loaded,
                     device: "ANE",
                     modelName: "parakeet-tdt-0.6b-v3",
-                    uptimeSeconds: 0 // Could be tracked
+                    uptimeSeconds: 0
                 )
-                
+
                 let encoder = JSONEncoder()
                 let data = try encoder.encode(status)
+                MeetingAssistantAIService.logger.info("Sending status response")
                 reply(data, nil)
             } catch {
+                MeetingAssistantAIService.logger.error("Failed to fetch status: \(error.localizedDescription)")
                 reply(nil, error)
             }
         }
     }
-    
+
     func warmupModel(withReply reply: @escaping @Sendable (Error?) -> Void) {
-        Task {
+        Task { @MainActor in
             await FluidAIModelManager.shared.loadModels()
             reply(nil)
         }

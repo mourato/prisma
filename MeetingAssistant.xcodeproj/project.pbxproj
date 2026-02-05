@@ -48,15 +48,15 @@
 /* End PBXFileReference section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		A1A1A11011159973516BB785 /* Embed XPCServices */ = {
-			isa = PBXCopyFilesBuildPhase;
+		A1A1A11011159973516BB785 /* Embed PlugIns */ = {
+			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				A1A1A11411159973516BB785 /* MeetingAssistantAI.xpc in Embed XPCServices */,
+				A1A1A11411159973516BB785 /* MeetingAssistantAI.xpc in Embed PlugIns */,
 			);
-			name = "Embed XPCServices";
+			name = "Embed PlugIns";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -156,8 +156,8 @@
 				39619CA28397798BF02CF90D /* Sources */,
 				4406995276713BCE01038784 /* Resources */,
 				E73F3666792546EC762B746A /* Frameworks */,
-							A1A1A11011159973516BB785 /* Embed XPCServices */,
-);
+				A1A1A11011159973516BB785 /* Embed PlugIns */,
+			);
 			buildRules = (
 			);
 			dependencies = (
@@ -452,6 +452,9 @@
 		A1A1A10B11159973516BB785 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = MeetingAssistantAI/Resources/MeetingAssistantAI.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = MeetingAssistantAI/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -470,6 +473,9 @@
 		A1A1A10C11159973516BB785 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = MeetingAssistantAI/Resources/MeetingAssistantAI.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = MeetingAssistantAI/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
