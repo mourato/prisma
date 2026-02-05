@@ -121,11 +121,11 @@ public struct MenuBarView: View {
         VStack(spacing: 12) {
             if !viewModel.isRecording {
                 HStack {
-                    Text("Type:")
+                    Text(NSLocalizedString("menubar.meeting.type_label", bundle: .safeModule, comment: ""))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     
-                    Picker("Meeting Type", selection: $viewModel.selectedMeetingType) {
+                    Picker(NSLocalizedString("menubar.meeting.type_picker", bundle: .safeModule, comment: ""), selection: $viewModel.selectedMeetingType) {
                         ForEach(MeetingType.allCases, id: \.self) { type in
                             Text(type.displayName).tag(type)
                         }

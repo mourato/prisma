@@ -271,6 +271,8 @@
 "menubar.settings" = "Configurações...";
 "menubar.check_updates" = "Verificar Atualizações...";
 "menubar.quit" = "Sair";
+"menubar.meeting.type_label" = "Tipo:";
+"menubar.meeting.type_picker" = "Tipo de Reunião";
 "menubar.accessibility.recording" = "Gravação em andamento";
 "menubar.accessibility.idle" = "Meeting Assistant";
 "status.recording" = "Gravando...";

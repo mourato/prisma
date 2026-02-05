@@ -271,6 +271,8 @@
 "menubar.settings" = "Settings...";
 "menubar.check_updates" = "Check for Updates...";
 "menubar.quit" = "Quit";
+"menubar.meeting.type_label" = "Type:";
+"menubar.meeting.type_picker" = "Meeting Type";
 "menubar.accessibility.recording" = "Recording in progress";
 "menubar.accessibility.idle" = "Meeting Assistant";
 "status.recording" = "Recording...";
