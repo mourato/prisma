@@ -4,7 +4,7 @@ import Foundation
 public struct MeetingAssistantXPCModels {
     
     /// Settings passed from the app to the XPC service.
-    public struct AppSettings: Codable {
+    public struct AppSettings: Codable, Sendable {
         public var diarization: Bool
         public var minSpeakers: Int
         public var maxSpeakers: Int
@@ -19,7 +19,7 @@ public struct MeetingAssistantXPCModels {
     }
     
     /// Service status information returned by the XPC service.
-    public struct ServiceStatus: Codable {
+    public struct ServiceStatus: Codable, Sendable {
         public let status: String
         public let modelState: String
         public let modelLoaded: Bool
