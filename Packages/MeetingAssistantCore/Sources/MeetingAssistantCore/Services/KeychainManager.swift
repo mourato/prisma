@@ -7,6 +7,9 @@ public protocol KeychainProvider: Sendable {
     func store(_ value: String, for key: KeychainManager.Key) throws
     func retrieve(for key: KeychainManager.Key) throws -> String?
     func delete(for key: KeychainManager.Key) throws
+    func exists(for key: KeychainManager.Key) -> Bool
+    func retrieveAPIKey(for provider: AIProvider) throws -> String?
+    func existsAPIKey(for provider: AIProvider) -> Bool
 }
 
 public struct DefaultKeychainProvider: KeychainProvider {
@@ -21,6 +24,18 @@ public struct DefaultKeychainProvider: KeychainProvider {
 
     public func delete(for key: KeychainManager.Key) throws {
         try KeychainManager.delete(for: key)
+    }
+
+    public func exists(for key: KeychainManager.Key) -> Bool {
+        KeychainManager.exists(for: key)
+    }
+
+    public func retrieveAPIKey(for provider: AIProvider) throws -> String? {
+        try KeychainManager.retrieveAPIKey(for: provider)
+    }
+
+    public func existsAPIKey(for provider: AIProvider) -> Bool {
+        KeychainManager.existsAPIKey(for: provider)
     }
 }
 

@@ -55,6 +55,51 @@ public struct MarkdownRenderer: Sendable {
         return markdown
     }
 
+    /// Renders the meeting summary using a custom template.
+    /// - Parameters:
+    ///   - template: The Markdown template string.
+    ///   - meeting: The meeting entity.
+    ///   - transcription: The associated transcription.
+    /// - Returns: The rendered string with placeholders replaced.
+    public func renderWithTemplate(_ template: String, meeting: Meeting, transcription: Transcription) -> String {
+        var output = template
+
+        // Common Placeholders
+        let title = meetingTitle(for: meeting)
+        let date = formatDate(meeting.startTime)
+        let duration = meeting.formattedDuration
+        let app = meeting.app.displayName
+        let type = meeting.type.displayName
+        
+        // Transcription Content
+        let summary = transcription.processedContent ?? ""
+        var transcriptionText = ""
+        if !transcription.segments.isEmpty {
+            for segment in transcription.segments {
+                let time = formatTime(segment.startTime)
+                transcriptionText += "**\(segment.speaker)** (\(time)): \(segment.text)\n\n"
+            }
+        } else {
+            transcriptionText = transcription.text
+        }
+
+        // Replacements
+        output = output.replacingOccurrences(of: "{{title}}", with: title)
+        output = output.replacingOccurrences(of: "{{date}}", with: date)
+        output = output.replacingOccurrences(of: "{{duration}}", with: duration)
+        output = output.replacingOccurrences(of: "{{app}}", with: app)
+        output = output.replacingOccurrences(of: "{{type}}", with: type)
+        output = output.replacingOccurrences(of: "{{summary}}", with: summary)
+        output = output.replacingOccurrences(of: "{{transcription}}", with: transcriptionText)
+        
+        // Metadata specific replacements
+        if let meetingType = transcription.meetingType {
+             output = output.replacingOccurrences(of: "{{meetingType}}", with: meetingType)
+        }
+
+        return output
+    }
+
     // MARK: - Helpers
 
     private func meetingTitle(for meeting: Meeting) -> String {
