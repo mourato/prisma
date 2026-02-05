@@ -3,36 +3,50 @@ import Foundation
 private class BundleFinder {}
 
 public extension Bundle {
-    /// Returns a bundle that works both in SPM and Xcode project builds.
-    /// Falls back to main bundle if module bundle is not available.
+    /// Returns a bundle that works safely across SPM, Xcode IDE, and Test environments.
+    /// Avoids `Bundle.module` which can cause `fatalError` during bundle loading.
     static var safeModule: Bundle {
-        // 1. Determine the base bundle (module or main)
-        let baseBundle: Bundle
-        #if SWIFT_PACKAGE
-        baseBundle = Bundle.module
-        #else
-        // In non-SPM environments, try to find the bundle of the current class
-        let bundle = Bundle(for: BundleFinder.self)
-        if bundle.bundleIdentifier?.contains("MeetingAssistantCore") == true &&
-            !bundle.bundlePath.hasSuffix(".xctest")
-        {
-            baseBundle = bundle
-        } else {
-            baseBundle = Bundle.main
-        }
-        #endif
+        let bundleName = "MeetingAssistantCore_MeetingAssistantCore"
+        
+        // 1. Candidates for finding the resource bundle
+        let candidates = [
+            // Bundle should be in the same folder as the code (SPM/Xcode)
+            Bundle(for: BundleFinder.self).resourceURL,
+            // Bundle should be in the main bundle (App target)
+            Bundle.main.resourceURL,
+            // Path-based lookup for standard locations
+            Bundle(for: BundleFinder.self).bundleURL,
+            Bundle.main.bundleURL,
+        ]
 
-        // 2. Check for user-selected language override in UserDefaults
+        // 2. Try to find the specific resource bundle (.bundle)
+        for candidate in candidates {
+            let bundlePath = candidate?.appendingPathComponent(bundleName + ".bundle")
+            if let bundle = bundlePath.flatMap(Bundle.init(url:)) {
+                return applyLanguageOverride(to: bundle)
+            }
+        }
+
+        // 3. Fallback: Use the bundle containing the code
+        let codeBundle = Bundle(for: BundleFinder.self)
+        
+        // Ensure we don't return the test bundle as a resource bundle
+        if codeBundle.bundleIdentifier?.contains("MeetingAssistantCoreTests") == true {
+            return applyLanguageOverride(to: Bundle.main)
+        }
+        
+        return applyLanguageOverride(to: codeBundle)
+    }
+
+    private static func applyLanguageOverride(to bundle: Bundle) -> Bundle {
         if let languages = UserDefaults.standard.array(forKey: "AppleLanguages") as? [String],
            let preferredLang = languages.first,
-           let path = baseBundle.path(forResource: preferredLang, ofType: "lproj"),
+           let path = bundle.path(forResource: preferredLang, ofType: "lproj"),
            let localizedBundle = Bundle(path: path)
         {
             return localizedBundle
         }
-
-        // 3. Fallback to base bundle if no override or localized resource found
-        return baseBundle
+        return bundle
     }
 }
 
