@@ -114,7 +114,9 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         notificationService.requestAuthorization()
         Task { @Sendable [weak self] in
             await self?.checkPermission()
-            await self?.startStatusMonitoring()
+            if self?.isRunningAsAppBundle == true {
+                await self?.startStatusMonitoring()
+            }
             await self?.syncStateFromActor()
         }
     }
