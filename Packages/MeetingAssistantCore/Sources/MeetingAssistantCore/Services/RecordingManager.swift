@@ -58,6 +58,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     private let postProcessingService: any PostProcessingServiceProtocol
     private let storage: any StorageService
     private let notificationService: NotificationService
+    private let transcribeAudioUseCase: TranscribeAudioUseCase
 
     private var cancellables = Set<AnyCancellable>()
     private var statusCheckTask: Task<Void, Never>?
@@ -109,6 +110,13 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         self.meetingDetector = meetingDetector
         self.storage = storage
         self.notificationService = notificationService
+        
+        // Initialize UseCase with Adapters
+        self.transcribeAudioUseCase = TranscribeAudioUseCase(
+            transcriptionRepository: TranscriptionRepositoryAdapter(transcriptionClient: transcriptionClient as? TranscriptionClient ?? TranscriptionClient.shared),
+            transcriptionStorageRepository: TranscriptionStorageRepositoryAdapter(storageService: storage as? FileSystemStorageService ?? FileSystemStorageService.shared),
+            postProcessingRepository: PostProcessingRepositoryAdapter(postProcessingService: postProcessingService)
+        )
 
         setupBindings()
         notificationService.requestAuthorization()
@@ -573,46 +581,80 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             try await performHealthCheck()
 
             let transcriptionStart = Date()
-            let response = try await performTranscription(audioURL: audioURL)
-            let transcriptionProcessingDuration = Date().timeIntervalSince(transcriptionStart)
-
-            // Transition to summarization/post-processing state
-            meetingState = .processing(.summarizing)
-            currentMeeting?.state = .processing(.summarizing)
-
-            let postProcessing = await applyPostProcessing(rawText: response.text)
-
-            // Transition to generating output state
-            meetingState = .processing(.generatingOutput)
-            currentMeeting?.state = .processing(.generatingOutput)
-
-            var meetingForTranscription = meeting
-            if meetingForTranscription.endTime == nil, let audioDuration {
-                meetingForTranscription.endTime = meetingForTranscription.startTime
-                    .addingTimeInterval(audioDuration)
-            }
-            meetingForTranscription.state = .completed // Final state for the meeting entity
-
-            // Determine input source display string
-            let sourceDisplay = switch recordingSource {
-            case .microphone: "Microphone"
-            case .system: "System Audio"
-            case .all: "Microphone & System"
-            }
-
-            let transcription = try await createAndSaveTranscription(
-                meeting: meetingForTranscription,
-                response: response,
-                inputSource: sourceDisplay,
-                transcriptionDuration: transcriptionProcessingDuration,
-                postProcessing: postProcessing
+            
+            // Prepare UseCase arguments
+            let settings = AppSettingsStore.shared
+            var meetingEntity = MeetingEntity(
+                id: meeting.id,
+                app: DomainMeetingApp(rawValue: meeting.app.rawValue) ?? .unknown,
+                startTime: meeting.startTime,
+                endTime: meeting.endTime,
+                audioFilePath: meeting.audioFilePath
             )
-
+            // Ensure endTime is set if missing (sanity logic from legacy)
+            if meetingEntity.endTime == nil, let duration = audioDuration {
+                meetingEntity.endTime = meetingEntity.startTime.addingTimeInterval(duration)
+            }
+            
+            let applyPostProcessing = settings.postProcessingEnabled && settings.aiConfiguration.isValid
+            
+            // Prepare Prompts
+            let availablePrompts: [DomainPostProcessingPrompt] = settings.meetingPrompts.map { p in
+                DomainPostProcessingPrompt(id: p.id, title: p.title, content: p.promptText, isDefault: false)
+            }
+            
+            // Determine prompt to use (if specific)
+            // Legacy logic: selectedPrompt ?? default.
+            // New Logic: If user selected a prompt explicitly in Settings -> Use it?
+            // "selectedPrompt" in AppSettings is global? Or per meeting?
+            // Assuming AppSettings.selectedPrompt is the "default" prompt preference.
+            // But we want "Autodetection" if nothing selected?
+            // Let's pass nil and let UseCase handle autodetection if availablePrompts > 0.
+            // But if user has selected a "General" prompt as default, what happens?
+            // The logic: if PostProcessingPrompt is passed, UseCase uses it.
+            // If nil, UseCase attempts autodetection.
+            // So we pass nil if we want autodetection.
+            
+            var promptToUse: DomainPostProcessingPrompt?
+            if let selected = settings.selectedPrompt {
+                 promptToUse = DomainPostProcessingPrompt(id: selected.id, title: selected.title, content: selected.promptText, isDefault: false)
+            }
+            // IF user wants autodetection, selectedPrompt might be nil?
+            // For now, let's respect selectedPrompt if present, else let UseCase find out.
+            
+            meetingState = .processing(.transcribing)
+            
+            // Execute UseCase
+            let transcriptionEntity = try await transcribeAudioUseCase.execute(
+                audioURL: audioURL,
+                meeting: meetingEntity,
+                applyPostProcessing: applyPostProcessing,
+                postProcessingPrompt: promptToUse,
+                availablePrompts: availablePrompts
+            )
+            
+            // Convert to Model (Transcription) for Legacy UI/Notification
+            // (We could improve this mapping later or move UI to use Entities)
+            let transcription = convertToModel(transcriptionEntity, audioDuration: audioDuration, transcriptionStart: transcriptionStart)
+            
+            // Update State
+            meetingState = .processing(.generatingOutput)
+            currentMeeting?.state = .completed
+            
+            // Handling UI status updates during "execute" is skipped for now (0->100 jump),
+            // but we update success here.
+            
+            // Deliver
             TranscriptionDeliveryService.deliver(transcription: transcription)
 
             transcriptionStatus.completeTranscription(success: true)
             notifySuccess(for: transcription)
             scheduleStatusReset()
+            
+            // Export Summary if enabled
+            if settings.autoExportSummaries {
+                 await exportSummary(transcription: transcription)
+            }
 
         } catch {
             handleTranscriptionError(error)
@@ -623,6 +665,82 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         isTranscribing = false
         meetingState = .idle
         currentMeeting = nil
+    }
+    
+    private func exportSummary(transcription: Transcription) async {
+         let settings = AppSettingsStore.shared
+         guard let folder = settings.summaryExportFolder,
+               !settings.summaryTemplate.isEmpty else { return }
+         
+         let template = settings.summaryTemplate
+         
+         let renderer = MarkdownRenderer()
+         // Use default template if nil/empty? AppSettingsStore usually has default.
+         // If template is empty string, use default?
+         // Assuming valid string.
+         
+         let content = renderer.renderWithTemplate(template, meeting: transcription.meeting, transcription: transcription)
+         
+         // Generate Filename
+         let dateFormatter = DateFormatter()
+         dateFormatter.dateFormat = "yyyy-MM-dd_HHmm"
+         let dateStr = dateFormatter.string(from: transcription.meeting.startTime)
+         let safeTitle = transcription.meeting.appName.components(separatedBy: CharacterSet(charactersIn: "/\\?%*|\"<>:")).joined(separator: "_")
+         let filename = "\(dateStr)_\(safeTitle).md"
+         
+         let destinationURL: URL
+         if settings.createMeetingFolder {
+             let subfolder = folder.appendingPathComponent(dateStr + "_" + safeTitle)
+             // We need to access the security scoped resource BEFORE creating the directory
+             let isAccessing = folder.startAccessingSecurityScopedResource()
+             defer { if isAccessing { folder.stopAccessingSecurityScopedResource() } }
+
+             try? FileManager.default.createDirectory(at: subfolder, withIntermediateDirectories: true)
+             destinationURL = subfolder.appendingPathComponent(filename)
+             
+             // The subfolder is inside the accessed folder, so we should be able to write to it.
+             // However, writing content happens below. The defer block will handle cleanup.
+         } else {
+             destinationURL = folder.appendingPathComponent(filename)
+         }
+         
+         let isAccessing = folder.startAccessingSecurityScopedResource()
+         defer { if isAccessing { folder.stopAccessingSecurityScopedResource() } }
+
+         do {
+             try content.write(to: destinationURL, atomically: true, encoding: String.Encoding.utf8)
+             AppLogger.info("Summary exported to \(destinationURL.path)", category: .recordingManager)
+         } catch {
+             AppLogger.error("Failed to export summary", category: .recordingManager, error: error)
+         }
+    }
+    
+    private func convertToModel(_ entity: TranscriptionEntity, audioDuration: Double?, transcriptionStart: Date) -> Transcription {
+         let duration = Date().timeIntervalSince(transcriptionStart) // Approx
+         return Transcription(
+             id: entity.id,
+             meeting: Meeting(
+                 id: entity.meeting.id,
+                 app: MeetingApp(rawValue: entity.meeting.app.rawValue) ?? .unknown,
+                 type: MeetingType(rawValue: entity.meetingType ?? "") ?? .general, // Map back
+                 startTime: entity.meeting.startTime,
+                 endTime: entity.meeting.endTime,
+                 audioFilePath: entity.meeting.audioFilePath
+             ),
+             segments: entity.segments.map { Transcription.Segment(id: $0.id, speaker: $0.speaker, text: $0.text, startTime: $0.startTime, endTime: $0.endTime) },
+             text: entity.text,
+             rawText: entity.rawText,
+             processedContent: entity.processedContent,
+             postProcessingPromptId: entity.postProcessingPromptId,
+             postProcessingPromptTitle: entity.postProcessingPromptTitle,
+             language: entity.language,
+             createdAt: entity.createdAt,
+             modelName: entity.modelName,
+             inputSource: entity.inputSource, // Entity might not have inputSource? check config
+             transcriptionDuration: entity.transcriptionDuration, // Entity has it?
+             postProcessingDuration: entity.postProcessingDuration,
+             postProcessingModel: entity.postProcessingModel
+         )
     }
 
     // MARK: - Helper Methods

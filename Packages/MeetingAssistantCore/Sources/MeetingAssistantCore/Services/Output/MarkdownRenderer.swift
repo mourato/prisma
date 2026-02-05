@@ -55,47 +55,43 @@ public struct MarkdownRenderer: Sendable {
         return markdown
     }
 
-    /// Renders the meeting summary using a custom template.
+    /// Renders a meeting summary using a user-defined template.
     /// - Parameters:
-    ///   - template: The Markdown template string.
+    ///   - template: The Markdown template with placeholders.
     ///   - meeting: The meeting entity.
     ///   - transcription: The associated transcription.
-    /// - Returns: The rendered string with placeholders replaced.
+    /// - Returns: A Markdown string with placeholders replaced.
     public func renderWithTemplate(_ template: String, meeting: Meeting, transcription: Transcription) -> String {
         var output = template
 
-        // Common Placeholders
-        let title = meetingTitle(for: meeting)
-        let date = formatDate(meeting.startTime)
-        let duration = meeting.formattedDuration
-        let app = meeting.app.displayName
-        let type = meeting.type.displayName
-        
-        // Transcription Content
-        let summary = transcription.processedContent ?? ""
-        var transcriptionText = ""
-        if !transcription.segments.isEmpty {
-            for segment in transcription.segments {
-                let time = formatTime(segment.startTime)
-                transcriptionText += "**\(segment.speaker)** (\(time)): \(segment.text)\n\n"
+        let summary: String = {
+            if let processed = transcription.processedContent, !processed.isEmpty {
+                return processed
             }
-        } else {
-            transcriptionText = transcription.text
-        }
+            return transcription.text
+        }()
 
-        // Replacements
-        output = output.replacingOccurrences(of: "{{title}}", with: title)
-        output = output.replacingOccurrences(of: "{{date}}", with: date)
-        output = output.replacingOccurrences(of: "{{duration}}", with: duration)
-        output = output.replacingOccurrences(of: "{{app}}", with: app)
-        output = output.replacingOccurrences(of: "{{type}}", with: type)
-        output = output.replacingOccurrences(of: "{{summary}}", with: summary)
-        output = output.replacingOccurrences(of: "{{transcription}}", with: transcriptionText)
-        
-        // Metadata specific replacements
-        // Metadata specific replacements
+        // Replace standard placeholders
+        output = output.replacingOccurrences(of: "{{title}}", with: meetingTitle(for: meeting))
+        output = output.replacingOccurrences(of: "{{date}}", with: formatDate(meeting.startTime))
+        output = output.replacingOccurrences(of: "{{duration}}", with: meeting.formattedDuration)
+        output = output.replacingOccurrences(of: "{{type}}", with: meeting.type.displayName)
         output = output.replacingOccurrences(of: "{{meetingType}}", with: meeting.type.displayName)
+        output = output.replacingOccurrences(of: "{{app}}", with: meeting.app.displayName)
+        output = output.replacingOccurrences(of: "{{summary}}", with: summary)
 
+        if output.contains("{{transcription}}") {
+            var transcriptionText = ""
+            if !transcription.segments.isEmpty {
+                for segment in transcription.segments {
+                    let time = formatTime(segment.startTime)
+                    transcriptionText += "**\(segment.speaker)** (\(time)):\n\(segment.text)\n\n"
+                }
+            } else {
+                transcriptionText = transcription.text
+            }
+            output = output.replacingOccurrences(of: "{{transcription}}", with: transcriptionText)
+        }
         return output
     }
 

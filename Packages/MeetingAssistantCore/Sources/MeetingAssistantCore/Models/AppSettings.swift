@@ -440,6 +440,13 @@ public class AppSettingsStore: ObservableObject {
         static let recordingStopSound = "recordingStopSound"
         /// App Visibility
         static let showInDock = "showInDock"
+        
+        // MARK: - Meeting Summary Configuration
+        static let meetingPrompts = "meetingPrompts"
+        static let summaryExportFolder = "summaryExportFolder"
+        static let summaryTemplate = "summaryTemplate"
+        static let autoExportSummaries = "autoExportSummaries"
+        static let createMeetingFolder = "createMeetingFolder"
     }
 
     // MARK: - Published Properties
@@ -682,6 +689,44 @@ public class AppSettingsStore: ObservableObject {
         didSet { UserDefaults.standard.set(showInDock, forKey: Keys.showInDock) }
     }
 
+    // MARK: - Meeting Prompts & Export
+
+    /// User-created prompts specifically for meetings.
+    @Published public var meetingPrompts: [PostProcessingPrompt] {
+        didSet { save(meetingPrompts, forKey: Keys.meetingPrompts) }
+    }
+
+    /// Path URL for exporting summaries.
+    @Published public var summaryExportFolder: URL? {
+        didSet {
+            if let url = summaryExportFolder {
+                do {
+                    let bookmark = try url.bookmarkData(options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
+                    UserDefaults.standard.set(bookmark, forKey: Keys.summaryExportFolder)
+                } catch {
+                   print("Failed to save bookmark for export folder: \(error)")
+                }
+            } else {
+                UserDefaults.standard.removeObject(forKey: Keys.summaryExportFolder)
+            }
+        }
+    }
+
+    /// Markdown template for summary generation.
+    @Published public var summaryTemplate: String {
+        didSet { UserDefaults.standard.set(summaryTemplate, forKey: Keys.summaryTemplate) }
+    }
+
+    /// Whether to automatically export summaries after generation.
+    @Published public var autoExportSummaries: Bool {
+        didSet { UserDefaults.standard.set(autoExportSummaries, forKey: Keys.autoExportSummaries) }
+    }
+    
+    /// Whether to create a subfolder for each meeting inside the export folder.
+    @Published public var createMeetingFolder: Bool {
+        didSet { UserDefaults.standard.set(createMeetingFolder, forKey: Keys.createMeetingFolder) }
+    }
+
     /// All available prompts (predefined + user-created), filtered by deleted and overrides.
     public var allPrompts: [PostProcessingPrompt] {
         // 1. Start with predefined prompts that are NOT deleted
@@ -791,6 +836,43 @@ public class AppSettingsStore: ObservableObject {
 
         let rawAssistantPresetKey = UserDefaults.standard.string(forKey: Keys.assistantSelectedPresetKey)
         assistantSelectedPresetKey = rawAssistantPresetKey.flatMap { PresetShortcutKey(rawValue: $0) } ?? .rightOption
+
+        // Load Meeting Prompts
+        if let data = UserDefaults.standard.data(forKey: Keys.meetingPrompts),
+           let prompts = try? JSONDecoder().decode([PostProcessingPrompt].self, from: data) {
+            meetingPrompts = prompts
+        } else {
+            meetingPrompts = []
+        }
+
+        // Load Summary Export Config
+        if let data = UserDefaults.standard.data(forKey: Keys.summaryExportFolder) {
+            var isStale = false
+            if let url = try? URL(resolvingBookmarkData: data, options: .withSecurityScope, relativeTo: nil, bookmarkDataIsStale: &isStale) {
+                summaryExportFolder = url
+            } else {
+                summaryExportFolder = nil
+            }
+        } else {
+            summaryExportFolder = nil
+        }
+
+        summaryTemplate = UserDefaults.standard.string(forKey: Keys.summaryTemplate) ?? """
+        ---
+        title: "{{title}}"
+        date: "{{date}}"
+        duration: "{{duration}}"
+        app: "{{app}}"
+        type: "{{type}}"
+        ---
+        
+        # {{title}}
+        
+        {{summary}}
+        """
+        
+        autoExportSummaries = UserDefaults.standard.bool(forKey: Keys.autoExportSummaries)
+        createMeetingFolder = UserDefaults.standard.bool(forKey: Keys.createMeetingFolder)
 
         // Load assistant border settings
         let rawBorderColor = UserDefaults.standard.string(forKey: Keys.assistantBorderColor)
