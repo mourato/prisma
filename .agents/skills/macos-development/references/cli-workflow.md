@@ -559,43 +559,33 @@ xcodebuild -project MyApp.xcodeproj -scheme MyApp -configuration Release -derive
 </complete_workflow>
 
 <helper_script>
-The project includes a robust `Makefile` for these tasks.
+The project includes a unified `Makefile` that guarantees Xcode IDE parity.
 
 ```bash
-# Build (Debug) - No auto-formatting
+# Build (Debug) - Uses xcodebuild (same as IDE)
 make build
-
-# Build with Xcode IDE compatibility check
-make build-xcode
 
 # Format code explicitly
 make format
 
-# Run tests (Standard - CLI swift test)
+# Run tests - Uses xcodebuild (guaranteed IDE parity)
 make test
+
+# Run tests (Alternative - swift test, faster but no IDE parity)
+make test-swift
 
 # Run tests (Strict Concurrency) - Catches Swift 6 issues
 make test-strict
-
-# Run tests (Xcode parity) - Uses xcodebuild, matches IDE behavior
-make test-xcode
-
-# Full parity verification (CLI vs Xcode IDE)
-make verify-parity
 ```
 
-**Xcode IDE Parity Guarantee:**
-To ensure builds that pass in CLI will also pass in Xcode IDE:
+**Xcode IDE Parity:**
+All main targets (`make build`, `make test`) use `xcodebuild` with the same settings as the Xcode IDE:
 
-1. **Always use the same derived data path** - Both CLI and IDE use `.xcode-build/` directory
-2. **Run `make verify-parity`** before committing - This runs builds and tests in both modes
-3. **Use `make test-xcode`** - Tests using xcodebuild (same as IDE)
-4. **Use `make build-xcode`** - Build using xcodebuild (same as IDE)
+- **Same build system**: Both use `xcodebuild` with identical flags
+- **Same derived data**: Both use `.xcode-build/` directory
+- **Same scheme**: Both use MeetingAssistantCore scheme for tests
 
-The `verify-parity` target runs all combinations to catch any discrepancies:
-```bash
-make verify-parity  # Runs: build-debug, build-xcode, test, test-xcode
-```
+If a build/test passes in CLI, it will pass in Xcode IDE. Use `make test-swift` only when you need faster feedback during development, but always verify with `make test` before committing.
 </helper_script>
 
 <useful_aliases>
