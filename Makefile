@@ -5,7 +5,7 @@
 # with CI/CD pipelines and headless environments.
 # =============================================================================
 
-.PHONY: help build build-debug build-release test test-verbose lint lint-fix clean run run-release dmg setup docs docs-preview docs-clean
+.PHONY: help build build-debug build-release build-xcode test test-verbose test-strict test-xcode verify-parity lint lint-fix clean run run-release dmg setup docs docs-preview docs-clean
 
 # Default target
 help:
@@ -18,10 +18,11 @@ help:
 	@echo "  make build-release  - Build release version"
 	@echo ""
 	@echo "Test Commands:"
-	@echo "  make test           - Run all tests"
+	@echo "  make test           - Run all tests (CLI - swift test)"
 	@echo "  make test-strict    - Run tests with strict concurrency checking"
 	@echo "  make test-xcode     - Run tests using xcodebuild (IDE parity)"
 	@echo "  make test-verbose   - Run tests with verbose output"
+	@echo "  make verify-parity  - Full parity check (CLI vs Xcode IDE)"
 	@echo ""
 	@echo "Code Quality:"
 	@echo "  make lint           - Run linting checks"
@@ -109,17 +110,59 @@ test-strict:
 	@./scripts/run-tests.sh --strict
 
 test-xcode:
-	@echo -e "$(BLUE)Running tests (Xcodebuild)...$(NC)"
-	@xcodebuild -project "$(XCODEPROJ)" \
-		-scheme "$(APP_NAME)" \
+	@echo -e "$(BLUE)Running tests (Xcode IDE parity)...$(NC)"
+	@echo -e "$(YELLOW)This uses the same build system as Xcode IDE$(NC)"
+	@cd "$(PROJECT_DIR)/Packages/MeetingAssistantCore" && \
+	xcodebuild -scheme MeetingAssistantCore \
 		-derivedDataPath "$(DERIVED_DATA)" \
 		-destination 'platform=macOS' \
 		test \
-		| xcpretty || xcodebuild -project "$(XCODEPROJ)" \
+		2>&1 | tee /tmp/xcode-test-output.log; \
+	EXIT_CODE=$${PIPESTATUS[0]}; \
+	if [ $$EXIT_CODE -eq 0 ]; then \
+		echo -e "$(GREEN)✓ All tests passed!$(NC)"; \
+	else \
+		echo -e "$(RED)✗ Tests failed!$(NC)"; \
+		echo -e "$(YELLOW)Full output available at: /tmp/xcode-test-output.log$(NC)"; \
+	fi; \
+	exit $$EXIT_CODE
+
+build-xcode:
+	@echo -e "$(BLUE)Building with Xcode IDE settings...$(NC)"
+	@echo -e "$(YELLOW)This ensures CLI and IDE build compatibility$(NC)"
+	@xcodebuild -project "$(XCODEPROJ)" \
 		-scheme "$(APP_NAME)" \
+		-configuration Debug \
 		-derivedDataPath "$(DERIVED_DATA)" \
 		-destination 'platform=macOS' \
-		test
+		build \
+		2>&1 | tee /tmp/xcode-build-output.log | grep -E "(BUILD|error:|warning:|Compiling|Linking|Signing)" | head -30; \
+	EXIT_CODE=$${PIPESTATUS[0]}; \
+	if [ $$EXIT_CODE -eq 0 ]; then \
+		echo -e "$(GREEN)✓ Xcode IDE build successful!$(NC)"; \
+	else \
+		echo -e "$(RED)✗ Xcode IDE build failed!$(NC)"; \
+		echo -e "$(YELLOW)Full output available at: /tmp/xcode-build-output.log$(NC)"; \
+	fi; \
+	exit $$EXIT_CODE
+
+verify-parity:
+	@echo -e "$(BLUE)Verifying CLI/Xcode IDE parity...$(NC)"
+	@echo "=================================="
+	@echo -e "$(YELLOW)Step 1: Building with CLI (make build)...$(NC)"
+	@$(MAKE) build-debug
+	@echo ""
+	@echo -e "$(YELLOW)Step 2: Building with Xcode IDE settings...$(NC)"
+	@$(MAKE) build-xcode
+	@echo ""
+	@echo -e "$(YELLOW)Step 3: Running tests with CLI (make test)...$(NC)"
+	@$(MAKE) test
+	@echo ""
+	@echo -e "$(YELLOW)Step 4: Running tests with Xcode IDE (make test-xcode)...$(NC)"
+	@$(MAKE) test-xcode
+	@echo ""
+	@echo -e "$(GREEN)✓ Parity verification complete!$(NC)"
+	@echo -e "$(BLUE)If all steps passed, your code will work in both CLI and Xcode IDE.$(NC)"
 
 # Code Quality
 lint:

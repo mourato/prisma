@@ -565,17 +565,36 @@ The project includes a robust `Makefile` for these tasks.
 # Build (Debug) - No auto-formatting
 make build
 
+# Build with Xcode IDE compatibility check
+make build-xcode
+
 # Format code explicitly
 make format
 
-# Run tests (Standard)
+# Run tests (Standard - CLI swift test)
 make test
 
 # Run tests (Strict Concurrency) - Catches Swift 6 issues
 make test-strict
 
-# Run tests (Xcode parity) - Matches IDE behavior
+# Run tests (Xcode parity) - Uses xcodebuild, matches IDE behavior
 make test-xcode
+
+# Full parity verification (CLI vs Xcode IDE)
+make verify-parity
+```
+
+**Xcode IDE Parity Guarantee:**
+To ensure builds that pass in CLI will also pass in Xcode IDE:
+
+1. **Always use the same derived data path** - Both CLI and IDE use `.xcode-build/` directory
+2. **Run `make verify-parity`** before committing - This runs builds and tests in both modes
+3. **Use `make test-xcode`** - Tests using xcodebuild (same as IDE)
+4. **Use `make build-xcode`** - Build using xcodebuild (same as IDE)
+
+The `verify-parity` target runs all combinations to catch any discrepancies:
+```bash
+make verify-parity  # Runs: build-debug, build-xcode, test, test-xcode
 ```
 </helper_script>
 
