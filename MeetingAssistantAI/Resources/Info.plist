@@ -14,10 +14,12 @@
     <string>1.0</string>
     <key>CFBundleVersion</key>
     <string>1</string>
-    <key>XPCService</key>
+    <key>LSMinimumSystemVersion</key>
+    <string>14.0</string>
+    <key>MachServices</key>
     <dict>
-        <key>ServiceType</key>
-        <string>Application</string>
+        <key>com.mourato.my-meeting-assistant.ai-service</key>
+        <true/>
     </dict>
 </dict>
 </plist>

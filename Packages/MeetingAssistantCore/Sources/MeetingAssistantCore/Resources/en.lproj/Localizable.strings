@@ -7,6 +7,7 @@
 "settings.section.transcriptions" = "Transcriptions";
 "settings.section.assistant" = "Assistant";
 "settings.section.ai" = "Enhancements";
+"settings.section.service" = "AI Service";
 "settings.section.permissions" = "Permissions";
 
 /* Metrics Dashboard */

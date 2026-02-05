@@ -11,6 +11,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable {
     case audio
     case transcriptions
     case enhancements
+    case service
     case permissions
 
     public var id: String {
@@ -27,6 +28,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable {
         case .assistant: NSLocalizedString("settings.section.assistant", bundle: .safeModule, comment: "")
         case .transcriptions: NSLocalizedString("settings.section.transcriptions", bundle: .safeModule, comment: "")
         case .enhancements: NSLocalizedString("settings.section.ai", bundle: .safeModule, comment: "")
+        case .service: NSLocalizedString("settings.section.service", bundle: .safeModule, comment: "")
         case .permissions: NSLocalizedString("settings.section.permissions", bundle: .safeModule, comment: "")
         }
     }
@@ -41,6 +43,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable {
         case .assistant: "sparkles"
         case .transcriptions: "doc.text"
         case .enhancements: "wand.and.stars"
+        case .service: "server.rack"
         case .permissions: "lock.shield"
         }
     }

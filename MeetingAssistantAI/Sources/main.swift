@@ -1,28 +1,33 @@
 import Foundation
 import MeetingAssistantCore
+import os.log
+
+private let logger = Logger(subsystem: "com.mourato.my-meeting-assistant.ai-service", category: "Main")
 
 /// Delegate for the XPC Service to handle incoming connections.
-@MainActor
-class AIServiceDelegate: NSObject, @preconcurrency NSXPCListenerDelegate {
+class AIServiceDelegate: NSObject, NSXPCListenerDelegate {
     func listener(_ listener: NSXPCListener, shouldAcceptNewConnection newConnection: NSXPCConnection) -> Bool {
-        
-        // Use the protocol defined in MeetingAssistantCore
+        logger.info("XPC Service: Accepting new connection")
+
         newConnection.exportedInterface = NSXPCInterface(with: MeetingAssistantXPCProtocol.self)
-        
-        // Provide the implementation
+
         let exportedObject = MeetingAssistantAIService()
         newConnection.exportedObject = exportedObject
-        
+
         newConnection.resume()
+        logger.info("XPC Service: Connection established")
         return true
     }
 }
 
-// Start the service
-let delegate = AIServiceDelegate()
-let listener = NSXPCListener.service()
-listener.delegate = delegate
-listener.resume()
-
-// Keep the service running
-RunLoop.main.run()
+/// Entry point for bundle-based XPC connection
+@_cdecl("MeetingAssistantAI_main")
+func MeetingAssistantAI_main() {
+    logger.info("XPC Service: Starting via bundle entry point...")
+    let delegate = AIServiceDelegate()
+    let listener = NSXPCListener.service()
+    listener.delegate = delegate
+    listener.resume()
+    logger.info("XPC Service: Listener resumed")
+    RunLoop.main.run()
+}
