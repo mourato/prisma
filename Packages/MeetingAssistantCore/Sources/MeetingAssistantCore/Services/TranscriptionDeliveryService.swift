@@ -7,19 +7,21 @@ import Foundation
 struct TranscriptionDeliveryService {
     static func deliver(
         transcription: Transcription,
-        settings: AppSettingsStore = .shared
+        settings: DeliverySettingsConfig = AppSettingsStore.shared,
+        pasteboard: PasteboardServiceProtocol = PasteboardService.shared
     ) {
-        // Only allow auto-copy/paste for dictations (unknown app source).
+        // Only allow auto-copy/paste for dictations.
         // Meeting recordings and imported files should not trigger this.
-        guard transcription.meeting.app == .unknown else { return }
+        guard transcription.meeting.isDictation else { return }
 
         guard settings.autoCopyTranscriptionToClipboard || settings.autoPasteTranscriptionToActiveApp else { return }
 
         let textToCopy = transcriptionDeliveryText(from: transcription)
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(textToCopy, forType: .string)
+        pasteboard.clearContents()
+        pasteboard.setString(textToCopy, forType: .string)
 
         if settings.autoPasteTranscriptionToActiveApp {
+            pasteboard.setString(textToCopy, forType: .string) // Ensure it's ready for pasting
             pasteTranscriptionIntoActiveApp()
         }
     }
