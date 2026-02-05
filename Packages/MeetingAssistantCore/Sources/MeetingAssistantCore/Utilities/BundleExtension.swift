@@ -1,5 +1,7 @@
 import Foundation
 
+private class BundleFinder {}
+
 public extension Bundle {
     /// Returns a bundle that works both in SPM and Xcode project builds.
     /// Falls back to main bundle if module bundle is not available.
@@ -9,11 +11,18 @@ public extension Bundle {
         #if SWIFT_PACKAGE
         baseBundle = Bundle.module
         #else
-        baseBundle = Bundle.main
+        // In non-SPM environments, try to find the bundle of the current class
+        let bundle = Bundle(for: BundleFinder.self)
+        if bundle.bundleIdentifier?.contains("MeetingAssistantCore") == true &&
+            !bundle.bundlePath.hasSuffix(".xctest")
+        {
+            baseBundle = bundle
+        } else {
+            baseBundle = Bundle.main
+        }
         #endif
 
         // 2. Check for user-selected language override in UserDefaults
-        //    NOTE: UserDefaults(suiteName: nil) checks standard defaults
         if let languages = UserDefaults.standard.array(forKey: "AppleLanguages") as? [String],
            let preferredLang = languages.first,
            let path = baseBundle.path(forResource: preferredLang, ofType: "lproj"),
