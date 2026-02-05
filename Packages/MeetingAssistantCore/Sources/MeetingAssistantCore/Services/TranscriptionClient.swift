@@ -188,26 +188,3 @@ public enum TranscriptionError: LocalizedError {
     }
 }
 
-// MARK: - UserDefaultsStorage for non-View contexts
-
-import SwiftUI
-
-@propertyWrapper
-public struct UserDefaultsStorage<Value> {
-    private let key: String
-    private let defaultValue: Value
-
-    public init(wrappedValue: Value, _ key: String) {
-        self.key = key
-        defaultValue = wrappedValue
-    }
-
-    public var wrappedValue: Value {
-        get {
-            UserDefaults.standard.object(forKey: key) as? Value ?? defaultValue
-        }
-        set {
-            UserDefaults.standard.set(newValue, forKey: key)
-        }
-    }
-}
