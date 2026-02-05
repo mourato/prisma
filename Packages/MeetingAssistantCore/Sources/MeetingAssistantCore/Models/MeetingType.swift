@@ -37,4 +37,16 @@ extension MeetingType {
         case .planning: return "Planning"
         }
     }
+    
+    public var iconName: String {
+        switch self {
+        case .autodetect: return "sparkles"
+        case .general: return "bubble.left.and.bubble.right"
+        case .standup: return "figure.stand"
+        case .designReview: return "paintbrush"
+        case .oneOnOne: return "person.2"
+        case .presentation: return "tv"
+        case .planning: return "map"
+        }
+    }
 }

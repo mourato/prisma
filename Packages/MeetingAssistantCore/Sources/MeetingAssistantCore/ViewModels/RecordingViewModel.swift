@@ -14,10 +14,12 @@ public class RecordingViewModel: ObservableObject {
 
     @Published public var isRecording: Bool = false
     @Published public var isTranscribing: Bool = false
+    @Published public var meetingState: MeetingState = .idle
     @Published public var arePermissionsGranted: Bool = false
     @Published public var currentMeeting: Meeting?
     @Published public var isModelLoaded: Bool = false
     @Published public var selectedSource: RecordingSource = .microphone
+    @Published public var selectedMeetingType: MeetingType = .general
     @Published public var displayDuration: String = "00:00"
     private var timer: AnyCancellable?
 
@@ -98,7 +100,7 @@ public class RecordingViewModel: ObservableObject {
         // Let's support passing source.
         let sourceToUse = source ?? .microphone
         selectedSource = sourceToUse // Sync UI state
-        await recordingManager.startRecording(source: sourceToUse)
+        await recordingManager.startRecording(source: sourceToUse, type: selectedMeetingType)
     }
 
     public func stopRecording() async {
@@ -137,6 +139,10 @@ public class RecordingViewModel: ObservableObject {
         recordingManager.isTranscribingPublisher
             .receive(on: DispatchQueue.main)
             .assign(to: &$isTranscribing)
+
+        recordingManager.meetingStatePublisher
+            .receive(on: DispatchQueue.main)
+            .assign(to: &$meetingState)
 
         recordingManager.currentMeetingPublisher
             .receive(on: DispatchQueue.main)

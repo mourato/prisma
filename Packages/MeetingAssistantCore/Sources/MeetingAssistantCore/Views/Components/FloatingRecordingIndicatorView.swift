@@ -5,6 +5,7 @@ public struct FloatingRecordingIndicatorView: View {
     @ObservedObject var audioMonitor: AudioLevelMonitor
     let style: RecordingIndicatorStyle
     let mode: FloatingRecordingIndicatorMode
+    let meetingType: MeetingType? // Added
     let onStop: @Sendable () -> Void
     let onCancel: @Sendable () -> Void
 
@@ -14,12 +15,14 @@ public struct FloatingRecordingIndicatorView: View {
         audioMonitor: AudioLevelMonitor,
         style: RecordingIndicatorStyle,
         mode: FloatingRecordingIndicatorMode,
+        meetingType: MeetingType? = nil, // Added default nil
         onStop: @escaping @Sendable () -> Void,
         onCancel: @escaping @Sendable () -> Void
     ) {
         self.audioMonitor = audioMonitor
         self.style = style
         self.mode = mode
+        self.meetingType = meetingType
         self.onStop = onStop
         self.onCancel = onCancel
     }
@@ -62,6 +65,14 @@ public struct FloatingRecordingIndicatorView: View {
                     maxHeight: 24
                 )
                 .frame(width: 120)
+                
+                if let type = meetingType, isRecordingMode {
+                    Image(systemName: type.iconName)
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.8))
+                        .padding(.leading, 4)
+                        .help(type.displayName)
+                }
             }
             .opacity(isHovering ? 0.3 : 1.0)
 

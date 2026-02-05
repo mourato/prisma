@@ -20,6 +20,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
     private let settingsStore: AppSettingsStore
     private var cancellables = Set<AnyCancellable>()
     private var currentMode: FloatingRecordingIndicatorMode = .recording
+    private var meetingType: MeetingType?
 
     /// Whether the indicator is currently visible.
     @Published public private(set) var isVisible = false
@@ -53,9 +54,11 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
     /// Show the floating indicator.
     /// Automatically reads style and position from settings.
     /// - Parameter mode: Whether to present recording or processing visuals.
-    public func show(mode: FloatingRecordingIndicatorMode = .recording) {
+    /// - Parameter type: The type of meeting being recorded.
+    public func show(mode: FloatingRecordingIndicatorMode = .recording, type: MeetingType? = nil) {
         guard shouldShowIndicator(for: mode) else { return }
         currentMode = mode
+        self.meetingType = type
 
         let shouldCreatePanel = panel == nil
 
@@ -181,6 +184,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
             audioMonitor: audioMonitor,
             style: settingsStore.recordingIndicatorStyle,
             mode: currentMode,
+            meetingType: meetingType,
             onStop: {
                 Task { @MainActor in
                     await RecordingManager.shared.stopRecording()

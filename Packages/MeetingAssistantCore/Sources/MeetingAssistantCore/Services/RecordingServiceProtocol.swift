@@ -5,6 +5,8 @@ import Foundation
 @MainActor
 public protocol RecordingServiceProtocol: AnyObject {
     // Properties
+    // Properties
+    var meetingState: MeetingState { get }
     var isRecording: Bool { get }
     var isTranscribing: Bool { get }
     var currentMeeting: Meeting? { get }
@@ -12,12 +14,13 @@ public protocol RecordingServiceProtocol: AnyObject {
     var permissionStatus: PermissionStatusManager { get }
 
     // Publishers
+    var meetingStatePublisher: AnyPublisher<MeetingState, Never> { get }
     var isRecordingPublisher: AnyPublisher<Bool, Never> { get }
     var isTranscribingPublisher: AnyPublisher<Bool, Never> { get }
     var currentMeetingPublisher: AnyPublisher<Meeting?, Never> { get }
 
     // Actions
-    func startRecording(source: RecordingSource) async
+    func startRecording(source: RecordingSource, type: MeetingType) async
     func stopRecording() async
     func transcribeExternalAudio(from audioURL: URL) async
     func checkPermission() async

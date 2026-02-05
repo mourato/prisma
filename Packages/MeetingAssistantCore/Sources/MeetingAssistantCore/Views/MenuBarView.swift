@@ -118,7 +118,25 @@ public struct MenuBarView: View {
     }
 
     private var controlButtons: some View {
-        VStack {
+        VStack(spacing: 12) {
+            if !viewModel.isRecording {
+                HStack {
+                    Text("Type:")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    
+                    Picker("Meeting Type", selection: $viewModel.selectedMeetingType) {
+                        ForEach(MeetingType.allCases, id: \.self) { type in
+                            Text(type.displayName).tag(type)
+                        }
+                    }
+                    .labelsHidden()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding(.horizontal, 4)
+            }
+
+
             if viewModel.isRecording {
                 Button(action: stopRecording) {
                     Label(
@@ -176,6 +194,10 @@ struct MeetingCard: View {
                 Text(meeting.appName)
                     .font(.subheadline)
                     .fontWeight(.medium)
+
+                Text(meeting.type.displayName)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
 
                 Text(duration)
                     .font(.caption)
