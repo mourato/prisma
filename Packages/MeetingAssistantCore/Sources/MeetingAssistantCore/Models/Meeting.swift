@@ -81,6 +81,8 @@ public enum MeetingApp: String, CaseIterable, Codable, Sendable {
 public struct Meeting: Identifiable, Codable, Hashable, Sendable {
     public let id: UUID
     public let app: MeetingApp
+    public var type: MeetingType = .general
+    public var state: MeetingState = .idle
     public let startTime: Date
     public var endTime: Date?
     public var audioFilePath: String?
@@ -88,12 +90,16 @@ public struct Meeting: Identifiable, Codable, Hashable, Sendable {
     public init(
         id: UUID = UUID(),
         app: MeetingApp,
+        type: MeetingType = .general,
+        state: MeetingState = .idle,
         startTime: Date = Date(),
         endTime: Date? = nil,
         audioFilePath: String? = nil
     ) {
         self.id = id
         self.app = app
+        self.type = type
+        self.state = state
         self.startTime = startTime
         self.endTime = endTime
         self.audioFilePath = audioFilePath
