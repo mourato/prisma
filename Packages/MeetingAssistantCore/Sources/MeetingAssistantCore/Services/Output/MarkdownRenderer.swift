@@ -93,9 +93,8 @@ public struct MarkdownRenderer: Sendable {
         output = output.replacingOccurrences(of: "{{transcription}}", with: transcriptionText)
         
         // Metadata specific replacements
-        if let meetingType = transcription.meetingType {
-             output = output.replacingOccurrences(of: "{{meetingType}}", with: meetingType)
-        }
+        // Metadata specific replacements
+        output = output.replacingOccurrences(of: "{{meetingType}}", with: meeting.type.displayName)
 
         return output
     }
