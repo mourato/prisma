@@ -666,8 +666,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
         let settings = AppSettingsStore.shared
         guard settings.postProcessingEnabled,
-              settings.aiConfiguration.isValid,
-              let prompt = settings.selectedPrompt
+              settings.aiConfiguration.isValid
         else {
             return PostProcessingResult(
                 processedContent: nil,
@@ -676,6 +675,21 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
                 duration: 0,
                 model: nil
             )
+        }
+
+        // Context-Aware Prompt Selection
+        // We prioritize the strategy for the specific meeting type.
+        // If the type is general, we fall back to the user's selected prompt in settings,
+        // or the default strategy if none is selected.
+        let type = currentMeeting?.type ?? .general
+        let prompt: PostProcessingPrompt
+        
+        if type != .general, type != .autodetect {
+             let strategy = PromptService.shared.strategy(for: type)
+             prompt = strategy.promptObject()
+             AppLogger.info("Using context-aware prompt for type: \(type.displayName)", category: .transcriptionEngine)
+        } else {
+             prompt = settings.selectedPrompt ?? PromptService.shared.strategy(for: .general).promptObject()
         }
 
         transcriptionStatus.updateProgress(

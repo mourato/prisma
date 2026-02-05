@@ -5,6 +5,7 @@ import Foundation
 @MainActor
 class MockRecordingService: RecordingServiceProtocol {
     // Properties
+    var meetingState: MeetingState = .idle
     var isRecording: Bool = false
     var isTranscribing: Bool = false
     var currentMeeting: Meeting?
@@ -12,9 +13,14 @@ class MockRecordingService: RecordingServiceProtocol {
     var permissionStatus = PermissionStatusManager()
 
     // Publishers
+    var meetingStateSubject = PassthroughSubject<MeetingState, Never>()
     var isRecordingSubject = PassthroughSubject<Bool, Never>()
     var isTranscribingSubject = PassthroughSubject<Bool, Never>()
     var currentMeetingSubject = PassthroughSubject<Meeting?, Never>()
+
+    var meetingStatePublisher: AnyPublisher<MeetingState, Never> {
+        meetingStateSubject.eraseToAnyPublisher()
+    }
 
     var isRecordingPublisher: AnyPublisher<Bool, Never> {
         isRecordingSubject.eraseToAnyPublisher()
@@ -30,6 +36,7 @@ class MockRecordingService: RecordingServiceProtocol {
 
     // Track calls
     var startRecordingCalled = false
+    var startRecordingType: MeetingType?
     var stopRecordingCalled = false
     var checkPermissionCalled = false
     var requestPermissionCalled = false
@@ -41,10 +48,13 @@ class MockRecordingService: RecordingServiceProtocol {
     var openAccessibilitySettingsCalled = false
     var transcribeExternalAudioCalled = false
 
-    func startRecording(source: RecordingSource) async {
+    func startRecording(source: RecordingSource, type: MeetingType = .general) async {
         startRecordingCalled = true
+        startRecordingType = type
         isRecording = true
         isRecordingSubject.send(true)
+        meetingState = .recording
+        meetingStateSubject.send(.recording)
     }
 
     func stopRecording() async {
