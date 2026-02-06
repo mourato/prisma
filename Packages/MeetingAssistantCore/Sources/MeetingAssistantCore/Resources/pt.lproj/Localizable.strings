@@ -81,6 +81,7 @@
 "settings.meetings.no_folder_selected" = "Nenhuma pasta selecionada";
 "settings.meetings.template" = "Template";
 "settings.meetings.template_desc" = "Template usado para formatar os resumos exportados.";
+"settings.meetings.speaker_identification" = "Identificação de oradores";
 "settings.meetings.prompts" = "Prompts de reunião";
 "settings.meetings.no_prompts" = "Nenhum prompt ainda";
 "settings.dictation.prompts" = "Prompts de ditado";
