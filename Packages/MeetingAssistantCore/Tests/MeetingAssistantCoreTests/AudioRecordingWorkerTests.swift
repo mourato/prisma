@@ -1,5 +1,6 @@
 import AVFoundation
 @testable import MeetingAssistantCore
+@testable import MeetingAssistantCoreAudio
 import XCTest
 
 final class AudioRecordingWorkerTests: XCTestCase {
