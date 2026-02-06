@@ -111,4 +111,4 @@ Accepted and enforced.
 
 1. Complete the remaining storage migration cleanup and deprecate legacy-only paths.
 2. Reduce lint debt from pre-existing large files (especially `RecordingManager`) without changing behavior.
-3. Add lightweight architecture checks to CI (module-boundary and import-surface checks).
+3. Add lightweight architecture checks to CI (module-boundary and import-surface checks). ✅ Done (2026-02-06)
