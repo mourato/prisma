@@ -1,11 +1,12 @@
 import Foundation
 @testable import MeetingAssistantCore
+@testable import MeetingAssistantCoreDomain
 import XCTest
 
 final class TranscribeAudioUseCaseMacroMockingTests: XCTestCase {
     func testExecuteSuccess_SavesTranscription() async throws {
-        let transcriptionRepository = MeetingAssistantCore.MacroMockTranscriptionRepository()
-        let storageRepository = MeetingAssistantCore.MacroMockTranscriptionStorageRepository()
+        let transcriptionRepository = MeetingAssistantCoreDomain.MacroMockTranscriptionRepository()
+        let storageRepository = MeetingAssistantCoreDomain.MacroMockTranscriptionStorageRepository()
 
         transcriptionRepository.healthCheckHandler = { () async throws -> Bool in true }
 

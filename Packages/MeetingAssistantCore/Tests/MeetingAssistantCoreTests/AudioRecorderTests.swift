@@ -1,5 +1,6 @@
 @preconcurrency import AVFoundation
 @testable import MeetingAssistantCore
+@testable import MeetingAssistantCoreAudio
 import XCTest
 
 /// Testes unitários para AudioRecorder usando MockAudioEngine

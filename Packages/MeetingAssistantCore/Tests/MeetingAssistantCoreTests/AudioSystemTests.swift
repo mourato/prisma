@@ -1,5 +1,6 @@
 @preconcurrency import AVFoundation
 @testable import MeetingAssistantCore
+@testable import MeetingAssistantCoreAudio
 import XCTest
 
 /// Testes de integração completa do sistema de áudio.

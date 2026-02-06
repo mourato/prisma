@@ -1,6 +1,7 @@
 import AVFoundation
 import Combine
 @testable import MeetingAssistantCore
+@testable import MeetingAssistantCoreAudio
 import XCTest
 
 final class ConcurrencyTests: XCTestCase {
