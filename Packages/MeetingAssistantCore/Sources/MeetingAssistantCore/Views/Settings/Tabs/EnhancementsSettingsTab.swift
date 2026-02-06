@@ -62,28 +62,10 @@ public struct EnhancementsSettingsTab: View {
     }
 
     private var connectionWarningSection: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.title2)
-                .foregroundStyle(.yellow)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text("settings.post_processing.warning_title".localized)
-                    .font(.headline)
-
-                Text("settings.post_processing.warning_desc".localized)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer()
-        }
-        .padding()
-        .background(Color.yellow.opacity(0.1))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.yellow.opacity(0.2), lineWidth: 1)
+        MACallout(
+            kind: .warning,
+            title: "settings.post_processing.warning_title".localized,
+            message: "settings.post_processing.warning_desc".localized
         )
     }
 

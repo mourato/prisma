@@ -21,35 +21,33 @@ public struct PermissionStatusView: View {
     }
 
     public var body: some View {
-        VStack(spacing: 12) {
-            headerSection
+        MACard {
+            VStack(spacing: 12) {
+                headerSection
 
-            VStack(spacing: 8) {
-                PermissionRowView(
-                    permission: PermissionInfo(type: .microphone, state: viewModel.microphoneState),
-                    onRequest: { Task { await viewModel.requestMicrophonePermission() } },
-                    onOpenSettings: { viewModel.openMicrophoneSystemSettings() }
-                )
+                VStack(spacing: 8) {
+                    PermissionRowView(
+                        permission: PermissionInfo(type: .microphone, state: viewModel.microphoneState),
+                        onRequest: { Task { await viewModel.requestMicrophonePermission() } },
+                        onOpenSettings: { viewModel.openMicrophoneSystemSettings() }
+                    )
 
-                PermissionRowView(
-                    permission: PermissionInfo(
-                        type: .screenRecording, state: viewModel.screenState
-                    ),
-                    onRequest: { Task { await viewModel.requestScreenPermission() } },
-                    onOpenSettings: { viewModel.openScreenSystemSettings() }
-                )
+                    PermissionRowView(
+                        permission: PermissionInfo(type: .screenRecording, state: viewModel.screenState),
+                        onRequest: { Task { await viewModel.requestScreenPermission() } },
+                        onOpenSettings: { viewModel.openScreenSystemSettings() }
+                    )
 
-                PermissionRowView(
-                    permission: PermissionInfo(
-                        type: .accessibility, state: viewModel.accessibilityState
-                    ),
-                    onRequest: { viewModel.requestAccessibilityPermission() },
-                    onOpenSettings: { viewModel.openAccessibilitySystemSettings() }
-                )
-            }
+                    PermissionRowView(
+                        permission: PermissionInfo(type: .accessibility, state: viewModel.accessibilityState),
+                        onRequest: { viewModel.requestAccessibilityPermission() },
+                        onOpenSettings: { viewModel.openAccessibilitySystemSettings() }
+                    )
+                }
 
-            if !requiredPermissionsGranted {
-                permissionWarning
+                if !requiredPermissionsGranted {
+                    permissionWarning
+                }
             }
         }
     } // body
@@ -98,6 +96,8 @@ public struct PermissionStatusView: View {
             }
 
             Spacer()
+
+            statusBadge
         }
     }
 
@@ -105,29 +105,11 @@ public struct PermissionStatusView: View {
     private var statusBadge: some View {
         if requiredPermissionsGranted {
             Button(action: { onDismiss?() }) {
-                Text("common.ok".localized)
-                    .font(.caption2)
-                    .fontWeight(.bold)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(
-                        Capsule()
-                            .fill(SettingsDesignSystem.Colors.success)
-                    )
-                    .foregroundColor(.white)
+                MABadge("common.ok".localized, kind: .success)
             }
             .buttonStyle(.plain)
         } else {
-            Image(systemName: PermissionConstants.Icons.exclamationMark)
-                .font(.caption2)
-                .fontWeight(.bold)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(
-                    Capsule()
-                        .fill(SettingsDesignSystem.Colors.warning)
-                )
-                .foregroundColor(.white)
+            MABadge("permissions.action_required".localized, kind: .warning)
         }
     }
 
@@ -142,36 +124,6 @@ public struct PermissionStatusView: View {
                 .foregroundStyle(.secondary)
         }
         .padding(.top, 4)
-    }
-
-    // MARK: - Computed Properties
-
-    private var backgroundGradient: LinearGradient {
-        if requiredPermissionsGranted {
-            LinearGradient(
-                colors: [
-                    Color.green.opacity(0.05),
-                    Color.green.opacity(0.02),
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        } else {
-            LinearGradient(
-                colors: [
-                    Color.orange.opacity(0.08),
-                    Color.orange.opacity(0.03),
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        }
-    }
-
-    private var borderColor: Color {
-        requiredPermissionsGranted
-            ? Color.green.opacity(0.2)
-            : Color.orange.opacity(0.3)
     }
 
     private var headerIconColor: Color {
@@ -231,7 +183,7 @@ struct PermissionRowView: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
         .background(
-            RoundedRectangle(cornerRadius: 8)
+            RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
                 .fill(.background)
         )
     }

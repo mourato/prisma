@@ -18,8 +18,8 @@ public struct TranscriptionStatusView: View {
                 expandedDetails
             }
         }
-        .padding(12)
-        .background(statusBackground, in: RoundedRectangle(cornerRadius: 10))
+        .padding(MeetingAssistantDesignSystem.Layout.spacing12)
+        .background(statusBackground, in: RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.cardCornerRadius))
         .animation(.easeInOut(duration: 0.2), value: isExpanded)
         .animation(.easeInOut(duration: 0.3), value: viewModel.phase)
     }
@@ -182,18 +182,18 @@ public struct TranscriptionStatusView: View {
     private func errorRow(error: TranscriptionStatusError) -> some View {
         HStack(spacing: 6) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(.red)
+                .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
 
             VStack(alignment: .leading) {
                 Text(error.localizedDescription)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
                 Text("transcription.error.click_retry".localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         }
         .padding(6)
-        .background(.red.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
+        .background(MeetingAssistantDesignSystem.Colors.error.opacity(0.1), in: RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
     }
 
     private var chevronButton: some View {
@@ -210,11 +210,11 @@ public struct TranscriptionStatusView: View {
     private var statusBackground: some ShapeStyle {
         switch (viewModel.serviceState, viewModel.hasBlockingError) {
         case (_, true):
-            AnyShapeStyle(Color.red.opacity(0.1))
+            AnyShapeStyle(MeetingAssistantDesignSystem.Colors.error.opacity(0.1))
         case (.connected, _) where viewModel.isProcessing:
             AnyShapeStyle(SettingsDesignSystem.Colors.accent.opacity(0.1))
         case (.connected, _) where viewModel.phase == .completed:
-            AnyShapeStyle(Color.green.opacity(0.1))
+            AnyShapeStyle(MeetingAssistantDesignSystem.Colors.success.opacity(0.1))
         default:
             AnyShapeStyle(.ultraThinMaterial)
         }
@@ -222,35 +222,35 @@ public struct TranscriptionStatusView: View {
 
     private var statusTextColor: Color {
         if viewModel.hasBlockingError {
-            return .red
+            return MeetingAssistantDesignSystem.Colors.error
         } else if viewModel.isProcessing {
             return SettingsDesignSystem.Colors.accent
         } else if viewModel.phase == .completed {
-            return .green
+            return MeetingAssistantDesignSystem.Colors.success
         }
         return .primary
     }
 
     private var statusIconBackground: Color {
         if viewModel.hasBlockingError {
-            return .red.opacity(0.15)
+            return MeetingAssistantDesignSystem.Colors.error.opacity(0.15)
         } else if viewModel.isProcessing {
             return SettingsDesignSystem.Colors.accent.opacity(0.15)
         } else if viewModel.phase == .completed {
-            return .green.opacity(0.15)
+            return MeetingAssistantDesignSystem.Colors.success.opacity(0.15)
         } else if viewModel.isReady {
-            return .green.opacity(0.15)
+            return MeetingAssistantDesignSystem.Colors.success.opacity(0.15)
         }
         return .gray.opacity(0.15)
     }
 
     private var statusIconColor: Color {
         if viewModel.hasBlockingError {
-            return .red
+            return MeetingAssistantDesignSystem.Colors.error
         } else if viewModel.isProcessing {
             return SettingsDesignSystem.Colors.accent
         } else if viewModel.phase == .completed || viewModel.isReady {
-            return .green
+            return MeetingAssistantDesignSystem.Colors.success
         }
         return .gray
     }

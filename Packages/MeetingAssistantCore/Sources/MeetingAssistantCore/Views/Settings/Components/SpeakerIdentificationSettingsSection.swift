@@ -223,4 +223,3 @@ public struct SpeakerIdentificationSettingsSection: View {
         }
     }
 }
-

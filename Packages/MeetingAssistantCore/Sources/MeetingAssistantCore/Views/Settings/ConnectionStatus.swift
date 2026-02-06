@@ -12,9 +12,9 @@ public enum ConnectionStatus: Equatable {
     public var color: Color {
         switch self {
         case .unknown: .secondary
-        case .testing: .orange
-        case .success: .green
-        case .failure: .red
+        case .testing: MeetingAssistantDesignSystem.Colors.warning
+        case .success: MeetingAssistantDesignSystem.Colors.success
+        case .failure: MeetingAssistantDesignSystem.Colors.error
         }
     }
 

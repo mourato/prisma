@@ -123,14 +123,19 @@ struct ContentView: View {
 
 ## Settings UI Patterns
 
-### Settings Design System
+### Design System
 
-Use the project's `SettingsDesignSystem` for consistent macOS settings interfaces:
+Use the project's Design System tokens/components to keep UI consistent and DRY:
+
+- Tokens: `MeetingAssistantDesignSystem`
+- Components: `MACard`, `MAGroup`, `MAToggleRow`, `MACallout`, `MABadge`, `MAActionButton`
+
+For Settings screens specifically, `SettingsDesignSystem`, `SettingsGroup`, `SettingsToggle`, and `SettingsCard` exist as aliases for backwards compatibility (they map to the global components).
 
 ```swift
-// Use SettingsGroup for labeled sections
-SettingsGroup("Recording", icon: "recordingtape") {
-    SettingsToggle(
+// Use MAGroup for labeled sections
+MAGroup("Recording", icon: "recordingtape") {
+    MAToggleRow(
         "Auto-start recording",
         description: "Optional description text",
         isOn: $viewModel.autoStart
@@ -141,8 +146,8 @@ SettingsGroup("Recording", icon: "recordingtape") {
     // Additional content
 }
 
-// Use SettingsCard for unlabeled containers
-SettingsCard {
+// Use MACard for unlabeled containers
+MACard {
     HStack {
         Text("Format")
         Spacer()

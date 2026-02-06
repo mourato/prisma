@@ -92,4 +92,3 @@ public final class DictationPromptSettingsViewModel: ObservableObject {
         showPromptEditor = true
     }
 }
-

@@ -57,21 +57,13 @@ public struct TranscriptionCardView: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Content
+        MACard(cornerRadius: MeetingAssistantDesignSystem.Layout.largeCornerRadius, padding: MeetingAssistantDesignSystem.Layout.spacing16) {
             if isExpanded {
                 expandedContent
             } else {
                 collapsedContent
             }
         }
-        .padding()
-        .background(Color(NSColor.controlBackgroundColor))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.primary.opacity(0.1), lineWidth: 1)
-        )
         .contentShape(Rectangle())
         .onTapGesture {
             onToggleExpand()

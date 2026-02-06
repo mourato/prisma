@@ -23,7 +23,7 @@ struct RecordingButton: View {
                 }
                 .foregroundColor(SettingsDesignSystem.Colors.onAccent)
                 .frame(maxWidth: .infinity)
-                .frame(height: 44)
+                .frame(height: MeetingAssistantDesignSystem.Layout.controlHeight)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -67,7 +67,7 @@ struct RecordingButton: View {
         } label: {
             // Fully transparent clickable area
             Color.clear
-                .frame(width: 44, height: 44)
+                .frame(width: MeetingAssistantDesignSystem.Layout.controlHeight, height: MeetingAssistantDesignSystem.Layout.controlHeight)
                 .contentShape(Rectangle())
         }
         .menuStyle(.button)
@@ -82,7 +82,7 @@ struct RecordingButton: View {
                 .opacity(isDropdownPressed ? 0.7 : 1.0)
                 .allowsHitTesting(false)
         }
-        .frame(width: 44, height: 44)
+        .frame(width: MeetingAssistantDesignSystem.Layout.controlHeight, height: MeetingAssistantDesignSystem.Layout.controlHeight)
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { _ in

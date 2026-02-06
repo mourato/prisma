@@ -442,8 +442,9 @@ public class AppSettingsStore: ObservableObject {
         static let recordingStopSound = "recordingStopSound"
         /// App Visibility
         static let showInDock = "showInDock"
-        
+
         // MARK: - Meeting Summary Configuration
+
         static let meetingTypeAutoDetectEnabled = "meetingTypeAutoDetectEnabled"
         static let meetingPrompts = "meetingPrompts"
         static let summaryExportFolder = "summaryExportFolder"
@@ -729,7 +730,7 @@ public class AppSettingsStore: ObservableObject {
                     let bookmark = try url.bookmarkData(options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
                     UserDefaults.standard.set(bookmark, forKey: Keys.summaryExportFolder)
                 } catch {
-                   print("Failed to save bookmark for export folder: \(error)")
+                    print("Failed to save bookmark for export folder: \(error)")
                 }
             } else {
                 UserDefaults.standard.removeObject(forKey: Keys.summaryExportFolder)
@@ -797,80 +798,37 @@ public class AppSettingsStore: ObservableObject {
     // MARK: - Initialization
 
     private init() {
-        // Load AI configuration
-        if let data = UserDefaults.standard.data(forKey: Keys.aiConfiguration),
-           let config = try? JSONDecoder().decode(AIConfiguration.self, from: data)
-        {
-            if !config.legacyApiKey.isEmpty {
-                // Migrate to Keychain
-                let providerKey = KeychainManager.apiKeyKey(for: config.provider)
-                try? KeychainManager.store(config.legacyApiKey, for: providerKey)
-                aiConfiguration = config.withoutLegacyKey
-            } else {
-                aiConfiguration = config
-            }
-        } else {
-            aiConfiguration = .default
-        }
+        aiConfiguration = Self.loadAIConfiguration()
 
-        systemPrompt = UserDefaults.standard.string(forKey: Keys.systemPrompt)
-            ?? AIPromptTemplates.defaultSystemPrompt
+        systemPrompt = UserDefaults.standard.string(forKey: Keys.systemPrompt) ?? AIPromptTemplates.defaultSystemPrompt
 
-        if let data = UserDefaults.standard.data(forKey: Keys.userPrompts),
-           let prompts = try? JSONDecoder().decode([PostProcessingPrompt].self, from: data)
-        {
-            userPrompts = prompts
-        } else {
-            userPrompts = []
-        }
+        userPrompts = Self.loadDecoded([PostProcessingPrompt].self, forKey: Keys.userPrompts) ?? []
 
-        if let data = UserDefaults.standard.data(forKey: Keys.dictationPrompts),
-           let prompts = try? JSONDecoder().decode([PostProcessingPrompt].self, from: data)
-        {
-            dictationPrompts = prompts
-        } else {
-            dictationPrompts = []
-        }
+        dictationPrompts = Self.loadDecoded([PostProcessingPrompt].self, forKey: Keys.dictationPrompts) ?? []
 
-        if let data = UserDefaults.standard.data(forKey: Keys.deletedPromptIds),
-           let ids = try? JSONDecoder().decode(Set<UUID>.self, from: data)
-        {
-            deletedPromptIds = ids
-        } else {
-            deletedPromptIds = []
-        }
+        deletedPromptIds = Self.loadDecoded(Set<UUID>.self, forKey: Keys.deletedPromptIds) ?? []
 
         postProcessingEnabled = UserDefaults.standard.bool(forKey: Keys.postProcessingEnabled)
         isDiarizationEnabled = UserDefaults.standard.bool(forKey: Keys.isDiarizationEnabled)
 
-        minSpeakers = UserDefaults.standard.object(forKey: Keys.minSpeakers) as? Int
-        maxSpeakers = UserDefaults.standard.object(forKey: Keys.maxSpeakers) as? Int
-        numSpeakers = UserDefaults.standard.object(forKey: Keys.numSpeakers) as? Int
+        minSpeakers = Self.loadOptionalInt(forKey: Keys.minSpeakers)
+        maxSpeakers = Self.loadOptionalInt(forKey: Keys.maxSpeakers)
+        numSpeakers = Self.loadOptionalInt(forKey: Keys.numSpeakers)
 
-        let rawFormat = UserDefaults.standard.string(forKey: PostProcessingKeys.audioFormat)
-        audioFormat = rawFormat.flatMap { AudioFormat(rawValue: $0) } ?? .m4a
+        audioFormat = Self.loadEnum(forKey: PostProcessingKeys.audioFormat, defaultValue: .m4a)
 
-        selectedPromptId = UserDefaults.standard.string(forKey: Keys.selectedPromptId)
-            .flatMap { UUID(uuidString: $0) }
+        selectedPromptId = Self.loadUUID(forKey: Keys.selectedPromptId)
+        dictationSelectedPromptId = Self.loadUUID(forKey: Keys.dictationSelectedPromptId)
 
-        dictationSelectedPromptId = UserDefaults.standard.string(forKey: Keys.dictationSelectedPromptId)
-            .flatMap { UUID(uuidString: $0) }
+        shouldMergeAudioFiles = Self.loadBoolDefaultIfUnset(
+            forKey: PostProcessingKeys.shouldMergeAudioFiles,
+            defaultValue: true
+        )
 
-        if UserDefaults.standard.object(forKey: PostProcessingKeys.shouldMergeAudioFiles) == nil {
-            shouldMergeAudioFiles = true
-        } else {
-            shouldMergeAudioFiles = UserDefaults.standard.bool(forKey: PostProcessingKeys.shouldMergeAudioFiles)
-        }
-
-        let rawLang = UserDefaults.standard.string(forKey: Keys.selectedLanguage)
-        selectedLanguage = rawLang.flatMap { AppLanguage(rawValue: $0) } ?? .system
+        selectedLanguage = Self.loadEnum(forKey: Keys.selectedLanguage, defaultValue: .system)
 
         audioDevicePriority = UserDefaults.standard.stringArray(forKey: Keys.audioDevicePriority) ?? []
-        if UserDefaults.standard.object(forKey: Keys.useSystemDefaultInput) == nil {
-            useSystemDefaultInput = true
-        } else {
-            useSystemDefaultInput = UserDefaults.standard.bool(forKey: Keys.useSystemDefaultInput)
-        }
+        useSystemDefaultInput = Self.loadBoolDefaultIfUnset(forKey: Keys.useSystemDefaultInput, defaultValue: true)
         muteOutputDuringRecording = UserDefaults.standard.bool(forKey: Keys.muteOutputDuringRecording)
 
         let rawActivationMode = UserDefaults.standard.string(forKey: Keys.shortcutActivationMode)
@@ -898,7 +856,8 @@ public class AppSettingsStore: ObservableObject {
 
         // Load Meeting Prompts
         if let data = UserDefaults.standard.data(forKey: Keys.meetingPrompts),
-           let prompts = try? JSONDecoder().decode([PostProcessingPrompt].self, from: data) {
+           let prompts = try? JSONDecoder().decode([PostProcessingPrompt].self, from: data)
+        {
             meetingPrompts = prompts
         } else {
             meetingPrompts = []
@@ -924,12 +883,12 @@ public class AppSettingsStore: ObservableObject {
         app: "{{app}}"
         type: "{{type}}"
         ---
-        
+
         # {{title}}
-        
+
         {{summary}}
         """
-        
+
         autoExportSummaries = UserDefaults.standard.bool(forKey: Keys.autoExportSummaries)
         createMeetingFolder = UserDefaults.standard.bool(forKey: Keys.createMeetingFolder)
 
@@ -967,6 +926,80 @@ public class AppSettingsStore: ObservableObject {
     }
 
     // MARK: - Private Helpers
+
+    private static let defaultSummaryTemplate = """
+    ---
+    title: "{{title}}"
+    date: "{{date}}"
+    duration: "{{duration}}"
+    app: "{{app}}"
+    type: "{{type}}"
+    ---
+
+    # {{title}}
+
+    {{summary}}
+    """
+
+    private static func loadDecoded<T: Decodable>(_ type: T.Type, forKey key: String) -> T? {
+        guard let data = UserDefaults.standard.data(forKey: key) else { return nil }
+        return try? JSONDecoder().decode(type, from: data)
+    }
+
+    private static func loadAIConfiguration() -> AIConfiguration {
+        guard let config = loadDecoded(AIConfiguration.self, forKey: Keys.aiConfiguration) else {
+            return .default
+        }
+
+        if !config.legacyApiKey.isEmpty {
+            let providerKey = KeychainManager.apiKeyKey(for: config.provider)
+            try? KeychainManager.store(config.legacyApiKey, for: providerKey)
+            return config.withoutLegacyKey
+        }
+
+        return config
+    }
+
+    private static func loadUUID(forKey key: String) -> UUID? {
+        UserDefaults.standard.string(forKey: key).flatMap(UUID.init(uuidString:))
+    }
+
+    private static func loadOptionalInt(forKey key: String) -> Int? {
+        UserDefaults.standard.object(forKey: key) as? Int
+    }
+
+    private static func loadInt(forKey key: String, defaultValue: Int) -> Int {
+        let value = UserDefaults.standard.object(forKey: key) as? Int
+        return value ?? defaultValue
+    }
+
+    private static func loadBoolDefaultIfUnset(forKey key: String, defaultValue: Bool) -> Bool {
+        guard UserDefaults.standard.object(forKey: key) != nil else {
+            return defaultValue
+        }
+        return UserDefaults.standard.bool(forKey: key)
+    }
+
+    private static func loadEnum<T: RawRepresentable>(forKey key: String, defaultValue: T) -> T where T.RawValue == String {
+        let rawValue = UserDefaults.standard.string(forKey: key)
+        return rawValue.flatMap(T.init(rawValue:)) ?? defaultValue
+    }
+
+    private static func loadURLBookmark(forKey key: String) -> URL? {
+        guard let data = UserDefaults.standard.data(forKey: key) else { return nil }
+        var isStale = false
+        return try? URL(
+            resolvingBookmarkData: data,
+            options: .withSecurityScope,
+            relativeTo: nil,
+            bookmarkDataIsStale: &isStale
+        )
+    }
+
+    private static func loadDictationPresetKey(fallback: PresetShortcutKey) -> PresetShortcutKey {
+        let rawValue = UserDefaults.standard.string(forKey: Keys.dictationSelectedPresetKey)
+        return rawValue.flatMap { PresetShortcutKey(rawValue: $0) } ?? fallback
+    }
 
     /// Encodes and saves a Codable value to UserDefaults.
     private func save(_ value: some Encodable, forKey key: String) {

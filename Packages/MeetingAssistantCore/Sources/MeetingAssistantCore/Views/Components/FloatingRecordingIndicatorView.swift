@@ -89,7 +89,7 @@ public struct FloatingRecordingIndicatorView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
-        .background(Color.black.opacity(0.95))
+        .background(MeetingAssistantDesignSystem.Colors.overlayBackground)
         .clipShape(Capsule())
         .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
     }
@@ -123,7 +123,7 @@ public struct FloatingRecordingIndicatorView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(Color.black.opacity(0.95))
+        .background(MeetingAssistantDesignSystem.Colors.overlayBackground)
         .clipShape(Capsule())
         .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 3)
     }
@@ -139,7 +139,7 @@ public struct FloatingRecordingIndicatorView: View {
                     .foregroundColor(.white)
             }
             .buttonStyle(.plain)
-            .help("Stop and Transcribe")
+            .help("recording_indicator.stop.help".localized)
 
             Button(action: onCancel) {
                 Image(systemName: "xmark")
@@ -147,7 +147,7 @@ public struct FloatingRecordingIndicatorView: View {
                     .foregroundColor(.white.opacity(0.8))
             }
             .buttonStyle(.plain)
-            .help("Cancel and Discard")
+            .help("recording_indicator.cancel.help".localized)
         }
     }
 
@@ -161,7 +161,7 @@ public struct FloatingRecordingIndicatorView: View {
             .fixedSize(horizontal: true, vertical: true)
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
-            .background(Color.red.opacity(0.9))
+            .background(MeetingAssistantDesignSystem.Colors.recording.opacity(0.9))
             .clipShape(Capsule())
             .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
             .contentShape(Rectangle())
@@ -174,7 +174,7 @@ public struct FloatingRecordingIndicatorView: View {
     /// Dot indicating recording or processing.
     private var statusDot: some View {
         Circle()
-            .fill(isRecordingMode ? Color.red : SettingsDesignSystem.Colors.accent)
+            .fill(isRecordingMode ? MeetingAssistantDesignSystem.Colors.recording : SettingsDesignSystem.Colors.accent)
             .frame(width: 8, height: 8)
             .modifier(PulsingModifier(isActive: isRecordingMode, speed: isRecordingMode ? 0.9 : 1.4))
     }
@@ -209,7 +209,7 @@ public struct FloatingRecordingIndicatorView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
-        .background(Color.red.opacity(0.95))
+        .background(MeetingAssistantDesignSystem.Colors.error.opacity(0.95))
         .clipShape(Capsule())
         .shadow(color: .black.opacity(0.2), radius: 6, x: 0, y: 3)
     }

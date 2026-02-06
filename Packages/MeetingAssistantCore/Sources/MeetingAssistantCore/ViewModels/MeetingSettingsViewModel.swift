@@ -92,16 +92,16 @@ public class MeetingSettingsViewModel: ObservableObject {
         editingPrompt = newPrompt
         showPromptEditor = true
     }
-    
+
     // MARK: - Export Configuration
-    
+
     public func selectExportFolder() {
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
         panel.prompt = "Select"
-        
+
         if panel.runModal() == .OK {
             settings.summaryExportFolder = panel.url
         }
