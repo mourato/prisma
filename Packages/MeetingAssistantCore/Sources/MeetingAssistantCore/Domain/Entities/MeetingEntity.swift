@@ -49,8 +49,8 @@ public enum DomainMeetingApp: String, CaseIterable, Codable, Sendable {
         case .microsoftTeams: "Microsoft Teams"
         case .slack: "Slack"
         case .zoom: "Zoom"
-        case .importedFile: NSLocalizedString("meeting.app.imported", bundle: .safeModule, comment: "Imported File")
-        case .unknown: NSLocalizedString("meeting.app.unknown", bundle: .safeModule, comment: "Unknown App")
+        case .importedFile: "meeting.app.imported".localized
+        case .unknown: "meeting.app.unknown".localized
         }
     }
 

@@ -27,8 +27,8 @@ public class TranscriptionImportViewModel: ObservableObject {
             .audio, .mpeg4Audio, .mp3, .wav,
             .movie, .mpeg4Movie, .quickTimeMovie,
         ]
-        panel.message = NSLocalizedString("settings.transcriptions.import_select_msg", comment: "")
-        panel.prompt = NSLocalizedString("settings.transcriptions.import_prompt", comment: "")
+        panel.message = "settings.transcriptions.import_select_msg".localized
+        panel.prompt = "settings.transcriptions.import_prompt".localized
 
         if panel.runModal() == .OK, let url = panel.url {
             Task {

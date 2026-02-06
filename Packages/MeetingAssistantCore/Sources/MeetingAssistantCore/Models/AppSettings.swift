@@ -80,13 +80,13 @@ public enum ShortcutActivationMode: String, CaseIterable, Codable, Sendable {
     public var localizedName: String {
         switch self {
         case .holdOrToggle:
-            NSLocalizedString("settings.shortcuts.activation_mode.hold_or_toggle", bundle: .safeModule, comment: "")
+            "settings.shortcuts.activation_mode.hold_or_toggle".localized
         case .toggle:
-            NSLocalizedString("settings.shortcuts.activation_mode.toggle", bundle: .safeModule, comment: "")
+            "settings.shortcuts.activation_mode.toggle".localized
         case .hold:
-            NSLocalizedString("settings.shortcuts.activation_mode.hold", bundle: .safeModule, comment: "")
+            "settings.shortcuts.activation_mode.hold".localized
         case .doubleTap:
-            NSLocalizedString("settings.shortcuts.activation_mode.double_tap", bundle: .safeModule, comment: "")
+            "settings.shortcuts.activation_mode.double_tap".localized
         }
     }
 }
@@ -102,11 +102,11 @@ public enum RecordingIndicatorStyle: String, CaseIterable, Codable, Sendable {
     public var displayName: String {
         switch self {
         case .classic:
-            NSLocalizedString("settings.general.recording_indicator.style.classic", bundle: .safeModule, comment: "")
+            "settings.general.recording_indicator.style.classic".localized
         case .mini:
-            NSLocalizedString("settings.general.recording_indicator.style.mini", bundle: .safeModule, comment: "")
+            "settings.general.recording_indicator.style.mini".localized
         case .none:
-            NSLocalizedString("settings.general.recording_indicator.style.none", bundle: .safeModule, comment: "")
+            "settings.general.recording_indicator.style.none".localized
         }
     }
 }
@@ -119,9 +119,9 @@ public enum RecordingIndicatorPosition: String, CaseIterable, Codable, Sendable 
     public var displayName: String {
         switch self {
         case .top:
-            NSLocalizedString("settings.general.recording_indicator.position.top", bundle: .safeModule, comment: "")
+            "settings.general.recording_indicator.position.top".localized
         case .bottom:
-            NSLocalizedString("settings.general.recording_indicator.position.bottom", bundle: .safeModule, comment: "")
+            "settings.general.recording_indicator.position.bottom".localized
         }
     }
 }
@@ -183,9 +183,9 @@ public enum AssistantBorderStyle: String, CaseIterable, Codable, Sendable {
     public var displayName: String {
         switch self {
         case .stroke:
-            NSLocalizedString("settings.assistant.border_style.stroke", bundle: .safeModule, comment: "")
+            "settings.assistant.border_style.stroke".localized
         case .glow:
-            NSLocalizedString("settings.assistant.border_style.glow", bundle: .safeModule, comment: "")
+            "settings.assistant.border_style.glow".localized
         }
     }
 }
@@ -216,7 +216,7 @@ public enum SoundFeedbackSound: String, CaseIterable, Codable, Sendable {
     public var displayName: String {
         switch self {
         case .none:
-            NSLocalizedString("settings.general.sound_feedback.sound.none", bundle: .safeModule, comment: "")
+            "settings.general.sound_feedback.sound.none".localized
         case .glass:
             "Glass"
         case .ping:
@@ -313,7 +313,7 @@ public enum PresetShortcutKey: String, CaseIterable, Codable, Sendable {
     public var displayName: String {
         switch self {
         case .notSpecified:
-            NSLocalizedString("settings.shortcuts.key.not_specified", bundle: .safeModule, comment: "")
+            "settings.shortcuts.key.not_specified".localized
         case .rightCommand:
             "Right ⌘"
         case .rightOption:
@@ -337,7 +337,7 @@ public enum PresetShortcutKey: String, CaseIterable, Codable, Sendable {
         case .fn:
             "Fn"
         case .custom:
-            NSLocalizedString("settings.shortcuts.key.custom", bundle: .safeModule, comment: "")
+            "settings.shortcuts.key.custom".localized
         }
     }
 

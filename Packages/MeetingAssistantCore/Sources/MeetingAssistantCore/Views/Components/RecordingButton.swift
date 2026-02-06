@@ -45,7 +45,7 @@ struct RecordingButton: View {
 
     private var dropdownButton: some View {
         Menu {
-            Section(NSLocalizedString("menubar.record_section", bundle: .safeModule, comment: "")) {
+            Section("menubar.record_section".localized) {
                 Button {
                     onStart(.all)
                 } label: {

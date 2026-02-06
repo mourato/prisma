@@ -58,7 +58,7 @@ public struct SettingsView: View {
                     )
                 }
             } header: {
-                Text(NSLocalizedString("about.title", bundle: .safeModule, comment: ""))
+                Text("about.title".localized)
                     .font(.caption2)
                     .fontWeight(.bold)
                     .foregroundStyle(.secondary)

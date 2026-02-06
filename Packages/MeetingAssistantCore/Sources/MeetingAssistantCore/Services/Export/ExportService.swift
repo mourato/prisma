@@ -27,7 +27,7 @@ public struct ExportService: Sendable {
         let date = formatter.string(from: meeting.startTime)
         let type = meeting.type.displayName.replacingOccurrences(of: " ", with: "")
 
-        let prefix = NSLocalizedString("export.filename.prefix", bundle: .safeModule, comment: "Filename Prefix")
+        let prefix = "export.filename.prefix".localized
         return "\(prefix)_\(date)_\(type).md"
     }
 }

@@ -22,13 +22,13 @@ public struct PermissionsSettingsTab: View {
     public var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: SettingsDesignSystem.Layout.sectionSpacing) {
-                SettingsGroup(NSLocalizedString("settings.permissions.about", bundle: .safeModule, comment: ""), icon: "info.circle") {
-                    Text(NSLocalizedString("settings.permissions.description", bundle: .safeModule, comment: ""))
+                SettingsGroup("settings.permissions.about".localized, icon: "info.circle") {
+                    Text("settings.permissions.description".localized)
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
 
-                SettingsGroup(NSLocalizedString("settings.permissions.status", bundle: .safeModule, comment: ""), icon: "checkmark.shield") {
+                SettingsGroup("settings.permissions.status".localized, icon: "checkmark.shield") {
                     PermissionStatusView(viewModel: viewModel, requiredSource: .all)
                         .padding(.top, 4)
                 }

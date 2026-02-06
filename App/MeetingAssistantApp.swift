@@ -14,7 +14,7 @@ struct MeetingAssistantApp: App {
     @Environment(\.openWindow) private var openWindow
 
     var body: some Scene {
-        WindowGroup(NSLocalizedString("settings.title", bundle: .main, comment: ""), id: "settings") {
+        WindowGroup("settings.title".localized, id: "settings") {
             SettingsView()
                 .onAppear {
                     NavigationService.shared.register(openWindow: openWindow)
@@ -26,7 +26,7 @@ struct MeetingAssistantApp: App {
         .windowResizability(.contentSize)
         .commands {
             CommandGroup(replacing: .appSettings) {
-                Button(NSLocalizedString("settings.title", bundle: .main, comment: "") + "...") {
+                Button("settings.title".localized + "...") {
                     if let existingWindow = NSApp.windows.first(where: { $0.identifier?.rawValue == "settings" }) {
                         existingWindow.makeKeyAndOrderFront(nil)
                         NSApp.activate(ignoringOtherApps: true)
@@ -52,7 +52,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var recordMeetingMenuItem: NSMenuItem?
     private var assistantMenuItem: NSMenuItem?
     private lazy var recordingManager: RecordingManager = .shared
-    private lazy var localizationBundle: Bundle = .safeModule
     private var eventMonitor: Any?
     private lazy var floatingIndicatorController = FloatingRecordingIndicatorController()
     private lazy var globalShortcutController = GlobalShortcutController(recordingManager: RecordingManager.shared)
@@ -167,7 +166,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         if let button = statusItem?.button {
             button.image = NSImage(
-                systemSymbolName: "waveform", accessibilityDescription: NSLocalizedString("about.title", bundle: .main, comment: "")
+                systemSymbolName: "waveform",
+                accessibilityDescription: "about.title".localized
             )
             button.action = #selector(handleStatusItemClick)
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
@@ -238,7 +238,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         keyEquivalent: String = "",
         shortcutName: KeyboardShortcuts.Name? = nil
     ) -> NSMenuItem {
-        let title = NSLocalizedString(key, bundle: localizationBundle, comment: "")
+        let title = key.localized
         let item = NSMenuItem(title: title, action: action, keyEquivalent: keyEquivalent)
         item.target = self
 
@@ -265,7 +265,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func updateMenuItem(_ item: NSMenuItem?, key: String, shortcutName: KeyboardShortcuts.Name) {
-        let title = NSLocalizedString(key, bundle: localizationBundle, comment: "")
+        let title = key.localized
         if let item {
             applyShortcut(to: item, title: title, shortcutName: shortcutName)
         }
@@ -462,11 +462,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func updateStatusIcon(isRecording: Bool) {
         let iconName = isRecording ? "record.circle.fill" : "waveform"
         let accessibilityKey = isRecording ? "menubar.accessibility.recording" : "menubar.accessibility.idle"
-        let accessibilityDesc = NSLocalizedString(
-            accessibilityKey,
-            bundle: localizationBundle,
-            comment: ""
-        )
+        let accessibilityDesc = accessibilityKey.localized
 
         let config = NSImage.SymbolConfiguration(paletteColors: isRecording ? [.systemRed] : [.headerTextColor])
         let image = NSImage(systemSymbolName: iconName, accessibilityDescription: accessibilityDesc)?

@@ -16,30 +16,30 @@ public struct MarkdownRenderer: Sendable {
         markdown += "# \(meetingTitle(for: meeting))\n\n"
 
         // Metadata
-        let metadataHeader = NSLocalizedString("export.section.metadata", bundle: .safeModule, comment: "Metadata Section Header")
+        let metadataHeader = "export.section.metadata".localized
         markdown += "## \(metadataHeader)\n"
 
-        let dateLabel = NSLocalizedString("export.label.date", bundle: .safeModule, comment: "Date Label")
+        let dateLabel = "export.label.date".localized
         markdown += "- **\(dateLabel)**: \(formatDate(meeting.startTime))\n"
 
-        let durationLabel = NSLocalizedString("export.label.duration", bundle: .safeModule, comment: "Duration Label")
+        let durationLabel = "export.label.duration".localized
         markdown += "- **\(durationLabel)**: \(meeting.formattedDuration)\n"
 
-        let typeLabel = NSLocalizedString("export.label.type", bundle: .safeModule, comment: "Type Label")
+        let typeLabel = "export.label.type".localized
         markdown += "- **\(typeLabel)**: \(meeting.type.displayName)\n"
 
-        let appLabel = NSLocalizedString("export.label.app", bundle: .safeModule, comment: "App Label")
+        let appLabel = "export.label.app".localized
         markdown += "- **\(appLabel)**: \(meeting.app.displayName)\n\n"
 
         // AI Summary (if available)
         if let processedContent = transcription.processedContent, !processedContent.isEmpty {
-            let summaryHeader = NSLocalizedString("export.section.ai_summary", bundle: .safeModule, comment: "AI Summary Section Header")
+            let summaryHeader = "export.section.ai_summary".localized
             markdown += "## \(summaryHeader)\n\n"
             markdown += processedContent + "\n\n"
         }
 
         // Transcription (Segments or Raw Text)
-        let transcriptionHeader = NSLocalizedString("export.section.transcription", bundle: .safeModule, comment: "Transcription Section Header")
+        let transcriptionHeader = "export.section.transcription".localized
         markdown += "## \(transcriptionHeader)\n\n"
 
         if !transcription.segments.isEmpty {
@@ -102,8 +102,10 @@ public struct MarkdownRenderer: Sendable {
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
 
-        let formatString = NSLocalizedString("export.header.meeting_title", bundle: .safeModule, comment: "Meeting Title Format")
-        return String(format: formatString, meeting.app.displayName, formatter.string(from: meeting.startTime))
+        return "export.header.meeting_title".localized(
+            with: meeting.app.displayName,
+            formatter.string(from: meeting.startTime)
+        )
     }
 
     private func formatDate(_ date: Date) -> String {

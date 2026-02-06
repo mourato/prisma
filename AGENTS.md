@@ -142,7 +142,7 @@ Skills are loaded when specific contexts are detected. See `.agent/skills/` for 
 | [git-advanced-workflows](.agent/skills/git-advanced-workflows/) | rebase, bisect, cherry-pick |
 | [git-workflow](.agent/skills/git-workflow/) | git commit, branches, PRs |
 | [keychain-security](.agent/skills/keychain-security/) | KeychainManager, KeychainProvider, storeSecret |
-| [localization](.agent/skills/localization/) | Bundle.module, NSLocalizedString, accessibility |
+| [localization](.agent/skills/localization/) | Bundle.safeModule, String.localized, accessibility |
 | [menubar](.agent/skills/menubar/) | NSStatusItem, NSMenu, NSPopover |
 | [skill-development](.agent/skills/skill-development/) | create skill, develop plugin |
 | [skills-discovery](.agent/skills/skills-discovery/) | search skills, registry |
@@ -173,6 +173,13 @@ Skills are loaded when specific contexts are detected. See `.agent/skills/` for 
 - Insert explicit `self`
 - Semicolons inline
 - Wrap arguments before first element
+
+## Localization (L10n)
+
+- All UI keys live in `Packages/MeetingAssistantCore/.../Resources/*/Localizable.strings`.
+- Use `"some.key".localized` or `"some.key".localized(with: args...)` everywhere.
+- Never call `NSLocalizedString(...)` directly in feature code (only inside the shared helpers).
+- Never depend on `.main` / `.module` bundles for UI strings; the helpers resolve the correct bundle via `Bundle.safeModule`.
 
 ## Project Structure
 

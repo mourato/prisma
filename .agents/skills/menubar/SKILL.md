@@ -76,7 +76,7 @@ class MenuBarController {
 
     private func createMenuItem(key: String, action: Selector?) -> NSMenuItem {
         NSMenuItem(
-            title: NSLocalizedString(key, bundle: .module, comment: ""),
+            title: key.localized,
             action: action,
             keyEquivalent: ""
         )
@@ -85,7 +85,7 @@ class MenuBarController {
     func updateUIState(isRecording: Bool) {
         self.isRecording = isRecording
         let titleKey = isRecording ? "menubar.recording.stop" : "menubar.recording.start"
-        startStopMenuItem.title = NSLocalizedString(titleKey, bundle: .module, comment: "")
+        startStopMenuItem.title = titleKey.localized
         updateStatusIcon(isRecording: isRecording)
     }
 }
@@ -100,7 +100,7 @@ func updateStatusIcon(isRecording: Bool) {
     let iconName = isRecording ? "record.circle.fill" : "circle"
     statusItem.button?.image = NSImage(systemSymbolName: iconName, accessibilityDescription: nil)
     statusItem.button?.toolTip = isRecording ?
-        NSLocalizedString("recording.in_progress", bundle: .module, comment: "") : nil
+        "recording.in_progress".localized : nil
 }
 ```
 
@@ -260,4 +260,3 @@ init() {
 - [MenuBarView.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Views/MenuBarView.swift)
 - [FloatingRecordingIndicatorView.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Views/Components/FloatingRecordingIndicatorView.swift)
 - [Apple Status Bar Guide](https://developer.apple.com/documentation/appkit/nsstatusitem)
-

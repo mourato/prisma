@@ -58,8 +58,8 @@ public struct PostProcessingSettingsTab: View {
         SettingsCard {
             VStack(alignment: .leading, spacing: 8) {
                 SettingsToggle(
-                    NSLocalizedString("settings.post_processing.enabled", bundle: .safeModule, comment: ""),
-                    description: NSLocalizedString("settings.post_processing.description", bundle: .safeModule, comment: ""),
+                    "settings.post_processing.enabled".localized,
+                    description: "settings.post_processing.description".localized,
                     isOn: $viewModel.settings.postProcessingEnabled
                 )
             }
@@ -73,10 +73,10 @@ public struct PostProcessingSettingsTab: View {
                 .foregroundStyle(.yellow)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(NSLocalizedString("settings.post_processing.warning_title", bundle: .safeModule, comment: ""))
+                Text("settings.post_processing.warning_title".localized)
                     .font(.headline)
 
-                Text(NSLocalizedString("settings.post_processing.warning_desc", bundle: .safeModule, comment: ""))
+                Text("settings.post_processing.warning_desc".localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -93,11 +93,11 @@ public struct PostProcessingSettingsTab: View {
     }
 
     private var systemPromptSection: some View {
-        SettingsGroup(NSLocalizedString("settings.post_processing.system_prompt", bundle: .safeModule, comment: ""), icon: "terminal.fill") {
+        SettingsGroup("settings.post_processing.system_prompt".localized, icon: "terminal.fill") {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(NSLocalizedString("settings.post_processing.base_instructions", bundle: .safeModule, comment: ""))
+                        Text("settings.post_processing.base_instructions".localized)
                             .font(.subheadline)
                             .fontWeight(.medium)
 
@@ -113,7 +113,7 @@ public struct PostProcessingSettingsTab: View {
                         viewModel.showSystemPromptEditor = true
                     } label: {
                         Label(
-                            NSLocalizedString("settings.post_processing.edit_system_guidelines", bundle: .safeModule, comment: ""),
+                            "settings.post_processing.edit_system_guidelines".localized,
                             systemImage: "pencil"
                         )
                     }
@@ -125,10 +125,10 @@ public struct PostProcessingSettingsTab: View {
     }
 
     private var userPromptsSection: some View {
-        SettingsGroup(NSLocalizedString("settings.post_processing.prompts", bundle: .safeModule, comment: ""), icon: "sparkles") {
+        SettingsGroup("settings.post_processing.prompts".localized, icon: "sparkles") {
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
-                    Text(NSLocalizedString("settings.post_processing.choose_active", bundle: .safeModule, comment: ""))
+                    Text("settings.post_processing.choose_active".localized)
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
@@ -139,7 +139,7 @@ public struct PostProcessingSettingsTab: View {
                         viewModel.showPromptEditor = true
                     } label: {
                         Label(
-                            NSLocalizedString("settings.post_processing.new_prompt", bundle: .safeModule, comment: ""),
+                            "settings.post_processing.new_prompt".localized,
                             systemImage: "plus"
                         )
                     }

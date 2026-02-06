@@ -65,19 +65,19 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
         public var localizedDescription: String {
             switch self {
             case .idle:
-                NSLocalizedString("settings.ai.phase_idle", bundle: .safeModule, comment: "")
+                "settings.ai.phase_idle".localized
             case .downloadingASR:
-                NSLocalizedString("settings.ai.downloading_asr", bundle: .safeModule, comment: "")
+                "settings.ai.downloading_asr".localized
             case .loadingASR:
-                NSLocalizedString("settings.ai.loading_asr", bundle: .safeModule, comment: "")
+                "settings.ai.loading_asr".localized
             case .downloadingDiarization:
-                NSLocalizedString("settings.ai.downloading_diarization", bundle: .safeModule, comment: "")
+                "settings.ai.downloading_diarization".localized
             case .loadingDiarization:
-                NSLocalizedString("settings.ai.loading_diarization", bundle: .safeModule, comment: "")
+                "settings.ai.loading_diarization".localized
             case .ready:
-                NSLocalizedString("settings.ai.models_ready", bundle: .safeModule, comment: "")
+                "settings.ai.models_ready".localized
             case let .failed(error):
-                String(format: NSLocalizedString("settings.ai.download_failed", bundle: .safeModule, comment: ""), error)
+                "settings.ai.download_failed".localized(with: error)
             }
         }
     }

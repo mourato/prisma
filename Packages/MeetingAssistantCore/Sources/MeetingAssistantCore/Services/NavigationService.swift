@@ -37,19 +37,17 @@ public class NavigationService: ObservableObject {
     /// Shows the About alert.
     public func showAbout() {
         let alert = NSAlert()
-        alert.messageText = NSLocalizedString("about.title", bundle: .safeModule, comment: "")
-        alert.informativeText = String(
-            format: NSLocalizedString("about.version", bundle: .safeModule, comment: ""),
-            AppVersion.current
-        ) + "\n\n" +
-            NSLocalizedString("about.description", bundle: .safeModule, comment: "") + "\n\n" +
-            String(format: NSLocalizedString("about.copyright", bundle: .safeModule, comment: ""), 2_025)
+        alert.messageText = "about.title".localized
+        alert.informativeText =
+            "about.version".localized(with: AppVersion.current) + "\n\n" +
+            "about.description".localized + "\n\n" +
+            "about.copyright".localized(with: 2_025)
         alert.alertStyle = .informational
         alert.icon = NSImage(
             systemSymbolName: "waveform.circle.fill",
-            accessibilityDescription: NSLocalizedString("about.title", bundle: .safeModule, comment: "")
+            accessibilityDescription: "about.title".localized
         )
-        alert.addButton(withTitle: NSLocalizedString("common.ok", bundle: .safeModule, comment: ""))
+        alert.addButton(withTitle: "common.ok".localized)
 
         NSApp.activate(ignoringOtherApps: true)
         alert.runModal()
@@ -58,10 +56,10 @@ public class NavigationService: ObservableObject {
     /// Checks for updates (static placeholder for now).
     public func checkForUpdates() {
         let alert = NSAlert()
-        alert.messageText = NSLocalizedString("updates.check_title", bundle: .safeModule, comment: "")
-        alert.informativeText = NSLocalizedString("updates.latest_version", bundle: .safeModule, comment: "")
+        alert.messageText = "updates.check_title".localized
+        alert.informativeText = "updates.latest_version".localized
         alert.alertStyle = .informational
-        alert.addButton(withTitle: NSLocalizedString("common.ok", bundle: .safeModule, comment: ""))
+        alert.addButton(withTitle: "common.ok".localized)
 
         NSApp.activate(ignoringOtherApps: true)
         alert.runModal()
