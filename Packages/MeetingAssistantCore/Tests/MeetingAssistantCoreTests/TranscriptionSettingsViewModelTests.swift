@@ -87,8 +87,8 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
         let metadata1 = TranscriptionMetadata(
             id: mockId1,
             meetingId: mockId1,
-            appName: "Teams",
-            appRawValue: MeetingApp.microsoftTeams.rawValue,
+            appName: "Dictation",
+            appRawValue: MeetingApp.unknown.rawValue,
             startTime: Date(),
             createdAt: Date(),
             previewText: "",
