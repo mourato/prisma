@@ -15,7 +15,7 @@ extension AudioRecorder {
             onBus: Constants.tapBusNumber,
             bufferSize: 1_024,
             format: format
-        ) { buffer, _ in
+        ) { @Sendable buffer, _ in
             guard let channelData = buffer.floatChannelData else { return }
             let channelCount = Int(buffer.format.channelCount)
             let frameLength = Int(buffer.frameLength)

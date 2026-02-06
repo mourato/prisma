@@ -68,17 +68,39 @@ public struct FloatingRecordingIndicatorView: View {
 
         return ZStack(alignment: .top) {
             HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
-                if isExpanded {
-                    expandedLeadingControls
-                    divider
-                }
+                expandedLeadingControls
+                    .modifier(
+                        ExpandedContentVisibility(
+                            isVisible: isExpanded,
+                            expandedWidth: MeetingAssistantDesignSystem.Layout.controlHeight + MeetingAssistantDesignSystem.Layout.spacing20
+                        )
+                    )
+
+                divider
+                    .modifier(
+                        ExpandedContentVisibility(
+                            isVisible: isExpanded,
+                            expandedWidth: 1
+                        )
+                    )
 
                 recordingCluster(size: size)
 
-                if isExpanded {
-                    divider
-                    expandedTrailingControl
-                }
+                divider
+                    .modifier(
+                        ExpandedContentVisibility(
+                            isVisible: isExpanded,
+                            expandedWidth: 1
+                        )
+                    )
+
+                expandedTrailingControl
+                    .modifier(
+                        ExpandedContentVisibility(
+                            isVisible: isExpanded,
+                            expandedWidth: MeetingAssistantDesignSystem.Layout.spacing20
+                        )
+                    )
             }
             .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing16)
             .frame(height: MeetingAssistantDesignSystem.Layout.controlHeight)
@@ -93,9 +115,7 @@ public struct FloatingRecordingIndicatorView: View {
             .contentShape(Capsule())
             .onHover { hovering in
                 guard isRecordingMode else { return }
-                withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
-                    isHovering = hovering
-                }
+                isHovering = hovering
             }
 
             if isRecordingMode, audioMonitor.isSilenceWarningVisible {
@@ -347,6 +367,20 @@ public struct FloatingRecordingIndicatorView: View {
         formatter.zeroFormattingBehavior = .pad
 
         return formatter.string(from: duration) ?? "00:00"
+    }
+}
+
+private struct ExpandedContentVisibility: ViewModifier {
+    let isVisible: Bool
+    let expandedWidth: CGFloat
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(isVisible ? 1 : 0)
+            .frame(width: isVisible ? expandedWidth : 0)
+            .clipped()
+            .allowsHitTesting(isVisible)
+            .accessibilityHidden(!isVisible)
     }
 }
 
