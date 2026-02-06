@@ -54,10 +54,6 @@ public struct SettingsView: View {
                 .fill(.ultraThinMaterial)
                 .overlay(
                     RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.sidebarContainerCornerRadius)
-                        .fill(MeetingAssistantDesignSystem.Colors.windowBackground.opacity(0.58))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.sidebarContainerCornerRadius)
                         .strokeBorder(
                             MeetingAssistantDesignSystem.Colors.separator.opacity(0.32),
                             lineWidth: 0.5
@@ -107,6 +103,7 @@ public struct SettingsView: View {
                 )
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: - Detail View
@@ -170,7 +167,11 @@ private struct SidebarItemView: View {
 
                 Spacer(minLength: 0)
             }
-            .frame(height: MeetingAssistantDesignSystem.Layout.sidebarItemHeight)
+            .frame(
+                maxWidth: .infinity,
+                minHeight: MeetingAssistantDesignSystem.Layout.sidebarItemHeight,
+                alignment: .leading
+            )
             .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing8)
             .background(isSelected ? MeetingAssistantDesignSystem.Colors.selectionFill : .clear)
             .overlay(
@@ -183,7 +184,11 @@ private struct SidebarItemView: View {
             .clipShape(
                 RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.sidebarItemCornerRadius)
             )
+            .contentShape(
+                RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.sidebarItemCornerRadius)
+            )
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .buttonStyle(.plain)
         .contentShape(Rectangle())
     }
