@@ -727,36 +727,33 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         let content = renderer.renderWithTemplate(template, meeting: transcription.meeting, transcription: transcription)
 
         let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd_HHmmss"
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+        dateFormatter.timeZone = .current
+        dateFormatter.dateFormat = "yyyy-MM-dd"
         let dateStr = dateFormatter.string(from: transcription.meeting.startTime)
-        let safeTitle = transcription.meeting.appName
-            .components(separatedBy: CharacterSet(charactersIn: "/\\?%*|\"<>:"))
-            .joined(separator: "_")
 
-        let idSuffix = String(transcription.id.uuidString.prefix(8))
-        let baseName = "\(dateStr)_\(safeTitle)_\(idSuffix)"
-
-        let destinationFolder: URL
-        if settings.createMeetingFolder {
-            destinationFolder = folder.appendingPathComponent(baseName, isDirectory: true)
-            do {
-                try FileManager.default.createDirectory(
-                    at: destinationFolder,
-                    withIntermediateDirectories: true
-                )
-            } catch {
-                AppLogger.error("Failed to create export subfolder", category: .recordingManager, error: error)
-                return
+        let meetingTitle: String = {
+            let raw = transcription.meeting.type.displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+            if let range = raw.range(of: " (") {
+                return String(raw[..<range.lowerBound])
             }
-        } else {
-            destinationFolder = folder
-        }
+            return raw
+        }()
 
-        var destinationURL = destinationFolder.appendingPathComponent("\(baseName).md")
+        let safeTitle = meetingTitle
+            .components(separatedBy: CharacterSet(charactersIn: "/\\?%*|\"<>:"))
+            .joined(separator: " ")
+            .split(whereSeparator: \.isWhitespace)
+            .joined(separator: " ")
+
+        let titleComponent = safeTitle.isEmpty ? transcription.meeting.appName : safeTitle
+        let baseName = "\(dateStr) \(titleComponent)"
+
+        var destinationURL = folder.appendingPathComponent("\(baseName).md")
         var attempt = 1
         while FileManager.default.fileExists(atPath: destinationURL.path) {
             attempt += 1
-            destinationURL = destinationFolder.appendingPathComponent("\(baseName)-\(attempt).md")
+            destinationURL = folder.appendingPathComponent("\(baseName)-\(attempt).md")
         }
 
         do {

@@ -27,14 +27,6 @@ public struct MeetingSettingsTab: View {
                         )
 
                         if meetingViewModel.settings.autoExportSummaries {
-                            Divider()
-                            
-                            SettingsToggle(
-                                "settings.meetings.create_subfolder".localized,
-                                description: "settings.meetings.create_subfolder_desc".localized,
-                                isOn: $meetingViewModel.settings.createMeetingFolder
-                            )
-                            
                             HStack {
                                 Text("settings.meetings.export_location".localized)
                                 Spacer()
@@ -50,6 +42,10 @@ public struct MeetingSettingsTab: View {
                                     meetingViewModel.selectExportFolder()
                                 }
                             }
+
+                            Text("settings.meetings.export_location_desc".localized)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
 
                             Divider()
 

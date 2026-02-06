@@ -448,7 +448,6 @@ public class AppSettingsStore: ObservableObject {
         static let summaryExportFolder = "summaryExportFolder"
         static let summaryTemplate = "summaryTemplate"
         static let autoExportSummaries = "autoExportSummaries"
-        static let createMeetingFolder = "createMeetingFolder"
     }
 
     // MARK: - Published Properties
@@ -739,11 +738,6 @@ public class AppSettingsStore: ObservableObject {
     @Published public var autoExportSummaries: Bool {
         didSet { UserDefaults.standard.set(autoExportSummaries, forKey: Keys.autoExportSummaries) }
     }
-    
-    /// Whether to create a subfolder for each meeting inside the export folder.
-    @Published public var createMeetingFolder: Bool {
-        didSet { UserDefaults.standard.set(createMeetingFolder, forKey: Keys.createMeetingFolder) }
-    }
 
     /// All available prompts (predefined + user-created), filtered by deleted and overrides.
     public var allPrompts: [PostProcessingPrompt] {
@@ -922,7 +916,6 @@ public class AppSettingsStore: ObservableObject {
         """
         
         autoExportSummaries = UserDefaults.standard.bool(forKey: Keys.autoExportSummaries)
-        createMeetingFolder = UserDefaults.standard.bool(forKey: Keys.createMeetingFolder)
 
         // Load assistant border settings
         let rawBorderColor = UserDefaults.standard.string(forKey: Keys.assistantBorderColor)
