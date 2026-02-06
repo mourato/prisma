@@ -17,7 +17,6 @@ public enum SettingsSection: String, CaseIterable, Identifiable {
     case audio
     case transcriptions
     case enhancements
-    case service
     case permissions
 
     public var id: String {
@@ -34,7 +33,6 @@ public enum SettingsSection: String, CaseIterable, Identifiable {
         case .assistant: "settings.section.assistant".localized
         case .transcriptions: "settings.section.transcriptions".localized
         case .enhancements: "settings.section.ai".localized
-        case .service: "settings.section.service".localized
         case .permissions: "settings.section.permissions".localized
         }
     }
@@ -49,7 +47,6 @@ public enum SettingsSection: String, CaseIterable, Identifiable {
         case .assistant: "sparkles"
         case .transcriptions: "doc.text"
         case .enhancements: "wand.and.stars"
-        case .service: "server.rack"
         case .permissions: "lock.shield"
         }
     }

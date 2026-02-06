@@ -123,6 +123,28 @@ public struct GeneralSettingsTab: View {
                     }
                 }
 
+                // Audio Format
+                MAGroup("settings.general.audio_format".localized, icon: "waveform.path") {
+                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                        HStack {
+                            Text("settings.general.audio_format".localized)
+                                .font(.body)
+                                .foregroundStyle(.primary)
+
+                            Spacer()
+
+                            Picker("", selection: $viewModel.audioFormat) {
+                                ForEach(AppSettingsStore.AudioFormat.allCases, id: \.self) { format in
+                                    Text(format.displayName).tag(format)
+                                }
+                            }
+                            .labelsHidden()
+                            .pickerStyle(.menu)
+                            .frame(width: MeetingAssistantDesignSystem.Layout.maxPickerWidth)
+                        }
+                    }
+                }
+
                 // Storage
                 MAGroup("settings.general.storage".localized, icon: "folder.fill") {
                     VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
@@ -164,6 +186,9 @@ public struct GeneralSettingsTab: View {
                         }
                     }
                 }
+
+                // AI Service
+                ServiceSettingsContent()
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
