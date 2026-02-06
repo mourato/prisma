@@ -4,9 +4,9 @@ import Foundation
 
 /// Adapter que implementa TranscriptionStorageRepository usando FileSystemStorageService existente
 public final class TranscriptionStorageRepositoryAdapter: TranscriptionStorageRepository {
-    private let storageService: FileSystemStorageService
+    private let storageService: any StorageService
 
-    public init(storageService: FileSystemStorageService) {
+    public init(storageService: any StorageService) {
         self.storageService = storageService
     }
 

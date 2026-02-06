@@ -138,17 +138,54 @@ public final class TranscribeAudioUseCase: Sendable {
         )
         
         let jsonString = try await repository.processTranscription(text, with: classifierPrompt)
-        
-        guard let data = jsonString.data(using: .utf8),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: String],
-              let type = json["type"] else {
-            return nil
-        }
-        return type
+        return parseMeetingType(from: jsonString)
     }
     
     private func findPrompt(for type: String, in prompts: [DomainPostProcessingPrompt]) -> DomainPostProcessingPrompt? {
-        return prompts.first { $0.title.localizedCaseInsensitiveContains(type) }
+        let normalizedType = normalizedMatchKey(type)
+
+        return prompts.first { prompt in
+            let normalizedTitle = normalizedMatchKey(prompt.title)
+            return normalizedTitle.contains(normalizedType)
+        }
+    }
+
+    private func parseMeetingType(from jsonString: String) -> String? {
+        if let type = parseMeetingTypeFromJSON(jsonString) {
+            return type
+        }
+
+        // Fallback: try extracting the first JSON object from the string (handles code fences / extra text)
+        guard let startIndex = jsonString.firstIndex(of: "{"),
+              let endIndex = jsonString.lastIndex(of: "}") else {
+            return nil
+        }
+        let candidate = String(jsonString[startIndex ... endIndex])
+        return parseMeetingTypeFromJSON(candidate)
+    }
+
+    private func parseMeetingTypeFromJSON(_ jsonString: String) -> String? {
+        guard let data = jsonString.data(using: .utf8),
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let rawType = object["type"] as? String else {
+            return nil
+        }
+
+        let type = rawType.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let allowed = Set(["standup", "presentation", "design_review", "one_on_one", "planning", "general"])
+        return allowed.contains(type) ? type : nil
+    }
+
+    private func normalizedMatchKey(_ value: String) -> String {
+        value
+            .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+            .replacingOccurrences(of: "_", with: " ")
+            .replacingOccurrences(of: "-", with: " ")
+            .components(separatedBy: CharacterSet.alphanumerics.inverted)
+            .joined(separator: " ")
+            .replacingOccurrences(of: "  ", with: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
     }
 }
 

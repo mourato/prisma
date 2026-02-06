@@ -113,8 +113,8 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         
         // Initialize UseCase with Adapters
         self.transcribeAudioUseCase = TranscribeAudioUseCase(
-            transcriptionRepository: TranscriptionRepositoryAdapter(transcriptionClient: transcriptionClient as? TranscriptionClient ?? TranscriptionClient.shared),
-            transcriptionStorageRepository: TranscriptionStorageRepositoryAdapter(storageService: storage as? FileSystemStorageService ?? FileSystemStorageService.shared),
+            transcriptionRepository: TranscriptionRepositoryAdapter(transcriptionService: transcriptionClient),
+            transcriptionStorageRepository: TranscriptionStorageRepositoryAdapter(storageService: storage),
             postProcessingRepository: PostProcessingRepositoryAdapter(postProcessingService: postProcessingService)
         )
 
@@ -599,28 +599,59 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             let applyPostProcessing = settings.postProcessingEnabled && settings.aiConfiguration.isValid
             
             // Prepare Prompts
-            let availablePrompts: [DomainPostProcessingPrompt] = settings.meetingPrompts.map { p in
-                DomainPostProcessingPrompt(id: p.id, title: p.title, content: p.promptText, isDefault: false)
+            let builtInMeetingPrompts: [PostProcessingPrompt] = [
+                .standup,
+                .presentation,
+                .designReview,
+                .oneOnOne,
+                .planning,
+            ]
+
+            let availablePrompts: [DomainPostProcessingPrompt] = (builtInMeetingPrompts + settings.meetingPrompts).map { prompt in
+                DomainPostProcessingPrompt(
+                    id: prompt.id,
+                    title: prompt.title,
+                    content: prompt.promptText,
+                    isDefault: false
+                )
             }
-            
-            // Determine prompt to use (if specific)
-            // Legacy logic: selectedPrompt ?? default.
-            // New Logic: If user selected a prompt explicitly in Settings -> Use it?
-            // "selectedPrompt" in AppSettings is global? Or per meeting?
-            // Assuming AppSettings.selectedPrompt is the "default" prompt preference.
-            // But we want "Autodetection" if nothing selected?
-            // Let's pass nil and let UseCase handle autodetection if availablePrompts > 0.
-            // But if user has selected a "General" prompt as default, what happens?
-            // The logic: if PostProcessingPrompt is passed, UseCase uses it.
-            // If nil, UseCase attempts autodetection.
-            // So we pass nil if we want autodetection.
-            
-            var promptToUse: DomainPostProcessingPrompt?
-            if let selected = settings.selectedPrompt {
-                 promptToUse = DomainPostProcessingPrompt(id: selected.id, title: selected.title, content: selected.promptText, isDefault: false)
+
+            func domainPrompt(from prompt: PostProcessingPrompt) -> DomainPostProcessingPrompt {
+                DomainPostProcessingPrompt(
+                    id: prompt.id,
+                    title: prompt.title,
+                    content: prompt.promptText,
+                    isDefault: false
+                )
             }
-            // IF user wants autodetection, selectedPrompt might be nil?
-            // For now, let's respect selectedPrompt if present, else let UseCase find out.
+
+            let promptToUse: DomainPostProcessingPrompt? = {
+                guard applyPostProcessing else { return nil }
+
+                // Rule of thumb:
+                // - If the meeting type is explicitly `.autodetect`, do NOT pass a fixed prompt so the UseCase can classify.
+                // - If a concrete meeting type was chosen, use the built-in type prompt.
+                // - Otherwise (general), respect the user's selected global prompt when present.
+                switch meeting.type {
+                case .autodetect:
+                    return nil
+                case .standup:
+                    return domainPrompt(from: .standup)
+                case .presentation:
+                    return domainPrompt(from: .presentation)
+                case .designReview:
+                    return domainPrompt(from: .designReview)
+                case .oneOnOne:
+                    return domainPrompt(from: .oneOnOne)
+                case .planning:
+                    return domainPrompt(from: .planning)
+                case .general:
+                    if let selected = settings.selectedPrompt {
+                        return domainPrompt(from: selected)
+                    }
+                    return nil
+                }
+            }()
             
             meetingState = .processing(.transcribing)
             
@@ -668,55 +699,64 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     }
     
     private func exportSummary(transcription: Transcription) async {
-         let settings = AppSettingsStore.shared
-         guard let folder = settings.summaryExportFolder,
-               !settings.summaryTemplate.isEmpty else { return }
-         
-         let template = settings.summaryTemplate
-         
-         let renderer = MarkdownRenderer()
-         // Use default template if nil/empty? AppSettingsStore usually has default.
-         // If template is empty string, use default?
-         // Assuming valid string.
-         
-         let content = renderer.renderWithTemplate(template, meeting: transcription.meeting, transcription: transcription)
-         
-         // Generate Filename
-         let dateFormatter = DateFormatter()
-         dateFormatter.dateFormat = "yyyy-MM-dd_HHmm"
-         let dateStr = dateFormatter.string(from: transcription.meeting.startTime)
-         let safeTitle = transcription.meeting.appName.components(separatedBy: CharacterSet(charactersIn: "/\\?%*|\"<>:")).joined(separator: "_")
-         let filename = "\(dateStr)_\(safeTitle).md"
-         
-         let destinationURL: URL
-         if settings.createMeetingFolder {
-             let subfolder = folder.appendingPathComponent(dateStr + "_" + safeTitle)
-             // We need to access the security scoped resource BEFORE creating the directory
-             let isAccessing = folder.startAccessingSecurityScopedResource()
-             defer { if isAccessing { folder.stopAccessingSecurityScopedResource() } }
+        let settings = AppSettingsStore.shared
+        guard let folder = settings.summaryExportFolder else { return }
 
-             try? FileManager.default.createDirectory(at: subfolder, withIntermediateDirectories: true)
-             destinationURL = subfolder.appendingPathComponent(filename)
-             
-             // The subfolder is inside the accessed folder, so we should be able to write to it.
-             // However, writing content happens below. The defer block will handle cleanup.
-         } else {
-             destinationURL = folder.appendingPathComponent(filename)
-         }
-         
-         let isAccessing = folder.startAccessingSecurityScopedResource()
-         defer { if isAccessing { folder.stopAccessingSecurityScopedResource() } }
+        let template = settings.summaryTemplate.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !template.isEmpty else { return }
 
-         do {
-             try content.write(to: destinationURL, atomically: true, encoding: String.Encoding.utf8)
-             AppLogger.info("Summary exported to \(destinationURL.path)", category: .recordingManager)
-         } catch {
-             AppLogger.error("Failed to export summary", category: .recordingManager, error: error)
-         }
+        let isAccessing = folder.startAccessingSecurityScopedResource()
+        guard isAccessing else {
+            AppLogger.error("Failed to access export folder security-scoped resource", category: .recordingManager)
+            return
+        }
+        defer { folder.stopAccessingSecurityScopedResource() }
+
+        let renderer = MarkdownRenderer()
+        let content = renderer.renderWithTemplate(template, meeting: transcription.meeting, transcription: transcription)
+
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd_HHmmss"
+        let dateStr = dateFormatter.string(from: transcription.meeting.startTime)
+        let safeTitle = transcription.meeting.appName
+            .components(separatedBy: CharacterSet(charactersIn: "/\\?%*|\"<>:"))
+            .joined(separator: "_")
+
+        let idSuffix = String(transcription.id.uuidString.prefix(8))
+        let baseName = "\(dateStr)_\(safeTitle)_\(idSuffix)"
+
+        let destinationFolder: URL
+        if settings.createMeetingFolder {
+            destinationFolder = folder.appendingPathComponent(baseName, isDirectory: true)
+            do {
+                try FileManager.default.createDirectory(
+                    at: destinationFolder,
+                    withIntermediateDirectories: true
+                )
+            } catch {
+                AppLogger.error("Failed to create export subfolder", category: .recordingManager, error: error)
+                return
+            }
+        } else {
+            destinationFolder = folder
+        }
+
+        var destinationURL = destinationFolder.appendingPathComponent("\(baseName).md")
+        var attempt = 1
+        while FileManager.default.fileExists(atPath: destinationURL.path) {
+            attempt += 1
+            destinationURL = destinationFolder.appendingPathComponent("\(baseName)-\(attempt).md")
+        }
+
+        do {
+            try content.write(to: destinationURL, atomically: true, encoding: .utf8)
+            AppLogger.info("Summary exported to \(destinationURL.path)", category: .recordingManager)
+        } catch {
+            AppLogger.error("Failed to export summary", category: .recordingManager, error: error)
+        }
     }
     
     private func convertToModel(_ entity: TranscriptionEntity, audioDuration: Double?, transcriptionStart: Date) -> Transcription {
-         let duration = Date().timeIntervalSince(transcriptionStart) // Approx
          return Transcription(
              id: entity.id,
              meeting: Meeting(
