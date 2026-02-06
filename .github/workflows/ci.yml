@@ -48,6 +48,9 @@ jobs:
       - name: Install SwiftLint/SwiftFormat
         run: brew install swiftlint swiftformat
 
+      - name: Architecture checks
+        run: make arch-check
+
       - name: Run Lint (strict)
         run: STRICT_LINT=1 make lint
 
