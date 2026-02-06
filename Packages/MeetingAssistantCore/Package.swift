@@ -24,15 +24,76 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "MeetingAssistantCore",
-            dependencies: [
-                .product(name: "FluidAudio", package: "FluidAudio"),
-                .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
-                .product(name: "Atomics", package: "swift-atomics"),
-                "MeetingAssistantCoreMocking",
-            ],
+            name: "MeetingAssistantCoreCommon",
             resources: [
                 .process("Resources"),
+            ]
+        ),
+        .target(
+            name: "MeetingAssistantCoreDomain",
+            dependencies: [
+                "MeetingAssistantCoreCommon",
+                "MeetingAssistantCoreMocking",
+            ]
+        ),
+        .target(
+            name: "MeetingAssistantCoreData",
+            dependencies: [
+                "MeetingAssistantCoreCommon",
+                "MeetingAssistantCoreDomain",
+                "MeetingAssistantCoreInfrastructure",
+            ]
+        ),
+        .target(
+            name: "MeetingAssistantCoreInfrastructure",
+            dependencies: [
+                "MeetingAssistantCoreCommon",
+                "MeetingAssistantCoreDomain",
+                .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
+            ]
+        ),
+        .target(
+            name: "MeetingAssistantCoreAudio",
+            dependencies: [
+                "MeetingAssistantCoreCommon",
+                "MeetingAssistantCoreData",
+                "MeetingAssistantCoreDomain",
+                "MeetingAssistantCoreInfrastructure",
+                .product(name: "Atomics", package: "swift-atomics"),
+            ]
+        ),
+        .target(
+            name: "MeetingAssistantCoreAI",
+            dependencies: [
+                "MeetingAssistantCoreCommon",
+                "MeetingAssistantCoreData",
+                "MeetingAssistantCoreDomain",
+                "MeetingAssistantCoreInfrastructure",
+                .product(name: "FluidAudio", package: "FluidAudio"),
+            ]
+        ),
+        .target(
+            name: "MeetingAssistantCoreUI",
+            dependencies: [
+                "MeetingAssistantCoreAI",
+                "MeetingAssistantCoreAudio",
+                "MeetingAssistantCoreCommon",
+                "MeetingAssistantCoreData",
+                "MeetingAssistantCoreDomain",
+                "MeetingAssistantCoreInfrastructure",
+                .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
+            ]
+        ),
+        .target(
+            name: "MeetingAssistantCore",
+            dependencies: [
+                "MeetingAssistantCoreAI",
+                "MeetingAssistantCoreAudio",
+                "MeetingAssistantCoreCommon",
+                "MeetingAssistantCoreData",
+                "MeetingAssistantCoreDomain",
+                "MeetingAssistantCoreInfrastructure",
+                "MeetingAssistantCoreUI",
             ]
         ),
         .target(
@@ -54,6 +115,8 @@ let package = Package(
             name: "MeetingAssistantCoreTests",
             dependencies: [
                 "MeetingAssistantCore",
+                "MeetingAssistantCoreAudio",
+                "MeetingAssistantCoreDomain",
             ],
             path: "Tests/MeetingAssistantCoreTests"
         ),

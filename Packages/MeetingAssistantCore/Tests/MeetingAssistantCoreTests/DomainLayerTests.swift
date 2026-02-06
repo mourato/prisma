@@ -2,24 +2,25 @@
 // Usando MacroMocks (@GenerateMock) para mocks
 
 @testable import MeetingAssistantCore
+@testable import MeetingAssistantCoreDomain
 import XCTest
 
 final class DomainLayerTests: XCTestCase {
-    var mockRecordingRepo: MeetingAssistantCore.MacroMockRecordingRepository?
-    var mockAudioFileRepo: MeetingAssistantCore.MacroMockAudioFileRepository?
-    var mockMeetingRepo: MeetingAssistantCore.MacroMockMeetingRepository?
-    var mockTranscriptionRepo: MeetingAssistantCore.MacroMockTranscriptionRepository?
-    var mockTranscriptionStorageRepo: MeetingAssistantCore.MacroMockTranscriptionStorageRepository?
-    var mockPostProcessingRepo: MeetingAssistantCore.MacroMockPostProcessingRepository?
+    var mockRecordingRepo: MeetingAssistantCoreDomain.MacroMockRecordingRepository?
+    var mockAudioFileRepo: MeetingAssistantCoreDomain.MacroMockAudioFileRepository?
+    var mockMeetingRepo: MeetingAssistantCoreDomain.MacroMockMeetingRepository?
+    var mockTranscriptionRepo: MeetingAssistantCoreDomain.MacroMockTranscriptionRepository?
+    var mockTranscriptionStorageRepo: MeetingAssistantCoreDomain.MacroMockTranscriptionStorageRepository?
+    var mockPostProcessingRepo: MeetingAssistantCoreDomain.MacroMockPostProcessingRepository?
 
     override func setUp() {
         super.setUp()
-        mockRecordingRepo = MeetingAssistantCore.MacroMockRecordingRepository()
-        mockAudioFileRepo = MeetingAssistantCore.MacroMockAudioFileRepository()
-        mockMeetingRepo = MeetingAssistantCore.MacroMockMeetingRepository()
-        mockTranscriptionRepo = MeetingAssistantCore.MacroMockTranscriptionRepository()
-        mockTranscriptionStorageRepo = MeetingAssistantCore.MacroMockTranscriptionStorageRepository()
-        mockPostProcessingRepo = MeetingAssistantCore.MacroMockPostProcessingRepository()
+        mockRecordingRepo = MeetingAssistantCoreDomain.MacroMockRecordingRepository()
+        mockAudioFileRepo = MeetingAssistantCoreDomain.MacroMockAudioFileRepository()
+        mockMeetingRepo = MeetingAssistantCoreDomain.MacroMockMeetingRepository()
+        mockTranscriptionRepo = MeetingAssistantCoreDomain.MacroMockTranscriptionRepository()
+        mockTranscriptionStorageRepo = MeetingAssistantCoreDomain.MacroMockTranscriptionStorageRepository()
+        mockPostProcessingRepo = MeetingAssistantCoreDomain.MacroMockPostProcessingRepository()
     }
 
     override func tearDown() {

@@ -1,11 +1,12 @@
 import Foundation
 @testable import MeetingAssistantCore
+@testable import MeetingAssistantCoreDomain
 import XCTest
 
 final class ImportAudioUseCaseMacroMockingTests: XCTestCase {
     func testExecuteSuccess_CopiesFileAndUpdatesMeeting() async throws {
-        let audioFileRepository = MeetingAssistantCore.MacroMockAudioFileRepository()
-        let meetingRepository = MeetingAssistantCore.MacroMockMeetingRepository()
+        let audioFileRepository = MeetingAssistantCoreDomain.MacroMockAudioFileRepository()
+        let meetingRepository = MeetingAssistantCoreDomain.MacroMockMeetingRepository()
 
         let sourceURL = URL(fileURLWithPath: "/tmp/source.wav")
         let destinationURL = URL(fileURLWithPath: "/tmp/dest.wav")
@@ -47,8 +48,8 @@ final class ImportAudioUseCaseMacroMockingTests: XCTestCase {
     }
 
     func testExecuteCopyFailure_DeletesMeeting() async {
-        let audioFileRepository = MeetingAssistantCore.MacroMockAudioFileRepository()
-        let meetingRepository = MeetingAssistantCore.MacroMockMeetingRepository()
+        let audioFileRepository = MeetingAssistantCoreDomain.MacroMockAudioFileRepository()
+        let meetingRepository = MeetingAssistantCoreDomain.MacroMockMeetingRepository()
 
         let sourceURL = URL(fileURLWithPath: "/tmp/source.wav")
         let destinationURL = URL(fileURLWithPath: "/tmp/dest.wav")

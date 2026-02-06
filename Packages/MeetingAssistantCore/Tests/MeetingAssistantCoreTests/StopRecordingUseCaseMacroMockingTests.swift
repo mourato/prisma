@@ -1,11 +1,12 @@
 import Foundation
 @testable import MeetingAssistantCore
+@testable import MeetingAssistantCoreDomain
 import XCTest
 
 final class StopRecordingUseCaseMacroMockingTests: XCTestCase {
     func testExecuteSuccess_StopsRecordingAndUpdatesMeeting() async throws {
-        let recordingRepository = MeetingAssistantCore.MacroMockRecordingRepository()
-        let meetingRepository = MeetingAssistantCore.MacroMockMeetingRepository()
+        let recordingRepository = MeetingAssistantCoreDomain.MacroMockRecordingRepository()
+        let meetingRepository = MeetingAssistantCoreDomain.MacroMockMeetingRepository()
 
         let expectedURL = URL(fileURLWithPath: "/tmp/test.wav")
         recordingRepository.stopRecordingHandler = { () async throws -> URL? in expectedURL }

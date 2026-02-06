@@ -1,12 +1,13 @@
 import Foundation
 @testable import MeetingAssistantCore
+@testable import MeetingAssistantCoreDomain
 import XCTest
 
 final class StartRecordingUseCaseMacroMockingTests: XCTestCase {
     func testExecuteSuccess_UsesRepositoriesAndUpdatesMeeting() async throws {
-        let recordingRepository = MeetingAssistantCore.MacroMockRecordingRepository()
-        let audioFileRepository = MeetingAssistantCore.MacroMockAudioFileRepository()
-        let meetingRepository = MeetingAssistantCore.MacroMockMeetingRepository()
+        let recordingRepository = MeetingAssistantCoreDomain.MacroMockRecordingRepository()
+        let audioFileRepository = MeetingAssistantCoreDomain.MacroMockAudioFileRepository()
+        let meetingRepository = MeetingAssistantCoreDomain.MacroMockMeetingRepository()
 
         recordingRepository.hasPermissionHandler = { () async -> Bool in true }
         recordingRepository.startRecordingHandler = { _, _ in }
