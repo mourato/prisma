@@ -2,6 +2,7 @@ import Foundation
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
+import CoreData
 
 // MARK: - Models
 
@@ -11,7 +12,7 @@ public enum RecordingType: String, Sendable {
     case merged
 }
 
-public struct RetentionCleanupCandidate: Hashable, Sendable {
+public struct RetentionCleanupAudioCandidate: Hashable, Sendable {
     public let url: URL
     public let byteSize: Int64
 
@@ -21,19 +22,29 @@ public struct RetentionCleanupCandidate: Hashable, Sendable {
     }
 }
 
+public struct RetentionCleanupTranscriptionCandidate: Hashable, Sendable {
+    public let id: UUID
+    public let byteSize: Int64
+
+    public init(id: UUID, byteSize: Int64) {
+        self.id = id
+        self.byteSize = byteSize
+    }
+}
+
 public struct RetentionCleanupPreview: Hashable, Sendable {
     public let retentionDays: Int
-    public let audioFiles: [RetentionCleanupCandidate]
-    public let transcriptionFiles: [RetentionCleanupCandidate]
+    public let audioFiles: [RetentionCleanupAudioCandidate]
+    public let transcriptions: [RetentionCleanupTranscriptionCandidate]
 
     public init(
         retentionDays: Int,
-        audioFiles: [RetentionCleanupCandidate],
-        transcriptionFiles: [RetentionCleanupCandidate]
+        audioFiles: [RetentionCleanupAudioCandidate],
+        transcriptions: [RetentionCleanupTranscriptionCandidate]
     ) {
         self.retentionDays = retentionDays
         self.audioFiles = audioFiles
-        self.transcriptionFiles = transcriptionFiles
+        self.transcriptions = transcriptions
     }
 
     public var audioCount: Int {
@@ -41,7 +52,7 @@ public struct RetentionCleanupPreview: Hashable, Sendable {
     }
 
     public var transcriptionCount: Int {
-        transcriptionFiles.count
+        transcriptions.count
     }
 
     public var totalAudioBytes: Int64 {
@@ -49,7 +60,7 @@ public struct RetentionCleanupPreview: Hashable, Sendable {
     }
 
     public var totalTranscriptionBytes: Int64 {
-        transcriptionFiles.reduce(0) { $0 + $1.byteSize }
+        transcriptions.reduce(0) { $0 + $1.byteSize }
     }
 }
 
@@ -94,7 +105,7 @@ public protocol StorageService: Sendable {
     /// Delete transcriptions older than the specified number of days.
     func cleanupOldTranscriptions(olderThanDays days: Int) async throws
 
-    /// Computes what would be deleted by retention cleanup (audio files + transcription JSONs).
+    /// Computes what would be deleted by retention cleanup (audio files + transcription records).
     func computeRetentionCleanupPreview(olderThanDays days: Int) async throws -> RetentionCleanupPreview
 
     /// Performs retention cleanup using a previously computed preview.
@@ -108,6 +119,7 @@ public final class FileSystemStorageService: StorageService {
 
     private enum Keys {
         static let recordingsDirectory = "recordingsDirectory"
+        static let didMigrateLegacyJSONTranscriptionsToCoreDataV1 = "storage.migrations.legacy_json_transcriptions_to_coredata.v1"
     }
 
     private static func wordCount(for text: String) -> Int {
@@ -134,7 +146,9 @@ public final class FileSystemStorageService: StorageService {
     }
 
     private let defaultRecordingsDirectory: URL
-    private let transcriptsDirectory: URL
+    private let legacyTranscriptsDirectory: URL
+    private let coreDataStack: CoreDataStack
+    private let coreDataTranscriptionRepository: CoreDataTranscriptionStorageRepository
 
     public init() {
         // Setup default directories in Application Support
@@ -145,7 +159,9 @@ public final class FileSystemStorageService: StorageService {
 
         let baseDir = appSupport.appendingPathComponent("MeetingAssistant", isDirectory: true)
         defaultRecordingsDirectory = baseDir.appendingPathComponent("recordings", isDirectory: true)
-        transcriptsDirectory = baseDir.appendingPathComponent("transcripts", isDirectory: true)
+        legacyTranscriptsDirectory = baseDir.appendingPathComponent("transcripts", isDirectory: true)
+        coreDataStack = .shared
+        coreDataTranscriptionRepository = CoreDataTranscriptionStorageRepository(stack: coreDataStack)
 
         setupDirectories()
     }
@@ -153,7 +169,7 @@ public final class FileSystemStorageService: StorageService {
     private func setupDirectories() {
         do {
             try FileManager.default.createDirectory(at: defaultRecordingsDirectory, withIntermediateDirectories: true)
-            try FileManager.default.createDirectory(at: transcriptsDirectory, withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(at: legacyTranscriptsDirectory, withIntermediateDirectories: true)
         } catch {
             AppLogger.fault("Failed to create storage directories", category: .databaseManager, error: error)
         }
@@ -202,123 +218,54 @@ public final class FileSystemStorageService: StorageService {
     }
 
     public func saveTranscription(_ transcription: Transcription) async throws {
-        let filename = "\(transcription.id.uuidString).json"
-        let url = transcriptsDirectory.appendingPathComponent(filename)
-
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        encoder.outputFormatting = .prettyPrinted
-
-        let data = try encoder.encode(transcription)
-        try data.write(to: url)
-
-        AppLogger.info("Saved transcription", category: .databaseManager, extra: ["filename": filename])
+        let entity = Self.convertToEntity(transcription)
+        try await coreDataTranscriptionRepository.saveTranscription(entity)
+        AppLogger.info("Saved transcription (Core Data)", category: .databaseManager, extra: ["id": transcription.id.uuidString])
     }
 
     public func loadTranscriptions() async throws -> [Transcription] {
-        let transcriptsDir = transcriptsDirectory
-        return await Task.detached(priority: .userInitiated) {
-            let fileManager = FileManager.default
-            let contents: [URL]
-            do {
-                contents = try fileManager.contentsOfDirectory(
-                    at: transcriptsDir,
-                    includingPropertiesForKeys: [.contentModificationDateKey],
-                    options: .skipsHiddenFiles
-                )
-            } catch {
-                AppLogger.warning("Failed to read transcripts directory: \(error.localizedDescription)", category: .databaseManager)
-                return []
-            }
-
-            let jsonFiles = contents.filter { $0.pathExtension == "json" }
-            var transcriptions: [Transcription] = []
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-
-            for file in jsonFiles {
-                if let transcription = FileSystemStorageService.decodeTranscriptionSync(from: file, using: decoder) {
-                    transcriptions.append(transcription)
-                }
-            }
-
-            transcriptions.sort { $0.createdAt > $1.createdAt }
-
-            AppLogger.info("Loaded transcriptions", category: .databaseManager, extra: ["count": transcriptions.count])
-            return transcriptions
-        }.value
+        let entities = try await coreDataTranscriptionRepository.fetchAllTranscriptions()
+        let models = entities.map(Self.convertToModel)
+        AppLogger.info("Loaded transcriptions (Core Data)", category: .databaseManager, extra: ["count": models.count])
+        return models
     }
 
     public func loadAllMetadata() async throws -> [TranscriptionMetadata] {
-        let transcriptsDir = transcriptsDirectory
-        return await Task.detached(priority: .userInitiated) {
-            let fileManager = FileManager.default
-            let contents: [URL]
-            do {
-                contents = try fileManager.contentsOfDirectory(
-                    at: transcriptsDir,
-                    includingPropertiesForKeys: [.contentModificationDateKey],
-                    options: .skipsHiddenFiles
+        try await coreDataStack.performBackgroundTask { context in
+            let request = TranscriptionMO.fetchRequest()
+            let results = try context.fetch(request)
+
+            return results.map { mo in
+                let wordCount = Self.wordCount(for: mo.text)
+                return TranscriptionMetadata(
+                    id: mo.id,
+                    meetingId: mo.meeting.id,
+                    appName: mo.meeting.appRawValue,
+                    appRawValue: mo.meeting.appRawValue,
+                    startTime: mo.meeting.startTime,
+                    createdAt: mo.createdAt,
+                    previewText: String(mo.text.prefix(100)),
+                    wordCount: wordCount,
+                    language: mo.language,
+                    isPostProcessed: mo.processedContent != nil,
+                    duration: mo.meeting.endTime?.timeIntervalSince(mo.meeting.startTime) ?? 0,
+                    audioFilePath: mo.meeting.audioFilePath,
+                    inputSource: mo.inputSource
                 )
-            } catch {
-                return []
             }
-
-            let jsonFiles = contents.filter { $0.pathExtension == "json" }
-            var metadataList: [TranscriptionMetadata] = []
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-
-            for file in jsonFiles {
-                if let data = try? Data(contentsOf: file),
-                   let meta = try? decoder.decode(MetadataDecoder.self, from: data)
-                {
-                    let wordCount = FileSystemStorageService.wordCount(for: meta.text)
-                    metadataList.append(TranscriptionMetadata(
-                        id: meta.id,
-                        meetingId: meta.meeting.id,
-                        appName: meta.meeting.app.rawValue,
-                        appRawValue: meta.meeting.app.rawValue,
-                        startTime: meta.meeting.startTime,
-                        createdAt: meta.createdAt,
-                        previewText: String(meta.text.prefix(100)),
-                        wordCount: wordCount,
-                        language: meta.language,
-                        isPostProcessed: meta.processedContent != nil,
-                        duration: meta.meeting.duration,
-                        audioFilePath: meta.meeting.audioFilePath,
-                        inputSource: meta.inputSource
-                    ))
-                }
-            }
-
-            metadataList.sort { $0.createdAt > $1.createdAt }
-            return metadataList
-        }.value
+        }
     }
 
     public func loadTranscription(by id: UUID) async throws -> Transcription? {
-        let url = transcriptsDirectory.appendingPathComponent("\(id.uuidString).json")
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-
-        return await Task.detached(priority: .userInitiated) {
-            FileSystemStorageService.decodeTranscriptionSync(from: url, using: decoder)
-        }.value
+        guard let entity = try await coreDataTranscriptionRepository.fetchTranscription(by: id) else {
+            return nil
+        }
+        return Self.convertToModel(entity)
     }
 
     public func deleteTranscription(by id: UUID) async throws {
-        let filename = "\(id.uuidString).json"
-        let url = transcriptsDirectory.appendingPathComponent(filename)
-
-        try await Task.detached(priority: .userInitiated) {
-            if FileManager.default.fileExists(atPath: url.path) {
-                try FileManager.default.removeItem(at: url)
-                AppLogger.info("Deleted transcription", category: .databaseManager, extra: ["filename": filename])
-            } else {
-                AppLogger.warning("Transcription file not found to delete", category: .databaseManager, extra: ["filename": filename])
-            }
-        }.value
+        try await coreDataTranscriptionRepository.deleteTranscription(by: id)
+        AppLogger.info("Deleted transcription (Core Data)", category: .databaseManager, extra: ["id": id.uuidString])
     }
 
     public func cleanupOldTranscriptions(olderThanDays days: Int) async throws {
@@ -347,20 +294,21 @@ public final class FileSystemStorageService: StorageService {
         let transcriptionsToKeep = allMetadata.filter { $0.createdAt >= cutoffDate }
 
         let recordingsDir = recordingsDirectory.standardizedFileURL
-        let transcriptsDir = transcriptsDirectory.standardizedFileURL
 
         let audioPathsToKeep = Self.standardizedAudioPaths(from: transcriptionsToKeep)
         let audioPathsFromDeletedTranscriptions = Self.standardizedAudioPaths(from: transcriptionsToDelete)
+        let transcriptionCandidates = transcriptionsToDelete.map { meta in
+            RetentionCleanupTranscriptionCandidate(id: meta.id, byteSize: 0)
+        }
 
         return await Task.detached(priority: .userInitiated) {
             Self.computeRetentionCleanupPreviewSync(
                 retentionDays: retentionDays,
                 cutoffDate: cutoffDate,
                 recordingsDir: recordingsDir,
-                transcriptsDir: transcriptsDir,
-                transcriptionsToDelete: transcriptionsToDelete,
                 audioPathsToKeep: audioPathsToKeep,
-                audioPathsFromDeletedTranscriptions: audioPathsFromDeletedTranscriptions
+                audioPathsFromDeletedTranscriptions: audioPathsFromDeletedTranscriptions,
+                transcriptionCandidates: transcriptionCandidates
             )
         }.value
     }
@@ -376,10 +324,9 @@ public final class FileSystemStorageService: StorageService {
         retentionDays: Int,
         cutoffDate: Date,
         recordingsDir: URL,
-        transcriptsDir: URL,
-        transcriptionsToDelete: [TranscriptionMetadata],
         audioPathsToKeep: Set<String>,
-        audioPathsFromDeletedTranscriptions: Set<String>
+        audioPathsFromDeletedTranscriptions: Set<String>,
+        transcriptionCandidates: [RetentionCleanupTranscriptionCandidate]
     ) -> RetentionCleanupPreview {
         let fileManager = FileManager.default
         let allowedAudioExtensions: Set<String> = ["m4a", "wav"]
@@ -406,17 +353,6 @@ public final class FileSystemStorageService: StorageService {
                 return size.int64Value
             }
             return nil
-        }
-
-        var transcriptionFiles: [RetentionCleanupCandidate] = []
-        transcriptionFiles.reserveCapacity(transcriptionsToDelete.count)
-
-        for item in transcriptionsToDelete {
-            let url = transcriptsDir.appendingPathComponent("\(item.id.uuidString).json")
-            if fileManager.fileExists(atPath: url.path) {
-                let bytes = fileByteSizeIfExists(url) ?? 0
-                transcriptionFiles.append(RetentionCleanupCandidate(url: url, byteSize: bytes))
-            }
         }
 
         var audioURLsToDelete: Set<URL> = []
@@ -449,12 +385,11 @@ public final class FileSystemStorageService: StorageService {
                 fileByteSizeIfExists: fileByteSizeIfExists,
                 fileManager: fileManager
             )
-
-            let sortedTranscriptions = transcriptionFiles.sorted { $0.url.lastPathComponent < $1.url.lastPathComponent }
+            let sortedTranscriptions = transcriptionCandidates.sorted { $0.id.uuidString < $1.id.uuidString }
             return RetentionCleanupPreview(
                 retentionDays: retentionDays,
                 audioFiles: audioFiles,
-                transcriptionFiles: sortedTranscriptions
+                transcriptions: sortedTranscriptions
             )
         }
 
@@ -484,12 +419,12 @@ public final class FileSystemStorageService: StorageService {
             fileByteSizeIfExists: fileByteSizeIfExists,
             fileManager: fileManager
         )
-        let sortedTranscriptions = transcriptionFiles.sorted { $0.url.lastPathComponent < $1.url.lastPathComponent }
+        let sortedTranscriptions = transcriptionCandidates.sorted { $0.id.uuidString < $1.id.uuidString }
 
         return RetentionCleanupPreview(
             retentionDays: retentionDays,
             audioFiles: audioFiles,
-            transcriptionFiles: sortedTranscriptions
+            transcriptions: sortedTranscriptions
         )
     }
 
@@ -497,14 +432,14 @@ public final class FileSystemStorageService: StorageService {
         audioURLsToDelete: Set<URL>,
         fileByteSizeIfExists: (URL) -> Int64?,
         fileManager: FileManager
-    ) -> [RetentionCleanupCandidate] {
-        var audioFiles: [RetentionCleanupCandidate] = []
+    ) -> [RetentionCleanupAudioCandidate] {
+        var audioFiles: [RetentionCleanupAudioCandidate] = []
         audioFiles.reserveCapacity(audioURLsToDelete.count)
 
         for url in audioURLsToDelete {
             if fileManager.fileExists(atPath: url.path) {
                 let bytes = fileByteSizeIfExists(url) ?? 0
-                audioFiles.append(RetentionCleanupCandidate(url: url, byteSize: bytes))
+                audioFiles.append(RetentionCleanupAudioCandidate(url: url, byteSize: bytes))
             }
         }
 
@@ -514,18 +449,30 @@ public final class FileSystemStorageService: StorageService {
 
     public func performRetentionCleanup(preview: RetentionCleanupPreview) async throws -> RetentionCleanupResult {
         let audioToDelete = preview.audioFiles.map(\.url)
-        let transcriptionsToDelete = preview.transcriptionFiles.map(\.url)
         let recordingsDirPath = recordingsDirectory.standardizedFileURL.path
-        let transcriptsDirPath = transcriptsDirectory.standardizedFileURL.path
+        let transcriptionIdsToDelete = preview.transcriptions.map(\.id)
 
-        return try await Task.detached(priority: .userInitiated) {
+        let deletedTranscriptions = try await coreDataStack.performBackgroundTask { context in
+            var deleted = 0
+            for id in transcriptionIdsToDelete {
+                let request = TranscriptionMO.fetchRequest(forTranscriptionId: id)
+                if let transcriptionMO = try context.fetch(request).first {
+                    context.delete(transcriptionMO)
+                    deleted += 1
+                }
+            }
+            if context.hasChanges {
+                try context.save()
+            }
+            return deleted
+        }
+
+        let deletedAudio = try await Task.detached(priority: .userInitiated) {
             let fileManager = FileManager.default
             var deletedAudio = 0
-            var deletedTranscriptions = 0
             let allowedAudioExtensions: Set<String> = ["m4a", "wav"]
 
             let normalizedRecordingsDir = FileSystemStorageService.normalizeDirectoryPath(recordingsDirPath)
-            let normalizedTranscriptsDir = FileSystemStorageService.normalizeDirectoryPath(transcriptsDirPath)
 
             func isUnderDirectory(_ url: URL, directoryPath: String) -> Bool {
                 let standardized = url.standardizedFileURL.path
@@ -544,12 +491,6 @@ public final class FileSystemStorageService: StorageService {
                 return false
             }
 
-            for url in transcriptionsToDelete where isUnderDirectory(url, directoryPath: normalizedTranscriptsDir) {
-                if try removeIfExists(url) {
-                    deletedTranscriptions += 1
-                }
-            }
-
             for url in audioToDelete
                 where isUnderDirectory(url, directoryPath: normalizedRecordingsDir) && isAllowedAudioFile(url)
             {
@@ -558,22 +499,24 @@ public final class FileSystemStorageService: StorageService {
                 }
             }
 
-            if deletedAudio > 0 || deletedTranscriptions > 0 {
-                AppLogger.info(
-                    "Retention cleanup completed",
-                    category: .databaseManager,
-                    extra: [
-                        "deletedAudioCount": "\(deletedAudio)",
-                        "deletedTranscriptionCount": "\(deletedTranscriptions)",
-                    ]
-                )
-            }
-
-            return RetentionCleanupResult(
-                deletedAudioCount: deletedAudio,
-                deletedTranscriptionCount: deletedTranscriptions
-            )
+            return deletedAudio
         }.value
+
+        if deletedAudio > 0 || deletedTranscriptions > 0 {
+            AppLogger.info(
+                "Retention cleanup completed",
+                category: .databaseManager,
+                extra: [
+                    "deletedAudioCount": "\(deletedAudio)",
+                    "deletedTranscriptionCount": "\(deletedTranscriptions)",
+                ]
+            )
+        }
+
+        return RetentionCleanupResult(
+            deletedAudioCount: deletedAudio,
+            deletedTranscriptionCount: deletedTranscriptions
+        )
     }
 
     public func cleanupOrphanedRecordings() async throws {
@@ -631,24 +574,185 @@ public final class FileSystemStorageService: StorageService {
         return normalized
     }
 
-    private struct MetadataDecoder: Codable {
-        let id: UUID
-        let meeting: Meeting
-        let text: String
-        let createdAt: Date
-        let language: String
-        let processedContent: String?
-        let inputSource: String?
+    // MARK: - Legacy JSON migration
+
+    /// One-time migration for legacy JSON transcriptions into Core Data.
+    ///
+    /// This is designed to be idempotent:
+    /// - Transcriptions are upserted into Core Data by `id`.
+    /// - Migrated JSON files are moved to `transcripts/legacy-json-archive/`.
+    /// - The `UserDefaults` checkpoint is only marked complete when there are no
+    ///   remaining `.json` files in the legacy directory root.
+    public func migrateLegacyJSONTranscriptionsToCoreDataIfNeeded() async {
+        guard !UserDefaults.standard.bool(forKey: Keys.didMigrateLegacyJSONTranscriptionsToCoreDataV1) else {
+            return
+        }
+
+        let legacyDirectory = legacyTranscriptsDirectory
+        let archiveDirectory = legacyDirectory.appendingPathComponent("legacy-json-archive", isDirectory: true)
+
+        do {
+            try FileManager.default.createDirectory(at: archiveDirectory, withIntermediateDirectories: true)
+        } catch {
+            AppLogger.error("Failed to create legacy JSON archive directory", category: .databaseManager, error: error)
+            return
+        }
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+
+        let legacyJSONFiles: [URL]
+        do {
+            legacyJSONFiles = try FileManager.default.contentsOfDirectory(
+                at: legacyDirectory,
+                includingPropertiesForKeys: [.isRegularFileKey],
+                options: [.skipsHiddenFiles]
+            )
+            .filter { $0.pathExtension.lowercased() == "json" }
+        } catch {
+            AppLogger.error("Failed to enumerate legacy transcripts directory", category: .databaseManager, error: error)
+            return
+        }
+
+        guard !legacyJSONFiles.isEmpty else {
+            UserDefaults.standard.set(true, forKey: Keys.didMigrateLegacyJSONTranscriptionsToCoreDataV1)
+            return
+        }
+
+        var migratedCount = 0
+        var failedCount = 0
+
+        for fileURL in legacyJSONFiles {
+            do {
+                let data = try Data(contentsOf: fileURL)
+                let legacy = try decoder.decode(Transcription.self, from: data)
+                let entity = Self.convertToEntity(legacy)
+
+                try await coreDataTranscriptionRepository.saveTranscription(entity)
+
+                let destinationURL = archiveDirectory.appendingPathComponent(fileURL.lastPathComponent)
+                if FileManager.default.fileExists(atPath: destinationURL.path) {
+                    try FileManager.default.removeItem(at: destinationURL)
+                }
+                try FileManager.default.moveItem(at: fileURL, to: destinationURL)
+
+                migratedCount += 1
+            } catch {
+                failedCount += 1
+                AppLogger.error(
+                    "Failed to migrate legacy JSON transcription",
+                    category: .databaseManager,
+                    error: error,
+                    extra: ["filename": fileURL.lastPathComponent]
+                )
+            }
+        }
+
+        let remainingJSONFiles: [URL]
+        do {
+            remainingJSONFiles = try FileManager.default.contentsOfDirectory(
+                at: legacyDirectory,
+                includingPropertiesForKeys: [.isRegularFileKey],
+                options: [.skipsHiddenFiles]
+            )
+            .filter { $0.pathExtension.lowercased() == "json" }
+        } catch {
+            remainingJSONFiles = []
+        }
+
+        if remainingJSONFiles.isEmpty {
+            UserDefaults.standard.set(true, forKey: Keys.didMigrateLegacyJSONTranscriptionsToCoreDataV1)
+        }
+
+        AppLogger.info(
+            "Legacy JSON → Core Data migration finished",
+            category: .databaseManager,
+            extra: [
+                "migratedCount": "\(migratedCount)",
+                "failedCount": "\(failedCount)",
+            ]
+        )
     }
 
-    private static func decodeTranscriptionSync(from file: URL, using decoder: JSONDecoder) -> Transcription? {
-        do {
-            let data = try Data(contentsOf: file)
-            return try decoder.decode(Transcription.self, from: data)
-        } catch {
-            AppLogger.error("Failed to load transcription", category: .databaseManager, error: error, extra: ["filename": file.lastPathComponent])
-            return nil
+    // MARK: - Core Data helpers
+
+    private static func convertToEntity(_ transcription: Transcription) -> TranscriptionEntity {
+        let meetingEntity = MeetingEntity(
+            id: transcription.meeting.id,
+            app: DomainMeetingApp(rawValue: transcription.meeting.app.rawValue) ?? .unknown,
+            startTime: transcription.meeting.startTime,
+            endTime: transcription.meeting.endTime,
+            audioFilePath: transcription.meeting.audioFilePath
+        )
+
+        let segments = transcription.segments.map { segment in
+            TranscriptionEntity.Segment(
+                id: segment.id,
+                speaker: segment.speaker,
+                text: segment.text,
+                startTime: segment.startTime,
+                endTime: segment.endTime
+            )
         }
+
+        var config = TranscriptionEntity.Configuration(
+            text: transcription.text,
+            rawText: transcription.rawText,
+            segments: segments,
+            language: transcription.language
+        )
+        config.id = transcription.id
+        config.processedContent = transcription.processedContent
+        config.postProcessingPromptId = transcription.postProcessingPromptId
+        config.postProcessingPromptTitle = transcription.postProcessingPromptTitle
+        config.createdAt = transcription.createdAt
+        config.modelName = transcription.modelName
+        config.inputSource = transcription.inputSource
+        config.transcriptionDuration = transcription.transcriptionDuration
+        config.postProcessingDuration = transcription.postProcessingDuration
+        config.postProcessingModel = transcription.postProcessingModel
+        config.meetingType = transcription.meetingType
+
+        return TranscriptionEntity(meeting: meetingEntity, config: config)
+    }
+
+    private static func convertToModel(_ entity: TranscriptionEntity) -> Transcription {
+        let meeting = Meeting(
+            id: entity.meeting.id,
+            app: MeetingApp(rawValue: entity.meeting.app.rawValue) ?? .unknown,
+            startTime: entity.meeting.startTime,
+            endTime: entity.meeting.endTime,
+            audioFilePath: entity.meeting.audioFilePath
+        )
+
+        let segments = entity.segments.map { segment in
+            Transcription.Segment(
+                id: segment.id,
+                speaker: segment.speaker,
+                text: segment.text,
+                startTime: segment.startTime,
+                endTime: segment.endTime
+            )
+        }
+
+        return Transcription(
+            id: entity.id,
+            meeting: meeting,
+            segments: segments,
+            text: entity.text,
+            rawText: entity.rawText,
+            processedContent: entity.processedContent,
+            postProcessingPromptId: entity.postProcessingPromptId,
+            postProcessingPromptTitle: entity.postProcessingPromptTitle,
+            language: entity.language,
+            createdAt: entity.createdAt,
+            modelName: entity.modelName,
+            inputSource: entity.inputSource,
+            transcriptionDuration: entity.transcriptionDuration,
+            postProcessingDuration: entity.postProcessingDuration,
+            postProcessingModel: entity.postProcessingModel,
+            meetingType: entity.meetingType
+        )
     }
 
     deinit {

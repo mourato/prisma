@@ -35,7 +35,14 @@ public final class CoreDataStack: Sendable {
         if inMemory {
             let description = NSPersistentStoreDescription()
             description.type = NSInMemoryStoreType
+            description.shouldMigrateStoreAutomatically = true
+            description.shouldInferMappingModelAutomatically = true
             persistentContainer.persistentStoreDescriptions = [description]
+        } else {
+            persistentContainer.persistentStoreDescriptions.forEach { description in
+                description.shouldMigrateStoreAutomatically = true
+                description.shouldInferMappingModelAutomatically = true
+            }
         }
 
         persistentContainer.loadPersistentStores { [weak self] storeDescription, error in

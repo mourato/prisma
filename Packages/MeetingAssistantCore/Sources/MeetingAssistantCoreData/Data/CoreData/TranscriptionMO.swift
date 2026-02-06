@@ -25,6 +25,7 @@ public final class TranscriptionMO: NSManagedObject {
     @NSManaged public var transcriptionDuration: Double
     @NSManaged public var postProcessingDuration: Double
     @NSManaged public var postProcessingModel: String?
+    @NSManaged public var meetingType: String?
 
     // Relacionamentos
     @NSManaged public var meeting: MeetingMO
@@ -81,12 +82,13 @@ extension TranscriptionMO {
         config.transcriptionDuration = transcriptionDuration
         config.postProcessingDuration = postProcessingDuration
         config.postProcessingModel = postProcessingModel
+        config.meetingType = meetingType
 
         return TranscriptionEntity(meeting: meeting.toDomain(), config: config)
     }
 
     /// Atualiza Managed Object com dados da Domain Entity
-    func update(from entity: TranscriptionEntity) {
+    func update(from entity: TranscriptionEntity, meeting: MeetingMO) {
         id = entity.id
         text = entity.text
         rawText = entity.rawText
@@ -100,11 +102,9 @@ extension TranscriptionMO {
         transcriptionDuration = entity.transcriptionDuration
         postProcessingDuration = entity.postProcessingDuration
         postProcessingModel = entity.postProcessingModel
+        meetingType = entity.meetingType
 
-        // Atualizar relacionamento com meeting
-        if let meetingMO = managedObjectContext?.object(with: meeting.objectID) as? MeetingMO {
-            meeting = meetingMO
-        }
+        self.meeting = meeting
 
         // Atualizar segmentos
         segments.forEach { self.managedObjectContext?.delete($0) }
@@ -130,6 +130,7 @@ extension TranscriptionMO {
         transcriptionMO.transcriptionDuration = entity.transcriptionDuration
         transcriptionMO.postProcessingDuration = entity.postProcessingDuration
         transcriptionMO.postProcessingModel = entity.postProcessingModel
+        transcriptionMO.meetingType = entity.meetingType
         transcriptionMO.meeting = meeting
 
         // Criar segmentos

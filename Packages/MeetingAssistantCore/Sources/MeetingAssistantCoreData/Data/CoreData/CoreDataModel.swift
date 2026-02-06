@@ -167,6 +167,11 @@ public enum CoreDataModel {
         postProcessingModelAttribute.attributeType = .stringAttributeType
         postProcessingModelAttribute.isOptional = true
 
+        let meetingTypeAttribute = NSAttributeDescription()
+        meetingTypeAttribute.name = "meetingType"
+        meetingTypeAttribute.attributeType = .stringAttributeType
+        meetingTypeAttribute.isOptional = true
+
         transcriptionEntity.properties = [
             transcriptionIdAttribute,
             transcriptionTextAttribute,
@@ -181,6 +186,7 @@ public enum CoreDataModel {
             transcriptionDurationAttribute,
             postProcessingDurationAttribute,
             postProcessingModelAttribute,
+            meetingTypeAttribute,
         ]
 
         // Relacionamentos

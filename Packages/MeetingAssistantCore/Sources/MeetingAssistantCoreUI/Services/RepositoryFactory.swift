@@ -49,9 +49,7 @@ public final class DefaultRepositoryFactory: RepositoryFactory {
     }
 
     public func makeTranscriptionStorageRepository() -> TranscriptionStorageRepository {
-        let coreDataRepo = CoreDataTranscriptionStorageRepository(stack: coreDataStack)
-        let legacyRepo = TranscriptionStorageRepositoryAdapter(storageService: storageService)
-        return HybridTranscriptionStorageRepository(coreDataRepo: coreDataRepo, legacyRepo: legacyRepo)
+        CoreDataTranscriptionStorageRepository(stack: coreDataStack)
     }
 
     public func makeRecordingRepository() -> RecordingRepository {
