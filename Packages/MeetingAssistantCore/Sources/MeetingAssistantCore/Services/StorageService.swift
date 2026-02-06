@@ -346,7 +346,7 @@ public final class FileSystemStorageService: StorageService {
             return FileSystemStorageService.standardizePath(path: path)
         })
 
-        return try await Task.detached(priority: .userInitiated) {
+        return await Task.detached(priority: .userInitiated) {
             let fileManager = FileManager.default
 
             let allowedAudioExtensions: Set<String> = ["m4a", "wav"]
@@ -411,9 +411,22 @@ public final class FileSystemStorageService: StorageService {
                     options: [.skipsHiddenFiles]
                 )
             } catch {
+                var audioFiles: [RetentionCleanupCandidate] = []
+                audioFiles.reserveCapacity(audioURLsToDelete.count)
+
+                for url in audioURLsToDelete {
+                    if fileManager.fileExists(atPath: url.path) {
+                        let bytes = fileByteSizeIfExists(url) ?? 0
+                        audioFiles.append(RetentionCleanupCandidate(url: url, byteSize: bytes))
+                    }
+                }
+
+                audioFiles.sort { $0.url.lastPathComponent < $1.url.lastPathComponent }
+                transcriptionFiles.sort { $0.url.lastPathComponent < $1.url.lastPathComponent }
+
                 return RetentionCleanupPreview(
                     retentionDays: retentionDays,
-                    audioFiles: [],
+                    audioFiles: audioFiles,
                     transcriptionFiles: transcriptionFiles
                 )
             }
@@ -463,11 +476,26 @@ public final class FileSystemStorageService: StorageService {
     public func performRetentionCleanup(preview: RetentionCleanupPreview) async throws -> RetentionCleanupResult {
         let audioToDelete = preview.audioFiles.map(\.url)
         let transcriptionsToDelete = preview.transcriptionFiles.map(\.url)
+        let recordingsDirPath = recordingsDirectory.standardizedFileURL.path
+        let transcriptsDirPath = transcriptsDirectory.standardizedFileURL.path
 
         return try await Task.detached(priority: .userInitiated) {
             let fileManager = FileManager.default
             var deletedAudio = 0
             var deletedTranscriptions = 0
+            let allowedAudioExtensions: Set<String> = ["m4a", "wav"]
+
+            let normalizedRecordingsDir = FileSystemStorageService.normalizeDirectoryPath(recordingsDirPath)
+            let normalizedTranscriptsDir = FileSystemStorageService.normalizeDirectoryPath(transcriptsDirPath)
+
+            func isUnderDirectory(_ url: URL, directoryPath: String) -> Bool {
+                let standardized = url.standardizedFileURL.path
+                return standardized == directoryPath || standardized.hasPrefix(directoryPath + "/")
+            }
+
+            func isAllowedAudioFile(_ url: URL) -> Bool {
+                allowedAudioExtensions.contains(url.pathExtension.lowercased())
+            }
 
             func removeIfExists(_ url: URL) throws -> Bool {
                 if fileManager.fileExists(atPath: url.path) {
@@ -477,13 +505,14 @@ public final class FileSystemStorageService: StorageService {
                 return false
             }
 
-            for url in transcriptionsToDelete {
+            for url in transcriptionsToDelete where isUnderDirectory(url, directoryPath: normalizedTranscriptsDir) {
                 if try removeIfExists(url) {
                     deletedTranscriptions += 1
                 }
             }
 
-            for url in audioToDelete {
+            for url in audioToDelete
+            where isUnderDirectory(url, directoryPath: normalizedRecordingsDir) && isAllowedAudioFile(url) {
                 if try removeIfExists(url) {
                     deletedAudio += 1
                 }
