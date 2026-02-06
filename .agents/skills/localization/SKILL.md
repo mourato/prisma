@@ -21,7 +21,7 @@ Activate this skill when working with:
 
 ### Resource Loading
 
-**CRITICAL**: This project centralizes localization bundle resolution in `Bundle.safeModule` (see `Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Utilities/BundleExtension.swift`).
+**CRITICAL**: This project centralizes localization bundle resolution in `Bundle.safeModule` (see `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreCommon/Utilities/BundleExtension.swift`).
 
 ```swift
 // ✅ Standard (everywhere)
@@ -52,7 +52,7 @@ Text("Record")
 Text("recording.start".localized)
 ```
 
-Ao adicionar ou remover textos na interface, é importante tratar eles de maneira adequada: ou cuidando da correta localização ou fazendo a sanitização do que for removido.
+When adding or removing UI text, ensure it is handled correctly: either by proper localization or by removing/sanitizing it safely.
 
 ### Key Convention
 
@@ -101,6 +101,6 @@ Follow this pattern for consistent naming:
 
 ## References
 
-- [BundleExtension.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Utilities/BundleExtension.swift)
-- [Localizable.strings](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Resources/en.lproj/Localizable.strings)
+- [BundleExtension.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreCommon/Utilities/BundleExtension.swift)
+- [Localizable.strings](Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreCommon/Resources/en.lproj/Localizable.strings)
 - [Apple Accessibility Guide](https://developer.apple.com/documentation/accessibility)
