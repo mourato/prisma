@@ -27,13 +27,13 @@ public enum MeetingType: String, CaseIterable, Codable, Sendable {
 public extension MeetingType {
     var displayName: String {
         switch self {
-        case .autodetect: "Autodetect"
-        case .general: "General"
-        case .standup: "Standup"
-        case .designReview: "Design Review"
-        case .oneOnOne: "One-on-One"
-        case .presentation: "Presentation"
-        case .planning: "Planning"
+        case .autodetect: "meeting.type.autodetect".localized
+        case .general: "meeting.type.general".localized
+        case .standup: "meeting.type.standup".localized
+        case .designReview: "meeting.type.design_review".localized
+        case .oneOnOne: "meeting.type.one_on_one".localized
+        case .presentation: "meeting.type.presentation".localized
+        case .planning: "meeting.type.planning".localized
         }
     }
 

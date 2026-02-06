@@ -466,7 +466,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
                 Task { @MainActor in
                     let isCurrentlyRecording = self?.isRecording ?? false
                     if detected != nil, !isCurrentlyRecording {
-                        await self?.startRecording(source: .microphone)
+                        await self?.startRecording(source: .all)
                     } else if detected == nil, isCurrentlyRecording {
                         await self?.stopRecording()
                     }

@@ -362,7 +362,7 @@ final class GlobalShortcutController {
     }
 
     private func startRecording(for type: ShortcutType) async {
-        let source: RecordingSource = type == .dictation ? .microphone : .system
+        let source: RecordingSource = type == .dictation ? .microphone : .all
         await recordingManager.startRecording(source: source)
     }
 

@@ -69,6 +69,20 @@
 "settings.general.monitoring_active" = "Active monitoring";
 
 "settings.meetings.workflow" = "Workflow";
+"settings.dictation.workflow" = "Workflow";
+
+/* Meetings Export */
+"settings.meetings.export" = "Export";
+"settings.meetings.auto_export" = "Auto-export summaries";
+"settings.meetings.auto_export_desc" = "Automatically exports the AI summary after processing completes.";
+"settings.meetings.create_subfolder" = "Create a folder per meeting";
+"settings.meetings.create_subfolder_desc" = "Creates a subfolder using the meeting title and date.";
+"settings.meetings.export_location" = "Export location";
+"settings.meetings.no_folder_selected" = "No folder selected";
+"settings.meetings.template" = "Template";
+"settings.meetings.template_desc" = "Template used to format exported summaries.";
+"settings.meetings.prompts" = "Meeting prompts";
+"settings.meetings.no_prompts" = "No prompts yet";
 "settings.general.days" = "Days";
 "settings.general.keep_for" = "Keep for";
 "settings.general.theme_color" = "Theme Color";
@@ -78,6 +92,20 @@
 "settings.storage.cleanup_success" = "Cleanup completed successfully.";
 "meeting.app.imported" = "Imported File";
 "meeting.app.unknown" = "Unknown";
+
+/* Meeting Types */
+"meeting.type.autodetect" = "Auto-detect";
+"meeting.type.general" = "General";
+"meeting.type.standup" = "Standup";
+"meeting.type.design_review" = "Design review";
+"meeting.type.one_on_one" = "One-on-one";
+"meeting.type.presentation" = "Presentation";
+"meeting.type.planning" = "Planning";
+
+/* Recording Sources */
+"recording.source.all" = "Microphone + system audio";
+"recording.source.microphone" = "Microphone only";
+"recording.source.system" = "System audio only";
 
 /* AI Settings */
 "settings.ai.title" = "Enhancements";
@@ -133,6 +161,7 @@
 /* Accessibility Labels */
 "settings.ai.downloading" = "Downloading";
 "settings.ai.loading" = "Loading";
+"settings.ai.no_models" = "No models available";
 "settings.ai.ready" = "Ready";
 "settings.ai.failed" = "Failed";
 
@@ -363,6 +392,7 @@
 "common.copy" = "Copy";
 "common.save" = "Save";
 "common.create" = "Create";
+"common.select" = "Select";
 "common.optional" = "(optional)";
 
 /* Prompt Editor */
@@ -396,6 +426,7 @@
 /* Filters */
 "filter.source.all" = "All";
 "filter.source.dictations" = "Recordings";
+"filter.source.meetings" = "Meetings";
 "filter.source.manual_imports" = "Imported";
 
 /* Date Filters */
@@ -424,7 +455,7 @@
 "settings.general.device_unavailable" = "Unavailable";
 "settings.general.device_default" = "Default";
 "settings.general.mute_output_during_recording" = "Mute Output During Recording";
-"settings.general.mute_output_desc" = "Mutes system audio while a recording is in progress.";
+"settings.general.mute_output_desc" = "Mutes system audio during Dictation and Assistant recordings.";
 
 /* Transcribe File */
 "transcribe.import_audio" = "Import Audio";
@@ -477,6 +508,16 @@
 "prompt.action_items.description" = "Extracts tasks and next steps";
 "prompt.clean_transcription.title" = "Clean Transcription";
 "prompt.clean_transcription.description" = "Removes hesitations and corrects speech errors";
+"prompt.standup.title" = "Standup";
+"prompt.standup.description" = "Focuses on progress, blockers, and next steps";
+"prompt.presentation.title" = "Presentation";
+"prompt.presentation.description" = "Highlights key takeaways, decisions, and questions";
+"prompt.design_review.title" = "Design Review";
+"prompt.design_review.description" = "Focuses on design feedback, decisions, and critiques";
+"prompt.one_on_one.title" = "One-on-One";
+"prompt.one_on_one.description" = "Focuses on feedback, alignment, and action items";
+"prompt.planning.title" = "Planning";
+"prompt.planning.description" = "Focuses on tasks, owners, timelines, and milestones";
 
 /* Recording Indicator Settings */
 "settings.general.recording_indicator" = "Recording Indicator";
@@ -516,6 +557,7 @@
 
 /* App Visibility Settings */
 "settings.general.show_in_dock" = "Show in Dock";
+"settings.general.show_in_dock_desc" = "Shows the app icon in the Dock and enables Cmd+Tab switching.";
 /* Export */
 "export.header.meeting_title" = "Meeting using %1$@ - %2$@";
 "export.section.metadata" = "Metadata";
