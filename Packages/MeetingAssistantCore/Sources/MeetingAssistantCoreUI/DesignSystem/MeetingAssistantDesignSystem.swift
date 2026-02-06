@@ -132,5 +132,16 @@ public enum MeetingAssistantDesignSystem {
         public static let chartHeight: CGFloat = 220
         public static let indentation: CGFloat = 24
         public static let smallPadding: CGFloat = 4
+
+        public static let sidebarContainerCornerRadius: CGFloat = 18
+        public static let sidebarItemCornerRadius: CGFloat = 8
+        public static let sidebarItemHeight: CGFloat = 40
+        public static let sidebarHorizontalPadding: CGFloat = 10
+        public static let sidebarVerticalPadding: CGFloat = 12
+        public static let sidebarTopInset: CGFloat = 48
+        public static let sidebarSectionSpacing: CGFloat = 6
+        public static let sidebarItemContentSpacing: CGFloat = 8
+        public static let sidebarLabelFontSize: CGFloat = 15
+        public static let sidebarSymbolFontSize: CGFloat = 15
     }
 }
