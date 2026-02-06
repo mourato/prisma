@@ -119,23 +119,6 @@ public struct MenuBarView: View {
 
     private var controlButtons: some View {
         VStack(spacing: 12) {
-            if !viewModel.isRecording {
-                HStack {
-                    Text(NSLocalizedString("menubar.meeting.type_label", bundle: .safeModule, comment: ""))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    Picker(NSLocalizedString("menubar.meeting.type_picker", bundle: .safeModule, comment: ""), selection: $viewModel.selectedMeetingType) {
-                        ForEach(MeetingType.allCases, id: \.self) { type in
-                            Text(type.displayName).tag(type)
-                        }
-                    }
-                    .labelsHidden()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .padding(.horizontal, 4)
-            }
-
             if viewModel.isRecording {
                 Button(action: stopRecording) {
                     Label(

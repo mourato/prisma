@@ -36,7 +36,6 @@ class MockRecordingService: RecordingServiceProtocol {
 
     // Track calls
     var startRecordingCalled = false
-    var startRecordingType: MeetingType?
     var stopRecordingCalled = false
     var checkPermissionCalled = false
     var requestPermissionCalled = false
@@ -48,9 +47,8 @@ class MockRecordingService: RecordingServiceProtocol {
     var openAccessibilitySettingsCalled = false
     var transcribeExternalAudioCalled = false
 
-    func startRecording(source: RecordingSource, type: MeetingType = .general) async {
+    func startRecording(source: RecordingSource) async {
         startRecordingCalled = true
-        startRecordingType = type
         isRecording = true
         isRecordingSubject.send(true)
         meetingState = .recording

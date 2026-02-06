@@ -215,8 +215,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     /// Start recording audio for a meeting.
     /// - Parameters:
     ///   - source: The audio source to record.
-    ///   - type: The type of meeting (defaults to .general for backward compatibility).
-    public func startRecording(source: RecordingSource = .microphone, type: MeetingType = .general) async {
+    public func startRecording(source: RecordingSource = .microphone) async {
         guard !isRecording else {
             AppLogger.info("Attempted to start recording but already recording", category: .recordingManager)
             return
@@ -235,7 +234,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         defer { isStarting = false }
 
         do {
-            let meeting = createMeeting(type: type)
+            let meeting = createMeeting(type: resolveMeetingType())
             currentMeeting = meeting
 
             // We only need one output URL because AudioRecorder handles mixing
@@ -262,6 +261,11 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             await RecordingExclusivityCoordinator.shared.endRecording()
             await handleStartRecordingError(error)
         }
+    }
+
+    private func resolveMeetingType() -> MeetingType {
+        let settings = AppSettingsStore.shared
+        return settings.meetingTypeAutoDetectEnabled ? .autodetect : .general
     }
 
     private func startRecorder(to url: URL, source: RecordingSource) async throws {
@@ -634,6 +638,16 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
                 )
             }
 
+            let defaultMeetingPrompt: DomainPostProcessingPrompt? = {
+                guard applyPostProcessing, !isDictation else { return nil }
+
+                if let selected = settings.selectedPrompt {
+                    return domainPrompt(from: selected)
+                }
+
+                return domainPrompt(from: PromptService.shared.strategy(for: .general).promptObject())
+            }()
+
             let promptToUse: DomainPostProcessingPrompt? = {
                 guard applyPostProcessing else { return nil }
 
@@ -646,7 +660,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
                 // Meetings:
                 // - If the meeting type is explicitly `.autodetect`, do NOT pass a fixed prompt so the UseCase can classify.
                 // - If a concrete meeting type was chosen, use the built-in type prompt.
-                // - Otherwise (general), respect the user's selected meeting prompt when present.
+                // - Otherwise (general), use the user's selected prompt (or a default General prompt).
                 switch meeting.type {
                 case .autodetect:
                     return nil
@@ -661,12 +675,11 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
                 case .planning:
                     return domainPrompt(from: .planning)
                 case .general:
-                    if let selected = settings.selectedPrompt {
-                        return domainPrompt(from: selected)
-                    }
-                    return nil
+                    return defaultMeetingPrompt
                 }
             }()
+
+            let shouldAutoDetectMeetingType = applyPostProcessing && !isDictation && meeting.type == .autodetect
             
             meetingState = .processing(.transcribing)
             
@@ -677,7 +690,9 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
                 inputSource: resolveInputSourceLabel(for: meeting),
                 applyPostProcessing: applyPostProcessing,
                 postProcessingPrompt: promptToUse,
+                defaultPostProcessingPrompt: shouldAutoDetectMeetingType ? defaultMeetingPrompt : nil,
                 postProcessingModel: applyPostProcessing ? settings.aiConfiguration.selectedModel : nil,
+                autoDetectMeetingType: shouldAutoDetectMeetingType,
                 availablePrompts: availablePrompts
             )
             
@@ -878,7 +893,38 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
         if meeting?.isDictation == true || recordingSource == .microphone {
             prompt = settings.selectedDictationPrompt ?? .cleanTranscription
-        } else if type != .general, type != .autodetect {
+        } else if type == .autodetect {
+            let fallback = settings.selectedPrompt ?? PromptService.shared.strategy(for: .general).promptObject()
+
+            let classifierPrompt = PostProcessingPrompt(
+                title: "Classifier",
+                promptText: """
+                Analise a transcrição e classifique o tipo de reunião.
+                Responda APENAS com o JSON no seguinte formato:
+                { "type": "VALOR" }
+                Valores possíveis: standup, presentation, design_review, one_on_one, planning, general.
+                """,
+                icon: "sparkles",
+                isPredefined: false
+            )
+
+            do {
+                let jsonString = try await postProcessingService.processTranscription(rawText, with: classifierPrompt)
+                if let detectedType = parseMeetingType(from: jsonString),
+                   detectedType != .general {
+                    prompt = resolveBuiltInMeetingPrompt(for: detectedType, fallbackGeneral: fallback)
+                } else {
+                    prompt = fallback
+                }
+            } catch {
+                AppLogger.warning(
+                    "Meeting type autodetect failed; falling back to general prompt",
+                    category: .recordingManager,
+                    extra: ["error": error.localizedDescription]
+                )
+                prompt = fallback
+            }
+        } else if type != .general {
             let strategy = PromptService.shared.strategy(for: type)
             prompt = strategy.promptObject()
             AppLogger.info("Using context-aware prompt for type: \(type.displayName)", category: .transcriptionEngine)
@@ -919,6 +965,53 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
                 model: nil
             )
         }
+    }
+
+    private func resolveBuiltInMeetingPrompt(for type: MeetingType, fallbackGeneral: PostProcessingPrompt) -> PostProcessingPrompt {
+        switch type {
+        case .standup:
+            .standup
+        case .presentation:
+            .presentation
+        case .designReview:
+            .designReview
+        case .oneOnOne:
+            .oneOnOne
+        case .planning:
+            .planning
+        case .general:
+            fallbackGeneral
+        case .autodetect:
+            fallbackGeneral
+        }
+    }
+
+    private func parseMeetingType(from jsonString: String) -> MeetingType? {
+        if let type = parseMeetingTypeFromJSON(jsonString) {
+            return type
+        }
+
+        guard let startIndex = jsonString.firstIndex(of: "{"),
+              let endIndex = jsonString.lastIndex(of: "}") else {
+            return nil
+        }
+
+        let candidate = String(jsonString[startIndex ... endIndex])
+        return parseMeetingTypeFromJSON(candidate)
+    }
+
+    private func parseMeetingTypeFromJSON(_ jsonString: String) -> MeetingType? {
+        guard let data = jsonString.data(using: .utf8),
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let rawType = object["type"] as? String else {
+            return nil
+        }
+
+        let trimmed = rawType.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard let type = MeetingType(rawValue: trimmed) else { return nil }
+
+        let allowed: Set<MeetingType> = [.standup, .presentation, .designReview, .oneOnOne, .planning, .general]
+        return allowed.contains(type) ? type : nil
     }
 
     private func createAndSaveTranscription(
