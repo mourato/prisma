@@ -597,6 +597,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             }
             
             let applyPostProcessing = settings.postProcessingEnabled && settings.aiConfiguration.isValid
+            let isDictation = meeting.isDictation || recordingSource == .microphone
             
             // Prepare Prompts
             let builtInMeetingPrompts: [PostProcessingPrompt] = [
@@ -607,14 +608,18 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
                 .planning,
             ]
 
-            let availablePrompts: [DomainPostProcessingPrompt] = (builtInMeetingPrompts + settings.meetingPrompts).map { prompt in
-                DomainPostProcessingPrompt(
-                    id: prompt.id,
-                    title: prompt.title,
-                    content: prompt.promptText,
-                    isDefault: false
-                )
-            }
+            let availablePrompts: [DomainPostProcessingPrompt] = {
+                guard !isDictation else { return [] }
+
+                return (builtInMeetingPrompts + settings.meetingPrompts).map { prompt in
+                    DomainPostProcessingPrompt(
+                        id: prompt.id,
+                        title: prompt.title,
+                        content: prompt.promptText,
+                        isDefault: false
+                    )
+                }
+            }()
 
             func domainPrompt(from prompt: PostProcessingPrompt) -> DomainPostProcessingPrompt {
                 DomainPostProcessingPrompt(
@@ -628,10 +633,16 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             let promptToUse: DomainPostProcessingPrompt? = {
                 guard applyPostProcessing else { return nil }
 
-                // Rule of thumb:
+                // Dictation: always use the dictation prompt set.
+                if isDictation {
+                    let prompt = settings.selectedDictationPrompt ?? .cleanTranscription
+                    return domainPrompt(from: prompt)
+                }
+
+                // Meetings:
                 // - If the meeting type is explicitly `.autodetect`, do NOT pass a fixed prompt so the UseCase can classify.
                 // - If a concrete meeting type was chosen, use the built-in type prompt.
-                // - Otherwise (general), respect the user's selected global prompt when present.
+                // - Otherwise (general), respect the user's selected meeting prompt when present.
                 switch meeting.type {
                 case .autodetect:
                     return nil
@@ -818,7 +829,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         let model: String?
     }
 
-    private func applyPostProcessing(rawText: String) async -> PostProcessingResult {
+    private func applyPostProcessing(rawText: String, meeting: Meeting?) async -> PostProcessingResult {
         transcriptionStatus.updateProgress(
             phase: .postProcessing, percentage: Constants.postProcessingProgress
         )
@@ -840,10 +851,12 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         // We prioritize the strategy for the specific meeting type.
         // If the type is general, we fall back to the user's selected prompt in settings,
         // or the default strategy if none is selected.
-        let type = currentMeeting?.type ?? .general
+        let type = meeting?.type ?? currentMeeting?.type ?? .general
         let prompt: PostProcessingPrompt
 
-        if type != .general, type != .autodetect {
+        if meeting?.isDictation == true || recordingSource == .microphone {
+            prompt = settings.selectedDictationPrompt ?? .cleanTranscription
+        } else if type != .general, type != .autodetect {
             let strategy = PromptService.shared.strategy(for: type)
             prompt = strategy.promptObject()
             AppLogger.info("Using context-aware prompt for type: \(type.displayName)", category: .transcriptionEngine)
@@ -1128,8 +1141,8 @@ extension RecordingManager {
         let response = try await performTranscription(audioURL: audioURL)
         let transcriptionProcessingDuration = Date().timeIntervalSince(transcriptionStart)
 
-        let postProcessing = await applyPostProcessing(rawText: response.text)
         let meeting = updatedMeeting(for: transcription.meeting, audioDuration: audioDuration)
+        let postProcessing = await applyPostProcessing(rawText: response.text, meeting: meeting)
 
         return Transcription(
             id: transcription.id,

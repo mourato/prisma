@@ -83,6 +83,7 @@
 "settings.meetings.template_desc" = "Template usado para formatar os resumos exportados.";
 "settings.meetings.prompts" = "Prompts de reunião";
 "settings.meetings.no_prompts" = "Nenhum prompt ainda";
+"settings.dictation.prompts" = "Prompts de ditado";
 "settings.general.days" = "Dias";
 "settings.general.keep_for" = "Manter por";
 "settings.general.theme_color" = "Cor do Tema";
@@ -497,12 +498,6 @@
 "error.transcription.failed" = "Falha na transcrição: %@";
 
 /* AI Prompts */
-"prompt.meeting_notes.title" = "Notas de Reunião";
-"prompt.meeting_notes.description" = "Gera notas de reunião estruturadas";
-"prompt.executive_summary.title" = "Resumo Executivo";
-"prompt.executive_summary.description" = "Cria um resumo executivo conciso";
-"prompt.action_items.title" = "Action Items";
-"prompt.action_items.description" = "Extrai tarefas e próximos passos";
 "prompt.clean_transcription.title" = "Transcrição Limpa";
 "prompt.clean_transcription.description" = "Remove hesitações e corrige erros de fala";
 

@@ -408,6 +408,8 @@ public class AppSettingsStore: ObservableObject {
         static let systemPrompt = "postProcessingSystemPrompt"
         static let userPrompts = "postProcessingUserPrompts"
         static let selectedPromptId = "postProcessingSelectedPromptId"
+        static let dictationPrompts = "dictationPrompts"
+        static let dictationSelectedPromptId = "dictationSelectedPromptId"
         static let postProcessingEnabled = "postProcessingEnabled"
         static let isDiarizationEnabled = "isDiarizationEnabled"
         static let minSpeakers = "minSpeakers"
@@ -503,6 +505,22 @@ public class AppSettingsStore: ObservableObject {
                 UserDefaults.standard.set(id.uuidString, forKey: Keys.selectedPromptId)
             } else {
                 UserDefaults.standard.removeObject(forKey: Keys.selectedPromptId)
+            }
+        }
+    }
+
+    /// User-created prompts specifically for dictation.
+    @Published public var dictationPrompts: [PostProcessingPrompt] {
+        didSet { save(dictationPrompts, forKey: Keys.dictationPrompts) }
+    }
+
+    /// Selected prompt ID for dictation post-processing.
+    @Published public var dictationSelectedPromptId: UUID? {
+        didSet {
+            if let id = dictationSelectedPromptId {
+                UserDefaults.standard.set(id.uuidString, forKey: Keys.dictationSelectedPromptId)
+            } else {
+                UserDefaults.standard.removeObject(forKey: Keys.dictationSelectedPromptId)
             }
         }
     }
@@ -729,23 +747,44 @@ public class AppSettingsStore: ObservableObject {
 
     /// All available prompts (predefined + user-created), filtered by deleted and overrides.
     public var allPrompts: [PostProcessingPrompt] {
-        // 1. Start with predefined prompts that are NOT deleted
-        let activePredefined = PostProcessingPrompt.allPredefined.filter { !deletedPromptIds.contains($0.id) }
+        deduplicatedPrompts(dictationAvailablePrompts + meetingAvailablePrompts)
+    }
 
-        // 2. Identify which predefined prompts have user overrides (same ID in userPrompts)
-        let overrideIds = Set(userPrompts.map(\.id))
+    /// Dictation prompts (predefined + user-created).
+    public var dictationAvailablePrompts: [PostProcessingPrompt] {
+        mergedPrompts(
+            predefined: [PostProcessingPrompt.cleanTranscription],
+            custom: dictationPrompts + userPrompts.filter { $0.id == PostProcessingPrompt.cleanTranscription.id }
+        )
+    }
 
-        // 3. Filter predefined prompts that are NOT overridden
-        let remainingPredefined = activePredefined.filter { !overrideIds.contains($0.id) }
+    /// Meeting prompts (predefined + user-created).
+    public var meetingAvailablePrompts: [PostProcessingPrompt] {
+        let predefined: [PostProcessingPrompt] = [
+            .standup,
+            .presentation,
+            .designReview,
+            .oneOnOne,
+            .planning,
+        ]
 
-        // 4. Return combined list: predefined (not overridden) + all user prompts (including overrides)
-        return remainingPredefined + userPrompts
+        // Backward-compat: prompts created in older versions lived under `userPrompts`.
+        // Clean Transcription is dictation-only, so keep it out of meeting prompts.
+        let custom = (meetingPrompts + userPrompts)
+            .filter { $0.id != PostProcessingPrompt.cleanTranscription.id }
+        return mergedPrompts(predefined: predefined, custom: custom)
     }
 
     /// Currently selected prompt.
     public var selectedPrompt: PostProcessingPrompt? {
         guard let id = selectedPromptId else { return nil }
-        return allPrompts.first { $0.id == id }
+        return meetingAvailablePrompts.first { $0.id == id }
+    }
+
+    /// Currently selected dictation prompt.
+    public var selectedDictationPrompt: PostProcessingPrompt? {
+        guard let id = dictationSelectedPromptId else { return nil }
+        return dictationAvailablePrompts.first { $0.id == id }
     }
 
     // MARK: - Initialization
@@ -778,6 +817,14 @@ public class AppSettingsStore: ObservableObject {
             userPrompts = []
         }
 
+        if let data = UserDefaults.standard.data(forKey: Keys.dictationPrompts),
+           let prompts = try? JSONDecoder().decode([PostProcessingPrompt].self, from: data)
+        {
+            dictationPrompts = prompts
+        } else {
+            dictationPrompts = []
+        }
+
         if let data = UserDefaults.standard.data(forKey: Keys.deletedPromptIds),
            let ids = try? JSONDecoder().decode(Set<UUID>.self, from: data)
         {
@@ -797,6 +844,9 @@ public class AppSettingsStore: ObservableObject {
         audioFormat = rawFormat.flatMap { AudioFormat(rawValue: $0) } ?? .m4a
 
         selectedPromptId = UserDefaults.standard.string(forKey: Keys.selectedPromptId)
+            .flatMap { UUID(uuidString: $0) }
+
+        dictationSelectedPromptId = UserDefaults.standard.string(forKey: Keys.dictationSelectedPromptId)
             .flatMap { UUID(uuidString: $0) }
 
         if UserDefaults.standard.object(forKey: PostProcessingKeys.shouldMergeAudioFiles) == nil {
@@ -934,8 +984,10 @@ public class AppSettingsStore: ObservableObject {
         aiConfiguration = .default
         systemPrompt = AIPromptTemplates.defaultSystemPrompt
         userPrompts = []
+        dictationPrompts = []
         deletedPromptIds = []
         selectedPromptId = nil
+        dictationSelectedPromptId = nil
         postProcessingEnabled = false
         isDiarizationEnabled = false
         minSpeakers = nil
@@ -963,6 +1015,7 @@ public class AppSettingsStore: ObservableObject {
         recordingStopSound = .glass
         launchAtLogin = false
         showInDock = false
+        meetingPrompts = []
     }
 
     // MARK: - Prompt Management
@@ -1006,6 +1059,36 @@ public class AppSettingsStore: ObservableObject {
     /// Resets the system prompt to default.
     public func resetSystemPrompt() {
         systemPrompt = AIPromptTemplates.defaultSystemPrompt
+    }
+
+    // MARK: - Prompt Composition
+
+    private func mergedPrompts(predefined: [PostProcessingPrompt], custom: [PostProcessingPrompt]) -> [PostProcessingPrompt] {
+        var customById: [UUID: PostProcessingPrompt] = [:]
+        for prompt in custom {
+            customById[prompt.id] = prompt
+        }
+        let predefinedIds = Set(predefined.map(\.id))
+
+        var merged: [PostProcessingPrompt] = predefined.map { prompt in
+            customById[prompt.id] ?? prompt
+        }
+
+        merged.append(contentsOf: custom.filter { !predefinedIds.contains($0.id) })
+        return merged
+    }
+
+    private func deduplicatedPrompts(_ prompts: [PostProcessingPrompt]) -> [PostProcessingPrompt] {
+        var seen = Set<UUID>()
+        var result: [PostProcessingPrompt] = []
+        result.reserveCapacity(prompts.count)
+
+        for prompt in prompts where !seen.contains(prompt.id) {
+            seen.insert(prompt.id)
+            result.append(prompt)
+        }
+
+        return result
     }
 }
 

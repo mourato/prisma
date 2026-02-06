@@ -3,7 +3,7 @@ import Foundation
 import SwiftUI
 
 @MainActor
-public class MeetingSettingsViewModel: ObservableObject {
+public final class DictationPromptSettingsViewModel: ObservableObject {
     @Published var settings: AppSettingsStore
     @Published public var showPromptEditor = false
     @Published public var editingPrompt: PostProcessingPrompt?
@@ -15,7 +15,6 @@ public class MeetingSettingsViewModel: ObservableObject {
     public init(settings: AppSettingsStore = .shared) {
         self.settings = settings
 
-        // Forward settings changes
         settings.objectWillChange
             .sink { [weak self] _ in
                 self?.objectWillChange.send()
@@ -23,36 +22,35 @@ public class MeetingSettingsViewModel: ObservableObject {
             .store(in: &cancellables)
     }
 
-    // MARK: - Prompt Management
-
     public var availablePrompts: [PostProcessingPrompt] {
-        settings.meetingAvailablePrompts
+        settings.dictationAvailablePrompts
     }
 
     public var selectedPromptId: UUID? {
-        settings.selectedPromptId
+        settings.dictationSelectedPromptId
     }
 
     public func selectPrompt(_ id: UUID, forceSelect: Bool = false) {
         withAnimation(.easeInOut(duration: 0.2)) {
             if forceSelect {
-                settings.selectedPromptId = id
+                settings.dictationSelectedPromptId = id
             } else {
-                settings.selectedPromptId = (settings.selectedPromptId == id) ? nil : id
+                settings.dictationSelectedPromptId = (settings.dictationSelectedPromptId == id) ? nil : id
             }
         }
     }
 
     public func handleSavePrompt(_ prompt: PostProcessingPrompt) {
-        if let index = settings.meetingPrompts.firstIndex(where: { $0.id == prompt.id }) {
-            var prompts = settings.meetingPrompts
+        if let index = settings.dictationPrompts.firstIndex(where: { $0.id == prompt.id }) {
+            var prompts = settings.dictationPrompts
             prompts[index] = prompt
-            settings.meetingPrompts = prompts
+            settings.dictationPrompts = prompts
         } else {
-            var prompts = settings.meetingPrompts
+            var prompts = settings.dictationPrompts
             prompts.append(prompt)
-            settings.meetingPrompts = prompts
+            settings.dictationPrompts = prompts
         }
+
         showPromptEditor = false
         editingPrompt = nil
     }
@@ -65,9 +63,9 @@ public class MeetingSettingsViewModel: ObservableObject {
 
     public func executeDelete() {
         if let prompt = promptToDelete {
-            settings.meetingPrompts.removeAll { $0.id == prompt.id }
-            if settings.selectedPromptId == prompt.id {
-                settings.selectedPromptId = nil
+            settings.dictationPrompts.removeAll { $0.id == prompt.id }
+            if settings.dictationSelectedPromptId == prompt.id {
+                settings.dictationSelectedPromptId = nil
             }
         }
         showDeleteConfirmation = false
@@ -89,21 +87,9 @@ public class MeetingSettingsViewModel: ObservableObject {
             description: prompt.description,
             isPredefined: false
         )
+
         editingPrompt = newPrompt
         showPromptEditor = true
     }
-    
-    // MARK: - Export Configuration
-    
-    public func selectExportFolder() {
-        let panel = NSOpenPanel()
-        panel.canChooseFiles = false
-        panel.canChooseDirectories = true
-        panel.allowsMultipleSelection = false
-        panel.prompt = "Select"
-        
-        if panel.runModal() == .OK {
-            settings.summaryExportFolder = panel.url
-        }
-    }
 }
+
