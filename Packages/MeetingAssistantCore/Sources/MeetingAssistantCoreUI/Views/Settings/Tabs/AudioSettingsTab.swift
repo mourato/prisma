@@ -89,30 +89,64 @@ public struct AudioSettingsTab: View {
                     }
                 }
 
-                // Audio Format
-                MAGroup("settings.general.audio_format".localized, icon: "waveform.path") {
-                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
-                        HStack {
-                            Text("settings.general.audio_format".localized)
-                                .font(.body)
-                                .foregroundStyle(.primary)
+                // Sound Feedback
+                MAGroup("settings.general.sound_feedback".localized, icon: "speaker.wave.2.fill") {
+                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
+                        MAToggleRow(
+                            "settings.general.sound_feedback.enabled".localized,
+                            description: "settings.general.sound_feedback.enabled_desc".localized,
+                            isOn: $viewModel.soundFeedbackEnabled
+                        )
 
-                            Spacer()
+                        if viewModel.soundFeedbackEnabled {
+                            Divider()
 
-                            Picker("", selection: $viewModel.audioFormat) {
-                                ForEach(AppSettingsStore.AudioFormat.allCases, id: \.self) { format in
-                                    Text(format.displayName).tag(format)
-                                }
-                            }
-                            .labelsHidden()
-                            .pickerStyle(.menu)
-                            .frame(width: MeetingAssistantDesignSystem.Layout.maxPickerWidth)
+                            soundPickerRow(
+                                title: "settings.general.sound_feedback.start_sound".localized,
+                                selection: $viewModel.recordingStartSound
+                            )
+
+                            Divider()
+
+                            soundPickerRow(
+                                title: "settings.general.sound_feedback.stop_sound".localized,
+                                selection: $viewModel.recordingStopSound
+                            )
                         }
                     }
                 }
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func soundPickerRow(title: String, selection: Binding<SoundFeedbackSound>) -> some View {
+        HStack {
+            Text(title)
+                .font(.body)
+                .foregroundStyle(.primary)
+
+            Spacer()
+
+            Picker("", selection: selection) {
+                ForEach(SoundFeedbackSound.allCases, id: \.self) { sound in
+                    Text(sound.displayName).tag(sound)
+                }
+            }
+            .labelsHidden()
+            .pickerStyle(.menu)
+            .frame(width: MeetingAssistantDesignSystem.Layout.smallPickerWidth)
+
+            Button {
+                SoundFeedbackService.shared.preview(selection.wrappedValue)
+            } label: {
+                Image(systemName: "play.circle.fill")
+                    .font(.title3)
+            }
+            .buttonStyle(.borderless)
+            .disabled(selection.wrappedValue == .none)
+            .accessibilityLabel("settings.general.sound_feedback.preview".localized)
         }
     }
 }

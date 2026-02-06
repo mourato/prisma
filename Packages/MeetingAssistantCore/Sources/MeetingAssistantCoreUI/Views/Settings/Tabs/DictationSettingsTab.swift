@@ -20,24 +20,6 @@ public struct DictationSettingsTab: View {
     public var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.sectionSpacing) {
-                // Workflow
-                MAGroup("settings.dictation.workflow".localized, icon: "cpu") {
-                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
-                        MAToggleRow(
-                            "settings.general.auto_copy_transcription".localized,
-                            description: "settings.general.auto_copy_transcription_desc".localized,
-                            isOn: $viewModel.autoCopyTranscriptionToClipboard
-                        )
-
-                        Divider()
-
-                        MAToggleRow(
-                            "settings.general.auto_paste_transcription".localized,
-                            isOn: $viewModel.autoPasteTranscriptionToActiveApp
-                        )
-                    }
-                }
-
                 // Keyboard Shortcut
                 MAGroup("settings.shortcuts.dictation".localized, icon: "keyboard") {
                     VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
@@ -88,30 +70,21 @@ public struct DictationSettingsTab: View {
                     }
                 }
 
-                // Sound Feedback
-                MAGroup("settings.general.sound_feedback".localized, icon: "speaker.wave.2.fill") {
+                // Workflow
+                MAGroup("settings.dictation.workflow".localized, icon: "cpu") {
                     VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
                         MAToggleRow(
-                            "settings.general.sound_feedback.enabled".localized,
-                            description: "settings.general.sound_feedback.enabled_desc".localized,
-                            isOn: $viewModel.soundFeedbackEnabled
+                            "settings.general.auto_copy_transcription".localized,
+                            description: "settings.general.auto_copy_transcription_desc".localized,
+                            isOn: $viewModel.autoCopyTranscriptionToClipboard
                         )
 
-                        if viewModel.soundFeedbackEnabled {
-                            Divider()
+                        Divider()
 
-                            soundPickerRow(
-                                title: "settings.general.sound_feedback.start_sound".localized,
-                                selection: $viewModel.recordingStartSound
-                            )
-
-                            Divider()
-
-                            soundPickerRow(
-                                title: "settings.general.sound_feedback.stop_sound".localized,
-                                selection: $viewModel.recordingStopSound
-                            )
-                        }
+                        MAToggleRow(
+                            "settings.general.auto_paste_transcription".localized,
+                            isOn: $viewModel.autoPasteTranscriptionToActiveApp
+                        )
                     }
                 }
 
@@ -166,35 +139,6 @@ public struct DictationSettingsTab: View {
             if let prompt = promptViewModel.promptToDelete {
                 Text("settings.post_processing.delete_confirm_message".localized(with: prompt.title))
             }
-        }
-    }
-
-    private func soundPickerRow(title: String, selection: Binding<SoundFeedbackSound>) -> some View {
-        HStack {
-            Text(title)
-                .font(.body)
-                .foregroundStyle(.primary)
-
-            Spacer()
-
-            Picker("", selection: selection) {
-                ForEach(SoundFeedbackSound.allCases, id: \.self) { sound in
-                    Text(sound.displayName).tag(sound)
-                }
-            }
-            .labelsHidden()
-            .pickerStyle(.menu)
-            .frame(width: MeetingAssistantDesignSystem.Layout.smallPickerWidth)
-
-            Button {
-                SoundFeedbackService.shared.preview(selection.wrappedValue)
-            } label: {
-                Image(systemName: "play.circle.fill")
-                    .font(.title3)
-            }
-            .buttonStyle(.borderless)
-            .disabled(selection.wrappedValue == .none)
-            .accessibilityLabel("settings.general.sound_feedback.preview".localized)
         }
     }
 
