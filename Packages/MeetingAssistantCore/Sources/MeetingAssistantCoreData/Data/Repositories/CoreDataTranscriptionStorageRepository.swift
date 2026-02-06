@@ -15,17 +15,16 @@ public final class CoreDataTranscriptionStorageRepository: TranscriptionStorageR
 
     public func saveTranscription(_ transcription: TranscriptionEntity) async throws {
         try await stack.performBackgroundTask { context in
-            // Buscar a reunião associada no contexto atual
-            // swiftlint:disable line_length
-            // swiftlint:disable line_length
             let meetingRequest = MeetingMO.fetchRequest(for: transcription.meeting.id)
-            // swiftlint:enable line_length
-            // swiftlint:enable line_length
-            guard let meetingMO = try context.fetch(meetingRequest).first else {
-                throw NSError(domain: "CoreDataTranscriptionStorageRepository", code: 404, userInfo: [NSLocalizedDescriptionKey: "Meeting not found for transcription"])
-            }
+            let meetingMO = try context.fetch(meetingRequest).first ?? MeetingMO.create(from: transcription.meeting, in: context)
+            meetingMO.update(from: transcription.meeting)
 
-            _ = TranscriptionMO.create(from: transcription, meeting: meetingMO, in: context)
+            let transcriptionRequest = TranscriptionMO.fetchRequest(forTranscriptionId: transcription.id)
+            if let existing = try context.fetch(transcriptionRequest).first {
+                existing.update(from: transcription, meeting: meetingMO)
+            } else {
+                _ = TranscriptionMO.create(from: transcription, meeting: meetingMO, in: context)
+            }
             try context.save()
         }
     }
@@ -88,9 +87,13 @@ public final class CoreDataTranscriptionStorageRepository: TranscriptionStorageR
 
     public func updateTranscription(_ transcription: TranscriptionEntity) async throws {
         try await stack.performBackgroundTask { context in
+            let meetingRequest = MeetingMO.fetchRequest(for: transcription.meeting.id)
+            let meetingMO = try context.fetch(meetingRequest).first ?? MeetingMO.create(from: transcription.meeting, in: context)
+            meetingMO.update(from: transcription.meeting)
+
             let request = TranscriptionMO.fetchRequest(forTranscriptionId: transcription.id)
             if let transcriptionMO = try context.fetch(request).first {
-                transcriptionMO.update(from: transcription)
+                transcriptionMO.update(from: transcription, meeting: meetingMO)
                 try context.save()
             }
         }

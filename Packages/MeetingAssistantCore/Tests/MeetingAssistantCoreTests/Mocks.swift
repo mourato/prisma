@@ -228,7 +228,7 @@ class MockStorageService: StorageService, @unchecked Sendable {
         RetentionCleanupPreview(
             retentionDays: days,
             audioFiles: [],
-            transcriptionFiles: []
+            transcriptions: []
         )
     }
 

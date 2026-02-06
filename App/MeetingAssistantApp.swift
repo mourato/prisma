@@ -69,6 +69,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         CrashReporter.shared.setup()
         PerformanceMonitor.shared.startMonitoring()
 
+        // One-time migration: legacy JSON → Core Data
+        Task {
+            await FileSystemStorageService.shared.migrateLegacyJSONTranscriptionsToCoreDataIfNeeded()
+        }
+
         setupMenuBar()
         setupContextMenu()
         setupEventMonitor()

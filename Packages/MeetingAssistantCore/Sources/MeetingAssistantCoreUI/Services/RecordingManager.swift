@@ -124,7 +124,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         // Initialize UseCase with Adapters
         transcribeAudioUseCase = TranscribeAudioUseCase(
             transcriptionRepository: TranscriptionRepositoryAdapter(transcriptionService: transcriptionClient),
-            transcriptionStorageRepository: TranscriptionStorageRepositoryAdapter(storageService: storage),
+            transcriptionStorageRepository: CoreDataTranscriptionStorageRepository(stack: .shared),
             postProcessingRepository: PostProcessingRepositoryAdapter(postProcessingService: postProcessingService)
         )
 
