@@ -12,6 +12,11 @@ public struct MeetingSettingsTab: View {
     public var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: SettingsDesignSystem.Layout.sectionSpacing) {
+                // Speaker Identification Section
+                SettingsGroup("settings.meetings.speaker_identification".localized, icon: "person.wave.2.fill") {
+                    SpeakerIdentificationSettingsSection(settings: meetingViewModel.settings)
+                }
+
                 // Summary Export Section
                 SettingsGroup("settings.meetings.export".localized, icon: "folder.fill") {
                     VStack(alignment: .leading, spacing: 16) {
