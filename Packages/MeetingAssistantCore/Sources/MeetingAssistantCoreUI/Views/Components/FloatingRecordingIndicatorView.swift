@@ -66,7 +66,8 @@ public struct FloatingRecordingIndicatorView: View {
 
     private func indicatorPill(size: IndicatorSize) -> some View {
         let isExpanded = isRecordingMode && isHovering
-        let expandedSideWidth = MeetingAssistantDesignSystem.Layout.controlHeight + MeetingAssistantDesignSystem.Layout.spacing20
+        let controlHeight = controlHeight(for: size)
+        let expandedSideWidth = controlHeight + MeetingAssistantDesignSystem.Layout.spacing20
 
         return ZStack(alignment: .top) {
             HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
@@ -105,7 +106,7 @@ public struct FloatingRecordingIndicatorView: View {
                     )
             }
             .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing16)
-            .frame(height: MeetingAssistantDesignSystem.Layout.controlHeight)
+            .frame(height: controlHeight)
             .background(MeetingAssistantDesignSystem.Colors.overlayBackground)
             .clipShape(Capsule())
             .shadow(
@@ -216,11 +217,27 @@ public struct FloatingRecordingIndicatorView: View {
     }
 
     /// Dot indicating recording or processing (Figma uses 12x12).
-    private var statusDot: some View {
+    private func statusDot(for size: IndicatorSize) -> some View {
+        let dotSize: CGFloat = switch size {
+        case .classic:
+            MeetingAssistantDesignSystem.Layout.spacing12
+        case .mini:
+            MeetingAssistantDesignSystem.Layout.recordingIndicatorMiniDotSize
+        }
+
         Circle()
             .fill(isRecordingMode ? MeetingAssistantDesignSystem.Colors.recording : MeetingAssistantDesignSystem.Colors.accent)
-            .frame(width: MeetingAssistantDesignSystem.Layout.spacing12, height: MeetingAssistantDesignSystem.Layout.spacing12)
+            .frame(width: dotSize, height: dotSize)
             .modifier(PulsingModifier(isActive: isRecordingMode, speed: isRecordingMode ? 0.9 : 1.4))
+    }
+
+    private func controlHeight(for size: IndicatorSize) -> CGFloat {
+        switch size {
+        case .classic:
+            MeetingAssistantDesignSystem.Layout.controlHeight
+        case .mini:
+            MeetingAssistantDesignSystem.Layout.recordingIndicatorMiniHeight
+        }
     }
 
     private var isRecordingMode: Bool {
@@ -282,7 +299,7 @@ public struct FloatingRecordingIndicatorView: View {
 
     private func recordingCluster(size: IndicatorSize) -> some View {
         HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
-            statusDot
+            statusDot(for: size)
 
             AudioVisualizer(
                 audioMeter: audioMonitor.audioMeter,
