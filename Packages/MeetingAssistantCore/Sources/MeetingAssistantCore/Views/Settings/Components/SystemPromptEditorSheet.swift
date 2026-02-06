@@ -4,6 +4,12 @@ import SwiftUI
 
 /// Sheet for editing the AI system guidelines.
 struct SystemPromptEditorSheet: View {
+    private enum Constants {
+        static let sheetWidth: CGFloat = 500
+        static let sheetHeight: CGFloat = 450
+        static let editorMinHeight: CGFloat = 250
+    }
+
     @State private var systemPrompt: String
     private let onSave: (String) -> Void
     private let onCancel: () -> Void
@@ -27,7 +33,7 @@ struct SystemPromptEditorSheet: View {
             Divider()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
                     instructionSection
                     editorSection
                 }
@@ -37,7 +43,7 @@ struct SystemPromptEditorSheet: View {
             Divider()
             footer
         }
-        .frame(width: 500, height: 450)
+        .frame(width: Constants.sheetWidth, height: Constants.sheetHeight)
     }
 
     // MARK: - Header
@@ -52,21 +58,21 @@ struct SystemPromptEditorSheet: View {
                 onRestoreDefault()
             }
             .buttonStyle(.plain)
-            .foregroundStyle(SettingsDesignSystem.Colors.accent)
+            .foregroundStyle(MeetingAssistantDesignSystem.Colors.accent)
             .font(.system(size: 11, weight: .medium))
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(SettingsDesignSystem.Colors.accent.opacity(0.1))
-            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing8)
+            .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing4)
+            .background(MeetingAssistantDesignSystem.Colors.selectionFill)
+            .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.chipCornerRadius))
         }
         .padding()
-        .background(Color(NSColor.windowBackgroundColor))
+        .background(MeetingAssistantDesignSystem.Colors.windowBackground)
     }
 
     // MARK: - Sections
 
     private var instructionSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
             Text("settings.post_processing.base_instructions".localized)
                 .font(.subheadline)
                 .fontWeight(.medium)
@@ -80,13 +86,13 @@ struct SystemPromptEditorSheet: View {
     private var editorSection: some View {
         TextEditor(text: $systemPrompt)
             .font(.body)
-            .frame(minHeight: 250)
-            .padding(8)
-            .background(Color(NSColor.textBackgroundColor))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .frame(minHeight: Constants.editorMinHeight)
+            .padding(MeetingAssistantDesignSystem.Layout.spacing8)
+            .background(MeetingAssistantDesignSystem.Colors.textBackground)
+            .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
             .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color(NSColor.separatorColor), lineWidth: 1)
+                RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
+                    .stroke(MeetingAssistantDesignSystem.Colors.separator, lineWidth: 1)
             )
     }
 
@@ -106,11 +112,11 @@ struct SystemPromptEditorSheet: View {
             }
             .keyboardShortcut(.return)
             .buttonStyle(.borderedProminent)
-            .tint(SettingsDesignSystem.Colors.accent)
+            .tint(MeetingAssistantDesignSystem.Colors.accent)
             .disabled(systemPrompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
         .padding()
-        .background(Color(NSColor.windowBackgroundColor))
+        .background(MeetingAssistantDesignSystem.Colors.windowBackground)
     }
 }
 

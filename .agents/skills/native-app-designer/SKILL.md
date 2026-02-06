@@ -182,4 +182,5 @@ panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
 **Technical references for deep dives:**
 - [FloatingRecordingIndicatorView.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Views/Components/FloatingRecordingIndicatorView.swift)
 - [RecordingButton.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Views/Components/RecordingButton.swift)
-- [SettingsDesignSystem.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Views/Settings/SettingsDesignSystem.swift)
+- [MeetingAssistantDesignSystem.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/DesignSystem/MeetingAssistantDesignSystem.swift)
+- [DesignSystem Components](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/DesignSystem/Components/)

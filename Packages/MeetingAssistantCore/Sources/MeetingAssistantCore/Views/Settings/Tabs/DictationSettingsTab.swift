@@ -13,11 +13,11 @@ public struct DictationSettingsTab: View {
 
     public var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: SettingsDesignSystem.Layout.sectionSpacing) {
+            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.sectionSpacing) {
                 // Workflow
-                SettingsGroup("settings.dictation.workflow".localized, icon: "cpu") {
-                    VStack(alignment: .leading, spacing: 16) {
-                        SettingsToggle(
+                MAGroup("settings.dictation.workflow".localized, icon: "cpu") {
+                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
+                        MAToggleRow(
                             "settings.general.auto_copy_transcription".localized,
                             description: "settings.general.auto_copy_transcription_desc".localized,
                             isOn: $viewModel.autoCopyTranscriptionToClipboard
@@ -25,7 +25,7 @@ public struct DictationSettingsTab: View {
 
                         Divider()
 
-                        SettingsToggle(
+                        MAToggleRow(
                             "settings.general.auto_paste_transcription".localized,
                             isOn: $viewModel.autoPasteTranscriptionToActiveApp
                         )
@@ -33,8 +33,8 @@ public struct DictationSettingsTab: View {
                 }
 
                 // Keyboard Shortcut
-                SettingsGroup("settings.shortcuts.dictation".localized, icon: "keyboard") {
-                    VStack(alignment: .leading, spacing: 12) {
+                MAGroup("settings.shortcuts.dictation".localized, icon: "keyboard") {
+                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
                         Text("settings.shortcuts.dictation_desc".localized)
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -59,7 +59,7 @@ public struct DictationSettingsTab: View {
                             }
                             .labelsHidden()
                             .pickerStyle(.menu)
-                            .frame(width: 150)
+                            .frame(width: MeetingAssistantDesignSystem.Layout.smallPickerWidth)
                         }
 
                         if shortcutsViewModel.dictationSelectedPresetKey == .custom {
@@ -74,18 +74,18 @@ public struct DictationSettingsTab: View {
 
                                 KeyboardShortcuts.Recorder(for: .dictationToggle)
                             }
-                            .padding(.vertical, 8)
-                            .padding(.horizontal, 12)
-                            .background(Color.secondary.opacity(0.1))
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
+                            .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)
+                            .background(MeetingAssistantDesignSystem.Colors.secondaryFill)
+                            .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
                         }
                     }
                 }
 
                 // Sound Feedback
-                SettingsGroup("settings.general.sound_feedback".localized, icon: "speaker.wave.2.fill") {
-                    VStack(alignment: .leading, spacing: 16) {
-                        SettingsToggle(
+                MAGroup("settings.general.sound_feedback".localized, icon: "speaker.wave.2.fill") {
+                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
+                        MAToggleRow(
                             "settings.general.sound_feedback.enabled".localized,
                             description: "settings.general.sound_feedback.enabled_desc".localized,
                             isOn: $viewModel.soundFeedbackEnabled
@@ -110,8 +110,8 @@ public struct DictationSettingsTab: View {
                 }
 
                 // Dictation Prompts Section
-                SettingsGroup("settings.dictation.prompts".localized, icon: "sparkles") {
-                    VStack(alignment: .leading, spacing: SettingsDesignSystem.Layout.cardPadding) {
+                MAGroup("settings.dictation.prompts".localized, icon: "sparkles") {
+                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.cardPadding) {
                         HStack {
                             Text("settings.post_processing.choose_active".localized)
                                 .font(.caption)
@@ -132,7 +132,7 @@ public struct DictationSettingsTab: View {
                             .controlSize(.small)
                         }
 
-                        VStack(spacing: 8) {
+                        VStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
                             ForEach(promptViewModel.availablePrompts) { prompt in
                                 promptRow(prompt: prompt)
                             }
@@ -177,7 +177,7 @@ public struct DictationSettingsTab: View {
             }
             .labelsHidden()
             .pickerStyle(.menu)
-            .frame(width: 150)
+            .frame(width: MeetingAssistantDesignSystem.Layout.smallPickerWidth)
 
             Button {
                 SoundFeedbackService.shared.preview(selection.wrappedValue)
@@ -207,21 +207,21 @@ public struct DictationSettingsTab: View {
 
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
+                        .foregroundStyle(MeetingAssistantDesignSystem.Colors.success)
                         .symbolEffect(.bounce, value: isSelected)
                 }
 
                 promptMenu(prompt: prompt, isSelected: isSelected)
             }
-            .padding(10)
+            .padding(MeetingAssistantDesignSystem.Layout.spacing10)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .background(isSelected ? SettingsDesignSystem.Colors.accent.opacity(0.08) : Color.clear)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .background(isSelected ? MeetingAssistantDesignSystem.Colors.selectionFill : Color.clear)
+        .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.cardCornerRadius))
         .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(isSelected ? SettingsDesignSystem.Colors.accent.opacity(0.3) : Color.clear, lineWidth: 1)
+            RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.cardCornerRadius)
+                .stroke(isSelected ? MeetingAssistantDesignSystem.Colors.selectionStroke : Color.clear, lineWidth: 1)
         )
         .contextMenu {
             promptMenuContent(prompt: prompt, isSelected: isSelected)
@@ -230,13 +230,13 @@ public struct DictationSettingsTab: View {
 
     private func promptIcon(prompt: PostProcessingPrompt, isSelected: Bool) -> some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(isSelected ? SettingsDesignSystem.Colors.accent : Color.primary.opacity(0.05))
+            RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
+                .fill(isSelected ? MeetingAssistantDesignSystem.Colors.accent : MeetingAssistantDesignSystem.Colors.subtleFill)
                 .frame(width: 36, height: 36)
 
             Image(systemName: prompt.icon)
                 .font(.subheadline)
-                .foregroundStyle(isSelected ? SettingsDesignSystem.Colors.onAccent : .primary)
+                .foregroundStyle(isSelected ? MeetingAssistantDesignSystem.Colors.onAccent : .primary)
         }
     }
 

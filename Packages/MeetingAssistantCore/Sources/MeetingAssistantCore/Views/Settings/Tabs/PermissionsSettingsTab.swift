@@ -21,16 +21,16 @@ public struct PermissionsSettingsTab: View {
 
     public var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: SettingsDesignSystem.Layout.sectionSpacing) {
-                SettingsGroup("settings.permissions.about".localized, icon: "info.circle") {
+            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.sectionSpacing) {
+                MAGroup("settings.permissions.about".localized, icon: "info.circle") {
                     Text("settings.permissions.description".localized)
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
 
-                SettingsGroup("settings.permissions.status".localized, icon: "checkmark.shield") {
+                MAGroup("settings.permissions.status".localized, icon: "checkmark.shield") {
                     PermissionStatusView(viewModel: viewModel, requiredSource: .all)
-                        .padding(.top, 4)
+                        .padding(.top, MeetingAssistantDesignSystem.Layout.spacing4)
                 }
             }
             .padding()

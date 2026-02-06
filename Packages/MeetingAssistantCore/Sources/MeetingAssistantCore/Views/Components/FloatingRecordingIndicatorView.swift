@@ -174,7 +174,7 @@ public struct FloatingRecordingIndicatorView: View {
     /// Dot indicating recording or processing.
     private var statusDot: some View {
         Circle()
-            .fill(isRecordingMode ? MeetingAssistantDesignSystem.Colors.recording : SettingsDesignSystem.Colors.accent)
+            .fill(isRecordingMode ? MeetingAssistantDesignSystem.Colors.recording : MeetingAssistantDesignSystem.Colors.accent)
             .frame(width: 8, height: 8)
             .modifier(PulsingModifier(isActive: isRecordingMode, speed: isRecordingMode ? 0.9 : 1.4))
     }
@@ -391,7 +391,7 @@ private struct PulsingModifier: ViewModifier {
         onCancel: {}
     )
     .padding()
-    .background(Color.gray.opacity(0.3))
+    .background(MeetingAssistantDesignSystem.Colors.neutral.opacity(0.3))
 }
 
 #Preview("Mini") {
@@ -404,5 +404,5 @@ private struct PulsingModifier: ViewModifier {
         onCancel: {}
     )
     .padding()
-    .background(Color.gray.opacity(0.3))
+    .background(MeetingAssistantDesignSystem.Colors.neutral.opacity(0.3))
 }

@@ -396,6 +396,7 @@
 
 /* Common Actions */
 "common.ok" = "OK";
+"common.error" = "Error";
 "common.cancel" = "Cancel";
 "common.delete" = "Delete";
 "common.copy" = "Copy";
@@ -431,6 +432,8 @@
 "settings.service.status.testing" = "Testing...";
 "settings.service.status.connected" = "Connected";
 "settings.service.status.failed" = "Failed";
+"settings.service.asr_model_name" = "Parakeet TDT 0.6B v3";
+"settings.service.diarization_model_name" = "Pyannote 3.1";
 
 /* Filters */
 "filter.source.all" = "All";

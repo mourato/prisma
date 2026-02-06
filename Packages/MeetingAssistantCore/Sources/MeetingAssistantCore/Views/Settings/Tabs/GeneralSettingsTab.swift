@@ -10,18 +10,18 @@ public struct GeneralSettingsTab: View {
 
     public var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: SettingsDesignSystem.Layout.sectionSpacing) {
+            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.sectionSpacing) {
                 // Application Behavior
-                SettingsGroup("settings.general.app_behavior".localized, icon: "app.badge") {
-                    VStack(alignment: .leading, spacing: 16) {
-                        SettingsToggle(
+                MAGroup("settings.general.app_behavior".localized, icon: "app.badge") {
+                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
+                        MAToggleRow(
                             "settings.general.launch_at_login".localized,
                             isOn: $viewModel.launchAtLogin
                         )
 
                         Divider()
 
-                        SettingsToggle(
+                        MAToggleRow(
                             "settings.general.show_in_dock".localized,
                             description: "settings.general.show_in_dock_desc".localized,
                             isOn: $viewModel.showInDock
@@ -29,7 +29,7 @@ public struct GeneralSettingsTab: View {
 
                         Divider()
 
-                        SettingsToggle(
+                        MAToggleRow(
                             "settings.general.show_settings_on_launch".localized,
                             isOn: $viewModel.showSettingsOnLaunch
                         )
@@ -37,14 +37,14 @@ public struct GeneralSettingsTab: View {
                 }
 
                 // Appearance
-                SettingsGroup("settings.general.appearance".localized, icon: "paintbrush.fill") {
-                    VStack(alignment: .leading, spacing: 16) {
-                        VStack(alignment: .leading, spacing: 8) {
+                MAGroup("settings.general.appearance".localized, icon: "paintbrush.fill") {
+                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
+                        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
                             Text("settings.general.theme_color".localized)
                                 .font(.body)
                                 .foregroundStyle(.primary)
 
-                            SettingsThemePicker(selection: $viewModel.appAccentColor)
+                            MAThemePicker(selection: $viewModel.appAccentColor)
                         }
 
                         Divider()
@@ -63,15 +63,15 @@ public struct GeneralSettingsTab: View {
                             }
                             .labelsHidden()
                             .pickerStyle(.menu)
-                            .frame(width: SettingsDesignSystem.Layout.maxPickerWidth)
+                            .frame(width: MeetingAssistantDesignSystem.Layout.maxPickerWidth)
                         }
                     }
                 }
 
                 // Recording Indicator
-                SettingsGroup("settings.general.recording_indicator".localized, icon: "record.circle") {
-                    VStack(alignment: .leading, spacing: 16) {
-                        SettingsToggle(
+                MAGroup("settings.general.recording_indicator".localized, icon: "record.circle") {
+                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
+                        MAToggleRow(
                             "settings.general.recording_indicator.enabled".localized,
                             description: "settings.general.recording_indicator.enabled_desc".localized,
                             isOn: $viewModel.recordingIndicatorEnabled
@@ -93,7 +93,7 @@ public struct GeneralSettingsTab: View {
                                 }
                                 .labelsHidden()
                                 .pickerStyle(.segmented)
-                                .frame(width: 200)
+                                .frame(width: MeetingAssistantDesignSystem.Layout.maxPickerWidth)
                             }
 
                             Divider()
@@ -111,18 +111,17 @@ public struct GeneralSettingsTab: View {
                                 }
                                 .labelsHidden()
                                 .pickerStyle(.segmented)
-                                .frame(width: 200)
+                                .frame(width: MeetingAssistantDesignSystem.Layout.maxPickerWidth)
                             }
                         }
                     }
                 }
 
                 // Storage
-                SettingsGroup("settings.general.storage".localized, icon: "folder.fill") {
-                    VStack(alignment: .leading, spacing: 16) {
-
-                        VStack(alignment: .leading, spacing: 12) {
-                            SettingsToggle(
+                MAGroup("settings.general.storage".localized, icon: "folder.fill") {
+                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
+                        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                            MAToggleRow(
                                 "settings.general.auto_delete".localized,
                                 description: "settings.general.auto_delete_desc".localized,
                                 isOn: $viewModel.autoDeleteTranscriptions
@@ -141,7 +140,7 @@ public struct GeneralSettingsTab: View {
                                             .monospacedDigit()
                                     }
                                 }
-                                .padding(.leading, SettingsDesignSystem.Layout.indentation)
+                                .padding(.leading, MeetingAssistantDesignSystem.Layout.indentation)
 
                                 Button {
                                     viewModel.performCleanup()
@@ -153,8 +152,8 @@ public struct GeneralSettingsTab: View {
                                 }
                                 .buttonStyle(.bordered)
                                 .disabled(viewModel.cleanupInProgress)
-                                .padding(.leading, SettingsDesignSystem.Layout.indentation)
-                                .padding(.top, SettingsDesignSystem.Layout.smallPadding)
+                                .padding(.leading, MeetingAssistantDesignSystem.Layout.indentation)
+                                .padding(.top, MeetingAssistantDesignSystem.Layout.smallPadding)
                             }
                         }
                     }
@@ -176,15 +175,15 @@ public struct GeneralSettingsTab: View {
             Text(viewModel.cleanupConfirmationMessage)
         }
         .alert("settings.general.storage".localized, isPresented: $viewModel.showCleanupSuccessAlert) {
-            Button("OK", role: .cancel) {}
+            Button("common.ok".localized, role: .cancel) {}
         } message: {
             Text("settings.storage.cleanup_success".localized)
         }
-        .alert("Error", isPresented: Binding(
+        .alert("common.error".localized, isPresented: Binding(
             get: { viewModel.cleanupError != nil },
             set: { if !$0 { viewModel.cleanupError = nil } }
         )) {
-            Button("OK", role: .cancel) {}
+            Button("common.ok".localized, role: .cancel) {}
         } message: {
             if let error = viewModel.cleanupError {
                 Text(error)

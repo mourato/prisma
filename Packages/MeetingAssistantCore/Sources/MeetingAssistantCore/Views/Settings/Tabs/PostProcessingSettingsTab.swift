@@ -10,7 +10,7 @@ public struct PostProcessingSettingsTab: View {
 
     public var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: SettingsDesignSystem.Layout.sectionSpacing) {
+            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.sectionSpacing) {
                 enableToggleSection
 
                 if viewModel.settings.postProcessingEnabled {
@@ -55,46 +55,26 @@ public struct PostProcessingSettingsTab: View {
     // MARK: - Sections
 
     private var enableToggleSection: some View {
-        SettingsCard {
-            VStack(alignment: .leading, spacing: 8) {
-                SettingsToggle(
-                    "settings.post_processing.enabled".localized,
-                    description: "settings.post_processing.description".localized,
-                    isOn: $viewModel.settings.postProcessingEnabled
-                )
-            }
+        MACard {
+            MAToggleRow(
+                "settings.post_processing.enabled".localized,
+                description: "settings.post_processing.description".localized,
+                isOn: $viewModel.settings.postProcessingEnabled
+            )
         }
     }
 
     private var connectionWarningSection: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.title2)
-                .foregroundStyle(.yellow)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text("settings.post_processing.warning_title".localized)
-                    .font(.headline)
-
-                Text("settings.post_processing.warning_desc".localized)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer()
-        }
-        .padding()
-        .background(Color.yellow.opacity(0.1))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.yellow.opacity(0.2), lineWidth: 1)
+        MACallout(
+            kind: .warning,
+            title: "settings.post_processing.warning_title".localized,
+            message: "settings.post_processing.warning_desc".localized
         )
     }
 
     private var systemPromptSection: some View {
-        SettingsGroup("settings.post_processing.system_prompt".localized, icon: "terminal.fill") {
-            VStack(alignment: .leading, spacing: 12) {
+        MAGroup("settings.post_processing.system_prompt".localized, icon: "terminal.fill") {
+            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("settings.post_processing.base_instructions".localized)
@@ -125,8 +105,8 @@ public struct PostProcessingSettingsTab: View {
     }
 
     private var userPromptsSection: some View {
-        SettingsGroup("settings.post_processing.prompts".localized, icon: "sparkles") {
-            VStack(alignment: .leading, spacing: 16) {
+        MAGroup("settings.post_processing.prompts".localized, icon: "sparkles") {
+            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
                 HStack {
                     Text("settings.post_processing.choose_active".localized)
                         .font(.caption)
@@ -147,7 +127,7 @@ public struct PostProcessingSettingsTab: View {
                     .controlSize(.small)
                 }
 
-                VStack(spacing: 8) {
+                VStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
                     ForEach(viewModel.settings.allPrompts) { prompt in
                         promptRow(prompt: prompt)
                     }
@@ -176,15 +156,15 @@ public struct PostProcessingSettingsTab: View {
 
                 promptMenu(prompt: prompt, isSelected: isSelected)
             }
-            .padding(10)
+            .padding(MeetingAssistantDesignSystem.Layout.spacing10)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .background(isSelected ? Color.accentColor.opacity(0.08) : Color.clear)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .background(isSelected ? MeetingAssistantDesignSystem.Colors.selectionFill : Color.clear)
+        .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.cardCornerRadius))
         .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(isSelected ? Color.accentColor.opacity(0.3) : Color.clear, lineWidth: 1)
+            RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.cardCornerRadius)
+                .stroke(isSelected ? MeetingAssistantDesignSystem.Colors.selectionStroke : Color.clear, lineWidth: 1)
         )
         .contextMenu {
             promptMenuContent(prompt: prompt, isSelected: isSelected)
@@ -193,13 +173,13 @@ public struct PostProcessingSettingsTab: View {
 
     private func promptIcon(prompt: PostProcessingPrompt, isSelected: Bool) -> some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(isSelected ? Color.accentColor : Color.primary.opacity(0.05))
+            RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
+                .fill(isSelected ? MeetingAssistantDesignSystem.Colors.accent : MeetingAssistantDesignSystem.Colors.subtleFill)
                 .frame(width: 36, height: 36)
 
             Image(systemName: prompt.icon)
                 .font(.subheadline)
-                .foregroundStyle(isSelected ? .white : .primary)
+                .foregroundStyle(isSelected ? MeetingAssistantDesignSystem.Colors.onAccent : .primary)
         }
     }
 
@@ -220,7 +200,7 @@ public struct PostProcessingSettingsTab: View {
 
     private func selectionIndicator(isSelected: Bool) -> some View {
         Image(systemName: "checkmark.circle.fill")
-            .foregroundStyle(.green)
+            .foregroundStyle(MeetingAssistantDesignSystem.Colors.success)
             .symbolEffect(.bounce, value: isSelected)
     }
 

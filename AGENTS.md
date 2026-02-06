@@ -40,8 +40,8 @@ We use a lightweight, SwiftUI-first Design System to keep UI consistent and DRY:
 
 ### Public components (v1)
 
-- `MACard`, `MAGroup`, `MAToggleRow`, `MACallout`, `MABadge`, `MAActionButton`
-- `SettingsDesignSystem`, `SettingsCard`, `SettingsGroup`, `SettingsToggle` remain available as aliases for settings-related views.
+- `MACard`, `MAGroup`, `MAToggleRow`, `MACallout`, `MABadge`, `MAActionButton`, `MAThemePicker`
+- Use `MA*` components directly in Settings (legacy `Settings*` aliases were removed).
 
 ## Build Commands
 

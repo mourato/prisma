@@ -11,11 +11,11 @@ public struct AudioSettingsTab: View {
 
     public var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: SettingsDesignSystem.Layout.sectionSpacing) {
+            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.sectionSpacing) {
                 // Audio Devices
-                SettingsGroup("settings.general.audio_devices".localized, icon: "mic.fill") {
-                    VStack(alignment: .leading, spacing: 12) {
-                        SettingsToggle(
+                MAGroup("settings.general.audio_devices".localized, icon: "mic.fill") {
+                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                        MAToggleRow(
                             "settings.general.use_system_default_input".localized,
                             description: "settings.general.use_system_default_input_desc".localized,
                             isOn: $viewModel.useSystemDefaultInput
@@ -26,9 +26,9 @@ public struct AudioSettingsTab: View {
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
 
-                            VStack(spacing: 8) {
+                            VStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
                                 ForEach(viewModel.availableDevices) { device in
-                                    HStack(spacing: 12) {
+                                    HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
                                         Image(systemName: device.isAvailable ? "mic" : "mic.slash")
                                             .foregroundStyle(device.isAvailable ? .primary : .secondary)
                                             .frame(width: 20)
@@ -49,16 +49,16 @@ public struct AudioSettingsTab: View {
                                         if !device.isAvailable {
                                             Text("settings.general.device_unavailable".localized)
                                                 .font(.caption2)
-                                                .foregroundStyle(.red)
+                                                .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
                                         }
 
                                         Image(systemName: "line.3.horizontal")
                                             .font(.caption)
                                             .foregroundStyle(.secondary)
                                     }
-                                    .padding(8)
-                                    .background(Color.primary.opacity(0.03))
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    .padding(MeetingAssistantDesignSystem.Layout.spacing8)
+                                    .background(MeetingAssistantDesignSystem.Colors.subtleFill2)
+                                    .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
                                     .onDrag {
                                         draggingDevice = device
                                         return NSItemProvider(object: device.id as NSString)
@@ -75,7 +75,7 @@ public struct AudioSettingsTab: View {
 
                         Divider()
 
-                        SettingsToggle(
+                        MAToggleRow(
                             "settings.general.mute_output_during_recording".localized,
                             description: "settings.general.mute_output_desc".localized,
                             isOn: $viewModel.muteOutputDuringRecording
@@ -84,8 +84,8 @@ public struct AudioSettingsTab: View {
                 }
 
                 // Audio Format
-                SettingsGroup("settings.general.audio_format".localized, icon: "waveform.path") {
-                    VStack(alignment: .leading, spacing: 12) {
+                MAGroup("settings.general.audio_format".localized, icon: "waveform.path") {
+                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
                         HStack {
                             Text("settings.general.audio_format".localized)
                                 .font(.body)
@@ -100,7 +100,7 @@ public struct AudioSettingsTab: View {
                             }
                             .labelsHidden()
                             .pickerStyle(.menu)
-                            .frame(width: 200)
+                            .frame(width: MeetingAssistantDesignSystem.Layout.maxPickerWidth)
                         }
                     }
                 }

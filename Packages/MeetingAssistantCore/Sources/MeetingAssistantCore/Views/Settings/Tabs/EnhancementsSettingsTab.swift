@@ -11,7 +11,7 @@ public struct EnhancementsSettingsTab: View {
 
     public var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: SettingsDesignSystem.Layout.sectionSpacing) {
+            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.sectionSpacing) {
                 mainSection
 
                 if postProcessingViewModel.settings.postProcessingEnabled {
@@ -35,8 +35,8 @@ public struct EnhancementsSettingsTab: View {
     // MARK: - Sections
 
     private var mainSection: some View {
-        SettingsGroup("settings.general.title".localized, icon: "brain") {
-            SettingsToggle(
+        MAGroup("settings.general.title".localized, icon: "brain") {
+            MAToggleRow(
                 "settings.post_processing.enabled".localized,
                 description: "settings.post_processing.description".localized,
                 isOn: $postProcessingViewModel.settings.postProcessingEnabled
@@ -70,8 +70,8 @@ public struct EnhancementsSettingsTab: View {
     }
 
     private var systemPromptSection: some View {
-        SettingsGroup("settings.post_processing.system_prompt".localized, icon: "terminal.fill") {
-            VStack(alignment: .leading, spacing: SettingsDesignSystem.Layout.itemSpacing) {
+        MAGroup("settings.post_processing.system_prompt".localized, icon: "terminal.fill") {
+            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.itemSpacing) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("settings.post_processing.base_instructions".localized)

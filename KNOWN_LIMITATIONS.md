@@ -14,9 +14,9 @@ Este documento descreve as limitações técnicas e de design identificadas no p
 - **Assistant depende de Clipboard e Acessibilidade**: O Assistant usa copiar/colar via clipboard para capturar o texto selecionado e substituir o conteúdo. Em alguns apps, o comando de copiar pode não atualizar o clipboard (ou pode ser bloqueado), o que impede o fluxo de edição. (Contexto: integração via atalhos de sistema sem APIs privadas, fevereiro/2026)
 - **Impacto**: Pode falhar ao capturar/substituir texto em apps restritivos ou quando a permissão de Acessibilidade não foi concedida.
 
-## 4. Design System Singleton Dependency
-- **Design System Singleton Dependency**: O `SettingsDesignSystem` utiliza propriedades estáticas que acessam o singleton `AppSettingsStore.shared` diretamente. Isso cria um acoplamento oculto e dificulta a testabilidade e o uso de diferentes temas em contextos isolados (ex: previews ou múltiplas janelas).
-- **Impacto**: Arquitetura menos flexível e maior dificuldade em implementar "Theme Previews" sem afetar o estado global do app.
+## 4. Design System Global Theme Lookup
+- **Design System Global Theme Lookup**: O `MeetingAssistantDesignSystem.Colors.accent` resolve o tema lendo diretamente do `UserDefaults` (chave `appAccentColor`). Isso mantém o uso simples e consistente, mas ainda é estado global (sem DI) e pode dificultar previews/testes com múltiplas variações de tema em paralelo. (Contexto: priorizar simplicidade e consistência, 06/02/2026)
+- **Impacto**: Testes/previews podem precisar configurar/restaurar `UserDefaults` para garantir determinismo; múltiplas janelas com temas distintos não são suportadas hoje.
 ## 5. Model Fetching is State-Based
 - **Model Fetching**: A lista de modelos disponíveis para provedores (OpenAI, Anthropic, etc.) é buscada apenas após um teste de conexão bem-sucedido ou quando o provedor é alterado e já existe uma chave válida. Não há um mecanismo de "background refresh" contínuo se a chave for alterada externamente no Keychain sem intervenção do usuário na UI. (Contexto: simplificação de estado da UI, fevereiro/2026)
 - **Impacto**: O usuário pode precisar clicar em "Verify and Save" novamente se quiser atualizar a lista de modelos após uma mudança de rede ou configuração.

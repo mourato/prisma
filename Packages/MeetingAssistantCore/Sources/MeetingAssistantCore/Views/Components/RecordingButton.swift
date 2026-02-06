@@ -21,7 +21,7 @@ struct RecordingButton: View {
                     Text(title)
                         .font(.system(size: 15, weight: .bold))
                 }
-                .foregroundColor(SettingsDesignSystem.Colors.onAccent)
+                .foregroundColor(MeetingAssistantDesignSystem.Colors.onAccent)
                 .frame(maxWidth: .infinity)
                 .frame(height: MeetingAssistantDesignSystem.Layout.controlHeight)
                 .contentShape(Rectangle())
@@ -31,14 +31,14 @@ struct RecordingButton: View {
 
             // Vertical Divider
             Rectangle()
-                .fill(SettingsDesignSystem.Colors.onAccent.opacity(0.3))
+                .fill(MeetingAssistantDesignSystem.Colors.onAccent.opacity(0.3))
                 .frame(width: 1, height: 24)
 
             // Dropdown Area - Custom implementation for better control
             dropdownButton
         }
-        .foregroundColor(SettingsDesignSystem.Colors.onAccent)
-        .background(isDisabled ? Color.gray : SettingsDesignSystem.Colors.accent)
+        .foregroundColor(MeetingAssistantDesignSystem.Colors.onAccent)
+        .background(isDisabled ? MeetingAssistantDesignSystem.Colors.neutral : MeetingAssistantDesignSystem.Colors.accent)
         .clipShape(Capsule())
         .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
     }
@@ -78,7 +78,7 @@ struct RecordingButton: View {
             // Custom chevron with press state feedback
             Image(systemName: "chevron.down")
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(SettingsDesignSystem.Colors.onAccent)
+                .foregroundColor(MeetingAssistantDesignSystem.Colors.onAccent)
                 .opacity(isDropdownPressed ? 0.7 : 1.0)
                 .allowsHitTesting(false)
         }

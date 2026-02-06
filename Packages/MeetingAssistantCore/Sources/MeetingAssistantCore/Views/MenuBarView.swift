@@ -38,16 +38,19 @@ public struct MenuBarView: View {
         HStack {
             Image(systemName: "waveform.circle.fill")
                 .font(.title)
-                .foregroundStyle(SettingsDesignSystem.Colors.accent)
+                .foregroundStyle(MeetingAssistantDesignSystem.Colors.accent)
 
             Text("about.title".localized)
                 .font(.headline)
 
             Spacer()
 
-            Button(action: { NavigationService.shared.openSettings() }) {
-                Image(systemName: "gear")
-            }
+            Button(
+                action: { NavigationService.shared.openSettings() },
+                label: {
+                    Image(systemName: "gear")
+                }
+            )
             .buttonStyle(.plain)
         }
     }
@@ -58,7 +61,7 @@ public struct MenuBarView: View {
                 VStack(spacing: 8) {
                     HStack {
                         Circle()
-                            .fill(viewModel.isRecording ? .red : .gray)
+                            .fill(viewModel.isRecording ? MeetingAssistantDesignSystem.Colors.recording : MeetingAssistantDesignSystem.Colors.neutral)
                             .frame(width: 10, height: 10)
 
                         Text(statusText)
@@ -72,8 +75,8 @@ public struct MenuBarView: View {
                         MeetingCard(meeting: meeting, duration: viewModel.displayDuration)
                     }
                 }
-                .padding()
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
+                .padding(MeetingAssistantDesignSystem.Layout.spacing16)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
             }
         }
     }
@@ -143,7 +146,7 @@ struct MeetingCard: View {
             Spacer()
         }
         .padding(8)
-        .background(.background, in: RoundedRectangle(cornerRadius: 6))
+        .background(.background, in: RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.chipCornerRadius))
     }
 }
 

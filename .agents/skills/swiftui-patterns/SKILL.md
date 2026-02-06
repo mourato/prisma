@@ -128,9 +128,7 @@ struct ContentView: View {
 Use the project's Design System tokens/components to keep UI consistent and DRY:
 
 - Tokens: `MeetingAssistantDesignSystem`
-- Components: `MACard`, `MAGroup`, `MAToggleRow`, `MACallout`, `MABadge`, `MAActionButton`
-
-For Settings screens specifically, `SettingsDesignSystem`, `SettingsGroup`, `SettingsToggle`, and `SettingsCard` exist as aliases for backwards compatibility (they map to the global components).
+- Components: `MACard`, `MAGroup`, `MAToggleRow`, `MACallout`, `MABadge`, `MAActionButton`, `MAThemePicker`
 
 ```swift
 // Use MAGroup for labeled sections
@@ -162,7 +160,7 @@ MACard {
 
 ```swift
 // ✅ CORRECT - Toggle for immediate-effect settings
-SettingsToggle("Enable feature", isOn: $viewModel.isEnabled)
+MAToggleRow("Enable feature", isOn: $viewModel.isEnabled)
 
 // ❌ WRONG - Checkbox for settings without explicit save
 Toggle(isOn: $isEnabled) {
