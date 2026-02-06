@@ -9,6 +9,47 @@ public enum RecordingType: String, Sendable {
     case merged
 }
 
+public struct RetentionCleanupCandidate: Hashable, Sendable {
+    public let url: URL
+    public let byteSize: Int64
+
+    public init(url: URL, byteSize: Int64) {
+        self.url = url
+        self.byteSize = byteSize
+    }
+}
+
+public struct RetentionCleanupPreview: Hashable, Sendable {
+    public let retentionDays: Int
+    public let audioFiles: [RetentionCleanupCandidate]
+    public let transcriptionFiles: [RetentionCleanupCandidate]
+
+    public init(
+        retentionDays: Int,
+        audioFiles: [RetentionCleanupCandidate],
+        transcriptionFiles: [RetentionCleanupCandidate]
+    ) {
+        self.retentionDays = retentionDays
+        self.audioFiles = audioFiles
+        self.transcriptionFiles = transcriptionFiles
+    }
+
+    public var audioCount: Int { audioFiles.count }
+    public var transcriptionCount: Int { transcriptionFiles.count }
+    public var totalAudioBytes: Int64 { audioFiles.reduce(0) { $0 + $1.byteSize } }
+    public var totalTranscriptionBytes: Int64 { transcriptionFiles.reduce(0) { $0 + $1.byteSize } }
+}
+
+public struct RetentionCleanupResult: Hashable, Sendable {
+    public let deletedAudioCount: Int
+    public let deletedTranscriptionCount: Int
+
+    public init(deletedAudioCount: Int, deletedTranscriptionCount: Int) {
+        self.deletedAudioCount = deletedAudioCount
+        self.deletedTranscriptionCount = deletedTranscriptionCount
+    }
+}
+
 // MARK: - Protocol
 
 public protocol StorageService: Sendable {
@@ -39,6 +80,12 @@ public protocol StorageService: Sendable {
 
     /// Delete transcriptions older than the specified number of days.
     func cleanupOldTranscriptions(olderThanDays days: Int) async throws
+
+    /// Computes what would be deleted by retention cleanup (audio files + transcription JSONs).
+    func computeRetentionCleanupPreview(olderThanDays days: Int) async throws -> RetentionCleanupPreview
+
+    /// Performs retention cleanup using a previously computed preview.
+    func performRetentionCleanup(preview: RetentionCleanupPreview) async throws -> RetentionCleanupResult
 }
 
 // MARK: - Implementation
@@ -278,19 +325,225 @@ public final class FileSystemStorageService: StorageService {
         try? await cleanupOrphanedRecordings()
     }
 
+    public func computeRetentionCleanupPreview(olderThanDays days: Int) async throws -> RetentionCleanupPreview {
+        let retentionDays = max(1, days)
+        let cutoffDate = Calendar.current.date(byAdding: .day, value: -retentionDays, to: Date()) ?? Date()
+
+        let allMetadata = try await loadAllMetadata()
+        let transcriptionsToDelete = allMetadata.filter { $0.createdAt < cutoffDate }
+        let transcriptionsToKeep = allMetadata.filter { $0.createdAt >= cutoffDate }
+
+        let recordingsDir = recordingsDirectory.standardizedFileURL
+        let transcriptsDir = transcriptsDirectory.standardizedFileURL
+
+        let audioPathsToKeep: Set<String> = Set(transcriptionsToKeep.compactMap { meta in
+            guard let path = meta.audioFilePath else { return nil }
+            return FileSystemStorageService.standardizePath(path: path)
+        })
+
+        let audioPathsFromDeletedTranscriptions: Set<String> = Set(transcriptionsToDelete.compactMap { meta in
+            guard let path = meta.audioFilePath else { return nil }
+            return FileSystemStorageService.standardizePath(path: path)
+        })
+
+        return await Task.detached(priority: .userInitiated) {
+            let fileManager = FileManager.default
+
+            let allowedAudioExtensions: Set<String> = ["m4a", "wav"]
+            let recordingsDirPath = recordingsDir.path
+
+            func isAudioFile(_ url: URL) -> Bool {
+                allowedAudioExtensions.contains(url.pathExtension.lowercased())
+            }
+
+            func isPathInsideRecordingsDirectory(_ path: String) -> Bool {
+                let normalizedRecordings = FileSystemStorageService.normalizeDirectoryPath(recordingsDirPath)
+                let normalizedPath = FileSystemStorageService.normalizeDirectoryPath(path)
+                return normalizedPath == normalizedRecordings || normalizedPath.hasPrefix(normalizedRecordings + "/")
+            }
+
+            func fileByteSizeIfExists(_ url: URL) -> Int64? {
+                guard fileManager.fileExists(atPath: url.path) else { return nil }
+                let values = try? url.resourceValues(forKeys: [.fileSizeKey])
+                if let fileSize = values?.fileSize {
+                    return Int64(fileSize)
+                }
+                let attributes = try? fileManager.attributesOfItem(atPath: url.path)
+                if let size = attributes?[.size] as? NSNumber {
+                    return size.int64Value
+                }
+                return nil
+            }
+
+            var transcriptionFiles: [RetentionCleanupCandidate] = []
+            transcriptionFiles.reserveCapacity(transcriptionsToDelete.count)
+
+            for item in transcriptionsToDelete {
+                let url = transcriptsDir.appendingPathComponent("\(item.id.uuidString).json")
+                if fileManager.fileExists(atPath: url.path) {
+                    let bytes = fileByteSizeIfExists(url) ?? 0
+                    transcriptionFiles.append(RetentionCleanupCandidate(url: url, byteSize: bytes))
+                }
+            }
+
+            var audioURLsToDelete: Set<URL> = []
+            audioURLsToDelete.reserveCapacity(audioPathsFromDeletedTranscriptions.count)
+
+            for audioPath in audioPathsFromDeletedTranscriptions {
+                guard isPathInsideRecordingsDirectory(audioPath) else { continue }
+                let url = URL(fileURLWithPath: audioPath).standardizedFileURL
+                guard isAudioFile(url) else { continue }
+                audioURLsToDelete.insert(url)
+            }
+
+            let resourceKeys: [URLResourceKey] = [
+                .contentModificationDateKey,
+                .creationDateKey,
+                .fileSizeKey,
+                .isDirectoryKey,
+            ]
+
+            let files: [URL]
+            do {
+                files = try fileManager.contentsOfDirectory(
+                    at: recordingsDir,
+                    includingPropertiesForKeys: resourceKeys,
+                    options: [.skipsHiddenFiles]
+                )
+            } catch {
+                var audioFiles: [RetentionCleanupCandidate] = []
+                audioFiles.reserveCapacity(audioURLsToDelete.count)
+
+                for url in audioURLsToDelete {
+                    if fileManager.fileExists(atPath: url.path) {
+                        let bytes = fileByteSizeIfExists(url) ?? 0
+                        audioFiles.append(RetentionCleanupCandidate(url: url, byteSize: bytes))
+                    }
+                }
+
+                audioFiles.sort { $0.url.lastPathComponent < $1.url.lastPathComponent }
+                transcriptionFiles.sort { $0.url.lastPathComponent < $1.url.lastPathComponent }
+
+                return RetentionCleanupPreview(
+                    retentionDays: retentionDays,
+                    audioFiles: audioFiles,
+                    transcriptionFiles: transcriptionFiles
+                )
+            }
+
+            for fileURL in files {
+                let values = try? fileURL.resourceValues(forKeys: Set(resourceKeys))
+                if values?.isDirectory == true {
+                    continue
+                }
+
+                guard isAudioFile(fileURL) else { continue }
+
+                let standardizedPath = fileURL.standardizedFileURL.path
+                if audioPathsToKeep.contains(standardizedPath) {
+                    continue
+                }
+
+                let referenceDate = values?.contentModificationDate ?? values?.creationDate
+                if let referenceDate, referenceDate >= cutoffDate {
+                    continue
+                }
+
+                audioURLsToDelete.insert(fileURL.standardizedFileURL)
+            }
+
+            var audioFiles: [RetentionCleanupCandidate] = []
+            audioFiles.reserveCapacity(audioURLsToDelete.count)
+
+            for url in audioURLsToDelete {
+                if fileManager.fileExists(atPath: url.path) {
+                    let bytes = fileByteSizeIfExists(url) ?? 0
+                    audioFiles.append(RetentionCleanupCandidate(url: url, byteSize: bytes))
+                }
+            }
+
+            audioFiles.sort { $0.url.lastPathComponent < $1.url.lastPathComponent }
+            transcriptionFiles.sort { $0.url.lastPathComponent < $1.url.lastPathComponent }
+
+            return RetentionCleanupPreview(
+                retentionDays: retentionDays,
+                audioFiles: audioFiles,
+                transcriptionFiles: transcriptionFiles
+            )
+        }.value
+    }
+
+    public func performRetentionCleanup(preview: RetentionCleanupPreview) async throws -> RetentionCleanupResult {
+        let audioToDelete = preview.audioFiles.map(\.url)
+        let transcriptionsToDelete = preview.transcriptionFiles.map(\.url)
+        let recordingsDirPath = recordingsDirectory.standardizedFileURL.path
+        let transcriptsDirPath = transcriptsDirectory.standardizedFileURL.path
+
+        return try await Task.detached(priority: .userInitiated) {
+            let fileManager = FileManager.default
+            var deletedAudio = 0
+            var deletedTranscriptions = 0
+            let allowedAudioExtensions: Set<String> = ["m4a", "wav"]
+
+            let normalizedRecordingsDir = FileSystemStorageService.normalizeDirectoryPath(recordingsDirPath)
+            let normalizedTranscriptsDir = FileSystemStorageService.normalizeDirectoryPath(transcriptsDirPath)
+
+            func isUnderDirectory(_ url: URL, directoryPath: String) -> Bool {
+                let standardized = url.standardizedFileURL.path
+                return standardized == directoryPath || standardized.hasPrefix(directoryPath + "/")
+            }
+
+            func isAllowedAudioFile(_ url: URL) -> Bool {
+                allowedAudioExtensions.contains(url.pathExtension.lowercased())
+            }
+
+            func removeIfExists(_ url: URL) throws -> Bool {
+                if fileManager.fileExists(atPath: url.path) {
+                    try fileManager.removeItem(at: url)
+                    return true
+                }
+                return false
+            }
+
+            for url in transcriptionsToDelete where isUnderDirectory(url, directoryPath: normalizedTranscriptsDir) {
+                if try removeIfExists(url) {
+                    deletedTranscriptions += 1
+                }
+            }
+
+            for url in audioToDelete
+            where isUnderDirectory(url, directoryPath: normalizedRecordingsDir) && isAllowedAudioFile(url) {
+                if try removeIfExists(url) {
+                    deletedAudio += 1
+                }
+            }
+
+            if deletedAudio > 0 || deletedTranscriptions > 0 {
+                AppLogger.info(
+                    "Retention cleanup completed",
+                    category: .databaseManager,
+                    extra: [
+                        "deletedAudioCount": "\(deletedAudio)",
+                        "deletedTranscriptionCount": "\(deletedTranscriptions)",
+                    ]
+                )
+            }
+
+            return RetentionCleanupResult(
+                deletedAudioCount: deletedAudio,
+                deletedTranscriptionCount: deletedTranscriptions
+            )
+        }.value
+    }
+
     public func cleanupOrphanedRecordings() async throws {
         let allMetadata = try await loadAllMetadata()
         let knownAudioPaths = Set(allMetadata.compactMap(\.audioFilePath))
+        let recordingsDir = recordingsDirectory
 
         // Use a detached task for file system operations to avoid blocking
         await Task.detached(priority: .background) {
             let fileManager = FileManager.default
-            // Re-construct directories inside task to be safe, or capture 'recordingsDirectory'
-            // We need to resolve recordingsDirectory. Safest is to hardcode or pass it in.
-            // But since 'self' capture might sendable issue, let's assume we can access a static or recalculate.
-            // For now, let's use the known path structure: "Recordings" in documents.
-            guard let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
-            let recordingsDir = docs.appendingPathComponent("Recordings")
 
             // Enum all files in recordings dir
             guard let files = try? fileManager.contentsOfDirectory(at: recordingsDir, includingPropertiesForKeys: [.creationDateKey]) else { return }
@@ -324,6 +577,18 @@ public final class FileSystemStorageService: StorageService {
                 AppLogger.info("Orphan cleanup completed", category: .databaseManager, extra: ["deletedCount": deletedCount])
             }
         }.value
+    }
+
+    private static func standardizePath(path: String) -> String {
+        URL(fileURLWithPath: path).standardizedFileURL.path
+    }
+
+    private static func normalizeDirectoryPath(_ path: String) -> String {
+        var normalized = path
+        while normalized.hasSuffix("/") {
+            normalized.removeLast()
+        }
+        return normalized
     }
 
     private struct MetadataDecoder: Codable {

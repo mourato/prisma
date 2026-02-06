@@ -8,6 +8,7 @@ import SwiftUI
 @MainActor
 public class GeneralSettingsViewModel: ObservableObject {
     private let settingsStore: AppSettingsStore
+    private let storage: StorageService
 
     @Published public var autoStartRecording: Bool {
         didSet {
@@ -143,14 +144,21 @@ public class GeneralSettingsViewModel: ObservableObject {
 
     @Published public var availableDevices: [AudioInputDevice] = []
     @Published public var showCleanupSuccessAlert = false
+    @Published public var showCleanupConfirmationDialog = false
+    @Published public var cleanupInProgress = false
     @Published public var cleanupError: String?
+    @Published public var cleanupPreview: RetentionCleanupPreview?
 
     private let deviceManager = AudioDeviceManager()
     private var cancellables = Set<AnyCancellable>()
     private nonisolated static let logger = Logger(subsystem: "MeetingAssistant", category: "GeneralSettingsViewModel")
 
-    public init(settingsStore: AppSettingsStore = .shared) {
+    public init(
+        settingsStore: AppSettingsStore = .shared,
+        storage: StorageService = FileSystemStorageService.shared
+    ) {
         self.settingsStore = settingsStore
+        self.storage = storage
         autoStartRecording = settingsStore.autoStartRecording
         recordingsPath = settingsStore.recordingsDirectory
         audioFormat = settingsStore.audioFormat
@@ -174,6 +182,27 @@ public class GeneralSettingsViewModel: ObservableObject {
         launchAtLogin = settingsStore.launchAtLogin
 
         setupDeviceObservation()
+    }
+
+    public var cleanupConfirmationMessage: String {
+        let preview = cleanupPreview
+
+        let audioCount = preview?.audioCount ?? 0
+        let transcriptionCount = preview?.transcriptionCount ?? 0
+
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .file
+
+        let audioSize = formatter.string(fromByteCount: preview?.totalAudioBytes ?? 0)
+        let transcriptionSize = formatter.string(fromByteCount: preview?.totalTranscriptionBytes ?? 0)
+
+        return String(
+            format: "settings.storage.cleanup_confirm_message".localized,
+            audioCount,
+            audioSize,
+            transcriptionCount,
+            transcriptionSize
+        )
     }
 
     private func setupDeviceObservation() {
@@ -259,40 +288,46 @@ public class GeneralSettingsViewModel: ObservableObject {
     }
 
     public func performCleanup() {
-        let url = URL(fileURLWithPath: recordingsPath)
-        let days = autoDeletePeriodDays
+        guard !cleanupInProgress else { return }
 
-        guard let cutoffDate = Calendar.current.date(byAdding: .day, value: -days, to: Date()) else {
-            return
-        }
+        cleanupError = nil
+        cleanupPreview = nil
+        cleanupInProgress = true
 
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            let fileManager = FileManager.default
+        Task { [weak self] in
+            guard let self else { return }
+
             do {
-                let resourceKeys: [URLResourceKey] = [.creationDateKey, .isDirectoryKey]
-                let files = try fileManager.contentsOfDirectory(at: url, includingPropertiesForKeys: resourceKeys, options: .skipsHiddenFiles)
-
-                for fileURL in files {
-                    let resourceValues = try fileURL.resourceValues(forKeys: Set(resourceKeys))
-                    if let isDirectory = resourceValues.isDirectory, isDirectory {
-                        continue
-                    }
-
-                    if let creationDate = resourceValues.creationDate, creationDate < cutoffDate {
-                        try fileManager.removeItem(at: fileURL)
-                        Self.logger.info("Deleted old recording: \(fileURL.lastPathComponent)")
-                    }
-                }
-
-                DispatchQueue.main.async {
-                    self?.showCleanupSuccessAlert = true
-                }
+                let preview = try await storage.computeRetentionCleanupPreview(olderThanDays: autoDeletePeriodDays)
+                cleanupPreview = preview
+                showCleanupConfirmationDialog = true
             } catch {
-                Self.logger.error("Failed to perform cleanup: \(error.localizedDescription)")
-                DispatchQueue.main.async {
-                    self?.cleanupError = error.localizedDescription
-                }
+                cleanupError = error.localizedDescription
             }
+
+            cleanupInProgress = false
+        }
+    }
+
+    public func confirmCleanup() {
+        guard !cleanupInProgress else { return }
+        guard let preview = cleanupPreview else { return }
+
+        cleanupError = nil
+        cleanupInProgress = true
+
+        Task { [weak self] in
+            guard let self else { return }
+
+            do {
+                _ = try await storage.performRetentionCleanup(preview: preview)
+                showCleanupSuccessAlert = true
+            } catch {
+                cleanupError = error.localizedDescription
+            }
+
+            cleanupInProgress = false
+            cleanupPreview = nil
         }
     }
 }
