@@ -43,6 +43,7 @@ public struct FloatingRecordingIndicatorView: View {
                 }
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         .onHover { hovering in
             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                 isHovering = hovering
