@@ -1,4 +1,3 @@
-```
 ---
 name: quality-assurance
 description: This skill should be used when writing unit tests, mocking dependencies, or verifying task completeness with automated checks.
@@ -9,6 +8,14 @@ description: This skill should be used when writing unit tests, mocking dependen
 ## Overview
 
 Requirements for maintaining high stability and confidence through rigorous testing and verification.
+
+## Non-Negotiable Gates (Workflow)
+
+These gates exist to keep history bisectable and prevent “broken main” incidents.
+
+- **Before ANY commit**: `make build` + `make test` (and `make lint` when available).
+- **If a gate fails**: stop and fix until it passes. Do **not** commit broken builds/tests.
+- **Before push/merge**: `make lint` + `make test` + `make build` (order can vary; all must be green).
 
 ## 1. Testing Methodology
 
