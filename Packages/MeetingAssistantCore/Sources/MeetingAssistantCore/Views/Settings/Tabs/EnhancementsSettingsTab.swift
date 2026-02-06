@@ -1,4 +1,3 @@
-import os.log
 import SwiftUI
 
 // MARK: - AI Settings Tab
@@ -24,13 +23,6 @@ public struct EnhancementsSettingsTab: View {
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .sheet(isPresented: $postProcessingViewModel.showPromptEditor) {
-            PromptEditorSheet(
-                prompt: postProcessingViewModel.editingPrompt,
-                onSave: postProcessingViewModel.handleSavePrompt,
-                onCancel: { postProcessingViewModel.showPromptEditor = false }
-            )
-        }
         .sheet(isPresented: $postProcessingViewModel.showSystemPromptEditor) {
             SystemPromptEditorSheet(
                 initialPrompt: postProcessingViewModel.settings.systemPrompt,
@@ -38,16 +30,6 @@ public struct EnhancementsSettingsTab: View {
                 onCancel: { postProcessingViewModel.showSystemPromptEditor = false },
                 onRestoreDefault: { postProcessingViewModel.resetSystemPrompt() }
             )
-        }
-        .alert("settings.post_processing.delete_confirm_title".localized, isPresented: $postProcessingViewModel.showDeleteConfirmation) {
-            Button("common.cancel".localized, role: .cancel) {}
-            Button("common.delete".localized, role: .destructive) {
-                postProcessingViewModel.executeDelete()
-            }
-        } message: {
-            if let prompt = postProcessingViewModel.promptToDelete {
-                Text("settings.post_processing.delete_confirm_message".localized(with: prompt.title))
-            }
         }
     }
 
@@ -288,7 +270,6 @@ public struct EnhancementsSettingsTab: View {
     private var postProcessingSection: some View {
         if viewModel.settings.aiConfiguration.isValid {
             systemPromptSection
-            userPromptsSection
         } else {
             connectionWarningSection
         }
@@ -351,159 +332,6 @@ public struct EnhancementsSettingsTab: View {
             }
         }
     }
-
-    private var userPromptsSection: some View {
-        SettingsGroup("settings.post_processing.prompts".localized, icon: "sparkles") {
-            VStack(alignment: .leading, spacing: SettingsDesignSystem.Layout.cardPadding) {
-                HStack {
-                    Text("settings.post_processing.choose_active".localized)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    Spacer()
-
-                    Button {
-                        postProcessingViewModel.editingPrompt = nil
-                        postProcessingViewModel.showPromptEditor = true
-                    } label: {
-                        Label(
-                            "settings.post_processing.new_prompt".localized,
-                            systemImage: "plus"
-                        )
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                }
-
-                VStack(spacing: 8) {
-                    ForEach(postProcessingViewModel.settings.allPrompts) { prompt in
-                        promptRow(prompt: prompt)
-                    }
-                }
-            }
-        }
-    }
-
-    // MARK: - Prompt Row
-
-    private func promptRow(prompt: PostProcessingPrompt) -> some View {
-        let isSelected = postProcessingViewModel.settings.selectedPromptId == prompt.id
-
-        return Button {
-            postProcessingViewModel.selectPrompt(prompt.id)
-        } label: {
-            HStack(spacing: 12) {
-                promptIcon(prompt: prompt, isSelected: isSelected)
-                promptInfo(prompt: prompt, isSelected: isSelected)
-
-                Spacer()
-
-                if isSelected {
-                    selectionIndicator(isSelected: isSelected)
-                }
-
-                promptMenu(prompt: prompt, isSelected: isSelected)
-            }
-            .padding(10)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .background(isSelected ? SettingsDesignSystem.Colors.accent.opacity(0.08) : Color.clear)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(isSelected ? SettingsDesignSystem.Colors.accent.opacity(0.3) : Color.clear, lineWidth: 1)
-        )
-        .contextMenu {
-            promptMenuContent(prompt: prompt, isSelected: isSelected)
-        }
-    }
-
-    private func promptIcon(prompt: PostProcessingPrompt, isSelected: Bool) -> some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(isSelected ? SettingsDesignSystem.Colors.accent : Color.primary.opacity(0.05))
-                .frame(width: 36, height: 36)
-
-            Image(systemName: prompt.icon)
-                .font(.subheadline)
-                .foregroundStyle(isSelected ? SettingsDesignSystem.Colors.onAccent : .primary)
-        }
-    }
-
-    private func promptInfo(prompt: PostProcessingPrompt, isSelected: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(prompt.title)
-                .font(.body)
-                .fontWeight(isSelected ? .bold : .medium)
-
-            if let description = prompt.description {
-                Text(description)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-        }
-    }
-
-    private func selectionIndicator(isSelected: Bool) -> some View {
-        Image(systemName: "checkmark.circle.fill")
-            .foregroundStyle(.green)
-            .symbolEffect(.bounce, value: isSelected)
-    }
-
-    private func promptMenu(prompt: PostProcessingPrompt, isSelected: Bool) -> some View {
-        Menu {
-            promptMenuContent(prompt: prompt, isSelected: isSelected)
-        } label: {
-            Image(systemName: "ellipsis.circle")
-                .foregroundStyle(.secondary)
-        }
-        .menuStyle(.borderlessButton)
-        .fixedSize()
-        // Prevent click on menu from triggering the row button
-        .highPriorityGesture(TapGesture())
-    }
-
-    @ViewBuilder
-    private func promptMenuContent(prompt: PostProcessingPrompt, isSelected: Bool) -> some View {
-        Button {
-            postProcessingViewModel.selectPrompt(prompt.id, forceSelect: true)
-        } label: {
-            Label("settings.post_processing.select".localized, systemImage: isSelected ? "checkmark.circle.fill" : "circle")
-        }
-
-        Divider()
-
-        Button {
-            if prompt.isPredefined {
-                postProcessingViewModel.prepareCopy(of: prompt, asDuplicate: false)
-            } else {
-                postProcessingViewModel.editingPrompt = prompt
-                postProcessingViewModel.showPromptEditor = true
-            }
-        } label: {
-            Label("settings.post_processing.edit".localized, systemImage: "pencil")
-        }
-
-        Button {
-            postProcessingViewModel.prepareCopy(of: prompt, asDuplicate: true)
-        } label: {
-            Label("settings.post_processing.duplicate".localized, systemImage: "plus.square.on.square")
-        }
-
-        Divider()
-
-        Button(role: .destructive) {
-            postProcessingViewModel.confirmDeletePrompt(prompt)
-        } label: {
-            Label("settings.post_processing.delete".localized, systemImage: "trash")
-        }
-    }
-}
-
-#Preview {
-    EnhancementsSettingsTab()
 }
 
 #Preview {
