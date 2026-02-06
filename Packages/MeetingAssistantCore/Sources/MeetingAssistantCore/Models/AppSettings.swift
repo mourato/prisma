@@ -669,12 +669,12 @@ public class AppSettingsStore: ObservableObject {
         didSet { UserDefaults.standard.set(recordingIndicatorPosition.rawValue, forKey: Keys.recordingIndicatorPosition) }
     }
 
-    /// Whether auto-delete of old transcriptions is enabled.
+    /// Whether retention limit for old recordings and transcriptions is enabled.
     @Published public var autoDeleteTranscriptions: Bool {
         didSet { UserDefaults.standard.set(autoDeleteTranscriptions, forKey: Keys.autoDeleteTranscriptions) }
     }
 
-    /// Number of days to keep transcriptions before auto-deleting.
+    /// Number of days to keep recordings and transcriptions before cleanup.
     @Published public var autoDeletePeriodDays: Int {
         didSet { UserDefaults.standard.set(autoDeletePeriodDays, forKey: Keys.autoDeletePeriodDays) }
     }
