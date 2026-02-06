@@ -57,7 +57,7 @@ public struct MeetingSettingsTab: View {
                             .foregroundStyle(.secondary)
                         
                         TextEditor(text: $meetingViewModel.settings.summaryTemplate)
-                            .font(.monospaced(.body)())
+                            .font(.system(.body, design: .monospaced))
                             .frame(height: 150)
                             .padding(8)
                             .background(Color(NSColor.controlBackgroundColor))

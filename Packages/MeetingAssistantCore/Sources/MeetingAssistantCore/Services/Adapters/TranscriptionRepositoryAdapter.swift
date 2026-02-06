@@ -5,18 +5,18 @@ import Foundation
 /// Adapter que implementa TranscriptionRepository usando TranscriptionClient existente
 @MainActor
 public final class TranscriptionRepositoryAdapter: TranscriptionRepository {
-    private let transcriptionClient: TranscriptionClient
+    private let transcriptionService: any TranscriptionService
 
-    public init(transcriptionClient: TranscriptionClient) {
-        self.transcriptionClient = transcriptionClient
+    public init(transcriptionService: any TranscriptionService) {
+        self.transcriptionService = transcriptionService
     }
 
     public func healthCheck() async throws -> Bool {
-        try await transcriptionClient.healthCheck()
+        try await transcriptionService.healthCheck()
     }
 
     public func fetchServiceStatus() async throws -> DomainServiceStatusResponse {
-        let status = try await transcriptionClient.fetchServiceStatus()
+        let status = try await transcriptionService.fetchServiceStatus()
         return DomainServiceStatusResponse(
             status: status.status,
             message: "Model: \(status.modelName), State: \(status.modelState)",
@@ -28,7 +28,7 @@ public final class TranscriptionRepositoryAdapter: TranscriptionRepository {
         audioURL: URL,
         onProgress: (@Sendable (Double) -> Void)?
     ) async throws -> DomainTranscriptionResponse {
-        let response = try await transcriptionClient.transcribe(
+        let response = try await transcriptionService.transcribe(
             audioURL: audioURL,
             onProgress: onProgress
         )

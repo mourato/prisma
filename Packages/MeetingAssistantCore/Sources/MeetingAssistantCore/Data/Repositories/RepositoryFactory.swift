@@ -50,7 +50,7 @@ public final class DefaultRepositoryFactory: RepositoryFactory {
 
     public func makeTranscriptionRepository() -> TranscriptionRepository {
         // Usar adaptador existente por enquanto
-        TranscriptionRepositoryAdapter(transcriptionClient: TranscriptionClient.shared)
+        TranscriptionRepositoryAdapter(transcriptionService: TranscriptionClient.shared)
     }
 
     @MainActor
