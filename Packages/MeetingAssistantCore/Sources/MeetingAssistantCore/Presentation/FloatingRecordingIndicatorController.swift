@@ -28,9 +28,9 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
     // MARK: - Configuration
 
     private enum Constants {
-        static let panelWidth: CGFloat = 220
-        static let panelHeightClassic: CGFloat = 44
-        static let panelHeightMini: CGFloat = 32
+        static let panelWidth: CGFloat = MeetingAssistantDesignSystem.Layout.recordingIndicatorPanelWidth
+        static let panelHeightClassic: CGFloat = MeetingAssistantDesignSystem.Layout.controlHeight
+        static let panelHeightMini: CGFloat = MeetingAssistantDesignSystem.Layout.controlHeight
         static let screenPadding: CGFloat = 40
     }
 

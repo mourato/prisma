@@ -538,6 +538,10 @@
 "recording_indicator.silence_warning" = "No microphone audio detected";
 "recording_indicator.stop.help" = "Stop and transcribe";
 "recording_indicator.cancel.help" = "Cancel and discard";
+"recording_indicator.duration" = "Recording duration";
+"recording_indicator.prompt.help" = "Choose post-processing prompt";
+"recording_indicator.prompt.none" = "No post-processing";
+"recording_indicator.prompt.none_desc" = "Skip AI post-processing after recording.";
 "settings.transcriptions.today" = "Today";
 "settings.transcriptions.yesterday" = "Yesterday";
 "transcription.empty_fallback" = "No transcription available";
