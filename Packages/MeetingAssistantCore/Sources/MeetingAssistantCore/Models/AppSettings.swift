@@ -401,6 +401,16 @@ public struct AIConfiguration: Codable, Equatable, Sendable {
 public class AppSettingsStore: ObservableObject {
     public static let shared = AppSettingsStore()
 
+    /// Sentinel UUID used to represent an explicit "No post-processing" selection.
+    /// This avoids changing persisted schemas while still allowing an opt-out choice.
+    public static let noPostProcessingPromptId: UUID = {
+        guard let uuid = UUID(uuidString: "00000000-0000-0000-0000-000000000001") else {
+            assertionFailure("Invalid UUID string for noPostProcessingPromptId")
+            return UUID()
+        }
+        return uuid
+    }()
+
     // MARK: - Keys
 
     private enum Keys {
@@ -785,14 +795,22 @@ public class AppSettingsStore: ObservableObject {
 
     /// Currently selected prompt.
     public var selectedPrompt: PostProcessingPrompt? {
-        guard let id = selectedPromptId else { return nil }
+        guard let id = selectedPromptId, id != Self.noPostProcessingPromptId else { return nil }
         return meetingAvailablePrompts.first { $0.id == id }
     }
 
     /// Currently selected dictation prompt.
     public var selectedDictationPrompt: PostProcessingPrompt? {
-        guard let id = dictationSelectedPromptId else { return nil }
+        guard let id = dictationSelectedPromptId, id != Self.noPostProcessingPromptId else { return nil }
         return dictationAvailablePrompts.first { $0.id == id }
+    }
+
+    public var isMeetingPostProcessingDisabled: Bool {
+        selectedPromptId == Self.noPostProcessingPromptId
+    }
+
+    public var isDictationPostProcessingDisabled: Bool {
+        dictationSelectedPromptId == Self.noPostProcessingPromptId
     }
 
     // MARK: - Initialization

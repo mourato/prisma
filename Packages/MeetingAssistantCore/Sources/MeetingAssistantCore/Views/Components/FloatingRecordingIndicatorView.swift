@@ -1,8 +1,11 @@
+import Foundation
 import SwiftUI
 
 /// Floating indicator view that shows audio waveforms during recording or processing.
 public struct FloatingRecordingIndicatorView: View {
     @ObservedObject var audioMonitor: AudioLevelMonitor
+    @ObservedObject private var recordingManager: RecordingManager
+    @ObservedObject private var settingsStore: AppSettingsStore
     let style: RecordingIndicatorStyle
     let mode: FloatingRecordingIndicatorMode
     let meetingType: MeetingType? // Added
@@ -16,6 +19,8 @@ public struct FloatingRecordingIndicatorView: View {
         style: RecordingIndicatorStyle,
         mode: FloatingRecordingIndicatorMode,
         meetingType: MeetingType? = nil, // Added default nil
+        recordingManager: RecordingManager = .shared,
+        settingsStore: AppSettingsStore = .shared,
         onStop: @escaping @Sendable () -> Void,
         onCancel: @escaping @Sendable () -> Void
     ) {
@@ -23,131 +28,96 @@ public struct FloatingRecordingIndicatorView: View {
         self.style = style
         self.mode = mode
         self.meetingType = meetingType
+        self.recordingManager = recordingManager
+        self.settingsStore = settingsStore
         self.onStop = onStop
         self.onCancel = onCancel
     }
 
     public var body: some View {
-        Group {
-            switch mode {
-            case .error:
-                errorView
-            case .recording, .processing:
-                switch style {
-                case .classic:
-                    classicWaveformView
-                case .mini:
-                    miniWaveformView
-                case .none:
-                    EmptyView()
-                }
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-        .onHover { hovering in
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                isHovering = hovering
+        switch mode {
+        case .error:
+            errorView
+        case .recording, .processing:
+            switch style {
+            case .classic:
+                indicatorPill(size: .classic)
+            case .mini:
+                indicatorPill(size: .mini)
+            case .none:
+                EmptyView()
             }
         }
     }
 
-    // MARK: - Classic Style
+    // MARK: - Indicator Pill (Figma)
 
-    /// Full waveform view similar to SuperWhisper's "Classic" style.
-    private var classicWaveformView: some View {
-        let visualizerMode = visualizerModeForIndicator
-        return ZStack {
-            HStack(spacing: 4) {
-                statusDot
-                AudioVisualizer(
-                    audioMeter: audioMonitor.audioMeter,
-                    mode: visualizerMode,
-                    barCount: 16,
-                    maxHeight: 24
-                )
-                .frame(width: 120)
-
-                if let type = meetingType, isRecordingMode {
-                    Image(systemName: type.iconName)
-                        .font(.caption)
-                        .foregroundStyle(.white.opacity(0.8))
-                        .padding(.leading, 4)
-                        .help(type.displayName)
-                }
-            }
-            .opacity(isHovering ? 0.3 : 1.0)
-
-            if isHovering, isRecordingMode {
-                controlsOverlay
-                    .transition(.scale(scale: 0.9).combined(with: .opacity))
-            }
-
-            if isRecordingMode, audioMonitor.isSilenceWarningVisible {
-                silenceWarningOverlay
-                    .transition(.move(edge: .top).combined(with: .opacity))
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-        .background(MeetingAssistantDesignSystem.Colors.overlayBackground)
-        .clipShape(Capsule())
-        .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
+    private enum IndicatorSize {
+        case classic
+        case mini
     }
 
-    // MARK: - Mini Style
+    private func indicatorPill(size: IndicatorSize) -> some View {
+        let isExpanded = isRecordingMode && isHovering
 
-    /// Compact pill view similar to SuperWhisper's "Mini" style.
-    private var miniWaveformView: some View {
-        let visualizerMode = visualizerModeForIndicator
-        return ZStack {
-            HStack(spacing: 6) {
-                statusDot
-                AudioVisualizer(
-                    audioMeter: audioMonitor.audioMeter,
-                    mode: visualizerMode,
-                    barCount: 7,
-                    maxHeight: 16
-                )
+        return ZStack(alignment: .top) {
+            HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                if isExpanded {
+                    expandedLeadingControls
+                    divider
+                }
+
+                recordingCluster(size: size)
+
+                if isExpanded {
+                    divider
+                    expandedTrailingControl
+                }
             }
-            .opacity(isHovering ? 0.3 : 1.0)
-
-            if isHovering, isRecordingMode {
-                controlsOverlay
-                    .transition(.scale(scale: 0.9).combined(with: .opacity))
+            .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing16)
+            .frame(height: MeetingAssistantDesignSystem.Layout.controlHeight)
+            .background(MeetingAssistantDesignSystem.Colors.overlayBackground)
+            .clipShape(Capsule())
+            .shadow(
+                color: .black.opacity(0.15),
+                radius: MeetingAssistantDesignSystem.Layout.shadowRadius,
+                x: MeetingAssistantDesignSystem.Layout.shadowX,
+                y: MeetingAssistantDesignSystem.Layout.shadowY
+            )
+            .contentShape(Capsule())
+            .onHover { hovering in
+                guard isRecordingMode else { return }
+                withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                    isHovering = hovering
+                }
             }
 
             if isRecordingMode, audioMonitor.isSilenceWarningVisible {
                 silenceWarningOverlay
+                    .padding(.top, 2)
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(MeetingAssistantDesignSystem.Colors.overlayBackground)
-        .clipShape(Capsule())
-        .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 3)
+        .animation(.spring(response: 0.25, dampingFraction: 0.8), value: isHovering)
     }
 
     // MARK: - Shared Components
 
-    /// Control buttons overlay shown on hover.
-    private var controlsOverlay: some View {
-        HStack(spacing: 24) {
+    private var expandedLeadingControls: some View {
+        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
             Button(action: onStop) {
-                Image(systemName: "stop.fill")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(.white)
+                Image(systemName: "checkmark")
+                    .font(.callout.weight(.semibold))
+                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.overlayForeground)
+                    .frame(
+                        width: MeetingAssistantDesignSystem.Layout.spacing20,
+                        height: MeetingAssistantDesignSystem.Layout.spacing20
+                    )
             }
             .buttonStyle(.plain)
             .help("recording_indicator.stop.help".localized)
 
-            Button(action: onCancel) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(.white.opacity(0.8))
-            }
-            .buttonStyle(.plain)
-            .help("recording_indicator.cancel.help".localized)
+            promptPickerControl
         }
     }
 
@@ -159,11 +129,16 @@ public struct FloatingRecordingIndicatorView: View {
             .multilineTextAlignment(.center)
             .lineLimit(nil)
             .fixedSize(horizontal: true, vertical: true)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 4)
-            .background(MeetingAssistantDesignSystem.Colors.recording.opacity(0.9))
+            .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing10)
+            .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing4)
+            .background(MeetingAssistantDesignSystem.Colors.recordingOverlayBackground)
             .clipShape(Capsule())
-            .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+            .shadow(
+                color: .black.opacity(0.2),
+                radius: MeetingAssistantDesignSystem.Layout.shadowRadiusSmall,
+                x: MeetingAssistantDesignSystem.Layout.shadowX,
+                y: MeetingAssistantDesignSystem.Layout.shadowYSmall
+            )
             .contentShape(Rectangle())
             .onTapGesture {
                 onCancel()
@@ -171,11 +146,31 @@ public struct FloatingRecordingIndicatorView: View {
             }
     }
 
-    /// Dot indicating recording or processing.
+    private var divider: some View {
+        Rectangle()
+            .fill(MeetingAssistantDesignSystem.Colors.overlayDivider)
+            .frame(width: 1, height: MeetingAssistantDesignSystem.Layout.spacing20)
+    }
+
+    private var expandedTrailingControl: some View {
+        Button(action: onCancel) {
+            Image(systemName: "trash")
+                .font(.callout.weight(.semibold))
+                .foregroundStyle(MeetingAssistantDesignSystem.Colors.overlayForeground)
+                .frame(
+                    width: MeetingAssistantDesignSystem.Layout.spacing20,
+                    height: MeetingAssistantDesignSystem.Layout.spacing20
+                )
+        }
+        .buttonStyle(.plain)
+        .help("recording_indicator.cancel.help".localized)
+    }
+
+    /// Dot indicating recording or processing (Figma uses 12x12).
     private var statusDot: some View {
         Circle()
             .fill(isRecordingMode ? MeetingAssistantDesignSystem.Colors.recording : SettingsDesignSystem.Colors.accent)
-            .frame(width: 8, height: 8)
+            .frame(width: MeetingAssistantDesignSystem.Layout.spacing12, height: MeetingAssistantDesignSystem.Layout.spacing12)
             .modifier(PulsingModifier(isActive: isRecordingMode, speed: isRecordingMode ? 0.9 : 1.4))
     }
 
@@ -196,10 +191,10 @@ public struct FloatingRecordingIndicatorView: View {
     private var errorView: some View {
         let message = errorMessage ?? "Error"
 
-        return HStack(spacing: 8) {
+        return HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundStyle(.white)
-                .font(.system(size: 12, weight: .bold))
+                .font(.caption.weight(.bold))
 
             Text(message)
                 .font(.caption.bold())
@@ -207,11 +202,16 @@ public struct FloatingRecordingIndicatorView: View {
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
+        .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing16)
+        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
         .background(MeetingAssistantDesignSystem.Colors.error.opacity(0.95))
         .clipShape(Capsule())
-        .shadow(color: .black.opacity(0.2), radius: 6, x: 0, y: 3)
+        .shadow(
+            color: .black.opacity(0.2),
+            radius: MeetingAssistantDesignSystem.Layout.shadowRadiusSmall,
+            x: MeetingAssistantDesignSystem.Layout.shadowX,
+            y: MeetingAssistantDesignSystem.Layout.shadowYSmall
+        )
     }
 
     private var errorMessage: String? {
@@ -219,6 +219,128 @@ public struct FloatingRecordingIndicatorView: View {
             return nil
         }
         return message
+    }
+
+    private var isDictationRecording: Bool {
+        guard recordingManager.isRecording else { return false }
+        if recordingManager.recordingSource == .microphone { return true }
+        return recordingManager.currentMeeting?.isDictation == true
+    }
+
+    private var isMeetingRecording: Bool {
+        recordingManager.isRecording && !isDictationRecording
+    }
+
+    private func recordingCluster(size: IndicatorSize) -> some View {
+        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+            statusDot
+
+            AudioVisualizer(
+                audioMeter: audioMonitor.audioMeter,
+                mode: visualizerModeForIndicator,
+                barCount: size == .classic ? 16 : 8,
+                maxHeight: MeetingAssistantDesignSystem.Layout.recordingIndicatorWaveformMaxHeight,
+                barWidth: MeetingAssistantDesignSystem.Layout.spacing4,
+                barSpacing: MeetingAssistantDesignSystem.Layout.spacing2,
+                minHeight: MeetingAssistantDesignSystem.Layout.spacing8
+            )
+
+            if isRecordingMode, isMeetingRecording {
+                TimelineView(.periodic(from: .now, by: 1.0)) { context in
+                    Text(formatRecordingDuration(at: context.date))
+                        .font(.callout.weight(.semibold))
+                        .foregroundStyle(MeetingAssistantDesignSystem.Colors.overlayForeground)
+                        .monospacedDigit()
+                }
+                .accessibilityLabel("recording_indicator.duration".localized)
+            }
+        }
+    }
+
+    private var promptPickerControl: some View {
+        Menu {
+            Button {
+                applyPostProcessingSelection(nil)
+            } label: {
+                Label(
+                    "recording_indicator.prompt.none".localized,
+                    systemImage: "nosign"
+                )
+            }
+
+            Divider()
+
+            ForEach(promptPickerPrompts) { prompt in
+                Button {
+                    applyPostProcessingSelection(prompt.id)
+                } label: {
+                    Label(prompt.title, systemImage: prompt.icon)
+                }
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: currentPromptIconName)
+                    .font(.callout.weight(.semibold))
+                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.overlayForeground)
+
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.overlayForegroundMuted)
+            }
+            .frame(height: MeetingAssistantDesignSystem.Layout.spacing20)
+            .contentShape(Rectangle())
+        }
+        .menuStyle(.borderlessButton)
+        .help("recording_indicator.prompt.help".localized)
+        .highPriorityGesture(TapGesture())
+    }
+
+    private var promptPickerPrompts: [PostProcessingPrompt] {
+        isDictationRecording ? settingsStore.dictationAvailablePrompts : settingsStore.meetingAvailablePrompts
+    }
+
+    private var currentPromptIconName: String {
+        if isDictationRecording {
+            if settingsStore.isDictationPostProcessingDisabled {
+                return "nosign"
+            }
+            return (settingsStore.selectedDictationPrompt ?? .cleanTranscription).icon
+        }
+
+        if settingsStore.isMeetingPostProcessingDisabled {
+            return "nosign"
+        }
+
+        return settingsStore.selectedPrompt?.icon ?? "doc.text"
+    }
+
+    private func applyPostProcessingSelection(_ promptId: UUID?) {
+        let selectionId = promptId ?? AppSettingsStore.noPostProcessingPromptId
+
+        if isDictationRecording {
+            settingsStore.dictationSelectedPromptId = selectionId
+            return
+        }
+
+        // Meetings
+        settingsStore.meetingTypeAutoDetectEnabled = false
+        if recordingManager.currentMeeting?.type == .autodetect {
+            recordingManager.overrideCurrentMeetingType(.general)
+        }
+
+        settingsStore.selectedPromptId = selectionId
+    }
+
+    private func formatRecordingDuration(at date: Date) -> String {
+        guard let startTime = recordingManager.currentMeeting?.startTime else { return "00:00" }
+
+        let duration = max(0, date.timeIntervalSince(startTime))
+
+        let formatter = DateComponentsFormatter()
+        formatter.allowedUnits = duration >= 3_600 ? [.hour, .minute, .second] : [.minute, .second]
+        formatter.zeroFormattingBehavior = .pad
+
+        return formatter.string(from: duration) ?? "00:00"
     }
 }
 
@@ -233,10 +355,10 @@ struct AudioVisualizer: View {
     let audioMeter: AudioMeter
     let mode: AudioVisualizerMode
     let barCount: Int
-    let minHeight: CGFloat = 2.5
     let maxHeight: CGFloat
-    let barWidth: CGFloat = 2.5
-    let barSpacing: CGFloat = 2.0
+    let barWidth: CGFloat
+    let barSpacing: CGFloat
+    let minHeight: CGFloat
     let hardThreshold: Double = 0.05
 
     private let sensitivityMultipliers: [Double]
@@ -247,11 +369,22 @@ struct AudioVisualizer: View {
     @State private var barHeights: [CGFloat]
     @State private var targetHeights: [CGFloat]
 
-    init(audioMeter: AudioMeter, mode: AudioVisualizerMode, barCount: Int, maxHeight: CGFloat) {
+    init(
+        audioMeter: AudioMeter,
+        mode: AudioVisualizerMode,
+        barCount: Int,
+        maxHeight: CGFloat,
+        barWidth: CGFloat = MeetingAssistantDesignSystem.Layout.spacing4,
+        barSpacing: CGFloat = MeetingAssistantDesignSystem.Layout.spacing2,
+        minHeight: CGFloat = MeetingAssistantDesignSystem.Layout.spacing8
+    ) {
         self.audioMeter = audioMeter
         self.mode = mode
         self.barCount = barCount
         self.maxHeight = maxHeight
+        self.barWidth = barWidth
+        self.barSpacing = barSpacing
+        self.minHeight = minHeight
 
         sensitivityMultipliers = (0..<barCount).map { _ in
             Double.random(in: 0.6...1.4)
@@ -266,8 +399,8 @@ struct AudioVisualizer: View {
             Double.random(in: 0.75...1.1)
         }
 
-        _barHeights = State(initialValue: Array(repeating: 4, count: barCount))
-        _targetHeights = State(initialValue: Array(repeating: 4, count: barCount))
+        _barHeights = State(initialValue: Array(repeating: minHeight, count: barCount))
+        _targetHeights = State(initialValue: Array(repeating: minHeight, count: barCount))
     }
 
     var body: some View {
@@ -284,14 +417,14 @@ struct AudioVisualizer: View {
     private var recordingBars: some View {
         HStack(spacing: barSpacing) {
             ForEach(0..<barCount, id: \.self) { index in
-                RoundedRectangle(cornerRadius: 1.2)
+                Capsule()
                     .fill(Color.white)
                     .frame(width: barWidth, height: barHeights[index])
             }
         }
         .frame(height: maxHeight, alignment: .center)
-        .onChange(of: audioMeter) { _, newValue in
-            updateBars(with: Float(newValue.averagePower))
+        .onChange(of: audioMeter.averagePower) { _, newValue in
+            updateBars(with: Float(newValue))
         }
     }
 
@@ -300,7 +433,7 @@ struct AudioVisualizer: View {
             let time = timeline.date.timeIntervalSinceReferenceDate
             HStack(spacing: barSpacing) {
                 ForEach(0..<barCount, id: \.self) { index in
-                    RoundedRectangle(cornerRadius: 1.2)
+                    Capsule()
                         .fill(Color.white)
                         .frame(width: barWidth, height: processingHeight(for: index, time: time))
                 }
