@@ -1,46 +1,51 @@
 # Meeting Assistant - Installation Guide
 
-## System Requirements
-- **macOS**: Sonoma 14.0 or later
-- **Architecture**: Apple Silicon (M1/M2/M3) recommended
+## System requirements
 
-## Installation Steps
+- macOS 14.0+ (Sonoma or later)
+- Apple Silicon recommended
 
-1. **Download**
-   - Download the latest `.dmg` file from the [Releases page](https://github.com/mourato/my-meeting-assistant/releases).
+## Installation
 
-2. **Install**
-   - Double-click the downloaded `.dmg` file.
-   - Drag the `MeetingAssistant` icon to the `Applications` folder shortcut.
+1. Download the latest `.dmg` from the Releases page.
+2. Open the `.dmg` and drag `MeetingAssistant.app` to `/Applications`.
+3. On first run, grant the requested permissions (see below).
 
-3. **First Run & Permissions**
-   - Open specific Application from Launchpad or Finder.
-   - **Critical**: When prompted, allow **Microphone Access**. This is required for recording meetings.
-   - If prompted for purely local storage access or accessibility (for global shortcuts), please grant them.
+## Permissions
+
+Open **System Settings → Privacy & Security** and ensure Meeting Assistant has access to:
+
+- Screen Recording (required for system audio capture)
+- Microphone (fallback audio capture)
+- Accessibility (global shortcuts and Assistant actions)
 
 ## Troubleshooting
 
-### "App is damaged and can't be opened"
-Since this app is not notarized by Apple (internal build), you might see this error.
-To fix, open Terminal and run:
+### “App is damaged and can’t be opened”
+
+If the build is not notarized, macOS Gatekeeper may show this message.
 
 ```bash
 xattr -cr /Applications/MeetingAssistant.app
 ```
 
-Then try opening it again.
+### Audio recording does not work
 
-### Audio Recording Not Working
-1. Check System Settings > Privacy & Security > Microphone.
-2. Ensure `MeetingAssistant` is enabled.
-3. Check `Privacy & Security > Screen Recording` if you are using system audio capture features.
+1. Check **Privacy & Security → Screen Recording**.
+2. Ensure Meeting Assistant is enabled.
+3. If you rebuilt/reinstalled the app, remove and re-add the permission.
 
-### Where are my recordings stored?
-By default, recordings are stored in the app's secure container or your configured storage directory.
-Check `~/Library/Application Support/com.meetingassistant.app/`
+### Where are recordings stored?
 
-## Crash Reports
-If the app crashes, logs are saved to:
-`~/Library/Logs/MeetingAssistant/CrashReports/`
+By default, the app stores:
 
-Please attach the latest log file when reporting issues.
+- Audio: `~/Library/Application Support/MeetingAssistant/recordings/`
+- Transcripts: `~/Library/Application Support/MeetingAssistant/transcripts/`
+
+(These locations may change if you configure a custom directory in Settings.)
+
+## Crash reports and logs
+
+- Logs: `~/Library/Logs/MeetingAssistant/`
+
+When reporting issues, attach relevant logs and your macOS version.

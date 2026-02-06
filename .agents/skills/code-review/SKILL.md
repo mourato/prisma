@@ -5,61 +5,62 @@ description: This skill should be used when conducting code reviews, analyzing p
 
 # Code Review (Meeting Assistant)
 
-## Objetivo
+## Goal
 
-Fazer uma análise crítica e pragmática do código alterado antes do push final, com foco em:
+Perform a pragmatic review of the change set before the final push, focusing on:
 
-- Correção e concorrência (Swift 6 / `@MainActor` / races)
-- Segurança e privacidade (dados sensíveis, logs, permissões)
-- Performance (hot paths, alocação, observação/Combine)
-- UX (consistência de Settings, estados inválidos, feedback)
-- Manutenibilidade (duplicação, coesão, acoplamento, naming)
-- Testabilidade (pontos de injeção, pure logic)
+- Correctness and concurrency (Swift 6 / `@MainActor` / race conditions)
+- Security and privacy (sensitive data, logs, permissions)
+- Performance (hot paths, allocations, observation/Combine)
+- UX (Settings consistency, invalid states, feedback)
+- Maintainability (duplication, cohesion, coupling, naming)
+- Testability (injection points, pure logic)
 
-## Como executar
+## How to run
 
-1/ **Escopo**
+### 1) Scope
 
-- Liste os commits e os arquivos tocados.
-- Identifique mudanças de comportamento vs. mudanças estruturais.
+- List commits and touched files.
+- Separate behavior changes from structural refactors.
 
-2/ **Checklist técnico**
+### 2) Technical checklist
 
-- **Threading**: mutação de estado acontece no actor certo?
-- **Side effects**: atualizações em `UserDefaults` e `KeyboardShortcuts` são consistentes?
-- **Estado**: há estados impossíveis (ex.: lock preso)?
-- **Falhas**: em caso de erro/cancelamento, estado volta ao normal?
-- **Logs**: sem PII; severidade coerente.
-- **i18n/a11y**: strings e labels estão corretos?
+- Threading: does state mutation happen on the correct actor/thread?
+- Side effects: are updates to `UserDefaults` and `KeyboardShortcuts` consistent?
+- State: are there impossible/stuck states (e.g., a lock that never releases)?
+- Failure paths: on error/cancel, does the system return to a sane state?
+- Logs: no PII; consistent severity.
+- i18n/a11y: localization keys and accessibility labels/hints are correct.
 
-3/ **Checklist de UX**
+### 3) UX checklist
 
-- Configurações estão no lugar certo (contextual)?
-- “Reset” deixa a UI consistente e previsível?
-- Shortcuts “custom” ficam inativos quando não selecionados?
+- Settings placement is coherent and discoverable.
+- “Reset” returns the UI to a predictable, consistent state.
+- Custom shortcuts are disabled when not selected.
 
-4/ **Checklist de segurança**
+### 4) Security checklist
 
-- Nada de gravação simultânea conflitante.
-- Sem vazamento de paths/inputs sensíveis em logs.
+- No conflicting simultaneous recording.
+- No leaking of file paths or sensitive inputs in logs.
 
-5/ **Resumo final em tabela (semáforo)**
-Use uma tabela com prioridade e recomendação:
+### 5) Final summary table (traffic-light)
 
-- 🔴 **Crítico**: bug, risco de crash, perda de dados, segurança
-- 🟡 **Médio**: comportamento confuso, dívidas técnicas, performance
-- 🟢 **Baixo**: melhorias de clareza, refactors opcionais
+Use a short table with priority and recommendation:
 
-Colunas sugeridas:
+- Critical: crash risk, data loss, security, user harm
+- Medium: confusing behavior, technical debt, performance regressions
+- Low: clarity improvements, optional refactors
 
-- Severidade
-- Área (UX/Perf/Sec/Conc/Test/Arch)
-- Achado
-- Impacto
-- Recomendação
+Suggested columns:
 
-## Saída esperada
+- Severity
+- Area (UX/Perf/Sec/Conc/Test/Arch)
+- Finding
+- Impact
+- Recommendation
 
-- Uma tabela de resumo (semáforo).
-- Observações objetivas com referência a arquivos/símbolos.
-- Recomendações “next steps” (curtas e acionáveis).
+## Expected output
+
+- A summary table (traffic-light).
+- Objective notes with references to files/symbols.
+- Short, actionable next steps.

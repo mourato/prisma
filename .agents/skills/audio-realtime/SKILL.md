@@ -268,33 +268,33 @@ actor AudioRecordingWorker {
 
 ### Mock Audio Engine Pattern
 
-Ao testar componentes de áudio, sempre valide alocações e bounds antes de unsafe operations:
+When testing audio components, always validate allocations and bounds before unsafe operations:
 
 ```swift
-// ✅ CORRETO - Safe pointer handling em testes
+// ✅ Correct - safe pointer handling in tests
 class MockAudioEngine {
     func testRenderCallback() {
         let frameCount: AVAudioFrameCount = 512
         let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 1)!
         
-        // 1. Alocar buffer ANTES do callback
+        // 1. Allocate the buffer BEFORE the callback
         guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else {
             XCTFail("Failed to allocate buffer")
             return
         }
         buffer.frameLength = frameCount
         
-        // 2. Validar ponteiros antes de usar
+        // 2. Validate pointers before using them
         let ablPtr = UnsafeMutableAudioBufferListPointer(buffer.mutableAudioBufferList)
         guard let channelData = ablPtr.first else {
             XCTFail("No channel data")
             return
         }
         
-        // 3. Bounds check SEMPRE
+        // 3. Always bounds-check
         let safeCount = min(Int(frameCount), Int(channelData.mDataByteSize) / MemoryLayout<Float>.size)
         
-        // 4. Processar apenas safeCount frames
+        // 4. Process only safeCount frames
         let floatPtr = channelData.mData?.assumingMemoryBound(to: Float.self)
         // Safe to use floatPtr[0..<safeCount]
     }
@@ -304,17 +304,17 @@ class MockAudioEngine {
 ### Common Test Crashes
 
 **Signal 11 (SIGSEGV)**:
-- **Causa**: Acesso a ponteiro inválido ou buffer não alocado
-- **Solução**: Sempre alocar `AVAudioPCMBuffer` ANTES de passar para callbacks
-- **Validação**: Use `XCTAssertNotNil` para validar alocações antes de unsafe casts
+- **Cause**: Invalid pointer access or an unallocated buffer
+- **Fix**: Always allocate `AVAudioPCMBuffer` BEFORE passing it to callbacks
+- **Validation**: Use `XCTAssertNotNil` to validate allocations before unsafe casts
 
-**Exemplo de fix real (Issue #26)**:
+**Example of a real fix (Issue #26)**:
 ```swift
-// ❌ ANTES - Crash em testSourceNodeRenderCallback
+// ❌ Before - crash in testSourceNodeRenderCallback
 let ablPtr = UnsafeMutableAudioBufferListPointer(audioBufferList)
-let buffer = ablPtr.first!  // Force unwrap sem validação
+let buffer = ablPtr.first!  // Force-unwrap without validation
 
-// ✅ DEPOIS - Safe com validação
+// ✅ After - safe with validation
 guard let ablPtr = UnsafeMutableAudioBufferListPointer(audioBufferList).first else {
     XCTFail("Expected audio buffer")
     return noErr
@@ -324,7 +324,7 @@ let safeFrameCount = min(requestedFrames, ablPtr.mDataByteSize / MemoryLayout<Fl
 
 ### Skipping Unstable Tests
 
-Para testes com comportamento não-determinístico (ex: performance, concorrência extrema):
+For tests with non-deterministic behavior (e.g., performance, extreme concurrency):
 
 ```swift
 func testHighConcurrencyScenario() throws {
