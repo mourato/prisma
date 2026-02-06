@@ -1,16 +1,16 @@
 # Dependencies Audit (Issue #37)
 
-Data: 2026-02-03  
+Date: 2026-02-03  
 Branch: `codex/issue-37-deps-audit`  
-Escopo: **todas** as dependências (runtime, testes, tooling local, CI/CD e scripts).
+Scope: **all dependencies** (runtime, tests, local tooling, CI/CD, scripts).
 
-## Fontes analisadas
+## Sources reviewed
 
 - SwiftPM:
-  - `Packages/MeetingAssistantCore/Package.swift` (dependências diretas)
-  - `Packages/MeetingAssistantCore/Package.resolved` (pins de topo)
-  - `Packages/MeetingAssistantCore/.build/workspace-state.json` + `Packages/MeetingAssistantCore/.build/checkouts/` (checkouts presentes no workspace local)
-- Projeto/Build:
+  - `Packages/MeetingAssistantCore/Package.swift` (declared direct dependencies)
+  - `Packages/MeetingAssistantCore/Package.resolved` (top-level pins)
+  - `Packages/MeetingAssistantCore/.build/workspace-state.json` + `Packages/MeetingAssistantCore/.build/checkouts/` (local workspace checkouts)
+- Project / build:
   - `MeetingAssistant.xcodeproj/project.pbxproj`
   - `Makefile`
   - `scripts/*`
@@ -19,28 +19,28 @@ Escopo: **todas** as dependências (runtime, testes, tooling local, CI/CD e scri
   - `.github/workflows/release.yml`
   - `.github/workflows/generate-docs.yml`
 
-> Observação: `Package.resolved` **não lista transitivas**. Para transitivas/checkouts, usei o `workspace-state.json` quando disponível — ele pode ficar **stale** (ex.: checkouts antigos em `.build`). A fonte de verdade para “o que o projeto declara” é o `Package.swift`.
+> Note: `Package.resolved` does **not** list transitive dependencies directly. For transitives/checkouts, `workspace-state.json` can help, but it may become stale (e.g., old checkouts left in `.build`). The source of truth for what the project declares is `Package.swift`.
 
 ---
 
-## Lista por categoria
+## Dependency list (by category)
 
-### Usadas
+### In use
 
-#### SwiftPM (diretas)
+#### SwiftPM (direct)
 
 - **FluidAudio** (`0.10.0`) — runtime (core feature)
-  - Evidência: `@preconcurrency import FluidAudio` em `Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Services/FluidAudioProvider.swift` e `Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Services/FluidAIModelManager.swift`.
-- **KeyboardShortcuts** (`2.4.0`) — runtime (atalhos globais)
-  - Evidência: `import KeyboardShortcuts` em `App/GlobalShortcutController.swift`, `App/AssistantShortcutController.swift` e uso no Core (settings).
-- **swift-atomics** (`1.3.0`) — runtime (concorrência/estado em pipeline de áudio)
-  - Evidência: `import Atomics` + `ManagedAtomic` em `Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Services/SystemAudioRecorder.swift`, `Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Services/AudioRecordingWorker.swift`, `Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Services/AudioRecorder.swift`.
-- **swift-syntax** (`602.0.0`) — build-time (Swift Macros para mocks)
-  - Evidência: target macro `MeetingAssistantCoreMockingMacros` em `Packages/MeetingAssistantCore/Package.swift`.
+  - Evidence: `@preconcurrency import FluidAudio` in `Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Services/FluidAudioProvider.swift` and `Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Services/FluidAIModelManager.swift`.
+- **KeyboardShortcuts** (`2.4.0`) — runtime (global shortcuts)
+  - Evidence: `import KeyboardShortcuts` in `App/GlobalShortcutController.swift`, `App/AssistantShortcutController.swift` and Core settings.
+- **swift-atomics** (`1.3.0`) — runtime (audio pipeline state / concurrency)
+  - Evidence: `import Atomics` + `ManagedAtomic` in `SystemAudioRecorder.swift`, `AudioRecordingWorker.swift`, `AudioRecorder.swift`.
+- **swift-syntax** (`602.0.0`) — build-time (Swift macros for mocks)
+  - Evidence: macro target `MeetingAssistantCoreMockingMacros` in `Packages/MeetingAssistantCore/Package.swift`.
 
-#### SwiftPM (checkouts/transitivas presentes no workspace)
+#### SwiftPM (workspace checkouts / transitives)
 
-> Abaixo estão dependências que aparecem em `.build` como checkouts. Elas podem entrar indiretamente via SwiftPM **ou** podem ser resíduos de resoluções anteriores (stale).
+> The list below contains packages seen in `.build` as checkouts. They may be pulled transitively by SwiftPM **or** they may be leftovers from previous resolves (stale).
 
 - AEXML (`4.7.0`)
 - FileKit (`6.1.0`)
@@ -52,77 +52,67 @@ Escopo: **todas** as dependências (runtime, testes, tooling local, CI/CD e scri
 - XcodeProj (`9.7.2`)
 - swift-argument-parser (`1.7.0`)
 
-#### Tooling local / scripts
+#### Local tooling / scripts
 
-- **SwiftFormat** — formatação
-  - Evidência: `Makefile` roda `swiftformat` no target `format` (pré-requisito de `make build`).
-  - Evidência: `scripts/lint.sh`, `scripts/lint-fix.sh` e `scripts/hooks/pre-commit`.
+- **SwiftFormat** — formatting
+  - Evidence: `Makefile` uses `swiftformat` in the `format` target.
+  - Evidence: `scripts/lint.sh`, `scripts/lint-fix.sh`, and `scripts/hooks/pre-commit`.
 - **SwiftLint** — lint
-  - Evidência: `Makefile` (`make lint`) e `scripts/lint.sh`, `scripts/lint-fix.sh`, `scripts/code-health-check.sh`, `scripts/hooks/pre-commit`.
-- **PR heuristics (script)** — checagens leves em PR (warnings)
-  - Evidência: `scripts/pr-checks.sh`.
-- Ferramentas Apple (ambiente)
-  - `xcodebuild`, `codesign`, `hdiutil` (usadas por `Makefile`/scripts e workflows).
+  - Evidence: `make lint` and `scripts/lint.sh`, `scripts/lint-fix.sh`, `scripts/code-health-check.sh`, `scripts/hooks/pre-commit`.
+- **PR heuristics (script)** — lightweight checks (warnings)
+  - Evidence: `scripts/pr-checks.sh`.
+- Apple tooling (environment)
+  - `xcodebuild`, `codesign`, `hdiutil` (used by Makefile/scripts/workflows).
 
 #### CI/CD (GitHub Actions)
 
-- Workflow CI (`.github/workflows/ci.yml`)
-  - **Lint job**: instala `swiftlint`/`swiftformat` e roda `STRICT_LINT=1 make lint`.
-  - **Test job**: roda `make ci-test`.
-- Workflow Release (`.github/workflows/release.yml`)
-  - build release + create dmg + upload artifact + gh-release.
+- CI workflow (`.github/workflows/ci.yml`)
+  - Lint: installs `swiftlint`/`swiftformat` and runs `STRICT_LINT=1 make lint`.
+  - Tests: runs `make ci-test`.
+- Release workflow (`.github/workflows/release.yml`)
+  - Builds release + creates DMG + uploads artifact + drafts GitHub release.
 
 ---
 
-### Não usadas (candidatas fortes)
+### Not in use (strong candidates)
 
-- **Cuckoo** (test-only) — **removido** do projeto nesta branch.
-  - Remoções aplicadas: dependência no `Package.swift`, mocks gerados, configs (`Cuckoofile.*`) e target `make mocks`.
-  - Observação: checkouts antigos ainda podem aparecer em `Packages/MeetingAssistantCore/.build/` até um `swift package reset` (ou limpeza da pasta `.build`).
+- **Cuckoo** (test-only) — removed in the audited branch.
+  - Note: stale checkouts may still appear in `Packages/MeetingAssistantCore/.build/` until `swift package reset` (or deleting `.build`).
 
 ---
 
-### Subutilizadas (avaliar caso a caso)
-
-> Candidatas com potencial de remoção, mas exigem decisão de produto/processo. Recomenda-se ser conservador: **não remover sem alternativa clara + validação**.
+### Under discussion (keep until there is a clear replacement)
 
 - **swift-syntax**
-  - Uso atual: exclusivamente para suportar Swift Macros (mocks) no Core.
-  - Trade-off: removeu o Cuckoo (e tooling), mas adiciona um pacote grande ao grafo de build.
-  - Direção sugerida: manter enquanto a estratégia de mocks via macros for padrão; revisitar se quisermos tornar mocking **test-only** (isolando o uso de `@GenerateMock` para fora do target principal ou adotando outra abordagem).
+  - Current usage: Swift macros (mocks).
+  - Trade-off: removes external mock tooling, but adds a large build-time dependency.
+  - Suggested direction: keep while macros are the standard, revisit if mocking becomes test-only or moves to a dedicated target.
 
 - **swift-atomics**
-  - Uso atual: flags/contadores simples (`ManagedAtomic<Bool>`, `ManagedAtomic<UInt32>`), mas em hot paths de áudio.
-  - Direção sugerida: manter por enquanto; revisitar quando houver janela para testes de estresse/TSan.
+  - Current usage: small flags/counters in audio hot paths.
+  - Suggested direction: keep; revisit only with a dedicated stress/TSan window.
 
----
+## Recommendations and impact (as implemented in the audit branch)
 
-## Recomendações e impactos (alinhadas com sua ordem)
+### Phase 1 — immediate hygiene
 
-### Fase 1 — Higiene imediata (quick wins)
+1) **Release workflow cleanup** (remove lint/format installation)
+- Result: faster and less variable release jobs.
 
-1) **Limpeza do workflow de release** (remover install de lint/format)
-- Implementado: removi `brew install swiftlint swiftformat` de `.github/workflows/release.yml`.
-- Impacto: job de release mais rápido e com menos variabilidade.
+2) **Decide on XcodeGen** (treat `.xcodeproj` as the source of truth)
+- Result: less ambiguity; the trade-off is manual `.xcodeproj` drift (mitigated by review/CI).
 
-2) **Decisão sobre XcodeGen** (assumir `.xcodeproj` como fonte de verdade)
-- Implementado: removi `project.yml` e referências a XcodeGen.
-- Impacto: menos ambiguidade; risco de drift manual do `.xcodeproj` (mitigado por revisão/CI).
+### Phase 2 — reduce CI/setup cost
 
-### Fase 2 — Redução de custo de CI & build
+3) **Retire Danger-Swift**
+- Replacement: strict lint gate + `scripts/pr-checks.sh` warnings.
+- Result: less CI setup and fewer moving parts.
 
-3) **Aposentar Danger-Swift**
-- Implementado: removi `Dangerfile.swift`, os targets do `Makefile` e o job do Danger no CI.
-- Substituição: lint/format como gate (`STRICT_LINT=1 make lint`) + `scripts/pr-checks.sh` emitindo warnings.
-- Impacto: menos setup no CI; gate objetivo sem ficar excessivamente restritivo.
+### Phase 3 — longer-term structural work
 
-### Fase 3 — Refatoração estrutural (longo prazo)
+4) **Testing strategy (replace Cuckoo)**
+- Result: mocks via Swift macros.
+- Trade-off: build-time dependency on `swift-syntax`.
 
-4) **Estratégia de testes (substituição do Cuckoo)**
-- Implementado: mocks via Swift Macros (`@GenerateMock`) + migração dos testes que dependiam de Cuckoo.
-- Removido: Cuckoo, mocks gerados e tooling/configs.
-- Impacto: reduz tooling de mocks e facilita evolução incremental dos testes; custo é uma dependência de build (`swift-syntax`).
-
-5) **Manutenção da concorrência**
-- Sugestão: manter `swift-atomics` por enquanto.
-- Impacto: evita risco em pipeline de áudio; revisitar com janela para testes de estresse/TSan.
+5) **Concurrency maintenance**
+- Result: keep `swift-atomics` for safety in audio hot paths; revisit when stress testing is available.
