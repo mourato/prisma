@@ -18,7 +18,8 @@ Guidelines for maintaining consistent project documentation and visibility into 
 ## 2. Agent Documentation
 
 - **Living Guidance**: Ensure `AGENTS.md` reflects the current state of tools, scripts, and skills.
-- **Clean Registry**: Periodically audit `.agent/skills` to remove stale or redundant guidance.
+- **Design System Guidance**: Keep the UI Design System tokens/components documented (and referenced from `AGENTS.md` / relevant skills).
+- **Clean Registry**: Periodically audit `.agents/skills` to remove stale or redundant guidance.
 
 ## 3. Consistency
 

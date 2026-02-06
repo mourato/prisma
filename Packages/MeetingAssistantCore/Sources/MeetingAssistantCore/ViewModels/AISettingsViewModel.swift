@@ -38,23 +38,23 @@ public class AISettingsViewModel: ObservableObject {
             .removeDuplicates()
             .dropFirst() // Skip initial value to avoid clearing selection on tab switch
             .sink { [weak self] provider in
-                guard let self = self else { return }
-                self.apiKeyText = ""
-                self.isKeySaved = self.keychain.existsAPIKey(for: provider)
+                guard let self else { return }
+                apiKeyText = ""
+                isKeySaved = self.keychain.existsAPIKey(for: provider)
                 self.settings.updateSelectedModel("") // Clear previous selection (properly triggers didSet)
 
-                if self.isKeySaved {
+                if isKeySaved {
                     // Restore verified state and fetch models
-                    self.connectionStatus = .success
+                    connectionStatus = .success
                     Task {
                         await self.fetchAvailableModels()
                     }
                 } else {
-                    self.connectionStatus = .unknown
-                    self.availableModels = [] // Clear models if no key
+                    connectionStatus = .unknown
+                    availableModels = [] // Clear models if no key
                 }
 
-                self.updateUIStates()
+                updateUIStates()
             }
             .store(in: &cancellables)
 
@@ -182,8 +182,6 @@ public class AISettingsViewModel: ObservableObject {
             logger.error("Failed to remove API key: \(error.localizedDescription)")
         }
     }
-
-
 
     private func connectionErrorMessage(from error: Error) -> String {
         if let urlError = error as? URLError {

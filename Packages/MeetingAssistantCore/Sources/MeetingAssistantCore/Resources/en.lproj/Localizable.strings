@@ -321,6 +321,7 @@
 "permissions.system_title" = "System Permissions";
 "permissions.granted_count" = "%d/%d granted";
 "permissions.required_warning" = "Some permissions are required to record meetings.";
+"permissions.action_required" = "Action required";
 "permissions.request" = "Request";
 "permissions.configure" = "Configure";
 
@@ -467,6 +468,8 @@
 
 /* Transcribe File */
 "transcribe.import_audio" = "Import Audio";
+"transcribe.import_audio.panel.message" = "Select an audio file to transcribe";
+"transcribe.import_audio.panel.prompt" = "Transcribe";
 
 /* About */
 "about.title" = "Meeting Assistant";
@@ -533,6 +536,8 @@
 "settings.general.recording_indicator.position.top" = "Top";
 "settings.general.recording_indicator.position.bottom" = "Bottom";
 "recording_indicator.silence_warning" = "No microphone audio detected";
+"recording_indicator.stop.help" = "Stop and transcribe";
+"recording_indicator.cancel.help" = "Cancel and discard";
 "settings.transcriptions.today" = "Today";
 "settings.transcriptions.yesterday" = "Yesterday";
 "transcription.empty_fallback" = "No transcription available";

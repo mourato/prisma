@@ -20,7 +20,7 @@ public extension Bundle {
         #endif
 
         let bundleName = "MeetingAssistantCore_MeetingAssistantCore"
-        
+
         // 1. Candidates for finding the resource bundle
         let candidates = [
             // Bundle should be in the same folder as the code (SPM/Xcode)
@@ -42,12 +42,12 @@ public extension Bundle {
 
         // 3. Fallback: Use the bundle containing the code
         let codeBundle = Bundle(for: BundleFinder.self)
-        
+
         // Ensure we don't return the test bundle as a resource bundle
         if codeBundle.bundleIdentifier?.contains("MeetingAssistantCoreTests") == true {
             return applyLanguageOverride(to: Bundle.main)
         }
-        
+
         return applyLanguageOverride(to: codeBundle)
     }
 

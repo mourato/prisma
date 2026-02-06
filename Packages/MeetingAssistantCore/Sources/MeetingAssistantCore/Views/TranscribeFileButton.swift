@@ -27,8 +27,8 @@ public struct TranscribeFileButton: View {
             .mp3,
             .wav,
         ]
-        panel.message = "Selecione um arquivo de áudio para transcrever"
-        panel.prompt = "Transcrever"
+        panel.message = "transcribe.import_audio.panel.message".localized
+        panel.prompt = "transcribe.import_audio.panel.prompt".localized
 
         if panel.runModal() == .OK, let url = panel.url {
             Task {

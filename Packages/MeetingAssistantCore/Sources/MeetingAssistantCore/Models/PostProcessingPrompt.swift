@@ -140,7 +140,7 @@ public extension PostProcessingPrompt {
         - O que foi feito (Progresso)
         - O que será feito (Planejamento)
         - Impedimentos/Bloqueios
-        
+
         Ignore conversas paralelas e foque atualizações objetivas.
         """,
         icon: "figure.stand",
@@ -187,7 +187,7 @@ public extension PostProcessingPrompt {
         - Acordos firmados
         - Discussões sobre carreira/crescimento (se houver)
         - Action items para ambas as partes
-        
+
         Mantenha a discrição e profissionalismo, focando em outcomes.
         """,
         icon: "person.2",
@@ -221,7 +221,7 @@ public extension PostProcessingPrompt {
         {
             "type": "ONE_OF_THE_VALUES"
         }
-        
+
         Valores possíveis:
         - standup
         - presentation
@@ -229,7 +229,7 @@ public extension PostProcessingPrompt {
         - one_on_one
         - planning
         - general
-        
+
         Não forneça explicação, apenas o JSON.
         """,
         isActive: true,

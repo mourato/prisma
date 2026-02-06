@@ -19,6 +19,30 @@ For detailed steps and commands, see the **[task-lifecycle](.agents/skills/task-
 
 The project uses a **Skill-Based Architecture**. All logic and patterns are documented in tool-agnostic skills.
 
+## 🖥 Platform Target
+
+- Minimum supported version: **macOS 14**
+- UI approach: **SwiftUI-first**, with **AppKit** where needed (menu bar `NSStatusItem`, non-activating overlays, etc.).
+
+## 🎛 Design System (UI)
+
+We use a lightweight, SwiftUI-first Design System to keep UI consistent and DRY:
+
+- **Tokens**: `Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/DesignSystem/MeetingAssistantDesignSystem.swift`
+- **Components**: `Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/DesignSystem/Components/`
+
+### Rules of thumb
+
+- Prefer semantic colors (`.primary`, `.secondary`, materials) and DS tokens over hardcoded `Color(...)`.
+- Prefer DS spacing/radius constants over magic numbers.
+- Prefer DS components (cards, groups, callouts) over ad-hoc styling.
+- UI strings must be localized via `"key".localized` (never hardcode user-facing strings).
+
+### Public components (v1)
+
+- `MACard`, `MAGroup`, `MAToggleRow`, `MACallout`, `MABadge`, `MAActionButton`
+- `SettingsDesignSystem`, `SettingsCard`, `SettingsGroup`, `SettingsToggle` remain available as aliases for settings-related views.
+
 ## Build Commands
 
 ```bash

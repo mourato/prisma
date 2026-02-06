@@ -114,9 +114,9 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         self.meetingDetector = meetingDetector
         self.storage = storage
         self.notificationService = notificationService
-        
+
         // Initialize UseCase with Adapters
-        self.transcribeAudioUseCase = TranscribeAudioUseCase(
+        transcribeAudioUseCase = TranscribeAudioUseCase(
             transcriptionRepository: TranscriptionRepositoryAdapter(transcriptionService: transcriptionClient),
             transcriptionStorageRepository: TranscriptionStorageRepositoryAdapter(storageService: storage),
             postProcessingRepository: PostProcessingRepositoryAdapter(postProcessingService: postProcessingService)
@@ -589,7 +589,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             try await performHealthCheck()
 
             let transcriptionStart = Date()
-            
+
             // Prepare UseCase arguments
             let settings = AppSettingsStore.shared
             var meetingEntity = MeetingEntity(
@@ -603,10 +603,10 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             if meetingEntity.endTime == nil, let duration = audioDuration {
                 meetingEntity.endTime = meetingEntity.startTime.addingTimeInterval(duration)
             }
-            
+
             let applyPostProcessing = settings.postProcessingEnabled && settings.aiConfiguration.isValid
             let isDictation = meeting.isDictation || recordingSource == .microphone
-            
+
             // Prepare Prompts
             let builtInMeetingPrompts: [PostProcessingPrompt] = [
                 .standup,
@@ -680,9 +680,9 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             }()
 
             let shouldAutoDetectMeetingType = applyPostProcessing && !isDictation && meeting.type == .autodetect
-            
+
             meetingState = .processing(.transcribing)
-            
+
             // Execute UseCase
             let transcriptionEntity = try await transcribeAudioUseCase.execute(
                 audioURL: audioURL,
@@ -695,28 +695,28 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
                 autoDetectMeetingType: shouldAutoDetectMeetingType,
                 availablePrompts: availablePrompts
             )
-            
+
             // Convert to Model (Transcription) for Legacy UI/Notification
             // (We could improve this mapping later or move UI to use Entities)
             let transcription = convertToModel(transcriptionEntity, audioDuration: audioDuration, transcriptionStart: transcriptionStart)
-            
+
             // Update State
             meetingState = .processing(.generatingOutput)
             currentMeeting?.state = .completed
-            
+
             // Handling UI status updates during "execute" is skipped for now (0->100 jump),
             // but we update success here.
-            
+
             // Deliver
             TranscriptionDeliveryService.deliver(transcription: transcription)
 
             transcriptionStatus.completeTranscription(success: true)
             notifySuccess(for: transcription)
             scheduleStatusReset()
-            
+
             // Export Summary if enabled
             if settings.autoExportSummaries {
-                 await exportSummary(transcription: transcription)
+                await exportSummary(transcription: transcription)
             }
 
         } catch {
@@ -729,7 +729,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         meetingState = .idle
         currentMeeting = nil
     }
-    
+
     private func exportSummary(transcription: Transcription) async {
         let settings = AppSettingsStore.shared
         guard let folder = settings.summaryExportFolder else { return }
@@ -803,32 +803,32 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             AppLogger.error("Failed to export summary", category: .recordingManager, error: error)
         }
     }
-    
+
     private func convertToModel(_ entity: TranscriptionEntity, audioDuration: Double?, transcriptionStart: Date) -> Transcription {
-         return Transcription(
-             id: entity.id,
-             meeting: Meeting(
-                 id: entity.meeting.id,
-                 app: MeetingApp(rawValue: entity.meeting.app.rawValue) ?? .unknown,
-                 type: MeetingType(rawValue: entity.meetingType ?? "") ?? .general, // Map back
-                 startTime: entity.meeting.startTime,
-                 endTime: entity.meeting.endTime,
-                 audioFilePath: entity.meeting.audioFilePath
-             ),
-             segments: entity.segments.map { Transcription.Segment(id: $0.id, speaker: $0.speaker, text: $0.text, startTime: $0.startTime, endTime: $0.endTime) },
-             text: entity.text,
-             rawText: entity.rawText,
-             processedContent: entity.processedContent,
-             postProcessingPromptId: entity.postProcessingPromptId,
-             postProcessingPromptTitle: entity.postProcessingPromptTitle,
-             language: entity.language,
-             createdAt: entity.createdAt,
-             modelName: entity.modelName,
-             inputSource: entity.inputSource, // Entity might not have inputSource? check config
-             transcriptionDuration: entity.transcriptionDuration, // Entity has it?
-             postProcessingDuration: entity.postProcessingDuration,
-             postProcessingModel: entity.postProcessingModel
-         )
+        Transcription(
+            id: entity.id,
+            meeting: Meeting(
+                id: entity.meeting.id,
+                app: MeetingApp(rawValue: entity.meeting.app.rawValue) ?? .unknown,
+                type: MeetingType(rawValue: entity.meetingType ?? "") ?? .general, // Map back
+                startTime: entity.meeting.startTime,
+                endTime: entity.meeting.endTime,
+                audioFilePath: entity.meeting.audioFilePath
+            ),
+            segments: entity.segments.map { Transcription.Segment(id: $0.id, speaker: $0.speaker, text: $0.text, startTime: $0.startTime, endTime: $0.endTime) },
+            text: entity.text,
+            rawText: entity.rawText,
+            processedContent: entity.processedContent,
+            postProcessingPromptId: entity.postProcessingPromptId,
+            postProcessingPromptTitle: entity.postProcessingPromptTitle,
+            language: entity.language,
+            createdAt: entity.createdAt,
+            modelName: entity.modelName,
+            inputSource: entity.inputSource, // Entity might not have inputSource? check config
+            transcriptionDuration: entity.transcriptionDuration, // Entity has it?
+            postProcessingDuration: entity.postProcessingDuration,
+            postProcessingModel: entity.postProcessingModel
+        )
     }
 
     // MARK: - Helper Methods
@@ -911,7 +911,8 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             do {
                 let jsonString = try await postProcessingService.processTranscription(rawText, with: classifierPrompt)
                 if let detectedType = parseMeetingType(from: jsonString),
-                   detectedType != .general {
+                   detectedType != .general
+                {
                     prompt = resolveBuiltInMeetingPrompt(for: detectedType, fallbackGeneral: fallback)
                 } else {
                     prompt = fallback
@@ -992,18 +993,20 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         }
 
         guard let startIndex = jsonString.firstIndex(of: "{"),
-              let endIndex = jsonString.lastIndex(of: "}") else {
+              let endIndex = jsonString.lastIndex(of: "}")
+        else {
             return nil
         }
 
-        let candidate = String(jsonString[startIndex ... endIndex])
+        let candidate = String(jsonString[startIndex...endIndex])
         return parseMeetingTypeFromJSON(candidate)
     }
 
     private func parseMeetingTypeFromJSON(_ jsonString: String) -> MeetingType? {
         guard let data = jsonString.data(using: .utf8),
               let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let rawType = object["type"] as? String else {
+              let rawType = object["type"] as? String
+        else {
             return nil
         }
 
@@ -1326,7 +1329,8 @@ extension RecordingManager {
 
     private func resolveSystemDefaultMicrophoneDeviceName() -> String? {
         if let id = audioDeviceManager.getDefaultInputDeviceID(),
-           let name = audioDeviceManager.getDeviceName(for: id) {
+           let name = audioDeviceManager.getDeviceName(for: id)
+        {
             return name
         }
 

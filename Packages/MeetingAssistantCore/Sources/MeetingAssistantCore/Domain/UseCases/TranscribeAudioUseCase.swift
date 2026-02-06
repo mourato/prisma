@@ -84,7 +84,8 @@ public final class TranscribeAudioUseCase: Sendable {
                         let normalizedType = classification?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
                         if let normalizedType,
                            normalizedType != "general",
-                           let match = findPrompt(for: normalizedType, in: availablePrompts) {
+                           let match = findPrompt(for: normalizedType, in: availablePrompts)
+                        {
                             processedContent = try await postProcessingRepo.processTranscription(response.text, with: match)
                             promptId = match.id
                             promptTitle = match.title
@@ -146,7 +147,6 @@ public final class TranscribeAudioUseCase: Sendable {
         return transcription
     }
 
-
     // MARK: - Private Helpers
 
     private func classifyMeeting(text: String, repository: PostProcessingRepository) async throws -> String? {
@@ -161,11 +161,11 @@ public final class TranscribeAudioUseCase: Sendable {
             """,
             isDefault: false
         )
-        
+
         let jsonString = try await repository.processTranscription(text, with: classifierPrompt)
         return parseMeetingType(from: jsonString)
     }
-    
+
     private func findPrompt(for type: String, in prompts: [DomainPostProcessingPrompt]) -> DomainPostProcessingPrompt? {
         let normalizedType = normalizedMatchKey(type)
 
@@ -182,17 +182,19 @@ public final class TranscribeAudioUseCase: Sendable {
 
         // Fallback: try extracting the first JSON object from the string (handles code fences / extra text)
         guard let startIndex = jsonString.firstIndex(of: "{"),
-              let endIndex = jsonString.lastIndex(of: "}") else {
+              let endIndex = jsonString.lastIndex(of: "}")
+        else {
             return nil
         }
-        let candidate = String(jsonString[startIndex ... endIndex])
+        let candidate = String(jsonString[startIndex...endIndex])
         return parseMeetingTypeFromJSON(candidate)
     }
 
     private func parseMeetingTypeFromJSON(_ jsonString: String) -> String? {
         guard let data = jsonString.data(using: .utf8),
               let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let rawType = object["type"] as? String else {
+              let rawType = object["type"] as? String
+        else {
             return nil
         }
 
