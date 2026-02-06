@@ -14,6 +14,10 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
     private let recordingActor = RecordingActor()
 
+    // MARK: - Input Device
+
+    private let audioDeviceManager = AudioDeviceManager()
+
     // MARK: - Published State
 
     @Published public private(set) var isRecording = false
@@ -670,8 +674,10 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             let transcriptionEntity = try await transcribeAudioUseCase.execute(
                 audioURL: audioURL,
                 meeting: meetingEntity,
+                inputSource: resolveInputSourceLabel(for: meeting),
                 applyPostProcessing: applyPostProcessing,
                 postProcessingPrompt: promptToUse,
+                postProcessingModel: applyPostProcessing ? settings.aiConfiguration.selectedModel : nil,
                 availablePrompts: availablePrompts
             )
             
@@ -1167,6 +1173,58 @@ extension RecordingManager {
         var updatedMeeting = meeting
         updatedMeeting.endTime = meeting.startTime.addingTimeInterval(audioDuration)
         return updatedMeeting
+    }
+
+    private func resolveInputSourceLabel(for meeting: Meeting) -> String? {
+        if meeting.app == .importedFile {
+            return NSLocalizedString("meeting.app.imported", bundle: .safeModule, comment: "Imported File")
+        }
+
+        switch recordingSource {
+        case .microphone:
+            return resolveMicrophoneDeviceName() ?? NSLocalizedString("recording.source.microphone", bundle: .safeModule, comment: "Microphone")
+        case .system:
+            return NSLocalizedString("recording.source.system", bundle: .safeModule, comment: "System Audio")
+        case .all:
+            let system = NSLocalizedString("recording.source.system", bundle: .safeModule, comment: "System Audio")
+            let mic = resolveMicrophoneDeviceName()
+            if let mic {
+                return "\(system) + \(mic)"
+            }
+            let microphone = NSLocalizedString("recording.source.microphone", bundle: .safeModule, comment: "Microphone")
+            return "\(system) + \(microphone)"
+        }
+    }
+
+    private func resolveMicrophoneDeviceName() -> String? {
+        let settings = AppSettingsStore.shared
+
+        if settings.useSystemDefaultInput {
+            return resolveSystemDefaultMicrophoneDeviceName()
+        }
+
+        for uid in settings.audioDevicePriority {
+            guard audioDeviceManager.isDeviceAvailable(uid) else { continue }
+            guard let id = audioDeviceManager.getAudioDeviceID(for: uid) else { continue }
+            if let name = audioDeviceManager.getDeviceName(for: id) {
+                return name
+            }
+        }
+
+        return resolveSystemDefaultMicrophoneDeviceName()
+    }
+
+    private func resolveSystemDefaultMicrophoneDeviceName() -> String? {
+        if let id = audioDeviceManager.getDefaultInputDeviceID(),
+           let name = audioDeviceManager.getDeviceName(for: id) {
+            return name
+        }
+
+        if let device = audioDeviceManager.availableInputDevices.first(where: { $0.isDefault }) {
+            return device.name
+        }
+
+        return nil
     }
 
     // MARK: - Menu Helpers
