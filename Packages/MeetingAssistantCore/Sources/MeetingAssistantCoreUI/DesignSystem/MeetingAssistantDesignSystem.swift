@@ -137,7 +137,7 @@ public enum MeetingAssistantDesignSystem {
 
         public static let sidebarContainerCornerRadius: CGFloat = 18
         public static let sidebarItemCornerRadius: CGFloat = 8
-        public static let sidebarItemHeight: CGFloat = 40
+        public static let sidebarItemHeight: CGFloat = 44
         public static let sidebarHorizontalPadding: CGFloat = 10
         public static let sidebarVerticalPadding: CGFloat = 12
         public static let sidebarTopInset: CGFloat = 48
