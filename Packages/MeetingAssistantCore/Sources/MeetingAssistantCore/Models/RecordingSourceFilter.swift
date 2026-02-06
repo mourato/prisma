@@ -15,8 +15,7 @@ public enum RecordingSourceFilter: String, CaseIterable, Sendable {
         case .dictations:
             "filter.source.dictations".localized
         case .meetings:
-            // "Reuniões"
-            NSLocalizedString("filter.source.meetings", bundle: .safeModule, value: "Reuniões", comment: "Filter option for meetings")
+            "filter.source.meetings".localized
         case .manualImports:
             "filter.source.manual_imports".localized
         }

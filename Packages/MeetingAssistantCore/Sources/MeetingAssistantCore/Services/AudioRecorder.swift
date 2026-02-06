@@ -69,6 +69,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
     private let muteController = SystemAudioMuteController.shared
     private var wasMutedBeforeRecording = false
+    private var didMuteOutputForThisRecording = false
     let deviceManager = AudioDeviceManager()
     var micDiagnosticsTimer: Timer?
     var isMicDiagnosticsTapInstalled = false
@@ -121,22 +122,48 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         // Stop any existing recording first
         await stopRecording()
 
+        // Reset per-session mute state
+        wasMutedBeforeRecording = false
+        didMuteOutputForThisRecording = false
+
         AppLogger.info(
             "Starting recording",
             category: .recordingManager,
             extra: ["path": outputURL.path, "source": source.rawValue]
         )
 
+        // Muting system output must only apply to Dictation/Assistant (mic-only).
+        // Meetings (system + mic) must preserve the system output volume.
+        let shouldMuteOutput = AppSettingsStore.shared.muteOutputDuringRecording && source == .microphone
+        if shouldMuteOutput {
+            wasMutedBeforeRecording = muteController.isMuted()
+            if !wasMutedBeforeRecording {
+                do {
+                    try muteController.setMuted(true)
+                    didMuteOutputForThisRecording = true
+                } catch {
+                    // Best-effort: failing to mute should not block recording.
+                    didMuteOutputForThisRecording = false
+                }
+            }
+        }
+
         // 1. Check Microphone Permissions first if needed
         if (source == .microphone || source == .all) && AVCaptureDevice.authorizationStatus(for: .audio) != .authorized {
             AppLogger.error("Microphone permission denied. Cannot start recording.", category: .recordingManager)
+            restoreOutputMuteIfNeeded()
             throw AudioRecorderError.permissionDenied
         }
 
         if source == .microphone {
-            try startFallbackRecorder(to: outputURL)
-            currentRecordingURL = outputURL
-            return
+            do {
+                try startFallbackRecorder(to: outputURL)
+                currentRecordingURL = outputURL
+                return
+            } catch {
+                restoreOutputMuteIfNeeded()
+                throw error
+            }
         }
 
         // 2. Prepare Engine & Input Device (system/all only)
@@ -164,14 +191,6 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             try await systemRecorder.startRecording(to: outputURL, sampleRate: targetSampleRate)
         } else {
             AppLogger.debug("Skipping system recorder start (source: \(source.rawValue))", category: .recordingManager)
-        }
-
-        // 5. Mute system output if enabled
-        if AppSettingsStore.shared.muteOutputDuringRecording {
-            wasMutedBeforeRecording = muteController.isMuted()
-            if !wasMutedBeforeRecording {
-                try? muteController.setMuted(true)
-            }
         }
 
         do {
@@ -397,6 +416,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
         if let recorder = fallbackRecorder {
             stopFallbackRecorder(recorder)
+            restoreOutputMuteIfNeeded()
             isRecording = false
             currentAveragePower = -160.0
             currentPeakPower = -160.0
@@ -408,9 +428,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         cleanupEngine()
 
         // Restore audio output if we muted it
-        if AppSettingsStore.shared.muteOutputDuringRecording, !wasMutedBeforeRecording {
-            try? muteController.setMuted(false)
-        }
+        restoreOutputMuteIfNeeded()
 
         // Finalize worker - wait for all buffers to be processed
         let url = await worker.stop()
@@ -438,6 +456,17 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         }
 
         return url
+    }
+
+    private func restoreOutputMuteIfNeeded() {
+        guard didMuteOutputForThisRecording else { return }
+        defer {
+            didMuteOutputForThisRecording = false
+            wasMutedBeforeRecording = false
+        }
+
+        guard !wasMutedBeforeRecording else { return }
+        try? muteController.setMuted(false)
     }
 
     private func cleanupEngine() {

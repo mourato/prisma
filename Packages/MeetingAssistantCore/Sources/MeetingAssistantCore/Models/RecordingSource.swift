@@ -10,11 +10,11 @@ public enum RecordingSource: String, CaseIterable, Sendable {
     public var displayName: String {
         switch self {
         case .microphone:
-            "Microphone Only" // "Microfone Apenas" - Should be localized later
+            "recording.source.microphone".localized
         case .system:
-            "System Audio Only" // "Áudio do Sistema Apenas"
+            "recording.source.system".localized
         case .all:
-            "All Sources (Mic + System)" // "Todos (Mic + Sistema)"
+            "recording.source.all".localized
         }
     }
 

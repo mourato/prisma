@@ -403,7 +403,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func startMeetingFromMenu() {
         Task { @MainActor in
             // Meeting mode (System + Mic) permissions will be checked by manager
-            await self.startRecording(source: .system) // Assuming system source implies meeting logic or combined
+            await self.startRecording(source: .all)
         }
     }
 

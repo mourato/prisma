@@ -45,27 +45,32 @@ public struct MeetingSettingsTab: View {
                                     meetingViewModel.selectExportFolder()
                                 }
                             }
-                        }
-                    }
-                }
 
-                // Summary Template Section
-                SettingsGroup("settings.meetings.template".localized, icon: "doc.text") {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("settings.meetings.template_desc".localized)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        
-                        TextEditor(text: $meetingViewModel.settings.summaryTemplate)
-                            .font(.system(.body, design: .monospaced))
-                            .frame(height: 150)
-                            .padding(8)
-                            .background(Color(NSColor.controlBackgroundColor))
-                            .cornerRadius(8)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
-                            )
+                            Divider()
+
+                            HStack(spacing: 8) {
+                                Image(systemName: "doc.text")
+                                    .foregroundStyle(SettingsDesignSystem.Colors.iconHighlight)
+                                Text("settings.meetings.template".localized)
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                            }
+
+                            Text("settings.meetings.template_desc".localized)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+
+                            TextEditor(text: $meetingViewModel.settings.summaryTemplate)
+                                .font(.system(.body, design: .monospaced))
+                                .frame(height: 150)
+                                .padding(8)
+                                .background(Color(NSColor.controlBackgroundColor))
+                                .cornerRadius(8)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                                )
+                        }
                     }
                 }
 
