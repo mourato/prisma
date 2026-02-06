@@ -124,6 +124,7 @@ public struct GeneralSettingsTab: View {
                         VStack(alignment: .leading, spacing: 12) {
                             SettingsToggle(
                                 "settings.general.auto_delete".localized,
+                                description: "settings.general.auto_delete_desc".localized,
                                 isOn: $viewModel.autoDeleteTranscriptions
                             )
 
@@ -145,9 +146,13 @@ public struct GeneralSettingsTab: View {
                                 Button {
                                     viewModel.performCleanup()
                                 } label: {
-                                    Text("settings.storage.cleanup_now".localized)
+                                    Text(String(
+                                        format: "settings.storage.cleanup_now".localized,
+                                        viewModel.autoDeletePeriodDays
+                                    ))
                                 }
                                 .buttonStyle(.bordered)
+                                .disabled(viewModel.cleanupInProgress)
                                 .padding(.leading, SettingsDesignSystem.Layout.indentation)
                                 .padding(.top, SettingsDesignSystem.Layout.smallPadding)
                             }
@@ -157,6 +162,18 @@ public struct GeneralSettingsTab: View {
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .confirmationDialog(
+            "settings.storage.cleanup_confirm_title".localized,
+            isPresented: $viewModel.showCleanupConfirmationDialog,
+            titleVisibility: .visible
+        ) {
+            Button("settings.storage.cleanup_confirm_delete".localized, role: .destructive) {
+                viewModel.confirmCleanup()
+            }
+            Button("settings.storage.cleanup_confirm_cancel".localized, role: .cancel) {}
+        } message: {
+            Text(viewModel.cleanupConfirmationMessage)
         }
         .alert("settings.general.storage".localized, isPresented: $viewModel.showCleanupSuccessAlert) {
             Button("OK", role: .cancel) {}

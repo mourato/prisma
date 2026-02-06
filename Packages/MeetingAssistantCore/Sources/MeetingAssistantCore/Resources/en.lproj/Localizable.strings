@@ -54,8 +54,8 @@
 
 /* Storage Settings */
 "settings.general.storage" = "Storage";
-"settings.general.auto_delete" = "Automatically delete old transcriptions";
-"settings.general.auto_delete_desc" = "Removes transcriptions older than the specified period to save disk space.";
+"settings.general.auto_delete" = "Enable retention limit (recordings + transcriptions)";
+"settings.general.auto_delete_desc" = "Limits how long recordings and transcriptions are kept. Use the button below to delete items older than the specified period.";
 "settings.general.days_format" = "%d days";
 
 "settings.general.transcript_delivery" = "Transcript Delivery";
@@ -90,8 +90,12 @@
 "settings.general.theme_color" = "Theme Color";
 "settings.general.appearance" = "Appearance";
 "settings.general.app_behavior" = "App Behavior";
-"settings.storage.cleanup_now" = "Run Cleanup Now";
+"settings.storage.cleanup_now" = "Clean up items older than %d days";
 "settings.storage.cleanup_success" = "Cleanup completed successfully.";
+"settings.storage.cleanup_confirm_title" = "Clean up storage";
+"settings.storage.cleanup_confirm_message" = "This will delete:\n\nAudio files: %d (%@)\nTranscriptions: %d (%@)\n\nThis cannot be undone.";
+"settings.storage.cleanup_confirm_delete" = "Delete";
+"settings.storage.cleanup_confirm_cancel" = "Cancel";
 "meeting.app.imported" = "Imported File";
 "meeting.app.unknown" = "Unknown";
 
