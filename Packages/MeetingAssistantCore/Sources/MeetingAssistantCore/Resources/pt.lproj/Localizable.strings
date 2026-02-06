@@ -77,6 +77,7 @@
 "settings.meetings.auto_export_desc" = "Salva automaticamente o resumo da reunião (Markdown) na pasta selecionada.";
 "settings.meetings.export_location" = "Pasta para salvar";
 "settings.meetings.export_location_desc" = "Formato do arquivo: AAAA-MM-DD Título.md";
+"settings.meetings.export_location_required" = "Selecione uma pasta para ativar a exportação automática.";
 "settings.meetings.no_folder_selected" = "Nenhuma pasta selecionada";
 "settings.meetings.template" = "Template";
 "settings.meetings.template_desc" = "Template usado para formatar os resumos exportados.";

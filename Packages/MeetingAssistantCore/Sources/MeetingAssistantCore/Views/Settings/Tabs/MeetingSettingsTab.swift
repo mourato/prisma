@@ -47,6 +47,12 @@ public struct MeetingSettingsTab: View {
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
 
+                            if meetingViewModel.settings.summaryExportFolder == nil {
+                                Text("settings.meetings.export_location_required".localized)
+                                    .font(.caption)
+                                    .foregroundStyle(.red)
+                            }
+
                             Divider()
 
                             HStack(spacing: 8) {
