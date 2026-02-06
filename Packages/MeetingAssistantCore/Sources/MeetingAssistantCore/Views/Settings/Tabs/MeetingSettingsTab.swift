@@ -98,15 +98,8 @@ public struct MeetingSettingsTab: View {
                         }
 
                         VStack(spacing: 8) {
-                            ForEach(meetingViewModel.settings.meetingPrompts) { prompt in
+                            ForEach(meetingViewModel.availablePrompts) { prompt in
                                 promptRow(prompt: prompt)
-                            }
-                            if meetingViewModel.settings.meetingPrompts.isEmpty {
-                                Text("settings.meetings.no_prompts".localized)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                    .frame(maxWidth: .infinity, alignment: .center)
-                                    .padding()
                             }
                         }
                     }
@@ -237,43 +230,57 @@ public struct MeetingSettingsTab: View {
     // MARK: - Prompt Row
 
     private func promptRow(prompt: PostProcessingPrompt) -> some View {
-        return HStack(spacing: 12) {
-            promptIcon(prompt: prompt)
-            promptInfo(prompt: prompt)
+        let isSelected = meetingViewModel.selectedPromptId == prompt.id
 
-            Spacer()
+        return Button {
+            meetingViewModel.selectPrompt(prompt.id)
+        } label: {
+            HStack(spacing: 12) {
+                promptIcon(prompt: prompt, isSelected: isSelected)
+                promptInfo(prompt: prompt, isSelected: isSelected)
 
-            promptMenu(prompt: prompt)
+                Spacer()
+
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                        .symbolEffect(.bounce, value: isSelected)
+                }
+
+                promptMenu(prompt: prompt, isSelected: isSelected)
+            }
+            .padding(10)
+            .contentShape(Rectangle())
         }
-        .padding(10)
-        .background(Color.clear)
+        .buttonStyle(.plain)
+        .background(isSelected ? SettingsDesignSystem.Colors.accent.opacity(0.08) : Color.clear)
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .overlay(
             RoundedRectangle(cornerRadius: 10)
-                .stroke(Color.secondary.opacity(0.1), lineWidth: 1)
+                .stroke(isSelected ? SettingsDesignSystem.Colors.accent.opacity(0.3) : Color.secondary.opacity(0.1), lineWidth: 1)
         )
         .contextMenu {
-            promptMenuContent(prompt: prompt)
+            promptMenuContent(prompt: prompt, isSelected: isSelected)
         }
     }
 
-    private func promptIcon(prompt: PostProcessingPrompt) -> some View {
+    private func promptIcon(prompt: PostProcessingPrompt, isSelected: Bool) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: 8)
-                .fill(Color.primary.opacity(0.05))
+                .fill(isSelected ? SettingsDesignSystem.Colors.accent : Color.primary.opacity(0.05))
                 .frame(width: 36, height: 36)
 
             Image(systemName: prompt.icon)
                 .font(.subheadline)
-                .foregroundStyle(.primary)
+                .foregroundStyle(isSelected ? SettingsDesignSystem.Colors.onAccent : .primary)
         }
     }
 
-    private func promptInfo(prompt: PostProcessingPrompt) -> some View {
+    private func promptInfo(prompt: PostProcessingPrompt, isSelected: Bool) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(prompt.title)
                 .font(.body)
-                .fontWeight(.medium)
+                .fontWeight(isSelected ? .bold : .medium)
 
             if let description = prompt.description {
                 Text(description)
@@ -284,9 +291,9 @@ public struct MeetingSettingsTab: View {
         }
     }
 
-    private func promptMenu(prompt: PostProcessingPrompt) -> some View {
+    private func promptMenu(prompt: PostProcessingPrompt, isSelected: Bool) -> some View {
         Menu {
-            promptMenuContent(prompt: prompt)
+            promptMenuContent(prompt: prompt, isSelected: isSelected)
         } label: {
             Image(systemName: "ellipsis.circle")
                 .foregroundStyle(.secondary)
@@ -297,10 +304,22 @@ public struct MeetingSettingsTab: View {
     }
 
     @ViewBuilder
-    private func promptMenuContent(prompt: PostProcessingPrompt) -> some View {
+    private func promptMenuContent(prompt: PostProcessingPrompt, isSelected: Bool) -> some View {
         Button {
-            meetingViewModel.editingPrompt = prompt
-            meetingViewModel.showPromptEditor = true
+            meetingViewModel.selectPrompt(prompt.id, forceSelect: true)
+        } label: {
+            Label("settings.post_processing.select".localized, systemImage: isSelected ? "checkmark.circle.fill" : "circle")
+        }
+
+        Divider()
+
+        Button {
+            if prompt.isPredefined {
+                meetingViewModel.prepareCopy(of: prompt, asDuplicate: false)
+            } else {
+                meetingViewModel.editingPrompt = prompt
+                meetingViewModel.showPromptEditor = true
+            }
         } label: {
             Label("settings.post_processing.edit".localized, systemImage: "pencil")
         }
@@ -311,12 +330,14 @@ public struct MeetingSettingsTab: View {
             Label("settings.post_processing.duplicate".localized, systemImage: "plus.square.on.square")
         }
 
-        Divider()
+        if !prompt.isPredefined {
+            Divider()
 
-        Button(role: .destructive) {
-            meetingViewModel.confirmDeletePrompt(prompt)
-        } label: {
-            Label("settings.post_processing.delete".localized, systemImage: "trash")
+            Button(role: .destructive) {
+                meetingViewModel.confirmDeletePrompt(prompt)
+            } label: {
+                Label("settings.post_processing.delete".localized, systemImage: "trash")
+            }
         }
     }
 }

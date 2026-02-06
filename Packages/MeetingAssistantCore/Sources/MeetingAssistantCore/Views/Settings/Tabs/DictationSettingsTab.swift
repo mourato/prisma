@@ -7,6 +7,7 @@ import SwiftUI
 public struct DictationSettingsTab: View {
     @StateObject private var viewModel = GeneralSettingsViewModel()
     @StateObject private var shortcutsViewModel = ShortcutSettingsViewModel()
+    @StateObject private var promptViewModel = DictationPromptSettingsViewModel()
 
     public init() {}
 
@@ -107,9 +108,57 @@ public struct DictationSettingsTab: View {
                         }
                     }
                 }
+
+                // Dictation Prompts Section
+                SettingsGroup("settings.dictation.prompts".localized, icon: "sparkles") {
+                    VStack(alignment: .leading, spacing: SettingsDesignSystem.Layout.cardPadding) {
+                        HStack {
+                            Text("settings.post_processing.choose_active".localized)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+
+                            Spacer()
+
+                            Button {
+                                promptViewModel.editingPrompt = nil
+                                promptViewModel.showPromptEditor = true
+                            } label: {
+                                Label(
+                                    "settings.post_processing.new_prompt".localized,
+                                    systemImage: "plus"
+                                )
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                        }
+
+                        VStack(spacing: 8) {
+                            ForEach(promptViewModel.availablePrompts) { prompt in
+                                promptRow(prompt: prompt)
+                            }
+                        }
+                    }
+                }
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .sheet(isPresented: $promptViewModel.showPromptEditor) {
+            PromptEditorSheet(
+                prompt: promptViewModel.editingPrompt,
+                onSave: promptViewModel.handleSavePrompt,
+                onCancel: { promptViewModel.showPromptEditor = false }
+            )
+        }
+        .alert("settings.post_processing.delete_confirm_title".localized, isPresented: $promptViewModel.showDeleteConfirmation) {
+            Button("common.cancel".localized, role: .cancel) {}
+            Button("common.delete".localized, role: .destructive) {
+                promptViewModel.executeDelete()
+            }
+        } message: {
+            if let prompt = promptViewModel.promptToDelete {
+                Text("settings.post_processing.delete_confirm_message".localized(with: prompt.title))
+            }
         }
     }
 
@@ -139,6 +188,120 @@ public struct DictationSettingsTab: View {
             .buttonStyle(.borderless)
             .disabled(selection.wrappedValue == .none)
             .accessibilityLabel("settings.general.sound_feedback.preview".localized)
+        }
+    }
+
+    // MARK: - Prompts
+
+    private func promptRow(prompt: PostProcessingPrompt) -> some View {
+        let isSelected = promptViewModel.selectedPromptId == prompt.id
+
+        return Button {
+            promptViewModel.selectPrompt(prompt.id)
+        } label: {
+            HStack(spacing: 12) {
+                promptIcon(prompt: prompt, isSelected: isSelected)
+                promptInfo(prompt: prompt, isSelected: isSelected)
+
+                Spacer()
+
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                        .symbolEffect(.bounce, value: isSelected)
+                }
+
+                promptMenu(prompt: prompt, isSelected: isSelected)
+            }
+            .padding(10)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .background(isSelected ? SettingsDesignSystem.Colors.accent.opacity(0.08) : Color.clear)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(isSelected ? SettingsDesignSystem.Colors.accent.opacity(0.3) : Color.clear, lineWidth: 1)
+        )
+        .contextMenu {
+            promptMenuContent(prompt: prompt, isSelected: isSelected)
+        }
+    }
+
+    private func promptIcon(prompt: PostProcessingPrompt, isSelected: Bool) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 8)
+                .fill(isSelected ? SettingsDesignSystem.Colors.accent : Color.primary.opacity(0.05))
+                .frame(width: 36, height: 36)
+
+            Image(systemName: prompt.icon)
+                .font(.subheadline)
+                .foregroundStyle(isSelected ? SettingsDesignSystem.Colors.onAccent : .primary)
+        }
+    }
+
+    private func promptInfo(prompt: PostProcessingPrompt, isSelected: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(prompt.title)
+                .font(.body)
+                .fontWeight(isSelected ? .bold : .medium)
+
+            if let description = prompt.description {
+                Text(description)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+        }
+    }
+
+    private func promptMenu(prompt: PostProcessingPrompt, isSelected: Bool) -> some View {
+        Menu {
+            promptMenuContent(prompt: prompt, isSelected: isSelected)
+        } label: {
+            Image(systemName: "ellipsis.circle")
+                .foregroundStyle(.secondary)
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        .highPriorityGesture(TapGesture())
+    }
+
+    @ViewBuilder
+    private func promptMenuContent(prompt: PostProcessingPrompt, isSelected: Bool) -> some View {
+        Button {
+            promptViewModel.selectPrompt(prompt.id, forceSelect: true)
+        } label: {
+            Label("settings.post_processing.select".localized, systemImage: isSelected ? "checkmark.circle.fill" : "circle")
+        }
+
+        Divider()
+
+        Button {
+            if prompt.isPredefined {
+                promptViewModel.prepareCopy(of: prompt, asDuplicate: false)
+            } else {
+                promptViewModel.editingPrompt = prompt
+                promptViewModel.showPromptEditor = true
+            }
+        } label: {
+            Label("settings.post_processing.edit".localized, systemImage: "pencil")
+        }
+
+        Button {
+            promptViewModel.prepareCopy(of: prompt, asDuplicate: true)
+        } label: {
+            Label("settings.post_processing.duplicate".localized, systemImage: "plus.square.on.square")
+        }
+
+        if !prompt.isPredefined {
+            Divider()
+
+            Button(role: .destructive) {
+                promptViewModel.confirmDeletePrompt(prompt)
+            } label: {
+                Label("settings.post_processing.delete".localized, systemImage: "trash")
+            }
         }
     }
 }

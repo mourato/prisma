@@ -43,39 +43,12 @@ public extension PostProcessingPrompt {
             UUID(uuidString: string) ?? UUID()
         }
 
-        private static let fallbackMeetingNotes = uuid("00000000-0000-0000-0000-000000000001")
-        private static let fallbackExecutiveSummary = uuid("00000000-0000-0000-0000-000000000002")
-        private static let fallbackActionItems = uuid("00000000-0000-0000-0000-000000000003")
         private static let fallbackCleanTranscription = uuid("00000000-0000-0000-0000-000000000004")
         private static let fallbackStandup = uuid("00000000-0000-0000-0000-000000000005")
         private static let fallbackPresentation = uuid("00000000-0000-0000-0000-000000000006")
         private static let fallbackDesignReview = uuid("00000000-0000-0000-0000-000000000007")
         private static let fallbackOneOnOne = uuid("00000000-0000-0000-0000-000000000008")
         private static let fallbackPlanning = uuid("00000000-0000-0000-0000-000000000009")
-
-        static let meetingNotes: UUID = {
-            guard let uuid = UUID(uuidString: "00000000-0000-0000-0000-000000000001") else {
-                assertionFailure("Invalid UUID string for meetingNotes")
-                return fallbackMeetingNotes
-            }
-            return uuid
-        }()
-
-        static let executiveSummary: UUID = {
-            guard let uuid = UUID(uuidString: "00000000-0000-0000-0000-000000000002") else {
-                assertionFailure("Invalid UUID string for executiveSummary")
-                return fallbackExecutiveSummary
-            }
-            return uuid
-        }()
-
-        static let actionItems: UUID = {
-            guard let uuid = UUID(uuidString: "00000000-0000-0000-0000-000000000003") else {
-                assertionFailure("Invalid UUID string for actionItems")
-                return fallbackActionItems
-            }
-            return uuid
-        }()
 
         static let cleanTranscription: UUID = {
             guard let uuid = UUID(uuidString: "00000000-0000-0000-0000-000000000004") else {
@@ -126,56 +99,6 @@ public extension PostProcessingPrompt {
         }()
     }
 
-    /// Predefined prompt for generating meeting notes.
-    static let meetingNotes = PostProcessingPrompt(
-        id: PredefinedIDs.meetingNotes,
-        title: "prompt.meeting_notes.title".localized,
-        promptText: """
-        Analise a transcrição e gere notas de reunião estruturadas com:
-        - Participantes mencionados
-        - Tópicos principais discutidos
-        - Decisões tomadas
-        - Pontos de atenção
-
-        Mantenha um formato limpo e profissional.
-        """,
-        icon: "note.text",
-        description: "prompt.meeting_notes.description".localized,
-        isPredefined: true
-    )
-
-    /// Predefined prompt for executive summary.
-    static let executiveSummary = PostProcessingPrompt(
-        id: PredefinedIDs.executiveSummary,
-        title: "prompt.executive_summary.title".localized,
-        promptText: """
-        Crie um resumo executivo conciso da reunião em 3-5 parágrafos.
-        Foque nos pontos mais importantes e nas conclusões principais.
-        Use linguagem clara e objetiva, apropriada para stakeholders.
-        """,
-        icon: "doc.text.magnifyingglass",
-        description: "prompt.executive_summary.description".localized,
-        isPredefined: true
-    )
-
-    /// Predefined prompt for extracting action items.
-    static let actionItems = PostProcessingPrompt(
-        id: PredefinedIDs.actionItems,
-        title: "prompt.action_items.title".localized,
-        promptText: """
-        Extraia todos os action items e próximos passos mencionados na reunião.
-        Para cada item, identifique (quando disponível):
-        - Responsável
-        - Prazo mencionado
-        - Contexto/detalhes relevantes
-
-        Liste em formato de checklist.
-        """,
-        icon: "checklist",
-        description: "prompt.action_items.description".localized,
-        isPredefined: true
-    )
-
     /// Predefined prompt for clean transcription.
     static let cleanTranscription = PostProcessingPrompt(
         id: PredefinedIDs.cleanTranscription,
@@ -196,9 +119,6 @@ public extension PostProcessingPrompt {
 
     /// All predefined prompts.
     static let allPredefined: [PostProcessingPrompt] = [
-        .meetingNotes,
-        .executiveSummary,
-        .actionItems,
         .cleanTranscription,
         .standup,
         .presentation,
