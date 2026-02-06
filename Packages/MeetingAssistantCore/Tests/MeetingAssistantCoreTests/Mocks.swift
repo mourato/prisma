@@ -223,6 +223,21 @@ class MockStorageService: StorageService, @unchecked Sendable {
     func cleanupOldTranscriptions(olderThanDays days: Int) async throws {
         // Mock implementation
     }
+
+    func computeRetentionCleanupPreview(olderThanDays days: Int) async throws -> RetentionCleanupPreview {
+        RetentionCleanupPreview(
+            retentionDays: days,
+            audioFiles: [],
+            transcriptionFiles: []
+        )
+    }
+
+    func performRetentionCleanup(preview: RetentionCleanupPreview) async throws -> RetentionCleanupResult {
+        RetentionCleanupResult(
+            deletedAudioCount: preview.audioCount,
+            deletedTranscriptionCount: preview.transcriptionCount
+        )
+    }
 }
 
 // MARK: - Mock Notification Service

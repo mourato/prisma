@@ -63,9 +63,8 @@ final class ExportServiceTests: XCTestCase {
         let service = ExportService()
         let filename = service.suggestedFilename(for: meeting)
 
-        XCTAssertTrue(filename.contains("DesignReview.md"))
-        // Check for localized prefix (defaulting to English in tests usually or checking suffix)
-        // We know the English key is "Meeting"
+        let expectedTypeComponent = meeting.type.displayName.replacingOccurrences(of: " ", with: "")
+        XCTAssertTrue(filename.contains("\(expectedTypeComponent).md"))
         XCTAssertTrue(filename.hasSuffix(".md"))
     }
 }
