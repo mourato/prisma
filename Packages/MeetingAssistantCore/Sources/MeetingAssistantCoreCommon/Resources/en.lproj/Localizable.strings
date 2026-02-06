@@ -5,6 +5,7 @@
 "settings.section.meetings" = "Meetings";
 "settings.section.audio" = "Audio & Sound";
 "settings.section.transcriptions" = "Transcriptions";
+"settings.section.history" = "History";
 "settings.section.assistant" = "Assistant";
 "settings.section.ai" = "Enhancements";
 "settings.section.service" = "AI Service";

@@ -5,6 +5,7 @@
 "settings.section.meetings" = "Reuniões";
 "settings.section.audio" = "Áudio e Som";
 "settings.section.transcriptions" = "Transcrições";
+"settings.section.history" = "Histórico";
 "settings.section.assistant" = "Assistant";
 "settings.section.ai" = "Aprimoramentos";
 "settings.section.service" = "Serviço de IA";
