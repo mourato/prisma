@@ -36,7 +36,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
     private enum Constants {
         static let panelWidth: CGFloat = MeetingAssistantDesignSystem.Layout.recordingIndicatorPanelWidth
         static let panelHeightClassic: CGFloat = MeetingAssistantDesignSystem.Layout.controlHeight
-        static let panelHeightMini: CGFloat = MeetingAssistantDesignSystem.Layout.controlHeight
+        static let panelHeightMini: CGFloat = MeetingAssistantDesignSystem.Layout.recordingIndicatorMiniHeight
         static let screenPadding: CGFloat = 40
     }
 
@@ -93,7 +93,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
             panel.isOpaque = false
             panel.backgroundColor = .clear
             panel.hasShadow = false
-            panel.isMovableByWindowBackground = true
+            panel.isMovableByWindowBackground = false
 
             self.panel = panel
         }
@@ -202,7 +202,9 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
                 }
             }
         )
-        panel.contentView = NSHostingView(rootView: indicatorView)
+        panel.contentView = NSHostingView(
+            rootView: indicatorView.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        )
     }
 
     private func updateMode(_ mode: FloatingRecordingIndicatorMode) {
