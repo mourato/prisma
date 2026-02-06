@@ -30,8 +30,10 @@ public final class TranscribeAudioUseCase: Sendable {
     public func execute(
         audioURL: URL,
         meeting: MeetingEntity,
+        inputSource: String? = nil,
         applyPostProcessing: Bool = false,
         postProcessingPrompt: DomainPostProcessingPrompt? = nil,
+        postProcessingModel: String? = nil,
         availablePrompts: [DomainPostProcessingPrompt] = []
     ) async throws -> TranscriptionEntity {
         // Verificar saúde do serviço
@@ -40,6 +42,7 @@ public final class TranscribeAudioUseCase: Sendable {
         }
 
         // Transcrever áudio
+        let transcriptionStartTime = Date()
         let response: DomainTranscriptionResponse
         do {
             response = try await transcriptionRepository.transcribe(
@@ -49,14 +52,21 @@ public final class TranscribeAudioUseCase: Sendable {
         } catch {
             throw DomainTranscriptionError.transcriptionFailed(error.localizedDescription)
         }
+        let transcriptionDuration = Date().timeIntervalSince(transcriptionStartTime)
 
         // Aplicar pós-processamento se solicitado
         var processedContent: String?
         var promptId: UUID?
         var promptTitle: String?
         var meetingType: String?
+        var postProcessingDuration: Double = 0
 
         if applyPostProcessing, let postProcessingRepo = postProcessingRepository {
+            let postProcessingStartTime = Date()
+            defer {
+                postProcessingDuration = Date().timeIntervalSince(postProcessingStartTime)
+            }
+
             do {
                 if let prompt = postProcessingPrompt {
                     // Prompt específico fornecido
@@ -109,6 +119,10 @@ public final class TranscribeAudioUseCase: Sendable {
         config.postProcessingPromptTitle = promptTitle
         config.modelName = response.model
         config.meetingType = meetingType
+        config.inputSource = inputSource
+        config.transcriptionDuration = transcriptionDuration
+        config.postProcessingDuration = processedContent == nil ? 0 : postProcessingDuration
+        config.postProcessingModel = processedContent == nil ? nil : postProcessingModel
 
         let transcription = TranscriptionEntity(
             meeting: meeting,
