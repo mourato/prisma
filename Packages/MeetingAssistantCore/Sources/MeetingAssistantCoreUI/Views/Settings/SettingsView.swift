@@ -11,9 +11,9 @@ import MeetingAssistantCoreInfrastructure
 private enum LayoutConstants {
     static let windowWidth: CGFloat = 900
     static let windowHeight: CGFloat = 640
-    static let sidebarMinWidth: CGFloat = 200
+    static let sidebarMinWidth: CGFloat = 220
     static let sidebarIdealWidth: CGFloat = 240
-    static let sidebarMaxWidth: CGFloat = 280
+    static let sidebarMaxWidth: CGFloat = 260
 }
 
 // MARK: - Settings View
@@ -49,30 +49,38 @@ public struct SettingsView: View {
     // MARK: - Sidebar
 
     private var sidebar: some View {
-        List(selection: $selectedSection) {
-            Section {
-                ForEach(SettingsSection.allCases) { section in
-                    SidebarItemView(
-                        section: section,
-                        isSelected: selectedSection == section,
-                        accentColor: MeetingAssistantDesignSystem.Colors.accent,
-                        onAccentColor: MeetingAssistantDesignSystem.Colors.onAccent
-                    )
-                    .tag(section)
-                    .listRowBackground(
-                        selectedSection == section ? MeetingAssistantDesignSystem.Colors.accent : nil
-                    )
+        ZStack {
+            RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.sidebarContainerCornerRadius)
+                .fill(.ultraThinMaterial)
+                .overlay(
+                    RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.sidebarContainerCornerRadius)
+                        .fill(MeetingAssistantDesignSystem.Colors.windowBackground.opacity(0.58))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.sidebarContainerCornerRadius)
+                        .strokeBorder(
+                            MeetingAssistantDesignSystem.Colors.separator.opacity(0.32),
+                            lineWidth: 0.5
+                        )
+                )
+
+            ScrollView {
+                LazyVStack(spacing: MeetingAssistantDesignSystem.Layout.sidebarSectionSpacing) {
+                    ForEach(SettingsSection.allCases) { section in
+                        SidebarItemView(
+                            section: section,
+                            isSelected: selectedSection == section,
+                            onSelect: { selectedSection = section }
+                        )
+                    }
                 }
-            } header: {
-                Text("about.title".localized)
-                    .font(.caption2)
-                    .fontWeight(.bold)
-                    .foregroundStyle(.secondary)
-                    .padding(.bottom, 8)
+                .padding(.top, MeetingAssistantDesignSystem.Layout.sidebarTopInset)
+                .padding(.horizontal, MeetingAssistantDesignSystem.Layout.sidebarHorizontalPadding)
+                .padding(.bottom, MeetingAssistantDesignSystem.Layout.sidebarVerticalPadding)
             }
         }
-        .listStyle(.sidebar)
-        .tint(MeetingAssistantDesignSystem.Colors.accent)
+        .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing8)
+        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing10)
         .navigationSplitViewColumnWidth(
             min: LayoutConstants.sidebarMinWidth,
             ideal: LayoutConstants.sidebarIdealWidth,
@@ -115,29 +123,50 @@ public struct SettingsView: View {
 private struct SidebarItemView: View {
     let section: SettingsSection
     let isSelected: Bool
-    let accentColor: Color
-    let onAccentColor: Color
+    let onSelect: () -> Void
 
     var body: some View {
-        Label {
-            Text(section.title)
-                .font(.body)
-                .padding(.leading, MeetingAssistantDesignSystem.Layout.spacing4)
-                .foregroundStyle(isSelected ? onAccentColor : .primary)
-        } icon: {
-            ZStack {
-                RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.chipCornerRadius)
-                    .fill(accentColor)
-                    .opacity(isSelected ? 1.0 : 0.1)
-
+        Button(action: onSelect) {
+            HStack(spacing: MeetingAssistantDesignSystem.Layout.sidebarItemContentSpacing) {
                 Image(systemName: section.icon)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(
+                        .system(
+                            size: MeetingAssistantDesignSystem.Layout.sidebarSymbolFontSize,
+                            weight: .medium
+                        )
+                    )
                     .aspectRatio(contentMode: .fit)
-                    .foregroundStyle(isSelected ? onAccentColor : accentColor)
+                    .foregroundStyle(Color.primary.opacity(0.85))
+                    .frame(width: 24, height: 24)
+
+                Text(section.title)
+                    .font(
+                        .system(
+                            size: MeetingAssistantDesignSystem.Layout.sidebarLabelFontSize,
+                            weight: .medium
+                        )
+                    )
+                    .foregroundStyle(Color.primary.opacity(0.85))
+                    .lineLimit(1)
+
+                Spacer(minLength: 0)
             }
-            .frame(width: 24, height: 24)
+            .frame(height: MeetingAssistantDesignSystem.Layout.sidebarItemHeight)
+            .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing8)
+            .background(isSelected ? MeetingAssistantDesignSystem.Colors.selectionFill : .clear)
+            .overlay(
+                RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.sidebarItemCornerRadius)
+                    .stroke(
+                        isSelected ? MeetingAssistantDesignSystem.Colors.selectionStroke : .clear,
+                        lineWidth: 1
+                    )
+            )
+            .clipShape(
+                RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.sidebarItemCornerRadius)
+            )
         }
-        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing2)
+        .buttonStyle(.plain)
+        .contentShape(Rectangle())
     }
 }
 
