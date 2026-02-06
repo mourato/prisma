@@ -35,7 +35,15 @@ Break your work into small, self-contained units.
 **CRITICAL**: Before creating ANY commit, you MUST verify project health.
 - Run `make build` (or `make build-debug`).
 - Ensure relevant tests pass with `make test`.
+- (Recommended) Run `make lint`.
 - Do NOT commit broken code.
+
+### 4. Pre-Push / Pre-Merge Code Review
+Before the final push/merge, perform a local review using **[code-review](../code-review/SKILL.md)**.
+
+- Create a semáforo report (🔴/🟡/🟢).
+- Fix **🔴 Critical** and **🟡 Medium** findings.
+- Re-verify (`make lint`, `make test`, `make build`) and commit fixes atomically.
 
 ## Key Concepts
 
@@ -97,11 +105,25 @@ cd ../my-new-feature
 
 ### Pull Requests
 
-Always use the project PR template and ensure:
+If the repository has a PR template, use it.
+
+Before opening a PR (or before merging locally), ensure:
 - [ ] Build Passed (`make build`)
 - [ ] Tests passed (`make test`)
 - [ ] Lint passed (`make lint`)
 - [ ] Documentation updated
+
+### Branch Cleanup (After Merge)
+
+After merging into `main`, remove temporary branches and worktrees (never delete `main`).
+
+```bash
+# Local branch
+git branch -D <branch-name>
+
+# Remote branch (if pushed)
+git push origin --delete <branch-name>
+```
 
 ## Advanced Techniques
 
@@ -113,5 +135,4 @@ For complex Git operations, see the **[git-advanced-workflows](../git-advanced-w
 
 ## References
 
-- [.github/PULL_REQUEST_TEMPLATE.md](../../.github/PULL_REQUEST_TEMPLATE.md)
 - [Conventional Commits Specification](https://www.conventionalcommits.org)
