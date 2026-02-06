@@ -98,13 +98,14 @@ Common workflows:
 - Development: `make build && make run`
 - Testing: `make test`
 - Release: `make lint && make test && make build-release && make dmg`
-- CI: `make ci-build`
+- CI: `make ci-build` (includes `make arch-check`)
 
 ## Lint & format
 
 ```bash
 ./scripts/lint.sh
 ./scripts/lint-fix.sh
+make arch-check
 make format
 ```
 

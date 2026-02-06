@@ -33,7 +33,7 @@ Language policy:
 Work exclusively within the isolated worktree directory.
 
 1. **Incremental Commits**: Commit logically related changes frequently using Conventional Commits.
-2. **Continuous Verification**: Periodically run `make build` and `make test` to ensure stability.
+2. **Continuous Verification**: Periodically run `make arch-check`, `make build`, and `make test` to ensure stability.
    - For B2 modularization work, verify both compile and tests after each access-control/import change.
    - If tests touch module internals, ensure the test target depends on that module explicitly in `Package.swift`.
 3. **Documentation**: Update `KNOWN_LIMITATIONS.md` or DocC comments if the implementation introduces new constraints or APIs.
