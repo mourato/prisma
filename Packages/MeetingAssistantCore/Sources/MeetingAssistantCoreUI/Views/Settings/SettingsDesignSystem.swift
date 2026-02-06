@@ -1,4 +1,5 @@
 import SwiftUI
+import MeetingAssistantCoreInfrastructure
 
 /// Backwards-compatible alias for legacy Settings-only naming.
 public typealias SettingsDesignSystem = MeetingAssistantDesignSystem
