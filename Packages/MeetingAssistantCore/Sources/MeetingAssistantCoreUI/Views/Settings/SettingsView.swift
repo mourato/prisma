@@ -65,14 +65,16 @@ public struct SettingsView: View {
                 )
 
             ScrollView {
-                LazyVStack(spacing: MeetingAssistantDesignSystem.Layout.sidebarSectionSpacing) {
-                    ForEach(SettingsSection.allCases) { section in
-                        SidebarItemView(
-                            section: section,
-                            isSelected: selectedSection == section,
-                            onSelect: { selectedSection = section }
-                        )
-                    }
+                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
+                    sidebarGroup(
+                        title: "about.title".localized,
+                        sections: SettingsSection.primarySections
+                    )
+
+                    sidebarGroup(
+                        title: "settings.title".localized,
+                        sections: SettingsSection.settingsSections
+                    )
                 }
                 .padding(.top, MeetingAssistantDesignSystem.Layout.sidebarTopInset)
                 .padding(.horizontal, MeetingAssistantDesignSystem.Layout.sidebarHorizontalPadding)
@@ -86,6 +88,25 @@ public struct SettingsView: View {
             ideal: LayoutConstants.sidebarIdealWidth,
             max: LayoutConstants.sidebarMaxWidth
         )
+    }
+
+    @ViewBuilder
+    private func sidebarGroup(title: String, sections: [SettingsSection]) -> some View {
+        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.sidebarSectionSpacing) {
+            Text(title)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing8)
+                .padding(.bottom, MeetingAssistantDesignSystem.Layout.spacing6)
+
+            ForEach(sections) { section in
+                SidebarItemView(
+                    section: section,
+                    isSelected: selectedSection == section,
+                    onSelect: { selectedSection = section }
+                )
+            }
+        }
     }
 
     // MARK: - Detail View
