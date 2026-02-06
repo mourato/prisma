@@ -60,20 +60,20 @@ public class TranscriptionSettingsViewModel: ObservableObject {
     }
 
     private func matchesSourceFilter(_ transcription: TranscriptionMetadata) -> Bool {
+        let app = MeetingApp(rawValue: transcription.appRawValue) ?? .unknown
+
         switch sourceFilter {
         case .all:
             return true
         case .dictations:
-            // Dictation = Microphone source AND not imported file
-            if transcription.appRawValue == MeetingApp.importedFile.rawValue { return false }
-            return transcription.inputSource == "Microphone"
+            // Dictation = Unknown app source (menu bar dictation) AND not imported file.
+            if app == .importedFile { return false }
+            return app == .unknown
         case .meetings:
-            // Meetings = System Audio or Merged
-            // Or anything that is NOT Microphone and NOT imported
-            if transcription.appRawValue == MeetingApp.importedFile.rawValue { return false }
-            return transcription.inputSource != "Microphone"
+            if app == .importedFile { return false }
+            return app != .unknown
         case .manualImports:
-            return transcription.appRawValue == MeetingApp.importedFile.rawValue
+            return app == .importedFile
         }
     }
 
