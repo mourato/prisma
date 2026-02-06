@@ -225,7 +225,7 @@ public struct FloatingRecordingIndicatorView: View {
             MeetingAssistantDesignSystem.Layout.recordingIndicatorMiniDotSize
         }
 
-        Circle()
+        return Circle()
             .fill(isRecordingMode ? MeetingAssistantDesignSystem.Colors.recording : MeetingAssistantDesignSystem.Colors.accent)
             .frame(width: dotSize, height: dotSize)
             .modifier(PulsingModifier(isActive: isRecordingMode, speed: isRecordingMode ? 0.9 : 1.4))
