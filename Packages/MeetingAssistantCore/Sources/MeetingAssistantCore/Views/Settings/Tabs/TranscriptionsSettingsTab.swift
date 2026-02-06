@@ -28,13 +28,13 @@ public struct TranscriptionsSettingsTab: View {
             await viewModel.loadTranscriptions()
         }
         .alert(
-            NSLocalizedString("settings.transcriptions.error_load", bundle: .safeModule, comment: ""),
+            "settings.transcriptions.error_load".localized,
             isPresented: Binding(
                 get: { viewModel.errorMessage != nil },
                 set: { if !$0 { viewModel.errorMessage = nil } }
             )
         ) {
-            Button("OK", role: .cancel) {
+            Button("common.ok".localized, role: .cancel) {
                 viewModel.errorMessage = nil
             }
         } message: {
@@ -49,14 +49,11 @@ public struct TranscriptionsSettingsTab: View {
     private var headerSection: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text(NSLocalizedString("settings.transcriptions.title", bundle: .safeModule, comment: ""))
+                Text("settings.transcriptions.title".localized)
                     .font(.system(.title2, design: .rounded))
                     .fontWeight(.bold)
                 Text(
-                    String.localizedStringWithFormat(
-                        NSLocalizedString("settings.transcriptions.items_found", bundle: .safeModule, comment: ""),
-                        viewModel.filteredTranscriptions.count
-                    )
+                    "settings.transcriptions.items_found".localized(with: viewModel.filteredTranscriptions.count)
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -67,7 +64,7 @@ public struct TranscriptionsSettingsTab: View {
             Button(
                 action: { viewModel.openRecordingsDirectory() },
                 label: {
-                    Label(NSLocalizedString("settings.transcriptions.open_folder", bundle: .safeModule, comment: ""), systemImage: "folder")
+                    Label("settings.transcriptions.open_folder".localized, systemImage: "folder")
                 }
             )
             .buttonStyle(.bordered)
@@ -108,7 +105,7 @@ public struct TranscriptionsSettingsTab: View {
                     Spacer()
                     ProgressView()
                         .controlSize(.large)
-                    Text(NSLocalizedString("settings.transcriptions.loading", bundle: .safeModule, comment: ""))
+                    Text("settings.transcriptions.loading".localized)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .padding(.top, 8)
@@ -131,7 +128,7 @@ public struct TranscriptionsSettingsTab: View {
             HStack {
                 Image(systemName: "line.3.horizontal.decrease.circle")
                     .foregroundStyle(.secondary)
-                Text(NSLocalizedString("settings.transcriptions.filters", bundle: .safeModule, comment: ""))
+                Text("settings.transcriptions.filters".localized)
                     .font(.system(.caption, design: .monospaced))
                     .fontWeight(.bold)
                     .foregroundStyle(.secondary)
@@ -145,7 +142,7 @@ public struct TranscriptionsSettingsTab: View {
 
     private var sourceFilterPicker: some View {
         Picker(
-            NSLocalizedString("settings.transcriptions.source", bundle: .safeModule, comment: ""),
+            "settings.transcriptions.source".localized,
             selection: $viewModel.sourceFilter
         ) {
             ForEach(RecordingSourceFilter.allCases, id: \.self) { filter in
@@ -197,10 +194,10 @@ public struct TranscriptionsSettingsTab: View {
                 .symbolEffect(.bounce, value: importViewModel.isDropTargeted)
 
             VStack(spacing: 4) {
-                Text(NSLocalizedString("settings.transcriptions.import", bundle: .safeModule, comment: ""))
+                Text("settings.transcriptions.import".localized)
                     .font(.headline)
 
-                Text(NSLocalizedString("settings.transcriptions.import_desc", bundle: .safeModule, comment: ""))
+                Text("settings.transcriptions.import_desc".localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -237,11 +234,11 @@ public struct TranscriptionsSettingsTab: View {
                 .symbolEffect(.pulse)
 
             VStack(spacing: 4) {
-                Text(NSLocalizedString("settings.transcriptions.empty_title", bundle: .safeModule, comment: ""))
+                Text("settings.transcriptions.empty_title".localized)
                     .font(.headline)
                     .foregroundStyle(.secondary)
 
-                Text(NSLocalizedString("settings.transcriptions.empty_desc", bundle: .safeModule, comment: ""))
+                Text("settings.transcriptions.empty_desc".localized)
                     .font(.caption)
                     .foregroundStyle(.tertiary)
                     .multilineTextAlignment(.center)
@@ -376,7 +373,7 @@ public struct TranscriptionsSettingsTab: View {
                 .foregroundStyle(.tertiary)
                 .opacity(0.5)
 
-            Text(NSLocalizedString("settings.transcriptions.no_selection", bundle: .safeModule, comment: ""))
+            Text("settings.transcriptions.no_selection".localized)
                 .font(.headline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

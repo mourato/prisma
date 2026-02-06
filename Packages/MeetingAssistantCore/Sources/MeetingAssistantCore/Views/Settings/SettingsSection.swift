@@ -20,16 +20,16 @@ public enum SettingsSection: String, CaseIterable, Identifiable {
 
     public var title: String {
         switch self {
-        case .metrics: NSLocalizedString("settings.section.metrics", bundle: .safeModule, comment: "")
-        case .general: NSLocalizedString("settings.section.general", bundle: .safeModule, comment: "")
-        case .dictation: NSLocalizedString("settings.section.dictation", bundle: .safeModule, comment: "")
-        case .meetings: NSLocalizedString("settings.section.meetings", bundle: .safeModule, comment: "")
-        case .audio: NSLocalizedString("settings.section.audio", bundle: .safeModule, comment: "")
-        case .assistant: NSLocalizedString("settings.section.assistant", bundle: .safeModule, comment: "")
-        case .transcriptions: NSLocalizedString("settings.section.transcriptions", bundle: .safeModule, comment: "")
-        case .enhancements: NSLocalizedString("settings.section.ai", bundle: .safeModule, comment: "")
-        case .service: NSLocalizedString("settings.section.service", bundle: .safeModule, comment: "")
-        case .permissions: NSLocalizedString("settings.section.permissions", bundle: .safeModule, comment: "")
+        case .metrics: "settings.section.metrics".localized
+        case .general: "settings.section.general".localized
+        case .dictation: "settings.section.dictation".localized
+        case .meetings: "settings.section.meetings".localized
+        case .audio: "settings.section.audio".localized
+        case .assistant: "settings.section.assistant".localized
+        case .transcriptions: "settings.section.transcriptions".localized
+        case .enhancements: "settings.section.ai".localized
+        case .service: "settings.section.service".localized
+        case .permissions: "settings.section.permissions".localized
         }
     }
 

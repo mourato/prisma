@@ -219,7 +219,7 @@ public struct TranscriptionCardView: View {
                     }
                 }
             } else {
-                Text(NSLocalizedString("transcription.no_segments", bundle: .safeModule, comment: ""))
+                Text("transcription.no_segments".localized)
                     .foregroundStyle(.secondary)
             }
         }

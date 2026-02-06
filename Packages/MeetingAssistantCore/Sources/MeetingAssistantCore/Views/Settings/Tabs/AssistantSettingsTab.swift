@@ -22,7 +22,7 @@ public struct AssistantSettingsTab: View {
     }
 
     private var headerSection: some View {
-        Text(NSLocalizedString("settings.assistant.header_desc", bundle: .safeModule, comment: ""))
+        Text("settings.assistant.header_desc".localized)
             .font(.subheadline)
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -30,16 +30,16 @@ public struct AssistantSettingsTab: View {
 
     private var assistantControlsSection: some View {
         SettingsGroup(
-            NSLocalizedString("settings.assistant.controls", bundle: .safeModule, comment: ""),
+            "settings.assistant.controls".localized,
             icon: "sparkles"
         ) {
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(NSLocalizedString("settings.assistant.toggle_command", bundle: .safeModule, comment: ""))
+                        Text("settings.assistant.toggle_command".localized)
                             .font(.body)
                             .fontWeight(.medium)
-                        Text(NSLocalizedString("settings.assistant.toggle_command_desc", bundle: .safeModule, comment: ""))
+                        Text("settings.assistant.toggle_command_desc".localized)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -71,7 +71,7 @@ public struct AssistantSettingsTab: View {
 
                 if viewModel.isRecordingCustomShortcut {
                     HStack {
-                        Text(NSLocalizedString("settings.assistant.custom_shortcut", bundle: .safeModule, comment: ""))
+                        Text("settings.assistant.custom_shortcut".localized)
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
 
@@ -87,7 +87,7 @@ public struct AssistantSettingsTab: View {
 
                 Divider()
 
-                Text(NSLocalizedString("settings.assistant.activation_mode_desc", bundle: .safeModule, comment: ""))
+                Text("settings.assistant.activation_mode_desc".localized)
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
@@ -96,13 +96,13 @@ public struct AssistantSettingsTab: View {
 
     private var visualFeedbackSection: some View {
         SettingsGroup(
-            NSLocalizedString("settings.assistant.visual_feedback", bundle: .safeModule, comment: ""),
+            "settings.assistant.visual_feedback".localized,
             icon: "rectangle.inset.filled"
         ) {
             VStack(alignment: .leading, spacing: 16) {
                 // Border Color Picker
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(NSLocalizedString("settings.assistant.border_color", bundle: .safeModule, comment: ""))
+                    Text("settings.assistant.border_color".localized)
                         .font(.body)
                         .fontWeight(.medium)
 
@@ -115,7 +115,7 @@ public struct AssistantSettingsTab: View {
 
                 // Border Style Picker
                 HStack {
-                    Text(NSLocalizedString("settings.assistant.border_style", bundle: .safeModule, comment: ""))
+                    Text("settings.assistant.border_style".localized)
                         .font(.body)
                         .fontWeight(.medium)
 
@@ -137,7 +137,7 @@ public struct AssistantSettingsTab: View {
     private var optionsSection: some View {
         SettingsCard {
             SettingsToggle(
-                NSLocalizedString("settings.assistant.use_escape", bundle: .safeModule, comment: ""),
+                "settings.assistant.use_escape".localized,
                 isOn: $viewModel.useEscapeToCancelRecording
             )
         }
@@ -145,14 +145,14 @@ public struct AssistantSettingsTab: View {
 
     private var testKeysSection: some View {
         SettingsGroup(
-            NSLocalizedString("settings.assistant.try_keys", bundle: .safeModule, comment: ""),
+            "settings.assistant.try_keys".localized,
             icon: "keyboard"
         ) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 6) {
                     Image(systemName: "hand.point.up.left.fill")
                         .foregroundStyle(.blue)
-                    Text(NSLocalizedString("settings.assistant.try_keys_hint", bundle: .safeModule, comment: ""))
+                    Text("settings.assistant.try_keys_hint".localized)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -173,7 +173,7 @@ public struct AssistantSettingsTab: View {
                 Button(action: {
                     viewModel.resetShortcuts()
                 }) {
-                    Text(NSLocalizedString("settings.assistant.reset", bundle: .safeModule, comment: ""))
+                    Text("settings.assistant.reset".localized)
                 }
                 .buttonStyle(.link)
 

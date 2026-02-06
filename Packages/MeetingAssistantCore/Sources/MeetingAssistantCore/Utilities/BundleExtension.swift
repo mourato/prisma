@@ -4,14 +4,18 @@ private class BundleFinder {}
 
 public extension Bundle {
     /// Returns a bundle that works safely across SPM, Xcode IDE, and Test environments.
-    /// Avoids `Bundle.module` which can cause `fatalError` during bundle loading.
+    ///
+    /// Notes:
+    /// - Prefer using `.safeModule` for all localized UI strings in this project.
+    /// - Direct `Bundle.module` usage can be brittle across build/test environments when the
+    ///   resource bundle name/location differs (e.g. `xcodebuild` vs `swift test`).
     static var safeModule: Bundle {
         #if SWIFT_PACKAGE
         // Detect if running via `swift test` (CLI) vs `xcodebuild` (Xcode)
         // Xcode usually sets specific environment variables.
         let isXcode = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
         if !isXcode {
-             return applyLanguageOverride(to: Bundle.module)
+            return applyLanguageOverride(to: Bundle.module)
         }
         #endif
 
@@ -71,6 +75,6 @@ public extension String {
     /// Localized string with format arguments.
     /// Usage: `"permissions.granted_count".localized(with: count)`
     func localized(with arguments: CVarArg...) -> String {
-        String(format: localized, arguments: arguments)
+        String(format: localized, locale: .current, arguments: arguments)
     }
 }

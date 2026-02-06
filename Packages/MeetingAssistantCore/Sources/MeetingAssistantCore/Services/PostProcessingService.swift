@@ -17,27 +17,21 @@ public enum PostProcessingError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .noPromptSelected:
-            NSLocalizedString("error.post_processing.no_prompt_selected", bundle: .module, comment: "")
+            "error.post_processing.no_prompt_selected".localized
         case .noAPIConfigured:
-            NSLocalizedString("error.post_processing.no_api_configured", bundle: .module, comment: "")
+            "error.post_processing.no_api_configured".localized
         case .invalidURL:
-            NSLocalizedString("error.post_processing.invalid_url", bundle: .module, comment: "")
+            "error.post_processing.invalid_url".localized
         case let .requestFailed(error):
-            String(
-                format: NSLocalizedString("error.post_processing.request_failed", bundle: .module, comment: ""),
-                error.localizedDescription
-            )
+            "error.post_processing.request_failed".localized(with: error.localizedDescription)
         case .invalidResponse:
-            NSLocalizedString("error.post_processing.invalid_response", bundle: .module, comment: "")
+            "error.post_processing.invalid_response".localized
         case let .apiError(message):
-            String(format: NSLocalizedString("error.post_processing.api_error", bundle: .module, comment: ""), message)
+            "error.post_processing.api_error".localized(with: message)
         case .emptyTranscription:
-            NSLocalizedString("error.post_processing.empty_transcription", bundle: .module, comment: "")
+            "error.post_processing.empty_transcription".localized
         case let .transcriptionTooLong(count):
-            String(
-                format: NSLocalizedString("error.post_processing.transcription_too_long", bundle: .module, comment: ""),
-                count
-            )
+            "error.post_processing.transcription_too_long".localized(with: count)
         }
     }
 }

@@ -12,44 +12,31 @@ Complete guide for internationalization (i18n) and accessibility (a11y) for the 
 ## When to Use
 
 Activate this skill when working with:
-- `Bundle.module` resource loading
-- `NSLocalizedString`
-- `Text("Key", bundle: .module)`
+- `Bundle.safeModule` resource resolution
+- `"some.key".localized` / `"some.key".localized(with: ...)`
 - Accessibility modifiers
 - VoiceOver support
 
 ## Key Concepts
 
-### Resource Loading in Swift Packages
+### Resource Loading
 
-**CRITICAL**: Use `Bundle.module` in Swift Packages:
-
-```swift
-// ✅ CORRECT - Swift Package
-Text("settings_api_key_placeholder", bundle: .module)
-NSLocalizedString("menubar.accessibility.recording", bundle: .module, comment: "Recording status")
-
-// ❌ WRONG - Bundle.main doesn't work in frameworks
-Text("settings_api_key_placeholder", bundle: .main)
-```
-
-### Safe Bundle Access
-
-Create a fallback for safer resource loading:
+**CRITICAL**: This project centralizes localization bundle resolution in `Bundle.safeModule` (see `Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Utilities/BundleExtension.swift`).
 
 ```swift
-extension Bundle {
-    static var safeModule: Bundle {
-        guard let module = Bundle.module else {
-            return Bundle.main
-        }
-        return module
-    }
-}
+// ✅ Standard (everywhere)
+Text("settings.transcriptions.title".localized)
+Text("permissions.granted_count".localized(with: granted, required))
+let title = key.localized
 
-// Usage
-Text("key", bundle: .safeModule)
+// ✅ Formatting (respects Locale.current)
+let message = "about.version".localized(with: AppVersion.current)
+
+// ❌ Avoid in feature code (only allowed inside helpers)
+NSLocalizedString("settings.transcriptions.title", comment: "")
 ```
+
+Do not re-implement bundle lookup helpers in feature code. Always use the shared helpers.
 
 ## Localization Patterns
 
@@ -62,21 +49,21 @@ Text("key", bundle: .safeModule)
 Text("Record")
 
 // ✅ CORRECT
-Text("recording.start", bundle: .module)
+Text("recording.start".localized)
 ```
 
 Ao adicionar ou remover textos na interface, é importante tratar eles de maneira adequada: ou cuidando da correta localização ou fazendo a sanitização do que for removido.
 
 ### Key Convention
 
-Use descriptive `snake_case` keys:
+Use descriptive, dot-separated keys with `lower_snake_case` segments:
 
 ```swift
 // Good keys
-"recording.start"              // Start recording
-"recording.stop"               // Stop recording
-"recording.in_progress"        // Recording in progress
-"settings.api_key.placeholder" // API key placeholder
+"recording.start"                   // Start recording
+"recording.stop"                    // Stop recording
+"recording.in_progress"             // Recording in progress
+"settings.transcriptions.empty_desc" // Empty state description
 ```
 
 ## Accessibility (VoiceOver)
@@ -114,5 +101,6 @@ Follow this pattern for consistent naming:
 
 ## References
 
+- [BundleExtension.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Utilities/BundleExtension.swift)
 - [Localizable.strings](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Resources/en.lproj/Localizable.strings)
 - [Apple Accessibility Guide](https://developer.apple.com/documentation/accessibility)

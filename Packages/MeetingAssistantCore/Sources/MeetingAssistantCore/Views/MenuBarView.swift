@@ -79,7 +79,7 @@ public struct MenuBarView: View {
                 .font(.title)
                 .foregroundStyle(SettingsDesignSystem.Colors.accent)
 
-            Text(NSLocalizedString("about.title", bundle: .safeModule, comment: ""))
+            Text("about.title".localized)
                 .font(.headline)
 
             Spacer()

@@ -25,7 +25,7 @@ public struct ServiceSettingsTab: View {
     }
 
     private var modelInfoSection: some View {
-        SettingsGroup(NSLocalizedString("settings.service.model_info", bundle: .safeModule, comment: ""), icon: "waveform") {
+        SettingsGroup("settings.service.model_info".localized, icon: "waveform") {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 12) {
                     ZStack {
@@ -38,9 +38,9 @@ public struct ServiceSettingsTab: View {
                     }
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(NSLocalizedString("settings.service.on_device", bundle: .safeModule, comment: ""))
+                        Text("settings.service.on_device".localized)
                             .font(.headline)
-                        Text(NSLocalizedString("settings.service.ane_opt", bundle: .safeModule, comment: ""))
+                        Text("settings.service.ane_opt".localized)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -51,7 +51,7 @@ public struct ServiceSettingsTab: View {
                 Grid(alignment: .leading, horizontalSpacing: 20, verticalSpacing: 12) {
                     // ASR Model
                     GridRow {
-                        Text(NSLocalizedString("settings.service.model", bundle: .safeModule, comment: ""))
+                        Text("settings.service.model".localized)
                             .foregroundStyle(.secondary)
 
                         HStack {
@@ -73,7 +73,7 @@ public struct ServiceSettingsTab: View {
                                         .foregroundStyle(.red)
                                 }
                                 .buttonStyle(.borderless)
-                                .help(NSLocalizedString("settings.service.delete_model", bundle: .safeModule, comment: ""))
+                                .help("settings.service.delete_model".localized)
                             } else if viewModel.modelState == .downloading || viewModel.modelState == .loading {
                                 ProgressView()
                                     .controlSize(.small)
@@ -86,7 +86,7 @@ public struct ServiceSettingsTab: View {
                                         .foregroundStyle(SettingsDesignSystem.Colors.accent)
                                 }
                                 .buttonStyle(.borderless)
-                                .help(NSLocalizedString("settings.service.download_model", bundle: .safeModule, comment: ""))
+                                .help("settings.service.download_model".localized)
                             }
                         }
                     }
@@ -95,7 +95,7 @@ public struct ServiceSettingsTab: View {
 
                     // Diarization Model
                     GridRow {
-                        Text(NSLocalizedString("settings.service.diarization", bundle: .safeModule, comment: ""))
+                        Text("settings.service.diarization".localized)
                             .foregroundStyle(.secondary)
 
                         HStack {
@@ -104,8 +104,8 @@ public struct ServiceSettingsTab: View {
                                     .fontWeight(.medium)
                                 Text(
                                     viewModel.isDiarizationLoaded
-                                        ? NSLocalizedString("settings.service.installed", bundle: .safeModule, comment: "")
-                                        : NSLocalizedString("settings.service.not_installed", bundle: .safeModule, comment: "")
+                                        ? "settings.service.installed".localized
+                                        : "settings.service.not_installed".localized
                                 )
                                 .font(.caption2)
                                 .foregroundStyle(viewModel.isDiarizationLoaded ? .green : .secondary)
@@ -121,7 +121,7 @@ public struct ServiceSettingsTab: View {
                                         .foregroundStyle(.red)
                                 }
                                 .buttonStyle(.borderless)
-                                .help(NSLocalizedString("settings.service.delete_model", bundle: .safeModule, comment: ""))
+                                .help("settings.service.delete_model".localized)
                             } else {
                                 Button {
                                     Task { await FluidAIModelManager.shared.loadDiarizationModels() }
@@ -131,15 +131,15 @@ public struct ServiceSettingsTab: View {
                                         .foregroundStyle(SettingsDesignSystem.Colors.accent)
                                 }
                                 .buttonStyle(.borderless)
-                                .help(NSLocalizedString("settings.service.download_model", bundle: .safeModule, comment: ""))
+                                .help("settings.service.download_model".localized)
                             }
                         }
                     }
 
                     GridRow {
-                        Text(NSLocalizedString("settings.service.languages", bundle: .safeModule, comment: ""))
+                        Text("settings.service.languages".localized)
                             .foregroundStyle(.secondary)
-                        Text(NSLocalizedString("settings.service.languages_desc", bundle: .safeModule, comment: ""))
+                        Text("settings.service.languages_desc".localized)
                             .fontWeight(.medium)
                     }
                 }
@@ -156,10 +156,10 @@ public struct ServiceSettingsTab: View {
                     .foregroundStyle(.orange)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(NSLocalizedString("settings.service.high_performance", bundle: .safeModule, comment: ""))
+                    Text("settings.service.high_performance".localized)
                         .font(.subheadline)
                         .fontWeight(.medium)
-                    Text(NSLocalizedString("settings.service.no_internet", bundle: .safeModule, comment: ""))
+                    Text("settings.service.no_internet".localized)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
@@ -173,7 +173,7 @@ public struct ServiceSettingsTab: View {
         SettingsCard {
             HStack {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(NSLocalizedString("settings.service.status", bundle: .safeModule, comment: ""))
+                    Text("settings.service.status".localized)
                         .font(.headline)
 
                     HStack(spacing: 6) {
@@ -195,7 +195,7 @@ public struct ServiceSettingsTab: View {
                             ProgressView().controlSize(.small)
                         } else {
                             Label(
-                                NSLocalizedString("settings.service.verify", bundle: .safeModule, comment: ""),
+                                "settings.service.verify".localized,
                                 systemImage: "arrow.clockwise"
                             )
                         }
@@ -209,11 +209,11 @@ public struct ServiceSettingsTab: View {
 
     private var modelStatusText: String {
         switch viewModel.modelState {
-        case .loaded: NSLocalizedString("transcription.model_state.loaded", bundle: .safeModule, comment: "")
-        case .downloading: NSLocalizedString("transcription.model_state.downloading", bundle: .safeModule, comment: "")
-        case .loading: NSLocalizedString("transcription.model_state.loading", bundle: .safeModule, comment: "")
-        case .unloaded: NSLocalizedString("transcription.model_state.unloaded", bundle: .safeModule, comment: "")
-        case .error: NSLocalizedString("transcription.model_state.error", bundle: .safeModule, comment: "")
+        case .loaded: "transcription.model_state.loaded".localized
+        case .downloading: "transcription.model_state.downloading".localized
+        case .loading: "transcription.model_state.loading".localized
+        case .unloaded: "transcription.model_state.unloaded".localized
+        case .error: "transcription.model_state.error".localized
         }
     }
 

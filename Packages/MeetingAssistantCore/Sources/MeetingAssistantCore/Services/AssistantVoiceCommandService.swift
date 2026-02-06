@@ -96,7 +96,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
             }
 
             let prompt = PostProcessingPrompt(
-                title: NSLocalizedString("assistant.prompt_title", bundle: .safeModule, comment: ""),
+                title: "assistant.prompt_title".localized,
                 promptText: command
             )
 
@@ -168,21 +168,21 @@ public enum AssistantVoiceCommandError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .microphonePermissionRequired:
-            NSLocalizedString("assistant.error.microphone_permission", bundle: .safeModule, comment: "")
+            "assistant.error.microphone_permission".localized
         case .accessibilityPermissionRequired:
-            NSLocalizedString("assistant.error.accessibility_permission", bundle: .safeModule, comment: "")
+            "assistant.error.accessibility_permission".localized
         case .noSelectionFound:
-            NSLocalizedString("assistant.error.no_selection", bundle: .safeModule, comment: "")
+            "assistant.error.no_selection".localized
         case .emptyCommand:
-            NSLocalizedString("assistant.error.empty_command", bundle: .safeModule, comment: "")
+            "assistant.error.empty_command".localized
         case .failedToStartRecording:
-            NSLocalizedString("assistant.error.start_failed", bundle: .safeModule, comment: "")
+            "assistant.error.start_failed".localized
         case .failedToStopRecording:
-            NSLocalizedString("assistant.error.stop_failed", bundle: .safeModule, comment: "")
+            "assistant.error.stop_failed".localized
         case .recordingInProgress:
-            NSLocalizedString("assistant.error.recording_in_progress", bundle: .safeModule, comment: "")
+            "assistant.error.recording_in_progress".localized
         case .processingFailed:
-            NSLocalizedString("assistant.error.processing_failed", bundle: .safeModule, comment: "")
+            "assistant.error.processing_failed".localized
         }
     }
 }

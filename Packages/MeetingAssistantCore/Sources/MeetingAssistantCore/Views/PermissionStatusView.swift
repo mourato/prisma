@@ -105,7 +105,7 @@ public struct PermissionStatusView: View {
     private var statusBadge: some View {
         if requiredPermissionsGranted {
             Button(action: { onDismiss?() }) {
-                Text(NSLocalizedString("common.ok", bundle: .safeModule, comment: ""))
+                Text("common.ok".localized)
                     .font(.caption2)
                     .fontWeight(.bold)
                     .padding(.horizontal, 8)

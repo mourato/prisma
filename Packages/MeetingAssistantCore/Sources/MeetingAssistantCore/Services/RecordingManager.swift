@@ -1057,17 +1057,16 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     private func notifySuccess(for transcription: Transcription) {
         let suffix =
             transcription.isPostProcessed
-                ? NSLocalizedString("notification.transcription_processed", bundle: .safeModule, comment: "")
-                : NSLocalizedString("notification.transcription_transcribed", bundle: .safeModule, comment: "")
-        let body = String(
-            format: NSLocalizedString("notification.transcription_body", bundle: .safeModule, comment: ""),
-            transcription.meeting.appName,
+                ? "notification.transcription_processed".localized
+                : "notification.transcription_transcribed".localized
+        let body = "notification.transcription_body".localized(
+            with: transcription.meeting.appName,
             transcription.wordCount,
             suffix
         )
 
         notificationService.sendNotification(
-            title: NSLocalizedString("notification.transcription_completed", bundle: .safeModule, comment: ""),
+            title: "notification.transcription_completed".localized,
             body: body
         )
     }
@@ -1080,7 +1079,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         transcriptionStatus.completeTranscription(success: false)
 
         notificationService.sendNotification(
-            title: NSLocalizedString("notification.transcription_failed", bundle: .safeModule, comment: ""),
+            title: "notification.transcription_failed".localized,
             body: error.localizedDescription
         )
     }
@@ -1289,21 +1288,21 @@ extension RecordingManager {
 
     private func resolveInputSourceLabel(for meeting: Meeting) -> String? {
         if meeting.app == .importedFile {
-            return NSLocalizedString("meeting.app.imported", bundle: .safeModule, comment: "Imported File")
+            return "meeting.app.imported".localized
         }
 
         switch recordingSource {
         case .microphone:
-            return resolveMicrophoneDeviceName() ?? NSLocalizedString("recording.source.microphone", bundle: .safeModule, comment: "Microphone")
+            return resolveMicrophoneDeviceName() ?? "recording.source.microphone".localized
         case .system:
-            return NSLocalizedString("recording.source.system", bundle: .safeModule, comment: "System Audio")
+            return "recording.source.system".localized
         case .all:
-            let system = NSLocalizedString("recording.source.system", bundle: .safeModule, comment: "System Audio")
+            let system = "recording.source.system".localized
             let mic = resolveMicrophoneDeviceName()
             if let mic {
                 return "\(system) + \(mic)"
             }
-            let microphone = NSLocalizedString("recording.source.microphone", bundle: .safeModule, comment: "Microphone")
+            let microphone = "recording.source.microphone".localized
             return "\(system) + \(microphone)"
         }
     }
