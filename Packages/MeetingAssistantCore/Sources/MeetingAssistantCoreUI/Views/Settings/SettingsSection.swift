@@ -8,20 +8,35 @@ import MeetingAssistantCoreInfrastructure
 
 // MARK: - Settings Section Enum
 
-public enum SettingsSection: String, CaseIterable, Identifiable {
+public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
     case metrics
-    case general
     case dictation
-    case meetings
     case assistant
-    case audio
+    case meetings
     case transcriptions
+    case general
     case enhancements
+    case audio
     case permissions
 
     public var id: String {
         rawValue
     }
+
+    public static let primarySections: [SettingsSection] = [
+        .metrics,
+        .dictation,
+        .assistant,
+        .meetings,
+        .transcriptions
+    ]
+
+    public static let settingsSections: [SettingsSection] = [
+        .general,
+        .enhancements,
+        .audio,
+        .permissions
+    ]
 
     public var title: String {
         switch self {
@@ -31,7 +46,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable {
         case .meetings: "settings.section.meetings".localized
         case .audio: "settings.section.audio".localized
         case .assistant: "settings.section.assistant".localized
-        case .transcriptions: "settings.section.transcriptions".localized
+        case .transcriptions: "settings.section.history".localized
         case .enhancements: "settings.section.ai".localized
         case .permissions: "settings.section.permissions".localized
         }
@@ -39,15 +54,15 @@ public enum SettingsSection: String, CaseIterable, Identifiable {
 
     public var icon: String {
         switch self {
-        case .metrics: "chart.bar"
-        case .general: "gear"
-        case .dictation: "mic.fill"
-        case .meetings: "person.2.fill"
-        case .audio: "speaker.wave.2.fill"
+        case .metrics: "chart.pie.fill"
+        case .general: "gearshape.2"
+        case .dictation: "microphone"
+        case .meetings: "bubble.left.and.waveform"
+        case .audio: "speaker.wave.2"
         case .assistant: "sparkles"
-        case .transcriptions: "doc.text"
-        case .enhancements: "wand.and.stars"
-        case .permissions: "lock.shield"
+        case .transcriptions: "clock"
+        case .enhancements: "sparkles"
+        case .permissions: "hand.raised.square"
         }
     }
 }
