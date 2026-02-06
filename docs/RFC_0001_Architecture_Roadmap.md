@@ -1,6 +1,6 @@
 # RFC 0001 — Architecture Roadmap
 
-Status: Accepted (Phase 1 complete)
+Status: Accepted (B2 consolidation complete on `main`)
 Last updated: 2026-02-06
 
 ## Context
@@ -103,7 +103,7 @@ Accepted and enforced.
 
 ## Operational outcomes from this phase
 
-- B2 modular split is now operational with green build/tests.
+- B2 modular split is fully integrated on `main` with green build/tests.
 - Project standards and skills were updated to the modular layout and current paths.
 - Architecture decisions are now codified as actionable guidance instead of open questions.
 
