@@ -139,7 +139,11 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         }
     }
 
-    /// Sincroniza o estado local com o estado do actor (para inicialização).
+    deinit {
+        AppLogger.debug("RecordingManager deinitialized", category: .recordingManager)
+    }
+
+    /// Sync local state from the recording actor (used on initialization).
     private func syncStateFromActor() async {
         isRecording = await recordingActor.recordingState
         isTranscribing = await recordingActor.transcribingState
@@ -148,13 +152,15 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         hasRequiredPermissions = await recordingActor.permissionsState
     }
 
-    // ...
-
     /// Check if running as a proper app bundle (required for UNUserNotificationCenter).
     private var isRunningAsAppBundle: Bool {
         guard let bundleId = Bundle.main.bundleIdentifier else { return false }
         return !bundleId.lowercased().contains("xctest")
     }
+
+}
+
+extension RecordingManager {
 
     public func checkPermission() async {
         await checkPermission(for: recordingSource)
@@ -495,6 +501,9 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             .store(in: &cancellables)
     }
 
+}
+
+extension RecordingManager {
     // MARK: - Private Methods
 
     private func setupBindings() {
@@ -586,13 +595,11 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         }
     }
 
+}
+
+extension RecordingManager {
     private func transcribeRecording(audioURL: URL, meeting: Meeting) async {
-        // isTranscribing is already set by stopRecording to bridge the UI gap
-        if !isTranscribing {
-            isTranscribing = true
-            meetingState = .processing(.transcribing)
-            currentMeeting?.state = .processing(.transcribing)
-        }
+        beginTranscriptionUIStateIfNeeded()
 
         let audioDuration = await getAudioDuration(from: audioURL)
         transcriptionStatus.beginTranscription(audioDuration: audioDuration)
@@ -600,141 +607,39 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         do {
             try await performHealthCheck()
 
-            let transcriptionStart = Date()
-
-            // Prepare UseCase arguments
             let settings = AppSettingsStore.shared
-            var meetingEntity = MeetingEntity(
-                id: meeting.id,
-                app: DomainMeetingApp(rawValue: meeting.app.rawValue) ?? .unknown,
-                startTime: meeting.startTime,
-                endTime: meeting.endTime,
-                audioFilePath: meeting.audioFilePath
-            )
-            // Ensure endTime is set if missing (sanity logic from legacy)
-            if meetingEntity.endTime == nil, let duration = audioDuration {
-                meetingEntity.endTime = meetingEntity.startTime.addingTimeInterval(duration)
-            }
-
-            let applyPostProcessing = settings.postProcessingEnabled && settings.aiConfiguration.isValid
-            let isDictation = meeting.isDictation || recordingSource == .microphone
-            let isPostProcessingDisabledForThisRecording = isDictation
-                ? settings.isDictationPostProcessingDisabled
-                : settings.isMeetingPostProcessingDisabled
-            let shouldApplyPostProcessing = applyPostProcessing && !isPostProcessingDisabledForThisRecording
-
-            // Prepare Prompts
-            let builtInMeetingPrompts: [PostProcessingPrompt] = [
-                .standup,
-                .presentation,
-                .designReview,
-                .oneOnOne,
-                .planning,
-            ]
-
-            let availablePrompts: [DomainPostProcessingPrompt] = {
-                guard !isDictation else { return [] }
-
-                return (builtInMeetingPrompts + settings.meetingPrompts).map { prompt in
-                    DomainPostProcessingPrompt(
-                        id: prompt.id,
-                        title: prompt.title,
-                        content: prompt.promptText,
-                        isDefault: false
-                    )
-                }
-            }()
-
-            func domainPrompt(from prompt: PostProcessingPrompt) -> DomainPostProcessingPrompt {
-                DomainPostProcessingPrompt(
-                    id: prompt.id,
-                    title: prompt.title,
-                    content: prompt.promptText,
-                    isDefault: false
-                )
-            }
-
-            let defaultMeetingPrompt: DomainPostProcessingPrompt? = {
-                guard shouldApplyPostProcessing, !isDictation else { return nil }
-
-                if let selected = settings.selectedPrompt {
-                    return domainPrompt(from: selected)
-                }
-
-                return domainPrompt(from: PromptService.shared.strategy(for: .general).promptObject())
-            }()
-
-            let promptToUse: DomainPostProcessingPrompt? = {
-                guard shouldApplyPostProcessing else { return nil }
-
-                // Dictation: always use the dictation prompt set.
-                if isDictation {
-                    let prompt = settings.selectedDictationPrompt ?? .cleanTranscription
-                    return domainPrompt(from: prompt)
-                }
-
-                // Meetings:
-                // - If the meeting type is explicitly `.autodetect`, do NOT pass a fixed prompt so the UseCase can classify.
-                // - If a concrete meeting type was chosen, use the built-in type prompt.
-                // - Otherwise (general), use the user's selected prompt (or a default General prompt).
-                switch meeting.type {
-                case .autodetect:
-                    return nil
-                case .standup:
-                    return domainPrompt(from: .standup)
-                case .presentation:
-                    return domainPrompt(from: .presentation)
-                case .designReview:
-                    return domainPrompt(from: .designReview)
-                case .oneOnOne:
-                    return domainPrompt(from: .oneOnOne)
-                case .planning:
-                    return domainPrompt(from: .planning)
-                case .general:
-                    return defaultMeetingPrompt
-                }
-            }()
-
-            let shouldAutoDetectMeetingType = shouldApplyPostProcessing && !isDictation && meeting.type == .autodetect
+            let transcriptionStart = Date()
+            let meetingEntity = makeMeetingEntity(meeting: meeting, audioDuration: audioDuration)
+            let config = makeUseCaseConfig(meeting: meeting, settings: settings)
 
             meetingState = .processing(.transcribing)
 
-            // Execute UseCase
             let transcriptionEntity = try await transcribeAudioUseCase.execute(
                 audioURL: audioURL,
                 meeting: meetingEntity,
                 inputSource: resolveInputSourceLabel(for: meeting),
-                applyPostProcessing: shouldApplyPostProcessing,
-                postProcessingPrompt: promptToUse,
-                defaultPostProcessingPrompt: shouldAutoDetectMeetingType ? defaultMeetingPrompt : nil,
-                postProcessingModel: shouldApplyPostProcessing ? settings.aiConfiguration.selectedModel : nil,
-                autoDetectMeetingType: shouldAutoDetectMeetingType,
-                availablePrompts: availablePrompts
+                applyPostProcessing: config.applyPostProcessing,
+                postProcessingPrompt: config.postProcessingPrompt,
+                defaultPostProcessingPrompt: config.defaultPostProcessingPrompt,
+                postProcessingModel: config.postProcessingModel,
+                autoDetectMeetingType: config.autoDetectMeetingType,
+                availablePrompts: config.availablePrompts
             )
 
-            // Convert to Model (Transcription) for Legacy UI/Notification
-            // (We could improve this mapping later or move UI to use Entities)
             let transcription = convertToModel(transcriptionEntity, audioDuration: audioDuration, transcriptionStart: transcriptionStart)
 
-            // Update State
             meetingState = .processing(.generatingOutput)
             currentMeeting?.state = .completed
 
-            // Handling UI status updates during "execute" is skipped for now (0->100 jump),
-            // but we update success here.
-
-            // Deliver
             TranscriptionDeliveryService.deliver(transcription: transcription)
 
             transcriptionStatus.completeTranscription(success: true)
             notifySuccess(for: transcription)
             scheduleStatusReset()
 
-            // Export Summary if enabled
             if settings.autoExportSummaries {
                 await exportSummary(transcription: transcription)
             }
-
         } catch {
             handleTranscriptionError(error)
             meetingState = .failed(error.localizedDescription)
@@ -746,6 +651,121 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         currentMeeting = nil
     }
 
+    private func beginTranscriptionUIStateIfNeeded() {
+        // stopRecording() may have already set `isTranscribing` to bridge the UI gap.
+        guard !isTranscribing else { return }
+        isTranscribing = true
+        meetingState = .processing(.transcribing)
+        currentMeeting?.state = .processing(.transcribing)
+    }
+
+    private struct UseCaseConfig {
+        let applyPostProcessing: Bool
+        let postProcessingPrompt: DomainPostProcessingPrompt?
+        let defaultPostProcessingPrompt: DomainPostProcessingPrompt?
+        let postProcessingModel: String?
+        let autoDetectMeetingType: Bool
+        let availablePrompts: [DomainPostProcessingPrompt]
+    }
+
+    private func makeMeetingEntity(meeting: Meeting, audioDuration: Double?) -> MeetingEntity {
+        var entity = MeetingEntity(id: meeting.id, app: DomainMeetingApp(rawValue: meeting.app.rawValue) ?? .unknown, startTime: meeting.startTime, endTime: meeting.endTime, audioFilePath: meeting.audioFilePath)
+
+        if entity.endTime == nil, let audioDuration {
+            entity.endTime = entity.startTime.addingTimeInterval(audioDuration)
+        }
+
+        return entity
+    }
+
+    private func makeUseCaseConfig(meeting: Meeting, settings: AppSettingsStore) -> UseCaseConfig {
+        let applyPostProcessing = settings.postProcessingEnabled && settings.aiConfiguration.isValid
+        let isDictation = meeting.isDictation || recordingSource == .microphone
+
+        let disabledForRecording = isDictation
+            ? settings.isDictationPostProcessingDisabled
+            : settings.isMeetingPostProcessingDisabled
+        let shouldApplyPostProcessing = applyPostProcessing && !disabledForRecording
+
+        guard shouldApplyPostProcessing else {
+            return UseCaseConfig(applyPostProcessing: false, postProcessingPrompt: nil, defaultPostProcessingPrompt: nil, postProcessingModel: nil, autoDetectMeetingType: false, availablePrompts: [])
+        }
+
+        let availablePrompts = makeAvailablePrompts(isDictation: isDictation, settings: settings)
+        let defaultMeetingPrompt = makeDefaultMeetingPrompt(isDictation: isDictation, settings: settings)
+        let prompt = resolvePostProcessingPromptForUseCase(
+            meeting: meeting,
+            isDictation: isDictation,
+            settings: settings,
+            defaultMeetingPrompt: defaultMeetingPrompt
+        )
+
+        let autoDetectMeetingType = !isDictation && meeting.type == .autodetect
+
+        return UseCaseConfig(
+            applyPostProcessing: true,
+            postProcessingPrompt: prompt,
+            defaultPostProcessingPrompt: autoDetectMeetingType ? defaultMeetingPrompt : nil,
+            postProcessingModel: settings.aiConfiguration.selectedModel,
+            autoDetectMeetingType: autoDetectMeetingType,
+            availablePrompts: availablePrompts
+        )
+    }
+
+    private func makeAvailablePrompts(isDictation: Bool, settings: AppSettingsStore) -> [DomainPostProcessingPrompt] {
+        guard !isDictation else { return [] }
+
+        let builtIn: [PostProcessingPrompt] = [.standup, .presentation, .designReview, .oneOnOne, .planning]
+        return (builtIn + settings.meetingPrompts).map(domainPrompt(from:))
+    }
+
+    private func makeDefaultMeetingPrompt(
+        isDictation: Bool,
+        settings: AppSettingsStore
+    ) -> DomainPostProcessingPrompt? {
+        guard !isDictation else { return nil }
+
+        if let selected = settings.selectedPrompt {
+            return domainPrompt(from: selected)
+        }
+
+        return domainPrompt(from: PromptService.shared.strategy(for: .general).promptObject())
+    }
+
+    private func resolvePostProcessingPromptForUseCase(
+        meeting: Meeting,
+        isDictation: Bool,
+        settings: AppSettingsStore,
+        defaultMeetingPrompt: DomainPostProcessingPrompt?
+    ) -> DomainPostProcessingPrompt? {
+        if isDictation {
+            let prompt = settings.selectedDictationPrompt ?? .cleanTranscription
+            return domainPrompt(from: prompt)
+        }
+
+        switch meeting.type {
+        case .autodetect:
+            // Let the UseCase classify and pick a concrete prompt.
+            return nil
+        case .standup:
+            return domainPrompt(from: .standup)
+        case .presentation:
+            return domainPrompt(from: .presentation)
+        case .designReview:
+            return domainPrompt(from: .designReview)
+        case .oneOnOne:
+            return domainPrompt(from: .oneOnOne)
+        case .planning:
+            return domainPrompt(from: .planning)
+        case .general:
+            return defaultMeetingPrompt
+        }
+    }
+
+    private func domainPrompt(from prompt: PostProcessingPrompt) -> DomainPostProcessingPrompt {
+        DomainPostProcessingPrompt(id: prompt.id, title: prompt.title, content: prompt.promptText, isDefault: false)
+    }
+
     private func exportSummary(transcription: Transcription) async {
         let settings = AppSettingsStore.shared
         guard let folder = settings.summaryExportFolder else { return }
@@ -753,35 +773,25 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         let template = settings.summaryTemplate.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !template.isEmpty else { return }
 
-        let isAccessing = folder.startAccessingSecurityScopedResource()
-        guard isAccessing else {
+        guard folder.startAccessingSecurityScopedResource() else {
             AppLogger.error("Failed to access export folder security-scoped resource", category: .recordingManager)
             return
         }
         defer { folder.stopAccessingSecurityScopedResource() }
 
-        let renderer = MarkdownRenderer()
-        let content = renderer.renderWithTemplate(template, meeting: transcription.meeting, transcription: transcription)
+        let content = MarkdownRenderer().renderWithTemplate(template, meeting: transcription.meeting, transcription: transcription)
 
         let dateFormatter = DateFormatter()
-        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
-        dateFormatter.timeZone = .current
-        dateFormatter.dateFormat = "yyyy-MM-dd"
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX"); dateFormatter.timeZone = .current; dateFormatter.dateFormat = "yyyy-MM-dd"
         let dateStr = dateFormatter.string(from: transcription.meeting.startTime)
 
         let meetingTitle: String = {
             let raw = transcription.meeting.type.displayName.trimmingCharacters(in: .whitespacesAndNewlines)
-            if let range = raw.range(of: " (") {
-                return String(raw[..<range.lowerBound])
-            }
-            return raw
+            guard let range = raw.range(of: " (") else { return raw }
+            return String(raw[..<range.lowerBound])
         }()
 
-        let safeTitle = meetingTitle
-            .components(separatedBy: CharacterSet(charactersIn: "/\\?%*|\"<>:"))
-            .joined(separator: " ")
-            .split(whereSeparator: \.isWhitespace)
-            .joined(separator: " ")
+        let safeTitle = meetingTitle.components(separatedBy: CharacterSet(charactersIn: "/\\?%*|\"<>:")).joined(separator: " ").split(whereSeparator: \.isWhitespace).joined(separator: " ")
 
         let titleComponent = safeTitle.isEmpty ? transcription.meeting.appName : safeTitle
         let baseName = "\(dateStr) \(titleComponent)"
@@ -858,17 +868,12 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     }
 
     private func performTranscription(audioURL: URL) async throws -> TranscriptionResponse {
-        transcriptionStatus.updateProgress(
-            phase: .processing, percentage: Constants.processingProgress
-        )
+        transcriptionStatus.updateProgress(phase: .processing, percentage: Constants.processingProgress)
         return try await transcriptionClient.transcribe(
             audioURL: audioURL,
             onProgress: { [weak self] percentage in
                 Task { @MainActor in
-                    self?.transcriptionStatus.updateProgress(
-                        phase: .processing,
-                        percentage: percentage
-                    )
+                    self?.transcriptionStatus.updateProgress(phase: .processing, percentage: percentage)
                 }
             }
         )
@@ -880,128 +885,103 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         let promptTitle: String?
         let duration: Double
         let model: String?
+
+        static let empty = PostProcessingResult(processedContent: nil, promptId: nil, promptTitle: nil, duration: 0, model: nil)
     }
 
     private func applyPostProcessing(rawText: String, meeting: Meeting?) async -> PostProcessingResult {
-        transcriptionStatus.updateProgress(
-            phase: .postProcessing, percentage: Constants.postProcessingProgress
-        )
+        transcriptionStatus.updateProgress(phase: .postProcessing, percentage: Constants.postProcessingProgress)
 
         let settings = AppSettingsStore.shared
-        guard settings.postProcessingEnabled,
-              settings.aiConfiguration.isValid
-        else {
-            return PostProcessingResult(
-                processedContent: nil,
-                promptId: nil,
-                promptTitle: nil,
-                duration: 0,
-                model: nil
-            )
-        }
+        guard settings.postProcessingEnabled, settings.aiConfiguration.isValid else { return .empty }
 
         let isDictation = meeting?.isDictation == true || recordingSource == .microphone
-        if isDictation, settings.isDictationPostProcessingDisabled {
-            return PostProcessingResult(
-                processedContent: nil,
-                promptId: nil,
-                promptTitle: nil,
-                duration: 0,
-                model: nil
-            )
-        }
+        guard !isPostProcessingDisabled(isDictation: isDictation, settings: settings) else { return .empty }
 
-        if !isDictation, settings.isMeetingPostProcessingDisabled {
-            return PostProcessingResult(
-                processedContent: nil,
-                promptId: nil,
-                promptTitle: nil,
-                duration: 0,
-                model: nil
-            )
-        }
-
-        // Context-Aware Prompt Selection
-        // We prioritize the strategy for the specific meeting type.
-        // If the type is general, we fall back to the user's selected prompt in settings,
-        // or the default strategy if none is selected.
         let type = meeting?.type ?? currentMeeting?.type ?? .general
-        let prompt: PostProcessingPrompt
-
-        if isDictation {
-            prompt = settings.selectedDictationPrompt ?? .cleanTranscription
-        } else if type == .autodetect {
-            let fallback = settings.selectedPrompt ?? PromptService.shared.strategy(for: .general).promptObject()
-
-            let classifierPrompt = PostProcessingPrompt(
-                title: "Classifier",
-                promptText: """
-                Analise a transcrição e classifique o tipo de reunião.
-                Responda APENAS com o JSON no seguinte formato:
-                { "type": "VALOR" }
-                Valores possíveis: standup, presentation, design_review, one_on_one, planning, general.
-                """,
-                icon: "sparkles",
-                isPredefined: false
-            )
-
-            do {
-                let jsonString = try await postProcessingService.processTranscription(rawText, with: classifierPrompt)
-                if let detectedType = parseMeetingType(from: jsonString),
-                   detectedType != .general
-                {
-                    prompt = resolveBuiltInMeetingPrompt(for: detectedType, fallbackGeneral: fallback)
-                } else {
-                    prompt = fallback
-                }
-            } catch {
-                AppLogger.warning(
-                    "Meeting type autodetect failed; falling back to general prompt",
-                    category: .recordingManager,
-                    extra: ["error": error.localizedDescription]
-                )
-                prompt = fallback
-            }
-        } else if type != .general {
-            let strategy = PromptService.shared.strategy(for: type)
-            prompt = strategy.promptObject()
-            AppLogger.info("Using context-aware prompt for type: \(type.displayName)", category: .transcriptionEngine)
-        } else {
-            prompt = settings.selectedPrompt ?? PromptService.shared.strategy(for: .general).promptObject()
-        }
-
-        transcriptionStatus.updateProgress(
-            phase: .postProcessing, percentage: Constants.aiProcessingProgress
+        let prompt = await resolvePostProcessingPrompt(
+            rawText: rawText,
+            isDictation: isDictation,
+            meetingType: type,
+            settings: settings
         )
 
+        transcriptionStatus.updateProgress(phase: .postProcessing, percentage: Constants.aiProcessingProgress)
+        return await runPostProcessing(rawText: rawText, prompt: prompt, settings: settings)
+    }
+
+    private func isPostProcessingDisabled(isDictation: Bool, settings: AppSettingsStore) -> Bool {
+        if isDictation { return settings.isDictationPostProcessingDisabled }
+        return settings.isMeetingPostProcessingDisabled
+    }
+
+    private func resolvePostProcessingPrompt(
+        rawText: String,
+        isDictation: Bool,
+        meetingType: MeetingType,
+        settings: AppSettingsStore
+    ) async -> PostProcessingPrompt {
+        if isDictation {
+            return settings.selectedDictationPrompt ?? .cleanTranscription
+        }
+
+        if meetingType == .autodetect {
+            return await resolveAutodetectPrompt(rawText: rawText, settings: settings)
+        }
+
+        if meetingType != .general {
+            let strategy = PromptService.shared.strategy(for: meetingType)
+            let prompt = strategy.promptObject()
+            AppLogger.info("Using context-aware prompt for type: \(meetingType.displayName)", category: .transcriptionEngine)
+            return prompt
+        }
+
+        return settings.selectedPrompt ?? PromptService.shared.strategy(for: .general).promptObject()
+    }
+
+    private func resolveAutodetectPrompt(rawText: String, settings: AppSettingsStore) async -> PostProcessingPrompt {
+        let fallback = settings.selectedPrompt ?? PromptService.shared.strategy(for: .general).promptObject()
+        let classifierPrompt = makeMeetingTypeClassifierPrompt()
+
+        do {
+            let jsonString = try await postProcessingService.processTranscription(rawText, with: classifierPrompt)
+            guard let detectedType = parseMeetingType(from: jsonString), detectedType != .general else { return fallback }
+            return resolveBuiltInMeetingPrompt(for: detectedType, fallbackGeneral: fallback)
+        } catch {
+            AppLogger.warning("Meeting type autodetect failed; falling back to general prompt", category: .recordingManager, extra: ["error": error.localizedDescription])
+            return fallback
+        }
+    }
+
+    private func makeMeetingTypeClassifierPrompt() -> PostProcessingPrompt {
+        PostProcessingPrompt(
+            title: "Classifier",
+            promptText: """
+            Analyze the transcription and classify the meeting type.
+            Reply ONLY with JSON in the following format:
+            { "type": "VALUE" }
+            Allowed values: standup, presentation, design_review, one_on_one, planning, general.
+            """,
+            icon: "sparkles",
+            isPredefined: false
+        )
+    }
+
+    private func runPostProcessing(
+        rawText: String,
+        prompt: PostProcessingPrompt,
+        settings: AppSettingsStore
+    ) async -> PostProcessingResult {
         do {
             let startTime = Date()
-            let processed = try await postProcessingService.processTranscription(
-                rawText, with: prompt
-            )
+            let processed = try await postProcessingService.processTranscription(rawText, with: prompt)
             let duration = Date().timeIntervalSince(startTime)
             let model = settings.aiConfiguration.selectedModel
             AppLogger.info("Post-processing complete", category: .recordingManager, extra: ["prompt": prompt.title])
-            return PostProcessingResult(
-                processedContent: processed,
-                promptId: prompt.id,
-                promptTitle: prompt.title,
-                duration: duration,
-                model: model
-            )
+            return PostProcessingResult(processedContent: processed, promptId: prompt.id, promptTitle: prompt.title, duration: duration, model: model)
         } catch {
-            AppLogger.error(
-                "Post-processing failed, using raw transcription",
-                category: .recordingManager,
-                error: error
-            )
-            return PostProcessingResult(
-                processedContent: nil,
-                promptId: nil,
-                promptTitle: nil,
-                duration: 0,
-                model: nil
-            )
+            AppLogger.error("Post-processing failed, using raw transcription", category: .recordingManager, error: error)
+            return .empty
         }
     }
 
@@ -1054,46 +1034,6 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         return allowed.contains(type) ? type : nil
     }
 
-    private func createAndSaveTranscription(
-        meeting: Meeting,
-        response: TranscriptionResponse,
-        inputSource: String,
-        transcriptionDuration: Double,
-        postProcessing: PostProcessingResult
-    ) async throws -> Transcription {
-        let transcription = Transcription(
-            meeting: meeting,
-            text: postProcessing.processedContent ?? response.text,
-            rawText: response.text,
-            processedContent: postProcessing.processedContent,
-            postProcessingPromptId: postProcessing.promptId,
-            postProcessingPromptTitle: postProcessing.promptTitle,
-            language: response.language,
-            modelName: response.model,
-            inputSource: inputSource,
-            transcriptionDuration: transcriptionDuration,
-            postProcessingDuration: postProcessing.duration,
-            postProcessingModel: postProcessing.model
-        )
-
-        let logMessageSuffix =
-            transcription.isPostProcessed
-                ? "post-processed" : "raw"
-        AppLogger.info(
-            "Transcription created",
-            category: .recordingManager,
-            extra: ["words": transcription.wordCount, "type": logMessageSuffix]
-        )
-
-        try await storage.saveTranscription(transcription)
-        NotificationCenter.default.post(
-            name: .meetingAssistantTranscriptionSaved,
-            object: nil,
-            userInfo: [AppNotifications.UserInfoKey.transcriptionId: transcription.id]
-        )
-        return transcription
-    }
-
     private func notifySuccess(for transcription: Transcription) {
         let suffix =
             transcription.isPostProcessed
@@ -1144,6 +1084,9 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         }
     }
 
+}
+
+extension RecordingManager {
     /// Start periodic status monitoring.
     private func startStatusMonitoring() async {
         statusCheckTask?.cancel()
@@ -1184,42 +1127,6 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         lastError = nil
     }
 
-    deinit {
-        AppLogger.debug("RecordingManager deinitialized", category: .recordingManager)
-    }
-}
-
-// MARK: - Errors
-
-public enum RecordingManagerError: LocalizedError {
-    case noOutputPath
-    case mergeFailed(Error)
-    case noInputFiles
-
-    public var errorDescription: String? {
-        switch self {
-        case .noOutputPath:
-            "No output path specified for merged audio"
-        case let .mergeFailed(error):
-            "Audio merge failed: \(error.localizedDescription)"
-        case .noInputFiles:
-            "No audio files recorded"
-        }
-    }
-}
-
-public enum AudioImportError: LocalizedError {
-    case fileNotFound
-    case unsupportedFormat
-
-    public var errorDescription: String? {
-        switch self {
-        case .fileNotFound:
-            "Audio file not found"
-        case .unsupportedFormat:
-            "Unsupported audio format. Supported formats: m4a, mp3, wav"
-        }
-    }
 }
 
 // MARK: - Retry Transcription
@@ -1240,21 +1147,13 @@ extension RecordingManager {
 
     private func resolveRetryAudioURL(for transcription: Transcription) -> URL? {
         guard let audioURL = transcription.audioURL else {
-            AppLogger.error(
-                "Audio file missing for retry",
-                category: .recordingManager,
-                extra: ["id": transcription.id.uuidString]
-            )
+            AppLogger.error("Audio file missing for retry", category: .recordingManager, extra: ["id": transcription.id.uuidString])
             lastError = AudioImportError.fileNotFound
             return nil
         }
 
         guard FileManager.default.fileExists(atPath: audioURL.path) else {
-            AppLogger.error(
-                "Audio file not found for retry",
-                category: .recordingManager,
-                extra: ["path": audioURL.path]
-            )
+            AppLogger.error("Audio file not found for retry", category: .recordingManager, extra: ["path": audioURL.path])
             lastError = AudioImportError.fileNotFound
             return nil
         }

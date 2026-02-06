@@ -110,5 +110,5 @@ Accepted and enforced.
 ## Next actions
 
 1. Complete the remaining storage migration cleanup and deprecate legacy-only paths.
-2. Reduce lint debt from pre-existing large files (especially `RecordingManager`) without changing behavior.
+2. Reduce lint debt from pre-existing large files (especially `RecordingManager`) without changing behavior. In progress (RecordingManager: serious SwiftLint violations addressed, 2026-02-06)
 3. Add lightweight architecture checks to CI (module-boundary and import-surface checks). ✅ Done (2026-02-06)
