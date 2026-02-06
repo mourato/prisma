@@ -1204,7 +1204,6 @@ extension RecordingManager {
         }
 
         for uid in settings.audioDevicePriority {
-            guard audioDeviceManager.isDeviceAvailable(uid) else { continue }
             guard let id = audioDeviceManager.getAudioDeviceID(for: uid) else { continue }
             if let name = audioDeviceManager.getDeviceName(for: id) {
                 return name
