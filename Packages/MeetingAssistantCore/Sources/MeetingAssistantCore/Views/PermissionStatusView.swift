@@ -65,10 +65,8 @@ public struct PermissionStatusView: View {
 
     private var grantedCount: Int {
         var count = 0
-        for permission in requiredPermissions {
-            if permissionState(for: permission).isAuthorized {
-                count += 1
-            }
+        for permission in requiredPermissions where permissionState(for: permission).isAuthorized {
+            count += 1
         }
         return count
     }
@@ -104,9 +102,12 @@ public struct PermissionStatusView: View {
     @ViewBuilder
     private var statusBadge: some View {
         if requiredPermissionsGranted {
-            Button(action: { onDismiss?() }) {
-                MABadge("common.ok".localized, kind: .success)
-            }
+            Button(
+                action: { onDismiss?() },
+                label: {
+                    MABadge("common.ok".localized, kind: .success)
+                }
+            )
             .buttonStyle(.plain)
         } else {
             MABadge("permissions.action_required".localized, kind: .warning)
@@ -116,7 +117,7 @@ public struct PermissionStatusView: View {
     private var permissionWarning: some View {
         HStack(spacing: 6) {
             Image(systemName: PermissionConstants.Icons.exclamationMarkTriangle)
-                .foregroundStyle(SettingsDesignSystem.Colors.warning)
+                .foregroundStyle(MeetingAssistantDesignSystem.Colors.warning)
                 .font(.caption)
 
             Text("permissions.warning".localized)
@@ -127,7 +128,7 @@ public struct PermissionStatusView: View {
     }
 
     private var headerIconColor: Color {
-        requiredPermissionsGranted ? SettingsDesignSystem.Colors.success : SettingsDesignSystem.Colors.warning
+        requiredPermissionsGranted ? MeetingAssistantDesignSystem.Colors.success : MeetingAssistantDesignSystem.Colors.warning
     }
 
     private func permissionState(for type: PermissionType) -> PermissionState {
@@ -216,7 +217,7 @@ struct PermissionRowView: View {
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.small)
-            .tint(SettingsDesignSystem.Colors.accent)
+            .tint(MeetingAssistantDesignSystem.Colors.accent)
 
         case .openSettings:
             Button("permissions.configure".localized) {

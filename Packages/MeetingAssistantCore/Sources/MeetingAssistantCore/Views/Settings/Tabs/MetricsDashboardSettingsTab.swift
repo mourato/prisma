@@ -10,9 +10,9 @@ public struct MetricsDashboardSettingsTab: View {
 
     public var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: SettingsDesignSystem.Layout.sectionSpacing) {
+            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.sectionSpacing) {
                 if let errorMessage = viewModel.errorMessage {
-                    SettingsCard {
+                    MACard {
                         Text(errorMessage)
                             .foregroundStyle(.secondary)
                     }
@@ -42,7 +42,7 @@ public struct MetricsDashboardSettingsTab: View {
     }
 
     private var heroSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
             Text("metrics.hero.title".localized(with: formattedTimeSaved))
                 .font(.title2.weight(.bold))
                 .foregroundStyle(.white)
@@ -52,19 +52,19 @@ public struct MetricsDashboardSettingsTab: View {
                 .foregroundStyle(.white.opacity(0.9))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(SettingsDesignSystem.Layout.heroPadding)
-        .background(SettingsDesignSystem.Colors.dashboardHeroGradient)
-        .clipShape(RoundedRectangle(cornerRadius: SettingsDesignSystem.Layout.heroCornerRadius, style: .continuous))
+        .padding(MeetingAssistantDesignSystem.Layout.heroPadding)
+        .background(MeetingAssistantDesignSystem.Colors.dashboardHeroGradient)
+        .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.heroCornerRadius, style: .continuous))
         .shadow(
-            color: SettingsDesignSystem.Colors.accent.opacity(0.2),
-            radius: SettingsDesignSystem.Layout.shadowRadius,
-            x: SettingsDesignSystem.Layout.shadowX,
-            y: SettingsDesignSystem.Layout.shadowY
+            color: MeetingAssistantDesignSystem.Colors.accent.opacity(0.2),
+            radius: MeetingAssistantDesignSystem.Layout.shadowRadius,
+            x: MeetingAssistantDesignSystem.Layout.shadowX,
+            y: MeetingAssistantDesignSystem.Layout.shadowY
         )
     }
 
     private var filtersSection: some View {
-        SettingsGroup("metrics.filters.title".localized, icon: "calendar") {
+        MAGroup("metrics.filters.title".localized, icon: "calendar") {
             HStack {
                 Text("metrics.filters.period".localized)
                     .font(.body)
@@ -78,7 +78,7 @@ public struct MetricsDashboardSettingsTab: View {
                 }
                 .labelsHidden()
                 .pickerStyle(.menu)
-                .frame(width: 200)
+                .frame(width: MeetingAssistantDesignSystem.Layout.maxPickerWidth)
             }
         }
     }
@@ -127,7 +127,7 @@ public struct MetricsDashboardSettingsTab: View {
             title: "metrics.summary.words_dictated".localized,
             value: Formatters.formattedNumber(viewModel.summary.wordsDictated),
             detail: "metrics.summary.words_dictated_detail".localized,
-            tint: SettingsDesignSystem.Colors.accent
+            tint: MeetingAssistantDesignSystem.Colors.accent
         )
     }
 
@@ -152,42 +152,42 @@ public struct MetricsDashboardSettingsTab: View {
     }
 
     private var weekdayPeaksSection: some View {
-        SettingsGroup("metrics.peaks.weekday.title".localized, icon: "chart.bar.xaxis") {
+        MAGroup("metrics.peaks.weekday.title".localized, icon: "chart.bar.xaxis") {
             Chart(viewModel.weekdayBuckets) { bucket in
                 BarMark(
                     x: .value("weekday", weekdayLabel(for: bucket.weekday)),
                     y: .value("words", bucket.words)
                 )
-                .foregroundStyle(SettingsDesignSystem.Colors.accent.gradient)
-                .cornerRadius(4)
+                .foregroundStyle(MeetingAssistantDesignSystem.Colors.accent.gradient)
+                .cornerRadius(MeetingAssistantDesignSystem.Layout.tinyCornerRadius)
             }
             .chartYAxis {
                 AxisMarks(position: .leading)
             }
-            .frame(height: SettingsDesignSystem.Layout.chartHeight)
+            .frame(height: MeetingAssistantDesignSystem.Layout.chartHeight)
         }
     }
 
     private var hourlyPeaksSection: some View {
-        SettingsGroup("metrics.peaks.hourly.title".localized, icon: "clock.arrow.circlepath") {
+        MAGroup("metrics.peaks.hourly.title".localized, icon: "clock.arrow.circlepath") {
             Chart(viewModel.hourlyBuckets) { bucket in
                 BarMark(
                     x: .value("hour", bucket.hour),
                     y: .value("count", bucket.count)
                 )
-                .foregroundStyle(SettingsDesignSystem.Colors.accent.gradient)
+                .foregroundStyle(MeetingAssistantDesignSystem.Colors.accent.gradient)
             }
             .chartXScale(domain: 0...23)
             .chartYAxis {
                 AxisMarks(position: .leading)
             }
-            .frame(height: SettingsDesignSystem.Layout.chartHeight)
+            .frame(height: MeetingAssistantDesignSystem.Layout.chartHeight)
         }
     }
 
     private var emptyStateSection: some View {
-        SettingsCard {
-            VStack(alignment: .leading, spacing: 6) {
+        MACard {
+            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
                 Text("metrics.empty.title".localized)
                     .font(.headline)
                 Text("metrics.empty.subtitle".localized)
@@ -230,18 +230,18 @@ private struct MetricStatCard: View {
     let tint: Color
 
     var body: some View {
-        SettingsCard {
-            HStack(alignment: .top, spacing: 12) {
+        MACard {
+            HStack(alignment: .top, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
                 Image(systemName: icon)
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(tint)
                     .frame(width: 28, height: 28)
                     .background(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius, style: .continuous)
                             .fill(tint.opacity(0.12))
                     )
 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing4) {
                     Text(title)
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(.secondary)

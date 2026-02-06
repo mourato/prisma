@@ -4,6 +4,13 @@ import SwiftUI
 
 /// Sheet for creating or editing a post-processing prompt.
 public struct PromptEditorSheet: View {
+    private enum Constants {
+        static let sheetWidth: CGFloat = 500
+        static let sheetHeight: CGFloat = 550
+        static let iconButtonSize: CGFloat = 36
+        static let promptEditorMinHeight: CGFloat = 150
+    }
+
     @State private var title: String
     @State private var promptText: String
     @State private var selectedIcon: String
@@ -41,7 +48,7 @@ public struct PromptEditorSheet: View {
 
             // Content
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.sectionSpacing) {
                     titleSection
                     iconSection
                     descriptionSection
@@ -55,7 +62,7 @@ public struct PromptEditorSheet: View {
             // Footer
             footer
         }
-        .frame(width: 500, height: 550)
+        .frame(width: Constants.sheetWidth, height: Constants.sheetHeight)
     }
 
     // MARK: - Header
@@ -68,13 +75,13 @@ public struct PromptEditorSheet: View {
             Spacer()
         }
         .padding()
-        .background(Color(NSColor.windowBackgroundColor))
+        .background(MeetingAssistantDesignSystem.Colors.windowBackground)
     }
 
     // MARK: - Title Section
 
     private var titleSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
             Text("prompt.title_label".localized)
                 .font(.subheadline)
                 .fontWeight(.medium)
@@ -87,18 +94,18 @@ public struct PromptEditorSheet: View {
     // MARK: - Icon Section
 
     private var iconSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
             Text("prompt.icon_label".localized)
                 .font(.subheadline)
                 .fontWeight(.medium)
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
+                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
                     ForEach(PostProcessingPrompt.availableIcons, id: \.self) { icon in
                         iconButton(icon)
                     }
                 }
-                .padding(.vertical, 4)
+                .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing4)
             }
         }
     }
@@ -111,13 +118,13 @@ public struct PromptEditorSheet: View {
         } label: {
             Image(systemName: icon)
                 .font(.title3)
-                .foregroundStyle(isSelected ? SettingsDesignSystem.Colors.onAccent : .primary)
-                .frame(width: 36, height: 36)
-                .background(isSelected ? SettingsDesignSystem.Colors.accent : Color(NSColor.controlBackgroundColor))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .foregroundStyle(isSelected ? MeetingAssistantDesignSystem.Colors.onAccent : .primary)
+                .frame(width: Constants.iconButtonSize, height: Constants.iconButtonSize)
+                .background(isSelected ? MeetingAssistantDesignSystem.Colors.accent : MeetingAssistantDesignSystem.Colors.controlBackground)
+                .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(isSelected ? SettingsDesignSystem.Colors.accent : Color(NSColor.separatorColor), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
+                        .stroke(isSelected ? MeetingAssistantDesignSystem.Colors.accent : MeetingAssistantDesignSystem.Colors.separator, lineWidth: 1)
                 )
         }
         .buttonStyle(.plain)
@@ -128,7 +135,7 @@ public struct PromptEditorSheet: View {
     // MARK: - Description Section
 
     private var descriptionSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
             HStack {
                 Text("prompt.description_label".localized)
                     .font(.subheadline)
@@ -147,7 +154,7 @@ public struct PromptEditorSheet: View {
     // MARK: - Prompt Section
 
     private var promptSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
             Text("prompt.instructions_label".localized)
                 .font(.subheadline)
                 .fontWeight(.medium)
@@ -158,13 +165,13 @@ public struct PromptEditorSheet: View {
 
             TextEditor(text: $promptText)
                 .font(.body)
-                .frame(minHeight: 150)
-                .padding(8)
-                .background(Color(NSColor.textBackgroundColor))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .frame(minHeight: Constants.promptEditorMinHeight)
+                .padding(MeetingAssistantDesignSystem.Layout.spacing8)
+                .background(MeetingAssistantDesignSystem.Colors.textBackground)
+                .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color(NSColor.separatorColor), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
+                        .stroke(MeetingAssistantDesignSystem.Colors.separator, lineWidth: 1)
                 )
         }
     }
@@ -185,11 +192,11 @@ public struct PromptEditorSheet: View {
             }
             .keyboardShortcut(.return)
             .buttonStyle(.borderedProminent)
-            .tint(SettingsDesignSystem.Colors.accent)
+            .tint(MeetingAssistantDesignSystem.Colors.accent)
             .disabled(!isValid)
         }
-        .padding()
-        .background(Color(NSColor.windowBackgroundColor))
+        .padding(MeetingAssistantDesignSystem.Layout.spacing16)
+        .background(MeetingAssistantDesignSystem.Colors.windowBackground)
     }
 
     // MARK: - Validation

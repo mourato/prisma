@@ -21,13 +21,13 @@ public struct AIProviderIntegrationCard: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: SettingsDesignSystem.Layout.itemSpacing) {
+        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.itemSpacing) {
             Text("settings.ai.api_config".localized)
                 .font(.system(.headline, design: .rounded))
                 .foregroundStyle(.primary)
-                .padding(.leading, 4)
+                .padding(.leading, MeetingAssistantDesignSystem.Layout.spacing4)
 
-            SettingsCard {
+            MACard {
                 VStack(spacing: 0) {
                     providerRow
                     Divider()
@@ -60,11 +60,11 @@ public struct AIProviderIntegrationCard: View {
             Text("settings.ai.provider".localized)
                 .foregroundStyle(.secondary)
             Spacer()
-            HStack(spacing: 8) {
+            HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
                 if viewModel.connectionStatus == .success {
-                    HStack(spacing: 4) {
+                    HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing4) {
                         Circle()
-                            .fill(.green)
+                            .fill(MeetingAssistantDesignSystem.Colors.success)
                             .frame(width: 8, height: 8)
                         Text("settings.ai.connection.success".localized)
                             .font(.caption)
@@ -87,7 +87,7 @@ public struct AIProviderIntegrationCard: View {
                 }
             }
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
     }
 
     private var modelRow: some View {
@@ -102,7 +102,7 @@ public struct AIProviderIntegrationCard: View {
                 )
                 .textFieldStyle(.plain)
                 .multilineTextAlignment(.trailing)
-                .frame(maxWidth: SettingsDesignSystem.Layout.maxCompactTextFieldWidth)
+                .frame(maxWidth: MeetingAssistantDesignSystem.Layout.maxCompactTextFieldWidth)
             } else {
                 Picker("", selection: selectedModelBinding) {
                     if viewModel.isLoadingModels {
@@ -118,11 +118,11 @@ public struct AIProviderIntegrationCard: View {
                 }
                 .pickerStyle(.menu)
                 .labelsHidden()
-                .frame(maxWidth: SettingsDesignSystem.Layout.maxPickerWidth)
+                .frame(maxWidth: MeetingAssistantDesignSystem.Layout.maxPickerWidth)
                 .disabled(viewModel.isLoadingModels || viewModel.availableModels.isEmpty)
             }
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
     }
 
     private var baseURLRow: some View {
@@ -136,9 +136,9 @@ public struct AIProviderIntegrationCard: View {
             )
             .textFieldStyle(.plain)
             .multilineTextAlignment(.trailing)
-            .frame(maxWidth: SettingsDesignSystem.Layout.maxTextFieldWidth)
+            .frame(maxWidth: MeetingAssistantDesignSystem.Layout.maxTextFieldWidth)
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
     }
 
     private var apiKeyRow: some View {
@@ -151,11 +151,11 @@ public struct AIProviderIntegrationCard: View {
                 HStack(spacing: 8) {
                     Text("settings.ai.keychain_secure".localized)
                         .font(.caption)
-                        .foregroundStyle(.green)
+                        .foregroundStyle(MeetingAssistantDesignSystem.Colors.success)
 
                     Image(systemName: "lock.fill")
                         .font(.caption)
-                        .foregroundStyle(.green)
+                        .foregroundStyle(MeetingAssistantDesignSystem.Colors.success)
 
                     Button {
                         viewModel.removeAPIKey()
@@ -169,34 +169,34 @@ public struct AIProviderIntegrationCard: View {
                 SecureField("settings.ai.api_key_placeholder".localized, text: $viewModel.apiKeyText)
                     .textFieldStyle(.plain)
                     .multilineTextAlignment(.trailing)
-                    .frame(maxWidth: SettingsDesignSystem.Layout.maxCompactTextFieldWidth)
+                    .frame(maxWidth: MeetingAssistantDesignSystem.Layout.maxCompactTextFieldWidth)
             }
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
     }
 
     private func connectionDetailRow(_ detail: String) -> some View {
-        HStack(spacing: 6) {
+        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(.yellow)
+                .foregroundStyle(MeetingAssistantDesignSystem.Colors.warning)
             Text(detail)
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Spacer()
         }
-        .padding(.top, 4)
+        .padding(.top, MeetingAssistantDesignSystem.Layout.spacing4)
     }
 
     private func actionErrorRow(_ error: String) -> some View {
-        HStack(spacing: 6) {
+        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
             Image(systemName: "exclamationmark.octagon.fill")
-                .foregroundStyle(.red)
+                .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
             Text(error)
                 .font(.caption)
-                .foregroundStyle(.red)
+                .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
             Spacer()
         }
-        .padding(.top, 4)
+        .padding(.top, MeetingAssistantDesignSystem.Layout.spacing4)
     }
 
     private var footerActions: some View {
@@ -205,16 +205,16 @@ public struct AIProviderIntegrationCard: View {
                 Button {
                     NSWorkspace.shared.open(url)
                 } label: {
-                    HStack(spacing: 4) {
+                    HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing4) {
                         Image(systemName: "key.fill")
                         Text("settings.ai.get_api_key".localized)
                             .font(.system(size: 11, weight: .medium))
                     }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(SettingsDesignSystem.Colors.accent.opacity(0.1))
-                    .foregroundStyle(SettingsDesignSystem.Colors.accent)
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing8)
+                    .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing4)
+                    .background(MeetingAssistantDesignSystem.Colors.selectionFill)
+                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.accent)
+                    .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.chipCornerRadius))
                 }
                 .buttonStyle(.plain)
             }
@@ -238,6 +238,6 @@ public struct AIProviderIntegrationCard: View {
                 .disabled(viewModel.apiKeyText.isEmpty || viewModel.connectionStatus == .testing)
             }
         }
-        .padding(.top, 8)
+        .padding(.top, MeetingAssistantDesignSystem.Layout.spacing8)
     }
 }

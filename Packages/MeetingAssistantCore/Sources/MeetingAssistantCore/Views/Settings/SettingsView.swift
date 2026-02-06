@@ -27,12 +27,12 @@ public struct SettingsView: View {
             sidebar
         } detail: {
             ZStack {
-                Color(NSColor.windowBackgroundColor)
+                MeetingAssistantDesignSystem.Colors.windowBackground
                     .ignoresSafeArea()
 
                 detailView
             }
-            .tint(SettingsDesignSystem.Colors.accent)
+            .tint(MeetingAssistantDesignSystem.Colors.accent)
         }
         .navigationSplitViewStyle(.balanced)
         .navigationTitle(selectedSection.title)
@@ -49,12 +49,12 @@ public struct SettingsView: View {
                     SidebarItemView(
                         section: section,
                         isSelected: selectedSection == section,
-                        accentColor: SettingsDesignSystem.Colors.accent,
-                        onAccentColor: SettingsDesignSystem.Colors.onAccent
+                        accentColor: MeetingAssistantDesignSystem.Colors.accent,
+                        onAccentColor: MeetingAssistantDesignSystem.Colors.onAccent
                     )
                     .tag(section)
                     .listRowBackground(
-                        selectedSection == section ? SettingsDesignSystem.Colors.accent : nil
+                        selectedSection == section ? MeetingAssistantDesignSystem.Colors.accent : nil
                     )
                 }
             } header: {
@@ -66,7 +66,7 @@ public struct SettingsView: View {
             }
         }
         .listStyle(.sidebar)
-        .tint(SettingsDesignSystem.Colors.accent)
+        .tint(MeetingAssistantDesignSystem.Colors.accent)
         .navigationSplitViewColumnWidth(
             min: LayoutConstants.sidebarMinWidth,
             ideal: LayoutConstants.sidebarIdealWidth,
@@ -116,11 +116,11 @@ private struct SidebarItemView: View {
         Label {
             Text(section.title)
                 .font(.body)
-                .padding(.leading, 4)
+                .padding(.leading, MeetingAssistantDesignSystem.Layout.spacing4)
                 .foregroundStyle(isSelected ? onAccentColor : .primary)
         } icon: {
             ZStack {
-                RoundedRectangle(cornerRadius: 6)
+                RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.chipCornerRadius)
                     .fill(accentColor)
                     .opacity(isSelected ? 1.0 : 0.1)
 
@@ -131,7 +131,7 @@ private struct SidebarItemView: View {
             }
             .frame(width: 24, height: 24)
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing2)
     }
 }
 

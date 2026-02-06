@@ -106,7 +106,7 @@ public struct TranscriptionStatusView: View {
                 ZStack(alignment: .leading) {
                     // Background track
                     Capsule()
-                        .fill(Color.gray.opacity(0.2))
+                        .fill(MeetingAssistantDesignSystem.Colors.neutral.opacity(0.2))
                         .frame(height: 4)
 
                     // Progress fill
@@ -212,7 +212,7 @@ public struct TranscriptionStatusView: View {
         case (_, true):
             AnyShapeStyle(MeetingAssistantDesignSystem.Colors.error.opacity(0.1))
         case (.connected, _) where viewModel.isProcessing:
-            AnyShapeStyle(SettingsDesignSystem.Colors.accent.opacity(0.1))
+            AnyShapeStyle(MeetingAssistantDesignSystem.Colors.accent.opacity(0.1))
         case (.connected, _) where viewModel.phase == .completed:
             AnyShapeStyle(MeetingAssistantDesignSystem.Colors.success.opacity(0.1))
         default:
@@ -224,7 +224,7 @@ public struct TranscriptionStatusView: View {
         if viewModel.hasBlockingError {
             return MeetingAssistantDesignSystem.Colors.error
         } else if viewModel.isProcessing {
-            return SettingsDesignSystem.Colors.accent
+            return MeetingAssistantDesignSystem.Colors.accent
         } else if viewModel.phase == .completed {
             return MeetingAssistantDesignSystem.Colors.success
         }
@@ -235,29 +235,29 @@ public struct TranscriptionStatusView: View {
         if viewModel.hasBlockingError {
             return MeetingAssistantDesignSystem.Colors.error.opacity(0.15)
         } else if viewModel.isProcessing {
-            return SettingsDesignSystem.Colors.accent.opacity(0.15)
+            return MeetingAssistantDesignSystem.Colors.accent.opacity(0.15)
         } else if viewModel.phase == .completed {
             return MeetingAssistantDesignSystem.Colors.success.opacity(0.15)
         } else if viewModel.isReady {
             return MeetingAssistantDesignSystem.Colors.success.opacity(0.15)
         }
-        return .gray.opacity(0.15)
+        return MeetingAssistantDesignSystem.Colors.neutral.opacity(0.15)
     }
 
     private var statusIconColor: Color {
         if viewModel.hasBlockingError {
             return MeetingAssistantDesignSystem.Colors.error
         } else if viewModel.isProcessing {
-            return SettingsDesignSystem.Colors.accent
+            return MeetingAssistantDesignSystem.Colors.accent
         } else if viewModel.phase == .completed || viewModel.isReady {
             return MeetingAssistantDesignSystem.Colors.success
         }
-        return .gray
+        return MeetingAssistantDesignSystem.Colors.neutral
     }
 
     private var progressGradient: LinearGradient {
         LinearGradient(
-            colors: [SettingsDesignSystem.Colors.accent, SettingsDesignSystem.Colors.secondaryAccent],
+            colors: [MeetingAssistantDesignSystem.Colors.accent, MeetingAssistantDesignSystem.Colors.secondaryAccent],
             startPoint: .leading,
             endPoint: .trailing
         )
@@ -308,7 +308,7 @@ public struct CompactTranscriptionStatusView: View {
         if viewModel.hasBlockingError {
             return .red
         } else if viewModel.isProcessing {
-            return SettingsDesignSystem.Colors.accent
+            return MeetingAssistantDesignSystem.Colors.accent
         } else if viewModel.isReady {
             return .green
         }

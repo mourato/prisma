@@ -92,11 +92,11 @@ public struct TranscriptionsSettingsTab: View {
                         .frame(maxWidth: .infinity)
 
                     dateFilterMenu
-                        .frame(width: 140)
+                        .frame(width: MeetingAssistantDesignSystem.Layout.narrowPickerWidth)
                 }
             }
-            .padding(24)
-            .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
+            .padding(MeetingAssistantDesignSystem.Layout.spacing24)
+            .background(MeetingAssistantDesignSystem.Colors.cardBackground)
 
             Divider()
 
@@ -108,7 +108,7 @@ public struct TranscriptionsSettingsTab: View {
                     Text("settings.transcriptions.loading".localized)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .padding(.top, 8)
+                        .padding(.top, MeetingAssistantDesignSystem.Layout.spacing8)
                     Spacer()
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -118,7 +118,7 @@ public struct TranscriptionsSettingsTab: View {
                 transcriptionsList
             }
         }
-        .background(Color(NSColor.windowBackgroundColor))
+        .background(MeetingAssistantDesignSystem.Colors.windowBackground)
     }
 
     // MARK: - Filters Section
@@ -170,7 +170,7 @@ public struct TranscriptionsSettingsTab: View {
         } label: {
             HStack {
                 Image(systemName: "calendar")
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.accent)
                 Text(viewModel.dateFilter.displayName)
                     .font(.subheadline)
                 Spacer()
@@ -178,10 +178,10 @@ public struct TranscriptionsSettingsTab: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-            .background(Color.primary.opacity(0.05))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing10)
+            .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
+            .background(MeetingAssistantDesignSystem.Colors.subtleFill)
+            .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
         }
         .menuStyle(.borderlessButton)
     }
@@ -190,7 +190,7 @@ public struct TranscriptionsSettingsTab: View {
         VStack(spacing: 12) {
             Image(systemName: "tray.and.arrow.down.fill")
                 .font(.system(size: 28))
-                .foregroundStyle(SettingsDesignSystem.Colors.iconHighlight)
+                .foregroundStyle(MeetingAssistantDesignSystem.Colors.iconHighlight)
                 .symbolEffect(.bounce, value: importViewModel.isDropTargeted)
 
             VStack(spacing: 4) {
@@ -204,17 +204,17 @@ public struct TranscriptionsSettingsTab: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 20)
+        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing20)
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.cardCornerRadius)
                 .strokeBorder(
-                    importViewModel.isDropTargeted ? Color.accentColor : Color.secondary.opacity(0.2),
+                    importViewModel.isDropTargeted ? MeetingAssistantDesignSystem.Colors.accent : MeetingAssistantDesignSystem.Colors.separator.opacity(0.6),
                     style: StrokeStyle(lineWidth: 2, dash: [4, 4])
                 )
                 .background(
                     importViewModel.isDropTargeted
-                        ? Color.accentColor.opacity(0.1)
-                        : Color.primary.opacity(0.02)
+                        ? MeetingAssistantDesignSystem.Colors.accent.opacity(0.1)
+                        : MeetingAssistantDesignSystem.Colors.subtleFill2
                 )
         )
         .onTapGesture {
@@ -256,8 +256,8 @@ public struct TranscriptionsSettingsTab: View {
                         .font(.caption)
                         .fontWeight(.bold)
                         .foregroundStyle(.secondary)
-                        .padding(.top, 16)
-                        .padding(.bottom, 8)
+                        .padding(.top, MeetingAssistantDesignSystem.Layout.spacing16)
+                        .padding(.bottom, MeetingAssistantDesignSystem.Layout.spacing8)
                 ) {
                     ForEach(viewModel.groupedTranscriptions[date] ?? []) { transcription in
                         HStack(alignment: .top, spacing: 16) {
@@ -456,11 +456,11 @@ struct TranscriptionRowView: View {
                 if metadata.isPostProcessed {
                     Image(systemName: "sparkles")
                         .font(.caption)
-                        .foregroundStyle(SettingsDesignSystem.Colors.iconHighlight)
+                        .foregroundStyle(MeetingAssistantDesignSystem.Colors.iconHighlight)
                 }
             }
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
     }
 }
 

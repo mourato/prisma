@@ -8,7 +8,7 @@ public struct AssistantSettingsTab: View {
 
     public var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: SettingsDesignSystem.Layout.sectionSpacing) {
+            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.sectionSpacing) {
                 headerSection
                 assistantControlsSection
                 visualFeedbackSection
@@ -29,11 +29,11 @@ public struct AssistantSettingsTab: View {
     }
 
     private var assistantControlsSection: some View {
-        SettingsGroup(
+        MAGroup(
             "settings.assistant.controls".localized,
             icon: "sparkles"
         ) {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("settings.assistant.toggle_command".localized)
@@ -53,7 +53,7 @@ public struct AssistantSettingsTab: View {
                     }
                     .labelsHidden()
                     .pickerStyle(.menu)
-                    .frame(width: 140)
+                    .frame(width: MeetingAssistantDesignSystem.Layout.narrowPickerWidth)
 
                     Picker("", selection: $viewModel.selectedPresetKey) {
                         ForEach(PresetShortcutKey.allCases, id: \.self) { key in
@@ -66,7 +66,7 @@ public struct AssistantSettingsTab: View {
                     }
                     .labelsHidden()
                     .pickerStyle(.menu)
-                    .frame(width: 150)
+                    .frame(width: MeetingAssistantDesignSystem.Layout.smallPickerWidth)
                 }
 
                 if viewModel.isRecordingCustomShortcut {
@@ -79,10 +79,10 @@ public struct AssistantSettingsTab: View {
 
                         KeyboardShortcuts.Recorder(for: .assistantCommand)
                     }
-                    .padding(.vertical, 8)
-                    .padding(.horizontal, 12)
-                    .background(Color.secondary.opacity(0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
+                    .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)
+                    .background(MeetingAssistantDesignSystem.Colors.secondaryFill)
+                    .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
                 }
 
                 Divider()
@@ -95,19 +95,19 @@ public struct AssistantSettingsTab: View {
     }
 
     private var visualFeedbackSection: some View {
-        SettingsGroup(
+        MAGroup(
             "settings.assistant.visual_feedback".localized,
             icon: "rectangle.inset.filled"
         ) {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
                 // Border Color Picker
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
                     Text("settings.assistant.border_color".localized)
                         .font(.body)
                         .fontWeight(.medium)
 
-                    HStack(spacing: 12) {
-                        SettingsThemePicker(selection: $viewModel.borderColor)
+                    HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                        MAThemePicker(selection: $viewModel.borderColor)
                     }
                 }
 
@@ -128,15 +128,15 @@ public struct AssistantSettingsTab: View {
                     }
                     .labelsHidden()
                     .pickerStyle(.segmented)
-                    .frame(width: 200)
+                    .frame(width: MeetingAssistantDesignSystem.Layout.maxPickerWidth)
                 }
             }
         }
     }
 
     private var optionsSection: some View {
-        SettingsCard {
-            SettingsToggle(
+        MACard {
+            MAToggleRow(
                 "settings.assistant.use_escape".localized,
                 isOn: $viewModel.useEscapeToCancelRecording
             )
@@ -144,14 +144,14 @@ public struct AssistantSettingsTab: View {
     }
 
     private var testKeysSection: some View {
-        SettingsGroup(
+        MAGroup(
             "settings.assistant.try_keys".localized,
             icon: "keyboard"
         ) {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 6) {
+            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
                     Image(systemName: "hand.point.up.left.fill")
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(MeetingAssistantDesignSystem.Colors.accent)
                     Text("settings.assistant.try_keys_hint".localized)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -165,16 +165,17 @@ public struct AssistantSettingsTab: View {
     }
 
     private var resetSection: some View {
-        SettingsCard {
+        MACard {
             HStack {
                 Image(systemName: "arrow.counterclockwise")
                     .foregroundStyle(.secondary)
 
-                Button(action: {
-                    viewModel.resetShortcuts()
-                }) {
-                    Text("settings.assistant.reset".localized)
-                }
+                Button(
+                    action: { viewModel.resetShortcuts() },
+                    label: {
+                        Text("settings.assistant.reset".localized)
+                    }
+                )
                 .buttonStyle(.link)
 
                 Spacer()

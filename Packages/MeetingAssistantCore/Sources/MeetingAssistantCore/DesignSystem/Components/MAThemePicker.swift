@@ -1,24 +1,14 @@
 import SwiftUI
 
-/// Backwards-compatible alias for legacy Settings-only naming.
-public typealias SettingsDesignSystem = MeetingAssistantDesignSystem
-
-public typealias SettingsCard = MACard
-
-public typealias SettingsGroup = MAGroup
-
-public typealias SettingsToggle = MAToggleRow
-
-/// A theme-aware color picker for settings.
-public struct SettingsThemePicker: View {
-    @Binding var selection: AppThemeColor
+public struct MAThemePicker: View {
+    @Binding private var selection: AppThemeColor
 
     public init(selection: Binding<AppThemeColor>) {
         _selection = selection
     }
 
     public var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
             ForEach(AppThemeColor.allCases, id: \.self) { color in
                 colorCircle(color)
             }

@@ -161,12 +161,12 @@ public struct TranscriptionDetailView: View {
     private func contentBox(title: String, text: String, isOriginal: Bool, showSparkles: Bool = false) -> some View {
         let displayText = transcriptionDisplayText(text)
 
-        return VStack(alignment: .leading, spacing: 12) {
+        return VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
             HStack {
-                HStack(spacing: 6) {
+                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
                     if showSparkles {
                         Image(systemName: "sparkles")
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(MeetingAssistantDesignSystem.Colors.aiGradient)
                     }
                     Text(title)
                         .font(.headline)
@@ -186,11 +186,11 @@ public struct TranscriptionDetailView: View {
             Text(displayText)
                 .font(.body)
                 .textSelection(.enabled)
-                .padding()
+                .padding(MeetingAssistantDesignSystem.Layout.spacing16)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(
-                    isOriginal ? Color.primary.opacity(0.03) : Color(NSColor.controlBackgroundColor).opacity(0.5),
-                    in: RoundedRectangle(cornerRadius: 8)
+                    isOriginal ? MeetingAssistantDesignSystem.Colors.subtleFill2 : MeetingAssistantDesignSystem.Colors.cardBackground,
+                    in: RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
                 )
         }
     }

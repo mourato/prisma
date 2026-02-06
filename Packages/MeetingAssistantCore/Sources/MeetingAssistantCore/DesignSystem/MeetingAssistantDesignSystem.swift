@@ -53,9 +53,27 @@ public enum MeetingAssistantDesignSystem {
         public static let recording = Color.red
         public static let overlayBackground = Color.black.opacity(0.95)
 
-        public static let glassBackground = Color(NSColor.windowBackgroundColor).opacity(0.7)
-        public static let cardBackground = Color(NSColor.controlBackgroundColor).opacity(0.5)
+        public static let windowBackground = Color(NSColor.windowBackgroundColor)
+        public static let controlBackground = Color(NSColor.controlBackgroundColor)
+        public static let textBackground = Color(NSColor.textBackgroundColor)
+        public static let separator = Color(NSColor.separatorColor)
+
+        public static let glassBackground = windowBackground.opacity(0.7)
+        public static let cardBackground = controlBackground.opacity(0.5)
         public static let cardStroke = Color.primary.opacity(0.1)
+
+        public static let subtleFill = Color.primary.opacity(0.05)
+        public static let subtleFill2 = Color.primary.opacity(0.03)
+
+        public static let secondaryFill = Color.secondary.opacity(0.1)
+
+        public static var selectionFill: Color {
+            accent.opacity(0.08)
+        }
+
+        public static var selectionStroke: Color {
+            accent.opacity(0.3)
+        }
     }
 
     // MARK: - Layout
@@ -71,6 +89,8 @@ public enum MeetingAssistantDesignSystem {
         public static let spacing20: CGFloat = 20
         public static let spacing24: CGFloat = 24
 
+        public static let tinyCornerRadius: CGFloat = 4
+        public static let chipCornerRadius: CGFloat = 6
         public static let smallCornerRadius: CGFloat = 8
         public static let cardCornerRadius: CGFloat = 12
         public static let largeCornerRadius: CGFloat = 16
@@ -91,6 +111,9 @@ public enum MeetingAssistantDesignSystem {
         public static let maxTextFieldWidth: CGFloat = 300
         public static let maxPickerWidth: CGFloat = 200
         public static let maxCompactTextFieldWidth: CGFloat = 200
+
+        public static let narrowPickerWidth: CGFloat = 140
+        public static let smallPickerWidth: CGFloat = 150
 
         public static let chartHeight: CGFloat = 220
         public static let indentation: CGFloat = 24

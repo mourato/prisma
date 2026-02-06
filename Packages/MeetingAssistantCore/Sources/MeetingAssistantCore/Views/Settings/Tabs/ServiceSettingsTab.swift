@@ -11,7 +11,7 @@ public struct ServiceSettingsTab: View {
 
     public var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: SettingsDesignSystem.Layout.sectionSpacing) {
+            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.sectionSpacing) {
                 modelInfoSection
                 performanceSection
                 statusSection
@@ -25,16 +25,16 @@ public struct ServiceSettingsTab: View {
     }
 
     private var modelInfoSection: some View {
-        SettingsGroup("settings.service.model_info".localized, icon: "waveform") {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 12) {
+        MAGroup("settings.service.model_info".localized, icon: "waveform") {
+            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
                     ZStack {
                         Circle()
-                            .fill(SettingsDesignSystem.Colors.accent.opacity(0.1))
+                            .fill(MeetingAssistantDesignSystem.Colors.accent.opacity(0.1))
                             .frame(width: 48, height: 48)
                         Image(systemName: "cpu")
                             .font(.title2)
-                            .foregroundStyle(SettingsDesignSystem.Colors.accent)
+                            .foregroundStyle(MeetingAssistantDesignSystem.Colors.accent)
                     }
 
                     VStack(alignment: .leading, spacing: 2) {
@@ -46,7 +46,7 @@ public struct ServiceSettingsTab: View {
                     }
                 }
 
-                Divider().padding(.vertical, 4)
+                Divider().padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing4)
 
                 Grid(alignment: .leading, horizontalSpacing: 20, verticalSpacing: 12) {
                     // ASR Model
@@ -56,7 +56,7 @@ public struct ServiceSettingsTab: View {
 
                         HStack {
                             VStack(alignment: .leading) {
-                                Text("Parakeet TDT 0.6B v3")
+                                Text("settings.service.asr_model_name".localized)
                                     .fontWeight(.medium)
                                 Text(modelStatusText)
                                     .font(.caption2)
@@ -70,7 +70,7 @@ public struct ServiceSettingsTab: View {
                                     viewModel.deleteASRModels()
                                 } label: {
                                     Image(systemName: "trash")
-                                        .foregroundStyle(.red)
+                                        .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
                                 }
                                 .buttonStyle(.borderless)
                                 .help("settings.service.delete_model".localized)
@@ -83,7 +83,7 @@ public struct ServiceSettingsTab: View {
                                 } label: {
                                     Image(systemName: "arrow.down.circle")
                                         .font(.title3)
-                                        .foregroundStyle(SettingsDesignSystem.Colors.accent)
+                                        .foregroundStyle(MeetingAssistantDesignSystem.Colors.accent)
                                 }
                                 .buttonStyle(.borderless)
                                 .help("settings.service.download_model".localized)
@@ -100,7 +100,7 @@ public struct ServiceSettingsTab: View {
 
                         HStack {
                             VStack(alignment: .leading) {
-                                Text("Pyannote 3.1")
+                                Text("settings.service.diarization_model_name".localized)
                                     .fontWeight(.medium)
                                 Text(
                                     viewModel.isDiarizationLoaded
@@ -108,7 +108,7 @@ public struct ServiceSettingsTab: View {
                                         : "settings.service.not_installed".localized
                                 )
                                 .font(.caption2)
-                                .foregroundStyle(viewModel.isDiarizationLoaded ? .green : .secondary)
+                                .foregroundStyle(viewModel.isDiarizationLoaded ? MeetingAssistantDesignSystem.Colors.success : .secondary)
                             }
 
                             Spacer()
@@ -118,7 +118,7 @@ public struct ServiceSettingsTab: View {
                                     viewModel.deleteDiarizationModels()
                                 } label: {
                                     Image(systemName: "trash")
-                                        .foregroundStyle(.red)
+                                        .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
                                 }
                                 .buttonStyle(.borderless)
                                 .help("settings.service.delete_model".localized)
@@ -128,7 +128,7 @@ public struct ServiceSettingsTab: View {
                                 } label: {
                                     Image(systemName: "arrow.down.circle")
                                         .font(.title3)
-                                        .foregroundStyle(SettingsDesignSystem.Colors.accent)
+                                        .foregroundStyle(MeetingAssistantDesignSystem.Colors.accent)
                                 }
                                 .buttonStyle(.borderless)
                                 .help("settings.service.download_model".localized)
@@ -149,11 +149,11 @@ public struct ServiceSettingsTab: View {
     }
 
     private var performanceSection: some View {
-        SettingsCard {
-            HStack(spacing: 12) {
+        MACard {
+            HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
                 Image(systemName: "speedometer")
                     .font(.title3)
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.warning)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("settings.service.high_performance".localized)
@@ -170,13 +170,13 @@ public struct ServiceSettingsTab: View {
     }
 
     private var statusSection: some View {
-        SettingsCard {
+        MACard {
             HStack {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
                     Text("settings.service.status".localized)
                         .font(.headline)
 
-                    HStack(spacing: 6) {
+                    HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
                         Circle()
                             .fill(viewModel.transcriptionStatus.color)
                             .frame(width: 8, height: 8)
@@ -219,8 +219,8 @@ public struct ServiceSettingsTab: View {
 
     private var modelStatusColor: Color {
         switch viewModel.modelState {
-        case .loaded: .green
-        case .downloading, .loading: .orange
+        case .loaded: MeetingAssistantDesignSystem.Colors.success
+        case .downloading, .loading: MeetingAssistantDesignSystem.Colors.warning
         case .unloaded, .error: .secondary
         }
     }
