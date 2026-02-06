@@ -5,7 +5,7 @@
 # with CI/CD pipelines and headless environments.
 # =============================================================================
 
-.PHONY: help build build-debug build-release test test-swift test-verbose test-strict lint lint-fix clean run run-release dmg setup docs docs-preview docs-clean
+.PHONY: help build build-debug build-release test test-swift test-verbose test-strict lint lint-fix arch-check clean run run-release dmg setup docs docs-preview docs-clean
 
 # Default target
 help:
@@ -26,6 +26,7 @@ help:
 	@echo "Code Quality:"
 	@echo "  make lint           - Run linting checks"
 	@echo "  make lint-fix       - Auto-fix linting issues"
+	@echo "  make arch-check     - Run architecture boundary checks"
 	@echo "  make health         - Run comprehensive code health check"
 	@echo ""
 	@echo "Run Commands:"
@@ -136,6 +137,10 @@ lint-fix:
 	@echo -e "$(BLUE)Auto-fixing lint issues...$(NC)"
 	@./scripts/lint-fix.sh
 
+arch-check:
+	@echo -e "$(BLUE)Running architecture checks...$(NC)"
+	@./scripts/architecture-check.sh
+
 format:
 	@echo -e "$(BLUE)Running SwiftFormat...$(NC)"
 	@if ! command -v swiftformat &> /dev/null; then \
@@ -197,7 +202,7 @@ profile-animation: build-debug
 
 
 # CI/CD Commands
-ci-build: lint test build-release
+ci-build: arch-check lint test build-release
 	@echo -e "$(GREEN)✓ CI build completed successfully$(NC)"
 
 ci-test: test
