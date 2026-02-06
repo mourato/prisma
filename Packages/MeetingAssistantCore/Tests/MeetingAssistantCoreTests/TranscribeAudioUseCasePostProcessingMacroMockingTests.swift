@@ -1,12 +1,13 @@
 import Foundation
 @testable import MeetingAssistantCore
+@testable import MeetingAssistantCoreDomain
 import XCTest
 
 final class TranscribeAudioPostProcessingTests: XCTestCase {
     func testExecuteWithPrompt_UsesPromptOverloadAndStoresProcessedText() async throws {
-        let transcriptionRepository = MeetingAssistantCore.MacroMockTranscriptionRepository()
-        let storageRepository = MeetingAssistantCore.MacroMockTranscriptionStorageRepository()
-        let postProcessingRepository = MeetingAssistantCore.MacroMockPostProcessingRepository()
+        let transcriptionRepository = MeetingAssistantCoreDomain.MacroMockTranscriptionRepository()
+        let storageRepository = MeetingAssistantCoreDomain.MacroMockTranscriptionStorageRepository()
+        let postProcessingRepository = MeetingAssistantCoreDomain.MacroMockPostProcessingRepository()
 
         transcriptionRepository.healthCheckHandler = { () async throws -> Bool in true }
 

@@ -20,8 +20,15 @@ Guidelines for maintaining consistent project documentation and visibility into 
 - **Living Guidance**: Ensure `AGENTS.md` reflects the current state of tools, scripts, and skills.
 - **Design System Guidance**: Keep the UI Design System tokens/components documented (and referenced from `AGENTS.md` / relevant skills).
 - **Clean Registry**: Periodically audit `.agents/skills` to remove stale or redundant guidance.
+- **B2 Module Awareness**: Keep docs aligned with the current module split (`Common`, `Domain`, `Infrastructure`, `Data`, `Audio`, `AI`, `UI`, compatibility `Core`).
+- **Path Validity**: After file moves between modules, update all documentation links and examples to the new canonical paths.
 
 ## 3. Consistency
 
 - **Commit Messages**: Enforce Conventional Commits consistently to ensure a readable history.
 - **Worktree Mandate**: Adhere to the Worktree-first development workflow for every task.
+
+## 4. Language
+
+- All documentation must be written in **English**.
+- All code comments must be written in **English**.

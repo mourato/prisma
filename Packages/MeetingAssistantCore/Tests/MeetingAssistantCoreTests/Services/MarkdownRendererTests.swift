@@ -28,9 +28,9 @@ final class MarkdownRendererTests: XCTestCase {
         let output = renderer.render(meeting: meeting, transcription: transcription)
 
         // Assertions
-        XCTAssertTrue(output.contains("# Meeting using Google Meet"))
-        XCTAssertTrue(output.contains("- **Type**: Standup"))
-        XCTAssertTrue(output.contains("## AI Summary"))
+        XCTAssertTrue(output.contains(meeting.app.displayName))
+        XCTAssertTrue(output.contains("- **\("export.label.type".localized)**: \(meeting.type.displayName)"))
+        XCTAssertTrue(output.contains("## \("export.section.ai_summary".localized)"))
         XCTAssertTrue(output.contains("Alice and Bob greeted each other."))
         XCTAssertTrue(output.contains("**Alice** (00:00):"))
         XCTAssertTrue(output.contains("Hello team."))
