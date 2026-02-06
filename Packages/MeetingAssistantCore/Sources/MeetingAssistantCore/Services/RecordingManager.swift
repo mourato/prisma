@@ -755,11 +755,30 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         let titleComponent = safeTitle.isEmpty ? transcription.meeting.appName : safeTitle
         let baseName = "\(dateStr) \(titleComponent)"
 
-        var destinationURL = folder.appendingPathComponent("\(baseName).md")
+        let targetFolder: URL = {
+            guard settings.createMeetingFolder else { return folder }
+
+            var subfolder = folder.appendingPathComponent(baseName, isDirectory: true)
+            var attempt = 1
+            while FileManager.default.fileExists(atPath: subfolder.path) {
+                attempt += 1
+                subfolder = folder.appendingPathComponent("\(baseName)-\(attempt)", isDirectory: true)
+            }
+
+            do {
+                try FileManager.default.createDirectory(at: subfolder, withIntermediateDirectories: true)
+            } catch {
+                AppLogger.error("Failed to create meeting export subfolder", category: .recordingManager, error: error)
+                return folder
+            }
+            return subfolder
+        }()
+
+        var destinationURL = targetFolder.appendingPathComponent("\(baseName).md")
         var attempt = 1
         while FileManager.default.fileExists(atPath: destinationURL.path) {
             attempt += 1
-            destinationURL = folder.appendingPathComponent("\(baseName)-\(attempt).md")
+            destinationURL = targetFolder.appendingPathComponent("\(baseName)-\(attempt).md")
         }
 
         do {
