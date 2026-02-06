@@ -92,6 +92,12 @@ public struct MeetingSettingsTab: View {
                 // Meeting Prompts Section
                 SettingsGroup("settings.meetings.prompts".localized, icon: "sparkles") {
                     VStack(alignment: .leading, spacing: SettingsDesignSystem.Layout.cardPadding) {
+                        SettingsToggle(
+                            "settings.meetings.autodetect_type".localized,
+                            description: "settings.meetings.autodetect_type_desc".localized,
+                            isOn: $meetingViewModel.settings.meetingTypeAutoDetectEnabled
+                        )
+
                         HStack {
                             Text("settings.post_processing.choose_active".localized)
                                 .font(.caption)
@@ -245,29 +251,38 @@ public struct MeetingSettingsTab: View {
     // MARK: - Prompt Row
 
     private func promptRow(prompt: PostProcessingPrompt) -> some View {
-        let isSelected = meetingViewModel.selectedPromptId == prompt.id
+        let isAutoDetectEnabled = meetingViewModel.settings.meetingTypeAutoDetectEnabled
+        let isSelected = !isAutoDetectEnabled && meetingViewModel.selectedPromptId == prompt.id
 
-        return Button {
-            meetingViewModel.selectPrompt(prompt.id)
-        } label: {
-            HStack(spacing: 12) {
-                promptIcon(prompt: prompt, isSelected: isSelected)
-                promptInfo(prompt: prompt, isSelected: isSelected)
+        let row = HStack(spacing: 12) {
+            promptIcon(prompt: prompt, isSelected: isSelected)
+            promptInfo(prompt: prompt, isSelected: isSelected)
 
-                Spacer()
+            Spacer()
 
-                if isSelected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
-                        .symbolEffect(.bounce, value: isSelected)
-                }
-
-                promptMenu(prompt: prompt, isSelected: isSelected)
+            if isSelected {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(.green)
+                    .symbolEffect(.bounce, value: isSelected)
             }
-            .padding(10)
-            .contentShape(Rectangle())
+
+            promptMenu(prompt: prompt, isSelected: isSelected, isAutoDetectEnabled: isAutoDetectEnabled)
         }
-        .buttonStyle(.plain)
+        .padding(10)
+        .contentShape(Rectangle())
+
+        return Group {
+            if isAutoDetectEnabled {
+                row
+            } else {
+                Button {
+                    meetingViewModel.selectPrompt(prompt.id)
+                } label: {
+                    row
+                }
+                .buttonStyle(.plain)
+            }
+        }
         .background(isSelected ? SettingsDesignSystem.Colors.accent.opacity(0.08) : Color.clear)
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .overlay(
@@ -275,7 +290,7 @@ public struct MeetingSettingsTab: View {
                 .stroke(isSelected ? SettingsDesignSystem.Colors.accent.opacity(0.3) : Color.secondary.opacity(0.1), lineWidth: 1)
         )
         .contextMenu {
-            promptMenuContent(prompt: prompt, isSelected: isSelected)
+            promptMenuContent(prompt: prompt, isSelected: isSelected, isAutoDetectEnabled: isAutoDetectEnabled)
         }
     }
 
@@ -306,9 +321,9 @@ public struct MeetingSettingsTab: View {
         }
     }
 
-    private func promptMenu(prompt: PostProcessingPrompt, isSelected: Bool) -> some View {
+    private func promptMenu(prompt: PostProcessingPrompt, isSelected: Bool, isAutoDetectEnabled: Bool) -> some View {
         Menu {
-            promptMenuContent(prompt: prompt, isSelected: isSelected)
+            promptMenuContent(prompt: prompt, isSelected: isSelected, isAutoDetectEnabled: isAutoDetectEnabled)
         } label: {
             Image(systemName: "ellipsis.circle")
                 .foregroundStyle(.secondary)
@@ -319,14 +334,16 @@ public struct MeetingSettingsTab: View {
     }
 
     @ViewBuilder
-    private func promptMenuContent(prompt: PostProcessingPrompt, isSelected: Bool) -> some View {
-        Button {
-            meetingViewModel.selectPrompt(prompt.id, forceSelect: true)
-        } label: {
-            Label("settings.post_processing.select".localized, systemImage: isSelected ? "checkmark.circle.fill" : "circle")
-        }
+    private func promptMenuContent(prompt: PostProcessingPrompt, isSelected: Bool, isAutoDetectEnabled: Bool) -> some View {
+        if !isAutoDetectEnabled {
+            Button {
+                meetingViewModel.selectPrompt(prompt.id, forceSelect: true)
+            } label: {
+                Label("settings.post_processing.select".localized, systemImage: isSelected ? "checkmark.circle.fill" : "circle")
+            }
 
-        Divider()
+            Divider()
+        }
 
         Button {
             if prompt.isPredefined {

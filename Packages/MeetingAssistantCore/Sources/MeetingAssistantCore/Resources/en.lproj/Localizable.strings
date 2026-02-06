@@ -83,6 +83,8 @@
 "settings.meetings.template_desc" = "Template used to format exported summaries.";
 "settings.meetings.speaker_identification" = "Speaker identification";
 "settings.meetings.prompts" = "Meeting prompts";
+"settings.meetings.autodetect_type" = "Auto-detect meeting type";
+"settings.meetings.autodetect_type_desc" = "Classifies the meeting type from the transcript and automatically chooses the best prompt for the summary.";
 "settings.meetings.no_prompts" = "No prompts yet";
 "settings.dictation.prompts" = "Dictation prompts";
 "settings.general.days" = "Days";

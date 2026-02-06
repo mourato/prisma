@@ -25,7 +25,8 @@ final class PromptServiceTests: XCTestCase {
     }
 
     func testStrategyForAutodetectDefaultsToGeneral() {
-        // Currently mapping autodetect to General until Autodetect logic is implemented
+        // Autodetect is implemented at a higher level (classification), but the PromptService strategy
+        // for `.autodetect` should still default to General as a safe fallback.
         let strategy = PromptService.shared.strategy(for: .autodetect)
         XCTAssertTrue(strategy is GeneralMeetingStrategy)
     }

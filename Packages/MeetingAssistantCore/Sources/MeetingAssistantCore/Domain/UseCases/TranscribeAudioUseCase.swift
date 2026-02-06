@@ -33,7 +33,9 @@ public final class TranscribeAudioUseCase: Sendable {
         inputSource: String? = nil,
         applyPostProcessing: Bool = false,
         postProcessingPrompt: DomainPostProcessingPrompt? = nil,
+        defaultPostProcessingPrompt: DomainPostProcessingPrompt? = nil,
         postProcessingModel: String? = nil,
+        autoDetectMeetingType: Bool = false,
         availablePrompts: [DomainPostProcessingPrompt] = []
     ) async throws -> TranscriptionEntity {
         // Verificar saúde do serviço
@@ -74,21 +76,30 @@ public final class TranscribeAudioUseCase: Sendable {
                     promptId = prompt.id
                     promptTitle = prompt.title
                 } else {
-                    // Autodetecção ou Prompt Geral
-                    if !availablePrompts.isEmpty {
+                    if autoDetectMeetingType, !availablePrompts.isEmpty {
+                        // Autodetecção: classifica o tipo e tenta escolher o prompt mais apropriado.
                         let classification = try await classifyMeeting(text: response.text, repository: postProcessingRepo)
                         meetingType = classification
-                        
-                        // Tentar encontrar prompt correspondente ao tipo
-                        if let type = classification,
-                           let match = findPrompt(for: type, in: availablePrompts) {
-                                processedContent = try await postProcessingRepo.processTranscription(response.text, with: match)
-                                promptId = match.id
-                                promptTitle = match.title
-                           } else {
-                               // Fallback
-                               processedContent = try await postProcessingRepo.processTranscription(response.text)
-                           }
+
+                        let normalizedType = classification?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                        if let normalizedType,
+                           normalizedType != "general",
+                           let match = findPrompt(for: normalizedType, in: availablePrompts) {
+                            processedContent = try await postProcessingRepo.processTranscription(response.text, with: match)
+                            promptId = match.id
+                            promptTitle = match.title
+                        } else if let fallback = defaultPostProcessingPrompt {
+                            processedContent = try await postProcessingRepo.processTranscription(response.text, with: fallback)
+                            promptId = fallback.id
+                            promptTitle = fallback.title
+                        } else {
+                            processedContent = try await postProcessingRepo.processTranscription(response.text)
+                        }
+                    } else if let fallback = defaultPostProcessingPrompt {
+                        // Sem autodetecção: usar prompt default (quando fornecido).
+                        processedContent = try await postProcessingRepo.processTranscription(response.text, with: fallback)
+                        promptId = fallback.id
+                        promptTitle = fallback.title
                     } else {
                         processedContent = try await postProcessingRepo.processTranscription(response.text)
                     }

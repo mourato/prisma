@@ -83,6 +83,8 @@
 "settings.meetings.template_desc" = "Template usado para formatar os resumos exportados.";
 "settings.meetings.speaker_identification" = "Identificação de oradores";
 "settings.meetings.prompts" = "Prompts de reunião";
+"settings.meetings.autodetect_type" = "Autodetectar tipo de reunião";
+"settings.meetings.autodetect_type_desc" = "Classifica o tipo de reunião a partir da transcrição e escolhe automaticamente o melhor prompt para o resumo.";
 "settings.meetings.no_prompts" = "Nenhum prompt ainda";
 "settings.dictation.prompts" = "Prompts de ditado";
 "settings.general.days" = "Dias";

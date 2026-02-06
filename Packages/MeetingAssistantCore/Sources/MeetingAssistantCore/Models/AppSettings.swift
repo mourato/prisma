@@ -444,6 +444,7 @@ public class AppSettingsStore: ObservableObject {
         static let showInDock = "showInDock"
         
         // MARK: - Meeting Summary Configuration
+        static let meetingTypeAutoDetectEnabled = "meetingTypeAutoDetectEnabled"
         static let meetingPrompts = "meetingPrompts"
         static let summaryExportFolder = "summaryExportFolder"
         static let summaryTemplate = "summaryTemplate"
@@ -709,6 +710,12 @@ public class AppSettingsStore: ObservableObject {
 
     // MARK: - Meeting Prompts & Export
 
+    /// When enabled, the app will auto-detect the meeting type for new meetings.
+    /// When disabled, it will use the selected meeting prompt as the baseline.
+    @Published public var meetingTypeAutoDetectEnabled: Bool {
+        didSet { UserDefaults.standard.set(meetingTypeAutoDetectEnabled, forKey: Keys.meetingTypeAutoDetectEnabled) }
+    }
+
     /// User-created prompts specifically for meetings.
     @Published public var meetingPrompts: [PostProcessingPrompt] {
         didSet { save(meetingPrompts, forKey: Keys.meetingPrompts) }
@@ -887,6 +894,8 @@ public class AppSettingsStore: ObservableObject {
         let rawAssistantPresetKey = UserDefaults.standard.string(forKey: Keys.assistantSelectedPresetKey)
         assistantSelectedPresetKey = rawAssistantPresetKey.flatMap { PresetShortcutKey(rawValue: $0) } ?? .rightOption
 
+        meetingTypeAutoDetectEnabled = UserDefaults.standard.bool(forKey: Keys.meetingTypeAutoDetectEnabled)
+
         // Load Meeting Prompts
         if let data = UserDefaults.standard.data(forKey: Keys.meetingPrompts),
            let prompts = try? JSONDecoder().decode([PostProcessingPrompt].self, from: data) {
@@ -1016,6 +1025,7 @@ public class AppSettingsStore: ObservableObject {
         launchAtLogin = false
         showInDock = false
         meetingPrompts = []
+        meetingTypeAutoDetectEnabled = false
     }
 
     // MARK: - Prompt Management

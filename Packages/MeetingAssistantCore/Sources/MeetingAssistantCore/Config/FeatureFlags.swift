@@ -11,9 +11,6 @@ public enum FeatureFlags {
     /// Enable AI post-processing for transcriptions.
     public static let enablePostProcessing: Bool = true
 
-    /// Enable meeting auto-detection feature.
-    public static let enableMeetingDetection: Bool = true
-
     /// Enable live waveform visualization during recording.
     /// Enable XPC Service for transcription processing.
     /// When true: Uses MeetingAssistantAIClient (XPC) for heavy AI processing.
