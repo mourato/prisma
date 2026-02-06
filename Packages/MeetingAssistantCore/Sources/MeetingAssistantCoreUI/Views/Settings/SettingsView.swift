@@ -110,8 +110,6 @@ public struct SettingsView: View {
             TranscriptionsSettingsTab()
         case .enhancements:
             EnhancementsSettingsTab()
-        case .service:
-            ServiceSettingsTab()
         case .permissions:
             PermissionsSettingsTab()
         }
