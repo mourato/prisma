@@ -30,6 +30,14 @@ public final class DictationPromptSettingsViewModel: ObservableObject {
         settings.dictationSelectedPromptId
     }
 
+    public var effectiveSelectedPromptId: UUID {
+        if settings.isDictationPostProcessingDisabled {
+            return AppSettingsStore.noPostProcessingPromptId
+        }
+
+        return settings.dictationSelectedPromptId ?? PostProcessingPrompt.cleanTranscription.id
+    }
+
     public func selectPrompt(_ id: UUID, forceSelect: Bool = false) {
         withAnimation(.easeInOut(duration: 0.2)) {
             if forceSelect {

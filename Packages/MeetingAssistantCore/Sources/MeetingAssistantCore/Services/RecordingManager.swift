@@ -268,6 +268,12 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         return settings.meetingTypeAutoDetectEnabled ? .autodetect : .general
     }
 
+    public func overrideCurrentMeetingType(_ type: MeetingType) {
+        guard isRecording, var meeting = currentMeeting else { return }
+        meeting.type = type
+        currentMeeting = meeting
+    }
+
     private func startRecorder(to url: URL, source: RecordingSource) async throws {
         // Start recorder with source preference
         // We assume micRecorder is capable of handling the source logic (AudioRecorder)
@@ -606,6 +612,10 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
             let applyPostProcessing = settings.postProcessingEnabled && settings.aiConfiguration.isValid
             let isDictation = meeting.isDictation || recordingSource == .microphone
+            let isPostProcessingDisabledForThisRecording = isDictation
+                ? settings.isDictationPostProcessingDisabled
+                : settings.isMeetingPostProcessingDisabled
+            let shouldApplyPostProcessing = applyPostProcessing && !isPostProcessingDisabledForThisRecording
 
             // Prepare Prompts
             let builtInMeetingPrompts: [PostProcessingPrompt] = [
@@ -639,7 +649,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             }
 
             let defaultMeetingPrompt: DomainPostProcessingPrompt? = {
-                guard applyPostProcessing, !isDictation else { return nil }
+                guard shouldApplyPostProcessing, !isDictation else { return nil }
 
                 if let selected = settings.selectedPrompt {
                     return domainPrompt(from: selected)
@@ -649,7 +659,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             }()
 
             let promptToUse: DomainPostProcessingPrompt? = {
-                guard applyPostProcessing else { return nil }
+                guard shouldApplyPostProcessing else { return nil }
 
                 // Dictation: always use the dictation prompt set.
                 if isDictation {
@@ -679,7 +689,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
                 }
             }()
 
-            let shouldAutoDetectMeetingType = applyPostProcessing && !isDictation && meeting.type == .autodetect
+            let shouldAutoDetectMeetingType = shouldApplyPostProcessing && !isDictation && meeting.type == .autodetect
 
             meetingState = .processing(.transcribing)
 
@@ -688,10 +698,10 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
                 audioURL: audioURL,
                 meeting: meetingEntity,
                 inputSource: resolveInputSourceLabel(for: meeting),
-                applyPostProcessing: applyPostProcessing,
+                applyPostProcessing: shouldApplyPostProcessing,
                 postProcessingPrompt: promptToUse,
                 defaultPostProcessingPrompt: shouldAutoDetectMeetingType ? defaultMeetingPrompt : nil,
-                postProcessingModel: applyPostProcessing ? settings.aiConfiguration.selectedModel : nil,
+                postProcessingModel: shouldApplyPostProcessing ? settings.aiConfiguration.selectedModel : nil,
                 autoDetectMeetingType: shouldAutoDetectMeetingType,
                 availablePrompts: availablePrompts
             )
@@ -884,6 +894,27 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             )
         }
 
+        let isDictation = meeting?.isDictation == true || recordingSource == .microphone
+        if isDictation, settings.isDictationPostProcessingDisabled {
+            return PostProcessingResult(
+                processedContent: nil,
+                promptId: nil,
+                promptTitle: nil,
+                duration: 0,
+                model: nil
+            )
+        }
+
+        if !isDictation, settings.isMeetingPostProcessingDisabled {
+            return PostProcessingResult(
+                processedContent: nil,
+                promptId: nil,
+                promptTitle: nil,
+                duration: 0,
+                model: nil
+            )
+        }
+
         // Context-Aware Prompt Selection
         // We prioritize the strategy for the specific meeting type.
         // If the type is general, we fall back to the user's selected prompt in settings,
@@ -891,7 +922,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         let type = meeting?.type ?? currentMeeting?.type ?? .general
         let prompt: PostProcessingPrompt
 
-        if meeting?.isDictation == true || recordingSource == .microphone {
+        if isDictation {
             prompt = settings.selectedDictationPrompt ?? .cleanTranscription
         } else if type == .autodetect {
             let fallback = settings.selectedPrompt ?? PromptService.shared.strategy(for: .general).promptObject()

@@ -3,6 +3,49 @@ import Atomics
 import Foundation
 
 extension AudioRecorder {
+    nonisolated private func installMicDiagnosticsTap(
+        on inputNode: AVAudioInputNode,
+        format: AVAudioFormat,
+        peakBits: ManagedAtomic<UInt32>,
+        probeWorker: AudioRecordingWorker?
+    ) {
+        inputNode.installTap(
+            onBus: Constants.tapBusNumber,
+            bufferSize: 1_024,
+            format: format
+        ) { buffer, _ in
+            guard let channelData = buffer.floatChannelData else { return }
+            let channelCount = Int(buffer.format.channelCount)
+            let frameLength = Int(buffer.frameLength)
+            guard channelCount > 0, frameLength > 0 else { return }
+
+            var peak: Float = 0
+            for ch in 0..<channelCount {
+                let channel = channelData[ch]
+                for frame in stride(from: 0, to: frameLength, by: 4) {
+                    let sample = abs(channel[frame])
+                    if sample > peak { peak = sample }
+                }
+            }
+
+            probeWorker?.process(buffer)
+
+            if peak > 0 {
+                var updated = false
+                while !updated {
+                    let currentBits = peakBits.load(ordering: .relaxed)
+                    let currentPeak = Float(bitPattern: currentBits)
+                    guard peak > currentPeak else { break }
+                    updated = peakBits.compareExchange(
+                        expected: currentBits,
+                        desired: peak.bitPattern,
+                        ordering: .relaxed
+                    ).exchanged
+                }
+            }
+        }
+    }
+
     func logDeviceDiagnostics(for deviceID: AudioObjectID, label: String) {
         let name = deviceManager.getDeviceName(for: deviceID) ?? "Unknown"
         let uid = deviceManager.getDeviceUID(for: deviceID) ?? "Unknown"
@@ -35,42 +78,11 @@ extension AudioRecorder {
         micDiagnosticsPeakBits.store(0, ordering: .relaxed)
         startMicProbeRecording(format: format)
 
-        inputNode.installTap(
-            onBus: Constants.tapBusNumber,
-            bufferSize: 1_024,
-            format: format
-        ) { [weak self] buffer, _ in
-            guard let self else { return }
-            guard let channelData = buffer.floatChannelData else { return }
-            let channelCount = Int(buffer.format.channelCount)
-            let frameLength = Int(buffer.frameLength)
-            guard channelCount > 0, frameLength > 0 else { return }
-
-            var peak: Float = 0
-            for ch in 0..<channelCount {
-                let channel = channelData[ch]
-                for frame in stride(from: 0, to: frameLength, by: 4) {
-                    let sample = abs(channel[frame])
-                    if sample > peak { peak = sample }
-                }
-            }
-
-            micProbeWorker?.process(buffer)
-
-            if peak > 0 {
-                var updated = false
-                while !updated {
-                    let currentBits = micDiagnosticsPeakBits.load(ordering: .relaxed)
-                    let currentPeak = Float(bitPattern: currentBits)
-                    guard peak > currentPeak else { break }
-                    updated = micDiagnosticsPeakBits.compareExchange(
-                        expected: currentBits,
-                        desired: peak.bitPattern,
-                        ordering: .relaxed
-                    ).exchanged
-                }
-            }
-        }
+        // Avoid capturing `self` (MainActor-isolated) inside the audio tap callback.
+        // AVAudioEngine invokes tap blocks from a real-time audio thread/queue.
+        let peakBits = micDiagnosticsPeakBits
+        let probeWorker = micProbeWorker
+        installMicDiagnosticsTap(on: inputNode, format: format, peakBits: peakBits, probeWorker: probeWorker)
 
         isMicDiagnosticsTapInstalled = true
         micDiagnosticsTimer?.invalidate()

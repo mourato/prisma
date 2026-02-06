@@ -51,7 +51,11 @@ public enum MeetingAssistantDesignSystem {
         }
 
         public static let recording = Color.red
+        public static let recordingOverlayBackground = recording.opacity(0.9)
         public static let overlayBackground = Color.black.opacity(0.95)
+        public static let overlayDivider = Color.white.opacity(0.25)
+        public static let overlayForeground = Color.white
+        public static let overlayForegroundMuted = Color.white.opacity(0.85)
 
         public static let windowBackground = Color(NSColor.windowBackgroundColor)
         public static let controlBackground = Color(NSColor.controlBackgroundColor)
@@ -103,10 +107,14 @@ public enum MeetingAssistantDesignSystem {
         public static let itemSpacing: CGFloat = 12
 
         public static let controlHeight: CGFloat = 44
+        public static let recordingIndicatorPanelWidth: CGFloat = 380
+        public static let recordingIndicatorWaveformMaxHeight: CGFloat = 26
 
         public static let shadowRadius: CGFloat = 10
         public static let shadowX: CGFloat = 0
         public static let shadowY: CGFloat = 5
+        public static let shadowRadiusSmall: CGFloat = 6
+        public static let shadowYSmall: CGFloat = 3
 
         public static let maxTextFieldWidth: CGFloat = 300
         public static let maxPickerWidth: CGFloat = 200

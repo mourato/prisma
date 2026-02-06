@@ -36,6 +36,7 @@ public class MeetingSettingsViewModel: ObservableObject {
     public func selectPrompt(_ id: UUID, forceSelect: Bool = false) {
         withAnimation(.easeInOut(duration: 0.2)) {
             if forceSelect {
+                settings.meetingTypeAutoDetectEnabled = false
                 settings.selectedPromptId = id
             } else {
                 settings.selectedPromptId = (settings.selectedPromptId == id) ? nil : id

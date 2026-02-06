@@ -119,6 +119,7 @@ public struct MeetingSettingsTab: View {
                         }
 
                         VStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                            noPostProcessingRow()
                             ForEach(meetingViewModel.availablePrompts) { prompt in
                                 promptRow(prompt: prompt)
                             }
@@ -371,6 +372,67 @@ public struct MeetingSettingsTab: View {
                 Label("settings.post_processing.delete".localized, systemImage: "trash")
             }
         }
+    }
+
+    private func noPostProcessingRow() -> some View {
+        let isAutoDetectEnabled = meetingViewModel.settings.meetingTypeAutoDetectEnabled
+        let isSelected = !isAutoDetectEnabled && meetingViewModel.selectedPromptId == AppSettingsStore.noPostProcessingPromptId
+
+        let row = HStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isSelected ? SettingsDesignSystem.Colors.accent : Color.primary.opacity(0.05))
+                    .frame(width: 36, height: 36)
+
+                Image(systemName: "nosign")
+                    .font(.subheadline)
+                    .foregroundStyle(isSelected ? SettingsDesignSystem.Colors.onAccent : .primary)
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("recording_indicator.prompt.none".localized)
+                    .font(.body)
+                    .fontWeight(isSelected ? .bold : .medium)
+
+                Text("recording_indicator.prompt.none_desc".localized)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+
+            Spacer()
+
+            if isSelected {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(.green)
+                    .symbolEffect(.bounce, value: isSelected)
+            }
+
+            Image(systemName: "ellipsis.circle")
+                .foregroundStyle(.secondary)
+                .opacity(0) // Keep layout aligned with prompt rows
+        }
+        .padding(10)
+        .contentShape(Rectangle())
+
+        return Group {
+            if isAutoDetectEnabled {
+                row
+            } else {
+                Button {
+                    meetingViewModel.selectPrompt(AppSettingsStore.noPostProcessingPromptId, forceSelect: true)
+                } label: {
+                    row
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .background(isSelected ? SettingsDesignSystem.Colors.accent.opacity(0.08) : Color.clear)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(isSelected ? SettingsDesignSystem.Colors.accent.opacity(0.3) : Color.secondary.opacity(0.1), lineWidth: 1)
+        )
     }
 }
 
