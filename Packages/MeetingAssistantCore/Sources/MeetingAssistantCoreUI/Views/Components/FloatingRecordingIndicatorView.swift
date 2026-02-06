@@ -19,6 +19,7 @@ public struct FloatingRecordingIndicatorView: View {
     let onCancel: @Sendable () -> Void
 
     @State private var isHovering = false
+    @State private var hoverCollapseTask: Task<Void, Never>?
 
     public init(
         audioMonitor: AudioLevelMonitor,
@@ -65,6 +66,7 @@ public struct FloatingRecordingIndicatorView: View {
 
     private func indicatorPill(size: IndicatorSize) -> some View {
         let isExpanded = isRecordingMode && isHovering
+        let expandedSideWidth = MeetingAssistantDesignSystem.Layout.controlHeight + MeetingAssistantDesignSystem.Layout.spacing20
 
         return ZStack(alignment: .top) {
             HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
@@ -72,7 +74,7 @@ public struct FloatingRecordingIndicatorView: View {
                     .modifier(
                         ExpandedContentVisibility(
                             isVisible: isExpanded,
-                            expandedWidth: MeetingAssistantDesignSystem.Layout.controlHeight + MeetingAssistantDesignSystem.Layout.spacing20
+                            expandedWidth: expandedSideWidth
                         )
                     )
 
@@ -98,7 +100,7 @@ public struct FloatingRecordingIndicatorView: View {
                     .modifier(
                         ExpandedContentVisibility(
                             isVisible: isExpanded,
-                            expandedWidth: MeetingAssistantDesignSystem.Layout.spacing20
+                            expandedWidth: expandedSideWidth
                         )
                     )
             }
@@ -115,7 +117,26 @@ public struct FloatingRecordingIndicatorView: View {
             .contentShape(Capsule())
             .onHover { hovering in
                 guard isRecordingMode else { return }
-                isHovering = hovering
+                if hovering {
+                    hoverCollapseTask?.cancel()
+                    withAnimation(.spring(response: 0.22, dampingFraction: 0.86)) {
+                        isHovering = true
+                    }
+                    return
+                }
+
+                hoverCollapseTask?.cancel()
+                hoverCollapseTask = Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 110_000_000)
+                    guard !Task.isCancelled else { return }
+                    withAnimation(.easeOut(duration: 0.14)) {
+                        isHovering = false
+                    }
+                }
+            }
+            .onDisappear {
+                hoverCollapseTask?.cancel()
+                hoverCollapseTask = nil
             }
 
             if isRecordingMode, audioMonitor.isSilenceWarningVisible {
@@ -124,7 +145,6 @@ public struct FloatingRecordingIndicatorView: View {
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
-        .animation(.spring(response: 0.25, dampingFraction: 0.8), value: isHovering)
     }
 
     // MARK: - Shared Components
@@ -179,17 +199,20 @@ public struct FloatingRecordingIndicatorView: View {
     }
 
     private var expandedTrailingControl: some View {
-        Button(action: onCancel) {
-            Image(systemName: "trash")
-                .font(.callout.weight(.semibold))
-                .foregroundStyle(MeetingAssistantDesignSystem.Colors.overlayForeground)
-                .frame(
-                    width: MeetingAssistantDesignSystem.Layout.spacing20,
-                    height: MeetingAssistantDesignSystem.Layout.spacing20
-                )
+        HStack(spacing: 0) {
+            Spacer(minLength: 0)
+            Button(action: onCancel) {
+                Image(systemName: "trash")
+                    .font(.callout.weight(.semibold))
+                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.overlayForeground)
+                    .frame(
+                        width: MeetingAssistantDesignSystem.Layout.spacing20,
+                        height: MeetingAssistantDesignSystem.Layout.spacing20
+                    )
+            }
+            .buttonStyle(.plain)
+            .help("recording_indicator.cancel.help".localized)
         }
-        .buttonStyle(.plain)
-        .help("recording_indicator.cancel.help".localized)
     }
 
     /// Dot indicating recording or processing (Figma uses 12x12).
@@ -376,8 +399,20 @@ private struct ExpandedContentVisibility: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .opacity(isVisible ? 1 : 0)
             .frame(width: isVisible ? expandedWidth : 0)
+            .animation(
+                isVisible
+                    ? .spring(response: 0.2, dampingFraction: 0.88)
+                    : .easeOut(duration: 0.12),
+                value: isVisible
+            )
+            .opacity(isVisible ? 1 : 0)
+            .animation(
+                isVisible
+                    ? .easeOut(duration: 0.16)
+                    : .easeIn(duration: 0.08),
+                value: isVisible
+            )
             .clipped()
             .allowsHitTesting(isVisible)
             .accessibilityHidden(!isVisible)
@@ -512,13 +547,7 @@ struct AudioVisualizer: View {
             targetHeights[i] = targetHeights[i] * (1 - smoothingFactor) + targetHeight * smoothingFactor
 
             if abs(barHeights[i] - targetHeights[i]) > 0.3 {
-                withAnimation(
-                    isDecaying
-                        ? .spring(response: 0.3, dampingFraction: 0.8)
-                        : .spring(response: 0.2, dampingFraction: 0.7)
-                ) {
-                    barHeights[i] = targetHeights[i]
-                }
+                barHeights[i] = targetHeights[i]
             }
         }
     }
