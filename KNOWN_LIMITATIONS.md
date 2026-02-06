@@ -1,37 +1,96 @@
 # Known Limitations
 
-Este documento descreve as limitações técnicas e de design identificadas no projeto.
+This document tracks known limitations and intentional trade-offs in the project. Each entry includes context on why the limitation exists and what a future improvement could look like.
 
-## 1. High-Frequency Audio Allocations
-- **High-Frequency Audio Allocations**: O `SystemAudioRecorder` aloca um novo `AVAudioPCMBuffer` a cada callback do `SCStream` para converter o `CMSampleBuffer`. Embora isso ocorra em uma fila de captura em background e não na thread de renderização principal, em regime de alta frequência isso pode gerar pressão desnecessária no coletor de lixo (ARC) e impacto marginal na performance/bateria. (Contexto: estabilidade imediata vs. pool de buffers complexo, 19/01/2026)
-- **Impacto**: Baixo (especialmente em máquinas modernas), mas suboptimal em termos de Clean Code para áudio de alta performance.
+> **Last updated:** 2026-02-06
 
-## 2. Audio Engine Start Timeout
-- **Audio Engine Start Timeout**: O início do `AVAudioEngine` tem um timeout hardcoded de 10 segundos. Em sistemas sob carga extrema, o driver de áudio pode demorar mais para responder. (Contexto: padrão de segurança para evitar UI travada, 2026)
-- **Impacto**: Falha na gravação se o sistema demorar > 10s para inicializar o subsistema de áudio.
+## Storage
 
-## 3. Assistant depende de Clipboard e Acessibilidade
-- **Assistant depende de Clipboard e Acessibilidade**: O Assistant usa copiar/colar via clipboard para capturar o texto selecionado e substituir o conteúdo. Em alguns apps, o comando de copiar pode não atualizar o clipboard (ou pode ser bloqueado), o que impede o fluxo de edição. (Contexto: integração via atalhos de sistema sem APIs privadas, fevereiro/2026)
-- **Impacto**: Pode falhar ao capturar/substituir texto em apps restritivos ou quando a permissão de Acessibilidade não foi concedida.
+### Filesystem storage (JSON) does not scale to thousands of items
 
-## 4. Design System Global Theme Lookup
-- **Design System Global Theme Lookup**: O `MeetingAssistantDesignSystem.Colors.accent` resolve o tema lendo diretamente do `UserDefaults` (chave `appAccentColor`). Isso mantém o uso simples e consistente, mas ainda é estado global (sem DI) e pode dificultar previews/testes com múltiplas variações de tema em paralelo. (Contexto: priorizar simplicidade e consistência, 06/02/2026)
-- **Impacto**: Testes/previews podem precisar configurar/restaurar `UserDefaults` para garantir determinismo; múltiplas janelas com temas distintos não são suportadas hoje.
-## 5. Model Fetching is State-Based
-- **Model Fetching**: A lista de modelos disponíveis para provedores (OpenAI, Anthropic, etc.) é buscada apenas após um teste de conexão bem-sucedido ou quando o provedor é alterado e já existe uma chave válida. Não há um mecanismo de "background refresh" contínuo se a chave for alterada externamente no Keychain sem intervenção do usuário na UI. (Contexto: simplificação de estado da UI, fevereiro/2026)
-- **Impacto**: O usuário pode precisar clicar em "Verify and Save" novamente se quiser atualizar a lista de modelos após uma mudança de rede ou configuração.
+- **What:** `FileSystemStorageService` loads and decodes all transcription JSON files when loading the library.
+- **Why:** Simpler implementation and fast iteration early on.
+- **Impact:** Works for hundreds of items but will degrade with thousands (I/O + memory + latency).
+- **Future direction:** Migrate to Core Data or SQLite (e.g., GRDB) and keep JSON only as an export/import format.
 
-## 6. API Key Persistence on Success Only
-- **API Key Persistence**: A chave de API agora é persistida no Keychain apenas após uma verificação de conexão bem-sucedida ("Verify and Save"). Mudanças feitas no texto sem verificação são perdidas ao trocar de aba ou fechar o app. (Contexto: evitar persistência de chaves inválidas ou parciais, fevereiro/2026)
-- **Impacto**: Melhora a integridade do Keychain, mas exige uma ação explícita do usuário para salvar novas chaves.
-## 7. Plaintext API Key in Memory
-- **Plaintext API Key**: O `AISettingsViewModel` mantém o texto da chave de API em uma propriedade `@Published String` (`apiKeyText`) durante a edição. Após a confirmação ("Verify and Save"), a string é limpa da memória. (Status: Mitigado em fev/2026, mas inerente ao binding de String do SwiftUI).
-- **Impacto**: Baixo/Moderado. A exposição é limitada apenas ao momento de digitação.
+## Audio
 
-## 8. Custom Provider Verification Requirement
-- **Custom Provider Verification**: A verificação de conexão para provedores customizados exige que o endpoint `/v1/models` (ou equivalente sufixado a URL base) esteja disponível e retorne 200 OK. Provedores que suportam apenas endpoints de chat completation mas bloqueiam listing de modelos irão falhar na verificação.
-- **Impacto**: Limita a compatibilidade com backends muito restritivos ou proxies de API mínimos.
+### High-frequency buffer allocations in `SystemAudioRecorder`
 
-## 9. Auto-Launch requires signed app
-- **Auto-Launch Implementation**: A funcionalidade de "Iniciar ao fazer login" utiliza a API `SMAppService.mainApp`. Esta API exige que o aplicativo esteja propriamente assinado (codesign) e com as entitlements corretas. Em ambientes de desenvolvimento (debug) sem assinatura válida, o registro pode falhar silenciosamente ou gerar erros no Console do sistema. (Contexto: modernização de login items no macOS, fev/2026)
-- **Impacto**: O toggle de auto-launch pode não funcionar ou reverter seu estado se executado fora de um bundle assinado.
+- **What:** The ScreenCaptureKit callback path allocates new buffers at a high rate.
+- **Why:** Prioritized correctness and stability over a complex buffer pool.
+- **Impact:** Low on modern Apple Silicon, but still suboptimal for long sessions.
+- **Future direction:** Introduce a bounded buffer pool with strict ownership rules.
+
+### Audio engine start timeout is hardcoded
+
+- **What:** Audio engine startup uses a hardcoded timeout (10 seconds).
+- **Why:** Avoids UI hangs and stuck state transitions.
+- **Impact:** Recording may fail on heavily loaded systems if initialization takes longer.
+- **Future direction:** Make it configurable and improve diagnostics.
+
+## Assistant (text selection)
+
+### Depends on clipboard + Accessibility
+
+- **What:** The Assistant uses copy/paste to read and replace selected text.
+- **Why:** Avoids private APIs and keeps compatibility across apps.
+- **Impact:** Some apps may block clipboard updates or Accessibility actions.
+- **Future direction:** Improve app-specific adapters and add better UX when actions fail.
+
+## Design system
+
+### Global theme lookup via `UserDefaults`
+
+- **What:** Design system accent/theme tokens read from `UserDefaults`.
+- **Why:** Keeps UI usage simple and consistent without heavy DI.
+- **Impact:** Harder to run parallel previews/tests with different themes.
+- **Future direction:** Add an injectable theme provider for previews/tests, while keeping a default global implementation.
+
+## AI settings
+
+### Model fetching is state-based (no background refresh)
+
+- **What:** The list of available models refreshes only after verification or provider changes with a valid key.
+- **Why:** Simpler UI state and fewer background network calls.
+- **Impact:** Users may need to re-verify to refresh models.
+- **Future direction:** Add a lightweight refresh mechanism with explicit user control.
+
+### API key persistence occurs only after successful verification
+
+- **What:** API keys are stored in Keychain only after “Verify and Save”.
+- **Why:** Avoid persisting invalid/partial keys.
+- **Impact:** Changes can be lost if the user navigates away before verification.
+- **Future direction:** Provide a clear “Save without verify” flow with explicit warnings.
+
+### API key is plaintext in memory while editing
+
+- **What:** The UI binds to a `String` while editing the key.
+- **Why:** SwiftUI bindings require it.
+- **Impact:** Low/moderate; exposure is limited to edit time.
+- **Future direction:** Keep minimizing lifetime (clear immediately after save) and avoid logging.
+
+### Custom provider verification requires `/v1/models`
+
+- **What:** Verification assumes a model-list endpoint exists and returns 200.
+- **Why:** Needed to populate model pickers consistently.
+- **Impact:** Some minimal proxies will fail verification.
+- **Future direction:** Add alternate verification modes (chat-only, custom endpoints).
+
+## macOS integration
+
+### Auto-launch requires a properly signed app
+
+- **What:** “Launch at login” uses `SMAppService.mainApp`.
+- **Why:** Modern Login Item API.
+- **Impact:** In dev/debug or unsigned builds, registration can fail.
+- **Future direction:** Improve error surfacing and document expected behavior.
+
+## Testing / CI
+
+### XCTest runner instability for concurrency + AVFoundation in headless environments
+
+- **What:** Some tests can exit silently in terminal/headless environments when mixing Actors + AVFoundation + performance measurements.
+- **Why:** XCTest runner behavior differs between Xcode UI and headless mode.
+- **Impact:** Certain performance tests are kept disabled for CI stability.
+- **Future direction:** Move performance tests to a dedicated target/environment.
