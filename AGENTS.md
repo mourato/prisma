@@ -13,6 +13,33 @@ Every coding task MUST follow the **Worktree-First** workflow to ensure environm
 
 For detailed steps and commands, see the **[task-lifecycle](.agents/skills/task-lifecycle/SKILL.md)** skill.
 
+## ✅ Standard Task SOP (Mandatory)
+
+This is the **single, standardized** flow for every task in this repository:
+
+1. **Create branch + worktree** (never work directly on `main`):
+   - `git worktree add -b <branch-name> ../<folder-name> main`
+   - `cd ../<folder-name>`
+2. **Implement in small slices**.
+3. **Verification gate (before ANY commit)**:
+   - `make build`
+   - `make test`
+   - (recommended) `make lint`
+   - If anything fails: stop and fix until green.
+4. **Atomic commits (green state)**:
+   - Split commits by intent (feature vs refactor vs tests vs cleanup).
+   - Every commit must compile and test.
+   - Use Conventional Commits (see `.agents/skills/git-workflow/SKILL.md`).
+5. **Local code review ritual (before final push/merge)**:
+   - Follow `.agents/skills/code-review/SKILL.md` and generate the 🔴/🟡/🟢 report.
+   - Fix **🔴 Critical** and **🟡 Medium** findings (🟢 optional).
+6. **Re-verify + atomic commits for review fixes**:
+   - `make build && make test` (and `make lint` when applicable).
+7. **Push / merge** the task branch into `main`.
+8. **Cleanup**:
+   - Remove worktree + prune.
+   - Delete the branch locally and remotely (if pushed).
+
 ---
 
 ## 🏗 Project Architecture
@@ -97,22 +124,13 @@ make ci-test
 
 ## Worktree-First Development (Mandatory)
 
-To ensure workspace isolation and maintain a clean `main` branch, all file modifications MUST follow this workflow:
+To ensure workspace isolation and maintain a clean `main` branch, all file modifications MUST follow Worktree-first + green gates + atomic commits.
 
-1. **Initialize Task**: Create a new branch and Git Worktree.
-
-   ```bash
-   git worktree add -b <branch-name> ../<branch-name> main
-   ```
-
-2. **Implement**: Perform all changes within the new worktree folder.
-3. **Verify**: Run `make test` and `make build` in the worktree.
-4. **Finalize**:
-   - Merge to `main`.
-   - Cleanup: `rm -rf ../<branch-name> && git worktree prune`.
-   - Delete branch: `git branch -D <branch-name>`.
-
-For detailed instructions, see the **[git-workflow skill](.agent/skills/git-workflow/SKILL.md)** and **[git-worktree skill](.agent/skills/git-worktree/SKILL.md)**.
+For the full standardized flow, follow the **Standard Task SOP** above and the skills:
+- `.agents/skills/task-lifecycle/SKILL.md`
+- `.agents/skills/git-workflow/SKILL.md`
+- `.agents/skills/code-review/SKILL.md`
+- `.agents/skills/git-worktree/SKILL.md`
 
 |------|-------------|
 | [architecture.md](.agent/rules/architecture.md) | MVVM or Clean Architecture patterns |
