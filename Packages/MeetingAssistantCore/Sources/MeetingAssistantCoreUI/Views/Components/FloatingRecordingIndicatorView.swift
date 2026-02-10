@@ -521,7 +521,7 @@ struct AudioVisualizer: View {
     let barWidth: CGFloat
     let barSpacing: CGFloat
     let minHeight: CGFloat
-    let hardThreshold: Double = 0.05
+    let hardThreshold: Double = 0.50
 
     private let sensitivityMultipliers: [Double]
     private let phaseOffsets: [Double]
