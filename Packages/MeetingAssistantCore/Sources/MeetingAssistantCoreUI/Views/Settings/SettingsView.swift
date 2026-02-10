@@ -78,7 +78,7 @@ public struct SettingsView: View {
             .font(
                 .system(
                     size: MeetingAssistantDesignSystem.Layout.sidebarLabelFontSize,
-                    weight: .medium
+                    weight: .regular
                 )
             )
             .lineLimit(1)
