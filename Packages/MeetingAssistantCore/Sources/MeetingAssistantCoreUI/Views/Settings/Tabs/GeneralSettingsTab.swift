@@ -45,16 +45,6 @@ public struct GeneralSettingsTab: View {
                 // Appearance
                 MAGroup("settings.general.appearance".localized, icon: "paintbrush.fill") {
                     VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
-                        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-                            Text("settings.general.theme_color".localized)
-                                .font(.body)
-                                .foregroundStyle(.primary)
-
-                            MAThemePicker(selection: $viewModel.appAccentColor)
-                        }
-
-                        Divider()
-
                         HStack {
                             Text("settings.general.language".localized)
                                 .font(.body)
