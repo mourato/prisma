@@ -302,7 +302,8 @@ public struct FloatingRecordingIndicatorView: View {
         } label: {
             Image(systemName: currentPromptIconName)
                 .font(.system(size: promptIconSize(for: size), weight: .medium))
-                .foregroundStyle(MeetingAssistantDesignSystem.Colors.overlayForeground)
+                .symbolRenderingMode(.monochrome)
+                .foregroundStyle(.white)
                 .frame(width: 20, height: 20)
             .contentShape(Rectangle())
         }

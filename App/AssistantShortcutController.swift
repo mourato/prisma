@@ -22,6 +22,8 @@ final class AssistantShortcutController {
 
     private let holdThreshold: TimeInterval = 0.35
     private let doubleTapInterval: TimeInterval = 0.5
+    private let escapeDoublePressInterval: TimeInterval = 0.5
+    private var lastEscapePressTime: Date?
 
     init(
         assistantService: AssistantVoiceCommandService,
@@ -167,9 +169,21 @@ final class AssistantShortcutController {
             return
         }
 
-        guard event.keyCode == PresetShortcutKey.escapeKeyCode else {
+        guard !event.isARepeat else {
             return
         }
+
+        guard event.keyCode == PresetShortcutKey.escapeKeyCode else {
+            lastEscapePressTime = nil
+            return
+        }
+
+        let now = Date()
+        guard let lastEscapePressTime, now.timeIntervalSince(lastEscapePressTime) <= escapeDoublePressInterval else {
+            self.lastEscapePressTime = now
+            return
+        }
+        self.lastEscapePressTime = nil
 
         Task { @MainActor in
             guard self.assistantService.isRecording else {
@@ -273,6 +287,7 @@ final class AssistantShortcutController {
     private func resetShortcutState() {
         isPresetPressed = false
         lastTapTime = nil
+        lastEscapePressTime = nil
         resetHoldState()
         presetState.reset()
     }

@@ -1049,6 +1049,12 @@ extension RecordingManager {
             title: "notification.transcription_completed".localized,
             body: body
         )
+
+        NotificationCenter.default.post(
+            name: .meetingAssistantTranscriptionSaved,
+            object: nil,
+            userInfo: [AppNotifications.UserInfoKey.transcriptionId: transcription.id.uuidString]
+        )
     }
 
     private func handleTranscriptionError(_ error: Error) {
