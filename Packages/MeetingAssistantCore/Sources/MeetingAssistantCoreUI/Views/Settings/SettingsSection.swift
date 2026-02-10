@@ -62,7 +62,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
         case .assistant: "sparkles"
         case .transcriptions: "clock"
         case .enhancements: "sparkles"
-        case .permissions: "hand.raised.square"
+        case .permissions: "checkmark.shield"
         }
     }
 }
