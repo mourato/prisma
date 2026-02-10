@@ -194,6 +194,23 @@
 "settings.post_processing.duplicate" = "Duplicar";
 "settings.post_processing.select" = "Ativar";
 "settings.post_processing.is_active" = "Ativo";
+"settings.context_awareness.title" = "Context Awareness";
+"settings.context_awareness.enabled" = "Usar Context Awareness";
+"settings.context_awareness.enabled_desc" = "Captura metadados de contexto no início da gravação e os inclui no pós-processamento com IA.";
+"settings.context_awareness.active_app" = "Incluir App Ativo";
+"settings.context_awareness.active_app_desc" = "Captura o nome do app ativo e o título da janela em foco quando disponível.";
+"settings.context_awareness.clipboard" = "Incluir Clipboard";
+"settings.context_awareness.clipboard_desc" = "Captura o conteúdo de texto mais recente do clipboard.";
+"settings.context_awareness.window_ocr" = "Incluir OCR da Janela Ativa";
+"settings.context_awareness.window_ocr_desc" = "Captura texto visível da janela ativa via OCR (requer permissão de Gravação de Tela).";
+"settings.context_awareness.accessibility_text" = "Incluir Texto da UI via Acessibilidade";
+"settings.context_awareness.accessibility_text_desc" = "Captura texto selecionado ou em foco no app ativo via APIs de Acessibilidade (requer permissão de Acessibilidade).";
+"settings.context_awareness.protect_sensitive_apps" = "Proteger Apps Sensíveis";
+"settings.context_awareness.protect_sensitive_apps_desc" = "Ignora a captura de contexto quando o app ativo está na lista de apps sensíveis.";
+"settings.context_awareness.redact_sensitive_data" = "Redigir Dados Sensíveis";
+"settings.context_awareness.redact_sensitive_data_desc" = "Redige e-mails, URLs, segredos e sequências numéricas longas antes de enviar contexto para IA.";
+"settings.context_awareness.excluded_apps" = "Bundle IDs Excluídos";
+"settings.context_awareness.excluded_apps_desc" = "Um bundle ID por linha (ou separado por vírgula). Exemplo: com.example.secureapp";
 
 /* Service Settings */
 "settings.service.title" = "Serviço";

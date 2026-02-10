@@ -464,6 +464,14 @@ public class AppSettingsStore: ObservableObject {
         static let summaryTemplate = "summaryTemplate"
         static let autoExportSummaries = "autoExportSummaries"
         static let createMeetingFolder = "createMeetingFolder"
+        static let contextAwarenessEnabled = "contextAwarenessEnabled"
+        static let contextAwarenessIncludeActiveApp = "contextAwarenessIncludeActiveApp"
+        static let contextAwarenessIncludeClipboard = "contextAwarenessIncludeClipboard"
+        static let contextAwarenessIncludeWindowOCR = "contextAwarenessIncludeWindowOCR"
+        static let contextAwarenessIncludeAccessibilityText = "contextAwarenessIncludeAccessibilityText"
+        static let contextAwarenessProtectSensitiveApps = "contextAwarenessProtectSensitiveApps"
+        static let contextAwarenessRedactSensitiveData = "contextAwarenessRedactSensitiveData"
+        static let contextAwarenessExcludedBundleIDs = "contextAwarenessExcludedBundleIDs"
     }
 
     // MARK: - Published Properties
@@ -771,6 +779,46 @@ public class AppSettingsStore: ObservableObject {
         didSet { UserDefaults.standard.set(createMeetingFolder, forKey: Keys.createMeetingFolder) }
     }
 
+    /// Enables Context Awareness to enrich AI post-processing with active app context.
+    @Published public var contextAwarenessEnabled: Bool {
+        didSet { UserDefaults.standard.set(contextAwarenessEnabled, forKey: Keys.contextAwarenessEnabled) }
+    }
+
+    /// Includes active app metadata (app name and focused window title when available).
+    @Published public var contextAwarenessIncludeActiveApp: Bool {
+        didSet { UserDefaults.standard.set(contextAwarenessIncludeActiveApp, forKey: Keys.contextAwarenessIncludeActiveApp) }
+    }
+
+    /// Includes clipboard text in context metadata.
+    @Published public var contextAwarenessIncludeClipboard: Bool {
+        didSet { UserDefaults.standard.set(contextAwarenessIncludeClipboard, forKey: Keys.contextAwarenessIncludeClipboard) }
+    }
+
+    /// Includes OCR text extracted from the active window image.
+    @Published public var contextAwarenessIncludeWindowOCR: Bool {
+        didSet { UserDefaults.standard.set(contextAwarenessIncludeWindowOCR, forKey: Keys.contextAwarenessIncludeWindowOCR) }
+    }
+
+    /// Includes focused UI text extracted via macOS Accessibility APIs.
+    @Published public var contextAwarenessIncludeAccessibilityText: Bool {
+        didSet { UserDefaults.standard.set(contextAwarenessIncludeAccessibilityText, forKey: Keys.contextAwarenessIncludeAccessibilityText) }
+    }
+
+    /// Enables blocking context capture when the frontmost app is in a sensitive-app list.
+    @Published public var contextAwarenessProtectSensitiveApps: Bool {
+        didSet { UserDefaults.standard.set(contextAwarenessProtectSensitiveApps, forKey: Keys.contextAwarenessProtectSensitiveApps) }
+    }
+
+    /// Redacts sensitive patterns (email, URLs, tokens, long numeric sequences) before sending context to AI.
+    @Published public var contextAwarenessRedactSensitiveData: Bool {
+        didSet { UserDefaults.standard.set(contextAwarenessRedactSensitiveData, forKey: Keys.contextAwarenessRedactSensitiveData) }
+    }
+
+    /// Additional app bundle identifiers excluded from context capture.
+    @Published public var contextAwarenessExcludedBundleIDs: [String] {
+        didSet { save(contextAwarenessExcludedBundleIDs, forKey: Keys.contextAwarenessExcludedBundleIDs) }
+    }
+
     /// All available prompts (predefined + user-created), filtered by deleted and overrides.
     public var allPrompts: [PostProcessingPrompt] {
         deduplicatedPrompts(dictationAvailablePrompts + meetingAvailablePrompts)
@@ -922,6 +970,26 @@ public class AppSettingsStore: ObservableObject {
 
         autoExportSummaries = UserDefaults.standard.bool(forKey: Keys.autoExportSummaries)
         createMeetingFolder = UserDefaults.standard.bool(forKey: Keys.createMeetingFolder)
+        contextAwarenessEnabled = UserDefaults.standard.bool(forKey: Keys.contextAwarenessEnabled)
+        contextAwarenessIncludeActiveApp = Self.loadBoolDefaultIfUnset(
+            forKey: Keys.contextAwarenessIncludeActiveApp,
+            defaultValue: true
+        )
+        contextAwarenessIncludeClipboard = UserDefaults.standard.bool(forKey: Keys.contextAwarenessIncludeClipboard)
+        contextAwarenessIncludeWindowOCR = UserDefaults.standard.bool(forKey: Keys.contextAwarenessIncludeWindowOCR)
+        contextAwarenessIncludeAccessibilityText = Self.loadBoolDefaultIfUnset(
+            forKey: Keys.contextAwarenessIncludeAccessibilityText,
+            defaultValue: true
+        )
+        contextAwarenessProtectSensitiveApps = Self.loadBoolDefaultIfUnset(
+            forKey: Keys.contextAwarenessProtectSensitiveApps,
+            defaultValue: true
+        )
+        contextAwarenessRedactSensitiveData = Self.loadBoolDefaultIfUnset(
+            forKey: Keys.contextAwarenessRedactSensitiveData,
+            defaultValue: true
+        )
+        contextAwarenessExcludedBundleIDs = Self.loadDecoded([String].self, forKey: Keys.contextAwarenessExcludedBundleIDs) ?? []
 
         // Load assistant border settings
         let rawBorderColor = UserDefaults.standard.string(forKey: Keys.assistantBorderColor)
