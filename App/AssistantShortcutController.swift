@@ -12,17 +12,16 @@ final class AssistantShortcutController {
     private var flagsMonitor: KeyboardEventMonitor?
     private var keyDownMonitor: KeyboardEventMonitor?
 
-    private var isPresetPressed = false
-    private var shortcutPressStartTime: Date?
-    private var shortcutWasRecordingAtPress = false
-    private var shortcutStartedRecording = false
-    private var lastTapTime: Date?
-    private var lastTapWasRecording = false
+    private lazy var shortcutHandler = SmartShortcutHandler(
+        isRecordingProvider: { [weak self] in self?.assistantService.isRecording ?? false },
+        actionHandler: { [weak self] action in
+            Task { @MainActor in
+                await self?.performAction(action)
+            }
+        }
+    )
 
     private let presetState = ShortcutActivationState()
-
-    private let holdThreshold: TimeInterval = 0.35
-    private let doubleTapInterval: TimeInterval = 0.75
     private let escapeDoublePressInterval: TimeInterval = 0.5
     private var lastEscapePressTime: Date?
 
@@ -151,17 +150,15 @@ final class AssistantShortcutController {
         }
 
         let isActive = presetState.isPresetActive(settings.assistantSelectedPresetKey, event: event)
-
+        shortcutHandler.handleModifierChange(isActive: isActive)
+        
+        // Similar to GlobalShortcutController logic (adapted for Assistant)
         if isActive, !isPresetPressed {
-            isPresetPressed = true
-            Task { @MainActor in
-                await self.handleShortcutDown()
-            }
+             isPresetPressed = true
+             Task { @MainActor in await handleShortcutDown() }
         } else if !isActive, isPresetPressed {
-            isPresetPressed = false
-            Task { @MainActor in
-                await self.handleShortcutUp()
-            }
+             isPresetPressed = false
+             Task { @MainActor in await handleShortcutUp() }
         }
     }
 
@@ -212,91 +209,26 @@ final class AssistantShortcutController {
     }
 
     private func handleShortcutDown() async {
-        switch settings.assistantShortcutActivationMode {
-        case .toggle:
-            await toggleAssistant()
-        case .hold:
-            shortcutPressStartTime = Date()
-            shortcutWasRecordingAtPress = assistantService.isRecording
-            if !assistantService.isRecording {
-                shortcutStartedRecording = true
-                await assistantService.startRecording()
-            } else {
-                shortcutStartedRecording = false
-            }
-        case .holdOrToggle:
-            shortcutPressStartTime = Date()
-            shortcutWasRecordingAtPress = assistantService.isRecording
-            if assistantService.isRecording {
-                await assistantService.stopAndProcess()
-                shortcutStartedRecording = false
-            } else {
-                shortcutStartedRecording = true
-                await assistantService.startRecording()
-            }
-        case .doubleTap:
-            break
-        }
+        shortcutHandler.handleShortcutDown(activationMode: settings.assistantShortcutActivationMode)
     }
 
     private func handleShortcutUp() async {
-        switch settings.assistantShortcutActivationMode {
-        case .hold:
-            if shortcutStartedRecording {
-                await assistantService.stopAndProcess()
-            }
-            resetHoldState()
-        case .holdOrToggle:
-            guard let startTime = shortcutPressStartTime else {
-                return
-            }
-
-            if !shortcutWasRecordingAtPress {
-                let heldDuration = Date().timeIntervalSince(startTime)
-                if heldDuration >= holdThreshold, shortcutStartedRecording {
-                    await assistantService.stopAndProcess()
-                }
-            }
-            resetHoldState()
-        case .doubleTap:
-            let now = Date()
-            let isRecording = assistantService.isRecording
-            if let lastTapTime,
-               now.timeIntervalSince(lastTapTime) <= doubleTapInterval,
-               lastTapWasRecording == isRecording
-            {
-                self.lastTapTime = nil
-                self.lastTapWasRecording = false
-                await toggleAssistant()
-            } else {
-                lastTapTime = now
-                lastTapWasRecording = isRecording
-            }
-        case .toggle:
-            break
-        }
+        shortcutHandler.handleShortcutUp(activationMode: settings.assistantShortcutActivationMode)
     }
-
-    private func toggleAssistant() async {
-        if assistantService.isRecording {
-            await assistantService.stopAndProcess()
-        } else {
+    
+    private func performAction(_ action: SmartShortcutHandler.Action) async {
+        switch action {
+        case .startRecording:
             await assistantService.startRecording()
+        case .stopRecording:
+            await assistantService.stopAndProcess()
         }
-    }
-
-    private func resetHoldState() {
-        shortcutPressStartTime = nil
-        shortcutWasRecordingAtPress = false
-        shortcutStartedRecording = false
     }
 
     private func resetShortcutState() {
         isPresetPressed = false
-        lastTapTime = nil
-        lastTapWasRecording = false
         lastEscapePressTime = nil
-        resetHoldState()
         presetState.reset()
+        shortcutHandler.reset()
     }
 }
