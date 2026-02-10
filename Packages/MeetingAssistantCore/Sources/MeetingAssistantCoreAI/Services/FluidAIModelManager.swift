@@ -31,6 +31,7 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
 
     @Published public var progress: Double = 0.0
 
+    @Published public var isASRInstalled: Bool = false
     @Published public var isDiarizationLoaded: Bool = false
 
     private(set) var asrManager: AsrManager?
@@ -113,6 +114,7 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
 
             asrManager = manager
             modelState = .loaded
+            isASRInstalled = true
             updateReadyState()
             logger.info("ASR Manager initialized successfully.")
 
@@ -222,6 +224,7 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
         // Unload from memory
         asrManager = nil
         modelState = .unloaded
+        isASRInstalled = false
 
         // Remove from disk
         let fileManager = FileManager.default
@@ -276,17 +279,44 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
 
     /// Refreshes model installation flags based on in-memory managers and local disk contents.
     public func refreshInstalledModelStates() {
-        if diarizerManager != nil {
-            isDiarizationLoaded = true
-            return
+        if asrManager != nil {
+            isASRInstalled = true
+        } else {
+            isASRInstalled = hasASRModelsOnDisk()
         }
 
-        isDiarizationLoaded = hasDiarizationModelsOnDisk()
+        if diarizerManager != nil {
+            isDiarizationLoaded = true
+        } else {
+            isDiarizationLoaded = hasDiarizationModelsOnDisk()
+        }
     }
 
     private var currentDiarizerMinSpeakers: Int?
     private var currentDiarizerMaxSpeakers: Int?
     private var currentDiarizerNumSpeakers: Int?
+
+    private func hasASRModelsOnDisk() -> Bool {
+        let fileManager = FileManager.default
+        guard let supportDir = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            return false
+        }
+
+        let modelsDir = supportDir.appendingPathComponent("FluidAudio/Models")
+        guard fileManager.fileExists(atPath: modelsDir.path) else {
+            return false
+        }
+
+        do {
+            let contents = try fileManager.contentsOfDirectory(at: modelsDir, includingPropertiesForKeys: nil)
+            return contents.contains { url in
+                url.lastPathComponent.lowercased().contains("parakeet")
+            }
+        } catch {
+            logger.error("Failed to inspect ASR model directory: \(error.localizedDescription)")
+            return false
+        }
+    }
 
     private func hasDiarizationModelsOnDisk() -> Bool {
         let fileManager = FileManager.default

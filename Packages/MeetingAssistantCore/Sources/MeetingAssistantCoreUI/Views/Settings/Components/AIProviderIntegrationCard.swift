@@ -57,6 +57,9 @@ public struct AIProviderIntegrationCard: View {
                 footerActions
             }
         }
+        .task {
+            viewModel.refreshProviderCredentialState()
+        }
     }
 
     // MARK: - Rows
