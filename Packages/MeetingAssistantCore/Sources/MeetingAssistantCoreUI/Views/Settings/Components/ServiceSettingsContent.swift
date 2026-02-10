@@ -18,6 +18,7 @@ public struct ServiceSettingsContent: View {
             statusSection
         }
         .task {
+            viewModel.refreshInstalledModelStates()
             viewModel.testConnection()
         }
     }
@@ -120,7 +121,7 @@ public struct ServiceSettingsContent: View {
                                 .help("settings.service.delete_model".localized)
                             } else {
                                 Button {
-                                    Task { await FluidAIModelManager.shared.loadDiarizationModels() }
+                                    viewModel.downloadDiarizationModels()
                                 } label: {
                                     Image(systemName: "arrow.down.circle")
                                         .font(.title3)

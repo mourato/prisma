@@ -86,7 +86,9 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
     @Published public var downloadPhase: DownloadPhase = .idle
     @Published public var lastError: String?
 
-    private init() {}
+    private init() {
+        refreshInstalledModelStates()
+    }
 
     /// Loads the ASR models. Downloads them if not present.
     public func loadModels() async {
@@ -272,9 +274,42 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
         }
     }
 
+    /// Refreshes model installation flags based on in-memory managers and local disk contents.
+    public func refreshInstalledModelStates() {
+        if diarizerManager != nil {
+            isDiarizationLoaded = true
+            return
+        }
+
+        isDiarizationLoaded = hasDiarizationModelsOnDisk()
+    }
+
     private var currentDiarizerMinSpeakers: Int?
     private var currentDiarizerMaxSpeakers: Int?
     private var currentDiarizerNumSpeakers: Int?
+
+    private func hasDiarizationModelsOnDisk() -> Bool {
+        let fileManager = FileManager.default
+        guard let supportDir = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            return false
+        }
+
+        let modelsDir = supportDir.appendingPathComponent("FluidAudio/Models")
+        guard fileManager.fileExists(atPath: modelsDir.path) else {
+            return false
+        }
+
+        do {
+            let contents = try fileManager.contentsOfDirectory(at: modelsDir, includingPropertiesForKeys: nil)
+            return contents.contains { url in
+                let name = url.lastPathComponent.lowercased()
+                return name.contains("pyannote") || name.contains("segmentation")
+            }
+        } catch {
+            logger.error("Failed to inspect Diarization model directory: \(error.localizedDescription)")
+            return false
+        }
+    }
 
     /// Structure to hold raw diarization result
     struct DiarizationSegment: Identifiable, Sendable {
