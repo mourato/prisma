@@ -8,11 +8,13 @@ final class GlobalShortcutController {
     private let recordingManager: RecordingManager
     private let settings: AppSettingsStore
     private var cancellables = Set<AnyCancellable>()
+    private var flagsMonitor: KeyboardEventMonitor?
+    private var keyDownMonitor: KeyboardEventMonitor?
 
     private lazy var dictationHandler = SmartShortcutHandler(
         isRecordingProvider: { [weak self] in self?.recordingManager.isRecording ?? false },
         actionHandler: { [weak self] action in
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
                 await self?.performAction(action, for: .dictation)
             }
         }
@@ -21,7 +23,7 @@ final class GlobalShortcutController {
     private lazy var meetingHandler = SmartShortcutHandler(
         isRecordingProvider: { [weak self] in self?.recordingManager.isRecording ?? false },
         actionHandler: { [weak self] action in
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
                 await self?.performAction(action, for: .meeting)
             }
         }
@@ -186,135 +188,36 @@ final class GlobalShortcutController {
         removeKeyDownMonitors()
     }
 
-    private func handleFlagsChanged(_ event: NSEvent) {
-        // Handle Dictation Preset
-        if settings.dictationSelectedPresetKey.requiresModifierMonitoring {
-            let isActive = isPresetActive(settings.dictationSelectedPresetKey, event: event)
-            dictationHandler.handleModifierChange(isActive: isActive)
-            // Trigger down/up based on state change if needed, but the original logic
-            // triggered handleShortcutDown/Up directly.
-            // Let's adapt: if isActive became true, call handleShortcutDown
-            // We need to inspect state before/after or just rely on the fact that
-            // handleModifierChange updates internal state.
-            
-            // Re-evaluating Design: The original logic checked `!dictationState.isPresetPressed`
-            // and `isActive`.
-            // Let's implement similar logic here, but using the Handler's methods.
-            // Actually, `handleModifierChange` in `SmartShortcutHandler` was designed a bit stateful.
-            // Let's simplify: Use the handler for logic, but keep the trigger here.
-            
-            // Correction: `SmartShortcutHandler` doesn't expose `isPresetPressed`.
-            // Let's refactor slightly: Call `handleShortcutDown` when active.
-            
-            // We need to know previous state to detect edges.
-            // Since we can't easily modify `SmartShortcutHandler` right now without another step,
-            // let's assume we can rely on `presetState` logic which we kept?
-            // No, `presetState` is `ShortcutActivationState` which handles modifier masks.
-            
-            // Let's just trigger the actions based on edge detection here.
-            // We can't access `dictationState` anymore.
-            // We need `SmartShortcutHandler` to tell us?
-            // Or we just call `handleShortcutDown`?
-            
-            // Let's implement the edge detection using a local property in the Handler?
-            // No, let's just trigger based on `isActive` and let the Handler manage duplications?
-            // The duplicate check `!dictationState.isPresetPressed` was crucial.
-            
-            // Wait, I can't easily detect the edge without state.
-            // `SmartShortcutHandler` needs to expose `isPressed`.
-            
-            // STOP. I need to update `SmartShortcutHandler` to expose `isPressed` or handle the event directly.
-            // But let's check `ShortcutActivationState`... it just checks if keys match.
-            
-            // Let's assume for this step I will implement the calls and if I need to update
-            // `SmartShortcutHandler` I will do it in a next step.
-            // Actually, `handleModifierChange` in my previous step was:
-            // if isActive, !isPresetPressed -> set true
-            // if !isActive, isPresetPressed -> set false
-            
-            // So the Handler *knows*. But it doesn't trigger the action.
-            // I should have made `handleModifierChange` trigger the action or return a decision.
-            
-            // Let's look at `handleCustomShortcutDown` calls.
-            // They call `handleShortcutDown`.
-            
-            // Let's try to pass the event to `SmartShortcutHandler`? No it takes `isActive`.
-            
-            // Okay, let's update `SmartShortcutHandler` to return what to do, OR
-            // just call `handleShortcutDown` blindly? No, extensive loops.
-            
-            // I will add a `public var isPressed: Bool` to `SmartShortcutHandler` in a separate step if needed.
-            // For now, let's use the `dictationHandler.handleModifierChange` I wrote?
-            // It didn't have a return value.
-            
-            // Let's implement the logic assuming I'll fix `SmartShortcutHandler` in a moment if needed.
-            // Actually, better: modifying `SmartShortcutHandler` is cheap.
-            
-            // But I am in the middle of replacing this file.
-            // I will implement a temporary local state tracking in the closure? No.
-            
-            // Let's rely on the fact that `handleShortcutDown` handles the logic.
-            // But we need to *start* the task.
-        }
-        
-        // ... (rest of logic) ...
-        
-        // This replacement is getting complex because I am trying to rewrite the whole file content
-        // based on a tool call that expects a single block.
-        // The original logic had:
-        // if isActive, !dictationState.isPresetPressed { ... }
-        
-        // I will implement the edge detection locally in this method for now using
-        // a simple set of flags if I have to, OR update SmartShortcutHandler.
-        
-        // Actually, looking at `SmartShortcutHandler`, `handleModifierChange` DOES update `isPresetPressed`.
-        // I should have exposed `isPressed` or a callback `onPressChange`.
-        
-        // Plan:
-        // 1. Finish this replacement with the structure I want.
-        // 2. Update `SmartShortcutHandler.swift` to expose `isPressed` or add `handleEvent`.
-        // 3. Update duplication here.
-        
-        // Let's write the code assuming `dictationHandler.isPressed` exists, and I will add it.
-    }
-    
-    // ...
-    
-    // Wait, the `ReplacementContent` I am generating is huge.
-    // I should probably use `multi_replace_file_content` or split it.
-    // But verify_file returned 434 lines.
-    // I entered `EndLine: 433`.
-    
     // To match the original logic:
-    
+
     private func handleFlagsChanged(_ event: NSEvent) {
-         // Dictation
+        // Dictation
         if settings.dictationSelectedPresetKey.requiresModifierMonitoring {
             let isActive = isPresetActive(settings.dictationSelectedPresetKey, event: event)
             let wasPressed = dictationHandler.isPressed
             dictationHandler.handleModifierChange(isActive: isActive)
-            
+
             if isActive, !wasPressed {
-                 Task { @MainActor in await handleShortcutDown(for: .dictation) }
+                Task { @MainActor in await handleShortcutDown(for: .dictation) }
             } else if !isActive, wasPressed {
-                 Task { @MainActor in await handleShortcutUp(for: .dictation) }
+                Task { @MainActor in await handleShortcutUp(for: .dictation) }
             }
         }
-        
+
         // Meeting
         if settings.meetingSelectedPresetKey.requiresModifierMonitoring {
             let isActive = isPresetActive(settings.meetingSelectedPresetKey, event: event)
             let wasPressed = meetingHandler.isPressed
             meetingHandler.handleModifierChange(isActive: isActive)
-            
+
             if isActive, !wasPressed {
-                 Task { @MainActor in await handleShortcutDown(for: .meeting) }
+                Task { @MainActor in await handleShortcutDown(for: .meeting) }
             } else if !isActive, wasPressed {
-                 Task { @MainActor in await handleShortcutUp(for: .meeting) }
+                Task { @MainActor in await handleShortcutUp(for: .meeting) }
             }
         }
     }
-    
+
     private func handleKeyDown(_ event: NSEvent) {
         guard settings.useEscapeToCancelRecording else { return }
         guard !event.isARepeat else { return }
@@ -357,7 +260,7 @@ final class GlobalShortcutController {
         let handler = type == .dictation ? dictationHandler : meetingHandler
         handler.handleShortcutUp(activationMode: activationMode(for: type))
     }
-    
+
     private func performAction(_ action: SmartShortcutHandler.Action, for type: ShortcutType) async {
         switch action {
         case .startRecording:
@@ -378,12 +281,12 @@ final class GlobalShortcutController {
     private func activationMode(for type: ShortcutType) -> ShortcutActivationMode {
         switch type {
         case .dictation:
-            return settings.dictationShortcutActivationMode
+            settings.dictationShortcutActivationMode
         case .meeting:
-            return settings.shortcutActivationMode
+            settings.shortcutActivationMode
         }
     }
-    
+
     private func isPresetActive(_ preset: PresetShortcutKey, event: NSEvent) -> Bool {
         presetState.isPresetActive(preset, event: event)
     }
@@ -393,4 +296,3 @@ private enum ShortcutType {
     case dictation
     case meeting
 }
-

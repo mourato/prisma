@@ -1,43 +1,44 @@
 
-import Foundation
 import AppKit
+import Foundation
+import MeetingAssistantCore
 
 /// A reusable handler for smart shortcut logic (Toggle, Hold, Double Tap).
 /// This class encapsulates the state and timing logic to determine how a shortcut
 /// should be interpreted based on the user's configuration.
 @MainActor
 final class SmartShortcutHandler {
-    
+
     // MARK: - Types
-    
+
     enum Action {
         case startRecording
         case stopRecording
     }
-    
+
     // MARK: - Properties
-    
-    public private(set) var isPressed = false
+
+    private(set) var isPressed = false
     private var pressStartTime: Date?
     private var wasRecordingAtPress = false
     private var startedRecording = false
-    
+
     // Double Tap State
     private var lastTapTime: Date?
     private var lastTapWasRecording = false
-    
+
     // MARK: - Configuration
-    
+
     private let holdThreshold: TimeInterval
     private let doubleTapInterval: TimeInterval
-    
+
     // MARK: - Callbacks
-    
+
     private let actionHandler: (Action) -> Void
     private let isRecordingProvider: () -> Bool
-    
+
     // MARK: - Initialization
-    
+
     init(
         holdThreshold: TimeInterval = 0.35,
         doubleTapInterval: TimeInterval = 0.25,
@@ -49,9 +50,9 @@ final class SmartShortcutHandler {
         self.isRecordingProvider = isRecordingProvider
         self.actionHandler = actionHandler
     }
-    
+
     // MARK: - Public API
-    
+
     func reset() {
         isPressed = false
         pressStartTime = nil
@@ -60,7 +61,7 @@ final class SmartShortcutHandler {
         lastTapTime = nil
         lastTapWasRecording = false
     }
-    
+
     func handleShortcutDown(activationMode: ShortcutActivationMode) {
         switch activationMode {
         case .toggle:
@@ -73,7 +74,7 @@ final class SmartShortcutHandler {
             break // Handled on Up
         }
     }
-    
+
     func handleShortcutUp(activationMode: ShortcutActivationMode) {
         switch activationMode {
         case .hold:
@@ -90,21 +91,21 @@ final class SmartShortcutHandler {
     func handleModifierChange(isActive: Bool) {
         if isActive, !isPressed {
             isPressed = true
-            // We need to know the current activation mode to decide what to do. 
-            // Since this method doesn't take it, the caller should trigger the 'Down' 
+            // We need to know the current activation mode to decide what to do.
+            // Since this method doesn't take it, the caller should trigger the 'Down'
             // action if appropriate.
-            // *Design Decision*: This helper tracks the state, but the caller 
+            // *Design Decision*: This helper tracks the state, but the caller
             // essentially drives the 'Down'/'Up' calls based on this state change.
-            // For now, let's assume the caller handles the async Task dispatch 
+            // For now, let's assume the caller handles the async Task dispatch
             // and calls handleShortcutDown.
         } else if !isActive, isPressed {
             isPressed = false
             // Caller handles 'Up'
         }
     }
-    
+
     // MARK: - Private Logic
-    
+
     private func toggleRecording() {
         if isRecordingProvider() {
             actionHandler(.stopRecording)
@@ -112,11 +113,11 @@ final class SmartShortcutHandler {
             actionHandler(.startRecording)
         }
     }
-    
+
     private func handleHoldDown() {
         pressStartTime = Date()
         wasRecordingAtPress = isRecordingProvider()
-        
+
         if !isRecordingProvider() {
             startedRecording = true
             actionHandler(.startRecording)
@@ -124,18 +125,18 @@ final class SmartShortcutHandler {
             startedRecording = false
         }
     }
-    
+
     private func handleHoldUp() {
         if startedRecording {
             actionHandler(.stopRecording)
         }
         resetHoldState()
     }
-    
+
     private func handleHoldOrToggleDown() {
         pressStartTime = Date()
         wasRecordingAtPress = isRecordingProvider()
-        
+
         if isRecordingProvider() {
             actionHandler(.stopRecording)
             startedRecording = false
@@ -144,10 +145,10 @@ final class SmartShortcutHandler {
             actionHandler(.startRecording)
         }
     }
-    
+
     private func handleHoldOrToggleUp() {
         guard let startTime = pressStartTime else { return }
-        
+
         if !wasRecordingAtPress {
             let heldDuration = Date().timeIntervalSince(startTime)
             if heldDuration >= holdThreshold, startedRecording {
@@ -156,24 +157,24 @@ final class SmartShortcutHandler {
         }
         resetHoldState()
     }
-    
+
     private func handleDoubleTapUp() {
         let now = Date()
         let isRecording = isRecordingProvider()
-        
-        if let lastTapTime = lastTapTime,
+
+        if let lastTapTime,
            now.timeIntervalSince(lastTapTime) <= doubleTapInterval,
            lastTapWasRecording == isRecording
         {
             self.lastTapTime = nil
-            self.lastTapWasRecording = false
+            lastTapWasRecording = false
             toggleRecording()
         } else {
-            self.lastTapTime = now
-            self.lastTapWasRecording = isRecording
+            lastTapTime = now
+            lastTapWasRecording = isRecording
         }
     }
-    
+
     private func resetHoldState() {
         pressStartTime = nil
         wasRecordingAtPress = false
