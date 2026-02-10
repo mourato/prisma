@@ -1,37 +1,21 @@
 # AGENTS.md - Meeting Assistant Development Guide
 
-This file provides the primary operational standards for all AI agents and developers.
+This file defines operational standards for AI agents and developers working in this repository.
 
-## Mandatory: Task lifecycle (worktree-first)
+## Project overview
 
-Every coding task MUST follow the **Worktree-First** workflow to ensure environment isolation and repository integrity. This is the first step of any interaction involving code changes.
+Meeting Assistant is a macOS app focused on local-first meeting capture, transcription, and AI-powered post-processing. The project follows a modular Swift Package architecture and a CLI-first workflow for reproducible local and CI execution.
 
-1. Create a new branch based on `main`.
-2. Create a Git worktree for the task.
-3. Implement and verify changes inside the worktree.
-4. Merge back to `main` and clean up the worktree.
+Core context:
 
-For detailed steps and commands, see `.agents/skills/task-lifecycle/SKILL.md`.
+- Platform: macOS 14+
+- UI approach: SwiftUI-first with AppKit integrations where required (`NSStatusItem`, non-activating overlays)
+- Architecture style: skill-based guidance + modular Clean Architecture boundaries
+- Canonical agent directory: `.agents/` (`.agent` is a compatibility symlink)
 
-## Language policy (project-wide)
+### Module split (B2 standard)
 
-- All documentation must be written in **English**.
-- All code comments must be written in **English**.
-- User-facing UI strings must be localized via `"key".localized` (do not hardcode strings).
-
-Rationale: English-only docs/comments reduce duplication and make the project accessible to external contributors.
-
----
-
-## Project architecture
-
-The project uses a **Skill-Based Architecture**. All logic and patterns are documented in tool-agnostic skills.
-
-> Agent content lives under `.agents/` (canonical). A compatibility symlink `.agent -> .agents` exists for tools that still expect `.agent/`.
-
-### B2 module split (current standard)
-
-`MeetingAssistantCore` is now an aggregation target over specialized modules:
+`MeetingAssistantCore` is an aggregation target over specialized modules:
 
 - `MeetingAssistantCoreCommon` — shared models/utilities/resources (`String.localized`, logging, helpers)
 - `MeetingAssistantCoreDomain` — entities, protocols, use cases
@@ -42,38 +26,9 @@ The project uses a **Skill-Based Architecture**. All logic and patterns are docu
 - `MeetingAssistantCoreUI` — view models, coordinators, SwiftUI/AppKit presentation
 - `MeetingAssistantCore` — compatibility export surface for app/test imports
 
-Rules:
+## Build and test commands
 
-- Add imports only for modules actually required by the file.
-- Prefer dependency inversion through domain protocols over direct cross-module concrete types.
-- When moving types between modules, update access control deliberately (`public` only when required).
-- Keep test targets aligned with module ownership when internals are exercised.
-
-## Platform target
-
-- Minimum supported version: macOS 14
-- UI approach: SwiftUI-first, with AppKit where needed (menu bar `NSStatusItem`, non-activating overlays, etc.)
-
-## Design system (UI)
-
-We use a lightweight, SwiftUI-first design system to keep UI consistent and DRY:
-
-- Tokens: `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreUI/DesignSystem/MeetingAssistantDesignSystem.swift`
-- Components: `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreUI/DesignSystem/Components/`
-
-Rules of thumb:
-
-- Prefer semantic colors (`.primary`, `.secondary`, materials) and DS tokens over hardcoded `Color(...)`.
-- Prefer DS spacing/radius constants over magic numbers.
-- Prefer DS components (cards, groups, callouts) over ad-hoc styling.
-- UI strings must be localized via `"key".localized` (never hardcode user-facing strings).
-
-Public components (v1):
-
-- `MACard`, `MAGroup`, `MAToggleRow`, `MACallout`, `MABadge`, `MAActionButton`, `MAThemePicker`
-- Use `MA*` components directly in Settings (legacy `Settings*` aliases were removed)
-
-## Build commands
+Primary build/release commands:
 
 ```bash
 make build
@@ -81,10 +36,6 @@ make run
 make build-release
 make dmg
 ```
-
-### CLI-first workflow
-
-All builds/tests/releases run via CLI for consistency with CI.
 
 Quick start:
 
@@ -98,9 +49,9 @@ Common workflows:
 - Development: `make build && make run`
 - Testing: `make test`
 - Release: `make lint && make test && make build-release && make dmg`
-- CI: `make ci-build` (includes `make arch-check`)
+- CI-style local check: `make ci-build` (includes `make arch-check`)
 
-## Lint & format
+Lint and formatting:
 
 ```bash
 ./scripts/lint.sh
@@ -109,9 +60,38 @@ make arch-check
 make format
 ```
 
-Note: formatting is not run implicitly on every build. Run `make format` (or `make lint-fix`) when you want to auto-format.
+Formatting is not implicit on every build; run `make format` (or `make lint-fix`) when needed.
 
-## Testing
+## Code style guidelines
+
+Language and localization policy:
+
+- All documentation must be written in English.
+- All code comments must be written in English.
+- User-facing strings must be localized via `"key".localized` (never hardcode UI strings).
+
+General style and architecture rules:
+
+- Import only modules required by each file.
+- Prefer dependency inversion through domain protocols over direct cross-module concrete dependencies.
+- When moving types between modules, review access control deliberately (`public` only when required).
+- Keep tests aligned with module ownership when internals are exercised.
+
+UI design-system rules:
+
+- Prefer semantic colors (`.primary`, `.secondary`, materials) and design-system tokens over hardcoded `Color(...)`.
+- Prefer design-system spacing/radius tokens over magic numbers.
+- Prefer design-system components over ad-hoc container styling.
+- Use `MA*` components directly in Settings (`MACard`, `MAGroup`, `MAToggleRow`, `MACallout`, `MABadge`, `MAActionButton`, `MAThemePicker`).
+
+Design-system references:
+
+- Tokens: `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreUI/DesignSystem/MeetingAssistantDesignSystem.swift`
+- Components: `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreUI/DesignSystem/Components/`
+
+## Testing instructions
+
+Use CLI-driven tests for consistency with CI:
 
 ```bash
 make test
@@ -122,30 +102,64 @@ make test-verbose
 make ci-test
 ```
 
-## Worktree-first development (mandatory)
+Minimum verification before merging:
 
-From the `main/` worktree, start every task like this:
+- `make test`
+- `make build`
+
+## Security considerations
+
+- Never hardcode secrets, API keys, or tokens in source code, test fixtures, scripts, or docs.
+- Use Keychain-backed secret handling patterns and providers when credentials are required.
+- Apply least-privilege thinking for entitlements, capabilities, and integrations.
+- Validate and sanitize external input at module boundaries (network payloads, file content, provider responses).
+- Avoid logging sensitive data (keys, tokens, full transcripts, personal identifiers).
+- Follow `.agents/rules/security.md` and `.agents/skills/keychain-security/` for concrete implementation guidance.
+
+## Task lifecycle (mandatory, worktree-first)
+
+Every coding task must run in an isolated Git worktree.
+
+Start from the `main/` worktree:
 
 ```bash
 git worktree add -b <branch-name> ../<worktree-folder> main
 cd ../<worktree-folder>
 ```
 
-Verify inside the worktree:
+Workflow:
 
-- `make test`
-- `make build`
+1. Create a branch from `main`.
+2. Create and switch to a worktree for that branch.
+3. Implement and verify changes inside the worktree.
+4. Merge back to `main`.
+5. Remove the temporary worktree and branch.
+6. Run `git worktree prune`.
 
-Finalize:
+Detailed procedures:
 
-- Merge to `main`
-- Remove the worktree folder
-- `git worktree prune`
-- Delete the temporary branch
+- `.agents/skills/task-lifecycle/SKILL.md`
+- `.agents/skills/git-workflow/SKILL.md`
+- `.agents/skills/git-worktree/SKILL.md`
 
-For detailed instructions, see `.agents/skills/git-workflow/SKILL.md` and `.agents/skills/git-worktree/SKILL.md`.
+## Project structure
 
-## Rules index
+- `App/` — main app target (entry point, Info.plist, entitlements)
+- `Packages/MeetingAssistantCore/` — Swift package root
+- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreCommon/` — shared utilities/resources
+- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreDomain/` — domain layer
+- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreInfrastructure/` — infrastructure layer
+- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreData/` — data layer
+- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreAudio/` — audio subsystem
+- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreAI/` — AI/transcription subsystem
+- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreUI/` — UI/presentation layer
+- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/` — compatibility exports
+- `docs/` — technical documentation
+- `.agents/` — agent rules and skills (canonical)
+
+## Extended references
+
+Rules index:
 
 | Document | What it covers |
 |----------|----------------|
@@ -164,9 +178,7 @@ For detailed instructions, see `.agents/skills/git-workflow/SKILL.md` and `.agen
 | `.agents/rules/testing.md` | Testing guidelines |
 | `.agents/rules/type-security.md` | Type safety patterns |
 
-## Skills index (conditional)
-
-Skills are loaded when specific contexts are detected. See `.agents/skills/` for full guides.
+Skills index (loaded conditionally):
 
 | Skill | Trigger |
 |-------|---------|
@@ -183,18 +195,3 @@ Skills are loaded when specific contexts are detected. See `.agents/skills/` for
 | `.agents/skills/swift-package-manager/` | Package.swift, SPM dependencies |
 | `.agents/skills/swiftui-patterns/` | SwiftUI views, @State, NavigationStack |
 | `.agents/skills/testing-xctest/` | XCTest, @Test, mock, XCTAssert |
-
-## Project structure
-
-- `App/` — Main app target (entry point, Info.plist, entitlements)
-- `Packages/MeetingAssistantCore/` — Swift package root
-- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreCommon/` — shared utilities/resources
-- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreDomain/` — domain layer
-- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreInfrastructure/` — infrastructure layer
-- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreData/` — data layer
-- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreAudio/` — audio subsystem
-- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreAI/` — AI/transcription subsystem
-- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreUI/` — UI/presentation layer
-- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/` — compatibility exports
-- `docs/` — Technical documentation
-- `.agents/` — Agent rules and skills (canonical)
