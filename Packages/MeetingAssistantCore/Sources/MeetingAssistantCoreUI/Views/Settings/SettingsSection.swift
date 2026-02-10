@@ -1,10 +1,10 @@
-import SwiftUI
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
+import SwiftUI
 
 // MARK: - Settings Section Enum
 
@@ -28,14 +28,14 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
         .dictation,
         .assistant,
         .meetings,
-        .transcriptions
+        .transcriptions,
     ]
 
     public static let settingsSections: [SettingsSection] = [
         .general,
         .enhancements,
         .audio,
-        .permissions
+        .permissions,
     ]
 
     public var title: String {

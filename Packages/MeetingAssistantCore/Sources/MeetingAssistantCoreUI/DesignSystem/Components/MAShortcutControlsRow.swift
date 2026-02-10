@@ -1,10 +1,10 @@
-import SwiftUI
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
+import SwiftUI
 
 public struct MAShortcutControlsRow: View {
     private let title: String
@@ -19,9 +19,9 @@ public struct MAShortcutControlsRow: View {
         presetPickerWidth: CGFloat = MeetingAssistantDesignSystem.Layout.smallPickerWidth
     ) {
         self.title = title
-        self.activationMode = nil
+        activationMode = nil
         self.selectedPresetKey = selectedPresetKey
-        self.activationPickerWidth = MeetingAssistantDesignSystem.Layout.narrowPickerWidth
+        activationPickerWidth = MeetingAssistantDesignSystem.Layout.narrowPickerWidth
         self.presetPickerWidth = presetPickerWidth
     }
 

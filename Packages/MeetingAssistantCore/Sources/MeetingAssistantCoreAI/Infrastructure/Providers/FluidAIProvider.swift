@@ -1,6 +1,6 @@
 import Foundation
-import MeetingAssistantCoreInfrastructure
 import MeetingAssistantCoreDomain
+import MeetingAssistantCoreInfrastructure
 
 /// Infrastructure adapter for FluidAudio local transcription.
 public final class FluidAIProvider: AIInfrastructureProvider, Sendable {

@@ -1,10 +1,10 @@
-import SwiftUI
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
+import SwiftUI
 
 /// An expandable card for a transcription item.
 public struct TranscriptionCardView: View {
@@ -287,7 +287,7 @@ private extension Transcription {
             meeting: Meeting(
                 app: .googleMeet,
                 state: .completed,
-                startTime: Date().addingTimeInterval(-1200),
+                startTime: Date().addingTimeInterval(-1_200),
                 endTime: Date().addingTimeInterval(-600),
                 audioFilePath: nil
             ),

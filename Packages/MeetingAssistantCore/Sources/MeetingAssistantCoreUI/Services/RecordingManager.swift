@@ -1,14 +1,14 @@
 import AVFoundation
 import Combine
 import Foundation
-import os.log
-import UserNotifications
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
+import os.log
+import UserNotifications
 
 /// Central manager coordinating recording, meeting detection, and transcription.
 /// Orchestrates microphone and system audio recording with post-processing merge.
@@ -164,13 +164,13 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
 }
 
-extension RecordingManager {
+public extension RecordingManager {
 
-    public func checkPermission() async {
+    func checkPermission() async {
         await checkPermission(for: recordingSource)
     }
 
-    public func checkPermission(for source: RecordingSource) async {
+    func checkPermission(for source: RecordingSource) async {
         let micPermission = await micRecorder.hasPermission()
         let screenPermission = await systemRecorder.hasPermission()
         let accessibilityState = AccessibilityPermissionService.currentState()
@@ -193,11 +193,11 @@ extension RecordingManager {
     }
 
     /// Request permissions required for the provided source.
-    public func requestPermission() async {
+    func requestPermission() async {
         await requestPermission(for: recordingSource)
     }
 
-    public func requestPermission(for source: RecordingSource) async {
+    func requestPermission(for source: RecordingSource) async {
         if source.requiresMicrophonePermission {
             await micRecorder.requestPermission()
         }
@@ -208,21 +208,21 @@ extension RecordingManager {
     }
 
     /// Open System Preferences to Screen Recording settings.
-    public func openPermissionSettings() {
+    func openPermissionSettings() {
         systemRecorder.openSettings()
     }
 
     /// Open System Preferences to Microphone settings.
-    public func openMicrophoneSettings() {
+    func openMicrophoneSettings() {
         micRecorder.openSettings()
     }
 
-    public func requestAccessibilityPermission() {
+    func requestAccessibilityPermission() {
         AccessibilityPermissionService.requestPermission()
         permissionStatus.updateAccessibilityState(AccessibilityPermissionService.currentState())
     }
 
-    public func openAccessibilitySettings() {
+    func openAccessibilitySettings() {
         AccessibilityPermissionService.openSystemSettings()
     }
 
@@ -231,7 +231,7 @@ extension RecordingManager {
     /// Start recording audio for a meeting.
     /// - Parameters:
     ///   - source: The audio source to record.
-    public func startRecording(source: RecordingSource = .microphone) async {
+    func startRecording(source: RecordingSource = .microphone) async {
         guard !isRecording else {
             AppLogger.info("Attempted to start recording but already recording", category: .recordingManager)
             return
@@ -286,7 +286,7 @@ extension RecordingManager {
         return settings.meetingTypeAutoDetectEnabled ? .autodetect : .general
     }
 
-    public func overrideCurrentMeetingType(_ type: MeetingType) {
+    func overrideCurrentMeetingType(_ type: MeetingType) {
         guard isRecording, var meeting = currentMeeting else { return }
         meeting.type = type
         currentMeeting = meeting
@@ -353,11 +353,11 @@ extension RecordingManager {
     }
 
     /// Stop recording and optionally transcribe.
-    public func stopRecording() async {
+    func stopRecording() async {
         await stopRecording(transcribe: true)
     }
 
-    public func stopRecording(transcribe: Bool = true) async {
+    func stopRecording(transcribe: Bool = true) async {
         guard isRecording else {
             AppLogger.info("Attempted to stop recording but not recording", category: .recordingManager)
             return
@@ -416,7 +416,7 @@ extension RecordingManager {
     }
 
     /// Cancel recording and discard audio files.
-    public func cancelRecording() async {
+    func cancelRecording() async {
         guard isRecording else { return }
 
         AppLogger.info("Cancelling recording...", category: .recordingManager)
@@ -445,7 +445,7 @@ extension RecordingManager {
 
     /// Transcribe an externally recorded audio file.
     /// - Parameter audioURL: Path to the audio file (m4a, mp3, wav).
-    public func transcribeExternalAudio(from audioURL: URL) async {
+    func transcribeExternalAudio(from audioURL: URL) async {
         guard !isTranscribing else {
             AppLogger.info("Already transcribing", category: .recordingManager)
             return
@@ -490,7 +490,7 @@ extension RecordingManager {
     }
 
     /// Enable automatic recording when meetings are detected.
-    func enableAutoRecording() {
+    internal func enableAutoRecording() {
         meetingDetector.startMonitoring()
 
         // Watch for detected meetings
@@ -729,15 +729,16 @@ extension RecordingManager {
         let settings = AppSettingsStore.shared
         guard settings.contextAwarenessEnabled else { return nil }
 
-        let snapshot = contextAwarenessService.captureSnapshot(options: .init(
-            includeActiveApp: true,
-            includeClipboard: settings.contextAwarenessIncludeClipboard,
-            includeWindowOCR: settings.contextAwarenessIncludeWindowOCR,
-            includeAccessibilityText: true,
-            protectSensitiveApps: settings.contextAwarenessProtectSensitiveApps,
-            redactSensitiveData: settings.contextAwarenessRedactSensitiveData,
-            excludedBundleIDs: settings.contextAwarenessExcludedBundleIDs
-        )
+        let snapshot = contextAwarenessService.captureSnapshot(
+            options: .init(
+                includeActiveApp: true,
+                includeClipboard: settings.contextAwarenessIncludeClipboard,
+                includeWindowOCR: settings.contextAwarenessIncludeWindowOCR,
+                includeAccessibilityText: true,
+                protectSensitiveApps: settings.contextAwarenessProtectSensitiveApps,
+                redactSensitiveData: settings.contextAwarenessRedactSensitiveData,
+                excludedBundleIDs: settings.contextAwarenessExcludedBundleIDs
+            )
         )
         return contextAwarenessService.makePostProcessingContext(from: snapshot)
     }
@@ -812,7 +813,9 @@ extension RecordingManager {
         let content = MarkdownRenderer().renderWithTemplate(template, meeting: transcription.meeting, transcription: transcription)
 
         let dateFormatter = DateFormatter()
-        dateFormatter.locale = Locale(identifier: "en_US_POSIX"); dateFormatter.timeZone = .current; dateFormatter.dateFormat = "yyyy-MM-dd"
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+        dateFormatter.timeZone = .current
+        dateFormatter.dateFormat = "yyyy-MM-dd"
         let dateStr = dateFormatter.string(from: transcription.meeting.startTime)
 
         let meetingTitle: String = {

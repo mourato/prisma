@@ -1,4 +1,5 @@
 import MeetingAssistantCoreDomain
+
 // CoreDataModel - Definição programática do modelo CoreData
 // Permite versionamento e migração automática seguindo Clean Architecture
 

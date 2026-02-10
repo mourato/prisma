@@ -1,12 +1,12 @@
 import Charts
 import Combine
-import SwiftUI
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
+import SwiftUI
 
 public struct MetricsDashboardSettingsTab: View {
     @StateObject private var viewModel = MetricsDashboardViewModel()

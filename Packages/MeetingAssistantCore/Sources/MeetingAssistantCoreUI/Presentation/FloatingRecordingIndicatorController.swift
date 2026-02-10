@@ -1,12 +1,12 @@
 import AppKit
 import Combine
-import SwiftUI
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
+import SwiftUI
 
 /// Mode for the floating indicator.
 public enum FloatingRecordingIndicatorMode: Sendable {
