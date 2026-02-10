@@ -730,10 +730,10 @@ extension RecordingManager {
         guard settings.contextAwarenessEnabled else { return nil }
 
         let snapshot = contextAwarenessService.captureSnapshot(options: .init(
-            includeActiveApp: settings.contextAwarenessIncludeActiveApp,
+            includeActiveApp: true,
             includeClipboard: settings.contextAwarenessIncludeClipboard,
             includeWindowOCR: settings.contextAwarenessIncludeWindowOCR,
-            includeAccessibilityText: settings.contextAwarenessIncludeAccessibilityText,
+            includeAccessibilityText: true,
             protectSensitiveApps: settings.contextAwarenessProtectSensitiveApps,
             redactSensitiveData: settings.contextAwarenessRedactSensitiveData,
             excludedBundleIDs: settings.contextAwarenessExcludedBundleIDs
