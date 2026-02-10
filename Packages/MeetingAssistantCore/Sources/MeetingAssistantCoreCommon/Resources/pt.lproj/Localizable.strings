@@ -3,7 +3,7 @@
 "settings.section.general" = "Geral";
 "settings.section.dictation" = "Ditado";
 "settings.section.meetings" = "Reuniões";
-"settings.section.audio" = "Áudio e Som";
+"settings.section.audio" = "Som";
 "settings.section.transcriptions" = "Transcrições";
 "settings.section.history" = "Histórico";
 "settings.section.assistant" = "Assistant";
@@ -484,6 +484,8 @@
 "settings.general.device_default" = "Padrão";
 "settings.general.mute_output_during_recording" = "Silenciar Saída Durante Gravação";
 "settings.general.mute_output_desc" = "Silencia o áudio do sistema enquanto uma gravação está em andamento.";
+"settings.general.auto_increase_microphone_volume" = "Aumentar automaticamente o volume do microfone";
+"settings.general.auto_increase_microphone_volume_tooltip" = "Define o volume de entrada do microfone no máximo ao iniciar uma gravação. Só funciona ao usar o dispositivo padrão do sistema.";
 
 /* Transcribe File */
 "transcribe.import_audio" = "Importar Áudio";

@@ -220,4 +220,57 @@ public final class AudioDeviceManager: ObservableObject {
         guard status == noErr else { return nil }
         return mute != 0
     }
+
+    /// Attempts to set the system default input device volume to maximum (1.0).
+    /// Returns true when at least one input volume property is successfully updated.
+    public nonisolated func setDefaultInputVolumeToMaximum() -> Bool {
+        guard let deviceID = getDefaultInputDeviceID() else { return false }
+        return setInputVolume(for: deviceID, to: 1.0)
+    }
+
+    /// Attempts to set input volume for the provided device.
+    /// Returns true when at least one volume property is successfully updated.
+    public nonisolated func setInputVolume(for id: AudioObjectID, to scalar: Float) -> Bool {
+        let volume = max(0.0, min(1.0, scalar))
+        var didSetAny = false
+
+        // Try "master" element first.
+        if setInputVolumeScalar(for: id, element: kAudioObjectPropertyElementMain, volume: volume) {
+            didSetAny = true
+        }
+
+        // If the device exposes per-channel controls, set each channel too.
+        if let channelCount = getInputChannelCount(for: id), channelCount > 0 {
+            for channel in 1...channelCount {
+                if setInputVolumeScalar(for: id, element: UInt32(channel), volume: volume) {
+                    didSetAny = true
+                }
+            }
+        }
+
+        return didSetAny
+    }
+
+    private nonisolated func setInputVolumeScalar(
+        for id: AudioObjectID,
+        element: UInt32,
+        volume: Float
+    ) -> Bool {
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyVolumeScalar,
+            mScope: kAudioDevicePropertyScopeInput,
+            mElement: element
+        )
+
+        guard AudioObjectHasProperty(id, &address) else { return false }
+
+        var settable = DarwinBoolean(false)
+        let settableStatus = AudioObjectIsPropertySettable(id, &address, &settable)
+        guard settableStatus == noErr, settable.boolValue else { return false }
+
+        var mutableVolume = volume
+        let size = UInt32(MemoryLayout<Float>.size)
+        let status = AudioObjectSetPropertyData(id, &address, 0, nil, size, &mutableVolume)
+        return status == noErr
+    }
 }

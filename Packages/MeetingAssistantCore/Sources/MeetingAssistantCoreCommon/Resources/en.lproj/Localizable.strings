@@ -3,7 +3,7 @@
 "settings.section.general" = "General";
 "settings.section.dictation" = "Dictation";
 "settings.section.meetings" = "Meetings";
-"settings.section.audio" = "Audio & Sound";
+"settings.section.audio" = "Sound";
 "settings.section.transcriptions" = "Transcriptions";
 "settings.section.history" = "History";
 "settings.section.assistant" = "Assistant";
@@ -487,6 +487,8 @@
 "settings.general.device_default" = "Default";
 "settings.general.mute_output_during_recording" = "Mute Output During Recording";
 "settings.general.mute_output_desc" = "Mutes system audio during Dictation and Assistant recordings.";
+"settings.general.auto_increase_microphone_volume" = "Automatically increase microphone volume";
+"settings.general.auto_increase_microphone_volume_tooltip" = "Sets microphone input volume to max when starting a recording. Only works if using system default device.";
 
 /* Transcribe File */
 "transcribe.import_audio" = "Import Audio";
