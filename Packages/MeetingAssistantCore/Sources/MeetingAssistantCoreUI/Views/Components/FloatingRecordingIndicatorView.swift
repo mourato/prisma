@@ -25,30 +25,7 @@ public struct FloatingRecordingIndicatorView: View {
     @State private var isPromptRegionHovered = false
     @State private var isPromptSessionArmed = false
 
-    private enum IndicatorMetrics {
-        static let classicHeight: CGFloat = 42
-        static let miniHeight: CGFloat = 38
-
-        static let classicPromptSize: CGFloat = 42
-        static let miniPromptSize: CGFloat = 38
-
-        static let classicInnerSpacing: CGFloat = 12
-        static let miniInnerSpacing: CGFloat = 8
-
-        static let classicWaveCount = 18
-        static let miniWaveCount = 9
-
-        static let classicWaveHeight: CGFloat = 26
-        static let miniWaveHeight: CGFloat = 16
-
-        static let waveformBarWidth: CGFloat = 2
-        static let waveformBarSpacing: CGFloat = 2
-        static let waveformMinHeight: CGFloat = 2
-
-        static let dotSize: CGFloat = 8
-        static let promptGap: CGFloat = 2
-        static let sidePadding: CGFloat = 16
-    }
+    // Removed IndicatorMetrics in favor of MeetingAssistantDesignSystem.Layout
 
     public init(
         audioMonitor: AudioLevelMonitor,
@@ -95,7 +72,7 @@ public struct FloatingRecordingIndicatorView: View {
 
     private func indicatorPill(size: IndicatorSize) -> some View {
         ZStack(alignment: .top) {
-            HStack(spacing: IndicatorMetrics.promptGap) {
+            HStack(spacing: MeetingAssistantDesignSystem.Layout.recordingIndicatorPromptGap) {
                 mainPill(size: size)
 
                 if isRecordingMode {
@@ -185,16 +162,16 @@ public struct FloatingRecordingIndicatorView: View {
     private func statusDot(for size: IndicatorSize) -> some View {
         return Circle()
             .fill(isRecordingMode ? MeetingAssistantDesignSystem.Colors.recording : MeetingAssistantDesignSystem.Colors.accent)
-            .frame(width: IndicatorMetrics.dotSize, height: IndicatorMetrics.dotSize)
+            .frame(width: MeetingAssistantDesignSystem.Layout.recordingIndicatorDotSize, height: MeetingAssistantDesignSystem.Layout.recordingIndicatorDotSize)
             .modifier(PulsingModifier(isActive: isRecordingMode, speed: isRecordingMode ? 0.9 : 1.4))
     }
 
     private func controlHeight(for size: IndicatorSize) -> CGFloat {
         switch size {
         case .classic:
-            IndicatorMetrics.classicHeight
+            MeetingAssistantDesignSystem.Layout.recordingIndicatorClassicHeight
         case .mini:
-            IndicatorMetrics.miniHeight
+            MeetingAssistantDesignSystem.Layout.recordingIndicatorMiniHeight
         }
     }
 
@@ -262,11 +239,12 @@ public struct FloatingRecordingIndicatorView: View {
             AudioVisualizer(
                 audioMeter: audioMonitor.audioMeter,
                 mode: visualizerModeForIndicator,
+                mode: visualizerModeForIndicator,
                 barCount: waveCount(for: size),
                 maxHeight: waveformHeight(for: size),
-                barWidth: IndicatorMetrics.waveformBarWidth,
-                barSpacing: IndicatorMetrics.waveformBarSpacing,
-                minHeight: IndicatorMetrics.waveformMinHeight
+                barWidth: MeetingAssistantDesignSystem.Layout.recordingIndicatorWaveformBarWidth,
+                barSpacing: MeetingAssistantDesignSystem.Layout.recordingIndicatorWaveformBarSpacing,
+                minHeight: MeetingAssistantDesignSystem.Layout.recordingIndicatorWaveformMinHeight
             )
 
             if isRecordingMode, isMeetingRecording {
@@ -383,7 +361,7 @@ public struct FloatingRecordingIndicatorView: View {
                 trailingControl
             }
         }
-        .padding(.horizontal, IndicatorMetrics.sidePadding)
+        .padding(.horizontal, MeetingAssistantDesignSystem.Layout.recordingIndicatorSidePadding)
         .frame(height: controlHeight(for: size))
         .background(MeetingAssistantDesignSystem.Colors.overlayBackground)
         .clipShape(Capsule())
@@ -461,45 +439,45 @@ public struct FloatingRecordingIndicatorView: View {
     private func contentSpacing(for size: IndicatorSize) -> CGFloat {
         switch size {
         case .classic:
-            return IndicatorMetrics.classicInnerSpacing
+            return MeetingAssistantDesignSystem.Layout.recordingIndicatorClassicInnerSpacing
         case .mini:
-            return IndicatorMetrics.miniInnerSpacing
+            return MeetingAssistantDesignSystem.Layout.recordingIndicatorMiniInnerSpacing
         }
     }
 
     private func controlSpacing(for size: IndicatorSize) -> CGFloat {
         switch size {
         case .classic:
-            return IndicatorMetrics.classicInnerSpacing
+            return MeetingAssistantDesignSystem.Layout.recordingIndicatorClassicInnerSpacing
         case .mini:
-            return IndicatorMetrics.miniInnerSpacing
+            return MeetingAssistantDesignSystem.Layout.recordingIndicatorMiniInnerSpacing
         }
     }
 
     private func promptSize(for size: IndicatorSize) -> CGFloat {
         switch size {
         case .classic:
-            return IndicatorMetrics.classicPromptSize
+            return MeetingAssistantDesignSystem.Layout.recordingIndicatorClassicPromptSize
         case .mini:
-            return IndicatorMetrics.miniPromptSize
+            return MeetingAssistantDesignSystem.Layout.recordingIndicatorMiniPromptSize
         }
     }
 
     private func waveformHeight(for size: IndicatorSize) -> CGFloat {
         switch size {
         case .classic:
-            return IndicatorMetrics.classicWaveHeight
+            return MeetingAssistantDesignSystem.Layout.recordingIndicatorClassicWaveHeight
         case .mini:
-            return IndicatorMetrics.miniWaveHeight
+            return MeetingAssistantDesignSystem.Layout.recordingIndicatorMiniWaveHeight
         }
     }
 
     private func waveCount(for size: IndicatorSize) -> Int {
         switch size {
         case .classic:
-            return IndicatorMetrics.classicWaveCount
+            return MeetingAssistantDesignSystem.Layout.recordingIndicatorClassicWaveCount
         case .mini:
-            return IndicatorMetrics.miniWaveCount
+            return MeetingAssistantDesignSystem.Layout.recordingIndicatorMiniWaveCount
         }
     }
 

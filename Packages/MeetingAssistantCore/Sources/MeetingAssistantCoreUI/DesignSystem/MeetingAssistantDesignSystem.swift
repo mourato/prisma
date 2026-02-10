@@ -108,10 +108,33 @@ public enum MeetingAssistantDesignSystem {
         public static let itemSpacing: CGFloat = 12
 
         public static let controlHeight: CGFloat = 44
-        public static let recordingIndicatorMiniHeight: CGFloat = 32
+        public static let recordingIndicatorMiniHeight: CGFloat = 38
+        public static let recordingIndicatorClassicHeight: CGFloat = 42
+
         public static let recordingIndicatorPanelWidth: CGFloat = 380
+
+        // Recording Indicator Metrics
+        public static let recordingIndicatorClassicPromptSize: CGFloat = 42
+        public static let recordingIndicatorMiniPromptSize: CGFloat = 38
+
+        public static let recordingIndicatorClassicInnerSpacing: CGFloat = 12
+        public static let recordingIndicatorMiniInnerSpacing: CGFloat = 8
+
+        public static let recordingIndicatorClassicWaveCount: Int = 18
+        public static let recordingIndicatorMiniWaveCount: Int = 9
+
+        public static let recordingIndicatorClassicWaveHeight: CGFloat = 26
+        public static let recordingIndicatorMiniWaveHeight: CGFloat = 16
+
+        public static let recordingIndicatorWaveformBarWidth: CGFloat = 2
+        public static let recordingIndicatorWaveformBarSpacing: CGFloat = 2
+        public static let recordingIndicatorWaveformMinHeight: CGFloat = 2
         public static let recordingIndicatorWaveformMaxHeight: CGFloat = 26
+
+        public static let recordingIndicatorDotSize: CGFloat = 8
         public static let recordingIndicatorMiniDotSize: CGFloat = 8
+        public static let recordingIndicatorPromptGap: CGFloat = 2
+        public static let recordingIndicatorSidePadding: CGFloat = 16
 
         public static let shadowRadius: CGFloat = 10
         public static let shadowX: CGFloat = 0
