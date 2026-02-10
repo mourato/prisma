@@ -9,6 +9,7 @@ import MeetingAssistantCoreInfrastructure
 /// A unified card for configuring AI provider settings, including status indicators and verification.
 public struct AIProviderIntegrationCard: View {
     @ObservedObject var viewModel: AISettingsViewModel
+    private let runInitialTasks: Bool
 
     /// Binding that properly triggers persistence when selectedModel changes.
     /// Using direct struct mutation ($viewModel.settings.aiConfiguration.selectedModel)
@@ -22,8 +23,12 @@ public struct AIProviderIntegrationCard: View {
         )
     }
 
-    public init(viewModel: AISettingsViewModel) {
+    public init(
+        viewModel: AISettingsViewModel,
+        runInitialTasks: Bool = !PreviewRuntime.isRunning
+    ) {
         self.viewModel = viewModel
+        self.runInitialTasks = runInitialTasks
     }
 
     public var body: some View {
@@ -58,6 +63,7 @@ public struct AIProviderIntegrationCard: View {
             }
         }
         .task {
+            guard runInitialTasks else { return }
             viewModel.refreshProviderCredentialState()
         }
     }
@@ -249,4 +255,49 @@ public struct AIProviderIntegrationCard: View {
         }
         .padding(.top, MeetingAssistantDesignSystem.Layout.spacing8)
     }
+}
+
+private struct PreviewKeychainProvider: KeychainProvider {
+    func store(_ value: String, for key: KeychainManager.Key) throws {}
+    func retrieve(for key: KeychainManager.Key) throws -> String? { nil }
+    func delete(for key: KeychainManager.Key) throws {}
+    func exists(for key: KeychainManager.Key) -> Bool { false }
+    func retrieveAPIKey(for provider: AIProvider) throws -> String? { nil }
+    func existsAPIKey(for provider: AIProvider) -> Bool { false }
+}
+
+private struct PreviewLLMService: LLMService {
+    func validateURL(_ urlString: String) -> URL? { URL(string: "https://api.openai.com/v1") }
+    func fetchAvailableModels(baseURL: URL, apiKey: String, provider: AIProvider) async throws -> [LLMModel] { [] }
+    func testConnection(baseURL: URL, apiKey: String) async throws -> Bool { true }
+}
+
+@MainActor
+private struct AIProviderIntegrationCardPreview: View {
+    @StateObject private var viewModel: AISettingsViewModel
+
+    init() {
+        let viewModel = AISettingsViewModel(
+            settings: .shared,
+            keychain: PreviewKeychainProvider(),
+            llmService: PreviewLLMService()
+        )
+        viewModel.settings.aiConfiguration.provider = .openai
+        viewModel.settings.aiConfiguration.baseURL = AIProvider.openai.defaultBaseURL
+        viewModel.settings.updateSelectedModel("gpt-4o-mini")
+        viewModel.apiKeyText = "sk-preview-key"
+        viewModel.connectionStatus = .unknown
+        viewModel.availableModels = []
+        _viewModel = StateObject(wrappedValue: viewModel)
+    }
+
+    var body: some View {
+        AIProviderIntegrationCard(viewModel: viewModel, runInitialTasks: false)
+            .padding()
+            .frame(width: 760)
+    }
+}
+
+#Preview("AI Provider Integration") {
+    AIProviderIntegrationCardPreview()
 }

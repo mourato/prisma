@@ -53,3 +53,16 @@ public struct MAToggleRow: View {
         }
     }
 }
+
+#Preview("Toggle Row") {
+    PreviewStateContainer(true) { isOn in
+        MAToggleRow(
+            "Enable smart post-processing",
+            description: "Automatically format transcript output after each recording.",
+            tooltip: "This can increase processing time for larger meetings.",
+            isOn: isOn
+        )
+        .padding()
+        .frame(width: 520)
+    }
+}
