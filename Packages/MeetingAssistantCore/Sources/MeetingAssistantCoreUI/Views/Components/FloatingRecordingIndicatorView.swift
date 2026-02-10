@@ -27,23 +27,23 @@ public struct FloatingRecordingIndicatorView: View {
 
     private enum IndicatorMetrics {
         static let classicHeight: CGFloat = 42
-        static let miniHeight: CGFloat = 32
+        static let miniHeight: CGFloat = 38
 
         static let classicPromptSize: CGFloat = 42
-        static let miniPromptSize: CGFloat = 32
+        static let miniPromptSize: CGFloat = 38
 
         static let classicInnerSpacing: CGFloat = 12
         static let miniInnerSpacing: CGFloat = 8
 
-        static let classicWaveCount = 17
+        static let classicWaveCount = 18
         static let miniWaveCount = 9
 
         static let classicWaveHeight: CGFloat = 26
         static let miniWaveHeight: CGFloat = 16
 
-        static let waveformBarWidth: CGFloat = 2.5
+        static let waveformBarWidth: CGFloat = 2
         static let waveformBarSpacing: CGFloat = 2
-        static let waveformMinHeight: CGFloat = 4
+        static let waveformMinHeight: CGFloat = 2
 
         static let dotSize: CGFloat = 8
         static let promptGap: CGFloat = 2
@@ -86,7 +86,7 @@ public struct FloatingRecordingIndicatorView: View {
         }
     }
 
-    // MARK: - Indicator Pill (Figma)
+    // MARK: - Indicator Pill
 
     private enum IndicatorSize {
         case classic
@@ -174,7 +174,7 @@ public struct FloatingRecordingIndicatorView: View {
                 Image(systemName: "trash")
                     .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(MeetingAssistantDesignSystem.Colors.overlayForeground)
-                    .frame(width: 20, height: 20)
+                    .frame(width: 20, height: 16)
             }
             .buttonStyle(.plain)
             .help("recording_indicator.cancel.help".localized)
