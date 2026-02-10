@@ -21,6 +21,31 @@ public struct FloatingRecordingIndicatorView: View {
     @State private var isHovering = false
     @State private var hoverCollapseTask: Task<Void, Never>?
 
+    private enum IndicatorMetrics {
+        static let classicHeight: CGFloat = 42
+        static let miniHeight: CGFloat = 32
+
+        static let classicPromptSize: CGFloat = 42
+        static let miniPromptSize: CGFloat = 32
+
+        static let classicInnerSpacing: CGFloat = 12
+        static let miniInnerSpacing: CGFloat = 8
+
+        static let classicWaveCount = 17
+        static let miniWaveCount = 9
+
+        static let classicWaveHeight: CGFloat = 26
+        static let miniWaveHeight: CGFloat = 16
+
+        static let waveformBarWidth: CGFloat = 2.5
+        static let waveformBarSpacing: CGFloat = 2
+        static let waveformMinHeight: CGFloat = 4
+
+        static let dotSize: CGFloat = 8
+        static let promptGap: CGFloat = 2
+        static let sidePadding: CGFloat = 16
+    }
+
     public init(
         audioMonitor: AudioLevelMonitor,
         style: RecordingIndicatorStyle,
@@ -65,75 +90,16 @@ public struct FloatingRecordingIndicatorView: View {
     }
 
     private func indicatorPill(size: IndicatorSize) -> some View {
-        let isExpanded = isRecordingMode && isHovering
-        let controlHeight = controlHeight(for: size)
-        let expandedSideWidth = controlHeight + MeetingAssistantDesignSystem.Layout.spacing20
+        ZStack(alignment: .top) {
+            HStack(spacing: IndicatorMetrics.promptGap) {
+                mainPill(size: size)
 
-        return ZStack(alignment: .top) {
-            HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
-                expandedLeadingControls
-                    .modifier(
-                        ExpandedContentVisibility(
-                            isVisible: isExpanded,
-                            expandedWidth: expandedSideWidth
-                        )
-                    )
-
-                divider
-                    .modifier(
-                        ExpandedContentVisibility(
-                            isVisible: isExpanded,
-                            expandedWidth: 1
-                        )
-                    )
-
-                recordingCluster(size: size)
-
-                divider
-                    .modifier(
-                        ExpandedContentVisibility(
-                            isVisible: isExpanded,
-                            expandedWidth: 1
-                        )
-                    )
-
-                expandedTrailingControl
-                    .modifier(
-                        ExpandedContentVisibility(
-                            isVisible: isExpanded,
-                            expandedWidth: expandedSideWidth
-                        )
-                    )
+                if isRecordingMode {
+                    promptSelectionPill(size: size)
+                }
             }
-            .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing16)
-            .frame(height: controlHeight)
-            .background(MeetingAssistantDesignSystem.Colors.overlayBackground)
-            .clipShape(Capsule())
-            .shadow(
-                color: .black.opacity(0.15),
-                radius: MeetingAssistantDesignSystem.Layout.shadowRadius,
-                x: MeetingAssistantDesignSystem.Layout.shadowX,
-                y: MeetingAssistantDesignSystem.Layout.shadowY
-            )
-            .contentShape(Capsule())
             .onHover { hovering in
-                guard isRecordingMode else { return }
-                if hovering {
-                    hoverCollapseTask?.cancel()
-                    withAnimation(.spring(response: 0.22, dampingFraction: 0.86)) {
-                        isHovering = true
-                    }
-                    return
-                }
-
-                hoverCollapseTask?.cancel()
-                hoverCollapseTask = Task { @MainActor in
-                    try? await Task.sleep(nanoseconds: 110_000_000)
-                    guard !Task.isCancelled else { return }
-                    withAnimation(.easeOut(duration: 0.14)) {
-                        isHovering = false
-                    }
-                }
+                updateHoverState(hovering)
             }
             .onDisappear {
                 hoverCollapseTask?.cancel()
@@ -150,21 +116,18 @@ public struct FloatingRecordingIndicatorView: View {
 
     // MARK: - Shared Components
 
-    private var expandedLeadingControls: some View {
-        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+    private var leadingControls: some View {
+        HStack(spacing: controlSpacing(for: currentIndicatorSize)) {
             Button(action: onStop) {
                 Image(systemName: "checkmark")
-                    .font(.callout.weight(.semibold))
+                    .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(MeetingAssistantDesignSystem.Colors.overlayForeground)
-                    .frame(
-                        width: MeetingAssistantDesignSystem.Layout.spacing20,
-                        height: MeetingAssistantDesignSystem.Layout.spacing20
-                    )
+                    .frame(width: 20, height: 20)
             }
             .buttonStyle(.plain)
             .help("recording_indicator.stop.help".localized)
 
-            promptPickerControl
+            divider
         }
     }
 
@@ -196,20 +159,18 @@ public struct FloatingRecordingIndicatorView: View {
     private var divider: some View {
         Rectangle()
             .fill(MeetingAssistantDesignSystem.Colors.overlayDivider)
-            .frame(width: 1, height: MeetingAssistantDesignSystem.Layout.spacing20)
+            .frame(width: 1, height: 20)
     }
 
-    private var expandedTrailingControl: some View {
-        HStack(spacing: 0) {
-            Spacer(minLength: 0)
+    private var trailingControl: some View {
+        HStack(spacing: controlSpacing(for: currentIndicatorSize)) {
+            divider
+
             Button(action: onCancel) {
                 Image(systemName: "trash")
-                    .font(.callout.weight(.semibold))
+                    .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(MeetingAssistantDesignSystem.Colors.overlayForeground)
-                    .frame(
-                        width: MeetingAssistantDesignSystem.Layout.spacing20,
-                        height: MeetingAssistantDesignSystem.Layout.spacing20
-                    )
+                    .frame(width: 20, height: 20)
             }
             .buttonStyle(.plain)
             .help("recording_indicator.cancel.help".localized)
@@ -218,25 +179,18 @@ public struct FloatingRecordingIndicatorView: View {
 
     /// Dot indicating recording or processing (Figma uses 12x12).
     private func statusDot(for size: IndicatorSize) -> some View {
-        let dotSize: CGFloat = switch size {
-        case .classic:
-            MeetingAssistantDesignSystem.Layout.spacing12
-        case .mini:
-            MeetingAssistantDesignSystem.Layout.recordingIndicatorMiniDotSize
-        }
-
         return Circle()
             .fill(isRecordingMode ? MeetingAssistantDesignSystem.Colors.recording : MeetingAssistantDesignSystem.Colors.accent)
-            .frame(width: dotSize, height: dotSize)
+            .frame(width: IndicatorMetrics.dotSize, height: IndicatorMetrics.dotSize)
             .modifier(PulsingModifier(isActive: isRecordingMode, speed: isRecordingMode ? 0.9 : 1.4))
     }
 
     private func controlHeight(for size: IndicatorSize) -> CGFloat {
         switch size {
         case .classic:
-            MeetingAssistantDesignSystem.Layout.controlHeight
+            IndicatorMetrics.classicHeight
         case .mini:
-            MeetingAssistantDesignSystem.Layout.recordingIndicatorMiniHeight
+            IndicatorMetrics.miniHeight
         }
     }
 
@@ -298,23 +252,23 @@ public struct FloatingRecordingIndicatorView: View {
     }
 
     private func recordingCluster(size: IndicatorSize) -> some View {
-        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+        HStack(spacing: contentSpacing(for: size)) {
             statusDot(for: size)
 
             AudioVisualizer(
                 audioMeter: audioMonitor.audioMeter,
                 mode: visualizerModeForIndicator,
-                barCount: size == .classic ? 16 : 8,
-                maxHeight: MeetingAssistantDesignSystem.Layout.recordingIndicatorWaveformMaxHeight,
-                barWidth: MeetingAssistantDesignSystem.Layout.spacing4,
-                barSpacing: MeetingAssistantDesignSystem.Layout.spacing2,
-                minHeight: MeetingAssistantDesignSystem.Layout.spacing8
+                barCount: waveCount(for: size),
+                maxHeight: waveformHeight(for: size),
+                barWidth: IndicatorMetrics.waveformBarWidth,
+                barSpacing: IndicatorMetrics.waveformBarSpacing,
+                minHeight: IndicatorMetrics.waveformMinHeight
             )
 
             if isRecordingMode, isMeetingRecording {
                 TimelineView(.periodic(from: .now, by: 1.0)) { context in
                     Text(formatRecordingDuration(at: context.date))
-                        .font(.callout.weight(.semibold))
+                        .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(MeetingAssistantDesignSystem.Colors.overlayForeground)
                 }
                 .accessibilityLabel("recording_indicator.duration".localized)
@@ -322,7 +276,7 @@ public struct FloatingRecordingIndicatorView: View {
         }
     }
 
-    private var promptPickerControl: some View {
+    private func promptPickerControl(size: IndicatorSize) -> some View {
         Menu {
             Button {
                 applyPostProcessingSelection(nil)
@@ -343,16 +297,10 @@ public struct FloatingRecordingIndicatorView: View {
                 }
             }
         } label: {
-            HStack(spacing: 6) {
-                Image(systemName: currentPromptIconName)
-                    .font(.callout.weight(.semibold))
-                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.overlayForeground)
-
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.overlayForegroundMuted)
-            }
-            .frame(height: MeetingAssistantDesignSystem.Layout.spacing20)
+            Image(systemName: currentPromptIconName)
+                .font(.system(size: promptIconSize(for: size), weight: .medium))
+                .foregroundStyle(MeetingAssistantDesignSystem.Colors.overlayForeground)
+                .frame(width: 20, height: 20)
             .contentShape(Rectangle())
         }
         .menuStyle(.borderlessButton)
@@ -407,31 +355,123 @@ public struct FloatingRecordingIndicatorView: View {
 
         return formatter.string(from: duration) ?? "00:00"
     }
-}
 
-private struct ExpandedContentVisibility: ViewModifier {
-    let isVisible: Bool
-    let expandedWidth: CGFloat
+    private var currentIndicatorSize: IndicatorSize {
+        switch style {
+        case .classic:
+            return .classic
+        case .mini:
+            return .mini
+        case .none:
+            return .classic
+        }
+    }
 
-    func body(content: Content) -> some View {
-        content
-            .frame(width: isVisible ? expandedWidth : 0)
-            .animation(
-                isVisible
-                    ? .spring(response: 0.2, dampingFraction: 0.88)
-                    : .easeOut(duration: 0.12),
-                value: isVisible
-            )
-            .opacity(isVisible ? 1 : 0)
-            .animation(
-                isVisible
-                    ? .easeOut(duration: 0.16)
-                    : .easeIn(duration: 0.08),
-                value: isVisible
-            )
-            .clipped()
-            .allowsHitTesting(isVisible)
-            .accessibilityHidden(!isVisible)
+    private func mainPill(size: IndicatorSize) -> some View {
+        HStack(spacing: contentSpacing(for: size)) {
+            if isRecordingMode, isHovering {
+                leadingControls
+            }
+
+            recordingCluster(size: size)
+
+            if isRecordingMode, isHovering {
+                trailingControl
+            }
+        }
+        .padding(.horizontal, IndicatorMetrics.sidePadding)
+        .frame(height: controlHeight(for: size))
+        .background(MeetingAssistantDesignSystem.Colors.overlayBackground)
+        .clipShape(Capsule())
+        .shadow(
+            color: .black.opacity(0.15),
+            radius: MeetingAssistantDesignSystem.Layout.shadowRadius,
+            x: MeetingAssistantDesignSystem.Layout.shadowX,
+            y: MeetingAssistantDesignSystem.Layout.shadowY
+        )
+        .contentShape(Capsule())
+        .animation(.spring(response: 0.22, dampingFraction: 0.86), value: isHovering)
+    }
+
+    private func promptSelectionPill(size: IndicatorSize) -> some View {
+        promptPickerControl(size: size)
+            .frame(width: promptSize(for: size), height: controlHeight(for: size))
+            .background(Color(red: 26 / 255, green: 26 / 255, blue: 26 / 255))
+            .clipShape(Capsule())
+    }
+
+    private func updateHoverState(_ hovering: Bool) {
+        guard isRecordingMode else { return }
+        if hovering {
+            hoverCollapseTask?.cancel()
+            withAnimation(.spring(response: 0.22, dampingFraction: 0.86)) {
+                isHovering = true
+            }
+            return
+        }
+
+        hoverCollapseTask?.cancel()
+        hoverCollapseTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 110_000_000)
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeOut(duration: 0.14)) {
+                isHovering = false
+            }
+        }
+    }
+
+    private func contentSpacing(for size: IndicatorSize) -> CGFloat {
+        switch size {
+        case .classic:
+            return IndicatorMetrics.classicInnerSpacing
+        case .mini:
+            return IndicatorMetrics.miniInnerSpacing
+        }
+    }
+
+    private func controlSpacing(for size: IndicatorSize) -> CGFloat {
+        switch size {
+        case .classic:
+            return IndicatorMetrics.classicInnerSpacing
+        case .mini:
+            return IndicatorMetrics.miniInnerSpacing
+        }
+    }
+
+    private func promptSize(for size: IndicatorSize) -> CGFloat {
+        switch size {
+        case .classic:
+            return IndicatorMetrics.classicPromptSize
+        case .mini:
+            return IndicatorMetrics.miniPromptSize
+        }
+    }
+
+    private func waveformHeight(for size: IndicatorSize) -> CGFloat {
+        switch size {
+        case .classic:
+            return IndicatorMetrics.classicWaveHeight
+        case .mini:
+            return IndicatorMetrics.miniWaveHeight
+        }
+    }
+
+    private func waveCount(for size: IndicatorSize) -> Int {
+        switch size {
+        case .classic:
+            return IndicatorMetrics.classicWaveCount
+        case .mini:
+            return IndicatorMetrics.miniWaveCount
+        }
+    }
+
+    private func promptIconSize(for size: IndicatorSize) -> CGFloat {
+        switch size {
+        case .classic:
+            return 17
+        case .mini:
+            return 13
+        }
     }
 }
 
