@@ -7,9 +7,16 @@ import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
 
 public struct ServiceSettingsContent: View {
-    @StateObject private var viewModel = ServiceSettingsViewModel()
+    @StateObject private var viewModel: ServiceSettingsViewModel
+    private let runInitialTasks: Bool
 
-    public init() {}
+    public init(
+        viewModel: ServiceSettingsViewModel = ServiceSettingsViewModel(),
+        runInitialTasks: Bool = !PreviewRuntime.isRunning
+    ) {
+        _viewModel = StateObject(wrappedValue: viewModel)
+        self.runInitialTasks = runInitialTasks
+    }
 
     public var body: some View {
         VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.sectionSpacing) {
@@ -18,6 +25,7 @@ public struct ServiceSettingsContent: View {
             statusSection
         }
         .task {
+            guard runInitialTasks else { return }
             viewModel.refreshInstalledModelStates()
             viewModel.testConnection()
         }
@@ -224,4 +232,28 @@ public struct ServiceSettingsContent: View {
             .secondary
         }
     }
+}
+
+@MainActor
+private struct ServiceSettingsContentPreview: View {
+    @StateObject private var viewModel: ServiceSettingsViewModel
+
+    init() {
+        let viewModel = ServiceSettingsViewModel()
+        viewModel.transcriptionStatus = .success
+        viewModel.modelState = .loaded
+        viewModel.isASRInstalled = true
+        viewModel.isDiarizationLoaded = true
+        _viewModel = StateObject(wrappedValue: viewModel)
+    }
+
+    var body: some View {
+        ServiceSettingsContent(viewModel: viewModel, runInitialTasks: false)
+            .padding()
+            .frame(width: 760)
+    }
+}
+
+#Preview("Service Settings Content") {
+    ServiceSettingsContentPreview()
 }

@@ -5,7 +5,7 @@
 # with CI/CD pipelines and headless environments.
 # =============================================================================
 
-.PHONY: help build build-debug build-release test test-swift test-verbose test-strict lint lint-fix arch-check clean run run-release dmg setup docs docs-preview docs-clean
+.PHONY: help build build-debug build-release test test-swift test-verbose test-strict lint lint-fix arch-check preview-check clean run run-release dmg setup docs docs-preview docs-clean
 
 # Default target
 help:
@@ -27,6 +27,7 @@ help:
 	@echo "  make lint           - Run linting checks"
 	@echo "  make lint-fix       - Auto-fix linting issues"
 	@echo "  make arch-check     - Run architecture boundary checks"
+	@echo "  make preview-check  - Verify all SwiftUI views have previews"
 	@echo "  make health         - Run comprehensive code health check"
 	@echo ""
 	@echo "Run Commands:"
@@ -140,6 +141,10 @@ lint-fix:
 arch-check:
 	@echo -e "$(BLUE)Running architecture checks...$(NC)"
 	@./scripts/architecture-check.sh
+
+preview-check:
+	@echo -e "$(BLUE)Checking SwiftUI preview coverage...$(NC)"
+	@./scripts/preview-check.sh
 
 format:
 	@echo -e "$(BLUE)Running SwiftFormat...$(NC)"

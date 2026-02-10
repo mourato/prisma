@@ -209,3 +209,36 @@ public struct TranscriptionDetailView: View {
         return text
     }
 }
+
+private extension Transcription {
+    static var previewDetailForSettings: Self {
+        .init(
+            meeting: Meeting(
+                app: .slack,
+                state: .completed,
+                startTime: Date().addingTimeInterval(-1800),
+                endTime: Date().addingTimeInterval(-600),
+                audioFilePath: nil
+            ),
+            segments: [
+                .init(speaker: "Speaker 1", text: "Precisamos consolidar os previews da interface.", startTime: 0, endTime: 9),
+                .init(speaker: "Speaker 2", text: "Vou priorizar as telas com side effects na fase seguinte.", startTime: 10, endTime: 21),
+            ],
+            text: "Precisamos consolidar os previews da interface. Vou priorizar as telas com side effects na fase seguinte.",
+            rawText: "precisamos consolidar previews interface vou priorizar telas com side effects na fase seguinte",
+            processedContent: "Precisamos consolidar os previews da interface e priorizar, na sequência, as telas com side effects.",
+            postProcessingPromptTitle: "Planning summary",
+            language: "pt"
+        )
+    }
+}
+
+#Preview("Processed") {
+    TranscriptionDetailView(transcription: .previewDetailForSettings, isProcessing: false)
+        .frame(width: 860, height: 620)
+}
+
+#Preview("Processing Overlay") {
+    TranscriptionDetailView(transcription: .previewDetailForSettings, isProcessing: true)
+        .frame(width: 860, height: 620)
+}
