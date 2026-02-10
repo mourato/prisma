@@ -49,33 +49,21 @@ public struct SettingsView: View {
     // MARK: - Sidebar
 
     private var sidebar: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.sidebarContainerCornerRadius)
-                .fill(.ultraThinMaterial)
-                .overlay(
-                    RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.sidebarContainerCornerRadius)
-                        .strokeBorder(
-                            MeetingAssistantDesignSystem.Colors.separator.opacity(0.32),
-                            lineWidth: 0.5
-                        )
+        ScrollView {
+            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
+                sidebarGroup(
+                    title: "about.title".localized,
+                    sections: SettingsSection.primarySections
                 )
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
-                    sidebarGroup(
-                        title: "about.title".localized,
-                        sections: SettingsSection.primarySections
-                    )
-
-                    sidebarGroup(
-                        title: "settings.title".localized,
-                        sections: SettingsSection.settingsSections
-                    )
-                }
-                .padding(.top, MeetingAssistantDesignSystem.Layout.sidebarTopInset)
-                .padding(.horizontal, MeetingAssistantDesignSystem.Layout.sidebarHorizontalPadding)
-                .padding(.bottom, MeetingAssistantDesignSystem.Layout.sidebarVerticalPadding)
+                sidebarGroup(
+                    title: "settings.title".localized,
+                    sections: SettingsSection.settingsSections
+                )
             }
+            .padding(.top, MeetingAssistantDesignSystem.Layout.sidebarTopInset)
+            .padding(.horizontal, MeetingAssistantDesignSystem.Layout.sidebarHorizontalPadding)
+            .padding(.bottom, MeetingAssistantDesignSystem.Layout.sidebarVerticalPadding)
         }
         .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing8)
         .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing10)

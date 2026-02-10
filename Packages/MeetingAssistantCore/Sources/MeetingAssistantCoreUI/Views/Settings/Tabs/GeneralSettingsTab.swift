@@ -165,7 +165,6 @@ public struct GeneralSettingsTab: View {
                                     Stepper(value: $viewModel.autoDeletePeriodDays, in: 1...365) {
                                         Text("\(viewModel.autoDeletePeriodDays) " + "settings.general.days".localized)
                                             .font(.body)
-                                            .monospacedDigit()
                                     }
                                 }
                                 .padding(.leading, MeetingAssistantDesignSystem.Layout.indentation)

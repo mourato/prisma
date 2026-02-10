@@ -135,7 +135,7 @@ public struct TranscriptionsSettingsTab: View {
                 Image(systemName: "line.3.horizontal.decrease.circle")
                     .foregroundStyle(.secondary)
                 Text("settings.transcriptions.filters".localized)
-                    .font(.system(.caption, design: .monospaced))
+                    .font(.caption)
                     .fontWeight(.bold)
                     .foregroundStyle(.secondary)
             }
@@ -268,7 +268,7 @@ public struct TranscriptionsSettingsTab: View {
                     ForEach(viewModel.groupedTranscriptions[date] ?? []) { transcription in
                         HStack(alignment: .top, spacing: 16) {
                             Text(formatTime(transcription.createdAt))
-                                .font(.system(.body, design: .monospaced))
+                                .font(.body)
                                 .fontWeight(.semibold)
                                 .foregroundStyle(.secondary)
                                 .padding(.top, 12) // Align with card content
@@ -456,7 +456,6 @@ struct TranscriptionRowView: View {
             VStack(alignment: .trailing, spacing: 4) {
                 Text(formattedTime)
                     .font(.caption2)
-                    .monospacedDigit()
                     .foregroundStyle(.tertiary)
 
                 if metadata.isPostProcessed {

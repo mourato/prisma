@@ -146,7 +146,6 @@ struct MeetingCard: View {
                 Text(duration)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .monospacedDigit()
             }
 
             Spacer()
