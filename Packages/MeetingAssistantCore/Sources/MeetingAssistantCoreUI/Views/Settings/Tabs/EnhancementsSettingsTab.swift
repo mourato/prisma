@@ -19,6 +19,7 @@ public struct EnhancementsSettingsTab: View {
         ScrollView {
             VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.sectionSpacing) {
                 mainSection
+                contextAwarenessSection
 
                 if postProcessingViewModel.settings.postProcessingEnabled {
                     aiProviderIntegrationCard
@@ -47,6 +48,76 @@ public struct EnhancementsSettingsTab: View {
                 description: "settings.post_processing.description".localized,
                 isOn: $postProcessingViewModel.settings.postProcessingEnabled
             )
+        }
+    }
+
+    private var contextAwarenessSection: some View {
+        MAGroup("settings.context_awareness.title".localized, icon: "text.viewfinder") {
+            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.itemSpacing) {
+                MAToggleRow(
+                    "settings.context_awareness.enabled".localized,
+                    description: "settings.context_awareness.enabled_desc".localized,
+                    isOn: $postProcessingViewModel.settings.contextAwarenessEnabled
+                )
+
+                if postProcessingViewModel.settings.contextAwarenessEnabled {
+                    MAToggleRow(
+                        "settings.context_awareness.active_app".localized,
+                        description: "settings.context_awareness.active_app_desc".localized,
+                        isOn: $postProcessingViewModel.settings.contextAwarenessIncludeActiveApp
+                    )
+
+                    MAToggleRow(
+                        "settings.context_awareness.clipboard".localized,
+                        description: "settings.context_awareness.clipboard_desc".localized,
+                        isOn: $postProcessingViewModel.settings.contextAwarenessIncludeClipboard
+                    )
+
+                    MAToggleRow(
+                        "settings.context_awareness.window_ocr".localized,
+                        description: "settings.context_awareness.window_ocr_desc".localized,
+                        isOn: $postProcessingViewModel.settings.contextAwarenessIncludeWindowOCR
+                    )
+
+                    MAToggleRow(
+                        "settings.context_awareness.accessibility_text".localized,
+                        description: "settings.context_awareness.accessibility_text_desc".localized,
+                        isOn: $postProcessingViewModel.settings.contextAwarenessIncludeAccessibilityText
+                    )
+
+                    MAToggleRow(
+                        "settings.context_awareness.protect_sensitive_apps".localized,
+                        description: "settings.context_awareness.protect_sensitive_apps_desc".localized,
+                        isOn: $postProcessingViewModel.settings.contextAwarenessProtectSensitiveApps
+                    )
+
+                    MAToggleRow(
+                        "settings.context_awareness.redact_sensitive_data".localized,
+                        description: "settings.context_awareness.redact_sensitive_data_desc".localized,
+                        isOn: $postProcessingViewModel.settings.contextAwarenessRedactSensitiveData
+                    )
+
+                    if postProcessingViewModel.settings.contextAwarenessProtectSensitiveApps {
+                        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                            Text("settings.context_awareness.excluded_apps".localized)
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+
+                            Text("settings.context_awareness.excluded_apps_desc".localized)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+
+                            TextEditor(text: excludedBundleIDsBinding)
+                                .font(.caption.monospaced())
+                                .frame(minHeight: 72)
+                                .padding(6)
+                                .background(MeetingAssistantDesignSystem.Colors.subtleFill2)
+                                .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+                        }
+                        .padding(.top, MeetingAssistantDesignSystem.Layout.spacing4)
+                    }
+                }
+            }
         }
     }
 
@@ -105,6 +176,34 @@ public struct EnhancementsSettingsTab: View {
                 }
             }
         }
+    }
+
+    private var excludedBundleIDsBinding: Binding<String> {
+        Binding(
+            get: {
+                postProcessingViewModel.settings.contextAwarenessExcludedBundleIDs.joined(separator: "\n")
+            },
+            set: { newValue in
+                postProcessingViewModel.settings.contextAwarenessExcludedBundleIDs = parseBundleIDs(from: newValue)
+            }
+        )
+    }
+
+    private func parseBundleIDs(from rawValue: String) -> [String] {
+        var seen = Set<String>()
+        var ordered: [String] = []
+
+        for token in rawValue
+            .replacingOccurrences(of: ",", with: "\n")
+            .components(separatedBy: .newlines)
+        {
+            let normalized = token.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            guard !normalized.isEmpty, !seen.contains(normalized) else { continue }
+            seen.insert(normalized)
+            ordered.append(normalized)
+        }
+
+        return ordered
     }
 }
 
