@@ -353,12 +353,8 @@ public struct MeetingSettingsTab: View {
         }
 
         Button {
-            if prompt.isPredefined {
-                meetingViewModel.prepareCopy(of: prompt, asDuplicate: false)
-            } else {
-                meetingViewModel.editingPrompt = prompt
-                meetingViewModel.showPromptEditor = true
-            }
+            meetingViewModel.editingPrompt = prompt
+            meetingViewModel.showPromptEditor = true
         } label: {
             Label("settings.post_processing.edit".localized, systemImage: "pencil")
         }
@@ -369,14 +365,12 @@ public struct MeetingSettingsTab: View {
             Label("settings.post_processing.duplicate".localized, systemImage: "plus.square.on.square")
         }
 
-        if !prompt.isPredefined {
-            Divider()
+        Divider()
 
-            Button(role: .destructive) {
-                meetingViewModel.confirmDeletePrompt(prompt)
-            } label: {
-                Label("settings.post_processing.delete".localized, systemImage: "trash")
-            }
+        Button(role: .destructive) {
+            meetingViewModel.confirmDeletePrompt(prompt)
+        } label: {
+            Label("settings.post_processing.delete".localized, systemImage: "trash")
         }
     }
 

@@ -55,32 +55,19 @@ public final class DictationPromptSettingsViewModel: ObservableObject {
     }
 
     public func handleSavePrompt(_ prompt: PostProcessingPrompt) {
-        if let index = settings.dictationPrompts.firstIndex(where: { $0.id == prompt.id }) {
-            var prompts = settings.dictationPrompts
-            prompts[index] = prompt
-            settings.dictationPrompts = prompts
-        } else {
-            var prompts = settings.dictationPrompts
-            prompts.append(prompt)
-            settings.dictationPrompts = prompts
-        }
-
+        settings.upsertDictationPrompt(prompt)
         showPromptEditor = false
         editingPrompt = nil
     }
 
     public func confirmDeletePrompt(_ prompt: PostProcessingPrompt) {
-        guard !prompt.isPredefined else { return }
         promptToDelete = prompt
         showDeleteConfirmation = true
     }
 
     public func executeDelete() {
         if let prompt = promptToDelete {
-            settings.dictationPrompts.removeAll { $0.id == prompt.id }
-            if settings.dictationSelectedPromptId == prompt.id {
-                settings.dictationSelectedPromptId = nil
-            }
+            settings.deleteDictationPrompt(id: prompt.id)
         }
         showDeleteConfirmation = false
         promptToDelete = nil

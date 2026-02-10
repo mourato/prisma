@@ -1086,6 +1086,7 @@ public class AppSettingsStore: ObservableObject {
     /// Adds a new user prompt.
     /// - Parameter prompt: The prompt to add.
     public func addPrompt(_ prompt: PostProcessingPrompt) {
+        deletedPromptIds.remove(prompt.id)
         userPrompts.append(prompt)
     }
 
@@ -1119,6 +1120,60 @@ public class AppSettingsStore: ObservableObject {
         }
     }
 
+    /// Adds or updates a dictation prompt while restoring predefined prompts if needed.
+    /// - Parameter prompt: The prompt to upsert.
+    public func upsertDictationPrompt(_ prompt: PostProcessingPrompt) {
+        deletedPromptIds.remove(prompt.id)
+
+        if let index = dictationPrompts.firstIndex(where: { $0.id == prompt.id }) {
+            dictationPrompts[index] = prompt
+        } else {
+            dictationPrompts.append(prompt)
+        }
+    }
+
+    /// Deletes a dictation prompt by ID, including predefined prompts.
+    /// - Parameter id: The ID of the prompt to delete.
+    public func deleteDictationPrompt(id: UUID) {
+        if PostProcessingPrompt.allPredefined.contains(where: { $0.id == id }) {
+            deletedPromptIds.insert(id)
+        }
+
+        dictationPrompts.removeAll { $0.id == id }
+        userPrompts.removeAll { $0.id == id }
+
+        if dictationSelectedPromptId == id {
+            dictationSelectedPromptId = nil
+        }
+    }
+
+    /// Adds or updates a meeting prompt while restoring predefined prompts if needed.
+    /// - Parameter prompt: The prompt to upsert.
+    public func upsertMeetingPrompt(_ prompt: PostProcessingPrompt) {
+        deletedPromptIds.remove(prompt.id)
+
+        if let index = meetingPrompts.firstIndex(where: { $0.id == prompt.id }) {
+            meetingPrompts[index] = prompt
+        } else {
+            meetingPrompts.append(prompt)
+        }
+    }
+
+    /// Deletes a meeting prompt by ID, including predefined prompts.
+    /// - Parameter id: The ID of the prompt to delete.
+    public func deleteMeetingPrompt(id: UUID) {
+        if PostProcessingPrompt.allPredefined.contains(where: { $0.id == id }) {
+            deletedPromptIds.insert(id)
+        }
+
+        meetingPrompts.removeAll { $0.id == id }
+        userPrompts.removeAll { $0.id == id }
+
+        if selectedPromptId == id {
+            selectedPromptId = nil
+        }
+    }
+
     /// Resets the system prompt to default.
     public func resetSystemPrompt() {
         systemPrompt = AIPromptTemplates.defaultSystemPrompt
@@ -1127,17 +1182,18 @@ public class AppSettingsStore: ObservableObject {
     // MARK: - Prompt Composition
 
     private func mergedPrompts(predefined: [PostProcessingPrompt], custom: [PostProcessingPrompt]) -> [PostProcessingPrompt] {
+        let visiblePredefined = predefined.filter { !deletedPromptIds.contains($0.id) }
         var customById: [UUID: PostProcessingPrompt] = [:]
-        for prompt in custom {
+        for prompt in custom where !deletedPromptIds.contains(prompt.id) {
             customById[prompt.id] = prompt
         }
-        let predefinedIds = Set(predefined.map(\.id))
+        let predefinedIds = Set(visiblePredefined.map(\.id))
 
-        var merged: [PostProcessingPrompt] = predefined.map { prompt in
+        var merged: [PostProcessingPrompt] = visiblePredefined.map { prompt in
             customById[prompt.id] ?? prompt
         }
 
-        merged.append(contentsOf: custom.filter { !predefinedIds.contains($0.id) })
+        merged.append(contentsOf: custom.filter { !deletedPromptIds.contains($0.id) && !predefinedIds.contains($0.id) })
         return merged
     }
 
