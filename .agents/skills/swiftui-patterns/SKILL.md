@@ -243,7 +243,17 @@ HStack(spacing: 0) {
 5. **Centered settings** - Use `.leading` alignment and `frame(maxWidth: .infinity, alignment: .leading)`
 6. **Checkboxes for settings** - Use `SettingsToggle` or `.toggleStyle(.switch)`
 
+## Preview Requirements
+
+- Every SwiftUI `View` must include at least one `#Preview`.
+- Add more than one preview when state variations are relevant.
+- Keep previews deterministic and side-effect free.
+- Use `PreviewRuntime.isRunning` for startup task suppression when needed.
+- Use `PreviewStateContainer` when interactive bindings are required.
+- Validate coverage with `make preview-check`.
+
 ## References
 
 - [SettingsView.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Views/Settings/SettingsView.swift)
 - [TranscriptionListView.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Views/TranscriptionListView.swift)
+- [PREVIEW_GUIDELINES.md](docs/PREVIEW_GUIDELINES.md)
