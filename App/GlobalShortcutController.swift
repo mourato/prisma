@@ -35,6 +35,8 @@ final class GlobalShortcutController {
 
     private let holdThreshold: TimeInterval = 0.35
     private let doubleTapInterval: TimeInterval = 0.5
+    private let escapeDoublePressInterval: TimeInterval = 0.5
+    private var lastEscapePressTime: Date?
 
     init(
         recordingManager: RecordingManager,
@@ -227,9 +229,21 @@ final class GlobalShortcutController {
             return
         }
 
-        guard event.keyCode == PresetShortcutKey.escapeKeyCode else {
+        guard !event.isARepeat else {
             return
         }
+
+        guard event.keyCode == PresetShortcutKey.escapeKeyCode else {
+            lastEscapePressTime = nil
+            return
+        }
+
+        let now = Date()
+        guard let lastEscapePressTime, now.timeIntervalSince(lastEscapePressTime) <= escapeDoublePressInterval else {
+            self.lastEscapePressTime = now
+            return
+        }
+        self.lastEscapePressTime = nil
 
         Task { @MainActor in
             guard self.recordingManager.isRecording else {
@@ -388,6 +402,7 @@ final class GlobalShortcutController {
     private func resetShortcutState() {
         dictationState.reset()
         meetingState.reset()
+        lastEscapePressTime = nil
 
         presetState.reset()
     }
