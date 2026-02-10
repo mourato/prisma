@@ -244,9 +244,9 @@
 "settings.assistant.header_desc" = "Configure o atalho do Assistant para editar o texto selecionado com comandos de voz em qualquer app.";
 "settings.assistant.controls" = "Atalho do Assistant";
 "settings.assistant.toggle_command" = "Iniciar/Parar Assistant";
-"settings.assistant.toggle_command_desc" = "Segure ou alterne para gravar um comando de voz para o texto selecionado";
+"settings.assistant.toggle_command_desc" = "Segure ou pressione para gravar um comando de voz para o texto selecionado";
 "settings.assistant.custom_shortcut" = "Atalho Personalizado:";
-"settings.assistant.activation_mode_desc" = "Configure como as teclas de atalho ativam: Segurar ou Alternar (auto-detecta), Alternar (pressione uma vez), Segurar (grave enquanto pressionado), ou Toque Duplo (toque duas vezes rapidamente).";
+"settings.assistant.activation_mode_desc" = "Configure como as teclas de atalho ativam: Segurar ou Pressionar (auto-detecta), Pressionar (uma vez), Segurar (grave enquanto pressionado), ou Toque Duplo (toque duas vezes rapidamente).";
 "settings.assistant.tips_title" = "Dicas";
 "settings.assistant.fn_key_title" = "Usando a tecla Fn";
 "settings.assistant.fn_key_desc" = "Para usar a tecla Fn sozinha:\n• Abra Configurações do Sistema → Teclado\n• Clique no dropdown \"Pressionar tecla 🌐 para\"\n• Selecione \"Não fazer nada\"\n• Isso permite que o app detecte a tecla Fn";
@@ -275,11 +275,11 @@
 "settings.shortcuts.header_desc" = "Escolha suas teclas preferidas para iniciar gravações. Pressione apenas essas teclas para começar a gravar.";
 "settings.shortcuts.recording_controls" = "Controles de Gravação";
 "settings.shortcuts.activation_mode" = "Modo de Ativação";
-"settings.shortcuts.activation_mode.hold_or_toggle" = "Segurar ou Alternar";
-"settings.shortcuts.activation_mode.toggle" = "Alternar";
+"settings.shortcuts.activation_mode.hold_or_press" = "Segurar ou Pressionar";
+"settings.shortcuts.activation_mode.press" = "Pressionar";
 "settings.shortcuts.activation_mode.hold" = "Segurar";
 "settings.shortcuts.activation_mode.double_tap" = "Toque Duplo";
-"settings.shortcuts.activation_mode_desc" = "Configure como as teclas de atalho ativam: Segurar ou Alternar (auto-detecta), Alternar (pressione uma vez), Segurar (grave enquanto pressionado), ou Toque Duplo (toque duas vezes rapidamente).";
+"settings.shortcuts.activation_mode_desc" = "Configure como as teclas de atalho ativam: Segurar ou Pressionar (auto-detecta), Pressionar (uma vez), Segurar (grave enquanto pressionado), ou Toque Duplo (toque duas vezes rapidamente).";
 "settings.shortcuts.tips_title" = "Dicas";
 "settings.shortcuts.fn_key_title" = "Usando a tecla Fn";
 "settings.shortcuts.fn_key_desc" = "Para usar a tecla Fn sozinha:\n• Abra Configurações do Sistema → Teclado\n• Clique no dropdown \"Pressionar tecla 🌐 para\"\n• Selecione \"Não fazer nada\"\n• Isso permite que o app detecte a tecla Fn";
