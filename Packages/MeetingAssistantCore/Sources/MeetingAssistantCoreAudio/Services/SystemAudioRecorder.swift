@@ -1,11 +1,11 @@
-import AVFoundation
-import Foundation
-import os.lock
-import MeetingAssistantCoreCommon
-import Combine
 import Atomics
+import AVFoundation
+import Combine
+import Foundation
+import MeetingAssistantCoreCommon
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
+import os.lock
 @preconcurrency import ScreenCaptureKit
 
 // MARK: - System Audio Recorder (Screen Capture Stream)

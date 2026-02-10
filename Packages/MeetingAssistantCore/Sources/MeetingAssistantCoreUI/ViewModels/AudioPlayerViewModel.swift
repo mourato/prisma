@@ -1,12 +1,12 @@
 import AVFoundation
 import Combine
-import SwiftUI
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
+import SwiftUI
 
 /// View model for audio playback and waveform visualization.
 @MainActor

@@ -1,8 +1,8 @@
 import Foundation
-import OSLog
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
+import OSLog
 
 private let meetingAssistantAIClientLogger = Logger(subsystem: "MeetingAssistant", category: "AIClient")
 

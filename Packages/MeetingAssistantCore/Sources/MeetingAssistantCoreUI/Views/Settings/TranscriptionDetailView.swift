@@ -1,10 +1,10 @@
-import SwiftUI
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
+import SwiftUI
 
 /// Detail view for a selected transcription.
 public struct TranscriptionDetailView: View {
@@ -216,7 +216,7 @@ private extension Transcription {
             meeting: Meeting(
                 app: .slack,
                 state: .completed,
-                startTime: Date().addingTimeInterval(-1800),
+                startTime: Date().addingTimeInterval(-1_800),
                 endTime: Date().addingTimeInterval(-600),
                 audioFilePath: nil
             ),

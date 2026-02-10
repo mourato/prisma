@@ -1,11 +1,11 @@
 import AppKit
-import SwiftUI
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
+import SwiftUI
 
 /// Controller that manages a colored border overlay around the active screen
 /// to provide visual feedback when the Assistant mode is active.

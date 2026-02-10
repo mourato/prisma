@@ -1,7 +1,7 @@
 import Foundation
-import MeetingAssistantCoreInfrastructure
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreDomain
+import MeetingAssistantCoreInfrastructure
 import os.log
 
 // MARK: - Post-Processing Service

@@ -1,7 +1,7 @@
 import AppKit
 import Foundation
-import MeetingAssistantCoreDomain
 import MeetingAssistantCoreCommon
+import MeetingAssistantCoreDomain
 import SwiftUI
 
 // MARK: - AI Provider Configuration

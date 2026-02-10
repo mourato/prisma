@@ -1,13 +1,13 @@
 import Combine
 import Foundation
 import KeyboardShortcuts
-import SwiftUI
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
+import SwiftUI
 
 // MARK: - Shortcut Settings View Model
 

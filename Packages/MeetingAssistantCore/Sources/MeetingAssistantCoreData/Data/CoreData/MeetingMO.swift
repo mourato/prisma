@@ -1,4 +1,5 @@
 import MeetingAssistantCoreDomain
+
 // MeetingMO - Managed Object para MeetingEntity
 // Modelo CoreData thread-safe seguindo Clean Architecture
 

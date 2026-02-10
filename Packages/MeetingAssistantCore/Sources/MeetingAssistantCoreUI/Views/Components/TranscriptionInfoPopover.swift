@@ -1,11 +1,11 @@
 import Foundation
-import SwiftUI
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
+import SwiftUI
 
 /// Popover view displaying detailed metadata about a transcription.
 struct TranscriptionInfoPopover: View {

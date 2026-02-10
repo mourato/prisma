@@ -1,10 +1,10 @@
-import SwiftUI
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
+import SwiftUI
 
 /// Button component that opens a file picker for importing audio files to transcribe.
 public struct TranscribeFileButton: View {

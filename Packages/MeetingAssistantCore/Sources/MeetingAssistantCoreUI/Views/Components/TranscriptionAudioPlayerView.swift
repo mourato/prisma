@@ -1,10 +1,10 @@
-import SwiftUI
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
+import SwiftUI
 
 /// Audio player component for transcriptions with waveform and playback controls.
 public struct TranscriptionAudioPlayerView: View {

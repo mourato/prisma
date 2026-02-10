@@ -1,6 +1,6 @@
 import Foundation
-import MeetingAssistantCoreInfrastructure
 import MeetingAssistantCoreDomain
+import MeetingAssistantCoreInfrastructure
 
 /// Service for interacting with LLM providers.
 public protocol LLMService: Sendable {

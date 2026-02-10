@@ -1,10 +1,10 @@
-import SwiftUI
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
+import SwiftUI
 
 /// Coordinator responsável pela navegação dentro das configurações.
 /// Gerencia as abas de configurações e navegação entre elas.

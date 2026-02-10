@@ -1,5 +1,5 @@
-import SwiftUI
 import MeetingAssistantCoreCommon
+import SwiftUI
 
 /// Service to handle navigation and window management across the app.
 @MainActor

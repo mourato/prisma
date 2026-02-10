@@ -15,7 +15,7 @@ final class AssistantShortcutController {
     private lazy var shortcutHandler = SmartShortcutHandler(
         isRecordingProvider: { [weak self] in self?.assistantService.isRecording ?? false },
         actionHandler: { [weak self] (action: SmartShortcutHandler.Action) in
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
                 await self?.performAction(action)
             }
         }
@@ -48,13 +48,13 @@ final class AssistantShortcutController {
 
     private func setupKeyboardShortcutHandlers() {
         KeyboardShortcuts.onKeyDown(for: .assistantCommand) { [weak self] in
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
                 await self?.handleCustomShortcutDown()
             }
         }
 
         KeyboardShortcuts.onKeyUp(for: .assistantCommand) { [weak self] in
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
                 await self?.handleCustomShortcutUp()
             }
         }
@@ -152,11 +152,11 @@ final class AssistantShortcutController {
         let isActive = presetState.isPresetActive(settings.assistantSelectedPresetKey, event: event)
         let wasPressed = shortcutHandler.isPressed
         shortcutHandler.handleModifierChange(isActive: isActive)
-        
+
         if isActive, !wasPressed {
-             Task { @MainActor in await handleShortcutDown() }
+            Task { @MainActor [weak self] in await self?.handleShortcutDown() }
         } else if !isActive, wasPressed {
-             Task { @MainActor in await handleShortcutUp() }
+            Task { @MainActor [weak self] in await self?.handleShortcutUp() }
         }
     }
 
@@ -181,12 +181,13 @@ final class AssistantShortcutController {
         }
         self.lastEscapePressTime = nil
 
-        Task { @MainActor in
-            guard self.assistantService.isRecording else {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            guard assistantService.isRecording else {
                 return
             }
 
-            await self.assistantService.cancelRecording()
+            await assistantService.cancelRecording()
         }
     }
 
@@ -213,7 +214,7 @@ final class AssistantShortcutController {
     private func handleShortcutUp() async {
         shortcutHandler.handleShortcutUp(activationMode: settings.assistantShortcutActivationMode)
     }
-    
+
     private func performAction(_ action: SmartShortcutHandler.Action) async {
         switch action {
         case .startRecording:
@@ -224,7 +225,6 @@ final class AssistantShortcutController {
     }
 
     private func resetShortcutState() {
-        isPresetPressed = false
         lastEscapePressTime = nil
         presetState.reset()
         shortcutHandler.reset()

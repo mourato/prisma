@@ -1,7 +1,7 @@
 import Foundation
-import os.log
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
+import os.log
 
 /// Client for local transcription using FluidAudio.
 @MainActor
