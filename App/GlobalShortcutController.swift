@@ -18,6 +18,7 @@ final class GlobalShortcutController {
         var wasRecordingAtPress = false
         var startedRecording = false
         var lastTapTime: Date?
+        var lastTapWasRecording = false
 
         mutating func reset() {
             isPresetPressed = false
@@ -25,6 +26,7 @@ final class GlobalShortcutController {
             wasRecordingAtPress = false
             startedRecording = false
             lastTapTime = nil
+            lastTapWasRecording = false
         }
     }
 
@@ -354,19 +356,28 @@ final class GlobalShortcutController {
             resetHoldState(for: type)
         case .doubleTap:
             let now = Date()
+            let isRecording = recordingManager.isRecording
             let lastTapTime = type == .dictation ? dictationState.lastTapTime : meetingState.lastTapTime
-            if let lastTapTime, now.timeIntervalSince(lastTapTime) <= doubleTapInterval {
+            let lastTapWasRecording = type == .dictation ? dictationState.lastTapWasRecording : meetingState.lastTapWasRecording
+            if let lastTapTime,
+               now.timeIntervalSince(lastTapTime) <= doubleTapInterval,
+               lastTapWasRecording == isRecording
+            {
                 if type == .dictation {
                     dictationState.lastTapTime = nil
+                    dictationState.lastTapWasRecording = false
                 } else {
                     meetingState.lastTapTime = nil
+                    meetingState.lastTapWasRecording = false
                 }
                 await toggleRecording(for: type)
             } else {
                 if type == .dictation {
                     dictationState.lastTapTime = now
+                    dictationState.lastTapWasRecording = isRecording
                 } else {
                     meetingState.lastTapTime = now
+                    meetingState.lastTapWasRecording = isRecording
                 }
             }
         case .toggle:

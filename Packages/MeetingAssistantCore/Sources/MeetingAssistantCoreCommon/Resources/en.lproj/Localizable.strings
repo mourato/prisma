@@ -245,9 +245,9 @@
 "settings.assistant.header_desc" = "Configure the Assistant shortcut to edit selected text with voice commands in any app.";
 "settings.assistant.controls" = "Assistant Shortcut";
 "settings.assistant.toggle_command" = "Start/Stop Assistant";
-"settings.assistant.toggle_command_desc" = "Hold or toggle to record a voice command for the selected text";
+"settings.assistant.toggle_command_desc" = "Hold or press to record a voice command for the selected text";
 "settings.assistant.custom_shortcut" = "Custom Shortcut:";
-"settings.assistant.activation_mode_desc" = "Choose how the shortcut activates: Hold or Toggle (auto-detects), Toggle (press once), Hold (record while pressed), or Double Tap (tap twice quickly).";
+"settings.assistant.activation_mode_desc" = "Choose how the shortcut activates: Hold or Press (auto-detects), Press (press once), Hold (record while pressed), or Double Tap (tap twice quickly).";
 "settings.assistant.tips_title" = "Tips";
 "settings.assistant.fn_key_title" = "Using the Fn key";
 "settings.assistant.fn_key_desc" = "To use the Fn key alone:\n• Open System Settings → Keyboard\n• Click \"Press 🌐 key to\" dropdown\n• Select \"Do Nothing\"\n• This allows the app to detect the Fn key press";
@@ -276,11 +276,11 @@
 "settings.shortcuts.header_desc" = "Choose your preferred keyboard keys for starting recordings. Press only these keys to begin recording.";
 "settings.shortcuts.recording_controls" = "Recording Controls";
 "settings.shortcuts.activation_mode" = "Activation Mode";
-"settings.shortcuts.activation_mode.hold_or_toggle" = "Hold or Toggle";
-"settings.shortcuts.activation_mode.toggle" = "Toggle";
+"settings.shortcuts.activation_mode.hold_or_press" = "Hold or Press";
+"settings.shortcuts.activation_mode.press" = "Press";
 "settings.shortcuts.activation_mode.hold" = "Hold";
 "settings.shortcuts.activation_mode.double_tap" = "Double Tap";
-"settings.shortcuts.activation_mode_desc" = "Configure how shortcut keys activate: Hold or Toggle (auto-detects), Toggle (press once), Hold (record while pressed), or Double Tap (tap twice quickly).";
+"settings.shortcuts.activation_mode_desc" = "Configure how shortcut keys activate: Hold or Press (auto-detects), Press (press once), Hold (record while pressed), or Double Tap (tap twice quickly).";
 "settings.shortcuts.tips_title" = "Tips";
 "settings.shortcuts.fn_key_title" = "Using the Fn key";
 "settings.shortcuts.fn_key_desc" = "To use the Fn key alone:\n• Open System Settings → Keyboard\n• Click \"Press 🌐 key to\" dropdown\n• Select \"Do Nothing\"\n• This allows the app to detect the Fn key press";
