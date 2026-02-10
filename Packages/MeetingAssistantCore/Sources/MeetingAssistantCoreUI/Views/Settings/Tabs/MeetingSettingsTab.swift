@@ -25,45 +25,17 @@ public struct MeetingSettingsTab: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
 
-                        HStack {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("settings.shortcuts.meeting".localized)
-                                    .font(.body)
-                                    .fontWeight(.medium)
-                            }
-
-                            Spacer()
-
-                            Picker("", selection: $meetingViewModel.settings.meetingSelectedPresetKey) {
-                                ForEach(PresetShortcutKey.allCases, id: \.self) { key in
-                                    if let icon = key.icon {
-                                        Label(key.displayName, systemImage: icon).tag(key)
-                                    } else {
-                                        Text(key.displayName).tag(key)
-                                    }
-                                }
-                            }
-                            .labelsHidden()
-                            .pickerStyle(.menu)
-                            .frame(width: MeetingAssistantDesignSystem.Layout.smallPickerWidth)
-                        }
+                        MAShortcutControlsRow(
+                            title: "settings.shortcuts.meeting".localized,
+                            selectedPresetKey: $meetingViewModel.settings.meetingSelectedPresetKey
+                        )
 
                         if meetingViewModel.settings.meetingSelectedPresetKey == .custom {
                             Divider()
 
-                            HStack {
-                                Text("settings.shortcuts.custom_shortcut".localized)
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-
-                                Spacer()
-
+                            MAShortcutRecorderRow(label: "settings.shortcuts.custom_shortcut".localized) {
                                 KeyboardShortcuts.Recorder(for: .meetingToggle)
                             }
-                            .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
-                            .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)
-                            .background(MeetingAssistantDesignSystem.Colors.secondaryFill)
-                            .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
                         }
                     }
                 }

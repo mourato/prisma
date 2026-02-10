@@ -433,6 +433,7 @@ public class AppSettingsStore: ObservableObject {
         static let muteOutputDuringRecording = "muteOutputDuringRecording"
         static let deletedPromptIds = "postProcessingDeletedPromptIds"
         static let shortcutActivationMode = "shortcutActivationMode"
+        static let dictationShortcutActivationMode = "dictationShortcutActivationMode"
         static let useEscapeToCancelRecording = "useEscapeToCancelRecording"
         static let selectedPresetKey = "selectedPresetKey"
         static let dictationSelectedPresetKey = "dictationSelectedPresetKey"
@@ -615,6 +616,11 @@ public class AppSettingsStore: ObservableObject {
     /// How keyboard shortcuts activate recording.
     @Published public var shortcutActivationMode: ShortcutActivationMode {
         didSet { UserDefaults.standard.set(shortcutActivationMode.rawValue, forKey: Keys.shortcutActivationMode) }
+    }
+
+    /// How keyboard shortcuts activate Dictation.
+    @Published public var dictationShortcutActivationMode: ShortcutActivationMode {
+        didSet { UserDefaults.standard.set(dictationShortcutActivationMode.rawValue, forKey: Keys.dictationShortcutActivationMode) }
     }
 
     /// Whether pressing Escape cancels recording.
@@ -852,7 +858,12 @@ public class AppSettingsStore: ObservableObject {
         muteOutputDuringRecording = UserDefaults.standard.bool(forKey: Keys.muteOutputDuringRecording)
 
         let rawActivationMode = UserDefaults.standard.string(forKey: Keys.shortcutActivationMode)
-        shortcutActivationMode = rawActivationMode.flatMap { ShortcutActivationMode(rawValue: $0) } ?? .holdOrToggle
+        let resolvedActivationMode = rawActivationMode.flatMap { ShortcutActivationMode(rawValue: $0) } ?? .holdOrToggle
+        shortcutActivationMode = resolvedActivationMode
+        let rawDictationActivationMode = UserDefaults.standard.string(forKey: Keys.dictationShortcutActivationMode)
+        dictationShortcutActivationMode = rawDictationActivationMode
+            .flatMap { ShortcutActivationMode(rawValue: $0) }
+            ?? resolvedActivationMode
         useEscapeToCancelRecording = UserDefaults.standard.bool(forKey: Keys.useEscapeToCancelRecording)
 
         let rawPresetKey = UserDefaults.standard.string(forKey: Keys.selectedPresetKey)
@@ -1059,6 +1070,7 @@ public class AppSettingsStore: ObservableObject {
         useSystemDefaultInput = true
         muteOutputDuringRecording = false
         shortcutActivationMode = .holdOrToggle
+        dictationShortcutActivationMode = .holdOrToggle
         useEscapeToCancelRecording = false
         selectedPresetKey = .fn
         assistantShortcutActivationMode = .holdOrToggle
