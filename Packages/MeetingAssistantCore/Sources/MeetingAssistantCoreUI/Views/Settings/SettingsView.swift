@@ -21,7 +21,6 @@ private enum LayoutConstants {
 /// Settings view for app configuration.
 /// Uses sidebar navigation pattern similar to macOS System Settings.
 public struct SettingsView: View {
-    @ObservedObject private var settings = AppSettingsStore.shared
     @State private var selectedSection: SettingsSection = .metrics
     @State private var columnVisibility = NavigationSplitViewVisibility.all
 
@@ -49,24 +48,24 @@ public struct SettingsView: View {
     // MARK: - Sidebar
 
     private var sidebar: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
-                sidebarGroup(
-                    title: "about.title".localized,
-                    sections: SettingsSection.primarySections
-                )
-
-                sidebarGroup(
-                    title: "settings.title".localized,
-                    sections: SettingsSection.settingsSections
-                )
+        List(selection: $selectedSection) {
+            Section("about.title".localized) {
+                ForEach(SettingsSection.primarySections) { section in
+                    NavigationLink(value: section) {
+                        sidebarLabel(for: section)
+                    }
+                }
             }
-            .padding(.top, MeetingAssistantDesignSystem.Layout.sidebarTopInset)
-            .padding(.horizontal, MeetingAssistantDesignSystem.Layout.sidebarHorizontalPadding)
-            .padding(.bottom, MeetingAssistantDesignSystem.Layout.sidebarVerticalPadding)
+
+            Section("settings.title".localized) {
+                ForEach(SettingsSection.settingsSections) { section in
+                    NavigationLink(value: section) {
+                        sidebarLabel(for: section)
+                    }
+                }
+            }
         }
-        .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing8)
-        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing10)
+        .listStyle(.sidebar)
         .navigationSplitViewColumnWidth(
             min: LayoutConstants.sidebarMinWidth,
             ideal: LayoutConstants.sidebarIdealWidth,
@@ -74,24 +73,16 @@ public struct SettingsView: View {
         )
     }
 
-    @ViewBuilder
-    private func sidebarGroup(title: String, sections: [SettingsSection]) -> some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.sidebarSectionSpacing) {
-            Text(title)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing8)
-                .padding(.bottom, MeetingAssistantDesignSystem.Layout.spacing6)
-
-            ForEach(sections) { section in
-                SidebarItemView(
-                    section: section,
-                    isSelected: selectedSection == section,
-                    onSelect: { selectedSection = section }
+    private func sidebarLabel(for section: SettingsSection) -> some View {
+        Label(section.title, systemImage: section.icon)
+            .font(
+                .system(
+                    size: MeetingAssistantDesignSystem.Layout.sidebarLabelFontSize,
+                    weight: .medium
                 )
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
+            )
+            .lineLimit(1)
+            .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing2)
     }
 
     // MARK: - Detail View
@@ -119,66 +110,6 @@ public struct SettingsView: View {
         case .permissions:
             PermissionsSettingsTab()
         }
-    }
-}
-
-// MARK: - Sidebar Item View
-
-private struct SidebarItemView: View {
-    let section: SettingsSection
-    let isSelected: Bool
-    let onSelect: () -> Void
-
-    var body: some View {
-        Button(action: onSelect) {
-            HStack(spacing: MeetingAssistantDesignSystem.Layout.sidebarItemContentSpacing) {
-                Image(systemName: section.icon)
-                    .font(
-                        .system(
-                            size: MeetingAssistantDesignSystem.Layout.sidebarSymbolFontSize,
-                            weight: .medium
-                        )
-                    )
-                    .aspectRatio(contentMode: .fit)
-                    .foregroundStyle(Color.primary.opacity(0.85))
-                    .frame(width: 24, height: 24)
-
-                Text(section.title)
-                    .font(
-                        .system(
-                            size: MeetingAssistantDesignSystem.Layout.sidebarLabelFontSize,
-                            weight: .medium
-                        )
-                    )
-                    .foregroundStyle(Color.primary.opacity(0.85))
-                    .lineLimit(1)
-
-                Spacer(minLength: 0)
-            }
-            .frame(
-                maxWidth: .infinity,
-                minHeight: MeetingAssistantDesignSystem.Layout.sidebarItemHeight,
-                alignment: .leading
-            )
-            .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing8)
-            .background(isSelected ? MeetingAssistantDesignSystem.Colors.selectionFill : .clear)
-            .overlay(
-                RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.sidebarItemCornerRadius)
-                    .stroke(
-                        isSelected ? MeetingAssistantDesignSystem.Colors.selectionStroke : .clear,
-                        lineWidth: 1
-                    )
-            )
-            .clipShape(
-                RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.sidebarItemCornerRadius)
-            )
-            .contentShape(
-                RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.sidebarItemCornerRadius)
-            )
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .buttonStyle(.plain)
-        .contentShape(Rectangle())
     }
 }
 
