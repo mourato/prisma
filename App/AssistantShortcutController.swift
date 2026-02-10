@@ -14,7 +14,7 @@ final class AssistantShortcutController {
 
     private lazy var shortcutHandler = SmartShortcutHandler(
         isRecordingProvider: { [weak self] in self?.assistantService.isRecording ?? false },
-        actionHandler: { [weak self] action in
+        actionHandler: { [weak self] (action: SmartShortcutHandler.Action) in
             Task { @MainActor in
                 await self?.performAction(action)
             }
@@ -150,14 +150,12 @@ final class AssistantShortcutController {
         }
 
         let isActive = presetState.isPresetActive(settings.assistantSelectedPresetKey, event: event)
+        let wasPressed = shortcutHandler.isPressed
         shortcutHandler.handleModifierChange(isActive: isActive)
         
-        // Similar to GlobalShortcutController logic (adapted for Assistant)
-        if isActive, !isPresetPressed {
-             isPresetPressed = true
+        if isActive, !wasPressed {
              Task { @MainActor in await handleShortcutDown() }
-        } else if !isActive, isPresetPressed {
-             isPresetPressed = false
+        } else if !isActive, wasPressed {
              Task { @MainActor in await handleShortcutUp() }
         }
     }

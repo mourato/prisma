@@ -17,7 +17,7 @@ final class SmartShortcutHandler {
     
     // MARK: - Properties
     
-    private var isPresetPressed = false
+    public private(set) var isPressed = false
     private var pressStartTime: Date?
     private var wasRecordingAtPress = false
     private var startedRecording = false
@@ -40,7 +40,7 @@ final class SmartShortcutHandler {
     
     init(
         holdThreshold: TimeInterval = 0.35,
-        doubleTapInterval: TimeInterval = 0.75, // Default to the fixed 0.75s
+        doubleTapInterval: TimeInterval = 0.25,
         isRecordingProvider: @escaping () -> Bool,
         actionHandler: @escaping (Action) -> Void
     ) {
@@ -53,7 +53,7 @@ final class SmartShortcutHandler {
     // MARK: - Public API
     
     func reset() {
-        isPresetPressed = false
+        isPressed = false
         pressStartTime = nil
         wasRecordingAtPress = false
         startedRecording = false
@@ -86,10 +86,10 @@ final class SmartShortcutHandler {
             break // Handled on Down
         }
     }
-    
+
     func handleModifierChange(isActive: Bool) {
-        if isActive, !isPresetPressed {
-            isPresetPressed = true
+        if isActive, !isPressed {
+            isPressed = true
             // We need to know the current activation mode to decide what to do. 
             // Since this method doesn't take it, the caller should trigger the 'Down' 
             // action if appropriate.
@@ -97,8 +97,8 @@ final class SmartShortcutHandler {
             // essentially drives the 'Down'/'Up' calls based on this state change.
             // For now, let's assume the caller handles the async Task dispatch 
             // and calls handleShortcutDown.
-        } else if !isActive, isPresetPressed {
-            isPresetPressed = false
+        } else if !isActive, isPressed {
+            isPressed = false
             // Caller handles 'Up'
         }
     }
