@@ -52,7 +52,7 @@ public struct TranscriptionAudioPlayerView: View {
 
             // Duration
             Text(formatTime(viewModel.duration - viewModel.currentTime))
-                .font(.caption2.monospacedDigit())
+                .font(.caption2)
                 .foregroundStyle(.secondary)
                 .frame(width: 40, alignment: .trailing)
         }

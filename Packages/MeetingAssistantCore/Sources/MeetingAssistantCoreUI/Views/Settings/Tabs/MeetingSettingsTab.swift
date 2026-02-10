@@ -149,7 +149,7 @@ public struct MeetingSettingsTab: View {
                                 .foregroundStyle(.secondary)
 
                             TextEditor(text: $meetingViewModel.settings.summaryTemplate)
-                                .font(.system(.body, design: .monospaced))
+                                .font(.body)
                                 .frame(height: 150)
                                 .padding(MeetingAssistantDesignSystem.Layout.spacing8)
                                 .background(MeetingAssistantDesignSystem.Colors.controlBackground)

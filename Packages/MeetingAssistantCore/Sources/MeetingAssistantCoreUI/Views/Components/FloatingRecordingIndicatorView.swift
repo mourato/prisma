@@ -316,7 +316,6 @@ public struct FloatingRecordingIndicatorView: View {
                     Text(formatRecordingDuration(at: context.date))
                         .font(.callout.weight(.semibold))
                         .foregroundStyle(MeetingAssistantDesignSystem.Colors.overlayForeground)
-                        .monospacedDigit()
                 }
                 .accessibilityLabel("recording_indicator.duration".localized)
             }
