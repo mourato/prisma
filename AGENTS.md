@@ -57,6 +57,7 @@ Lint and formatting:
 ./scripts/lint.sh
 ./scripts/lint-fix.sh
 make arch-check
+make preview-check
 make format
 ```
 
@@ -83,11 +84,16 @@ UI design-system rules:
 - Prefer design-system spacing/radius tokens over magic numbers.
 - Prefer design-system components over ad-hoc container styling.
 - Use `MA*` components directly in Settings (`MACard`, `MAGroup`, `MAToggleRow`, `MACallout`, `MABadge`, `MAActionButton`, `MAThemePicker`).
+- Every SwiftUI `struct ...: View` under `MeetingAssistantCoreUI` must include at least one `#Preview`.
+- For stateful UI, prefer multiple previews covering key states (e.g., loading/success/error).
+- For views with startup side effects, gate them in preview mode via `PreviewRuntime.isRunning`.
 
 Design-system references:
 
 - Tokens: `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreUI/DesignSystem/MeetingAssistantDesignSystem.swift`
 - Components: `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreUI/DesignSystem/Components/`
+- Preview guidelines: `docs/PREVIEW_GUIDELINES.md`
+- Preview check script: `scripts/preview-check.sh`
 
 ## Testing instructions
 
@@ -192,6 +198,7 @@ Skills index (loaded conditionally):
 | `.agents/skills/menubar/` | NSStatusItem, NSMenu, NSPopover |
 | `.agents/skills/skill-development/` | create skill, develop plugin |
 | `.agents/skills/skills-discovery/` | search skills, registry |
+| `.agents/skills/preview-coverage/` | SwiftUI preview requirements, preview state coverage |
 | `.agents/skills/swift-package-manager/` | Package.swift, SPM dependencies |
 | `.agents/skills/swiftui-patterns/` | SwiftUI views, @State, NavigationStack |
 | `.agents/skills/testing-xctest/` | XCTest, @Test, mock, XCTAssert |
