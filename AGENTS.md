@@ -13,6 +13,35 @@ Core context:
 - Architecture style: skill-based guidance + modular Clean Architecture boundaries
 - Canonical agent directory: `.agents/` (`.agent` is a compatibility symlink)
 
+## ✅ Standard Task SOP (Mandatory)
+
+This is the **single, standardized** flow for every task in this repository:
+
+1. **Create branch + worktree** (never work directly on `main`):
+   - `git worktree add -b <branch-name> ../<folder-name> main`
+   - `cd ../<folder-name>`
+2. **Implement in small slices**.
+3. **Verification gate (before ANY commit)**:
+   - `make build`
+   - `make test`
+   - (recommended) `make lint`
+   - If anything fails: stop and fix until green.
+4. **Atomic commits (green state)**:
+   - Split commits by intent (feature vs refactor vs tests vs cleanup).
+   - Every commit must compile and test.
+   - Use Conventional Commits (see `.agents/skills/git-workflow/SKILL.md`).
+5. **Local code review ritual (before final push/merge)**:
+   - Follow `.agents/skills/code-review/SKILL.md` and generate the 🔴/🟡/🟢 report.
+   - Fix **🔴 Critical** and **🟡 Medium** findings (🟢 optional).
+6. **Re-verify + atomic commits for review fixes**:
+   - `make build && make test` (and `make lint` when applicable).
+7. **Push / merge** the task branch into `main`.
+8. **Cleanup**:
+   - Remove worktree + prune.
+   - Delete the branch locally and remotely (if pushed).
+
+---
+
 ### Module split (B2 standard)
 
 `MeetingAssistantCore` is an aggregation target over specialized modules:
@@ -112,6 +141,14 @@ Minimum verification before merging:
 
 - `make test`
 - `make build`
+
+To ensure workspace isolation and maintain a clean `main` branch, all file modifications MUST follow Worktree-first + green gates + atomic commits.
+
+For the full standardized flow, follow the **Standard Task SOP** above and the skills:
+- `.agents/skills/task-lifecycle/SKILL.md`
+- `.agents/skills/git-workflow/SKILL.md`
+- `.agents/skills/code-review/SKILL.md`
+- `.agents/skills/git-worktree/SKILL.md`
 
 ## Security considerations
 
