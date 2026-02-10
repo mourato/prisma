@@ -36,7 +36,8 @@ public final class TranscribeAudioUseCase: Sendable {
         defaultPostProcessingPrompt: DomainPostProcessingPrompt? = nil,
         postProcessingModel: String? = nil,
         autoDetectMeetingType: Bool = false,
-        availablePrompts: [DomainPostProcessingPrompt] = []
+        availablePrompts: [DomainPostProcessingPrompt] = [],
+        postProcessingContext: String? = nil
     ) async throws -> TranscriptionEntity {
         // Verificar saúde do serviço
         guard try await transcriptionRepository.healthCheck() else {
@@ -62,6 +63,10 @@ public final class TranscribeAudioUseCase: Sendable {
         var promptTitle: String?
         var meetingType: String?
         var postProcessingDuration: Double = 0
+        let postProcessingInput = mergedPostProcessingInput(
+            transcriptionText: response.text,
+            context: postProcessingContext
+        )
 
         if applyPostProcessing, let postProcessingRepo = postProcessingRepository {
             let postProcessingStartTime = Date()
@@ -72,13 +77,13 @@ public final class TranscribeAudioUseCase: Sendable {
             do {
                 if let prompt = postProcessingPrompt {
                     // Prompt específico fornecido
-                    processedContent = try await postProcessingRepo.processTranscription(response.text, with: prompt)
+                    processedContent = try await postProcessingRepo.processTranscription(postProcessingInput, with: prompt)
                     promptId = prompt.id
                     promptTitle = prompt.title
                 } else {
                     if autoDetectMeetingType, !availablePrompts.isEmpty {
                         // Autodetecção: classifica o tipo e tenta escolher o prompt mais apropriado.
-                        let classification = try await classifyMeeting(text: response.text, repository: postProcessingRepo)
+                        let classification = try await classifyMeeting(text: postProcessingInput, repository: postProcessingRepo)
                         meetingType = classification
 
                         let normalizedType = classification?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -86,23 +91,23 @@ public final class TranscribeAudioUseCase: Sendable {
                            normalizedType != "general",
                            let match = findPrompt(for: normalizedType, in: availablePrompts)
                         {
-                            processedContent = try await postProcessingRepo.processTranscription(response.text, with: match)
+                            processedContent = try await postProcessingRepo.processTranscription(postProcessingInput, with: match)
                             promptId = match.id
                             promptTitle = match.title
                         } else if let fallback = defaultPostProcessingPrompt {
-                            processedContent = try await postProcessingRepo.processTranscription(response.text, with: fallback)
+                            processedContent = try await postProcessingRepo.processTranscription(postProcessingInput, with: fallback)
                             promptId = fallback.id
                             promptTitle = fallback.title
                         } else {
-                            processedContent = try await postProcessingRepo.processTranscription(response.text)
+                            processedContent = try await postProcessingRepo.processTranscription(postProcessingInput)
                         }
                     } else if let fallback = defaultPostProcessingPrompt {
                         // Sem autodetecção: usar prompt default (quando fornecido).
-                        processedContent = try await postProcessingRepo.processTranscription(response.text, with: fallback)
+                        processedContent = try await postProcessingRepo.processTranscription(postProcessingInput, with: fallback)
                         promptId = fallback.id
                         promptTitle = fallback.title
                     } else {
-                        processedContent = try await postProcessingRepo.processTranscription(response.text)
+                        processedContent = try await postProcessingRepo.processTranscription(postProcessingInput)
                     }
                 }
             } catch {
@@ -213,6 +218,21 @@ public final class TranscribeAudioUseCase: Sendable {
             .replacingOccurrences(of: "  ", with: " ")
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .lowercased()
+    }
+
+    private func mergedPostProcessingInput(transcriptionText: String, context: String?) -> String {
+        guard let context else { return transcriptionText }
+
+        let trimmedContext = context.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedContext.isEmpty else { return transcriptionText }
+
+        return """
+        \(transcriptionText)
+
+        ---
+        Additional context captured at recording start:
+        \(trimmedContext)
+        """
     }
 }
 
