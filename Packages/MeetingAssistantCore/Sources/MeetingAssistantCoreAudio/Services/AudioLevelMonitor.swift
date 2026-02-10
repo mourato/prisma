@@ -50,7 +50,7 @@ public final class AudioLevelMonitor: ObservableObject {
     ///   - samplingInterval: How often to sample audio levels. Default: 0.05s (20Hz).
     public init(
         audioRecorder: AudioRecorder = .shared,
-        samplingInterval: TimeInterval = 0.05
+        samplingInterval: TimeInterval = 0.03
     ) {
         self.audioRecorder = audioRecorder
         self.samplingInterval = samplingInterval

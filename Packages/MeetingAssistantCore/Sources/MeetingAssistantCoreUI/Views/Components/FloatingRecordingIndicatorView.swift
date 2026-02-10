@@ -529,7 +529,6 @@ struct AudioVisualizer: View {
     private let amplitudeScales: [Double]
 
     @State private var barHeights: [CGFloat]
-    @State private var targetHeights: [CGFloat]
 
     init(
         audioMeter: AudioMeter,
@@ -562,7 +561,6 @@ struct AudioVisualizer: View {
         }
 
         _barHeights = State(initialValue: Array(repeating: minHeight, count: barCount))
-        _targetHeights = State(initialValue: Array(repeating: minHeight, count: barCount))
     }
 
     var body: some View {
@@ -582,6 +580,14 @@ struct AudioVisualizer: View {
                 Capsule()
                     .fill(Color.white)
                     .frame(width: barWidth, height: barHeights[index])
+                    .animation(
+                        .interactiveSpring(
+                            response: 0.2, // Controls the speed of the spring (lower is faster)
+                            dampingFraction: 0.5, // Controls the bounciness (lower is bouncier)
+                            blendDuration: 0.2
+                        ),
+                        value: barHeights[index]
+                    )
             }
         }
         .frame(height: maxHeight, alignment: .center)
@@ -619,6 +625,8 @@ struct AudioVisualizer: View {
         let range = maxHeight - minHeight
         let center = barCount / 2
 
+        var newHeights: [CGFloat] = []
+
         for i in 0..<barCount {
             let distanceFromCenter = abs(i - center)
             let positionMultiplier = 1.0 - (Double(distanceFromCenter) / Double(center)) * 0.4
@@ -626,17 +634,13 @@ struct AudioVisualizer: View {
             // Use randomized sensitivity
             let sensitivityAdjustedLevel = adjustedLevel * positionMultiplier * sensitivityMultipliers[i]
 
+            // Calculate target height directly
             let targetHeight = minHeight + CGFloat(sensitivityAdjustedLevel) * range
-
-            let isDecaying = targetHeight < targetHeights[i]
-            let smoothingFactor: CGFloat = isDecaying ? 0.4 : 0.2
-
-            targetHeights[i] = targetHeights[i] * (1 - smoothingFactor) + targetHeight * smoothingFactor
-
-            if abs(barHeights[i] - targetHeights[i]) > 0.3 {
-                barHeights[i] = targetHeights[i]
-            }
+            newHeights.append(targetHeight)
         }
+        
+        // Update state directly; animation modifier handles the transition
+        barHeights = newHeights
     }
 }
 
