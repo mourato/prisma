@@ -20,6 +20,9 @@ public class ServiceSettingsViewModel: ObservableObject {
     public init(transcriptionClient: TranscriptionClient = .shared) {
         self.transcriptionClient = transcriptionClient
 
+        modelState = FluidAIModelManager.shared.modelState
+        isDiarizationLoaded = FluidAIModelManager.shared.isDiarizationLoaded
+
         FluidAIModelManager.shared.$modelState
             .receive(on: DispatchQueue.main)
             .assign(to: \.modelState, on: self)
@@ -29,6 +32,8 @@ public class ServiceSettingsViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .assign(to: \.isDiarizationLoaded, on: self)
             .store(in: &cancellables)
+
+        refreshInstalledModelStates()
     }
 
     public func testConnection() {
@@ -56,9 +61,19 @@ public class ServiceSettingsViewModel: ObservableObject {
         }
     }
 
+    public func downloadDiarizationModels() {
+        Task {
+            await FluidAIModelManager.shared.loadDiarizationModels()
+        }
+    }
+
     public func deleteDiarizationModels() {
         Task {
             FluidAIModelManager.shared.deleteDiarizationModels()
         }
+    }
+
+    public func refreshInstalledModelStates() {
+        FluidAIModelManager.shared.refreshInstalledModelStates()
     }
 }
