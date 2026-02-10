@@ -57,7 +57,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
         case .metrics: "chart.pie.fill"
         case .general: "gearshape.2"
         case .dictation: "microphone"
-        case .meetings: "bubble.left.and.waveform"
+        case .meetings: "bubble.left.and.text.bubble.right"
         case .audio: "speaker.wave.2"
         case .assistant: "sparkles"
         case .transcriptions: "clock"
