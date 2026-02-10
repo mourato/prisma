@@ -49,6 +49,14 @@ public struct DictationSettingsTab: View {
                     }
                 }
 
+                MACard {
+                    MAToggleRow(
+                        "settings.shortcuts.use_escape".localized,
+                        description: "settings.shortcuts.use_escape_desc".localized,
+                        isOn: $shortcutsViewModel.useEscapeToCancelRecording
+                    )
+                }
+
                 // Workflow
                 MAGroup("settings.dictation.workflow".localized, icon: "cpu") {
                     VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
