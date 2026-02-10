@@ -1,11 +1,11 @@
 import KeyboardShortcuts
-import SwiftUI
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
+import SwiftUI
 
 // MARK: - Meeting Settings Tab
 
@@ -19,25 +19,16 @@ public struct MeetingSettingsTab: View {
         ScrollView {
             VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.sectionSpacing) {
                 // Keyboard Shortcut (Existing)
-                MAGroup("settings.shortcuts.meeting".localized, icon: "keyboard") {
-                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
-                        Text("settings.shortcuts.meeting_desc".localized)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-
-                        MAShortcutControlsRow(
-                            title: "settings.shortcuts.meeting".localized,
-                            selectedPresetKey: $meetingViewModel.settings.meetingSelectedPresetKey
-                        )
-
-                        if meetingViewModel.settings.meetingSelectedPresetKey == .custom {
-                            Divider()
-
-                            MAShortcutRecorderRow(label: "settings.shortcuts.custom_shortcut".localized) {
-                                KeyboardShortcuts.Recorder(for: .meetingToggle)
-                            }
-                        }
-                    }
+                MAShortcutSettingsSection(
+                    groupTitle: "settings.shortcuts.meeting".localized,
+                    descriptionText: "settings.shortcuts.meeting_desc".localized,
+                    shortcutTitle: "settings.shortcuts.meeting".localized,
+                    customShortcutLabel: "settings.shortcuts.custom_shortcut".localized,
+                    activationModeDescription: "settings.shortcuts.activation_mode_desc".localized,
+                    activationMode: $meetingViewModel.settings.shortcutActivationMode,
+                    selectedPresetKey: $meetingViewModel.settings.meetingSelectedPresetKey
+                ) {
+                    KeyboardShortcuts.Recorder(for: .meetingToggle)
                 }
 
                 // Automation (Existing)
