@@ -34,9 +34,13 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
     // MARK: - Configuration
 
     private enum Constants {
-        static let panelWidth: CGFloat = MeetingAssistantDesignSystem.Layout.recordingIndicatorPanelWidth
-        static let panelHeightClassic: CGFloat = MeetingAssistantDesignSystem.Layout.controlHeight
+        static let panelHeightClassic: CGFloat = 42
         static let panelHeightMini: CGFloat = MeetingAssistantDesignSystem.Layout.recordingIndicatorMiniHeight
+        static let panelWidthClassicMeeting: CGFloat = 305
+        static let panelWidthClassicDictation: CGFloat = 254
+        static let panelWidthMiniMeeting: CGFloat = 235
+        static let panelWidthMiniDictation: CGFloat = 188
+        static let panelWidthError: CGFloat = MeetingAssistantDesignSystem.Layout.recordingIndicatorPanelWidth
         static let screenPadding: CGFloat = 40
     }
 
@@ -69,11 +73,13 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         let shouldCreatePanel = panel == nil
 
         // Create the panel
-        let panelHeight = panelHeight(for: settingsStore.recordingIndicatorStyle, mode: mode)
+        let style = settingsStore.recordingIndicatorStyle
+        let panelWidth = panelWidth(for: style, mode: mode, type: type)
+        let panelHeight = panelHeight(for: style, mode: mode)
         let contentRect = NSRect(
             x: 0,
             y: 0,
-            width: Constants.panelWidth,
+            width: panelWidth,
             height: panelHeight
         )
 
@@ -96,6 +102,8 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
             panel.isMovableByWindowBackground = false
 
             self.panel = panel
+        } else {
+            panel.setContentSize(NSSize(width: panelWidth, height: panelHeight))
         }
 
         updateMode(mode)
@@ -235,6 +243,27 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
                 Constants.panelHeightMini
             case .none:
                 Constants.panelHeightMini
+            }
+        }
+    }
+
+    private func panelWidth(
+        for style: RecordingIndicatorStyle,
+        mode: FloatingRecordingIndicatorMode,
+        type: MeetingType?
+    ) -> CGFloat {
+        switch mode {
+        case .error:
+            return Constants.panelWidthError
+        case .recording, .processing:
+            let isMeetingType = type != nil && RecordingManager.shared.recordingSource != .microphone
+            switch style {
+            case .classic:
+                return isMeetingType ? Constants.panelWidthClassicMeeting : Constants.panelWidthClassicDictation
+            case .mini:
+                return isMeetingType ? Constants.panelWidthMiniMeeting : Constants.panelWidthMiniDictation
+            case .none:
+                return Constants.panelWidthMiniDictation
             }
         }
     }
