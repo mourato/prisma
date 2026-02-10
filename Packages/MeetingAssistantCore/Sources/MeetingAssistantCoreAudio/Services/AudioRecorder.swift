@@ -151,6 +151,14 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             }
         }
 
+        let settings = AppSettingsStore.shared
+        let shouldBoostMicInputVolume = settings.autoIncreaseMicrophoneVolume
+            && settings.useSystemDefaultInput
+            && (source == .microphone || source == .all)
+        if shouldBoostMicInputVolume {
+            increaseDefaultMicrophoneInputVolumeIfPossible()
+        }
+
         // 1. Check Microphone Permissions first if needed
         if (source == .microphone || source == .all) && AVCaptureDevice.authorizationStatus(for: .audio) != .authorized {
             AppLogger.error("Microphone permission denied. Cannot start recording.", category: .recordingManager)
@@ -208,6 +216,21 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             await stopRecording()
             throw error
         }
+    }
+
+    private func increaseDefaultMicrophoneInputVolumeIfPossible() {
+        guard deviceManager.setDefaultInputVolumeToMaximum() else {
+            AppLogger.debug(
+                "Unable to set default microphone input volume to maximum (property not available or not settable).",
+                category: .recordingManager
+            )
+            return
+        }
+
+        AppLogger.info(
+            "Default microphone input volume set to maximum at recording start.",
+            category: .recordingManager
+        )
     }
 
     // MARK: - Engine Setup Helpers

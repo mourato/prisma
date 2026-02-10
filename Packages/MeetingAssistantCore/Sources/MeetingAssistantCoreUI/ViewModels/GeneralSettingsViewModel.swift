@@ -76,6 +76,12 @@ public class GeneralSettingsViewModel: ObservableObject {
         }
     }
 
+    @Published public var autoIncreaseMicrophoneVolume: Bool {
+        didSet {
+            settingsStore.autoIncreaseMicrophoneVolume = autoIncreaseMicrophoneVolume
+        }
+    }
+
     @Published public var recordingIndicatorEnabled: Bool {
         didSet {
             settingsStore.recordingIndicatorEnabled = recordingIndicatorEnabled
@@ -169,6 +175,7 @@ public class GeneralSettingsViewModel: ObservableObject {
         autoPasteTranscriptionToActiveApp = settingsStore.autoPasteTranscriptionToActiveApp
         muteOutputDuringRecording = settingsStore.muteOutputDuringRecording
         useSystemDefaultInput = settingsStore.useSystemDefaultInput
+        autoIncreaseMicrophoneVolume = settingsStore.autoIncreaseMicrophoneVolume
         recordingIndicatorEnabled = settingsStore.recordingIndicatorEnabled
         recordingIndicatorStyle = settingsStore.recordingIndicatorStyle
         recordingIndicatorPosition = settingsStore.recordingIndicatorPosition

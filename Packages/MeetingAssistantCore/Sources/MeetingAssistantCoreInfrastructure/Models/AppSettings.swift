@@ -431,6 +431,7 @@ public class AppSettingsStore: ObservableObject {
         static let audioDevicePriority = "audioDevicePriority"
         static let useSystemDefaultInput = "useSystemDefaultInput"
         static let muteOutputDuringRecording = "muteOutputDuringRecording"
+        static let autoIncreaseMicrophoneVolume = "autoIncreaseMicrophoneVolume"
         static let deletedPromptIds = "postProcessingDeletedPromptIds"
         static let shortcutActivationMode = "shortcutActivationMode"
         static let dictationShortcutActivationMode = "dictationShortcutActivationMode"
@@ -619,6 +620,11 @@ public class AppSettingsStore: ObservableObject {
     /// Whether to mute system audio output while recording is in progress.
     @Published public var muteOutputDuringRecording: Bool {
         didSet { UserDefaults.standard.set(muteOutputDuringRecording, forKey: Keys.muteOutputDuringRecording) }
+    }
+
+    /// Whether to set the default microphone input volume to maximum when recording starts.
+    @Published public var autoIncreaseMicrophoneVolume: Bool {
+        didSet { UserDefaults.standard.set(autoIncreaseMicrophoneVolume, forKey: Keys.autoIncreaseMicrophoneVolume) }
     }
 
     /// How keyboard shortcuts activate recording.
@@ -904,6 +910,7 @@ public class AppSettingsStore: ObservableObject {
         audioDevicePriority = UserDefaults.standard.stringArray(forKey: Keys.audioDevicePriority) ?? []
         useSystemDefaultInput = Self.loadBoolDefaultIfUnset(forKey: Keys.useSystemDefaultInput, defaultValue: true)
         muteOutputDuringRecording = UserDefaults.standard.bool(forKey: Keys.muteOutputDuringRecording)
+        autoIncreaseMicrophoneVolume = UserDefaults.standard.bool(forKey: Keys.autoIncreaseMicrophoneVolume)
 
         let rawActivationMode = UserDefaults.standard.string(forKey: Keys.shortcutActivationMode)
         let resolvedActivationMode = rawActivationMode.flatMap { ShortcutActivationMode(rawValue: $0) } ?? .holdOrToggle
@@ -1137,6 +1144,7 @@ public class AppSettingsStore: ObservableObject {
         audioDevicePriority = []
         useSystemDefaultInput = true
         muteOutputDuringRecording = false
+        autoIncreaseMicrophoneVolume = false
         shortcutActivationMode = .holdOrToggle
         dictationShortcutActivationMode = .holdOrToggle
         useEscapeToCancelRecording = false
