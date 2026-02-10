@@ -291,11 +291,12 @@ final class GlobalShortcutController {
          // Dictation
         if settings.dictationSelectedPresetKey.requiresModifierMonitoring {
             let isActive = isPresetActive(settings.dictationSelectedPresetKey, event: event)
-            if isActive, !dictationHandler.isPressed {
-                 dictationHandler.setPressed(true)
+            let wasPressed = dictationHandler.isPressed
+            dictationHandler.handleModifierChange(isActive: isActive)
+            
+            if isActive, !wasPressed {
                  Task { @MainActor in await handleShortcutDown(for: .dictation) }
-            } else if !isActive, dictationHandler.isPressed {
-                 dictationHandler.setPressed(false)
+            } else if !isActive, wasPressed {
                  Task { @MainActor in await handleShortcutUp(for: .dictation) }
             }
         }
@@ -303,11 +304,12 @@ final class GlobalShortcutController {
         // Meeting
         if settings.meetingSelectedPresetKey.requiresModifierMonitoring {
             let isActive = isPresetActive(settings.meetingSelectedPresetKey, event: event)
-            if isActive, !meetingHandler.isPressed {
-                 meetingHandler.setPressed(true)
+            let wasPressed = meetingHandler.isPressed
+            meetingHandler.handleModifierChange(isActive: isActive)
+            
+            if isActive, !wasPressed {
                  Task { @MainActor in await handleShortcutDown(for: .meeting) }
-            } else if !isActive, meetingHandler.isPressed {
-                 meetingHandler.setPressed(false)
+            } else if !isActive, wasPressed {
                  Task { @MainActor in await handleShortcutUp(for: .meeting) }
             }
         }
