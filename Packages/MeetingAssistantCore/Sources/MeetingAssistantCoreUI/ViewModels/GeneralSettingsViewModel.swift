@@ -106,12 +106,6 @@ public class GeneralSettingsViewModel: ObservableObject {
         }
     }
 
-    @Published public var appAccentColor: AppThemeColor {
-        didSet {
-            settingsStore.appAccentColor = appAccentColor
-        }
-    }
-
     // MARK: - Sound Feedback Properties
 
     @Published public var soundFeedbackEnabled: Bool {
@@ -180,7 +174,6 @@ public class GeneralSettingsViewModel: ObservableObject {
         recordingIndicatorPosition = settingsStore.recordingIndicatorPosition
         autoDeleteTranscriptions = settingsStore.autoDeleteTranscriptions
         autoDeletePeriodDays = settingsStore.autoDeletePeriodDays
-        appAccentColor = settingsStore.appAccentColor
         soundFeedbackEnabled = settingsStore.soundFeedbackEnabled
         recordingStartSound = settingsStore.recordingStartSound
         recordingStopSound = settingsStore.recordingStopSound

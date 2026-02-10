@@ -16,13 +16,8 @@ public enum MeetingAssistantDesignSystem {
     // MARK: - Colors
 
     public enum Colors {
-        private static var selectedAccentColor: AppThemeColor {
-            let rawValue = UserDefaults.standard.string(forKey: "appAccentColor")
-            return rawValue.flatMap { AppThemeColor(rawValue: $0) } ?? .system
-        }
-
         public static var accent: Color {
-            Color(nsColor: selectedAccentColor.nsColor)
+            Color(nsColor: .controlAccentColor)
         }
 
         public static var secondaryAccent: Color {
@@ -30,7 +25,7 @@ public enum MeetingAssistantDesignSystem {
         }
 
         public static var onAccent: Color {
-            selectedAccentColor.adaptiveForegroundColor
+            .white
         }
 
         public static let success = Color.green
