@@ -1,11 +1,11 @@
 import KeyboardShortcuts
-import SwiftUI
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
+import SwiftUI
 
 // MARK: - Dictation Settings Tab
 
@@ -21,32 +21,16 @@ public struct DictationSettingsTab: View {
         ScrollView {
             VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.sectionSpacing) {
                 // Keyboard Shortcut
-                MAGroup("settings.shortcuts.dictation".localized, icon: "keyboard") {
-                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
-                        Text("settings.shortcuts.dictation_desc".localized)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-
-                        MAShortcutControlsRow(
-                            title: "settings.shortcuts.dictation".localized,
-                            activationMode: $shortcutsViewModel.dictationActivationMode,
-                            selectedPresetKey: $shortcutsViewModel.dictationSelectedPresetKey
-                        )
-
-                        if shortcutsViewModel.dictationSelectedPresetKey == .custom {
-                            Divider()
-
-                            MAShortcutRecorderRow(label: "settings.shortcuts.custom_shortcut".localized) {
-                                KeyboardShortcuts.Recorder(for: .dictationToggle)
-                            }
-                        }
-
-                        Divider()
-
-                        Text("settings.shortcuts.activation_mode_desc".localized)
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
-                    }
+                MAShortcutSettingsSection(
+                    groupTitle: "settings.shortcuts.dictation".localized,
+                    descriptionText: "settings.shortcuts.dictation_desc".localized,
+                    shortcutTitle: "settings.shortcuts.dictation".localized,
+                    customShortcutLabel: "settings.shortcuts.custom_shortcut".localized,
+                    activationModeDescription: "settings.shortcuts.activation_mode_desc".localized,
+                    activationMode: $shortcutsViewModel.dictationActivationMode,
+                    selectedPresetKey: $shortcutsViewModel.dictationSelectedPresetKey
+                ) {
+                    KeyboardShortcuts.Recorder(for: .dictationToggle)
                 }
 
                 MACard {

@@ -1,11 +1,11 @@
 import KeyboardShortcuts
-import SwiftUI
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
+import SwiftUI
 
 public struct AssistantSettingsTab: View {
     @StateObject private var viewModel = AssistantShortcutSettingsViewModel()
@@ -35,35 +35,17 @@ public struct AssistantSettingsTab: View {
     }
 
     private var assistantControlsSection: some View {
-        MAGroup(
-            "settings.assistant.controls".localized,
-            icon: "sparkles"
+        MAShortcutSettingsSection(
+            groupTitle: "settings.assistant.controls".localized,
+            groupIcon: "sparkles",
+            descriptionText: "settings.assistant.toggle_command_desc".localized,
+            shortcutTitle: "settings.assistant.toggle_command".localized,
+            customShortcutLabel: "settings.assistant.custom_shortcut".localized,
+            activationModeDescription: "settings.assistant.activation_mode_desc".localized,
+            activationMode: $viewModel.activationMode,
+            selectedPresetKey: $viewModel.selectedPresetKey
         ) {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
-                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing4) {
-                    Text("settings.assistant.toggle_command_desc".localized)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    MAShortcutControlsRow(
-                        title: "settings.assistant.toggle_command".localized,
-                        activationMode: $viewModel.activationMode,
-                        selectedPresetKey: $viewModel.selectedPresetKey
-                    )
-                }
-
-                if viewModel.isRecordingCustomShortcut {
-                    MAShortcutRecorderRow(label: "settings.assistant.custom_shortcut".localized) {
-                        KeyboardShortcuts.Recorder(for: .assistantCommand)
-                    }
-                }
-
-                Divider()
-
-                Text("settings.assistant.activation_mode_desc".localized)
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-            }
+            KeyboardShortcuts.Recorder(for: .assistantCommand)
         }
     }
 
