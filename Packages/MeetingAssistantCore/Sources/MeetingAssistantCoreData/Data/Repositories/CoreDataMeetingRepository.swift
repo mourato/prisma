@@ -1,4 +1,5 @@
 import MeetingAssistantCoreDomain
+
 // CoreDataMeetingRepository - Implementação de MeetingRepository usando CoreData
 // Thread-safe e isolado do domínio
 

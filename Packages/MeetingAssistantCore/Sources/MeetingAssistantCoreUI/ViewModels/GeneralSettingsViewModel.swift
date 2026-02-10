@@ -1,15 +1,15 @@
 import AppKit
 import Combine
 import Foundation
-import os
-import ServiceManagement
-import SwiftUI
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
+import os
+import ServiceManagement
+import SwiftUI
 
 @MainActor
 public class GeneralSettingsViewModel: ObservableObject {

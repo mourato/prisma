@@ -1,4 +1,5 @@
 import MeetingAssistantCoreDomain
+
 // CoreDataStack - Stack thread-safe para gerenciamento de CoreData
 // Seguindo Clean Architecture com isolamento de infraestrutura
 
@@ -39,7 +40,7 @@ public final class CoreDataStack: Sendable {
             description.shouldInferMappingModelAutomatically = true
             persistentContainer.persistentStoreDescriptions = [description]
         } else {
-            persistentContainer.persistentStoreDescriptions.forEach { description in
+            for description in persistentContainer.persistentStoreDescriptions {
                 description.shouldMigrateStoreAutomatically = true
                 description.shouldInferMappingModelAutomatically = true
             }
@@ -69,7 +70,7 @@ public final class CoreDataStack: Sendable {
         return try await withCheckedThrowingContinuation { continuation in
             context.perform {
                 do {
-                    continuation.resume(returning: try operation(context))
+                    try continuation.resume(returning: operation(context))
                 } catch {
                     continuation.resume(throwing: error)
                 }

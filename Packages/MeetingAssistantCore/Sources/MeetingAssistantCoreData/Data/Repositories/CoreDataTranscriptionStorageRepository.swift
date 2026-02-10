@@ -1,4 +1,5 @@
 import MeetingAssistantCoreDomain
+
 // CoreDataTranscriptionStorageRepository - Implementação de TranscriptionStorageRepository usando CoreData
 // Thread-safe e isolado do domínio
 

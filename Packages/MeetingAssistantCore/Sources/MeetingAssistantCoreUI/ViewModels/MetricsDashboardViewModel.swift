@@ -1,11 +1,11 @@
 import Foundation
-import OSLog
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
+import OSLog
 
 @MainActor
 public final class MetricsDashboardViewModel: ObservableObject {

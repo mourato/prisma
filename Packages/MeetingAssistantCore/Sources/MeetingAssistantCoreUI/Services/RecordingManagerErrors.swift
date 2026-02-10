@@ -18,6 +18,7 @@ public enum RecordingManagerError: LocalizedError {
         }
     }
 }
+
 public enum AudioImportError: LocalizedError {
     case fileNotFound
     case unsupportedFormat

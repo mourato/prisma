@@ -1,12 +1,12 @@
 import AppKit
 import Foundation
-import SwiftUI
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
+import SwiftUI
 
 /// Floating indicator view that shows audio waveforms during recording or processing.
 public struct FloatingRecordingIndicatorView: View {
@@ -160,7 +160,7 @@ public struct FloatingRecordingIndicatorView: View {
 
     /// Dot indicating recording or processing (Figma uses 12x12).
     private func statusDot(for size: IndicatorSize) -> some View {
-        return Circle()
+        Circle()
             .fill(isRecordingMode ? MeetingAssistantDesignSystem.Colors.recording : MeetingAssistantDesignSystem.Colors.accent)
             .frame(width: MeetingAssistantDesignSystem.Layout.recordingIndicatorDotSize, height: MeetingAssistantDesignSystem.Layout.recordingIndicatorDotSize)
             .modifier(PulsingModifier(isActive: isRecordingMode, speed: isRecordingMode ? 0.9 : 1.4))
@@ -281,7 +281,7 @@ public struct FloatingRecordingIndicatorView: View {
             Image(nsImage: promptIconImage(for: size))
                 .renderingMode(.original)
                 .frame(width: 20, height: 20)
-            .contentShape(Rectangle())
+                .contentShape(Rectangle())
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
@@ -340,11 +340,11 @@ public struct FloatingRecordingIndicatorView: View {
     private var currentIndicatorSize: IndicatorSize {
         switch style {
         case .classic:
-            return .classic
+            .classic
         case .mini:
-            return .mini
+            .mini
         case .none:
-            return .classic
+            .classic
         }
     }
 
@@ -418,7 +418,7 @@ public struct FloatingRecordingIndicatorView: View {
     private func collapseAfterDelayIfNeeded() {
         guard isRecordingMode else { return }
         guard !isMainRegionHovered else { return }
-        if isPromptRegionHovered && isPromptSessionArmed { return }
+        if isPromptRegionHovered, isPromptSessionArmed { return }
         guard isHovering else { return }
 
         hoverCollapseTask?.cancel()
@@ -426,7 +426,7 @@ public struct FloatingRecordingIndicatorView: View {
             try? await Task.sleep(nanoseconds: 110_000_000)
             guard !Task.isCancelled else { return }
             guard !isMainRegionHovered else { return }
-            if isPromptRegionHovered && isPromptSessionArmed { return }
+            if isPromptRegionHovered, isPromptSessionArmed { return }
 
             withAnimation(.easeOut(duration: 0.14)) {
                 isHovering = false
@@ -438,54 +438,54 @@ public struct FloatingRecordingIndicatorView: View {
     private func contentSpacing(for size: IndicatorSize) -> CGFloat {
         switch size {
         case .classic:
-            return MeetingAssistantDesignSystem.Layout.recordingIndicatorClassicInnerSpacing
+            MeetingAssistantDesignSystem.Layout.recordingIndicatorClassicInnerSpacing
         case .mini:
-            return MeetingAssistantDesignSystem.Layout.recordingIndicatorMiniInnerSpacing
+            MeetingAssistantDesignSystem.Layout.recordingIndicatorMiniInnerSpacing
         }
     }
 
     private func controlSpacing(for size: IndicatorSize) -> CGFloat {
         switch size {
         case .classic:
-            return MeetingAssistantDesignSystem.Layout.recordingIndicatorClassicInnerSpacing
+            MeetingAssistantDesignSystem.Layout.recordingIndicatorClassicInnerSpacing
         case .mini:
-            return MeetingAssistantDesignSystem.Layout.recordingIndicatorMiniInnerSpacing
+            MeetingAssistantDesignSystem.Layout.recordingIndicatorMiniInnerSpacing
         }
     }
 
     private func promptSize(for size: IndicatorSize) -> CGFloat {
         switch size {
         case .classic:
-            return MeetingAssistantDesignSystem.Layout.recordingIndicatorClassicPromptSize
+            MeetingAssistantDesignSystem.Layout.recordingIndicatorClassicPromptSize
         case .mini:
-            return MeetingAssistantDesignSystem.Layout.recordingIndicatorMiniPromptSize
+            MeetingAssistantDesignSystem.Layout.recordingIndicatorMiniPromptSize
         }
     }
 
     private func waveformHeight(for size: IndicatorSize) -> CGFloat {
         switch size {
         case .classic:
-            return MeetingAssistantDesignSystem.Layout.recordingIndicatorClassicWaveHeight
+            MeetingAssistantDesignSystem.Layout.recordingIndicatorClassicWaveHeight
         case .mini:
-            return MeetingAssistantDesignSystem.Layout.recordingIndicatorMiniWaveHeight
+            MeetingAssistantDesignSystem.Layout.recordingIndicatorMiniWaveHeight
         }
     }
 
     private func waveCount(for size: IndicatorSize) -> Int {
         switch size {
         case .classic:
-            return MeetingAssistantDesignSystem.Layout.recordingIndicatorClassicWaveCount
+            MeetingAssistantDesignSystem.Layout.recordingIndicatorClassicWaveCount
         case .mini:
-            return MeetingAssistantDesignSystem.Layout.recordingIndicatorMiniWaveCount
+            MeetingAssistantDesignSystem.Layout.recordingIndicatorMiniWaveCount
         }
     }
 
     private func promptIconSize(for size: IndicatorSize) -> CGFloat {
         switch size {
         case .classic:
-            return 17
+            17
         case .mini:
-            return 13
+            13
         }
     }
 
@@ -638,7 +638,7 @@ struct AudioVisualizer: View {
             let targetHeight = minHeight + CGFloat(sensitivityAdjustedLevel) * range
             newHeights.append(targetHeight)
         }
-        
+
         // Update state directly; animation modifier handles the transition
         barHeights = newHeights
     }

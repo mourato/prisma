@@ -1,8 +1,8 @@
+import CoreData
 import Foundation
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
-import CoreData
 
 // MARK: - Models
 

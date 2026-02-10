@@ -1,14 +1,14 @@
 import AppKit
 import Foundation
-import OSLog
-import SwiftUI
-import UniformTypeIdentifiers
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
+import OSLog
+import SwiftUI
+import UniformTypeIdentifiers
 
 @MainActor
 public class TranscriptionSettingsViewModel: ObservableObject {

@@ -1,11 +1,11 @@
 import Atomics
 @preconcurrency import AVFoundation
 import Foundation
-import MeetingAssistantCoreInfrastructure
 import MeetingAssistantCoreCommon
+import MeetingAssistantCoreInfrastructure
 
 extension AudioRecorder {
-    nonisolated private func installMicDiagnosticsTap(
+    private nonisolated func installMicDiagnosticsTap(
         on inputNode: AVAudioInputNode,
         format: AVAudioFormat,
         peakBits: ManagedAtomic<UInt32>,

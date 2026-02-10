@@ -1,9 +1,9 @@
 import Combine
 import Foundation
-import os.log
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
+import os.log
 
 // MARK: - Transcription Client
 

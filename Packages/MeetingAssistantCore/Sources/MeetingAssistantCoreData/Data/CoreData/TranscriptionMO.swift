@@ -1,4 +1,5 @@
 import MeetingAssistantCoreDomain
+
 // TranscriptionMO - Managed Object para TranscriptionEntity
 // Modelo CoreData thread-safe seguindo Clean Architecture
 

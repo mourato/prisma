@@ -1,6 +1,6 @@
+import Atomics
 @preconcurrency import AVFoundation
 import Foundation
-import Atomics
 import MeetingAssistantCoreInfrastructure
 
 // MARK: - Audio Recording Worker

@@ -1,10 +1,10 @@
-import SwiftUI
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
+import SwiftUI
 
 /// A unified card for configuring AI provider settings, including status indicators and verification.
 public struct AIProviderIntegrationCard: View {
@@ -259,17 +259,36 @@ public struct AIProviderIntegrationCard: View {
 
 private struct PreviewKeychainProvider: KeychainProvider {
     func store(_ value: String, for key: KeychainManager.Key) throws {}
-    func retrieve(for key: KeychainManager.Key) throws -> String? { nil }
+    func retrieve(for key: KeychainManager.Key) throws -> String? {
+        nil
+    }
+
     func delete(for key: KeychainManager.Key) throws {}
-    func exists(for key: KeychainManager.Key) -> Bool { false }
-    func retrieveAPIKey(for provider: AIProvider) throws -> String? { nil }
-    func existsAPIKey(for provider: AIProvider) -> Bool { false }
+    func exists(for key: KeychainManager.Key) -> Bool {
+        false
+    }
+
+    func retrieveAPIKey(for provider: AIProvider) throws -> String? {
+        nil
+    }
+
+    func existsAPIKey(for provider: AIProvider) -> Bool {
+        false
+    }
 }
 
 private struct PreviewLLMService: LLMService {
-    func validateURL(_ urlString: String) -> URL? { URL(string: "https://api.openai.com/v1") }
-    func fetchAvailableModels(baseURL: URL, apiKey: String, provider: AIProvider) async throws -> [LLMModel] { [] }
-    func testConnection(baseURL: URL, apiKey: String) async throws -> Bool { true }
+    func validateURL(_ urlString: String) -> URL? {
+        URL(string: "https://api.openai.com/v1")
+    }
+
+    func fetchAvailableModels(baseURL: URL, apiKey: String, provider: AIProvider) async throws -> [LLMModel] {
+        []
+    }
+
+    func testConnection(baseURL: URL, apiKey: String) async throws -> Bool {
+        true
+    }
 }
 
 @MainActor

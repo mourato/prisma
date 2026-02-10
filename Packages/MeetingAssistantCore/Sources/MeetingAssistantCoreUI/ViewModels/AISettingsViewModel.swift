@@ -1,13 +1,13 @@
 import Combine
 import Foundation
-import os.log
-import SwiftUI
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
+import os.log
+import SwiftUI
 
 @MainActor
 public class AISettingsViewModel: ObservableObject {
@@ -45,7 +45,7 @@ public class AISettingsViewModel: ObservableObject {
                 guard let self else { return }
                 self.settings.updateSelectedModel("") // Clear previous selection (properly triggers didSet)
 
-                self.refreshProviderCredentialState()
+                refreshProviderCredentialState()
             }
             .store(in: &cancellables)
 

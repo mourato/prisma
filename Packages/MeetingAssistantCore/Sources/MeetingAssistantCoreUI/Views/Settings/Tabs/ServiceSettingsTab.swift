@@ -1,10 +1,10 @@
-import SwiftUI
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
+import SwiftUI
 
 // MARK: - Service Settings Tab
 
@@ -16,8 +16,8 @@ public struct ServiceSettingsTab: View {
     public var body: some View {
         ScrollView {
             ServiceSettingsContent()
-            .padding()
-            .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }
