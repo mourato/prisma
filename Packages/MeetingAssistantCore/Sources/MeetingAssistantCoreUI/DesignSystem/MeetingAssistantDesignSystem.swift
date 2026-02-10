@@ -123,13 +123,13 @@ public enum MeetingAssistantDesignSystem {
         public static let recordingIndicatorClassicWaveCount: Int = 18
         public static let recordingIndicatorMiniWaveCount: Int = 9
 
-        public static let recordingIndicatorClassicWaveHeight: CGFloat = 26
-        public static let recordingIndicatorMiniWaveHeight: CGFloat = 16
+        public static let recordingIndicatorClassicWaveHeight: CGFloat = 24
+        public static let recordingIndicatorMiniWaveHeight: CGFloat = 20
 
         public static let recordingIndicatorWaveformBarWidth: CGFloat = 2
         public static let recordingIndicatorWaveformBarSpacing: CGFloat = 2
         public static let recordingIndicatorWaveformMinHeight: CGFloat = 2
-        public static let recordingIndicatorWaveformMaxHeight: CGFloat = 26
+        public static let recordingIndicatorWaveformMaxHeight: CGFloat = 24
 
         public static let recordingIndicatorDotSize: CGFloat = 8
         public static let recordingIndicatorMiniDotSize: CGFloat = 8
