@@ -62,12 +62,6 @@ public struct EnhancementsSettingsTab: View {
 
                 if postProcessingViewModel.settings.contextAwarenessEnabled {
                     MAToggleRow(
-                        "settings.context_awareness.active_app".localized,
-                        description: "settings.context_awareness.active_app_desc".localized,
-                        isOn: $postProcessingViewModel.settings.contextAwarenessIncludeActiveApp
-                    )
-
-                    MAToggleRow(
                         "settings.context_awareness.clipboard".localized,
                         description: "settings.context_awareness.clipboard_desc".localized,
                         isOn: $postProcessingViewModel.settings.contextAwarenessIncludeClipboard
@@ -80,21 +74,17 @@ public struct EnhancementsSettingsTab: View {
                     )
 
                     MAToggleRow(
-                        "settings.context_awareness.accessibility_text".localized,
-                        description: "settings.context_awareness.accessibility_text_desc".localized,
-                        isOn: $postProcessingViewModel.settings.contextAwarenessIncludeAccessibilityText
+                        "settings.context_awareness.redact_sensitive_data".localized,
+                        description: "settings.context_awareness.redact_sensitive_data_desc".localized,
+                        isOn: $postProcessingViewModel.settings.contextAwarenessRedactSensitiveData
                     )
+
+                    Divider()
 
                     MAToggleRow(
                         "settings.context_awareness.protect_sensitive_apps".localized,
                         description: "settings.context_awareness.protect_sensitive_apps_desc".localized,
                         isOn: $postProcessingViewModel.settings.contextAwarenessProtectSensitiveApps
-                    )
-
-                    MAToggleRow(
-                        "settings.context_awareness.redact_sensitive_data".localized,
-                        description: "settings.context_awareness.redact_sensitive_data_desc".localized,
-                        isOn: $postProcessingViewModel.settings.contextAwarenessRedactSensitiveData
                     )
 
                     if postProcessingViewModel.settings.contextAwarenessProtectSensitiveApps {
