@@ -229,12 +229,8 @@ public struct DictationSettingsTab: View {
         Divider()
 
         Button {
-            if prompt.isPredefined {
-                promptViewModel.prepareCopy(of: prompt, asDuplicate: false)
-            } else {
-                promptViewModel.editingPrompt = prompt
-                promptViewModel.showPromptEditor = true
-            }
+            promptViewModel.editingPrompt = prompt
+            promptViewModel.showPromptEditor = true
         } label: {
             Label("settings.post_processing.edit".localized, systemImage: "pencil")
         }
@@ -245,14 +241,12 @@ public struct DictationSettingsTab: View {
             Label("settings.post_processing.duplicate".localized, systemImage: "plus.square.on.square")
         }
 
-        if !prompt.isPredefined {
-            Divider()
+        Divider()
 
-            Button(role: .destructive) {
-                promptViewModel.confirmDeletePrompt(prompt)
-            } label: {
-                Label("settings.post_processing.delete".localized, systemImage: "trash")
-            }
+        Button(role: .destructive) {
+            promptViewModel.confirmDeletePrompt(prompt)
+        } label: {
+            Label("settings.post_processing.delete".localized, systemImage: "trash")
         }
     }
 
