@@ -111,6 +111,13 @@ final class GlobalShortcutController {
             }
             .store(in: &cancellables)
 
+        settings.$dictationShortcutActivationMode
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.resetShortcutState()
+            }
+            .store(in: &cancellables)
+
         settings.$useEscapeToCancelRecording
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
@@ -252,7 +259,7 @@ final class GlobalShortcutController {
     }
 
     private func handleShortcutDown(for type: ShortcutType) async {
-        switch settings.shortcutActivationMode {
+        switch activationMode(for: type) {
         case .toggle:
             await toggleRecording(for: type)
         case .hold:
@@ -308,7 +315,7 @@ final class GlobalShortcutController {
     }
 
     private func handleShortcutUp(for type: ShortcutType) async {
-        switch settings.shortcutActivationMode {
+        switch activationMode(for: type) {
         case .hold:
             let startedRecording = type == .dictation ? dictationState.startedRecording : meetingState.startedRecording
             if startedRecording {
@@ -383,6 +390,15 @@ final class GlobalShortcutController {
         meetingState.reset()
 
         presetState.reset()
+    }
+
+    private func activationMode(for type: ShortcutType) -> ShortcutActivationMode {
+        switch type {
+        case .dictation:
+            settings.dictationShortcutActivationMode
+        case .meeting:
+            settings.shortcutActivationMode
+        }
     }
 
     private func isPresetActive(_ preset: PresetShortcutKey, event: NSEvent) -> Bool {

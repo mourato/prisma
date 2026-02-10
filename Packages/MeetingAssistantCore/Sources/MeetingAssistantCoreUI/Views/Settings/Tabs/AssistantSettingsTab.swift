@@ -40,55 +40,22 @@ public struct AssistantSettingsTab: View {
             icon: "sparkles"
         ) {
             VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("settings.assistant.toggle_command".localized)
-                            .font(.body)
-                            .fontWeight(.medium)
-                        Text("settings.assistant.toggle_command_desc".localized)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
+                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing4) {
+                    Text("settings.assistant.toggle_command_desc".localized)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
 
-                    Spacer()
-
-                    Picker("", selection: $viewModel.activationMode) {
-                        ForEach(ShortcutActivationMode.allCases, id: \.self) { mode in
-                            Text(mode.localizedName).tag(mode)
-                        }
-                    }
-                    .labelsHidden()
-                    .pickerStyle(.menu)
-                    .frame(width: MeetingAssistantDesignSystem.Layout.narrowPickerWidth)
-
-                    Picker("", selection: $viewModel.selectedPresetKey) {
-                        ForEach(PresetShortcutKey.allCases, id: \.self) { key in
-                            if let icon = key.icon {
-                                Label(key.displayName, systemImage: icon).tag(key)
-                            } else {
-                                Text(key.displayName).tag(key)
-                            }
-                        }
-                    }
-                    .labelsHidden()
-                    .pickerStyle(.menu)
-                    .frame(width: MeetingAssistantDesignSystem.Layout.smallPickerWidth)
+                    MAShortcutControlsRow(
+                        title: "settings.assistant.toggle_command".localized,
+                        activationMode: $viewModel.activationMode,
+                        selectedPresetKey: $viewModel.selectedPresetKey
+                    )
                 }
 
                 if viewModel.isRecordingCustomShortcut {
-                    HStack {
-                        Text("settings.assistant.custom_shortcut".localized)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-
-                        Spacer()
-
+                    MAShortcutRecorderRow(label: "settings.assistant.custom_shortcut".localized) {
                         KeyboardShortcuts.Recorder(for: .assistantCommand)
                     }
-                    .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
-                    .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)
-                    .background(MeetingAssistantDesignSystem.Colors.secondaryFill)
-                    .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
                 }
 
                 Divider()
