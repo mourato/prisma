@@ -73,3 +73,25 @@ public struct MACallout: View {
         .accessibilityElement(children: .combine)
     }
 }
+
+#Preview("Callout Kinds") {
+    VStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+        MACallout(
+            kind: .info,
+            title: "Information",
+            message: "This action is available and ready to use."
+        )
+        MACallout(
+            kind: .warning,
+            title: "Warning",
+            message: "Your model is not installed yet."
+        )
+        MACallout(
+            kind: .error,
+            title: "Error",
+            message: "We could not validate this configuration."
+        )
+    }
+    .padding()
+    .frame(width: 480)
+}

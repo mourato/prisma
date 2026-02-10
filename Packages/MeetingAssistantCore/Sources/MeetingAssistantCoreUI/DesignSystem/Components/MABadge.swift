@@ -42,3 +42,13 @@ public struct MABadge: View {
             .accessibilityLabel(text)
     }
 }
+
+#Preview("Badge Kinds") {
+    HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+        MABadge("Success", kind: .success)
+        MABadge("Warning", kind: .warning)
+        MABadge("Error", kind: .error)
+        MABadge("Neutral", kind: .neutral)
+    }
+    .padding()
+}

@@ -229,3 +229,28 @@ public struct SpeakerIdentificationSettingsSection: View {
         }
     }
 }
+
+private struct SpeakerIdentificationSettingsSectionPreview: View {
+    private let settings: AppSettingsStore
+
+    init() {
+        let settings = AppSettingsStore.shared
+        settings.isDiarizationEnabled = true
+        settings.numSpeakers = nil
+        settings.minSpeakers = 2
+        settings.maxSpeakers = 6
+        self.settings = settings
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+            SpeakerIdentificationSettingsSection(settings: settings, modelManager: .shared)
+        }
+        .padding()
+        .frame(width: 760)
+    }
+}
+
+#Preview("Speaker Identification Settings") {
+    SpeakerIdentificationSettingsSectionPreview()
+}

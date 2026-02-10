@@ -101,3 +101,28 @@ public struct MAShortcutRecorderRow<RecorderContent: View>: View {
         .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
     }
 }
+
+#Preview("Preset Shortcut") {
+    PreviewStateContainer(PresetShortcutKey.optionCommand) { key in
+        MAShortcutControlsRow(
+            title: "Quick Recording Shortcut",
+            selectedPresetKey: key
+        )
+        .padding()
+        .frame(width: 520)
+    }
+}
+
+#Preview("Activation + Preset") {
+    PreviewStateContainer(ShortcutActivationMode.holdOrToggle) { mode in
+        PreviewStateContainer(PresetShortcutKey.rightCommand) { key in
+            MAShortcutControlsRow(
+                title: "Meeting Assistant Shortcut",
+                activationMode: mode,
+                selectedPresetKey: key
+            )
+            .padding()
+            .frame(width: 520)
+        }
+    }
+}

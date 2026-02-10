@@ -69,3 +69,10 @@ public struct SettingsThemePicker: View {
         .contentShape(Rectangle())
     }
 }
+
+#Preview("Settings Theme Picker") {
+    PreviewStateContainer(AppThemeColor.blue) { selection in
+        SettingsThemePicker(selection: selection)
+            .padding()
+    }
+}
