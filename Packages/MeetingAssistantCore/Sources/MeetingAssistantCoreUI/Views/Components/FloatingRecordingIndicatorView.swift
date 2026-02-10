@@ -239,7 +239,6 @@ public struct FloatingRecordingIndicatorView: View {
             AudioVisualizer(
                 audioMeter: audioMonitor.audioMeter,
                 mode: visualizerModeForIndicator,
-                mode: visualizerModeForIndicator,
                 barCount: waveCount(for: size),
                 maxHeight: waveformHeight(for: size),
                 barWidth: MeetingAssistantDesignSystem.Layout.recordingIndicatorWaveformBarWidth,
