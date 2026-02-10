@@ -56,14 +56,17 @@ public struct ServiceSettingsContent: View {
                             VStack(alignment: .leading) {
                                 Text("settings.service.asr_model_name".localized)
                                     .fontWeight(.medium)
-                                Text(modelStatusText)
+                                Text(asrStatusText)
                                     .font(.caption2)
-                                    .foregroundStyle(modelStatusColor)
+                                    .foregroundStyle(asrStatusColor)
                             }
 
                             Spacer()
 
-                            if viewModel.modelState == .loaded {
+                            if viewModel.modelState == .downloading || viewModel.modelState == .loading {
+                                ProgressView()
+                                    .controlSize(.small)
+                            } else if viewModel.isASRInstalled {
                                 Button(role: .destructive) {
                                     viewModel.deleteASRModels()
                                 } label: {
@@ -72,9 +75,6 @@ public struct ServiceSettingsContent: View {
                                 }
                                 .buttonStyle(.borderless)
                                 .help("settings.service.delete_model".localized)
-                            } else if viewModel.modelState == .downloading || viewModel.modelState == .loading {
-                                ProgressView()
-                                    .controlSize(.small)
                             } else {
                                 Button {
                                     viewModel.downloadASRModels()
@@ -204,21 +204,24 @@ public struct ServiceSettingsContent: View {
         }
     }
 
-    private var modelStatusText: String {
+    private var asrStatusText: String {
         switch viewModel.modelState {
-        case .loaded: "transcription.model_state.loaded".localized
+        case .loaded: "settings.service.installed".localized
         case .downloading: "transcription.model_state.downloading".localized
         case .loading: "transcription.model_state.loading".localized
-        case .unloaded: "transcription.model_state.unloaded".localized
+        case .unloaded: viewModel.isASRInstalled ? "settings.service.installed".localized : "settings.service.not_installed".localized
         case .error: "transcription.model_state.error".localized
         }
     }
 
-    private var modelStatusColor: Color {
+    private var asrStatusColor: Color {
         switch viewModel.modelState {
         case .loaded: MeetingAssistantDesignSystem.Colors.success
         case .downloading, .loading: MeetingAssistantDesignSystem.Colors.warning
-        case .unloaded, .error: .secondary
+        case .unloaded:
+            viewModel.isASRInstalled ? MeetingAssistantDesignSystem.Colors.success : .secondary
+        case .error:
+            .secondary
         }
     }
 }

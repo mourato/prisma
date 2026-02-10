@@ -12,6 +12,7 @@ import MeetingAssistantCoreInfrastructure
 public class ServiceSettingsViewModel: ObservableObject {
     @Published public var transcriptionStatus: ConnectionStatus = .unknown
     @Published public var modelState: FluidAIModelManager.ModelState = .unloaded
+    @Published public var isASRInstalled: Bool = false
     @Published public var isDiarizationLoaded: Bool = false
 
     private let transcriptionClient: TranscriptionClient
@@ -21,11 +22,17 @@ public class ServiceSettingsViewModel: ObservableObject {
         self.transcriptionClient = transcriptionClient
 
         modelState = FluidAIModelManager.shared.modelState
+        isASRInstalled = FluidAIModelManager.shared.isASRInstalled
         isDiarizationLoaded = FluidAIModelManager.shared.isDiarizationLoaded
 
         FluidAIModelManager.shared.$modelState
             .receive(on: DispatchQueue.main)
             .assign(to: \.modelState, on: self)
+            .store(in: &cancellables)
+
+        FluidAIModelManager.shared.$isASRInstalled
+            .receive(on: DispatchQueue.main)
+            .assign(to: \.isASRInstalled, on: self)
             .store(in: &cancellables)
 
         FluidAIModelManager.shared.$isDiarizationLoaded

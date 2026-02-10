@@ -36,49 +36,44 @@ public class AISettingsViewModel: ObservableObject {
         self.settings = settings
         self.keychain = keychain
         self.llmService = llmService
-        // Initial load for current provider
-        apiKeyText = loadAPIKeyForCurrentProvider() ?? ""
 
         settings.$aiConfiguration
             .map(\.provider)
             .removeDuplicates()
             .dropFirst() // Skip initial value to avoid clearing selection on tab switch
-            .sink { [weak self] provider in
+            .sink { [weak self] _ in
                 guard let self else { return }
-                apiKeyText = ""
-                isKeySaved = self.keychain.existsAPIKey(for: provider)
                 self.settings.updateSelectedModel("") // Clear previous selection (properly triggers didSet)
 
-                if isKeySaved {
-                    // Restore verified state and fetch models
-                    connectionStatus = .success
-                    Task {
-                        await self.fetchAvailableModels()
-                    }
-                } else {
-                    connectionStatus = .unknown
-                    availableModels = [] // Clear models if no key
-                }
-
-                updateUIStates()
+                self.refreshProviderCredentialState()
             }
             .store(in: &cancellables)
 
-        // Initial state
+        // Initial load for current provider
+        refreshProviderCredentialState()
+    }
+
+    private func updateUIStates() {
+        showVerifyButton = !isKeySaved
+        showGetApiKeyButton = !isKeySaved && settings.aiConfiguration.provider.apiKeyURL != nil
+    }
+
+    public func refreshProviderCredentialState() {
         isKeySaved = keychain.existsAPIKey(for: settings.aiConfiguration.provider)
-        updateUIStates()
+        apiKeyText = isKeySaved ? "" : (loadAPIKeyForCurrentProvider() ?? "")
+
         if isKeySaved {
             connectionStatus = .success
             Task {
                 await fetchAvailableModels()
             }
+        } else {
+            connectionStatus = .unknown
+            availableModels = []
+            modelsFetchError = nil
         }
-    }
 
-    private func updateUIStates() {
-        let isVerified = connectionStatus == .success
-        showVerifyButton = !isKeySaved || !isVerified
-        showGetApiKeyButton = !isVerified && settings.aiConfiguration.provider.apiKeyURL != nil
+        updateUIStates()
     }
 
     private func persistAPIKey(_ value: String) throws {
