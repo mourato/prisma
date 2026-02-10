@@ -82,9 +82,9 @@ public enum ShortcutActivationMode: String, CaseIterable, Codable, Sendable {
     public var localizedName: String {
         switch self {
         case .holdOrToggle:
-            "settings.shortcuts.activation_mode.hold_or_toggle".localized
+            "settings.shortcuts.activation_mode.hold_or_press".localized
         case .toggle:
-            "settings.shortcuts.activation_mode.toggle".localized
+            "settings.shortcuts.activation_mode.press".localized
         case .hold:
             "settings.shortcuts.activation_mode.hold".localized
         case .doubleTap:

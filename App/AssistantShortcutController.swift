@@ -17,6 +17,7 @@ final class AssistantShortcutController {
     private var shortcutWasRecordingAtPress = false
     private var shortcutStartedRecording = false
     private var lastTapTime: Date?
+    private var lastTapWasRecording = false
 
     private let presetState = ShortcutActivationState()
 
@@ -259,11 +260,17 @@ final class AssistantShortcutController {
             resetHoldState()
         case .doubleTap:
             let now = Date()
-            if let lastTapTime, now.timeIntervalSince(lastTapTime) <= doubleTapInterval {
+            let isRecording = assistantService.isRecording
+            if let lastTapTime,
+               now.timeIntervalSince(lastTapTime) <= doubleTapInterval,
+               lastTapWasRecording == isRecording
+            {
                 self.lastTapTime = nil
+                self.lastTapWasRecording = false
                 await toggleAssistant()
             } else {
                 lastTapTime = now
+                lastTapWasRecording = isRecording
             }
         case .toggle:
             break
@@ -287,6 +294,7 @@ final class AssistantShortcutController {
     private func resetShortcutState() {
         isPresetPressed = false
         lastTapTime = nil
+        lastTapWasRecording = false
         lastEscapePressTime = nil
         resetHoldState()
         presetState.reset()
