@@ -138,7 +138,7 @@ public enum MeetingAssistantDesignSystem {
         public static let sidebarTopInset: CGFloat = 48
         public static let sidebarSectionSpacing: CGFloat = 6
         public static let sidebarItemContentSpacing: CGFloat = 8
-        public static let sidebarLabelFontSize: CGFloat = 15
+        public static let sidebarLabelFontSize: CGFloat = 13
         public static let sidebarSymbolFontSize: CGFloat = 15
     }
 }
