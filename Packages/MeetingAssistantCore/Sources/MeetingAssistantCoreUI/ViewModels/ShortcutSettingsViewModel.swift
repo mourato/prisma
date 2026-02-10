@@ -19,6 +19,7 @@ public class ShortcutSettingsViewModel: ObservableObject {
     // MARK: - Published Properties
 
     @Published public var activationMode: ShortcutActivationMode
+    @Published public var dictationActivationMode: ShortcutActivationMode
     @Published public var useEscapeToCancelRecording: Bool
     @Published public var selectedPresetKey: PresetShortcutKey
     @Published public var dictationSelectedPresetKey: PresetShortcutKey
@@ -32,6 +33,7 @@ public class ShortcutSettingsViewModel: ObservableObject {
 
     public init() {
         activationMode = settings.shortcutActivationMode
+        dictationActivationMode = settings.dictationShortcutActivationMode
         useEscapeToCancelRecording = settings.useEscapeToCancelRecording
         selectedPresetKey = settings.selectedPresetKey
         dictationSelectedPresetKey = settings.dictationSelectedPresetKey
@@ -48,6 +50,14 @@ public class ShortcutSettingsViewModel: ObservableObject {
             .dropFirst()
             .sink { [weak self] newValue in
                 self?.settings.shortcutActivationMode = newValue
+            }
+            .store(in: &cancellables)
+
+        // Sync Dictation activation mode changes to settings
+        $dictationActivationMode
+            .dropFirst()
+            .sink { [weak self] newValue in
+                self?.settings.dictationShortcutActivationMode = newValue
             }
             .store(in: &cancellables)
 
@@ -94,6 +104,7 @@ public class ShortcutSettingsViewModel: ObservableObject {
         KeyboardShortcuts.reset(.dictationToggle)
         KeyboardShortcuts.reset(.meetingToggle)
         activationMode = .holdOrToggle
+        dictationActivationMode = .holdOrToggle
         useEscapeToCancelRecording = false
         selectedPresetKey = .fn
         dictationSelectedPresetKey = .fn
