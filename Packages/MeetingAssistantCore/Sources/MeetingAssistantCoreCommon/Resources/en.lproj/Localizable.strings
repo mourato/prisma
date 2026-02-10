@@ -234,7 +234,7 @@
 "settings.assistant.tips_title" = "Tips";
 "settings.assistant.fn_key_title" = "Using the Fn key";
 "settings.assistant.fn_key_desc" = "To use the Fn key alone:\n• Open System Settings → Keyboard\n• Click \"Press 🌐 key to\" dropdown\n• Select \"Do Nothing\"\n• This allows the app to detect the Fn key press";
-"settings.assistant.use_escape" = "Use Escape to cancel Assistant recording";
+"settings.assistant.use_escape" = "Press Escape twice to cancel Assistant recording";
 "settings.assistant.try_keys" = "Try Your Keys";
 "settings.assistant.try_keys_hint" = "Click in the text box below first.";
 "settings.assistant.reset" = "Reset to Default Shortcut";
@@ -267,7 +267,8 @@
 "settings.shortcuts.tips_title" = "Tips";
 "settings.shortcuts.fn_key_title" = "Using the Fn key";
 "settings.shortcuts.fn_key_desc" = "To use the Fn key alone:\n• Open System Settings → Keyboard\n• Click \"Press 🌐 key to\" dropdown\n• Select \"Do Nothing\"\n• This allows the app to detect the Fn key press";
-"settings.shortcuts.use_escape" = "Use Escape to cancel recording";
+"settings.shortcuts.use_escape" = "Press Escape twice to cancel recording";
+"settings.shortcuts.use_escape_desc" = "Requires two consecutive Escape key presses while recording.";
 "settings.shortcuts.try_keys" = "Try Your Keys";
 "settings.shortcuts.try_keys_hint" = "Click in the text box below first.";
 "settings.shortcuts.key.not_specified" = "Not specified";
