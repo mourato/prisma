@@ -51,31 +51,19 @@ public class MeetingSettingsViewModel: ObservableObject {
     }
 
     public func handleSavePrompt(_ prompt: PostProcessingPrompt) {
-        if let index = settings.meetingPrompts.firstIndex(where: { $0.id == prompt.id }) {
-            var prompts = settings.meetingPrompts
-            prompts[index] = prompt
-            settings.meetingPrompts = prompts
-        } else {
-            var prompts = settings.meetingPrompts
-            prompts.append(prompt)
-            settings.meetingPrompts = prompts
-        }
+        settings.upsertMeetingPrompt(prompt)
         showPromptEditor = false
         editingPrompt = nil
     }
 
     public func confirmDeletePrompt(_ prompt: PostProcessingPrompt) {
-        guard !prompt.isPredefined else { return }
         promptToDelete = prompt
         showDeleteConfirmation = true
     }
 
     public func executeDelete() {
         if let prompt = promptToDelete {
-            settings.meetingPrompts.removeAll { $0.id == prompt.id }
-            if settings.selectedPromptId == prompt.id {
-                settings.selectedPromptId = nil
-            }
+            settings.deleteMeetingPrompt(id: prompt.id)
         }
         showDeleteConfirmation = false
         promptToDelete = nil
