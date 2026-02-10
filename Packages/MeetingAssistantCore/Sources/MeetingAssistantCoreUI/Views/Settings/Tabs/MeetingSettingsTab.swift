@@ -18,6 +18,73 @@ public struct MeetingSettingsTab: View {
     public var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.sectionSpacing) {
+                // Keyboard Shortcut (Existing)
+                MAGroup("settings.shortcuts.meeting".localized, icon: "keyboard") {
+                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                        Text("settings.shortcuts.meeting_desc".localized)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("settings.shortcuts.meeting".localized)
+                                    .font(.body)
+                                    .fontWeight(.medium)
+                            }
+
+                            Spacer()
+
+                            Picker("", selection: $meetingViewModel.settings.meetingSelectedPresetKey) {
+                                ForEach(PresetShortcutKey.allCases, id: \.self) { key in
+                                    if let icon = key.icon {
+                                        Label(key.displayName, systemImage: icon).tag(key)
+                                    } else {
+                                        Text(key.displayName).tag(key)
+                                    }
+                                }
+                            }
+                            .labelsHidden()
+                            .pickerStyle(.menu)
+                            .frame(width: MeetingAssistantDesignSystem.Layout.smallPickerWidth)
+                        }
+
+                        if meetingViewModel.settings.meetingSelectedPresetKey == .custom {
+                            Divider()
+
+                            HStack {
+                                Text("settings.shortcuts.custom_shortcut".localized)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+
+                                Spacer()
+
+                                KeyboardShortcuts.Recorder(for: .meetingToggle)
+                            }
+                            .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
+                            .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)
+                            .background(MeetingAssistantDesignSystem.Colors.secondaryFill)
+                            .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+                        }
+                    }
+                }
+
+                // Automation (Existing)
+                MAGroup("settings.meetings.workflow".localized, icon: "bolt.fill") {
+                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
+                        MAToggleRow(
+                            "settings.general.auto_start".localized,
+                            isOn: $meetingViewModel.settings.autoStartRecording
+                        )
+
+                        Divider()
+
+                        MAToggleRow(
+                            "settings.general.merge_audio".localized,
+                            isOn: $meetingViewModel.settings.shouldMergeAudioFiles
+                        )
+                    }
+                }
+
                 // Speaker Identification Section
                 MAGroup("settings.meetings.speaker_identification".localized, icon: "person.wave.2.fill") {
                     SpeakerIdentificationSettingsSection(settings: meetingViewModel.settings)
@@ -129,73 +196,6 @@ public struct MeetingSettingsTab: View {
                             ForEach(meetingViewModel.availablePrompts) { prompt in
                                 promptRow(prompt: prompt)
                             }
-                        }
-                    }
-                }
-
-                // Automation (Existing)
-                MAGroup("settings.meetings.workflow".localized, icon: "bolt.fill") {
-                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
-                        MAToggleRow(
-                            "settings.general.auto_start".localized,
-                            isOn: $meetingViewModel.settings.autoStartRecording
-                        )
-
-                        Divider()
-
-                        MAToggleRow(
-                            "settings.general.merge_audio".localized,
-                            isOn: $meetingViewModel.settings.shouldMergeAudioFiles
-                        )
-                    }
-                }
-
-                // Keyboard Shortcut (Existing)
-                MAGroup("settings.shortcuts.meeting".localized, icon: "keyboard") {
-                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
-                        Text("settings.shortcuts.meeting_desc".localized)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-
-                        HStack {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("settings.shortcuts.meeting".localized)
-                                    .font(.body)
-                                    .fontWeight(.medium)
-                            }
-
-                            Spacer()
-
-                            Picker("", selection: $meetingViewModel.settings.meetingSelectedPresetKey) {
-                                ForEach(PresetShortcutKey.allCases, id: \.self) { key in
-                                    if let icon = key.icon {
-                                        Label(key.displayName, systemImage: icon).tag(key)
-                                    } else {
-                                        Text(key.displayName).tag(key)
-                                    }
-                                }
-                            }
-                            .labelsHidden()
-                            .pickerStyle(.menu)
-                            .frame(width: MeetingAssistantDesignSystem.Layout.smallPickerWidth)
-                        }
-
-                        if meetingViewModel.settings.meetingSelectedPresetKey == .custom {
-                            Divider()
-
-                            HStack {
-                                Text("settings.shortcuts.custom_shortcut".localized)
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-
-                                Spacer()
-
-                                KeyboardShortcuts.Recorder(for: .meetingToggle)
-                            }
-                            .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
-                            .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)
-                            .background(MeetingAssistantDesignSystem.Colors.secondaryFill)
-                            .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
                         }
                     }
                 }
