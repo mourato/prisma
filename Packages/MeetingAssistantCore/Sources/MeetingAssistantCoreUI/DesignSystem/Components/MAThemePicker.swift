@@ -64,3 +64,10 @@ public struct MAThemePicker: View {
         .contentShape(Rectangle())
     }
 }
+
+#Preview("Theme Picker") {
+    PreviewStateContainer(AppThemeColor.system) { selection in
+        MAThemePicker(selection: selection)
+            .padding()
+    }
+}

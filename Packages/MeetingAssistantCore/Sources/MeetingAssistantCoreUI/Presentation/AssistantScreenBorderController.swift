@@ -152,3 +152,25 @@ private struct AssistantScreenBorderView: View {
         .frame(width: size.width, height: size.height)
     }
 }
+
+#Preview("Assistant Border Stroke") {
+    AssistantScreenBorderView(
+        borderWidth: 10,
+        glowRadius: 20,
+        borderColor: .orange,
+        style: .stroke
+    )
+    .frame(width: 500, height: 320)
+    .background(Color.black.opacity(0.85))
+}
+
+#Preview("Assistant Border Glow") {
+    AssistantScreenBorderView(
+        borderWidth: 10,
+        glowRadius: 20,
+        borderColor: .green,
+        style: .glow
+    )
+    .frame(width: 500, height: 320)
+    .background(Color.black.opacity(0.85))
+}
