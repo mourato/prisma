@@ -20,6 +20,9 @@ public struct FloatingRecordingIndicatorView: View {
 
     @State private var isHovering = false
     @State private var hoverCollapseTask: Task<Void, Never>?
+    @State private var isMainRegionHovered = false
+    @State private var isPromptRegionHovered = false
+    @State private var isPromptSessionArmed = false
 
     private enum IndicatorMetrics {
         static let classicHeight: CGFloat = 42
@@ -98,12 +101,12 @@ public struct FloatingRecordingIndicatorView: View {
                     promptSelectionPill(size: size)
                 }
             }
-            .onHover { hovering in
-                updateHoverState(hovering)
-            }
             .onDisappear {
                 hoverCollapseTask?.cancel()
                 hoverCollapseTask = nil
+                isMainRegionHovered = false
+                isPromptRegionHovered = false
+                isPromptSessionArmed = false
             }
 
             if isRecordingMode, audioMonitor.isSilenceWarningVisible {
@@ -304,6 +307,7 @@ public struct FloatingRecordingIndicatorView: View {
             .contentShape(Rectangle())
         }
         .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
         .help("recording_indicator.prompt.help".localized)
         .highPriorityGesture(TapGesture())
     }
@@ -390,6 +394,9 @@ public struct FloatingRecordingIndicatorView: View {
             y: MeetingAssistantDesignSystem.Layout.shadowY
         )
         .contentShape(Capsule())
+        .onHover { hovering in
+            handleMainRegionHover(hovering)
+        }
         .animation(.spring(response: 0.22, dampingFraction: 0.86), value: isHovering)
     }
 
@@ -398,11 +405,17 @@ public struct FloatingRecordingIndicatorView: View {
             .frame(width: promptSize(for: size), height: controlHeight(for: size))
             .background(Color(red: 26 / 255, green: 26 / 255, blue: 26 / 255))
             .clipShape(Capsule())
+            .onHover { hovering in
+                handlePromptRegionHover(hovering)
+            }
     }
 
-    private func updateHoverState(_ hovering: Bool) {
+    private func handleMainRegionHover(_ hovering: Bool) {
         guard isRecordingMode else { return }
+
+        isMainRegionHovered = hovering
         if hovering {
+            isPromptSessionArmed = true
             hoverCollapseTask?.cancel()
             withAnimation(.spring(response: 0.22, dampingFraction: 0.86)) {
                 isHovering = true
@@ -410,13 +423,38 @@ public struct FloatingRecordingIndicatorView: View {
             return
         }
 
+        collapseAfterDelayIfNeeded()
+    }
+
+    private func handlePromptRegionHover(_ hovering: Bool) {
+        guard isRecordingMode else { return }
+
+        isPromptRegionHovered = hovering
+        if hovering, isPromptSessionArmed {
+            hoverCollapseTask?.cancel()
+            return
+        }
+
+        collapseAfterDelayIfNeeded()
+    }
+
+    private func collapseAfterDelayIfNeeded() {
+        guard isRecordingMode else { return }
+        guard !isMainRegionHovered else { return }
+        if isPromptRegionHovered && isPromptSessionArmed { return }
+        guard isHovering else { return }
+
         hoverCollapseTask?.cancel()
         hoverCollapseTask = Task { @MainActor in
             try? await Task.sleep(nanoseconds: 110_000_000)
             guard !Task.isCancelled else { return }
+            guard !isMainRegionHovered else { return }
+            if isPromptRegionHovered && isPromptSessionArmed { return }
+
             withAnimation(.easeOut(duration: 0.14)) {
                 isHovering = false
             }
+            isPromptSessionArmed = false
         }
     }
 
