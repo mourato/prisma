@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import SwiftUI
 import MeetingAssistantCoreAI
@@ -300,10 +301,8 @@ public struct FloatingRecordingIndicatorView: View {
                 }
             }
         } label: {
-            Image(systemName: currentPromptIconName)
-                .font(.system(size: promptIconSize(for: size), weight: .medium))
-                .symbolRenderingMode(.monochrome)
-                .foregroundStyle(.white)
+            Image(nsImage: promptIconImage(for: size))
+                .renderingMode(.original)
                 .frame(width: 20, height: 20)
             .contentShape(Rectangle())
         }
@@ -511,6 +510,22 @@ public struct FloatingRecordingIndicatorView: View {
         case .mini:
             return 13
         }
+    }
+
+    private func promptIconImage(for size: IndicatorSize) -> NSImage {
+        let fallbackName = "doc.text"
+        let symbolName = currentPromptIconName
+        let pointSize = promptIconSize(for: size)
+        let symbolConfig = NSImage.SymbolConfiguration(pointSize: pointSize, weight: .medium)
+            .applying(NSImage.SymbolConfiguration(paletteColors: [.white]))
+
+        let rawImage = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil)
+            ?? NSImage(systemSymbolName: fallbackName, accessibilityDescription: nil)
+            ?? NSImage()
+
+        let configured = rawImage.withSymbolConfiguration(symbolConfig) ?? rawImage
+        configured.isTemplate = false
+        return configured
     }
 }
 
