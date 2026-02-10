@@ -787,7 +787,13 @@ public class AppSettingsStore: ObservableObject {
 
     /// Enables Context Awareness to enrich AI post-processing with active app context.
     @Published public var contextAwarenessEnabled: Bool {
-        didSet { UserDefaults.standard.set(contextAwarenessEnabled, forKey: Keys.contextAwarenessEnabled) }
+        didSet {
+            UserDefaults.standard.set(contextAwarenessEnabled, forKey: Keys.contextAwarenessEnabled)
+            if contextAwarenessEnabled {
+                contextAwarenessIncludeActiveApp = true
+                contextAwarenessIncludeAccessibilityText = true
+            }
+        }
     }
 
     /// Includes active app metadata (app name and focused window title when available).
@@ -977,7 +983,8 @@ public class AppSettingsStore: ObservableObject {
 
         autoExportSummaries = UserDefaults.standard.bool(forKey: Keys.autoExportSummaries)
         createMeetingFolder = UserDefaults.standard.bool(forKey: Keys.createMeetingFolder)
-        contextAwarenessEnabled = UserDefaults.standard.bool(forKey: Keys.contextAwarenessEnabled)
+        let loadedContextAwarenessEnabled = UserDefaults.standard.bool(forKey: Keys.contextAwarenessEnabled)
+        contextAwarenessEnabled = loadedContextAwarenessEnabled
         contextAwarenessIncludeActiveApp = Self.loadBoolDefaultIfUnset(
             forKey: Keys.contextAwarenessIncludeActiveApp,
             defaultValue: true
@@ -997,6 +1004,10 @@ public class AppSettingsStore: ObservableObject {
             defaultValue: true
         )
         contextAwarenessExcludedBundleIDs = Self.loadDecoded([String].self, forKey: Keys.contextAwarenessExcludedBundleIDs) ?? []
+        if loadedContextAwarenessEnabled {
+            contextAwarenessIncludeActiveApp = true
+            contextAwarenessIncludeAccessibilityText = true
+        }
 
         // Load assistant border settings
         let rawBorderColor = UserDefaults.standard.string(forKey: Keys.assistantBorderColor)
