@@ -36,7 +36,7 @@ final class GlobalShortcutController {
     private let presetState = ShortcutActivationState()
 
     private let holdThreshold: TimeInterval = 0.35
-    private let doubleTapInterval: TimeInterval = 0.5
+    private let doubleTapInterval: TimeInterval = 0.75
     private let escapeDoublePressInterval: TimeInterval = 0.5
     private var lastEscapePressTime: Date?
 
