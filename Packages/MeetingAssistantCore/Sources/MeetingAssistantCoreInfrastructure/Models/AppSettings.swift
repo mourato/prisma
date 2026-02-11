@@ -838,10 +838,13 @@ public class AppSettingsStore: ObservableObject {
 
     /// Dictation prompts (predefined + user-created).
     public var dictationAvailablePrompts: [PostProcessingPrompt] {
-        mergedPrompts(
-            predefined: [PostProcessingPrompt.cleanTranscription],
-            custom: dictationPrompts + userPrompts.filter { $0.id == PostProcessingPrompt.cleanTranscription.id }
-        )
+        let predefined: [PostProcessingPrompt] = [
+            .cleanTranscription,
+            .flex,
+        ]
+        let predefinedIds = Set(predefined.map { $0.id })
+        let custom = dictationPrompts + userPrompts.filter { predefinedIds.contains($0.id) }
+        return mergedPrompts(predefined: predefined, custom: custom)
     }
 
     /// Meeting prompts (predefined + user-created).

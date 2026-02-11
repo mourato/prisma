@@ -534,6 +534,8 @@
 /* AI Prompts */
 "prompt.clean_transcription.title" = "Transcrição Limpa";
 "prompt.clean_transcription.description" = "Remove hesitações e corrige erros de fala";
+"prompt.flex.title" = "Flex";
+"prompt.flex.description" = "Regras estritas de formatação para limpeza avançada do ditado";
 
 /* Recording Indicator Settings */
 "settings.general.recording_indicator" = "Indicador de Gravação";
