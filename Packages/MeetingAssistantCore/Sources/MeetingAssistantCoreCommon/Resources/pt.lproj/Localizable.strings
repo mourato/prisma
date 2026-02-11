@@ -528,14 +528,10 @@
 "menubar.record_meeting" = "Gravar Reunião";
 "menubar.assistant" = "Assistant";
 "menubar.stop_assistant" = "Parar Assistant";
+"menubar.history" = "Histórico";
 
 /* Settings */
 "settings.title" = "Configurações";
-"settings.meetings.delivery" = "Entrega da Transcrição";
-"settings.meetings.auto_copy_transcription" = "Copiar automaticamente a transcrição da reunião";
-"settings.meetings.auto_copy_transcription_desc" = "Copia as transcrições concluídas da reunião para a área de transferência.";
-"settings.meetings.auto_paste_transcription" = "Colar automaticamente a transcrição da reunião";
-"settings.meetings.auto_paste_transcription_desc" = "Cola as transcrições concluídas da reunião no app ativo.";
 /* Post-Processing Errors */
 "error.post_processing.no_prompt_selected" = "Nenhum prompt de pós-processamento selecionado";
 "error.post_processing.no_api_configured" = "API de IA não configurada";

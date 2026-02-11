@@ -23,6 +23,7 @@ private enum LayoutConstants {
 public struct SettingsView: View {
     @State private var selectedSection: SettingsSection = .metrics
     @State private var columnVisibility = NavigationSplitViewVisibility.all
+    @StateObject private var navigationService = NavigationService.shared
 
     @MainActor
     public init() {}
@@ -43,6 +44,12 @@ public struct SettingsView: View {
         .navigationTitle(selectedSection.title)
         .frame(minWidth: LayoutConstants.windowWidth, minHeight: LayoutConstants.windowHeight)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onReceive(navigationService.$requestedSettingsSection.compactMap { $0 }) { sectionId in
+            if let section = SettingsSection(rawValue: sectionId) {
+                selectedSection = section
+            }
+            navigationService.requestedSettingsSection = nil
+        }
     }
 
     // MARK: - Sidebar

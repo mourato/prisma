@@ -140,7 +140,7 @@ final class TranscriptionDeliveryServiceTests: XCTestCase {
         XCTAssertNil(mockPasteboard.storedString, "Clipboard should be empty when settings are disabled")
     }
 
-    func testDeliver_WithMeetingApp_CopiesWhenMeetingSettingEnabled() {
+    func testDeliver_WithMeetingApp_DoesNotCopyWhenMeetingSettingEnabled() {
         // Given
         let meeting = Meeting(app: .googleMeet)
         let transcription = Transcription(
@@ -163,6 +163,6 @@ final class TranscriptionDeliveryServiceTests: XCTestCase {
         )
 
         // Then
-        XCTAssertEqual(mockPasteboard.storedString, kMeetingText, "Clipboard should contain text for Meeting Apps when enabled")
+        XCTAssertNil(mockPasteboard.storedString, "Clipboard should be empty for Meeting Apps even when meeting settings are enabled")
     }
 }
