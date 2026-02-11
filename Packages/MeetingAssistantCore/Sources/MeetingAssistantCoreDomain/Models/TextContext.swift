@@ -28,10 +28,12 @@ public enum ContextSource: String, Sendable, Equatable {
 public struct ActiveAppContext: Sendable, Equatable {
     public let bundleIdentifier: String
     public let name: String?
+    public let processIdentifier: Int
 
-    public init(bundleIdentifier: String, name: String?) {
+    public init(bundleIdentifier: String, name: String?, processIdentifier: Int) {
         self.bundleIdentifier = bundleIdentifier
         self.name = name
+        self.processIdentifier = processIdentifier
     }
 }
 
