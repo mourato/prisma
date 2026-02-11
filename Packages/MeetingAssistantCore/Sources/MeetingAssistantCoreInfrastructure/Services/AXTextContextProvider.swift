@@ -7,59 +7,90 @@ import MeetingAssistantCoreDomain
 public final class AXTextContextProvider: TextContextProvider {
     private let textMarkerRangeAttribute: CFString = "AXTextMarkerRange" as CFString
     private let activeAppProvider: ActiveAppContextProvider
-    private let exclusionPolicy: TextContextExclusionPolicy
+    private let exclusionPolicyProvider: () -> TextContextExclusionPolicy
     private let markdownConverter: RichTextMarkdownConverter
-    private let customExcludedBundleIDs: [String]
+    private let customExcludedBundleIDsProvider: () -> [String]
+    private let cache: TextContextCache
+    private let failureTracker: TextContextFailureTracker
 
     public init(
         activeAppProvider: ActiveAppContextProvider = NSWorkspaceActiveAppContextProvider(),
-        exclusionPolicy: TextContextExclusionPolicy = TextContextExclusionPolicy(),
+        exclusionPolicyProvider: @escaping () -> TextContextExclusionPolicy = { TextContextExclusionPolicy() },
         markdownConverter: RichTextMarkdownConverter = RichTextMarkdownConverter(),
-        customExcludedBundleIDs: [String] = []
+        customExcludedBundleIDsProvider: @escaping () -> [String] = { [] },
+        cache: TextContextCache = TextContextCache(),
+        failureTracker: TextContextFailureTracker = TextContextFailureTracker()
     ) {
         self.activeAppProvider = activeAppProvider
-        self.exclusionPolicy = exclusionPolicy
+        self.exclusionPolicyProvider = exclusionPolicyProvider
         self.markdownConverter = markdownConverter
-        self.customExcludedBundleIDs = customExcludedBundleIDs
+        self.customExcludedBundleIDsProvider = customExcludedBundleIDsProvider
+        self.cache = cache
+        self.failureTracker = failureTracker
     }
 
     public func fetchTextContext() async throws -> TextContextSnapshot {
-        guard AccessibilityPermissionService.isTrusted() else {
-            throw ContextAcquisitionError.permissionDenied
-        }
-
         guard let appContext = try await activeAppProvider.fetchActiveAppContext() else {
             throw ContextAcquisitionError.noActiveApp
         }
+
+        let customExcludedBundleIDs = customExcludedBundleIDsProvider()
+        let exclusionPolicy = exclusionPolicyProvider()
 
         if exclusionPolicy.isExcluded(
             bundleIdentifier: appContext.bundleIdentifier,
             customExcludedBundleIDs: customExcludedBundleIDs
         ) {
+            recordFailure(appContext: appContext, reason: .excludedApp)
             throw ContextAcquisitionError.excludedApp
         }
 
-        let focusedElement = try focusedElement(for: appContext.processIdentifier)
-
-        if let fullAttributed = readTextMarkerRangeText(from: focusedElement) {
-            let text = formattedText(from: fullAttributed)
-            return TextContextSnapshot(
-                text: text,
-                source: .accessibility,
-                appContext: appContext
-            )
+        guard AccessibilityPermissionService.isTrusted() else {
+            recordFailure(appContext: appContext, reason: .permissionDenied)
+            throw ContextAcquisitionError.permissionDenied
         }
 
-        if let visibleAttributed = readVisibleText(from: focusedElement) {
-            let text = formattedText(from: visibleAttributed)
-            return TextContextSnapshot(
-                text: text,
-                source: .visibleOnly,
-                appContext: appContext
-            )
-        }
+        do {
+            let focusedElement = try focusedElement(for: appContext.processIdentifier)
+            let cacheKey = makeCacheKey(appContext: appContext, focusedElement: focusedElement)
 
-        throw ContextAcquisitionError.accessibilityUnsupported
+            if let cached = cache.value(for: cacheKey) {
+                return cached
+            }
+
+            if let fullAttributed = readTextMarkerRangeText(from: focusedElement) {
+                let text = formattedText(from: fullAttributed)
+                let snapshot = TextContextSnapshot(
+                    text: text,
+                    source: .accessibility,
+                    appContext: appContext
+                )
+                cache.insert(snapshot, for: cacheKey)
+                return snapshot
+            }
+
+            if let visibleAttributed = readVisibleText(from: focusedElement) {
+                let text = formattedText(from: visibleAttributed)
+                let snapshot = TextContextSnapshot(
+                    text: text,
+                    source: .visibleOnly,
+                    appContext: appContext
+                )
+                cache.insert(snapshot, for: cacheKey)
+                return snapshot
+            }
+
+            let error = ContextAcquisitionError.accessibilityUnsupported
+            recordFailure(appContext: appContext, reason: error)
+            throw error
+        } catch let error as ContextAcquisitionError {
+            recordFailure(appContext: appContext, reason: error)
+            throw error
+        } catch {
+            let wrapped = ContextAcquisitionError.providerFailed(error.localizedDescription)
+            recordFailure(appContext: appContext, reason: wrapped)
+            throw wrapped
+        }
     }
 
     private func focusedElement(for processIdentifier: Int) throws -> AXUIElement {
@@ -135,6 +166,46 @@ public final class AXTextContextProvider: TextContextProvider {
         let converted = markdownConverter.convertIfRichText(attributedText)
         let rawText = converted ?? attributedText.string
         return normalizeLineBreaks(rawText)
+    }
+
+    private func makeCacheKey(appContext: ActiveAppContext, focusedElement: AXUIElement) -> String {
+        let role = readAXStringAttribute(focusedElement, attribute: kAXRoleAttribute as String) ?? "unknown"
+        let subrole = readAXStringAttribute(focusedElement, attribute: kAXSubroleAttribute as String) ?? "unknown"
+        let identifier = readAXStringAttribute(focusedElement, attribute: kAXIdentifierAttribute as String) ?? ""
+        let title = readAXStringAttribute(focusedElement, attribute: kAXTitleAttribute as String) ?? ""
+        let description = readAXStringAttribute(focusedElement, attribute: kAXDescriptionAttribute as String) ?? ""
+
+        return [
+            appContext.bundleIdentifier.lowercased(),
+            String(appContext.processIdentifier),
+            role,
+            subrole,
+            identifier,
+            title,
+            description,
+        ].joined(separator: "|")
+    }
+
+    private func readAXStringAttribute(_ element: AXUIElement, attribute: String) -> String? {
+        var value: CFTypeRef?
+        let result = AXUIElementCopyAttributeValue(element, attribute as CFString, &value)
+        guard result == .success else { return nil }
+        return value as? String
+    }
+
+    private func recordFailure(appContext: ActiveAppContext, reason: ContextAcquisitionError) {
+        let sanitized = sanitizedReason(reason)
+        failureTracker.recordFailure(bundleIdentifier: appContext.bundleIdentifier, reason: sanitized)
+        TextContextLogger.logFailure(bundleIdentifier: appContext.bundleIdentifier, reason: sanitized)
+    }
+
+    private func sanitizedReason(_ reason: ContextAcquisitionError) -> ContextAcquisitionError {
+        switch reason {
+        case .providerFailed:
+            return .providerFailed("redacted")
+        default:
+            return reason
+        }
     }
 
     private func normalizeLineBreaks(_ text: String) -> String {
