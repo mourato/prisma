@@ -18,8 +18,6 @@ final class MockPasteboardService: PasteboardServiceProtocol {
 struct MockDeliverySettings: DeliverySettingsConfig {
     var autoCopyTranscriptionToClipboard: Bool
     var autoPasteTranscriptionToActiveApp: Bool
-    var meetingAutoCopyTranscriptionToClipboard: Bool
-    var meetingAutoPasteTranscriptionToActiveApp: Bool
 }
 
 @MainActor
@@ -46,9 +44,7 @@ final class TranscriptionDeliveryServiceTests: XCTestCase {
         )
         let settings = MockDeliverySettings(
             autoCopyTranscriptionToClipboard: true,
-            autoPasteTranscriptionToActiveApp: false,
-            meetingAutoCopyTranscriptionToClipboard: false,
-            meetingAutoPasteTranscriptionToActiveApp: false
+            autoPasteTranscriptionToActiveApp: false
         )
 
         // When
@@ -72,9 +68,7 @@ final class TranscriptionDeliveryServiceTests: XCTestCase {
         )
         let settings = MockDeliverySettings(
             autoCopyTranscriptionToClipboard: true,
-            autoPasteTranscriptionToActiveApp: false,
-            meetingAutoCopyTranscriptionToClipboard: false,
-            meetingAutoPasteTranscriptionToActiveApp: false
+            autoPasteTranscriptionToActiveApp: false
         )
 
         // When
@@ -98,9 +92,7 @@ final class TranscriptionDeliveryServiceTests: XCTestCase {
         )
         let settings = MockDeliverySettings(
             autoCopyTranscriptionToClipboard: true,
-            autoPasteTranscriptionToActiveApp: false,
-            meetingAutoCopyTranscriptionToClipboard: false,
-            meetingAutoPasteTranscriptionToActiveApp: false
+            autoPasteTranscriptionToActiveApp: false
         )
 
         // When
@@ -124,9 +116,7 @@ final class TranscriptionDeliveryServiceTests: XCTestCase {
         )
         let settings = MockDeliverySettings(
             autoCopyTranscriptionToClipboard: false,
-            autoPasteTranscriptionToActiveApp: false,
-            meetingAutoCopyTranscriptionToClipboard: false,
-            meetingAutoPasteTranscriptionToActiveApp: false
+            autoPasteTranscriptionToActiveApp: false
         )
 
         // When
@@ -140,29 +130,4 @@ final class TranscriptionDeliveryServiceTests: XCTestCase {
         XCTAssertNil(mockPasteboard.storedString, "Clipboard should be empty when settings are disabled")
     }
 
-    func testDeliver_WithMeetingApp_DoesNotCopyWhenMeetingSettingEnabled() {
-        // Given
-        let meeting = Meeting(app: .googleMeet)
-        let transcription = Transcription(
-            meeting: meeting,
-            text: kMeetingText,
-            rawText: kMeetingText
-        )
-        let settings = MockDeliverySettings(
-            autoCopyTranscriptionToClipboard: false,
-            autoPasteTranscriptionToActiveApp: false,
-            meetingAutoCopyTranscriptionToClipboard: true,
-            meetingAutoPasteTranscriptionToActiveApp: false
-        )
-
-        // When
-        TranscriptionDeliveryService.deliver(
-            transcription: transcription,
-            settings: settings,
-            pasteboard: mockPasteboard
-        )
-
-        // Then
-        XCTAssertNil(mockPasteboard.storedString, "Clipboard should be empty for Meeting Apps even when meeting settings are enabled")
-    }
 }

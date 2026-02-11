@@ -1336,10 +1336,6 @@ public extension AppSettingsStore {
         static let launchAtLogin = "launchAtLogin"
     }
 
-    private enum MeetingKeys {
-        static let meetingAutoCopyTranscriptionToClipboard = "meetingAutoCopyTranscriptionToClipboard"
-        static let meetingAutoPasteTranscriptionToActiveApp = "meetingAutoPasteTranscriptionToActiveApp"
-    }
 
     /// Configured path for saving recordings.
     /// If empty or invalid, services should fallback to the default Application Support directory.
@@ -1377,20 +1373,6 @@ public extension AppSettingsStore {
     var autoPasteTranscriptionToActiveApp: Bool {
         get { UserDefaults.standard.bool(forKey: GeneralKeys.autoPasteTranscriptionToActiveApp) }
         set { UserDefaults.standard.set(newValue, forKey: GeneralKeys.autoPasteTranscriptionToActiveApp) }
-    }
-
-    /// Whether to automatically copy the latest meeting transcription to the clipboard.
-    /// Default: false
-    var meetingAutoCopyTranscriptionToClipboard: Bool {
-        get { UserDefaults.standard.bool(forKey: MeetingKeys.meetingAutoCopyTranscriptionToClipboard) }
-        set { UserDefaults.standard.set(newValue, forKey: MeetingKeys.meetingAutoCopyTranscriptionToClipboard) }
-    }
-
-    /// Whether to automatically paste the latest meeting transcription into the active app.
-    /// Default: false
-    var meetingAutoPasteTranscriptionToActiveApp: Bool {
-        get { UserDefaults.standard.bool(forKey: MeetingKeys.meetingAutoPasteTranscriptionToActiveApp) }
-        set { UserDefaults.standard.set(newValue, forKey: MeetingKeys.meetingAutoPasteTranscriptionToActiveApp) }
     }
 
     /// Whether the app should launch automatically at login.
