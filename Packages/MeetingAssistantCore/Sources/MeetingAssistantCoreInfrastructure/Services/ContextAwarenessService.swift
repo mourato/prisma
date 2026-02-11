@@ -2,6 +2,7 @@ import AppKit
 @preconcurrency import ApplicationServices
 import CoreGraphics
 import Foundation
+@preconcurrency import ScreenCaptureKit
 import Vision
 
 public struct ContextAwarenessCaptureOptions: Sendable {
@@ -60,7 +61,7 @@ public struct ContextAwarenessSnapshot: Sendable {
 
 @MainActor
 public protocol ContextAwarenessServiceProtocol: Sendable {
-    func captureSnapshot(options: ContextAwarenessCaptureOptions) -> ContextAwarenessSnapshot
+    func captureSnapshot(options: ContextAwarenessCaptureOptions) async -> ContextAwarenessSnapshot
     func makePostProcessingContext(from snapshot: ContextAwarenessSnapshot) -> String?
 }
 
@@ -113,7 +114,7 @@ public final class ContextAwarenessService: ContextAwarenessServiceProtocol {
         }
     }
 
-    public func captureSnapshot(options: ContextAwarenessCaptureOptions) -> ContextAwarenessSnapshot {
+    public func captureSnapshot(options: ContextAwarenessCaptureOptions) async -> ContextAwarenessSnapshot {
         let frontmostApp = NSWorkspace.shared.frontmostApplication
         let normalizedExcludedBundleIDs = normalizedExcludedBundleIDs(options.excludedBundleIDs)
 
@@ -134,7 +135,7 @@ public final class ContextAwarenessService: ContextAwarenessServiceProtocol {
         var windowTitle = options.includeActiveApp ? focusedWindowTitle(for: activeApp) : nil
         var accessibilityText = options.includeAccessibilityText ? focusedElementText(for: activeApp) : nil
         var clipboard = options.includeClipboard ? readClipboardText() : nil
-        var ocrText = options.includeWindowOCR ? readActiveWindowOCRText(for: activeApp) : nil
+        var ocrText = options.includeWindowOCR ? await readActiveWindowOCRText(for: activeApp) : nil
 
         if options.redactSensitiveData {
             appName = redactSensitiveContent(appName)
@@ -204,7 +205,7 @@ public final class ContextAwarenessService: ContextAwarenessServiceProtocol {
         guard CFGetTypeID(focusedWindow) == AXUIElementGetTypeID() else {
             return nil
         }
-        let windowElement = unsafeBitCast(focusedWindow, to: AXUIElement.self)
+        let windowElement = unsafeDowncast(focusedWindow, to: AXUIElement.self)
 
         var titleValue: CFTypeRef?
         let titleResult = AXUIElementCopyAttributeValue(
@@ -231,7 +232,7 @@ public final class ContextAwarenessService: ContextAwarenessServiceProtocol {
 
         guard focusedElementResult == .success, let focusedElementRef else { return nil }
         guard CFGetTypeID(focusedElementRef) == AXUIElementGetTypeID() else { return nil }
-        let focusedElement = unsafeBitCast(focusedElementRef, to: AXUIElement.self)
+        let focusedElement = unsafeDowncast(focusedElementRef, to: AXUIElement.self)
 
         if let selectedText = readAXStringAttribute(focusedElement, attribute: kAXSelectedTextAttribute as String) {
             return selectedText
@@ -286,21 +287,37 @@ public final class ContextAwarenessService: ContextAwarenessServiceProtocol {
         return nil
     }
 
-    private func readActiveWindowOCRText(for app: NSRunningApplication?) -> String? {
+    private func readActiveWindowOCRText(for app: NSRunningApplication?) async -> String? {
         guard CGPreflightScreenCaptureAccess() else { return nil }
         guard let app else { return nil }
         guard let windowID = frontmostWindowID(for: app.processIdentifier) else { return nil }
 
-        guard let image = CGWindowListCreateImage(
-            .null,
-            .optionIncludingWindow,
-            windowID,
-            [.bestResolution, .boundsIgnoreFraming]
-        ) else {
+        let image = await captureWindowImageUsingScreenCaptureKit(windowID: windowID)
+
+        guard let image else { return nil }
+        return recognizedText(from: image)
+    }
+
+    @available(macOS 14.0, *)
+    private nonisolated func captureWindowImageUsingScreenCaptureKit(windowID: CGWindowID) async -> CGImage? {
+        do {
+            let content = try await SCShareableContent.current
+            guard let window = content.windows.first(where: { $0.windowID == windowID }) else {
+                return nil
+            }
+
+            let filter = SCContentFilter(desktopIndependentWindow: window)
+            let config = SCStreamConfiguration()
+            config.width = Int(window.frame.width)
+            config.height = Int(window.frame.height)
+
+            return try await SCScreenshotManager.captureImage(
+                contentFilter: filter,
+                configuration: config
+            )
+        } catch {
             return nil
         }
-
-        return recognizedText(from: image)
     }
 
     private func frontmostWindowID(for processIdentifier: pid_t) -> CGWindowID? {

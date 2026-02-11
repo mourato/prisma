@@ -52,7 +52,7 @@ public final class AudioDeviceManager: ObservableObject {
     /// Explicitly refresh the list of available devices.
     /// Performs discovery on a background thread to avoid blocking the UI.
     public func refreshDevices() {
-        Task.detached(priority: .userInitiated) { [weak self] in
+        let task = Task.detached(priority: .userInitiated) {
             let discoverySession = AVCaptureDevice.DiscoverySession(
                 deviceTypes: [.microphone, .external],
                 mediaType: .audio,
@@ -61,7 +61,7 @@ public final class AudioDeviceManager: ObservableObject {
 
             let defaultInput = AVCaptureDevice.default(for: .audio)
 
-            let devices = discoverySession.devices.map { device in
+            return discoverySession.devices.map { device in
                 AudioInputDevice(
                     id: device.uniqueID,
                     name: device.localizedName,
@@ -69,8 +69,11 @@ public final class AudioDeviceManager: ObservableObject {
                     isAvailable: true
                 )
             }
+        }
 
-            await self?.updateDevices(devices)
+        Task { @MainActor [weak self] in
+            let devices = await task.value
+            self?.updateDevices(devices)
         }
     }
 
