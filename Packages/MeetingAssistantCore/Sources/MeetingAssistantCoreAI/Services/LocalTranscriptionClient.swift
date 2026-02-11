@@ -1,4 +1,5 @@
 import Foundation
+import MeetingAssistantCoreCommon
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
 import os.log
@@ -48,7 +49,8 @@ public class LocalTranscriptionClient {
         var segments: [Transcription.Segment] = []
 
         // Use passed settings or fallback to singleton (for app-process usage)
-        let diarizationEnabled = isDiarizationEnabled ?? AppSettingsStore.shared.isDiarizationEnabled
+        let diarizationSetting = isDiarizationEnabled ?? AppSettingsStore.shared.isDiarizationEnabled
+        let diarizationEnabled = diarizationSetting && FeatureFlags.enableDiarization
         let minS = minSpeakers ?? AppSettingsStore.shared.minSpeakers
         let maxS = maxSpeakers ?? AppSettingsStore.shared.maxSpeakers
         let numS = numSpeakers ?? AppSettingsStore.shared.numSpeakers
@@ -56,7 +58,9 @@ public class LocalTranscriptionClient {
         // Check if diarization is enabled
         if diarizationEnabled {
             // Perform diarization
-            logger.info("Diarization enabled. Processing...")
+            logger.info(
+                "Diarization enabled. Processing (min=\(minS ?? 0), max=\(maxS ?? 0), num=\(numS ?? 0))..."
+            )
             do {
                 let diarizationSegments = try await manager.diarize(
                     audioURL: audioURL,
@@ -64,8 +68,10 @@ public class LocalTranscriptionClient {
                     maxSpeakers: maxS,
                     numSpeakers: numS
                 )
+                logger.info("Diarization produced \(diarizationSegments.count) segments")
                 if segmentsFromASR.isEmpty {
                     // Fallback when token timings are unavailable.
+                    logger.info("ASR segments unavailable. Falling back to diarization-only segmentation.")
                     segments = fallbackSegments(text: text, speakers: diarizationSegments)
                 } else {
                     segments = merge(
@@ -73,6 +79,7 @@ public class LocalTranscriptionClient {
                     )
 
                     if segments.isEmpty {
+                        logger.info("Merged segments empty. Falling back to diarization-only segmentation.")
                         segments = fallbackSegments(text: text, speakers: diarizationSegments)
                     }
                 }
@@ -81,6 +88,10 @@ public class LocalTranscriptionClient {
                     "Diarization failed: \(error.localizedDescription). Proceeding with transcription only."
                 )
             }
+        } else {
+            logger.info(
+                "Diarization disabled for this run (setting=\(diarizationSetting, privacy: .public), flag=\(FeatureFlags.enableDiarization, privacy: .public))."
+            )
         }
 
         let duration = Date().timeIntervalSince(startTime)
