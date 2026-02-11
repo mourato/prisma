@@ -1,3 +1,4 @@
+import Combine
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
@@ -32,6 +33,11 @@ public struct TranscriptionsSettingsTab: View {
         }
         .task {
             await viewModel.loadTranscriptions()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .meetingAssistantTranscriptionSaved)) { _ in
+            Task {
+                await viewModel.loadTranscriptions()
+            }
         }
         .alert(
             "settings.transcriptions.error_load".localized,
