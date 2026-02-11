@@ -222,6 +222,11 @@
 "settings.context_awareness.excluded_apps_desc" = "One bundle ID per line (or comma-separated). Example: com.example.secureapp";
 "settings.context_awareness.base_exclusions" = "Always excluded apps";
 "settings.context_awareness.base_exclusions_desc" = "These apps are blocked by default for privacy.";
+"settings.markdown_targets.title" = "Markdown Formatting Targets";
+"settings.markdown_targets.description" = "Force Markdown formatting for dictation when these apps are active.";
+"settings.markdown_targets.empty" = "No apps selected yet.";
+"settings.markdown_targets.add" = "Add App";
+"settings.markdown_targets.remove" = "Remove app";
 
 /* Service Settings */
 "settings.service.title" = "Service";

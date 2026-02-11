@@ -12,6 +12,7 @@ import SwiftUI
 public struct EnhancementsSettingsTab: View {
     @StateObject private var viewModel = AISettingsViewModel(settings: .shared)
     @StateObject private var postProcessingViewModel = PostProcessingSettingsViewModel()
+    @StateObject private var markdownTargetsViewModel = MarkdownTargetsViewModel()
     @State private var supportStatus: TextContextSupportStatus = .unknown
     private let supportChecker = TextContextSupportChecker()
 
@@ -22,6 +23,7 @@ public struct EnhancementsSettingsTab: View {
             VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.sectionSpacing) {
                 mainSection
                 contextAwarenessSection
+                markdownTargetsSection
 
                 if postProcessingViewModel.settings.postProcessingEnabled {
                     aiProviderIntegrationCard
@@ -143,6 +145,48 @@ public struct EnhancementsSettingsTab: View {
         }
     }
 
+    private var markdownTargetsSection: some View {
+        MAGroup("settings.markdown_targets.title".localized, icon: "textformat") {
+            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                Text("settings.markdown_targets.description".localized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                if markdownTargetsViewModel.installedApps.isEmpty {
+                    Text("settings.markdown_targets.empty".localized)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    VStack(spacing: 0) {
+                        ForEach(Array(markdownTargetsViewModel.installedApps.enumerated()), id: \.element.id) { index, app in
+                            markdownTargetRow(app)
+
+                            if index < markdownTargetsViewModel.installedApps.count - 1 {
+                                Divider()
+                            }
+                        }
+                    }
+                    .background(MeetingAssistantDesignSystem.Colors.subtleFill2)
+                    .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+                }
+
+                HStack {
+                    Spacer()
+                    Button {
+                        markdownTargetsViewModel.addApp()
+                    } label: {
+                        Label("settings.markdown_targets.add".localized, systemImage: "plus")
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+            }
+        }
+        .onAppear {
+            markdownTargetsViewModel.refreshTargets()
+        }
+    }
+
     @ViewBuilder
     private var contextAwarenessSupportStatus: some View {
         VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
@@ -255,6 +299,40 @@ public struct EnhancementsSettingsTab: View {
                 postProcessingViewModel.settings.contextAwarenessExcludedBundleIDs = parseBundleIDs(from: newValue)
             }
         )
+    }
+
+    private func markdownTargetRow(_ app: MarkdownTargetApp) -> some View {
+        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+            Image(nsImage: app.icon)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 20, height: 20)
+                .padding(6)
+                .background(MeetingAssistantDesignSystem.Colors.subtleFill)
+                .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(app.displayName)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                Text(app.bundleIdentifier)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Button(role: .destructive) {
+                markdownTargetsViewModel.removeApp(bundleIdentifier: app.bundleIdentifier)
+            } label: {
+                Image(systemName: "minus.circle")
+                    .accessibilityLabel("settings.markdown_targets.remove".localized)
+            }
+            .buttonStyle(.borderless)
+            .controlSize(.small)
+        }
+        .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)
+        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
     }
 
     private func parseBundleIDs(from rawValue: String) -> [String] {
