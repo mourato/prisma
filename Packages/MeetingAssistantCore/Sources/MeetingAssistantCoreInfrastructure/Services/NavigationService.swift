@@ -9,6 +9,8 @@ public class NavigationService: ObservableObject {
     /// Reference to the SwiftUI openWindow action.
     public private(set) var openWindow: OpenWindowAction?
 
+    @Published public var requestedSettingsSection: String?
+
     private init() {}
 
     /// Registers the openWindow action from the SwiftUI environment.
@@ -33,6 +35,12 @@ public class NavigationService: ObservableObject {
             NSApp.activate(ignoringOtherApps: true)
             NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
         }
+    }
+
+    /// Opens the settings window and requests a specific section.
+    public func openSettings(section: String) {
+        requestedSettingsSection = section
+        openSettings()
     }
 
     /// Shows the About alert.

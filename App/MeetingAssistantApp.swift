@@ -221,6 +221,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         contextMenu?.addItem(NSMenuItem.separator())
 
         contextMenu?.addItem(createMenuItem(
+            key: "menubar.history",
+            action: #selector(openHistory)
+        ))
+
+        contextMenu?.addItem(NSMenuItem.separator())
+
+        contextMenu?.addItem(createMenuItem(
             key: "menubar.settings",
             action: #selector(openSettings),
             keyEquivalent: ","
@@ -396,6 +403,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func openSettings() {
         NavigationService.shared.openSettings()
+    }
+
+    @objc private func openHistory() {
+        NavigationService.shared.openSettings(section: SettingsSection.transcriptions.rawValue)
     }
 
     @objc private func toggleRecordingFromMenu() {

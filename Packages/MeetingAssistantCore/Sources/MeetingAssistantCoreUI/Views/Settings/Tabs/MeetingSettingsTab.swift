@@ -48,24 +48,6 @@ public struct MeetingSettingsTab: View {
                     }
                 }
 
-                MAGroup("settings.meetings.delivery".localized, icon: "doc.on.clipboard") {
-                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
-                        MAToggleRow(
-                            "settings.meetings.auto_copy_transcription".localized,
-                            description: "settings.meetings.auto_copy_transcription_desc".localized,
-                            isOn: $meetingViewModel.settings.meetingAutoCopyTranscriptionToClipboard
-                        )
-
-                        Divider()
-
-                        MAToggleRow(
-                            "settings.meetings.auto_paste_transcription".localized,
-                            description: "settings.meetings.auto_paste_transcription_desc".localized,
-                            isOn: $meetingViewModel.settings.meetingAutoPasteTranscriptionToActiveApp
-                        )
-                    }
-                }
-
                 // Speaker Identification Section
                 MAGroup("settings.meetings.speaker_identification".localized, icon: "person.wave.2.fill") {
                     SpeakerIdentificationSettingsSection(settings: meetingViewModel.settings)

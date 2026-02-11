@@ -20,8 +20,8 @@ public struct TranscriptionDeliveryService {
             shouldAutoCopy = settings.autoCopyTranscriptionToClipboard
             shouldAutoPaste = settings.autoPasteTranscriptionToActiveApp
         } else {
-            shouldAutoCopy = settings.meetingAutoCopyTranscriptionToClipboard
-            shouldAutoPaste = settings.meetingAutoPasteTranscriptionToActiveApp
+            shouldAutoCopy = false
+            shouldAutoPaste = false
         }
 
         guard shouldAutoCopy || shouldAutoPaste else { return }
