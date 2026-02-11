@@ -13,6 +13,12 @@ Core context:
 - Architecture style: skill-based guidance + modular Clean Architecture boundaries
 - Canonical agent directory: `.agents/` (`.agent` is a compatibility symlink)
 
+## Tool usage policy
+
+- For every reasoning or planning task, use the Sequential Thinking tool to capture each step of the thought process before acting.
+- Whenever you need to read from, write to, or otherwise interact with GitHub (issues, PRs, repos), drive those interactions through the GitHub CLI (`gh`).
+- For holistic or repository-wide analysis, feel free to leverage deepwiki to collect broader context, but keep it optional when the information is already contained locally.
+
 ## ✅ Standard Task SOP (Mandatory)
 
 This is the **single, standardized** flow for every task in this repository:
@@ -40,6 +46,14 @@ This is the **single, standardized** flow for every task in this repository:
 8. **Cleanup**:
    - Remove worktree + prune.
    - Delete the branch locally and remotely (if pushed).
+
+## Optimized workflow checklist
+
+- [ ] Open the Sequential Thinking tool before planning a task so each reasoning step is recorded.
+- [ ] Use `gh` for every GitHub interaction (issues, PRs, repos) rather than manual HTTP/UI visits.
+- [ ] Consider deepwiki only when local context is insufficient for a holistic, repository-wide perspective.
+- [ ] Follow the SOP flow: create worktree/branch, implement in slices, run `make build` `make test` (and `make lint` when feasible), make atomic commits, perform local code review, rerun `make build && make test` after fixes, push/merge, then cleanup.
+- [ ] Localize user-facing text and respect module/skill responsibilities as outlined in the main SOP and skills index.
 
 ---
 
