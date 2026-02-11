@@ -1,6 +1,7 @@
 import AppKit
 import MeetingAssistantCoreInfrastructure
 import SwiftUI
+import UniformTypeIdentifiers
 
 @MainActor
 public final class MarkdownTargetsViewModel: ObservableObject {
@@ -33,7 +34,7 @@ public final class MarkdownTargetsViewModel: ObservableObject {
         panel.canChooseFiles = true
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = false
-        panel.allowedFileTypes = ["app"]
+        panel.allowedContentTypes = [UTType.applicationBundle]
 
         if panel.runModal() == .OK, let url = panel.url {
             addApp(from: url)
