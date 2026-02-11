@@ -73,12 +73,14 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     private let textContextGuardrails: TextContextGuardrails
     private let textContextPolicy: TextContextPolicy
     private let transcribeAudioUseCase: TranscribeAudioUseCase
+    private let activeAppContextProvider: any ActiveAppContextProvider
 
     private var cancellables = Set<AnyCancellable>()
     private var statusCheckTask: Task<Void, Never>?
     private var isStarting = false
     private var postProcessingContext: String?
     private var postProcessingContextItems: [TranscriptionContextItem] = []
+    private var dictationStartBundleIdentifier: String?
 
     // MARK: - Computed Properties for Actor State
 
@@ -133,7 +135,8 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             }
         ),
         textContextGuardrails: TextContextGuardrails = TextContextGuardrails(),
-        textContextPolicy: TextContextPolicy = .default
+        textContextPolicy: TextContextPolicy = .default,
+        activeAppContextProvider: any ActiveAppContextProvider = NSWorkspaceActiveAppContextProvider()
     ) {
         self.micRecorder = micRecorder
         self.systemRecorder = systemRecorder
@@ -147,6 +150,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         self.textContextProvider = textContextProvider
         self.textContextGuardrails = textContextGuardrails
         self.textContextPolicy = textContextPolicy
+        self.activeAppContextProvider = activeAppContextProvider
 
         // Initialize UseCase with Adapters
         transcribeAudioUseCase = TranscribeAudioUseCase(
@@ -278,6 +282,11 @@ public extension RecordingManager {
         do {
             let meeting = createMeeting(type: resolveMeetingType())
             currentMeeting = meeting
+            dictationStartBundleIdentifier = nil
+            if source == .microphone {
+                let context = try? await activeAppContextProvider.fetchActiveAppContext()
+                dictationStartBundleIdentifier = context?.bundleIdentifier
+            }
             let contextCapture = await capturePostProcessingContext(for: meeting)
             postProcessingContext = contextCapture.context
             postProcessingContextItems = contextCapture.items
@@ -869,8 +878,9 @@ extension RecordingManager {
         defaultMeetingPrompt: DomainPostProcessingPrompt?
     ) -> DomainPostProcessingPrompt? {
         if isDictation {
-            let prompt = settings.selectedDictationPrompt ?? .cleanTranscription
-            return domainPrompt(from: prompt)
+            let basePrompt = settings.selectedDictationPrompt ?? .cleanTranscription
+            let resolvedPrompt = markdownPromptIfNeeded(prompt: basePrompt, settings: settings)
+            return domainPrompt(from: resolvedPrompt)
         }
 
         switch meeting.type {
@@ -895,6 +905,46 @@ extension RecordingManager {
     private func domainPrompt(from prompt: PostProcessingPrompt) -> DomainPostProcessingPrompt {
         DomainPostProcessingPrompt(id: prompt.id, title: prompt.title, content: prompt.promptText, isDefault: false)
     }
+
+    private func markdownPromptIfNeeded(
+        prompt: PostProcessingPrompt,
+        settings: AppSettingsStore
+    ) -> PostProcessingPrompt {
+        guard shouldForceMarkdownForDictation(settings: settings) else { return prompt }
+
+        let augmentedText = """
+        \(prompt.promptText)
+
+        \(Self.markdownFormatInstruction)
+        """
+
+        return PostProcessingPrompt(
+            id: prompt.id,
+            title: prompt.title,
+            promptText: augmentedText,
+            isActive: prompt.isActive,
+            icon: prompt.icon,
+            description: prompt.description,
+            isPredefined: prompt.isPredefined
+        )
+    }
+
+    private func shouldForceMarkdownForDictation(settings: AppSettingsStore) -> Bool {
+        guard let bundleIdentifier = dictationStartBundleIdentifier else { return false }
+        let normalized = normalizeBundleIdentifier(bundleIdentifier)
+        let targets = Set(settings.markdownTargetBundleIdentifiers.map(normalizeBundleIdentifier))
+        return targets.contains(normalized)
+    }
+
+    private func normalizeBundleIdentifier(_ value: String) -> String {
+        value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    private static let markdownFormatInstruction = """
+    <OUTPUT_FORMAT>
+    Always format the output as Markdown.
+    </OUTPUT_FORMAT>
+    """
 
     private func exportSummary(transcription: Transcription) async {
         let settings = AppSettingsStore.shared
