@@ -25,6 +25,7 @@ This is the **single, standardized** flow for every task in this repository:
    - `make build`
    - `make test`
    - (recommended) `make lint`
+   - No Codacy/MCP analysis is required.
    - If anything fails: stop and fix until green.
 4. **Atomic commits (green state)**:
    - Split commits by intent (feature vs refactor vs tests vs cleanup).
