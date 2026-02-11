@@ -198,6 +198,8 @@
 "settings.context_awareness.title" = "Context Awareness";
 "settings.context_awareness.enabled" = "Use Context Awareness";
 "settings.context_awareness.enabled_desc" = "Capture contextual metadata at recording start and include it in AI post-processing.";
+"settings.context_awareness.explicit_action_only" = "Capture only on explicit action";
+"settings.context_awareness.explicit_action_only_desc" = "Only capture focused text when you manually trigger dictation or commands.";
 "settings.context_awareness.active_app" = "Include Active App";
 "settings.context_awareness.active_app_desc" = "Capture active app name and focused window title when available.";
 "settings.context_awareness.clipboard" = "Include Clipboard";
@@ -206,12 +208,19 @@
 "settings.context_awareness.window_ocr_desc" = "Capture visible text from the active window using OCR (requires Screen Recording permission).";
 "settings.context_awareness.accessibility_text" = "Include Accessibility UI Text";
 "settings.context_awareness.accessibility_text_desc" = "Capture selected or focused text from the active app via Accessibility APIs (requires Accessibility permission).";
+"settings.context_awareness.permission_title" = "Accessibility permission required";
+"settings.context_awareness.permission_desc" = "Enable Accessibility to read focused text from the active app.";
+"settings.context_awareness.unsupported_title" = "Focused text not available";
+"settings.context_awareness.unsupported_desc" = "The active app does not expose focused text. Try another app or field.";
+"settings.context_awareness.support_status_check" = "Check support";
 "settings.context_awareness.protect_sensitive_apps" = "Protect Sensitive Apps";
 "settings.context_awareness.protect_sensitive_apps_desc" = "Skip context capture when the active app is on the sensitive-app blocklist.";
 "settings.context_awareness.redact_sensitive_data" = "Redact Sensitive Data";
 "settings.context_awareness.redact_sensitive_data_desc" = "Redact emails, URLs, secrets, and long numeric sequences before sending context to AI.";
 "settings.context_awareness.excluded_apps" = "Excluded Bundle IDs";
 "settings.context_awareness.excluded_apps_desc" = "One bundle ID per line (or comma-separated). Example: com.example.secureapp";
+"settings.context_awareness.base_exclusions" = "Always excluded apps";
+"settings.context_awareness.base_exclusions_desc" = "These apps are blocked by default for privacy.";
 
 /* Service Settings */
 "settings.service.title" = "Service";

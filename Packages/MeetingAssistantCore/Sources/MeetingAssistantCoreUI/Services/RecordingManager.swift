@@ -69,6 +69,9 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     private let storage: any StorageService
     private let notificationService: NotificationService
     private let contextAwarenessService: any ContextAwarenessServiceProtocol
+    private let textContextProvider: any TextContextProvider
+    private let textContextGuardrails: TextContextGuardrails
+    private let textContextPolicy: TextContextPolicy
     private let transcribeAudioUseCase: TranscribeAudioUseCase
 
     private var cancellables = Set<AnyCancellable>()
@@ -113,7 +116,23 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         meetingDetector: MeetingDetector = MeetingDetector.shared,
         storage: any StorageService = FileSystemStorageService.shared,
         notificationService: NotificationService = .shared,
-        contextAwarenessService: any ContextAwarenessServiceProtocol = ContextAwarenessService.shared
+        contextAwarenessService: any ContextAwarenessServiceProtocol = ContextAwarenessService.shared,
+        textContextProvider: any TextContextProvider = AXTextContextProvider(
+            exclusionPolicyProvider: {
+                let settings = AppSettingsStore.shared
+                return settings.contextAwarenessProtectSensitiveApps
+                    ? TextContextExclusionPolicy()
+                    : TextContextExclusionPolicy(baseExcludedBundleIDs: [])
+            },
+            customExcludedBundleIDsProvider: {
+                let settings = AppSettingsStore.shared
+                return settings.contextAwarenessProtectSensitiveApps
+                    ? settings.contextAwarenessExcludedBundleIDs
+                    : []
+            }
+        ),
+        textContextGuardrails: TextContextGuardrails = TextContextGuardrails(),
+        textContextPolicy: TextContextPolicy = .default
     ) {
         self.micRecorder = micRecorder
         self.systemRecorder = systemRecorder
@@ -124,6 +143,9 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         self.storage = storage
         self.notificationService = notificationService
         self.contextAwarenessService = contextAwarenessService
+        self.textContextProvider = textContextProvider
+        self.textContextGuardrails = textContextGuardrails
+        self.textContextPolicy = textContextPolicy
 
         // Initialize UseCase with Adapters
         transcribeAudioUseCase = TranscribeAudioUseCase(
@@ -252,7 +274,7 @@ public extension RecordingManager {
         do {
             let meeting = createMeeting(type: resolveMeetingType())
             currentMeeting = meeting
-            postProcessingContext = await capturePostProcessingContext()
+            postProcessingContext = await capturePostProcessingContext(for: meeting)
 
             // We only need one output URL because AudioRecorder handles mixing
             let audioURL = storage.createRecordingURL(for: meeting, type: .merged)
@@ -725,22 +747,46 @@ extension RecordingManager {
         )
     }
 
-    private func capturePostProcessingContext() async -> String? {
+    private func capturePostProcessingContext(for meeting: Meeting) async -> String? {
         let settings = AppSettingsStore.shared
         guard settings.contextAwarenessEnabled else { return nil }
 
+        if meeting.isDictation {
+            return await captureFocusedTextContext(settings: settings)
+        }
+
+        guard !settings.contextAwarenessExplicitActionOnly else { return nil }
+
         let snapshot = await contextAwarenessService.captureSnapshot(
             options: .init(
-                includeActiveApp: true,
+                includeActiveApp: settings.contextAwarenessIncludeActiveApp,
                 includeClipboard: settings.contextAwarenessIncludeClipboard,
                 includeWindowOCR: settings.contextAwarenessIncludeWindowOCR,
-                includeAccessibilityText: true,
+                includeAccessibilityText: settings.contextAwarenessIncludeAccessibilityText,
                 protectSensitiveApps: settings.contextAwarenessProtectSensitiveApps,
                 redactSensitiveData: settings.contextAwarenessRedactSensitiveData,
                 excludedBundleIDs: settings.contextAwarenessExcludedBundleIDs
             )
         )
         return contextAwarenessService.makePostProcessingContext(from: snapshot)
+    }
+
+    private func captureFocusedTextContext(settings: AppSettingsStore) async -> String? {
+        guard settings.contextAwarenessIncludeAccessibilityText else { return nil }
+
+        guard AccessibilityPermissionService.isTrusted() else {
+            AccessibilityPermissionService.requestPermission()
+            return nil
+        }
+
+        do {
+            let snapshot = try await textContextProvider.fetchTextContext()
+            let guarded = textContextGuardrails.apply(to: snapshot.text, policy: textContextPolicy)
+            let trimmed = guarded.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? nil : trimmed
+        } catch {
+            return nil
+        }
     }
 
     private func makeAvailablePrompts(isDictation: Bool, settings: AppSettingsStore) -> [DomainPostProcessingPrompt] {
