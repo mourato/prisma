@@ -42,7 +42,7 @@ final class MeetingAssistantAIService: NSObject, MeetingAssistantXPCProtocol {
         Task { @MainActor in
             do {
                 MeetingAssistantAIService.logger.info("Fetching service status...")
-                let currentState = await FluidAIModelManager.shared.modelState
+                let currentState = FluidAIModelManager.shared.modelState
                 MeetingAssistantAIService.logger.info("Model state: \(currentState.rawValue)")
 
                 let status = MeetingAssistantXPCModels.ServiceStatus(

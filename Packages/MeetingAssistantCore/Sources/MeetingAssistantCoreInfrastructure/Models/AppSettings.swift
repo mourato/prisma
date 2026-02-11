@@ -1097,7 +1097,7 @@ public class AppSettingsStore: ObservableObject {
         return UserDefaults.standard.bool(forKey: key)
     }
 
-    private static func loadEnum<T: RawRepresentable>(forKey key: String, defaultValue: T) -> T where T.RawValue == String {
+    private static func loadEnum<T: RawRepresentable & Sendable>(forKey key: String, defaultValue: T) -> T where T.RawValue == String {
         let rawValue = UserDefaults.standard.string(forKey: key)
         return rawValue.flatMap(T.init(rawValue:)) ?? defaultValue
     }
