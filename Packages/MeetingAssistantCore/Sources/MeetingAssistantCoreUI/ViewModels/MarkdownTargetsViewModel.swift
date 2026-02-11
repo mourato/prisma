@@ -78,7 +78,8 @@ public final class MarkdownTargetsViewModel: ObservableObject {
         for bundleIdentifier in bundleIdentifiers {
             let normalized = normalizeBundleIdentifier(bundleIdentifier)
             guard seen.insert(normalized).inserted else { continue }
-            guard let appURL = workspace.urlForApplication(withBundleIdentifier: bundleIdentifier) else { continue }
+            let trimmed = bundleIdentifier.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let appURL = workspace.urlForApplication(withBundleIdentifier: trimmed) else { continue }
 
             let icon = workspace.icon(forFile: appURL.path)
             icon.size = NSSize(width: 20, height: 20)
