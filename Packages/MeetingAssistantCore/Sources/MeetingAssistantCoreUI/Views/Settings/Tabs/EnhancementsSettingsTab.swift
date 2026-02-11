@@ -12,6 +12,8 @@ import SwiftUI
 public struct EnhancementsSettingsTab: View {
     @StateObject private var viewModel = AISettingsViewModel(settings: .shared)
     @StateObject private var postProcessingViewModel = PostProcessingSettingsViewModel()
+    @State private var supportStatus: TextContextSupportStatus = .unknown
+    private let supportChecker = TextContextSupportChecker()
 
     public init() {}
 
@@ -62,6 +64,24 @@ public struct EnhancementsSettingsTab: View {
 
                 if postProcessingViewModel.settings.contextAwarenessEnabled {
                     MAToggleRow(
+                        "settings.context_awareness.explicit_action_only".localized,
+                        description: "settings.context_awareness.explicit_action_only_desc".localized,
+                        isOn: $postProcessingViewModel.settings.contextAwarenessExplicitActionOnly
+                    )
+
+                    MAToggleRow(
+                        "settings.context_awareness.accessibility_text".localized,
+                        description: "settings.context_awareness.accessibility_text_desc".localized,
+                        isOn: $postProcessingViewModel.settings.contextAwarenessIncludeAccessibilityText
+                    )
+
+                    if postProcessingViewModel.settings.contextAwarenessIncludeAccessibilityText {
+                        contextAwarenessSupportStatus
+                    }
+
+                    Divider()
+
+                    MAToggleRow(
                         "settings.context_awareness.clipboard".localized,
                         description: "settings.context_awareness.clipboard_desc".localized,
                         isOn: $postProcessingViewModel.settings.contextAwarenessIncludeClipboard
@@ -103,12 +123,70 @@ public struct EnhancementsSettingsTab: View {
                                 .padding(6)
                                 .background(MeetingAssistantDesignSystem.Colors.subtleFill2)
                                 .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+
+                            Text("settings.context_awareness.base_exclusions".localized)
+                                .font(.caption)
+                                .fontWeight(.medium)
+
+                            Text("settings.context_awareness.base_exclusions_desc".localized)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+
+                            Text(TextContextExclusionPolicy.defaultBundleIDs.joined(separator: "\n"))
+                                .font(.caption.monospaced())
+                                .foregroundStyle(.secondary)
                         }
                         .padding(.top, MeetingAssistantDesignSystem.Layout.spacing4)
                     }
                 }
             }
         }
+    }
+
+    @ViewBuilder
+    private var contextAwarenessSupportStatus: some View {
+        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+            switch supportStatus {
+            case .permissionDenied:
+                MACallout(
+                    kind: .warning,
+                    title: "settings.context_awareness.permission_title".localized,
+                    message: "settings.context_awareness.permission_desc".localized
+                )
+
+                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                    Button("permissions.request".localized) {
+                        AccessibilityPermissionService.requestPermission()
+                        Task { await refreshSupportStatus() }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+
+                    Button("permissions.configure".localized) {
+                        AccessibilityPermissionService.openSystemSettings()
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+
+            case .noFocusedElement, .unsupported:
+                MACallout(
+                    kind: .info,
+                    title: "settings.context_awareness.unsupported_title".localized,
+                    message: "settings.context_awareness.unsupported_desc".localized
+                )
+
+            case .noActiveApp, .supported, .unknown:
+                EmptyView()
+            }
+
+            Button("settings.context_awareness.support_status_check".localized) {
+                Task { await refreshSupportStatus() }
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+        }
+        .task { await refreshSupportStatus() }
     }
 
     // MARK: - AI Provider Integration Card
@@ -194,6 +272,11 @@ public struct EnhancementsSettingsTab: View {
         }
 
         return ordered
+    }
+
+    @MainActor
+    private func refreshSupportStatus() async {
+        supportStatus = await supportChecker.checkSupport()
     }
 }
 

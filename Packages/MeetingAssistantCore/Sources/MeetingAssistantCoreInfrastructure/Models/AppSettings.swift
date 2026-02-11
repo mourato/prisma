@@ -466,6 +466,7 @@ public class AppSettingsStore: ObservableObject {
         static let autoExportSummaries = "autoExportSummaries"
         static let createMeetingFolder = "createMeetingFolder"
         static let contextAwarenessEnabled = "contextAwarenessEnabled"
+        static let contextAwarenessExplicitActionOnly = "contextAwarenessExplicitActionOnly"
         static let contextAwarenessIncludeActiveApp = "contextAwarenessIncludeActiveApp"
         static let contextAwarenessIncludeClipboard = "contextAwarenessIncludeClipboard"
         static let contextAwarenessIncludeWindowOCR = "contextAwarenessIncludeWindowOCR"
@@ -796,6 +797,11 @@ public class AppSettingsStore: ObservableObject {
         }
     }
 
+    /// Restricts context capture to explicit user actions (dictation/commands).
+    @Published public var contextAwarenessExplicitActionOnly: Bool {
+        didSet { UserDefaults.standard.set(contextAwarenessExplicitActionOnly, forKey: Keys.contextAwarenessExplicitActionOnly) }
+    }
+
     /// Includes active app metadata (app name and focused window title when available).
     @Published public var contextAwarenessIncludeActiveApp: Bool {
         didSet { UserDefaults.standard.set(contextAwarenessIncludeActiveApp, forKey: Keys.contextAwarenessIncludeActiveApp) }
@@ -988,6 +994,10 @@ public class AppSettingsStore: ObservableObject {
         createMeetingFolder = UserDefaults.standard.bool(forKey: Keys.createMeetingFolder)
         let loadedContextAwarenessEnabled = UserDefaults.standard.bool(forKey: Keys.contextAwarenessEnabled)
         contextAwarenessEnabled = loadedContextAwarenessEnabled
+        contextAwarenessExplicitActionOnly = Self.loadBoolDefaultIfUnset(
+            forKey: Keys.contextAwarenessExplicitActionOnly,
+            defaultValue: true
+        )
         contextAwarenessIncludeActiveApp = Self.loadBoolDefaultIfUnset(
             forKey: Keys.contextAwarenessIncludeActiveApp,
             defaultValue: true
@@ -1181,6 +1191,7 @@ public class AppSettingsStore: ObservableObject {
         showInDock = false
         meetingPrompts = []
         meetingTypeAutoDetectEnabled = false
+        contextAwarenessExplicitActionOnly = true
     }
 
     // MARK: - Prompt Management

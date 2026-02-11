@@ -197,6 +197,8 @@
 "settings.context_awareness.title" = "Context Awareness";
 "settings.context_awareness.enabled" = "Usar Context Awareness";
 "settings.context_awareness.enabled_desc" = "Captura metadados de contexto no início da gravação e os inclui no pós-processamento com IA.";
+"settings.context_awareness.explicit_action_only" = "Capturar apenas em ação explícita";
+"settings.context_awareness.explicit_action_only_desc" = "Captura o texto em foco somente quando você inicia ditado ou comandos manualmente.";
 "settings.context_awareness.active_app" = "Incluir App Ativo";
 "settings.context_awareness.active_app_desc" = "Captura o nome do app ativo e o título da janela em foco quando disponível.";
 "settings.context_awareness.clipboard" = "Incluir Clipboard";
@@ -205,12 +207,19 @@
 "settings.context_awareness.window_ocr_desc" = "Captura texto visível da janela ativa via OCR (requer permissão de Gravação de Tela).";
 "settings.context_awareness.accessibility_text" = "Incluir Texto da UI via Acessibilidade";
 "settings.context_awareness.accessibility_text_desc" = "Captura texto selecionado ou em foco no app ativo via APIs de Acessibilidade (requer permissão de Acessibilidade).";
+"settings.context_awareness.permission_title" = "Permissão de Acessibilidade necessária";
+"settings.context_awareness.permission_desc" = "Ative Acessibilidade para ler o texto em foco no app ativo.";
+"settings.context_awareness.unsupported_title" = "Texto em foco indisponível";
+"settings.context_awareness.unsupported_desc" = "O app ativo não expõe texto em foco. Tente outro app ou campo.";
+"settings.context_awareness.support_status_check" = "Verificar suporte";
 "settings.context_awareness.protect_sensitive_apps" = "Proteger Apps Sensíveis";
 "settings.context_awareness.protect_sensitive_apps_desc" = "Ignora a captura de contexto quando o app ativo está na lista de apps sensíveis.";
 "settings.context_awareness.redact_sensitive_data" = "Redigir Dados Sensíveis";
 "settings.context_awareness.redact_sensitive_data_desc" = "Redige e-mails, URLs, segredos e sequências numéricas longas antes de enviar contexto para IA.";
 "settings.context_awareness.excluded_apps" = "Bundle IDs Excluídos";
 "settings.context_awareness.excluded_apps_desc" = "Um bundle ID por linha (ou separado por vírgula). Exemplo: com.example.secureapp";
+"settings.context_awareness.base_exclusions" = "Apps sempre excluídos";
+"settings.context_awareness.base_exclusions_desc" = "Esses apps são bloqueados por padrão por privacidade.";
 
 /* Service Settings */
 "settings.service.title" = "Serviço";
