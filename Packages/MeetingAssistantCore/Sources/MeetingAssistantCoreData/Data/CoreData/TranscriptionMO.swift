@@ -27,6 +27,7 @@ public final class TranscriptionMO: NSManagedObject {
     @NSManaged public var postProcessingDuration: Double
     @NSManaged public var postProcessingModel: String?
     @NSManaged public var meetingType: String?
+    @NSManaged public var contextItemsData: Data?
 
     // Relacionamentos
     @NSManaged public var meeting: MeetingMO
@@ -65,6 +66,9 @@ public extension TranscriptionMO {
 // MARK: - Conversion Methods
 
 extension TranscriptionMO {
+    private static let contextItemsDecoder = JSONDecoder()
+    private static let contextItemsEncoder = JSONEncoder()
+
     /// Converte Managed Object para Domain Entity
     func toDomain() -> TranscriptionEntity {
         var config = TranscriptionEntity.Configuration(
@@ -74,6 +78,7 @@ extension TranscriptionMO {
             language: language
         )
         config.id = id
+        config.contextItems = decodeContextItems()
         config.processedContent = processedContent
         config.postProcessingPromptId = postProcessingPromptId
         config.postProcessingPromptTitle = postProcessingPromptTitle
@@ -104,6 +109,7 @@ extension TranscriptionMO {
         postProcessingDuration = entity.postProcessingDuration
         postProcessingModel = entity.postProcessingModel
         meetingType = entity.meetingType
+        contextItemsData = encodeContextItems(entity.contextItems)
 
         self.meeting = meeting
 
@@ -132,6 +138,7 @@ extension TranscriptionMO {
         transcriptionMO.postProcessingDuration = entity.postProcessingDuration
         transcriptionMO.postProcessingModel = entity.postProcessingModel
         transcriptionMO.meetingType = entity.meetingType
+        transcriptionMO.contextItemsData = transcriptionMO.encodeContextItems(entity.contextItems)
         transcriptionMO.meeting = meeting
 
         // Criar segmentos
@@ -141,5 +148,15 @@ extension TranscriptionMO {
         transcriptionMO.segments = Set(segments)
 
         return transcriptionMO
+    }
+
+    private func decodeContextItems() -> [TranscriptionContextItem] {
+        guard let data = contextItemsData else { return [] }
+        return (try? Self.contextItemsDecoder.decode([TranscriptionContextItem].self, from: data)) ?? []
+    }
+
+    private func encodeContextItems(_ items: [TranscriptionContextItem]) -> Data? {
+        guard !items.isEmpty else { return nil }
+        return try? Self.contextItemsEncoder.encode(items)
     }
 }

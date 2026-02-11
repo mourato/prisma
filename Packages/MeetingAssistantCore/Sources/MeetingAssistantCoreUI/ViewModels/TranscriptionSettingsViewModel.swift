@@ -134,6 +134,7 @@ public class TranscriptionSettingsViewModel: ObservableObject {
             let updatedTranscription = Transcription(
                 id: transcription.id,
                 meeting: transcription.meeting,
+                contextItems: transcription.contextItems,
                 segments: transcription.segments,
                 text: transcription.text,
                 rawText: transcription.rawText,

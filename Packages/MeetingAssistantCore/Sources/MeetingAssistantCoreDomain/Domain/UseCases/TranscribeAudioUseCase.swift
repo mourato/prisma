@@ -31,6 +31,7 @@ public final class TranscribeAudioUseCase: Sendable {
         audioURL: URL,
         meeting: MeetingEntity,
         inputSource: String? = nil,
+        contextItems: [TranscriptionContextItem] = [],
         applyPostProcessing: Bool = false,
         postProcessingPrompt: DomainPostProcessingPrompt? = nil,
         defaultPostProcessingPrompt: DomainPostProcessingPrompt? = nil,
@@ -131,6 +132,7 @@ public final class TranscribeAudioUseCase: Sendable {
             },
             language: response.language
         )
+        config.contextItems = contextItems
         config.processedContent = processedContent
         config.postProcessingPromptId = promptId
         config.postProcessingPromptTitle = promptTitle

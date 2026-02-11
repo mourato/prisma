@@ -702,6 +702,7 @@ public final class FileSystemStorageService: StorageService {
             language: transcription.language
         )
         config.id = transcription.id
+        config.contextItems = transcription.contextItems
         config.processedContent = transcription.processedContent
         config.postProcessingPromptId = transcription.postProcessingPromptId
         config.postProcessingPromptTitle = transcription.postProcessingPromptTitle
@@ -738,6 +739,7 @@ public final class FileSystemStorageService: StorageService {
         return Transcription(
             id: entity.id,
             meeting: meeting,
+            contextItems: entity.contextItems,
             segments: segments,
             text: entity.text,
             rawText: entity.rawText,

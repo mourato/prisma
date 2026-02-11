@@ -7,6 +7,9 @@ public struct TranscriptionEntity: Identifiable, Codable, Hashable, Sendable {
     public let id: UUID
     public let meeting: MeetingEntity
 
+    /// Context items used during post-processing.
+    public let contextItems: [TranscriptionContextItem]
+
     /// Segmentos da transcrição com identificação de speaker.
     public let segments: [Segment]
 
@@ -40,6 +43,7 @@ public struct TranscriptionEntity: Identifiable, Codable, Hashable, Sendable {
     /// Configuração para inicialização flexível de TranscriptionEntity.
     public struct Configuration: Sendable {
         public var id: UUID = .init()
+        public var contextItems: [TranscriptionContextItem] = []
         public var segments: [Segment] = []
         public var text: String
         public var rawText: String
@@ -72,6 +76,7 @@ public struct TranscriptionEntity: Identifiable, Codable, Hashable, Sendable {
     public init(meeting: MeetingEntity, config: Configuration) {
         id = config.id
         self.meeting = meeting
+        contextItems = config.contextItems
         segments = config.segments
         text = config.text
         rawText = config.rawText

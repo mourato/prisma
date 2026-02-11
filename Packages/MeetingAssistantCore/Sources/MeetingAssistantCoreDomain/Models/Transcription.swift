@@ -5,6 +5,9 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
     public let id: UUID
     public let meeting: Meeting
 
+    /// Context items used during post-processing.
+    public let contextItems: [TranscriptionContextItem]
+
     /// Segments of the transcription with speaker identification.
     public let segments: [Segment]
 
@@ -38,6 +41,7 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
     public init(
         id: UUID = UUID(),
         meeting: Meeting,
+        contextItems: [TranscriptionContextItem] = [],
         segments: [Segment] = [],
         text: String,
         rawText: String,
@@ -55,6 +59,7 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
     ) {
         self.id = id
         self.meeting = meeting
+        self.contextItems = contextItems
         self.segments = segments
         self.text = text
         self.rawText = rawText
@@ -83,6 +88,7 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
         self.init(
             id: id,
             meeting: meeting,
+            contextItems: [],
             segments: [],
             text: text,
             rawText: text,
@@ -183,6 +189,28 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
 
     /// Default string for unknown speaker.
     public static let unknownSpeaker = "Desconhecido"
+}
+
+/// Context item sent to the post-processing provider.
+public struct TranscriptionContextItem: Identifiable, Codable, Hashable, Sendable {
+    public enum Source: String, Codable, Sendable {
+        case activeApp
+        case windowTitle
+        case accessibilityText
+        case clipboard
+        case windowOCR
+        case focusedText
+    }
+
+    public let id: UUID
+    public let source: Source
+    public let text: String
+
+    public init(id: UUID = UUID(), source: Source, text: String) {
+        self.id = id
+        self.source = source
+        self.text = text
+    }
 }
 
 /// Response from transcription API.
