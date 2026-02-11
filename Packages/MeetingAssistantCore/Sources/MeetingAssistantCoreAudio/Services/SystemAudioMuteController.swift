@@ -125,10 +125,17 @@ public final class SystemAudioMuteController: Sendable {
 
         let muteState = getOutputMuteState(for: deviceID)
         let volumeState = getOutputVolume(for: deviceID)
-        let canMute = isMuteSettable(for: deviceID)
-        let canSetVolume = isVolumeSettable(for: deviceID)
+        let canMute = isMuteSettable(for: deviceID) && muteState != nil
+        let canSetVolume = isVolumeSettable(for: deviceID) && volumeState != nil
 
-        guard canMute || canSetVolume else { return nil }
+        guard canMute || canSetVolume else {
+            AppLogger.warning(
+                "System output mute skipped due to missing restore state",
+                category: .recordingManager,
+                extra: ["canMute": canMute, "canSetVolume": canSetVolume]
+            )
+            return nil
+        }
 
         return OutputMuteSession(
             deviceID: deviceID,
