@@ -6,8 +6,6 @@ import MeetingAssistantCoreInfrastructure
 public protocol DeliverySettingsConfig {
     var autoCopyTranscriptionToClipboard: Bool { get }
     var autoPasteTranscriptionToActiveApp: Bool { get }
-    var meetingAutoCopyTranscriptionToClipboard: Bool { get }
-    var meetingAutoPasteTranscriptionToActiveApp: Bool { get }
 }
 
 /// Extend existing AppSettingsStore to conform to the protocol directly.
