@@ -297,6 +297,11 @@ public struct TranscriptionsSettingsTab: View {
                                 },
                                 onAction: { action in
                                     handleTranscriptionAction(action, for: transcription)
+                                },
+                                onUpdateSource: { isMeeting in
+                                    Task {
+                                        await viewModel.updateSource(for: transcription, isMeeting: isMeeting)
+                                    }
                                 }
                             )
                         }
@@ -366,9 +371,17 @@ public struct TranscriptionsSettingsTab: View {
                 TranscriptionDetailView(
                     transcription: selected,
                     isProcessing: viewModel.isProcessingAI,
+                    isSourceEditable: isSourceEditable(selected),
                     onApplyPrompt: { prompt in
                         Task {
                             await viewModel.applyPostProcessing(prompt: prompt, to: selected)
+                        }
+                    },
+                    onUpdateSource: { isMeeting in
+                        if let metadata = viewModel.transcriptions.first(where: { $0.id == selected.id }) {
+                            Task {
+                                await viewModel.updateSource(for: metadata, isMeeting: isMeeting)
+                            }
                         }
                     }
                 )
@@ -376,6 +389,10 @@ public struct TranscriptionsSettingsTab: View {
                 noSelectionView
             }
         }
+    }
+
+    private func isSourceEditable(_ transcription: Transcription) -> Bool {
+        transcription.meeting.app == .unknown || transcription.meeting.app == .manualMeeting
     }
 
     private var noSelectionView: some View {
