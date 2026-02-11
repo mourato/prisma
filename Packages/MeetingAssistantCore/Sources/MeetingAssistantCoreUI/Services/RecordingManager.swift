@@ -156,6 +156,9 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         )
 
         setupBindings()
+        if isRunningAsAppBundle {
+            meetingDetector.startMonitoring()
+        }
         notificationService.requestAuthorization()
         Task { @Sendable [weak self] in
             await self?.checkPermission()

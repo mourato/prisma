@@ -15,6 +15,7 @@ public struct TranscriptionCardView: View {
     let availablePrompts: [PostProcessingPrompt]
     let onToggleExpand: () -> Void
     let onAction: (TranscriptionAction) -> Void
+    let onUpdateSource: (Bool) -> Void
 
     public init(
         transcription: TranscriptionMetadata,
@@ -23,7 +24,8 @@ public struct TranscriptionCardView: View {
         audioURL: URL?,
         availablePrompts: [PostProcessingPrompt] = [],
         onToggleExpand: @escaping () -> Void,
-        onAction: @escaping (TranscriptionAction) -> Void
+        onAction: @escaping (TranscriptionAction) -> Void,
+        onUpdateSource: @escaping (Bool) -> Void = { _ in }
     ) {
         self.transcription = transcription
         self.transcriptionDetail = transcriptionDetail
@@ -32,6 +34,7 @@ public struct TranscriptionCardView: View {
         self.availablePrompts = availablePrompts
         self.onToggleExpand = onToggleExpand
         self.onAction = onAction
+        self.onUpdateSource = onUpdateSource
     }
 
     @State private var selectedTab: TranscriptionTab = .aiProcessed
@@ -62,6 +65,20 @@ public struct TranscriptionCardView: View {
         }
     }
 
+    private enum SourceSelection: String, CaseIterable {
+        case recording
+        case meeting
+
+        var title: String {
+            switch self {
+            case .recording:
+                "transcription.source.recording".localized
+            case .meeting:
+                "transcription.source.meeting".localized
+            }
+        }
+    }
+
     public var body: some View {
         MACard(cornerRadius: MeetingAssistantDesignSystem.Layout.largeCornerRadius, padding: MeetingAssistantDesignSystem.Layout.spacing16) {
             if isExpanded {
@@ -84,11 +101,15 @@ public struct TranscriptionCardView: View {
     }
 
     private var collapsedContent: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        HStack(alignment: .top, spacing: 12) {
             Text(displayText(transcription.previewText))
                 .font(.body)
                 .lineLimit(2)
                 .foregroundStyle(.primary)
+
+            Spacer()
+
+            sourceInlineControl
         }
     }
 
@@ -116,6 +137,8 @@ public struct TranscriptionCardView: View {
                 .pickerStyle(.segmented)
                 .labelsHidden()
                 .frame(width: 250)
+
+                sourceInlineControl
 
                 Spacer()
 
@@ -171,7 +194,13 @@ public struct TranscriptionCardView: View {
                     .buttonStyle(.plain)
                     .popover(isPresented: $showInfoPopover) {
                         if let details = transcriptionDetail {
-                            TranscriptionInfoPopover(transcription: details)
+                            TranscriptionInfoPopover(
+                                transcription: details,
+                                isSourceEditable: isSourceEditable,
+                                onUpdateSource: { isMeeting in
+                                    onUpdateSource(isMeeting)
+                                }
+                            )
                         } else {
                             Text("transcription.info.loading".localized)
                                 .padding()
@@ -240,6 +269,71 @@ public struct TranscriptionCardView: View {
                 .foregroundStyle(isDestructive ? .red : .secondary)
         }
         .buttonStyle(.plain)
+    }
+
+    private var appSource: MeetingApp {
+        MeetingApp(rawValue: transcription.appRawValue) ?? .unknown
+    }
+
+    private var isSourceEditable: Bool {
+        appSource == .unknown || appSource == .manualMeeting
+    }
+
+    private var sourceSelection: SourceSelection {
+        switch appSource {
+        case .unknown:
+            return .recording
+        case .importedFile:
+            return .recording
+        default:
+            return .meeting
+        }
+    }
+
+    private var sourceInlineControl: some View {
+        if appSource == .importedFile {
+            return AnyView(sourceLabel(text: appSource.displayName))
+        }
+
+        if isSourceEditable {
+            return AnyView(sourceMenu)
+        }
+
+        return AnyView(sourceLabel(text: appSource.displayName))
+    }
+
+    private var sourceMenu: some View {
+        Menu {
+            ForEach(SourceSelection.allCases, id: \.self) { option in
+                Button {
+                    onUpdateSource(option == .meeting)
+                } label: {
+                    HStack {
+                        Text(option.title)
+                        if option == sourceSelection {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            }
+        } label: {
+            sourceLabel(text: sourceSelection.title)
+        }
+        .menuStyle(.borderlessButton)
+        .highPriorityGesture(TapGesture())
+    }
+
+    private func sourceLabel(text: String) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: "tag")
+                .font(.caption2)
+            Text(text)
+                .font(.caption2)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(MeetingAssistantDesignSystem.Colors.subtleFill, in: Capsule())
+        .foregroundStyle(.secondary)
     }
 }
 

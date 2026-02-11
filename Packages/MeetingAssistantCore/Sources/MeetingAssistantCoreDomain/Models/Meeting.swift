@@ -7,6 +7,7 @@ public enum MeetingApp: String, CaseIterable, Codable, Sendable {
     case microsoftTeams = "microsoft-teams"
     case slack
     case zoom
+    case manualMeeting = "manual-meeting"
     case importedFile = "imported-file"
     case unknown
 
@@ -21,7 +22,7 @@ public enum MeetingApp: String, CaseIterable, Codable, Sendable {
             ["com.tinyspeck.slackmacgap"]
         case .zoom:
             ["us.zoom.xos"]
-        case .importedFile, .unknown:
+        case .manualMeeting, .importedFile, .unknown:
             []
         }
     }
@@ -37,7 +38,7 @@ public enum MeetingApp: String, CaseIterable, Codable, Sendable {
             ["Huddle", "Call"]
         case .zoom:
             ["Zoom Meeting", "Zoom Webinar"]
-        case .importedFile, .unknown:
+        case .manualMeeting, .importedFile, .unknown:
             []
         }
     }
@@ -48,6 +49,7 @@ public enum MeetingApp: String, CaseIterable, Codable, Sendable {
         case .microsoftTeams: "Microsoft Teams"
         case .slack: "Slack"
         case .zoom: "Zoom"
+        case .manualMeeting: "meeting.app.manual".localized
         case .importedFile: "meeting.app.imported".localized
         case .unknown: "meeting.app.unknown".localized
         }
@@ -59,6 +61,7 @@ public enum MeetingApp: String, CaseIterable, Codable, Sendable {
         case .microsoftTeams: "person.3.fill"
         case .slack: "number.square.fill"
         case .zoom: "video.circle.fill"
+        case .manualMeeting: "person.2.wave.2"
         case .importedFile: "doc.badge.arrow.up"
         case .unknown: "questionmark.circle"
         }

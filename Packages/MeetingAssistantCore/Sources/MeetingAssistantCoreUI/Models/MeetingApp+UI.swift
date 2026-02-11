@@ -13,6 +13,7 @@ public extension MeetingApp {
         case .microsoftTeams: .purple
         case .slack: .pink
         case .zoom: .blue
+        case .manualMeeting: .teal
         case .importedFile: .orange
         case .unknown: .gray
         }
