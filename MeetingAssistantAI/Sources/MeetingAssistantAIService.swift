@@ -68,6 +68,9 @@ final class MeetingAssistantAIService: NSObject, MeetingAssistantXPCProtocol {
     func warmupModel(withReply reply: @escaping @Sendable (Error?) -> Void) {
         Task { @MainActor in
             await FluidAIModelManager.shared.loadModels()
+            if FeatureFlags.enableDiarization, AppSettingsStore.shared.isDiarizationEnabled {
+                await FluidAIModelManager.shared.loadDiarizationModels()
+            }
             reply(nil)
         }
     }
