@@ -64,9 +64,18 @@ public class LocalTranscriptionClient {
                     maxSpeakers: maxS,
                     numSpeakers: numS
                 )
-                segments = merge(
-                    text: text, asrSegments: segmentsFromASR, speakers: diarizationSegments
-                )
+                if segmentsFromASR.isEmpty {
+                    // Fallback when token timings are unavailable.
+                    segments = fallbackSegments(text: text, speakers: diarizationSegments)
+                } else {
+                    segments = merge(
+                        text: text, asrSegments: segmentsFromASR, speakers: diarizationSegments
+                    )
+
+                    if segments.isEmpty {
+                        segments = fallbackSegments(text: text, speakers: diarizationSegments)
+                    }
+                }
             } catch {
                 logger.error(
                     "Diarization failed: \(error.localizedDescription). Proceeding with transcription only."
@@ -133,6 +142,72 @@ public class LocalTranscriptionClient {
         // Flush last segment
         if let segment = makeSegment(from: currentBatch, speaker: currentSpeakerId) {
             result.append(segment)
+        }
+
+        return result
+    }
+
+    private func fallbackSegments(
+        text: String,
+        speakers: [FluidAIModelManager.DiarizationSegment]
+    ) -> [Transcription.Segment] {
+        let sortedSpeakers = speakers.sorted { $0.startTime < $1.startTime }
+        let words = text.split(whereSeparator: \.isWhitespace)
+        guard !sortedSpeakers.isEmpty, !words.isEmpty else { return [] }
+
+        let totalDuration = sortedSpeakers.reduce(0.0) { partial, segment in
+            partial + max(0, segment.endTime - segment.startTime)
+        }
+
+        var result: [Transcription.Segment] = []
+        var currentIndex = 0
+        var remainingDuration = totalDuration
+
+        for (index, speaker) in sortedSpeakers.enumerated() {
+            let remainingWords = words.count - currentIndex
+            guard remainingWords > 0 else { break }
+
+            let duration = max(0, speaker.endTime - speaker.startTime)
+            let isLast = index == sortedSpeakers.count - 1
+
+            let wordCount: Int
+            if isLast {
+                wordCount = remainingWords
+            } else if remainingDuration > 0 {
+                let ratio = duration / remainingDuration
+                wordCount = max(1, Int(round(ratio * Double(remainingWords))))
+            } else {
+                wordCount = max(1, remainingWords / max(1, sortedSpeakers.count - index))
+            }
+
+            let endIndex = min(currentIndex + wordCount, words.count)
+            let segmentText = words[currentIndex..<endIndex].joined(separator: " ").trimmingCharacters(in: .whitespaces)
+            currentIndex = endIndex
+            remainingDuration -= duration
+
+            guard !segmentText.isEmpty else { continue }
+
+            result.append(
+                Transcription.Segment(
+                    speaker: speaker.speakerId,
+                    text: segmentText,
+                    startTime: speaker.startTime,
+                    endTime: speaker.endTime
+                )
+            )
+        }
+
+        if currentIndex < words.count, !result.isEmpty {
+            let remainder = words[currentIndex...].joined(separator: " ")
+            let last = result[result.count - 1]
+            let updated = Transcription.Segment(
+                id: last.id,
+                speaker: last.speaker,
+                text: "\(last.text) \(remainder)".trimmingCharacters(in: .whitespaces),
+                startTime: last.startTime,
+                endTime: last.endTime
+            )
+            result[result.count - 1] = updated
         }
 
         return result
