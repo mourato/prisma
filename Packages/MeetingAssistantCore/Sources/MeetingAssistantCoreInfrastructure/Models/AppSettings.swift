@@ -413,6 +413,15 @@ public class AppSettingsStore: ObservableObject {
         return uuid
     }()
 
+    /// Default list of apps that should force Markdown formatting for dictation.
+    public static let defaultMarkdownTargetBundleIdentifiers: [String] = [
+        "abnerworks.Typora",
+        "com.microsoft.VSCode",
+        "com.uranusjr.macdown",
+        "md.obsidian",
+        "net.shinyfrog.bear"
+    ]
+
     // MARK: - Keys
 
     private enum Keys {
@@ -474,6 +483,7 @@ public class AppSettingsStore: ObservableObject {
         static let contextAwarenessProtectSensitiveApps = "contextAwarenessProtectSensitiveApps"
         static let contextAwarenessRedactSensitiveData = "contextAwarenessRedactSensitiveData"
         static let contextAwarenessExcludedBundleIDs = "contextAwarenessExcludedBundleIDs"
+        static let markdownTargetBundleIdentifiers = "markdownTargetBundleIdentifiers"
     }
 
     // MARK: - Published Properties
@@ -837,6 +847,16 @@ public class AppSettingsStore: ObservableObject {
         didSet { save(contextAwarenessExcludedBundleIDs, forKey: Keys.contextAwarenessExcludedBundleIDs) }
     }
 
+    /// Bundle identifiers that should force Markdown formatting for dictation.
+    @Published public var markdownTargetBundleIdentifiers: [String] {
+        didSet { save(markdownTargetBundleIdentifiers, forKey: Keys.markdownTargetBundleIdentifiers) }
+    }
+
+    /// Indicates whether the Markdown targets list has been explicitly configured.
+    public var hasConfiguredMarkdownTargets: Bool {
+        UserDefaults.standard.object(forKey: Keys.markdownTargetBundleIdentifiers) != nil
+    }
+
     /// All available prompts (predefined + user-created), filtered by deleted and overrides.
     public var allPrompts: [PostProcessingPrompt] {
         deduplicatedPrompts(dictationAvailablePrompts + meetingAvailablePrompts)
@@ -1017,6 +1037,8 @@ public class AppSettingsStore: ObservableObject {
             defaultValue: true
         )
         contextAwarenessExcludedBundleIDs = Self.loadDecoded([String].self, forKey: Keys.contextAwarenessExcludedBundleIDs) ?? []
+        markdownTargetBundleIdentifiers = Self.loadDecoded([String].self, forKey: Keys.markdownTargetBundleIdentifiers)
+            ?? Self.defaultMarkdownTargetBundleIdentifiers
         if loadedContextAwarenessEnabled {
             contextAwarenessIncludeActiveApp = true
             contextAwarenessIncludeAccessibilityText = true
@@ -1192,6 +1214,7 @@ public class AppSettingsStore: ObservableObject {
         meetingPrompts = []
         meetingTypeAutoDetectEnabled = false
         contextAwarenessExplicitActionOnly = true
+        markdownTargetBundleIdentifiers = Self.defaultMarkdownTargetBundleIdentifiers
     }
 
     // MARK: - Prompt Management
