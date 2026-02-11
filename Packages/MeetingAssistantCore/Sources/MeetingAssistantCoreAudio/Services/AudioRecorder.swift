@@ -33,6 +33,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         static let fallbackChannels: Int = 1
         static let fallbackBitRate: Int = 128_000
         static let fallbackMeterUpdateInterval: TimeInterval = 0.1
+        static let outputMuteDelayAfterStart: UInt64 = 200_000_000 // 200ms
     }
 
     @Published public internal(set) var isRecording = false
@@ -71,8 +72,8 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     public var onRecordingError: (@Sendable (Error) -> Void)?
 
     private let muteController = SystemAudioMuteController.shared
-    private var wasMutedBeforeRecording = false
-    private var didMuteOutputForThisRecording = false
+    private var outputMuteSession: SystemAudioMuteController.OutputMuteSession?
+    private var outputMuteTask: Task<Void, Never>?
     let deviceManager = AudioDeviceManager()
     var micDiagnosticsTimer: Timer?
     var isMicDiagnosticsTapInstalled = false
@@ -126,8 +127,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         await stopRecording()
 
         // Reset per-session mute state
-        wasMutedBeforeRecording = false
-        didMuteOutputForThisRecording = false
+        resetOutputMuteState()
 
         AppLogger.info(
             "Starting recording",
@@ -139,16 +139,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         // Meetings (system + mic) must preserve the system output volume.
         let shouldMuteOutput = AppSettingsStore.shared.muteOutputDuringRecording && source == .microphone
         if shouldMuteOutput {
-            wasMutedBeforeRecording = muteController.isMuted()
-            if !wasMutedBeforeRecording {
-                do {
-                    try muteController.setMuted(true)
-                    didMuteOutputForThisRecording = true
-                } catch {
-                    // Best-effort: failing to mute should not block recording.
-                    didMuteOutputForThisRecording = false
-                }
-            }
+            outputMuteSession = muteController.prepareOutputMuteSession()
         }
 
         let settings = AppSettingsStore.shared
@@ -170,6 +161,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             do {
                 try startFallbackRecorder(to: outputURL)
                 currentRecordingURL = outputURL
+                scheduleOutputMuteIfNeeded()
                 return
             } catch {
                 restoreOutputMuteIfNeeded()
@@ -212,6 +204,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
                 retryCount: retryCount,
                 sampleRate: targetSampleRate
             )
+            scheduleOutputMuteIfNeeded()
         } catch {
             await stopRecording()
             throw error
@@ -485,14 +478,40 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     }
 
     private func restoreOutputMuteIfNeeded() {
-        guard didMuteOutputForThisRecording else { return }
-        defer {
-            didMuteOutputForThisRecording = false
-            wasMutedBeforeRecording = false
-        }
+        outputMuteTask?.cancel()
+        outputMuteTask = nil
 
-        guard !wasMutedBeforeRecording else { return }
-        try? muteController.setMuted(false)
+        guard let session = outputMuteSession else { return }
+        outputMuteSession = nil
+        muteController.restoreOutputState(from: session)
+    }
+
+    private func resetOutputMuteState() {
+        outputMuteTask?.cancel()
+        outputMuteTask = nil
+        outputMuteSession = nil
+    }
+
+    private func scheduleOutputMuteIfNeeded() {
+        guard outputMuteSession != nil else { return }
+
+        outputMuteTask?.cancel()
+        outputMuteTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: Constants.outputMuteDelayAfterStart)
+            guard let self, self.isRecording else { return }
+            guard var session = self.outputMuteSession else { return }
+
+            do {
+                try self.muteController.applyMute(to: &session)
+                self.outputMuteSession = session
+            } catch {
+                AppLogger.warning(
+                    "Failed to mute system audio output",
+                    category: .recordingManager,
+                    extra: ["error": error.localizedDescription]
+                )
+            }
+        }
     }
 
     private func cleanupEngine() {
