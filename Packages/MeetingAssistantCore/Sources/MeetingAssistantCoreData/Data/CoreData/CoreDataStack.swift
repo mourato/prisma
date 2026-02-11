@@ -64,7 +64,7 @@ public final class CoreDataStack: Sendable {
     /// - Parameter operation: Bloco assíncrono a executar
     /// - Returns: Resultado da operação
     public func performBackgroundTask<T>(
-        _ operation: @escaping (NSManagedObjectContext) throws -> T
+        _ operation: @Sendable @escaping (NSManagedObjectContext) throws -> T
     ) async throws -> T {
         let context = backgroundContext
         return try await withCheckedThrowingContinuation { continuation in

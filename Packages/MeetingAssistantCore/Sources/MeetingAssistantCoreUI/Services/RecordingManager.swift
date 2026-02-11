@@ -252,7 +252,7 @@ public extension RecordingManager {
         do {
             let meeting = createMeeting(type: resolveMeetingType())
             currentMeeting = meeting
-            postProcessingContext = capturePostProcessingContext()
+            postProcessingContext = await capturePostProcessingContext()
 
             // We only need one output URL because AudioRecorder handles mixing
             let audioURL = storage.createRecordingURL(for: meeting, type: .merged)
@@ -725,11 +725,11 @@ extension RecordingManager {
         )
     }
 
-    private func capturePostProcessingContext() -> String? {
+    private func capturePostProcessingContext() async -> String? {
         let settings = AppSettingsStore.shared
         guard settings.contextAwarenessEnabled else { return nil }
 
-        let snapshot = contextAwarenessService.captureSnapshot(
+        let snapshot = await contextAwarenessService.captureSnapshot(
             options: .init(
                 includeActiveApp: true,
                 includeClipboard: settings.contextAwarenessIncludeClipboard,
