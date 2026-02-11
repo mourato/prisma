@@ -24,6 +24,12 @@ public struct SpeakerIdentificationSettingsSection: View {
             description: "settings.ai.diarization_desc".localized,
             isOn: $settings.isDiarizationEnabled
         )
+        .onChange(of: settings.isDiarizationEnabled) { isEnabled in
+            guard isEnabled, FeatureFlags.enableDiarization else { return }
+            Task {
+                await modelManager.loadDiarizationModels()
+            }
+        }
 
         if settings.isDiarizationEnabled {
             modelStatusSection
