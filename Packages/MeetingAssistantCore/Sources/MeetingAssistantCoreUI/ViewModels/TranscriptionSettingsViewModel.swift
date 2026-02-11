@@ -35,14 +35,17 @@ public class TranscriptionSettingsViewModel: ObservableObject {
 
     private let storage: StorageService
     private let recordingManager: RecordingManager
+    private let meetingRepository: MeetingRepository
     private let logger = Logger(subsystem: "MeetingAssistant", category: "TranscriptionSettingsViewModel")
 
     public init(
         storage: StorageService = FileSystemStorageService.shared,
-        recordingManager: RecordingManager = .shared
+        recordingManager: RecordingManager = .shared,
+        meetingRepository: MeetingRepository = CoreDataMeetingRepository()
     ) {
         self.storage = storage
         self.recordingManager = recordingManager
+        self.meetingRepository = meetingRepository
     }
 
     public var filteredTranscriptions: [TranscriptionMetadata] {
@@ -205,6 +208,38 @@ public class TranscriptionSettingsViewModel: ObservableObject {
             }
         } catch {
             logger.error("Failed to retry transcription: \(error.localizedDescription)")
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    public func updateSource(for metadata: TranscriptionMetadata, isMeeting: Bool) async {
+        let app = MeetingApp(rawValue: metadata.appRawValue) ?? .unknown
+        guard app != .importedFile else { return }
+        guard app == .unknown || app == .manualMeeting else { return }
+
+        let targetApp: DomainMeetingApp = isMeeting ? .manualMeeting : .unknown
+
+        do {
+            let existing = try await meetingRepository.fetchMeeting(by: metadata.meetingId)
+            let endTime = metadata.duration > 0
+                ? metadata.startTime.addingTimeInterval(metadata.duration)
+                : nil
+
+            let updatedMeeting = MeetingEntity(
+                id: metadata.meetingId,
+                app: targetApp,
+                startTime: existing?.startTime ?? metadata.startTime,
+                endTime: existing?.endTime ?? endTime,
+                audioFilePath: existing?.audioFilePath ?? metadata.audioFilePath
+            )
+
+            try await meetingRepository.updateMeeting(updatedMeeting)
+            await loadTranscriptions()
+            if selectedId == metadata.id {
+                await loadFullTranscription(id: metadata.id)
+            }
+        } catch {
+            logger.error("Failed to update recording source: \(error.localizedDescription)")
             errorMessage = error.localizedDescription
         }
     }

@@ -100,6 +100,7 @@
 "settings.storage.cleanup_confirm_delete" = "Delete";
 "settings.storage.cleanup_confirm_cancel" = "Cancel";
 "meeting.app.imported" = "Imported File";
+"meeting.app.manual" = "Manual Meeting";
 "meeting.app.unknown" = "Unknown";
 
 /* Meeting Types */
@@ -476,6 +477,8 @@
 "filter.source.dictations" = "Recordings";
 "filter.source.meetings" = "Meetings";
 "filter.source.manual_imports" = "Imported";
+"transcription.source.meeting" = "Meeting";
+"transcription.source.recording" = "Recording";
 
 /* Date Filters */
 "filter.date.today" = "Today";

@@ -171,7 +171,9 @@ public struct MeetingSettingsTab: View {
                             .foregroundStyle(.secondary)
                             .padding(.bottom, MeetingAssistantDesignSystem.Layout.spacing4)
 
-                        ForEach(MeetingApp.allCases, id: \.self) { app in
+                        ForEach(MeetingApp.allCases.filter { app in
+                            app != .importedFile && app != .unknown && app != .manualMeeting
+                        }, id: \.self) { app in
                             HStack(spacing: 12) {
                                 Image(systemName: app.icon)
                                     .font(.title3)
