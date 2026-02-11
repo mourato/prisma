@@ -58,9 +58,55 @@ struct TranscriptionInfoPopover: View {
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
+
+            Divider()
+
+            // Context Items Section
+            VStack(alignment: .leading, spacing: 8) {
+                Text("transcription.context.title".localized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                if transcription.contextItems.isEmpty {
+                    Text("transcription.context.none".localized)
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                } else {
+                    ForEach(transcription.contextItems) { item in
+                        ContextItemRow(
+                            title: contextItemTitle(for: item.source),
+                            preview: previewText(item.text),
+                            fullText: item.text
+                        )
+                    }
+                }
+            }
         }
         .padding()
         .frame(width: 300)
+    }
+
+    private func contextItemTitle(for source: TranscriptionContextItem.Source) -> String {
+        switch source {
+        case .activeApp:
+            return "transcription.context.source.active_app".localized
+        case .windowTitle:
+            return "transcription.context.source.window_title".localized
+        case .accessibilityText:
+            return "transcription.context.source.accessibility_text".localized
+        case .clipboard:
+            return "transcription.context.source.clipboard".localized
+        case .windowOCR:
+            return "transcription.context.source.window_ocr".localized
+        case .focusedText:
+            return "transcription.context.source.focused_text".localized
+        }
+    }
+
+    private func previewText(_ text: String) -> String {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.count > 120 else { return trimmed }
+        return String(trimmed.prefix(120)) + "..."
     }
 
     private func formatDuration(_ duration: Double) -> String {
@@ -100,10 +146,33 @@ private struct InfoRow: View {
     }
 }
 
+private struct ContextItemRow: View {
+    let title: String
+    let preview: String
+    let fullText: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Text(preview)
+                .font(.subheadline)
+                .lineLimit(2)
+                .help(fullText)
+        }
+    }
+}
+
 #Preview {
     TranscriptionInfoPopover(
         transcription: Transcription(
             meeting: Meeting(app: .zoom),
+            contextItems: [
+                .init(source: .activeApp, text: "Zoom"),
+                .init(source: .clipboard, text: "Agenda: roadmap review and next steps."),
+            ],
             text: "Preview text",
             rawText: "Raw text",
             modelName: "Whisper-v3",

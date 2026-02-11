@@ -388,6 +388,14 @@
 "transcription.info.no_post_processing" = "Sem pós-processamento aplicado";
 "transcription.info.unknown_input" = "Entrada desconhecida";
 "transcription.info.loading" = "Carregando detalhes...";
+"transcription.context.title" = "Contexto enviado";
+"transcription.context.none" = "Nenhum contexto foi enviado";
+"transcription.context.source.active_app" = "Aplicativo ativo";
+"transcription.context.source.window_title" = "Título da janela";
+"transcription.context.source.accessibility_text" = "Texto focado (UI)";
+"transcription.context.source.clipboard" = "Área de transferência";
+"transcription.context.source.window_ocr" = "OCR da janela";
+"transcription.context.source.focused_text" = "Texto focado";
 "transcription.tab.ai_processed" = "Processado por IA";
 "transcription.tab.original" = "Original";
 "transcription.tab.segmented" = "Segmentado";

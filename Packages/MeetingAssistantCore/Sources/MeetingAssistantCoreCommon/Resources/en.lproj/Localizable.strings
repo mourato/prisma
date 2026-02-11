@@ -389,6 +389,14 @@
 "transcription.info.no_post_processing" = "No post-processing applied";
 "transcription.info.unknown_input" = "Unknown Input";
 "transcription.info.loading" = "Loading details...";
+"transcription.context.title" = "Context sent";
+"transcription.context.none" = "No context was sent";
+"transcription.context.source.active_app" = "Active app";
+"transcription.context.source.window_title" = "Window title";
+"transcription.context.source.accessibility_text" = "Focused UI text";
+"transcription.context.source.clipboard" = "Clipboard";
+"transcription.context.source.window_ocr" = "Window OCR";
+"transcription.context.source.focused_text" = "Focused text";
 "transcription.tab.ai_processed" = "AI Processed";
 "transcription.tab.original" = "Original";
 "transcription.tab.segmented" = "Segmented";

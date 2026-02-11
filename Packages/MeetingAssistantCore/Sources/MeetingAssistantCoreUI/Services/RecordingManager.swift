@@ -78,6 +78,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     private var statusCheckTask: Task<Void, Never>?
     private var isStarting = false
     private var postProcessingContext: String?
+    private var postProcessingContextItems: [TranscriptionContextItem] = []
 
     // MARK: - Computed Properties for Actor State
 
@@ -274,7 +275,9 @@ public extension RecordingManager {
         do {
             let meeting = createMeeting(type: resolveMeetingType())
             currentMeeting = meeting
-            postProcessingContext = await capturePostProcessingContext(for: meeting)
+            let contextCapture = await capturePostProcessingContext(for: meeting)
+            postProcessingContext = contextCapture.context
+            postProcessingContextItems = contextCapture.items
 
             // We only need one output URL because AudioRecorder handles mixing
             let audioURL = storage.createRecordingURL(for: meeting, type: .merged)
@@ -299,6 +302,7 @@ public extension RecordingManager {
         } catch {
             await RecordingExclusivityCoordinator.shared.endRecording()
             postProcessingContext = nil
+            postProcessingContextItems = []
             await handleStartRecordingError(error)
         }
     }
@@ -422,6 +426,7 @@ public extension RecordingManager {
                 await transcribeRecording(audioURL: finalURL, meeting: meeting)
             } else {
                 postProcessingContext = nil
+                postProcessingContextItems = []
                 currentMeeting = nil // Clear current meeting if done
             }
 
@@ -434,6 +439,7 @@ public extension RecordingManager {
             currentMeeting?.state = .failed(error.localizedDescription) // Sync entity state
             await RecordingExclusivityCoordinator.shared.endRecording()
             postProcessingContext = nil
+            postProcessingContextItems = []
         }
     }
 
@@ -460,6 +466,7 @@ public extension RecordingManager {
         isRecording = false
         currentMeeting = nil
         postProcessingContext = nil
+        postProcessingContextItems = []
         await RecordingExclusivityCoordinator.shared.endRecording()
 
         AppLogger.info("Recording cancelled and files discarded", category: .recordingManager)
@@ -649,6 +656,7 @@ extension RecordingManager {
                 audioURL: audioURL,
                 meeting: meetingEntity,
                 inputSource: resolveInputSourceLabel(for: meeting),
+                contextItems: config.postProcessingContextItems,
                 applyPostProcessing: config.applyPostProcessing,
                 postProcessingPrompt: config.postProcessingPrompt,
                 defaultPostProcessingPrompt: config.defaultPostProcessingPrompt,
@@ -682,6 +690,7 @@ extension RecordingManager {
         meetingState = .idle
         currentMeeting = nil
         postProcessingContext = nil
+        postProcessingContextItems = []
     }
 
     private func beginTranscriptionUIStateIfNeeded() {
@@ -700,6 +709,7 @@ extension RecordingManager {
         let autoDetectMeetingType: Bool
         let availablePrompts: [DomainPostProcessingPrompt]
         let postProcessingContext: String?
+        let postProcessingContextItems: [TranscriptionContextItem]
     }
 
     private func makeMeetingEntity(meeting: Meeting, audioDuration: Double?) -> MeetingEntity {
@@ -722,7 +732,16 @@ extension RecordingManager {
         let shouldApplyPostProcessing = applyPostProcessing && !disabledForRecording
 
         guard shouldApplyPostProcessing else {
-            return UseCaseConfig(applyPostProcessing: false, postProcessingPrompt: nil, defaultPostProcessingPrompt: nil, postProcessingModel: nil, autoDetectMeetingType: false, availablePrompts: [], postProcessingContext: nil)
+            return UseCaseConfig(
+                applyPostProcessing: false,
+                postProcessingPrompt: nil,
+                defaultPostProcessingPrompt: nil,
+                postProcessingModel: nil,
+                autoDetectMeetingType: false,
+                availablePrompts: [],
+                postProcessingContext: nil,
+                postProcessingContextItems: []
+            )
         }
 
         let availablePrompts = makeAvailablePrompts(isDictation: isDictation, settings: settings)
@@ -743,19 +762,22 @@ extension RecordingManager {
             postProcessingModel: settings.aiConfiguration.selectedModel,
             autoDetectMeetingType: autoDetectMeetingType,
             availablePrompts: availablePrompts,
-            postProcessingContext: postProcessingContext
+            postProcessingContext: postProcessingContext,
+            postProcessingContextItems: postProcessingContextItems
         )
     }
 
-    private func capturePostProcessingContext(for meeting: Meeting) async -> String? {
+    private func capturePostProcessingContext(for meeting: Meeting) async -> (context: String?, items: [TranscriptionContextItem]) {
         let settings = AppSettingsStore.shared
-        guard settings.contextAwarenessEnabled else { return nil }
+        guard settings.contextAwarenessEnabled else { return (nil, []) }
 
         if meeting.isDictation {
-            return await captureFocusedTextContext(settings: settings)
+            let focusedText = await captureFocusedTextContext(settings: settings)
+            let items = focusedText.map { [TranscriptionContextItem(source: .focusedText, text: $0)] } ?? []
+            return (focusedText, items)
         }
 
-        guard !settings.contextAwarenessExplicitActionOnly else { return nil }
+        guard !settings.contextAwarenessExplicitActionOnly else { return (nil, []) }
 
         let snapshot = await contextAwarenessService.captureSnapshot(
             options: .init(
@@ -768,7 +790,9 @@ extension RecordingManager {
                 excludedBundleIDs: settings.contextAwarenessExcludedBundleIDs
             )
         )
-        return contextAwarenessService.makePostProcessingContext(from: snapshot)
+        let context = contextAwarenessService.makePostProcessingContext(from: snapshot)
+        let items = makeContextItems(from: snapshot)
+        return (context, items)
     }
 
     private func captureFocusedTextContext(settings: AppSettingsStore) async -> String? {
@@ -787,6 +811,32 @@ extension RecordingManager {
         } catch {
             return nil
         }
+    }
+
+    private func makeContextItems(from snapshot: ContextAwarenessSnapshot) -> [TranscriptionContextItem] {
+        var items: [TranscriptionContextItem] = []
+
+        if let activeAppName = snapshot.activeAppName {
+            items.append(TranscriptionContextItem(source: .activeApp, text: activeAppName))
+        }
+
+        if let activeWindowTitle = snapshot.activeWindowTitle {
+            items.append(TranscriptionContextItem(source: .windowTitle, text: activeWindowTitle))
+        }
+
+        if let accessibilityText = snapshot.activeAccessibilityText {
+            items.append(TranscriptionContextItem(source: .accessibilityText, text: accessibilityText))
+        }
+
+        if let clipboardText = snapshot.clipboardText {
+            items.append(TranscriptionContextItem(source: .clipboard, text: clipboardText))
+        }
+
+        if let ocrText = snapshot.activeWindowOCRText {
+            items.append(TranscriptionContextItem(source: .windowOCR, text: ocrText))
+        }
+
+        return items
     }
 
     private func makeAvailablePrompts(isDictation: Bool, settings: AppSettingsStore) -> [DomainPostProcessingPrompt] {
@@ -920,6 +970,7 @@ extension RecordingManager {
                 endTime: entity.meeting.endTime,
                 audioFilePath: entity.meeting.audioFilePath
             ),
+            contextItems: entity.contextItems,
             segments: entity.segments.map { Transcription.Segment(id: $0.id, speaker: $0.speaker, text: $0.text, startTime: $0.startTime, endTime: $0.endTime) },
             text: entity.text,
             rawText: entity.rawText,
@@ -1285,6 +1336,7 @@ extension RecordingManager {
         return Transcription(
             id: transcription.id,
             meeting: meeting,
+            contextItems: transcription.contextItems,
             segments: response.segments,
             text: postProcessing.processedContent ?? response.text,
             rawText: response.text,
