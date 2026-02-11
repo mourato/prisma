@@ -10,12 +10,16 @@ import SwiftUI
 /// Popover view displaying detailed metadata about a transcription.
 struct TranscriptionInfoPopover: View {
     let transcription: Transcription
+    let isSourceEditable: Bool
+    let onUpdateSource: ((Bool) -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("transcription.info.title".localized)
                 .font(.headline)
                 .padding(.bottom, 4)
+
+            sourceSection
 
             // Recording Section
             VStack(alignment: .leading, spacing: 8) {
@@ -86,6 +90,35 @@ struct TranscriptionInfoPopover: View {
         .frame(width: 300)
     }
 
+    private var sourceSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("settings.transcriptions.source".localized)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            if isSourceEditable, let onUpdateSource {
+                Picker("", selection: Binding(
+                    get: { sourceSelection },
+                    set: { newValue in
+                        onUpdateSource(newValue == .meeting)
+                    }
+                )) {
+                    ForEach(SourceSelection.allCases, id: \.self) { option in
+                        Text(option.title).tag(option)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+            } else {
+                InfoRow(
+                    icon: transcription.meeting.appIcon,
+                    label: transcription.meeting.appName,
+                    value: "-"
+                )
+            }
+        }
+    }
+
     private func contextItemTitle(for source: TranscriptionContextItem.Source) -> String {
         switch source {
         case .activeApp:
@@ -120,6 +153,31 @@ struct TranscriptionInfoPopover: View {
         formatter.zeroFormattingBehavior = .pad
 
         return formatter.string(from: duration) ?? String(format: "%.0fs", duration)
+    }
+
+    private var sourceSelection: SourceSelection {
+        switch transcription.meeting.app {
+        case .unknown:
+            return .recording
+        case .importedFile:
+            return .recording
+        default:
+            return .meeting
+        }
+    }
+}
+
+private enum SourceSelection: String, CaseIterable {
+    case recording
+    case meeting
+
+    var title: String {
+        switch self {
+        case .recording:
+            "transcription.source.recording".localized
+        case .meeting:
+            "transcription.source.meeting".localized
+        }
     }
 }
 
@@ -180,6 +238,8 @@ private struct ContextItemRow: View {
             transcriptionDuration: 35.5,
             postProcessingDuration: 2.1,
             postProcessingModel: "GPT-4"
-        )
+        ),
+        isSourceEditable: true,
+        onUpdateSource: { _ in }
     )
 }

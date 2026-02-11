@@ -100,6 +100,7 @@
 "settings.storage.cleanup_confirm_delete" = "Excluir";
 "settings.storage.cleanup_confirm_cancel" = "Cancelar";
 "meeting.app.imported" = "Arquivo Importado";
+"meeting.app.manual" = "Reunião manual";
 "meeting.app.unknown" = "Desconhecido";
 
 /* Tipos de Reunião */
@@ -472,7 +473,10 @@
 /* Filters */
 "filter.source.all" = "Todas";
 "filter.source.dictations" = "Gravações";
+"filter.source.meetings" = "Reuniões";
 "filter.source.manual_imports" = "Importadas";
+"transcription.source.meeting" = "Reunião";
+"transcription.source.recording" = "Gravação";
 
 /* Date Filters */
 "filter.date.today" = "Hoje";

@@ -10,16 +10,22 @@ import SwiftUI
 public struct TranscriptionDetailView: View {
     let transcription: Transcription
     let isProcessing: Bool
+    let isSourceEditable: Bool
     let onApplyPrompt: (PostProcessingPrompt) -> Void
+    let onUpdateSource: (Bool) -> Void
 
     public init(
         transcription: Transcription,
         isProcessing: Bool = false,
-        onApplyPrompt: @escaping (PostProcessingPrompt) -> Void = { _ in }
+        isSourceEditable: Bool = false,
+        onApplyPrompt: @escaping (PostProcessingPrompt) -> Void = { _ in },
+        onUpdateSource: @escaping (Bool) -> Void = { _ in }
     ) {
         self.transcription = transcription
         self.isProcessing = isProcessing
+        self.isSourceEditable = isSourceEditable
         self.onApplyPrompt = onApplyPrompt
+        self.onUpdateSource = onUpdateSource
     }
 
     public var body: some View {
@@ -77,6 +83,9 @@ public struct TranscriptionDetailView: View {
             HStack(spacing: 8) {
                 statusBadge(text: "transcription.completed".localized, color: .green, icon: "checkmark.circle.fill")
                 statusBadge(text: transcription.meeting.appName, color: .blue, icon: "mic.fill")
+                if isSourceEditable {
+                    sourcePicker
+                }
                 if transcription.isPostProcessed {
                     statusBadge(
                         text: transcription.postProcessingPromptTitle ?? "transcription.processed".localized,
@@ -135,6 +144,21 @@ public struct TranscriptionDetailView: View {
         .padding(.vertical, 4)
         .background(color.opacity(0.15), in: Capsule())
         .foregroundStyle(color)
+    }
+
+    private var sourcePicker: some View {
+        Picker("", selection: Binding(
+            get: { sourceSelection },
+            set: { newValue in
+                onUpdateSource(newValue == .meeting)
+            }
+        )) {
+            ForEach(SourceSelection.allCases, id: \.self) { option in
+                Text(option.title).tag(option)
+            }
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
     }
 
     // MARK: - Transcript Section
@@ -207,6 +231,31 @@ public struct TranscriptionDetailView: View {
             return "transcription.empty_fallback".localized
         }
         return text
+    }
+
+    private var sourceSelection: SourceSelection {
+        switch transcription.meeting.app {
+        case .unknown:
+            return .recording
+        case .importedFile:
+            return .recording
+        default:
+            return .meeting
+        }
+    }
+}
+
+private enum SourceSelection: String, CaseIterable {
+    case recording
+    case meeting
+
+    var title: String {
+        switch self {
+        case .recording:
+            "transcription.source.recording".localized
+        case .meeting:
+            "transcription.source.meeting".localized
+        }
     }
 }
 
