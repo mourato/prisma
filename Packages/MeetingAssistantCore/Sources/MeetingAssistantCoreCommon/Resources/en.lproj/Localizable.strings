@@ -526,6 +526,11 @@
 
 /* Settings */
 "settings.title" = "Settings";
+"settings.meetings.delivery" = "Transcription Delivery";
+"settings.meetings.auto_copy_transcription" = "Auto-copy meeting transcription";
+"settings.meetings.auto_copy_transcription_desc" = "Copy completed meeting transcriptions to the clipboard.";
+"settings.meetings.auto_paste_transcription" = "Auto-paste meeting transcription";
+"settings.meetings.auto_paste_transcription_desc" = "Paste completed meeting transcriptions into the active app.";
 /* Post-Processing Errors */
 "error.post_processing.no_prompt_selected" = "No post-processing prompt selected";
 "error.post_processing.no_api_configured" = "AI API not configured";

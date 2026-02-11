@@ -13,17 +13,24 @@ public struct TranscriptionDeliveryService {
         settings: DeliverySettingsConfig = AppSettingsStore.shared,
         pasteboard: PasteboardServiceProtocol = PasteboardService.shared
     ) {
-        // Only allow auto-copy/paste for dictations.
-        // Meeting recordings and imported files should not trigger this.
-        guard transcription.meeting.isDictation else { return }
+        let shouldAutoCopy: Bool
+        let shouldAutoPaste: Bool
 
-        guard settings.autoCopyTranscriptionToClipboard || settings.autoPasteTranscriptionToActiveApp else { return }
+        if transcription.meeting.isDictation {
+            shouldAutoCopy = settings.autoCopyTranscriptionToClipboard
+            shouldAutoPaste = settings.autoPasteTranscriptionToActiveApp
+        } else {
+            shouldAutoCopy = settings.meetingAutoCopyTranscriptionToClipboard
+            shouldAutoPaste = settings.meetingAutoPasteTranscriptionToActiveApp
+        }
+
+        guard shouldAutoCopy || shouldAutoPaste else { return }
 
         let textToCopy = transcriptionDeliveryText(from: transcription)
         pasteboard.clearContents()
         pasteboard.setString(textToCopy, forType: .string)
 
-        if settings.autoPasteTranscriptionToActiveApp {
+        if shouldAutoPaste {
             pasteboard.setString(textToCopy, forType: .string) // Ensure it's ready for pasting
             pasteTranscriptionIntoActiveApp()
         }
