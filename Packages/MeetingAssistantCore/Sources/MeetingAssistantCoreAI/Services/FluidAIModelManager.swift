@@ -180,7 +180,7 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
         logger.info("Loading Diarization models with constraints: min=\(min ?? 0), max=\(max ?? 0), num=\(num ?? 0)...")
 
         do {
-            var config = OfflineDiarizerConfig.default
+            var config = OfflineDiarizerConfig()
                 .withSpeakers(min: min, max: max)
 
             if let num {

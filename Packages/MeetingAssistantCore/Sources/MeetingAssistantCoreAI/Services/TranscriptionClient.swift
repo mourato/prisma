@@ -81,6 +81,9 @@ public class TranscriptionClient: ObservableObject, TranscriptionService {
             try await MeetingAssistantAIClient.shared.warmupModel()
         case .local:
             await FluidAIModelManager.shared.loadModels()
+            if FeatureFlags.enableDiarization, AppSettingsStore.shared.isDiarizationEnabled {
+                await FluidAIModelManager.shared.loadDiarizationModels()
+            }
         }
     }
 
