@@ -226,7 +226,7 @@
 "settings.markdown_targets.description" = "Force Markdown formatting for dictation when these apps are active.";
 "settings.markdown_targets.empty" = "No apps selected yet.";
 "settings.markdown_targets.add" = "Add App";
-"settings.markdown_targets.remove" = "Remove app";
+"settings.markdown_targets.remove" = "Remove App";
 
 /* Service Settings */
 "settings.service.title" = "Service";
