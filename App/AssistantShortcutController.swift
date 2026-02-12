@@ -11,6 +11,9 @@ final class AssistantShortcutController {
 
     private var flagsMonitor: KeyboardEventMonitor?
     private var keyDownMonitor: KeyboardEventMonitor?
+    private var integrationShortcutHandlers: [UUID: SmartShortcutHandler] = [:]
+    private var integrationPresetStates: [UUID: ShortcutActivationState] = [:]
+    private var registeredIntegrationShortcutIDs = Set<UUID>()
 
     private lazy var shortcutHandler = SmartShortcutHandler(
         isRecordingProvider: { [weak self] in self?.assistantService.isRecording ?? false },
@@ -37,6 +40,7 @@ final class AssistantShortcutController {
         setupKeyboardShortcutHandlers()
         observeSettings()
         refreshCustomShortcutRegistration()
+        refreshIntegrationCustomShortcutRegistrations()
         refreshEventMonitors()
     }
 
@@ -83,10 +87,22 @@ final class AssistantShortcutController {
                 self?.refreshEventMonitors()
             }
             .store(in: &cancellables)
+
+        settings.$assistantIntegrations
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.resetShortcutState()
+                self?.refreshIntegrationCustomShortcutRegistrations()
+                self?.refreshEventMonitors()
+            }
+            .store(in: &cancellables)
     }
 
     private func refreshEventMonitors() {
         let needsModifierMonitoring = settings.assistantSelectedPresetKey.requiresModifierMonitoring
+            || settings.assistantIntegrations.contains { integration in
+                integration.isEnabled && integration.shortcutPresetKey.requiresModifierMonitoring
+            }
         let needsEscapeMonitoring = settings.assistantUseEscapeToCancelRecording
 
         if needsModifierMonitoring {
@@ -111,10 +127,47 @@ final class AssistantShortcutController {
         }
     }
 
+    private func refreshIntegrationCustomShortcutRegistrations() {
+        let currentIDs = Set(settings.assistantIntegrations.map(\.id))
+        for removedID in registeredIntegrationShortcutIDs.subtracting(currentIDs) {
+            KeyboardShortcuts.disable(.assistantIntegration(removedID))
+            integrationShortcutHandlers.removeValue(forKey: removedID)
+            integrationPresetStates.removeValue(forKey: removedID)
+        }
+
+        for integration in settings.assistantIntegrations {
+            let shortcutName = KeyboardShortcuts.Name.assistantIntegration(integration.id)
+
+            if !registeredIntegrationShortcutIDs.contains(integration.id) {
+                KeyboardShortcuts.onKeyDown(for: shortcutName) { [weak self] in
+                    Task { @MainActor [weak self] in
+                        await self?.handleIntegrationCustomShortcutDown(integrationID: integration.id)
+                    }
+                }
+
+                KeyboardShortcuts.onKeyUp(for: shortcutName) { [weak self] in
+                    Task { @MainActor [weak self] in
+                        await self?.handleIntegrationCustomShortcutUp(integrationID: integration.id)
+                    }
+                }
+            }
+
+            if integration.isEnabled, integration.shortcutPresetKey == .custom {
+                KeyboardShortcuts.enable(shortcutName)
+            } else {
+                KeyboardShortcuts.disable(shortcutName)
+            }
+        }
+
+        registeredIntegrationShortcutIDs = currentIDs
+    }
+
     private func installFlagsChangedMonitors() {
         if flagsMonitor == nil {
             flagsMonitor = KeyboardEventMonitor(mask: .flagsChanged) { [weak self] event in
-                self?.handleFlagsChanged(event)
+                Task { @MainActor [weak self] in
+                    self?.handleFlagsChanged(event)
+                }
             }
             flagsMonitor?.start()
         }
@@ -128,7 +181,9 @@ final class AssistantShortcutController {
     private func installKeyDownMonitors() {
         if keyDownMonitor == nil {
             keyDownMonitor = KeyboardEventMonitor(mask: .keyDown) { [weak self] event in
-                self?.handleKeyDown(event)
+                Task { @MainActor [weak self] in
+                    self?.handleKeyDown(event)
+                }
             }
             keyDownMonitor?.start()
         }
@@ -146,6 +201,7 @@ final class AssistantShortcutController {
 
     private func handleFlagsChanged(_ event: NSEvent) {
         guard settings.assistantSelectedPresetKey.requiresModifierMonitoring else {
+            handleIntegrationFlagsChanged(event)
             return
         }
 
@@ -157,6 +213,30 @@ final class AssistantShortcutController {
             Task { @MainActor [weak self] in await self?.handleShortcutDown() }
         } else if !isActive, wasPressed {
             Task { @MainActor [weak self] in await self?.handleShortcutUp() }
+        }
+
+        handleIntegrationFlagsChanged(event)
+    }
+
+    private func handleIntegrationFlagsChanged(_ event: NSEvent) {
+        for integration in settings.assistantIntegrations where integration.isEnabled && integration.shortcutPresetKey.requiresModifierMonitoring {
+            let presetState = integrationPresetStates[integration.id, default: ShortcutActivationState()]
+            let isActive = presetState.isPresetActive(integration.shortcutPresetKey, event: event)
+            let shortcutHandler = integrationShortcutHandlers[integration.id] ?? makeIntegrationShortcutHandler(for: integration.id)
+            integrationShortcutHandlers[integration.id] = shortcutHandler
+            let wasPressed = shortcutHandler.isPressed
+
+            shortcutHandler.handleModifierChange(isActive: isActive)
+
+            if isActive, !wasPressed {
+                Task { @MainActor [weak self] in
+                    await self?.handleIntegrationShortcutDown(integrationID: integration.id)
+                }
+            } else if !isActive, wasPressed {
+                Task { @MainActor [weak self] in
+                    await self?.handleIntegrationShortcutUp(integrationID: integration.id)
+                }
+            }
         }
     }
 
@@ -207,12 +287,55 @@ final class AssistantShortcutController {
         await handleShortcutUp()
     }
 
+    private func handleIntegrationCustomShortcutDown(integrationID: UUID) async {
+        guard let integration = integration(for: integrationID),
+              integration.isEnabled,
+              integration.shortcutPresetKey == .custom
+        else {
+            return
+        }
+
+        await handleIntegrationShortcutDown(integrationID: integrationID)
+    }
+
+    private func handleIntegrationCustomShortcutUp(integrationID: UUID) async {
+        guard let integration = integration(for: integrationID),
+              integration.isEnabled,
+              integration.shortcutPresetKey == .custom
+        else {
+            return
+        }
+
+        await handleIntegrationShortcutUp(integrationID: integrationID)
+    }
+
     private func handleShortcutDown() async {
         shortcutHandler.handleShortcutDown(activationMode: settings.assistantShortcutActivationMode)
     }
 
     private func handleShortcutUp() async {
         shortcutHandler.handleShortcutUp(activationMode: settings.assistantShortcutActivationMode)
+    }
+
+    private func handleIntegrationShortcutDown(integrationID: UUID) async {
+        guard let integration = integration(for: integrationID), integration.isEnabled else {
+            return
+        }
+
+        settings.assistantSelectedIntegrationId = integrationID
+        let shortcutHandler = integrationShortcutHandlers[integrationID] ?? makeIntegrationShortcutHandler(for: integrationID)
+        integrationShortcutHandlers[integrationID] = shortcutHandler
+        shortcutHandler.handleShortcutDown(activationMode: integration.shortcutActivationMode)
+    }
+
+    private func handleIntegrationShortcutUp(integrationID: UUID) async {
+        guard let integration = integration(for: integrationID), integration.isEnabled else {
+            return
+        }
+
+        let shortcutHandler = integrationShortcutHandlers[integrationID] ?? makeIntegrationShortcutHandler(for: integrationID)
+        integrationShortcutHandlers[integrationID] = shortcutHandler
+        shortcutHandler.handleShortcutUp(activationMode: integration.shortcutActivationMode)
     }
 
     private func performAction(_ action: SmartShortcutHandler.Action) async {
@@ -224,9 +347,36 @@ final class AssistantShortcutController {
         }
     }
 
+    private func performIntegrationAction(_ action: SmartShortcutHandler.Action, integrationID: UUID) async {
+        switch action {
+        case .startRecording:
+            settings.assistantSelectedIntegrationId = integrationID
+            await assistantService.startRecording()
+        case .stopRecording:
+            await assistantService.stopAndProcess()
+        }
+    }
+
+    private func makeIntegrationShortcutHandler(for integrationID: UUID) -> SmartShortcutHandler {
+        SmartShortcutHandler(
+            isRecordingProvider: { [weak self] in self?.assistantService.isRecording ?? false },
+            actionHandler: { [weak self] action in
+                Task { @MainActor [weak self] in
+                    await self?.performIntegrationAction(action, integrationID: integrationID)
+                }
+            }
+        )
+    }
+
+    private func integration(for id: UUID) -> AssistantIntegrationConfig? {
+        settings.assistantIntegrations.first(where: { $0.id == id })
+    }
+
     private func resetShortcutState() {
         lastEscapePressTime = nil
         presetState.reset()
         shortcutHandler.reset()
+        integrationPresetStates.values.forEach { $0.reset() }
+        integrationShortcutHandlers.values.forEach { $0.reset() }
     }
 }

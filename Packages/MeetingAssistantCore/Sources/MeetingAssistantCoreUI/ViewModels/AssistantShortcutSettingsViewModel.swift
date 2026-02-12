@@ -94,8 +94,7 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
             name: "settings.assistant.integrations.default_name".localized(with: nextIndex),
             kind: .deeplink,
             isEnabled: false,
-            deepLink: "raycast://ai-commands/ask-ai",
-            outputMode: .replaceSelection
+            deepLink: "raycast://ai-commands/ask-ai"
         )
 
         assistantIntegrations = assistantIntegrations + [newIntegration]
