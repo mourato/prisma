@@ -9,6 +9,8 @@ import SwiftUI
 
 public struct AssistantSettingsTab: View {
     @StateObject private var viewModel = AssistantShortcutSettingsViewModel()
+    @State private var editingIntegration: AssistantIntegrationConfig?
+    @State private var advancedIntegrationDraft: AssistantIntegrationConfig?
 
     public init() {}
 
@@ -25,6 +27,47 @@ public struct AssistantSettingsTab: View {
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .sheet(item: $editingIntegration) { integration in
+            AssistantIntegrationEditorSheet(
+                integration: integration,
+                onApplyAndClose: { draft in
+                    viewModel.saveIntegration(draft.integration)
+                    if let preset = draft.integration.selectedPreset {
+                        viewModel.applyPreset(preset, to: draft.integration.id)
+                    }
+                    editingIntegration = nil
+                },
+                onDelete: { id in
+                    viewModel.removeIntegration(id: id)
+                    editingIntegration = nil
+                },
+                onOpenAdvanced: { draft in
+                    advancedIntegrationDraft = draft.integration
+                    editingIntegration = nil
+                }
+            )
+        }
+        .sheet(item: $advancedIntegrationDraft) { integration in
+            AssistantIntegrationBashScriptSheet(
+                scriptConfig: integration.advancedScript,
+                scriptTestOutput: viewModel.scriptTestOutput,
+                scriptTestErrorMessage: viewModel.scriptTestErrorMessage,
+                onSave: { scriptConfig in
+                    var updated = integration
+                    updated.advancedScript = scriptConfig
+                    viewModel.saveIntegration(updated)
+                    advancedIntegrationDraft = nil
+                    viewModel.clearScriptTestResult()
+                },
+                onTest: { script, input in
+                    await viewModel.testScript(script: script, input: input)
+                },
+                onClose: {
+                    advancedIntegrationDraft = nil
+                    viewModel.clearScriptTestResult()
+                }
+            )
         }
     }
 
@@ -130,131 +173,97 @@ public struct AssistantSettingsTab: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                HStack {
-                    Text("settings.assistant.integrations.output_mode".localized)
-                        .font(.body)
-                        .fontWeight(.medium)
+                Divider()
 
-                    Spacer()
+                Text("settings.assistant.integrations.built_in".localized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
 
-                    Picker("", selection: $viewModel.integrationOutputMode) {
-                        ForEach(AssistantIntegrationOutputMode.allCases, id: \.self) { mode in
-                            Text(mode.localizedName).tag(mode)
-                        }
-                    }
-                    .labelsHidden()
-                    .pickerStyle(.segmented)
-                    .frame(width: MeetingAssistantDesignSystem.Layout.maxPickerWidth)
+                ForEach(viewModel.builtInIntegrations) { integration in
+                    integrationRow(integration: integration, isCardStyle: false)
                 }
 
                 Divider()
 
-                if !viewModel.assistantIntegrations.isEmpty {
-                    HStack {
-                        Text("settings.assistant.integrations.current".localized)
-                            .font(.body)
-                            .fontWeight(.medium)
-
-                        Spacer()
-
-                        Picker("", selection: $viewModel.selectedIntegrationId) {
-                            ForEach(viewModel.assistantIntegrations) { integration in
-                                Text(integration.name).tag(Optional(integration.id))
-                            }
-                        }
-                        .labelsHidden()
-                        .frame(width: MeetingAssistantDesignSystem.Layout.maxPickerWidth)
-                    }
-
-                    HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-                        MAActionButton(kind: .secondary) {
-                            viewModel.addIntegration()
-                        } label: {
-                            HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-                                Image(systemName: "plus")
-                                Text("settings.assistant.integrations.add_button".localized)
-                            }
-                            .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)
-                        }
-
-                        MAActionButton(kind: .secondary) {
-                            viewModel.removeSelectedIntegration()
-                        } label: {
-                            HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-                                Image(systemName: "trash")
-                                Text("settings.assistant.integrations.remove_button".localized)
-                            }
-                            .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)
-                        }
-                        .disabled(!viewModel.canRemoveSelectedIntegration)
-
-                        Spacer()
-                    }
-
-                    Divider()
-                }
-
-                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-                    Text("settings.assistant.integrations.integration_name".localized)
+                HStack {
+                    Text("settings.assistant.integrations.custom".localized)
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
-                    TextField("", text: $viewModel.integrationName)
-                        .textFieldStyle(.roundedBorder)
+                    Spacer()
+
+                    Button {
+                        viewModel.addIntegration()
+                    } label: {
+                        Label(
+                            "settings.assistant.integrations.new".localized,
+                            systemImage: "plus"
+                        )
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
                 }
 
-                Divider()
+                ForEach(viewModel.customIntegrations) { integration in
+                    integrationRow(integration: integration, isCardStyle: true)
+                }
 
-                MAToggleRow(
-                    "settings.assistant.integrations.integration_enabled".localized,
-                    isOn: $viewModel.integrationEnabled
-                )
-
-                if viewModel.integrationEnabled {
-                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-                        Text("settings.assistant.integrations.integration_deeplink".localized)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-
-                        TextField("", text: $viewModel.integrationDeepLink)
-                            .textFieldStyle(.roundedBorder)
-
-                        if let validationMessage = viewModel.raycastDeepLinkValidationMessage {
-                            HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-                                Image(systemName: viewModel.raycastDeepLinkIsValid
-                                    ? "checkmark.circle.fill"
-                                    : "exclamationmark.triangle.fill")
-                                Text(validationMessage)
-                                    .font(.caption)
-                            }
-                            .foregroundStyle(viewModel.raycastDeepLinkIsValid
-                                ? MeetingAssistantDesignSystem.Colors.success
-                                : MeetingAssistantDesignSystem.Colors.warning)
-                        }
-
-                        MAActionButton(kind: .secondary) {
-                            viewModel.testRaycastIntegration()
-                        } label: {
-                            HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-                                Image(systemName: "arrow.up.right.square")
-                                Text("settings.assistant.integrations.test_button".localized)
-                                    .fontWeight(.medium)
-                            }
-                            .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)
-                        }
-                        .disabled(!viewModel.raycastDeepLinkIsValid)
-
-                        if let statusMessage = viewModel.raycastTestStatusMessage {
-                            Text(statusMessage)
-                                .font(.caption)
-                                .foregroundStyle(viewModel.raycastTestStatusIsError
-                                    ? MeetingAssistantDesignSystem.Colors.error
-                                    : MeetingAssistantDesignSystem.Colors.success)
-                        }
-                    }
+                if let statusMessage = viewModel.raycastTestStatusMessage {
+                    Text(statusMessage)
+                        .font(.caption)
+                        .foregroundStyle(viewModel.raycastTestStatusIsError
+                            ? MeetingAssistantDesignSystem.Colors.error
+                            : MeetingAssistantDesignSystem.Colors.success)
                 }
             }
         }
+    }
+
+    private func integrationRow(integration: AssistantIntegrationConfig, isCardStyle: Bool) -> some View {
+        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+            if isCardStyle {
+                RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
+                    .fill(Color.secondary.opacity(0.12))
+                    .frame(width: 36, height: 36)
+                    .overlay(
+                        Image(systemName: "line.3.horizontal")
+                            .foregroundStyle(.secondary)
+                    )
+            }
+
+            Text(integration.name)
+                .font(.body)
+                .fontWeight(.medium)
+
+            Spacer()
+
+            if isCardStyle {
+                Button {
+                    editingIntegration = integration
+                } label: {
+                    Image(systemName: "pencil")
+                        .padding(6)
+                        .background(
+                            Circle().fill(Color.secondary.opacity(0.12))
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+
+            Toggle("", isOn: Binding(
+                get: { integration.isEnabled },
+                set: { newValue in
+                    viewModel.setIntegrationEnabled(newValue, for: integration.id)
+                }
+            ))
+            .labelsHidden()
+            .toggleStyle(.switch)
+        }
+        .padding(isCardStyle ? MeetingAssistantDesignSystem.Layout.spacing12 : 0)
+        .background(
+            RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.cardCornerRadius)
+                .strokeBorder(isCardStyle ? Color.secondary.opacity(0.2) : Color.clear, lineWidth: 1)
+        )
     }
 
     private var resetSection: some View {

@@ -211,6 +211,68 @@ public enum AssistantIntegrationOutputMode: String, CaseIterable, Codable, Senda
     }
 }
 
+public enum AssistantIntegrationPreset: String, Codable, CaseIterable, Sendable {
+    case googleSearch
+    case launchApps
+    case closeApps
+    case askChatGPT
+    case askClaude
+    case youtubeSearch
+    case openWebsite
+    case appleShortcuts
+    case shellCommand
+    case pressKeys
+
+    public var localizedName: String {
+        switch self {
+        case .googleSearch:
+            "settings.assistant.integrations.presets.google_search".localized
+        case .launchApps:
+            "settings.assistant.integrations.presets.launch_apps".localized
+        case .closeApps:
+            "settings.assistant.integrations.presets.close_apps".localized
+        case .askChatGPT:
+            "settings.assistant.integrations.presets.ask_chatgpt".localized
+        case .askClaude:
+            "settings.assistant.integrations.presets.ask_claude".localized
+        case .youtubeSearch:
+            "settings.assistant.integrations.presets.youtube_search".localized
+        case .openWebsite:
+            "settings.assistant.integrations.presets.open_website".localized
+        case .appleShortcuts:
+            "settings.assistant.integrations.presets.apple_shortcuts".localized
+        case .shellCommand:
+            "settings.assistant.integrations.presets.shell_command".localized
+        case .pressKeys:
+            "settings.assistant.integrations.presets.press_keys".localized
+        }
+    }
+}
+
+public struct AssistantIntegrationScriptConfig: Codable, Equatable, Sendable {
+    public enum Stage: String, Codable, CaseIterable, Sendable {
+        case beforeAI
+        case afterAI
+
+        public var localizedName: String {
+            switch self {
+            case .beforeAI:
+                "settings.assistant.integrations.script.stage.before_ai".localized
+            case .afterAI:
+                "settings.assistant.integrations.script.stage.after_ai".localized
+            }
+        }
+    }
+
+    public var stage: Stage
+    public var script: String
+
+    public init(stage: Stage, script: String) {
+        self.stage = stage
+        self.script = script
+    }
+}
+
 public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Sendable {
     public enum Kind: String, Codable, CaseIterable, Sendable {
         case deeplink
@@ -221,19 +283,69 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
     public var kind: Kind
     public var isEnabled: Bool
     public var deepLink: String
+    public var outputMode: AssistantIntegrationOutputMode
+    public var promptInstructions: String?
+    public var selectedPreset: AssistantIntegrationPreset?
+    public var keyboardShortcut: String?
+    public var advancedScript: AssistantIntegrationScriptConfig?
 
     public init(
         id: UUID = UUID(),
         name: String,
         kind: Kind = .deeplink,
         isEnabled: Bool,
-        deepLink: String
+        deepLink: String,
+        outputMode: AssistantIntegrationOutputMode = .sendToRaycast,
+        promptInstructions: String? = nil,
+        selectedPreset: AssistantIntegrationPreset? = nil,
+        keyboardShortcut: String? = nil,
+        advancedScript: AssistantIntegrationScriptConfig? = nil
     ) {
         self.id = id
         self.name = name
         self.kind = kind
         self.isEnabled = isEnabled
         self.deepLink = deepLink
+        self.outputMode = outputMode
+        self.promptInstructions = promptInstructions
+        self.selectedPreset = selectedPreset
+        self.keyboardShortcut = keyboardShortcut
+        self.advancedScript = advancedScript
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case kind
+        case isEnabled
+        case deepLink
+        case outputMode
+        case promptInstructions
+        case selectedPreset
+        case keyboardShortcut
+        case advancedScript
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        kind = try container.decodeIfPresent(Kind.self, forKey: .kind) ?? .deeplink
+        isEnabled = try container.decodeIfPresent(Bool.self, forKey: .isEnabled) ?? false
+        deepLink = try container.decodeIfPresent(String.self, forKey: .deepLink) ?? "raycast://ai-commands/ask-ai"
+
+        let decodedOutputMode = try container.decodeIfPresent(AssistantIntegrationOutputMode.self, forKey: .outputMode)
+        if let decodedOutputMode {
+            outputMode = decodedOutputMode
+        } else {
+            outputMode = id == Self.raycastDefaultID ? .sendToRaycast : .replaceSelection
+        }
+
+        promptInstructions = try container.decodeIfPresent(String.self, forKey: .promptInstructions)
+        selectedPreset = try container.decodeIfPresent(AssistantIntegrationPreset.self, forKey: .selectedPreset)
+        keyboardShortcut = try container.decodeIfPresent(String.self, forKey: .keyboardShortcut)
+        advancedScript = try container.decodeIfPresent(AssistantIntegrationScriptConfig.self, forKey: .advancedScript)
     }
 
     public static var defaultRaycast: AssistantIntegrationConfig {
@@ -475,6 +587,7 @@ public class AppSettingsStore: ObservableObject {
         }
         return uuid
     }()
+    private var isSynchronizingAssistantIntegrations = false
 
     /// Default list of apps that should force Markdown formatting for dictation.
     public static let defaultMarkdownTargetBundleIdentifiers: [String] = [
@@ -815,21 +928,12 @@ public class AppSettingsStore: ObservableObject {
         didSet { UserDefaults.standard.set(assistantBorderStyle.rawValue, forKey: Keys.assistantBorderStyle) }
     }
 
-    /// Defines where Assistant output is delivered after processing.
-    @Published public var assistantIntegrationOutputMode: AssistantIntegrationOutputMode {
-        didSet {
-            UserDefaults.standard.set(
-                assistantIntegrationOutputMode.rawValue,
-                forKey: Keys.assistantIntegrationOutputMode
-            )
-        }
-    }
-
     /// Configured Assistant integrations (Raycast is pre-seeded by default).
     @Published public var assistantIntegrations: [AssistantIntegrationConfig] {
         didSet {
-            save(assistantIntegrations, forKey: Keys.assistantIntegrations)
+            guard !isSynchronizingAssistantIntegrations else { return }
             synchronizeAssistantIntegrationsState()
+            save(assistantIntegrations, forKey: Keys.assistantIntegrations)
         }
     }
 
@@ -1201,10 +1305,6 @@ public class AppSettingsStore: ObservableObject {
         let rawAssistantPresetKey = UserDefaults.standard.string(forKey: Keys.assistantSelectedPresetKey)
         assistantSelectedPresetKey = rawAssistantPresetKey.flatMap { PresetShortcutKey(rawValue: $0) } ?? .rightOption
 
-        let rawAssistantOutputMode = UserDefaults.standard.string(forKey: Keys.assistantIntegrationOutputMode)
-        assistantIntegrationOutputMode = rawAssistantOutputMode
-            .flatMap { AssistantIntegrationOutputMode(rawValue: $0) } ?? .replaceSelection
-
         let loadedIntegrations = Self.loadDecoded([AssistantIntegrationConfig].self, forKey: Keys.assistantIntegrations)
         assistantIntegrations = loadedIntegrations ?? [AssistantIntegrationConfig.defaultRaycast]
         let shouldMigrateLegacyAssistantIntegration = loadedIntegrations == nil
@@ -1371,13 +1471,26 @@ public class AppSettingsStore: ObservableObject {
     }
 
     private func synchronizeAssistantIntegrationsState() {
-        if assistantIntegrations.isEmpty {
-            let fallback = AssistantIntegrationConfig.defaultRaycast
-            assistantIntegrations = [fallback]
-            assistantSelectedIntegrationId = fallback.id
-            assistantRaycastEnabled = fallback.isEnabled
-            assistantRaycastDeepLink = fallback.deepLink
-            return
+        var normalizedIntegrations = assistantIntegrations
+
+        if normalizedIntegrations.isEmpty {
+            normalizedIntegrations = [AssistantIntegrationConfig.defaultRaycast]
+        }
+
+        normalizedIntegrations = normalizedIntegrations.map { integration in
+            guard integration.id == AssistantIntegrationConfig.raycastDefaultID else {
+                return integration
+            }
+
+            var normalized = integration
+            normalized.outputMode = .sendToRaycast
+            return normalized
+        }
+
+        if normalizedIntegrations != assistantIntegrations {
+            isSynchronizingAssistantIntegrations = true
+            assistantIntegrations = normalizedIntegrations
+            isSynchronizingAssistantIntegrations = false
         }
 
         if let selectedID = assistantSelectedIntegrationId,
@@ -1554,7 +1667,6 @@ public class AppSettingsStore: ObservableObject {
         assistantSelectedPresetKey = .rightOption
         assistantBorderColor = .green
         assistantBorderStyle = .stroke
-        assistantIntegrationOutputMode = .replaceSelection
         assistantIntegrations = [AssistantIntegrationConfig.defaultRaycast]
         assistantSelectedIntegrationId = AssistantIntegrationConfig.defaultRaycast.id
         assistantRaycastEnabled = false
