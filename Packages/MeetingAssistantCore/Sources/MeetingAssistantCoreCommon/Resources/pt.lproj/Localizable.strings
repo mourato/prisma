@@ -335,7 +335,7 @@
 "assistant.error.recording_in_progress" = "Há uma gravação em andamento. Finalize antes de usar o Assistant.";
 "assistant.error.processing_failed" = "Não foi possível processar o comando do Assistant.";
 "assistant.error.raycast_integration_disabled" = "A integração com Raycast está desativada nas configurações do Assistant.";
-"assistant.error.raycast_deeplink_invalid" = "O deeplink do Raycast é inválido. Verifique Integrations no Assistant.";
+"assistant.error.raycast_deeplink_invalid" = "O deeplink do Raycast é inválido. Verifique Integrações no Assistant.";
 "assistant.error.raycast_open_failed" = "Não foi possível abrir o Raycast com o deeplink configurado.";
 "assistant.error.raycast_opened_clipboard_fallback" = "Raycast aberto e comando copiado para a área de transferência por limite de URL.";
 
