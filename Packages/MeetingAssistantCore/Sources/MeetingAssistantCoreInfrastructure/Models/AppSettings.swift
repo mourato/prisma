@@ -192,6 +192,69 @@ public enum AssistantBorderStyle: String, CaseIterable, Codable, Sendable {
     }
 }
 
+// MARK: - Assistant Integrations Configuration
+
+public enum AssistantIntegrationOutputMode: String, CaseIterable, Codable, Sendable {
+    case replaceSelection
+    case sendToRaycast
+    case both
+
+    public var localizedName: String {
+        switch self {
+        case .replaceSelection:
+            "settings.assistant.integrations.output_mode.replace_selection".localized
+        case .sendToRaycast:
+            "settings.assistant.integrations.output_mode.send_to_raycast".localized
+        case .both:
+            "settings.assistant.integrations.output_mode.both".localized
+        }
+    }
+}
+
+public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Sendable {
+    public enum Kind: String, Codable, CaseIterable, Sendable {
+        case deeplink
+    }
+
+    public let id: UUID
+    public var name: String
+    public var kind: Kind
+    public var isEnabled: Bool
+    public var deepLink: String
+
+    public init(
+        id: UUID = UUID(),
+        name: String,
+        kind: Kind = .deeplink,
+        isEnabled: Bool,
+        deepLink: String
+    ) {
+        self.id = id
+        self.name = name
+        self.kind = kind
+        self.isEnabled = isEnabled
+        self.deepLink = deepLink
+    }
+
+    public static var defaultRaycast: AssistantIntegrationConfig {
+        AssistantIntegrationConfig(
+            id: Self.raycastDefaultID,
+            name: "Raycast",
+            kind: .deeplink,
+            isEnabled: false,
+            deepLink: "raycast://ai-commands/ask-ai"
+        )
+    }
+
+    public static var raycastDefaultID: UUID {
+        guard let uuid = UUID(uuidString: "00000000-0000-0000-0000-000000000010") else {
+            assertionFailure("Invalid UUID for default Raycast integration")
+            return UUID()
+        }
+        return uuid
+    }
+}
+
 // MARK: - Sound Feedback Configuration
 
 /// Available sounds for recording feedback notifications.
@@ -498,6 +561,11 @@ public class AppSettingsStore: ObservableObject {
         static let assistantSelectedPresetKey = "assistantSelectedPresetKey"
         static let assistantBorderColor = "assistantBorderColor"
         static let assistantBorderStyle = "assistantBorderStyle"
+        static let assistantIntegrationOutputMode = "assistantIntegrationOutputMode"
+        static let assistantIntegrations = "assistantIntegrations"
+        static let assistantSelectedIntegrationId = "assistantSelectedIntegrationId"
+        static let assistantRaycastEnabled = "assistantRaycastEnabled"
+        static let assistantRaycastDeepLink = "assistantRaycastDeepLink"
         static let recordingIndicatorEnabled = "recordingIndicatorEnabled"
         static let recordingIndicatorStyle = "recordingIndicatorStyle"
         static let recordingIndicatorPosition = "recordingIndicatorPosition"
@@ -745,6 +813,77 @@ public class AppSettingsStore: ObservableObject {
     /// Style for the Assistant mode screen border (stroke or glow).
     @Published public var assistantBorderStyle: AssistantBorderStyle {
         didSet { UserDefaults.standard.set(assistantBorderStyle.rawValue, forKey: Keys.assistantBorderStyle) }
+    }
+
+    /// Defines where Assistant output is delivered after processing.
+    @Published public var assistantIntegrationOutputMode: AssistantIntegrationOutputMode {
+        didSet {
+            UserDefaults.standard.set(
+                assistantIntegrationOutputMode.rawValue,
+                forKey: Keys.assistantIntegrationOutputMode
+            )
+        }
+    }
+
+    /// Configured Assistant integrations (Raycast is pre-seeded by default).
+    @Published public var assistantIntegrations: [AssistantIntegrationConfig] {
+        didSet {
+            save(assistantIntegrations, forKey: Keys.assistantIntegrations)
+            synchronizeAssistantIntegrationsState()
+        }
+    }
+
+    /// Currently selected Assistant integration.
+    @Published public var assistantSelectedIntegrationId: UUID? {
+        didSet {
+            if let id = assistantSelectedIntegrationId {
+                UserDefaults.standard.set(id.uuidString, forKey: Keys.assistantSelectedIntegrationId)
+            } else {
+                UserDefaults.standard.removeObject(forKey: Keys.assistantSelectedIntegrationId)
+            }
+        }
+    }
+
+    /// Whether Raycast integration is enabled for Assistant mode.
+    @Published public var assistantRaycastEnabled: Bool {
+        didSet { UserDefaults.standard.set(assistantRaycastEnabled, forKey: Keys.assistantRaycastEnabled) }
+    }
+
+    /// Base deeplink used for Raycast AI command integration.
+    @Published public var assistantRaycastDeepLink: String {
+        didSet { UserDefaults.standard.set(assistantRaycastDeepLink, forKey: Keys.assistantRaycastDeepLink) }
+    }
+
+    /// Active integration resolved from selected ID.
+    public var assistantSelectedIntegration: AssistantIntegrationConfig? {
+        if let id = assistantSelectedIntegrationId,
+           let selected = assistantIntegrations.first(where: { $0.id == id })
+        {
+            return selected
+        }
+        return assistantIntegrations.first
+    }
+
+    public func upsertAssistantIntegration(_ integration: AssistantIntegrationConfig) {
+        if let index = assistantIntegrations.firstIndex(where: { $0.id == integration.id }) {
+            var updated = assistantIntegrations
+            updated[index] = integration
+            assistantIntegrations = updated
+        } else {
+            var updated = assistantIntegrations
+            updated.append(integration)
+            assistantIntegrations = updated
+
+            if assistantSelectedIntegrationId == nil {
+                assistantSelectedIntegrationId = integration.id
+            }
+        }
+    }
+
+    public func removeAssistantIntegration(id: UUID) {
+        let filtered = assistantIntegrations.filter { $0.id != id }
+        guard filtered.count != assistantIntegrations.count else { return }
+        assistantIntegrations = filtered
     }
 
     // MARK: - Recording Indicator Properties
@@ -1062,6 +1201,20 @@ public class AppSettingsStore: ObservableObject {
         let rawAssistantPresetKey = UserDefaults.standard.string(forKey: Keys.assistantSelectedPresetKey)
         assistantSelectedPresetKey = rawAssistantPresetKey.flatMap { PresetShortcutKey(rawValue: $0) } ?? .rightOption
 
+        let rawAssistantOutputMode = UserDefaults.standard.string(forKey: Keys.assistantIntegrationOutputMode)
+        assistantIntegrationOutputMode = rawAssistantOutputMode
+            .flatMap { AssistantIntegrationOutputMode(rawValue: $0) } ?? .replaceSelection
+
+        let loadedIntegrations = Self.loadDecoded([AssistantIntegrationConfig].self, forKey: Keys.assistantIntegrations)
+        assistantIntegrations = loadedIntegrations ?? [AssistantIntegrationConfig.defaultRaycast]
+        let shouldMigrateLegacyAssistantIntegration = loadedIntegrations == nil
+
+        let rawSelectedIntegrationId = UserDefaults.standard.string(forKey: Keys.assistantSelectedIntegrationId)
+        assistantSelectedIntegrationId = rawSelectedIntegrationId.flatMap(UUID.init(uuidString:))
+
+        assistantRaycastEnabled = UserDefaults.standard.bool(forKey: Keys.assistantRaycastEnabled)
+        assistantRaycastDeepLink = UserDefaults.standard.string(forKey: Keys.assistantRaycastDeepLink) ?? "raycast://ai-commands/ask-ai"
+
         meetingTypeAutoDetectEnabled = UserDefaults.standard.bool(forKey: Keys.meetingTypeAutoDetectEnabled)
 
         // Load Meeting Prompts
@@ -1177,6 +1330,18 @@ public class AppSettingsStore: ObservableObject {
         // Load app visibility settings
         showInDock = UserDefaults.standard.bool(forKey: Keys.showInDock)
 
+        if shouldMigrateLegacyAssistantIntegration {
+            var migratedRaycast = AssistantIntegrationConfig.defaultRaycast
+            migratedRaycast.isEnabled = assistantRaycastEnabled
+            migratedRaycast.deepLink = assistantRaycastDeepLink
+            assistantIntegrations = [migratedRaycast]
+            assistantSelectedIntegrationId = migratedRaycast.id
+        }
+
+        if assistantSelectedIntegrationId == nil {
+            assistantSelectedIntegrationId = assistantIntegrations.first?.id
+        }
+
         if hasPersistedLegacyPerTargetBrowsers && !hasGlobalBrowserSetting {
             migrateWebTargetBrowsersToGlobalSettingIfNeeded()
         }
@@ -1203,6 +1368,32 @@ public class AppSettingsStore: ObservableObject {
     private static func loadDecoded<T: Decodable>(_ type: T.Type, forKey key: String) -> T? {
         guard let data = UserDefaults.standard.data(forKey: key) else { return nil }
         return try? JSONDecoder().decode(type, from: data)
+    }
+
+    private func synchronizeAssistantIntegrationsState() {
+        if assistantIntegrations.isEmpty {
+            let fallback = AssistantIntegrationConfig.defaultRaycast
+            assistantIntegrations = [fallback]
+            assistantSelectedIntegrationId = fallback.id
+            assistantRaycastEnabled = fallback.isEnabled
+            assistantRaycastDeepLink = fallback.deepLink
+            return
+        }
+
+        if let selectedID = assistantSelectedIntegrationId,
+           assistantIntegrations.contains(where: { $0.id == selectedID }) == false
+        {
+            assistantSelectedIntegrationId = assistantIntegrations.first?.id
+        }
+
+        if assistantSelectedIntegrationId == nil {
+            assistantSelectedIntegrationId = assistantIntegrations.first?.id
+        }
+
+        if let raycast = assistantIntegrations.first(where: { $0.id == AssistantIntegrationConfig.raycastDefaultID }) {
+            assistantRaycastEnabled = raycast.isEnabled
+            assistantRaycastDeepLink = raycast.deepLink
+        }
     }
 
     private static func loadAIConfiguration() -> AIConfiguration {
@@ -1363,6 +1554,11 @@ public class AppSettingsStore: ObservableObject {
         assistantSelectedPresetKey = .rightOption
         assistantBorderColor = .green
         assistantBorderStyle = .stroke
+        assistantIntegrationOutputMode = .replaceSelection
+        assistantIntegrations = [AssistantIntegrationConfig.defaultRaycast]
+        assistantSelectedIntegrationId = AssistantIntegrationConfig.defaultRaycast.id
+        assistantRaycastEnabled = false
+        assistantRaycastDeepLink = "raycast://ai-commands/ask-ai"
         recordingIndicatorEnabled = false
         recordingIndicatorStyle = .mini
         recordingIndicatorPosition = .bottom
