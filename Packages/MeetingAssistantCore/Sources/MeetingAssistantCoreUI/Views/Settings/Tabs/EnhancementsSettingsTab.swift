@@ -277,6 +277,10 @@ public struct EnhancementsSettingsTab: View {
     }
 
     private func browserNames(from bundleIdentifiers: [String]) -> String {
+        if bundleIdentifiers.isEmpty {
+            return "settings.web_targets.any_browser".localized
+        }
+
         let names = bundleIdentifiers
             .map { WebTargetEditorSupport.browserDisplayName(for: $0) }
             .sorted()

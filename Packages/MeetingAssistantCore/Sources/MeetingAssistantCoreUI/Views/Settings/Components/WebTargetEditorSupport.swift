@@ -17,6 +17,10 @@ enum WebTargetEditorSupport {
     ]
 
     static var defaultBrowserBundleIdentifiers: [String] {
+        []
+    }
+
+    static var commonBrowserBundleIdentifiers: [String] {
         browserOptions.map(\.bundleIdentifier)
     }
 
