@@ -63,7 +63,6 @@ public struct EnhancementsSettingsTab: View {
         .sheet(isPresented: $markdownWebTargetsViewModel.showEditor) {
             WebMarkdownTargetEditorSheet(
                 target: markdownWebTargetsViewModel.editingTarget,
-                browserBundleIdentifiers: viewModel.settings.webTargetBrowserBundleIdentifiers,
                 onSave: markdownWebTargetsViewModel.handleSave,
                 onCancel: { markdownWebTargetsViewModel.showEditor = false }
             )
@@ -302,7 +301,7 @@ public struct EnhancementsSettingsTab: View {
         // no browsers will actually match. Reflect that in the UI instead of
         // suggesting that any browser is allowed.
         if bundleIdentifiers.isEmpty && fallbackBundleIdentifiers.isEmpty {
-            return "settings.web_targets.no_browsers_configured".localized
+            return "settings.web_targets.browsers.empty".localized
         }
 
         let effectiveBundleIdentifiers = bundleIdentifiers.isEmpty ? fallbackBundleIdentifiers : bundleIdentifiers
