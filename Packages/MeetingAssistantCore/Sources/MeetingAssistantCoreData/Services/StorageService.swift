@@ -237,11 +237,15 @@ public final class FileSystemStorageService: StorageService {
 
             return results.map { mo in
                 let wordCount = Self.wordCount(for: mo.text)
+                let fallbackName = MeetingApp(rawValue: mo.meeting.appRawValue)?.displayName ?? mo.meeting.appRawValue
+                let trimmedDisplayName = mo.meeting.appDisplayName?.trimmingCharacters(in: .whitespacesAndNewlines)
+                let resolvedName = (trimmedDisplayName?.isEmpty == false) ? trimmedDisplayName! : fallbackName
                 return TranscriptionMetadata(
                     id: mo.id,
                     meetingId: mo.meeting.id,
-                    appName: mo.meeting.appRawValue,
+                    appName: resolvedName,
                     appRawValue: mo.meeting.appRawValue,
+                    appBundleIdentifier: mo.meeting.appBundleIdentifier,
                     startTime: mo.meeting.startTime,
                     createdAt: mo.createdAt,
                     previewText: String(mo.text.prefix(100)),
@@ -680,6 +684,8 @@ public final class FileSystemStorageService: StorageService {
         let meetingEntity = MeetingEntity(
             id: transcription.meeting.id,
             app: DomainMeetingApp(rawValue: transcription.meeting.app.rawValue) ?? .unknown,
+            appBundleIdentifier: transcription.meeting.appBundleIdentifier,
+            appDisplayName: transcription.meeting.appDisplayName,
             startTime: transcription.meeting.startTime,
             endTime: transcription.meeting.endTime,
             audioFilePath: transcription.meeting.audioFilePath
@@ -721,6 +727,8 @@ public final class FileSystemStorageService: StorageService {
         let meeting = Meeting(
             id: entity.meeting.id,
             app: MeetingApp(rawValue: entity.meeting.app.rawValue) ?? .unknown,
+            appBundleIdentifier: entity.meeting.appBundleIdentifier,
+            appDisplayName: entity.meeting.appDisplayName,
             startTime: entity.meeting.startTime,
             endTime: entity.meeting.endTime,
             audioFilePath: entity.meeting.audioFilePath

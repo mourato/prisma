@@ -458,9 +458,12 @@ struct TranscriptionRowView: View {
                     .fill(appColor.opacity(0.1))
                     .frame(width: 40, height: 40)
 
-                Image(systemName: appIcon)
-                    .font(.title3)
-                    .foregroundStyle(appColor)
+                AppIconView(
+                    bundleIdentifier: metadata.appBundleIdentifier,
+                    fallbackSystemName: appIcon,
+                    size: 22,
+                    cornerRadius: 5
+                )
             }
 
             VStack(alignment: .leading, spacing: 4) {

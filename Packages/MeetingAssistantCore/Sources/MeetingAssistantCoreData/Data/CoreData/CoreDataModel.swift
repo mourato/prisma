@@ -32,6 +32,16 @@ public enum CoreDataModel {
         meetingAppAttribute.attributeType = .stringAttributeType
         meetingAppAttribute.isOptional = false
 
+        let meetingAppBundleIdentifierAttribute = NSAttributeDescription()
+        meetingAppBundleIdentifierAttribute.name = "appBundleIdentifier"
+        meetingAppBundleIdentifierAttribute.attributeType = .stringAttributeType
+        meetingAppBundleIdentifierAttribute.isOptional = true
+
+        let meetingAppDisplayNameAttribute = NSAttributeDescription()
+        meetingAppDisplayNameAttribute.name = "appDisplayName"
+        meetingAppDisplayNameAttribute.attributeType = .stringAttributeType
+        meetingAppDisplayNameAttribute.isOptional = true
+
         let meetingStartTimeAttribute = NSAttributeDescription()
         meetingStartTimeAttribute.name = "startTime"
         meetingStartTimeAttribute.attributeType = .dateAttributeType
@@ -50,6 +60,8 @@ public enum CoreDataModel {
         meetingEntity.properties = [
             meetingIdAttribute,
             meetingAppAttribute,
+            meetingAppBundleIdentifierAttribute,
+            meetingAppDisplayNameAttribute,
             meetingStartTimeAttribute,
             meetingEndTimeAttribute,
             meetingAudioFilePathAttribute,
