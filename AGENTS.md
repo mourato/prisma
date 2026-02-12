@@ -82,6 +82,7 @@ If uncertain, choose the higher risk level.
 - [ ] Run `make preview-check` when SwiftUI views are added or modified.
 - [ ] Use `git worktree remove` + `git worktree prune` for cleanup.
 - [ ] Localize user-facing text and respect module/skill responsibilities as outlined in the main SOP and skills index.
+- [ ] When UI text is removed, sanitize localization resources by removing now-unused keys from supported locales.
 
 ---
 
@@ -142,6 +143,7 @@ Language and localization policy:
 - All documentation must be written in English.
 - All code comments must be written in English.
 - User-facing strings must be localized via `"key".localized` (never hardcode UI strings).
+- Removing UI text requires localization sanitization: delete orphaned keys from `Localizable.strings` files and confirm no source references remain.
 
 General style and architecture rules:
 

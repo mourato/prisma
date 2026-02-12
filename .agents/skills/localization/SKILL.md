@@ -54,6 +54,16 @@ Text("recording.start".localized)
 
 When adding or removing UI text, ensure it is handled correctly: either by proper localization or by removing/sanitizing it safely.
 
+### Mandatory Sanitization on UI Text Removal
+
+If any user-facing text is removed from the interface, localization cleanup is required in the same task:
+
+1. Remove orphaned keys from all supported locale files (`en.lproj`, `pt.lproj`, etc.).
+2. Confirm no source references remain for the removed keys.
+3. Keep locale files symmetric whenever applicable (no stale key in one language only).
+
+This sanitization is mandatory, not optional.
+
 ### Key Convention
 
 Use descriptive, dot-separated keys with `lower_snake_case` segments:
@@ -101,6 +111,6 @@ Follow this pattern for consistent naming:
 
 ## References
 
-- [BundleExtension.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreCommon/Utilities/BundleExtension.swift)
-- [Localizable.strings](Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreCommon/Resources/en.lproj/Localizable.strings)
+- [BundleExtension.swift](../../../Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreCommon/Utilities/BundleExtension.swift)
+- [Localizable.strings](../../../Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreCommon/Resources/en.lproj/Localizable.strings)
 - [Apple Accessibility Guide](https://developer.apple.com/documentation/accessibility)

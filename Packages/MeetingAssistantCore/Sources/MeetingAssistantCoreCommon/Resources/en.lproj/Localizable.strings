@@ -138,10 +138,6 @@
 "settings.ai.title" = "Enhancements";
 "settings.ai.diarization" = "Identify Speakers (Beta)";
 "settings.ai.diarization_desc" = "Identifies who is speaking in the meeting. Significantly increases processing time.";
-"settings.ai.min_speakers" = "Min Speakers";
-"settings.ai.max_speakers" = "Max Speakers";
-"settings.ai.num_speakers" = "Fixed Number of Speakers";
-"settings.ai.speakers_auto" = "Auto";
 "settings.ai.provider" = "Provider";
 "settings.ai.provider_label" = "AI Provider:";
 "settings.ai.api_config" = "API Configuration";
