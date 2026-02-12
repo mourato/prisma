@@ -63,7 +63,10 @@ public struct TranscriptionCardView: View {
     }
 
     public var body: some View {
-        MACard(cornerRadius: MeetingAssistantDesignSystem.Layout.largeCornerRadius, padding: MeetingAssistantDesignSystem.Layout.spacing16) {
+        MACard(
+            cornerRadius: MeetingAssistantDesignSystem.Layout.largeCornerRadius,
+            padding: isExpanded ? MeetingAssistantDesignSystem.Layout.spacing16 : MeetingAssistantDesignSystem.Layout.spacing12
+        ) {
             if isExpanded {
                 expandedContent
             } else {
@@ -91,11 +94,9 @@ public struct TranscriptionCardView: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .foregroundStyle(.primary)
                 .frame(maxWidth: .infinity, alignment: .leading)
+
+            sourceLabel(text: sourceDisplayName)
                 .layoutPriority(1)
-
-            Spacer()
-
-            sourceLabel(text: transcription.appName)
         }
     }
 
@@ -286,6 +287,11 @@ public struct TranscriptionCardView: View {
         MeetingApp(rawValue: transcription.appRawValue) ?? .unknown
     }
 
+    private var sourceDisplayName: String {
+        let trimmed = transcription.appName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? appSource.displayName : trimmed
+    }
+
     private func sourceLabel(text: String) -> some View {
         HStack(spacing: 6) {
             AppIconView(
@@ -296,10 +302,9 @@ public struct TranscriptionCardView: View {
             )
             Text(text)
                 .font(.caption)
+                .lineLimit(1)
+                .truncationMode(.tail)
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .background(MeetingAssistantDesignSystem.Colors.subtleFill, in: Capsule())
         .foregroundStyle(.secondary)
     }
 }
