@@ -6,6 +6,7 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
     public let meetingId: UUID
     public let appName: String
     public let appRawValue: String
+    public let appBundleIdentifier: String?
     public let startTime: Date
     public let createdAt: Date
     public let previewText: String
@@ -21,6 +22,7 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
         case meetingId
         case appName
         case appRawValue
+        case appBundleIdentifier
         case startTime
         case createdAt
         case previewText
@@ -37,6 +39,7 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
         meetingId: UUID,
         appName: String,
         appRawValue: String,
+        appBundleIdentifier: String?,
         startTime: Date,
         createdAt: Date,
         previewText: String,
@@ -51,6 +54,7 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
         self.meetingId = meetingId
         self.appName = appName
         self.appRawValue = appRawValue
+        self.appBundleIdentifier = appBundleIdentifier
         self.startTime = startTime
         self.createdAt = createdAt
         self.previewText = previewText
@@ -69,6 +73,7 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
         let meetingId = try container.decode(UUID.self, forKey: .meetingId)
         let appName = try container.decode(String.self, forKey: .appName)
         let appRawValue = try container.decode(String.self, forKey: .appRawValue)
+        let appBundleIdentifier = try container.decodeIfPresent(String.self, forKey: .appBundleIdentifier)
         let startTime = try container.decode(Date.self, forKey: .startTime)
         let createdAt = try container.decode(Date.self, forKey: .createdAt)
         let previewText = try container.decode(String.self, forKey: .previewText)
@@ -84,6 +89,7 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
             meetingId: meetingId,
             appName: appName,
             appRawValue: appRawValue,
+            appBundleIdentifier: appBundleIdentifier,
             startTime: startTime,
             createdAt: createdAt,
             previewText: previewText,

@@ -88,6 +88,8 @@ public enum DomainMeetingApp: String, CaseIterable, Codable, Sendable {
 public struct MeetingEntity: Identifiable, Codable, Hashable, Sendable {
     public let id: UUID
     public let app: DomainMeetingApp
+    public let appBundleIdentifier: String?
+    public let appDisplayName: String?
     public let startTime: Date
     public var endTime: Date?
     public var audioFilePath: String?
@@ -95,12 +97,16 @@ public struct MeetingEntity: Identifiable, Codable, Hashable, Sendable {
     public init(
         id: UUID = UUID(),
         app: DomainMeetingApp,
+        appBundleIdentifier: String? = nil,
+        appDisplayName: String? = nil,
         startTime: Date = Date(),
         endTime: Date? = nil,
         audioFilePath: String? = nil
     ) {
         self.id = id
         self.app = app
+        self.appBundleIdentifier = appBundleIdentifier
+        self.appDisplayName = appDisplayName
         self.startTime = startTime
         self.endTime = endTime
         self.audioFilePath = audioFilePath
@@ -126,7 +132,8 @@ public struct MeetingEntity: Identifiable, Codable, Hashable, Sendable {
     }
 
     public var appName: String {
-        app.displayName
+        let trimmed = appDisplayName?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return (trimmed?.isEmpty == false) ? trimmed! : app.displayName
     }
 
     public var appIconName: String {

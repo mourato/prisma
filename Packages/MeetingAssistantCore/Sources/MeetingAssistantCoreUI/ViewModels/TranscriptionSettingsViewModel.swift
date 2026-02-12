@@ -228,6 +228,8 @@ public class TranscriptionSettingsViewModel: ObservableObject {
             let updatedMeeting = MeetingEntity(
                 id: metadata.meetingId,
                 app: targetApp,
+                appBundleIdentifier: existing?.appBundleIdentifier ?? metadata.appBundleIdentifier,
+                appDisplayName: existing?.appDisplayName ?? metadata.appName,
                 startTime: existing?.startTime ?? metadata.startTime,
                 endTime: existing?.endTime ?? endTime,
                 audioFilePath: existing?.audioFilePath ?? metadata.audioFilePath

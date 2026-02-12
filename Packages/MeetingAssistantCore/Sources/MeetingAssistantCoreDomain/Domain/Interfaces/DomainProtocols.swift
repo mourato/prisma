@@ -244,6 +244,7 @@ public struct DomainTranscriptionMetadata: Identifiable, Codable, Hashable, Send
     public let meetingId: UUID
     public let appName: String
     public let appRawValue: String
+    public let appBundleIdentifier: String?
     public let startTime: Date
     public let createdAt: Date
     public let previewText: String
@@ -257,6 +258,7 @@ public struct DomainTranscriptionMetadata: Identifiable, Codable, Hashable, Send
         meetingId: UUID,
         appName: String,
         appRawValue: String,
+        appBundleIdentifier: String?,
         startTime: Date,
         createdAt: Date,
         previewText: String,
@@ -269,6 +271,7 @@ public struct DomainTranscriptionMetadata: Identifiable, Codable, Hashable, Send
         self.meetingId = meetingId
         self.appName = appName
         self.appRawValue = appRawValue
+        self.appBundleIdentifier = appBundleIdentifier
         self.startTime = startTime
         self.createdAt = createdAt
         self.previewText = previewText
