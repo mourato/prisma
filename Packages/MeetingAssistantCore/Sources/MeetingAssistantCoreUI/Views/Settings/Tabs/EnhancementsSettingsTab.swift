@@ -13,6 +13,7 @@ public struct EnhancementsSettingsTab: View {
     @StateObject private var viewModel = AISettingsViewModel(settings: .shared)
     @StateObject private var postProcessingViewModel = PostProcessingSettingsViewModel()
     @StateObject private var markdownTargetsViewModel: InstalledAppsSelectionViewModel
+    @StateObject private var webBrowserTargetsViewModel: InstalledAppsSelectionViewModel
     @StateObject private var markdownWebTargetsViewModel: WebMarkdownTargetsViewModel
     @State private var supportStatus: TextContextSupportStatus = .unknown
     private let supportChecker = TextContextSupportChecker()
@@ -24,6 +25,14 @@ public struct EnhancementsSettingsTab: View {
                 hasConfigured: { settings.hasConfiguredMarkdownTargets },
                 loadBundleIdentifiers: { settings.markdownTargetBundleIdentifiers },
                 saveBundleIdentifiers: { settings.markdownTargetBundleIdentifiers = $0 }
+            )
+        )
+        _webBrowserTargetsViewModel = StateObject(
+            wrappedValue: InstalledAppsSelectionViewModel(
+                defaultBundleIdentifiers: AppSettingsStore.defaultWebTargetBrowserBundleIdentifiers,
+                hasConfigured: { settings.hasConfiguredWebTargetBrowsers },
+                loadBundleIdentifiers: { settings.webTargetBrowserBundleIdentifiers },
+                saveBundleIdentifiers: { settings.webTargetBrowserBundleIdentifiers = $0 }
             )
         )
         _markdownWebTargetsViewModel = StateObject(wrappedValue: WebMarkdownTargetsViewModel(settings: settings))
@@ -187,6 +196,15 @@ public struct EnhancementsSettingsTab: View {
 
                 Divider()
 
+                InstalledAppsSelectionList(
+                    descriptionKey: "settings.web_targets.browsers.description",
+                    emptyKey: "settings.web_targets.browsers.empty",
+                    addButtonKey: "settings.web_targets.browsers.add",
+                    viewModel: webBrowserTargetsViewModel
+                )
+
+                Divider()
+
                 markdownWebTargetsSection
             }
         }
@@ -277,11 +295,17 @@ public struct EnhancementsSettingsTab: View {
     }
 
     private func browserNames(from bundleIdentifiers: [String]) -> String {
-        if bundleIdentifiers.isEmpty {
-            return "settings.web_targets.any_browser".localized
+        let fallbackBundleIdentifiers = viewModel.settings.webTargetBrowserBundleIdentifiers
+
+        // If both the target-specific list and the global fallback list are empty,
+        // no browsers will actually match. Reflect that in the UI instead of
+        // suggesting that any browser is allowed.
+        if bundleIdentifiers.isEmpty && fallbackBundleIdentifiers.isEmpty {
+            return "settings.web_targets.browsers.empty".localized
         }
 
-        let names = bundleIdentifiers
+        let effectiveBundleIdentifiers = bundleIdentifiers.isEmpty ? fallbackBundleIdentifiers : bundleIdentifiers
+        let names = effectiveBundleIdentifiers
             .map { WebTargetEditorSupport.browserDisplayName(for: $0) }
             .sorted()
         let display = names.joined(separator: ", ")

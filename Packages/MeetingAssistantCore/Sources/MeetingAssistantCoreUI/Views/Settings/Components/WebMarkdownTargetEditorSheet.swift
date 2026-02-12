@@ -9,7 +9,6 @@ public struct WebMarkdownTargetEditorSheet: View {
 
     @State private var displayName: String
     @State private var urlPatternsText: String
-    @State private var selectedBrowsers: Set<String>
 
     public init(
         target: WebContextTarget?,
@@ -22,7 +21,6 @@ public struct WebMarkdownTargetEditorSheet: View {
 
         _displayName = State(initialValue: target?.displayName ?? "")
         _urlPatternsText = State(initialValue: (target?.urlPatterns ?? []).joined(separator: "\n"))
-        _selectedBrowsers = State(initialValue: Set(target?.browserBundleIdentifiers ?? WebTargetEditorSupport.defaultBrowserBundleIdentifiers))
     }
 
     public var body: some View {
@@ -34,13 +32,11 @@ public struct WebMarkdownTargetEditorSheet: View {
                 nameLabelKey: "settings.markdown_targets.websites.name_label",
                 urlLabelKey: "settings.markdown_targets.websites.url_label",
                 urlDescriptionKey: "settings.markdown_targets.websites.url_desc",
-                browserLabelKey: "settings.markdown_targets.websites.browser_label",
                 canSave: canSave,
                 onSave: { onSave(buildTarget()) },
                 onCancel: onCancel,
                 displayName: $displayName,
-                urlPatternsText: $urlPatternsText,
-                selectedBrowsers: $selectedBrowsers
+                urlPatternsText: $urlPatternsText
             )
         }
         .padding()
@@ -61,7 +57,7 @@ public struct WebMarkdownTargetEditorSheet: View {
             id: target?.id ?? UUID(),
             displayName: displayName.trimmingCharacters(in: .whitespacesAndNewlines),
             urlPatterns: parsedURLPatterns,
-            browserBundleIdentifiers: Array(selectedBrowsers)
+            browserBundleIdentifiers: []
         )
     }
 }
@@ -71,7 +67,7 @@ public struct WebMarkdownTargetEditorSheet: View {
         target: WebContextTarget(
             displayName: "Docs",
             urlPatterns: ["docs.example.com"],
-            browserBundleIdentifiers: WebTargetEditorSupport.defaultBrowserBundleIdentifiers
+            browserBundleIdentifiers: AppSettingsStore.defaultWebTargetBrowserBundleIdentifiers
         ),
         onSave: { _ in },
         onCancel: {}
