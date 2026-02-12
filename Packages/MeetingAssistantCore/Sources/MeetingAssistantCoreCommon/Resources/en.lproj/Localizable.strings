@@ -331,7 +331,10 @@
 "settings.assistant.integrations.custom" = "Custom Integrations";
 "settings.assistant.integrations.new" = "New Integration";
 "settings.assistant.integrations.editor.title" = "Edit Prompt";
+"settings.assistant.integrations.editor.title.integration" = "Edit Integration";
 "settings.assistant.integrations.editor.shortcut" = "Keyboard Shortcut";
+"settings.assistant.integrations.editor.hotkey" = "Hotkey";
+"settings.assistant.integrations.editor.hotkey_config" = "Shortcut Trigger";
 "settings.assistant.integrations.editor.instructions" = "Instructions (Optional)";
 "settings.assistant.integrations.editor.output_mode" = "Output Mode";
 "settings.assistant.integrations.editor.presets" = "Presets";

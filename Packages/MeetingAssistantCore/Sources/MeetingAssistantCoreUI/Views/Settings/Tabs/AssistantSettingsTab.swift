@@ -11,6 +11,7 @@ public struct AssistantSettingsTab: View {
     @StateObject private var viewModel = AssistantShortcutSettingsViewModel()
     @State private var editingIntegration: AssistantIntegrationConfig?
     @State private var advancedIntegrationDraft: AssistantIntegrationConfig?
+    @State private var hoveredHotkeyIntegrationId: UUID?
 
     public init() {}
 
@@ -236,6 +237,28 @@ public struct AssistantSettingsTab: View {
                 .fontWeight(.medium)
 
             Spacer()
+
+            if !isCardStyle {
+                KeyboardShortcuts.Recorder(for: .assistantIntegration(integration.id))
+                    .controlSize(.small)
+                    .frame(minWidth: 132, alignment: .leading)
+                    .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing8)
+                    .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing6)
+                    .background(
+                        RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
+                            .fill(Color.secondary.opacity(0.08))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
+                            .strokeBorder(
+                                Color.secondary.opacity(hoveredHotkeyIntegrationId == integration.id ? 0.55 : 0),
+                                lineWidth: 1
+                            )
+                    )
+                    .onHover { isHovering in
+                        hoveredHotkeyIntegrationId = isHovering ? integration.id : nil
+                    }
+            }
 
             if isCardStyle {
                 Button {

@@ -16,7 +16,6 @@ public final class AssistantVoiceCommandService: ObservableObject {
     private let postProcessingService: PostProcessingService
     private let recordingManager: RecordingManager
     private let indicator: FloatingRecordingIndicatorController
-    private let selectionService: AssistantTextSelectionService
     private let screenBorder: AssistantScreenBorderController
     private let settings: AppSettingsStore
     private let raycastIntegrationService: any AssistantDeepLinkDispatching
@@ -30,7 +29,6 @@ public final class AssistantVoiceCommandService: ObservableObject {
         postProcessingService: PostProcessingService = .shared,
         recordingManager: RecordingManager = .shared,
         indicator: FloatingRecordingIndicatorController = FloatingRecordingIndicatorController(),
-        selectionService: AssistantTextSelectionService = AssistantTextSelectionService(),
         screenBorder: AssistantScreenBorderController = AssistantScreenBorderController(),
         settings: AppSettingsStore = .shared,
         raycastIntegrationService: any AssistantDeepLinkDispatching = AssistantRaycastIntegrationService(),
@@ -41,7 +39,6 @@ public final class AssistantVoiceCommandService: ObservableObject {
         self.postProcessingService = postProcessingService
         self.recordingManager = recordingManager
         self.indicator = indicator
-        self.selectionService = selectionService
         self.screenBorder = screenBorder
         self.settings = settings
         self.raycastIntegrationService = raycastIntegrationService
@@ -115,113 +112,64 @@ public final class AssistantVoiceCommandService: ObservableObject {
                 throw AssistantVoiceCommandError.integrationDisabled
             }
 
-            let outputMode = selectedIntegration.outputMode
             AppLogger.info(
                 "Assistant command processed",
                 category: .assistant,
                 extra: [
                     "integration": selectedIntegration.name,
-                    "outputMode": outputMode.rawValue,
                     "commandLength": command.count,
                 ]
             )
 
-            if shouldReplaceSelection(for: outputMode) {
-                let (selectedText, snapshot) = try await selectionService.captureSelectedText()
+            let integrationPrompt = PostProcessingPrompt(
+                title: "assistant.raycast.prompt_title".localized,
+                promptText: normalizedPromptInstructions(from: selectedIntegration) ?? command
+            )
 
-                guard let beforeAIInput = try await applyScriptIfNeeded(
-                    stage: .beforeAI,
-                    input: selectedText,
-                    integration: selectedIntegration
-                ) else {
-                    indicator.hide()
-                    screenBorder.hide()
-                    isProcessing = false
-                    return
-                }
-
-                let promptInstructions = normalizedPromptInstructions(from: selectedIntegration)
-                let promptText = promptInstructions ?? command
-
-                let prompt = PostProcessingPrompt(
-                    title: "assistant.prompt_title".localized,
-                    promptText: promptText
-                )
-
-                let processed = try await postProcessingService.processTranscription(
-                    beforeAIInput,
-                    with: prompt,
-                    systemPromptOverride: AIPromptTemplates.assistantSystemPrompt
-                )
-
-                guard let output = try await applyScriptIfNeeded(
-                    stage: .afterAI,
-                    input: processed,
-                    integration: selectedIntegration
-                ) else {
-                    indicator.hide()
-                    screenBorder.hide()
-                    isProcessing = false
-                    return
-                }
-
-                try await selectionService.replaceSelectedText(
-                    with: output,
-                    restoring: snapshot
-                )
+            guard let beforeAICommand = try await applyScriptIfNeeded(
+                stage: .beforeAI,
+                input: command,
+                integration: selectedIntegration
+            ) else {
+                indicator.hide()
+                screenBorder.hide()
+                isProcessing = false
+                return
             }
 
-            if shouldSendToRaycast(for: outputMode) {
-                let raycastPrompt = PostProcessingPrompt(
-                    title: "assistant.raycast.prompt_title".localized,
-                    promptText: normalizedPromptInstructions(from: selectedIntegration) ?? command
-                )
+            let processedCommand = try await postProcessingService.processTranscription(
+                beforeAICommand,
+                with: integrationPrompt
+            )
 
-                guard let beforeAICommand = try await applyScriptIfNeeded(
-                    stage: .beforeAI,
-                    input: command,
-                    integration: selectedIntegration
-                ) else {
-                    indicator.hide()
-                    screenBorder.hide()
-                    isProcessing = false
-                    return
-                }
-
-                let processedRaycastCommand = try await postProcessingService.processTranscription(
-                    beforeAICommand,
-                    with: raycastPrompt
-                )
-
-                guard let commandForDispatch = try await applyScriptIfNeeded(
-                    stage: .afterAI,
-                    input: processedRaycastCommand,
-                    integration: selectedIntegration
-                ) else {
-                    indicator.hide()
-                    screenBorder.hide()
-                    isProcessing = false
-                    return
-                }
-
-                let dispatchResult = try dispatchToRaycast(
-                    with: commandForDispatch,
-                    selectedIntegration: selectedIntegration
-                )
-                if dispatchResult == .openedWithClipboardFallback {
-                    indicator.showError("settings.assistant.integrations.test_success_clipboard_fallback".localized)
-                }
-                AppLogger.info(
-                    "Assistant Raycast dispatch completed",
-                    category: .assistant,
-                    extra: [
-                        "integrationId": selectedIntegration.id.uuidString,
-                        "integrationName": selectedIntegration.name,
-                        "result": dispatchResult == .openedWithClipboardFallback ? "clipboardFallback" : "deepLink",
-                        "processedLength": processedRaycastCommand.count,
-                    ]
-                )
+            guard let commandForDispatch = try await applyScriptIfNeeded(
+                stage: .afterAI,
+                input: processedCommand,
+                integration: selectedIntegration
+            ) else {
+                indicator.hide()
+                screenBorder.hide()
+                isProcessing = false
+                return
             }
+
+            let dispatchResult = try dispatchToRaycast(
+                with: commandForDispatch,
+                selectedIntegration: selectedIntegration
+            )
+            if dispatchResult == .openedWithClipboardFallback {
+                indicator.showError("settings.assistant.integrations.test_success_clipboard_fallback".localized)
+            }
+            AppLogger.info(
+                "Assistant integration dispatch completed",
+                category: .assistant,
+                extra: [
+                    "integrationId": selectedIntegration.id.uuidString,
+                    "integrationName": selectedIntegration.name,
+                    "result": dispatchResult == .openedWithClipboardFallback ? "clipboardFallback" : "deepLink",
+                    "processedLength": processedCommand.count,
+                ]
+            )
 
             indicator.hide()
             screenBorder.hide()
@@ -263,14 +211,6 @@ public final class AssistantVoiceCommandService: ObservableObject {
     private func cleanupRecordingFile(_ url: URL?) {
         guard let url else { return }
         try? FileManager.default.removeItem(at: url)
-    }
-
-    private func shouldReplaceSelection(for mode: AssistantIntegrationOutputMode) -> Bool {
-        mode == .replaceSelection || mode == .both
-    }
-
-    private func shouldSendToRaycast(for mode: AssistantIntegrationOutputMode) -> Bool {
-        mode == .sendToRaycast || mode == .both
     }
 
     private func dispatchToRaycast(

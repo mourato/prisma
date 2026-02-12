@@ -330,7 +330,10 @@
 "settings.assistant.integrations.custom" = "Integrações Personalizadas";
 "settings.assistant.integrations.new" = "Nova Integração";
 "settings.assistant.integrations.editor.title" = "Editar Prompt";
+"settings.assistant.integrations.editor.title.integration" = "Editar Integração";
 "settings.assistant.integrations.editor.shortcut" = "Atalho de Teclado";
+"settings.assistant.integrations.editor.hotkey" = "Hotkey";
+"settings.assistant.integrations.editor.hotkey_config" = "Acionamento do Atalho";
 "settings.assistant.integrations.editor.instructions" = "Instruções (Opcional)";
 "settings.assistant.integrations.editor.output_mode" = "Modo de Saída";
 "settings.assistant.integrations.editor.presets" = "Presets";

@@ -1,3 +1,4 @@
+import KeyboardShortcuts
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreInfrastructure
 import SwiftUI
@@ -30,7 +31,7 @@ public struct AssistantIntegrationEditorSheet: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
-            Text("settings.assistant.integrations.editor.title".localized)
+            Text("settings.assistant.integrations.editor.title.integration".localized)
                 .font(.title3)
                 .fontWeight(.semibold)
 
@@ -46,40 +47,30 @@ public struct AssistantIntegrationEditorSheet: View {
             Toggle("settings.assistant.integrations.integration_enabled".localized, isOn: $draft.integration.isEnabled)
 
             VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-                Text("settings.assistant.integrations.editor.output_mode".localized)
+                Text("settings.assistant.integrations.integration_deeplink".localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                Picker("", selection: $draft.integration.outputMode) {
-                    ForEach(AssistantIntegrationOutputMode.allCases, id: \.self) { mode in
-                        Text(mode.localizedName).tag(mode)
-                    }
-                }
-                .labelsHidden()
-                .pickerStyle(.segmented)
-            }
-
-            if draft.integration.outputMode != .replaceSelection {
-                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-                    Text("settings.assistant.integrations.integration_deeplink".localized)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    TextField("", text: $draft.integration.deepLink)
-                        .textFieldStyle(.roundedBorder)
-                }
+                TextField("", text: $draft.integration.deepLink)
+                    .textFieldStyle(.roundedBorder)
             }
 
             VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-                Text("settings.assistant.integrations.editor.shortcut".localized)
+                Text("settings.assistant.integrations.editor.hotkey".localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                TextField("", text: Binding(
-                    get: { draft.integration.keyboardShortcut ?? "" },
-                    set: { draft.integration.keyboardShortcut = $0.isEmpty ? nil : $0 }
-                ))
-                .textFieldStyle(.roundedBorder)
+                MAShortcutControlsRow(
+                    title: "settings.assistant.integrations.editor.hotkey_config".localized,
+                    activationMode: $draft.integration.shortcutActivationMode,
+                    selectedPresetKey: $draft.integration.shortcutPresetKey
+                )
+
+                if draft.integration.shortcutPresetKey == .custom {
+                    MAShortcutRecorderRow(label: "settings.shortcuts.custom_shortcut".localized) {
+                        KeyboardShortcuts.Recorder(for: .assistantIntegration(draft.integration.id))
+                    }
+                }
             }
 
             VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {

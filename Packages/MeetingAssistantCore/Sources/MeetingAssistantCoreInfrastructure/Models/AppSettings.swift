@@ -194,23 +194,6 @@ public enum AssistantBorderStyle: String, CaseIterable, Codable, Sendable {
 
 // MARK: - Assistant Integrations Configuration
 
-public enum AssistantIntegrationOutputMode: String, CaseIterable, Codable, Sendable {
-    case replaceSelection
-    case sendToRaycast
-    case both
-
-    public var localizedName: String {
-        switch self {
-        case .replaceSelection:
-            "settings.assistant.integrations.output_mode.replace_selection".localized
-        case .sendToRaycast:
-            "settings.assistant.integrations.output_mode.send_to_raycast".localized
-        case .both:
-            "settings.assistant.integrations.output_mode.both".localized
-        }
-    }
-}
-
 public enum AssistantIntegrationPreset: String, Codable, CaseIterable, Sendable {
     case googleSearch
     case launchApps
@@ -283,10 +266,10 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
     public var kind: Kind
     public var isEnabled: Bool
     public var deepLink: String
-    public var outputMode: AssistantIntegrationOutputMode
     public var promptInstructions: String?
     public var selectedPreset: AssistantIntegrationPreset?
-    public var keyboardShortcut: String?
+    public var shortcutPresetKey: PresetShortcutKey
+    public var shortcutActivationMode: ShortcutActivationMode
     public var advancedScript: AssistantIntegrationScriptConfig?
 
     public init(
@@ -295,10 +278,10 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
         kind: Kind = .deeplink,
         isEnabled: Bool,
         deepLink: String,
-        outputMode: AssistantIntegrationOutputMode = .sendToRaycast,
         promptInstructions: String? = nil,
         selectedPreset: AssistantIntegrationPreset? = nil,
-        keyboardShortcut: String? = nil,
+        shortcutPresetKey: PresetShortcutKey = .notSpecified,
+        shortcutActivationMode: ShortcutActivationMode = .holdOrToggle,
         advancedScript: AssistantIntegrationScriptConfig? = nil
     ) {
         self.id = id
@@ -306,10 +289,10 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
         self.kind = kind
         self.isEnabled = isEnabled
         self.deepLink = deepLink
-        self.outputMode = outputMode
         self.promptInstructions = promptInstructions
         self.selectedPreset = selectedPreset
-        self.keyboardShortcut = keyboardShortcut
+        self.shortcutPresetKey = shortcutPresetKey
+        self.shortcutActivationMode = shortcutActivationMode
         self.advancedScript = advancedScript
     }
 
@@ -319,10 +302,10 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
         case kind
         case isEnabled
         case deepLink
-        case outputMode
         case promptInstructions
         case selectedPreset
-        case keyboardShortcut
+        case shortcutPresetKey
+        case shortcutActivationMode
         case advancedScript
     }
 
@@ -335,16 +318,10 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
         isEnabled = try container.decodeIfPresent(Bool.self, forKey: .isEnabled) ?? false
         deepLink = try container.decodeIfPresent(String.self, forKey: .deepLink) ?? "raycast://ai-commands/ask-ai"
 
-        let decodedOutputMode = try container.decodeIfPresent(AssistantIntegrationOutputMode.self, forKey: .outputMode)
-        if let decodedOutputMode {
-            outputMode = decodedOutputMode
-        } else {
-            outputMode = id == Self.raycastDefaultID ? .sendToRaycast : .replaceSelection
-        }
-
         promptInstructions = try container.decodeIfPresent(String.self, forKey: .promptInstructions)
         selectedPreset = try container.decodeIfPresent(AssistantIntegrationPreset.self, forKey: .selectedPreset)
-        keyboardShortcut = try container.decodeIfPresent(String.self, forKey: .keyboardShortcut)
+        shortcutPresetKey = try container.decodeIfPresent(PresetShortcutKey.self, forKey: .shortcutPresetKey) ?? .notSpecified
+        shortcutActivationMode = try container.decodeIfPresent(ShortcutActivationMode.self, forKey: .shortcutActivationMode) ?? .holdOrToggle
         advancedScript = try container.decodeIfPresent(AssistantIntegrationScriptConfig.self, forKey: .advancedScript)
     }
 
@@ -354,7 +331,9 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
             name: "Raycast",
             kind: .deeplink,
             isEnabled: false,
-            deepLink: "raycast://ai-commands/ask-ai"
+            deepLink: "raycast://ai-commands/ask-ai",
+            shortcutPresetKey: .custom,
+            shortcutActivationMode: .holdOrToggle
         )
     }
 
@@ -674,7 +653,6 @@ public class AppSettingsStore: ObservableObject {
         static let assistantSelectedPresetKey = "assistantSelectedPresetKey"
         static let assistantBorderColor = "assistantBorderColor"
         static let assistantBorderStyle = "assistantBorderStyle"
-        static let assistantIntegrationOutputMode = "assistantIntegrationOutputMode"
         static let assistantIntegrations = "assistantIntegrations"
         static let assistantSelectedIntegrationId = "assistantSelectedIntegrationId"
         static let assistantRaycastEnabled = "assistantRaycastEnabled"
@@ -1483,7 +1461,7 @@ public class AppSettingsStore: ObservableObject {
             }
 
             var normalized = integration
-            normalized.outputMode = .sendToRaycast
+            normalized.shortcutPresetKey = .custom
             return normalized
         }
 
