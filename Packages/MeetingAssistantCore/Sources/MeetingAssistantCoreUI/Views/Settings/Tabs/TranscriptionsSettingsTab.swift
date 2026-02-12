@@ -285,7 +285,7 @@ public struct TranscriptionsSettingsTab: View {
                                 transcriptionDetail: viewModel.selectedId == transcription.id ? viewModel.selectedTranscription : nil,
                                 isExpanded: viewModel.selectedId == transcription.id,
                                 audioURL: transcription.audioFilePath != nil ? URL(fileURLWithPath: transcription.audioFilePath!) : nil,
-                                availablePrompts: viewModel.availablePrompts,
+                                availablePrompts: viewModel.availablePrompts(for: transcription),
                                 onToggleExpand: {
                                     withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                                         if viewModel.selectedId == transcription.id {
@@ -297,11 +297,6 @@ public struct TranscriptionsSettingsTab: View {
                                 },
                                 onAction: { action in
                                     handleTranscriptionAction(action, for: transcription)
-                                },
-                                onUpdateSource: { isMeeting in
-                                    Task {
-                                        await viewModel.updateSource(for: transcription, isMeeting: isMeeting)
-                                    }
                                 }
                             )
                         }

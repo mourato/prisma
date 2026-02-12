@@ -10,8 +10,6 @@ import SwiftUI
 /// Popover view displaying detailed metadata about a transcription.
 struct TranscriptionInfoPopover: View {
     let transcription: Transcription
-    let isSourceEditable: Bool
-    let onUpdateSource: ((Bool) -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -96,21 +94,6 @@ struct TranscriptionInfoPopover: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            if isSourceEditable, let onUpdateSource {
-                Picker("", selection: Binding(
-                    get: { sourceSelection },
-                    set: { newValue in
-                        onUpdateSource(newValue == .meeting)
-                    }
-                )) {
-                    ForEach(SourceSelection.allCases, id: \.self) { option in
-                        Text(option.title).tag(option)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-            }
-
             HStack {
                 AppIconView(
                     bundleIdentifier: transcription.meeting.appBundleIdentifier,
@@ -118,7 +101,7 @@ struct TranscriptionInfoPopover: View {
                     size: 18,
                     cornerRadius: 4
                 )
-                Text(transcription.meeting.appName)
+                Text(sourceDisplayName)
                     .font(.subheadline)
                 Spacer()
                 Text("-")
@@ -126,6 +109,63 @@ struct TranscriptionInfoPopover: View {
                     .foregroundStyle(.secondary)
             }
         }
+    }
+
+    private var sourceDisplayName: String {
+        guard isBrowserSource else {
+            return transcription.meeting.appName
+        }
+
+        guard let site = browserSite else {
+            return transcription.meeting.appName
+        }
+
+        return "\(transcription.meeting.appName) • \(site)"
+    }
+
+    private var isBrowserSource: Bool {
+        guard let bundleID = transcription.meeting.appBundleIdentifier?.lowercased() else {
+            return false
+        }
+
+        return bundleID == "com.google.chrome"
+            || bundleID == "com.apple.safari"
+            || bundleID == "com.microsoft.edgemac"
+            || bundleID == "org.mozilla.firefox"
+    }
+
+    private var browserSite: String? {
+        for item in transcription.contextItems {
+            guard item.source == .windowTitle || item.source == .activeApp else {
+                continue
+            }
+
+            if let host = extractHost(from: item.text) {
+                return host
+            }
+        }
+
+        return nil
+    }
+
+    private func extractHost(from text: String) -> String? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+
+        let candidates = trimmed.components(separatedBy: .whitespacesAndNewlines)
+        for candidate in candidates {
+            let cleaned = candidate.trimmingCharacters(in: .punctuationCharacters)
+
+            if let url = URL(string: cleaned), let host = url.host {
+                return host
+            }
+
+            if let url = URL(string: "https://\(cleaned)"), let host = url.host, host.contains(".") {
+                return host
+            }
+        }
+
+        return nil
     }
 
     private func contextItemTitle(for source: TranscriptionContextItem.Source) -> String {
@@ -164,30 +204,6 @@ struct TranscriptionInfoPopover: View {
         return formatter.string(from: duration) ?? String(format: "%.0fs", duration)
     }
 
-    private var sourceSelection: SourceSelection {
-        switch transcription.meeting.app {
-        case .unknown:
-            return .recording
-        case .importedFile:
-            return .recording
-        default:
-            return .meeting
-        }
-    }
-}
-
-private enum SourceSelection: String, CaseIterable {
-    case recording
-    case meeting
-
-    var title: String {
-        switch self {
-        case .recording:
-            "transcription.source.recording".localized
-        case .meeting:
-            "transcription.source.meeting".localized
-        }
-    }
 }
 
 private struct InfoRow: View {
@@ -247,8 +263,6 @@ private struct ContextItemRow: View {
             transcriptionDuration: 35.5,
             postProcessingDuration: 2.1,
             postProcessingModel: "GPT-4"
-        ),
-        isSourceEditable: true,
-        onUpdateSource: { _ in }
+        )
     )
 }

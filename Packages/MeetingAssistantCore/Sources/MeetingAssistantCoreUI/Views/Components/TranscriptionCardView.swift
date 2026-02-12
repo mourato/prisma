@@ -15,7 +15,6 @@ public struct TranscriptionCardView: View {
     let availablePrompts: [PostProcessingPrompt]
     let onToggleExpand: () -> Void
     let onAction: (TranscriptionAction) -> Void
-    let onUpdateSource: (Bool) -> Void
 
     public init(
         transcription: TranscriptionMetadata,
@@ -24,8 +23,7 @@ public struct TranscriptionCardView: View {
         audioURL: URL?,
         availablePrompts: [PostProcessingPrompt] = [],
         onToggleExpand: @escaping () -> Void,
-        onAction: @escaping (TranscriptionAction) -> Void,
-        onUpdateSource: @escaping (Bool) -> Void = { _ in }
+        onAction: @escaping (TranscriptionAction) -> Void
     ) {
         self.transcription = transcription
         self.transcriptionDetail = transcriptionDetail
@@ -34,7 +32,6 @@ public struct TranscriptionCardView: View {
         self.availablePrompts = availablePrompts
         self.onToggleExpand = onToggleExpand
         self.onAction = onAction
-        self.onUpdateSource = onUpdateSource
     }
 
     @State private var selectedTab: TranscriptionTab = .aiProcessed
@@ -65,20 +62,6 @@ public struct TranscriptionCardView: View {
         }
     }
 
-    private enum SourceSelection: String, CaseIterable {
-        case recording
-        case meeting
-
-        var title: String {
-            switch self {
-            case .recording:
-                "transcription.source.recording".localized
-            case .meeting:
-                "transcription.source.meeting".localized
-            }
-        }
-    }
-
     public var body: some View {
         MACard(cornerRadius: MeetingAssistantDesignSystem.Layout.largeCornerRadius, padding: MeetingAssistantDesignSystem.Layout.spacing16) {
             if isExpanded {
@@ -101,48 +84,49 @@ public struct TranscriptionCardView: View {
     }
 
     private var collapsedContent: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .center, spacing: 12) {
             Text(displayText(transcription.previewText))
                 .font(.body)
                 .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
                 .foregroundStyle(.primary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .layoutPriority(1)
 
             Spacer()
 
-            sourceInlineControl
+            sourceLabel(text: transcription.appName)
         }
     }
 
     private var expandedContent: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // Full Text
+            HStack(alignment: .center, spacing: 12) {
+                TranscriptionAudioPlayerView(audioURL: audioURL)
+                    .frame(maxWidth: 250)
+
+                Spacer(minLength: 12)
+
+                Picker("", selection: $selectedTab) {
+                    ForEach(availableTabs, id: \.self) { tab in
+                        Text(tab.localized).tag(tab)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .frame(width: isSegmentedTabEnabled ? 300 : 220)
+            }
+
             contentView
                 .font(.body)
                 .foregroundStyle(.primary)
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            // Audio Player (resized to ~1/3 width)
-            TranscriptionAudioPlayerView(audioURL: audioURL)
-                .frame(maxWidth: 250) // Approx 1/3 of a typical card width, or usage of GeometryReader up hierarchy
-
-            // Tabs and Actions
             HStack {
-                // Tab Selector
-                Picker("", selection: $selectedTab) {
-                    ForEach(TranscriptionTab.allCases, id: \.self) { tab in
-                        Text(tab.localized).tag(tab)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(width: 250)
-
                 Spacer()
 
-                // Actions
                 HStack(spacing: 12) {
-                    // Copy (Context Aware)
                     Button {
                         onAction(.copy(text: currentText))
                     } label: {
@@ -153,23 +137,22 @@ public struct TranscriptionCardView: View {
                     .buttonStyle(.plain)
                     .help("common.copy".localized)
 
-                    // Redo Post-Processing
                     Menu {
-                        ForEach(availablePrompts) { prompt in
+                        ForEach(filteredPrompts) { prompt in
                             Button(prompt.title) {
                                 onAction(.reprocess(prompt: prompt))
                             }
                         }
                     } label: {
-                        Image(systemName: "arrow.clockwise") // User asked for rotating right arrow
+                        Image(systemName: "arrow.clockwise")
                             .font(.body)
                             .foregroundStyle(.secondary)
                     }
                     .menuStyle(.borderlessButton)
                     .help("transcription.actions.redo_post_processing".localized)
-                    .fixedSize() // Prevent menu chevron if possible or accept it
+                    .fixedSize()
+                    .disabled(filteredPrompts.isEmpty)
 
-                    // Retry Transcription
                     Button {
                         onAction(.retryTranscription)
                     } label: {
@@ -181,7 +164,6 @@ public struct TranscriptionCardView: View {
                     .help("transcription.actions.retry_transcription".localized)
                     .disabled(audioURL == nil)
 
-                    // Info
                     Button {
                         showInfoPopover.toggle()
                     } label: {
@@ -192,24 +174,55 @@ public struct TranscriptionCardView: View {
                     .buttonStyle(.plain)
                     .popover(isPresented: $showInfoPopover) {
                         if let details = transcriptionDetail {
-                            TranscriptionInfoPopover(
-                                transcription: details,
-                                isSourceEditable: isSourceEditable,
-                                onUpdateSource: { isMeeting in
-                                    onUpdateSource(isMeeting)
-                                }
-                            )
+                            TranscriptionInfoPopover(transcription: details)
                         } else {
                             Text("transcription.info.loading".localized)
                                 .padding()
                         }
                     }
 
-                    // Delete
                     actionButton(icon: "trash", action: .delete, isDestructive: true)
                 }
             }
         }
+        .onAppear {
+            ensureValidSelectedTab()
+        }
+        .onChange(of: isSegmentedTabEnabled) { _ in
+            ensureValidSelectedTab()
+        }
+    }
+
+    private var availableTabs: [TranscriptionTab] {
+        if isSegmentedTabEnabled {
+            return TranscriptionTab.allCases
+        }
+        return [.aiProcessed, .original]
+    }
+
+    private var isSegmentedTabEnabled: Bool {
+        isMeetingSource && AppSettingsStore.shared.isDiarizationEnabled
+    }
+
+    private var isMeetingSource: Bool {
+        appSource != .unknown && appSource != .importedFile
+    }
+
+    private var filteredPrompts: [PostProcessingPrompt] {
+        let settings = AppSettingsStore.shared
+        let typeSpecificPrompts = isMeetingSource ? settings.meetingAvailablePrompts : settings.dictationAvailablePrompts
+        let allowedIDs = Set(availablePrompts.map { $0.id })
+
+        guard !allowedIDs.isEmpty else {
+            return typeSpecificPrompts
+        }
+
+        return typeSpecificPrompts.filter { allowedIDs.contains($0.id) }
+    }
+
+    private func ensureValidSelectedTab() {
+        guard !availableTabs.contains(selectedTab) else { return }
+        selectedTab = .aiProcessed
     }
 
     private var currentText: String {
@@ -273,64 +286,16 @@ public struct TranscriptionCardView: View {
         MeetingApp(rawValue: transcription.appRawValue) ?? .unknown
     }
 
-    private var isSourceEditable: Bool {
-        appSource == .unknown || appSource == .manualMeeting
-    }
-
-    private var sourceSelection: SourceSelection {
-        switch appSource {
-        case .unknown:
-            return .recording
-        case .importedFile:
-            return .recording
-        default:
-            return .meeting
-        }
-    }
-
-    private var sourceInlineControl: some View {
-        if appSource == .importedFile {
-            return AnyView(sourceLabel(text: appSource.displayName))
-        }
-
-        if isSourceEditable {
-            return AnyView(sourceMenu)
-        }
-
-        return AnyView(sourceLabel(text: transcription.appName))
-    }
-
-    private var sourceMenu: some View {
-        Menu {
-            ForEach(SourceSelection.allCases, id: \.self) { option in
-                Button {
-                    onUpdateSource(option == .meeting)
-                } label: {
-                    HStack {
-                        Text(option.title)
-                        if option == sourceSelection {
-                            Image(systemName: "checkmark")
-                        }
-                    }
-                }
-            }
-        } label: {
-            sourceLabel(text: sourceSelection.title)
-        }
-        .menuStyle(.borderlessButton)
-        .highPriorityGesture(TapGesture())
-    }
-
     private func sourceLabel(text: String) -> some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 6) {
             AppIconView(
                 bundleIdentifier: transcription.appBundleIdentifier,
                 fallbackSystemName: appSource.icon,
-                size: 14,
-                cornerRadius: 3
+                size: 18,
+                cornerRadius: 4
             )
             Text(text)
-                .font(.caption2)
+                .font(.caption)
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
