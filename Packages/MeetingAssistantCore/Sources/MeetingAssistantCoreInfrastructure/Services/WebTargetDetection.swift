@@ -13,13 +13,21 @@ public enum WebTargetDetection {
     public static func matchTarget<T: WebTargetPattern>(
         for url: URL,
         bundleIdentifier: String,
-        targets: [T]
+        targets: [T],
+        fallbackBrowserBundleIdentifiers: [String] = []
     ) -> T? {
         let urlString = url.absoluteString.lowercased()
         let normalizedBundleId = normalizeBundleIdentifier(bundleIdentifier)
+        let normalizedFallbackBrowsers = Set(
+            fallbackBrowserBundleIdentifiers
+                .map(normalizeBundleIdentifier)
+                .filter { !$0.isEmpty }
+        )
 
         return targets.first { target in
-            guard targetSupportsBundle(target, normalizedBundleId: normalizedBundleId) else { return false }
+            guard targetSupportsBundle(target, normalizedBundleId: normalizedBundleId, normalizedFallbackBrowsers: normalizedFallbackBrowsers) else {
+                return false
+            }
             return target.urlPatterns.contains { pattern in
                 urlString.contains(pattern.lowercased())
             }
@@ -29,12 +37,20 @@ public enum WebTargetDetection {
     public static func matchTargetByWindowTitle<T: WebTargetPattern>(
         bundleIdentifier: String,
         targets: [T],
+        fallbackBrowserBundleIdentifiers: [String] = [],
         patternProvider: (T) -> [String] = { $0.urlPatterns }
     ) -> T? {
         let normalizedBundleId = normalizeBundleIdentifier(bundleIdentifier)
+        let normalizedFallbackBrowsers = Set(
+            fallbackBrowserBundleIdentifiers
+                .map(normalizeBundleIdentifier)
+                .filter { !$0.isEmpty }
+        )
 
         for target in targets {
-            guard targetSupportsBundle(target, normalizedBundleId: normalizedBundleId) else { continue }
+            guard targetSupportsBundle(target, normalizedBundleId: normalizedBundleId, normalizedFallbackBrowsers: normalizedFallbackBrowsers) else {
+                continue
+            }
 
             let patterns = patternProvider(target)
                 .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -74,15 +90,23 @@ public enum WebTargetDetection {
         value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 
-    private static func targetSupportsBundle<T: WebTargetPattern>(_ target: T, normalizedBundleId: String) -> Bool {
+    private static func targetSupportsBundle<T: WebTargetPattern>(
+        _ target: T,
+        normalizedBundleId: String,
+        normalizedFallbackBrowsers: Set<String>
+    ) -> Bool {
         let normalizedTargetBrowsers = target.browserBundleIdentifiers
             .map(normalizeBundleIdentifier)
             .filter { !$0.isEmpty }
 
-        if normalizedTargetBrowsers.isEmpty {
-            return true
+        if !normalizedTargetBrowsers.isEmpty {
+            return normalizedTargetBrowsers.contains(normalizedBundleId)
         }
 
-        return normalizedTargetBrowsers.contains(normalizedBundleId)
+        if !normalizedFallbackBrowsers.isEmpty {
+            return normalizedFallbackBrowsers.contains(normalizedBundleId)
+        }
+
+        return false
     }
 }

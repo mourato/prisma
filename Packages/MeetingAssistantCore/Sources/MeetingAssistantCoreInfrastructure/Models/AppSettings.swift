@@ -425,6 +425,13 @@ public class AppSettingsStore: ObservableObject {
     /// Default list of websites that should force Markdown formatting for dictation.
     public static let defaultMarkdownWebTargets: [WebContextTarget] = []
 
+    /// Default list of browsers used for web target matching.
+    public static let defaultWebTargetBrowserBundleIdentifiers: [String] = [
+        "com.apple.Safari",
+        "com.google.Chrome",
+        "com.microsoft.edgemac",
+    ]
+
     /// Default list of apps monitored to start/stop meeting recordings.
     public static let defaultMonitoredMeetingBundleIdentifiers: [String] = [
         "com.apple.Safari",
@@ -523,6 +530,7 @@ public class AppSettingsStore: ObservableObject {
         static let contextAwarenessExcludedBundleIDs = "contextAwarenessExcludedBundleIDs"
         static let markdownTargetBundleIdentifiers = "markdownTargetBundleIdentifiers"
         static let markdownWebTargets = "markdownWebTargets"
+        static let webTargetBrowserBundleIdentifiers = "webTargetBrowserBundleIdentifiers"
         static let monitoredMeetingBundleIdentifiers = "monitoredMeetingBundleIdentifiers"
         static let webMeetingTargets = "webMeetingTargets"
     }
@@ -898,6 +906,11 @@ public class AppSettingsStore: ObservableObject {
         didSet { save(markdownWebTargets, forKey: Keys.markdownWebTargets) }
     }
 
+    /// Browser bundle identifiers used for matching web targets.
+    @Published public var webTargetBrowserBundleIdentifiers: [String] {
+        didSet { save(webTargetBrowserBundleIdentifiers, forKey: Keys.webTargetBrowserBundleIdentifiers) }
+    }
+
     /// Bundle identifiers monitored to auto-start/stop meetings.
     @Published public var monitoredMeetingBundleIdentifiers: [String] {
         didSet { save(monitoredMeetingBundleIdentifiers, forKey: Keys.monitoredMeetingBundleIdentifiers) }
@@ -916,6 +929,11 @@ public class AppSettingsStore: ObservableObject {
     /// Indicates whether Markdown web targets have been explicitly configured.
     public var hasConfiguredMarkdownWebTargets: Bool {
         UserDefaults.standard.object(forKey: Keys.markdownWebTargets) != nil
+    }
+
+    /// Indicates whether the global web target browsers list has been explicitly configured.
+    public var hasConfiguredWebTargetBrowsers: Bool {
+        UserDefaults.standard.object(forKey: Keys.webTargetBrowserBundleIdentifiers) != nil
     }
 
     /// Indicates whether the monitored meetings list has been explicitly configured.
@@ -1112,10 +1130,21 @@ public class AppSettingsStore: ObservableObject {
             ?? Self.defaultMarkdownTargetBundleIdentifiers
         markdownWebTargets = Self.loadDecoded([WebContextTarget].self, forKey: Keys.markdownWebTargets)
             ?? Self.defaultMarkdownWebTargets
+        webTargetBrowserBundleIdentifiers = Self.loadDecoded([String].self, forKey: Keys.webTargetBrowserBundleIdentifiers)
+            ?? Self.defaultWebTargetBrowserBundleIdentifiers
         monitoredMeetingBundleIdentifiers = Self.loadDecoded([String].self, forKey: Keys.monitoredMeetingBundleIdentifiers)
             ?? Self.defaultMonitoredMeetingBundleIdentifiers
         webMeetingTargets = Self.loadDecoded([WebMeetingTarget].self, forKey: Keys.webMeetingTargets)
             ?? Self.defaultWebMeetingTargets
+
+        let hasPersistedMarkdownWebTargets = UserDefaults.standard.object(forKey: Keys.markdownWebTargets) != nil
+        let hasPersistedWebMeetingTargets = UserDefaults.standard.object(forKey: Keys.webMeetingTargets) != nil
+        let hasPersistedLegacyPerTargetBrowsers = hasPersistedMarkdownWebTargets || hasPersistedWebMeetingTargets
+        let hasGlobalBrowserSetting = UserDefaults.standard.object(forKey: Keys.webTargetBrowserBundleIdentifiers) != nil
+
+        if hasPersistedLegacyPerTargetBrowsers && !hasGlobalBrowserSetting {
+            migrateWebTargetBrowsersToGlobalSettingIfNeeded()
+        }
         if loadedContextAwarenessEnabled {
             contextAwarenessIncludeActiveApp = true
             contextAwarenessIncludeAccessibilityText = true
@@ -1230,6 +1259,62 @@ public class AppSettingsStore: ObservableObject {
         return rawValue.flatMap { PresetShortcutKey(rawValue: $0) } ?? fallback
     }
 
+    private func migrateWebTargetBrowsersToGlobalSettingIfNeeded() {
+        let legacyMarkdownBrowsers = markdownWebTargets.flatMap(\.browserBundleIdentifiers)
+        let legacyMeetingBrowsers = webMeetingTargets.flatMap(\.browserBundleIdentifiers)
+        let mergedBrowsers = deduplicatedNormalizedBundleIdentifiers(
+            webTargetBrowserBundleIdentifiers + legacyMarkdownBrowsers + legacyMeetingBrowsers
+        )
+
+        if mergedBrowsers != webTargetBrowserBundleIdentifiers {
+            webTargetBrowserBundleIdentifiers = mergedBrowsers
+        }
+
+        let migratedMarkdownTargets = markdownWebTargets.map { target in
+            WebContextTarget(
+                id: target.id,
+                displayName: target.displayName,
+                urlPatterns: target.urlPatterns,
+                browserBundleIdentifiers: []
+            )
+        }
+
+        if migratedMarkdownTargets != markdownWebTargets {
+            markdownWebTargets = migratedMarkdownTargets
+        }
+
+        let migratedMeetingTargets = webMeetingTargets.map { target in
+            WebMeetingTarget(
+                id: target.id,
+                app: target.app,
+                displayName: target.displayName,
+                urlPatterns: target.urlPatterns,
+                browserBundleIdentifiers: []
+            )
+        }
+
+        if migratedMeetingTargets != webMeetingTargets {
+            webMeetingTargets = migratedMeetingTargets
+        }
+    }
+
+    private func deduplicatedNormalizedBundleIdentifiers(_ identifiers: [String]) -> [String] {
+        var seenKeys = Set<String>()
+        var ordered: [String] = []
+
+        for identifier in identifiers {
+            // Trim whitespace but preserve original casing for storage.
+            let trimmed = identifier.trimmingCharacters(in: .whitespacesAndNewlines)
+            let normalizedKey = trimmed.lowercased()
+
+            guard !trimmed.isEmpty, !seenKeys.contains(normalizedKey) else { continue }
+            seenKeys.insert(normalizedKey)
+            ordered.append(trimmed)
+        }
+
+        return ordered
+    }
+
     /// Encodes and saves a Codable value to UserDefaults.
     private func save(_ value: some Encodable, forKey key: String) {
         if let data = try? JSONEncoder().encode(value) {
@@ -1293,6 +1378,7 @@ public class AppSettingsStore: ObservableObject {
         contextAwarenessExplicitActionOnly = true
         markdownTargetBundleIdentifiers = Self.defaultMarkdownTargetBundleIdentifiers
         markdownWebTargets = Self.defaultMarkdownWebTargets
+        webTargetBrowserBundleIdentifiers = Self.defaultWebTargetBrowserBundleIdentifiers
         monitoredMeetingBundleIdentifiers = Self.defaultMonitoredMeetingBundleIdentifiers
         webMeetingTargets = Self.defaultWebMeetingTargets
     }

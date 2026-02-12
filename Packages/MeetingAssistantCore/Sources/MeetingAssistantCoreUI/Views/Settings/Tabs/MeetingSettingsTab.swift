@@ -309,11 +309,12 @@ public struct MeetingSettingsTab: View {
     }
 
     private func browserNames(from bundleIdentifiers: [String]) -> String {
-        if bundleIdentifiers.isEmpty {
-            return "settings.web_targets.any_browser".localized
+        let effectiveBundleIdentifiers = bundleIdentifiers.isEmpty ? meetingViewModel.settings.webTargetBrowserBundleIdentifiers : bundleIdentifiers
+        if effectiveBundleIdentifiers.isEmpty {
+            return "settings.web_targets.browsers.empty".localized
         }
 
-        let names = bundleIdentifiers
+        let names = effectiveBundleIdentifiers
             .map { WebTargetEditorSupport.browserDisplayName(for: $0) }
             .sorted()
 

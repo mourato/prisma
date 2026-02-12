@@ -101,7 +101,6 @@
 "settings.meetings.web_targets.app_label" = "App de reuniao";
 "settings.meetings.web_targets.url_label" = "Padroes de URL";
 "settings.meetings.web_targets.url_desc" = "Um padrao por linha (ou separado por virgula). Exemplo: meet.google.com";
-"settings.meetings.web_targets.browser_label" = "Navegadores";
 "settings.meetings.web_targets.delete_confirm_title" = "Excluir alvo web?";
 "settings.meetings.web_targets.delete_confirm_message" = "Tem certeza que deseja excluir \"%@\"?";
 "settings.dictation.prompts" = "Prompts de ditado";
@@ -239,6 +238,9 @@
 "settings.markdown_targets.empty" = "Nenhum app selecionado ainda.";
 "settings.markdown_targets.add" = "Adicionar app";
 "settings.markdown_targets.remove" = "Remover app";
+"settings.web_targets.browsers.description" = "Navegadores usados para identificar sites nos alvos web em Aprimoramentos e Reuniões.";
+"settings.web_targets.browsers.empty" = "Nenhum navegador selecionado ainda.";
+"settings.web_targets.browsers.add" = "Adicionar navegador";
 "settings.markdown_targets.websites.title" = "Sites";
 "settings.markdown_targets.websites.desc" = "Força a formatação em Markdown no ditado quando esses sites estão ativos em navegadores compatíveis.";
 "settings.markdown_targets.websites.empty" = "Nenhum site selecionado ainda.";
@@ -250,14 +252,9 @@
 "settings.markdown_targets.websites.name_label" = "Nome de exibicao";
 "settings.markdown_targets.websites.url_label" = "Padroes de URL";
 "settings.markdown_targets.websites.url_desc" = "Um padrao por linha (ou separado por virgula). Exemplo: docs.exemplo.com";
-"settings.markdown_targets.websites.browser_label" = "Navegadores";
 "settings.markdown_targets.websites.delete_confirm_title" = "Excluir alvo de site?";
 "settings.markdown_targets.websites.delete_confirm_message" = "Tem certeza que deseja excluir \"%@\"?";
 "settings.web_targets.any_browser" = "Qualquer navegador detectado";
-"settings.web_targets.advanced.title" = "Avançado";
-"settings.web_targets.advanced.desc" = "Opcional: restringe a correspondência a bundle identifiers específicos de navegador.";
-"settings.web_targets.advanced.bundle_ids_desc" = "Um bundle ID por linha (ou separado por vírgula). Deixe vazio para corresponder a qualquer navegador detectado.";
-"settings.web_targets.advanced.import_common" = "Importar navegadores comuns";
 
 /* Service Settings */
 "settings.service.title" = "Serviço";

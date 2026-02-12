@@ -87,16 +87,15 @@ public struct TranscriptionCardView: View {
     }
 
     private var collapsedContent: some View {
-        HStack(alignment: .center, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             Text(displayText(transcription.previewText))
                 .font(.body)
-                .lineLimit(2)
+                .lineLimit(3)
                 .fixedSize(horizontal: false, vertical: true)
                 .foregroundStyle(.primary)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             sourceLabel(text: sourceDisplayName)
-                .layoutPriority(1)
         }
     }
 
