@@ -11,7 +11,7 @@ public final class InstalledAppsSelectionViewModel: ObservableObject {
     private let loadBundleIdentifiers: () -> [String]
     private let saveBundleIdentifiers: ([String]) -> Void
     private let workspace: NSWorkspace
-    private let openPanelProvider: () -> NSOpenPanel
+    private let openPanelProvider: @MainActor () -> NSOpenPanel
 
     public init(
         defaultBundleIdentifiers: [String],
@@ -19,7 +19,7 @@ public final class InstalledAppsSelectionViewModel: ObservableObject {
         loadBundleIdentifiers: @escaping () -> [String],
         saveBundleIdentifiers: @escaping ([String]) -> Void,
         workspace: NSWorkspace = .shared,
-        openPanelProvider: @escaping () -> NSOpenPanel = NSOpenPanel.init
+        openPanelProvider: @escaping @MainActor () -> NSOpenPanel = { NSOpenPanel() }
     ) {
         self.defaultBundleIdentifiers = defaultBundleIdentifiers
         self.hasConfigured = hasConfigured

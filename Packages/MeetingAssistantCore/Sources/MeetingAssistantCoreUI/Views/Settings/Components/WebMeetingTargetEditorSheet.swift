@@ -25,8 +25,8 @@ public struct WebMeetingTargetEditorSheet: View {
         let initialApp = target?.app ?? .googleMeet
         _selectedApp = State(initialValue: initialApp)
         _displayName = State(initialValue: target?.displayName ?? initialApp.displayName)
-        _urlPatternsText = State(initialValue: (target?.urlPatterns ?? defaultURLPatterns(for: initialApp)).joined(separator: "\n"))
-        _selectedBrowsers = State(initialValue: Set(target?.browserBundleIdentifiers ?? defaultBrowsers))
+        _urlPatternsText = State(initialValue: (target?.urlPatterns ?? Self.defaultURLPatterns(for: initialApp)).joined(separator: "\n"))
+        _selectedBrowsers = State(initialValue: Set(target?.browserBundleIdentifiers ?? Self.defaultBrowsers))
     }
 
     public var body: some View {
@@ -106,7 +106,7 @@ public struct WebMeetingTargetEditorSheet: View {
             if target == nil {
                 displayName = newValue.displayName
                 if urlPatternsText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    urlPatternsText = defaultURLPatterns(for: newValue).joined(separator: "\n")
+                    urlPatternsText = Self.defaultURLPatterns(for: newValue).joined(separator: "\n")
                 }
             }
         }
@@ -169,7 +169,7 @@ public struct WebMeetingTargetEditorSheet: View {
         "com.microsoft.edgemac",
     ]
 
-    private func defaultURLPatterns(for app: MeetingApp) -> [String] {
+    private static func defaultURLPatterns(for app: MeetingApp) -> [String] {
         AppSettingsStore.defaultWebMeetingTargets
             .first(where: { $0.app == app })
             .map { $0.urlPatterns }
