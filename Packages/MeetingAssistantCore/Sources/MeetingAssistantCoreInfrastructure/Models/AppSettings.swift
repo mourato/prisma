@@ -1136,7 +1136,6 @@ public class AppSettingsStore: ObservableObject {
             ?? Self.defaultMonitoredMeetingBundleIdentifiers
         webMeetingTargets = Self.loadDecoded([WebMeetingTarget].self, forKey: Keys.webMeetingTargets)
             ?? Self.defaultWebMeetingTargets
-        migrateWebTargetBrowsersToGlobalSettingIfNeeded()
         if loadedContextAwarenessEnabled {
             contextAwarenessIncludeActiveApp = true
             contextAwarenessIncludeAccessibilityText = true
@@ -1171,6 +1170,8 @@ public class AppSettingsStore: ObservableObject {
 
         // Load app visibility settings
         showInDock = UserDefaults.standard.bool(forKey: Keys.showInDock)
+
+        migrateWebTargetBrowsersToGlobalSettingIfNeeded()
 
         applyLanguage(selectedLanguage)
     }
