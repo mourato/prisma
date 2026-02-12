@@ -1,0 +1,163 @@
+import AppKit
+import Foundation
+import MeetingAssistantCoreCommon
+
+public enum AssistantIntegrationDispatchResult: Equatable {
+    case openedDeepLink
+    case openedWithClipboardFallback
+}
+
+public enum AssistantIntegrationDispatchError: Error, Equatable {
+    case invalidDeepLink
+    case openFailed
+}
+
+public enum AssistantIntegrationDeepLinkValidation: Equatable {
+    case valid
+    case invalid
+}
+
+@MainActor
+public protocol AssistantDeepLinkDispatching {
+    func validateDeepLink(_ value: String) -> AssistantIntegrationDeepLinkValidation
+    func dispatch(command: String, baseDeepLink: String) throws -> AssistantIntegrationDispatchResult
+}
+
+@MainActor
+public final class AssistantRaycastIntegrationService: AssistantDeepLinkDispatching {
+
+    private enum Constants {
+        static let fallbackTextQueryName = "fallbackText"
+        static let maxDeepLinkLength = 3_800
+    }
+
+    private let openURL: (URL) -> Bool
+    private let copyToClipboardHandler: (String) -> Void
+    private let maxDeepLinkLength: Int
+
+    public init(
+        workspace: NSWorkspace = .shared,
+        pasteboard: NSPasteboard = .general,
+        maxDeepLinkLength: Int = 3_800
+    ) {
+        openURL = { url in workspace.open(url) }
+        copyToClipboardHandler = { text in
+            pasteboard.clearContents()
+            pasteboard.setString(text, forType: .string)
+        }
+        self.maxDeepLinkLength = maxDeepLinkLength
+    }
+
+    public init(
+        openURL: @escaping (URL) -> Bool,
+        copyToClipboard: @escaping (String) -> Void,
+        maxDeepLinkLength: Int = 3_800
+    ) {
+        self.openURL = openURL
+        copyToClipboardHandler = copyToClipboard
+        self.maxDeepLinkLength = maxDeepLinkLength
+    }
+
+    public func validateDeepLink(_ value: String) -> AssistantIntegrationDeepLinkValidation {
+        let deeplink = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !deeplink.isEmpty, let components = URLComponents(string: deeplink) else {
+            AppLogger.warning(
+                "Raycast deeplink validation failed: empty or malformed",
+                category: .assistant,
+                extra: ["length": deeplink.count]
+            )
+            return .invalid
+        }
+
+        guard components.scheme?.lowercased() == "raycast" else {
+            AppLogger.warning(
+                "Raycast deeplink validation failed: invalid scheme",
+                category: .assistant,
+                extra: ["scheme": components.scheme ?? "nil"]
+            )
+            return .invalid
+        }
+
+        AppLogger.debug(
+            "Raycast deeplink validation succeeded",
+            category: .assistant,
+            extra: ["host": components.host ?? "nil"]
+        )
+        return .valid
+    }
+
+    public func dispatch(command: String, baseDeepLink: String) throws -> AssistantIntegrationDispatchResult {
+        AppLogger.info(
+            "Dispatching Assistant command to Raycast",
+            category: .assistant,
+            extra: [
+                "commandLength": command.count,
+                "deepLinkLength": baseDeepLink.count,
+            ]
+        )
+
+        guard var components = makeComponents(from: baseDeepLink) else {
+            AppLogger.error(
+                "Raycast dispatch failed: invalid deeplink",
+                category: .assistant,
+                extra: ["deepLinkLength": baseDeepLink.count]
+            )
+            throw AssistantIntegrationDispatchError.invalidDeepLink
+        }
+
+        var queryItems = components.queryItems ?? []
+        queryItems.removeAll { $0.name == Constants.fallbackTextQueryName }
+        queryItems.append(URLQueryItem(name: Constants.fallbackTextQueryName, value: command))
+        components.queryItems = queryItems
+
+        guard let fullURL = components.url else {
+            throw AssistantIntegrationDispatchError.invalidDeepLink
+        }
+
+        if fullURL.absoluteString.count > maxDeepLinkLength {
+            copyToClipboard(command)
+            AppLogger.warning(
+                "Raycast dispatch using clipboard fallback due to deeplink length",
+                category: .assistant,
+                extra: [
+                    "fullURLLength": fullURL.absoluteString.count,
+                    "maxLength": maxDeepLinkLength,
+                ]
+            )
+
+            components.queryItems = queryItems.filter { $0.name != Constants.fallbackTextQueryName }
+            guard let baseURL = components.url, openURL(baseURL) else {
+                AppLogger.error("Raycast dispatch failed during clipboard fallback open", category: .assistant)
+                throw AssistantIntegrationDispatchError.openFailed
+            }
+
+            AppLogger.info("Raycast opened with clipboard fallback", category: .assistant)
+            return .openedWithClipboardFallback
+        }
+
+        guard openURL(fullURL) else {
+            AppLogger.error("Raycast dispatch failed to open deeplink", category: .assistant)
+            throw AssistantIntegrationDispatchError.openFailed
+        }
+
+        AppLogger.info("Raycast deeplink opened successfully", category: .assistant)
+        return .openedDeepLink
+    }
+
+    private func makeComponents(from deepLink: String) -> URLComponents? {
+        let trimmed = deepLink.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, let components = URLComponents(string: trimmed) else {
+            return nil
+        }
+
+        guard components.scheme?.lowercased() == "raycast" else {
+            return nil
+        }
+
+        return components
+    }
+
+    private func copyToClipboard(_ text: String) {
+        copyToClipboardHandler(text)
+    }
+}

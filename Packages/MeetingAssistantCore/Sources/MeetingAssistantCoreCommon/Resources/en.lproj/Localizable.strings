@@ -304,6 +304,29 @@
 "settings.assistant.try_keys" = "Try Your Keys";
 "settings.assistant.try_keys_hint" = "Click in the text box below first.";
 "settings.assistant.reset" = "Reset to Default Shortcut";
+"settings.assistant.integrations.title" = "Integrations";
+"settings.assistant.integrations.description" = "Configure where Assistant output should be delivered after voice processing.";
+"settings.assistant.integrations.output_mode" = "Output Mode";
+"settings.assistant.integrations.output_mode.replace_selection" = "Replace";
+"settings.assistant.integrations.output_mode.send_to_raycast" = "Raycast";
+"settings.assistant.integrations.output_mode.both" = "Both";
+"settings.assistant.integrations.current" = "Current Integration";
+"settings.assistant.integrations.add_button" = "Add Integration";
+"settings.assistant.integrations.remove_button" = "Remove Integration";
+"settings.assistant.integrations.integration_name" = "Selected integration name";
+"settings.assistant.integrations.default_name" = "Integration %d";
+"settings.assistant.integrations.integration_enabled" = "Enable Selected Integration";
+"settings.assistant.integrations.integration_deeplink" = "Selected integration deeplink";
+"settings.assistant.integrations.raycast_enabled" = "Enable Raycast Integration";
+"settings.assistant.integrations.raycast_deeplink" = "Raycast command deeplink";
+"settings.assistant.integrations.valid_deeplink" = "Valid Raycast deeplink.";
+"settings.assistant.integrations.invalid_deeplink" = "Invalid deeplink. It must start with raycast://";
+"settings.assistant.integrations.test_button" = "Test Raycast Integration";
+"settings.assistant.integrations.test_message" = "Hello Raycast. This is a Meeting Assistant integration test.";
+"settings.assistant.integrations.test_success" = "Raycast deeplink opened successfully.";
+"settings.assistant.integrations.test_success_clipboard_fallback" = "Raycast opened. Command copied to clipboard due to URL length.";
+"settings.assistant.integrations.test_invalid_deeplink" = "Invalid deeplink. Check the Raycast command URL.";
+"settings.assistant.integrations.test_failed" = "Unable to open Raycast deeplink.";
 "assistant.error.microphone_permission" = "Microphone permission is required to use Assistant.";
 "assistant.error.accessibility_permission" = "Accessibility permission is required to edit the selected text.";
 "assistant.error.no_selection" = "No text selected in the active app.";
@@ -312,6 +335,10 @@
 "assistant.error.stop_failed" = "Unable to stop Assistant recording.";
 "assistant.error.recording_in_progress" = "A recording is in progress. Stop it before using Assistant.";
 "assistant.error.processing_failed" = "Unable to process the Assistant command.";
+"assistant.error.raycast_integration_disabled" = "Raycast integration is disabled in Assistant settings.";
+"assistant.error.raycast_deeplink_invalid" = "Raycast deeplink is invalid. Check Assistant Integrations settings.";
+"assistant.error.raycast_open_failed" = "Unable to open Raycast with the configured deeplink.";
+"assistant.error.raycast_opened_clipboard_fallback" = "Raycast opened and command copied to clipboard due to URL length.";
 
 /* Assistant Visual Feedback */
 "settings.assistant.visual_feedback" = "Visual Feedback";
@@ -642,6 +669,7 @@
 
 /* Assistant */
 "assistant.prompt_title" = "Assistant Command";
+"assistant.raycast.prompt_title" = "Raycast Assistant Command";
 
 /* Sound Feedback Settings */
 "settings.general.sound_feedback" = "Sound Feedback";
