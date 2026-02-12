@@ -235,11 +235,9 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
         case .valid:
             raycastDeepLinkIsValid = true
             raycastDeepLinkValidationMessage = "settings.assistant.integrations.valid_deeplink".localized
-            AppLogger.debug("Raycast deeplink marked as valid in settings", category: .assistant)
         case .invalid:
             raycastDeepLinkIsValid = false
             raycastDeepLinkValidationMessage = "settings.assistant.integrations.invalid_deeplink".localized
-            AppLogger.warning("Raycast deeplink marked as invalid in settings", category: .assistant)
         }
     }
 
