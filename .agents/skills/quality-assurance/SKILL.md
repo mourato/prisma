@@ -7,139 +7,93 @@ description: This skill should be used when writing unit tests, mocking dependen
 
 ## Overview
 
-Requirements for maintaining high stability and confidence through rigorous testing and verification.
+This skill defines verification practices that keep quality high while preserving development speed.
 
-## External Quality Gates
+Core policy alignment:
 
-Codacy integration is not used in this repository. Rely on local tooling and CI
-checks for quality gates.
---indent 4
---maxwidth 120
---wraparguments before-first
---wrapcollections before-first
-```
+- Use the risk matrix and Fast/Full lanes from `AGENTS.md`.
+- Keep hard gates at push/merge, not on every local edit.
+- Codacy is deprecated in this repository; rely on local scripts and CI.
 
-**Manual Format**:
-```bash
-swiftformat .
-```
+## Verification by Lane
 
-**Check Only** (no changes):
-```bash
-swiftformat . --lint
-```
+### Fast lane (Low risk)
 
----
+Use for docs/comments-only updates, localization/resource text updates, and constrained non-functional refactors.
 
-// Check description
-if danger.github.pullRequest.body?.isEmpty ?? true {
-  fail("Please add a description to the PR.")
-}
+Minimum expectation:
 
-// Check for SwiftLint violations
-SwiftLint.lint(inline: true)
-```
+- Run staged lint/format checks (or equivalent lightweight checks).
+- Run targeted tests when the change could affect behavior.
+- Before push/merge, run `make test`.
 
-### GitHub Actions Workflow
+### Full lane (Medium/High risk)
 
-**.github/workflows/danger.yml**:
-```yaml
-name: Danger
-on: [pull_request]
+Use for behavior changes, API changes, subsystem changes, concurrency/security/persistence/audio, and large/cross-module deltas.
 
-jobs:
-  danger:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Run Danger
-        uses: danger/swift@3.0.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-```
+Minimum expectation:
 
----
+- During development, run relevant targeted checks continuously.
+- Before push/merge (hard gate):
+  - `make build`
+  - `make test`
+  - `make lint` (recommended; mandatory for broad refactors)
 
-## Setup for New Developers
+## Scope-driven additional checks
 
-When cloning the repository:
+Run these only when relevant to the changed scope:
+
+- `make arch-check` for architecture boundary/access-control/import-rule changes.
+- `make preview-check` when adding/changing SwiftUI views.
+- `make test-verbose` or targeted `./scripts/run-tests.sh ...` commands when debugging flaky or scope-specific tests.
+
+## Practical command set
 
 ```bash
-# Install tools
-brew install swiftlint swiftformat
+# Core
+make build
+make test
+make lint
 
-# Install pre-commit hooks
-./scripts/setup-hooks.sh
+# Optional, scope-based
+make arch-check
+make preview-check
 
-# Verify installation
-swiftlint version
-swiftformat --version
+# Targeted test workflows
+./scripts/run-tests.sh --file <TestFile>
+./scripts/run-tests.sh --test <testName>
+./scripts/run-tests.sh --verbose
 ```
 
----
+## Hooks and automation
 
-## Common Workflows
+- Install Git hooks with `./scripts/setup-hooks.sh`.
+- `pre-commit` is optimized for speed and can run lightweight staged checks.
+- `pre-push` enforces `make test` unless explicitly bypassed.
 
-### Before Commit
-
-```bash
-# Check locally
-swiftlint lint
-swiftformat . --lint
-
-# Auto-fix if needed
-swiftlint lint --fix
-swiftformat .
-
-# Then commit
-git add .
-git commit -m "feat: add feature"
-```
-
-### In CI/CD
-
-```bash
-# Fail build on warnings
-swiftlint lint --strict
-
-# Verify formatting
-swiftformat . --lint
-```
-
-### Bypassing (Emergency Only)
-
-```bash
-# Skip pre-commit hooks
-git commit --no-verify
-
-# Disable SwiftLint for specific line
-// swiftlint:disable:next force_cast
-let value = json["key"] as! String
-```
-
----
+Emergency bypasses should be rare and followed by immediate remediation.
 
 ## Troubleshooting
 
-### "SwiftLint not found"
+### Tool missing
+
 ```bash
-brew install swiftlint
+brew install swiftlint swiftformat
 ```
 
-### "Pre-commit hook rejected"
-- Read the error message carefully
-- Run suggested fix command
-- Verify with `swiftlint lint` before re-committing
+### Hook failures
 
-### "Build fails in Xcode due to lint"
-- Open **Build Log** to see specific violations
-- Fix code issues
-- **Never delete the build script**
+- Read the hook output and run the suggested fix command.
+- Re-run the failed check locally until green.
 
----
+### Build/Test mismatch
+
+- Prefer `make test` for Xcode parity.
+- Use targeted tests to isolate issues before running full suite again.
 
 ## References
 
-- [SwiftLint Documentation](https://github.com/realm/SwiftLint)
-- [SwiftFormat Documentation](https://github.com/nicklockwood/SwiftFormat)
-- [Danger Swift](https://danger.systems/swift/)
+- `AGENTS.md`
+- `Makefile`
+- `scripts/lint.sh`
+- `scripts/run-tests.sh`
