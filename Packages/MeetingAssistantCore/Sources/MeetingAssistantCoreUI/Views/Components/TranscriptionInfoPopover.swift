@@ -104,7 +104,7 @@ struct TranscriptionInfoPopover: View {
                 Text(sourceDisplayName)
                     .font(.subheadline)
                 Spacer()
-                Text("-")
+                Text(sourceValue)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -112,15 +112,15 @@ struct TranscriptionInfoPopover: View {
     }
 
     private var sourceDisplayName: String {
+        transcription.meeting.appName
+    }
+
+    private var sourceValue: String {
         guard isBrowserSource else {
-            return transcription.meeting.appName
+            return "-"
         }
 
-        guard let site = browserSite else {
-            return transcription.meeting.appName
-        }
-
-        return "\(transcription.meeting.appName) • \(site)"
+        return browserSite ?? "-"
     }
 
     private var isBrowserSource: Bool {
@@ -135,12 +135,46 @@ struct TranscriptionInfoPopover: View {
     }
 
     private var browserSite: String? {
-        for item in transcription.contextItems {
-            guard item.source == .windowTitle || item.source == .activeApp else {
-                continue
+        for source in prioritizedBrowserSources {
+            for item in transcription.contextItems where item.source == source {
+                if let host = extractHost(from: item.text) {
+                    return host
+                }
             }
+        }
 
-            if let host = extractHost(from: item.text) {
+        return nil
+    }
+
+    private var prioritizedBrowserSources: [TranscriptionContextItem.Source] {
+        [.windowTitle, .activeApp, .focusedText, .accessibilityText]
+    }
+
+    private func extractHost(from text: String) -> String? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+
+        if let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue) {
+            let range = NSRange(trimmed.startIndex..<trimmed.endIndex, in: trimmed)
+            if let match = detector.matches(in: trimmed, options: [], range: range).first,
+               let matchedRange = Range(match.range, in: trimmed)
+            {
+                let candidate = String(trimmed[matchedRange])
+                if let host = host(from: candidate) {
+                    return host
+                }
+            }
+        }
+
+        if let host = host(from: trimmed) {
+            return host
+        }
+
+        let candidates = trimmed.components(separatedBy: .whitespacesAndNewlines)
+        for candidate in candidates {
+            let cleaned = candidate.trimmingCharacters(in: .punctuationCharacters)
+
+            if let host = host(from: cleaned) {
                 return host
             }
         }
@@ -148,24 +182,33 @@ struct TranscriptionInfoPopover: View {
         return nil
     }
 
-    private func extractHost(from text: String) -> String? {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return nil }
+    private func host(from value: String) -> String? {
+        let lowercased = value.lowercased()
+        let normalizedValue = value.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        let candidates = trimmed.components(separatedBy: .whitespacesAndNewlines)
-        for candidate in candidates {
-            let cleaned = candidate.trimmingCharacters(in: .punctuationCharacters)
+        if lowercased.hasPrefix("http://") || lowercased.hasPrefix("https://"),
+           let url = URL(string: normalizedValue),
+           let host = url.host
+        {
+            return normalizeHost(host)
+        }
 
-            if let url = URL(string: cleaned), let host = url.host {
-                return host
-            }
-
-            if let url = URL(string: "https://\(cleaned)"), let host = url.host, host.contains(".") {
-                return host
-            }
+        if let url = URL(string: "https://\(normalizedValue)"),
+           let host = url.host,
+           host.contains(".")
+        {
+            return normalizeHost(host)
         }
 
         return nil
+    }
+
+    private func normalizeHost(_ host: String) -> String {
+        let lowered = host.lowercased()
+        if lowered.hasPrefix("www.") {
+            return String(lowered.dropFirst(4))
+        }
+        return lowered
     }
 
     private func contextItemTitle(for source: TranscriptionContextItem.Source) -> String {
