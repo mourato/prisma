@@ -360,6 +360,7 @@ public struct MetricsDashboardSettingsTab: View {
         formatter.dateStyle = .medium
         return formatter
     }()
+}
 
 private struct MetricStatCard: View {
     let icon: String
