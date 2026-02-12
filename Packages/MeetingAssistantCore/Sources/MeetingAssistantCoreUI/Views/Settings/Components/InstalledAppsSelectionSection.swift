@@ -28,39 +28,67 @@ public struct InstalledAppsSelectionSection: View {
 
     public var body: some View {
         MAGroup(titleKey.localized, icon: icon) {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-                Text(descriptionKey.localized)
+            InstalledAppsSelectionList(
+                descriptionKey: descriptionKey,
+                emptyKey: emptyKey,
+                addButtonKey: addButtonKey,
+                viewModel: viewModel
+            )
+        }
+    }
+}
+
+public struct InstalledAppsSelectionList: View {
+    private let descriptionKey: String
+    private let emptyKey: String
+    private let addButtonKey: String
+    @ObservedObject private var viewModel: InstalledAppsSelectionViewModel
+
+    public init(
+        descriptionKey: String,
+        emptyKey: String,
+        addButtonKey: String,
+        viewModel: InstalledAppsSelectionViewModel
+    ) {
+        self.descriptionKey = descriptionKey
+        self.emptyKey = emptyKey
+        self.addButtonKey = addButtonKey
+        self.viewModel = viewModel
+    }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+            Text(descriptionKey.localized)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            if viewModel.installedApps.isEmpty {
+                Text(emptyKey.localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(Array(viewModel.installedApps.enumerated()), id: \.element.id) { index, app in
+                        appRow(app)
 
-                if viewModel.installedApps.isEmpty {
-                    Text(emptyKey.localized)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                } else {
-                    VStack(spacing: 0) {
-                        ForEach(Array(viewModel.installedApps.enumerated()), id: \.element.id) { index, app in
-                            appRow(app)
-
-                            if index < viewModel.installedApps.count - 1 {
-                                Divider()
-                            }
+                        if index < viewModel.installedApps.count - 1 {
+                            Divider()
                         }
                     }
-                    .background(MeetingAssistantDesignSystem.Colors.subtleFill2)
-                    .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
                 }
+                .background(MeetingAssistantDesignSystem.Colors.subtleFill2)
+                .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+            }
 
-                HStack {
-                    Spacer()
-                    Button {
-                        viewModel.addApp()
-                    } label: {
-                        Label(addButtonKey.localized, systemImage: "plus")
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
+            HStack {
+                Spacer()
+                Button {
+                    viewModel.addApp()
+                } label: {
+                    Label(addButtonKey.localized, systemImage: "plus")
                 }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
             }
         }
         .onAppear {
@@ -111,6 +139,23 @@ public struct InstalledAppsSelectionSection: View {
             emptyKey: "settings.markdown_targets.empty",
             addButtonKey: "settings.markdown_targets.add",
             icon: "textformat",
+            viewModel: InstalledAppsSelectionViewModel(
+                defaultBundleIdentifiers: identifiers.wrappedValue,
+                hasConfigured: { true },
+                loadBundleIdentifiers: { identifiers.wrappedValue },
+                saveBundleIdentifiers: { identifiers.wrappedValue = $0 }
+            )
+        )
+        .padding()
+    }
+}
+
+#Preview {
+    PreviewStateContainer(AppSettingsStore.defaultMarkdownTargetBundleIdentifiers) { identifiers in
+        InstalledAppsSelectionList(
+            descriptionKey: "settings.markdown_targets.description",
+            emptyKey: "settings.markdown_targets.empty",
+            addButtonKey: "settings.markdown_targets.add",
             viewModel: InstalledAppsSelectionViewModel(
                 defaultBundleIdentifiers: identifiers.wrappedValue,
                 hasConfigured: { true },
