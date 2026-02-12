@@ -1,3 +1,4 @@
+import AppKit
 import Charts
 import Combine
 import MeetingAssistantCoreAI
@@ -26,6 +27,7 @@ public struct MetricsDashboardSettingsTab: View {
 
                 heroSection
                 filtersSection
+                activityHeatmapSection
 
                 if viewModel.summary.sessionsRecorded == 0, !viewModel.isLoading {
                     emptyStateSection
@@ -85,6 +87,42 @@ public struct MetricsDashboardSettingsTab: View {
                 .labelsHidden()
                 .pickerStyle(.menu)
                 .frame(width: MeetingAssistantDesignSystem.Layout.maxPickerWidth)
+            }
+        }
+    }
+
+    private var activityHeatmapSection: some View {
+        MAGroup("metrics.activity.title".localized, icon: "calendar.badge.clock") {
+            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                Text("metrics.activity.subtitle".localized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                if viewModel.dailyBuckets.isEmpty {
+                    ProgressView()
+                        .tint(MeetingAssistantDesignSystem.Colors.accent)
+                        .frame(maxWidth: .infinity, minHeight: ActivityHeatmap.scrollHeight)
+                        .padding(.vertical, ActivityHeatmap.verticalPadding)
+                } else {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(alignment: .top, spacing: ActivityHeatmap.spacing) {
+                            ForEach(columnedDailyBuckets.indices, id: \.self) { columnIndex in
+                                let column = columnedDailyBuckets[columnIndex]
+                                VStack(spacing: ActivityHeatmap.spacing) {
+                                    ForEach(column) { bucket in
+                                        activitySquare(for: bucket)
+                                    }
+                                    ForEach(0..<max(0, 7 - column.count), id: \.self) { _ in
+                                        heatmapPlaceholder
+                                    }
+                                }
+                            }
+                        }
+                        .padding(.vertical, ActivityHeatmap.verticalPadding)
+                    }
+                    .frame(height: ActivityHeatmap.scrollHeight)
+                    heatmapLegend
+                }
             }
         }
     }
@@ -226,7 +264,102 @@ public struct MetricsDashboardSettingsTab: View {
     private func formattedDuration(_ interval: TimeInterval, style: DateComponentsFormatter.UnitsStyle = .abbreviated) -> String {
         Formatters.formattedDuration(interval, style: style, fallback: "–")
     }
-}
+
+    private var columnedDailyBuckets: [[MetricsDailyBucket]] {
+        stride(from: 0, to: viewModel.dailyBuckets.count, by: 7).map { start in
+            let end = min(start + 7, viewModel.dailyBuckets.count)
+            return Array(viewModel.dailyBuckets[start..<end])
+        }
+    }
+
+    private var maxDailyWords: Int {
+        viewModel.dailyBuckets.map { $0.words }.max() ?? 0
+    }
+
+    private func activitySquare(for bucket: MetricsDailyBucket) -> some View {
+        RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.tinyCornerRadius, style: .continuous)
+            .fill(heatmapColor(for: bucket.words))
+            .frame(width: ActivityHeatmap.squareSize, height: ActivityHeatmap.squareSize)
+            .overlay(
+                RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.tinyCornerRadius, style: .continuous)
+                    .stroke(
+                        bucket.words > 0 && bucket.words == maxDailyWords
+                            ? MeetingAssistantDesignSystem.Colors.accent
+                            : .clear,
+                        lineWidth: bucket.words > 0 && bucket.words == maxDailyWords ? 1 : 0
+                    )
+            )
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(heatmapAccessibility(for: bucket))
+    }
+
+    private var heatmapLegend: some View {
+        HStack(spacing: ActivityHeatmap.legendSpacing) {
+            legendItem(
+                color: Color(nsColor: .tertiaryLabelColor).opacity(0.4),
+                label: "metrics.activity.legend.none".localized
+            )
+            legendItem(
+                color: MeetingAssistantDesignSystem.Colors.accent,
+                label: "metrics.activity.legend.most".localized
+            )
+        }
+        .font(.caption2)
+        .foregroundStyle(.secondary)
+    }
+
+    private func legendItem(color: Color, label: String) -> some View {
+        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing4) {
+            RoundedRectangle(cornerRadius: ActivityHeatmap.legendSwatchCornerRadius, style: .continuous)
+                .fill(color)
+                .frame(width: ActivityHeatmap.legendSwatchSize, height: ActivityHeatmap.legendSwatchSize)
+            Text(label)
+        }
+    }
+
+    private func heatmapColor(for words: Int) -> Color {
+        guard words > 0, maxDailyWords > 0 else {
+            return Color(nsColor: .tertiaryLabelColor).opacity(0.35)
+        }
+
+        let normalized = min(1, Double(words) / Double(maxDailyWords))
+        let accent = colorComponents(from: NSColor.controlAccentColor)
+        let neutral = colorComponents(from: NSColor.tertiaryLabelColor)
+        let red = neutral.red + (accent.red - neutral.red) * normalized
+        let green = neutral.green + (accent.green - neutral.green) * normalized
+        let blue = neutral.blue + (accent.blue - neutral.blue) * normalized
+
+        return Color(red: red, green: green, blue: blue)
+    }
+
+    private func colorComponents(from nsColor: NSColor) -> (red: Double, green: Double, blue: Double) {
+        let converted = nsColor.usingColorSpace(.sRGB) ?? nsColor
+        return (
+            red: Double(converted.redComponent),
+            green: Double(converted.greenComponent),
+            blue: Double(converted.blueComponent)
+        )
+    }
+
+    private func heatmapAccessibility(for bucket: MetricsDailyBucket) -> Text {
+        let dayText = Self.activityDateFormatter.string(from: bucket.date)
+        let wordsText = Formatters.formattedNumber(bucket.words)
+        return Text("\(dayText), \(wordsText) words")
+    }
+
+    private var heatmapPlaceholder: some View {
+        RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.tinyCornerRadius, style: .continuous)
+            .fill(Color.clear)
+            .frame(width: ActivityHeatmap.squareSize, height: ActivityHeatmap.squareSize)
+            .opacity(0)
+            .accessibilityHidden(true)
+    }
+
+    private static let activityDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        return formatter
+    }()
 
 private struct MetricStatCard: View {
     let icon: String
@@ -295,4 +428,16 @@ private enum Formatters {
         formatter.allowedUnits = interval >= 3_600 ? [.hour, .minute] : [.minute, .second]
         return formatter.string(from: interval) ?? fallback
     }
+}
+
+private enum ActivityHeatmap {
+    static let squareSize: CGFloat = 14
+    static let spacing: CGFloat = 4
+    static let verticalPadding: CGFloat = 8
+    static var scrollHeight: CGFloat {
+        squareSize * 7 + spacing * 6 + verticalPadding * 2
+    }
+    static let legendSpacing: CGFloat = 12
+    static let legendSwatchSize: CGFloat = 12
+    static let legendSwatchCornerRadius: CGFloat = 3
 }

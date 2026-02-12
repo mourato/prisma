@@ -12,6 +12,7 @@ public final class MetricsDashboardViewModel: ObservableObject {
     @Published public private(set) var summary: MetricsDashboardSummary
     @Published public private(set) var weekdayBuckets: [MetricsWeekdayBucket] = []
     @Published public private(set) var hourlyBuckets: [MetricsHourlyBucket] = []
+    @Published public private(set) var dailyBuckets: [MetricsDailyBucket] = []
 
     @Published public var dateFilter: DateFilter = .allEntries {
         didSet {
@@ -76,5 +77,6 @@ public final class MetricsDashboardViewModel: ObservableObject {
         )
         weekdayBuckets = MetricsAggregator.computeWeekdayBuckets(metadata: filtered)
         hourlyBuckets = MetricsAggregator.computeHourlyBuckets(metadata: filtered)
+        dailyBuckets = MetricsAggregator.computeDailyBuckets(metadata: filtered)
     }
 }
