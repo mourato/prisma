@@ -12,7 +12,7 @@ public class MeetingDetector: ObservableObject {
 
     private let logger = Logger(subsystem: "MeetingAssistant", category: "MeetingDetector")
     private let settings: AppSettingsStore
-    private let browserProviders: [String: BrowserActiveTabURLProviding]
+    private var browserProviders: [String: BrowserActiveTabURLProviding]
 
     @Published public private(set) var detectedMeeting: MeetingApp?
     @Published private(set) var isMonitoring = false
@@ -162,8 +162,8 @@ public class MeetingDetector: ObservableObject {
             guard let bundleId = runningApp.bundleIdentifier else { continue }
             let normalizedBundleId = normalizeBundleIdentifier(bundleId)
             guard monitoredBundleIdentifiers.contains(normalizedBundleId) else { continue }
-            guard let provider = browserProviders[normalizedBundleId] else { continue }
-            if let url = provider.activeTabURL() {
+
+            if let url = activeBrowserURL(forBundleIdentifier: bundleId, normalizedBundleId: normalizedBundleId) {
                 if let match = WebTargetDetection.matchTarget(
                     for: url,
                     bundleIdentifier: normalizedBundleId,
@@ -186,6 +186,19 @@ public class MeetingDetector: ObservableObject {
         }
 
         return nil
+    }
+
+    private func activeBrowserURL(forBundleIdentifier bundleIdentifier: String, normalizedBundleId: String) -> URL? {
+        if let provider = browserProviders[normalizedBundleId] {
+            return provider.activeTabURL()
+        }
+
+        guard let provider = BrowserProviderRegistry.provider(for: bundleIdentifier) else {
+            return nil
+        }
+
+        browserProviders[normalizedBundleId] = provider
+        return provider.activeTabURL()
     }
 
     /// Setup notifications for app launches/terminations.

@@ -35,3 +35,21 @@ public enum BrowserScriptTemplates {
     public static let safari = "tell application \"%@\" to get URL of current tab of front window"
     public static let chromium = "tell application \"%@\" to get URL of active tab of front window"
 }
+
+public final class FallbackBrowserActiveTabURLProvider: BrowserActiveTabURLProviding {
+    private let providers: [BrowserActiveTabURLProviding]
+
+    public init(providers: [BrowserActiveTabURLProviding]) {
+        self.providers = providers
+    }
+
+    public func activeTabURL() -> URL? {
+        for provider in providers {
+            if let url = provider.activeTabURL() {
+                return url
+            }
+        }
+
+        return nil
+    }
+}
