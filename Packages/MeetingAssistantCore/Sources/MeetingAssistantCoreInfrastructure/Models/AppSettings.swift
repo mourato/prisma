@@ -1136,7 +1136,15 @@ public class AppSettingsStore: ObservableObject {
             ?? Self.defaultMonitoredMeetingBundleIdentifiers
         webMeetingTargets = Self.loadDecoded([WebMeetingTarget].self, forKey: Keys.webMeetingTargets)
             ?? Self.defaultWebMeetingTargets
-        migrateWebTargetBrowsersToGlobalSettingIfNeeded()
+
+        let hasPersistedMarkdownWebTargets = UserDefaults.standard.object(forKey: Keys.markdownWebTargets) != nil
+        let hasPersistedWebMeetingTargets = UserDefaults.standard.object(forKey: Keys.webMeetingTargets) != nil
+        let hasPersistedLegacyPerTargetBrowsers = hasPersistedMarkdownWebTargets || hasPersistedWebMeetingTargets
+        let hasGlobalBrowserSetting = UserDefaults.standard.object(forKey: Keys.webTargetBrowserBundleIdentifiers) != nil
+
+        if hasPersistedLegacyPerTargetBrowsers && !hasGlobalBrowserSetting {
+            migrateWebTargetBrowsersToGlobalSettingIfNeeded()
+        }
         if loadedContextAwarenessEnabled {
             contextAwarenessIncludeActiveApp = true
             contextAwarenessIncludeAccessibilityText = true
