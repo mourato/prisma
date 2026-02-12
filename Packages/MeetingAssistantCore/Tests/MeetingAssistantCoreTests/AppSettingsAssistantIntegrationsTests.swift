@@ -20,7 +20,7 @@ final class AppSettingsAssistantIntegrationsTests: XCTestCase {
 
         let raycast = settings.assistantIntegrations.first
         XCTAssertEqual(raycast?.name, "Raycast")
-        XCTAssertEqual(raycast?.deepLink, "raycast://ai-commands/ask-ai")
+        XCTAssertEqual(raycast?.deepLink, AssistantIntegrationConfig.defaultRaycastDeepLink)
         XCTAssertEqual(settings.assistantSelectedIntegrationId, raycast?.id)
         XCTAssertEqual(settings.assistantSelectedIntegration?.id, raycast?.id)
     }

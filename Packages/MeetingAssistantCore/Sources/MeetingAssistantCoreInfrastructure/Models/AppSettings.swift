@@ -316,7 +316,7 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
         name = try container.decode(String.self, forKey: .name)
         kind = try container.decodeIfPresent(Kind.self, forKey: .kind) ?? .deeplink
         isEnabled = try container.decodeIfPresent(Bool.self, forKey: .isEnabled) ?? false
-        deepLink = try container.decodeIfPresent(String.self, forKey: .deepLink) ?? "raycast://ai-commands/ask-ai"
+        deepLink = try container.decodeIfPresent(String.self, forKey: .deepLink) ?? Self.defaultRaycastDeepLink
 
         promptInstructions = try container.decodeIfPresent(String.self, forKey: .promptInstructions)
         selectedPreset = try container.decodeIfPresent(AssistantIntegrationPreset.self, forKey: .selectedPreset)
@@ -331,11 +331,14 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
             name: "Raycast",
             kind: .deeplink,
             isEnabled: false,
-            deepLink: "raycast://ai-commands/ask-ai",
+            deepLink: Self.defaultRaycastDeepLink,
             shortcutPresetKey: .custom,
             shortcutActivationMode: .holdOrToggle
         )
     }
+
+    public static let defaultRaycastDeepLink = "raycast://extensions/raycast/raycast-ai/ai-chat"
+    public static let legacyRaycastDeepLink = "raycast://ai-commands/ask-ai"
 
     public static var raycastDefaultID: UUID {
         guard let uuid = UUID(uuidString: "00000000-0000-0000-0000-000000000010") else {
@@ -1291,7 +1294,7 @@ public class AppSettingsStore: ObservableObject {
         assistantSelectedIntegrationId = rawSelectedIntegrationId.flatMap(UUID.init(uuidString:))
 
         assistantRaycastEnabled = UserDefaults.standard.bool(forKey: Keys.assistantRaycastEnabled)
-        assistantRaycastDeepLink = UserDefaults.standard.string(forKey: Keys.assistantRaycastDeepLink) ?? "raycast://ai-commands/ask-ai"
+        assistantRaycastDeepLink = UserDefaults.standard.string(forKey: Keys.assistantRaycastDeepLink) ?? AssistantIntegrationConfig.defaultRaycastDeepLink
 
         meetingTypeAutoDetectEnabled = UserDefaults.standard.bool(forKey: Keys.meetingTypeAutoDetectEnabled)
 
@@ -1416,6 +1419,10 @@ public class AppSettingsStore: ObservableObject {
             assistantSelectedIntegrationId = migratedRaycast.id
         }
 
+        if assistantRaycastDeepLink == AssistantIntegrationConfig.legacyRaycastDeepLink {
+            assistantRaycastDeepLink = AssistantIntegrationConfig.defaultRaycastDeepLink
+        }
+
         if assistantSelectedIntegrationId == nil {
             assistantSelectedIntegrationId = assistantIntegrations.first?.id
         }
@@ -1462,6 +1469,9 @@ public class AppSettingsStore: ObservableObject {
 
             var normalized = integration
             normalized.shortcutPresetKey = .custom
+            if normalized.deepLink == AssistantIntegrationConfig.legacyRaycastDeepLink {
+                normalized.deepLink = AssistantIntegrationConfig.defaultRaycastDeepLink
+            }
             return normalized
         }
 
@@ -1648,7 +1658,7 @@ public class AppSettingsStore: ObservableObject {
         assistantIntegrations = [AssistantIntegrationConfig.defaultRaycast]
         assistantSelectedIntegrationId = AssistantIntegrationConfig.defaultRaycast.id
         assistantRaycastEnabled = false
-        assistantRaycastDeepLink = "raycast://ai-commands/ask-ai"
+        assistantRaycastDeepLink = AssistantIntegrationConfig.defaultRaycastDeepLink
         recordingIndicatorEnabled = false
         recordingIndicatorStyle = .mini
         recordingIndicatorPosition = .bottom

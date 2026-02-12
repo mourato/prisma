@@ -28,6 +28,7 @@ public final class AssistantRaycastIntegrationService: AssistantDeepLinkDispatch
 
     private enum Constants {
         static let dispatchQueryNames = ["fallbackText", "text", "query", "prompt"]
+        static let supportedHosts: Set<String> = ["extensions", "script-commands", "ai-commands", "confetti"]
     }
 
     private let openURL: (URL) -> Bool
@@ -73,6 +74,18 @@ public final class AssistantRaycastIntegrationService: AssistantDeepLinkDispatch
                 "Raycast deeplink validation failed: invalid scheme",
                 category: .assistant,
                 extra: ["scheme": components.scheme ?? "nil"]
+            )
+            return .invalid
+        }
+
+        guard isSupportedRaycastCommand(components) else {
+            AppLogger.warning(
+                "Raycast deeplink validation failed: unsupported host/path format",
+                category: .assistant,
+                extra: [
+                    "host": components.host ?? "nil",
+                    "path": components.path,
+                ]
             )
             return .invalid
         }
@@ -157,7 +170,32 @@ public final class AssistantRaycastIntegrationService: AssistantDeepLinkDispatch
             return nil
         }
 
+        guard isSupportedRaycastCommand(components) else {
+            return nil
+        }
+
         return components
+    }
+
+    private func isSupportedRaycastCommand(_ components: URLComponents) -> Bool {
+        guard let host = components.host?.lowercased(), Constants.supportedHosts.contains(host) else {
+            return false
+        }
+
+        let pathSegments = components.path
+            .split(separator: "/")
+            .map(String.init)
+
+        switch host {
+        case "confetti":
+            return pathSegments.isEmpty
+        case "ai-commands", "script-commands":
+            return pathSegments.count >= 1
+        case "extensions":
+            return pathSegments.count >= 3
+        default:
+            return false
+        }
     }
 
     private func copyToClipboard(_ text: String) {

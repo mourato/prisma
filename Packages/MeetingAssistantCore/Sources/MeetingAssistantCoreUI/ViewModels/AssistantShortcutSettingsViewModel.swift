@@ -94,7 +94,7 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
             name: "settings.assistant.integrations.default_name".localized(with: nextIndex),
             kind: .deeplink,
             isEnabled: false,
-            deepLink: "raycast://ai-commands/ask-ai"
+            deepLink: AssistantIntegrationConfig.defaultRaycastDeepLink
         )
 
         assistantIntegrations = assistantIntegrations + [newIntegration]
@@ -143,9 +143,9 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
         case .closeApps:
             "raycast://extensions/raycast/system/quit"
         case .askChatGPT:
-            "raycast://ai-commands/ask-ai"
+            AssistantIntegrationConfig.defaultRaycastDeepLink
         case .askClaude:
-            "raycast://ai-commands/ask-ai"
+            AssistantIntegrationConfig.defaultRaycastDeepLink
         case .youtubeSearch:
             "raycast://extensions/raycast/youtube/search-videos"
         case .openWebsite:
