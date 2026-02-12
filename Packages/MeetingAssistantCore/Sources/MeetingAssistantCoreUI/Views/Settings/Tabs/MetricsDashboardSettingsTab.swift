@@ -24,9 +24,9 @@ public struct MetricsDashboardSettingsTab: View {
                     }
                 }
 
+                activityHeatmapSection
                 heroSection
                 filtersSection
-                activityHeatmapSection
 
                 if viewModel.summary.sessionsRecorded == 0, !viewModel.isLoading {
                     emptyStateSection
@@ -43,8 +43,8 @@ public struct MetricsDashboardSettingsTab: View {
         .task {
             await viewModel.load()
         }
-        .onReceive(NotificationCenter.default.publisher(for: .meetingAssistantTranscriptionSaved)) { _ in
-            Task { await viewModel.refresh() }
+        .onReceive(NotificationCenter.default.publisher(for: .meetingAssistantTranscriptionSaved)) { notification in
+            Task { await viewModel.handleTranscriptionSaved(notification) }
         }
     }
 
@@ -447,9 +447,14 @@ public struct MetricsDashboardSettingsTab: View {
     }
 
     private func activitySquare(for bucket: MetricsDailyBucket) -> some View {
-        RoundedRectangle(cornerRadius: 2, style: .continuous)
-            .fill(heatmapColor(for: bucket.words))
-            .frame(width: ActivityHeatmap.squareSize, height: ActivityHeatmap.squareSize)
+        ZStack {
+            RoundedRectangle(cornerRadius: 2, style: .continuous)
+                .fill(ActivityHeatmap.baseColor)
+
+            RoundedRectangle(cornerRadius: 2, style: .continuous)
+                .fill(heatmapColor(for: bucket.words))
+        }
+        .frame(width: ActivityHeatmap.squareSize, height: ActivityHeatmap.squareSize)
             .overlay(
                 RoundedRectangle(cornerRadius: 2, style: .continuous)
                     .stroke(
@@ -621,6 +626,7 @@ private enum ActivityHeatmap {
     static let squareSize: CGFloat = 10
     static let spacing: CGFloat = 2
     static let verticalPadding: CGFloat = 8
+    static let baseColor = Color(nsColor: .quaternaryLabelColor)
     static let monthHeaderHeight: CGFloat = 14
     static let monthToGridSpacing: CGFloat = 6
     static let weekdayLabelWidth: CGFloat = 24
