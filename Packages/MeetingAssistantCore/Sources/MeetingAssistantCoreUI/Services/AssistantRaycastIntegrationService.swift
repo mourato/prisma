@@ -27,7 +27,7 @@ public protocol AssistantDeepLinkDispatching {
 public final class AssistantRaycastIntegrationService: AssistantDeepLinkDispatching {
 
     private enum Constants {
-        static let fallbackTextQueryName = "fallbackText"
+        static let dispatchQueryNames = ["fallbackText", "text", "query", "prompt"]
     }
 
     private let openURL: (URL) -> Bool
@@ -105,8 +105,10 @@ public final class AssistantRaycastIntegrationService: AssistantDeepLinkDispatch
         }
 
         var queryItems = components.queryItems ?? []
-        queryItems.removeAll { $0.name == Constants.fallbackTextQueryName }
-        queryItems.append(URLQueryItem(name: Constants.fallbackTextQueryName, value: command))
+        queryItems.removeAll { Constants.dispatchQueryNames.contains($0.name) }
+        queryItems.append(contentsOf: Constants.dispatchQueryNames.map { key in
+            URLQueryItem(name: key, value: command)
+        })
         components.queryItems = queryItems
 
         guard let fullURL = components.url else {
@@ -124,7 +126,9 @@ public final class AssistantRaycastIntegrationService: AssistantDeepLinkDispatch
                 ]
             )
 
-            components.queryItems = queryItems.filter { $0.name != Constants.fallbackTextQueryName }
+            components.queryItems = queryItems.filter { item in
+                !Constants.dispatchQueryNames.contains(item.name)
+            }
             guard let baseURL = components.url, openURL(baseURL) else {
                 AppLogger.error("Raycast dispatch failed during clipboard fallback open", category: .assistant)
                 throw AssistantIntegrationDispatchError.openFailed
