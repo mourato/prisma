@@ -24,7 +24,7 @@ public struct SpeakerIdentificationSettingsSection: View {
             description: "settings.ai.diarization_desc".localized,
             isOn: $settings.isDiarizationEnabled
         )
-        .onChange(of: settings.isDiarizationEnabled) { isEnabled in
+        .onChange(of: settings.isDiarizationEnabled) { isEnabled, _ in
             guard isEnabled else { return }
             settings.minSpeakers = nil
             settings.maxSpeakers = nil

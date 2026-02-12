@@ -188,7 +188,7 @@ public struct TranscriptionCardView: View {
         .onAppear {
             ensureValidSelectedTab()
         }
-        .onChange(of: isSegmentedTabEnabled) { _ in
+        .onChange(of: isSegmentedTabEnabled) { _, _ in
             ensureValidSelectedTab()
         }
     }
