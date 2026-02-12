@@ -78,6 +78,7 @@ If uncertain, choose the higher risk level.
 - [ ] Classify risk (Low/Medium/High) before coding and pick Fast or Full lane accordingly.
 - [ ] Use Fast lane for low-risk tasks and Full lane for medium/high-risk tasks.
 - [ ] Keep hard gates at push/merge stage (`make test`, plus `make build` for Full lane).
+- [ ] Prefer `make preflight` (scripted build + test + lint) before push/merge.
 - [ ] Run `make arch-check` only for architecture boundary/access-control changes.
 - [ ] Run `make preview-check` when SwiftUI views are added or modified.
 - [ ] Use `git worktree remove` + `git worktree prune` for cleanup.
@@ -105,6 +106,7 @@ Primary build/release commands:
 
 ```bash
 make build
+make preflight
 make run
 make build-release
 make dmg
@@ -120,6 +122,7 @@ make
 Common workflows:
 
 - Development: `make build && make run`
+- Pre-merge validation: `make preflight`
 - Testing: `make test`
 - Release: `make lint && make test && make build-release && make dmg`
 - CI-style local check: `make ci-build` (includes `make arch-check`)

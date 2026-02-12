@@ -1,7 +1,6 @@
 ---
 name: task-lifecycle
 description: This skill should be used when following the project's task lifecycle, from initialization and branching to implementation, verification, and cleanup.
-trigger: always_on
 ---
 
 # Universal Task Lifecycle
@@ -68,6 +67,7 @@ Repeat the following loop until the task is complete:
 2. **Run proportional checks during development**:
    - Fast lane: staged lint/format and targeted tests when relevant.
    - Full lane: run targeted tests and/or `make build` as needed while iterating.
+   - Prefer `make preflight` before final push/merge to run the canonical scripted gates (`build + test + lint`).
    - Run `make arch-check` when changing architecture boundaries/access control/import rules.
    - Run `make preview-check` when adding/changing SwiftUI views.
    - If tests touch module internals, ensure the test target depends on that module explicitly in `Package.swift`.
@@ -95,6 +95,7 @@ Before the final push/merge, perform a local review using **[code-review](../cod
    - Fast lane minimum: `make test`
    - Full lane minimum: `make build` + `make test`
    - `make lint` is recommended (mandatory for broad refactors)
+   - Preferred single command: `make preflight`
 5. **Atomic commits for review fixes**: Commit review-driven changes separately from feature work.
 
 ## Phase 4: Integration (Push / Merge)

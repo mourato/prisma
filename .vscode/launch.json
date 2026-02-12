@@ -4,11 +4,31 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug MeetingAssistant",
-            "program": "${workspaceFolder}/MeetingAssistant/dist/MeetingAssistant.app/Contents/MacOS/MeetingAssistant",
+            "name": "Debug MeetingAssistant (CLI Build)",
+            "program": "${workspaceFolder}/.xcode-build/Build/Products/Debug/MeetingAssistant.app/Contents/MacOS/MeetingAssistant",
             "args": [],
-            "cwd": "${workspaceFolder}/MeetingAssistant",
-            "preLaunchTask": "build-debug"
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "OS_ACTIVITY_MODE": "disable"
+            },
+            "preLaunchTask": "build-debug",
+            "sourceLanguages": [
+                "swift"
+            ]
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug MeetingAssistant (No Build)",
+            "program": "${workspaceFolder}/.xcode-build/Build/Products/Debug/MeetingAssistant.app/Contents/MacOS/MeetingAssistant",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "OS_ACTIVITY_MODE": "disable"
+            },
+            "sourceLanguages": [
+                "swift"
+            ]
         },
         {
             "type": "swift",
