@@ -303,6 +303,29 @@
 "settings.assistant.try_keys" = "Teste suas Teclas";
 "settings.assistant.try_keys_hint" = "Clique na caixa de texto abaixo primeiro.";
 "settings.assistant.reset" = "Restaurar atalho padrão";
+"settings.assistant.integrations.title" = "Integrações";
+"settings.assistant.integrations.description" = "Configure para onde a saída do Assistant deve ser enviada após o processamento por voz.";
+"settings.assistant.integrations.output_mode" = "Modo de Saída";
+"settings.assistant.integrations.output_mode.replace_selection" = "Substituir";
+"settings.assistant.integrations.output_mode.send_to_raycast" = "Raycast";
+"settings.assistant.integrations.output_mode.both" = "Ambos";
+"settings.assistant.integrations.current" = "Integração Atual";
+"settings.assistant.integrations.add_button" = "Adicionar integração";
+"settings.assistant.integrations.remove_button" = "Remover integração";
+"settings.assistant.integrations.integration_name" = "Nome da integração selecionada";
+"settings.assistant.integrations.default_name" = "Integração %d";
+"settings.assistant.integrations.integration_enabled" = "Ativar integração selecionada";
+"settings.assistant.integrations.integration_deeplink" = "Deeplink da integração selecionada";
+"settings.assistant.integrations.raycast_enabled" = "Ativar integração com Raycast";
+"settings.assistant.integrations.raycast_deeplink" = "Deeplink do comando no Raycast";
+"settings.assistant.integrations.valid_deeplink" = "Deeplink do Raycast válido.";
+"settings.assistant.integrations.invalid_deeplink" = "Deeplink inválido. Ele deve começar com raycast://";
+"settings.assistant.integrations.test_button" = "Testar integração com Raycast";
+"settings.assistant.integrations.test_message" = "Olá Raycast. Este é um teste de integração do Meeting Assistant.";
+"settings.assistant.integrations.test_success" = "Deeplink do Raycast aberto com sucesso.";
+"settings.assistant.integrations.test_success_clipboard_fallback" = "Raycast aberto. Comando copiado para a área de transferência por limite de URL.";
+"settings.assistant.integrations.test_invalid_deeplink" = "Deeplink inválido. Verifique a URL do comando no Raycast.";
+"settings.assistant.integrations.test_failed" = "Não foi possível abrir o deeplink do Raycast.";
 "assistant.error.microphone_permission" = "Permissão de microfone necessária para usar o Assistant.";
 "assistant.error.accessibility_permission" = "Permissão de Acessibilidade necessária para editar o texto selecionado.";
 "assistant.error.no_selection" = "Nenhum texto selecionado no app ativo.";
@@ -311,6 +334,10 @@
 "assistant.error.stop_failed" = "Não foi possível finalizar a gravação do Assistant.";
 "assistant.error.recording_in_progress" = "Há uma gravação em andamento. Finalize antes de usar o Assistant.";
 "assistant.error.processing_failed" = "Não foi possível processar o comando do Assistant.";
+"assistant.error.raycast_integration_disabled" = "A integração com Raycast está desativada nas configurações do Assistant.";
+"assistant.error.raycast_deeplink_invalid" = "O deeplink do Raycast é inválido. Verifique Integrations no Assistant.";
+"assistant.error.raycast_open_failed" = "Não foi possível abrir o Raycast com o deeplink configurado.";
+"assistant.error.raycast_opened_clipboard_fallback" = "Raycast aberto e comando copiado para a área de transferência por limite de URL.";
 
 /* Assistant Visual Feedback */
 "settings.assistant.visual_feedback" = "Feedback Visual";
@@ -630,6 +657,7 @@
 
 /* Assistant */
 "assistant.prompt_title" = "Comando do Assistant";
+"assistant.raycast.prompt_title" = "Comando do Assistant para Raycast";
 
 /* Sound Feedback Settings */
 "settings.general.sound_feedback" = "Feedback Sonoro";
