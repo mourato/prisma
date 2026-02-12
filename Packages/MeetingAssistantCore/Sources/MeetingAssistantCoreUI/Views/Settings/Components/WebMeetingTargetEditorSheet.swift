@@ -86,7 +86,7 @@ public struct WebMeetingTargetEditorSheet: View {
             app: selectedApp,
             displayName: displayName.trimmingCharacters(in: .whitespacesAndNewlines),
             urlPatterns: parsedURLPatterns,
-            browserBundleIdentifiers: browserBundleIdentifiers
+            browserBundleIdentifiers: []
         )
     }
 
