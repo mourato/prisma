@@ -43,6 +43,7 @@
 "metrics.activity.subtitle" = "Last 365 days";
 "metrics.activity.legend.none" = "No words";
 "metrics.activity.legend.most" = "Busiest day";
+"metrics.activity.tooltip.words_on_date" = "%1$@ words on %2$@";
 
 
 "settings.general.theme" = "App Theme";
