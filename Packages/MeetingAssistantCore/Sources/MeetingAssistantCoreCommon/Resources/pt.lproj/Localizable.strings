@@ -38,6 +38,12 @@
 "metrics.summary.keystrokes" = "Teclas Economizadas";
 "metrics.summary.keystrokes_detail" = "menos toques no teclado";
 
+/* Activity Heatmap */
+"metrics.activity.title" = "Atividade de Transcrição";
+"metrics.activity.subtitle" = "Últimos 365 dias";
+"metrics.activity.legend.none" = "Nenhuma palavra";
+"metrics.activity.legend.most" = "Dia mais ativo";
+
 
 "settings.general.theme" = "Tema do Aplicativo";
 "settings.general.theme.system" = "Sistema";
@@ -222,8 +228,6 @@
 "settings.context_awareness.accessibility_text_desc" = "Captura texto selecionado ou em foco no app ativo via APIs de Acessibilidade (requer permissão de Acessibilidade).";
 "settings.context_awareness.permission_title" = "Permissão de Acessibilidade necessária";
 "settings.context_awareness.permission_desc" = "Ative Acessibilidade para ler o texto em foco no app ativo.";
-"settings.context_awareness.unsupported_title" = "Texto em foco indisponível";
-"settings.context_awareness.unsupported_desc" = "O app ativo não expõe texto em foco. Tente outro app ou campo.";
 "settings.context_awareness.support_status_check" = "Verificar suporte";
 "settings.context_awareness.protect_sensitive_apps" = "Proteger Apps Sensíveis";
 "settings.context_awareness.protect_sensitive_apps_desc" = "Ignora a captura de contexto quando o app ativo está na lista de apps sensíveis.";

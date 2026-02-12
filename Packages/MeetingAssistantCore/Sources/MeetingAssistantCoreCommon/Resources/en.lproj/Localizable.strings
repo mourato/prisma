@@ -38,6 +38,12 @@
 "metrics.summary.keystrokes" = "Keystrokes Saved";
 "metrics.summary.keystrokes_detail" = "fewer keystrokes";
 
+/* Activity Heatmap */
+"metrics.activity.title" = "Transcription Activity";
+"metrics.activity.subtitle" = "Last 365 days";
+"metrics.activity.legend.none" = "No words";
+"metrics.activity.legend.most" = "Busiest day";
+
 
 "settings.general.theme" = "App Theme";
 "settings.general.theme.system" = "System";
@@ -223,8 +229,6 @@
 "settings.context_awareness.accessibility_text_desc" = "Capture selected or focused text from the active app via Accessibility APIs (requires Accessibility permission).";
 "settings.context_awareness.permission_title" = "Accessibility permission required";
 "settings.context_awareness.permission_desc" = "Enable Accessibility to read focused text from the active app.";
-"settings.context_awareness.unsupported_title" = "Focused text not available";
-"settings.context_awareness.unsupported_desc" = "The active app does not expose focused text. Try another app or field.";
 "settings.context_awareness.support_status_check" = "Check support";
 "settings.context_awareness.protect_sensitive_apps" = "Protect Sensitive Apps";
 "settings.context_awareness.protect_sensitive_apps_desc" = "Skip context capture when the active app is on the sensitive-app blocklist.";

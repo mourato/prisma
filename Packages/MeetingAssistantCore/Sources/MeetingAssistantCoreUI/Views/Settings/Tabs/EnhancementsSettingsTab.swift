@@ -334,14 +334,7 @@ public struct EnhancementsSettingsTab: View {
                     .controlSize(.small)
                 }
 
-            case .noFocusedElement, .unsupported:
-                MACallout(
-                    kind: .info,
-                    title: "settings.context_awareness.unsupported_title".localized,
-                    message: "settings.context_awareness.unsupported_desc".localized
-                )
-
-            case .noActiveApp, .supported, .unknown:
+            case .noActiveApp, .supported, .unknown, .noFocusedElement, .unsupported:
                 EmptyView()
             }
 
