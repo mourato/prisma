@@ -51,15 +51,16 @@ public class LocalTranscriptionClient {
         // Use passed settings or fallback to singleton (for app-process usage)
         let diarizationSetting = isDiarizationEnabled ?? AppSettingsStore.shared.isDiarizationEnabled
         let diarizationEnabled = diarizationSetting && FeatureFlags.enableDiarization
-        let minS = minSpeakers ?? AppSettingsStore.shared.minSpeakers
-        let maxS = maxSpeakers ?? AppSettingsStore.shared.maxSpeakers
-        let numS = numSpeakers ?? AppSettingsStore.shared.numSpeakers
+        _ = (minSpeakers, maxSpeakers, numSpeakers)
+        let minS: Int? = nil
+        let maxS: Int? = nil
+        let numS: Int? = nil
 
         // Check if diarization is enabled
         if diarizationEnabled {
             // Perform diarization
             logger.info(
-                "Diarization enabled. Processing (min=\(minS ?? 0), max=\(maxS ?? 0), num=\(numS ?? 0))..."
+                "Diarization enabled. Processing with automatic speaker count..."
             )
             do {
                 let diarizationSegments = try await manager.diarize(
