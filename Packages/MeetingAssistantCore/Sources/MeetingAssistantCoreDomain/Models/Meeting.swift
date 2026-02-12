@@ -86,6 +86,8 @@ public enum MeetingApp: String, CaseIterable, Codable, Sendable {
 public struct Meeting: Identifiable, Codable, Hashable, Sendable {
     public let id: UUID
     public let app: MeetingApp
+    public let appBundleIdentifier: String?
+    public let appDisplayName: String?
     public var type: MeetingType = .general
     public var state: MeetingState = .idle
     public let startTime: Date
@@ -95,6 +97,8 @@ public struct Meeting: Identifiable, Codable, Hashable, Sendable {
     public init(
         id: UUID = UUID(),
         app: MeetingApp,
+        appBundleIdentifier: String? = nil,
+        appDisplayName: String? = nil,
         type: MeetingType = .general,
         state: MeetingState = .idle,
         startTime: Date = Date(),
@@ -103,6 +107,8 @@ public struct Meeting: Identifiable, Codable, Hashable, Sendable {
     ) {
         self.id = id
         self.app = app
+        self.appBundleIdentifier = appBundleIdentifier
+        self.appDisplayName = appDisplayName
         self.type = type
         self.state = state
         self.startTime = startTime
@@ -130,7 +136,8 @@ public struct Meeting: Identifiable, Codable, Hashable, Sendable {
     }
 
     public var appName: String {
-        app.displayName
+        let trimmed = appDisplayName?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return (trimmed?.isEmpty == false) ? trimmed! : app.displayName
     }
 
     public var appIcon: String {

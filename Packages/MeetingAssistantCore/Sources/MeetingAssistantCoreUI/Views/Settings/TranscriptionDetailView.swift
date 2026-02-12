@@ -82,7 +82,7 @@ public struct TranscriptionDetailView: View {
 
             HStack(spacing: 8) {
                 statusBadge(text: "transcription.completed".localized, color: .green, icon: "checkmark.circle.fill")
-                statusBadge(text: transcription.meeting.appName, color: .blue, icon: "mic.fill")
+                appBadge(text: transcription.meeting.appName, color: .blue)
                 if isSourceEditable {
                     sourcePicker
                 }
@@ -137,6 +137,23 @@ public struct TranscriptionDetailView: View {
     private func statusBadge(text: String, color: Color, icon: String) -> some View {
         HStack(spacing: 4) {
             Image(systemName: icon)
+            Text(text)
+        }
+        .font(.caption)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(color.opacity(0.15), in: Capsule())
+        .foregroundStyle(color)
+    }
+
+    private func appBadge(text: String, color: Color) -> some View {
+        HStack(spacing: 4) {
+            AppIconView(
+                bundleIdentifier: transcription.meeting.appBundleIdentifier,
+                fallbackSystemName: transcription.meeting.appIcon,
+                size: 14,
+                cornerRadius: 3
+            )
             Text(text)
         }
         .font(.caption)

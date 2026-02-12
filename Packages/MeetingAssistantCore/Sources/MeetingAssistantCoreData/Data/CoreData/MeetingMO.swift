@@ -11,6 +11,8 @@ import Foundation
 public final class MeetingMO: NSManagedObject {
     @NSManaged public var id: UUID
     @NSManaged public var appRawValue: String
+    @NSManaged public var appBundleIdentifier: String?
+    @NSManaged public var appDisplayName: String?
     @NSManaged public var startTime: Date
     @NSManaged public var endTime: Date?
     @NSManaged public var audioFilePath: String?
@@ -46,6 +48,8 @@ extension MeetingMO {
         MeetingEntity(
             id: id,
             app: DomainMeetingApp(rawValue: appRawValue) ?? .unknown,
+            appBundleIdentifier: appBundleIdentifier,
+            appDisplayName: appDisplayName,
             startTime: startTime,
             endTime: endTime,
             audioFilePath: audioFilePath
@@ -56,6 +60,8 @@ extension MeetingMO {
     func update(from entity: MeetingEntity) {
         id = entity.id
         appRawValue = entity.app.rawValue
+        appBundleIdentifier = entity.appBundleIdentifier
+        appDisplayName = entity.appDisplayName
         startTime = entity.startTime
         endTime = entity.endTime
         audioFilePath = entity.audioFilePath

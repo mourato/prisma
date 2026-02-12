@@ -138,8 +138,6 @@ public struct TranscriptionCardView: View {
                 .labelsHidden()
                 .frame(width: 250)
 
-                sourceInlineControl
-
                 Spacer()
 
                 // Actions
@@ -299,7 +297,7 @@ public struct TranscriptionCardView: View {
             return AnyView(sourceMenu)
         }
 
-        return AnyView(sourceLabel(text: appSource.displayName))
+        return AnyView(sourceLabel(text: transcription.appName))
     }
 
     private var sourceMenu: some View {
@@ -325,8 +323,12 @@ public struct TranscriptionCardView: View {
 
     private func sourceLabel(text: String) -> some View {
         HStack(spacing: 4) {
-            Image(systemName: "tag")
-                .font(.caption2)
+            AppIconView(
+                bundleIdentifier: transcription.appBundleIdentifier,
+                fallbackSystemName: appSource.icon,
+                size: 14,
+                cornerRadius: 3
+            )
             Text(text)
                 .font(.caption2)
         }
@@ -362,6 +364,7 @@ private extension TranscriptionMetadata {
             meetingId: UUID(),
             appName: "Google Meet",
             appRawValue: "google-meet",
+            appBundleIdentifier: "com.google.Chrome",
             startTime: Date().addingTimeInterval(-900),
             createdAt: Date(),
             previewText: "Resumo da sprint: concluímos os endpoints de transcrição, faltando validar tratamento de erros e UX da aba de settings.",

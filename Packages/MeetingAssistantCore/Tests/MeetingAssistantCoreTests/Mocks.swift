@@ -199,6 +199,7 @@ class MockStorageService: StorageService, @unchecked Sendable {
                 meetingId: transcription.meeting.id,
                 appName: transcription.meeting.appName,
                 appRawValue: transcription.meeting.app.rawValue,
+                appBundleIdentifier: transcription.meeting.appBundleIdentifier,
                 startTime: transcription.meeting.startTime,
                 createdAt: transcription.createdAt,
                 previewText: transcription.preview,
