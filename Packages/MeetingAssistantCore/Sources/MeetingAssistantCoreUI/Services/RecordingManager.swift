@@ -74,6 +74,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     private let textContextPolicy: TextContextPolicy
     private let transcribeAudioUseCase: TranscribeAudioUseCase
     private let activeAppContextProvider: any ActiveAppContextProvider
+    private let browserProviders: [String: BrowserActiveTabURLProviding] = BrowserProviderRegistry.defaultProviders()
 
     private var cancellables = Set<AnyCancellable>()
     private var statusCheckTask: Task<Void, Never>?
@@ -81,6 +82,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     private var postProcessingContext: String?
     private var postProcessingContextItems: [TranscriptionContextItem] = []
     private var dictationStartBundleIdentifier: String?
+    private var dictationStartURL: URL?
 
     // MARK: - Computed Properties for Actor State
 
@@ -283,9 +285,11 @@ public extension RecordingManager {
             let meeting = createMeeting(type: resolveMeetingType())
             currentMeeting = meeting
             dictationStartBundleIdentifier = nil
+            dictationStartURL = nil
             if source == .microphone {
                 let context = try? await activeAppContextProvider.fetchActiveAppContext()
                 dictationStartBundleIdentifier = context?.bundleIdentifier
+                dictationStartURL = activeBrowserURL(for: context?.bundleIdentifier)
             }
             let contextCapture = await capturePostProcessingContext(for: meeting)
             postProcessingContext = contextCapture.context
@@ -931,13 +935,35 @@ extension RecordingManager {
 
     private func shouldForceMarkdownForDictation(settings: AppSettingsStore) -> Bool {
         guard let bundleIdentifier = dictationStartBundleIdentifier else { return false }
-        let normalized = normalizeBundleIdentifier(bundleIdentifier)
-        let targets = Set(settings.markdownTargetBundleIdentifiers.map(normalizeBundleIdentifier))
-        return targets.contains(normalized)
+        let normalized = WebTargetDetection.normalizeBundleIdentifier(bundleIdentifier)
+        let appTargets = Set(settings.markdownTargetBundleIdentifiers.map(WebTargetDetection.normalizeBundleIdentifier))
+        if appTargets.contains(normalized) {
+            return true
+        }
+
+        let webTargets = settings.markdownWebTargets
+        guard !webTargets.isEmpty else { return false }
+
+        if let url = dictationStartURL,
+           WebTargetDetection.matchTarget(for: url, bundleIdentifier: normalized, targets: webTargets) != nil {
+            return true
+        }
+
+        if WebTargetDetection.matchTargetByWindowTitle(
+            bundleIdentifier: normalized,
+            targets: webTargets
+        ) != nil {
+            return true
+        }
+
+        return false
     }
 
-    private func normalizeBundleIdentifier(_ value: String) -> String {
-        value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    private func activeBrowserURL(for bundleIdentifier: String?) -> URL? {
+        guard let bundleIdentifier else { return nil }
+        let normalized = WebTargetDetection.normalizeBundleIdentifier(bundleIdentifier)
+        guard let provider = browserProviders[normalized] else { return nil }
+        return provider.activeTabURL()
     }
 
     private static let markdownFormatInstruction = """

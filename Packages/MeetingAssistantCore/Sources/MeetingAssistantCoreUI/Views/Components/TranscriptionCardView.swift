@@ -138,8 +138,6 @@ public struct TranscriptionCardView: View {
                 .labelsHidden()
                 .frame(width: 250)
 
-                sourceInlineControl
-
                 Spacer()
 
                 // Actions

@@ -309,14 +309,8 @@ public struct MeetingSettingsTab: View {
     }
 
     private func browserNames(from bundleIdentifiers: [String]) -> String {
-        let known: [String: String] = [
-            "com.apple.Safari": "Safari",
-            "com.google.Chrome": "Google Chrome",
-            "com.microsoft.edgemac": "Microsoft Edge",
-        ]
-
         let names = bundleIdentifiers
-            .compactMap { known[$0] ?? $0 }
+            .compactMap { WebTargetEditorSupport.browserDisplayName(for: $0) }
             .sorted()
 
         return "settings.meetings.web_targets.browsers".localized(with: names.joined(separator: ", "))

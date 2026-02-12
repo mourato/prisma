@@ -422,6 +422,9 @@ public class AppSettingsStore: ObservableObject {
         "net.shinyfrog.bear"
     ]
 
+    /// Default list of websites that should force Markdown formatting for dictation.
+    public static let defaultMarkdownWebTargets: [WebContextTarget] = []
+
     /// Default list of apps monitored to start/stop meeting recordings.
     public static let defaultMonitoredMeetingBundleIdentifiers: [String] = [
         "com.apple.Safari",
@@ -519,6 +522,7 @@ public class AppSettingsStore: ObservableObject {
         static let contextAwarenessRedactSensitiveData = "contextAwarenessRedactSensitiveData"
         static let contextAwarenessExcludedBundleIDs = "contextAwarenessExcludedBundleIDs"
         static let markdownTargetBundleIdentifiers = "markdownTargetBundleIdentifiers"
+        static let markdownWebTargets = "markdownWebTargets"
         static let monitoredMeetingBundleIdentifiers = "monitoredMeetingBundleIdentifiers"
         static let webMeetingTargets = "webMeetingTargets"
     }
@@ -889,6 +893,11 @@ public class AppSettingsStore: ObservableObject {
         didSet { save(markdownTargetBundleIdentifiers, forKey: Keys.markdownTargetBundleIdentifiers) }
     }
 
+    /// Website targets that should force Markdown formatting for dictation.
+    @Published public var markdownWebTargets: [WebContextTarget] {
+        didSet { save(markdownWebTargets, forKey: Keys.markdownWebTargets) }
+    }
+
     /// Bundle identifiers monitored to auto-start/stop meetings.
     @Published public var monitoredMeetingBundleIdentifiers: [String] {
         didSet { save(monitoredMeetingBundleIdentifiers, forKey: Keys.monitoredMeetingBundleIdentifiers) }
@@ -902,6 +911,11 @@ public class AppSettingsStore: ObservableObject {
     /// Indicates whether the Markdown targets list has been explicitly configured.
     public var hasConfiguredMarkdownTargets: Bool {
         UserDefaults.standard.object(forKey: Keys.markdownTargetBundleIdentifiers) != nil
+    }
+
+    /// Indicates whether Markdown web targets have been explicitly configured.
+    public var hasConfiguredMarkdownWebTargets: Bool {
+        UserDefaults.standard.object(forKey: Keys.markdownWebTargets) != nil
     }
 
     /// Indicates whether the monitored meetings list has been explicitly configured.
@@ -1096,6 +1110,8 @@ public class AppSettingsStore: ObservableObject {
         contextAwarenessExcludedBundleIDs = Self.loadDecoded([String].self, forKey: Keys.contextAwarenessExcludedBundleIDs) ?? []
         markdownTargetBundleIdentifiers = Self.loadDecoded([String].self, forKey: Keys.markdownTargetBundleIdentifiers)
             ?? Self.defaultMarkdownTargetBundleIdentifiers
+        markdownWebTargets = Self.loadDecoded([WebContextTarget].self, forKey: Keys.markdownWebTargets)
+            ?? Self.defaultMarkdownWebTargets
         monitoredMeetingBundleIdentifiers = Self.loadDecoded([String].self, forKey: Keys.monitoredMeetingBundleIdentifiers)
             ?? Self.defaultMonitoredMeetingBundleIdentifiers
         webMeetingTargets = Self.loadDecoded([WebMeetingTarget].self, forKey: Keys.webMeetingTargets)
@@ -1276,6 +1292,7 @@ public class AppSettingsStore: ObservableObject {
         meetingTypeAutoDetectEnabled = false
         contextAwarenessExplicitActionOnly = true
         markdownTargetBundleIdentifiers = Self.defaultMarkdownTargetBundleIdentifiers
+        markdownWebTargets = Self.defaultMarkdownWebTargets
         monitoredMeetingBundleIdentifiers = Self.defaultMonitoredMeetingBundleIdentifiers
         webMeetingTargets = Self.defaultWebMeetingTargets
     }
