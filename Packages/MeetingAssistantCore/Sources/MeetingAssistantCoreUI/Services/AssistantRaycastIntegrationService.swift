@@ -28,7 +28,6 @@ public final class AssistantRaycastIntegrationService: AssistantDeepLinkDispatch
 
     private enum Constants {
         static let fallbackTextQueryName = "fallbackText"
-        static let maxDeepLinkLength = 3_800
     }
 
     private let openURL: (URL) -> Bool
