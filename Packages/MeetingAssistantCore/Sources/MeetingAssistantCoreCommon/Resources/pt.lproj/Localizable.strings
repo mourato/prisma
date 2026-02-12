@@ -43,6 +43,7 @@
 "metrics.activity.subtitle" = "Últimos 365 dias";
 "metrics.activity.legend.none" = "Nenhuma palavra";
 "metrics.activity.legend.most" = "Dia mais ativo";
+"metrics.activity.tooltip.words_on_date" = "%1$@ palavras em %2$@";
 
 
 "settings.general.theme" = "Tema do Aplicativo";
