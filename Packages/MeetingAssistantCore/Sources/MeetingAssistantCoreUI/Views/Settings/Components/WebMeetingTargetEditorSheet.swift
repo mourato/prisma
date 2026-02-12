@@ -26,7 +26,7 @@ public struct WebMeetingTargetEditorSheet: View {
         _selectedApp = State(initialValue: initialApp)
         _displayName = State(initialValue: target?.displayName ?? initialApp.displayName)
         _urlPatternsText = State(initialValue: (target?.urlPatterns ?? Self.defaultURLPatterns(for: initialApp)).joined(separator: "\n"))
-        _selectedBrowsers = State(initialValue: Set(target?.browserBundleIdentifiers ?? Self.defaultBrowsers))
+        _selectedBrowsers = State(initialValue: Set(target?.browserBundleIdentifiers ?? WebTargetEditorSupport.defaultBrowserBundleIdentifiers))
     }
 
     public var body: some View {
@@ -47,58 +47,18 @@ public struct WebMeetingTargetEditorSheet: View {
                 .pickerStyle(.menu)
             }
 
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-                Text("settings.meetings.web_targets.name_label".localized)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                TextField("", text: $displayName)
-                    .textFieldStyle(.roundedBorder)
-            }
-
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-                Text("settings.meetings.web_targets.url_label".localized)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                Text("settings.meetings.web_targets.url_desc".localized)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-
-                TextEditor(text: $urlPatternsText)
-                    .font(.caption.monospaced())
-                    .frame(minHeight: 80)
-                    .padding(6)
-                    .background(MeetingAssistantDesignSystem.Colors.subtleFill2)
-                    .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
-            }
-
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-                Text("settings.meetings.web_targets.browser_label".localized)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                ForEach(browserOptions, id: \.bundleIdentifier) { option in
-                    MAToggleRow(
-                        option.name,
-                        isOn: binding(for: option.bundleIdentifier)
-                    )
-                }
-            }
-
-            HStack {
-                Spacer()
-                Button("common.cancel".localized) {
-                    onCancel()
-                }
-                .buttonStyle(.bordered)
-
-                Button("common.save".localized) {
-                    onSave(buildTarget())
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(!canSave)
-            }
+            WebTargetEditorFields(
+                nameLabelKey: "settings.meetings.web_targets.name_label",
+                urlLabelKey: "settings.meetings.web_targets.url_label",
+                urlDescriptionKey: "settings.meetings.web_targets.url_desc",
+                browserLabelKey: "settings.meetings.web_targets.browser_label",
+                canSave: canSave,
+                onSave: { onSave(buildTarget()) },
+                onCancel: onCancel,
+                displayName: $displayName,
+                urlPatternsText: $urlPatternsText,
+                selectedBrowsers: $selectedBrowsers
+            )
         }
         .padding()
         .frame(minWidth: 420)
@@ -119,11 +79,7 @@ public struct WebMeetingTargetEditorSheet: View {
     }
 
     private var parsedURLPatterns: [String] {
-        urlPatternsText
-            .replacingOccurrences(of: ",", with: "\n")
-            .components(separatedBy: .newlines)
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
+        WebTargetEditorSupport.parseURLPatterns(from: urlPatternsText)
     }
 
     private func buildTarget() -> WebMeetingTarget {
@@ -136,38 +92,11 @@ public struct WebMeetingTargetEditorSheet: View {
         )
     }
 
-    private func binding(for bundleIdentifier: String) -> Binding<Bool> {
-        Binding(
-            get: { selectedBrowsers.contains(bundleIdentifier) },
-            set: { isSelected in
-                if isSelected {
-                    selectedBrowsers.insert(bundleIdentifier)
-                } else {
-                    selectedBrowsers.remove(bundleIdentifier)
-                }
-            }
-        )
-    }
-
     private var availableApps: [MeetingApp] {
         MeetingApp.allCases.filter { app in
             app != .manualMeeting && app != .importedFile && app != .unknown
         }
     }
-
-    private var browserOptions: [BrowserOption] {
-        [
-            BrowserOption(name: "Safari", bundleIdentifier: "com.apple.Safari"),
-            BrowserOption(name: "Google Chrome", bundleIdentifier: "com.google.Chrome"),
-            BrowserOption(name: "Microsoft Edge", bundleIdentifier: "com.microsoft.edgemac"),
-        ]
-    }
-
-    private static let defaultBrowsers: [String] = [
-        "com.apple.Safari",
-        "com.google.Chrome",
-        "com.microsoft.edgemac",
-    ]
 
     private static func defaultURLPatterns(for app: MeetingApp) -> [String] {
         AppSettingsStore.defaultWebMeetingTargets
@@ -176,10 +105,6 @@ public struct WebMeetingTargetEditorSheet: View {
             ?? []
     }
 
-    private struct BrowserOption {
-        let name: String
-        let bundleIdentifier: String
-    }
 }
 
 #Preview {

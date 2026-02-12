@@ -13,6 +13,7 @@ public struct EnhancementsSettingsTab: View {
     @StateObject private var viewModel = AISettingsViewModel(settings: .shared)
     @StateObject private var postProcessingViewModel = PostProcessingSettingsViewModel()
     @StateObject private var markdownTargetsViewModel: InstalledAppsSelectionViewModel
+    @StateObject private var markdownWebTargetsViewModel: WebMarkdownTargetsViewModel
     @State private var supportStatus: TextContextSupportStatus = .unknown
     private let supportChecker = TextContextSupportChecker()
 
@@ -25,6 +26,7 @@ public struct EnhancementsSettingsTab: View {
                 saveBundleIdentifiers: { settings.markdownTargetBundleIdentifiers = $0 }
             )
         )
+        _markdownWebTargetsViewModel = StateObject(wrappedValue: WebMarkdownTargetsViewModel(settings: settings))
     }
 
     public var body: some View {
@@ -48,6 +50,26 @@ public struct EnhancementsSettingsTab: View {
                 onCancel: { postProcessingViewModel.showSystemPromptEditor = false },
                 onRestoreDefault: { postProcessingViewModel.resetSystemPrompt() }
             )
+        }
+        .sheet(isPresented: $markdownWebTargetsViewModel.showEditor) {
+            WebMarkdownTargetEditorSheet(
+                target: markdownWebTargetsViewModel.editingTarget,
+                onSave: markdownWebTargetsViewModel.handleSave,
+                onCancel: { markdownWebTargetsViewModel.showEditor = false }
+            )
+        }
+        .alert(
+            "settings.markdown_targets.websites.delete_confirm_title".localized,
+            isPresented: $markdownWebTargetsViewModel.showDeleteConfirmation
+        ) {
+            Button("common.cancel".localized, role: .cancel) {}
+            Button("common.delete".localized, role: .destructive) {
+                markdownWebTargetsViewModel.executeDelete()
+            }
+        } message: {
+            if let target = markdownWebTargetsViewModel.targetToDelete {
+                Text("settings.markdown_targets.websites.delete_confirm_message".localized(with: target.displayName))
+            }
         }
     }
 
@@ -154,14 +176,112 @@ public struct EnhancementsSettingsTab: View {
     }
 
     private var markdownTargetsSection: some View {
-        InstalledAppsSelectionSection(
-            titleKey: "settings.markdown_targets.title",
-            descriptionKey: "settings.markdown_targets.description",
-            emptyKey: "settings.markdown_targets.empty",
-            addButtonKey: "settings.markdown_targets.add",
-            icon: "textformat",
-            viewModel: markdownTargetsViewModel
-        )
+        MAGroup("settings.markdown_targets.title".localized, icon: "textformat") {
+            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                InstalledAppsSelectionList(
+                    descriptionKey: "settings.markdown_targets.description",
+                    emptyKey: "settings.markdown_targets.empty",
+                    addButtonKey: "settings.markdown_targets.add",
+                    viewModel: markdownTargetsViewModel
+                )
+
+                Divider()
+
+                markdownWebTargetsSection
+            }
+        }
+    }
+
+    private var markdownWebTargetsSection: some View {
+        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+            Text("settings.markdown_targets.websites.title".localized)
+                .font(.subheadline)
+                .fontWeight(.medium)
+
+            Text("settings.markdown_targets.websites.desc".localized)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            if markdownWebTargetsViewModel.targets.isEmpty {
+                Text("settings.markdown_targets.websites.empty".localized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(Array(markdownWebTargetsViewModel.targets.enumerated()), id: \.element.id) { index, target in
+                        markdownWebTargetRow(target)
+
+                        if index < markdownWebTargetsViewModel.targets.count - 1 {
+                            Divider()
+                        }
+                    }
+                }
+                .background(MeetingAssistantDesignSystem.Colors.subtleFill2)
+                .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+            }
+
+            HStack {
+                Spacer()
+                Button {
+                    markdownWebTargetsViewModel.addTarget()
+                } label: {
+                    Label("settings.markdown_targets.websites.add".localized, systemImage: "plus")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
+        }
+    }
+
+    private func markdownWebTargetRow(_ target: WebContextTarget) -> some View {
+        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+            Image(systemName: "globe")
+                .font(.title3)
+                .foregroundStyle(MeetingAssistantDesignSystem.Colors.iconHighlight)
+                .frame(width: 24)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(target.displayName)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                Text(target.urlPatterns.joined(separator: ", "))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text(browserNames(from: target.browserBundleIdentifiers))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Button {
+                markdownWebTargetsViewModel.editTarget(target)
+            } label: {
+                Image(systemName: "pencil")
+                    .accessibilityLabel("settings.markdown_targets.websites.edit".localized)
+            }
+            .buttonStyle(.borderless)
+            .controlSize(.small)
+
+            Button(role: .destructive) {
+                markdownWebTargetsViewModel.confirmDelete(target)
+            } label: {
+                Image(systemName: "trash")
+                    .accessibilityLabel("settings.markdown_targets.websites.delete".localized)
+            }
+            .buttonStyle(.borderless)
+            .controlSize(.small)
+        }
+        .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)
+        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
+    }
+
+    private func browserNames(from bundleIdentifiers: [String]) -> String {
+        let names = bundleIdentifiers
+            .map { WebTargetEditorSupport.browserDisplayName(for: $0) }
+            .sorted()
+        let display = names.joined(separator: ", ")
+        return "settings.markdown_targets.websites.browsers".localized(with: display)
     }
 
     @ViewBuilder

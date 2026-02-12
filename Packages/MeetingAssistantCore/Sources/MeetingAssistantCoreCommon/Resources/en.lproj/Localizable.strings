@@ -244,6 +244,20 @@
 "settings.markdown_targets.empty" = "No apps selected yet.";
 "settings.markdown_targets.add" = "Add App";
 "settings.markdown_targets.remove" = "Remove App";
+"settings.markdown_targets.websites.title" = "Websites";
+"settings.markdown_targets.websites.desc" = "Force Markdown formatting for dictation when these sites are active in supported browsers.";
+"settings.markdown_targets.websites.empty" = "No websites selected yet.";
+"settings.markdown_targets.websites.add" = "Add Website";
+"settings.markdown_targets.websites.edit" = "Edit website target";
+"settings.markdown_targets.websites.delete" = "Delete website target";
+"settings.markdown_targets.websites.browsers" = "Browsers: %@";
+"settings.markdown_targets.websites.editor_title" = "Website Target";
+"settings.markdown_targets.websites.name_label" = "Display name";
+"settings.markdown_targets.websites.url_label" = "URL patterns";
+"settings.markdown_targets.websites.url_desc" = "One pattern per line (or comma-separated). Example: docs.example.com";
+"settings.markdown_targets.websites.browser_label" = "Browsers";
+"settings.markdown_targets.websites.delete_confirm_title" = "Delete website target?";
+"settings.markdown_targets.websites.delete_confirm_message" = "Are you sure you want to delete \"%@\"?";
 
 /* Service Settings */
 "settings.service.title" = "Service";
