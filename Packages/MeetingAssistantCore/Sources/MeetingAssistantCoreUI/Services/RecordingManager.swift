@@ -977,13 +977,20 @@ extension RecordingManager {
         guard !webTargets.isEmpty else { return false }
 
         if let url = dictationStartURL,
-           WebTargetDetection.matchTarget(for: url, bundleIdentifier: normalized, targets: webTargets) != nil {
+           WebTargetDetection.matchTarget(
+               for: url,
+               bundleIdentifier: normalized,
+               targets: webTargets,
+               fallbackBrowserBundleIdentifiers: settings.webTargetBrowserBundleIdentifiers
+           ) != nil
+        {
             return true
         }
 
         if WebTargetDetection.matchTargetByWindowTitle(
             bundleIdentifier: normalized,
-            targets: webTargets
+            targets: webTargets,
+            fallbackBrowserBundleIdentifiers: settings.webTargetBrowserBundleIdentifiers
         ) != nil {
             return true
         }

@@ -101,7 +101,6 @@
 "settings.meetings.web_targets.app_label" = "Meeting app";
 "settings.meetings.web_targets.url_label" = "URL patterns";
 "settings.meetings.web_targets.url_desc" = "One pattern per line (or comma-separated). Example: meet.google.com";
-"settings.meetings.web_targets.browser_label" = "Browsers";
 "settings.meetings.web_targets.delete_confirm_title" = "Delete web target?";
 "settings.meetings.web_targets.delete_confirm_message" = "Are you sure you want to delete \"%@\"?";
 "settings.dictation.prompts" = "Dictation prompts";
@@ -240,6 +239,9 @@
 "settings.markdown_targets.empty" = "No apps selected yet.";
 "settings.markdown_targets.add" = "Add App";
 "settings.markdown_targets.remove" = "Remove App";
+"settings.web_targets.browsers.description" = "Browsers used to match website targets in Enhancements and Meetings.";
+"settings.web_targets.browsers.empty" = "No browsers selected yet.";
+"settings.web_targets.browsers.add" = "Add Browser";
 "settings.markdown_targets.websites.title" = "Websites";
 "settings.markdown_targets.websites.desc" = "Force Markdown formatting for dictation when these sites are active in supported browsers.";
 "settings.markdown_targets.websites.empty" = "No websites selected yet.";
@@ -251,14 +253,9 @@
 "settings.markdown_targets.websites.name_label" = "Display name";
 "settings.markdown_targets.websites.url_label" = "URL patterns";
 "settings.markdown_targets.websites.url_desc" = "One pattern per line (or comma-separated). Example: docs.example.com";
-"settings.markdown_targets.websites.browser_label" = "Browsers";
 "settings.markdown_targets.websites.delete_confirm_title" = "Delete website target?";
 "settings.markdown_targets.websites.delete_confirm_message" = "Are you sure you want to delete \"%@\"?";
 "settings.web_targets.any_browser" = "Any detected browser";
-"settings.web_targets.advanced.title" = "Advanced";
-"settings.web_targets.advanced.desc" = "Optional: restrict matching to specific browser bundle identifiers.";
-"settings.web_targets.advanced.bundle_ids_desc" = "One bundle ID per line (or comma-separated). Leave empty to match any detected browser.";
-"settings.web_targets.advanced.import_common" = "Import common browsers";
 
 /* Service Settings */
 "settings.service.title" = "Service";

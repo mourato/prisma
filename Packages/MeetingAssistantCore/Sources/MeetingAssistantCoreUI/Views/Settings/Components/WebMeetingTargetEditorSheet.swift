@@ -5,20 +5,22 @@ import SwiftUI
 
 public struct WebMeetingTargetEditorSheet: View {
     private let target: WebMeetingTarget?
+    private let browserBundleIdentifiers: [String]
     private let onSave: (WebMeetingTarget) -> Void
     private let onCancel: () -> Void
 
     @State private var selectedApp: MeetingApp
     @State private var displayName: String
     @State private var urlPatternsText: String
-    @State private var selectedBrowsers: Set<String>
 
     public init(
         target: WebMeetingTarget?,
+        browserBundleIdentifiers: [String],
         onSave: @escaping (WebMeetingTarget) -> Void,
         onCancel: @escaping () -> Void
     ) {
         self.target = target
+        self.browserBundleIdentifiers = browserBundleIdentifiers
         self.onSave = onSave
         self.onCancel = onCancel
 
@@ -26,7 +28,6 @@ public struct WebMeetingTargetEditorSheet: View {
         _selectedApp = State(initialValue: initialApp)
         _displayName = State(initialValue: target?.displayName ?? initialApp.displayName)
         _urlPatternsText = State(initialValue: (target?.urlPatterns ?? Self.defaultURLPatterns(for: initialApp)).joined(separator: "\n"))
-        _selectedBrowsers = State(initialValue: Set(target?.browserBundleIdentifiers ?? WebTargetEditorSupport.defaultBrowserBundleIdentifiers))
     }
 
     public var body: some View {
@@ -51,13 +52,11 @@ public struct WebMeetingTargetEditorSheet: View {
                 nameLabelKey: "settings.meetings.web_targets.name_label",
                 urlLabelKey: "settings.meetings.web_targets.url_label",
                 urlDescriptionKey: "settings.meetings.web_targets.url_desc",
-                browserLabelKey: "settings.meetings.web_targets.browser_label",
                 canSave: canSave,
                 onSave: { onSave(buildTarget()) },
                 onCancel: onCancel,
                 displayName: $displayName,
-                urlPatternsText: $urlPatternsText,
-                selectedBrowsers: $selectedBrowsers
+                urlPatternsText: $urlPatternsText
             )
         }
         .padding()
@@ -87,7 +86,7 @@ public struct WebMeetingTargetEditorSheet: View {
             app: selectedApp,
             displayName: displayName.trimmingCharacters(in: .whitespacesAndNewlines),
             urlPatterns: parsedURLPatterns,
-            browserBundleIdentifiers: Array(selectedBrowsers)
+            browserBundleIdentifiers: browserBundleIdentifiers
         )
     }
 
@@ -109,6 +108,7 @@ public struct WebMeetingTargetEditorSheet: View {
 #Preview {
     WebMeetingTargetEditorSheet(
         target: AppSettingsStore.defaultWebMeetingTargets.first,
+        browserBundleIdentifiers: AppSettingsStore.defaultWebTargetBrowserBundleIdentifiers,
         onSave: { _ in },
         onCancel: {}
     )
