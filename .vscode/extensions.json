@@ -1,6 +1,7 @@
 {
     "recommendations": [
-        "vknabel.vscode-swiftformat",
-        "vknabel.vscode-swiftlint"
+        "sswg.swift-lang",
+        "vadimcn.vscode-lldb",
+        "usernamehw.errorlens"
     ]
 }
