@@ -25,7 +25,7 @@ public class MeetingDetector: ObservableObject {
 
     private init(settings: AppSettingsStore = .shared) {
         self.settings = settings
-        self.browserProviders = Self.makeBrowserProviders()
+        self.browserProviders = BrowserProviderRegistry.defaultProviders()
         setupAppNotifications()
     }
 
@@ -109,7 +109,7 @@ public class MeetingDetector: ObservableObject {
 
         // For browser-based meetings, check window titles
         if app == .googleMeet {
-            return checkBrowserWindowTitles(for: app.windowTitlePatterns)
+            return WebTargetDetection.checkBrowserWindowTitles(for: app.windowTitlePatterns)
         }
 
         // For native apps, just check if running
@@ -164,13 +164,23 @@ public class MeetingDetector: ObservableObject {
             guard monitoredBundleIdentifiers.contains(normalizedBundleId) else { continue }
             guard let provider = browserProviders[normalizedBundleId] else { continue }
             if let url = provider.activeTabURL() {
-                if let match = matchWebTarget(for: url, bundleIdentifier: normalizedBundleId, targets: targets) {
+                if let match = WebTargetDetection.matchTarget(
+                    for: url,
+                    bundleIdentifier: normalizedBundleId,
+                    targets: targets
+                ) {
                     return match.app
                 }
                 continue
             }
 
-            if let match = matchWebTargetByWindowTitle(bundleIdentifier: normalizedBundleId, targets: targets) {
+            if let match = WebTargetDetection.matchTargetByWindowTitle(
+                bundleIdentifier: normalizedBundleId,
+                targets: targets,
+                patternProvider: { target in
+                    target.urlPatterns + target.app.windowTitlePatterns
+                }
+            ) {
                 return match.app
             }
         }
@@ -178,95 +188,6 @@ public class MeetingDetector: ObservableObject {
         return nil
     }
 
-    private func matchWebTarget(
-        for url: URL,
-        bundleIdentifier: String,
-        targets: [WebMeetingTarget]
-    ) -> WebMeetingTarget? {
-        let urlString = url.absoluteString.lowercased()
-
-        return targets.first { target in
-            let normalizedTargetBrowsers = target.browserBundleIdentifiers.map(normalizeBundleIdentifier)
-            guard normalizedTargetBrowsers.contains(bundleIdentifier) else { return false }
-            return target.urlPatterns.contains { pattern in
-                urlString.contains(pattern.lowercased())
-            }
-        }
-    }
-
-    private func matchWebTargetByWindowTitle(
-        bundleIdentifier: String,
-        targets: [WebMeetingTarget]
-    ) -> WebMeetingTarget? {
-        for target in targets {
-            let normalizedTargetBrowsers = target.browserBundleIdentifiers.map(normalizeBundleIdentifier)
-            guard normalizedTargetBrowsers.contains(bundleIdentifier) else { continue }
-
-            let patterns = (target.urlPatterns + target.app.windowTitlePatterns)
-                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                .filter { !$0.isEmpty }
-
-            if !patterns.isEmpty, checkBrowserWindowTitles(for: patterns) {
-                return target
-            }
-        }
-
-        return nil
-    }
-
-    private static func makeBrowserProviders() -> [String: BrowserActiveTabURLProviding] {
-        let providers: [String: BrowserActiveTabURLProviding?] = [
-            "com.apple.Safari": BrowserActiveTabURLProvider(
-                applicationName: "Safari",
-                scriptTemplate: BrowserScriptTemplates.safari
-            ),
-            "com.google.Chrome": BrowserActiveTabURLProvider(
-                applicationName: "Google Chrome",
-                scriptTemplate: BrowserScriptTemplates.chromium
-            ),
-            "com.microsoft.edgemac": BrowserActiveTabURLProvider(
-                applicationName: "Microsoft Edge",
-                scriptTemplate: BrowserScriptTemplates.chromium
-            ),
-        ]
-
-        var resolved: [String: BrowserActiveTabURLProviding] = [:]
-        for (bundleId, provider) in providers {
-            if let provider {
-                resolved[normalizeBundleIdentifierStatic(bundleId)] = provider
-            }
-        }
-        return resolved
-    }
-
-    private static func normalizeBundleIdentifierStatic(_ value: String) -> String {
-        value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-    }
-
-    /// Check browser window titles for meeting indicators.
-    private func checkBrowserWindowTitles(for patterns: [String]) -> Bool {
-        // Get window list
-        let windowInfoOptions: CGWindowListOption = [.optionOnScreenOnly]
-        guard
-            let windowList = CGWindowListCopyWindowInfo(
-                windowInfoOptions,
-                kCGNullWindowID
-            ) as? [[CFString: Any]]
-        else {
-            return false
-        }
-
-        for window in windowList {
-            guard let windowName = window[kCGWindowName] as? String else { continue }
-
-            for pattern in patterns where windowName.localizedCaseInsensitiveContains(pattern) {
-                self.logger.debug("Found matching window: \(windowName)")
-                return true
-            }
-        }
-
-        return false
-    }
 
     /// Setup notifications for app launches/terminations.
     private func setupAppNotifications() {

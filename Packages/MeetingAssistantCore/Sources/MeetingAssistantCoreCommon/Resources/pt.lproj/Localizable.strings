@@ -243,6 +243,20 @@
 "settings.markdown_targets.empty" = "Nenhum app selecionado ainda.";
 "settings.markdown_targets.add" = "Adicionar app";
 "settings.markdown_targets.remove" = "Remover app";
+"settings.markdown_targets.websites.title" = "Sites";
+"settings.markdown_targets.websites.desc" = "Força a formatação em Markdown no ditado quando esses sites estão ativos em navegadores compatíveis.";
+"settings.markdown_targets.websites.empty" = "Nenhum site selecionado ainda.";
+"settings.markdown_targets.websites.add" = "Adicionar site";
+"settings.markdown_targets.websites.edit" = "Editar alvo de site";
+"settings.markdown_targets.websites.delete" = "Excluir alvo de site";
+"settings.markdown_targets.websites.browsers" = "Navegadores: %@";
+"settings.markdown_targets.websites.editor_title" = "Alvo de Site";
+"settings.markdown_targets.websites.name_label" = "Nome de exibicao";
+"settings.markdown_targets.websites.url_label" = "Padroes de URL";
+"settings.markdown_targets.websites.url_desc" = "Um padrao por linha (ou separado por virgula). Exemplo: docs.exemplo.com";
+"settings.markdown_targets.websites.browser_label" = "Navegadores";
+"settings.markdown_targets.websites.delete_confirm_title" = "Excluir alvo de site?";
+"settings.markdown_targets.websites.delete_confirm_message" = "Tem certeza que deseja excluir \"%@\"?";
 
 /* Service Settings */
 "settings.service.title" = "Serviço";
