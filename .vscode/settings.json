@@ -38,5 +38,13 @@
         "**/DerivedData/**": true,
         "**/.swiftpm/**": true
     },
-    "makefile.configureOnOpen": false
+    "makefile.configureOnOpen": false,
+
+    // MARK: - Diagnostics in Editor (Error Lens)
+    "errorLens.enabled": true,
+    "errorLens.statusBarMessageEnabled": true,
+    "errorLens.gutterIconsEnabled": true,
+    "errorLens.excludeBySource": [
+        "cSpell"
+    ]
 }
