@@ -20,6 +20,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
     private let screenBorder: AssistantScreenBorderController
     private let settings: AppSettingsStore
     private let raycastIntegrationService: any AssistantDeepLinkDispatching
+    private let scriptRunner: AssistantBashScriptRunner
 
     private var currentRecordingURL: URL?
 
@@ -32,7 +33,8 @@ public final class AssistantVoiceCommandService: ObservableObject {
         selectionService: AssistantTextSelectionService = AssistantTextSelectionService(),
         screenBorder: AssistantScreenBorderController = AssistantScreenBorderController(),
         settings: AppSettingsStore = .shared,
-        raycastIntegrationService: any AssistantDeepLinkDispatching = AssistantRaycastIntegrationService()
+        raycastIntegrationService: any AssistantDeepLinkDispatching = AssistantRaycastIntegrationService(),
+        scriptRunner: AssistantBashScriptRunner = AssistantBashScriptRunner()
     ) {
         self.audioRecorder = audioRecorder
         self.transcriptionClient = transcriptionClient
@@ -43,6 +45,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
         self.screenBorder = screenBorder
         self.settings = settings
         self.raycastIntegrationService = raycastIntegrationService
+        self.scriptRunner = scriptRunner
     }
 
     public func startRecording() async {
@@ -106,11 +109,18 @@ public final class AssistantVoiceCommandService: ObservableObject {
                 throw AssistantVoiceCommandError.emptyCommand
             }
 
-            let outputMode = settings.assistantIntegrationOutputMode
+            guard let selectedIntegration = settings.assistantSelectedIntegration,
+                  selectedIntegration.isEnabled
+            else {
+                throw AssistantVoiceCommandError.integrationDisabled
+            }
+
+            let outputMode = selectedIntegration.outputMode
             AppLogger.info(
                 "Assistant command processed",
                 category: .assistant,
                 extra: [
+                    "integration": selectedIntegration.name,
                     "outputMode": outputMode.rawValue,
                     "commandLength": command.count,
                 ]
@@ -119,42 +129,83 @@ public final class AssistantVoiceCommandService: ObservableObject {
             if shouldReplaceSelection(for: outputMode) {
                 let (selectedText, snapshot) = try await selectionService.captureSelectedText()
 
+                guard let beforeAIInput = try await applyScriptIfNeeded(
+                    stage: .beforeAI,
+                    input: selectedText,
+                    integration: selectedIntegration
+                ) else {
+                    indicator.hide()
+                    screenBorder.hide()
+                    isProcessing = false
+                    return
+                }
+
+                let promptInstructions = normalizedPromptInstructions(from: selectedIntegration)
+                let promptText = promptInstructions ?? command
+
                 let prompt = PostProcessingPrompt(
                     title: "assistant.prompt_title".localized,
-                    promptText: command
+                    promptText: promptText
                 )
 
                 let processed = try await postProcessingService.processTranscription(
-                    selectedText,
+                    beforeAIInput,
                     with: prompt,
                     systemPromptOverride: AIPromptTemplates.assistantSystemPrompt
                 )
 
+                guard let output = try await applyScriptIfNeeded(
+                    stage: .afterAI,
+                    input: processed,
+                    integration: selectedIntegration
+                ) else {
+                    indicator.hide()
+                    screenBorder.hide()
+                    isProcessing = false
+                    return
+                }
+
                 try await selectionService.replaceSelectedText(
-                    with: processed,
+                    with: output,
                     restoring: snapshot
                 )
             }
 
             if shouldSendToRaycast(for: outputMode) {
-                guard let selectedIntegration = settings.assistantSelectedIntegration,
-                      selectedIntegration.isEnabled
-                else {
-                    throw AssistantVoiceCommandError.raycastIntegrationDisabled
-                }
-
                 let raycastPrompt = PostProcessingPrompt(
                     title: "assistant.raycast.prompt_title".localized,
-                    promptText: command
+                    promptText: normalizedPromptInstructions(from: selectedIntegration) ?? command
                 )
 
+                guard let beforeAICommand = try await applyScriptIfNeeded(
+                    stage: .beforeAI,
+                    input: command,
+                    integration: selectedIntegration
+                ) else {
+                    indicator.hide()
+                    screenBorder.hide()
+                    isProcessing = false
+                    return
+                }
+
                 let processedRaycastCommand = try await postProcessingService.processTranscription(
-                    command,
+                    beforeAICommand,
                     with: raycastPrompt
                 )
 
+                guard let commandForDispatch = try await applyScriptIfNeeded(
+                    stage: .afterAI,
+                    input: processedRaycastCommand,
+                    integration: selectedIntegration
+                ) else {
+                    indicator.hide()
+                    screenBorder.hide()
+                    isProcessing = false
+                    return
+                }
+
                 let dispatchResult = try dispatchToRaycast(
-                    with: processedRaycastCommand,
+                    with: commandForDispatch,
                     selectedIntegration: selectedIntegration
                 )
                 if dispatchResult == .openedWithClipboardFallback {
@@ -238,6 +289,44 @@ public final class AssistantVoiceCommandService: ObservableObject {
         }
     }
 
+    private func applyScriptIfNeeded(
+        stage: AssistantIntegrationScriptConfig.Stage,
+        input: String,
+        integration: AssistantIntegrationConfig?
+    ) async throws -> String? {
+        guard let integration,
+              integration.isEnabled,
+              let scriptConfig = integration.advancedScript,
+              scriptConfig.stage == stage
+        else {
+            return input
+        }
+
+        let output = try await scriptRunner.run(
+            script: scriptConfig.script,
+            input: input,
+            timeoutSeconds: 15
+        )
+
+        if output == nil {
+            AppLogger.info(
+                "Assistant script returned empty output; skipping remaining processing",
+                category: .assistant,
+                extra: ["stage": stage.rawValue, "integration": integration.name]
+            )
+        }
+
+        return output
+    }
+
+    private func normalizedPromptInstructions(from integration: AssistantIntegrationConfig) -> String? {
+        let normalized = integration.promptInstructions?.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let normalized, !normalized.isEmpty else {
+            return nil
+        }
+        return normalized
+    }
+
     private func showError(_ error: AssistantVoiceCommandError) {
         indicator.showError(error.localizedDescription)
     }
@@ -252,6 +341,7 @@ public enum AssistantVoiceCommandError: LocalizedError {
     case failedToStopRecording
     case recordingInProgress
     case processingFailed
+    case integrationDisabled
     case raycastIntegrationDisabled
     case raycastDeeplinkInvalid
     case raycastOpenFailed
@@ -274,6 +364,8 @@ public enum AssistantVoiceCommandError: LocalizedError {
             "assistant.error.recording_in_progress".localized
         case .processingFailed:
             "assistant.error.processing_failed".localized
+        case .integrationDisabled:
+            "assistant.error.integration_disabled".localized
         case .raycastIntegrationDisabled:
             "assistant.error.raycast_integration_disabled".localized
         case .raycastDeeplinkInvalid:
