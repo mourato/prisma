@@ -157,8 +157,12 @@
         },
         {
             "label": "Preflight (Build+Test+Lint)",
-            "dependsOn": ["make-build", "make-test", "make-lint"],
-            "dependsOrder": "sequence",
+            "type": "shell",
+            "command": "make",
+            "args": ["preflight"],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
             "group": {
                 "kind": "test",
                 "isDefault": true
