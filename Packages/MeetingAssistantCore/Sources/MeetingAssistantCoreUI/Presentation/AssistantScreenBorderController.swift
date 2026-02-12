@@ -87,15 +87,16 @@ public final class AssistantScreenBorderController {
 
     /// Hide the border overlay.
     public func hide() {
-        guard let window = borderWindow else { return }
+        guard let windowToClose = borderWindow else { return }
 
         NSAnimationContext.runAnimationGroup { context in
             context.duration = Constants.animationDuration
-            window.animator().alphaValue = 0
-        } completionHandler: { [weak self] in
-            Task { @MainActor in
-                self?.borderWindow?.close()
-                self?.borderWindow = nil
+            windowToClose.animator().alphaValue = 0
+        } completionHandler: { [weak self, weak windowToClose] in
+            guard let self, let windowToClose else { return }
+            windowToClose.close()
+            if self.borderWindow === windowToClose {
+                self.borderWindow = nil
             }
         }
 
