@@ -94,6 +94,13 @@ public final class AssistantVoiceCommandService: ObservableObject {
         isRecording = false
         await RecordingExclusivityCoordinator.shared.endAssistant()
 
+        defer {
+            isProcessing = false
+            screenBorder.hide()
+            cleanupRecordingFile(recordingURL ?? currentRecordingURL)
+            currentRecordingURL = nil
+        }
+
         do {
             guard let recordingURL else {
                 throw AssistantVoiceCommandError.failedToStopRecording
@@ -132,8 +139,6 @@ public final class AssistantVoiceCommandService: ObservableObject {
                 integration: selectedIntegration
             ) else {
                 indicator.hide()
-                screenBorder.hide()
-                isProcessing = false
                 return
             }
 
@@ -148,8 +153,6 @@ public final class AssistantVoiceCommandService: ObservableObject {
                 integration: selectedIntegration
             ) else {
                 indicator.hide()
-                screenBorder.hide()
-                isProcessing = false
                 return
             }
 
@@ -175,7 +178,6 @@ public final class AssistantVoiceCommandService: ObservableObject {
             )
 
             indicator.hide()
-            screenBorder.hide()
         } catch let error as AssistantVoiceCommandError {
             AppLogger.error("Assistant processing failed with known error", category: .assistant, error: error)
             showError(error)
@@ -186,11 +188,6 @@ public final class AssistantVoiceCommandService: ObservableObject {
             AppLogger.error("Assistant processing failed with unexpected error", category: .assistant, error: error)
             showError(.processingFailed)
         }
-
-        isProcessing = false
-        screenBorder.hide()
-        cleanupRecordingFile(recordingURL ?? currentRecordingURL)
-        currentRecordingURL = nil
     }
 
     public func cancelRecording() async {
