@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 
 struct WebTargetBrowserOption: Identifiable {
@@ -16,16 +17,24 @@ enum WebTargetEditorSupport {
         WebTargetBrowserOption(name: "Microsoft Edge", bundleIdentifier: "com.microsoft.edgemac"),
     ]
 
-    static var defaultBrowserBundleIdentifiers: [String] {
-        []
-    }
-
-    static var commonBrowserBundleIdentifiers: [String] {
-        browserOptions.map(\.bundleIdentifier)
-    }
-
     static func browserDisplayName(for bundleIdentifier: String) -> String {
-        browserOptions.first(where: { $0.bundleIdentifier == bundleIdentifier })?.name ?? bundleIdentifier
+        if let knownName = browserOptions.first(where: { $0.bundleIdentifier == bundleIdentifier })?.name {
+            return knownName
+        }
+
+        if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier),
+           let bundle = Bundle(url: appURL)
+        {
+            if let displayName = bundle.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String {
+                return displayName
+            }
+            if let name = bundle.object(forInfoDictionaryKey: "CFBundleName") as? String {
+                return name
+            }
+            return appURL.deletingPathExtension().lastPathComponent
+        }
+
+        return bundleIdentifier
     }
 
     static func parseURLPatterns(from text: String) -> [String] {
