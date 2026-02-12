@@ -282,15 +282,16 @@ public extension RecordingManager {
         defer { isStarting = false }
 
         do {
-            let meeting = createMeeting(type: resolveMeetingType())
-            currentMeeting = meeting
+            var meeting = createMeeting(type: resolveMeetingType())
             dictationStartBundleIdentifier = nil
             dictationStartURL = nil
+            let activeContext = try? await activeAppContextProvider.fetchActiveAppContext()
             if source == .microphone {
-                let context = try? await activeAppContextProvider.fetchActiveAppContext()
-                dictationStartBundleIdentifier = context?.bundleIdentifier
-                dictationStartURL = activeBrowserURL(for: context?.bundleIdentifier)
+                dictationStartBundleIdentifier = activeContext?.bundleIdentifier
+                dictationStartURL = activeBrowserURL(for: activeContext?.bundleIdentifier)
             }
+            meeting = applyStartAppContext(meeting, source: source, activeContext: activeContext)
+            currentMeeting = meeting
             let contextCapture = await capturePostProcessingContext(for: meeting)
             postProcessingContext = contextCapture.context
             postProcessingContextItems = contextCapture.items
@@ -310,7 +311,7 @@ public extension RecordingManager {
             SoundFeedbackService.shared.playRecordingStartSound()
 
             AppLogger.info("Recording started successfully", category: .recordingManager, extra: [
-                "app": meeting.app.displayName,
+                "app": meeting.appName,
                 "url": outputURL.lastPathComponent,
                 "source": source.rawValue,
             ])
@@ -355,6 +356,29 @@ public extension RecordingManager {
     private func createMeeting(type: MeetingType) -> Meeting {
         let app = meetingDetector.detectedMeeting ?? .unknown
         return Meeting(app: app, type: type, state: .recording)
+    }
+
+    private func applyStartAppContext(
+        _ meeting: Meeting,
+        source: RecordingSource,
+        activeContext: ActiveAppContext?
+    ) -> Meeting {
+        let resolvedApp: MeetingApp = source == .microphone ? .unknown : meeting.app
+        let appBundleIdentifier = activeContext?.bundleIdentifier
+        let trimmedName = activeContext?.name?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let appDisplayName = (trimmedName?.isEmpty == false) ? trimmedName : nil
+
+        return Meeting(
+            id: meeting.id,
+            app: resolvedApp,
+            appBundleIdentifier: appBundleIdentifier,
+            appDisplayName: appDisplayName,
+            type: meeting.type,
+            state: meeting.state,
+            startTime: meeting.startTime,
+            endTime: meeting.endTime,
+            audioFilePath: meeting.audioFilePath
+        )
     }
 
     private func generateRecordingPaths(for meeting: Meeting) async throws -> (URL, URL) {
@@ -729,7 +753,15 @@ extension RecordingManager {
     }
 
     private func makeMeetingEntity(meeting: Meeting, audioDuration: Double?) -> MeetingEntity {
-        var entity = MeetingEntity(id: meeting.id, app: DomainMeetingApp(rawValue: meeting.app.rawValue) ?? .unknown, startTime: meeting.startTime, endTime: meeting.endTime, audioFilePath: meeting.audioFilePath)
+        var entity = MeetingEntity(
+            id: meeting.id,
+            app: DomainMeetingApp(rawValue: meeting.app.rawValue) ?? .unknown,
+            appBundleIdentifier: meeting.appBundleIdentifier,
+            appDisplayName: meeting.appDisplayName,
+            startTime: meeting.startTime,
+            endTime: meeting.endTime,
+            audioFilePath: meeting.audioFilePath
+        )
 
         if entity.endTime == nil, let audioDuration {
             entity.endTime = entity.startTime.addingTimeInterval(audioDuration)
@@ -1043,6 +1075,8 @@ extension RecordingManager {
             meeting: Meeting(
                 id: entity.meeting.id,
                 app: MeetingApp(rawValue: entity.meeting.app.rawValue) ?? .unknown,
+                appBundleIdentifier: entity.meeting.appBundleIdentifier,
+                appDisplayName: entity.meeting.appDisplayName,
                 type: MeetingType(rawValue: entity.meetingType ?? "") ?? .general, // Map back
                 startTime: entity.meeting.startTime,
                 endTime: entity.meeting.endTime,

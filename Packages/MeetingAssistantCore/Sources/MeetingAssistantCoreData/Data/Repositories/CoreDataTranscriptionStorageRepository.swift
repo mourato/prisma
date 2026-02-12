@@ -59,11 +59,15 @@ public final class CoreDataTranscriptionStorageRepository: TranscriptionStorageR
             let request = TranscriptionMO.fetchRequest()
             let results = try context.fetch(request)
             return results.map { mo in
-                DomainTranscriptionMetadata(
+                let fallbackName = DomainMeetingApp(rawValue: mo.meeting.appRawValue)?.displayName ?? "Unknown"
+                let trimmedDisplayName = mo.meeting.appDisplayName?.trimmingCharacters(in: .whitespacesAndNewlines)
+                let resolvedName = (trimmedDisplayName?.isEmpty == false) ? trimmedDisplayName! : fallbackName
+                return DomainTranscriptionMetadata(
                     id: mo.id,
                     meetingId: mo.meeting.id,
-                    appName: DomainMeetingApp(rawValue: mo.meeting.appRawValue)?.displayName ?? "Unknown",
+                    appName: resolvedName,
                     appRawValue: mo.meeting.appRawValue,
+                    appBundleIdentifier: mo.meeting.appBundleIdentifier,
                     startTime: mo.meeting.startTime,
                     createdAt: mo.createdAt,
                     previewText: String(mo.text.prefix(100)),

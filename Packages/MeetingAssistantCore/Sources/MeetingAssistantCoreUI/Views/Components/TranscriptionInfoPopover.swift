@@ -109,12 +109,21 @@ struct TranscriptionInfoPopover: View {
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
-            } else {
-                InfoRow(
-                    icon: transcription.meeting.appIcon,
-                    label: transcription.meeting.appName,
-                    value: "-"
+            }
+
+            HStack {
+                AppIconView(
+                    bundleIdentifier: transcription.meeting.appBundleIdentifier,
+                    fallbackSystemName: transcription.meeting.appIcon,
+                    size: 18,
+                    cornerRadius: 4
                 )
+                Text(transcription.meeting.appName)
+                    .font(.subheadline)
+                Spacer()
+                Text("-")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
             }
         }
     }

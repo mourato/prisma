@@ -130,9 +130,12 @@ struct MeetingCard: View {
 
     var body: some View {
         HStack {
-            Image(systemName: meeting.appIcon)
-                .font(.title2)
-                .foregroundStyle(meeting.appColor)
+            AppIconView(
+                bundleIdentifier: meeting.appBundleIdentifier,
+                fallbackSystemName: meeting.appIcon,
+                size: 22,
+                cornerRadius: 5
+            )
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(meeting.appName)
