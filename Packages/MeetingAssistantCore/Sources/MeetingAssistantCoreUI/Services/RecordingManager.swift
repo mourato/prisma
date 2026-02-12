@@ -74,7 +74,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     private let textContextPolicy: TextContextPolicy
     private let transcribeAudioUseCase: TranscribeAudioUseCase
     private let activeAppContextProvider: any ActiveAppContextProvider
-    private let browserProviders: [String: BrowserActiveTabURLProviding] = BrowserProviderRegistry.defaultProviders()
+    private var browserProviders: [String: BrowserActiveTabURLProviding] = BrowserProviderRegistry.defaultProviders()
 
     private var cancellables = Set<AnyCancellable>()
     private var statusCheckTask: Task<Void, Never>?
@@ -994,7 +994,16 @@ extension RecordingManager {
     private func activeBrowserURL(for bundleIdentifier: String?) -> URL? {
         guard let bundleIdentifier else { return nil }
         let normalized = WebTargetDetection.normalizeBundleIdentifier(bundleIdentifier)
-        guard let provider = browserProviders[normalized] else { return nil }
+
+        if let provider = browserProviders[normalized] {
+            return provider.activeTabURL()
+        }
+
+        guard let provider = BrowserProviderRegistry.provider(for: bundleIdentifier) else {
+            return nil
+        }
+
+        browserProviders[normalized] = provider
         return provider.activeTabURL()
     }
     private static let markdownFormatInstruction = """

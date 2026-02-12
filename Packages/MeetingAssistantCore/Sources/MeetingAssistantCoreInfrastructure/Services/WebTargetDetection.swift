@@ -19,8 +19,7 @@ public enum WebTargetDetection {
         let normalizedBundleId = normalizeBundleIdentifier(bundleIdentifier)
 
         return targets.first { target in
-            let normalizedTargetBrowsers = target.browserBundleIdentifiers.map(normalizeBundleIdentifier)
-            guard normalizedTargetBrowsers.contains(normalizedBundleId) else { return false }
+            guard targetSupportsBundle(target, normalizedBundleId: normalizedBundleId) else { return false }
             return target.urlPatterns.contains { pattern in
                 urlString.contains(pattern.lowercased())
             }
@@ -35,8 +34,7 @@ public enum WebTargetDetection {
         let normalizedBundleId = normalizeBundleIdentifier(bundleIdentifier)
 
         for target in targets {
-            let normalizedTargetBrowsers = target.browserBundleIdentifiers.map(normalizeBundleIdentifier)
-            guard normalizedTargetBrowsers.contains(normalizedBundleId) else { continue }
+            guard targetSupportsBundle(target, normalizedBundleId: normalizedBundleId) else { continue }
 
             let patterns = patternProvider(target)
                 .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -74,5 +72,17 @@ public enum WebTargetDetection {
 
     public static func normalizeBundleIdentifier(_ value: String) -> String {
         value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    private static func targetSupportsBundle<T: WebTargetPattern>(_ target: T, normalizedBundleId: String) -> Bool {
+        let normalizedTargetBrowsers = target.browserBundleIdentifiers
+            .map(normalizeBundleIdentifier)
+            .filter { !$0.isEmpty }
+
+        if normalizedTargetBrowsers.isEmpty {
+            return true
+        }
+
+        return normalizedTargetBrowsers.contains(normalizedBundleId)
     }
 }
