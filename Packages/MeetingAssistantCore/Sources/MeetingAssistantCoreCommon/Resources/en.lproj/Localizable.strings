@@ -254,6 +254,11 @@
 "settings.markdown_targets.websites.browser_label" = "Browsers";
 "settings.markdown_targets.websites.delete_confirm_title" = "Delete website target?";
 "settings.markdown_targets.websites.delete_confirm_message" = "Are you sure you want to delete \"%@\"?";
+"settings.web_targets.any_browser" = "Any detected browser";
+"settings.web_targets.advanced.title" = "Advanced";
+"settings.web_targets.advanced.desc" = "Optional: restrict matching to specific browser bundle identifiers.";
+"settings.web_targets.advanced.bundle_ids_desc" = "One bundle ID per line (or comma-separated). Leave empty to match any detected browser.";
+"settings.web_targets.advanced.import_common" = "Import common browsers";
 
 /* Service Settings */
 "settings.service.title" = "Service";
