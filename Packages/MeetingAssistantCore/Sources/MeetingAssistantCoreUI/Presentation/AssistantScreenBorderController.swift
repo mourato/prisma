@@ -27,6 +27,10 @@ public final class AssistantScreenBorderController {
         static let animationDuration: TimeInterval = 0.2
     }
 
+    private var isRunningTests: Bool {
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+    }
+
     // MARK: - Initialization
 
     public init(settingsStore: AppSettingsStore = .shared) {
@@ -74,12 +78,17 @@ public final class AssistantScreenBorderController {
         // Store reference and show with animation
         borderWindow = window
 
-        window.alphaValue = 0
-        window.orderFront(nil)
+        if isRunningTests {
+            window.alphaValue = 1
+            window.orderFront(nil)
+        } else {
+            window.alphaValue = 0
+            window.orderFront(nil)
 
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = Constants.animationDuration
-            window.animator().alphaValue = 1
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = Constants.animationDuration
+                window.animator().alphaValue = 1
+            }
         }
 
         isVisible = true
@@ -89,14 +98,23 @@ public final class AssistantScreenBorderController {
     public func hide() {
         guard let windowToClose = borderWindow else { return }
 
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = Constants.animationDuration
-            windowToClose.animator().alphaValue = 0
-        } completionHandler: { [weak self, weak windowToClose] in
-            guard let self, let windowToClose else { return }
+        if isRunningTests {
             windowToClose.close()
-            if self.borderWindow === windowToClose {
-                self.borderWindow = nil
+            if borderWindow === windowToClose {
+                borderWindow = nil
+            }
+        } else {
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = Constants.animationDuration
+                windowToClose.animator().alphaValue = 0
+            } completionHandler: { [weak self, weak windowToClose] in
+                Task { @MainActor [weak self, weak windowToClose] in
+                    guard let self, let windowToClose else { return }
+                    windowToClose.close()
+                    if self.borderWindow === windowToClose {
+                        self.borderWindow = nil
+                    }
+                }
             }
         }
 

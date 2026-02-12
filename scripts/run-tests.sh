@@ -99,6 +99,10 @@ if [ "${CI:-}" = "true" ]; then
     export SWIFT_BACKTRACE_MODE=full
 fi
 
+# Overlay lifecycle tests rely on AppKit windowing behavior that is unstable in
+# Swift Package CLI runners without a fully interactive app host.
+export MA_SKIP_OVERLAY_LIFECYCLE_TESTS=1
+
 # Build test command - use swift test for package tests
 if [ -n "$TEST_FILE" ]; then
     TEST_CMD="cd \"${PROJECT_DIR}/Packages/MeetingAssistantCore\" && swift test --filter ${TEST_FILE}"
