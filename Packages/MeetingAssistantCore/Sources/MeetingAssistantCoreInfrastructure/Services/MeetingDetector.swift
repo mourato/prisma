@@ -109,7 +109,7 @@ public class MeetingDetector: ObservableObject {
 
         // For browser-based meetings, check window titles
         if app == .googleMeet {
-            return checkBrowserWindowTitles(for: app.windowTitlePatterns)
+            return WebTargetDetection.checkBrowserWindowTitles(for: app.windowTitlePatterns)
         }
 
         // For native apps, just check if running
@@ -187,8 +187,6 @@ public class MeetingDetector: ObservableObject {
 
         return nil
     }
-
-    
 
     /// Setup notifications for app launches/terminations.
     private func setupAppNotifications() {
