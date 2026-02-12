@@ -21,38 +21,66 @@ Core context:
 
 ## ✅ Standard Task SOP (Mandatory)
 
-This is the **single, standardized** flow for every task in this repository:
+`AGENTS.md` is the single source of truth for workflow policy. Skills must extend this SOP, not redefine it.
 
-1. **Create branch + worktree** (never work directly on `main`):
-   - `git worktree add -b <branch-name> ../<folder-name> main`
-   - `cd ../<folder-name>`
-2. **Implement in small slices**.
-3. **Verification gate (before ANY commit)**:
-   - `make build`
-   - `make test`
-   - (recommended) `make lint`
-   - No Codacy/MCP analysis is required.
-   - If anything fails: stop and fix until green.
-4. **Atomic commits (green state)**:
+### Risk matrix (required before implementation)
+
+Classify each task before coding:
+
+- **Low risk**:
+  - Docs-only / comments-only changes
+  - Localization/resource text updates without behavior changes
+  - Non-functional refactors confined to one file/module
+- **Medium risk**:
+  - Feature or bugfix in one subsystem
+  - Public API changes inside one package
+  - UI behavior/state logic changes
+- **High risk**:
+  - Audio pipeline, concurrency/actor isolation, persistence, security/permissions
+  - Cross-module architecture changes
+  - Large deltas (roughly >300 added lines or broad refactors)
+
+If uncertain, choose the higher risk level.
+
+### Execution lanes
+
+1. **Fast lane (Low risk)**:
+   - Worktree is recommended; direct branch work is acceptable for small low-risk changes.
+   - Implement in small slices.
+   - Pre-commit checks: staged lint/format + targeted tests when relevant.
+   - Before push/merge: run `make test`.
+2. **Full lane (Medium/High risk)**:
+   - Worktree is mandatory (never implement in `main/`).
+   - Implement in small slices.
+   - During development run relevant checks (targeted tests and/or `make build` as needed).
+   - Before push/merge (hard gate):
+     - `make build`
+     - `make test`
+     - `make lint` (recommended; mandatory for broad refactors)
+3. **Code review ritual (risk-based)**:
+   - Full semáforo review (🔴/🟡/🟢) is mandatory for Medium/High.
+   - Lightweight checklist review is acceptable for Low.
+   - Always fix **🔴 Critical** and **🟡 Medium** findings before merge.
+4. **Atomic commits**:
    - Split commits by intent (feature vs refactor vs tests vs cleanup).
-   - Every commit must compile and test.
    - Use Conventional Commits (see `.agents/skills/git-workflow/SKILL.md`).
-5. **Local code review ritual (before final push/merge)**:
-   - Follow `.agents/skills/code-review/SKILL.md` and generate the 🔴/🟡/🟢 report.
-   - Fix **🔴 Critical** and **🟡 Medium** findings (🟢 optional).
-6. **Re-verify + atomic commits for review fixes**:
-   - `make build && make test` (and `make lint` when applicable).
-7. **Push / merge** the task branch into `main`.
-8. **Cleanup**:
-   - Remove worktree + prune.
-   - Delete the branch locally and remotely (if pushed).
+   - Do not commit knowingly broken code.
+5. **Integration + cleanup**:
+   - Push / merge into `main`.
+   - Prefer `git worktree remove <path>` then `git worktree prune`.
+   - Delete local/remote branch when applicable.
 
 ## Optimized workflow checklist
 
 - [ ] Open the Sequential Thinking tool before planning a task so each reasoning step is recorded.
 - [ ] Use `gh` for every GitHub interaction (issues, PRs, repos) rather than manual HTTP/UI visits.
 - [ ] Consider deepwiki only when local context is insufficient for a holistic, repository-wide perspective.
-- [ ] Follow the SOP flow: create worktree/branch, implement in slices, run `make build` `make test` (and `make lint` when feasible), make atomic commits, perform local code review, rerun `make build && make test` after fixes, push/merge, then cleanup.
+- [ ] Classify risk (Low/Medium/High) before coding and pick Fast or Full lane accordingly.
+- [ ] Use Fast lane for low-risk tasks and Full lane for medium/high-risk tasks.
+- [ ] Keep hard gates at push/merge stage (`make test`, plus `make build` for Full lane).
+- [ ] Run `make arch-check` only for architecture boundary/access-control changes.
+- [ ] Run `make preview-check` when SwiftUI views are added or modified.
+- [ ] Use `git worktree remove` + `git worktree prune` for cleanup.
 - [ ] Localize user-facing text and respect module/skill responsibilities as outlined in the main SOP and skills index.
 
 ---
@@ -157,7 +185,7 @@ Minimum verification before merging:
 - `make test`
 - `make build`
 
-To ensure workspace isolation and maintain a clean `main` branch, all file modifications MUST follow Worktree-first + green gates + atomic commits.
+To keep quality high and cycle time low, use risk-based verification gates and lane selection from the Standard Task SOP above.
 
 For the full standardized flow, follow the **Standard Task SOP** above and the skills:
 - `.agents/skills/task-lifecycle/SKILL.md`
@@ -174,25 +202,25 @@ For the full standardized flow, follow the **Standard Task SOP** above and the s
 - Avoid logging sensitive data (keys, tokens, full transcripts, personal identifiers).
 - Follow `.agents/rules/security.md` and `.agents/skills/keychain-security/` for concrete implementation guidance.
 
-## Task lifecycle (mandatory, worktree-first)
+## Task lifecycle (risk-based)
 
-Every coding task must run in an isolated Git worktree.
+Use the Standard Task SOP (risk matrix + Fast/Full lanes) as policy.
 
-Start from the `main/` worktree:
+- **Low risk**: worktree recommended, Full review optional, minimum merge gate is `make test`.
+- **Medium/High risk**: worktree mandatory, semáforo review mandatory, merge gate includes `make build` + `make test`.
+- Always avoid direct implementation in `main/` for Medium/High tasks.
+
+Preferred worktree workflow:
 
 ```bash
 git worktree add -b <branch-name> ../<worktree-folder> main
 cd ../<worktree-folder>
+# ... implement ...
+cd ../main
+git merge <branch-name>
+git worktree remove ../<worktree-folder>
+git worktree prune
 ```
-
-Workflow:
-
-1. Create a branch from `main`.
-2. Create and switch to a worktree for that branch.
-3. Implement and verify changes inside the worktree.
-4. Merge back to `main`.
-5. Remove the temporary worktree and branch.
-6. Run `git worktree prune`.
 
 Detailed procedures:
 

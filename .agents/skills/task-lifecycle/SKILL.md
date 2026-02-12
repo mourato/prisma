@@ -11,19 +11,42 @@ trigger: always_on
 This skill defines the **MANDATORY** operational standards for every coding task performed on this codebase.
 
 The lifecycle is designed to guarantee:
-- Isolation via Worktrees
-- A continuously green repository state (build/tests)
+- Risk-proportional quality gates
+- Isolation via Worktrees when risk justifies it
 - Atomic commits (small, intention-revealing, buildable)
 - A consistent local code review ritual before final push/merge
 - Cleanup (worktree + branches, including remote when applicable)
 
+Policy source:
+
+- `AGENTS.md` is the source of truth.
+- This skill operationalizes that policy and must stay aligned with it.
+
+## Phase 0: Risk Classification (Required)
+
+Classify the task before implementation:
+
+- **Low risk**: docs/comments-only, localization/resource text updates, or constrained non-functional refactors in one module.
+- **Medium risk**: feature/bugfix in one subsystem, public API changes, UI behavior/state changes.
+- **High risk**: audio pipeline, concurrency/actor isolation, persistence, security/permissions, cross-module architectural changes, or large deltas.
+
+If uncertain, classify as the higher risk.
+
+Lane selection:
+
+- **Fast lane** for Low risk.
+- **Full lane** for Medium/High risk.
+
 ## Phase 1: Task Initialization
 
-**CRITICAL**: Never modify files in the `main/` worktree. Always create a dedicated task worktree first.
+Worktree policy:
+
+- **Full lane**: Worktree is mandatory. Never modify files in `main/`.
+- **Fast lane**: Worktree is recommended. Direct branch work is acceptable for very small low-risk tasks.
 
 1. **Context Identification**: Analyze the task and identify the target files.
 2. **Branching**: Create a fresh branch from `main` (for Codex sessions prefer `codex/<task-name>`).
-3. **Setup Worktree**: Create and enter a new Git Worktree.
+3. **Setup Worktree (Full lane or optional Fast lane)**: Create and enter a new Git Worktree.
    ```bash
    git worktree add -b <branch-name> ../<folder-name> main
    cd ../<folder-name>
@@ -37,39 +60,41 @@ Language policy:
 - Code comments must be written in **English**.
 
 
-Work exclusively within the isolated worktree directory.
+Work inside the selected lane context (worktree for Full lane; branch or worktree for Fast lane).
 
 Repeat the following loop until the task is complete:
 
 1. **Implement a small, coherent slice**: Prefer incremental changes.
-2. **Verify BEFORE committing (hard gate)**:
-   - `make build`
-   - `make test`
-   - (recommended) `make lint`
-   - Periodically run `make arch-check` (especially for B2 modularization and access-control/import updates).
+2. **Run proportional checks during development**:
+   - Fast lane: staged lint/format and targeted tests when relevant.
+   - Full lane: run targeted tests and/or `make build` as needed while iterating.
+   - Run `make arch-check` when changing architecture boundaries/access control/import rules.
+   - Run `make preview-check` when adding/changing SwiftUI views.
    - If tests touch module internals, ensure the test target depends on that module explicitly in `Package.swift`.
-3. **If verification fails**: Stop and fix until it passes. Do **not** commit broken builds.
+3. **If verification fails**: Stop and fix before progressing.
 4. **Atomic commit (green state)**:
    - Group changes by intent.
    - Use Conventional Commits.
-   - Every commit must leave the repo buildable + testable.
+   - Do not commit knowingly broken code.
 5. **Documentation**: Update `KNOWN_LIMITATIONS.md` / DocC if the change introduces new constraints or APIs.
 
-> This phase is intentionally strict: “green before commit” keeps history bisectable and reduces review noise.
+> Verify continuously, but keep hard gates at push/merge time to optimize cycle time.
 
-## Phase 3: Local Code Review Ritual (Mandatory)
+## Phase 3: Local Code Review Ritual (Risk-based)
 
 Before the final push/merge, perform a local review using **[code-review](../code-review/SKILL.md)**.
 
 1. **Define the scope**: Review the commit list and files touched.
-2. **Produce a semáforo table** (🔴/🟡/🟢) as specified in the skill.
+2. **Review depth by lane**:
+   - Fast lane: lightweight checklist review is acceptable.
+   - Full lane: semáforo table (🔴/🟡/🟢) is mandatory.
 3. **Fix findings**:
    - Must fix **🔴 Critical** and **🟡 Medium**.
    - Fix **🟢 Low** when it clearly improves clarity/safety with low risk.
-4. **Re-verify**:
-   - `make build`
-   - `make test`
-   - (recommended) `make lint`
+4. **Hard gate before push/merge**:
+   - Fast lane minimum: `make test`
+   - Full lane minimum: `make build` + `make test`
+   - `make lint` is recommended (mandatory for broad refactors)
 5. **Atomic commits for review fixes**: Commit review-driven changes separately from feature work.
 
 ## Phase 4: Integration (Push / Merge)
@@ -89,9 +114,9 @@ Before the final push/merge, perform a local review using **[code-review](../cod
 
 Once the task is complete and verified:
 
-1. **Cleanup Directory**: Remove the worktree folder.
+1. **Cleanup Directory**: Remove the worktree via Git.
    ```bash
-   rm -rf ../<folder-name>
+   git worktree remove ../<folder-name>
    git worktree prune
    ```
 2. **Delete local branch** (never delete `main`):

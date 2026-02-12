@@ -15,35 +15,41 @@ Activate this skill whenever you are:
 - Starting a new task or conversation that requires code changes.
 - Preparing to commit changes or create a pull request.
 - Managing branches or historical repository state.
-- Following the mandatory Worktree-first development workflow.
+- Applying the risk-based Fast/Full workflow from `AGENTS.md`.
 
 ## Core Principles
 
-### 1. Mandatory Worktree Workflow
-**CRITICAL**: Every session that results in file modifications MUST follow the standard lifecycle described in the **[task-lifecycle](../task-lifecycle/SKILL.md)** skill.
-1. **Branching**: Create a NEW branch based on `main`.
-2. **Worktree Creation**: Create a new Git Worktree and switch to it.
-3. **Verification**: Always run `make build` and `make test` before merging.
+### 1. Risk-based Worktree Workflow
+Follow `AGENTS.md` lane selection:
+1. **Low risk (Fast lane)**: worktree is recommended; direct branch work is acceptable for small tasks.
+2. **Medium/High risk (Full lane)**: worktree is mandatory.
+3. **Before merge**: apply lane hard gates (`make test` for Fast; `make build && make test` for Full).
 
 ### 2. Atomic Commits
 Break your work into small, self-contained units.
 - **One task = One (or more) Commits**: Do not combine refactoring, bug fixes, and new features.
 - **Commit Early & Often**: Capture each logical step (e.g., "add view model", "implement view").
-- **Green State**: Every commit must leave the repository in a buildable and testable state.
+- **Safe State**: Do not commit knowingly broken code.
 
 ### 3. Pre-Commit Verification
-**CRITICAL**: Before creating ANY commit, you MUST verify project health.
-- Run `make build` (or `make build-debug`).
-- Ensure relevant tests pass with `make test`.
-- (Recommended) Run `make lint`.
-- Do NOT commit broken code.
+Before creating a commit, run proportional checks:
+- Fast lane: staged lint/format and targeted tests when relevant.
+- Full lane: targeted tests and/or `make build` while iterating.
+- Run `make arch-check` only when architecture boundaries/access-control are affected.
+- Run `make preview-check` when SwiftUI views are added/changed.
 
 ### 4. Pre-Push / Pre-Merge Code Review
 Before the final push/merge, perform a local review using **[code-review](../code-review/SKILL.md)**.
 
-- Create a semáforo report (🔴/🟡/🟢).
+- Fast lane: lightweight checklist review is acceptable.
+- Full lane: create a semáforo report (🔴/🟡/🟢).
 - Fix **🔴 Critical** and **🟡 Medium** findings.
-- Re-verify (`make lint`, `make test`, `make build`) and commit fixes atomically.
+- Re-verify lane hard gate and commit fixes atomically.
+
+### 5. Hard Gates by Lane
+- **Fast lane (Low risk)**: `make test` before push/merge.
+- **Full lane (Medium/High risk)**: `make build` + `make test` before push/merge.
+- `make lint` is recommended and mandatory for broad refactors.
 
 ## Key Concepts
 
@@ -108,10 +114,10 @@ cd ../my-new-feature
 If the repository has a PR template, use it.
 
 Before opening a PR (or before merging locally), ensure:
-- [ ] Build Passed (`make build`)
-- [ ] Tests passed (`make test`)
-- [ ] Lint passed (`make lint`)
-- [ ] Documentation updated
+- [ ] Lane hard gate passed (`make test` for Fast; `make build && make test` for Full)
+- [ ] Review findings fixed (all 🔴/🟡)
+- [ ] Lint completed when required by scope
+- [ ] Documentation updated when behavior/contracts changed
 
 ### Branch Cleanup (After Merge)
 

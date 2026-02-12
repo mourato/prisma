@@ -7,9 +7,12 @@ description: This skill should be used when using Git Worktrees for parallel dev
 
 Git worktrees let you check out multiple branches into different directories at the same time.
 
-## Mandate: worktree-first development
+## Mandate: risk-based worktree usage
 
-**Worktrees are mandatory for any task that modifies code or documentation.**
+Follow `AGENTS.md` lane policy:
+
+- **Low risk (Fast lane)**: worktree is recommended.
+- **Medium/High risk (Full lane)**: worktree is mandatory.
 
 ## This repo layout (recommended)
 
@@ -26,7 +29,7 @@ git worktree add -b codex/<task-name> ../<worktree-folder> main
 cd ../<worktree-folder>
 ```
 
-Do not implement changes in `main/`; use `main/` only to create/merge/remove task worktrees.
+For Full lane tasks, do not implement changes in `main/`; use `main/` only to create/merge/remove task worktrees.
 
 ## Operations cheatsheet
 
@@ -58,3 +61,4 @@ Each worktree is a fresh directory.
 - A branch can only be checked out in one worktree at a time.
 - Prefer `git worktree remove` over `rm -rf` to keep Git state consistent.
 - Worktrees can multiply build outputs (DerivedData, `.build`); clean up when done.
+- For low-risk micro tasks, forcing worktree setup can add unnecessary overhead; use Fast lane discretion.
