@@ -422,6 +422,41 @@ public class AppSettingsStore: ObservableObject {
         "net.shinyfrog.bear"
     ]
 
+    /// Default list of apps monitored to start/stop meeting recordings.
+    public static let defaultMonitoredMeetingBundleIdentifiers: [String] = [
+        "com.apple.Safari",
+        "com.google.Chrome",
+        "com.microsoft.edgemac",
+        "com.microsoft.teams",
+        "com.microsoft.teams2",
+        "com.hnc.Discord",
+        "com.tinyspeck.slackmacgap",
+        "net.whatsapp.WhatsApp",
+        "us.zoom.xos"
+    ]
+
+    /// Default list of web meeting targets detected via browser URL matching.
+    public static let defaultWebMeetingTargets: [WebMeetingTarget] = [
+        WebMeetingTarget(
+            app: .googleMeet,
+            displayName: "Google Meet",
+            urlPatterns: ["meet.google.com"],
+            browserBundleIdentifiers: ["com.apple.Safari", "com.google.Chrome", "com.microsoft.edgemac"]
+        ),
+        WebMeetingTarget(
+            app: .microsoftTeams,
+            displayName: "Microsoft Teams",
+            urlPatterns: ["teams.microsoft.com"],
+            browserBundleIdentifiers: ["com.apple.Safari", "com.google.Chrome", "com.microsoft.edgemac"]
+        ),
+        WebMeetingTarget(
+            app: .zoom,
+            displayName: "Zoom",
+            urlPatterns: ["zoom.us/j", "zoom.us/wc"],
+            browserBundleIdentifiers: ["com.apple.Safari", "com.google.Chrome", "com.microsoft.edgemac"]
+        ),
+    ]
+
     // MARK: - Keys
 
     private enum Keys {
@@ -484,6 +519,8 @@ public class AppSettingsStore: ObservableObject {
         static let contextAwarenessRedactSensitiveData = "contextAwarenessRedactSensitiveData"
         static let contextAwarenessExcludedBundleIDs = "contextAwarenessExcludedBundleIDs"
         static let markdownTargetBundleIdentifiers = "markdownTargetBundleIdentifiers"
+        static let monitoredMeetingBundleIdentifiers = "monitoredMeetingBundleIdentifiers"
+        static let webMeetingTargets = "webMeetingTargets"
     }
 
     // MARK: - Published Properties
@@ -852,9 +889,29 @@ public class AppSettingsStore: ObservableObject {
         didSet { save(markdownTargetBundleIdentifiers, forKey: Keys.markdownTargetBundleIdentifiers) }
     }
 
+    /// Bundle identifiers monitored to auto-start/stop meetings.
+    @Published public var monitoredMeetingBundleIdentifiers: [String] {
+        didSet { save(monitoredMeetingBundleIdentifiers, forKey: Keys.monitoredMeetingBundleIdentifiers) }
+    }
+
+    /// Web meeting targets detected by URL matching in browsers.
+    @Published public var webMeetingTargets: [WebMeetingTarget] {
+        didSet { save(webMeetingTargets, forKey: Keys.webMeetingTargets) }
+    }
+
     /// Indicates whether the Markdown targets list has been explicitly configured.
     public var hasConfiguredMarkdownTargets: Bool {
         UserDefaults.standard.object(forKey: Keys.markdownTargetBundleIdentifiers) != nil
+    }
+
+    /// Indicates whether the monitored meetings list has been explicitly configured.
+    public var hasConfiguredMonitoredMeetingApps: Bool {
+        UserDefaults.standard.object(forKey: Keys.monitoredMeetingBundleIdentifiers) != nil
+    }
+
+    /// Indicates whether web meeting targets have been explicitly configured.
+    public var hasConfiguredWebMeetingTargets: Bool {
+        UserDefaults.standard.object(forKey: Keys.webMeetingTargets) != nil
     }
 
     /// All available prompts (predefined + user-created), filtered by deleted and overrides.
@@ -1039,6 +1096,10 @@ public class AppSettingsStore: ObservableObject {
         contextAwarenessExcludedBundleIDs = Self.loadDecoded([String].self, forKey: Keys.contextAwarenessExcludedBundleIDs) ?? []
         markdownTargetBundleIdentifiers = Self.loadDecoded([String].self, forKey: Keys.markdownTargetBundleIdentifiers)
             ?? Self.defaultMarkdownTargetBundleIdentifiers
+        monitoredMeetingBundleIdentifiers = Self.loadDecoded([String].self, forKey: Keys.monitoredMeetingBundleIdentifiers)
+            ?? Self.defaultMonitoredMeetingBundleIdentifiers
+        webMeetingTargets = Self.loadDecoded([WebMeetingTarget].self, forKey: Keys.webMeetingTargets)
+            ?? Self.defaultWebMeetingTargets
         if loadedContextAwarenessEnabled {
             contextAwarenessIncludeActiveApp = true
             contextAwarenessIncludeAccessibilityText = true
@@ -1215,6 +1276,8 @@ public class AppSettingsStore: ObservableObject {
         meetingTypeAutoDetectEnabled = false
         contextAwarenessExplicitActionOnly = true
         markdownTargetBundleIdentifiers = Self.defaultMarkdownTargetBundleIdentifiers
+        monitoredMeetingBundleIdentifiers = Self.defaultMonitoredMeetingBundleIdentifiers
+        webMeetingTargets = Self.defaultWebMeetingTargets
     }
 
     // MARK: - Prompt Management

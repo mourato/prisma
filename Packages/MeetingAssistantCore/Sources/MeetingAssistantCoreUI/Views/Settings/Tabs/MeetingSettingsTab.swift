@@ -11,9 +11,22 @@ import SwiftUI
 
 /// Tab for meeting-specific settings like app monitoring and automation.
 public struct MeetingSettingsTab: View {
-    @StateObject private var meetingViewModel = MeetingSettingsViewModel()
+    @StateObject private var meetingViewModel: MeetingSettingsViewModel
+    @StateObject private var monitoredAppsViewModel: InstalledAppsSelectionViewModel
+    @StateObject private var webTargetsViewModel: WebMeetingTargetsViewModel
 
-    public init() {}
+    public init(settings: AppSettingsStore = .shared) {
+        _meetingViewModel = StateObject(wrappedValue: MeetingSettingsViewModel(settings: settings))
+        _monitoredAppsViewModel = StateObject(
+            wrappedValue: InstalledAppsSelectionViewModel(
+                defaultBundleIdentifiers: AppSettingsStore.defaultMonitoredMeetingBundleIdentifiers,
+                hasConfigured: { settings.hasConfiguredMonitoredMeetingApps },
+                loadBundleIdentifiers: { settings.monitoredMeetingBundleIdentifiers },
+                saveBundleIdentifiers: { settings.monitoredMeetingBundleIdentifiers = $0 }
+            )
+        )
+        _webTargetsViewModel = StateObject(wrappedValue: WebMeetingTargetsViewModel(settings: settings))
+    }
 
     public var body: some View {
         ScrollView {
@@ -163,40 +176,16 @@ public struct MeetingSettingsTab: View {
                     }
                 }
 
-                // Apps (Existing)
-                MAGroup("settings.general.monitored_apps".localized, icon: "app.badge") {
-                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
-                        Text("settings.general.monitored_apps_desc".localized)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .padding(.bottom, MeetingAssistantDesignSystem.Layout.spacing4)
+                InstalledAppsSelectionSection(
+                    titleKey: "settings.general.monitored_apps",
+                    descriptionKey: "settings.general.monitored_apps_desc",
+                    emptyKey: "settings.general.monitored_apps_empty",
+                    addButtonKey: "settings.general.monitored_apps_add",
+                    icon: "app.badge",
+                    viewModel: monitoredAppsViewModel
+                )
 
-                        ForEach(MeetingApp.allCases.filter { app in
-                            app != .importedFile && app != .unknown && app != .manualMeeting
-                        }, id: \.self) { app in
-                            HStack(spacing: 12) {
-                                Image(systemName: app.icon)
-                                    .font(.title3)
-                                    .foregroundStyle(app.color)
-                                    .frame(width: 24)
-
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(app.displayName)
-                                        .font(.body)
-                                        .fontWeight(.medium)
-                                    Text("settings.general.monitoring_active".localized)
-                                        .font(.caption2)
-                                        .foregroundStyle(MeetingAssistantDesignSystem.Colors.success)
-                                }
-
-                                Spacer()
-                            }
-                            .padding(MeetingAssistantDesignSystem.Layout.spacing8)
-                            .background(MeetingAssistantDesignSystem.Colors.subtleFill2)
-                            .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
-                        }
-                    }
-                }
+                webTargetsSection
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -206,6 +195,13 @@ public struct MeetingSettingsTab: View {
                 prompt: meetingViewModel.editingPrompt,
                 onSave: meetingViewModel.handleSavePrompt,
                 onCancel: { meetingViewModel.showPromptEditor = false }
+            )
+        }
+        .sheet(isPresented: $webTargetsViewModel.showEditor) {
+            WebMeetingTargetEditorSheet(
+                target: webTargetsViewModel.editingTarget,
+                onSave: webTargetsViewModel.handleSave,
+                onCancel: { webTargetsViewModel.showEditor = false }
             )
         }
         .alert("settings.post_processing.delete_confirm_title".localized, isPresented: $meetingViewModel.showDeleteConfirmation) {
@@ -218,6 +214,112 @@ public struct MeetingSettingsTab: View {
                 Text("settings.post_processing.delete_confirm_message".localized(with: prompt.title))
             }
         }
+        .alert("settings.meetings.web_targets.delete_confirm_title".localized, isPresented: $webTargetsViewModel.showDeleteConfirmation) {
+            Button("common.cancel".localized, role: .cancel) {}
+            Button("common.delete".localized, role: .destructive) {
+                webTargetsViewModel.executeDelete()
+            }
+        } message: {
+            if let target = webTargetsViewModel.targetToDelete {
+                Text("settings.meetings.web_targets.delete_confirm_message".localized(with: target.displayName))
+            }
+        }
+    }
+
+    private var webTargetsSection: some View {
+        MAGroup("settings.meetings.web_targets.title".localized, icon: "globe") {
+            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                Text("settings.meetings.web_targets.desc".localized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                if webTargetsViewModel.targets.isEmpty {
+                    Text("settings.meetings.web_targets.empty".localized)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    VStack(spacing: 0) {
+                        ForEach(Array(webTargetsViewModel.targets.enumerated()), id: \.element.id) { index, target in
+                            webTargetRow(target)
+
+                            if index < webTargetsViewModel.targets.count - 1 {
+                                Divider()
+                            }
+                        }
+                    }
+                    .background(MeetingAssistantDesignSystem.Colors.subtleFill2)
+                    .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+                }
+
+                HStack {
+                    Spacer()
+                    Button {
+                        webTargetsViewModel.addTarget()
+                    } label: {
+                        Label("settings.meetings.web_targets.add".localized, systemImage: "plus")
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+            }
+        }
+    }
+
+    private func webTargetRow(_ target: WebMeetingTarget) -> some View {
+        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+            Image(systemName: target.app.icon)
+                .font(.title3)
+                .foregroundStyle(target.app.color)
+                .frame(width: 24)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(target.displayName)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                Text(target.urlPatterns.joined(separator: ", "))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text(browserNames(from: target.browserBundleIdentifiers))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Button {
+                webTargetsViewModel.editTarget(target)
+            } label: {
+                Image(systemName: "pencil")
+                    .accessibilityLabel("settings.meetings.web_targets.edit".localized)
+            }
+            .buttonStyle(.borderless)
+            .controlSize(.small)
+
+            Button(role: .destructive) {
+                webTargetsViewModel.confirmDelete(target)
+            } label: {
+                Image(systemName: "trash")
+                    .accessibilityLabel("settings.meetings.web_targets.delete".localized)
+            }
+            .buttonStyle(.borderless)
+            .controlSize(.small)
+        }
+        .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)
+        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
+    }
+
+    private func browserNames(from bundleIdentifiers: [String]) -> String {
+        let known: [String: String] = [
+            "com.apple.Safari": "Safari",
+            "com.google.Chrome": "Google Chrome",
+            "com.microsoft.edgemac": "Microsoft Edge",
+        ]
+
+        let names = bundleIdentifiers
+            .compactMap { known[$0] ?? $0 }
+            .sorted()
+
+        return "settings.meetings.web_targets.browsers".localized(with: names.joined(separator: ", "))
     }
 
     // MARK: - Prompt Row

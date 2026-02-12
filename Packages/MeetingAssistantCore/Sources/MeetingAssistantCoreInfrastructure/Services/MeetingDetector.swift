@@ -11,6 +11,8 @@ public class MeetingDetector: ObservableObject {
     public static let shared = MeetingDetector()
 
     private let logger = Logger(subsystem: "MeetingAssistant", category: "MeetingDetector")
+    private let settings: AppSettingsStore
+    private let browserProviders: [String: BrowserActiveTabURLProviding]
 
     @Published public private(set) var detectedMeeting: MeetingApp?
     @Published private(set) var isMonitoring = false
@@ -21,7 +23,9 @@ public class MeetingDetector: ObservableObject {
     /// Poll interval in seconds
     private let pollInterval: TimeInterval = 2.0
 
-    private init() {
+    private init(settings: AppSettingsStore = .shared) {
+        self.settings = settings
+        self.browserProviders = Self.makeBrowserProviders()
         setupAppNotifications()
     }
 
@@ -58,11 +62,30 @@ public class MeetingDetector: ObservableObject {
     /// Check currently running apps for active meetings.
     private func checkForMeetings() {
         let runningApps = NSWorkspace.shared.runningApplications
+        let monitoredBundleIdentifiers = normalizedMonitoredBundleIdentifiers()
 
-        for meetingApp in MeetingApp.allCases where isMeetingActive(meetingApp, in: runningApps) {
-            if self.detectedMeeting != meetingApp {
-                self.logger.info("Detected meeting: \(meetingApp.displayName)")
-                self.detectedMeeting = meetingApp
+        if let webMatch = detectWebMeeting(in: runningApps, monitoredBundleIdentifiers: monitoredBundleIdentifiers) {
+            if detectedMeeting != webMatch {
+                logger.info("Detected web meeting: \(webMatch.displayName)")
+                detectedMeeting = webMatch
+            }
+            return
+        }
+
+        for meetingApp in MeetingApp.allCases where shouldMonitor(app: meetingApp, monitoredBundleIdentifiers: monitoredBundleIdentifiers) {
+            if isMeetingActive(meetingApp, in: runningApps) {
+                if self.detectedMeeting != meetingApp {
+                    self.logger.info("Detected meeting: \(meetingApp.displayName)")
+                    self.detectedMeeting = meetingApp
+                }
+                return
+            }
+        }
+
+        if let monitoredAppBundleID = firstCustomMonitoredApp(in: runningApps, monitoredBundleIdentifiers: monitoredBundleIdentifiers) {
+            if self.detectedMeeting != .unknown {
+                self.logger.info("Detected meeting in monitored app: \(monitoredAppBundleID)")
+                self.detectedMeeting = .unknown
             }
             return
         }
@@ -92,6 +115,132 @@ public class MeetingDetector: ObservableObject {
         // For native apps, just check if running
         // More sophisticated detection could check window titles
         return true
+    }
+
+    private func shouldMonitor(app: MeetingApp, monitoredBundleIdentifiers: Set<String>) -> Bool {
+        guard !app.bundleIdentifiers.isEmpty else { return false }
+        return app.bundleIdentifiers.contains { monitoredBundleIdentifiers.contains(normalizeBundleIdentifier($0)) }
+    }
+
+    private func firstCustomMonitoredApp(
+        in runningApps: [NSRunningApplication],
+        monitoredBundleIdentifiers: Set<String>
+    ) -> String? {
+        for runningApp in runningApps {
+            guard let bundleId = runningApp.bundleIdentifier else { continue }
+            let normalizedBundleId = normalizeBundleIdentifier(bundleId)
+            guard monitoredBundleIdentifiers.contains(normalizedBundleId) else { continue }
+            if meetingApp(for: normalizedBundleId) == nil {
+                return bundleId
+            }
+        }
+        return nil
+    }
+
+    private func meetingApp(for normalizedBundleIdentifier: String) -> MeetingApp? {
+        MeetingApp.allCases.first { app in
+            app.bundleIdentifiers.contains { normalizeBundleIdentifier($0) == normalizedBundleIdentifier }
+        }
+    }
+
+    private func normalizedMonitoredBundleIdentifiers() -> Set<String> {
+        Set(settings.monitoredMeetingBundleIdentifiers.map(normalizeBundleIdentifier))
+    }
+
+    private func normalizeBundleIdentifier(_ value: String) -> String {
+        value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    private func detectWebMeeting(
+        in runningApps: [NSRunningApplication],
+        monitoredBundleIdentifiers: Set<String>
+    ) -> MeetingApp? {
+        let targets = settings.webMeetingTargets
+        guard !targets.isEmpty else { return nil }
+
+        for runningApp in runningApps {
+            guard let bundleId = runningApp.bundleIdentifier else { continue }
+            let normalizedBundleId = normalizeBundleIdentifier(bundleId)
+            guard monitoredBundleIdentifiers.contains(normalizedBundleId) else { continue }
+            guard let provider = browserProviders[normalizedBundleId] else { continue }
+            if let url = provider.activeTabURL() {
+                if let match = matchWebTarget(for: url, bundleIdentifier: normalizedBundleId, targets: targets) {
+                    return match.app
+                }
+                continue
+            }
+
+            if let match = matchWebTargetByWindowTitle(bundleIdentifier: normalizedBundleId, targets: targets) {
+                return match.app
+            }
+        }
+
+        return nil
+    }
+
+    private func matchWebTarget(
+        for url: URL,
+        bundleIdentifier: String,
+        targets: [WebMeetingTarget]
+    ) -> WebMeetingTarget? {
+        let urlString = url.absoluteString.lowercased()
+
+        return targets.first { target in
+            let normalizedTargetBrowsers = target.browserBundleIdentifiers.map(normalizeBundleIdentifier)
+            guard normalizedTargetBrowsers.contains(bundleIdentifier) else { return false }
+            return target.urlPatterns.contains { pattern in
+                urlString.contains(pattern.lowercased())
+            }
+        }
+    }
+
+    private func matchWebTargetByWindowTitle(
+        bundleIdentifier: String,
+        targets: [WebMeetingTarget]
+    ) -> WebMeetingTarget? {
+        for target in targets {
+            let normalizedTargetBrowsers = target.browserBundleIdentifiers.map(normalizeBundleIdentifier)
+            guard normalizedTargetBrowsers.contains(bundleIdentifier) else { continue }
+
+            let patterns = (target.urlPatterns + target.app.windowTitlePatterns)
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+
+            if !patterns.isEmpty, checkBrowserWindowTitles(for: patterns) {
+                return target
+            }
+        }
+
+        return nil
+    }
+
+    private static func makeBrowserProviders() -> [String: BrowserActiveTabURLProviding] {
+        let providers: [String: BrowserActiveTabURLProviding?] = [
+            "com.apple.Safari": BrowserActiveTabURLProvider(
+                applicationName: "Safari",
+                scriptTemplate: BrowserScriptTemplates.safari
+            ),
+            "com.google.Chrome": BrowserActiveTabURLProvider(
+                applicationName: "Google Chrome",
+                scriptTemplate: BrowserScriptTemplates.chromium
+            ),
+            "com.microsoft.edgemac": BrowserActiveTabURLProvider(
+                applicationName: "Microsoft Edge",
+                scriptTemplate: BrowserScriptTemplates.chromium
+            ),
+        ]
+
+        var resolved: [String: BrowserActiveTabURLProviding] = [:]
+        for (bundleId, provider) in providers {
+            if let provider {
+                resolved[normalizeBundleIdentifierStatic(bundleId)] = provider
+            }
+        }
+        return resolved
+    }
+
+    private static func normalizeBundleIdentifierStatic(_ value: String) -> String {
+        value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 
     /// Check browser window titles for meeting indicators.

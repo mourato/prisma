@@ -11,7 +11,9 @@ public extension MeetingApp {
         switch self {
         case .googleMeet: .green
         case .microsoftTeams: .purple
+        case .discord: .indigo
         case .slack: .pink
+        case .whatsApp: .green
         case .zoom: .blue
         case .manualMeeting: .teal
         case .importedFile: .orange

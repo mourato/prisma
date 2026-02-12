@@ -1,18 +1,32 @@
 import AppKit
-import MeetingAssistantCoreInfrastructure
 import SwiftUI
 import UniformTypeIdentifiers
 
 @MainActor
-public final class MarkdownTargetsViewModel: ObservableObject {
-    @Published public private(set) var installedApps: [MarkdownTargetApp] = []
+public final class InstalledAppsSelectionViewModel: ObservableObject {
+    @Published public private(set) var installedApps: [InstalledAppItem] = []
 
-    private let settings: AppSettingsStore
+    private let defaultBundleIdentifiers: [String]
+    private let hasConfigured: () -> Bool
+    private let loadBundleIdentifiers: () -> [String]
+    private let saveBundleIdentifiers: ([String]) -> Void
     private let workspace: NSWorkspace
+    private let openPanelProvider: () -> NSOpenPanel
 
-    public init(settings: AppSettingsStore = .shared, workspace: NSWorkspace = .shared) {
-        self.settings = settings
+    public init(
+        defaultBundleIdentifiers: [String],
+        hasConfigured: @escaping () -> Bool,
+        loadBundleIdentifiers: @escaping () -> [String],
+        saveBundleIdentifiers: @escaping ([String]) -> Void,
+        workspace: NSWorkspace = .shared,
+        openPanelProvider: @escaping () -> NSOpenPanel = NSOpenPanel.init
+    ) {
+        self.defaultBundleIdentifiers = defaultBundleIdentifiers
+        self.hasConfigured = hasConfigured
+        self.loadBundleIdentifiers = loadBundleIdentifiers
+        self.saveBundleIdentifiers = saveBundleIdentifiers
         self.workspace = workspace
+        self.openPanelProvider = openPanelProvider
     }
 
     public func refreshTargets() {
@@ -20,17 +34,15 @@ public final class MarkdownTargetsViewModel: ObservableObject {
         let resolved = resolveInstalledApps(from: candidates)
         let resolvedIdentifiers = resolved.map(\.bundleIdentifier)
 
-        if settings.hasConfiguredMarkdownTargets,
-           resolvedIdentifiers != settings.markdownTargetBundleIdentifiers
-        {
-            settings.markdownTargetBundleIdentifiers = resolvedIdentifiers
+        if hasConfigured(), resolvedIdentifiers != loadBundleIdentifiers() {
+            saveBundleIdentifiers(resolvedIdentifiers)
         }
 
         installedApps = resolved
     }
 
     public func addApp() {
-        let panel = NSOpenPanel()
+        let panel = openPanelProvider()
         panel.canChooseFiles = true
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = false
@@ -43,17 +55,17 @@ public final class MarkdownTargetsViewModel: ObservableObject {
 
     public func removeApp(bundleIdentifier: String) {
         let normalized = normalizeBundleIdentifier(bundleIdentifier)
-        var identifiers = settings.markdownTargetBundleIdentifiers
+        var identifiers = loadBundleIdentifiers()
         identifiers.removeAll { normalizeBundleIdentifier($0) == normalized }
-        settings.markdownTargetBundleIdentifiers = identifiers
+        saveBundleIdentifiers(identifiers)
         refreshTargets()
     }
 
     private func resolveCandidateBundleIdentifiers() -> [String] {
-        if settings.hasConfiguredMarkdownTargets {
-            return settings.markdownTargetBundleIdentifiers
+        if hasConfigured() {
+            return loadBundleIdentifiers()
         }
-        return AppSettingsStore.defaultMarkdownTargetBundleIdentifiers
+        return defaultBundleIdentifiers
     }
 
     private func addApp(from url: URL) {
@@ -64,17 +76,17 @@ public final class MarkdownTargetsViewModel: ObservableObject {
         }
 
         let normalized = normalizeBundleIdentifier(bundleIdentifier)
-        var identifiers = settings.markdownTargetBundleIdentifiers
+        var identifiers = loadBundleIdentifiers()
         if !identifiers.contains(where: { normalizeBundleIdentifier($0) == normalized }) {
             identifiers.append(bundleIdentifier)
         }
-        settings.markdownTargetBundleIdentifiers = identifiers
+        saveBundleIdentifiers(identifiers)
         refreshTargets()
     }
 
-    private func resolveInstalledApps(from bundleIdentifiers: [String]) -> [MarkdownTargetApp] {
+    private func resolveInstalledApps(from bundleIdentifiers: [String]) -> [InstalledAppItem] {
         var seen = Set<String>()
-        var resolved: [MarkdownTargetApp] = []
+        var resolved: [InstalledAppItem] = []
 
         for bundleIdentifier in bundleIdentifiers {
             let normalized = normalizeBundleIdentifier(bundleIdentifier)
@@ -87,7 +99,7 @@ public final class MarkdownTargetsViewModel: ObservableObject {
 
             let displayName = bundleDisplayName(from: appURL)
             resolved.append(
-                MarkdownTargetApp(
+                InstalledAppItem(
                     bundleIdentifier: bundleIdentifier,
                     displayName: displayName,
                     icon: icon
@@ -115,7 +127,7 @@ public final class MarkdownTargetsViewModel: ObservableObject {
     }
 }
 
-public struct MarkdownTargetApp: Identifiable {
+public struct InstalledAppItem: Identifiable {
     public let bundleIdentifier: String
     public let displayName: String
     public let icon: NSImage

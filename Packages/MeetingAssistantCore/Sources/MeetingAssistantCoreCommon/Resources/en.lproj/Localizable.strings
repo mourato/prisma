@@ -67,6 +67,8 @@
 "settings.general.choose" = "Choose...";
 "settings.general.monitored_apps" = "Monitored Apps";
 "settings.general.monitored_apps_desc" = "The application automatically monitors these applications to start/stop recordings.";
+"settings.general.monitored_apps_empty" = "No apps selected yet.";
+"settings.general.monitored_apps_add" = "Add App";
 "settings.general.monitoring_active" = "Active monitoring";
 
 "settings.meetings.workflow" = "Workflow";
@@ -87,6 +89,21 @@
 "settings.meetings.autodetect_type" = "Auto-detect meeting type";
 "settings.meetings.autodetect_type_desc" = "Classifies the meeting type from the transcript and automatically chooses the best prompt for the summary.";
 "settings.meetings.no_prompts" = "No prompts yet";
+"settings.meetings.web_targets.title" = "Web Meeting Targets";
+"settings.meetings.web_targets.desc" = "Match meetings by URL when your browser is active.";
+"settings.meetings.web_targets.empty" = "No web targets configured yet.";
+"settings.meetings.web_targets.add" = "Add Web Target";
+"settings.meetings.web_targets.edit" = "Edit web target";
+"settings.meetings.web_targets.delete" = "Delete web target";
+"settings.meetings.web_targets.browsers" = "Browsers: %@";
+"settings.meetings.web_targets.editor_title" = "Web Target";
+"settings.meetings.web_targets.name_label" = "Display name";
+"settings.meetings.web_targets.app_label" = "Meeting app";
+"settings.meetings.web_targets.url_label" = "URL patterns";
+"settings.meetings.web_targets.url_desc" = "One pattern per line (or comma-separated). Example: meet.google.com";
+"settings.meetings.web_targets.browser_label" = "Browsers";
+"settings.meetings.web_targets.delete_confirm_title" = "Delete web target?";
+"settings.meetings.web_targets.delete_confirm_message" = "Are you sure you want to delete \"%@\"?";
 "settings.dictation.prompts" = "Dictation prompts";
 "settings.general.days" = "Days";
 "settings.general.keep_for" = "Keep for";
