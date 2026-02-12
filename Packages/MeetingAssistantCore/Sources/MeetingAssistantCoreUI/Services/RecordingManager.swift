@@ -965,7 +965,6 @@ extension RecordingManager {
         guard let provider = browserProviders[normalized] else { return nil }
         return provider.activeTabURL()
     }
-
     private static let markdownFormatInstruction = """
     <OUTPUT_FORMAT>
     Always format the output as Markdown.
