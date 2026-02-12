@@ -117,6 +117,14 @@ public class TranscriptionSettingsViewModel: ObservableObject {
         AppSettingsStore.shared.allPrompts
     }
 
+    public func availablePrompts(for metadata: TranscriptionMetadata) -> [PostProcessingPrompt] {
+        let app = MeetingApp(rawValue: metadata.appRawValue) ?? .unknown
+        if app == .unknown || app == .importedFile {
+            return AppSettingsStore.shared.dictationAvailablePrompts
+        }
+        return AppSettingsStore.shared.meetingAvailablePrompts
+    }
+
     public func applyPostProcessing(prompt: PostProcessingPrompt, to transcription: Transcription) async {
         guard !isProcessingAI else { return }
 

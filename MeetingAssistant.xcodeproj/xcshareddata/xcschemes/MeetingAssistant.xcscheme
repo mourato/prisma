@@ -38,6 +38,17 @@
          </BuildableReference>
       </MacroExpansion>
       <Testables>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "MeetingAssistantCoreTests"
+               BuildableName = "MeetingAssistantCoreTests.xctest"
+               BlueprintName = "MeetingAssistantCoreTests"
+               ReferencedContainer = "container:Packages/MeetingAssistantCore/Package.swift">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction
