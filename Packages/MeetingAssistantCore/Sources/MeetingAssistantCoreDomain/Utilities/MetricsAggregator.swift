@@ -59,6 +59,20 @@ public struct MetricsHourlyBucket: Equatable, Identifiable, Sendable {
     }
 }
 
+public struct MetricsDailyBucket: Equatable, Identifiable, Sendable {
+    public let date: Date
+    public let words: Int
+
+    public var id: Date {
+        date
+    }
+
+    public init(date: Date, words: Int) {
+        self.date = date
+        self.words = words
+    }
+}
+
 public enum MetricsAggregator {
     private static let KEYSTROKES_PER_WORD = 5
 
@@ -134,6 +148,36 @@ public enum MetricsAggregator {
 
         return (0..<24).map { hour in
             MetricsHourlyBucket(hour: hour, count: hourCounts[hour, default: 0])
+        }
+    }
+
+    public static func computeDailyBuckets(
+        metadata: [TranscriptionMetadata],
+        days: Int = 365,
+        calendar: Calendar = .current
+    ) -> [MetricsDailyBucket] {
+        guard days > 0 else { return [] }
+
+        let today = calendar.startOfDay(for: Date())
+        guard let start = calendar.date(byAdding: .day, value: -(days - 1), to: today) else {
+            return []
+        }
+
+        var dayCounts: [Date: Int] = [:]
+        dayCounts.reserveCapacity(days)
+
+        for item in metadata {
+            let day = calendar.startOfDay(for: item.startTime)
+            guard day >= start, day <= today else { continue }
+            dayCounts[day, default: 0] += item.wordCount
+        }
+
+        return (0..<days).compactMap { offset in
+            guard let date = calendar.date(byAdding: .day, value: offset, to: start) else {
+                return nil
+            }
+
+            return MetricsDailyBucket(date: date, words: dayCounts[date, default: 0])
         }
     }
 }
