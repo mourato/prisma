@@ -153,8 +153,10 @@ public final class AssistantVoiceCommandService: ObservableObject {
                 return
             }
 
+            let commandToDispatch = normalizedCommand(commandForDispatch, fallback: command)
+
             let dispatchResult = try dispatchToRaycast(
-                with: commandForDispatch,
+                with: commandToDispatch,
                 selectedIntegration: selectedIntegration
             )
             if dispatchResult == .openedWithClipboardFallback {
@@ -168,6 +170,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
                     "integrationName": selectedIntegration.name,
                     "result": dispatchResult == .openedWithClipboardFallback ? "clipboardFallback" : "deepLink",
                     "processedLength": processedCommand.count,
+                    "dispatchedLength": commandToDispatch.count,
                 ]
             )
 
@@ -265,6 +268,15 @@ public final class AssistantVoiceCommandService: ObservableObject {
             return nil
         }
         return normalized
+    }
+
+    private func normalizedCommand(_ command: String, fallback: String) -> String {
+        let normalized = command.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !normalized.isEmpty {
+            return normalized
+        }
+
+        return fallback.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private func showError(_ error: AssistantVoiceCommandError) {
