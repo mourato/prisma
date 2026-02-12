@@ -158,7 +158,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
                     selectedIntegration: selectedIntegration
                 )
                 if dispatchResult == .openedWithClipboardFallback {
-                    indicator.showError("assistant.error.raycast_opened_clipboard_fallback".localized)
+                    indicator.showSuccess("assistant.success.raycast_opened_clipboard_fallback".localized)
                 }
                 AppLogger.info(
                     "Assistant Raycast dispatch completed",
