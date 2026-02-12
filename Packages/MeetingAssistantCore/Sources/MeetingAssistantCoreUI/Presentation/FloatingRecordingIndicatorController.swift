@@ -127,7 +127,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
 
     /// Hide the floating indicator.
     public func hide() {
-        guard let panel else { return }
+        guard let panelToClose = panel else { return }
 
         // Stop monitoring audio levels
         audioMonitor.stopMonitoring()
@@ -135,11 +135,12 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         // Fade out animation
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.15
-            panel.animator().alphaValue = 0
-        } completionHandler: { [weak self] in
-            Task { @MainActor in
-                self?.panel?.close()
-                self?.panel = nil
+            panelToClose.animator().alphaValue = 0
+        } completionHandler: { [weak self, weak panelToClose] in
+            guard let self, let panelToClose else { return }
+            panelToClose.close()
+            if self.panel === panelToClose {
+                self.panel = nil
             }
         }
 

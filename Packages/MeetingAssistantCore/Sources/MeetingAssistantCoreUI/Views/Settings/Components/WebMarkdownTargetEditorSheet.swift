@@ -4,7 +4,6 @@ import SwiftUI
 
 public struct WebMarkdownTargetEditorSheet: View {
     private let target: WebContextTarget?
-    private let browserBundleIdentifiers: [String]
     private let onSave: (WebContextTarget) -> Void
     private let onCancel: () -> Void
 
@@ -13,12 +12,10 @@ public struct WebMarkdownTargetEditorSheet: View {
 
     public init(
         target: WebContextTarget?,
-        browserBundleIdentifiers: [String],
         onSave: @escaping (WebContextTarget) -> Void,
         onCancel: @escaping () -> Void
     ) {
         self.target = target
-        self.browserBundleIdentifiers = browserBundleIdentifiers
         self.onSave = onSave
         self.onCancel = onCancel
 
@@ -60,7 +57,7 @@ public struct WebMarkdownTargetEditorSheet: View {
             id: target?.id ?? UUID(),
             displayName: displayName.trimmingCharacters(in: .whitespacesAndNewlines),
             urlPatterns: parsedURLPatterns,
-            browserBundleIdentifiers: browserBundleIdentifiers
+            browserBundleIdentifiers: []
         )
     }
 }
@@ -72,7 +69,6 @@ public struct WebMarkdownTargetEditorSheet: View {
             urlPatterns: ["docs.example.com"],
             browserBundleIdentifiers: AppSettingsStore.defaultWebTargetBrowserBundleIdentifiers
         ),
-        browserBundleIdentifiers: AppSettingsStore.defaultWebTargetBrowserBundleIdentifiers,
         onSave: { _ in },
         onCancel: {}
     )

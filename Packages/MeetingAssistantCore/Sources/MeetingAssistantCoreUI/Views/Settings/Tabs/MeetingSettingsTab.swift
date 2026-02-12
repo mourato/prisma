@@ -200,7 +200,6 @@ public struct MeetingSettingsTab: View {
         .sheet(isPresented: $webTargetsViewModel.showEditor) {
             WebMeetingTargetEditorSheet(
                 target: webTargetsViewModel.editingTarget,
-                browserBundleIdentifiers: meetingViewModel.settings.webTargetBrowserBundleIdentifiers,
                 onSave: webTargetsViewModel.handleSave,
                 onCancel: { webTargetsViewModel.showEditor = false }
             )
@@ -312,7 +311,7 @@ public struct MeetingSettingsTab: View {
     private func browserNames(from bundleIdentifiers: [String]) -> String {
         let effectiveBundleIdentifiers = bundleIdentifiers.isEmpty ? meetingViewModel.settings.webTargetBrowserBundleIdentifiers : bundleIdentifiers
         if effectiveBundleIdentifiers.isEmpty {
-            return "settings.web_targets.any_browser".localized
+            return "settings.web_targets.browsers.empty".localized
         }
 
         let names = effectiveBundleIdentifiers

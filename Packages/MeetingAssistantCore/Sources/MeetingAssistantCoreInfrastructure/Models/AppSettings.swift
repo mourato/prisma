@@ -1136,6 +1136,12 @@ public class AppSettingsStore: ObservableObject {
             ?? Self.defaultMonitoredMeetingBundleIdentifiers
         webMeetingTargets = Self.loadDecoded([WebMeetingTarget].self, forKey: Keys.webMeetingTargets)
             ?? Self.defaultWebMeetingTargets
+
+        let hasPersistedMarkdownWebTargets = UserDefaults.standard.object(forKey: Keys.markdownWebTargets) != nil
+        let hasPersistedWebMeetingTargets = UserDefaults.standard.object(forKey: Keys.webMeetingTargets) != nil
+        let hasPersistedLegacyPerTargetBrowsers = hasPersistedMarkdownWebTargets || hasPersistedWebMeetingTargets
+        let hasGlobalBrowserSetting = UserDefaults.standard.object(forKey: Keys.webTargetBrowserBundleIdentifiers) != nil
+
         if loadedContextAwarenessEnabled {
             contextAwarenessIncludeActiveApp = true
             contextAwarenessIncludeAccessibilityText = true
@@ -1171,7 +1177,9 @@ public class AppSettingsStore: ObservableObject {
         // Load app visibility settings
         showInDock = UserDefaults.standard.bool(forKey: Keys.showInDock)
 
-        migrateWebTargetBrowsersToGlobalSettingIfNeeded()
+        if hasPersistedLegacyPerTargetBrowsers && !hasGlobalBrowserSetting {
+            migrateWebTargetBrowsersToGlobalSettingIfNeeded()
+        }
 
         applyLanguage(selectedLanguage)
     }
@@ -1292,14 +1300,17 @@ public class AppSettingsStore: ObservableObject {
     }
 
     private func deduplicatedNormalizedBundleIdentifiers(_ identifiers: [String]) -> [String] {
-        var seen = Set<String>()
+        var seenKeys = Set<String>()
         var ordered: [String] = []
 
         for identifier in identifiers {
-            let normalized = identifier.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-            guard !normalized.isEmpty, !seen.contains(normalized) else { continue }
-            seen.insert(normalized)
-            ordered.append(normalized)
+            // Trim whitespace but preserve original casing for storage.
+            let trimmed = identifier.trimmingCharacters(in: .whitespacesAndNewlines)
+            let normalizedKey = trimmed.lowercased()
+
+            guard !trimmed.isEmpty, !seenKeys.contains(normalizedKey) else { continue }
+            seenKeys.insert(normalizedKey)
+            ordered.append(trimmed)
         }
 
         return ordered

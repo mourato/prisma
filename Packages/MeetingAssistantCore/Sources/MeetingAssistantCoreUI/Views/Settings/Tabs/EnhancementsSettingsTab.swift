@@ -63,7 +63,6 @@ public struct EnhancementsSettingsTab: View {
         .sheet(isPresented: $markdownWebTargetsViewModel.showEditor) {
             WebMarkdownTargetEditorSheet(
                 target: markdownWebTargetsViewModel.editingTarget,
-                browserBundleIdentifiers: viewModel.settings.webTargetBrowserBundleIdentifiers,
                 onSave: markdownWebTargetsViewModel.handleSave,
                 onCancel: { markdownWebTargetsViewModel.showEditor = false }
             )
@@ -296,11 +295,16 @@ public struct EnhancementsSettingsTab: View {
     }
 
     private func browserNames(from bundleIdentifiers: [String]) -> String {
-        let effectiveBundleIdentifiers = bundleIdentifiers.isEmpty ? viewModel.settings.webTargetBrowserBundleIdentifiers : bundleIdentifiers
-        if effectiveBundleIdentifiers.isEmpty {
-            return "settings.web_targets.any_browser".localized
+        let fallbackBundleIdentifiers = viewModel.settings.webTargetBrowserBundleIdentifiers
+
+        // If both the target-specific list and the global fallback list are empty,
+        // no browsers will actually match. Reflect that in the UI instead of
+        // suggesting that any browser is allowed.
+        if bundleIdentifiers.isEmpty && fallbackBundleIdentifiers.isEmpty {
+            return "settings.web_targets.browsers.empty".localized
         }
 
+        let effectiveBundleIdentifiers = bundleIdentifiers.isEmpty ? fallbackBundleIdentifiers : bundleIdentifiers
         let names = effectiveBundleIdentifiers
             .map { WebTargetEditorSupport.browserDisplayName(for: $0) }
             .sorted()
