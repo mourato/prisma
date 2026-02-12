@@ -5,7 +5,6 @@ import SwiftUI
 
 public struct WebMeetingTargetEditorSheet: View {
     private let target: WebMeetingTarget?
-    private let browserBundleIdentifiers: [String]
     private let onSave: (WebMeetingTarget) -> Void
     private let onCancel: () -> Void
 
@@ -15,12 +14,10 @@ public struct WebMeetingTargetEditorSheet: View {
 
     public init(
         target: WebMeetingTarget?,
-        browserBundleIdentifiers: [String],
         onSave: @escaping (WebMeetingTarget) -> Void,
         onCancel: @escaping () -> Void
     ) {
         self.target = target
-        self.browserBundleIdentifiers = browserBundleIdentifiers
         self.onSave = onSave
         self.onCancel = onCancel
 
@@ -108,7 +105,6 @@ public struct WebMeetingTargetEditorSheet: View {
 #Preview {
     WebMeetingTargetEditorSheet(
         target: AppSettingsStore.defaultWebMeetingTargets.first,
-        browserBundleIdentifiers: AppSettingsStore.defaultWebTargetBrowserBundleIdentifiers,
         onSave: { _ in },
         onCancel: {}
     )
