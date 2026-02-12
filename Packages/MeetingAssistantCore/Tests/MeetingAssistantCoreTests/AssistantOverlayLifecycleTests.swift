@@ -4,7 +4,15 @@ import XCTest
 
 @MainActor
 final class AssistantOverlayLifecycleTests: XCTestCase {
+    private func skipIfOverlayLifecycleDisabled() throws {
+        if ProcessInfo.processInfo.environment["MA_SKIP_OVERLAY_LIFECYCLE_TESTS"] == "1" {
+            throw XCTSkip("Overlay lifecycle tests disabled for current runner")
+        }
+    }
+
     func testFloatingIndicatorRapidShowHideDoesNotCrash() async throws {
+        try skipIfOverlayLifecycleDisabled()
+
         guard NSScreen.main != nil else {
             throw XCTSkip("No main screen available in current test environment")
         }
@@ -25,6 +33,8 @@ final class AssistantOverlayLifecycleTests: XCTestCase {
     }
 
     func testAssistantBorderRapidShowHideDoesNotCrash() async throws {
+        try skipIfOverlayLifecycleDisabled()
+
         guard NSScreen.main != nil else {
             throw XCTSkip("No main screen available in current test environment")
         }

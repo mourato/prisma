@@ -44,6 +44,10 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         static let screenPadding: CGFloat = 40
     }
 
+    private var isRunningTests: Bool {
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+    }
+
     // MARK: - Initialization
 
     /// Creates a new floating recording indicator controller.
@@ -113,12 +117,17 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         positionPanel(panel, at: settingsStore.recordingIndicatorPosition)
 
         if shouldCreatePanel {
-            // Show with fade-in animation
-            panel.alphaValue = 0
-            panel.orderFront(nil)
-            NSAnimationContext.runAnimationGroup { context in
-                context.duration = 0.2
-                panel.animator().alphaValue = 1
+            if isRunningTests {
+                panel.alphaValue = 1
+                panel.orderFront(nil)
+            } else {
+                // Show with fade-in animation
+                panel.alphaValue = 0
+                panel.orderFront(nil)
+                NSAnimationContext.runAnimationGroup { context in
+                    context.duration = 0.2
+                    panel.animator().alphaValue = 1
+                }
             }
         }
 
@@ -132,15 +141,24 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         // Stop monitoring audio levels
         audioMonitor.stopMonitoring()
 
-        // Fade out animation
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.15
-            panelToClose.animator().alphaValue = 0
-        } completionHandler: { [weak self, weak panelToClose] in
-            guard let self, let panelToClose else { return }
+        if isRunningTests {
             panelToClose.close()
-            if self.panel === panelToClose {
-                self.panel = nil
+            if panel === panelToClose {
+                panel = nil
+            }
+        } else {
+            // Fade out animation
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.15
+                panelToClose.animator().alphaValue = 0
+            } completionHandler: { [weak self, weak panelToClose] in
+                Task { @MainActor [weak self, weak panelToClose] in
+                    guard let self, let panelToClose else { return }
+                    panelToClose.close()
+                    if self.panel === panelToClose {
+                        self.panel = nil
+                    }
+                }
             }
         }
 

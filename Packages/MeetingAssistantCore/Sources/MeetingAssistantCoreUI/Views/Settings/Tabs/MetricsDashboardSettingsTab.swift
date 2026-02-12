@@ -129,7 +129,7 @@ public struct MetricsDashboardSettingsTab: View {
                             .onAppear {
                                 scrollToLatest(in: proxy)
                             }
-                            .onChange(of: viewModel.dailyBuckets) { _ in
+                            .onReceive(viewModel.$dailyBuckets.dropFirst()) { _ in
                                 scrollToLatest(in: proxy)
                             }
                         }
