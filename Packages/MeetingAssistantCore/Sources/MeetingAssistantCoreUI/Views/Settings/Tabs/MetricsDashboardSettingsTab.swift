@@ -25,8 +25,8 @@ public struct MetricsDashboardSettingsTab: View {
                 }
 
                 activityHeatmapSection
-                heroSection
                 filtersSection
+                heroSection
 
                 if viewModel.summary.sessionsRecorded == 0, !viewModel.isLoading {
                     emptyStateSection
@@ -62,12 +62,6 @@ public struct MetricsDashboardSettingsTab: View {
         .padding(MeetingAssistantDesignSystem.Layout.heroPadding)
         .background(MeetingAssistantDesignSystem.Colors.dashboardHeroGradient)
         .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.heroCornerRadius, style: .continuous))
-        .shadow(
-            color: MeetingAssistantDesignSystem.Colors.accent.opacity(0.2),
-            radius: MeetingAssistantDesignSystem.Layout.shadowRadius,
-            x: MeetingAssistantDesignSystem.Layout.shadowX,
-            y: MeetingAssistantDesignSystem.Layout.shadowY
-        )
     }
 
     private var filtersSection: some View {
