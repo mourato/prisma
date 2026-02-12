@@ -50,7 +50,6 @@ public struct WebMarkdownTargetEditorSheet: View {
     private var canSave: Bool {
         !displayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && !parsedURLPatterns.isEmpty
-            && !selectedBrowsers.isEmpty
     }
 
     private var parsedURLPatterns: [String] {

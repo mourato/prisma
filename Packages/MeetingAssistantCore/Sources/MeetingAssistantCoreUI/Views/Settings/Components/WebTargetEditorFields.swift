@@ -14,6 +14,10 @@ struct WebTargetEditorFields: View {
     @Binding var urlPatternsText: String
     @Binding var selectedBrowsers: Set<String>
 
+    @State private var isAdvancedExpanded = false
+    @State private var browserBundleIDsText = ""
+    @State private var hasInitializedAdvancedState = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
             VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
@@ -42,17 +46,37 @@ struct WebTargetEditorFields: View {
                     .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
             }
 
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-                Text(browserLabelKey.localized)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            DisclosureGroup("settings.web_targets.advanced.title".localized, isExpanded: $isAdvancedExpanded) {
+                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                    Text("settings.web_targets.advanced.desc".localized)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
 
-                ForEach(WebTargetEditorSupport.browserOptions) { option in
-                    MAToggleRow(
-                        option.name,
-                        isOn: binding(for: option.bundleIdentifier)
-                    )
+                    Text(browserLabelKey.localized)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    Text("settings.web_targets.advanced.bundle_ids_desc".localized)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+
+                    TextEditor(text: $browserBundleIDsText)
+                        .font(.caption.monospaced())
+                        .frame(minHeight: 72)
+                        .padding(6)
+                        .background(MeetingAssistantDesignSystem.Colors.subtleFill2)
+                        .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+
+                    HStack {
+                        Spacer()
+                        Button("settings.web_targets.advanced.import_common".localized) {
+                            selectedBrowsers = Set(WebTargetEditorSupport.commonBrowserBundleIdentifiers)
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                    }
                 }
+                .padding(.top, MeetingAssistantDesignSystem.Layout.spacing4)
             }
 
             HStack {
@@ -69,19 +93,37 @@ struct WebTargetEditorFields: View {
                 .disabled(!canSave)
             }
         }
+        .onAppear {
+            guard !hasInitializedAdvancedState else { return }
+            hasInitializedAdvancedState = true
+            isAdvancedExpanded = false
+            browserBundleIDsText = selectedBrowsers.sorted().joined(separator: "\n")
+        }
+        .onChange(of: selectedBrowsers) { _, newValue in
+            let serialized = newValue.sorted().joined(separator: "\n")
+            if serialized != browserBundleIDsText {
+                browserBundleIDsText = serialized
+            }
+        }
+        .onChange(of: browserBundleIDsText) { _, newValue in
+            let parsed = Set(parseBundleIdentifiers(from: newValue))
+            if parsed != selectedBrowsers {
+                selectedBrowsers = parsed
+            }
+        }
+        .onChange(of: isAdvancedExpanded) { _, isExpanded in
+            if !isExpanded {
+                selectedBrowsers.removeAll()
+            }
+        }
     }
 
-    private func binding(for bundleIdentifier: String) -> Binding<Bool> {
-        Binding(
-            get: { selectedBrowsers.contains(bundleIdentifier) },
-            set: { isSelected in
-                if isSelected {
-                    selectedBrowsers.insert(bundleIdentifier)
-                } else {
-                    selectedBrowsers.remove(bundleIdentifier)
-                }
-            }
-        )
+    private func parseBundleIdentifiers(from text: String) -> [String] {
+        text
+            .replacingOccurrences(of: ",", with: "\n")
+            .components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
     }
 }
 

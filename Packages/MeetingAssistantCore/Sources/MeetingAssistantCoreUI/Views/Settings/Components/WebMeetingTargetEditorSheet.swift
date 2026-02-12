@@ -75,7 +75,6 @@ public struct WebMeetingTargetEditorSheet: View {
     private var canSave: Bool {
         !displayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && !parsedURLPatterns.isEmpty
-            && !selectedBrowsers.isEmpty
     }
 
     private var parsedURLPatterns: [String] {
