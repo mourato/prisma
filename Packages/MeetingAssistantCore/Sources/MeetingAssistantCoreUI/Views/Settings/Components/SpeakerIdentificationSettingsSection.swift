@@ -25,7 +25,11 @@ public struct SpeakerIdentificationSettingsSection: View {
             isOn: $settings.isDiarizationEnabled
         )
         .onChange(of: settings.isDiarizationEnabled) { isEnabled in
-            guard isEnabled, FeatureFlags.enableDiarization else { return }
+            guard isEnabled else { return }
+            settings.minSpeakers = nil
+            settings.maxSpeakers = nil
+            settings.numSpeakers = nil
+            guard FeatureFlags.enableDiarization else { return }
             Task {
                 await modelManager.loadDiarizationModels()
             }
@@ -33,125 +37,6 @@ public struct SpeakerIdentificationSettingsSection: View {
 
         if settings.isDiarizationEnabled {
             modelStatusSection
-
-            Divider()
-                .padding(.vertical, 2)
-
-            VStack(spacing: 12) {
-                HStack {
-                    Text("settings.ai.num_speakers".localized)
-
-                    Spacer()
-
-                    if let num = settings.numSpeakers {
-                        Stepper(
-                            value: Binding(
-                                get: { num },
-                                set: { settings.numSpeakers = $0 }
-                            ),
-                            in: 1...20
-                        ) {
-                            Text("\(num)")
-                                .fontWeight(.medium)
-                                .frame(width: 24)
-                        }
-                    } else {
-                        Text("settings.ai.speakers_auto".localized)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Toggle(
-                        "",
-                        isOn: Binding(
-                            get: { settings.numSpeakers != nil },
-                            set: { isOn in
-                                settings.numSpeakers = isOn ? 2 : nil
-                                if isOn {
-                                    settings.minSpeakers = nil
-                                    settings.maxSpeakers = nil
-                                }
-                            }
-                        )
-                    )
-                    .labelsHidden()
-                    .toggleStyle(.switch)
-                }
-
-                if settings.numSpeakers == nil {
-                    HStack {
-                        Text("settings.ai.min_speakers".localized)
-
-                        Spacer()
-
-                        if let min = settings.minSpeakers {
-                            Stepper(
-                                value: Binding(
-                                    get: { min },
-                                    set: { settings.minSpeakers = $0 }
-                                ),
-                                in: 1...(settings.maxSpeakers ?? 20)
-                            ) {
-                                Text("\(min)")
-                                    .fontWeight(.medium)
-                                    .frame(width: 24)
-                            }
-                        } else {
-                            Text("settings.ai.speakers_auto".localized)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-
-                        Toggle(
-                            "",
-                            isOn: Binding(
-                                get: { settings.minSpeakers != nil },
-                                set: { isOn in
-                                    settings.minSpeakers = isOn ? 1 : nil
-                                }
-                            )
-                        )
-                        .labelsHidden()
-                        .toggleStyle(.switch)
-                    }
-
-                    HStack {
-                        Text("settings.ai.max_speakers".localized)
-
-                        Spacer()
-
-                        if let max = settings.maxSpeakers {
-                            Stepper(
-                                value: Binding(
-                                    get: { max },
-                                    set: { settings.maxSpeakers = $0 }
-                                ),
-                                in: (settings.minSpeakers ?? 1)...20
-                            ) {
-                                Text("\(max)")
-                                    .fontWeight(.medium)
-                                    .frame(width: 24)
-                            }
-                        } else {
-                            Text("settings.ai.speakers_auto".localized)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-
-                        Toggle(
-                            "",
-                            isOn: Binding(
-                                get: { settings.maxSpeakers != nil },
-                                set: { isOn in
-                                    settings.maxSpeakers = isOn ? 10 : nil
-                                }
-                            )
-                        )
-                        .labelsHidden()
-                        .toggleStyle(.switch)
-                    }
-                }
-            }
         }
     }
 
@@ -243,8 +128,8 @@ private struct SpeakerIdentificationSettingsSectionPreview: View {
         let settings = AppSettingsStore.shared
         settings.isDiarizationEnabled = true
         settings.numSpeakers = nil
-        settings.minSpeakers = 2
-        settings.maxSpeakers = 6
+        settings.minSpeakers = nil
+        settings.maxSpeakers = nil
         self.settings = settings
     }
 
