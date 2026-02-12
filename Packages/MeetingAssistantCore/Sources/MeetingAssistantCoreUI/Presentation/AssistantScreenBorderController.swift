@@ -37,31 +37,27 @@ public final class AssistantScreenBorderController {
         self.settingsStore = settingsStore
     }
 
+    deinit {
+        borderWindow?.close()
+        borderWindow = nil
+    }
+
     // MARK: - Public API
 
     /// Show the border around the active screen using configured color and style.
     public func show() {
         guard !isVisible else { return }
 
+        if isRunningTests {
+            isVisible = true
+            return
+        }
+
         guard let screen = NSScreen.main else { return }
 
         let screenFrame = screen.frame
 
-        // Create a borderless, transparent window that covers the entire screen
-        let window = NSWindow(
-            contentRect: screenFrame,
-            styleMask: .borderless,
-            backing: .buffered,
-            defer: false
-        )
-
-        // Configure window properties for overlay behavior
-        window.level = .screenSaver
-        window.ignoresMouseEvents = true
-        window.isOpaque = false
-        window.backgroundColor = .clear
-        window.hasShadow = false
-        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
+        let window = makeOrReuseWindow(frame: screenFrame)
 
         // Create the border view using SwiftUI with current settings
         let borderColor = Color(settingsStore.assistantBorderColor.nsColor)
@@ -74,9 +70,6 @@ public final class AssistantScreenBorderController {
             style: borderStyle
         )
         window.contentView = NSHostingView(rootView: borderView)
-
-        // Store reference and show with animation
-        borderWindow = window
 
         if isRunningTests {
             window.alphaValue = 1
@@ -96,29 +89,51 @@ public final class AssistantScreenBorderController {
 
     /// Hide the border overlay.
     public func hide() {
-        guard let windowToClose = borderWindow else { return }
+        if isRunningTests {
+            isVisible = false
+            return
+        }
+
+        guard let window = borderWindow else { return }
 
         if isRunningTests {
-            windowToClose.close()
-            if borderWindow === windowToClose {
-                borderWindow = nil
-            }
+            window.orderOut(nil)
+            window.alphaValue = 1
         } else {
             NSAnimationContext.runAnimationGroup { context in
                 context.duration = Constants.animationDuration
-                windowToClose.animator().alphaValue = 0
-            } completionHandler: { [weak self, weak windowToClose] in
-                Task { @MainActor [weak self, weak windowToClose] in
-                    guard let self, let windowToClose else { return }
-                    windowToClose.close()
-                    if self.borderWindow === windowToClose {
-                        self.borderWindow = nil
-                    }
-                }
+                window.animator().alphaValue = 0
+            } completionHandler: { [weak window] in
+                window?.orderOut(nil)
+                window?.alphaValue = 1
             }
         }
 
         isVisible = false
+    }
+
+    private func makeOrReuseWindow(frame: NSRect) -> NSWindow {
+        if let borderWindow {
+            borderWindow.setFrame(frame, display: false)
+            return borderWindow
+        }
+
+        let window = NSWindow(
+            contentRect: frame,
+            styleMask: .borderless,
+            backing: .buffered,
+            defer: false
+        )
+
+        window.level = .screenSaver
+        window.ignoresMouseEvents = true
+        window.isOpaque = false
+        window.backgroundColor = .clear
+        window.hasShadow = false
+        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
+
+        borderWindow = window
+        return window
     }
 }
 
