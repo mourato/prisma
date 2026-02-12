@@ -5,7 +5,9 @@ import MeetingAssistantCoreCommon
 public enum MeetingApp: String, CaseIterable, Codable, Sendable {
     case googleMeet = "google-meet"
     case microsoftTeams = "microsoft-teams"
+    case discord
     case slack
+    case whatsApp = "whatsapp"
     case zoom
     case manualMeeting = "manual-meeting"
     case importedFile = "imported-file"
@@ -18,8 +20,12 @@ public enum MeetingApp: String, CaseIterable, Codable, Sendable {
             ["com.google.Chrome", "com.apple.Safari", "com.microsoft.edgemac"]
         case .microsoftTeams:
             ["com.microsoft.teams", "com.microsoft.teams2"]
+        case .discord:
+            ["com.hnc.Discord"]
         case .slack:
             ["com.tinyspeck.slackmacgap"]
+        case .whatsApp:
+            ["net.whatsapp.WhatsApp"]
         case .zoom:
             ["us.zoom.xos"]
         case .manualMeeting, .importedFile, .unknown:
@@ -34,8 +40,12 @@ public enum MeetingApp: String, CaseIterable, Codable, Sendable {
             ["meet.google.com", "Google Meet"]
         case .microsoftTeams:
             ["Microsoft Teams", "| Teams"]
+        case .discord:
+            []
         case .slack:
             ["Huddle", "Call"]
+        case .whatsApp:
+            []
         case .zoom:
             ["Zoom Meeting", "Zoom Webinar"]
         case .manualMeeting, .importedFile, .unknown:
@@ -47,7 +57,9 @@ public enum MeetingApp: String, CaseIterable, Codable, Sendable {
         switch self {
         case .googleMeet: "Google Meet"
         case .microsoftTeams: "Microsoft Teams"
+        case .discord: "Discord"
         case .slack: "Slack"
+        case .whatsApp: "WhatsApp"
         case .zoom: "Zoom"
         case .manualMeeting: "meeting.app.manual".localized
         case .importedFile: "meeting.app.imported".localized
@@ -59,7 +71,9 @@ public enum MeetingApp: String, CaseIterable, Codable, Sendable {
         switch self {
         case .googleMeet: "video.fill"
         case .microsoftTeams: "person.3.fill"
+        case .discord: "bubble.left.and.bubble.right.fill"
         case .slack: "number.square.fill"
+        case .whatsApp: "phone.fill"
         case .zoom: "video.circle.fill"
         case .manualMeeting: "person.2.wave.2"
         case .importedFile: "doc.badge.arrow.up"

@@ -67,6 +67,8 @@
 "settings.general.choose" = "Escolher...";
 "settings.general.monitored_apps" = "Apps Monitorados";
 "settings.general.monitored_apps_desc" = "O aplicativo monitora automaticamente o estado destes apps para iniciar/parar gravações.";
+"settings.general.monitored_apps_empty" = "Nenhum app selecionado ainda.";
+"settings.general.monitored_apps_add" = "Adicionar app";
 "settings.general.monitoring_active" = "Monitoramento ativo";
 
 "settings.meetings.workflow" = "Fluxo de Trabalho";
@@ -87,6 +89,21 @@
 "settings.meetings.autodetect_type" = "Autodetectar tipo de reunião";
 "settings.meetings.autodetect_type_desc" = "Classifica o tipo de reunião a partir da transcrição e escolhe automaticamente o melhor prompt para o resumo.";
 "settings.meetings.no_prompts" = "Nenhum prompt ainda";
+"settings.meetings.web_targets.title" = "Alvos Web de Reunião";
+"settings.meetings.web_targets.desc" = "Identifica reuniões por URL quando o navegador está ativo.";
+"settings.meetings.web_targets.empty" = "Nenhum alvo web configurado ainda.";
+"settings.meetings.web_targets.add" = "Adicionar alvo web";
+"settings.meetings.web_targets.edit" = "Editar alvo web";
+"settings.meetings.web_targets.delete" = "Excluir alvo web";
+"settings.meetings.web_targets.browsers" = "Navegadores: %@";
+"settings.meetings.web_targets.editor_title" = "Alvo Web";
+"settings.meetings.web_targets.name_label" = "Nome de exibicao";
+"settings.meetings.web_targets.app_label" = "App de reuniao";
+"settings.meetings.web_targets.url_label" = "Padroes de URL";
+"settings.meetings.web_targets.url_desc" = "Um padrao por linha (ou separado por virgula). Exemplo: meet.google.com";
+"settings.meetings.web_targets.browser_label" = "Navegadores";
+"settings.meetings.web_targets.delete_confirm_title" = "Excluir alvo web?";
+"settings.meetings.web_targets.delete_confirm_message" = "Tem certeza que deseja excluir \"%@\"?";
 "settings.dictation.prompts" = "Prompts de ditado";
 "settings.general.days" = "Dias";
 "settings.general.keep_for" = "Manter por";
