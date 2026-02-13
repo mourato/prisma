@@ -38,7 +38,7 @@ final class AppSettingsAssistantIntegrationsTests: XCTestCase {
 
         XCTAssertEqual(settings.assistantIntegrations.count, 1)
         XCTAssertEqual(settings.assistantSelectedIntegration?.isEnabled, true)
-        XCTAssertEqual(settings.assistantSelectedIntegration?.deepLink, "raycast://ai-commands/custom-command")
+        XCTAssertEqual(settings.assistantSelectedIntegration?.deepLink, AssistantIntegrationConfig.defaultRaycastDeepLink)
     }
 
     func testUpsertAssistantIntegration_AppendsNewIntegration() {

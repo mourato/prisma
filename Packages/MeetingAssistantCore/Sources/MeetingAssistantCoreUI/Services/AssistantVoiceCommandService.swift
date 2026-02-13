@@ -1,10 +1,18 @@
 import Foundation
+import AppKit
+import ApplicationServices
+import Carbon
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
+
+public enum AssistantExecutionFlow: Sendable {
+    case assistantMode
+    case integrationDispatch
+}
 
 @MainActor
 public final class AssistantVoiceCommandService: ObservableObject {
@@ -22,6 +30,12 @@ public final class AssistantVoiceCommandService: ObservableObject {
     private let scriptRunner: AssistantBashScriptRunner
 
     private var currentRecordingURL: URL?
+    private var currentExecutionFlow: AssistantExecutionFlow = .assistantMode
+
+    private var shouldLogPayloadDetails: Bool {
+        ProcessInfo.processInfo.environment["MA_ASSISTANT_DEBUG_PAYLOAD"] == "1"
+            || UserDefaults.standard.bool(forKey: "assistantDebugPayload")
+    }
 
     public init(
         audioRecorder: AudioRecorder = .shared,
@@ -45,7 +59,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
         self.scriptRunner = scriptRunner
     }
 
-    public func startRecording() async {
+    public func startRecording(flow: AssistantExecutionFlow = .assistantMode) async {
         guard !isRecording, !isProcessing else { return }
 
         guard !recordingManager.isRecording else {
@@ -72,6 +86,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
         do {
             let outputURL = makeTemporaryRecordingURL()
             currentRecordingURL = outputURL
+            currentExecutionFlow = flow
 
             try await audioRecorder.startRecording(to: outputURL, source: .microphone)
             isRecording = true
@@ -96,6 +111,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
 
         defer {
             isProcessing = false
+            currentExecutionFlow = .assistantMode
             screenBorder.hide()
             cleanupRecordingFile(recordingURL ?? currentRecordingURL)
             currentRecordingURL = nil
@@ -109,21 +125,42 @@ public final class AssistantVoiceCommandService: ObservableObject {
             let transcription = try await transcriptionClient.transcribe(audioURL: recordingURL)
             let command = transcription.text.trimmingCharacters(in: .whitespacesAndNewlines)
 
+            if shouldLogPayloadDetails {
+                AppLogger.debug(
+                    "Assistant transcription payload",
+                    category: .assistant,
+                    extra: [
+                        "rawLength": transcription.text.count,
+                        "trimmedLength": command.count,
+                        "preview": payloadPreview(command),
+                    ]
+                )
+            }
+
             guard !command.isEmpty else {
                 throw AssistantVoiceCommandError.emptyCommand
             }
 
-            guard let selectedIntegration = settings.assistantSelectedIntegration,
-                  selectedIntegration.isEnabled
-            else {
-                throw AssistantVoiceCommandError.integrationDisabled
+            let executionFlow = currentExecutionFlow
+            let selectedIntegration: AssistantIntegrationConfig?
+
+            if executionFlow == .integrationDispatch {
+                guard let integration = settings.assistantSelectedIntegration,
+                      integration.isEnabled
+                else {
+                    throw AssistantVoiceCommandError.integrationDisabled
+                }
+                selectedIntegration = integration
+            } else {
+                selectedIntegration = nil
             }
 
             AppLogger.info(
                 "Assistant command processed",
                 category: .assistant,
                 extra: [
-                    "integration": selectedIntegration.name,
+                    "integration": selectedIntegration?.name ?? "assistantMode",
+                    "executionFlow": executionFlow == .integrationDispatch ? "integrationDispatch" : "assistantMode",
                     "commandLength": command.count,
                 ]
             )
@@ -147,6 +184,17 @@ public final class AssistantVoiceCommandService: ObservableObject {
                 with: integrationPrompt
             )
 
+            if shouldLogPayloadDetails {
+                AppLogger.debug(
+                    "Assistant post-processing payload",
+                    category: .assistant,
+                    extra: [
+                        "length": processedCommand.count,
+                        "preview": payloadPreview(processedCommand),
+                    ]
+                )
+            }
+
             guard let commandForDispatch = try await applyScriptIfNeeded(
                 stage: .afterAI,
                 input: processedCommand,
@@ -158,24 +206,52 @@ public final class AssistantVoiceCommandService: ObservableObject {
 
             let commandToDispatch = normalizedCommand(commandForDispatch, fallback: command)
 
-            let dispatchResult = try dispatchToRaycast(
-                with: commandToDispatch,
-                selectedIntegration: selectedIntegration
-            )
-            if dispatchResult == .openedWithClipboardFallback {
-                indicator.showError("settings.assistant.integrations.test_success_clipboard_fallback".localized)
+            if shouldLogPayloadDetails {
+                AppLogger.debug(
+                    "Assistant dispatch payload",
+                    category: .assistant,
+                    extra: [
+                        "length": commandToDispatch.count,
+                        "preview": payloadPreview(commandToDispatch),
+                        "integrationId": selectedIntegration?.id.uuidString ?? "assistantMode",
+                    ]
+                )
             }
-            AppLogger.info(
-                "Assistant integration dispatch completed",
-                category: .assistant,
-                extra: [
-                    "integrationId": selectedIntegration.id.uuidString,
-                    "integrationName": selectedIntegration.name,
-                    "result": dispatchResult == .openedWithClipboardFallback ? "clipboardFallback" : "deepLink",
-                    "processedLength": processedCommand.count,
-                    "dispatchedLength": commandToDispatch.count,
-                ]
-            )
+
+            if executionFlow == .integrationDispatch {
+                guard let selectedIntegration else {
+                    throw AssistantVoiceCommandError.integrationDisabled
+                }
+
+                let dispatchResult = try dispatchToRaycast(
+                    with: commandToDispatch,
+                    selectedIntegration: selectedIntegration
+                )
+                if dispatchResult == .openedWithClipboardFallback {
+                    indicator.showError("settings.assistant.integrations.test_success_clipboard_fallback".localized)
+                }
+                AppLogger.info(
+                    "Assistant integration dispatch completed",
+                    category: .assistant,
+                    extra: [
+                        "integrationId": selectedIntegration.id.uuidString,
+                        "integrationName": selectedIntegration.name,
+                        "result": dispatchResult == .openedWithClipboardFallback ? "clipboardFallback" : "deepLink",
+                        "processedLength": processedCommand.count,
+                        "dispatchedLength": commandToDispatch.count,
+                    ]
+                )
+            } else {
+                try replaceSelectedTextWith(commandToDispatch)
+                AppLogger.info(
+                    "Assistant mode command applied to active app",
+                    category: .assistant,
+                    extra: [
+                        "processedLength": processedCommand.count,
+                        "appliedLength": commandToDispatch.count,
+                    ]
+                )
+            }
 
             indicator.hide()
         } catch let error as AssistantVoiceCommandError {
@@ -196,6 +272,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
         _ = await audioRecorder.stopRecording()
         isRecording = false
         isProcessing = false
+        currentExecutionFlow = .assistantMode
         await RecordingExclusivityCoordinator.shared.endAssistant()
         indicator.hide()
         screenBorder.hide()
@@ -217,6 +294,17 @@ public final class AssistantVoiceCommandService: ObservableObject {
         with command: String,
         selectedIntegration: AssistantIntegrationConfig
     ) throws -> AssistantIntegrationDispatchResult {
+        if shouldLogPayloadDetails {
+            AppLogger.debug(
+                "Assistant dispatch target",
+                category: .assistant,
+                extra: [
+                    "deepLink": selectedIntegration.deepLink,
+                    "commandPreview": payloadPreview(command),
+                ]
+            )
+        }
+
         do {
             return try raycastIntegrationService.dispatch(
                 command: command,
@@ -248,6 +336,19 @@ public final class AssistantVoiceCommandService: ObservableObject {
             timeoutSeconds: 15
         )
 
+        if shouldLogPayloadDetails {
+            AppLogger.debug(
+                "Assistant script stage output",
+                category: .assistant,
+                extra: [
+                    "stage": stage.rawValue,
+                    "inputLength": input.count,
+                    "outputLength": output?.count ?? 0,
+                    "outputPreview": payloadPreview(output ?? ""),
+                ]
+            )
+        }
+
         if output == nil {
             AppLogger.info(
                 "Assistant script returned empty output; skipping remaining processing",
@@ -259,8 +360,8 @@ public final class AssistantVoiceCommandService: ObservableObject {
         return output
     }
 
-    private func normalizedPromptInstructions(from integration: AssistantIntegrationConfig) -> String? {
-        let normalized = integration.promptInstructions?.trimmingCharacters(in: .whitespacesAndNewlines)
+    private func normalizedPromptInstructions(from integration: AssistantIntegrationConfig?) -> String? {
+        let normalized = integration?.promptInstructions?.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let normalized, !normalized.isEmpty else {
             return nil
         }
@@ -278,6 +379,88 @@ public final class AssistantVoiceCommandService: ObservableObject {
 
     private func showError(_ error: AssistantVoiceCommandError) {
         indicator.showError(error.localizedDescription)
+    }
+
+    private func replaceSelectedTextWith(_ text: String) throws {
+        guard AccessibilityPermissionService.isTrusted() else {
+            throw AssistantVoiceCommandError.accessibilityPermissionRequired
+        }
+
+        guard hasSelectedTextInFocusedElement() else {
+            throw AssistantVoiceCommandError.noSelectionFound
+        }
+
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            throw AssistantVoiceCommandError.emptyCommand
+        }
+
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(trimmed, forType: .string)
+
+        let source = CGEventSource(stateID: .combinedSessionState)
+        let keyDown = CGEvent(
+            keyboardEventSource: source,
+            virtualKey: CGKeyCode(kVK_ANSI_V),
+            keyDown: true
+        )
+        keyDown?.flags = .maskCommand
+
+        let keyUp = CGEvent(
+            keyboardEventSource: source,
+            virtualKey: CGKeyCode(kVK_ANSI_V),
+            keyDown: false
+        )
+        keyUp?.flags = .maskCommand
+
+        keyDown?.post(tap: .cghidEventTap)
+        keyUp?.post(tap: .cghidEventTap)
+    }
+
+    private func hasSelectedTextInFocusedElement() -> Bool {
+        guard let frontmostApp = NSWorkspace.shared.frontmostApplication else {
+            return false
+        }
+
+        let appElement = AXUIElementCreateApplication(frontmostApp.processIdentifier)
+        var focusedElementRef: CFTypeRef?
+        let focusedResult = AXUIElementCopyAttributeValue(
+            appElement,
+            kAXFocusedUIElementAttribute as CFString,
+            &focusedElementRef
+        )
+        guard focusedResult == .success,
+              let focusedElementRef,
+              CFGetTypeID(focusedElementRef) == AXUIElementGetTypeID()
+        else {
+            return false
+        }
+
+        let focusedElement = unsafeDowncast(focusedElementRef, to: AXUIElement.self)
+        var selectedTextRef: CFTypeRef?
+        let selectedTextResult = AXUIElementCopyAttributeValue(
+            focusedElement,
+            kAXSelectedTextAttribute as CFString,
+            &selectedTextRef
+        )
+        guard selectedTextResult == .success,
+              let selectedText = selectedTextRef as? String
+        else {
+            return false
+        }
+
+        return !selectedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private func payloadPreview(_ value: String) -> String {
+        let singleLine = value.replacingOccurrences(of: "\n", with: "\\n")
+        let maxLength = 180
+        if singleLine.count <= maxLength {
+            return singleLine
+        }
+
+        return String(singleLine.prefix(maxLength)) + "…"
     }
 }
 

@@ -35,6 +35,11 @@ public final class AssistantRaycastIntegrationService: AssistantDeepLinkDispatch
     private let copyToClipboardHandler: (String) -> Void
     private let maxDeepLinkLength: Int
 
+    private var shouldLogPayloadDetails: Bool {
+        ProcessInfo.processInfo.environment["MA_ASSISTANT_DEBUG_PAYLOAD"] == "1"
+            || UserDefaults.standard.bool(forKey: "assistantDebugPayload")
+    }
+
     public init(
         workspace: NSWorkspace = .shared,
         pasteboard: NSPasteboard = .general,
@@ -128,6 +133,19 @@ public final class AssistantRaycastIntegrationService: AssistantDeepLinkDispatch
             throw AssistantIntegrationDispatchError.invalidDeepLink
         }
 
+        if shouldLogPayloadDetails {
+            AppLogger.debug(
+                "Raycast dispatch composed URL",
+                category: .assistant,
+                extra: [
+                    "baseDeepLink": baseDeepLink,
+                    "fullURL": fullURL.absoluteString,
+                    "payloadPreview": payloadPreview(command),
+                    "payloadByQuery": payloadSummary(from: components),
+                ]
+            )
+        }
+
         if fullURL.absoluteString.count > maxDeepLinkLength {
             copyToClipboard(command)
             AppLogger.warning(
@@ -200,5 +218,30 @@ public final class AssistantRaycastIntegrationService: AssistantDeepLinkDispatch
 
     private func copyToClipboard(_ text: String) {
         copyToClipboardHandler(text)
+    }
+
+    private func payloadSummary(from components: URLComponents) -> String {
+        let values = (components.queryItems ?? [])
+            .filter { Constants.dispatchQueryNames.contains($0.name) }
+            .map { item in
+                let value = item.value ?? ""
+                return "\(item.name)=\(payloadPreview(value))"
+            }
+
+        if values.isEmpty {
+            return "none"
+        }
+
+        return values.joined(separator: " | ")
+    }
+
+    private func payloadPreview(_ value: String) -> String {
+        let singleLine = value.replacingOccurrences(of: "\n", with: "\\n")
+        let maxLength = 180
+        if singleLine.count <= maxLength {
+            return singleLine
+        }
+
+        return String(singleLine.prefix(maxLength)) + "…"
     }
 }

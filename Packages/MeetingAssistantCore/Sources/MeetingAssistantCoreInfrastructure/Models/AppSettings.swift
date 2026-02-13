@@ -338,7 +338,6 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
     }
 
     public static let defaultRaycastDeepLink = "raycast://extensions/raycast/raycast-ai/ai-chat"
-    public static let legacyRaycastDeepLink = "raycast://ai-commands/ask-ai"
 
     public static var raycastDefaultID: UUID {
         guard let uuid = UUID(uuidString: "00000000-0000-0000-0000-000000000010") else {
@@ -1419,10 +1418,6 @@ public class AppSettingsStore: ObservableObject {
             assistantSelectedIntegrationId = migratedRaycast.id
         }
 
-        if assistantRaycastDeepLink == AssistantIntegrationConfig.legacyRaycastDeepLink {
-            assistantRaycastDeepLink = AssistantIntegrationConfig.defaultRaycastDeepLink
-        }
-
         if assistantSelectedIntegrationId == nil {
             assistantSelectedIntegrationId = assistantIntegrations.first?.id
         }
@@ -1469,9 +1464,7 @@ public class AppSettingsStore: ObservableObject {
 
             var normalized = integration
             normalized.shortcutPresetKey = .custom
-            if normalized.deepLink == AssistantIntegrationConfig.legacyRaycastDeepLink {
-                normalized.deepLink = AssistantIntegrationConfig.defaultRaycastDeepLink
-            }
+            normalized.deepLink = AssistantIntegrationConfig.defaultRaycastDeepLink
             return normalized
         }
 

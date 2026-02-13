@@ -242,12 +242,6 @@ public struct AssistantSettingsTab: View {
                 KeyboardShortcuts.Recorder(for: .assistantIntegration(integration.id))
                     .controlSize(.small)
                     .frame(minWidth: 132, alignment: .leading)
-                    .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing8)
-                    .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing6)
-                    .background(
-                        RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
-                            .fill(Color.secondary.opacity(0.08))
-                    )
                     .overlay(
                         RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
                             .strokeBorder(
