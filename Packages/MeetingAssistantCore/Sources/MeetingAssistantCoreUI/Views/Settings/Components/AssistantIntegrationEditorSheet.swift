@@ -159,7 +159,7 @@ public struct AssistantIntegrationEditorSheet: View {
         let isUsedInDeepLink = draft.integration.deepLink.contains(token)
         let isJustCopied = copiedPlaceholderToken == token
 
-        Button {
+        return Button {
             copyPlaceholder(token)
         } label: {
             HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
