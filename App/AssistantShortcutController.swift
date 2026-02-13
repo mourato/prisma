@@ -18,7 +18,7 @@ final class AssistantShortcutController {
     private lazy var shortcutHandler = SmartShortcutHandler(
         isRecordingProvider: { [weak self] in self?.assistantService.isRecording ?? false },
         actionHandler: { [weak self] (action: SmartShortcutHandler.Action) in
-            Task { @MainActor [weak self] in
+            Task { @MainActor in
                 await self?.performAction(action)
             }
         }
@@ -140,13 +140,13 @@ final class AssistantShortcutController {
 
             if !registeredIntegrationShortcutIDs.contains(integration.id) {
                 KeyboardShortcuts.onKeyDown(for: shortcutName) { [weak self] in
-                    Task { @MainActor [weak self] in
+                    Task { @MainActor in
                         await self?.handleIntegrationCustomShortcutDown(integrationID: integration.id)
                     }
                 }
 
                 KeyboardShortcuts.onKeyUp(for: shortcutName) { [weak self] in
-                    Task { @MainActor [weak self] in
+                    Task { @MainActor in
                         await self?.handleIntegrationCustomShortcutUp(integrationID: integration.id)
                     }
                 }
@@ -165,7 +165,7 @@ final class AssistantShortcutController {
     private func installFlagsChangedMonitors() {
         if flagsMonitor == nil {
             flagsMonitor = KeyboardEventMonitor(mask: .flagsChanged) { [weak self] event in
-                Task { @MainActor [weak self] in
+                Task { @MainActor in
                     self?.handleFlagsChanged(event)
                 }
             }
@@ -181,7 +181,7 @@ final class AssistantShortcutController {
     private func installKeyDownMonitors() {
         if keyDownMonitor == nil {
             keyDownMonitor = KeyboardEventMonitor(mask: .keyDown) { [weak self] event in
-                Task { @MainActor [weak self] in
+                Task { @MainActor in
                     self?.handleKeyDown(event)
                 }
             }
@@ -361,7 +361,7 @@ final class AssistantShortcutController {
         SmartShortcutHandler(
             isRecordingProvider: { [weak self] in self?.assistantService.isRecording ?? false },
             actionHandler: { [weak self] action in
-                Task { @MainActor [weak self] in
+                Task { @MainActor in
                     await self?.performIntegrationAction(action, integrationID: integrationID)
                 }
             }

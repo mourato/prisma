@@ -38,7 +38,6 @@ public final class AssistantScreenBorderController {
     }
 
     deinit {
-        borderWindow?.close()
         borderWindow = nil
     }
 
@@ -96,14 +95,11 @@ public final class AssistantScreenBorderController {
 
         guard let window = borderWindow else { return }
 
-        if isRunningTests {
-            window.orderOut(nil)
-            window.alphaValue = 1
-        } else {
-            NSAnimationContext.runAnimationGroup { context in
-                context.duration = Constants.animationDuration
-                window.animator().alphaValue = 0
-            } completionHandler: { [weak window] in
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = Constants.animationDuration
+            window.animator().alphaValue = 0
+        } completionHandler: { [weak window] in
+            Task { @MainActor in
                 window?.orderOut(nil)
                 window?.alphaValue = 1
             }
