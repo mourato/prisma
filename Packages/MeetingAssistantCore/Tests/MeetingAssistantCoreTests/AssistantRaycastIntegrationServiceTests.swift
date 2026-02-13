@@ -6,7 +6,15 @@ final class AssistantRaycastIntegrationServiceTests: XCTestCase {
     func testValidateDeepLink_WithRaycastScheme_ReturnsValid() {
         let service = makeService()
 
-        let result = service.validateDeepLink("raycast://ai-commands/ask-ai")
+        let result = service.validateDeepLink("raycast://extensions/raycast/raycast-ai/ai-chat")
+
+        XCTAssertEqual(result, .valid)
+    }
+
+    func testValidateDeepLink_WithExtensionsCommandShape_ReturnsValid() {
+        let service = makeService()
+
+        let result = service.validateDeepLink("raycast://extensions/raycast/file-search/search-files")
 
         XCTAssertEqual(result, .valid)
     }
@@ -19,7 +27,23 @@ final class AssistantRaycastIntegrationServiceTests: XCTestCase {
         XCTAssertEqual(result, .invalid)
     }
 
-    func testDispatch_WithValidCommand_OpensDeepLinkWithFallbackText() throws {
+    func testValidateDeepLink_WithUnsupportedRaycastHost_ReturnsInvalid() {
+        let service = makeService()
+
+        let result = service.validateDeepLink("raycast://unknown-host/anything")
+
+        XCTAssertEqual(result, .invalid)
+    }
+
+    func testValidateDeepLink_WithExtensionsMissingCommand_ReturnsInvalid() {
+        let service = makeService()
+
+        let result = service.validateDeepLink("raycast://extensions/raycast/file-search")
+
+        XCTAssertEqual(result, .invalid)
+    }
+
+    func testDispatch_WithValidCommand_OpensDeepLinkWithCommandPayloadKeys() throws {
         var openedURLs: [URL] = []
         let service = makeService(
             openURL: { url in
@@ -30,18 +54,21 @@ final class AssistantRaycastIntegrationServiceTests: XCTestCase {
 
         let result = try service.dispatch(
             command: "hello world",
-            baseDeepLink: "raycast://ai-commands/ask-ai"
+            baseDeepLink: "raycast://extensions/raycast/raycast-ai/ai-chat"
         )
 
         XCTAssertEqual(result, .openedDeepLink)
         XCTAssertEqual(openedURLs.count, 1)
 
         let components = try XCTUnwrap(URLComponents(url: openedURLs[0], resolvingAgainstBaseURL: false))
-        let fallbackText = components.queryItems?.first(where: { $0.name == "fallbackText" })?.value
-        XCTAssertEqual(fallbackText, "hello world")
+        let queryItems = components.queryItems ?? []
+        XCTAssertEqual(queryItems.first(where: { $0.name == "fallbackText" })?.value, "hello world")
+        XCTAssertEqual(queryItems.first(where: { $0.name == "text" })?.value, "hello world")
+        XCTAssertEqual(queryItems.first(where: { $0.name == "query" })?.value, "hello world")
+        XCTAssertEqual(queryItems.first(where: { $0.name == "prompt" })?.value, "hello world")
     }
 
-    func testDispatch_WithExistingFallbackText_ReplacesOldValue() throws {
+    func testDispatch_WithExistingPayload_ReplacesOldValues() throws {
         var openedURL: URL?
         let service = makeService(
             openURL: { url in
@@ -52,15 +79,15 @@ final class AssistantRaycastIntegrationServiceTests: XCTestCase {
 
         let result = try service.dispatch(
             command: "new value",
-            baseDeepLink: "raycast://ai-commands/ask-ai?fallbackText=old"
+            baseDeepLink: "raycast://extensions/raycast/raycast-ai/ai-chat?fallbackText=old&query=old"
         )
 
         XCTAssertEqual(result, .openedDeepLink)
         let components = try XCTUnwrap(URLComponents(url: try XCTUnwrap(openedURL), resolvingAgainstBaseURL: false))
         let fallbackValues = components.queryItems?
-            .filter { $0.name == "fallbackText" }
+            .filter { $0.name == "fallbackText" || $0.name == "query" }
             .compactMap { $0.value } ?? []
-        XCTAssertEqual(fallbackValues, ["new value"])
+        XCTAssertEqual(fallbackValues, ["new value", "new value"])
     }
 
     func testDispatch_WithInvalidDeepLink_ThrowsInvalidDeepLinkError() {
@@ -68,6 +95,16 @@ final class AssistantRaycastIntegrationServiceTests: XCTestCase {
 
         XCTAssertThrowsError(
             try service.dispatch(command: "test", baseDeepLink: "invalid-link")
+        ) { error in
+            XCTAssertEqual(error as? AssistantIntegrationDispatchError, .invalidDeepLink)
+        }
+    }
+
+    func testDispatch_WithUnsupportedHost_ThrowsInvalidDeepLinkError() {
+        let service = makeService()
+
+        XCTAssertThrowsError(
+            try service.dispatch(command: "test", baseDeepLink: "raycast://unknown-host/ask")
         ) { error in
             XCTAssertEqual(error as? AssistantIntegrationDispatchError, .invalidDeepLink)
         }
@@ -89,7 +126,7 @@ final class AssistantRaycastIntegrationServiceTests: XCTestCase {
 
         let result = try service.dispatch(
             command: String(repeating: "x", count: 120),
-            baseDeepLink: "raycast://ai-commands/ask-ai"
+            baseDeepLink: "raycast://extensions/raycast/raycast-ai/ai-chat"
         )
 
         XCTAssertEqual(result, .openedWithClipboardFallback)
@@ -97,8 +134,10 @@ final class AssistantRaycastIntegrationServiceTests: XCTestCase {
         XCTAssertEqual(openedURLs.count, 1)
 
         let components = try XCTUnwrap(URLComponents(url: openedURLs[0], resolvingAgainstBaseURL: false))
-        let fallbackText = components.queryItems?.first(where: { $0.name == "fallbackText" })?.value
-        XCTAssertNil(fallbackText)
+        let dispatchValues = components.queryItems?
+            .filter { ["fallbackText", "text", "query", "prompt"].contains($0.name) }
+            .compactMap { $0.value } ?? []
+        XCTAssertTrue(dispatchValues.isEmpty)
     }
 
     private func makeService(

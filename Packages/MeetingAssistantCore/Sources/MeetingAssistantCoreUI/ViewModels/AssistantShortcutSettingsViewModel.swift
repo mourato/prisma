@@ -22,16 +22,16 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
     @Published public var isRecordingCustomShortcut: Bool = false
     @Published public var borderColor: AssistantBorderColor
     @Published public var borderStyle: AssistantBorderStyle
-    @Published public var integrationOutputMode: AssistantIntegrationOutputMode
     @Published public var assistantIntegrations: [AssistantIntegrationConfig]
     @Published public var selectedIntegrationId: UUID?
-    @Published public var integrationName: String
-    @Published public var integrationEnabled: Bool
-    @Published public var integrationDeepLink: String
+
     @Published public private(set) var raycastTestStatusMessage: String?
     @Published public private(set) var raycastTestStatusIsError: Bool = false
     @Published public private(set) var raycastDeepLinkIsValid: Bool = true
     @Published public private(set) var raycastDeepLinkValidationMessage: String?
+
+    @Published public private(set) var scriptTestOutput: String?
+    @Published public private(set) var scriptTestErrorMessage: String?
 
     public init(
         raycastIntegrationService: any AssistantDeepLinkDispatching = AssistantRaycastIntegrationService()
@@ -46,17 +46,187 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
         isRecordingCustomShortcut = settings.assistantSelectedPresetKey == .custom
         borderColor = settings.assistantBorderColor
         borderStyle = settings.assistantBorderStyle
-        integrationOutputMode = settings.assistantIntegrationOutputMode
         assistantIntegrations = persistedIntegrations
         selectedIntegrationId = resolvedSelectedIntegration?.id
-        integrationName = resolvedSelectedIntegration?.name ?? ""
-        integrationEnabled = resolvedSelectedIntegration?.isEnabled ?? false
-        integrationDeepLink = resolvedSelectedIntegration?.deepLink ?? ""
+
         raycastTestStatusMessage = nil
         raycastDeepLinkValidationMessage = nil
+        scriptTestOutput = nil
+        scriptTestErrorMessage = nil
 
         setupBindings()
         updateRaycastDeepLinkValidation()
+    }
+
+    public var builtInIntegrations: [AssistantIntegrationConfig] {
+        assistantIntegrations.filter { $0.id == AssistantIntegrationConfig.raycastDefaultID }
+    }
+
+    public var customIntegrations: [AssistantIntegrationConfig] {
+        assistantIntegrations.filter { $0.id != AssistantIntegrationConfig.raycastDefaultID }
+    }
+
+    public var canAddIntegration: Bool {
+        true
+    }
+
+    public func integration(for id: UUID) -> AssistantIntegrationConfig? {
+        assistantIntegrations.first(where: { $0.id == id })
+    }
+
+    public func setIntegrationEnabled(_ isEnabled: Bool, for id: UUID) {
+        updateIntegration(id: id) { integration in
+            integration.isEnabled = isEnabled
+        }
+
+        if isEnabled {
+            selectedIntegrationId = id
+        }
+
+        if selectedIntegrationId == id {
+            updateRaycastDeepLinkValidation()
+        }
+    }
+
+    public func addIntegration() {
+        let nextIndex = customIntegrations.count + 1
+        let newIntegration = AssistantIntegrationConfig(
+            name: "settings.assistant.integrations.default_name".localized(with: nextIndex),
+            kind: .deeplink,
+            isEnabled: false,
+            deepLink: AssistantIntegrationConfig.defaultRaycastDeepLink
+        )
+
+        assistantIntegrations = assistantIntegrations + [newIntegration]
+        selectedIntegrationId = newIntegration.id
+        raycastTestStatusMessage = nil
+    }
+
+    public func removeIntegration(id: UUID) {
+        guard id != AssistantIntegrationConfig.raycastDefaultID else {
+            return
+        }
+
+        assistantIntegrations = assistantIntegrations.filter { $0.id != id }
+
+        if selectedIntegrationId == id {
+            selectedIntegrationId = assistantIntegrations.first?.id
+        }
+
+        raycastTestStatusMessage = nil
+    }
+
+    public func saveIntegration(_ integration: AssistantIntegrationConfig) {
+        updateIntegration(id: integration.id) { existing in
+            existing = integration
+        }
+
+        selectedIntegrationId = integration.id
+        updateRaycastDeepLinkValidation()
+    }
+
+    public func applyPreset(_ preset: AssistantIntegrationPreset, to id: UUID) {
+        updateIntegration(id: id) { integration in
+            integration.selectedPreset = preset
+            integration.deepLink = defaultDeepLink(for: preset)
+        }
+
+        updateRaycastDeepLinkValidation()
+    }
+
+    public func defaultDeepLink(for preset: AssistantIntegrationPreset) -> String {
+        switch preset {
+        case .googleSearch:
+            "raycast://extensions/raycast/google-search/search"
+        case .launchApps:
+            "raycast://extensions/raycast/system/open"
+        case .closeApps:
+            "raycast://extensions/raycast/system/quit"
+        case .askChatGPT:
+            AssistantIntegrationConfig.defaultRaycastDeepLink
+        case .askClaude:
+            AssistantIntegrationConfig.defaultRaycastDeepLink
+        case .youtubeSearch:
+            "raycast://extensions/raycast/youtube/search-videos"
+        case .openWebsite:
+            "raycast://extensions/raycast/browser/open-url"
+        case .appleShortcuts:
+            "raycast://extensions/raycast/shortcuts/run-shortcut"
+        case .shellCommand:
+            "raycast://extensions/raycast/script-commands"
+        case .pressKeys:
+            "raycast://extensions/raycast/system/keyboard-shortcuts"
+        }
+    }
+
+    public func validateDeepLink(_ deepLink: String, integrationEnabled: Bool) {
+        guard integrationEnabled else {
+            raycastDeepLinkIsValid = true
+            raycastDeepLinkValidationMessage = nil
+            return
+        }
+
+        let validation = raycastIntegrationService.validateDeepLink(deepLink)
+        switch validation {
+        case .valid:
+            raycastDeepLinkIsValid = true
+            raycastDeepLinkValidationMessage = "settings.assistant.integrations.valid_deeplink".localized
+        case .invalid:
+            raycastDeepLinkIsValid = false
+            raycastDeepLinkValidationMessage = "settings.assistant.integrations.invalid_deeplink".localized
+        }
+    }
+
+    public func testIntegration(_ integration: AssistantIntegrationConfig) {
+        AppLogger.info(
+            "Running integration test",
+            category: .assistant,
+            extra: ["deepLinkLength": integration.deepLink.count, "name": integration.name]
+        )
+
+        do {
+            let result = try raycastIntegrationService.dispatch(
+                command: "settings.assistant.integrations.test_message".localized,
+                baseDeepLink: integration.deepLink
+            )
+
+            raycastTestStatusIsError = false
+            raycastTestStatusMessage = result == .openedWithClipboardFallback
+                ? "settings.assistant.integrations.test_success_clipboard_fallback".localized
+                : "settings.assistant.integrations.test_success".localized
+        } catch AssistantIntegrationDispatchError.invalidDeepLink {
+            raycastTestStatusIsError = true
+            raycastTestStatusMessage = "settings.assistant.integrations.test_invalid_deeplink".localized
+        } catch {
+            raycastTestStatusIsError = true
+            raycastTestStatusMessage = "settings.assistant.integrations.test_failed".localized
+        }
+    }
+
+    public func clearScriptTestResult() {
+        scriptTestOutput = nil
+        scriptTestErrorMessage = nil
+    }
+
+    public func testScript(script: String, input: String) async {
+        do {
+            scriptTestErrorMessage = nil
+            let output = try await Self.executeScript(script: script, input: input)
+            scriptTestOutput = output
+        } catch {
+            scriptTestOutput = nil
+            scriptTestErrorMessage = error.localizedDescription
+        }
+    }
+
+    public func resetShortcuts() {
+        KeyboardShortcuts.reset(.assistantCommand)
+        activationMode = .holdOrToggle
+        useEscapeToCancelRecording = false
+        selectedPresetKey = .rightOption
+        isRecordingCustomShortcut = false
+        borderColor = .green
+        borderStyle = .stroke
     }
 
     private func setupBindings() {
@@ -96,13 +266,6 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
             }
             .store(in: &cancellables)
 
-        $integrationOutputMode
-            .dropFirst()
-            .sink { [weak self] newValue in
-                self?.settings.assistantIntegrationOutputMode = newValue
-            }
-            .store(in: &cancellables)
-
         $assistantIntegrations
             .dropFirst()
             .sink { [weak self] newValue in
@@ -114,157 +277,34 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
             .dropFirst()
             .sink { [weak self] newValue in
                 self?.settings.assistantSelectedIntegrationId = newValue
-                self?.synchronizeSelectedIntegrationState()
                 self?.updateRaycastDeepLinkValidation()
             }
             .store(in: &cancellables)
-
-        $integrationEnabled
-            .dropFirst()
-            .sink { [weak self] newValue in
-                self?.updateSelectedIntegration { integration in
-                    integration.isEnabled = newValue
-                }
-                self?.updateRaycastDeepLinkValidation()
-            }
-            .store(in: &cancellables)
-
-        $integrationName
-            .dropFirst()
-            .sink { [weak self] newValue in
-                self?.updateSelectedIntegration { integration in
-                    integration.name = newValue
-                }
-            }
-            .store(in: &cancellables)
-
-        $integrationDeepLink
-            .dropFirst()
-            .sink { [weak self] newValue in
-                self?.updateSelectedIntegration { integration in
-                    integration.deepLink = newValue
-                }
-                self?.updateRaycastDeepLinkValidation()
-            }
-            .store(in: &cancellables)
-    }
-
-    public func resetShortcuts() {
-        KeyboardShortcuts.reset(.assistantCommand)
-        activationMode = .holdOrToggle
-        useEscapeToCancelRecording = false
-        selectedPresetKey = .rightOption
-        isRecordingCustomShortcut = false
-        borderColor = .green
-        borderStyle = .stroke
-    }
-
-    public func testRaycastIntegration() {
-        AppLogger.info(
-            "Running Raycast integration test",
-            category: .assistant,
-            extra: ["deepLinkLength": integrationDeepLink.count]
-        )
-
-        do {
-            let result = try raycastIntegrationService.dispatch(
-                command: "settings.assistant.integrations.test_message".localized,
-                baseDeepLink: integrationDeepLink
-            )
-
-            raycastTestStatusIsError = false
-            raycastTestStatusMessage = result == .openedWithClipboardFallback
-                ? "settings.assistant.integrations.test_success_clipboard_fallback".localized
-                : "settings.assistant.integrations.test_success".localized
-            AppLogger.info(
-                "Raycast integration test completed",
-                category: .assistant,
-                extra: ["result": result == .openedWithClipboardFallback ? "clipboardFallback" : "deepLink"]
-            )
-        } catch AssistantIntegrationDispatchError.invalidDeepLink {
-            raycastTestStatusIsError = true
-            raycastTestStatusMessage = "settings.assistant.integrations.test_invalid_deeplink".localized
-            AppLogger.warning("Raycast integration test failed: invalid deeplink", category: .assistant)
-        } catch {
-            raycastTestStatusIsError = true
-            raycastTestStatusMessage = "settings.assistant.integrations.test_failed".localized
-            AppLogger.error("Raycast integration test failed", category: .assistant, error: error)
-        }
-    }
-
-    public var canRemoveSelectedIntegration: Bool {
-        assistantIntegrations.count > 1 && selectedIntegrationId != nil
-    }
-
-    public func addIntegration() {
-        let nextIndex = assistantIntegrations.count + 1
-        let newIntegration = AssistantIntegrationConfig(
-            name: "settings.assistant.integrations.default_name".localized(with: nextIndex),
-            kind: .deeplink,
-            isEnabled: false,
-            deepLink: "raycast://ai-commands/ask-ai"
-        )
-
-        assistantIntegrations = assistantIntegrations + [newIntegration]
-        selectedIntegrationId = newIntegration.id
-        raycastTestStatusMessage = nil
-    }
-
-    public func removeSelectedIntegration() {
-        guard let id = selectedIntegrationId,
-              assistantIntegrations.count > 1
-        else {
-            return
-        }
-
-        let updated = assistantIntegrations.filter { $0.id != id }
-        assistantIntegrations = updated
-        selectedIntegrationId = updated.first?.id
-        raycastTestStatusMessage = nil
     }
 
     private func updateRaycastDeepLinkValidation() {
-        guard integrationEnabled else {
+        guard let selectedIntegrationId,
+              let selected = assistantIntegrations.first(where: { $0.id == selectedIntegrationId })
+        else {
             raycastDeepLinkIsValid = true
             raycastDeepLinkValidationMessage = nil
             return
         }
 
-        let validation = raycastIntegrationService.validateDeepLink(integrationDeepLink)
-        switch validation {
-        case .valid:
-            raycastDeepLinkIsValid = true
-            raycastDeepLinkValidationMessage = "settings.assistant.integrations.valid_deeplink".localized
-        case .invalid:
-            raycastDeepLinkIsValid = false
-            raycastDeepLinkValidationMessage = "settings.assistant.integrations.invalid_deeplink".localized
-        }
+        validateDeepLink(selected.deepLink, integrationEnabled: selected.isEnabled)
     }
 
-    private func synchronizeSelectedIntegrationState() {
-        guard let id = selectedIntegrationId,
-              let selected = assistantIntegrations.first(where: { $0.id == id })
-        else {
-            integrationName = ""
-            integrationEnabled = false
-            integrationDeepLink = ""
-            return
-        }
-
-        integrationName = selected.name
-        integrationEnabled = selected.isEnabled
-        integrationDeepLink = selected.deepLink
-    }
-
-    private func updateSelectedIntegration(_ mutate: (inout AssistantIntegrationConfig) -> Void) {
-        guard let id = selectedIntegrationId,
-              let index = assistantIntegrations.firstIndex(where: { $0.id == id })
-        else {
+    private func updateIntegration(id: UUID, mutate: (inout AssistantIntegrationConfig) -> Void) {
+        guard let index = assistantIntegrations.firstIndex(where: { $0.id == id }) else {
             return
         }
 
         var updated = assistantIntegrations
         mutate(&updated[index])
         assistantIntegrations = updated
+    }
+
+    private static func executeScript(script: String, input: String) async throws -> String? {
+        try await AssistantBashScriptRunner().run(script: script, input: input, timeoutSeconds: 15)
     }
 }
