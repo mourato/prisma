@@ -338,7 +338,17 @@
 "settings.assistant.integrations.editor.placeholders.title" = "Placeholders";
 "settings.assistant.integrations.editor.placeholders.subtitle" = "Clique para copiar e usar em deeplinks.";
 "settings.assistant.integrations.editor.placeholders.copy_help" = "Copiar placeholder";
+"settings.assistant.integrations.editor.placeholders.info_help" = "Mostrar detalhes do placeholder";
+"settings.assistant.integrations.editor.placeholders.example_title" = "Exemplo";
 "settings.assistant.integrations.editor.placeholders.copied" = "Placeholder copiado: %@";
+"settings.assistant.integrations.editor.placeholders.final_text.meaning" = "Texto final enviado após o pós-processamento (com fallback quando necessário).";
+"settings.assistant.integrations.editor.placeholders.final_text.example" = "raycast://extensions/raycast/raycast-ai/ai-chat?query={{assistant_text}}";
+"settings.assistant.integrations.editor.placeholders.final_text_urlencoded.meaning" = "O mesmo texto final, já codificado para uso em parâmetros de URL.";
+"settings.assistant.integrations.editor.placeholders.final_text_urlencoded.example" = "https://example.app/run?text={{assistant_text_urlencoded}}";
+"settings.assistant.integrations.editor.placeholders.raw_text.meaning" = "Texto bruto da transcrição antes do pós-processamento.";
+"settings.assistant.integrations.editor.placeholders.raw_text.example" = "myapp://capture?raw={{assistant_raw_text}}";
+"settings.assistant.integrations.editor.placeholders.raw_text_urlencoded.meaning" = "Texto bruto da transcrição já codificado para URL.";
+"settings.assistant.integrations.editor.placeholders.raw_text_urlencoded.example" = "myapp://capture?raw={{assistant_raw_text_urlencoded}}";
 "settings.assistant.integrations.editor.output_mode" = "Modo de Saída";
 "settings.assistant.integrations.editor.presets" = "Presets";
 "settings.assistant.integrations.editor.advanced" = "Configurações Avançadas";
