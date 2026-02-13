@@ -18,8 +18,9 @@ final class AssistantShortcutController {
     private lazy var shortcutHandler = SmartShortcutHandler(
         isRecordingProvider: { [weak self] in self?.assistantService.isRecording ?? false },
         actionHandler: { [weak self] (action: SmartShortcutHandler.Action) in
-            Task { @MainActor in
-                await self?.performAction(action)
+            guard let self else { return }
+            Task {
+                await self.performAction(action)
             }
         }
     )

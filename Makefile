@@ -83,7 +83,12 @@ build-debug:
 		-derivedDataPath "$(DERIVED_DATA)" \
 		-destination 'platform=macOS' \
 		build \
-		2>&1 | grep -E "(Compiling|Linking|Signing|BUILD|error:|warning:)" | head -20
+		> /tmp/ma-build-debug.log 2>&1; \
+	STATUS=$$?; \
+	grep -E "(Compiling|Linking|Signing|BUILD|error:|warning:)" /tmp/ma-build-debug.log | head -20 || true; \
+	if [ $$STATUS -ne 0 ]; then \
+		exit $$STATUS; \
+	fi
 	@echo -e "$(GREEN)✓ Debug build completed$(NC)"
 
 build-release:
@@ -95,7 +100,12 @@ build-release:
 		-destination 'platform=macOS' \
 		-enableThreadSanitizer YES \
 		build \
-		2>&1 | grep -E "(Compiling|Linking|Signing|BUILD|error:|warning:)" | head -30
+		> /tmp/ma-build-release.log 2>&1; \
+	STATUS=$$?; \
+	grep -E "(Compiling|Linking|Signing|BUILD|error:|warning:)" /tmp/ma-build-release.log | head -30 || true; \
+	if [ $$STATUS -ne 0 ]; then \
+		exit $$STATUS; \
+	fi
 	@echo -e "$(GREEN)✓ Release build completed$(NC)"
 
 # Test Commands
