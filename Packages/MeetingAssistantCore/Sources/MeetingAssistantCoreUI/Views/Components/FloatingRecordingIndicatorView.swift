@@ -252,6 +252,10 @@ public struct FloatingRecordingIndicatorView: View {
                 TimelineView(.periodic(from: .now, by: 1.0)) { context in
                     Text(formatRecordingDuration(at: context.date))
                         .font(.system(size: 13, weight: .medium))
+                        .monospacedDigit()
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
+                        .layoutPriority(1)
                         .foregroundStyle(MeetingAssistantDesignSystem.Colors.overlayForeground)
                 }
                 .accessibilityLabel("recording_indicator.duration".localized)
