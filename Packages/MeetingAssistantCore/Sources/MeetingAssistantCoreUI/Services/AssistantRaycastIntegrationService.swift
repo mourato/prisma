@@ -35,11 +35,6 @@ public final class AssistantRaycastIntegrationService: AssistantDeepLinkDispatch
     private let copyToClipboardHandler: (String) -> Void
     private let maxDeepLinkLength: Int
 
-    private var shouldLogPayloadDetails: Bool {
-        ProcessInfo.processInfo.environment["MA_ASSISTANT_DEBUG_PAYLOAD"] == "1"
-            || UserDefaults.standard.bool(forKey: "assistantDebugPayload")
-    }
-
     public init(
         workspace: NSWorkspace = .shared,
         pasteboard: NSPasteboard = .general,
@@ -133,14 +128,14 @@ public final class AssistantRaycastIntegrationService: AssistantDeepLinkDispatch
             throw AssistantIntegrationDispatchError.invalidDeepLink
         }
 
-        if shouldLogPayloadDetails {
+        if AssistantPayloadLogging.shouldLogPayloadDetails {
             AppLogger.debug(
                 "Raycast dispatch composed URL",
                 category: .assistant,
                 extra: [
                     "baseDeepLink": baseDeepLink,
                     "fullURL": fullURL.absoluteString,
-                    "payloadPreview": payloadPreview(command),
+                    "payloadPreview": AssistantPayloadLogging.payloadPreview(command),
                     "payloadByQuery": payloadSummary(from: components),
                 ]
             )
@@ -225,7 +220,7 @@ public final class AssistantRaycastIntegrationService: AssistantDeepLinkDispatch
             .filter { Constants.dispatchQueryNames.contains($0.name) }
             .map { item in
                 let value = item.value ?? ""
-                return "\(item.name)=\(payloadPreview(value))"
+                return "\(item.name)=\(AssistantPayloadLogging.payloadPreview(value))"
             }
 
         if values.isEmpty {
@@ -233,15 +228,5 @@ public final class AssistantRaycastIntegrationService: AssistantDeepLinkDispatch
         }
 
         return values.joined(separator: " | ")
-    }
-
-    private func payloadPreview(_ value: String) -> String {
-        let singleLine = value.replacingOccurrences(of: "\n", with: "\\n")
-        let maxLength = 180
-        if singleLine.count <= maxLength {
-            return singleLine
-        }
-
-        return String(singleLine.prefix(maxLength)) + "…"
     }
 }

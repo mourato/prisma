@@ -39,11 +39,6 @@ public final class AssistantVoiceCommandService: ObservableObject {
     private var currentRecordingURL: URL?
     private var currentExecutionFlow: AssistantExecutionFlow = .assistantMode
 
-    private var shouldLogPayloadDetails: Bool {
-        ProcessInfo.processInfo.environment["MA_ASSISTANT_DEBUG_PAYLOAD"] == "1"
-            || UserDefaults.standard.bool(forKey: "assistantDebugPayload")
-    }
-
     public init(
         audioRecorder: AudioRecorder = .shared,
         transcriptionClient: TranscriptionClient = .shared,
@@ -132,14 +127,14 @@ public final class AssistantVoiceCommandService: ObservableObject {
             let transcription = try await transcriptionClient.transcribe(audioURL: recordingURL)
             let command = transcription.text.trimmingCharacters(in: .whitespacesAndNewlines)
 
-            if shouldLogPayloadDetails {
+            if AssistantPayloadLogging.shouldLogPayloadDetails {
                 AppLogger.debug(
                     "Assistant transcription payload",
                     category: .assistant,
                     extra: [
                         "rawLength": transcription.text.count,
                         "trimmedLength": command.count,
-                        "preview": payloadPreview(command),
+                        "preview": AssistantPayloadLogging.payloadPreview(command),
                     ]
                 )
             }
@@ -191,13 +186,13 @@ public final class AssistantVoiceCommandService: ObservableObject {
                 with: integrationPrompt
             )
 
-            if shouldLogPayloadDetails {
+            if AssistantPayloadLogging.shouldLogPayloadDetails {
                 AppLogger.debug(
                     "Assistant post-processing payload",
                     category: .assistant,
                     extra: [
                         "length": processedCommand.count,
-                        "preview": payloadPreview(processedCommand),
+                        "preview": AssistantPayloadLogging.payloadPreview(processedCommand),
                     ]
                 )
             }
@@ -213,13 +208,13 @@ public final class AssistantVoiceCommandService: ObservableObject {
 
             let commandToDispatch = normalizedCommand(commandForDispatch, fallback: command)
 
-            if shouldLogPayloadDetails {
+            if AssistantPayloadLogging.shouldLogPayloadDetails {
                 AppLogger.debug(
                     "Assistant dispatch payload",
                     category: .assistant,
                     extra: [
                         "length": commandToDispatch.count,
-                        "preview": payloadPreview(commandToDispatch),
+                        "preview": AssistantPayloadLogging.payloadPreview(commandToDispatch),
                         "integrationId": selectedIntegration?.id.uuidString ?? "assistantMode",
                     ]
                 )
@@ -309,14 +304,14 @@ public final class AssistantVoiceCommandService: ObservableObject {
             rawText: rawCommand
         )
 
-        if shouldLogPayloadDetails {
+        if AssistantPayloadLogging.shouldLogPayloadDetails {
             AppLogger.debug(
                 "Assistant dispatch target",
                 category: .assistant,
                 extra: [
                     "deepLink": selectedIntegration.deepLink,
                     "resolvedDeepLink": resolvedDeepLink,
-                    "commandPreview": payloadPreview(command),
+                    "commandPreview": AssistantPayloadLogging.payloadPreview(command),
                 ]
             )
         }
@@ -375,7 +370,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
             timeoutSeconds: 15
         )
 
-        if shouldLogPayloadDetails {
+        if AssistantPayloadLogging.shouldLogPayloadDetails {
             AppLogger.debug(
                 "Assistant script stage output",
                 category: .assistant,
@@ -383,7 +378,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
                     "stage": stage.rawValue,
                     "inputLength": input.count,
                     "outputLength": output?.count ?? 0,
-                    "outputPreview": payloadPreview(output ?? ""),
+                    "outputPreview": AssistantPayloadLogging.payloadPreview(output ?? ""),
                 ]
             )
         }
@@ -492,15 +487,6 @@ public final class AssistantVoiceCommandService: ObservableObject {
         return !selectedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    private func payloadPreview(_ value: String) -> String {
-        let singleLine = value.replacingOccurrences(of: "\n", with: "\\n")
-        let maxLength = 180
-        if singleLine.count <= maxLength {
-            return singleLine
-        }
-
-        return String(singleLine.prefix(maxLength)) + "…"
-    }
 }
 
 public enum AssistantVoiceCommandError: LocalizedError {

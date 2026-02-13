@@ -12,6 +12,10 @@ public struct AssistantIntegrationEditorDraft: Equatable {
 }
 
 public struct AssistantIntegrationEditorSheet: View {
+    private enum Constants {
+        static let copyFeedbackDurationNanoseconds: UInt64 = 1_500_000_000
+    }
+
     @State private var draft: AssistantIntegrationEditorDraft
     @State private var copiedPlaceholderToken: String?
     @State private var copiedFeedbackTask: Task<Void, Never>?
@@ -275,7 +279,7 @@ public struct AssistantIntegrationEditorSheet: View {
         copiedPlaceholderToken = token
 
         copiedFeedbackTask = Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            try? await Task.sleep(nanoseconds: Constants.copyFeedbackDurationNanoseconds)
             copiedPlaceholderToken = nil
         }
     }
