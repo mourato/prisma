@@ -34,6 +34,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         static let fallbackBitRate: Int = 128_000
         static let fallbackMeterUpdateInterval: TimeInterval = 0.1
         static let outputMuteDelayAfterStart: UInt64 = 200_000_000 // 200ms
+        static let retriableEngineStartErrorCodes: Set<Int> = [-10_875, -10_877]
     }
 
     @Published public internal(set) var isRecording = false
@@ -203,15 +204,6 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
         AppLogger.info("Detected Hardware Sample Rate: \(targetSampleRate)", category: .recordingManager)
 
-        // 4. Start Capture
-        // Start system capture with the matching rate
-        if source == .system || source == .all {
-            AppLogger.debug("Starting system recorder...", category: .recordingManager)
-            try await systemRecorder.startRecording(to: outputURL, sampleRate: targetSampleRate)
-        } else {
-            AppLogger.debug("Skipping system recorder start (source: \(source.rawValue))", category: .recordingManager)
-        }
-
         do {
             try await setupGraphAndStart(
                 engine: engine,
@@ -220,9 +212,31 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
                 retryCount: retryCount,
                 sampleRate: targetSampleRate
             )
+
+            // Start ScreenCaptureKit after AVAudioEngine is stable.
+            // This avoids a race where SCStream activation can transiently invalidate
+            // output hardware format during engine initialization (-10875/-10877).
+            if source == .system || source == .all {
+                AppLogger.debug("Starting system recorder...", category: .recordingManager)
+                try await systemRecorder.startRecording(to: outputURL, sampleRate: targetSampleRate)
+            } else {
+                AppLogger.debug("Skipping system recorder start (source: \(source.rawValue))", category: .recordingManager)
+            }
+
             scheduleOutputMuteIfNeeded()
         } catch {
-            await stopRecording()
+            await cleanupAfterFailedStart()
+            if shouldRetryStartup(after: error, source: source, retryCount: retryCount) {
+                let code = startupErrorCode(from: error) ?? 0
+                AppLogger.warning(
+                    "Retrying recording start after transient engine failure",
+                    category: .recordingManager,
+                    extra: ["code": code, "attempt": retryCount + 1, "max": Constants.maxRetries]
+                )
+                try await Task.sleep(nanoseconds: Constants.retryDelay)
+                try await startRecording(to: outputURL, source: source, retryCount: retryCount + 1)
+                return
+            }
             throw error
         }
     }
@@ -441,7 +455,12 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     /// Stop recording and finalize the audio file.
     @discardableResult
     public func stopRecording() async -> URL? {
-        guard isRecording else { return currentRecordingURL }
+        guard isRecording else {
+            if hasPendingStartupResources {
+                await cleanupAfterFailedStart()
+            }
+            return currentRecordingURL
+        }
 
         AppLogger.info("Stopping recording...", category: .recordingManager)
 
@@ -547,6 +566,49 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
             audioEngine = nil
         }
+    }
+
+    private var hasPendingStartupResources: Bool {
+        audioEngine != nil
+            || mixerNode != nil
+            || systemAudioSourceNode != nil
+            || currentRecordingURL != nil
+            || fallbackRecorder != nil
+    }
+
+    private func cleanupAfterFailedStart() async {
+        validationTimer?.invalidate()
+        validationTimer = nil
+
+        if let recorder = fallbackRecorder {
+            stopFallbackRecorder(recorder)
+        }
+
+        _ = await systemRecorder.stopRecording()
+        cleanupEngine()
+        _ = await worker.stop()
+        systemAudioQueue.clear()
+        partialBufferState.clear()
+
+        restoreOutputMuteIfNeeded()
+        isRecording = false
+        currentRecordingURL = nil
+        currentAveragePower = -160.0
+        currentPeakPower = -160.0
+    }
+
+    private func startupErrorCode(from error: Error) -> Int? {
+        if case let AudioRecorderError.failedToStartEngine(innerError) = error {
+            return (innerError as NSError).code
+        }
+
+        return (error as NSError).code
+    }
+
+    private func shouldRetryStartup(after error: Error, source: RecordingSource, retryCount: Int) -> Bool {
+        guard source != .microphone, retryCount < Constants.maxRetries else { return false }
+        guard let code = startupErrorCode(from: error) else { return false }
+        return Constants.retriableEngineStartErrorCodes.contains(code)
     }
 
     private func startFallbackRecorder(to outputURL: URL) throws {
