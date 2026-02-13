@@ -318,11 +318,8 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
             return
         }
 
-        let normalizedValue: ModifierShortcutGesture?
-        if let newValue {
-            normalizedValue = ModifierShortcutGesture(keys: newValue.keys, triggerMode: assistantModifierTriggerMode)
-        } else {
-            normalizedValue = nil
+        let normalizedValue = newValue.map {
+            ModifierShortcutGesture(keys: $0.keys, triggerMode: assistantModifierTriggerMode)
         }
 
         guard let normalizedValue else {
