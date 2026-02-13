@@ -76,7 +76,10 @@ Repeat the following loop until the task is complete:
    - Group changes by intent.
    - Use Conventional Commits.
    - Do not commit knowingly broken code.
-5. **Documentation**: Update `KNOWN_LIMITATIONS.md` / DocC if the change introduces new constraints or APIs.
+5. **Documentation + limitation tracking**:
+   - Update DocC when the change introduces new constraints or APIs.
+   - If the change introduces a known limitation or intentional trade-off, create or update a GitHub issue via `gh` and use the `known-limitation` label.
+   - Do not track limitations in a standalone markdown backlog file.
 
 > Verify continuously, but keep hard gates at push/merge time to optimize cycle time.
 

@@ -11,9 +11,9 @@ Guidelines for maintaining consistent project documentation and visibility into 
 
 ## 1. Limitation Tracking
 
-- **Update KNOWN_LIMITATIONS.md**: Always update this file when implementing features with known trade-offs.
-- **Format**: Give each limitation a descriptive title and a concise description.
-- **Context**: Include the reason for the limitation (e.g., performance restriction, timeframe, system API bug) and the date.
+- **Track in GitHub Issues**: Register known limitations and intentional trade-offs as GitHub issues (use `gh`) with the `known-limitation` label.
+- **Avoid markdown backlog files**: Do not maintain a standalone `KNOWN_LIMITATIONS.md` file.
+- **Issue quality**: Each issue should include context, impact, and a clear future direction/acceptance criteria.
 
 ## 2. Agent Documentation
 
