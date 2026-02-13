@@ -46,13 +46,11 @@ struct MeetingAssistantApp: App {
 class AppDelegate: NSObject, NSApplicationDelegate {
     private let logger = Logger(subsystem: "MeetingAssistant", category: "AppDelegate")
     private var statusItem: NSStatusItem?
-    private var popover: NSPopover?
     private var contextMenu: NSMenu?
     private var dictateMenuItem: NSMenuItem?
     private var recordMeetingMenuItem: NSMenuItem?
     private var assistantMenuItem: NSMenuItem?
     private lazy var recordingManager: RecordingManager = .shared
-    private var eventMonitor: Any?
     private lazy var floatingIndicatorController = FloatingRecordingIndicatorController()
     private lazy var globalShortcutController = GlobalShortcutController(recordingManager: RecordingManager.shared)
     private lazy var assistantVoiceCommandService = AssistantVoiceCommandService(
@@ -76,7 +74,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         setupMenuBar()
         setupContextMenu()
-        setupEventMonitor()
         globalShortcutController.start()
         assistantShortcutController.start()
         setupRecordingObservation()
@@ -108,11 +105,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
     }
 
-    func applicationWillTerminate(_ notification: Notification) {
-        if let monitor = eventMonitor {
-            NSEvent.removeMonitor(monitor)
-        }
-    }
+    func applicationWillTerminate(_ notification: Notification) {}
 
     // MARK: - Document Handling (Disabled for Menu Bar App)
 
@@ -178,14 +171,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
             button.target = self
         }
-
-        popover = NSPopover()
-        popover?.contentSize = NSSize(width: 320, height: 400)
-        popover?.behavior = .transient
-        popover?.contentViewController = NSHostingController(
-            rootView: MenuBarView()
-                .environmentObject(recordingManager)
-        )
     }
 
     private func setupContextMenu() {
@@ -348,40 +333,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func setupEventMonitor() {
-        // Monitor for clicks outside popover to close it
-        eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [
-            .leftMouseDown, .rightMouseDown,
-        ]) { [weak self] _ in
-            if self?.popover?.isShown == true {
-                self?.popover?.performClose(nil)
-            }
-        }
-    }
-
-    // MARK: - Click Handling
-
     @objc private func handleStatusItemClick() {
-        guard let event = NSApp.currentEvent else { return }
-
-        if event.type == .rightMouseUp {
-            showContextMenu()
-        } else {
-            togglePopover()
-        }
-    }
-
-    private func togglePopover() {
-        guard let popover, let button = statusItem?.button else { return }
-
-        if popover.isShown {
-            popover.performClose(nil)
-        } else {
-            DispatchQueue.main.async {
-                popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-                popover.contentViewController?.view.window?.makeKey()
-            }
-        }
+        showContextMenu()
     }
 
     private func showContextMenu() {
@@ -389,9 +342,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Update shortcuts/titles before showing
         updateMenuTitles()
-
-        // Close popover if open
-        popover?.performClose(nil)
 
         // Show context menu
         statusItem?.menu = menu

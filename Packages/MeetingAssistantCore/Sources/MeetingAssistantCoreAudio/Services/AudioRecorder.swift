@@ -107,6 +107,22 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         systemRecorder.onAudioBuffer = { @Sendable buffer in
             queue.enqueue(buffer)
         }
+        systemRecorder.onRecordingError = { [weak self] error in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                AppLogger.error(
+                    "System audio recorder failed during active session",
+                    category: .recordingManager,
+                    error: error
+                )
+                self.error = error
+                self.onRecordingError?(error)
+
+                if self.isRecording {
+                    _ = await self.stopRecording()
+                }
+            }
+        }
     }
 
     // MARK: - Public API
