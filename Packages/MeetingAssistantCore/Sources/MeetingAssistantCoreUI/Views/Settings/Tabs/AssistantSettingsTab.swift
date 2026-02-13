@@ -30,8 +30,11 @@ public struct AssistantSettingsTab: View {
             AssistantIntegrationEditorSheet(
                 integration: integration,
                 onApplyAndClose: { draft in
-                    viewModel.saveIntegration(draft.integration)
+                    if let conflictMessage = viewModel.saveIntegrationWithModifierValidation(draft.integration) {
+                        return conflictMessage
+                    }
                     editingIntegration = nil
+                    return nil
                 },
                 onDelete: { id in
                     viewModel.removeIntegration(id: id)
