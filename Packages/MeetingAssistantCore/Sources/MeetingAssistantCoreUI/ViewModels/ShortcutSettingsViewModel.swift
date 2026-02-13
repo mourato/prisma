@@ -164,11 +164,8 @@ public class ShortcutSettingsViewModel: ObservableObject {
             return
         }
 
-        let normalizedValue: ModifierShortcutGesture?
-        if let newValue {
-            normalizedValue = ModifierShortcutGesture(keys: newValue.keys, triggerMode: dictationModifierTriggerMode)
-        } else {
-            normalizedValue = nil
+        let normalizedValue = newValue.map {
+            ModifierShortcutGesture(keys: $0.keys, triggerMode: dictationModifierTriggerMode)
         }
 
         guard let normalizedValue else {
@@ -221,11 +218,8 @@ public class ShortcutSettingsViewModel: ObservableObject {
             return
         }
 
-        let normalizedValue: ModifierShortcutGesture?
-        if let newValue {
-            normalizedValue = ModifierShortcutGesture(keys: newValue.keys, triggerMode: meetingModifierTriggerMode)
-        } else {
-            normalizedValue = nil
+        let normalizedValue = newValue.map {
+            ModifierShortcutGesture(keys: $0.keys, triggerMode: meetingModifierTriggerMode)
         }
 
         guard let normalizedValue else {
