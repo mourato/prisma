@@ -225,6 +225,9 @@ public struct FloatingRecordingIndicatorView: View {
     private var isDictationRecording: Bool {
         guard recordingManager.isRecording else { return false }
         if recordingManager.recordingSource == .microphone { return true }
+        // Assistant recordings use the shared AudioRecorder directly and do not create a Meeting.
+        // In that case we should render the dictation-style indicator (without duration).
+        if recordingManager.currentMeeting == nil { return true }
         return recordingManager.currentMeeting?.isDictation == true
     }
 
