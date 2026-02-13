@@ -275,7 +275,8 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         case .error:
             return Constants.panelWidthError
         case .recording, .processing:
-            let isMeetingType = type != nil && RecordingManager.shared.recordingSource != .microphone
+            let hasActiveMeeting = RecordingManager.shared.currentMeeting != nil
+            let isMeetingType = hasActiveMeeting && type != nil && RecordingManager.shared.recordingSource != .microphone
             switch style {
             case .classic:
                 return isMeetingType ? Constants.panelWidthClassicMeeting : Constants.panelWidthClassicDictation

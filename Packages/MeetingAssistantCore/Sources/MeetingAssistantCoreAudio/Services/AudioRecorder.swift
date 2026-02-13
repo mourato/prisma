@@ -186,19 +186,12 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             }
         }
 
-        // 2. Prepare Engine & Input Device (system/all only)
-        // We initialize the engine EARLY to select the preferred input device.
-        // This updates the hardware state (sample rate/channels) BEFORE we query it.
+        // 2. Prepare engine (system/all only)
         let engine = injectedEngine ?? AVAudioEngine()
         audioEngine = engine // Retain generic reference
 
-        if source == .all {
-            await selectPreferredInputDevice(engine: engine)
-            configureInputIO(for: engine.inputNode)
-        }
-
         // 3. Determine Hardware Sample Rate
-        // Query the ACTUAL engine's output node after device selection.
+        // Query the actual output node format.
         let hardwareSampleRate = engine.outputNode.outputFormat(forBus: 0).sampleRate
         let targetSampleRate = (hardwareSampleRate > 0) ? hardwareSampleRate : Constants.outputSampleRate
 
