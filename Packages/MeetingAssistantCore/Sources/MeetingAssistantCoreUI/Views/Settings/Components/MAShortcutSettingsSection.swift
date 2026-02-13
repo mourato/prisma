@@ -15,6 +15,7 @@ public struct MAShortcutSettingsSection<RecorderContent: View>: View {
     private let activationModeDescription: String
     private let activationMode: Binding<ShortcutActivationMode>
     private let selectedPresetKey: Binding<PresetShortcutKey>
+    private let settingsContent: (() -> AnyView)?
     private let recorderContent: () -> RecorderContent
 
     public init(
@@ -36,6 +37,31 @@ public struct MAShortcutSettingsSection<RecorderContent: View>: View {
         self.activationModeDescription = activationModeDescription
         self.activationMode = activationMode
         self.selectedPresetKey = selectedPresetKey
+        settingsContent = nil
+        self.recorderContent = recorderContent
+    }
+
+    public init<SettingsContent: View>(
+        groupTitle: String,
+        groupIcon: String = "keyboard",
+        descriptionText: String,
+        shortcutTitle: String,
+        customShortcutLabel: String,
+        activationModeDescription: String,
+        activationMode: Binding<ShortcutActivationMode>,
+        selectedPresetKey: Binding<PresetShortcutKey>,
+        @ViewBuilder settingsContent: @escaping () -> SettingsContent,
+        @ViewBuilder recorderContent: @escaping () -> RecorderContent
+    ) {
+        self.groupTitle = groupTitle
+        self.groupIcon = groupIcon
+        self.descriptionText = descriptionText
+        self.shortcutTitle = shortcutTitle
+        self.customShortcutLabel = customShortcutLabel
+        self.activationModeDescription = activationModeDescription
+        self.activationMode = activationMode
+        self.selectedPresetKey = selectedPresetKey
+        self.settingsContent = { AnyView(settingsContent()) }
         self.recorderContent = recorderContent
     }
 
@@ -58,6 +84,11 @@ public struct MAShortcutSettingsSection<RecorderContent: View>: View {
                     MAShortcutRecorderRow(label: customShortcutLabel) {
                         recorderContent()
                     }
+                }
+
+                if let settingsContent {
+                    Divider()
+                    settingsContent()
                 }
 
                 Divider()

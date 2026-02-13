@@ -28,17 +28,16 @@ public struct DictationSettingsTab: View {
                     customShortcutLabel: "settings.shortcuts.custom_shortcut".localized,
                     activationModeDescription: "settings.shortcuts.activation_mode_desc".localized,
                     activationMode: $shortcutsViewModel.dictationActivationMode,
-                    selectedPresetKey: $shortcutsViewModel.dictationSelectedPresetKey
+                    selectedPresetKey: $shortcutsViewModel.dictationSelectedPresetKey,
+                    settingsContent: {
+                        MAToggleRow(
+                            "settings.shortcuts.use_escape".localized,
+                            description: "settings.shortcuts.use_escape_desc".localized,
+                            isOn: $shortcutsViewModel.useEscapeToCancelRecording
+                        )
+                    }
                 ) {
                     KeyboardShortcuts.Recorder(for: .dictationToggle)
-                }
-
-                MACard {
-                    MAToggleRow(
-                        "settings.shortcuts.use_escape".localized,
-                        description: "settings.shortcuts.use_escape_desc".localized,
-                        isOn: $shortcutsViewModel.useEscapeToCancelRecording
-                    )
                 }
 
                 // Workflow
