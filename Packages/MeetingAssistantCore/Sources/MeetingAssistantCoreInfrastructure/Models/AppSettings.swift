@@ -679,7 +679,6 @@ public class AppSettingsStore: ObservableObject {
         static let summaryExportFolder = "summaryExportFolder"
         static let summaryTemplate = "summaryTemplate"
         static let autoExportSummaries = "autoExportSummaries"
-        static let createMeetingFolder = "createMeetingFolder"
         static let contextAwarenessEnabled = "contextAwarenessEnabled"
         static let contextAwarenessExplicitActionOnly = "contextAwarenessExplicitActionOnly"
         static let contextAwarenessIncludeActiveApp = "contextAwarenessIncludeActiveApp"
@@ -1063,11 +1062,6 @@ public class AppSettingsStore: ObservableObject {
         didSet { UserDefaults.standard.set(autoExportSummaries, forKey: Keys.autoExportSummaries) }
     }
 
-    /// Whether to create a subfolder for each meeting inside the export folder.
-    @Published public var createMeetingFolder: Bool {
-        didSet { UserDefaults.standard.set(createMeetingFolder, forKey: Keys.createMeetingFolder) }
-    }
-
     /// Enables Context Awareness to enrich AI post-processing with active app context.
     @Published public var contextAwarenessEnabled: Bool {
         didSet {
@@ -1333,7 +1327,6 @@ public class AppSettingsStore: ObservableObject {
         """
 
         autoExportSummaries = UserDefaults.standard.bool(forKey: Keys.autoExportSummaries)
-        createMeetingFolder = UserDefaults.standard.bool(forKey: Keys.createMeetingFolder)
         let loadedContextAwarenessEnabled = UserDefaults.standard.bool(forKey: Keys.contextAwarenessEnabled)
         contextAwarenessEnabled = loadedContextAwarenessEnabled
         contextAwarenessExplicitActionOnly = Self.loadBoolDefaultIfUnset(

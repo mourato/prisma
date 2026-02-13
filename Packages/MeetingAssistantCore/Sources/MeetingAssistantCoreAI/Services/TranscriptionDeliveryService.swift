@@ -10,13 +10,14 @@ import MeetingAssistantCoreInfrastructure
 public struct TranscriptionDeliveryService {
     public static func deliver(
         transcription: Transcription,
+        recordingSource: RecordingSource? = nil,
         settings: DeliverySettingsConfig = AppSettingsStore.shared,
         pasteboard: PasteboardServiceProtocol = PasteboardService.shared
     ) {
         let shouldAutoCopy: Bool
         let shouldAutoPaste: Bool
 
-        if transcription.meeting.isDictation {
+        if isDictationDelivery(transcription: transcription, recordingSource: recordingSource) {
             shouldAutoCopy = settings.autoCopyTranscriptionToClipboard
             shouldAutoPaste = settings.autoPasteTranscriptionToActiveApp
         } else {
@@ -34,6 +35,14 @@ public struct TranscriptionDeliveryService {
             pasteboard.setString(textToCopy, forType: .string) // Ensure it's ready for pasting
             pasteTranscriptionIntoActiveApp()
         }
+    }
+
+    private static func isDictationDelivery(transcription: Transcription, recordingSource: RecordingSource?) -> Bool {
+        if let recordingSource {
+            return recordingSource == .microphone
+        }
+
+        return transcription.meeting.isDictation
     }
 
     private static func transcriptionDeliveryText(from transcription: Transcription) -> String {

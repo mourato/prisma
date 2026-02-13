@@ -269,14 +269,14 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
     private func panelWidth(
         for style: RecordingIndicatorStyle,
         mode: FloatingRecordingIndicatorMode,
-        type: MeetingType?
+        type _: MeetingType?
     ) -> CGFloat {
         switch mode {
         case .error:
             return Constants.panelWidthError
         case .recording, .processing:
             let hasActiveMeeting = RecordingManager.shared.currentMeeting != nil
-            let isMeetingType = hasActiveMeeting && type != nil && RecordingManager.shared.recordingSource != .microphone
+            let isMeetingType = hasActiveMeeting && RecordingManager.shared.recordingSource != .microphone
             switch style {
             case .classic:
                 return isMeetingType ? Constants.panelWidthClassicMeeting : Constants.panelWidthClassicDictation
