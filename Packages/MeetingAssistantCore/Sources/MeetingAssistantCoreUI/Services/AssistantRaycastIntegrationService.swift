@@ -27,7 +27,8 @@ public protocol AssistantDeepLinkDispatching {
 public final class AssistantRaycastIntegrationService: AssistantDeepLinkDispatching {
 
     private enum Constants {
-        static let fallbackTextQueryName = "fallbackText"
+        static let dispatchQueryNames = ["fallbackText", "text", "query", "prompt"]
+        static let supportedHosts: Set<String> = ["extensions", "script-commands", "ai-commands", "confetti"]
     }
 
     private let openURL: (URL) -> Bool
@@ -77,6 +78,18 @@ public final class AssistantRaycastIntegrationService: AssistantDeepLinkDispatch
             return .invalid
         }
 
+        guard isSupportedRaycastCommand(components) else {
+            AppLogger.warning(
+                "Raycast deeplink validation failed: unsupported host/path format",
+                category: .assistant,
+                extra: [
+                    "host": components.host ?? "nil",
+                    "path": components.path,
+                ]
+            )
+            return .invalid
+        }
+
         AppLogger.debug(
             "Raycast deeplink validation succeeded",
             category: .assistant,
@@ -105,12 +118,27 @@ public final class AssistantRaycastIntegrationService: AssistantDeepLinkDispatch
         }
 
         var queryItems = components.queryItems ?? []
-        queryItems.removeAll { $0.name == Constants.fallbackTextQueryName }
-        queryItems.append(URLQueryItem(name: Constants.fallbackTextQueryName, value: command))
+        queryItems.removeAll { Constants.dispatchQueryNames.contains($0.name) }
+        queryItems.append(contentsOf: Constants.dispatchQueryNames.map { key in
+            URLQueryItem(name: key, value: command)
+        })
         components.queryItems = queryItems
 
         guard let fullURL = components.url else {
             throw AssistantIntegrationDispatchError.invalidDeepLink
+        }
+
+        if AssistantPayloadLogging.shouldLogPayloadDetails {
+            AppLogger.debug(
+                "Raycast dispatch composed URL",
+                category: .assistant,
+                extra: [
+                    "baseDeepLink": baseDeepLink,
+                    "fullURL": fullURL.absoluteString,
+                    "payloadPreview": AssistantPayloadLogging.payloadPreview(command),
+                    "payloadByQuery": payloadSummary(from: components),
+                ]
+            )
         }
 
         if fullURL.absoluteString.count > maxDeepLinkLength {
@@ -124,7 +152,9 @@ public final class AssistantRaycastIntegrationService: AssistantDeepLinkDispatch
                 ]
             )
 
-            components.queryItems = queryItems.filter { $0.name != Constants.fallbackTextQueryName }
+            components.queryItems = queryItems.filter { item in
+                !Constants.dispatchQueryNames.contains(item.name)
+            }
             guard let baseURL = components.url, openURL(baseURL) else {
                 AppLogger.error("Raycast dispatch failed during clipboard fallback open", category: .assistant)
                 throw AssistantIntegrationDispatchError.openFailed
@@ -153,10 +183,50 @@ public final class AssistantRaycastIntegrationService: AssistantDeepLinkDispatch
             return nil
         }
 
+        guard isSupportedRaycastCommand(components) else {
+            return nil
+        }
+
         return components
+    }
+
+    private func isSupportedRaycastCommand(_ components: URLComponents) -> Bool {
+        guard let host = components.host?.lowercased(), Constants.supportedHosts.contains(host) else {
+            return false
+        }
+
+        let pathSegments = components.path
+            .split(separator: "/")
+            .map(String.init)
+
+        switch host {
+        case "confetti":
+            return pathSegments.isEmpty
+        case "ai-commands", "script-commands":
+            return pathSegments.count >= 1
+        case "extensions":
+            return pathSegments.count >= 3
+        default:
+            return false
+        }
     }
 
     private func copyToClipboard(_ text: String) {
         copyToClipboardHandler(text)
+    }
+
+    private func payloadSummary(from components: URLComponents) -> String {
+        let values = (components.queryItems ?? [])
+            .filter { Constants.dispatchQueryNames.contains($0.name) }
+            .map { item in
+                let value = item.value ?? ""
+                return "\(item.name)=\(AssistantPayloadLogging.payloadPreview(value))"
+            }
+
+        if values.isEmpty {
+            return "none"
+        }
+
+        return values.joined(separator: " | ")
     }
 }

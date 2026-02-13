@@ -20,7 +20,7 @@ final class AppSettingsAssistantIntegrationsTests: XCTestCase {
 
         let raycast = settings.assistantIntegrations.first
         XCTAssertEqual(raycast?.name, "Raycast")
-        XCTAssertEqual(raycast?.deepLink, "raycast://ai-commands/ask-ai")
+        XCTAssertEqual(raycast?.deepLink, AssistantIntegrationConfig.defaultRaycastDeepLink)
         XCTAssertEqual(settings.assistantSelectedIntegrationId, raycast?.id)
         XCTAssertEqual(settings.assistantSelectedIntegration?.id, raycast?.id)
     }
@@ -38,7 +38,7 @@ final class AppSettingsAssistantIntegrationsTests: XCTestCase {
 
         XCTAssertEqual(settings.assistantIntegrations.count, 1)
         XCTAssertEqual(settings.assistantSelectedIntegration?.isEnabled, true)
-        XCTAssertEqual(settings.assistantSelectedIntegration?.deepLink, "raycast://ai-commands/custom-command")
+        XCTAssertEqual(settings.assistantSelectedIntegration?.deepLink, AssistantIntegrationConfig.defaultRaycastDeepLink)
     }
 
     func testUpsertAssistantIntegration_AppendsNewIntegration() {

@@ -363,6 +363,10 @@ public struct FloatingRecordingIndicatorView: View {
         .padding(.horizontal, MeetingAssistantDesignSystem.Layout.recordingIndicatorSidePadding)
         .frame(height: controlHeight(for: size))
         .background(MeetingAssistantDesignSystem.Colors.overlayBackground)
+        .overlay(
+            Capsule()
+                .strokeBorder(Color.white.opacity(0.30), lineWidth: 1)
+        )
         .clipShape(Capsule())
         .shadow(
             color: .black.opacity(0.15),
@@ -380,7 +384,11 @@ public struct FloatingRecordingIndicatorView: View {
     private func promptSelectionPill(size: IndicatorSize) -> some View {
         promptPickerControl(size: size)
             .frame(width: promptSize(for: size), height: controlHeight(for: size))
-            .background(Color(red: 26 / 255, green: 26 / 255, blue: 26 / 255))
+            .background(MeetingAssistantDesignSystem.Colors.overlayBackground)
+            .overlay(
+                Capsule()
+                    .strokeBorder(Color.white.opacity(0.30), lineWidth: 1)
+            )
             .clipShape(Capsule())
             .onHover { hovering in
                 handlePromptRegionHover(hovering)
@@ -493,7 +501,7 @@ public struct FloatingRecordingIndicatorView: View {
         let fallbackName = "doc.text"
         let symbolName = currentPromptIconName
         let pointSize = promptIconSize(for: size)
-        let symbolConfig = NSImage.SymbolConfiguration(pointSize: pointSize, weight: .medium)
+        let symbolConfig = NSImage.SymbolConfiguration(pointSize: pointSize, weight: .regular)
             .applying(NSImage.SymbolConfiguration(paletteColors: [.white]))
 
         let rawImage = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil)
