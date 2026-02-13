@@ -274,19 +274,25 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         var isCustom = false
 
         if shortcutName == .dictationToggle {
-            if settings.dictationSelectedPresetKey != .custom, settings.dictationSelectedPresetKey != .notSpecified {
+            if settings.dictationModifierShortcutGesture != nil {
+                isCustom = false
+            } else if settings.dictationSelectedPresetKey != .custom, settings.dictationSelectedPresetKey != .notSpecified {
                 presetString = settings.dictationSelectedPresetKey.displayName
             } else {
                 isCustom = true
             }
         } else if shortcutName == .assistantCommand {
-            if settings.assistantSelectedPresetKey != .custom, settings.assistantSelectedPresetKey != .notSpecified {
+            if settings.assistantModifierShortcutGesture != nil {
+                isCustom = false
+            } else if settings.assistantSelectedPresetKey != .custom, settings.assistantSelectedPresetKey != .notSpecified {
                 presetString = settings.assistantSelectedPresetKey.displayName
             } else {
                 isCustom = true
             }
         } else if shortcutName == .meetingToggle {
-            if settings.meetingSelectedPresetKey != .custom, settings.meetingSelectedPresetKey != .notSpecified {
+            if settings.meetingModifierShortcutGesture != nil {
+                isCustom = false
+            } else if settings.meetingSelectedPresetKey != .custom, settings.meetingSelectedPresetKey != .notSpecified {
                 presetString = settings.meetingSelectedPresetKey.displayName
             } else {
                 isCustom = true

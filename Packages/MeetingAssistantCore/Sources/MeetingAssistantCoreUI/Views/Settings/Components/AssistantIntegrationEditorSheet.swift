@@ -20,17 +20,20 @@ public struct AssistantIntegrationEditorSheet: View {
     @State private var copiedPlaceholderToken: String?
     @State private var copiedFeedbackTask: Task<Void, Never>?
     @State private var activePlaceholderPopoverToken: String?
-    private let onApplyAndClose: (AssistantIntegrationEditorDraft) -> Void
+    @State private var modifierTriggerMode: ModifierShortcutTriggerMode
+    @State private var shortcutConflictMessage: String?
+    private let onApplyAndClose: (AssistantIntegrationEditorDraft) -> String?
     private let onDelete: (UUID) -> Void
     private let onOpenAdvanced: (AssistantIntegrationEditorDraft) -> Void
 
     public init(
         integration: AssistantIntegrationConfig,
-        onApplyAndClose: @escaping (AssistantIntegrationEditorDraft) -> Void,
+        onApplyAndClose: @escaping (AssistantIntegrationEditorDraft) -> String?,
         onDelete: @escaping (UUID) -> Void,
         onOpenAdvanced: @escaping (AssistantIntegrationEditorDraft) -> Void
     ) {
         _draft = State(initialValue: AssistantIntegrationEditorDraft(integration: integration))
+        _modifierTriggerMode = State(initialValue: integration.modifierShortcutGesture?.triggerMode ?? .singleTap)
         self.onApplyAndClose = onApplyAndClose
         self.onDelete = onDelete
         self.onOpenAdvanced = onOpenAdvanced
@@ -80,6 +83,28 @@ public struct AssistantIntegrationEditorSheet: View {
                         KeyboardShortcuts.Recorder(for: .assistantIntegration(draft.integration.id))
                     }
                 }
+
+                MAModifierShortcutEditor(
+                    gesture: Binding(
+                        get: { draft.integration.modifierShortcutGesture },
+                        set: { draft.integration.modifierShortcutGesture = $0 }
+                    ),
+                    triggerMode: Binding(
+                        get: {
+                            draft.integration.modifierShortcutGesture?.triggerMode ?? modifierTriggerMode
+                        },
+                        set: { newValue in
+                            modifierTriggerMode = newValue
+                            if let gesture = draft.integration.modifierShortcutGesture {
+                                draft.integration.modifierShortcutGesture = ModifierShortcutGesture(
+                                    keys: gesture.keys,
+                                    triggerMode: newValue
+                                )
+                            }
+                        }
+                    ),
+                    conflictMessage: shortcutConflictMessage
+                )
             }
 
             VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
@@ -114,13 +139,26 @@ public struct AssistantIntegrationEditorSheet: View {
                 Spacer()
 
                 Button("settings.assistant.integrations.editor.close".localized) {
-                    onApplyAndClose(draft)
+                    shortcutConflictMessage = onApplyAndClose(draft)
                 }
                 .keyboardShortcut(.defaultAction)
             }
         }
         .padding(MeetingAssistantDesignSystem.Layout.spacing20)
         .frame(minWidth: 560, minHeight: 480)
+        .onChange(of: draft.integration.modifierShortcutGesture) { _, newValue in
+            modifierTriggerMode = newValue?.triggerMode ?? modifierTriggerMode
+            shortcutConflictMessage = nil
+        }
+        .onChange(of: draft.integration.shortcutPresetKey) { _, _ in
+            shortcutConflictMessage = nil
+        }
+        .onChange(of: draft.integration.shortcutActivationMode) { _, _ in
+            shortcutConflictMessage = nil
+        }
+        .onChange(of: draft.integration.isEnabled) { _, _ in
+            shortcutConflictMessage = nil
+        }
         .onDisappear {
             copiedFeedbackTask?.cancel()
         }
@@ -288,7 +326,7 @@ public struct AssistantIntegrationEditorSheet: View {
 #Preview("Assistant Integration Editor") {
     AssistantIntegrationEditorSheet(
         integration: AssistantIntegrationConfig.defaultRaycast,
-        onApplyAndClose: { _ in },
+        onApplyAndClose: { _ in nil },
         onDelete: { _ in },
         onOpenAdvanced: { _ in }
     )

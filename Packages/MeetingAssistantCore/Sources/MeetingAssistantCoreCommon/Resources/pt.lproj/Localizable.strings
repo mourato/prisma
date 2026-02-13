@@ -418,6 +418,15 @@
 "settings.shortcuts.fn_key_desc" = "Para usar a tecla Fn sozinha:\n• Abra Configurações do Sistema → Teclado\n• Clique no dropdown \"Pressionar tecla 🌐 para\"\n• Selecione \"Não fazer nada\"\n• Isso permite que o app detecte a tecla Fn";
 "settings.shortcuts.use_escape" = "Pressione Escape duas vezes para cancelar gravação";
 "settings.shortcuts.use_escape_desc" = "Exige dois toques consecutivos na tecla Escape durante a gravação.";
+"settings.shortcuts.modifier.title" = "Atalho de Modificadoras";
+"settings.shortcuts.modifier.description" = "Grave um atalho usando Command, Shift, Option, Control (esquerda/direita) ou Fn.";
+"settings.shortcuts.modifier.record" = "Gravar atalho";
+"settings.shortcuts.modifier.stop" = "Parar";
+"settings.shortcuts.modifier.clear" = "Limpar";
+"settings.shortcuts.modifier.none" = "Nenhuma tecla gravada.";
+"settings.shortcuts.modifier.trigger" = "Comportamento de acionamento";
+"settings.shortcuts.modifier.trigger.single_tap" = "Toque simples";
+"settings.shortcuts.modifier.conflict" = "Este atalho já está vinculado a \"%@\".";
 "settings.shortcuts.try_keys" = "Teste suas Teclas";
 "settings.shortcuts.try_keys_hint" = "Clique na caixa de texto abaixo primeiro.";
 "settings.shortcuts.key.not_specified" = "Não especificado";

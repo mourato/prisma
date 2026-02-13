@@ -101,6 +101,24 @@ final class GlobalShortcutController {
             }
             .store(in: &cancellables)
 
+        settings.$dictationModifierShortcutGesture
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.resetShortcutState()
+                self?.refreshCustomShortcutRegistration()
+                self?.refreshEventMonitors()
+            }
+            .store(in: &cancellables)
+
+        settings.$meetingModifierShortcutGesture
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.resetShortcutState()
+                self?.refreshCustomShortcutRegistration()
+                self?.refreshEventMonitors()
+            }
+            .store(in: &cancellables)
+
         settings.$shortcutActivationMode
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
@@ -124,7 +142,9 @@ final class GlobalShortcutController {
     }
 
     private func refreshEventMonitors() {
-        let needsModifierMonitoring = settings.dictationSelectedPresetKey.requiresModifierMonitoring ||
+        let needsModifierMonitoring = settings.dictationModifierShortcutGesture != nil ||
+            settings.meetingModifierShortcutGesture != nil ||
+            settings.dictationSelectedPresetKey.requiresModifierMonitoring ||
             settings.meetingSelectedPresetKey.requiresModifierMonitoring
         let needsEscapeMonitoring = settings.useEscapeToCancelRecording
 
@@ -142,13 +162,13 @@ final class GlobalShortcutController {
     }
 
     private func refreshCustomShortcutRegistration() {
-        if settings.dictationSelectedPresetKey == .custom {
+        if settings.dictationModifierShortcutGesture == nil, settings.dictationSelectedPresetKey == .custom {
             KeyboardShortcuts.enable(.dictationToggle)
         } else {
             KeyboardShortcuts.disable(.dictationToggle)
         }
 
-        if settings.meetingSelectedPresetKey == .custom {
+        if settings.meetingModifierShortcutGesture == nil, settings.meetingSelectedPresetKey == .custom {
             KeyboardShortcuts.enable(.meetingToggle)
         } else {
             KeyboardShortcuts.disable(.meetingToggle)
@@ -192,7 +212,18 @@ final class GlobalShortcutController {
 
     private func handleFlagsChanged(_ event: NSEvent) {
         // Dictation
-        if settings.dictationSelectedPresetKey.requiresModifierMonitoring {
+        if let gesture = settings.dictationModifierShortcutGesture {
+            let isActive = isModifierGestureActive(gesture, event: event)
+            let wasPressed = dictationHandler.isPressed
+            dictationHandler.handleModifierChange(isActive: isActive)
+            let activationMode = gesture.triggerMode.asShortcutActivationMode
+
+            if isActive, !wasPressed {
+                Task { @MainActor in await handleShortcutDown(for: .dictation, activationModeOverride: activationMode) }
+            } else if !isActive, wasPressed {
+                Task { @MainActor in await handleShortcutUp(for: .dictation, activationModeOverride: activationMode) }
+            }
+        } else if settings.dictationSelectedPresetKey.requiresModifierMonitoring {
             let isActive = isPresetActive(settings.dictationSelectedPresetKey, event: event)
             let wasPressed = dictationHandler.isPressed
             dictationHandler.handleModifierChange(isActive: isActive)
@@ -205,7 +236,18 @@ final class GlobalShortcutController {
         }
 
         // Meeting
-        if settings.meetingSelectedPresetKey.requiresModifierMonitoring {
+        if let gesture = settings.meetingModifierShortcutGesture {
+            let isActive = isModifierGestureActive(gesture, event: event)
+            let wasPressed = meetingHandler.isPressed
+            meetingHandler.handleModifierChange(isActive: isActive)
+            let activationMode = gesture.triggerMode.asShortcutActivationMode
+
+            if isActive, !wasPressed {
+                Task { @MainActor in await handleShortcutDown(for: .meeting, activationModeOverride: activationMode) }
+            } else if !isActive, wasPressed {
+                Task { @MainActor in await handleShortcutUp(for: .meeting, activationModeOverride: activationMode) }
+            }
+        } else if settings.meetingSelectedPresetKey.requiresModifierMonitoring {
             let isActive = isPresetActive(settings.meetingSelectedPresetKey, event: event)
             let wasPressed = meetingHandler.isPressed
             meetingHandler.handleModifierChange(isActive: isActive)
@@ -241,24 +283,42 @@ final class GlobalShortcutController {
 
     private func handleCustomShortcutDown(for type: ShortcutType) async {
         let presetKey = type == .dictation ? settings.dictationSelectedPresetKey : settings.meetingSelectedPresetKey
+        if type == .dictation, settings.dictationModifierShortcutGesture != nil {
+            return
+        }
+        if type == .meeting, settings.meetingModifierShortcutGesture != nil {
+            return
+        }
         guard presetKey == .custom else { return }
         await handleShortcutDown(for: type)
     }
 
     private func handleCustomShortcutUp(for type: ShortcutType) async {
         let presetKey = type == .dictation ? settings.dictationSelectedPresetKey : settings.meetingSelectedPresetKey
+        if type == .dictation, settings.dictationModifierShortcutGesture != nil {
+            return
+        }
+        if type == .meeting, settings.meetingModifierShortcutGesture != nil {
+            return
+        }
         guard presetKey == .custom else { return }
         await handleShortcutUp(for: type)
     }
 
-    private func handleShortcutDown(for type: ShortcutType) async {
+    private func handleShortcutDown(
+        for type: ShortcutType,
+        activationModeOverride: ShortcutActivationMode? = nil
+    ) async {
         let handler = type == .dictation ? dictationHandler : meetingHandler
-        handler.handleShortcutDown(activationMode: activationMode(for: type))
+        handler.handleShortcutDown(activationMode: activationModeOverride ?? activationMode(for: type))
     }
 
-    private func handleShortcutUp(for type: ShortcutType) async {
+    private func handleShortcutUp(
+        for type: ShortcutType,
+        activationModeOverride: ShortcutActivationMode? = nil
+    ) async {
         let handler = type == .dictation ? dictationHandler : meetingHandler
-        handler.handleShortcutUp(activationMode: activationMode(for: type))
+        handler.handleShortcutUp(activationMode: activationModeOverride ?? activationMode(for: type))
     }
 
     private func performAction(_ action: SmartShortcutHandler.Action, for type: ShortcutType) async {
@@ -289,6 +349,10 @@ final class GlobalShortcutController {
 
     private func isPresetActive(_ preset: PresetShortcutKey, event: NSEvent) -> Bool {
         presetState.isPresetActive(preset, event: event)
+    }
+
+    private func isModifierGestureActive(_ gesture: ModifierShortcutGesture, event: NSEvent) -> Bool {
+        presetState.isModifierGestureActive(gesture, event: event)
     }
 }
 
