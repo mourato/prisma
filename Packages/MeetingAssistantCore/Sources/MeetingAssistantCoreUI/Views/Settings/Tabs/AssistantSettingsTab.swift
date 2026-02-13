@@ -21,7 +21,6 @@ public struct AssistantSettingsTab: View {
                 headerSection
                 assistantControlsSection
                 visualFeedbackSection
-                optionsSection
                 integrationsSection
             }
             .padding()
@@ -83,7 +82,13 @@ public struct AssistantSettingsTab: View {
             customShortcutLabel: "settings.assistant.custom_shortcut".localized,
             activationModeDescription: "settings.assistant.activation_mode_desc".localized,
             activationMode: $viewModel.activationMode,
-            selectedPresetKey: $viewModel.selectedPresetKey
+            selectedPresetKey: $viewModel.selectedPresetKey,
+            settingsContent: {
+                MAToggleRow(
+                    "settings.assistant.use_escape".localized,
+                    isOn: $viewModel.useEscapeToCancelRecording
+                )
+            }
         ) {
             KeyboardShortcuts.Recorder(for: .assistantCommand)
         }
@@ -126,15 +131,6 @@ public struct AssistantSettingsTab: View {
                     .frame(width: MeetingAssistantDesignSystem.Layout.maxPickerWidth)
                 }
             }
-        }
-    }
-
-    private var optionsSection: some View {
-        MACard {
-            MAToggleRow(
-                "settings.assistant.use_escape".localized,
-                isOn: $viewModel.useEscapeToCancelRecording
-            )
         }
     }
 
