@@ -15,6 +15,7 @@ public struct AssistantIntegrationEditorSheet: View {
     @State private var draft: AssistantIntegrationEditorDraft
     @State private var copiedPlaceholderToken: String?
     @State private var copiedFeedbackTask: Task<Void, Never>?
+    @State private var activePlaceholderPopoverToken: String?
     private let onApplyAndClose: (AssistantIntegrationEditorDraft) -> Void
     private let onDelete: (UUID) -> Void
     private let onOpenAdvanced: (AssistantIntegrationEditorDraft) -> Void
@@ -159,36 +160,111 @@ public struct AssistantIntegrationEditorSheet: View {
         let isUsedInDeepLink = draft.integration.deepLink.contains(token)
         let isJustCopied = copiedPlaceholderToken == token
 
-        return Button {
-            copyPlaceholder(token)
-        } label: {
-            HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
-                Text(token)
-                    .font(.system(.caption, design: .monospaced))
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .foregroundStyle(isUsedInDeepLink ? Color.accentColor : Color.primary)
+        return HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
+            Button {
+                copyPlaceholder(token)
+            } label: {
+                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
+                    Text(token)
+                        .font(.system(.caption, design: .monospaced))
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .foregroundStyle(isUsedInDeepLink ? Color.accentColor : Color.primary)
 
-                Spacer()
+                    Spacer()
 
-                Image(systemName: isUsedInDeepLink ? "checkmark.circle.fill" : "doc.on.doc")
-                    .font(.caption)
-                    .foregroundStyle(isUsedInDeepLink ? Color.accentColor : Color.secondary)
+                    Image(systemName: isUsedInDeepLink ? "checkmark.circle.fill" : "doc.on.doc")
+                        .font(.caption)
+                        .foregroundStyle(isUsedInDeepLink ? Color.accentColor : Color.secondary)
+                }
+                .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing10)
+                .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
+                .background(
+                    RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
+                        .fill(isUsedInDeepLink ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.08))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
+                        .strokeBorder(isUsedInDeepLink ? Color.accentColor.opacity(0.55) : Color.secondary.opacity(0.2), lineWidth: 1)
+                )
+                .opacity(isJustCopied ? 0.9 : 1)
             }
-            .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing10)
-            .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
-            .background(
-                RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
-                    .fill(isUsedInDeepLink ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.08))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
-                    .strokeBorder(isUsedInDeepLink ? Color.accentColor.opacity(0.55) : Color.secondary.opacity(0.2), lineWidth: 1)
-            )
-            .opacity(isJustCopied ? 0.9 : 1)
+            .buttonStyle(.plain)
+            .help("settings.assistant.integrations.editor.placeholders.copy_help".localized)
+
+            Button {
+                activePlaceholderPopoverToken = token
+            } label: {
+                Image(systemName: "info.circle")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 18, height: 18)
+            }
+            .buttonStyle(.plain)
+            .help("settings.assistant.integrations.editor.placeholders.info_help".localized)
+            .popover(
+                isPresented: Binding(
+                    get: { activePlaceholderPopoverToken == token },
+                    set: { isPresented in
+                        if !isPresented {
+                            activePlaceholderPopoverToken = nil
+                        }
+                    }
+                ),
+                arrowEdge: .bottom
+            ) {
+                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                    Text(token)
+                        .font(.system(.caption, design: .monospaced))
+                        .foregroundStyle(.secondary)
+
+                    Text(placeholderMeaning(for: token))
+                        .font(.callout)
+
+                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing4) {
+                        Text("settings.assistant.integrations.editor.placeholders.example_title".localized)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        Text(placeholderExample(for: token))
+                            .font(.system(.caption, design: .monospaced))
+                            .textSelection(.enabled)
+                    }
+                }
+                .padding(MeetingAssistantDesignSystem.Layout.spacing12)
+                .frame(width: 300, alignment: .leading)
+            }
         }
-        .buttonStyle(.plain)
-        .help("settings.assistant.integrations.editor.placeholders.copy_help".localized)
+    }
+
+    private func placeholderMeaning(for token: String) -> String {
+        switch token {
+        case AssistantIntegrationDeepLinkShortcode.finalText:
+            return "settings.assistant.integrations.editor.placeholders.final_text.meaning".localized
+        case AssistantIntegrationDeepLinkShortcode.finalTextURLEncoded:
+            return "settings.assistant.integrations.editor.placeholders.final_text_urlencoded.meaning".localized
+        case AssistantIntegrationDeepLinkShortcode.rawText:
+            return "settings.assistant.integrations.editor.placeholders.raw_text.meaning".localized
+        case AssistantIntegrationDeepLinkShortcode.rawTextURLEncoded:
+            return "settings.assistant.integrations.editor.placeholders.raw_text_urlencoded.meaning".localized
+        default:
+            return ""
+        }
+    }
+
+    private func placeholderExample(for token: String) -> String {
+        switch token {
+        case AssistantIntegrationDeepLinkShortcode.finalText:
+            return "settings.assistant.integrations.editor.placeholders.final_text.example".localized
+        case AssistantIntegrationDeepLinkShortcode.finalTextURLEncoded:
+            return "settings.assistant.integrations.editor.placeholders.final_text_urlencoded.example".localized
+        case AssistantIntegrationDeepLinkShortcode.rawText:
+            return "settings.assistant.integrations.editor.placeholders.raw_text.example".localized
+        case AssistantIntegrationDeepLinkShortcode.rawTextURLEncoded:
+            return "settings.assistant.integrations.editor.placeholders.raw_text_urlencoded.example".localized
+        default:
+            return ""
+        }
     }
 
     private func copyPlaceholder(_ token: String) {
