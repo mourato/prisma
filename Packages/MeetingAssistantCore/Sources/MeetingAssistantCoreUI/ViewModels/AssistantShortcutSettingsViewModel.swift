@@ -1,6 +1,5 @@
 import Combine
 import Foundation
-import KeyboardShortcuts
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
@@ -18,7 +17,6 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
     @Published public var activationMode: ShortcutActivationMode
     @Published public var useEscapeToCancelRecording: Bool
     @Published public var selectedPresetKey: PresetShortcutKey
-    @Published public var testKeysInput: String = ""
     @Published public var isRecordingCustomShortcut: Bool = false
     @Published public var borderColor: AssistantBorderColor
     @Published public var borderStyle: AssistantBorderStyle
@@ -217,16 +215,6 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
             scriptTestOutput = nil
             scriptTestErrorMessage = error.localizedDescription
         }
-    }
-
-    public func resetShortcuts() {
-        KeyboardShortcuts.reset(.assistantCommand)
-        activationMode = .holdOrToggle
-        useEscapeToCancelRecording = false
-        selectedPresetKey = .rightOption
-        isRecordingCustomShortcut = false
-        borderColor = .green
-        borderStyle = .stroke
     }
 
     private func setupBindings() {

@@ -341,12 +341,6 @@ public struct EnhancementsSettingsTab: View {
             case .noActiveApp, .supported, .unknown, .noFocusedElement, .unsupported:
                 EmptyView()
             }
-
-            Button("settings.context_awareness.support_status_check".localized) {
-                Task { await refreshSupportStatus() }
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
         }
         .task { await refreshSupportStatus() }
     }

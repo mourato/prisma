@@ -23,8 +23,6 @@ public struct AssistantSettingsTab: View {
                 visualFeedbackSection
                 optionsSection
                 integrationsSection
-                testKeysSection
-                resetSection
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -137,27 +135,6 @@ public struct AssistantSettingsTab: View {
                 "settings.assistant.use_escape".localized,
                 isOn: $viewModel.useEscapeToCancelRecording
             )
-        }
-    }
-
-    private var testKeysSection: some View {
-        MAGroup(
-            "settings.assistant.try_keys".localized,
-            icon: "keyboard"
-        ) {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
-                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
-                    Image(systemName: "hand.point.up.left.fill")
-                        .foregroundStyle(MeetingAssistantDesignSystem.Colors.accent)
-                    Text("settings.assistant.try_keys_hint".localized)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
-                TextField("", text: $viewModel.testKeysInput)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(height: 80)
-            }
         }
     }
 
@@ -280,24 +257,6 @@ public struct AssistantSettingsTab: View {
         )
     }
 
-    private var resetSection: some View {
-        MACard {
-            HStack {
-                Image(systemName: "arrow.counterclockwise")
-                    .foregroundStyle(.secondary)
-
-                Button(
-                    action: { viewModel.resetShortcuts() },
-                    label: {
-                        Text("settings.assistant.reset".localized)
-                    }
-                )
-                .buttonStyle(.link)
-
-                Spacer()
-            }
-        }
-    }
 }
 
 #Preview {

@@ -229,7 +229,6 @@
 "settings.context_awareness.accessibility_text_desc" = "Captura texto selecionado ou em foco no app ativo via APIs de Acessibilidade (requer permissão de Acessibilidade).";
 "settings.context_awareness.permission_title" = "Permissão de Acessibilidade necessária";
 "settings.context_awareness.permission_desc" = "Ative Acessibilidade para ler o texto em foco no app ativo.";
-"settings.context_awareness.support_status_check" = "Verificar suporte";
 "settings.context_awareness.protect_sensitive_apps" = "Proteger Apps Sensíveis";
 "settings.context_awareness.protect_sensitive_apps_desc" = "Ignora a captura de contexto quando o app ativo está na lista de apps sensíveis.";
 "settings.context_awareness.redact_sensitive_data" = "Redigir Dados Sensíveis";
@@ -300,9 +299,6 @@
 "settings.assistant.fn_key_title" = "Usando a tecla Fn";
 "settings.assistant.fn_key_desc" = "Para usar a tecla Fn sozinha:\n• Abra Configurações do Sistema → Teclado\n• Clique no dropdown \"Pressionar tecla 🌐 para\"\n• Selecione \"Não fazer nada\"\n• Isso permite que o app detecte a tecla Fn";
 "settings.assistant.use_escape" = "Pressione Escape duas vezes para cancelar a gravação do Assistant";
-"settings.assistant.try_keys" = "Teste suas Teclas";
-"settings.assistant.try_keys_hint" = "Clique na caixa de texto abaixo primeiro.";
-"settings.assistant.reset" = "Restaurar atalho padrão";
 "settings.assistant.integrations.title" = "Integrações";
 "settings.assistant.integrations.description" = "Configure para onde a saída do Assistant deve ser enviada após o processamento por voz.";
 "settings.assistant.integrations.output_mode" = "Modo de Saída";

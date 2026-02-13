@@ -1387,7 +1387,10 @@ public class AppSettingsStore: ObservableObject {
         assistantBorderStyle = rawBorderStyle.flatMap { AssistantBorderStyle(rawValue: $0) } ?? .stroke
 
         // Load recording indicator settings
-        recordingIndicatorEnabled = UserDefaults.standard.bool(forKey: Keys.recordingIndicatorEnabled)
+        recordingIndicatorEnabled = Self.loadBoolDefaultIfUnset(
+            forKey: Keys.recordingIndicatorEnabled,
+            defaultValue: true
+        )
         let rawIndicatorStyle = UserDefaults.standard.string(forKey: Keys.recordingIndicatorStyle)
         recordingIndicatorStyle = rawIndicatorStyle.flatMap { RecordingIndicatorStyle(rawValue: $0) } ?? .mini
         let rawIndicatorPosition = UserDefaults.standard.string(forKey: Keys.recordingIndicatorPosition)
@@ -1665,7 +1668,7 @@ public class AppSettingsStore: ObservableObject {
         assistantSelectedIntegrationId = AssistantIntegrationConfig.defaultRaycast.id
         assistantRaycastEnabled = false
         assistantRaycastDeepLink = AssistantIntegrationConfig.defaultRaycastDeepLink
-        recordingIndicatorEnabled = false
+        recordingIndicatorEnabled = true
         recordingIndicatorStyle = .mini
         recordingIndicatorPosition = .bottom
         autoDeleteTranscriptions = false

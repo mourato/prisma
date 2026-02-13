@@ -230,7 +230,6 @@
 "settings.context_awareness.accessibility_text_desc" = "Capture selected or focused text from the active app via Accessibility APIs (requires Accessibility permission).";
 "settings.context_awareness.permission_title" = "Accessibility permission required";
 "settings.context_awareness.permission_desc" = "Enable Accessibility to read focused text from the active app.";
-"settings.context_awareness.support_status_check" = "Check support";
 "settings.context_awareness.protect_sensitive_apps" = "Protect Sensitive Apps";
 "settings.context_awareness.protect_sensitive_apps_desc" = "Skip context capture when the active app is on the sensitive-app blocklist.";
 "settings.context_awareness.redact_sensitive_data" = "Redact Sensitive Data";
@@ -301,9 +300,6 @@
 "settings.assistant.fn_key_title" = "Using the Fn key";
 "settings.assistant.fn_key_desc" = "To use the Fn key alone:\n• Open System Settings → Keyboard\n• Click \"Press 🌐 key to\" dropdown\n• Select \"Do Nothing\"\n• This allows the app to detect the Fn key press";
 "settings.assistant.use_escape" = "Press Escape twice to cancel Assistant recording";
-"settings.assistant.try_keys" = "Try Your Keys";
-"settings.assistant.try_keys_hint" = "Click in the text box below first.";
-"settings.assistant.reset" = "Reset to Default Shortcut";
 "settings.assistant.integrations.title" = "Integrations";
 "settings.assistant.integrations.description" = "Configure where Assistant output should be delivered after voice processing.";
 "settings.assistant.integrations.output_mode" = "Output Mode";

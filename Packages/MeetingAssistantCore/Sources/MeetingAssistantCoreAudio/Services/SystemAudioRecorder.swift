@@ -29,6 +29,7 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
 
     private var stream: SCStream?
     private var streamOutput: SystemAudioStreamOutput?
+    private var streamDelegate: SystemAudioCaptureDelegate?
     private var audioCaptureQueue: DispatchQueue?
 
     // MARK: - Streaming Output
@@ -184,7 +185,13 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
         config.height = minVideoDimension
         config.minimumFrameInterval = CMTime(value: 1, timescale: Int32(videoFrameRate))
 
-        stream = SCStream(filter: filter, configuration: config, delegate: nil)
+        let delegate = SystemAudioCaptureDelegate { [weak self] error in
+            Task { @MainActor [weak self] in
+                await self?.handleStreamFailure(error)
+            }
+        }
+        streamDelegate = delegate
+        stream = SCStream(filter: filter, configuration: config, delegate: delegate)
 
         let queue = DispatchQueue(label: "MeetingAssistant.systemAudioCapture", qos: .userInitiated)
         audioCaptureQueue = queue
@@ -218,9 +225,25 @@ public class SystemAudioRecorder: ObservableObject, AudioRecordingService {
 
         stream = nil
         streamOutput = nil
+        streamDelegate = nil
         audioCaptureQueue = nil
         isRecording = false
         hasReceivedValidBuffer.store(false, ordering: .relaxed)
+    }
+
+    private func handleStreamFailure(_ error: Error) async {
+        guard isRecording else { return }
+
+        AppLogger.error(
+            "System audio capture stopped unexpectedly",
+            category: .recordingManager,
+            error: error
+        )
+        self.error = error
+        onRecordingError?(SystemAudioRecorderError.streamStoppedUnexpectedly(error))
+        validationTimer?.invalidate()
+        validationTimer = nil
+        await cleanup()
     }
 
     private func startValidationTimer() {
@@ -300,6 +323,7 @@ public enum SystemAudioRecorderError: LocalizedError {
     case noDisplayFound
     case invalidFormat
     case failedToStartCapture(Error)
+    case streamStoppedUnexpectedly(Error)
     case recordingValidationFailed
 
     public var errorDescription: String? {
@@ -312,8 +336,22 @@ public enum SystemAudioRecorderError: LocalizedError {
             "Falha ao criar formato de áudio."
         case let .failedToStartCapture(error):
             "Falha ao iniciar captura de tela: \(error.localizedDescription)"
+        case let .streamStoppedUnexpectedly(error):
+            "A captura de áudio do sistema foi interrompida: \(error.localizedDescription)"
         case .recordingValidationFailed:
             "Gravação de áudio do sistema falhou - nenhum áudio válido recebido"
         }
+    }
+}
+
+private final class SystemAudioCaptureDelegate: NSObject, SCStreamDelegate {
+    private let onStopWithError: @Sendable (Error) -> Void
+
+    init(onStopWithError: @escaping @Sendable (Error) -> Void) {
+        self.onStopWithError = onStopWithError
+    }
+
+    func stream(_ stream: SCStream, didStopWithError error: Error) {
+        onStopWithError(error)
     }
 }
