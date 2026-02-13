@@ -711,7 +711,10 @@ extension RecordingManager {
             meetingState = .processing(.generatingOutput)
             currentMeeting?.state = .completed
 
-            TranscriptionDeliveryService.deliver(transcription: transcription)
+            TranscriptionDeliveryService.deliver(
+                transcription: transcription,
+                recordingSource: recordingSource
+            )
 
             transcriptionStatus.completeTranscription(success: true)
             notifySuccess(for: transcription)
@@ -772,7 +775,7 @@ extension RecordingManager {
 
     private func makeUseCaseConfig(meeting: Meeting, settings: AppSettingsStore) -> UseCaseConfig {
         let applyPostProcessing = settings.postProcessingEnabled && settings.aiConfiguration.isValid
-        let isDictation = meeting.isDictation || recordingSource == .microphone
+        let isDictation = isDictationMode(for: meeting)
 
         let disabledForRecording = isDictation
             ? settings.isDictationPostProcessingDisabled
@@ -819,7 +822,7 @@ extension RecordingManager {
         let settings = AppSettingsStore.shared
         guard settings.contextAwarenessEnabled else { return (nil, []) }
 
-        if meeting.isDictation {
+        if isDictationMode(for: meeting) {
             let focusedText = await captureFocusedTextContext(settings: settings)
             let items = focusedText.map { [TranscriptionContextItem(source: .focusedText, text: $0)] } ?? []
             return (focusedText, items)
@@ -1051,30 +1054,11 @@ extension RecordingManager {
         let titleComponent = safeTitle.isEmpty ? transcription.meeting.appName : safeTitle
         let baseName = "\(dateStr) \(titleComponent)"
 
-        let targetFolder: URL = {
-            guard settings.createMeetingFolder else { return folder }
-
-            var subfolder = folder.appendingPathComponent(baseName, isDirectory: true)
-            var attempt = 1
-            while FileManager.default.fileExists(atPath: subfolder.path) {
-                attempt += 1
-                subfolder = folder.appendingPathComponent("\(baseName)-\(attempt)", isDirectory: true)
-            }
-
-            do {
-                try FileManager.default.createDirectory(at: subfolder, withIntermediateDirectories: true)
-            } catch {
-                AppLogger.error("Failed to create meeting export subfolder", category: .recordingManager, error: error)
-                return folder
-            }
-            return subfolder
-        }()
-
-        var destinationURL = targetFolder.appendingPathComponent("\(baseName).md")
+        var destinationURL = folder.appendingPathComponent("\(baseName).md")
         var attempt = 1
         while FileManager.default.fileExists(atPath: destinationURL.path) {
             attempt += 1
-            destinationURL = targetFolder.appendingPathComponent("\(baseName)-\(attempt).md")
+            destinationURL = folder.appendingPathComponent("\(baseName)-\(attempt).md")
         }
 
         do {
@@ -1153,7 +1137,7 @@ extension RecordingManager {
         let settings = AppSettingsStore.shared
         guard settings.postProcessingEnabled, settings.aiConfiguration.isValid else { return .empty }
 
-        let isDictation = meeting?.isDictation == true || recordingSource == .microphone
+        let isDictation = isDictationMode(for: meeting)
         guard !isPostProcessingDisabled(isDictation: isDictation, settings: settings) else { return .empty }
 
         let type = meeting?.type ?? currentMeeting?.type ?? .general
@@ -1166,6 +1150,19 @@ extension RecordingManager {
 
         transcriptionStatus.updateProgress(phase: .postProcessing, percentage: Constants.aiProcessingProgress)
         return await runPostProcessing(rawText: rawText, prompt: prompt, settings: settings)
+    }
+
+    private func isDictationMode(for meeting: Meeting?) -> Bool {
+        if let meeting, meeting.app == .importedFile {
+            return false
+        }
+
+        // During active capture/transcription, source is the canonical mode signal.
+        if isRecording || isTranscribing {
+            return recordingSource == .microphone
+        }
+
+        return meeting?.isDictation == true || recordingSource == .microphone
     }
 
     private func isPostProcessingDisabled(isDictation: Bool, settings: AppSettingsStore) -> Bool {

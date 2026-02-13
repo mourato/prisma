@@ -82,6 +82,31 @@ final class TranscriptionDeliveryServiceTests: XCTestCase {
         XCTAssertEqual(mockPasteboard.storedString, kDictationText, "Clipboard should contain text for Dictation")
     }
 
+    func testDeliver_UnknownAppWithMeetingSource_DoesNotCopyToClipboard() {
+        // Given
+        let meeting = Meeting(app: .unknown)
+        let transcription = Transcription(
+            meeting: meeting,
+            text: kMeetingText,
+            rawText: kMeetingText
+        )
+        let settings = MockDeliverySettings(
+            autoCopyTranscriptionToClipboard: true,
+            autoPasteTranscriptionToActiveApp: false
+        )
+
+        // When
+        TranscriptionDeliveryService.deliver(
+            transcription: transcription,
+            recordingSource: .all,
+            settings: settings,
+            pasteboard: mockPasteboard
+        )
+
+        // Then
+        XCTAssertNil(mockPasteboard.storedString, "Clipboard should be empty for meetings even when app detection is unknown")
+    }
+
     func testDeliver_WithImportedFile_DoesNotCopyToClipboard() {
         // Given
         let meeting = Meeting(app: .importedFile)
