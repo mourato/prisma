@@ -333,7 +333,7 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
             isEnabled: false,
             deepLink: Self.defaultRaycastDeepLink,
             shortcutPresetKey: .custom,
-            shortcutActivationMode: .holdOrToggle
+            shortcutActivationMode: .toggle
         )
     }
 
@@ -1413,7 +1413,7 @@ public class AppSettingsStore: ObservableObject {
         if shouldMigrateLegacyAssistantIntegration {
             var migratedRaycast = AssistantIntegrationConfig.defaultRaycast
             migratedRaycast.isEnabled = assistantRaycastEnabled
-            migratedRaycast.deepLink = assistantRaycastDeepLink
+            migratedRaycast.deepLink = AssistantIntegrationConfig.defaultRaycastDeepLink
             assistantIntegrations = [migratedRaycast]
             assistantSelectedIntegrationId = migratedRaycast.id
         }
@@ -1421,6 +1421,18 @@ public class AppSettingsStore: ObservableObject {
         if assistantSelectedIntegrationId == nil {
             assistantSelectedIntegrationId = assistantIntegrations.first?.id
         }
+
+        synchronizeAssistantIntegrationsState()
+        save(assistantIntegrations, forKey: Keys.assistantIntegrations)
+
+        if let selectedID = assistantSelectedIntegrationId {
+            UserDefaults.standard.set(selectedID.uuidString, forKey: Keys.assistantSelectedIntegrationId)
+        } else {
+            UserDefaults.standard.removeObject(forKey: Keys.assistantSelectedIntegrationId)
+        }
+
+        UserDefaults.standard.set(assistantRaycastEnabled, forKey: Keys.assistantRaycastEnabled)
+        UserDefaults.standard.set(assistantRaycastDeepLink, forKey: Keys.assistantRaycastDeepLink)
 
         if hasPersistedLegacyPerTargetBrowsers && !hasGlobalBrowserSetting {
             migrateWebTargetBrowsersToGlobalSettingIfNeeded()
@@ -1464,6 +1476,7 @@ public class AppSettingsStore: ObservableObject {
 
             var normalized = integration
             normalized.shortcutPresetKey = .custom
+            normalized.shortcutActivationMode = .toggle
             normalized.deepLink = AssistantIntegrationConfig.defaultRaycastDeepLink
             return normalized
         }

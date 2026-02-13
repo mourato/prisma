@@ -13,6 +13,8 @@ public struct AssistantIntegrationEditorDraft: Equatable {
 
 public struct AssistantIntegrationEditorSheet: View {
     @State private var draft: AssistantIntegrationEditorDraft
+    @State private var copiedPlaceholderToken: String?
+    @State private var copiedFeedbackTask: Task<Void, Never>?
     private let onApplyAndClose: (AssistantIntegrationEditorDraft) -> Void
     private let onDelete: (UUID) -> Void
     private let onOpenAdvanced: (AssistantIntegrationEditorDraft) -> Void
@@ -55,6 +57,8 @@ public struct AssistantIntegrationEditorSheet: View {
                     .textFieldStyle(.roundedBorder)
             }
 
+            placeholderSection
+
             VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
                 Text("settings.assistant.integrations.editor.hotkey".localized)
                     .font(.caption)
@@ -89,12 +93,11 @@ public struct AssistantIntegrationEditorSheet: View {
                 )
             }
 
-            presetSection
-
             Button(action: { onOpenAdvanced(draft) }) {
                 Label("settings.assistant.integrations.editor.advanced".localized, systemImage: "gearshape")
             }
             .buttonStyle(.plain)
+            .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing12)
 
             HStack {
                 Button(role: .destructive) {
@@ -113,50 +116,92 @@ public struct AssistantIntegrationEditorSheet: View {
         }
         .padding(MeetingAssistantDesignSystem.Layout.spacing20)
         .frame(minWidth: 560, minHeight: 480)
+        .onDisappear {
+            copiedFeedbackTask?.cancel()
+        }
     }
 
-    private var presetSection: some View {
+    private var placeholderSection: some View {
         VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-            Text("settings.assistant.integrations.editor.presets".localized)
+            Text("settings.assistant.integrations.editor.placeholders.title".localized)
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 130), spacing: MeetingAssistantDesignSystem.Layout.spacing8)],
-                      alignment: .leading,
-                      spacing: MeetingAssistantDesignSystem.Layout.spacing8)
-            {
-                ForEach(AssistantIntegrationPreset.allCases, id: \.self) { preset in
-                    presetChip(for: preset)
-                }
+            Text("settings.assistant.integrations.editor.placeholders.subtitle".localized)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 220), spacing: MeetingAssistantDesignSystem.Layout.spacing8)],
+                alignment: .leading,
+                spacing: MeetingAssistantDesignSystem.Layout.spacing8
+            ) {
+                placeholderButton(token: AssistantIntegrationDeepLinkShortcode.finalText)
+                placeholderButton(token: AssistantIntegrationDeepLinkShortcode.finalTextURLEncoded)
+                placeholderButton(token: AssistantIntegrationDeepLinkShortcode.rawText)
+                placeholderButton(token: AssistantIntegrationDeepLinkShortcode.rawTextURLEncoded)
+            }
+
+            if let copiedPlaceholderToken {
+                Text(
+                    String(
+                        format: "settings.assistant.integrations.editor.placeholders.copied".localized,
+                        copiedPlaceholderToken
+                    )
+                )
+                .font(.caption)
+                .foregroundStyle(MeetingAssistantDesignSystem.Colors.success)
             }
         }
     }
 
-    @ViewBuilder
-    private func presetChip(for preset: AssistantIntegrationPreset) -> some View {
-        let isSelected = draft.integration.selectedPreset == preset
-        let borderColor: Color = isSelected ? .accentColor : Color.secondary.opacity(0.25)
-        let fillColor: Color = isSelected ? .accentColor.opacity(0.12) : .clear
+    private func placeholderButton(token: String) -> some View {
+        let isUsedInDeepLink = draft.integration.deepLink.contains(token)
+        let isJustCopied = copiedPlaceholderToken == token
 
         Button {
-            draft.integration.selectedPreset = preset
+            copyPlaceholder(token)
         } label: {
-            Text(preset.localizedName)
-                .font(.callout)
-                .lineLimit(1)
-                .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)
-                .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing6)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(
-                    RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
-                        .fill(fillColor)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
-                        .stroke(borderColor, lineWidth: 1)
-                )
+            HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
+                Text(token)
+                    .font(.system(.caption, design: .monospaced))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .foregroundStyle(isUsedInDeepLink ? Color.accentColor : Color.primary)
+
+                Spacer()
+
+                Image(systemName: isUsedInDeepLink ? "checkmark.circle.fill" : "doc.on.doc")
+                    .font(.caption)
+                    .foregroundStyle(isUsedInDeepLink ? Color.accentColor : Color.secondary)
+            }
+            .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing10)
+            .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
+            .background(
+                RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
+                    .fill(isUsedInDeepLink ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.08))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
+                    .strokeBorder(isUsedInDeepLink ? Color.accentColor.opacity(0.55) : Color.secondary.opacity(0.2), lineWidth: 1)
+            )
+            .opacity(isJustCopied ? 0.9 : 1)
         }
         .buttonStyle(.plain)
+        .help("settings.assistant.integrations.editor.placeholders.copy_help".localized)
+    }
+
+    private func copyPlaceholder(_ token: String) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(token, forType: .string)
+
+        copiedFeedbackTask?.cancel()
+        copiedPlaceholderToken = token
+
+        copiedFeedbackTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            copiedPlaceholderToken = nil
+        }
     }
 }
 
