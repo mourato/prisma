@@ -270,6 +270,7 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
     public var selectedPreset: AssistantIntegrationPreset?
     public var shortcutPresetKey: PresetShortcutKey
     public var shortcutActivationMode: ShortcutActivationMode
+    public var modifierShortcutGesture: ModifierShortcutGesture?
     public var advancedScript: AssistantIntegrationScriptConfig?
 
     public init(
@@ -282,6 +283,7 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
         selectedPreset: AssistantIntegrationPreset? = nil,
         shortcutPresetKey: PresetShortcutKey = .notSpecified,
         shortcutActivationMode: ShortcutActivationMode = .holdOrToggle,
+        modifierShortcutGesture: ModifierShortcutGesture? = nil,
         advancedScript: AssistantIntegrationScriptConfig? = nil
     ) {
         self.id = id
@@ -293,6 +295,7 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
         self.selectedPreset = selectedPreset
         self.shortcutPresetKey = shortcutPresetKey
         self.shortcutActivationMode = shortcutActivationMode
+        self.modifierShortcutGesture = modifierShortcutGesture
         self.advancedScript = advancedScript
     }
 
@@ -306,6 +309,7 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
         case selectedPreset
         case shortcutPresetKey
         case shortcutActivationMode
+        case modifierShortcutGesture
         case advancedScript
     }
 
@@ -322,6 +326,7 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
         selectedPreset = try container.decodeIfPresent(AssistantIntegrationPreset.self, forKey: .selectedPreset)
         shortcutPresetKey = try container.decodeIfPresent(PresetShortcutKey.self, forKey: .shortcutPresetKey) ?? .notSpecified
         shortcutActivationMode = try container.decodeIfPresent(ShortcutActivationMode.self, forKey: .shortcutActivationMode) ?? .holdOrToggle
+        modifierShortcutGesture = try container.decodeIfPresent(ModifierShortcutGesture.self, forKey: .modifierShortcutGesture)
         advancedScript = try container.decodeIfPresent(AssistantIntegrationScriptConfig.self, forKey: .advancedScript)
     }
 
@@ -650,6 +655,9 @@ public class AppSettingsStore: ObservableObject {
         static let selectedPresetKey = "selectedPresetKey"
         static let dictationSelectedPresetKey = "dictationSelectedPresetKey"
         static let meetingSelectedPresetKey = "meetingSelectedPresetKey"
+        static let dictationModifierShortcutGesture = "dictationModifierShortcutGesture"
+        static let assistantModifierShortcutGesture = "assistantModifierShortcutGesture"
+        static let meetingModifierShortcutGesture = "meetingModifierShortcutGesture"
         static let assistantShortcutActivationMode = "assistantShortcutActivationMode"
         static let assistantUseEscapeToCancelRecording = "assistantUseEscapeToCancelRecording"
         static let assistantSelectedPresetKey = "assistantSelectedPresetKey"
@@ -877,6 +885,21 @@ public class AppSettingsStore: ObservableObject {
         didSet { UserDefaults.standard.set(meetingSelectedPresetKey.rawValue, forKey: Keys.meetingSelectedPresetKey) }
     }
 
+    /// Modifier-only shortcut gesture for Dictation.
+    @Published public var dictationModifierShortcutGesture: ModifierShortcutGesture? {
+        didSet { save(dictationModifierShortcutGesture, forKey: Keys.dictationModifierShortcutGesture) }
+    }
+
+    /// Modifier-only shortcut gesture for Assistant.
+    @Published public var assistantModifierShortcutGesture: ModifierShortcutGesture? {
+        didSet { save(assistantModifierShortcutGesture, forKey: Keys.assistantModifierShortcutGesture) }
+    }
+
+    /// Modifier-only shortcut gesture for Meetings.
+    @Published public var meetingModifierShortcutGesture: ModifierShortcutGesture? {
+        didSet { save(meetingModifierShortcutGesture, forKey: Keys.meetingModifierShortcutGesture) }
+    }
+
     /// How keyboard shortcuts activate Assistant commands.
     @Published public var assistantShortcutActivationMode: ShortcutActivationMode {
         didSet {
@@ -945,6 +968,67 @@ public class AppSettingsStore: ObservableObject {
             return selected
         }
         return assistantIntegrations.first
+    }
+
+    /// Snapshot of all currently configured modifier-only shortcuts.
+    public var configuredModifierShortcutBindings: [ModifierShortcutBinding] {
+        var bindings: [ModifierShortcutBinding] = []
+
+        appendResolvedModifierBinding(
+            to: &bindings,
+            actionID: .dictation,
+            actionDisplayName: "settings.shortcuts.dictation".localized,
+            explicitGesture: dictationModifierShortcutGesture,
+            legacyPresetKey: dictationSelectedPresetKey,
+            activationMode: dictationShortcutActivationMode
+        )
+
+        appendResolvedModifierBinding(
+            to: &bindings,
+            actionID: .assistant,
+            actionDisplayName: "settings.assistant.toggle_command".localized,
+            explicitGesture: assistantModifierShortcutGesture,
+            legacyPresetKey: assistantSelectedPresetKey,
+            activationMode: assistantShortcutActivationMode
+        )
+
+        appendResolvedModifierBinding(
+            to: &bindings,
+            actionID: .meeting,
+            actionDisplayName: "settings.shortcuts.meeting".localized,
+            explicitGesture: meetingModifierShortcutGesture,
+            legacyPresetKey: meetingSelectedPresetKey,
+            activationMode: shortcutActivationMode
+        )
+
+        for integration in assistantIntegrations where integration.isEnabled {
+            if let gesture = integration.modifierShortcutGesture ??
+                integration.shortcutPresetKey.asLegacyModifierGesture(activationMode: integration.shortcutActivationMode)
+            {
+                bindings.append(
+                    ModifierShortcutBinding(
+                        actionID: .assistantIntegration(integration.id),
+                        actionDisplayName: integration.name,
+                        gesture: gesture
+                    )
+                )
+            }
+        }
+
+        return bindings
+    }
+
+    public func modifierShortcutConflict(
+        for candidate: ModifierShortcutBinding
+    ) -> ModifierShortcutConflict? {
+        ModifierShortcutConflictService.conflict(
+            for: candidate,
+            in: configuredModifierShortcutBindings
+        )
+    }
+
+    public var modifierShortcutConflicts: [ModifierShortcutConflict] {
+        ModifierShortcutConflictService.allConflicts(in: configuredModifierShortcutBindings)
     }
 
     public func upsertAssistantIntegration(_ integration: AssistantIntegrationConfig) {
@@ -1271,6 +1355,19 @@ public class AppSettingsStore: ObservableObject {
         let rawMeetingKey = UserDefaults.standard.string(forKey: Keys.meetingSelectedPresetKey)
         meetingSelectedPresetKey = rawMeetingKey.flatMap { PresetShortcutKey(rawValue: $0) } ?? .notSpecified
 
+        dictationModifierShortcutGesture = Self.loadDecoded(
+            ModifierShortcutGesture.self,
+            forKey: Keys.dictationModifierShortcutGesture
+        )
+        assistantModifierShortcutGesture = Self.loadDecoded(
+            ModifierShortcutGesture.self,
+            forKey: Keys.assistantModifierShortcutGesture
+        )
+        meetingModifierShortcutGesture = Self.loadDecoded(
+            ModifierShortcutGesture.self,
+            forKey: Keys.meetingModifierShortcutGesture
+        )
+
         let rawAssistantActivation = UserDefaults.standard.string(forKey: Keys.assistantShortcutActivationMode)
         assistantShortcutActivationMode = rawAssistantActivation
             .flatMap { ShortcutActivationMode(rawValue: $0) } ?? .holdOrToggle
@@ -1430,7 +1527,7 @@ public class AppSettingsStore: ObservableObject {
         UserDefaults.standard.set(assistantRaycastEnabled, forKey: Keys.assistantRaycastEnabled)
         UserDefaults.standard.set(assistantRaycastDeepLink, forKey: Keys.assistantRaycastDeepLink)
 
-        if hasPersistedLegacyPerTargetBrowsers && !hasGlobalBrowserSetting {
+        if hasPersistedLegacyPerTargetBrowsers, !hasGlobalBrowserSetting {
             migrateWebTargetBrowsersToGlobalSettingIfNeeded()
         }
 
@@ -1456,6 +1553,28 @@ public class AppSettingsStore: ObservableObject {
     private static func loadDecoded<T: Decodable>(_ type: T.Type, forKey key: String) -> T? {
         guard let data = UserDefaults.standard.data(forKey: key) else { return nil }
         return try? JSONDecoder().decode(type, from: data)
+    }
+
+    private func appendResolvedModifierBinding(
+        to bindings: inout [ModifierShortcutBinding],
+        actionID: ModifierShortcutActionID,
+        actionDisplayName: String,
+        explicitGesture: ModifierShortcutGesture?,
+        legacyPresetKey: PresetShortcutKey,
+        activationMode: ShortcutActivationMode
+    ) {
+        let gesture = explicitGesture ?? legacyPresetKey.asLegacyModifierGesture(activationMode: activationMode)
+        guard let gesture, !gesture.isEmpty else {
+            return
+        }
+
+        bindings.append(
+            ModifierShortcutBinding(
+                actionID: actionID,
+                actionDisplayName: actionDisplayName,
+                gesture: gesture
+            )
+        )
     }
 
     private func synchronizeAssistantIntegrationsState() {
@@ -1652,6 +1771,9 @@ public class AppSettingsStore: ObservableObject {
         dictationShortcutActivationMode = .holdOrToggle
         useEscapeToCancelRecording = false
         selectedPresetKey = .fn
+        dictationModifierShortcutGesture = nil
+        assistantModifierShortcutGesture = nil
+        meetingModifierShortcutGesture = nil
         assistantShortcutActivationMode = .holdOrToggle
         assistantUseEscapeToCancelRecording = false
         assistantSelectedPresetKey = .rightOption
