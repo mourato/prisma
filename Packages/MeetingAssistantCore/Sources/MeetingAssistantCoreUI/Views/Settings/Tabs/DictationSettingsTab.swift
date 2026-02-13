@@ -30,11 +30,21 @@ public struct DictationSettingsTab: View {
                     activationMode: $shortcutsViewModel.dictationActivationMode,
                     selectedPresetKey: $shortcutsViewModel.dictationSelectedPresetKey,
                     settingsContent: {
-                        MAToggleRow(
-                            "settings.shortcuts.use_escape".localized,
-                            description: "settings.shortcuts.use_escape_desc".localized,
-                            isOn: $shortcutsViewModel.useEscapeToCancelRecording
-                        )
+                        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                            MAToggleRow(
+                                "settings.shortcuts.use_escape".localized,
+                                description: "settings.shortcuts.use_escape_desc".localized,
+                                isOn: $shortcutsViewModel.useEscapeToCancelRecording
+                            )
+
+                            Divider()
+
+                            MAModifierShortcutEditor(
+                                gesture: $shortcutsViewModel.dictationModifierShortcutGesture,
+                                triggerMode: $shortcutsViewModel.dictationModifierTriggerMode,
+                                conflictMessage: shortcutsViewModel.dictationModifierConflictMessage
+                            )
+                        }
                     }
                 ) {
                     KeyboardShortcuts.Recorder(for: .dictationToggle)
