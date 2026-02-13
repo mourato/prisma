@@ -84,10 +84,20 @@ public struct AssistantSettingsTab: View {
             activationMode: $viewModel.activationMode,
             selectedPresetKey: $viewModel.selectedPresetKey,
             settingsContent: {
-                MAToggleRow(
-                    "settings.assistant.use_escape".localized,
-                    isOn: $viewModel.useEscapeToCancelRecording
-                )
+                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                    MAToggleRow(
+                        "settings.assistant.use_escape".localized,
+                        isOn: $viewModel.useEscapeToCancelRecording
+                    )
+
+                    Divider()
+
+                    MAModifierShortcutEditor(
+                        gesture: $viewModel.assistantModifierShortcutGesture,
+                        triggerMode: $viewModel.assistantModifierTriggerMode,
+                        conflictMessage: viewModel.assistantModifierConflictMessage
+                    )
+                }
             }
         ) {
             KeyboardShortcuts.Recorder(for: .assistantCommand)

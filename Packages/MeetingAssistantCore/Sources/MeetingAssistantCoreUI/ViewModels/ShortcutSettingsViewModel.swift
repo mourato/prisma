@@ -27,6 +27,9 @@ public class ShortcutSettingsViewModel: ObservableObject {
     @Published public var dictationModifierShortcutGesture: ModifierShortcutGesture?
     @Published public var dictationModifierTriggerMode: ModifierShortcutTriggerMode
     @Published public var dictationModifierConflictMessage: String?
+    @Published public var meetingModifierShortcutGesture: ModifierShortcutGesture?
+    @Published public var meetingModifierTriggerMode: ModifierShortcutTriggerMode
+    @Published public var meetingModifierConflictMessage: String?
     @Published public var testKeysInput: String = ""
 
     /// Whether the user is recording a custom shortcut
@@ -45,6 +48,9 @@ public class ShortcutSettingsViewModel: ObservableObject {
         dictationModifierShortcutGesture = settings.dictationModifierShortcutGesture
         dictationModifierTriggerMode = settings.dictationModifierShortcutGesture?.triggerMode ?? .singleTap
         dictationModifierConflictMessage = nil
+        meetingModifierShortcutGesture = settings.meetingModifierShortcutGesture
+        meetingModifierTriggerMode = settings.meetingModifierShortcutGesture?.triggerMode ?? .singleTap
+        meetingModifierConflictMessage = nil
 
         setupBindings()
     }
@@ -115,6 +121,20 @@ public class ShortcutSettingsViewModel: ObservableObject {
                 self?.handleDictationModifierTriggerModeChange(newValue)
             }
             .store(in: &cancellables)
+
+        $meetingModifierShortcutGesture
+            .dropFirst()
+            .sink { [weak self] newValue in
+                self?.handleMeetingModifierGestureChange(newValue)
+            }
+            .store(in: &cancellables)
+
+        $meetingModifierTriggerMode
+            .dropFirst()
+            .sink { [weak self] newValue in
+                self?.handleMeetingModifierTriggerModeChange(newValue)
+            }
+            .store(in: &cancellables)
     }
 
     // MARK: - Public Methods
@@ -133,6 +153,9 @@ public class ShortcutSettingsViewModel: ObservableObject {
         dictationModifierShortcutGesture = nil
         dictationModifierTriggerMode = .singleTap
         dictationModifierConflictMessage = nil
+        meetingModifierShortcutGesture = nil
+        meetingModifierTriggerMode = .singleTap
+        meetingModifierConflictMessage = nil
         isRecordingCustomShortcut = false
     }
 
@@ -191,5 +214,62 @@ public class ShortcutSettingsViewModel: ObservableObject {
         dictationModifierShortcutGesture = updatedGesture
         isApplyingModifierShortcutChange = false
         handleDictationModifierGestureChange(updatedGesture)
+    }
+
+    private func handleMeetingModifierGestureChange(_ newValue: ModifierShortcutGesture?) {
+        guard !isApplyingModifierShortcutChange else {
+            return
+        }
+
+        let normalizedValue: ModifierShortcutGesture?
+        if let newValue {
+            normalizedValue = ModifierShortcutGesture(keys: newValue.keys, triggerMode: meetingModifierTriggerMode)
+        } else {
+            normalizedValue = nil
+        }
+
+        guard let normalizedValue else {
+            settings.meetingModifierShortcutGesture = nil
+            meetingModifierConflictMessage = nil
+            return
+        }
+
+        let candidate = ModifierShortcutBinding(
+            actionID: .meeting,
+            actionDisplayName: "settings.shortcuts.meeting".localized,
+            gesture: normalizedValue
+        )
+
+        if let conflict = settings.modifierShortcutConflict(for: candidate) {
+            isApplyingModifierShortcutChange = true
+            meetingModifierShortcutGesture = settings.meetingModifierShortcutGesture
+            meetingModifierTriggerMode = settings.meetingModifierShortcutGesture?.triggerMode ?? .singleTap
+            meetingModifierConflictMessage = "settings.shortcuts.modifier.conflict".localized(with: conflict.conflicting.actionDisplayName)
+            isApplyingModifierShortcutChange = false
+            return
+        }
+
+        settings.meetingModifierShortcutGesture = normalizedValue
+        meetingModifierConflictMessage = nil
+    }
+
+    private func handleMeetingModifierTriggerModeChange(_ newValue: ModifierShortcutTriggerMode) {
+        guard !isApplyingModifierShortcutChange else {
+            return
+        }
+
+        guard let gesture = meetingModifierShortcutGesture else {
+            return
+        }
+
+        let updatedGesture = ModifierShortcutGesture(keys: gesture.keys, triggerMode: newValue)
+        if updatedGesture == meetingModifierShortcutGesture {
+            return
+        }
+
+        isApplyingModifierShortcutChange = true
+        meetingModifierShortcutGesture = updatedGesture
+        isApplyingModifierShortcutChange = false
+        handleMeetingModifierGestureChange(updatedGesture)
     }
 }

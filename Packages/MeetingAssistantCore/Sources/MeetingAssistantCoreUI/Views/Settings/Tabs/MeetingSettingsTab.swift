@@ -12,6 +12,7 @@ import SwiftUI
 /// Tab for meeting-specific settings like app monitoring and automation.
 public struct MeetingSettingsTab: View {
     @StateObject private var meetingViewModel: MeetingSettingsViewModel
+    @StateObject private var shortcutsViewModel = ShortcutSettingsViewModel()
     @StateObject private var monitoredAppsViewModel: InstalledAppsSelectionViewModel
     @StateObject private var webTargetsViewModel: WebMeetingTargetsViewModel
 
@@ -38,8 +39,15 @@ public struct MeetingSettingsTab: View {
                     shortcutTitle: "settings.shortcuts.meeting".localized,
                     customShortcutLabel: "settings.shortcuts.custom_shortcut".localized,
                     activationModeDescription: "settings.shortcuts.activation_mode_desc".localized,
-                    activationMode: $meetingViewModel.settings.shortcutActivationMode,
-                    selectedPresetKey: $meetingViewModel.settings.meetingSelectedPresetKey
+                    activationMode: $shortcutsViewModel.activationMode,
+                    selectedPresetKey: $shortcutsViewModel.meetingSelectedPresetKey,
+                    settingsContent: {
+                        MAModifierShortcutEditor(
+                            gesture: $shortcutsViewModel.meetingModifierShortcutGesture,
+                            triggerMode: $shortcutsViewModel.meetingModifierTriggerMode,
+                            conflictMessage: shortcutsViewModel.meetingModifierConflictMessage
+                        )
+                    }
                 ) {
                     KeyboardShortcuts.Recorder(for: .meetingToggle)
                 }
