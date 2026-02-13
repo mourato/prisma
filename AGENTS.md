@@ -82,6 +82,7 @@ If uncertain, choose the higher risk level.
 - [ ] Run `make arch-check` only for architecture boundary/access-control changes.
 - [ ] Run `make preview-check` when SwiftUI views are added or modified.
 - [ ] Use `git worktree remove` + `git worktree prune` for cleanup.
+- [ ] When a new limitation/trade-off is discovered, create or update a GitHub issue via `gh` with label `known-limitation`.
 - [ ] Localize user-facing text and respect module/skill responsibilities as outlined in the main SOP and skills index.
 - [ ] When UI text is removed, sanitize localization resources by removing now-unused keys from supported locales.
 
@@ -260,7 +261,6 @@ Rules index:
 | `.agents/rules/data-persistency.md` | Data storage strategies |
 | `.agents/rules/error-handling.md` | Error propagation and logging |
 | `.agents/rules/external-dependencies.md` | Dependency management |
-| `.agents/rules/known-limitations.md` | Documentation requirements |
 | `.agents/rules/lifecycle-and-memory.md` | Memory management |
 | `.agents/rules/network.md` | URLSession and API patterns |
 | `.agents/rules/performance.md` | Optimization guidelines |
