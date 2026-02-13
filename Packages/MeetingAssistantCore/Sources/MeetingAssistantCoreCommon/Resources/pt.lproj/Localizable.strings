@@ -335,6 +335,10 @@
 "settings.assistant.integrations.editor.hotkey" = "Hotkey";
 "settings.assistant.integrations.editor.hotkey_config" = "Acionamento do Atalho";
 "settings.assistant.integrations.editor.instructions" = "Instruções (Opcional)";
+"settings.assistant.integrations.editor.placeholders.title" = "Placeholders";
+"settings.assistant.integrations.editor.placeholders.subtitle" = "Clique para copiar e usar em deeplinks.";
+"settings.assistant.integrations.editor.placeholders.copy_help" = "Copiar placeholder";
+"settings.assistant.integrations.editor.placeholders.copied" = "Placeholder copiado: %@";
 "settings.assistant.integrations.editor.output_mode" = "Modo de Saída";
 "settings.assistant.integrations.editor.presets" = "Presets";
 "settings.assistant.integrations.editor.advanced" = "Configurações Avançadas";

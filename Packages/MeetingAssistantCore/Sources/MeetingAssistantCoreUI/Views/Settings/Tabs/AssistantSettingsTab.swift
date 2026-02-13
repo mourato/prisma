@@ -34,9 +34,6 @@ public struct AssistantSettingsTab: View {
                 integration: integration,
                 onApplyAndClose: { draft in
                     viewModel.saveIntegration(draft.integration)
-                    if let preset = draft.integration.selectedPreset {
-                        viewModel.applyPreset(preset, to: draft.integration.id)
-                    }
                     editingIntegration = nil
                 },
                 onDelete: { id in

@@ -14,6 +14,13 @@ public enum AssistantExecutionFlow: Sendable {
     case integrationDispatch
 }
 
+public enum AssistantIntegrationDeepLinkShortcode {
+    public static let finalText = "{{assistant_text}}"
+    public static let finalTextURLEncoded = "{{assistant_text_urlencoded}}"
+    public static let rawText = "{{assistant_raw_text}}"
+    public static let rawTextURLEncoded = "{{assistant_raw_text_urlencoded}}"
+}
+
 @MainActor
 public final class AssistantVoiceCommandService: ObservableObject {
     @Published public private(set) var isRecording = false
@@ -225,6 +232,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
 
                 let dispatchResult = try dispatchToRaycast(
                     with: commandToDispatch,
+                    rawCommand: command,
                     selectedIntegration: selectedIntegration
                 )
                 if dispatchResult == .openedWithClipboardFallback {
@@ -292,14 +300,22 @@ public final class AssistantVoiceCommandService: ObservableObject {
 
     private func dispatchToRaycast(
         with command: String,
+        rawCommand: String,
         selectedIntegration: AssistantIntegrationConfig
     ) throws -> AssistantIntegrationDispatchResult {
+        let resolvedDeepLink = resolveDeepLinkShortcodes(
+            in: selectedIntegration.deepLink,
+            finalText: command,
+            rawText: rawCommand
+        )
+
         if shouldLogPayloadDetails {
             AppLogger.debug(
                 "Assistant dispatch target",
                 category: .assistant,
                 extra: [
                     "deepLink": selectedIntegration.deepLink,
+                    "resolvedDeepLink": resolvedDeepLink,
                     "commandPreview": payloadPreview(command),
                 ]
             )
@@ -308,13 +324,36 @@ public final class AssistantVoiceCommandService: ObservableObject {
         do {
             return try raycastIntegrationService.dispatch(
                 command: command,
-                baseDeepLink: selectedIntegration.deepLink
+                baseDeepLink: resolvedDeepLink
             )
         } catch AssistantIntegrationDispatchError.invalidDeepLink {
             throw AssistantVoiceCommandError.raycastDeeplinkInvalid
         } catch AssistantIntegrationDispatchError.openFailed {
             throw AssistantVoiceCommandError.raycastOpenFailed
         }
+    }
+
+    private func resolveDeepLinkShortcodes(
+        in template: String,
+        finalText: String,
+        rawText: String
+    ) -> String {
+        let replacements: [(String, String)] = [
+            (AssistantIntegrationDeepLinkShortcode.finalTextURLEncoded, urlEncoded(finalText)),
+            (AssistantIntegrationDeepLinkShortcode.rawTextURLEncoded, urlEncoded(rawText)),
+            (AssistantIntegrationDeepLinkShortcode.finalText, finalText),
+            (AssistantIntegrationDeepLinkShortcode.rawText, rawText),
+        ]
+
+        return replacements.reduce(template) { partialResult, replacement in
+            partialResult.replacingOccurrences(of: replacement.0, with: replacement.1)
+        }
+    }
+
+    private func urlEncoded(_ value: String) -> String {
+        var allowed = CharacterSet.urlQueryAllowed
+        allowed.remove(charactersIn: "&=+?#")
+        return value.addingPercentEncoding(withAllowedCharacters: allowed) ?? value
     }
 
     private func applyScriptIfNeeded(
