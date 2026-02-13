@@ -341,7 +341,7 @@ final class AssistantShortcutController {
     private func performAction(_ action: SmartShortcutHandler.Action) async {
         switch action {
         case .startRecording:
-            await assistantService.startRecording()
+            await assistantService.startRecording(flow: .assistantMode)
         case .stopRecording:
             await assistantService.stopAndProcess()
         }
@@ -351,7 +351,7 @@ final class AssistantShortcutController {
         switch action {
         case .startRecording:
             settings.assistantSelectedIntegrationId = integrationID
-            await assistantService.startRecording()
+            await assistantService.startRecording(flow: .integrationDispatch)
         case .stopRecording:
             await assistantService.stopAndProcess()
         }

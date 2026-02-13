@@ -363,6 +363,10 @@ public struct FloatingRecordingIndicatorView: View {
         .padding(.horizontal, MeetingAssistantDesignSystem.Layout.recordingIndicatorSidePadding)
         .frame(height: controlHeight(for: size))
         .background(MeetingAssistantDesignSystem.Colors.overlayBackground)
+        .overlay(
+            Capsule()
+                .strokeBorder(Color.white.opacity(0.06), lineWidth: 1)
+        )
         .clipShape(Capsule())
         .shadow(
             color: .black.opacity(0.15),
@@ -381,6 +385,10 @@ public struct FloatingRecordingIndicatorView: View {
         promptPickerControl(size: size)
             .frame(width: promptSize(for: size), height: controlHeight(for: size))
             .background(Color(red: 26 / 255, green: 26 / 255, blue: 26 / 255))
+            .overlay(
+                Capsule()
+                    .strokeBorder(Color.white.opacity(0.06), lineWidth: 1)
+            )
             .clipShape(Capsule())
             .onHover { hovering in
                 handlePromptRegionHover(hovering)
