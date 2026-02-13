@@ -419,6 +419,15 @@
 "settings.shortcuts.fn_key_desc" = "To use the Fn key alone:\n• Open System Settings → Keyboard\n• Click \"Press 🌐 key to\" dropdown\n• Select \"Do Nothing\"\n• This allows the app to detect the Fn key press";
 "settings.shortcuts.use_escape" = "Press Escape twice to cancel recording";
 "settings.shortcuts.use_escape_desc" = "Requires two consecutive Escape key presses while recording.";
+"settings.shortcuts.modifier.title" = "Modifier Shortcut";
+"settings.shortcuts.modifier.description" = "Record a shortcut with left/right Command, Shift, Option, Control, or Fn.";
+"settings.shortcuts.modifier.record" = "Record shortcut";
+"settings.shortcuts.modifier.stop" = "Stop";
+"settings.shortcuts.modifier.clear" = "Clear";
+"settings.shortcuts.modifier.none" = "No keys recorded.";
+"settings.shortcuts.modifier.trigger" = "Trigger behavior";
+"settings.shortcuts.modifier.trigger.single_tap" = "Single Tap";
+"settings.shortcuts.modifier.conflict" = "This shortcut is already assigned to \"%@\".";
 "settings.shortcuts.try_keys" = "Try Your Keys";
 "settings.shortcuts.try_keys_hint" = "Click in the text box below first.";
 "settings.shortcuts.key.not_specified" = "Not specified";
