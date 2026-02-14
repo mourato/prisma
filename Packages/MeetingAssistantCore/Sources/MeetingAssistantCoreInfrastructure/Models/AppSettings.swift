@@ -97,20 +97,75 @@ private func normalizedInHouseShortcutDefinition(
     _ definition: ShortcutDefinition,
     activationMode: ShortcutActivationMode
 ) -> ShortcutDefinition? {
-    var normalized = definition
+    _ = activationMode
+    let normalized: ShortcutDefinition
+    if let primaryKey = definition.primaryKey {
+        let canonicalModifiers = canonicalSimpleOrIntermediateModifiers(definition.modifiers)
+        normalized = ShortcutDefinition(
+            modifiers: canonicalModifiers,
+            primaryKey: primaryKey,
+            trigger: .singleTap
+        )
+    } else {
+        guard let canonicalModifier = canonicalAdvancedModifier(definition.modifiers) else {
+            return nil
+        }
+        normalized = ShortcutDefinition(
+            modifiers: [canonicalModifier],
+            primaryKey: nil,
+            trigger: .doubleTap
+        )
+    }
+    return normalized.isValid ? normalized : nil
+}
 
-    switch normalized.patternType {
-    case .advanced where normalized.trigger == .singleTap:
-        normalized.trigger = activationMode == .doubleTap ? .doubleTap : .hold
-    case .simple where normalized.trigger == .doubleTap:
-        normalized.trigger = activationMode == .hold ? .hold : .singleTap
-    case .intermediate where normalized.trigger == .doubleTap:
-        normalized.trigger = activationMode == .hold ? .hold : .singleTap
-    default:
-        break
+private func canonicalSimpleOrIntermediateModifiers(
+    _ modifiers: [ModifierShortcutKey]
+) -> [ModifierShortcutKey] {
+    let mapped = modifiers.map { key -> ModifierShortcutKey in
+        switch key {
+        case .leftCommand, .rightCommand, .command:
+            .command
+        case .leftShift, .rightShift, .shift:
+            .shift
+        case .leftOption, .rightOption, .option:
+            .option
+        case .leftControl, .rightControl, .control:
+            .control
+        case .fn:
+            .fn
+        }
     }
 
-    return normalized.isValid ? normalized : nil
+    return Array(Set(mapped))
+        .sorted { lhs, rhs in
+            lhs.sortOrder < rhs.sortOrder
+        }
+}
+
+private func canonicalAdvancedModifier(
+    _ modifiers: [ModifierShortcutKey]
+) -> ModifierShortcutKey? {
+    guard modifiers.count == 1 else {
+        return nil
+    }
+
+    switch modifiers[0] {
+    case .leftCommand, .rightCommand,
+         .leftShift, .rightShift,
+         .leftOption, .rightOption,
+         .leftControl, .rightControl,
+         .fn:
+        return modifiers[0]
+    case .command:
+        return .rightCommand
+    case .shift:
+        return .rightShift
+    case .option:
+        return .rightOption
+    case .control:
+        return .rightControl
+    }
 }
 
 // MARK: - Recording Indicator Configuration
@@ -324,7 +379,7 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
         self.advancedScript = advancedScript
     }
 
-    // Backward-compatible initializer preserving the previous symbol signature.
+    /// Backward-compatible initializer preserving the previous symbol signature.
     public init(
         id: UUID = UUID(),
         name: String,
@@ -405,11 +460,11 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
 
     public static var defaultRaycast: AssistantIntegrationConfig {
         AssistantIntegrationConfig(
-            id: Self.raycastDefaultID,
+            id: raycastDefaultID,
             name: "Raycast",
             kind: .deeplink,
             isEnabled: false,
-            deepLink: Self.defaultRaycastDeepLink,
+            deepLink: defaultRaycastDeepLink,
             shortcutPresetKey: .custom,
             shortcutActivationMode: .toggle
         )
@@ -646,6 +701,7 @@ public class AppSettingsStore: ObservableObject {
         }
         return uuid
     }()
+
     private var isSynchronizingAssistantIntegrations = false
 
     /// Default list of apps that should force Markdown formatting for dictation.
@@ -654,7 +710,7 @@ public class AppSettingsStore: ObservableObject {
         "com.microsoft.VSCode",
         "com.uranusjr.macdown",
         "md.obsidian",
-        "net.shinyfrog.bear"
+        "net.shinyfrog.bear",
     ]
 
     /// Default list of websites that should force Markdown formatting for dictation.
@@ -677,7 +733,7 @@ public class AppSettingsStore: ObservableObject {
         "com.hnc.Discord",
         "com.tinyspeck.slackmacgap",
         "net.whatsapp.WhatsApp",
-        "us.zoom.xos"
+        "us.zoom.xos",
     ]
 
     /// Default list of web meeting targets detected via browser URL matching.
@@ -1364,7 +1420,7 @@ public class AppSettingsStore: ObservableObject {
             .cleanTranscription,
             .flex,
         ]
-        let predefinedIds = Set(predefined.map { $0.id })
+        let predefinedIds = Set(predefined.map(\.id))
         let custom = dictationPrompts + userPrompts.filter { predefinedIds.contains($0.id) }
         return mergedPrompts(predefined: predefined, custom: custom)
     }
@@ -2148,7 +2204,6 @@ public extension AppSettingsStore {
         static let autoPasteTranscriptionToActiveApp = "autoPasteTranscriptionToActiveApp"
         static let launchAtLogin = "launchAtLogin"
     }
-
 
     /// Configured path for saving recordings.
     /// If empty or invalid, services should fallback to the default Application Support directory.

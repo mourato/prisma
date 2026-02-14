@@ -1,22 +1,21 @@
+import AppKit
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
-import AppKit
 import SwiftUI
 
 public struct MAModifierShortcutEditor: View {
-    @Binding private var gesture: ModifierShortcutGesture?
-    @Binding private var triggerMode: ModifierShortcutTriggerMode
+    @Binding private var shortcut: ShortcutDefinition?
     private let conflictMessage: String?
 
-    @StateObject private var recorder = ModifierShortcutRecorderController()
+    @StateObject private var recorder = ShortcutRecorderController()
     @State private var isPopoverPresented = false
     @State private var localStatus: RecordingStatus = .idle
     @State private var localConflictMessage: String?
-    @State private var attemptedKeys: [ModifierShortcutKey]?
+    @State private var attemptedShortcut: ShortcutDefinition?
     @State private var closeTask: Task<Void, Never>?
     @State private var restartTask: Task<Void, Never>?
 
@@ -28,12 +27,10 @@ public struct MAModifierShortcutEditor: View {
     }
 
     public init(
-        gesture: Binding<ModifierShortcutGesture?>,
-        triggerMode: Binding<ModifierShortcutTriggerMode>,
+        shortcut: Binding<ShortcutDefinition?>,
         conflictMessage: String?
     ) {
-        _gesture = gesture
-        _triggerMode = triggerMode
+        _shortcut = shortcut
         self.conflictMessage = conflictMessage
     }
 
@@ -49,6 +46,7 @@ public struct MAModifierShortcutEditor: View {
                 shortcutInputField
             }
             .buttonStyle(.plain)
+            .frame(maxWidth: 320, alignment: .leading)
             .popover(isPresented: $isPopoverPresented, arrowEdge: .top) {
                 recordingPopover
                     .frame(width: 360)
@@ -60,20 +58,9 @@ public struct MAModifierShortcutEditor: View {
                     .font(.caption)
                     .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
             }
-
-            Picker("settings.shortcuts.modifier.trigger".localized, selection: $triggerMode) {
-                Text("settings.shortcuts.activation_mode.hold".localized)
-                    .tag(ModifierShortcutTriggerMode.hold)
-                Text("settings.shortcuts.activation_mode.double_tap".localized)
-                    .tag(ModifierShortcutTriggerMode.doubleTap)
-            }
-            .labelsHidden()
-            .pickerStyle(.segmented)
-            .disabled(gesture == nil)
-            .opacity(gesture == nil ? 0.6 : 1)
         }
         .onChange(of: conflictMessage) { _, newValue in
-            guard isPopoverPresented, attemptedKeys != nil else {
+            guard isPopoverPresented, attemptedShortcut != nil else {
                 return
             }
 
@@ -84,30 +71,18 @@ public struct MAModifierShortcutEditor: View {
                 scheduleRecordingRestart()
             }
         }
-        .onChange(of: recorder.currentKeys) { _, newValue in
+        .onChange(of: recorder.previewLabels) { _, newValue in
             guard !newValue.isEmpty else {
                 return
             }
             localStatus = .recording
             localConflictMessage = nil
         }
-        .onChange(of: triggerMode) { _, newValue in
-            guard var existingGesture = gesture else {
-                return
-            }
-            existingGesture.triggerMode = newValue
-            gesture = existingGesture
-        }
         .onChange(of: isPopoverPresented) { _, isPresented in
             if isPresented {
                 beginRecordingSession(resetState: true)
             } else {
                 stopRecording(cancelled: true)
-            }
-        }
-        .onAppear {
-            if triggerMode == .singleTap {
-                triggerMode = .hold
             }
         }
         .onDisappear {
@@ -119,19 +94,15 @@ public struct MAModifierShortcutEditor: View {
 
     private var shortcutInputField: some View {
         HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-            if displayKeys.isEmpty {
+            if displayLabels.isEmpty {
                 Text("settings.shortcuts.modifier.input_placeholder".localized)
                     .foregroundStyle(.secondary)
                     .font(.subheadline)
             } else {
-                ShortcutChipRow(keys: displayKeys, colorStyle: .neutral)
+                ShortcutChipRow(labels: displayLabels, colorStyle: .neutral)
             }
 
-            Spacer()
-
-            Image(systemName: "chevron.down")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            Spacer(minLength: 0)
         }
         .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing10)
         .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
@@ -176,7 +147,7 @@ public struct MAModifierShortcutEditor: View {
                 .accessibilityLabel("common.cancel".localized)
             }
 
-            ShortcutChipRow(keys: popoverKeys, colorStyle: popoverColorStyle)
+            ShortcutChipRow(labels: popoverLabels, colorStyle: popoverColorStyle)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             if let localConflictMessage {
@@ -195,18 +166,18 @@ public struct MAModifierShortcutEditor: View {
         }
     }
 
-    private var displayKeys: [ModifierShortcutKey] {
-        gesture?.keys ?? []
+    private var displayLabels: [String] {
+        labels(for: shortcut)
     }
 
-    private var popoverKeys: [ModifierShortcutKey] {
-        if !recorder.currentKeys.isEmpty {
-            return recorder.currentKeys
+    private var popoverLabels: [String] {
+        if !recorder.previewLabels.isEmpty {
+            return recorder.previewLabels
         }
-        if let attemptedKeys {
-            return attemptedKeys
+        if let attemptedShortcut {
+            return labels(for: attemptedShortcut)
         }
-        return displayKeys
+        return displayLabels
     }
 
     private var popoverColorStyle: ShortcutChipColorStyle {
@@ -231,11 +202,11 @@ public struct MAModifierShortcutEditor: View {
         if resetState {
             localStatus = .recording
             localConflictMessage = nil
-            attemptedKeys = nil
+            attemptedShortcut = nil
         }
 
-        recorder.start { capturedKeys in
-            handleCapturedKeys(capturedKeys)
+        recorder.start { capturedShortcut in
+            handleCapturedShortcut(capturedShortcut)
         }
     }
 
@@ -243,22 +214,20 @@ public struct MAModifierShortcutEditor: View {
         recorder.stopRecording(cancelled: cancelled)
     }
 
-    private func handleCapturedKeys(_ keys: [ModifierShortcutKey]) {
-        attemptedKeys = keys
+    private func handleCapturedShortcut(_ capturedShortcut: ShortcutDefinition) {
+        attemptedShortcut = capturedShortcut
         localStatus = .recording
         localConflictMessage = nil
 
-        let appliedMode = triggerMode == .singleTap ? .hold : triggerMode
-        let candidate = ModifierShortcutGesture(keys: keys, triggerMode: appliedMode)
-        gesture = candidate
+        shortcut = capturedShortcut
 
         Task { @MainActor in
             try? await Task.sleep(nanoseconds: 80_000_000)
-            guard attemptedKeys == keys else {
+            guard attemptedShortcut == capturedShortcut else {
                 return
             }
 
-            if conflictMessage == nil, gesture?.keys == keys {
+            if conflictMessage == nil, shortcut == capturedShortcut {
                 localStatus = .success
                 closeTask?.cancel()
                 closeTask = Task { @MainActor in
@@ -284,6 +253,25 @@ public struct MAModifierShortcutEditor: View {
             beginRecordingSession(resetState: false)
         }
     }
+
+    private func labels(for shortcut: ShortcutDefinition?) -> [String] {
+        guard let shortcut else {
+            return []
+        }
+
+        var labels = shortcut.modifiers.map { $0.tokenLabel(in: shortcut.modifiers) }
+
+        if let primaryKey = shortcut.primaryKey {
+            labels.append(primaryKey.display)
+            return labels
+        }
+
+        if shortcut.trigger == .doubleTap, labels.count == 1 {
+            labels.append(labels[0])
+        }
+
+        return labels
+    }
 }
 
 private enum ShortcutChipColorStyle {
@@ -303,21 +291,44 @@ private enum ShortcutKeyCode {
     static let rightControl: UInt16 = 0x3e
     static let fn: UInt16 = 0x3f
     static let escape: UInt16 = 0x35
+    static let space: UInt16 = 0x31
+
+    static let functionKeyByCode: [UInt16: Int] = [
+        0x7a: 1,
+        0x78: 2,
+        0x63: 3,
+        0x76: 4,
+        0x60: 5,
+        0x61: 6,
+        0x62: 7,
+        0x64: 8,
+        0x65: 9,
+        0x6d: 10,
+        0x67: 11,
+        0x6f: 12,
+        0x69: 13,
+        0x6b: 14,
+        0x71: 15,
+        0x6a: 16,
+        0x40: 17,
+        0x4f: 18,
+        0x50: 19,
+    ]
 }
 
 private struct ShortcutChipRow: View {
-    let keys: [ModifierShortcutKey]
+    let labels: [String]
     let colorStyle: ShortcutChipColorStyle
 
     var body: some View {
-        if keys.isEmpty {
+        if labels.isEmpty {
             Text("settings.shortcuts.modifier.none".localized)
                 .font(.caption)
                 .foregroundStyle(.secondary)
         } else {
             HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
-                ForEach(keys, id: \.self) { key in
-                    Text(key.tokenLabel(in: keys))
+                ForEach(Array(labels.enumerated()), id: \.offset) { _, label in
+                    Text(label)
                         .font(.caption)
                         .fontWeight(.semibold)
                         .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing8)
@@ -387,21 +398,22 @@ private extension ModifierShortcutKey {
 }
 
 @MainActor
-private final class ModifierShortcutRecorderController: ObservableObject {
-    @Published private(set) var currentKeys: [ModifierShortcutKey] = []
+private final class ShortcutRecorderController: ObservableObject {
+    @Published private(set) var previewLabels: [String] = []
 
     private var flagsMonitor: KeyboardEventMonitor?
     private var keyDownMonitor: KeyboardEventMonitor?
-    private var pressedKeys = Set<ModifierShortcutKey>()
-    private var lastCapturedKeys: [ModifierShortcutKey] = []
-    private var completion: (([ModifierShortcutKey]) -> Void)?
+    private var pressedModifiers = Set<ModifierShortcutKey>()
+    private var completion: ((ShortcutDefinition) -> Void)?
+    private var lastModifierTap: (key: ModifierShortcutKey, date: Date)?
+    private let doubleTapInterval: TimeInterval = 0.25
 
-    func start(completion: @escaping ([ModifierShortcutKey]) -> Void) {
+    func start(completion: @escaping (ShortcutDefinition) -> Void) {
         stopRecording(cancelled: true)
         self.completion = completion
-        pressedKeys.removeAll()
-        currentKeys = []
-        lastCapturedKeys = []
+        pressedModifiers.removeAll()
+        previewLabels = []
+        lastModifierTap = nil
 
         flagsMonitor = KeyboardEventMonitor(mask: .flagsChanged) { [weak self] event in
             self?.handleFlagsChanged(event)
@@ -420,18 +432,13 @@ private final class ModifierShortcutRecorderController: ObservableObject {
         keyDownMonitor?.stop()
         keyDownMonitor = nil
 
-        let keysToCommit = lastCapturedKeys
-        let completionHandler = completion
-
-        completion = nil
-        pressedKeys.removeAll()
-        currentKeys = []
-        lastCapturedKeys = []
-
-        guard !cancelled, !keysToCommit.isEmpty else {
-            return
+        if cancelled {
+            completion = nil
         }
-        completionHandler?(keysToCommit)
+
+        pressedModifiers.removeAll()
+        lastModifierTap = nil
+        previewLabels = []
     }
 
     private func handleFlagsChanged(_ event: NSEvent) {
@@ -439,29 +446,148 @@ private final class ModifierShortcutRecorderController: ObservableObject {
             return
         }
 
-        if pressedKeys.contains(key) {
-            pressedKeys.remove(key)
+        let wasPressed = pressedModifiers.contains(key)
+        if wasPressed {
+            pressedModifiers.remove(key)
         } else {
-            pressedKeys.insert(key)
+            pressedModifiers.insert(key)
+            handleModifierPress(key)
         }
 
-        currentKeys = pressedKeys.sorted { lhs, rhs in
-            lhs.sortOrder < rhs.sortOrder
+        updatePreviewFromCurrentState()
+    }
+
+    private func handleModifierPress(_ key: ModifierShortcutKey) {
+        guard pressedModifiers.count == 1 else {
+            lastModifierTap = nil
+            return
         }
 
-        if !currentKeys.isEmpty {
-            lastCapturedKeys = currentKeys
+        let now = Date()
+        if let lastModifierTap,
+           lastModifierTap.key == key,
+           now.timeIntervalSince(lastModifierTap.date) <= doubleTapInterval
+        {
+            commit(
+                ShortcutDefinition(
+                    modifiers: [key],
+                    primaryKey: nil,
+                    trigger: .doubleTap
+                )
+            )
+            return
         }
 
-        if pressedKeys.isEmpty, !lastCapturedKeys.isEmpty {
-            stopRecording(cancelled: false)
-        }
+        lastModifierTap = (key, now)
     }
 
     private func handleKeyDown(_ event: NSEvent) {
+        guard !event.isARepeat else {
+            return
+        }
+
         if event.keyCode == ShortcutKeyCode.escape {
             stopRecording(cancelled: true)
+            return
         }
+
+        if Self.modifierKey(for: event.keyCode) != nil {
+            return
+        }
+
+        guard !pressedModifiers.isEmpty else {
+            return
+        }
+
+        guard let primaryKey = Self.primaryKey(for: event) else {
+            return
+        }
+
+        let simpleModifiers = canonicalSimpleOrIntermediateModifiers(Array(pressedModifiers))
+        let definition = ShortcutDefinition(
+            modifiers: simpleModifiers,
+            primaryKey: primaryKey,
+            trigger: .singleTap
+        )
+        commit(definition)
+    }
+
+    private func commit(_ definition: ShortcutDefinition) {
+        guard definition.isValid else {
+            return
+        }
+
+        let completionHandler = completion
+        completion = nil
+        stopRecording(cancelled: true)
+        previewLabels = displayLabels(for: definition)
+        completionHandler?(definition)
+    }
+
+    private func updatePreviewFromCurrentState() {
+        let sorted = pressedModifiers.sorted { lhs, rhs in
+            lhs.sortOrder < rhs.sortOrder
+        }
+        previewLabels = sorted.map { $0.tokenLabel(in: sorted) }
+    }
+
+    private func displayLabels(for definition: ShortcutDefinition) -> [String] {
+        var labels = definition.modifiers.map { $0.tokenLabel(in: definition.modifiers) }
+        if let primaryKey = definition.primaryKey {
+            labels.append(primaryKey.display)
+        } else if definition.trigger == .doubleTap, labels.count == 1 {
+            labels.append(labels[0])
+        }
+        return labels
+    }
+
+    private func canonicalSimpleOrIntermediateModifiers(_ modifiers: [ModifierShortcutKey]) -> [ModifierShortcutKey] {
+        let mapped = modifiers.map { key -> ModifierShortcutKey in
+            switch key {
+            case .leftCommand, .rightCommand, .command:
+                .command
+            case .leftShift, .rightShift, .shift:
+                .shift
+            case .leftOption, .rightOption, .option:
+                .option
+            case .leftControl, .rightControl, .control:
+                .control
+            case .fn:
+                .fn
+            }
+        }
+
+        return Array(Set(mapped))
+            .sorted { lhs, rhs in
+                lhs.sortOrder < rhs.sortOrder
+            }
+    }
+
+    private static func primaryKey(for event: NSEvent) -> ShortcutPrimaryKey? {
+        if let functionIndex = ShortcutKeyCode.functionKeyByCode[event.keyCode] {
+            return .function(index: functionIndex, keyCode: event.keyCode)
+        }
+
+        if event.keyCode == ShortcutKeyCode.space {
+            return .space(keyCode: event.keyCode)
+        }
+
+        guard let characters = event.charactersIgnoringModifiers,
+              let scalar = characters.unicodeScalars.first
+        else {
+            return nil
+        }
+
+        let display = String(scalar)
+        if scalar.properties.isAlphabetic {
+            return .letter(display, keyCode: event.keyCode)
+        }
+
+        if scalar.properties.numericType != nil {
+            return .digit(display, keyCode: event.keyCode)
+        }
+
+        return .symbol(display, keyCode: event.keyCode)
     }
 
     private static func modifierKey(for keyCode: UInt16) -> ModifierShortcutKey? {
@@ -481,36 +607,31 @@ private final class ModifierShortcutRecorderController: ObservableObject {
 }
 
 #Preview("Empty") {
-    PreviewStateContainer(ModifierShortcutGesture?.none) { gesture in
-        PreviewStateContainer(ModifierShortcutTriggerMode.hold) { triggerMode in
-            MAModifierShortcutEditor(
-                gesture: gesture,
-                triggerMode: triggerMode,
-                conflictMessage: nil
-            )
-            .padding()
-            .frame(width: 560)
-        }
+    PreviewStateContainer(ShortcutDefinition?.none) { shortcut in
+        MAModifierShortcutEditor(
+            shortcut: shortcut,
+            conflictMessage: nil
+        )
+        .padding()
+        .frame(width: 560)
     }
 }
 
 #Preview("Conflict") {
     PreviewStateContainer(
         Optional(
-            ModifierShortcutGesture(
-                keys: [.rightCommand, .leftShift],
-                triggerMode: .doubleTap
+            ShortcutDefinition(
+                modifiers: [.rightCommand],
+                primaryKey: nil,
+                trigger: .doubleTap
             )
         )
-    ) { gesture in
-        PreviewStateContainer(ModifierShortcutTriggerMode.doubleTap) { triggerMode in
-            MAModifierShortcutEditor(
-                gesture: gesture,
-                triggerMode: triggerMode,
-                conflictMessage: "settings.shortcuts.modifier.conflict".localized(with: "Meeting Shortcut")
-            )
-            .padding()
-            .frame(width: 560)
-        }
+    ) { shortcut in
+        MAModifierShortcutEditor(
+            shortcut: shortcut,
+            conflictMessage: "settings.shortcuts.modifier.conflict".localized(with: "Meeting Shortcut")
+        )
+        .padding()
+        .frame(width: 560)
     }
 }
