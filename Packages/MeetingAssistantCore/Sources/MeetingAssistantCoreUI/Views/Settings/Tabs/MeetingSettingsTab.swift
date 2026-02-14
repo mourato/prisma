@@ -120,7 +120,7 @@ public struct MeetingSettingsTab: View {
                             TextEditor(text: $meetingViewModel.settings.summaryTemplate)
                                 .font(.body)
                                 .frame(height: 150)
-                                .padding(MeetingAssistantDesignSystem.Layout.spacing8)
+                                .padding(MeetingAssistantDesignSystem.Layout.textAreaPadding)
                                 .background(MeetingAssistantDesignSystem.Colors.controlBackground)
                                 .cornerRadius(MeetingAssistantDesignSystem.Layout.smallCornerRadius)
                                 .overlay(

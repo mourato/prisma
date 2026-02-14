@@ -13,7 +13,7 @@ import SwiftUI
 /// Main tab for managing transcriptions in Settings.
 public struct TranscriptionsSettingsTab: View {
     private enum Layout {
-        static let controlHeight: CGFloat = 32
+        static let controlHeight: CGFloat = MeetingAssistantDesignSystem.Layout.compactButtonHeight
         static let searchWidthRatio: CGFloat = 0.6
         static let minSearchWidth: CGFloat = 240
         static let maxSearchWidth: CGFloat = 520
@@ -89,10 +89,10 @@ public struct TranscriptionsSettingsTab: View {
 
     private var leftPanel: some View {
         VStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
                 searchAndFolderRow
 
-                HStack(spacing: 16) {
+                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
                     sourceFilterPicker
                         .frame(maxWidth: .infinity)
 
@@ -141,7 +141,7 @@ public struct TranscriptionsSettingsTab: View {
                 max(Layout.minSearchWidth, geometry.size.width * Layout.searchWidthRatio)
             )
 
-            HStack(spacing: 16) {
+            HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
                 searchField
                     .frame(width: searchWidth)
 
@@ -269,7 +269,7 @@ public struct TranscriptionsSettingsTab: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
             Image(systemName: "doc.text.badge.plus")
                 .font(.system(size: 40))
                 .foregroundStyle(.tertiary)
@@ -302,7 +302,7 @@ public struct TranscriptionsSettingsTab: View {
                         .padding(.bottom, MeetingAssistantDesignSystem.Layout.spacing8)
                 ) {
                     ForEach(viewModel.groupedTranscriptions[date] ?? []) { transcription in
-                        HStack(alignment: .top, spacing: 16) {
+                        HStack(alignment: .top, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
                             Text(formatTime(transcription.createdAt))
                                 .font(.body)
                                 .fontWeight(.semibold)
@@ -420,7 +420,7 @@ public struct TranscriptionsSettingsTab: View {
     }
 
     private var noSelectionView: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
             Image(systemName: "doc.text.magnifyingglass")
                 .font(.system(size: 64))
                 .foregroundStyle(.tertiary)

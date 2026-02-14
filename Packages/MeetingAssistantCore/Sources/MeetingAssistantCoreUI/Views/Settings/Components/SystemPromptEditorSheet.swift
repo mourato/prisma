@@ -93,7 +93,7 @@ struct SystemPromptEditorSheet: View {
         TextEditor(text: $systemPrompt)
             .font(.body)
             .frame(minHeight: Constants.editorMinHeight)
-            .padding(MeetingAssistantDesignSystem.Layout.spacing8)
+            .padding(MeetingAssistantDesignSystem.Layout.textAreaPadding)
             .background(MeetingAssistantDesignSystem.Colors.textBackground)
             .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
             .overlay(

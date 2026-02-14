@@ -102,7 +102,7 @@ public struct InstalledAppsSelectionList: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 20, height: 20)
-                .padding(6)
+                .padding(MeetingAssistantDesignSystem.Layout.compactInset)
                 .background(MeetingAssistantDesignSystem.Colors.subtleFill)
                 .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
 

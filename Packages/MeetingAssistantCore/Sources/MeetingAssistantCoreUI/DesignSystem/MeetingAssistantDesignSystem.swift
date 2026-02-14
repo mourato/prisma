@@ -108,6 +108,7 @@ public enum MeetingAssistantDesignSystem {
         public static let itemSpacing: CGFloat = 12
 
         public static let controlHeight: CGFloat = 44
+        public static let compactButtonHeight: CGFloat = 32
         public static let recordingIndicatorMiniHeight: CGFloat = 38
         public static let recordingIndicatorClassicHeight: CGFloat = 42
 
@@ -145,6 +146,7 @@ public enum MeetingAssistantDesignSystem {
         public static let maxTextFieldWidth: CGFloat = 300
         public static let maxPickerWidth: CGFloat = 200
         public static let maxCompactTextFieldWidth: CGFloat = 200
+        public static let textAreaPadding: CGFloat = spacing8
 
         public static let narrowPickerWidth: CGFloat = 140
         public static let smallPickerWidth: CGFloat = 150
@@ -152,6 +154,7 @@ public enum MeetingAssistantDesignSystem {
         public static let chartHeight: CGFloat = 220
         public static let indentation: CGFloat = 24
         public static let smallPadding: CGFloat = 4
+        public static let compactInset: CGFloat = spacing6
 
         public static let sidebarContainerCornerRadius: CGFloat = 18
         public static let sidebarItemCornerRadius: CGFloat = 8

@@ -227,7 +227,7 @@ public struct AssistantSettingsTab: View {
                 editingIntegration = integration
             } label: {
                 Image(systemName: "pencil")
-                    .padding(6)
+                    .padding(MeetingAssistantDesignSystem.Layout.compactInset)
                     .background(
                         Circle().fill(Color.secondary.opacity(0.12))
                     )
