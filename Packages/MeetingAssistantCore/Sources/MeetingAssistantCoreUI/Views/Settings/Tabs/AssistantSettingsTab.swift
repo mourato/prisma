@@ -79,12 +79,10 @@ public struct AssistantSettingsTab: View {
             groupTitle: "settings.assistant.controls".localized,
             groupIcon: "sparkles",
             descriptionText: "settings.assistant.toggle_command_desc".localized,
-            activationModeDescription: "settings.assistant.activation_mode_desc".localized,
             settingsContent: {
                 VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
                     MAModifierShortcutEditor(
-                        gesture: $viewModel.assistantModifierShortcutGesture,
-                        triggerMode: $viewModel.assistantModifierTriggerMode,
+                        shortcut: $viewModel.assistantShortcutDefinition,
                         conflictMessage: viewModel.assistantModifierConflictMessage
                     )
 

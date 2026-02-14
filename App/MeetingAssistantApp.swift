@@ -41,6 +41,29 @@ struct MeetingAssistantApp: App {
     }
 }
 
+private extension ShortcutDefinition {
+    var menuDisplayString: String {
+        let modifierSymbols = modifiers.map { modifier in
+            switch modifier {
+            case .leftCommand, .rightCommand, .command: "⌘"
+            case .leftShift, .rightShift, .shift: "⇧"
+            case .leftOption, .rightOption, .option: "⌥"
+            case .leftControl, .rightControl, .control: "⌃"
+            case .fn: "Fn"
+            }
+        }
+
+        var tokens = modifierSymbols
+        if let primaryKey {
+            tokens.append(primaryKey.display)
+        } else if trigger == .doubleTap, let first = modifierSymbols.first {
+            tokens.append(first)
+        }
+
+        return tokens.joined()
+    }
+}
+
 /// App delegate for menu bar setup and lifecycle management.
 @MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
@@ -271,10 +294,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func applyShortcut(to item: NSMenuItem, title: String, shortcutName: KeyboardShortcuts.Name) {
         let settings = AppSettingsStore.shared
         var presetString: String?
+        var inHouseShortcut: ShortcutDefinition?
         var isCustom = false
 
         if shortcutName == .dictationToggle {
-            if settings.dictationModifierShortcutGesture != nil {
+            if let definition = settings.dictationShortcutDefinition {
+                inHouseShortcut = definition
+                isCustom = false
+            } else if settings.dictationModifierShortcutGesture != nil {
                 isCustom = false
             } else if settings.dictationSelectedPresetKey != .custom, settings.dictationSelectedPresetKey != .notSpecified {
                 presetString = settings.dictationSelectedPresetKey.displayName
@@ -282,7 +309,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 isCustom = true
             }
         } else if shortcutName == .assistantCommand {
-            if settings.assistantModifierShortcutGesture != nil {
+            if let definition = settings.assistantShortcutDefinition {
+                inHouseShortcut = definition
+                isCustom = false
+            } else if settings.assistantModifierShortcutGesture != nil {
                 isCustom = false
             } else if settings.assistantSelectedPresetKey != .custom, settings.assistantSelectedPresetKey != .notSpecified {
                 presetString = settings.assistantSelectedPresetKey.displayName
@@ -290,7 +320,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 isCustom = true
             }
         } else if shortcutName == .meetingToggle {
-            if settings.meetingModifierShortcutGesture != nil {
+            if let definition = settings.meetingShortcutDefinition {
+                inHouseShortcut = definition
+                isCustom = false
+            } else if settings.meetingModifierShortcutGesture != nil {
                 isCustom = false
             } else if settings.meetingSelectedPresetKey != .custom, settings.meetingSelectedPresetKey != .notSpecified {
                 presetString = settings.meetingSelectedPresetKey.displayName
@@ -299,7 +332,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        if let presetString {
+        if let inHouseShortcut {
+            item.title = "\(title) [\(inHouseShortcut.menuDisplayString)]"
+            item.keyEquivalent = ""
+            item.keyEquivalentModifierMask = []
+        } else if let presetString {
             item.title = "\(title) [\(presetString)]"
             item.keyEquivalent = ""
             item.keyEquivalentModifierMask = []

@@ -3,7 +3,7 @@ import Foundation
 import XCTest
 
 final class ShortcutDefinitionAndEngineTests: XCTestCase {
-    func testSimpleShortcutAllowsSingleTapAndHold() {
+    func testSimpleShortcutOnlyAllowsSingleTap() {
         let shortcut = ShortcutDefinition(
             modifiers: [.leftCommand],
             primaryKey: .letter("G", keyCode: 0x05),
@@ -11,7 +11,7 @@ final class ShortcutDefinitionAndEngineTests: XCTestCase {
         )
 
         XCTAssertEqual(shortcut.patternType, .simple)
-        XCTAssertEqual(shortcut.allowedTriggers, [.singleTap, .hold])
+        XCTAssertEqual(shortcut.allowedTriggers, [.singleTap])
         XCTAssertTrue(shortcut.isValid)
     }
 
@@ -34,6 +34,26 @@ final class ShortcutDefinitionAndEngineTests: XCTestCase {
 
         XCTAssertEqual(shortcut.patternType, .advanced)
         XCTAssertEqual(shortcut.validate(), .unsupportedTriggerForAdvanced)
+    }
+
+    func testAdvancedShortcutRejectsMultipleModifiers() {
+        let shortcut = ShortcutDefinition(
+            modifiers: [.leftCommand, .rightCommand],
+            primaryKey: nil,
+            trigger: .doubleTap
+        )
+
+        XCTAssertEqual(shortcut.validate(), .advancedRequiresSingleModifier)
+    }
+
+    func testAdvancedShortcutRejectsSideAgnosticModifier() {
+        let shortcut = ShortcutDefinition(
+            modifiers: [.command],
+            primaryKey: nil,
+            trigger: .doubleTap
+        )
+
+        XCTAssertEqual(shortcut.validate(), .advancedRequiresSideSpecificModifier)
     }
 
     func testFunctionPrimaryKeyRangeValidation() {
@@ -93,7 +113,7 @@ final class ShortcutDefinitionAndEngineTests: XCTestCase {
 
         let decoded = try JSONDecoder().decode(AssistantIntegrationConfig.self, from: data)
 
-        XCTAssertEqual(decoded.shortcutDefinition?.trigger, .hold)
+        XCTAssertEqual(decoded.shortcutDefinition?.trigger, .doubleTap)
         XCTAssertTrue(decoded.shortcutDefinition?.isValid ?? false)
     }
 
