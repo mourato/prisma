@@ -6,7 +6,6 @@ public enum RecordingSourceFilter: String, CaseIterable, Sendable {
     case all
     case dictations
     case meetings
-    case manualImports
 
     /// Display name for the filter option.
     public var displayName: String {
@@ -17,8 +16,6 @@ public enum RecordingSourceFilter: String, CaseIterable, Sendable {
             "filter.source.dictations".localized
         case .meetings:
             "filter.source.meetings".localized
-        case .manualImports:
-            "filter.source.manual_imports".localized
         }
     }
 }

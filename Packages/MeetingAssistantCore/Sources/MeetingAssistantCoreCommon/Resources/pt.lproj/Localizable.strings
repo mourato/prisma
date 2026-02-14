@@ -439,14 +439,11 @@
 "settings.transcriptions.items_found" = "%lld itens encontrados";
 "settings.transcriptions.open_folder" = "Abrir Pasta";
 "settings.transcriptions.loading" = "Carregando...";
-"settings.transcriptions.filters" = "FILTROS";
 "settings.transcriptions.source" = "Origem";
 "settings.transcriptions.search_placeholder" = "Buscar texto da transcrição";
 "settings.transcriptions.filter_app_all" = "Todos os Apps";
-"settings.transcriptions.import" = "Importar Arquivo";
-"settings.transcriptions.import_desc" = "Arraste ou clique para importar áudio/vídeo";
 "settings.transcriptions.empty_title" = "Sem transcrições";
-"settings.transcriptions.empty_desc" = "Grave uma reunião ou importe um áudio";
+"settings.transcriptions.empty_desc" = "Grave uma reunião para começar";
 "settings.transcriptions.no_selection" = "Selecione uma transcrição para visualizar os detalhes";
 "settings.transcriptions.error_load" = "Não foi possível carregar as transcrições. Tente novamente.";
 "settings.transcriptions.import_select_msg" = "Selecione um arquivo de áudio ou vídeo para transcrever";
@@ -602,7 +599,6 @@
 "filter.source.all" = "Todas";
 "filter.source.dictations" = "Gravações";
 "filter.source.meetings" = "Reuniões";
-"filter.source.manual_imports" = "Importadas";
 "transcription.source.meeting" = "Reunião";
 "transcription.source.recording" = "Gravação";
 

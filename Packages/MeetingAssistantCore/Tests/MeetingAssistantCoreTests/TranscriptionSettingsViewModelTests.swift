@@ -127,15 +127,19 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
         viewModel.sourceFilter = .all
         XCTAssertEqual(viewModel.filteredTranscriptions.count, 2)
 
-        // Test .dictations (appRawValue != importedFile)
+        // Test .dictations (unknown only, excluding imported files)
         viewModel.sourceFilter = .dictations
         XCTAssertEqual(viewModel.filteredTranscriptions.count, 1)
         XCTAssertEqual(viewModel.filteredTranscriptions.first?.id, mockId1)
 
-        // Test .manualImports (appRawValue == importedFile)
-        viewModel.sourceFilter = .manualImports
-        XCTAssertEqual(viewModel.filteredTranscriptions.count, 1)
-        XCTAssertEqual(viewModel.filteredTranscriptions.first?.id, mockId2)
+        // Test .meetings (non-unknown and non-imported)
+        viewModel.sourceFilter = .meetings
+        XCTAssertEqual(viewModel.filteredTranscriptions.count, 0)
+
+        // Imported files remain visible under .all
+        viewModel.sourceFilter = .all
+        XCTAssertEqual(viewModel.filteredTranscriptions.count, 2)
+        XCTAssertTrue(viewModel.filteredTranscriptions.contains(where: { $0.id == mockId2 }))
     }
 
     func testAppFilterOptionsIncludesAllAndLoadedApps() {
@@ -157,8 +161,8 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
 
         // Then
         XCTAssertEqual(options.first?.id, "__all_apps__")
-        XCTAssertTrue(options.contains(where: { $0.id == MeetingApp.zoom.rawValue }))
-        XCTAssertTrue(options.contains(where: { $0.id == MeetingApp.microsoftTeams.rawValue }))
+        XCTAssertTrue(options.contains(where: { $0.id == "raw:\(MeetingApp.zoom.rawValue)" }))
+        XCTAssertTrue(options.contains(where: { $0.id == "raw:\(MeetingApp.microsoftTeams.rawValue)" }))
     }
 
     func testFilteredTranscriptionsAppliesAppAndSearchFilters() {
@@ -176,12 +180,58 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
         viewModel.transcriptions = [zoomMetadata, teamsMetadata]
 
         // When
-        viewModel.appFilterId = MeetingApp.microsoftTeams.rawValue
+        viewModel.appFilterId = "raw:\(MeetingApp.microsoftTeams.rawValue)"
         viewModel.searchText = "reuniao"
 
         // Then
         XCTAssertEqual(viewModel.filteredTranscriptions.count, 1)
         XCTAssertEqual(viewModel.filteredTranscriptions.first?.id, teamsMetadata.id)
+    }
+
+    func testAppFilterOptionsIncludeUnknownAppsByDisplayName() {
+        // Given
+        let codexMetadata = makeMetadata(
+            appName: "Codex",
+            appRawValue: MeetingApp.unknown.rawValue,
+            previewText: "Discussing refinements"
+        )
+        let browserMetadata = makeMetadata(
+            appName: "Arc Browser",
+            appRawValue: MeetingApp.unknown.rawValue,
+            previewText: "Planning meeting"
+        )
+        viewModel.transcriptions = [codexMetadata, browserMetadata]
+
+        // When
+        let options = viewModel.appFilterOptions
+
+        // Then
+        XCTAssertTrue(options.contains(where: { $0.displayName == "Codex" }))
+        XCTAssertTrue(options.contains(where: { $0.displayName == "Arc Browser" }))
+        XCTAssertFalse(options.contains(where: { $0.displayName == MeetingApp.unknown.displayName }))
+    }
+
+    func testFilteredTranscriptionsAppliesUnknownDisplayNameAppFilter() {
+        // Given
+        let codexMetadata = makeMetadata(
+            appName: "Codex",
+            appRawValue: MeetingApp.unknown.rawValue,
+            previewText: "Implemented one two three"
+        )
+        let browserMetadata = makeMetadata(
+            appName: "Arc Browser",
+            appRawValue: MeetingApp.unknown.rawValue,
+            previewText: "General notes"
+        )
+        viewModel.transcriptions = [codexMetadata, browserMetadata]
+        let codexFilterOption = viewModel.appFilterOptions.first(where: { $0.displayName == "Codex" })
+
+        // When
+        viewModel.appFilterId = codexFilterOption?.id ?? "__all_apps__"
+
+        // Then
+        XCTAssertEqual(viewModel.filteredTranscriptions.count, 1)
+        XCTAssertEqual(viewModel.filteredTranscriptions.first?.id, codexMetadata.id)
     }
 
     private func makeMetadata(

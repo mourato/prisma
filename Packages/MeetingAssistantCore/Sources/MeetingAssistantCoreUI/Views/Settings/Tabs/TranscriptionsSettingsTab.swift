@@ -7,24 +7,20 @@ import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
 import OSLog
 import SwiftUI
-import UniformTypeIdentifiers
 
 // MARK: - Main Tab
 
 /// Main tab for managing transcriptions in Settings.
 public struct TranscriptionsSettingsTab: View {
-    @StateObject private var viewModel = TranscriptionSettingsViewModel()
-    @StateObject private var importViewModel: TranscriptionImportViewModel
-    @State private var searchReloadTask: Task<Void, Never>?
-
-    public init() {
-        // Initialize importViewModel with a closure to refresh the list
-        let vm = TranscriptionSettingsViewModel()
-        _viewModel = StateObject(wrappedValue: vm)
-        _importViewModel = StateObject(wrappedValue: TranscriptionImportViewModel(onImportSuccess: {
-            await vm.loadTranscriptions()
-        }))
+    private enum Layout {
+        static let controlHeight: CGFloat = 32
+        static let searchWidthRatio: CGFloat = 0.6
+        static let minSearchWidth: CGFloat = 240
+        static let maxSearchWidth: CGFloat = 520
     }
+
+    @StateObject private var viewModel = TranscriptionSettingsViewModel()
+    @State private var searchReloadTask: Task<Void, Never>?
 
     public var body: some View {
         VStack(spacing: 0) {
@@ -93,40 +89,25 @@ public struct TranscriptionsSettingsTab: View {
 
     private var leftPanel: some View {
         VStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 20) {
-                HStack(spacing: 16) {
-                    Text(
-                        "settings.transcriptions.items_found".localized(with: viewModel.filteredTranscriptions.count)
-                    )
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                    Spacer()
-
-                    Button(
-                        action: { viewModel.openRecordingsDirectory() },
-                        label: {
-                            Label("settings.transcriptions.open_folder".localized, systemImage: "folder")
-                        }
-                    )
-                    .buttonStyle(.bordered)
-                }
-
-                dropZone
+            VStack(alignment: .leading, spacing: 16) {
+                searchAndFolderRow
 
                 HStack(spacing: 16) {
-                    searchField
-                        .frame(minWidth: 220, maxWidth: .infinity)
+                    sourceFilterPicker
+                        .frame(maxWidth: .infinity)
 
                     appFilterMenu
                         .frame(width: 170)
 
-                    sourceFilterPicker
-                        .frame(maxWidth: .infinity)
-
                     dateFilterMenu
                         .frame(width: MeetingAssistantDesignSystem.Layout.narrowPickerWidth)
                 }
+
+                Text(
+                    "settings.transcriptions.items_found".localized(with: viewModel.filteredTranscriptions.count)
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
             .padding(MeetingAssistantDesignSystem.Layout.spacing24)
 
@@ -153,28 +134,40 @@ public struct TranscriptionsSettingsTab: View {
         .background(MeetingAssistantDesignSystem.Colors.windowBackground)
     }
 
-    // MARK: - Filters Section
+    private var searchAndFolderRow: some View {
+        GeometryReader { geometry in
+            let searchWidth = min(
+                Layout.maxSearchWidth,
+                max(Layout.minSearchWidth, geometry.size.width * Layout.searchWidthRatio)
+            )
 
-    private var filtersSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "line.3.horizontal.decrease.circle")
-                    .foregroundStyle(.secondary)
-                Text("settings.transcriptions.filters".localized)
-                    .font(.caption)
-                    .fontWeight(.bold)
-                    .foregroundStyle(.secondary)
+            HStack(spacing: 16) {
+                searchField
+                    .frame(width: searchWidth)
+
+                Spacer(minLength: 0)
+
+                openFolderButton
             }
-
-            sourceFilterPicker
-
-            dateFilterMenu
         }
+        .frame(height: Layout.controlHeight)
+    }
+
+    private var openFolderButton: some View {
+        Button(action: { viewModel.openRecordingsDirectory() }) {
+            Label("settings.transcriptions.open_folder".localized, systemImage: "folder")
+                .font(.subheadline)
+                .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing10)
+                .frame(height: Layout.controlHeight)
+                .background(MeetingAssistantDesignSystem.Colors.subtleFill)
+                .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+        }
+        .buttonStyle(.plain)
     }
 
     private var sourceFilterPicker: some View {
         Picker(
-            "settings.transcriptions.source".localized,
+            "",
             selection: $viewModel.sourceFilter
         ) {
             ForEach(RecordingSourceFilter.allCases, id: \.self) { filter in
@@ -183,6 +176,7 @@ public struct TranscriptionsSettingsTab: View {
         }
         .pickerStyle(.segmented)
         .controlSize(.small)
+        .labelsHidden()
     }
 
     private var searchField: some View {
@@ -197,6 +191,7 @@ public struct TranscriptionsSettingsTab: View {
         }
         .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing10)
         .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
+        .frame(height: Layout.controlHeight)
         .background(MeetingAssistantDesignSystem.Colors.subtleFill)
         .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
     }
@@ -273,46 +268,6 @@ public struct TranscriptionsSettingsTab: View {
             ?? "settings.transcriptions.filter_app_all".localized
     }
 
-    private var dropZone: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "tray.and.arrow.down.fill")
-                .font(.system(size: 28))
-                .foregroundStyle(MeetingAssistantDesignSystem.Colors.iconHighlight)
-                .symbolEffect(.bounce, value: importViewModel.isDropTargeted)
-
-            VStack(spacing: 4) {
-                Text("settings.transcriptions.import".localized)
-                    .font(.headline)
-
-                Text("settings.transcriptions.import_desc".localized)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing20)
-        .background(
-            RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.cardCornerRadius)
-                .strokeBorder(
-                    importViewModel.isDropTargeted ? MeetingAssistantDesignSystem.Colors.accent : MeetingAssistantDesignSystem.Colors.separator.opacity(0.6),
-                    style: StrokeStyle(lineWidth: 2, dash: [4, 4])
-                )
-                .background(
-                    importViewModel.isDropTargeted
-                        ? MeetingAssistantDesignSystem.Colors.accent.opacity(0.1)
-                        : MeetingAssistantDesignSystem.Colors.subtleFill2
-                )
-        )
-        .onTapGesture {
-            importViewModel.selectAndImportFile()
-        }
-        .onDrop(of: [.audio, .fileURL], isTargeted: $importViewModel.isDropTargeted) { providers in
-            importViewModel.handleDrop(providers: providers)
-            return true
-        }
-    }
-
     private var emptyState: some View {
         VStack(spacing: 16) {
             Image(systemName: "doc.text.badge.plus")
@@ -336,7 +291,7 @@ public struct TranscriptionsSettingsTab: View {
     }
 
     private var transcriptionsList: some View {
-        List(selection: $viewModel.selectedId) {
+        List {
             ForEach(viewModel.sortedGroupDates, id: \.self) { date in
                 Section(
                     header: Text(formatHeaderDate(date))
@@ -375,7 +330,6 @@ public struct TranscriptionsSettingsTab: View {
                                 }
                             )
                         }
-                        .tag(transcription.id)
                         .listRowSeparator(.hidden)
                         .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 12, trailing: 16))
                     }

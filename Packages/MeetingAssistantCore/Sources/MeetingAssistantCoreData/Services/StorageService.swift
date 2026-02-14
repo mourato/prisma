@@ -585,8 +585,6 @@ public final class FileSystemStorageService: StorageService {
         case .meetings:
             predicates.append(NSPredicate(format: "meeting.appRawValue != %@", MeetingApp.unknown.rawValue))
             predicates.append(NSPredicate(format: "meeting.appRawValue != %@", MeetingApp.importedFile.rawValue))
-        case .manualImports:
-            predicates.append(NSPredicate(format: "meeting.appRawValue == %@", MeetingApp.importedFile.rawValue))
         }
 
         if query.dateFilter != .allEntries {
