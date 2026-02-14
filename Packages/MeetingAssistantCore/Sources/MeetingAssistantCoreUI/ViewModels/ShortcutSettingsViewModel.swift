@@ -170,17 +170,18 @@ public class ShortcutSettingsViewModel: ObservableObject {
 
         guard let normalizedValue else {
             settings.dictationModifierShortcutGesture = nil
+            settings.dictationShortcutDefinition = nil
             dictationModifierConflictMessage = nil
             return
         }
 
-        let candidate = ModifierShortcutBinding(
+        let candidate = ShortcutBinding(
             actionID: .dictation,
             actionDisplayName: "settings.shortcuts.dictation".localized,
-            gesture: normalizedValue
+            shortcut: normalizedValue.asShortcutDefinition
         )
 
-        if let conflict = settings.modifierShortcutConflict(for: candidate) {
+        if let conflict = settings.shortcutConflict(for: candidate) {
             isApplyingModifierShortcutChange = true
             dictationModifierShortcutGesture = settings.dictationModifierShortcutGesture
             dictationModifierTriggerMode = settings.dictationModifierShortcutGesture?.triggerMode ?? .singleTap
@@ -190,6 +191,7 @@ public class ShortcutSettingsViewModel: ObservableObject {
         }
 
         settings.dictationModifierShortcutGesture = normalizedValue
+        settings.dictationShortcutDefinition = normalizedValue.asShortcutDefinition
         dictationModifierConflictMessage = nil
     }
 
@@ -224,17 +226,18 @@ public class ShortcutSettingsViewModel: ObservableObject {
 
         guard let normalizedValue else {
             settings.meetingModifierShortcutGesture = nil
+            settings.meetingShortcutDefinition = nil
             meetingModifierConflictMessage = nil
             return
         }
 
-        let candidate = ModifierShortcutBinding(
+        let candidate = ShortcutBinding(
             actionID: .meeting,
             actionDisplayName: "settings.shortcuts.meeting".localized,
-            gesture: normalizedValue
+            shortcut: normalizedValue.asShortcutDefinition
         )
 
-        if let conflict = settings.modifierShortcutConflict(for: candidate) {
+        if let conflict = settings.shortcutConflict(for: candidate) {
             isApplyingModifierShortcutChange = true
             meetingModifierShortcutGesture = settings.meetingModifierShortcutGesture
             meetingModifierTriggerMode = settings.meetingModifierShortcutGesture?.triggerMode ?? .singleTap
@@ -244,6 +247,7 @@ public class ShortcutSettingsViewModel: ObservableObject {
         }
 
         settings.meetingModifierShortcutGesture = normalizedValue
+        settings.meetingShortcutDefinition = normalizedValue.asShortcutDefinition
         meetingModifierConflictMessage = nil
     }
 

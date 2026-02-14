@@ -1,4 +1,3 @@
-import KeyboardShortcuts
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
@@ -11,7 +10,6 @@ public struct AssistantSettingsTab: View {
     @StateObject private var viewModel = AssistantShortcutSettingsViewModel()
     @State private var editingIntegration: AssistantIntegrationConfig?
     @State private var advancedIntegrationDraft: AssistantIntegrationConfig?
-    @State private var hoveredHotkeyIntegrationId: UUID?
 
     public init() {}
 
@@ -81,30 +79,24 @@ public struct AssistantSettingsTab: View {
             groupTitle: "settings.assistant.controls".localized,
             groupIcon: "sparkles",
             descriptionText: "settings.assistant.toggle_command_desc".localized,
-            shortcutTitle: "settings.assistant.toggle_command".localized,
-            customShortcutLabel: "settings.assistant.custom_shortcut".localized,
             activationModeDescription: "settings.assistant.activation_mode_desc".localized,
-            activationMode: $viewModel.activationMode,
-            selectedPresetKey: $viewModel.selectedPresetKey,
             settingsContent: {
                 VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
-                    MAToggleRow(
-                        "settings.assistant.use_escape".localized,
-                        isOn: $viewModel.useEscapeToCancelRecording
-                    )
-
-                    Divider()
-
                     MAModifierShortcutEditor(
                         gesture: $viewModel.assistantModifierShortcutGesture,
                         triggerMode: $viewModel.assistantModifierTriggerMode,
                         conflictMessage: viewModel.assistantModifierConflictMessage
                     )
+
+                    Divider()
+
+                    MAToggleRow(
+                        "settings.assistant.use_escape".localized,
+                        isOn: $viewModel.useEscapeToCancelRecording
+                    )
                 }
             }
-        ) {
-            KeyboardShortcuts.Recorder(for: .assistantCommand)
-        }
+        )
     }
 
     private var visualFeedbackSection: some View {
@@ -193,11 +185,13 @@ public struct AssistantSettingsTab: View {
                 }
 
                 if let statusMessage = viewModel.raycastTestStatusMessage {
+                    let statusColor = viewModel.raycastTestStatusIsError
+                        ? MeetingAssistantDesignSystem.Colors.error
+                        : MeetingAssistantDesignSystem.Colors.success
+
                     Text(statusMessage)
                         .font(.caption)
-                        .foregroundStyle(viewModel.raycastTestStatusIsError
-                            ? MeetingAssistantDesignSystem.Colors.error
-                            : MeetingAssistantDesignSystem.Colors.success)
+                        .foregroundStyle(statusColor)
                 }
             }
         }
@@ -221,34 +215,16 @@ public struct AssistantSettingsTab: View {
 
             Spacer()
 
-            if !isCardStyle {
-                KeyboardShortcuts.Recorder(for: .assistantIntegration(integration.id))
-                    .controlSize(.small)
-                    .frame(minWidth: 132, alignment: .leading)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
-                            .strokeBorder(
-                                Color.secondary.opacity(hoveredHotkeyIntegrationId == integration.id ? 0.55 : 0),
-                                lineWidth: 1
-                            )
+            Button {
+                editingIntegration = integration
+            } label: {
+                Image(systemName: "pencil")
+                    .padding(6)
+                    .background(
+                        Circle().fill(Color.secondary.opacity(0.12))
                     )
-                    .onHover { isHovering in
-                        hoveredHotkeyIntegrationId = isHovering ? integration.id : nil
-                    }
             }
-
-            if isCardStyle {
-                Button {
-                    editingIntegration = integration
-                } label: {
-                    Image(systemName: "pencil")
-                        .padding(6)
-                        .background(
-                            Circle().fill(Color.secondary.opacity(0.12))
-                        )
-                }
-                .buttonStyle(.plain)
-            }
+            .buttonStyle(.plain)
 
             Toggle("", isOn: Binding(
                 get: { integration.isEnabled },

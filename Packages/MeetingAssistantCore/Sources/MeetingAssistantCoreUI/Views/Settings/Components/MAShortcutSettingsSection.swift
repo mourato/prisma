@@ -6,63 +6,25 @@ import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
-public struct MAShortcutSettingsSection<RecorderContent: View>: View {
+public struct MAShortcutSettingsSection<SettingsContent: View>: View {
     private let groupTitle: String
     private let groupIcon: String
     private let descriptionText: String
-    private let shortcutTitle: String
-    private let customShortcutLabel: String
     private let activationModeDescription: String
-    private let activationMode: Binding<ShortcutActivationMode>
-    private let selectedPresetKey: Binding<PresetShortcutKey>
-    private let settingsContent: (() -> AnyView)?
-    private let recorderContent: () -> RecorderContent
+    private let settingsContent: () -> SettingsContent
 
     public init(
         groupTitle: String,
         groupIcon: String = "keyboard",
         descriptionText: String,
-        shortcutTitle: String,
-        customShortcutLabel: String,
         activationModeDescription: String,
-        activationMode: Binding<ShortcutActivationMode>,
-        selectedPresetKey: Binding<PresetShortcutKey>,
-        @ViewBuilder recorderContent: @escaping () -> RecorderContent
+        @ViewBuilder settingsContent: @escaping () -> SettingsContent
     ) {
         self.groupTitle = groupTitle
         self.groupIcon = groupIcon
         self.descriptionText = descriptionText
-        self.shortcutTitle = shortcutTitle
-        self.customShortcutLabel = customShortcutLabel
         self.activationModeDescription = activationModeDescription
-        self.activationMode = activationMode
-        self.selectedPresetKey = selectedPresetKey
-        settingsContent = nil
-        self.recorderContent = recorderContent
-    }
-
-    public init<SettingsContent: View>(
-        groupTitle: String,
-        groupIcon: String = "keyboard",
-        descriptionText: String,
-        shortcutTitle: String,
-        customShortcutLabel: String,
-        activationModeDescription: String,
-        activationMode: Binding<ShortcutActivationMode>,
-        selectedPresetKey: Binding<PresetShortcutKey>,
-        @ViewBuilder settingsContent: @escaping () -> SettingsContent,
-        @ViewBuilder recorderContent: @escaping () -> RecorderContent
-    ) {
-        self.groupTitle = groupTitle
-        self.groupIcon = groupIcon
-        self.descriptionText = descriptionText
-        self.shortcutTitle = shortcutTitle
-        self.customShortcutLabel = customShortcutLabel
-        self.activationModeDescription = activationModeDescription
-        self.activationMode = activationMode
-        self.selectedPresetKey = selectedPresetKey
-        self.settingsContent = { AnyView(settingsContent()) }
-        self.recorderContent = recorderContent
+        self.settingsContent = settingsContent
     }
 
     public var body: some View {
@@ -72,24 +34,7 @@ public struct MAShortcutSettingsSection<RecorderContent: View>: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                MAShortcutControlsRow(
-                    title: shortcutTitle,
-                    activationMode: activationMode,
-                    selectedPresetKey: selectedPresetKey
-                )
-
-                if selectedPresetKey.wrappedValue == .custom {
-                    Divider()
-
-                    MAShortcutRecorderRow(label: customShortcutLabel) {
-                        recorderContent()
-                    }
-                }
-
-                if let settingsContent {
-                    Divider()
-                    settingsContent()
-                }
+                settingsContent()
 
                 Divider()
 
@@ -102,22 +47,14 @@ public struct MAShortcutSettingsSection<RecorderContent: View>: View {
 }
 
 #Preview {
-    PreviewStateContainer(ShortcutActivationMode.holdOrToggle) { mode in
-        PreviewStateContainer(PresetShortcutKey.optionCommand) { key in
-            MAShortcutSettingsSection(
-                groupTitle: "Shortcuts",
-                descriptionText: "Configure the shortcut behavior.",
-                shortcutTitle: "Dictation shortcut",
-                customShortcutLabel: "Custom shortcut",
-                activationModeDescription: "Choose how the shortcut should trigger.",
-                activationMode: mode,
-                selectedPresetKey: key
-            ) {
-                Text("Recorder")
-                    .font(.caption)
-            }
-            .padding()
-            .frame(width: 620)
-        }
+    MAShortcutSettingsSection(
+        groupTitle: "Shortcuts",
+        descriptionText: "Configure the shortcut behavior.",
+        activationModeDescription: "Choose how the shortcut should trigger."
+    ) {
+        Text("In-house shortcut editor")
+            .font(.caption)
     }
+    .padding()
+    .frame(width: 620)
 }
