@@ -293,7 +293,6 @@
 "settings.assistant.controls" = "Atalho do Assistant";
 "settings.assistant.toggle_command" = "Iniciar/Parar Assistant";
 "settings.assistant.toggle_command_desc" = "Segure ou pressione para gravar um comando de voz para o texto selecionado";
-"settings.assistant.custom_shortcut" = "Atalho Personalizado:";
 "settings.assistant.activation_mode_desc" = "Configure como as teclas de atalho ativam: Segurar ou Pressionar (auto-detecta), Pressionar (uma vez), Segurar (grave enquanto pressionado), ou Toque Duplo (toque duas vezes rapidamente).";
 "settings.assistant.tips_title" = "Dicas";
 "settings.assistant.fn_key_title" = "Usando a tecla Fn";
@@ -419,19 +418,18 @@
 "settings.shortcuts.use_escape" = "Pressione Escape duas vezes para cancelar gravação";
 "settings.shortcuts.use_escape_desc" = "Exige dois toques consecutivos na tecla Escape durante a gravação.";
 "settings.shortcuts.modifier.title" = "Atalho de Modificadoras";
-"settings.shortcuts.modifier.description" = "Grave um atalho usando Command, Shift, Option, Control (esquerda/direita) ou Fn.";
-"settings.shortcuts.modifier.record" = "Gravar atalho";
-"settings.shortcuts.modifier.stop" = "Parar";
-"settings.shortcuts.modifier.clear" = "Limpar";
 "settings.shortcuts.modifier.none" = "Nenhuma tecla gravada.";
 "settings.shortcuts.modifier.trigger" = "Comportamento de acionamento";
-"settings.shortcuts.modifier.trigger.single_tap" = "Toque simples";
 "settings.shortcuts.modifier.conflict" = "Este atalho já está vinculado a \"%@\".";
+"settings.shortcuts.modifier.input_placeholder" = "Clique para gravar atalho";
+"settings.shortcuts.modifier.popover.recording" = "Gravando";
+"settings.shortcuts.modifier.popover.example" = "Exemplo: ⌘G";
+"settings.shortcuts.modifier.popover.success" = "Atalho capturado com sucesso.";
+"settings.shortcuts.modifier.popover.hint" = "Pressione e solte o atalho para capturá-lo.";
 "settings.shortcuts.try_keys" = "Teste suas Teclas";
 "settings.shortcuts.try_keys_hint" = "Clique na caixa de texto abaixo primeiro.";
 "settings.shortcuts.key.not_specified" = "Não especificado";
 "settings.shortcuts.key.custom" = "Gravar atalho...";
-"settings.shortcuts.custom_shortcut" = "Atalho Personalizado:";
 
 /* Permissions Settings */
 "settings.permissions.title" = "Permissões";

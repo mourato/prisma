@@ -1,4 +1,3 @@
-import KeyboardShortcuts
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreInfrastructure
 import SwiftUI
@@ -71,18 +70,6 @@ public struct AssistantIntegrationEditorSheet: View {
                 Text("settings.assistant.integrations.editor.hotkey".localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-
-                MAShortcutControlsRow(
-                    title: "settings.assistant.integrations.editor.hotkey_config".localized,
-                    activationMode: $draft.integration.shortcutActivationMode,
-                    selectedPresetKey: $draft.integration.shortcutPresetKey
-                )
-
-                if draft.integration.shortcutPresetKey == .custom {
-                    MAShortcutRecorderRow(label: "settings.shortcuts.custom_shortcut".localized) {
-                        KeyboardShortcuts.Recorder(for: .assistantIntegration(draft.integration.id))
-                    }
-                }
 
                 MAModifierShortcutEditor(
                     gesture: Binding(

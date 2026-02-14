@@ -112,7 +112,7 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
             deepLink: AssistantIntegrationConfig.defaultRaycastDeepLink
         )
 
-        assistantIntegrations = assistantIntegrations + [newIntegration]
+        assistantIntegrations += [newIntegration]
         selectedIntegrationId = newIntegration.id
         raycastTestStatusMessage = nil
     }
@@ -337,10 +337,18 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
     private func normalizedIntegration(_ integration: AssistantIntegrationConfig) -> AssistantIntegrationConfig {
         var normalized = integration
         if let gesture = integration.modifierShortcutGesture {
-            normalized.modifierShortcutGesture = ModifierShortcutGesture(
+            let canonicalGesture = ModifierShortcutGesture(
                 keys: gesture.keys,
                 triggerMode: gesture.triggerMode
             )
+            normalized.modifierShortcutGesture = canonicalGesture
+            normalized.shortcutDefinition = canonicalGesture.asShortcutDefinition
+        } else if let shortcutDefinition = integration.shortcutDefinition {
+            normalized.shortcutDefinition = shortcutDefinition
+            normalized.modifierShortcutGesture = shortcutDefinition.asModifierShortcutGesture
+        } else if let legacyGesture = integration.shortcutPresetKey.asLegacyModifierGesture(activationMode: integration.shortcutActivationMode) {
+            normalized.shortcutDefinition = legacyGesture.asShortcutDefinition
+            normalized.modifierShortcutGesture = legacyGesture
         }
         return normalized
     }
@@ -350,19 +358,20 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
             return nil
         }
 
-        let resolvedGesture = integration.modifierShortcutGesture ??
-            integration.shortcutPresetKey.asLegacyModifierGesture(activationMode: integration.shortcutActivationMode)
-        guard let resolvedGesture else {
+        let resolvedShortcut = integration.shortcutDefinition ??
+            integration.modifierShortcutGesture?.asShortcutDefinition ??
+            integration.shortcutPresetKey.asLegacyModifierGesture(activationMode: integration.shortcutActivationMode)?.asShortcutDefinition
+        guard let resolvedShortcut else {
             return nil
         }
 
-        let candidate = ModifierShortcutBinding(
+        let candidate = ShortcutBinding(
             actionID: .assistantIntegration(integration.id),
             actionDisplayName: integration.name,
-            gesture: resolvedGesture
+            shortcut: resolvedShortcut
         )
 
-        guard let conflict = settings.modifierShortcutConflict(for: candidate) else {
+        guard let conflict = settings.shortcutConflict(for: candidate) else {
             return nil
         }
 
@@ -380,6 +389,7 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
 
         guard let normalizedValue else {
             settings.assistantModifierShortcutGesture = nil
+            settings.assistantShortcutDefinition = nil
             assistantModifierConflictMessage = nil
             return
         }
@@ -390,7 +400,13 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
             gesture: normalizedValue
         )
 
-        if let conflict = settings.modifierShortcutConflict(for: candidate) {
+        if let conflict = settings.shortcutConflict(
+            for: ShortcutBinding(
+                actionID: candidate.actionID,
+                actionDisplayName: candidate.actionDisplayName,
+                shortcut: normalizedValue.asShortcutDefinition
+            )
+        ) {
             isApplyingModifierShortcutChange = true
             assistantModifierShortcutGesture = settings.assistantModifierShortcutGesture
             assistantModifierTriggerMode = settings.assistantModifierShortcutGesture?.triggerMode ?? .singleTap
@@ -400,6 +416,7 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
         }
 
         settings.assistantModifierShortcutGesture = normalizedValue
+        settings.assistantShortcutDefinition = normalizedValue.asShortcutDefinition
         assistantModifierConflictMessage = nil
     }
 
