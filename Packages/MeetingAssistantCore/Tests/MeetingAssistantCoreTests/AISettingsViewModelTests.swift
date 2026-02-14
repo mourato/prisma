@@ -1,0 +1,181 @@
+import XCTest
+@testable import MeetingAssistantCore
+
+@MainActor
+final class AISettingsViewModelTests: XCTestCase {
+    private var settings: AppSettingsStore!
+
+    override func setUp() async throws {
+        settings = .shared
+        settings.resetToDefaults()
+        settings.updateAIConfiguration(
+            provider: .openai,
+            baseURL: AIProvider.openai.defaultBaseURL,
+            selectedModel: ""
+        )
+    }
+
+    override func tearDown() async throws {
+        settings.resetToDefaults()
+        settings = nil
+    }
+
+    func testRefreshModelsManually_TriggersFetchAndStoresLastRefreshStatus() async throws {
+        let keychain = MockKeychainProvider()
+        let llmService = MockLLMService()
+        try? keychain.store("sk-saved", for: KeychainManager.apiKeyKey(for: .openai))
+        llmService.fetchModelsResult = [try XCTUnwrap(LLMModel.fixture(id: "gpt-4o"))]
+
+        let viewModel = AISettingsViewModel(settings: settings, keychain: keychain, llmService: llmService)
+
+        await Task.yield()
+        let previousFetchCount = llmService.fetchCallCount
+
+        let refreshTask = viewModel.refreshModelsManually()
+        await refreshTask.value
+
+        XCTAssertGreaterThan(llmService.fetchCallCount, previousFetchCount)
+        XCTAssertEqual(llmService.lastFetchedAPIKey, "sk-saved")
+        XCTAssertEqual(viewModel.availableModels.map(\.id), ["gpt-4o"])
+        XCTAssertTrue(viewModel.lastModelsRefreshSucceeded)
+        XCTAssertNotNil(viewModel.lastModelsRefreshAt)
+        XCTAssertNotNil(viewModel.modelsRefreshSummary)
+    }
+
+    func testRefreshModelsManually_OnFailureStoresErrorRefreshStatus() async {
+        let keychain = MockKeychainProvider()
+        let llmService = MockLLMService()
+        try? keychain.store("sk-saved", for: KeychainManager.apiKeyKey(for: .openai))
+        llmService.fetchModelsError = URLError(.timedOut)
+
+        let viewModel = AISettingsViewModel(settings: settings, keychain: keychain, llmService: llmService)
+
+        let refreshTask = viewModel.refreshModelsManually()
+        await refreshTask.value
+
+        XCTAssertFalse(viewModel.lastModelsRefreshSucceeded)
+        XCTAssertNotNil(viewModel.lastModelsRefreshAt)
+        XCTAssertEqual(viewModel.lastModelsRefreshResultText, "settings.ai.models.fetch_failed".localized)
+        XCTAssertNotNil(viewModel.modelsFetchError)
+    }
+
+    func testTestAPIConnection_OnSuccessClearsPlaintextFromMemory() async {
+        let keychain = MockKeychainProvider()
+        let llmService = MockLLMService()
+        llmService.testConnectionResult = true
+
+        let viewModel = AISettingsViewModel(settings: settings, keychain: keychain, llmService: llmService)
+        viewModel.apiKeyText = "sk-secret-value"
+
+        let connectionTask = viewModel.testAPIConnection()
+        await connectionTask.value
+
+        XCTAssertEqual(llmService.lastConnectionTestAPIKey, "sk-secret-value")
+        XCTAssertTrue(viewModel.isKeySaved)
+        XCTAssertEqual(viewModel.apiKeyText, "")
+        XCTAssertEqual(try keychain.retrieveAPIKey(for: .openai), "sk-secret-value")
+    }
+
+    func testTestAPIConnection_OnFailureStillClearsPlaintextFromMemory() async {
+        let keychain = MockKeychainProvider()
+        let llmService = MockLLMService()
+        llmService.testConnectionResult = false
+
+        let viewModel = AISettingsViewModel(settings: settings, keychain: keychain, llmService: llmService)
+        viewModel.apiKeyText = "sk-failure-value"
+
+        let connectionTask = viewModel.testAPIConnection()
+        await connectionTask.value
+
+        XCTAssertEqual(llmService.lastConnectionTestAPIKey, "sk-failure-value")
+        XCTAssertFalse(viewModel.isKeySaved)
+        XCTAssertEqual(viewModel.apiKeyText, "")
+        if case .failure = viewModel.connectionStatus {
+            XCTAssertTrue(true)
+        } else {
+            XCTFail("Expected failure connection status")
+        }
+    }
+
+    func testProviderChange_ClearsTransientAPIKeyInput() async {
+        let keychain = MockKeychainProvider()
+        let llmService = MockLLMService()
+
+        let viewModel = AISettingsViewModel(settings: settings, keychain: keychain, llmService: llmService)
+        viewModel.apiKeyText = "sk-temporary"
+
+        settings.updateAIConfiguration(
+            provider: .anthropic,
+            baseURL: AIProvider.anthropic.defaultBaseURL,
+            selectedModel: ""
+        )
+        await Task.yield()
+
+        XCTAssertEqual(viewModel.apiKeyText, "")
+    }
+}
+
+private final class MockKeychainProvider: KeychainProvider, @unchecked Sendable {
+    private var values: [KeychainManager.Key: String] = [:]
+
+    func store(_ value: String, for key: KeychainManager.Key) throws {
+        values[key] = value
+    }
+
+    func retrieve(for key: KeychainManager.Key) throws -> String? {
+        values[key]
+    }
+
+    func delete(for key: KeychainManager.Key) throws {
+        values.removeValue(forKey: key)
+    }
+
+    func exists(for key: KeychainManager.Key) -> Bool {
+        values[key] != nil
+    }
+
+    func retrieveAPIKey(for provider: AIProvider) throws -> String? {
+        values[KeychainManager.apiKeyKey(for: provider)]
+    }
+
+    func existsAPIKey(for provider: AIProvider) -> Bool {
+        values[KeychainManager.apiKeyKey(for: provider)] != nil
+    }
+}
+
+private final class MockLLMService: LLMService, @unchecked Sendable {
+    var fetchModelsResult: [LLMModel] = []
+    var fetchModelsError: Error?
+    var testConnectionResult = true
+    var validateURLResult = URL(string: "https://api.openai.com/v1")
+
+    private(set) var fetchCallCount = 0
+    private(set) var lastFetchedAPIKey: String?
+    private(set) var lastConnectionTestAPIKey: String?
+
+    func validateURL(_ urlString: String) -> URL? {
+        validateURLResult
+    }
+
+    func fetchAvailableModels(baseURL: URL, apiKey: String, provider: AIProvider) async throws -> [LLMModel] {
+        fetchCallCount += 1
+        lastFetchedAPIKey = apiKey
+        if let fetchModelsError {
+            throw fetchModelsError
+        }
+        return fetchModelsResult
+    }
+
+    func testConnection(baseURL: URL, apiKey: String) async throws -> Bool {
+        lastConnectionTestAPIKey = apiKey
+        return testConnectionResult
+    }
+}
+
+private extension LLMModel {
+    static func fixture(id: String) -> LLMModel? {
+        let payload = #"{"id":"\#(id)"}"#
+        guard let data = payload.data(using: .utf8) else { return nil }
+        return try? JSONDecoder().decode(LLMModel.self, from: data)
+    }
+}

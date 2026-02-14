@@ -106,35 +106,55 @@ public struct AIProviderIntegrationCard: View {
     }
 
     private var modelRow: some View {
-        HStack {
-            Text("settings.ai.model".localized)
-                .foregroundStyle(.secondary)
-            Spacer()
-            if viewModel.settings.aiConfiguration.provider == .custom {
-                TextField(
-                    "",
-                    text: $viewModel.settings.aiConfiguration.selectedModel
-                )
-                .textFieldStyle(.plain)
-                .multilineTextAlignment(.trailing)
-                .frame(maxWidth: MeetingAssistantDesignSystem.Layout.maxCompactTextFieldWidth)
-            } else {
-                Picker("", selection: selectedModelBinding) {
-                    if viewModel.isLoadingModels {
-                        Text("settings.ai.loading".localized).tag("")
-                    } else if viewModel.availableModels.isEmpty {
-                        Text("settings.ai.no_models".localized).tag("")
-                    } else {
-                        Text("settings.ai.model_select".localized).tag("")
-                        ForEach(viewModel.availableModels) { model in
-                            Text(model.id).tag(model.id)
+        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing4) {
+            HStack {
+                Text("settings.ai.model".localized)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                if viewModel.settings.aiConfiguration.provider == .custom {
+                    TextField(
+                        "",
+                        text: $viewModel.settings.aiConfiguration.selectedModel
+                    )
+                    .textFieldStyle(.plain)
+                    .multilineTextAlignment(.trailing)
+                    .frame(maxWidth: MeetingAssistantDesignSystem.Layout.maxCompactTextFieldWidth)
+                } else {
+                    Picker("", selection: selectedModelBinding) {
+                        if viewModel.isLoadingModels {
+                            Text("settings.ai.loading".localized).tag("")
+                        } else if viewModel.availableModels.isEmpty {
+                            Text("settings.ai.no_models".localized).tag("")
+                        } else {
+                            Text("settings.ai.model_select".localized).tag("")
+                            ForEach(viewModel.availableModels) { model in
+                                Text(model.id).tag(model.id)
+                            }
                         }
                     }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .frame(maxWidth: MeetingAssistantDesignSystem.Layout.maxPickerWidth)
+                    .disabled(viewModel.isLoadingModels || viewModel.availableModels.isEmpty)
                 }
-                .pickerStyle(.menu)
-                .labelsHidden()
-                .frame(maxWidth: MeetingAssistantDesignSystem.Layout.maxPickerWidth)
-                .disabled(viewModel.isLoadingModels || viewModel.availableModels.isEmpty)
+            }
+
+            if let refreshSummary = viewModel.modelsRefreshSummary {
+                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
+                    Image(systemName: viewModel.lastModelsRefreshSucceeded ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                        .foregroundStyle(
+                            viewModel.lastModelsRefreshSucceeded
+                                ? MeetingAssistantDesignSystem.Colors.success
+                                : MeetingAssistantDesignSystem.Colors.warning
+                        )
+                    Text(refreshSummary)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            } else if viewModel.canRefreshModels, viewModel.availableModels.isEmpty, !viewModel.isLoadingModels {
+                Text("settings.ai.model_hint".localized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
         .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
@@ -236,6 +256,23 @@ public struct AIProviderIntegrationCard: View {
 
             Spacer()
 
+            if viewModel.canRefreshModels {
+                Button {
+                    viewModel.refreshModelsManually()
+                } label: {
+                    if viewModel.isLoadingModels {
+                        ProgressView()
+                            .controlSize(.small)
+                            .scaleEffect(0.6)
+                    } else {
+                        Text("settings.ai.model_refresh".localized)
+                    }
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .disabled(viewModel.isLoadingModels || viewModel.connectionStatus == .testing)
+            }
+
             if viewModel.showVerifyButton {
                 Button {
                     viewModel.testAPIConnection()
@@ -250,7 +287,7 @@ public struct AIProviderIntegrationCard: View {
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
-                .disabled(viewModel.apiKeyText.isEmpty || viewModel.connectionStatus == .testing)
+                .disabled(!viewModel.hasPendingAPIKeyInput || viewModel.connectionStatus == .testing)
             }
         }
         .padding(.top, MeetingAssistantDesignSystem.Layout.spacing8)
