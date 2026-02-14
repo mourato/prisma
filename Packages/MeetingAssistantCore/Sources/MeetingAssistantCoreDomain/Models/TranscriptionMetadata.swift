@@ -102,3 +102,23 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
         )
     }
 }
+
+/// Query options for loading transcription metadata directly from persistence.
+public struct TranscriptionMetadataQuery: Hashable, Sendable {
+    public let sourceFilter: RecordingSourceFilter
+    public let dateFilter: DateFilter
+    public let searchText: String
+    public let appRawValue: String?
+
+    public init(
+        sourceFilter: RecordingSourceFilter = .all,
+        dateFilter: DateFilter = .allEntries,
+        searchText: String = "",
+        appRawValue: String? = nil
+    ) {
+        self.sourceFilter = sourceFilter
+        self.dateFilter = dateFilter
+        self.searchText = searchText
+        self.appRawValue = appRawValue
+    }
+}
