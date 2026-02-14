@@ -147,6 +147,21 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
         return nil
     }
 
+    @discardableResult
+    public func setIntegrationShortcutDefinition(_ shortcut: ShortcutDefinition?, for id: UUID) -> String? {
+        guard var integration = integration(for: id) else {
+            return nil
+        }
+
+        integration.shortcutDefinition = shortcut
+        integration.modifierShortcutGesture = shortcut?.asModifierShortcutGesture
+        if shortcut != nil {
+            integration.shortcutPresetKey = .custom
+        }
+
+        return saveIntegrationWithModifierValidation(integration)
+    }
+
     public func applyPreset(_ preset: AssistantIntegrationPreset, to id: UUID) {
         updateIntegration(id: id) { integration in
             integration.selectedPreset = preset

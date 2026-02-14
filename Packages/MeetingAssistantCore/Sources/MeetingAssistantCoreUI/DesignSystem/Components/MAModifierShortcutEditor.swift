@@ -10,6 +10,8 @@ import SwiftUI
 public struct MAModifierShortcutEditor: View {
     @Binding private var shortcut: ShortcutDefinition?
     private let conflictMessage: String?
+    private let showsTitle: Bool
+    private let maxInputWidth: CGFloat?
 
     @StateObject private var recorder = ShortcutRecorderController()
     @State private var isPopoverPresented = false
@@ -28,17 +30,23 @@ public struct MAModifierShortcutEditor: View {
 
     public init(
         shortcut: Binding<ShortcutDefinition?>,
-        conflictMessage: String?
+        conflictMessage: String?,
+        showsTitle: Bool = true,
+        maxInputWidth: CGFloat? = 320
     ) {
         _shortcut = shortcut
         self.conflictMessage = conflictMessage
+        self.showsTitle = showsTitle
+        self.maxInputWidth = maxInputWidth
     }
 
     public var body: some View {
         VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-            Text("settings.shortcuts.modifier.title".localized)
-                .font(.subheadline)
-                .fontWeight(.medium)
+            if showsTitle {
+                Text("settings.shortcuts.modifier.title".localized)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+            }
 
             Button {
                 openRecordingPopover()
@@ -46,7 +54,7 @@ public struct MAModifierShortcutEditor: View {
                 shortcutInputField
             }
             .buttonStyle(.plain)
-            .frame(maxWidth: 320, alignment: .leading)
+            .frame(maxWidth: maxInputWidth, alignment: .leading)
             .popover(isPresented: $isPopoverPresented, arrowEdge: .top) {
                 recordingPopover
                     .frame(width: 360)
