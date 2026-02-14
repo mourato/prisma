@@ -44,8 +44,12 @@ Worktree policy:
 - **Fast lane**: Worktree is recommended. Direct branch work is acceptable for very small low-risk tasks.
 
 1. **Context Identification**: Analyze the task and identify the target files.
-2. **Branching**: Create a fresh branch from `main` (for Codex sessions prefer `codex/<task-name>`).
-3. **Setup Worktree (Full lane or optional Fast lane)**: Create and enter a new Git Worktree.
+2. **Clarification & Confirmation (when needed)**:
+   - If requirements are ambiguous, incomplete, or have high-impact trade-offs, ask concise confirmation questions before implementation.
+   - This step is optional when the request is already specific enough and low-risk.
+   - Do not assume behavior, scope, acceptance criteria, or destructive intent when uncertainty remains.
+3. **Branching**: Create a fresh branch from `main` (for Codex sessions prefer `codex/<task-name>`).
+4. **Setup Worktree (Full lane or optional Fast lane)**: Create and enter a new Git Worktree.
    ```bash
    git worktree add -b <branch-name> ../<folder-name> main
    cd ../<folder-name>

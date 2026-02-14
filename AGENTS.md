@@ -42,6 +42,15 @@ Classify each task before coding:
 
 If uncertain, choose the higher risk level.
 
+### Clarification and confirmation (default behavior)
+
+Before implementation, run a quick clarification pass when needed:
+
+- If requirements are ambiguous, incomplete, or have meaningful trade-offs, ask concise confirmation questions before coding.
+- Agents are explicitly authorized by default to ask those questions whenever they prevent wrong assumptions or rework.
+- This planning/clarification step is optional when the request is already specific enough and low-risk.
+- Do not silently assume behavior, scope, acceptance criteria, or destructive intent when uncertainty remains.
+
 ### Execution lanes
 
 1. **Fast lane (Low risk)**:
@@ -76,6 +85,7 @@ If uncertain, choose the higher risk level.
 - [ ] Use `gh` for every GitHub interaction (issues, PRs, repos) rather than manual HTTP/UI visits.
 - [ ] Consider deepwiki only when local context is insufficient for a holistic, repository-wide perspective.
 - [ ] Classify risk (Low/Medium/High) before coding and pick Fast or Full lane accordingly.
+- [ ] Run a clarification pass when needed; ask concise confirmation questions instead of assuming missing requirements.
 - [ ] Use Fast lane for low-risk tasks and Full lane for medium/high-risk tasks.
 - [ ] Keep hard gates at push/merge stage (`make test`, plus `make build` for Full lane).
 - [ ] Prefer `make preflight` (scripted build + test + lint) before push/merge.
