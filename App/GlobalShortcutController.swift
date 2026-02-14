@@ -10,6 +10,7 @@ final class GlobalShortcutController {
     private var cancellables = Set<AnyCancellable>()
     private var flagsMonitor: KeyboardEventMonitor?
     private var keyDownMonitor: KeyboardEventMonitor?
+    private var keyUpMonitor: KeyboardEventMonitor?
 
     private lazy var dictationHandler = SmartShortcutHandler(
         isRecordingProvider: { [weak self] in self?.recordingManager.isRecording ?? false },
@@ -110,7 +111,25 @@ final class GlobalShortcutController {
             }
             .store(in: &cancellables)
 
+        settings.$dictationShortcutDefinition
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.resetShortcutState()
+                self?.refreshCustomShortcutRegistration()
+                self?.refreshEventMonitors()
+            }
+            .store(in: &cancellables)
+
         settings.$meetingModifierShortcutGesture
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.resetShortcutState()
+                self?.refreshCustomShortcutRegistration()
+                self?.refreshEventMonitors()
+            }
+            .store(in: &cancellables)
+
+        settings.$meetingShortcutDefinition
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.resetShortcutState()
@@ -142,10 +161,14 @@ final class GlobalShortcutController {
     }
 
     private func refreshEventMonitors() {
-        let needsModifierMonitoring = settings.dictationModifierShortcutGesture != nil ||
+        let hasInHouseShortcutDefinitions = settings.dictationShortcutDefinition != nil ||
+            settings.meetingShortcutDefinition != nil
+        let needsModifierMonitoring = hasInHouseShortcutDefinitions ||
+            settings.dictationModifierShortcutGesture != nil ||
             settings.meetingModifierShortcutGesture != nil ||
             settings.dictationSelectedPresetKey.requiresModifierMonitoring ||
             settings.meetingSelectedPresetKey.requiresModifierMonitoring
+        let needsShortcutKeyMonitoring = hasInHouseShortcutDefinitions
         let needsEscapeMonitoring = settings.useEscapeToCancelRecording
 
         if needsModifierMonitoring {
@@ -154,21 +177,33 @@ final class GlobalShortcutController {
             removeFlagsChangedMonitors()
         }
 
-        if needsEscapeMonitoring {
+        if needsEscapeMonitoring || needsShortcutKeyMonitoring {
             installKeyDownMonitors()
         } else {
             removeKeyDownMonitors()
         }
+
+        if needsShortcutKeyMonitoring {
+            installKeyUpMonitors()
+        } else {
+            removeKeyUpMonitors()
+        }
     }
 
     private func refreshCustomShortcutRegistration() {
-        if settings.dictationModifierShortcutGesture == nil, settings.dictationSelectedPresetKey == .custom {
+        if settings.dictationShortcutDefinition == nil,
+           settings.dictationModifierShortcutGesture == nil,
+           settings.dictationSelectedPresetKey == .custom
+        {
             KeyboardShortcuts.enable(.dictationToggle)
         } else {
             KeyboardShortcuts.disable(.dictationToggle)
         }
 
-        if settings.meetingModifierShortcutGesture == nil, settings.meetingSelectedPresetKey == .custom {
+        if settings.meetingShortcutDefinition == nil,
+           settings.meetingModifierShortcutGesture == nil,
+           settings.meetingSelectedPresetKey == .custom
+        {
             KeyboardShortcuts.enable(.meetingToggle)
         } else {
             KeyboardShortcuts.disable(.meetingToggle)
@@ -198,21 +233,43 @@ final class GlobalShortcutController {
         }
     }
 
+    private func installKeyUpMonitors() {
+        if keyUpMonitor == nil {
+            keyUpMonitor = KeyboardEventMonitor(mask: .keyUp) { [weak self] event in
+                self?.handleKeyUp(event)
+            }
+            keyUpMonitor?.start()
+        }
+    }
+
     private func removeKeyDownMonitors() {
         keyDownMonitor?.stop()
         keyDownMonitor = nil
     }
 
+    private func removeKeyUpMonitors() {
+        keyUpMonitor?.stop()
+        keyUpMonitor = nil
+    }
+
     private func removeEventMonitors() {
         removeFlagsChangedMonitors()
         removeKeyDownMonitors()
+        removeKeyUpMonitors()
     }
 
     // To match the original logic:
 
     private func handleFlagsChanged(_ event: NSEvent) {
         // Dictation
-        if let gesture = settings.dictationModifierShortcutGesture {
+        if let definition = settings.dictationShortcutDefinition {
+            handleInHouseShortcutEvent(
+                definition: definition,
+                event: event,
+                handler: dictationHandler,
+                type: .dictation
+            )
+        } else if let gesture = settings.dictationModifierShortcutGesture {
             let isActive = isModifierGestureActive(gesture, event: event)
             let wasPressed = dictationHandler.isPressed
             dictationHandler.handleModifierChange(isActive: isActive)
@@ -236,7 +293,14 @@ final class GlobalShortcutController {
         }
 
         // Meeting
-        if let gesture = settings.meetingModifierShortcutGesture {
+        if let definition = settings.meetingShortcutDefinition {
+            handleInHouseShortcutEvent(
+                definition: definition,
+                event: event,
+                handler: meetingHandler,
+                type: .meeting
+            )
+        } else if let gesture = settings.meetingModifierShortcutGesture {
             let isActive = isModifierGestureActive(gesture, event: event)
             let wasPressed = meetingHandler.isPressed
             meetingHandler.handleModifierChange(isActive: isActive)
@@ -261,6 +325,24 @@ final class GlobalShortcutController {
     }
 
     private func handleKeyDown(_ event: NSEvent) {
+        if let definition = settings.dictationShortcutDefinition {
+            handleInHouseShortcutEvent(
+                definition: definition,
+                event: event,
+                handler: dictationHandler,
+                type: .dictation
+            )
+        }
+
+        if let definition = settings.meetingShortcutDefinition {
+            handleInHouseShortcutEvent(
+                definition: definition,
+                event: event,
+                handler: meetingHandler,
+                type: .meeting
+            )
+        }
+
         guard settings.useEscapeToCancelRecording else { return }
         guard !event.isARepeat else { return }
         guard event.keyCode == PresetShortcutKey.escapeKeyCode else {
@@ -281,8 +363,32 @@ final class GlobalShortcutController {
         }
     }
 
+    private func handleKeyUp(_ event: NSEvent) {
+        if let definition = settings.dictationShortcutDefinition {
+            handleInHouseShortcutEvent(
+                definition: definition,
+                event: event,
+                handler: dictationHandler,
+                type: .dictation
+            )
+        }
+
+        if let definition = settings.meetingShortcutDefinition {
+            handleInHouseShortcutEvent(
+                definition: definition,
+                event: event,
+                handler: meetingHandler,
+                type: .meeting
+            )
+        }
+    }
+
     private func handleCustomShortcutDown(for type: ShortcutType) async {
         let presetKey = type == .dictation ? settings.dictationSelectedPresetKey : settings.meetingSelectedPresetKey
+        let inHouseDefinition = type == .dictation ? settings.dictationShortcutDefinition : settings.meetingShortcutDefinition
+        if inHouseDefinition != nil {
+            return
+        }
         if type == .dictation, settings.dictationModifierShortcutGesture != nil {
             return
         }
@@ -295,6 +401,10 @@ final class GlobalShortcutController {
 
     private func handleCustomShortcutUp(for type: ShortcutType) async {
         let presetKey = type == .dictation ? settings.dictationSelectedPresetKey : settings.meetingSelectedPresetKey
+        let inHouseDefinition = type == .dictation ? settings.dictationShortcutDefinition : settings.meetingShortcutDefinition
+        if inHouseDefinition != nil {
+            return
+        }
         if type == .dictation, settings.dictationModifierShortcutGesture != nil {
             return
         }
@@ -353,6 +463,32 @@ final class GlobalShortcutController {
 
     private func isModifierGestureActive(_ gesture: ModifierShortcutGesture, event: NSEvent) -> Bool {
         presetState.isModifierGestureActive(gesture, event: event)
+    }
+
+    private func isShortcutActive(_ definition: ShortcutDefinition, event: NSEvent) -> Bool {
+        presetState.isShortcutActive(definition, event: event)
+    }
+
+    private func handleInHouseShortcutEvent(
+        definition: ShortcutDefinition,
+        event: NSEvent,
+        handler: SmartShortcutHandler,
+        type: ShortcutType
+    ) {
+        let isActive = isShortcutActive(definition, event: event)
+        let wasPressed = handler.isPressed
+        handler.handleModifierChange(isActive: isActive)
+        let activationMode = definition.trigger.asShortcutActivationMode
+
+        if isActive, !wasPressed {
+            Task { @MainActor in
+                await handleShortcutDown(for: type, activationModeOverride: activationMode)
+            }
+        } else if !isActive, wasPressed {
+            Task { @MainActor in
+                await handleShortcutUp(for: type, activationModeOverride: activationMode)
+            }
+        }
     }
 }
 

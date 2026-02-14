@@ -23,12 +23,10 @@ public struct DictationSettingsTab: View {
                 MAShortcutSettingsSection(
                     groupTitle: "settings.shortcuts.dictation".localized,
                     descriptionText: "settings.shortcuts.dictation_desc".localized,
-                    activationModeDescription: "settings.shortcuts.activation_mode_desc".localized,
                     settingsContent: {
                         VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
                             MAModifierShortcutEditor(
-                                gesture: $shortcutsViewModel.dictationModifierShortcutGesture,
-                                triggerMode: $shortcutsViewModel.dictationModifierTriggerMode,
+                                shortcut: $shortcutsViewModel.dictationShortcutDefinition,
                                 conflictMessage: shortcutsViewModel.dictationModifierConflictMessage
                             )
 

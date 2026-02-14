@@ -19,7 +19,6 @@ public struct AssistantIntegrationEditorSheet: View {
     @State private var copiedPlaceholderToken: String?
     @State private var copiedFeedbackTask: Task<Void, Never>?
     @State private var activePlaceholderPopoverToken: String?
-    @State private var modifierTriggerMode: ModifierShortcutTriggerMode
     @State private var shortcutConflictMessage: String?
     private let onApplyAndClose: (AssistantIntegrationEditorDraft) -> String?
     private let onDelete: (UUID) -> Void
@@ -32,7 +31,6 @@ public struct AssistantIntegrationEditorSheet: View {
         onOpenAdvanced: @escaping (AssistantIntegrationEditorDraft) -> Void
     ) {
         _draft = State(initialValue: AssistantIntegrationEditorDraft(integration: integration))
-        _modifierTriggerMode = State(initialValue: integration.modifierShortcutGesture?.triggerMode ?? .singleTap)
         self.onApplyAndClose = onApplyAndClose
         self.onDelete = onDelete
         self.onOpenAdvanced = onOpenAdvanced
@@ -72,21 +70,13 @@ public struct AssistantIntegrationEditorSheet: View {
                     .foregroundStyle(.secondary)
 
                 MAModifierShortcutEditor(
-                    gesture: Binding(
-                        get: { draft.integration.modifierShortcutGesture },
-                        set: { draft.integration.modifierShortcutGesture = $0 }
-                    ),
-                    triggerMode: Binding(
-                        get: {
-                            draft.integration.modifierShortcutGesture?.triggerMode ?? modifierTriggerMode
-                        },
+                    shortcut: Binding(
+                        get: { draft.integration.shortcutDefinition },
                         set: { newValue in
-                            modifierTriggerMode = newValue
-                            if let gesture = draft.integration.modifierShortcutGesture {
-                                draft.integration.modifierShortcutGesture = ModifierShortcutGesture(
-                                    keys: gesture.keys,
-                                    triggerMode: newValue
-                                )
+                            draft.integration.shortcutDefinition = newValue
+                            draft.integration.modifierShortcutGesture = newValue?.asModifierShortcutGesture
+                            if newValue != nil {
+                                draft.integration.shortcutPresetKey = .custom
                             }
                         }
                     ),
@@ -133,14 +123,10 @@ public struct AssistantIntegrationEditorSheet: View {
         }
         .padding(MeetingAssistantDesignSystem.Layout.spacing20)
         .frame(minWidth: 560, minHeight: 480)
-        .onChange(of: draft.integration.modifierShortcutGesture) { _, newValue in
-            modifierTriggerMode = newValue?.triggerMode ?? modifierTriggerMode
-            shortcutConflictMessage = nil
-        }
         .onChange(of: draft.integration.shortcutPresetKey) { _, _ in
             shortcutConflictMessage = nil
         }
-        .onChange(of: draft.integration.shortcutActivationMode) { _, _ in
+        .onChange(of: draft.integration.shortcutDefinition) { _, _ in
             shortcutConflictMessage = nil
         }
         .onChange(of: draft.integration.isEnabled) { _, _ in
@@ -269,30 +255,30 @@ public struct AssistantIntegrationEditorSheet: View {
     private func placeholderMeaning(for token: String) -> String {
         switch token {
         case AssistantIntegrationDeepLinkShortcode.finalText:
-            return "settings.assistant.integrations.editor.placeholders.final_text.meaning".localized
+            "settings.assistant.integrations.editor.placeholders.final_text.meaning".localized
         case AssistantIntegrationDeepLinkShortcode.finalTextURLEncoded:
-            return "settings.assistant.integrations.editor.placeholders.final_text_urlencoded.meaning".localized
+            "settings.assistant.integrations.editor.placeholders.final_text_urlencoded.meaning".localized
         case AssistantIntegrationDeepLinkShortcode.rawText:
-            return "settings.assistant.integrations.editor.placeholders.raw_text.meaning".localized
+            "settings.assistant.integrations.editor.placeholders.raw_text.meaning".localized
         case AssistantIntegrationDeepLinkShortcode.rawTextURLEncoded:
-            return "settings.assistant.integrations.editor.placeholders.raw_text_urlencoded.meaning".localized
+            "settings.assistant.integrations.editor.placeholders.raw_text_urlencoded.meaning".localized
         default:
-            return ""
+            ""
         }
     }
 
     private func placeholderExample(for token: String) -> String {
         switch token {
         case AssistantIntegrationDeepLinkShortcode.finalText:
-            return "settings.assistant.integrations.editor.placeholders.final_text.example".localized
+            "settings.assistant.integrations.editor.placeholders.final_text.example".localized
         case AssistantIntegrationDeepLinkShortcode.finalTextURLEncoded:
-            return "settings.assistant.integrations.editor.placeholders.final_text_urlencoded.example".localized
+            "settings.assistant.integrations.editor.placeholders.final_text_urlencoded.example".localized
         case AssistantIntegrationDeepLinkShortcode.rawText:
-            return "settings.assistant.integrations.editor.placeholders.raw_text.example".localized
+            "settings.assistant.integrations.editor.placeholders.raw_text.example".localized
         case AssistantIntegrationDeepLinkShortcode.rawTextURLEncoded:
-            return "settings.assistant.integrations.editor.placeholders.raw_text_urlencoded.example".localized
+            "settings.assistant.integrations.editor.placeholders.raw_text_urlencoded.example".localized
         default:
-            return ""
+            ""
         }
     }
 
