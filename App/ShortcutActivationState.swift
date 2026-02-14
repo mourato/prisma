@@ -12,6 +12,7 @@ final class ShortcutActivationState {
     private var leftControlIsDown = false
     private var rightControlIsDown = false
     private var fnIsDown = false
+    private var pressedKeyCodes = Set<UInt16>()
 
     func reset() {
         leftCommandIsDown = false
@@ -23,6 +24,7 @@ final class ShortcutActivationState {
         leftControlIsDown = false
         rightControlIsDown = false
         fnIsDown = false
+        pressedKeyCodes.removeAll()
     }
 
     func isPresetActive(_ preset: PresetShortcutKey, event: NSEvent) -> Bool {
@@ -63,10 +65,31 @@ final class ShortcutActivationState {
         return matchesGesture(gesture, flags: flags)
     }
 
+    func isShortcutActive(_ definition: ShortcutDefinition, event: NSEvent) -> Bool {
+        let flags = normalizedFlags(event.modifierFlags)
+        updateTrackedModifierState(event: event, flags: flags)
+
+        guard matchesModifierSet(Set(definition.modifiers), flags: flags) else {
+            return false
+        }
+
+        guard let primaryKey = definition.primaryKey else {
+            return true
+        }
+
+        return pressedKeyCodes.contains(primaryKey.keyCode)
+    }
+
     private func updateTrackedModifierState(
         event: NSEvent,
         flags: NSEvent.ModifierFlags
     ) {
+        if event.type == .keyDown {
+            pressedKeyCodes.insert(event.keyCode)
+        } else if event.type == .keyUp {
+            pressedKeyCodes.remove(event.keyCode)
+        }
+
         switch event.keyCode {
         case PresetShortcutKey.leftCommandKeyCode:
             leftCommandIsDown.toggle()
@@ -116,6 +139,13 @@ final class ShortcutActivationState {
         flags: NSEvent.ModifierFlags
     ) -> Bool {
         let required = Set(gesture.keys)
+        return matchesModifierSet(required, flags: flags)
+    }
+
+    private func matchesModifierSet(
+        _ required: Set<ModifierShortcutKey>,
+        flags: NSEvent.ModifierFlags
+    ) -> Bool {
         guard !required.isEmpty else {
             return false
         }
