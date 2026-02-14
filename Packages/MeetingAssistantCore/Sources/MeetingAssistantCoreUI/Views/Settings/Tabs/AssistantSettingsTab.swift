@@ -10,6 +10,7 @@ public struct AssistantSettingsTab: View {
     @StateObject private var viewModel = AssistantShortcutSettingsViewModel()
     @State private var editingIntegration: AssistantIntegrationConfig?
     @State private var advancedIntegrationDraft: AssistantIntegrationConfig?
+    @State private var integrationShortcutConflictMessages: [UUID: String] = [:]
 
     public init() {}
 
@@ -213,6 +214,15 @@ public struct AssistantSettingsTab: View {
 
             Spacer()
 
+            if integration.shortcutDefinition != nil {
+                MAModifierShortcutEditor(
+                    shortcut: integrationShortcutBinding(for: integration.id),
+                    conflictMessage: integrationShortcutConflictMessages[integration.id],
+                    showsTitle: false,
+                    maxInputWidth: 260
+                )
+            }
+
             Button {
                 editingIntegration = integration
             } label: {
@@ -237,6 +247,18 @@ public struct AssistantSettingsTab: View {
         .background(
             RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.cardCornerRadius)
                 .strokeBorder(isCardStyle ? Color.secondary.opacity(0.2) : Color.clear, lineWidth: 1)
+        )
+    }
+
+    private func integrationShortcutBinding(for id: UUID) -> Binding<ShortcutDefinition?> {
+        Binding(
+            get: {
+                viewModel.integration(for: id)?.shortcutDefinition
+            },
+            set: { newValue in
+                let conflictMessage = viewModel.setIntegrationShortcutDefinition(newValue, for: id)
+                integrationShortcutConflictMessages[id] = conflictMessage
+            }
         )
     }
 
