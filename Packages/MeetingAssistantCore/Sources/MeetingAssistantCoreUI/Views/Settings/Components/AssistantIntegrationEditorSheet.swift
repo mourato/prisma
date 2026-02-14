@@ -42,27 +42,16 @@ public struct AssistantIntegrationEditorSheet: View {
                 .font(.title3)
                 .fontWeight(.semibold)
 
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-                Text("settings.assistant.integrations.integration_name".localized)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            if !isBuiltInIntegration {
+                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                    Text("settings.assistant.integrations.integration_name".localized)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
 
-                TextField("", text: $draft.integration.name)
-                    .textFieldStyle(.roundedBorder)
+                    TextField("", text: $draft.integration.name)
+                        .textFieldStyle(.roundedBorder)
+                }
             }
-
-            Toggle("settings.assistant.integrations.integration_enabled".localized, isOn: $draft.integration.isEnabled)
-
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-                Text("settings.assistant.integrations.integration_deeplink".localized)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                TextField("", text: $draft.integration.deepLink)
-                    .textFieldStyle(.roundedBorder)
-            }
-
-            placeholderSection
 
             VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
                 Text("settings.assistant.integrations.editor.hotkey".localized)
@@ -84,6 +73,17 @@ public struct AssistantIntegrationEditorSheet: View {
                 )
             }
 
+            if !isBuiltInIntegration {
+                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                    Text("settings.assistant.integrations.integration_deeplink".localized)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    TextField("", text: $draft.integration.deepLink)
+                        .textFieldStyle(.roundedBorder)
+                }
+            }
+
             VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
                 Text("settings.assistant.integrations.editor.instructions".localized)
                     .font(.caption)
@@ -100,17 +100,23 @@ public struct AssistantIntegrationEditorSheet: View {
                 )
             }
 
-            Button(action: { onOpenAdvanced(draft) }) {
-                Label("settings.assistant.integrations.editor.advanced".localized, systemImage: "gearshape")
+            if !isBuiltInIntegration {
+                placeholderSection
+
+                Button(action: { onOpenAdvanced(draft) }) {
+                    Label("settings.assistant.integrations.editor.advanced".localized, systemImage: "gearshape")
+                }
+                .buttonStyle(.plain)
+                .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing12)
             }
-            .buttonStyle(.plain)
-            .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing12)
 
             HStack {
-                Button(role: .destructive) {
-                    onDelete(draft.integration.id)
-                } label: {
-                    Text("settings.assistant.integrations.editor.delete".localized)
+                if !isBuiltInIntegration {
+                    Button(role: .destructive) {
+                        onDelete(draft.integration.id)
+                    } label: {
+                        Text("settings.assistant.integrations.editor.delete".localized)
+                    }
                 }
 
                 Spacer()
@@ -129,12 +135,13 @@ public struct AssistantIntegrationEditorSheet: View {
         .onChange(of: draft.integration.shortcutDefinition) { _, _ in
             shortcutConflictMessage = nil
         }
-        .onChange(of: draft.integration.isEnabled) { _, _ in
-            shortcutConflictMessage = nil
-        }
         .onDisappear {
             copiedFeedbackTask?.cancel()
         }
+    }
+
+    private var isBuiltInIntegration: Bool {
+        draft.integration.id == AssistantIntegrationConfig.raycastDefaultID
     }
 
     private var placeholderSection: some View {
