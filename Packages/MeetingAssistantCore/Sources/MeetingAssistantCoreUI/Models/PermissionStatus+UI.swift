@@ -41,7 +41,7 @@ public extension PermissionInfo {
     }
 
     var iconBackgroundColor: Color {
-        statusColor.opacity(0.15)
+        statusColor.opacity(0.1)
     }
 
     var iconForegroundColor: Color {

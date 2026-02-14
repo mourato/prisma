@@ -104,7 +104,7 @@ public struct PostProcessingSettingsTab: View {
                         )
                     }
                     .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    .controlSize(.regular)
                 }
             }
         }
@@ -130,7 +130,7 @@ public struct PostProcessingSettingsTab: View {
                         )
                     }
                     .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    .controlSize(.regular)
                 }
 
                 VStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {

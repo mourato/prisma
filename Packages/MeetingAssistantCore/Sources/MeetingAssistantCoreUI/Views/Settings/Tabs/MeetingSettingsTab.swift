@@ -157,7 +157,7 @@ public struct MeetingSettingsTab: View {
                                 )
                             }
                             .buttonStyle(.bordered)
-                            .controlSize(.small)
+                            .controlSize(.regular)
                         }
 
                         VStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
@@ -252,7 +252,7 @@ public struct MeetingSettingsTab: View {
                         Label("settings.meetings.web_targets.add".localized, systemImage: "plus")
                     }
                     .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    .controlSize(.regular)
                 }
             }
         }
@@ -286,7 +286,7 @@ public struct MeetingSettingsTab: View {
                     .accessibilityLabel("settings.meetings.web_targets.edit".localized)
             }
             .buttonStyle(.borderless)
-            .controlSize(.small)
+            .controlSize(.regular)
 
             Button(role: .destructive) {
                 webTargetsViewModel.confirmDelete(target)
@@ -295,7 +295,7 @@ public struct MeetingSettingsTab: View {
                     .accessibilityLabel("settings.meetings.web_targets.delete".localized)
             }
             .buttonStyle(.borderless)
-            .controlSize(.small)
+            .controlSize(.regular)
         }
         .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)
         .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)

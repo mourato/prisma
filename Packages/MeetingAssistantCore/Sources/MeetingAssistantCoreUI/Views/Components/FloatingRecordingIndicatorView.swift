@@ -371,7 +371,7 @@ public struct FloatingRecordingIndicatorView: View {
         .background(MeetingAssistantDesignSystem.Colors.overlayBackground)
         .overlay(
             Capsule()
-                .strokeBorder(Color.white.opacity(0.30), lineWidth: 1)
+                .strokeBorder(Color.white.opacity(0.15), lineWidth: 1.5)
         )
         .clipShape(Capsule())
         .shadow(
@@ -393,7 +393,7 @@ public struct FloatingRecordingIndicatorView: View {
             .background(MeetingAssistantDesignSystem.Colors.overlayBackground)
             .overlay(
                 Capsule()
-                    .strokeBorder(Color.white.opacity(0.30), lineWidth: 1)
+                    .strokeBorder(Color.white.opacity(0.15), lineWidth: 1.5)
             )
             .clipShape(Capsule())
             .onHover { hovering in
@@ -497,7 +497,7 @@ public struct FloatingRecordingIndicatorView: View {
     private func promptIconSize(for size: IndicatorSize) -> CGFloat {
         switch size {
         case .classic:
-            17
+            15
         case .mini:
             13
         }
