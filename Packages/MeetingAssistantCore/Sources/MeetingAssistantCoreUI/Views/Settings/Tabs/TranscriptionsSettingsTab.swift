@@ -156,13 +156,11 @@ public struct TranscriptionsSettingsTab: View {
     private var openFolderButton: some View {
         Button(action: { viewModel.openRecordingsDirectory() }) {
             Label("settings.transcriptions.open_folder".localized, systemImage: "folder")
-                .font(.subheadline)
-                .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing10)
-                .frame(height: Layout.controlHeight)
-                .background(MeetingAssistantDesignSystem.Colors.subtleFill)
+                .font(.body)
                 .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.bordered)
+        .controlSize(.large)
     }
 
     private var sourceFilterPicker: some View {
@@ -175,7 +173,7 @@ public struct TranscriptionsSettingsTab: View {
             }
         }
         .pickerStyle(.segmented)
-        .controlSize(.small)
+        .controlSize(.regular)
         .labelsHidden()
     }
 
@@ -215,13 +213,14 @@ public struct TranscriptionsSettingsTab: View {
                 Image(systemName: "desktopcomputer")
                     .foregroundStyle(MeetingAssistantDesignSystem.Colors.accent)
                 Text(selectedAppFilterLabel)
-                    .font(.subheadline)
+                    .font(.body)
                     .lineLimit(1)
                 Spacer()
                 Image(systemName: "chevron.down")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
+            .controlSize(.regular)
             .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing10)
             .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
             .background(MeetingAssistantDesignSystem.Colors.subtleFill)
@@ -249,7 +248,7 @@ public struct TranscriptionsSettingsTab: View {
                 Image(systemName: "calendar")
                     .foregroundStyle(MeetingAssistantDesignSystem.Colors.accent)
                 Text(viewModel.dateFilter.displayName)
-                    .font(.subheadline)
+                    .font(.body)
                 Spacer()
                 Image(systemName: "chevron.down")
                     .font(.caption2)

@@ -88,7 +88,7 @@ public struct InstalledAppsSelectionList: View {
                     Label(addButtonKey.localized, systemImage: "plus")
                 }
                 .buttonStyle(.bordered)
-                .controlSize(.small)
+                .controlSize(.regular)
             }
         }
         .onAppear {
@@ -124,7 +124,7 @@ public struct InstalledAppsSelectionList: View {
                     .accessibilityLabel("settings.markdown_targets.remove".localized)
             }
             .buttonStyle(.borderless)
-            .controlSize(.small)
+            .controlSize(.regular)
         }
         .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)
         .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)

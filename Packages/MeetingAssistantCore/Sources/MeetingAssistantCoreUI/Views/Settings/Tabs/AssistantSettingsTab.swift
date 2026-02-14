@@ -176,7 +176,7 @@ public struct AssistantSettingsTab: View {
                         )
                     }
                     .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    .controlSize(.regular)
                 }
 
                 ForEach(viewModel.customIntegrations) { integration in

@@ -79,7 +79,7 @@ public struct DictationSettingsTab: View {
                                 )
                             }
                             .buttonStyle(.bordered)
-                            .controlSize(.small)
+                            .controlSize(.regular)
                         }
 
                         VStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {

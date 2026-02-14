@@ -246,7 +246,7 @@ public struct EnhancementsSettingsTab: View {
                     Label("settings.markdown_targets.websites.add".localized, systemImage: "plus")
                 }
                 .buttonStyle(.bordered)
-                .controlSize(.small)
+                .controlSize(.regular)
             }
         }
     }
@@ -279,7 +279,7 @@ public struct EnhancementsSettingsTab: View {
                     .accessibilityLabel("settings.markdown_targets.websites.edit".localized)
             }
             .buttonStyle(.borderless)
-            .controlSize(.small)
+            .controlSize(.regular)
 
             Button(role: .destructive) {
                 markdownWebTargetsViewModel.confirmDelete(target)
@@ -288,7 +288,7 @@ public struct EnhancementsSettingsTab: View {
                     .accessibilityLabel("settings.markdown_targets.websites.delete".localized)
             }
             .buttonStyle(.borderless)
-            .controlSize(.small)
+            .controlSize(.regular)
         }
         .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)
         .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
@@ -329,13 +329,13 @@ public struct EnhancementsSettingsTab: View {
                         Task { await refreshSupportStatus() }
                     }
                     .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
+                    .controlSize(.regular)
 
                     Button("permissions.configure".localized) {
                         AccessibilityPermissionService.openSystemSettings()
                     }
                     .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    .controlSize(.regular)
                 }
 
             case .noActiveApp, .supported, .unknown, .noFocusedElement, .unsupported:
@@ -396,7 +396,7 @@ public struct EnhancementsSettingsTab: View {
                         )
                     }
                     .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    .controlSize(.regular)
                 }
             }
         }

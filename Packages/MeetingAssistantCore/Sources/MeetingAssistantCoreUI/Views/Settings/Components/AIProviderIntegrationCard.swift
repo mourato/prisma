@@ -120,6 +120,25 @@ public struct AIProviderIntegrationCard: View {
                     .multilineTextAlignment(.trailing)
                     .frame(maxWidth: MeetingAssistantDesignSystem.Layout.maxCompactTextFieldWidth)
                 } else {
+                    if viewModel.canRefreshModels {
+                        Button {
+                            viewModel.refreshModelsManually()
+                        } label: {
+                            if viewModel.isLoadingModels {
+                                ProgressView()
+                                    .controlSize(.small)
+                                    .scaleEffect(0.6)
+                            } else {
+                                Image(systemName: "arrow.clockwise")
+                                    .accessibilityLabel("settings.ai.model_refresh".localized)
+                                    .fontWeight(.medium)
+                            }
+                        }
+                        .controlSize(.regular)
+                        .buttonStyle(.borderless)
+                        .disabled(viewModel.isLoadingModels || viewModel.connectionStatus == .testing)
+                    }
+                    
                     Picker("", selection: selectedModelBinding) {
                         if viewModel.isLoadingModels {
                             Text("settings.ai.loading".localized).tag("")
@@ -134,7 +153,6 @@ public struct AIProviderIntegrationCard: View {
                     }
                     .pickerStyle(.menu)
                     .labelsHidden()
-                    .frame(maxWidth: MeetingAssistantDesignSystem.Layout.maxPickerWidth)
                     .disabled(viewModel.isLoadingModels || viewModel.availableModels.isEmpty)
                 }
             }
@@ -198,7 +216,7 @@ public struct AIProviderIntegrationCard: View {
                         Text("settings.ai.remove_key".localized)
                     }
                     .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    .controlSize(.regular)
                 }
             } else {
                 SecureField("settings.ai.api_key_placeholder".localized, text: $viewModel.apiKeyText)
@@ -256,23 +274,6 @@ public struct AIProviderIntegrationCard: View {
 
             Spacer()
 
-            if viewModel.canRefreshModels {
-                Button {
-                    viewModel.refreshModelsManually()
-                } label: {
-                    if viewModel.isLoadingModels {
-                        ProgressView()
-                            .controlSize(.small)
-                            .scaleEffect(0.6)
-                    } else {
-                        Text("settings.ai.model_refresh".localized)
-                    }
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .disabled(viewModel.isLoadingModels || viewModel.connectionStatus == .testing)
-            }
-
             if viewModel.showVerifyButton {
                 Button {
                     viewModel.testAPIConnection()
@@ -286,7 +287,7 @@ public struct AIProviderIntegrationCard: View {
                     }
                 }
                 .buttonStyle(.bordered)
-                .controlSize(.small)
+                .controlSize(.regular)
                 .disabled(!viewModel.hasPendingAPIKeyInput || viewModel.connectionStatus == .testing)
             }
         }

@@ -92,7 +92,7 @@ public struct PermissionStatusView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("permissions.system_title".localized)
                     .font(.subheadline)
-                    .fontWeight(.semibold)
+                    .fontWeight(.medium)
 
                 Text("permissions.granted_count".localized(with: grantedCount, requiredCount))
                     .font(.caption)
@@ -222,7 +222,7 @@ struct PermissionRowView: View {
                 onRequest()
             }
             .buttonStyle(.borderedProminent)
-            .controlSize(.small)
+            .controlSize(.regular)
             .tint(MeetingAssistantDesignSystem.Colors.accent)
 
         case .openSettings:
@@ -230,7 +230,7 @@ struct PermissionRowView: View {
                 onOpenSettings()
             }
             .buttonStyle(.bordered)
-            .controlSize(.small)
+            .controlSize(.regular)
 
         case .none:
             EmptyView()
@@ -284,7 +284,7 @@ struct CompactPermissionIndicator: View {
         .padding(.vertical, 4)
         .background(
             Capsule()
-                .fill(permission.statusColor.opacity(0.1))
+                .fill(permission.statusColor.opacity(0.5))
         )
         .help("\(permission.type.displayName): \(permission.state.displayName)")
     }
