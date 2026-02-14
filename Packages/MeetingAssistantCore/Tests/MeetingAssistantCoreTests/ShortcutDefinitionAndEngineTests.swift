@@ -1,3 +1,4 @@
+import Foundation
 @testable import MeetingAssistantCore
 import XCTest
 
@@ -67,6 +68,33 @@ final class ShortcutDefinitionAndEngineTests: XCTestCase {
         let conflict = ModifierShortcutConflictService.conflict(for: candidate, in: [existing])
         XCTAssertEqual(conflict?.conflicting.actionID, .assistant)
         XCTAssertEqual(conflict?.candidate.actionID, .meeting)
+    }
+
+    func testPrimaryKeyNormalizedTokenIncludesKeyCode() {
+        let first = ShortcutPrimaryKey.letter("A", keyCode: 0x00)
+        let second = ShortcutPrimaryKey.letter("A", keyCode: 0x32)
+
+        XCTAssertNotEqual(first.normalizedToken, second.normalizedToken)
+    }
+
+    func testAssistantIntegrationDecodeNormalizesModifierOnlySingleTapShortcut() throws {
+        let data = try JSONSerialization.data(withJSONObject: [
+            "id": UUID().uuidString,
+            "name": "Legacy Integration",
+            "kind": "deeplink",
+            "isEnabled": true,
+            "deepLink": "raycast://extensions/raycast/raycast-ai/ai-chat",
+            "shortcutActivationMode": "holdOrToggle",
+            "modifierShortcutGesture": [
+                "keys": ["rightCommand"],
+                "triggerMode": "singleTap",
+            ],
+        ])
+
+        let decoded = try JSONDecoder().decode(AssistantIntegrationConfig.self, from: data)
+
+        XCTAssertEqual(decoded.shortcutDefinition?.trigger, .hold)
+        XCTAssertTrue(decoded.shortcutDefinition?.isValid ?? false)
     }
 
     @MainActor

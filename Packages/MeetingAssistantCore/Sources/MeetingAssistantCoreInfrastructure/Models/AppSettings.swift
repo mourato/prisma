@@ -93,6 +93,26 @@ public enum ShortcutActivationMode: String, CaseIterable, Codable, Sendable {
     }
 }
 
+private func normalizedInHouseShortcutDefinition(
+    _ definition: ShortcutDefinition,
+    activationMode: ShortcutActivationMode
+) -> ShortcutDefinition? {
+    var normalized = definition
+
+    switch normalized.patternType {
+    case .advanced where normalized.trigger == .singleTap:
+        normalized.trigger = activationMode == .doubleTap ? .doubleTap : .hold
+    case .simple where normalized.trigger == .doubleTap:
+        normalized.trigger = activationMode == .hold ? .hold : .singleTap
+    case .intermediate where normalized.trigger == .doubleTap:
+        normalized.trigger = activationMode == .hold ? .hold : .singleTap
+    default:
+        break
+    }
+
+    return normalized.isValid ? normalized : nil
+}
+
 // MARK: - Recording Indicator Configuration
 
 /// Style options for the floating recording indicator.
@@ -295,7 +315,9 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
         self.deepLink = deepLink
         self.promptInstructions = promptInstructions
         self.selectedPreset = selectedPreset
-        self.shortcutDefinition = shortcutDefinition
+        self.shortcutDefinition = shortcutDefinition.flatMap {
+            normalizedInHouseShortcutDefinition($0, activationMode: shortcutActivationMode)
+        }
         self.shortcutPresetKey = shortcutPresetKey
         self.shortcutActivationMode = shortcutActivationMode
         self.modifierShortcutGesture = modifierShortcutGesture
@@ -362,15 +384,18 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
         shortcutActivationMode = try container.decodeIfPresent(ShortcutActivationMode.self, forKey: .shortcutActivationMode) ?? .holdOrToggle
         modifierShortcutGesture = try container.decodeIfPresent(ModifierShortcutGesture.self, forKey: .modifierShortcutGesture)
         let decodedShortcutDefinition = try container.decodeIfPresent(ShortcutDefinition.self, forKey: .shortcutDefinition)
-        if let decodedShortcutDefinition {
-            shortcutDefinition = decodedShortcutDefinition
-        } else if let modifierShortcutGesture {
-            shortcutDefinition = modifierShortcutGesture.asShortcutDefinition
-        } else if let legacyGesture = shortcutPresetKey.asLegacyModifierGesture(activationMode: shortcutActivationMode) {
-            shortcutDefinition = legacyGesture.asShortcutDefinition
-        } else {
-            shortcutDefinition = nil
+        let normalizedDecodedShortcut = decodedShortcutDefinition.flatMap {
+            normalizedInHouseShortcutDefinition($0, activationMode: shortcutActivationMode)
         }
+        let normalizedGestureShortcut = modifierShortcutGesture.flatMap {
+            normalizedInHouseShortcutDefinition($0.asShortcutDefinition, activationMode: shortcutActivationMode)
+        }
+        let normalizedLegacyShortcut = shortcutPresetKey
+            .asLegacyModifierGesture(activationMode: shortcutActivationMode)
+            .flatMap {
+                normalizedInHouseShortcutDefinition($0.asShortcutDefinition, activationMode: shortcutActivationMode)
+            }
+        shortcutDefinition = normalizedDecodedShortcut ?? normalizedGestureShortcut ?? normalizedLegacyShortcut
 
         if modifierShortcutGesture == nil {
             modifierShortcutGesture = shortcutDefinition?.asModifierShortcutGesture
@@ -1071,9 +1096,19 @@ public class AppSettingsStore: ObservableObject {
         )
 
         for integration in assistantIntegrations where integration.isEnabled {
-            let resolvedShortcut = integration.shortcutDefinition ??
-                integration.modifierShortcutGesture?.asShortcutDefinition ??
-                integration.shortcutPresetKey.asLegacyModifierGesture(activationMode: integration.shortcutActivationMode)?.asShortcutDefinition
+            let resolvedShortcut = integration.shortcutDefinition
+                .flatMap {
+                    normalizedInHouseShortcutDefinition($0, activationMode: integration.shortcutActivationMode)
+                } ??
+                integration.modifierShortcutGesture
+                .flatMap {
+                    normalizedInHouseShortcutDefinition($0.asShortcutDefinition, activationMode: integration.shortcutActivationMode)
+                } ??
+                integration.shortcutPresetKey
+                .asLegacyModifierGesture(activationMode: integration.shortcutActivationMode)
+                .flatMap {
+                    normalizedInHouseShortcutDefinition($0.asShortcutDefinition, activationMode: integration.shortcutActivationMode)
+                }
 
             guard let resolvedShortcut, !resolvedShortcut.isEmpty else {
                 continue
@@ -1676,12 +1711,20 @@ public class AppSettingsStore: ObservableObject {
         activationMode: ShortcutActivationMode
     ) -> ShortcutDefinition? {
         if let explicitGesture {
-            return explicitGesture.asShortcutDefinition
+            return normalizedInHouseShortcutDefinition(
+                explicitGesture.asShortcutDefinition,
+                activationMode: activationMode
+            )
         }
 
-        return legacyPresetKey
-            .asLegacyModifierGesture(activationMode: activationMode)?
-            .asShortcutDefinition
+        guard let legacyGesture = legacyPresetKey.asLegacyModifierGesture(activationMode: activationMode) else {
+            return nil
+        }
+
+        return normalizedInHouseShortcutDefinition(
+            legacyGesture.asShortcutDefinition,
+            activationMode: activationMode
+        )
     }
 
     private func appendResolvedShortcutBinding(
@@ -1722,10 +1765,20 @@ public class AppSettingsStore: ObservableObject {
         normalizedIntegrations = normalizedIntegrations.map { integration in
             var normalized = integration
 
-            if normalized.shortcutDefinition == nil {
-                normalized.shortcutDefinition = normalized.modifierShortcutGesture?.asShortcutDefinition ??
-                    normalized.shortcutPresetKey.asLegacyModifierGesture(activationMode: normalized.shortcutActivationMode)?.asShortcutDefinition
-            }
+            let normalizedShortcut = normalized.shortcutDefinition
+                .flatMap {
+                    normalizedInHouseShortcutDefinition($0, activationMode: normalized.shortcutActivationMode)
+                } ??
+                normalized.modifierShortcutGesture
+                .flatMap {
+                    normalizedInHouseShortcutDefinition($0.asShortcutDefinition, activationMode: normalized.shortcutActivationMode)
+                } ??
+                normalized.shortcutPresetKey
+                .asLegacyModifierGesture(activationMode: normalized.shortcutActivationMode)
+                .flatMap {
+                    normalizedInHouseShortcutDefinition($0.asShortcutDefinition, activationMode: normalized.shortcutActivationMode)
+                }
+            normalized.shortcutDefinition = normalizedShortcut
 
             if let canonicalGesture = normalized.shortcutDefinition?.asModifierShortcutGesture {
                 normalized.modifierShortcutGesture = canonicalGesture
