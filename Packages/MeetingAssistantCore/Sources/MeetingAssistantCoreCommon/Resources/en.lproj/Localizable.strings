@@ -294,7 +294,6 @@
 "settings.assistant.controls" = "Assistant Shortcut";
 "settings.assistant.toggle_command" = "Start/Stop Assistant";
 "settings.assistant.toggle_command_desc" = "Hold or press to record a voice command for the selected text";
-"settings.assistant.custom_shortcut" = "Custom Shortcut:";
 "settings.assistant.activation_mode_desc" = "Choose how the shortcut activates: Hold or Press (auto-detects), Press (press once), Hold (record while pressed), or Double Tap (tap twice quickly).";
 "settings.assistant.tips_title" = "Tips";
 "settings.assistant.fn_key_title" = "Using the Fn key";
@@ -420,19 +419,18 @@
 "settings.shortcuts.use_escape" = "Press Escape twice to cancel recording";
 "settings.shortcuts.use_escape_desc" = "Requires two consecutive Escape key presses while recording.";
 "settings.shortcuts.modifier.title" = "Modifier Shortcut";
-"settings.shortcuts.modifier.description" = "Record a shortcut with left/right Command, Shift, Option, Control, or Fn.";
-"settings.shortcuts.modifier.record" = "Record shortcut";
-"settings.shortcuts.modifier.stop" = "Stop";
-"settings.shortcuts.modifier.clear" = "Clear";
 "settings.shortcuts.modifier.none" = "No keys recorded.";
 "settings.shortcuts.modifier.trigger" = "Trigger behavior";
-"settings.shortcuts.modifier.trigger.single_tap" = "Single Tap";
 "settings.shortcuts.modifier.conflict" = "This shortcut is already assigned to \"%@\".";
+"settings.shortcuts.modifier.input_placeholder" = "Click to record shortcut";
+"settings.shortcuts.modifier.popover.recording" = "Recording";
+"settings.shortcuts.modifier.popover.example" = "Example: ⌘G";
+"settings.shortcuts.modifier.popover.success" = "Shortcut captured successfully.";
+"settings.shortcuts.modifier.popover.hint" = "Press and release your shortcut to capture it.";
 "settings.shortcuts.try_keys" = "Try Your Keys";
 "settings.shortcuts.try_keys_hint" = "Click in the text box below first.";
 "settings.shortcuts.key.not_specified" = "Not specified";
 "settings.shortcuts.key.custom" = "Record shortcut...";
-"settings.shortcuts.custom_shortcut" = "Custom Shortcut:";
 
 /* Permissions Settings */
 "settings.permissions.title" = "Permissions";
