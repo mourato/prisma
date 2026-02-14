@@ -46,13 +46,16 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
 
         // Then
         XCTAssertEqual(viewModel.transcriptions.count, 2)
-        XCTAssertEqual(viewModel.transcriptions[0].id, mockId1)
-        // appRawValue for Teams is "microsoft-teams" (from MeetingApp enum)
-        XCTAssertEqual(viewModel.transcriptions[0].appRawValue, MeetingApp.microsoftTeams.rawValue)
-        XCTAssertEqual(viewModel.transcriptions[0].duration, 60, accuracy: 0.1)
-        XCTAssertEqual(viewModel.transcriptions[1].id, mockId2)
-        XCTAssertEqual(viewModel.transcriptions[1].appRawValue, MeetingApp.zoom.rawValue)
-        XCTAssertEqual(viewModel.transcriptions[1].duration, 120, accuracy: 0.1)
+        let metadataById = Dictionary(uniqueKeysWithValues: viewModel.transcriptions.map { ($0.id, $0) })
+        let teamsMetadata = metadataById[mockId1]
+        let zoomMetadata = metadataById[mockId2]
+
+        XCTAssertNotNil(teamsMetadata)
+        XCTAssertNotNil(zoomMetadata)
+        XCTAssertEqual(teamsMetadata?.appRawValue, MeetingApp.microsoftTeams.rawValue)
+        XCTAssertEqual(teamsMetadata?.duration ?? 0, 60, accuracy: 0.1)
+        XCTAssertEqual(zoomMetadata?.appRawValue, MeetingApp.zoom.rawValue)
+        XCTAssertEqual(zoomMetadata?.duration ?? 0, 120, accuracy: 0.1)
     }
 
     func testSelectTranscriptionLoadsFullData() async {

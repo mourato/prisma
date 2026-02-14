@@ -15,6 +15,7 @@ import UniformTypeIdentifiers
 public struct TranscriptionsSettingsTab: View {
     @StateObject private var viewModel = TranscriptionSettingsViewModel()
     @StateObject private var importViewModel: TranscriptionImportViewModel
+    @State private var searchReloadTask: Task<Void, Never>?
 
     public init() {
         // Initialize importViewModel with a closure to refresh the list
@@ -36,6 +37,33 @@ public struct TranscriptionsSettingsTab: View {
             Task {
                 await viewModel.loadTranscriptions()
             }
+        }
+        .onChange(of: viewModel.sourceFilter) { _, _ in
+            Task {
+                await viewModel.loadTranscriptions()
+            }
+        }
+        .onChange(of: viewModel.dateFilter) { _, _ in
+            Task {
+                await viewModel.loadTranscriptions()
+            }
+        }
+        .onChange(of: viewModel.appFilterId) { _, _ in
+            Task {
+                await viewModel.loadTranscriptions()
+            }
+        }
+        .onChange(of: viewModel.searchText) { _, _ in
+            searchReloadTask?.cancel()
+            searchReloadTask = Task {
+                try? await Task.sleep(for: .milliseconds(300))
+                guard !Task.isCancelled else { return }
+                await viewModel.loadTranscriptions()
+            }
+        }
+        .onDisappear {
+            searchReloadTask?.cancel()
+            searchReloadTask = nil
         }
         .alert(
             "settings.transcriptions.error_load".localized,

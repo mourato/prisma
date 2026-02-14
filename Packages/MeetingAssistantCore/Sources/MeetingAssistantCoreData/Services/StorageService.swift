@@ -95,6 +95,9 @@ public protocol StorageService: Sendable {
     /// Load lightweight metadata for all transcriptions.
     func loadAllMetadata() async throws -> [TranscriptionMetadata]
 
+    /// Load lightweight metadata with server-side filters.
+    func loadMetadata(matching query: TranscriptionMetadataQuery) async throws -> [TranscriptionMetadata]
+
     /// Load a specific transcription by its ID.
     /// Load a specific transcription by its ID.
     func loadTranscription(by id: UUID) async throws -> Transcription?
@@ -231,32 +234,25 @@ public final class FileSystemStorageService: StorageService {
     }
 
     public func loadAllMetadata() async throws -> [TranscriptionMetadata] {
+        try await loadMetadata(
+            matching: TranscriptionMetadataQuery(
+                sourceFilter: .all,
+                dateFilter: .allEntries,
+                searchText: "",
+                appRawValue: nil
+            )
+        )
+    }
+
+    public func loadMetadata(matching query: TranscriptionMetadataQuery) async throws -> [TranscriptionMetadata] {
         try await coreDataStack.performBackgroundTask { context in
             let request = TranscriptionMO.fetchRequest()
-            let results = try context.fetch(request)
+            request.fetchBatchSize = 100
+            request.relationshipKeyPathsForPrefetching = ["meeting"]
+            request.predicate = Self.buildMetadataPredicate(for: query)
 
-            return results.map { mo in
-                let wordCount = Self.wordCount(for: mo.text)
-                let fallbackName = MeetingApp(rawValue: mo.meeting.appRawValue)?.displayName ?? mo.meeting.appRawValue
-                let trimmedDisplayName = mo.meeting.appDisplayName?.trimmingCharacters(in: .whitespacesAndNewlines)
-                let resolvedName = (trimmedDisplayName?.isEmpty == false) ? trimmedDisplayName! : fallbackName
-                return TranscriptionMetadata(
-                    id: mo.id,
-                    meetingId: mo.meeting.id,
-                    appName: resolvedName,
-                    appRawValue: mo.meeting.appRawValue,
-                    appBundleIdentifier: mo.meeting.appBundleIdentifier,
-                    startTime: mo.meeting.startTime,
-                    createdAt: mo.createdAt,
-                    previewText: String(mo.text.prefix(100)),
-                    wordCount: wordCount,
-                    language: mo.language,
-                    isPostProcessed: mo.processedContent != nil,
-                    duration: mo.meeting.endTime?.timeIntervalSince(mo.meeting.startTime) ?? 0,
-                    audioFilePath: mo.meeting.audioFilePath,
-                    inputSource: mo.inputSource
-                )
-            }
+            let results = try context.fetch(request)
+            return results.map(Self.convertToMetadata)
         }
     }
 
@@ -578,6 +574,52 @@ public final class FileSystemStorageService: StorageService {
         return normalized
     }
 
+    private static func buildMetadataPredicate(for query: TranscriptionMetadataQuery) -> NSPredicate? {
+        var predicates: [NSPredicate] = []
+
+        switch query.sourceFilter {
+        case .all:
+            break
+        case .dictations:
+            predicates.append(NSPredicate(format: "meeting.appRawValue == %@", MeetingApp.unknown.rawValue))
+        case .meetings:
+            predicates.append(NSPredicate(format: "meeting.appRawValue != %@", MeetingApp.unknown.rawValue))
+            predicates.append(NSPredicate(format: "meeting.appRawValue != %@", MeetingApp.importedFile.rawValue))
+        case .manualImports:
+            predicates.append(NSPredicate(format: "meeting.appRawValue == %@", MeetingApp.importedFile.rawValue))
+        }
+
+        if query.dateFilter != .allEntries {
+            let range = query.dateFilter.dateRange
+            predicates.append(
+                NSPredicate(
+                    format: "createdAt >= %@ AND createdAt < %@",
+                    range.start as NSDate,
+                    range.end as NSDate
+                )
+            )
+        }
+
+        if let appRawValue = query.appRawValue?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !appRawValue.isEmpty
+        {
+            predicates.append(NSPredicate(format: "meeting.appRawValue == %@", appRawValue))
+        }
+
+        let trimmedSearch = query.searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedSearch.isEmpty {
+            let searchPredicates = [
+                NSPredicate(format: "text CONTAINS[cd] %@", trimmedSearch),
+                NSPredicate(format: "meeting.appDisplayName CONTAINS[cd] %@", trimmedSearch),
+                NSPredicate(format: "meeting.appRawValue CONTAINS[cd] %@", trimmedSearch),
+            ]
+            predicates.append(NSCompoundPredicate(orPredicateWithSubpredicates: searchPredicates))
+        }
+
+        guard !predicates.isEmpty else { return nil }
+        return NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+    }
+
     // MARK: - Legacy JSON migration
 
     /// One-time migration for legacy JSON transcriptions into Core Data.
@@ -721,6 +763,30 @@ public final class FileSystemStorageService: StorageService {
         config.meetingType = transcription.meetingType
 
         return TranscriptionEntity(meeting: meetingEntity, config: config)
+    }
+
+    private static func convertToMetadata(_ mo: TranscriptionMO) -> TranscriptionMetadata {
+        let wordCount = Self.wordCount(for: mo.text)
+        let fallbackName = MeetingApp(rawValue: mo.meeting.appRawValue)?.displayName ?? mo.meeting.appRawValue
+        let trimmedDisplayName = mo.meeting.appDisplayName?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let resolvedName = (trimmedDisplayName?.isEmpty == false) ? trimmedDisplayName! : fallbackName
+
+        return TranscriptionMetadata(
+            id: mo.id,
+            meetingId: mo.meeting.id,
+            appName: resolvedName,
+            appRawValue: mo.meeting.appRawValue,
+            appBundleIdentifier: mo.meeting.appBundleIdentifier,
+            startTime: mo.meeting.startTime,
+            createdAt: mo.createdAt,
+            previewText: String(mo.text.prefix(100)),
+            wordCount: wordCount,
+            language: mo.language,
+            isPostProcessed: mo.processedContent != nil,
+            duration: mo.meeting.endTime?.timeIntervalSince(mo.meeting.startTime) ?? 0,
+            audioFilePath: mo.meeting.audioFilePath,
+            inputSource: mo.inputSource
+        )
     }
 
     private static func convertToModel(_ entity: TranscriptionEntity) -> Transcription {
