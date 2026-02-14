@@ -161,7 +161,7 @@ public struct EnhancementsSettingsTab: View {
                             TextEditor(text: excludedBundleIDsBinding)
                                 .font(.caption.monospaced())
                                 .frame(minHeight: 72)
-                                .padding(6)
+                                .padding(MeetingAssistantDesignSystem.Layout.textAreaPadding)
                                 .background(MeetingAssistantDesignSystem.Colors.subtleFill2)
                                 .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
 

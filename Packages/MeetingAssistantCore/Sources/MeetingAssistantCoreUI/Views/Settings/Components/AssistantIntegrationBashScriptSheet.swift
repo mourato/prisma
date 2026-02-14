@@ -116,6 +116,7 @@ public struct AssistantIntegrationBashScriptSheet: View {
             TextEditor(text: $script)
                 .font(.system(.body, design: .monospaced))
                 .frame(minHeight: 220)
+                .padding(MeetingAssistantDesignSystem.Layout.textAreaPadding)
                 .overlay(
                     RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
                         .strokeBorder(.separator, lineWidth: 1)

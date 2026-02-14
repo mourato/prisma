@@ -145,7 +145,7 @@ public struct MAModifierShortcutEditor: View {
                     Image(systemName: "xmark")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .padding(6)
+                        .padding(MeetingAssistantDesignSystem.Layout.compactInset)
                         .background(
                             Circle()
                                 .fill(MeetingAssistantDesignSystem.Colors.secondaryFill)

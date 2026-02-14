@@ -198,7 +198,7 @@ public struct TranscriptionStatusView: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .padding(6)
+        .padding(MeetingAssistantDesignSystem.Layout.compactInset)
         .background(MeetingAssistantDesignSystem.Colors.error.opacity(0.1), in: RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
     }
 

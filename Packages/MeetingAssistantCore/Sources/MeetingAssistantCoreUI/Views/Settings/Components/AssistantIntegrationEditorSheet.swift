@@ -94,6 +94,7 @@ public struct AssistantIntegrationEditorSheet: View {
                     set: { draft.integration.promptInstructions = $0.isEmpty ? nil : $0 }
                 ))
                 .frame(minHeight: 90)
+                .padding(MeetingAssistantDesignSystem.Layout.textAreaPadding)
                 .overlay(
                     RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
                         .strokeBorder(.separator, lineWidth: 1)

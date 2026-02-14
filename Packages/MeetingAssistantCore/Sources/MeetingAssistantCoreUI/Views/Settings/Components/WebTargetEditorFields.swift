@@ -35,7 +35,7 @@ struct WebTargetEditorFields: View {
                 TextEditor(text: $urlPatternsText)
                     .font(.caption.monospaced())
                     .frame(minHeight: 80)
-                    .padding(6)
+                    .padding(MeetingAssistantDesignSystem.Layout.textAreaPadding)
                     .background(MeetingAssistantDesignSystem.Colors.subtleFill2)
                     .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
             }
