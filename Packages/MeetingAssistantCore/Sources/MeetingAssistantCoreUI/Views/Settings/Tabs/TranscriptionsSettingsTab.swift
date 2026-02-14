@@ -27,8 +27,6 @@ public struct TranscriptionsSettingsTab: View {
 
     public var body: some View {
         VStack(spacing: 0) {
-            headerSection
-            Divider()
             contentSection
         }
         .task {
@@ -56,35 +54,6 @@ public struct TranscriptionsSettingsTab: View {
         }
     }
 
-    // MARK: - Header Section
-
-    private var headerSection: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("settings.transcriptions.title".localized)
-                    .font(.system(.title2, design: .rounded))
-                    .fontWeight(.bold)
-                Text(
-                    "settings.transcriptions.items_found".localized(with: viewModel.filteredTranscriptions.count)
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            }
-
-            Spacer()
-
-            Button(
-                action: { viewModel.openRecordingsDirectory() },
-                label: {
-                    Label("settings.transcriptions.open_folder".localized, systemImage: "folder")
-                }
-            )
-            .buttonStyle(.bordered)
-        }
-        .padding()
-        .background(.ultraThinMaterial)
-    }
-
     // MARK: - Content Section
 
     private var contentSection: some View {
@@ -96,10 +65,34 @@ public struct TranscriptionsSettingsTab: View {
 
     private var leftPanel: some View {
         VStack(spacing: 0) {
-            VStack(spacing: 20) {
+            VStack(alignment: .leading, spacing: 20) {
+                HStack(spacing: 16) {
+                    Text(
+                        "settings.transcriptions.items_found".localized(with: viewModel.filteredTranscriptions.count)
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                    Spacer()
+
+                    Button(
+                        action: { viewModel.openRecordingsDirectory() },
+                        label: {
+                            Label("settings.transcriptions.open_folder".localized, systemImage: "folder")
+                        }
+                    )
+                    .buttonStyle(.bordered)
+                }
+
                 dropZone
 
                 HStack(spacing: 16) {
+                    searchField
+                        .frame(minWidth: 220, maxWidth: .infinity)
+
+                    appFilterMenu
+                        .frame(width: 170)
+
                     sourceFilterPicker
                         .frame(maxWidth: .infinity)
 
@@ -108,7 +101,6 @@ public struct TranscriptionsSettingsTab: View {
                 }
             }
             .padding(MeetingAssistantDesignSystem.Layout.spacing24)
-            .background(MeetingAssistantDesignSystem.Colors.cardBackground)
 
             Divider()
 
@@ -165,6 +157,56 @@ public struct TranscriptionsSettingsTab: View {
         .controlSize(.small)
     }
 
+    private var searchField: some View {
+        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+            TextField(
+                "settings.transcriptions.search_placeholder".localized,
+                text: $viewModel.searchText
+            )
+            .textFieldStyle(.plain)
+        }
+        .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing10)
+        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
+        .background(MeetingAssistantDesignSystem.Colors.subtleFill)
+        .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+    }
+
+    private var appFilterMenu: some View {
+        Menu {
+            ForEach(viewModel.appFilterOptions) { option in
+                Button {
+                    viewModel.appFilterId = option.id
+                } label: {
+                    HStack {
+                        Text(option.displayName)
+                        if viewModel.appFilterId == option.id {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            }
+        } label: {
+            HStack {
+                Image(systemName: "desktopcomputer")
+                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.accent)
+                Text(selectedAppFilterLabel)
+                    .font(.subheadline)
+                    .lineLimit(1)
+                Spacer()
+                Image(systemName: "chevron.down")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing10)
+            .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
+            .background(MeetingAssistantDesignSystem.Colors.subtleFill)
+            .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+        }
+        .menuStyle(.borderlessButton)
+    }
+
     private var dateFilterMenu: some View {
         Menu {
             ForEach(DateFilter.allCases, id: \.self) { filter in
@@ -196,6 +238,11 @@ public struct TranscriptionsSettingsTab: View {
             .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
         }
         .menuStyle(.borderlessButton)
+    }
+
+    private var selectedAppFilterLabel: String {
+        viewModel.appFilterOptions.first(where: { $0.id == viewModel.appFilterId })?.displayName
+            ?? "settings.transcriptions.filter_app_all".localized
     }
 
     private var dropZone: some View {
