@@ -66,11 +66,11 @@ public struct ShortcutPrimaryKey: Codable, Equatable, Hashable, Sendable {
     public var normalizedToken: String {
         switch kind {
         case .function:
-            "f\(functionIndex ?? 0)"
+            "f\(functionIndex ?? 0):\(keyCode)"
         case .space:
-            "space"
+            "space:\(keyCode)"
         default:
-            "\(kind.rawValue):\(display.lowercased())"
+            "\(kind.rawValue):\(display.lowercased()):\(keyCode)"
         }
     }
 

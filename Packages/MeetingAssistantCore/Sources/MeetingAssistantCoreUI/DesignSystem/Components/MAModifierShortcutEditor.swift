@@ -1,10 +1,10 @@
-import AppKit
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
+import AppKit
 import SwiftUI
 
 public struct MAModifierShortcutEditor: View {
@@ -78,6 +78,7 @@ public struct MAModifierShortcutEditor: View {
             }
 
             if let newValue {
+                closeTask?.cancel()
                 localStatus = .failure
                 localConflictMessage = newValue
                 scheduleRecordingRestart()
@@ -266,6 +267,7 @@ public struct MAModifierShortcutEditor: View {
                     isPopoverPresented = false
                 }
             } else if let conflictMessage {
+                closeTask?.cancel()
                 localStatus = .failure
                 localConflictMessage = conflictMessage
                 scheduleRecordingRestart()
@@ -274,6 +276,7 @@ public struct MAModifierShortcutEditor: View {
     }
 
     private func scheduleRecordingRestart() {
+        closeTask?.cancel()
         restartTask?.cancel()
         restartTask = Task { @MainActor in
             try? await Task.sleep(nanoseconds: 250_000_000)
