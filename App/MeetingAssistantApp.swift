@@ -230,7 +230,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         contextMenu?.addItem(createMenuItem(
             key: "menubar.history",
-            action: #selector(openHistory)
+            action: #selector(openHistory),
+            systemImage: SettingsSection.transcriptions.icon
         ))
 
         contextMenu?.addItem(NSMenuItem.separator())
@@ -256,11 +257,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         key: String,
         action: Selector,
         keyEquivalent: String = "",
-        shortcutName: KeyboardShortcuts.Name? = nil
+        shortcutName: KeyboardShortcuts.Name? = nil,
+        systemImage: String? = nil
     ) -> NSMenuItem {
         let title = key.localized
         let item = NSMenuItem(title: title, action: action, keyEquivalent: keyEquivalent)
         item.target = self
+        if let systemImage {
+            item.image = NSImage(
+                systemSymbolName: systemImage,
+                accessibilityDescription: title
+            )
+            item.image?.isTemplate = true
+        }
 
         if let shortcutName {
             applyShortcut(to: item, title: title, shortcutName: shortcutName)
@@ -333,13 +342,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         if let inHouseShortcut {
+            if applyShortcutDefinition(inHouseShortcut, to: item, title: title) {
+                return
+            }
             item.title = "\(title) [\(inHouseShortcut.menuDisplayString)]"
-            item.keyEquivalent = ""
-            item.keyEquivalentModifierMask = []
+            clearShortcut(from: item)
         } else if let presetString {
             item.title = "\(title) [\(presetString)]"
-            item.keyEquivalent = ""
-            item.keyEquivalentModifierMask = []
+            clearShortcut(from: item)
         } else if isCustom, let shortcut = KeyboardShortcuts.Shortcut(name: shortcutName) {
             item.title = title
 
@@ -371,9 +381,97 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             item.keyEquivalentModifierMask = shortcut.modifiers
         } else {
             item.title = title
-            item.keyEquivalent = ""
-            item.keyEquivalentModifierMask = []
+            clearShortcut(from: item)
         }
+    }
+
+    private func applyShortcutDefinition(
+        _ shortcut: ShortcutDefinition,
+        to item: NSMenuItem,
+        title: String
+    ) -> Bool {
+        guard shortcut.trigger == .singleTap,
+              let primaryKey = shortcut.primaryKey,
+              let keyEquivalent = keyEquivalent(for: primaryKey)
+        else {
+            return false
+        }
+
+        item.title = title
+        item.keyEquivalent = keyEquivalent
+        item.keyEquivalentModifierMask = modifierMask(from: shortcut.modifiers)
+        return true
+    }
+
+    private func keyEquivalent(for primaryKey: ShortcutPrimaryKey) -> String? {
+        switch primaryKey.kind {
+        case .space:
+            return " "
+        case .function:
+            guard let functionIndex = primaryKey.functionIndex else {
+                return nil
+            }
+            let scalarValue = Int(NSF1FunctionKey) + functionIndex - 1
+            guard let scalar = UnicodeScalar(scalarValue) else {
+                return nil
+            }
+            return String(scalar)
+        default:
+            let normalized = primaryKey.display
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .lowercased()
+
+            switch normalized {
+            case "return", "enter":
+                return "\r"
+            case "tab":
+                return "\t"
+            case "backspace", "delete":
+                guard let scalar = UnicodeScalar(NSBackspaceCharacter) else { return nil }
+                return String(scalar)
+            case "escape", "esc":
+                return "\u{1b}"
+            case "left":
+                guard let scalar = UnicodeScalar(NSLeftArrowFunctionKey) else { return nil }
+                return String(scalar)
+            case "right":
+                guard let scalar = UnicodeScalar(NSRightArrowFunctionKey) else { return nil }
+                return String(scalar)
+            case "up":
+                guard let scalar = UnicodeScalar(NSUpArrowFunctionKey) else { return nil }
+                return String(scalar)
+            case "down":
+                guard let scalar = UnicodeScalar(NSDownArrowFunctionKey) else { return nil }
+                return String(scalar)
+            default:
+                guard let first = normalized.first else {
+                    return nil
+                }
+                return String(first)
+            }
+        }
+    }
+
+    private func modifierMask(from modifiers: [ModifierShortcutKey]) -> NSEvent.ModifierFlags {
+        modifiers.reduce(into: NSEvent.ModifierFlags()) { partialResult, modifier in
+            switch modifier {
+            case .leftCommand, .rightCommand, .command:
+                partialResult.insert(.command)
+            case .leftShift, .rightShift, .shift:
+                partialResult.insert(.shift)
+            case .leftOption, .rightOption, .option:
+                partialResult.insert(.option)
+            case .leftControl, .rightControl, .control:
+                partialResult.insert(.control)
+            case .fn:
+                partialResult.insert(.function)
+            }
+        }
+    }
+
+    private func clearShortcut(from item: NSMenuItem) {
+        item.keyEquivalent = ""
+        item.keyEquivalentModifierMask = []
     }
 
     @objc private func handleStatusItemClick() {

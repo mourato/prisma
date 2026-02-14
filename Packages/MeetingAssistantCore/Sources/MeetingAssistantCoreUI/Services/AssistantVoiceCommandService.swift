@@ -277,6 +277,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
         isProcessing = false
         currentExecutionFlow = .assistantMode
         await RecordingExclusivityCoordinator.shared.endAssistant()
+        SoundFeedbackService.shared.playRecordingCancelledSound()
         indicator.hide()
         screenBorder.hide()
         cleanupRecordingFile(currentRecordingURL)

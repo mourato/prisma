@@ -508,6 +508,7 @@ public extension RecordingManager {
         postProcessingContext = nil
         postProcessingContextItems = []
         await RecordingExclusivityCoordinator.shared.endRecording()
+        SoundFeedbackService.shared.playRecordingCancelledSound()
 
         AppLogger.info("Recording cancelled and files discarded", category: .recordingManager)
     }

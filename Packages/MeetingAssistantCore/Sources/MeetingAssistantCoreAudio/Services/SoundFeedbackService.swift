@@ -32,6 +32,13 @@ public final class SoundFeedbackService {
         play(settings.recordingStopSound)
     }
 
+    /// Play sound for recording cancellation events.
+    /// Uses fixed system sound "Basso" and is not user-configurable.
+    public func playRecordingCancelledSound() {
+        guard settings.soundFeedbackEnabled else { return }
+        play(.basso)
+    }
+
     /// Preview a specific sound in settings UI.
     /// Plays regardless of the global sound feedback toggle.
     public func preview(_ sound: SoundFeedbackSound) {
