@@ -134,4 +134,74 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.filteredTranscriptions.count, 1)
         XCTAssertEqual(viewModel.filteredTranscriptions.first?.id, mockId2)
     }
+
+    func testAppFilterOptionsIncludesAllAndLoadedApps() {
+        // Given
+        let metadata1 = makeMetadata(
+            appName: "Zoom",
+            appRawValue: MeetingApp.zoom.rawValue,
+            previewText: "Sprint planning"
+        )
+        let metadata2 = makeMetadata(
+            appName: "Microsoft Teams",
+            appRawValue: MeetingApp.microsoftTeams.rawValue,
+            previewText: "Roadmap review"
+        )
+        viewModel.transcriptions = [metadata1, metadata2]
+
+        // When
+        let options = viewModel.appFilterOptions
+
+        // Then
+        XCTAssertEqual(options.first?.id, "__all_apps__")
+        XCTAssertTrue(options.contains(where: { $0.id == MeetingApp.zoom.rawValue }))
+        XCTAssertTrue(options.contains(where: { $0.id == MeetingApp.microsoftTeams.rawValue }))
+    }
+
+    func testFilteredTranscriptionsAppliesAppAndSearchFilters() {
+        // Given
+        let zoomMetadata = makeMetadata(
+            appName: "Zoom",
+            appRawValue: MeetingApp.zoom.rawValue,
+            previewText: "Discussed quarterly results"
+        )
+        let teamsMetadata = makeMetadata(
+            appName: "Microsoft Teams",
+            appRawValue: MeetingApp.microsoftTeams.rawValue,
+            previewText: "Reunião de planejamento"
+        )
+        viewModel.transcriptions = [zoomMetadata, teamsMetadata]
+
+        // When
+        viewModel.appFilterId = MeetingApp.microsoftTeams.rawValue
+        viewModel.searchText = "reuniao"
+
+        // Then
+        XCTAssertEqual(viewModel.filteredTranscriptions.count, 1)
+        XCTAssertEqual(viewModel.filteredTranscriptions.first?.id, teamsMetadata.id)
+    }
+
+    private func makeMetadata(
+        appName: String,
+        appRawValue: String,
+        previewText: String
+    ) -> TranscriptionMetadata {
+        let id = UUID()
+        return TranscriptionMetadata(
+            id: id,
+            meetingId: id,
+            appName: appName,
+            appRawValue: appRawValue,
+            appBundleIdentifier: nil,
+            startTime: Date(),
+            createdAt: Date(),
+            previewText: previewText,
+            wordCount: previewText.count,
+            language: "en",
+            isPostProcessed: false,
+            duration: 60,
+            audioFilePath: nil,
+            inputSource: "Microphone"
+        )
+    }
 }

@@ -436,12 +436,13 @@
 "permissions.warning" = "Algumas permissões são necessárias dependendo do que você grava.";
 
 /* Transcriptions Settings */
-"settings.transcriptions.title" = "Transcrições";
 "settings.transcriptions.items_found" = "%lld itens encontrados";
 "settings.transcriptions.open_folder" = "Abrir Pasta";
 "settings.transcriptions.loading" = "Carregando...";
 "settings.transcriptions.filters" = "FILTROS";
 "settings.transcriptions.source" = "Origem";
+"settings.transcriptions.search_placeholder" = "Buscar texto da transcrição";
+"settings.transcriptions.filter_app_all" = "Todos os Apps";
 "settings.transcriptions.import" = "Importar Arquivo";
 "settings.transcriptions.import_desc" = "Arraste ou clique para importar áudio/vídeo";
 "settings.transcriptions.empty_title" = "Sem transcrições";

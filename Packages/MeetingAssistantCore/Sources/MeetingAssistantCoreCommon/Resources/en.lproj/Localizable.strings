@@ -437,12 +437,13 @@
 "permissions.warning" = "Some permissions are required depending on what you record.";
 
 /* Transcriptions Settings */
-"settings.transcriptions.title" = "Transcriptions";
 "settings.transcriptions.items_found" = "%lld items found";
 "settings.transcriptions.open_folder" = "Open Folder";
 "settings.transcriptions.loading" = "Loading...";
 "settings.transcriptions.filters" = "FILTERS";
 "settings.transcriptions.source" = "Source";
+"settings.transcriptions.search_placeholder" = "Search transcription text";
+"settings.transcriptions.filter_app_all" = "All Apps";
 "settings.transcriptions.import" = "Import File";
 "settings.transcriptions.import_desc" = "Drag or click to import audio/video";
 "settings.transcriptions.empty_title" = "No transcriptions";

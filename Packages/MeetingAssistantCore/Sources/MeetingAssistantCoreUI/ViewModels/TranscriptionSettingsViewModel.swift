@@ -12,6 +12,16 @@ import UniformTypeIdentifiers
 
 @MainActor
 public class TranscriptionSettingsViewModel: ObservableObject {
+    public struct AppFilterOption: Identifiable, Hashable, Sendable {
+        public let id: String
+        public let appRawValue: String?
+        public let displayName: String
+    }
+
+    private enum FilterConstants {
+        static let allAppsId = "__all_apps__"
+    }
+
     @Published public var transcriptions: [TranscriptionMetadata] = []
     @Published public var selectedTranscription: Transcription?
     @Published public var selectedId: UUID? {
@@ -31,6 +41,8 @@ public class TranscriptionSettingsViewModel: ObservableObject {
     @Published public var isLoading = true
     @Published public var sourceFilter: RecordingSourceFilter = .all
     @Published public var dateFilter: DateFilter = .today
+    @Published public var searchText = ""
+    @Published public var appFilterId = FilterConstants.allAppsId
     @Published public var errorMessage: String?
 
     private let storage: StorageService
@@ -52,8 +64,34 @@ public class TranscriptionSettingsViewModel: ObservableObject {
         transcriptions.filter { transcription in
             let matchesSource = self.matchesSourceFilter(transcription)
             let matchesDate = self.dateFilter.contains(transcription.createdAt)
-            return matchesSource && matchesDate
+            let matchesApp = self.matchesAppFilter(transcription)
+            let matchesText = self.matchesSearchFilter(transcription)
+            return matchesSource && matchesDate && matchesApp && matchesText
         }
+    }
+
+    public var appFilterOptions: [AppFilterOption] {
+        let optionsByRawValue = transcriptions.reduce(into: [String: AppFilterOption]()) { result, transcription in
+            let appRawValue = transcription.appRawValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !appRawValue.isEmpty else { return }
+            result[appRawValue] = AppFilterOption(
+                id: appRawValue,
+                appRawValue: appRawValue,
+                displayName: appDisplayName(for: transcription)
+            )
+        }
+
+        let allAppsOption = AppFilterOption(
+            id: FilterConstants.allAppsId,
+            appRawValue: nil,
+            displayName: "settings.transcriptions.filter_app_all".localized
+        )
+
+        let sortedAppOptions = optionsByRawValue.values.sorted {
+            $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending
+        }
+
+        return [allAppsOption] + sortedAppOptions
     }
 
     /// Transcriptions grouped by date (start of day) for section headers.
@@ -86,6 +124,38 @@ public class TranscriptionSettingsViewModel: ObservableObject {
         }
     }
 
+    private func matchesAppFilter(_ transcription: TranscriptionMetadata) -> Bool {
+        guard appFilterId != FilterConstants.allAppsId else {
+            return true
+        }
+        return transcription.appRawValue == appFilterId
+    }
+
+    private func matchesSearchFilter(_ transcription: TranscriptionMetadata) -> Bool {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return true }
+
+        let normalizedQuery = query.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+        let previewText = transcription.previewText.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+        let appName = transcription.appName.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+
+        return previewText.contains(normalizedQuery) || appName.contains(normalizedQuery)
+    }
+
+    private func appDisplayName(for transcription: TranscriptionMetadata) -> String {
+        if let knownApp = MeetingApp(rawValue: transcription.appRawValue) {
+            return knownApp.displayName
+        }
+
+        let trimmedName = transcription.appName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedName.isEmpty {
+            return trimmedName
+        }
+
+        let trimmedRawValue = transcription.appRawValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmedRawValue.isEmpty ? MeetingApp.unknown.displayName : trimmedRawValue
+    }
+
     public func loadTranscriptions() async {
         isLoading = true
         do {
@@ -94,6 +164,9 @@ public class TranscriptionSettingsViewModel: ObservableObject {
             // Assuming errors in capture manifest as 0 duration or specific metadata flags if we had them.
             // For now, ensuring we don't show items that are clearly failed (e.g. 0 duration and no text)
             transcriptions = allTranscriptions.filter { !($0.duration == 0 && $0.previewText.isEmpty) }
+            if !appFilterOptions.contains(where: { $0.id == appFilterId }) {
+                appFilterId = FilterConstants.allAppsId
+            }
         } catch {
             logger.error("Failed to load transcriptions: \(error.localizedDescription)")
             errorMessage = "settings.transcriptions.error_load".localized
