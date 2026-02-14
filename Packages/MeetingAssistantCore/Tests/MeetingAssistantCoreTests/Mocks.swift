@@ -193,6 +193,44 @@ class MockStorageService: StorageService, @unchecked Sendable {
     }
 
     func loadAllMetadata() async throws -> [TranscriptionMetadata] {
+        allMetadata()
+    }
+
+    func loadMetadata(matching query: TranscriptionMetadataQuery) async throws -> [TranscriptionMetadata] {
+        allMetadata()
+            .filter { metadata in
+                switch query.sourceFilter {
+                case .all:
+                    true
+                case .dictations:
+                    metadata.appRawValue == MeetingApp.unknown.rawValue
+                case .meetings:
+                    metadata.appRawValue != MeetingApp.unknown.rawValue &&
+                        metadata.appRawValue != MeetingApp.importedFile.rawValue
+                case .manualImports:
+                    metadata.appRawValue == MeetingApp.importedFile.rawValue
+                }
+            }
+            .filter { metadata in
+                query.dateFilter.contains(metadata.createdAt)
+            }
+            .filter { metadata in
+                guard let appRawValue = query.appRawValue else { return true }
+                return metadata.appRawValue == appRawValue
+            }
+            .filter { metadata in
+                let trimmed = query.searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else { return true }
+
+                let queryText = trimmed.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+                let preview = metadata.previewText.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+                let appName = metadata.appName.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+                return preview.contains(queryText) || appName.contains(queryText)
+            }
+            .sorted { $0.createdAt > $1.createdAt }
+    }
+
+    private func allMetadata() -> [TranscriptionMetadata] {
         mockTranscriptions.map { transcription in
             TranscriptionMetadata(
                 id: transcription.id,
