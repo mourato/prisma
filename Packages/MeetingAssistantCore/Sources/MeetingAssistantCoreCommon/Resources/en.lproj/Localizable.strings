@@ -310,7 +310,7 @@
 "settings.assistant.integrations.integration_name" = "Selected integration name";
 "settings.assistant.integrations.default_name" = "Integration %d";
 "settings.assistant.integrations.integration_enabled" = "Enable Selected Integration";
-"settings.assistant.integrations.integration_deeplink" = "Selected integration deeplink";
+"settings.assistant.integrations.integration_deeplink" = "Integration URL/Deeplink";
 "settings.assistant.integrations.raycast_enabled" = "Enable Raycast Integration";
 "settings.assistant.integrations.raycast_deeplink" = "Raycast command deeplink";
 "settings.assistant.integrations.valid_deeplink" = "Valid Raycast deeplink.";
@@ -331,7 +331,7 @@
 "settings.assistant.integrations.editor.hotkey_config" = "Shortcut Trigger";
 "settings.assistant.integrations.editor.instructions" = "Instructions (Optional)";
 "settings.assistant.integrations.editor.placeholders.title" = "Placeholders";
-"settings.assistant.integrations.editor.placeholders.subtitle" = "Click to copy and use in deeplinks.";
+"settings.assistant.integrations.editor.placeholders.subtitle" = "Click to copy and use in URLs/Deeplinks.";
 "settings.assistant.integrations.editor.placeholders.copy_help" = "Copy placeholder";
 "settings.assistant.integrations.editor.placeholders.info_help" = "Show placeholder details";
 "settings.assistant.integrations.editor.placeholders.example_title" = "Example";
