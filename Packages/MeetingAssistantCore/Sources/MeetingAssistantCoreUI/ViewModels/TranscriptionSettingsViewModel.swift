@@ -8,18 +8,27 @@ import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
 import OSLog
 import SwiftUI
-import UniformTypeIdentifiers
 
 @MainActor
 public class TranscriptionSettingsViewModel: ObservableObject {
     public struct AppFilterOption: Identifiable, Hashable, Sendable {
+        public enum Scope: Hashable, Sendable {
+            case all
+            case appRawValue(String)
+            case appBundleIdentifier(String)
+            case appDisplayName(String)
+        }
+
         public let id: String
-        public let appRawValue: String?
+        public let scope: Scope
         public let displayName: String
     }
 
     private enum FilterConstants {
         static let allAppsId = "__all_apps__"
+        static let rawAppPrefix = "raw:"
+        static let bundleAppPrefix = "bundle:"
+        static let nameAppPrefix = "name:"
     }
 
     @Published public var transcriptions: [TranscriptionMetadata] = []
@@ -61,33 +70,29 @@ public class TranscriptionSettingsViewModel: ObservableObject {
     }
 
     public var filteredTranscriptions: [TranscriptionMetadata] {
-        transcriptions.filter { transcription in
+        let selectedAppScope = selectedAppFilterScope()
+        return transcriptions.filter { transcription in
             let matchesSource = self.matchesSourceFilter(transcription)
             let matchesDate = self.dateFilter.contains(transcription.createdAt)
-            let matchesApp = self.matchesAppFilter(transcription)
+            let matchesApp = self.matchesAppFilter(transcription, scope: selectedAppScope)
             let matchesText = self.matchesSearchFilter(transcription)
             return matchesSource && matchesDate && matchesApp && matchesText
         }
     }
 
     public var appFilterOptions: [AppFilterOption] {
-        let optionsByRawValue = transcriptions.reduce(into: [String: AppFilterOption]()) { result, transcription in
-            let appRawValue = transcription.appRawValue.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !appRawValue.isEmpty else { return }
-            result[appRawValue] = AppFilterOption(
-                id: appRawValue,
-                appRawValue: appRawValue,
-                displayName: appDisplayName(for: transcription)
-            )
+        let optionsById = transcriptions.reduce(into: [String: AppFilterOption]()) { result, transcription in
+            guard let option = appFilterOption(for: transcription) else { return }
+            result[option.id] = option
         }
 
         let allAppsOption = AppFilterOption(
             id: FilterConstants.allAppsId,
-            appRawValue: nil,
+            scope: .all,
             displayName: "settings.transcriptions.filter_app_all".localized
         )
 
-        let sortedAppOptions = optionsByRawValue.values.sorted {
+        let sortedAppOptions = optionsById.values.sorted {
             $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending
         }
 
@@ -119,16 +124,44 @@ public class TranscriptionSettingsViewModel: ObservableObject {
         case .meetings:
             if app == .importedFile { return false }
             return app != .unknown
-        case .manualImports:
-            return app == .importedFile
         }
     }
 
-    private func matchesAppFilter(_ transcription: TranscriptionMetadata) -> Bool {
-        guard appFilterId != FilterConstants.allAppsId else {
+    private func matchesAppFilter(_ transcription: TranscriptionMetadata, scope: AppFilterOption.Scope) -> Bool {
+        switch scope {
+        case .all:
             return true
+        case let .appRawValue(appRawValue):
+            return transcription.appRawValue == appRawValue
+        case let .appBundleIdentifier(bundleIdentifier):
+            let transcriptionBundleIdentifier = transcription.appBundleIdentifier?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .lowercased()
+            return transcriptionBundleIdentifier == bundleIdentifier
+        case let .appDisplayName(displayName):
+            return normalizedFilterValue(appDisplayName(for: transcription)) == displayName
         }
-        return transcription.appRawValue == appFilterId
+    }
+
+    private func selectedAppFilterScope() -> AppFilterOption.Scope {
+        guard appFilterId != FilterConstants.allAppsId else { return .all }
+
+        if appFilterId.hasPrefix(FilterConstants.rawAppPrefix) {
+            let rawValue = String(appFilterId.dropFirst(FilterConstants.rawAppPrefix.count))
+            return rawValue.isEmpty ? .all : .appRawValue(rawValue)
+        }
+
+        if appFilterId.hasPrefix(FilterConstants.bundleAppPrefix) {
+            let bundleIdentifier = String(appFilterId.dropFirst(FilterConstants.bundleAppPrefix.count))
+            return bundleIdentifier.isEmpty ? .all : .appBundleIdentifier(bundleIdentifier)
+        }
+
+        if appFilterId.hasPrefix(FilterConstants.nameAppPrefix) {
+            let displayName = String(appFilterId.dropFirst(FilterConstants.nameAppPrefix.count))
+            return displayName.isEmpty ? .all : .appDisplayName(displayName)
+        }
+
+        return .all
     }
 
     private func matchesSearchFilter(_ transcription: TranscriptionMetadata) -> Bool {
@@ -143,17 +176,55 @@ public class TranscriptionSettingsViewModel: ObservableObject {
     }
 
     private func appDisplayName(for transcription: TranscriptionMetadata) -> String {
-        if let knownApp = MeetingApp(rawValue: transcription.appRawValue) {
-            return knownApp.displayName
-        }
-
         let trimmedName = transcription.appName.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmedName.isEmpty {
             return trimmedName
         }
 
+        if let knownApp = MeetingApp(rawValue: transcription.appRawValue) {
+            return knownApp.displayName
+        }
+
         let trimmedRawValue = transcription.appRawValue.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmedRawValue.isEmpty ? MeetingApp.unknown.displayName : trimmedRawValue
+    }
+
+    private func appFilterOption(for transcription: TranscriptionMetadata) -> AppFilterOption? {
+        let rawValue = transcription.appRawValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        let displayName = appDisplayName(for: transcription)
+
+        if !rawValue.isEmpty, rawValue != MeetingApp.unknown.rawValue {
+            return AppFilterOption(
+                id: "\(FilterConstants.rawAppPrefix)\(rawValue)",
+                scope: .appRawValue(rawValue),
+                displayName: displayName
+            )
+        }
+
+        let bundleIdentifier = transcription.appBundleIdentifier?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+        if let bundleIdentifier, !bundleIdentifier.isEmpty {
+            return AppFilterOption(
+                id: "\(FilterConstants.bundleAppPrefix)\(bundleIdentifier)",
+                scope: .appBundleIdentifier(bundleIdentifier),
+                displayName: displayName
+            )
+        }
+
+        let normalizedDisplayName = normalizedFilterValue(displayName)
+        guard !normalizedDisplayName.isEmpty else { return nil }
+        return AppFilterOption(
+            id: "\(FilterConstants.nameAppPrefix)\(normalizedDisplayName)",
+            scope: .appDisplayName(normalizedDisplayName),
+            displayName: displayName
+        )
+    }
+
+    private func normalizedFilterValue(_ value: String) -> String {
+        value
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
     }
 
     public func loadTranscriptions() async {
@@ -163,7 +234,7 @@ public class TranscriptionSettingsViewModel: ObservableObject {
                 sourceFilter: sourceFilter,
                 dateFilter: dateFilter,
                 searchText: searchText,
-                appRawValue: appFilterId == FilterConstants.allAppsId ? nil : appFilterId
+                appRawValue: nil
             )
 
             let allTranscriptions = try await storage.loadMetadata(matching: query)

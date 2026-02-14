@@ -440,14 +440,11 @@
 "settings.transcriptions.items_found" = "%lld items found";
 "settings.transcriptions.open_folder" = "Open Folder";
 "settings.transcriptions.loading" = "Loading...";
-"settings.transcriptions.filters" = "FILTERS";
 "settings.transcriptions.source" = "Source";
 "settings.transcriptions.search_placeholder" = "Search transcription text";
 "settings.transcriptions.filter_app_all" = "All Apps";
-"settings.transcriptions.import" = "Import File";
-"settings.transcriptions.import_desc" = "Drag or click to import audio/video";
 "settings.transcriptions.empty_title" = "No transcriptions";
-"settings.transcriptions.empty_desc" = "Record a meeting or import an audio file";
+"settings.transcriptions.empty_desc" = "Record a meeting to get started";
 "settings.transcriptions.no_selection" = "Select a transcription to view details";
 "settings.transcriptions.error_load" = "Could not load transcriptions. Please try again.";
 "settings.transcriptions.import_select_msg" = "Select an audio or video file to transcribe";
@@ -604,7 +601,6 @@
 "filter.source.all" = "All";
 "filter.source.dictations" = "Recordings";
 "filter.source.meetings" = "Meetings";
-"filter.source.manual_imports" = "Imported";
 "transcription.source.meeting" = "Meeting";
 "transcription.source.recording" = "Recording";
 

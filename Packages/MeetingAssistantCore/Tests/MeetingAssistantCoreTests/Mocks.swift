@@ -207,8 +207,6 @@ class MockStorageService: StorageService, @unchecked Sendable {
                 case .meetings:
                     metadata.appRawValue != MeetingApp.unknown.rawValue &&
                         metadata.appRawValue != MeetingApp.importedFile.rawValue
-                case .manualImports:
-                    metadata.appRawValue == MeetingApp.importedFile.rawValue
                 }
             }
             .filter { metadata in
