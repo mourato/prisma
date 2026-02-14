@@ -21,12 +21,34 @@ public class AISettingsViewModel: ObservableObject {
     @Published public var availableModels: [LLMModel] = []
     @Published public var isLoadingModels = false
     @Published public var modelsFetchError: String?
+    @Published public private(set) var lastModelsRefreshAt: Date?
+    @Published public private(set) var lastModelsRefreshSucceeded = false
+    @Published public private(set) var lastModelsRefreshResultText: String?
     @Published public var actionError: String?
 
     private let logger = Logger(subsystem: "MeetingAssistant", category: "AISettingsViewModel")
     private let keychain: KeychainProvider
     private let llmService: LLMService
     private var cancellables = Set<AnyCancellable>()
+    private var lastAutomaticModelsFetchAt: Date?
+    private let automaticModelsFetchThrottleInterval: TimeInterval = 15
+
+    public var canRefreshModels: Bool {
+        isKeySaved || !normalizedAPIKeyText.isEmpty
+    }
+
+    public var hasPendingAPIKeyInput: Bool {
+        !normalizedAPIKeyText.isEmpty
+    }
+
+    public var modelsRefreshSummary: String? {
+        guard let result = lastModelsRefreshResultText,
+              let refreshedAt = lastModelsRefreshAt
+        else { return nil }
+
+        let refreshTime = DateFormatter.localizedString(from: refreshedAt, dateStyle: .none, timeStyle: .short)
+        return "\(result) • \(refreshTime)"
+    }
 
     public init(
         settings: AppSettingsStore,
@@ -43,7 +65,8 @@ public class AISettingsViewModel: ObservableObject {
             .dropFirst() // Skip initial value to avoid clearing selection on tab switch
             .sink { [weak self] _ in
                 guard let self else { return }
-                self.settings.updateSelectedModel("") // Clear previous selection (properly triggers didSet)
+                settings.updateSelectedModel("") // Clear previous selection (properly triggers didSet)
+                clearTransientAPIKey()
 
                 refreshProviderCredentialState()
             }
@@ -60,7 +83,7 @@ public class AISettingsViewModel: ObservableObject {
 
     public func refreshProviderCredentialState() {
         isKeySaved = keychain.existsAPIKey(for: settings.aiConfiguration.provider)
-        apiKeyText = isKeySaved ? "" : (loadAPIKeyForCurrentProvider() ?? "")
+        clearTransientAPIKey()
 
         if isKeySaved {
             connectionStatus = .success
@@ -104,46 +127,71 @@ public class AISettingsViewModel: ObservableObject {
         }
     }
 
-    public func testAPIConnection() {
+    @discardableResult
+    public func testAPIConnection() -> Task<Void, Never> {
         connectionStatus = .testing
         availableModels = []
         modelsFetchError = nil
 
+        let apiKeySnapshot = normalizedAPIKeyText
         guard let url = llmService.validateURL(settings.aiConfiguration.baseURL) else {
             connectionStatus = .failure("settings.ai.connection.invalid_url".localized)
-            return
+            clearTransientAPIKey()
+            return Task {}
         }
 
-        Task {
+        return Task {
             do {
                 let success = try await llmService.testConnection(
                     baseURL: url,
-                    apiKey: apiKeyText
+                    apiKey: apiKeySnapshot
                 )
 
                 if success {
                     self.connectionStatus = .success
-                    try self.persistAPIKey(apiKeyText)
-                    self.isKeySaved = true
-                    self.apiKeyText = "" // Clear plaintext from memory
+                    try self.persistAPIKey(apiKeySnapshot)
+                    self.isKeySaved = !apiKeySnapshot.isEmpty
+                    self.clearTransientAPIKey()
                     self.updateUIStates()
                     await self.fetchAvailableModels()
                 } else {
                     self.connectionStatus = .failure("settings.ai.connection.invalid_response".localized)
+                    self.clearTransientAPIKey()
                     self.updateUIStates()
                 }
             } catch {
                 self.connectionStatus = .failure(self.connectionErrorMessage(from: error))
                 logger.error("Connection test failed: \(error.localizedDescription)")
+                self.clearTransientAPIKey()
             }
         }
     }
 
+    @discardableResult
+    public func refreshModelsManually() -> Task<Void, Never> {
+        Task { [weak self] in
+            guard let self else { return }
+            await fetchAvailableModels(trigger: .manual)
+        }
+    }
+
     /// Fetches available models from the LLM service's /models endpoint.
-    public func fetchAvailableModels() async {
+    public func fetchAvailableModels(trigger: ModelFetchTrigger = .automatic) async {
+        if trigger == .automatic,
+           let lastFetch = lastAutomaticModelsFetchAt,
+           Date().timeIntervalSince(lastFetch) < automaticModelsFetchThrottleInterval
+        {
+            return
+        }
+
         guard let baseURL = llmService.validateURL(settings.aiConfiguration.baseURL) else {
             modelsFetchError = "settings.ai.connection.invalid_url".localized
+            registerModelsRefreshResult(success: false, message: "settings.ai.connection.invalid_url".localized)
             return
+        }
+
+        if trigger == .automatic {
+            lastAutomaticModelsFetchAt = Date()
         }
 
         isLoadingModels = true
@@ -152,16 +200,22 @@ public class AISettingsViewModel: ObservableObject {
         defer { self.isLoadingModels = false }
 
         do {
+            let credential = resolvedCredentialForModelsFetch()
             availableModels = try await llmService.fetchAvailableModels(
                 baseURL: baseURL,
-                apiKey: apiKeyText.isEmpty ? (loadAPIKeyForCurrentProvider() ?? "") : apiKeyText,
+                apiKey: credential,
                 provider: settings.aiConfiguration.provider
+            )
+            registerModelsRefreshResult(
+                success: true,
+                message: String(format: "settings.ai.models_loaded".localized, availableModels.count)
             )
             // swiftformat:disable:next redundantSelf
             self.logger.info("Fetched \(self.availableModels.count) models from API")
         } catch {
             logger.error("Failed to fetch models: \(error.localizedDescription)")
             modelsFetchError = error.localizedDescription
+            registerModelsRefreshResult(success: false, message: "settings.ai.models.fetch_failed".localized)
         }
     }
 
@@ -171,7 +225,7 @@ public class AISettingsViewModel: ObservableObject {
         let providerKey = KeychainManager.apiKeyKey(for: settings.aiConfiguration.provider)
         do {
             try keychain.delete(for: providerKey)
-            apiKeyText = ""
+            clearTransientAPIKey()
             isKeySaved = false
             connectionStatus = .unknown
             updateUIStates()
@@ -182,6 +236,28 @@ public class AISettingsViewModel: ObservableObject {
             actionError = "settings.ai.remove_failed".localized
             logger.error("Failed to remove API key: \(error.localizedDescription)")
         }
+    }
+
+    private var normalizedAPIKeyText: String {
+        apiKeyText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func clearTransientAPIKey() {
+        guard !apiKeyText.isEmpty else { return }
+        apiKeyText = ""
+    }
+
+    private func resolvedCredentialForModelsFetch() -> String {
+        if isKeySaved {
+            return loadAPIKeyForCurrentProvider() ?? ""
+        }
+        return normalizedAPIKeyText
+    }
+
+    private func registerModelsRefreshResult(success: Bool, message: String) {
+        lastModelsRefreshSucceeded = success
+        lastModelsRefreshResultText = message
+        lastModelsRefreshAt = Date()
     }
 
     private func connectionErrorMessage(from error: Error) -> String {
@@ -205,4 +281,9 @@ public class AISettingsViewModel: ObservableObject {
         }
         return error.localizedDescription
     }
+}
+
+public enum ModelFetchTrigger {
+    case automatic
+    case manual
 }
