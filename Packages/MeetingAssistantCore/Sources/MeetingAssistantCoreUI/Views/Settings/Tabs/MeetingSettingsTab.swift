@@ -1,4 +1,3 @@
-import KeyboardShortcuts
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
@@ -36,11 +35,7 @@ public struct MeetingSettingsTab: View {
                 MAShortcutSettingsSection(
                     groupTitle: "settings.shortcuts.meeting".localized,
                     descriptionText: "settings.shortcuts.meeting_desc".localized,
-                    shortcutTitle: "settings.shortcuts.meeting".localized,
-                    customShortcutLabel: "settings.shortcuts.custom_shortcut".localized,
                     activationModeDescription: "settings.shortcuts.activation_mode_desc".localized,
-                    activationMode: $shortcutsViewModel.activationMode,
-                    selectedPresetKey: $shortcutsViewModel.meetingSelectedPresetKey,
                     settingsContent: {
                         MAModifierShortcutEditor(
                             gesture: $shortcutsViewModel.meetingModifierShortcutGesture,
@@ -48,9 +43,7 @@ public struct MeetingSettingsTab: View {
                             conflictMessage: shortcutsViewModel.meetingModifierConflictMessage
                         )
                     }
-                ) {
-                    KeyboardShortcuts.Recorder(for: .meetingToggle)
-                }
+                )
 
                 // Automation (Existing)
                 MAGroup("settings.meetings.workflow".localized, icon: "bolt.fill") {

@@ -1,4 +1,3 @@
-import KeyboardShortcuts
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
@@ -24,31 +23,25 @@ public struct DictationSettingsTab: View {
                 MAShortcutSettingsSection(
                     groupTitle: "settings.shortcuts.dictation".localized,
                     descriptionText: "settings.shortcuts.dictation_desc".localized,
-                    shortcutTitle: "settings.shortcuts.dictation".localized,
-                    customShortcutLabel: "settings.shortcuts.custom_shortcut".localized,
                     activationModeDescription: "settings.shortcuts.activation_mode_desc".localized,
-                    activationMode: $shortcutsViewModel.dictationActivationMode,
-                    selectedPresetKey: $shortcutsViewModel.dictationSelectedPresetKey,
                     settingsContent: {
                         VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
-                            MAToggleRow(
-                                "settings.shortcuts.use_escape".localized,
-                                description: "settings.shortcuts.use_escape_desc".localized,
-                                isOn: $shortcutsViewModel.useEscapeToCancelRecording
-                            )
-
-                            Divider()
-
                             MAModifierShortcutEditor(
                                 gesture: $shortcutsViewModel.dictationModifierShortcutGesture,
                                 triggerMode: $shortcutsViewModel.dictationModifierTriggerMode,
                                 conflictMessage: shortcutsViewModel.dictationModifierConflictMessage
                             )
+
+                            Divider()
+
+                            MAToggleRow(
+                                "settings.shortcuts.use_escape".localized,
+                                description: "settings.shortcuts.use_escape_desc".localized,
+                                isOn: $shortcutsViewModel.useEscapeToCancelRecording
+                            )
                         }
                     }
-                ) {
-                    KeyboardShortcuts.Recorder(for: .dictationToggle)
-                }
+                )
 
                 // Workflow
                 MAGroup("settings.dictation.workflow".localized, icon: "cpu") {

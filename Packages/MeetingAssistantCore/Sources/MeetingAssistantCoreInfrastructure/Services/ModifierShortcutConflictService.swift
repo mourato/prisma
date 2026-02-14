@@ -21,7 +21,24 @@ public enum ModifierShortcutActionID: Hashable, Sendable {
     }
 }
 
-/// Binding entry used by the conflict validator.
+/// Generic binding entry used by the conflict validator.
+public struct ShortcutBinding: Equatable, Sendable {
+    public let actionID: ModifierShortcutActionID
+    public let actionDisplayName: String
+    public let shortcut: ShortcutDefinition
+
+    public init(
+        actionID: ModifierShortcutActionID,
+        actionDisplayName: String,
+        shortcut: ShortcutDefinition
+    ) {
+        self.actionID = actionID
+        self.actionDisplayName = actionDisplayName
+        self.shortcut = shortcut
+    }
+}
+
+/// Binding entry used by the conflict validator for legacy modifier-only flows.
 public struct ModifierShortcutBinding: Equatable, Sendable {
     public let actionID: ModifierShortcutActionID
     public let actionDisplayName: String
@@ -39,40 +56,43 @@ public struct ModifierShortcutBinding: Equatable, Sendable {
 }
 
 /// Conflict result between two actions sharing the same normalized signature.
-public struct ModifierShortcutConflict: Equatable, Sendable {
-    public let candidate: ModifierShortcutBinding
-    public let conflicting: ModifierShortcutBinding
+public struct ShortcutConflict: Equatable, Sendable {
+    public let candidate: ShortcutBinding
+    public let conflicting: ShortcutBinding
 
-    public init(candidate: ModifierShortcutBinding, conflicting: ModifierShortcutBinding) {
+    public init(candidate: ShortcutBinding, conflicting: ShortcutBinding) {
         self.candidate = candidate
         self.conflicting = conflicting
     }
 }
 
+/// Legacy compatibility alias.
+public typealias ModifierShortcutConflict = ShortcutConflict
+
 public enum ModifierShortcutConflictService {
     /// Returns the first conflict found for `candidate` against a set of `existing` bindings.
     public static func conflict(
-        for candidate: ModifierShortcutBinding,
-        in existing: [ModifierShortcutBinding]
-    ) -> ModifierShortcutConflict? {
-        guard !candidate.gesture.isEmpty else {
+        for candidate: ShortcutBinding,
+        in existing: [ShortcutBinding]
+    ) -> ShortcutConflict? {
+        guard !candidate.shortcut.isEmpty else {
             return nil
         }
 
         guard let conflicting = existing.first(where: { entry in
             entry.actionID != candidate.actionID &&
-                !entry.gesture.isEmpty &&
-                entry.gesture.normalizedSignature == candidate.gesture.normalizedSignature
+                !entry.shortcut.isEmpty &&
+                entry.shortcut.normalizedSignature == candidate.shortcut.normalizedSignature
         }) else {
             return nil
         }
 
-        return ModifierShortcutConflict(candidate: candidate, conflicting: conflicting)
+        return ShortcutConflict(candidate: candidate, conflicting: conflicting)
     }
 
-    /// Detects all duplicates in a bindings collection.
-    public static func allConflicts(in bindings: [ModifierShortcutBinding]) -> [ModifierShortcutConflict] {
-        var conflicts: [ModifierShortcutConflict] = []
+    /// Detects all duplicates in a generic bindings collection.
+    public static func allConflicts(in bindings: [ShortcutBinding]) -> [ShortcutConflict] {
+        var conflicts: [ShortcutConflict] = []
 
         for index in bindings.indices {
             let candidate = bindings[index]
@@ -83,5 +103,28 @@ public enum ModifierShortcutConflictService {
         }
 
         return conflicts
+    }
+
+    /// Returns the first conflict found for `candidate` against a set of `existing` modifier bindings.
+    public static func conflict(
+        for candidate: ModifierShortcutBinding,
+        in existing: [ModifierShortcutBinding]
+    ) -> ModifierShortcutConflict? {
+        let genericCandidate = asShortcutBinding(candidate)
+        let genericExisting = existing.map(asShortcutBinding)
+        return conflict(for: genericCandidate, in: genericExisting)
+    }
+
+    /// Detects all duplicates in a modifier bindings collection.
+    public static func allConflicts(in bindings: [ModifierShortcutBinding]) -> [ModifierShortcutConflict] {
+        allConflicts(in: bindings.map(asShortcutBinding))
+    }
+
+    private static func asShortcutBinding(_ modifierBinding: ModifierShortcutBinding) -> ShortcutBinding {
+        ShortcutBinding(
+            actionID: modifierBinding.actionID,
+            actionDisplayName: modifierBinding.actionDisplayName,
+            shortcut: modifierBinding.gesture.asShortcutDefinition
+        )
     }
 }
