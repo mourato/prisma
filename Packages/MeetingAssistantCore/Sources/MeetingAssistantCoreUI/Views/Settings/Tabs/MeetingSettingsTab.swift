@@ -35,11 +35,9 @@ public struct MeetingSettingsTab: View {
                 MAShortcutSettingsSection(
                     groupTitle: "settings.shortcuts.meeting".localized,
                     descriptionText: "settings.shortcuts.meeting_desc".localized,
-                    activationModeDescription: "settings.shortcuts.activation_mode_desc".localized,
                     settingsContent: {
                         MAModifierShortcutEditor(
-                            gesture: $shortcutsViewModel.meetingModifierShortcutGesture,
-                            triggerMode: $shortcutsViewModel.meetingModifierTriggerMode,
+                            shortcut: $shortcutsViewModel.meetingShortcutDefinition,
                             conflictMessage: shortcutsViewModel.meetingModifierConflictMessage
                         )
                     }

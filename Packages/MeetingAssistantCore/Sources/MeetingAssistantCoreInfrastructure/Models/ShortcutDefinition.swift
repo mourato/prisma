@@ -99,6 +99,8 @@ public enum ShortcutDefinitionValidationError: Equatable, Sendable {
     case invalidPrimaryKey
     case unsupportedTriggerForAdvanced
     case unsupportedTriggerForSimpleOrIntermediate
+    case advancedRequiresSingleModifier
+    case advancedRequiresSideSpecificModifier
 }
 
 public struct ShortcutDefinition: Codable, Equatable, Hashable, Sendable {
@@ -130,9 +132,9 @@ public struct ShortcutDefinition: Codable, Equatable, Hashable, Sendable {
     public var allowedTriggers: [ShortcutTrigger] {
         switch patternType {
         case .simple, .intermediate:
-            [.singleTap, .hold]
+            [.singleTap]
         case .advanced:
-            [.hold, .doubleTap]
+            [.doubleTap]
         }
     }
 
@@ -160,15 +162,21 @@ public struct ShortcutDefinition: Codable, Equatable, Hashable, Sendable {
             guard primaryKey != nil else {
                 return .missingPrimaryKey
             }
-            guard trigger != .doubleTap else {
+            guard trigger == .singleTap else {
                 return .unsupportedTriggerForSimpleOrIntermediate
             }
         case .advanced:
             guard primaryKey == nil else {
                 return .missingPrimaryKey
             }
-            guard trigger != .singleTap else {
+            guard trigger == .doubleTap else {
                 return .unsupportedTriggerForAdvanced
+            }
+            guard modifiers.count == 1 else {
+                return .advancedRequiresSingleModifier
+            }
+            guard modifiers[0].isSideSpecificOrFn else {
+                return .advancedRequiresSideSpecificModifier
             }
         }
 
@@ -184,6 +192,21 @@ public struct ShortcutDefinition: Codable, Equatable, Hashable, Sendable {
             .sorted { lhs, rhs in
                 lhs.sortOrder < rhs.sortOrder
             }
+    }
+}
+
+private extension ModifierShortcutKey {
+    var isSideSpecificOrFn: Bool {
+        switch self {
+        case .leftCommand, .rightCommand,
+             .leftShift, .rightShift,
+             .leftOption, .rightOption,
+             .leftControl, .rightControl,
+             .fn:
+            true
+        case .command, .shift, .option, .control:
+            false
+        }
     }
 }
 
@@ -203,6 +226,17 @@ public extension ShortcutTrigger {
         switch self {
         case .singleTap:
             .singleTap
+        case .hold:
+            .hold
+        case .doubleTap:
+            .doubleTap
+        }
+    }
+
+    var asShortcutActivationMode: ShortcutActivationMode {
+        switch self {
+        case .singleTap:
+            .toggle
         case .hold:
             .hold
         case .doubleTap:

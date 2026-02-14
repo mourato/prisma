@@ -10,20 +10,17 @@ public struct MAShortcutSettingsSection<SettingsContent: View>: View {
     private let groupTitle: String
     private let groupIcon: String
     private let descriptionText: String
-    private let activationModeDescription: String
     private let settingsContent: () -> SettingsContent
 
     public init(
         groupTitle: String,
         groupIcon: String = "keyboard",
         descriptionText: String,
-        activationModeDescription: String,
         @ViewBuilder settingsContent: @escaping () -> SettingsContent
     ) {
         self.groupTitle = groupTitle
         self.groupIcon = groupIcon
         self.descriptionText = descriptionText
-        self.activationModeDescription = activationModeDescription
         self.settingsContent = settingsContent
     }
 
@@ -35,12 +32,6 @@ public struct MAShortcutSettingsSection<SettingsContent: View>: View {
                     .foregroundStyle(.secondary)
 
                 settingsContent()
-
-                Divider()
-
-                Text(activationModeDescription)
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
             }
         }
     }
@@ -49,8 +40,7 @@ public struct MAShortcutSettingsSection<SettingsContent: View>: View {
 #Preview {
     MAShortcutSettingsSection(
         groupTitle: "Shortcuts",
-        descriptionText: "Configure the shortcut behavior.",
-        activationModeDescription: "Choose how the shortcut should trigger."
+        descriptionText: "Configure the shortcut behavior."
     ) {
         Text("In-house shortcut editor")
             .font(.caption)
