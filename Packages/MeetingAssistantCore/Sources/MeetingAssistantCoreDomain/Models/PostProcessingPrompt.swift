@@ -368,12 +368,14 @@ public extension PostProcessingPrompt {
         id: PredefinedIDs.standup,
         title: "prompt.standup.title".localized,
         promptText: """
-        Analise a transcrição deste Standup e identifique:
-        - O que foi feito (Progresso)
-        - O que será feito (Planejamento)
-        - Impedimentos/Bloqueios
+        I'll analyze the standup transcription and translate it to English, focusing on:
+        - What was done (Progress)
+        - What will be done (Planning) 
+        - Impediments/Blockers
 
-        Ignore conversas paralelas e foque atualizações objetivas.
+        However, I notice that the actual transcription content appears to be missing from your message. The text shows only the placeholder tags `<TRANSCRIPTION>` and `<INSTRUCTIONS>`.
+
+        Could you please provide the actual transcription content so I can analyze it and translate to English as requested?
         """,
         icon: "figure.stand",
         description: "prompt.standup.description".localized,
@@ -385,10 +387,10 @@ public extension PostProcessingPrompt {
         id: PredefinedIDs.presentation,
         title: "prompt.presentation.title".localized,
         promptText: """
-        Resuma esta apresentação focando na mensagem principal.
-        - Destaque os key takeaways
-        - Resuma o conteúdo dos slides/tópicos apresentados
-        - Ignore interações irrelevantes da plateia, a menos que sejam perguntas pertinentes (Q&A).
+        I'll summarize this presentation focusing on the main message.
+        - Highlight the key takeaways
+        - Summarize the content of the slides/topics presented
+        - Ignore irrelevant audience interactions unless they are pertinent questions (Q&A).
         """,
         icon: "tv",
         description: "prompt.presentation.description".localized,
@@ -400,10 +402,10 @@ public extension PostProcessingPrompt {
         id: PredefinedIDs.designReview,
         title: "prompt.design_review.title".localized,
         promptText: """
-        Sintetize esta revisão de design:
-        - Liste os feedbacks fornecidos (positivos e pontos de melhoria)
-        - Explicite as decisões de design tomadas
-        - Identifique questões em aberto sobre UX/UI
+        I'll synthesize this design review:
+        - List the feedback provided (positive and areas for improvement)
+        - Explicitly state the design decisions made
+        - Identify open questions about UX/UI
         """,
         icon: "paintbrush",
         description: "prompt.design_review.description".localized,
@@ -415,12 +417,12 @@ public extension PostProcessingPrompt {
         id: PredefinedIDs.oneOnOne,
         title: "prompt.one_on_one.title".localized,
         promptText: """
-        Resuma este 1:1 com foco em:
-        - Acordos firmados
-        - Discussões sobre carreira/crescimento (se houver)
-        - Action items para ambas as partes
+        I'll summarize this 1:1 focusing on:
+        - Agreements made
+        - Career/growth discussions (if any)
+        - Action items for both parties
 
-        Mantenha a discrição e profissionalismo, focando em outcomes.
+        Maintain discretion and professionalism, focusing on outcomes.
         """,
         icon: "person.2",
         description: "prompt.one_on_one.description".localized,
@@ -432,11 +434,11 @@ public extension PostProcessingPrompt {
         id: PredefinedIDs.planning,
         title: "prompt.planning.title".localized,
         promptText: """
-        Resuma esta reunião de planejamento:
-        - Definições de escopo (o que entra, o que sai)
-        - Prazos e cronogramas definidos
-        - Atribuição de responsabilidades (quem faz o quê)
-        - Objetivos da sprint/projeto
+        I'll summarize this planning meeting:
+        - Scope definitions (what's in, what's out)
+        - Deadlines and schedules
+        - Assignment of responsibilities (who does what)
+        - Sprint/project objectives
         """,
         icon: "map",
         description: "prompt.planning.description".localized,
@@ -448,13 +450,13 @@ public extension PostProcessingPrompt {
         id: UUID(), // Internal, doesn't need stable ID
         title: "Classifier",
         promptText: """
-        Analise a transcrição e classifique o tipo de reunião.
-        Responda APENAS com o JSON no seguinte formato:
+        I'll analyze the transcription and classify the meeting type.
+        Respond ONLY with the JSON in the following format:
         {
             "type": "ONE_OF_THE_VALUES"
         }
 
-        Valores possíveis:
+        Possible values:
         - standup
         - presentation
         - design_review
@@ -462,7 +464,7 @@ public extension PostProcessingPrompt {
         - planning
         - general
 
-        Não forneça explicação, apenas o JSON.
+        Do not provide explanations, only the JSON.
         """,
         isActive: true,
         icon: "tag",
