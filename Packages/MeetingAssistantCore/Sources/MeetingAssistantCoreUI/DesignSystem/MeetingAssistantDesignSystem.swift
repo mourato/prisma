@@ -143,8 +143,6 @@ public enum MeetingAssistantDesignSystem {
         public static let shadowRadiusSmall: CGFloat = 6
         public static let shadowYSmall: CGFloat = 3
 
-        public static let maxTextFieldWidth: CGFloat = 300
-        public static let maxPickerWidth: CGFloat = 200
         public static let maxCompactTextFieldWidth: CGFloat = 200
         public static let textAreaPadding: CGFloat = spacing8
 
