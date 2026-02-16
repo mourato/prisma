@@ -792,7 +792,7 @@ extension RecordingManager {
                 autoDetectMeetingType: false,
                 availablePrompts: [],
                 postProcessingContext: nil,
-                postProcessingContextItems: []
+                postProcessingContextItems: postProcessingContextItems
             )
         }
 
@@ -823,14 +823,6 @@ extension RecordingManager {
         let settings = AppSettingsStore.shared
         guard settings.contextAwarenessEnabled else { return (nil, []) }
 
-        if isDictationMode(for: meeting) {
-            let focusedText = await captureFocusedTextContext(settings: settings)
-            let items = focusedText.map { [TranscriptionContextItem(source: .focusedText, text: $0)] } ?? []
-            return (focusedText, items)
-        }
-
-        guard !settings.contextAwarenessExplicitActionOnly else { return (nil, []) }
-
         let snapshot = await contextAwarenessService.captureSnapshot(
             options: .init(
                 includeActiveApp: true,
@@ -842,8 +834,34 @@ extension RecordingManager {
                 excludedBundleIDs: settings.contextAwarenessExcludedBundleIDs
             )
         )
-        let context = contextAwarenessService.makePostProcessingContext(from: snapshot)
-        let items = makeContextItems(from: snapshot)
+
+        var context = contextAwarenessService.makePostProcessingContext(from: snapshot)
+        var items = makeContextItems(from: snapshot)
+
+        if isDictationMode(for: meeting),
+           settings.contextAwarenessIncludeAccessibilityText,
+           let focusedText = await captureFocusedTextContext(settings: settings),
+           !items.contains(where: { $0.source == .focusedText && $0.text == focusedText })
+        {
+            items.append(TranscriptionContextItem(source: .focusedText, text: focusedText))
+
+            let focusedTextBlock = """
+            - Focused text:
+            \(focusedText)
+            """
+
+            if let existingContext = context,
+               !existingContext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            {
+                context = "\(existingContext)\n\(focusedTextBlock)"
+            } else {
+                context = """
+                CONTEXT_METADATA
+                \(focusedTextBlock)
+                """
+            }
+        }
+
         return (context, items)
     }
 
