@@ -12,6 +12,30 @@ public enum BrowserProviderRegistry {
                 applicationName: "Google Chrome",
                 scriptTemplate: BrowserScriptTemplates.chromium
             ),
+            "company.thebrowser.Browser": BrowserActiveTabURLProvider(
+                applicationName: "Arc",
+                scriptTemplate: BrowserScriptTemplates.chromium
+            ),
+            "com.brave.Browser": BrowserActiveTabURLProvider(
+                applicationName: "Brave Browser",
+                scriptTemplate: BrowserScriptTemplates.chromium
+            ),
+            "com.vivaldi.Vivaldi": BrowserActiveTabURLProvider(
+                applicationName: "Vivaldi",
+                scriptTemplate: BrowserScriptTemplates.chromium
+            ),
+            "com.operasoftware.Opera": BrowserActiveTabURLProvider(
+                applicationName: "Opera",
+                scriptTemplate: BrowserScriptTemplates.chromium
+            ),
+            "com.operasoftware.OperaNext": BrowserActiveTabURLProvider(
+                applicationName: "Opera",
+                scriptTemplate: BrowserScriptTemplates.chromium
+            ),
+            "org.mozilla.firefox": BrowserActiveTabURLProvider(
+                applicationName: "Firefox",
+                scriptTemplate: BrowserScriptTemplates.firefox
+            ),
             "com.microsoft.edgemac": BrowserActiveTabURLProvider(
                 applicationName: "Microsoft Edge",
                 scriptTemplate: BrowserScriptTemplates.chromium
@@ -42,7 +66,7 @@ public enum BrowserProviderRegistry {
         }
 
         let applicationName = appURL.deletingPathExtension().lastPathComponent
-        let candidates = [BrowserScriptTemplates.chromium, BrowserScriptTemplates.safari]
+        let candidates = [BrowserScriptTemplates.chromium, BrowserScriptTemplates.safari, BrowserScriptTemplates.firefox]
             .compactMap { BrowserActiveTabURLProvider(applicationName: applicationName, scriptTemplate: $0) }
 
         guard !candidates.isEmpty else {

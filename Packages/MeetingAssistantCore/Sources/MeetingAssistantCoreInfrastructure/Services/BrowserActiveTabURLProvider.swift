@@ -34,6 +34,7 @@ public final class BrowserActiveTabURLProvider: BrowserActiveTabURLProviding {
 public enum BrowserScriptTemplates {
     public static let safari = "tell application \"%@\" to get URL of current tab of front window"
     public static let chromium = "tell application \"%@\" to get URL of active tab of front window"
+    public static let firefox = "tell application \"%@\" to get URL of active tab of front window"
 }
 
 public final class FallbackBrowserActiveTabURLProvider: BrowserActiveTabURLProviding {

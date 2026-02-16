@@ -845,6 +845,22 @@ extension RecordingManager {
         var context = contextAwarenessService.makePostProcessingContext(from: snapshot)
         var items = makeContextItems(from: snapshot)
 
+        if let activeTabURL = activeBrowserURL(for: meeting.appBundleIdentifier)?.absoluteString {
+            items.append(TranscriptionContextItem(source: .activeTabURL, text: activeTabURL))
+
+            let activeTabURLBlock = "- Active tab URL: \(activeTabURL)"
+            if let existingContext = context,
+               !existingContext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            {
+                context = "\(existingContext)\n\(activeTabURLBlock)"
+            } else {
+                context = """
+                CONTEXT_METADATA
+                \(activeTabURLBlock)
+                """
+            }
+        }
+
         if isDictationMode(for: meeting),
            settings.contextAwarenessIncludeAccessibilityText,
            let focusedText = await captureFocusedTextContext(settings: settings),

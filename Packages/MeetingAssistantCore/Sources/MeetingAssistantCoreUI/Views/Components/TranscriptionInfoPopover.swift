@@ -69,12 +69,12 @@ struct TranscriptionInfoPopover: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                if transcription.contextItems.isEmpty {
+                if displayedContextItems.isEmpty {
                     Text("transcription.context.none".localized)
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                 } else {
-                    ForEach(transcription.contextItems) { item in
+                    ForEach(displayedContextItems) { item in
                         ContextItemRow(
                             title: contextItemTitle(for: item.source),
                             preview: previewText(item.text),
@@ -104,9 +104,16 @@ struct TranscriptionInfoPopover: View {
                 Text(sourceDisplayName)
                     .font(.subheadline)
                 Spacer()
-                Text(sourceValue)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                if sourceValueIsPlaceholder {
+                    Text(sourceValue)
+                        .font(.subheadline)
+                        .italic()
+                        .foregroundStyle(.tertiary)
+                } else {
+                    Text(sourceValue)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
     }
@@ -117,10 +124,18 @@ struct TranscriptionInfoPopover: View {
 
     private var sourceValue: String {
         guard isBrowserSource else {
-            return "-"
+            return "transcription.info.url_not_captured".localized
         }
 
-        return browserSite ?? "-"
+        return browserSite ?? "transcription.info.url_not_captured".localized
+    }
+
+    private var sourceValueIsPlaceholder: Bool {
+        sourceValue == "transcription.info.url_not_captured".localized
+    }
+
+    private var displayedContextItems: [TranscriptionContextItem] {
+        transcription.contextItems.filter { $0.source != .activeApp }
     }
 
     private var isBrowserSource: Bool {
@@ -128,9 +143,21 @@ struct TranscriptionInfoPopover: View {
             return false
         }
 
-        return bundleID == "com.google.chrome"
+        let configuredBrowsers = Set(
+            AppSettingsStore.shared
+                .webTargetBrowserBundleIdentifiers
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
+        )
+
+        return configuredBrowsers.contains(bundleID)
+            || bundleID == "com.google.chrome"
             || bundleID == "com.apple.safari"
             || bundleID == "com.microsoft.edgemac"
+            || bundleID == "company.thebrowser.browser"
+            || bundleID == "com.brave.browser"
+            || bundleID == "com.operasoftware.opera"
+            || bundleID == "com.vivaldi.vivaldi"
+            || bundleID == "com.operasoftware.operanext"
             || bundleID == "org.mozilla.firefox"
     }
 
@@ -147,7 +174,7 @@ struct TranscriptionInfoPopover: View {
     }
 
     private var prioritizedBrowserSources: [TranscriptionContextItem.Source] {
-        [.windowTitle, .activeApp, .focusedText, .accessibilityText]
+        [.activeTabURL, .windowTitle, .focusedText, .accessibilityText]
     }
 
     private func extractHost(from text: String) -> String? {
@@ -215,6 +242,8 @@ struct TranscriptionInfoPopover: View {
         switch source {
         case .activeApp:
             return "transcription.context.source.active_app".localized
+        case .activeTabURL:
+            return "transcription.context.source.active_tab_url".localized
         case .windowTitle:
             return "transcription.context.source.window_title".localized
         case .accessibilityText:
