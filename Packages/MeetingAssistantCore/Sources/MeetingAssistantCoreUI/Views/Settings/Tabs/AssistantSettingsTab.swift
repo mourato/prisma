@@ -7,10 +7,18 @@ import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
 public struct AssistantSettingsTab: View {
+    private enum Constants {
+        static let previewDurationNanoseconds: UInt64 = 2_000_000_000
+    }
+
     @StateObject private var viewModel = AssistantShortcutSettingsViewModel()
     @State private var editingIntegration: AssistantIntegrationConfig?
     @State private var advancedIntegrationDraft: AssistantIntegrationConfig?
     @State private var integrationShortcutConflictMessages: [UUID: String] = [:]
+    @State private var previewController: AssistantScreenBorderController?
+    @State private var previewTask: Task<Void, Never>?
+    @State private var isPreviewRunning = false
+    @State private var glowSizeInput = ""
 
     public init() {}
 
@@ -66,6 +74,18 @@ public struct AssistantSettingsTab: View {
                 }
             )
         }
+        .onAppear {
+            glowSizeInput = String(Int(viewModel.glowSize))
+        }
+        .onChange(of: viewModel.glowSize) { _, newValue in
+            let normalized = String(Int(newValue))
+            if glowSizeInput != normalized {
+                glowSizeInput = normalized
+            }
+        }
+        .onDisappear {
+            stopPreviewIfNeeded()
+        }
     }
 
     private var headerSection: some View {
@@ -104,20 +124,22 @@ public struct AssistantSettingsTab: View {
             icon: "rectangle.inset.filled"
         ) {
             VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
-                // Border Color Picker
-                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
                     Text("settings.assistant.border_color".localized)
                         .font(.body)
                         .fontWeight(.medium)
+                        
+                    Spacer()
 
-                    HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
-                        MAThemePicker(selection: $viewModel.borderColor)
-                    }
+                    MAThemePicker(
+                        selection: $viewModel.borderColor,
+                        circleSpacing: MeetingAssistantDesignSystem.Layout.spacing4,
+                        itemFrameSize: 34
+                    )
                 }
 
                 Divider()
 
-                // Border Style Picker
                 HStack {
                     Text("settings.assistant.border_style".localized)
                         .font(.body)
@@ -132,41 +154,121 @@ public struct AssistantSettingsTab: View {
                     }
                     .labelsHidden()
                     .pickerStyle(.segmented)
-                    .frame(width: MeetingAssistantDesignSystem.Layout.maxPickerWidth)
                 }
 
                 Divider()
 
-                HStack {
-                    Text("settings.assistant.border_width".localized)
-                        .font(.body)
-                        .fontWeight(.medium)
+                if viewModel.borderStyle == .stroke {
+                    HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                        Text("settings.assistant.border_width".localized)
+                            .font(.body)
+                            .fontWeight(.medium)
 
-                    Spacer()
+                        Spacer()
+                        
+                        previewButton
 
-                    Stepper(value: $viewModel.borderWidth, in: 1...30, step: 1) {
-                        Text("\(Int(viewModel.borderWidth)) px")
-                            .foregroundStyle(.secondary)
+                        Picker("", selection: borderWidthSelection) {
+                            ForEach(AssistantShortcutSettingsViewModel.borderWidthOptions, id: \.self) { option in
+                                Text("\(Int(option)) pt").tag(option)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+
                     }
-                    .frame(width: MeetingAssistantDesignSystem.Layout.maxPickerWidth)
-                }
+                } else {
+                    HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                        Text("settings.assistant.glow_size".localized)
+                            .font(.body)
+                            .fontWeight(.medium)
 
-                HStack {
-                    Text("settings.assistant.glow_size".localized)
-                        .font(.body)
-                        .fontWeight(.medium)
+                        Spacer()
+                        
+                        previewButton
 
-                    Spacer()
+                        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                            TextField("", text: glowSizeInputBinding)
+                                .textFieldStyle(.roundedBorder)
+                                .multilineTextAlignment(.trailing)
+                                .frame(width: 56)
 
-                    Stepper(value: $viewModel.glowSize, in: 0...60, step: 1) {
-                        Text("\(Int(viewModel.glowSize)) px")
-                            .foregroundStyle(.secondary)
+                            Text("pt")
+                                .foregroundStyle(.secondary)
+                                .font(.caption)
+                        }
+                        
                     }
-                    .frame(width: MeetingAssistantDesignSystem.Layout.maxPickerWidth)
-                    .disabled(viewModel.borderStyle != .glow)
                 }
             }
         }
+    }
+
+    private var previewButton: some View {
+        Button("settings.assistant.preview".localized) {
+            runVisualFeedbackPreview()
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.regular)
+        .disabled(isPreviewRunning)
+    }
+
+    private var borderWidthSelection: Binding<Double> {
+        Binding(
+            get: { nearestBorderWidthOption(for: viewModel.borderWidth) },
+            set: { viewModel.borderWidth = $0 }
+        )
+    }
+
+    private var glowSizeInputBinding: Binding<String> {
+        Binding(
+            get: { glowSizeInput },
+            set: { newValue in
+                let digitsOnly = String(newValue.filter(\.isNumber))
+                glowSizeInput = digitsOnly
+                if let numericValue = Int(digitsOnly) {
+                    viewModel.glowSize = Double(numericValue)
+                } else if digitsOnly.isEmpty {
+                    viewModel.glowSize = 0
+                }
+            }
+        )
+    }
+
+    private func nearestBorderWidthOption(for value: Double) -> Double {
+        AssistantShortcutSettingsViewModel.borderWidthOptions.min(
+            by: { abs($0 - value) < abs($1 - value) }
+        ) ?? AssistantShortcutSettingsViewModel.borderWidthOptions[1]
+    }
+
+    private func runVisualFeedbackPreview() {
+        guard !isPreviewRunning else { return }
+
+        let settings = AppSettingsStore.shared
+        settings.assistantBorderStyle = viewModel.borderStyle
+        settings.assistantBorderWidth = nearestBorderWidthOption(for: viewModel.borderWidth)
+        settings.assistantGlowSize = max(0, viewModel.glowSize)
+
+        let controller = AssistantScreenBorderController(settingsStore: settings)
+        previewController = controller
+        isPreviewRunning = true
+        controller.show()
+
+        previewTask?.cancel()
+        previewTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: Constants.previewDurationNanoseconds)
+            controller.hide()
+            previewController = nil
+            isPreviewRunning = false
+        }
+    }
+
+    private func stopPreviewIfNeeded() {
+        previewTask?.cancel()
+        previewTask = nil
+        previewController?.hide()
+        previewController = nil
+        isPreviewRunning = false
     }
 
     private var integrationsSection: some View {

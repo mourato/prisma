@@ -10,6 +10,8 @@ import SwiftUI
 
 @MainActor
 public final class AssistantShortcutSettingsViewModel: ObservableObject {
+    public static let borderWidthOptions: [Double] = [3, 8, 15, 20, 25, 30]
+
     private let settings = AppSettingsStore.shared
     private var cancellables = Set<AnyCancellable>()
     private let raycastIntegrationService: any AssistantDeepLinkDispatching
@@ -49,10 +51,15 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
         isRecordingCustomShortcut = settings.assistantSelectedPresetKey == .custom
         borderColor = settings.assistantBorderColor
         borderStyle = settings.assistantBorderStyle
-        borderWidth = settings.assistantBorderWidth
+        let normalizedBorderWidth = Self.normalizedBorderWidthValue(settings.assistantBorderWidth)
+        borderWidth = normalizedBorderWidth
         glowSize = settings.assistantGlowSize
         assistantIntegrations = persistedIntegrations
         selectedIntegrationId = resolvedSelectedIntegration?.id
+
+        if normalizedBorderWidth != settings.assistantBorderWidth {
+            settings.assistantBorderWidth = normalizedBorderWidth
+        }
 
         raycastTestStatusMessage = nil
         raycastDeepLinkValidationMessage = nil
@@ -298,7 +305,12 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
         $borderWidth
             .dropFirst()
             .sink { [weak self] newValue in
-                self?.settings.assistantBorderWidth = max(1, newValue)
+                guard let self else { return }
+                let normalized = Self.normalizedBorderWidthValue(newValue)
+                self.settings.assistantBorderWidth = normalized
+                if normalized != newValue {
+                    self.borderWidth = normalized
+                }
             }
             .store(in: &cancellables)
 
@@ -323,6 +335,10 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
                 self?.updateRaycastDeepLinkValidation()
             }
             .store(in: &cancellables)
+    }
+
+    private static func normalizedBorderWidthValue(_ value: Double) -> Double {
+        borderWidthOptions.min(by: { abs($0 - value) < abs($1 - value) }) ?? borderWidthOptions[1]
     }
 
     private func updateRaycastDeepLinkValidation() {

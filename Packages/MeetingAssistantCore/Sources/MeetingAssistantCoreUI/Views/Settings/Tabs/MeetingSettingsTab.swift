@@ -98,39 +98,34 @@ public struct MeetingSettingsTab: View {
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
 
+                            Divider()
+
+                            MAToggleRow(
+                                "settings.meetings.template_enabled".localized,
+                                description: "settings.meetings.template_enabled_desc".localized,
+                                isOn: $meetingViewModel.settings.summaryTemplateEnabled
+                            )
+
                             if meetingViewModel.settings.summaryExportFolder == nil {
                                 Text("settings.meetings.export_location_required".localized)
                                     .font(.caption)
                                     .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
                             }
 
-                            Divider()
+                            if meetingViewModel.settings.summaryTemplateEnabled {
+                                Divider()
 
-                            HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-                                Image(systemName: "doc.text")
-                                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.iconHighlight)
-                                Text("settings.meetings.template".localized)
-                                    .font(.subheadline)
-                                    .fontWeight(.semibold)
-                            }
+                                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                                    Image(systemName: "doc.text")
+                                        .foregroundStyle(MeetingAssistantDesignSystem.Colors.iconHighlight)
+                                    Text("settings.meetings.template".localized)
+                                        .font(.subheadline)
+                                        .fontWeight(.semibold)
+                                }
 
-                            Text("settings.meetings.template_desc".localized)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-
-                            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-                                Text(meetingViewModel.settings.summaryTemplate)
-                                    .font(.caption.monospaced())
-                                    .lineLimit(4)
-                                    .truncationMode(.tail)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(MeetingAssistantDesignSystem.Layout.textAreaPadding)
-                                    .background(MeetingAssistantDesignSystem.Colors.controlBackground)
-                                    .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
-                                            .stroke(MeetingAssistantDesignSystem.Colors.separator, lineWidth: 1)
-                                    )
+                                Text("settings.meetings.template_desc".localized)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
 
                                 HStack {
                                     Spacer()

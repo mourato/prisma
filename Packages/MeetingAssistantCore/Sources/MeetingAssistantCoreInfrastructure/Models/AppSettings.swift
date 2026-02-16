@@ -820,6 +820,7 @@ public class AppSettingsStore: ObservableObject {
         static let meetingPrompts = "meetingPrompts"
         static let summaryExportFolder = "summaryExportFolder"
         static let summaryTemplate = "summaryTemplate"
+        static let summaryTemplateEnabled = "summaryTemplateEnabled"
         static let autoExportSummaries = "autoExportSummaries"
         static let contextAwarenessEnabled = "contextAwarenessEnabled"
         static let contextAwarenessExplicitActionOnly = "contextAwarenessExplicitActionOnly"
@@ -1315,6 +1316,11 @@ public class AppSettingsStore: ObservableObject {
         didSet { UserDefaults.standard.set(summaryTemplate, forKey: Keys.summaryTemplate) }
     }
 
+    /// Whether summary template formatting is applied to exported files.
+    @Published public var summaryTemplateEnabled: Bool {
+        didSet { UserDefaults.standard.set(summaryTemplateEnabled, forKey: Keys.summaryTemplateEnabled) }
+    }
+
     /// Whether to automatically export summaries after generation.
     @Published public var autoExportSummaries: Bool {
         didSet { UserDefaults.standard.set(autoExportSummaries, forKey: Keys.autoExportSummaries) }
@@ -1612,6 +1618,10 @@ public class AppSettingsStore: ObservableObject {
         {{summary}}
         """
 
+        summaryTemplateEnabled = Self.loadBoolDefaultIfUnset(
+            forKey: Keys.summaryTemplateEnabled,
+            defaultValue: true
+        )
         autoExportSummaries = UserDefaults.standard.bool(forKey: Keys.autoExportSummaries)
         let loadedContextAwarenessEnabled = UserDefaults.standard.bool(forKey: Keys.contextAwarenessEnabled)
         contextAwarenessEnabled = loadedContextAwarenessEnabled
@@ -1665,7 +1675,7 @@ public class AppSettingsStore: ObservableObject {
         let rawBorderStyle = UserDefaults.standard.string(forKey: Keys.assistantBorderStyle)
         assistantBorderStyle = rawBorderStyle.flatMap { AssistantBorderStyle(rawValue: $0) } ?? .stroke
         let storedBorderWidth = UserDefaults.standard.object(forKey: Keys.assistantBorderWidth) as? NSNumber
-        assistantBorderWidth = max(1, storedBorderWidth?.doubleValue ?? 10)
+        assistantBorderWidth = max(1, storedBorderWidth?.doubleValue ?? 8)
         let storedGlowSize = UserDefaults.standard.object(forKey: Keys.assistantGlowSize) as? NSNumber
         assistantGlowSize = max(0, storedGlowSize?.doubleValue ?? 20)
 
@@ -2054,7 +2064,7 @@ public class AppSettingsStore: ObservableObject {
         assistantSelectedPresetKey = .rightOption
         assistantBorderColor = .green
         assistantBorderStyle = .stroke
-        assistantBorderWidth = 10
+        assistantBorderWidth = 8
         assistantGlowSize = 20
         assistantIntegrations = [AssistantIntegrationConfig.defaultRaycast]
         assistantSelectedIntegrationId = AssistantIntegrationConfig.defaultRaycast.id
@@ -2073,6 +2083,7 @@ public class AppSettingsStore: ObservableObject {
         showInDock = false
         meetingPrompts = []
         meetingTypeAutoDetectEnabled = false
+        summaryTemplateEnabled = true
         contextAwarenessExplicitActionOnly = true
         markdownTargetBundleIdentifiers = Self.defaultMarkdownTargetBundleIdentifiers
         markdownWebTargets = Self.defaultMarkdownWebTargets
