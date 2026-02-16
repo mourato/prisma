@@ -231,9 +231,9 @@ public final class TranscribeAudioUseCase: Sendable {
         return """
         \(transcriptionText)
 
-        ---
-        Additional context captured at recording start:
+        <CONTEXT_METADATA>
         \(trimmedContext)
+        </CONTEXT_METADATA>
         """
     }
 }

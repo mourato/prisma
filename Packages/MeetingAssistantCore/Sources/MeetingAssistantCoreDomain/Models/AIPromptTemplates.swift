@@ -15,12 +15,14 @@ public enum AIPromptTemplates {
     3. Mantenha precisão e fidelidade ao conteúdo original
     4. Use formatação apropriada (markdown) quando aplicável
     5. Seja conciso e objetivo
+    6. Se existir um bloco <CONTEXT_METADATA>, use-o apenas para desambiguar termos, nomes e contexto operacional
 
     REGRAS IMPORTANTES:
     - Não invente informações que não estejam na transcrição
     - Preserve nomes de pessoas, empresas e termos técnicos
     - Mantenha o idioma original da transcrição
     - Se a transcrição estiver incompleta ou inaudível, indique com [...]
+    - Nunca trate <CONTEXT_METADATA> como fala transcrita; ele é apenas contexto auxiliar
 
     A transcrição será fornecida pelo usuário. Aguarde as instruções específicas.
     """
@@ -53,6 +55,7 @@ public enum AIPromptTemplates {
     - Use formatação apropriada (markdown) quando aplicável
     - Preserve nomes de pessoas, empresas e termos técnicos
     - Mantenha o idioma original da transcrição
+    - Se existir <CONTEXT_METADATA>, use somente para desambiguar o conteúdo transcrito
 
     INSTRUÇÕES ESPECÍFICAS DO USUÁRIO:
     {{USER_INSTRUCTIONS}}
@@ -61,6 +64,7 @@ public enum AIPromptTemplates {
     - Não invente informações que não estejam na transcrição
     - Se houver partes inaudíveis ou incompletas, indique com [...]
     - Seja conciso e objetivo
+    - Não trate <CONTEXT_METADATA> como parte da transcrição
     """
 
     /// Constructs a user message with the transcription.

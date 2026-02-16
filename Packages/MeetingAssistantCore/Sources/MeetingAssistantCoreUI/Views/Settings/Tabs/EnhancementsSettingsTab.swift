@@ -1,3 +1,5 @@
+import AppKit
+import CoreGraphics
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
@@ -16,6 +18,7 @@ public struct EnhancementsSettingsTab: View {
     @StateObject private var webBrowserTargetsViewModel: InstalledAppsSelectionViewModel
     @StateObject private var markdownWebTargetsViewModel: WebMarkdownTargetsViewModel
     @State private var supportStatus: TextContextSupportStatus = .unknown
+    @State private var hasScreenRecordingPermission = CGPreflightScreenCaptureAccess()
     private let supportChecker = TextContextSupportChecker()
 
     public init(settings: AppSettingsStore = .shared) {
@@ -133,6 +136,10 @@ public struct EnhancementsSettingsTab: View {
                         description: "settings.context_awareness.window_ocr_desc".localized,
                         isOn: $postProcessingViewModel.settings.contextAwarenessIncludeWindowOCR
                     )
+
+                    if postProcessingViewModel.settings.contextAwarenessIncludeWindowOCR {
+                        screenRecordingSupportStatus
+                    }
 
                     MAToggleRow(
                         "settings.context_awareness.redact_sensitive_data".localized,
@@ -354,6 +361,35 @@ public struct EnhancementsSettingsTab: View {
         .task { await refreshSupportStatus() }
     }
 
+    @ViewBuilder
+    private var screenRecordingSupportStatus: some View {
+        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+            if !hasScreenRecordingPermission {
+                MACallout(
+                    kind: .warning,
+                    title: "settings.context_awareness.screen_permission_title".localized,
+                    message: "settings.context_awareness.screen_permission_desc".localized
+                )
+
+                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                    Button("permissions.request".localized) {
+                        CGRequestScreenCaptureAccess()
+                        refreshScreenRecordingPermission()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.regular)
+
+                    Button("permissions.configure".localized) {
+                        openScreenRecordingSettings()
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.regular)
+                }
+            }
+        }
+        .task { refreshScreenRecordingPermission() }
+    }
+
     // MARK: - AI Provider Integration Card
 
     private var aiProviderIntegrationCard: some View {
@@ -442,6 +478,17 @@ public struct EnhancementsSettingsTab: View {
     @MainActor
     private func refreshSupportStatus() async {
         supportStatus = await supportChecker.checkSupport()
+    }
+
+    private func refreshScreenRecordingPermission() {
+        hasScreenRecordingPermission = CGPreflightScreenCaptureAccess()
+    }
+
+    private func openScreenRecordingSettings() {
+        guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") else {
+            return
+        }
+        NSWorkspace.shared.open(url)
     }
 }
 

@@ -78,48 +78,13 @@ public final class ContextAwarenessService: ContextAwarenessServiceProtocol {
         static let maxExcludedBundleIDs = 100
     }
 
-    private enum RedactionPattern: String, CaseIterable {
-        case email = #"[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}"#
-        case url = #"\b(?:https?://|www\.)\S+\b"#
-        case secretToken = #"\b(?:sk|rk|pk|ghp|xoxb|xoxp|AIza)[-_A-Za-z0-9]{12,}\b"#
-        case longNumericSequence = #"\b(?:\d[ -]?){13,19}\b"#
-    }
-
-    private let defaultSensitiveBundleIDs: Set<String> = [
-        "com.apple.keychainaccess",
-        "com.1password.1password",
-        "com.agilebits.onepassword7",
-        "com.bitwarden.desktop",
-        "com.dashlane.dashlanephonefinal",
-        "com.lastpass.LastPass",
-        "proton.pass.mac",
-    ]
-
-    private let replacementByPattern: [RedactionPattern: String] = [
-        .email: "[REDACTED_EMAIL]",
-        .url: "[REDACTED_URL]",
-        .secretToken: "[REDACTED_SECRET]",
-        .longNumericSequence: "[REDACTED_NUMBER]",
-    ]
-
-    private let regexOptions: NSRegularExpression.Options = [.caseInsensitive]
-    private let redactionOrder: [RedactionPattern] = [.secretToken, .email, .url, .longNumericSequence]
-    private var compiledRedactionRegexes: [RedactionPattern: NSRegularExpression] = [:]
-
-    public init() {
-        for pattern in RedactionPattern.allCases {
-            if let regex = try? NSRegularExpression(pattern: pattern.rawValue, options: regexOptions) {
-                compiledRedactionRegexes[pattern] = regex
-            }
-        }
-    }
+    public init() {}
 
     public func captureSnapshot(options: ContextAwarenessCaptureOptions) async -> ContextAwarenessSnapshot {
         let frontmostApp = NSWorkspace.shared.frontmostApplication
-        let normalizedExcludedBundleIDs = normalizedExcludedBundleIDs(options.excludedBundleIDs)
 
         if options.protectSensitiveApps,
-           isSensitiveApp(frontmostApp, customExcludedBundleIDs: normalizedExcludedBundleIDs)
+              ContextAwarenessPrivacy.isCaptureBlocked(bundleIdentifier: frontmostApp?.bundleIdentifier, excludedBundleIDs: options.excludedBundleIDs)
         {
             return ContextAwarenessSnapshot(
                 activeAppName: nil,
@@ -138,11 +103,11 @@ public final class ContextAwarenessService: ContextAwarenessServiceProtocol {
         var ocrText = options.includeWindowOCR ? await readActiveWindowOCRText(for: activeApp) : nil
 
         if options.redactSensitiveData {
-            appName = redactSensitiveContent(appName)
-            windowTitle = redactSensitiveContent(windowTitle)
-            accessibilityText = redactSensitiveContent(accessibilityText)
-            clipboard = redactSensitiveContent(clipboard)
-            ocrText = redactSensitiveContent(ocrText)
+            appName = ContextAwarenessPrivacy.redactSensitiveText(appName)
+            windowTitle = ContextAwarenessPrivacy.redactSensitiveText(windowTitle)
+            accessibilityText = ContextAwarenessPrivacy.redactSensitiveText(accessibilityText)
+            clipboard = ContextAwarenessPrivacy.redactSensitiveText(clipboard)
+            ocrText = ContextAwarenessPrivacy.redactSensitiveText(ocrText)
         }
 
         return ContextAwarenessSnapshot(
@@ -389,43 +354,4 @@ public final class ContextAwarenessService: ContextAwarenessServiceProtocol {
         return String(value[..<endIndex])
     }
 
-    private func normalizedExcludedBundleIDs(_ values: [String]) -> Set<String> {
-        let normalized = values
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
-            .filter { !$0.isEmpty }
-
-        return Set(normalized.prefix(Constants.maxExcludedBundleIDs))
-    }
-
-    private func isSensitiveApp(
-        _ app: NSRunningApplication?,
-        customExcludedBundleIDs: Set<String>
-    ) -> Bool {
-        guard let bundleID = app?.bundleIdentifier?.lowercased() else { return false }
-        return defaultSensitiveBundleIDs.contains(bundleID) || customExcludedBundleIDs.contains(bundleID)
-    }
-
-    private func redactSensitiveContent(_ value: String?) -> String? {
-        guard let value else { return nil }
-        var output = value
-
-        for pattern in redactionOrder {
-            guard let regex = compiledRedactionRegexes[pattern],
-                  let replacement = replacementByPattern[pattern]
-            else {
-                continue
-            }
-
-            let fullRange = NSRange(output.startIndex..<output.endIndex, in: output)
-
-            output = regex.stringByReplacingMatches(
-                in: output,
-                options: [],
-                range: fullRange,
-                withTemplate: replacement
-            )
-        }
-
-        return output
-    }
 }
