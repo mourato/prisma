@@ -59,7 +59,6 @@ public struct GeneralSettingsTab: View {
                             }
                             .labelsHidden()
                             .pickerStyle(.menu)
-                            .frame(width: MeetingAssistantDesignSystem.Layout.maxPickerWidth)
                         }
                     }
                 }
@@ -89,7 +88,6 @@ public struct GeneralSettingsTab: View {
                                 }
                                 .labelsHidden()
                                 .pickerStyle(.segmented)
-                                .frame(width: MeetingAssistantDesignSystem.Layout.maxPickerWidth)
                             }
 
                             Divider()
@@ -107,7 +105,6 @@ public struct GeneralSettingsTab: View {
                                 }
                                 .labelsHidden()
                                 .pickerStyle(.segmented)
-                                .frame(width: MeetingAssistantDesignSystem.Layout.maxPickerWidth)
                             }
                         }
                     }
@@ -130,7 +127,6 @@ public struct GeneralSettingsTab: View {
                             }
                             .labelsHidden()
                             .pickerStyle(.menu)
-                            .frame(width: MeetingAssistantDesignSystem.Layout.maxPickerWidth)
                         }
                     }
                 }
