@@ -91,6 +91,9 @@
 "settings.meetings.no_folder_selected" = "No folder selected";
 "settings.meetings.template" = "Template";
 "settings.meetings.template_desc" = "Template used to format exported summaries.";
+"settings.meetings.template.edit" = "Edit template";
+"settings.meetings.template.editor_title" = "Edit export template";
+"settings.meetings.template.editor_hint" = "Available placeholders: {{meeting_title}}, {{meeting_date}}, {{duration}}, {{summary}}.";
 "settings.meetings.speaker_identification" = "Speaker identification";
 "settings.meetings.prompts" = "Meeting prompts";
 "settings.meetings.autodetect_type" = "Auto-detect meeting type";
@@ -105,7 +108,6 @@
 "settings.meetings.web_targets.browsers" = "Browsers: %@";
 "settings.meetings.web_targets.editor_title" = "Web Target";
 "settings.meetings.web_targets.name_label" = "Display name";
-"settings.meetings.web_targets.app_label" = "Meeting app";
 "settings.meetings.web_targets.url_label" = "URL patterns";
 "settings.meetings.web_targets.url_desc" = "One pattern per line (or comma-separated). Example: meet.google.com";
 "settings.meetings.web_targets.delete_confirm_title" = "Delete web target?";
@@ -399,6 +401,8 @@
 "settings.assistant.visual_feedback" = "Visual Feedback";
 "settings.assistant.border_color" = "Border Color";
 "settings.assistant.border_style" = "Border Style";
+"settings.assistant.border_width" = "Border Width";
+"settings.assistant.glow_size" = "Glow Size";
 "settings.assistant.border_style.stroke" = "Stroke";
 "settings.assistant.border_style.glow" = "Glow";
 

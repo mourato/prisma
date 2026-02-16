@@ -91,6 +91,9 @@
 "settings.meetings.no_folder_selected" = "Nenhuma pasta selecionada";
 "settings.meetings.template" = "Template";
 "settings.meetings.template_desc" = "Template usado para formatar os resumos exportados.";
+"settings.meetings.template.edit" = "Editar template";
+"settings.meetings.template.editor_title" = "Editar template de exportacao";
+"settings.meetings.template.editor_hint" = "Placeholders disponiveis: {{meeting_title}}, {{meeting_date}}, {{duration}}, {{summary}}.";
 "settings.meetings.speaker_identification" = "Identificação de oradores";
 "settings.meetings.prompts" = "Prompts de reunião";
 "settings.meetings.autodetect_type" = "Autodetectar tipo de reunião";
@@ -105,7 +108,6 @@
 "settings.meetings.web_targets.browsers" = "Navegadores: %@";
 "settings.meetings.web_targets.editor_title" = "Alvo Web";
 "settings.meetings.web_targets.name_label" = "Nome de exibicao";
-"settings.meetings.web_targets.app_label" = "App de reuniao";
 "settings.meetings.web_targets.url_label" = "Padroes de URL";
 "settings.meetings.web_targets.url_desc" = "Um padrao por linha (ou separado por virgula). Exemplo: meet.google.com";
 "settings.meetings.web_targets.delete_confirm_title" = "Excluir alvo web?";
@@ -398,6 +400,8 @@
 "settings.assistant.visual_feedback" = "Feedback Visual";
 "settings.assistant.border_color" = "Cor da Borda";
 "settings.assistant.border_style" = "Estilo da Borda";
+"settings.assistant.border_width" = "Largura da Borda";
+"settings.assistant.glow_size" = "Tamanho do Brilho";
 "settings.assistant.border_style.stroke" = "Linha";
 "settings.assistant.border_style.glow" = "Brilho";
 

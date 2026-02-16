@@ -14,6 +14,7 @@ public struct MeetingSettingsTab: View {
     @StateObject private var shortcutsViewModel = ShortcutSettingsViewModel()
     @StateObject private var monitoredAppsViewModel: InstalledAppsSelectionViewModel
     @StateObject private var webTargetsViewModel: WebMeetingTargetsViewModel
+    @State private var showSummaryTemplateEditor = false
 
     public init(settings: AppSettingsStore = .shared) {
         _meetingViewModel = StateObject(wrappedValue: MeetingSettingsViewModel(settings: settings))
@@ -117,16 +118,31 @@ public struct MeetingSettingsTab: View {
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
 
-                            TextEditor(text: $meetingViewModel.settings.summaryTemplate)
-                                .font(.body)
-                                .frame(height: 150)
-                                .padding(MeetingAssistantDesignSystem.Layout.textAreaPadding)
-                                .background(MeetingAssistantDesignSystem.Colors.controlBackground)
-                                .cornerRadius(MeetingAssistantDesignSystem.Layout.smallCornerRadius)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
-                                        .stroke(MeetingAssistantDesignSystem.Colors.separator, lineWidth: 1)
-                                )
+                            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                                Text(meetingViewModel.settings.summaryTemplate)
+                                    .font(.caption.monospaced())
+                                    .lineLimit(4)
+                                    .truncationMode(.tail)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(MeetingAssistantDesignSystem.Layout.textAreaPadding)
+                                    .background(MeetingAssistantDesignSystem.Colors.controlBackground)
+                                    .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
+                                            .stroke(MeetingAssistantDesignSystem.Colors.separator, lineWidth: 1)
+                                    )
+
+                                HStack {
+                                    Spacer()
+                                    Button {
+                                        showSummaryTemplateEditor = true
+                                    } label: {
+                                        Label("settings.meetings.template.edit".localized, systemImage: "pencil")
+                                    }
+                                    .buttonStyle(.bordered)
+                                    .controlSize(.regular)
+                                }
+                            }
                         }
                     }
                 }
@@ -188,6 +204,16 @@ public struct MeetingSettingsTab: View {
                 prompt: meetingViewModel.editingPrompt,
                 onSave: meetingViewModel.handleSavePrompt,
                 onCancel: { meetingViewModel.showPromptEditor = false }
+            )
+        }
+        .sheet(isPresented: $showSummaryTemplateEditor) {
+            SummaryTemplateEditorSheet(
+                initialTemplate: meetingViewModel.settings.summaryTemplate,
+                onSave: { updatedTemplate in
+                    meetingViewModel.settings.summaryTemplate = updatedTemplate
+                    showSummaryTemplateEditor = false
+                },
+                onCancel: { showSummaryTemplateEditor = false }
             )
         }
         .sheet(isPresented: $webTargetsViewModel.showEditor) {
@@ -295,6 +321,7 @@ public struct MeetingSettingsTab: View {
                     .accessibilityLabel("settings.meetings.web_targets.delete".localized)
             }
             .buttonStyle(.borderless)
+            .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
             .controlSize(.regular)
         }
         .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)

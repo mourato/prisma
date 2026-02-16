@@ -172,6 +172,7 @@ UI design-system rules:
 - Prefer design-system spacing/radius tokens over magic numbers.
 - Prefer design-system components over ad-hoc container styling.
 - Use `MA*` components directly in Settings (`MACard`, `MAGroup`, `MAToggleRow`, `MACallout`, `MABadge`, `MAActionButton`, `MAThemePicker`).
+- Destructive actions (`remove`, `clear`, `delete`) must use red styling (`.destructive` role and/or `MeetingAssistantDesignSystem.Colors.error` in custom button styles).
 - Every SwiftUI `struct ...: View` under `MeetingAssistantCoreUI` must include at least one `#Preview`.
 - For stateful UI, prefer multiple previews covering key states (e.g., loading/success/error).
 - For views with startup side effects, gate them in preview mode via `PreviewRuntime.isRunning`.

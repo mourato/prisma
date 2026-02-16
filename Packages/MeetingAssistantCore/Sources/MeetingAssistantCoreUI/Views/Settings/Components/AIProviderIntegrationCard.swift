@@ -216,6 +216,7 @@ public struct AIProviderIntegrationCard: View {
                         Text("settings.ai.remove_key".localized)
                     }
                     .buttonStyle(.bordered)
+                    .tint(MeetingAssistantDesignSystem.Colors.error)
                     .controlSize(.regular)
                 }
             } else {

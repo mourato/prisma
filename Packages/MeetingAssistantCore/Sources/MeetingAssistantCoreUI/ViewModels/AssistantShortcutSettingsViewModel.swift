@@ -21,6 +21,8 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
     @Published public var isRecordingCustomShortcut: Bool = false
     @Published public var borderColor: AssistantBorderColor
     @Published public var borderStyle: AssistantBorderStyle
+    @Published public var borderWidth: Double
+    @Published public var glowSize: Double
     @Published public var assistantIntegrations: [AssistantIntegrationConfig]
     @Published public var selectedIntegrationId: UUID?
 
@@ -47,6 +49,8 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
         isRecordingCustomShortcut = settings.assistantSelectedPresetKey == .custom
         borderColor = settings.assistantBorderColor
         borderStyle = settings.assistantBorderStyle
+        borderWidth = settings.assistantBorderWidth
+        glowSize = settings.assistantGlowSize
         assistantIntegrations = persistedIntegrations
         selectedIntegrationId = resolvedSelectedIntegration?.id
 
@@ -288,6 +292,20 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
             .dropFirst()
             .sink { [weak self] newValue in
                 self?.settings.assistantBorderStyle = newValue
+            }
+            .store(in: &cancellables)
+
+        $borderWidth
+            .dropFirst()
+            .sink { [weak self] newValue in
+                self?.settings.assistantBorderWidth = max(1, newValue)
+            }
+            .store(in: &cancellables)
+
+        $glowSize
+            .dropFirst()
+            .sink { [weak self] newValue in
+                self?.settings.assistantGlowSize = max(0, newValue)
             }
             .store(in: &cancellables)
 
