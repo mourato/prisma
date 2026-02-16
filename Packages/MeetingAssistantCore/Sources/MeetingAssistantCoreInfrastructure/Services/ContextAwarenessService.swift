@@ -2,6 +2,7 @@ import AppKit
 @preconcurrency import ApplicationServices
 import CoreGraphics
 import Foundation
+import MeetingAssistantCoreCommon
 @preconcurrency import ScreenCaptureKit
 import Vision
 
@@ -82,10 +83,19 @@ public final class ContextAwarenessService: ContextAwarenessServiceProtocol {
 
     public func captureSnapshot(options: ContextAwarenessCaptureOptions) async -> ContextAwarenessSnapshot {
         let frontmostApp = NSWorkspace.shared.frontmostApplication
+        let frontmostBundleID = frontmostApp?.bundleIdentifier ?? "unknown"
 
         if options.protectSensitiveApps,
               ContextAwarenessPrivacy.isCaptureBlocked(bundleIdentifier: frontmostApp?.bundleIdentifier, excludedBundleIDs: options.excludedBundleIDs)
         {
+            AppLogger.info(
+                "Context capture blocked for sensitive app",
+                category: .recordingManager,
+                extra: [
+                    "reasonCode": "context.sensitive_app_blocked",
+                    "bundleID": frontmostBundleID,
+                ]
+            )
             return ContextAwarenessSnapshot(
                 activeAppName: nil,
                 activeWindowTitle: nil,
@@ -253,14 +263,57 @@ public final class ContextAwarenessService: ContextAwarenessServiceProtocol {
     }
 
     private func readActiveWindowOCRText(for app: NSRunningApplication?) async -> String? {
-        guard CGPreflightScreenCaptureAccess() else { return nil }
-        guard let app else { return nil }
-        guard let windowID = frontmostWindowID(for: app.processIdentifier) else { return nil }
+        guard CGPreflightScreenCaptureAccess() else {
+            AppLogger.warning(
+                "OCR capture skipped: screen recording permission not granted",
+                category: .recordingManager,
+                extra: ["reasonCode": "ocr.permission_denied"]
+            )
+            return nil
+        }
+
+        guard let app else {
+            AppLogger.debug(
+                "OCR capture skipped: no active app",
+                category: .recordingManager,
+                extra: ["reasonCode": "ocr.no_active_app"]
+            )
+            return nil
+        }
+
+        guard let windowID = frontmostWindowID(for: app.processIdentifier) else {
+            AppLogger.debug(
+                "OCR capture skipped: no frontmost window found",
+                category: .recordingManager,
+                extra: [
+                    "reasonCode": "ocr.no_frontmost_window",
+                    "bundleID": app.bundleIdentifier ?? "unknown",
+                    "pid": app.processIdentifier,
+                ]
+            )
+            return nil
+        }
 
         let image = await captureWindowImageUsingScreenCaptureKit(windowID: windowID)
 
-        guard let image else { return nil }
-        return recognizedText(from: image)
+        guard let image else {
+            AppLogger.debug(
+                "OCR capture skipped: failed to capture window image",
+                category: .recordingManager,
+                extra: ["reasonCode": "ocr.image_capture_failed"]
+            )
+            return nil
+        }
+
+        let text = recognizedText(from: image)
+        if text == nil {
+            AppLogger.debug(
+                "OCR capture finished with empty text",
+                category: .recordingManager,
+                extra: ["reasonCode": "ocr.empty_text"]
+            )
+        }
+        return text
     }
 
     @available(macOS 14.0, *)
@@ -268,6 +321,14 @@ public final class ContextAwarenessService: ContextAwarenessServiceProtocol {
         do {
             let content = try await SCShareableContent.current
             guard let window = content.windows.first(where: { $0.windowID == windowID }) else {
+                AppLogger.debug(
+                    "OCR image capture skipped: window no longer available",
+                    category: .recordingManager,
+                    extra: [
+                        "reasonCode": "ocr.window_unavailable",
+                        "windowID": windowID,
+                    ]
+                )
                 return nil
             }
 
@@ -281,6 +342,14 @@ public final class ContextAwarenessService: ContextAwarenessServiceProtocol {
                 configuration: config
             )
         } catch {
+            AppLogger.warning(
+                "OCR image capture failed",
+                category: .recordingManager,
+                extra: [
+                    "reasonCode": "ocr.screencapturekit_error",
+                    "windowID": windowID,
+                ]
+            )
             return nil
         }
     }
@@ -323,6 +392,14 @@ public final class ContextAwarenessService: ContextAwarenessServiceProtocol {
         do {
             try handler.perform([request])
         } catch {
+            AppLogger.warning(
+                "OCR recognition request failed",
+                category: .recordingManager,
+                extra: [
+                    "reasonCode": "ocr.vision_request_failed",
+                    "error": error.localizedDescription,
+                ]
+            )
             return nil
         }
 
