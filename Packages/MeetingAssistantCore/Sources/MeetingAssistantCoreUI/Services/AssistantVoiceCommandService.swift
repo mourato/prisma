@@ -1,7 +1,4 @@
 import Foundation
-import AppKit
-import ApplicationServices
-import Carbon
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
@@ -35,6 +32,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
     private let settings: AppSettingsStore
     private let raycastIntegrationService: any AssistantDeepLinkDispatching
     private let scriptRunner: AssistantBashScriptRunner
+    private let textSelectionService: AssistantTextSelectionService
 
     private var currentRecordingURL: URL?
     private var currentExecutionFlow: AssistantExecutionFlow = .assistantMode
@@ -48,7 +46,8 @@ public final class AssistantVoiceCommandService: ObservableObject {
         screenBorder: AssistantScreenBorderController = AssistantScreenBorderController(),
         settings: AppSettingsStore = .shared,
         raycastIntegrationService: any AssistantDeepLinkDispatching = AssistantRaycastIntegrationService(),
-        scriptRunner: AssistantBashScriptRunner = AssistantBashScriptRunner()
+        scriptRunner: AssistantBashScriptRunner = AssistantBashScriptRunner(),
+        textSelectionService: AssistantTextSelectionService = AssistantTextSelectionService()
     ) {
         self.audioRecorder = audioRecorder
         self.transcriptionClient = transcriptionClient
@@ -59,6 +58,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
         self.settings = settings
         self.raycastIntegrationService = raycastIntegrationService
         self.scriptRunner = scriptRunner
+        self.textSelectionService = textSelectionService
     }
 
     public func startRecording(flow: AssistantExecutionFlow = .assistantMode) async {
@@ -167,10 +167,26 @@ public final class AssistantVoiceCommandService: ObservableObject {
                 ]
             )
 
-            let integrationPrompt = PostProcessingPrompt(
-                title: "assistant.raycast.prompt_title".localized,
-                promptText: normalizedPromptInstructions(from: selectedIntegration) ?? command
-            )
+            let selectedTextResult = try await textSelectionService.captureSelectedText()
+            let selectedText = selectedTextResult.text
+            let selectionSnapshotToRestore = executionFlow == .integrationDispatch ? selectedTextResult.snapshot : nil
+
+            defer {
+                if let selectionSnapshotToRestore {
+                    textSelectionService.restorePasteboard(selectionSnapshotToRestore)
+                }
+            }
+
+            if AssistantPayloadLogging.shouldLogPayloadDetails {
+                AppLogger.debug(
+                    "Assistant selected text payload",
+                    category: .assistant,
+                    extra: [
+                        "length": selectedText.count,
+                        "preview": AssistantPayloadLogging.payloadPreview(selectedText),
+                    ]
+                )
+            }
 
             guard let beforeAICommand = try await applyScriptIfNeeded(
                 stage: .beforeAI,
@@ -181,8 +197,16 @@ public final class AssistantVoiceCommandService: ObservableObject {
                 return
             }
 
+            let integrationPrompt = PostProcessingPrompt(
+                title: "assistant.raycast.prompt_title".localized,
+                promptText: assistantPromptInstructions(
+                    baseInstructions: normalizedPromptInstructions(from: selectedIntegration),
+                    voiceCommand: beforeAICommand
+                )
+            )
+
             let processedCommand = try await postProcessingService.processTranscription(
-                beforeAICommand,
+                selectedText,
                 with: integrationPrompt
             )
 
@@ -207,14 +231,15 @@ public final class AssistantVoiceCommandService: ObservableObject {
             }
 
             let commandToDispatch = normalizedCommand(commandForDispatch, fallback: command)
+            let finalCommand = normalizedCommand(commandToDispatch, fallback: selectedText)
 
             if AssistantPayloadLogging.shouldLogPayloadDetails {
                 AppLogger.debug(
                     "Assistant dispatch payload",
                     category: .assistant,
                     extra: [
-                        "length": commandToDispatch.count,
-                        "preview": AssistantPayloadLogging.payloadPreview(commandToDispatch),
+                        "length": finalCommand.count,
+                        "preview": AssistantPayloadLogging.payloadPreview(finalCommand),
                         "integrationId": selectedIntegration?.id.uuidString ?? "assistantMode",
                     ]
                 )
@@ -226,8 +251,8 @@ public final class AssistantVoiceCommandService: ObservableObject {
                 }
 
                 let dispatchResult = try dispatchToRaycast(
-                    with: commandToDispatch,
-                    rawCommand: command,
+                    with: finalCommand,
+                    rawText: selectedText,
                     selectedIntegration: selectedIntegration
                 )
                 if dispatchResult == .openedWithClipboardFallback {
@@ -241,17 +266,20 @@ public final class AssistantVoiceCommandService: ObservableObject {
                         "integrationName": selectedIntegration.name,
                         "result": dispatchResult == .openedWithClipboardFallback ? "clipboardFallback" : "deepLink",
                         "processedLength": processedCommand.count,
-                        "dispatchedLength": commandToDispatch.count,
+                        "dispatchedLength": finalCommand.count,
                     ]
                 )
             } else {
-                try replaceSelectedTextWith(commandToDispatch)
+                try await textSelectionService.replaceSelectedText(
+                    with: finalCommand,
+                    restoring: selectedTextResult.snapshot
+                )
                 AppLogger.info(
                     "Assistant mode command applied to active app",
                     category: .assistant,
                     extra: [
                         "processedLength": processedCommand.count,
-                        "appliedLength": commandToDispatch.count,
+                        "appliedLength": finalCommand.count,
                     ]
                 )
             }
@@ -296,13 +324,13 @@ public final class AssistantVoiceCommandService: ObservableObject {
 
     private func dispatchToRaycast(
         with command: String,
-        rawCommand: String,
+        rawText: String,
         selectedIntegration: AssistantIntegrationConfig
     ) throws -> AssistantIntegrationDispatchResult {
         let resolvedDeepLink = resolveDeepLinkShortcodes(
             in: selectedIntegration.deepLink,
             finalText: command,
-            rawText: rawCommand
+            rawText: rawText
         )
 
         if AssistantPayloadLogging.shouldLogPayloadDetails {
@@ -412,80 +440,27 @@ public final class AssistantVoiceCommandService: ObservableObject {
         return fallback.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    private func assistantPromptInstructions(
+        baseInstructions: String?,
+        voiceCommand: String
+    ) -> String {
+        let normalizedVoiceCommand = voiceCommand.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let baseInstructions,
+              !baseInstructions.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        else {
+            return normalizedVoiceCommand
+        }
+
+        return """
+        \(baseInstructions)
+
+        Comando do usuário:
+        \(normalizedVoiceCommand)
+        """
+    }
+
     private func showError(_ error: AssistantVoiceCommandError) {
         indicator.showError(error.localizedDescription)
-    }
-
-    private func replaceSelectedTextWith(_ text: String) throws {
-        guard AccessibilityPermissionService.isTrusted() else {
-            throw AssistantVoiceCommandError.accessibilityPermissionRequired
-        }
-
-        guard hasSelectedTextInFocusedElement() else {
-            throw AssistantVoiceCommandError.noSelectionFound
-        }
-
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else {
-            throw AssistantVoiceCommandError.emptyCommand
-        }
-
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.setString(trimmed, forType: .string)
-
-        let source = CGEventSource(stateID: .combinedSessionState)
-        let keyDown = CGEvent(
-            keyboardEventSource: source,
-            virtualKey: CGKeyCode(kVK_ANSI_V),
-            keyDown: true
-        )
-        keyDown?.flags = .maskCommand
-
-        let keyUp = CGEvent(
-            keyboardEventSource: source,
-            virtualKey: CGKeyCode(kVK_ANSI_V),
-            keyDown: false
-        )
-        keyUp?.flags = .maskCommand
-
-        keyDown?.post(tap: .cghidEventTap)
-        keyUp?.post(tap: .cghidEventTap)
-    }
-
-    private func hasSelectedTextInFocusedElement() -> Bool {
-        guard let frontmostApp = NSWorkspace.shared.frontmostApplication else {
-            return false
-        }
-
-        let appElement = AXUIElementCreateApplication(frontmostApp.processIdentifier)
-        var focusedElementRef: CFTypeRef?
-        let focusedResult = AXUIElementCopyAttributeValue(
-            appElement,
-            kAXFocusedUIElementAttribute as CFString,
-            &focusedElementRef
-        )
-        guard focusedResult == .success,
-              let focusedElementRef,
-              CFGetTypeID(focusedElementRef) == AXUIElementGetTypeID()
-        else {
-            return false
-        }
-
-        let focusedElement = unsafeDowncast(focusedElementRef, to: AXUIElement.self)
-        var selectedTextRef: CFTypeRef?
-        let selectedTextResult = AXUIElementCopyAttributeValue(
-            focusedElement,
-            kAXSelectedTextAttribute as CFString,
-            &selectedTextRef
-        )
-        guard selectedTextResult == .success,
-              let selectedText = selectedTextRef as? String
-        else {
-            return false
-        }
-
-        return !selectedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
 }
