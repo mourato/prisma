@@ -224,12 +224,12 @@
 "settings.context_awareness.enabled_desc" = "Capture contextual metadata at recording start and include it in AI post-processing.";
 "settings.context_awareness.explicit_action_only" = "Capture only on explicit action";
 "settings.context_awareness.explicit_action_only_desc" = "Only capture focused text when you manually trigger dictation or commands.";
-"settings.context_awareness.active_app" = "Include Active App";
-"settings.context_awareness.active_app_desc" = "Capture active app name and focused window title when available.";
 "settings.context_awareness.clipboard" = "Include Clipboard";
 "settings.context_awareness.clipboard_desc" = "Capture the latest plain-text clipboard content.";
 "settings.context_awareness.window_ocr" = "Include Active Window OCR";
 "settings.context_awareness.window_ocr_desc" = "Capture visible text from the active window using OCR (requires Screen Recording permission).";
+"settings.context_awareness.screen_permission_title" = "Screen Recording permission required";
+"settings.context_awareness.screen_permission_desc" = "Enable Screen Recording to capture visible text from the active window.";
 "settings.context_awareness.accessibility_text" = "Include Accessibility UI Text";
 "settings.context_awareness.accessibility_text_desc" = "Capture selected or focused text from the active app via Accessibility APIs (requires Accessibility permission).";
 "settings.context_awareness.permission_title" = "Accessibility permission required";
@@ -473,8 +473,6 @@
 "menubar.settings" = "Settings...";
 "menubar.check_updates" = "Check for Updates...";
 "menubar.quit" = "Quit";
-"menubar.meeting.type_label" = "Type:";
-"menubar.meeting.type_picker" = "Meeting Type";
 "menubar.accessibility.recording" = "Recording in progress";
 "menubar.accessibility.idle" = "Meeting Assistant";
 "status.recording" = "Recording...";
@@ -661,8 +659,6 @@
 
 /* Menu Bar */
 "menubar.record_section" = "Record...";
-"menubar.start_meeting" = "Start Meeting Recording";
-"menubar.start_assistant" = "Start Assistant";
 "menubar.dictate" = "Dictate";
 "menubar.stop_dictation" = "Stop Dictation";
 "menubar.record_meeting" = "Record Meeting";

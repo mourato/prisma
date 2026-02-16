@@ -223,12 +223,12 @@
 "settings.context_awareness.enabled_desc" = "Captura metadados de contexto no início da gravação e os inclui no pós-processamento com IA.";
 "settings.context_awareness.explicit_action_only" = "Capturar apenas em ação explícita";
 "settings.context_awareness.explicit_action_only_desc" = "Captura o texto em foco somente quando você inicia ditado ou comandos manualmente.";
-"settings.context_awareness.active_app" = "Incluir App Ativo";
-"settings.context_awareness.active_app_desc" = "Captura o nome do app ativo e o título da janela em foco quando disponível.";
 "settings.context_awareness.clipboard" = "Incluir Clipboard";
 "settings.context_awareness.clipboard_desc" = "Captura o conteúdo de texto mais recente do clipboard.";
 "settings.context_awareness.window_ocr" = "Incluir OCR da Janela Ativa";
 "settings.context_awareness.window_ocr_desc" = "Captura texto visível da janela ativa via OCR (requer permissão de Gravação de Tela).";
+"settings.context_awareness.screen_permission_title" = "Permissão de Gravação de Tela necessária";
+"settings.context_awareness.screen_permission_desc" = "Ative Gravação de Tela para capturar texto visível da janela ativa.";
 "settings.context_awareness.accessibility_text" = "Incluir Texto da UI via Acessibilidade";
 "settings.context_awareness.accessibility_text_desc" = "Captura texto selecionado ou em foco no app ativo via APIs de Acessibilidade (requer permissão de Acessibilidade).";
 "settings.context_awareness.permission_title" = "Permissão de Acessibilidade necessária";
@@ -472,8 +472,6 @@
 "menubar.settings" = "Configurações...";
 "menubar.check_updates" = "Verificar Atualizações...";
 "menubar.quit" = "Sair";
-"menubar.meeting.type_label" = "Tipo:";
-"menubar.meeting.type_picker" = "Tipo de Reunião";
 "menubar.accessibility.recording" = "Gravação em andamento";
 "menubar.accessibility.idle" = "Meeting Assistant";
 "status.recording" = "Gravando...";
@@ -659,8 +657,6 @@
 
 /* Menu Bar */
 "menubar.record_section" = "Gravar...";
-"menubar.start_meeting" = "Iniciar Gravação de Reunião";
-"menubar.start_assistant" = "Iniciar Assistant";
 "menubar.dictate" = "Ditar";
 "menubar.stop_dictation" = "Parar Ditado";
 "menubar.record_meeting" = "Gravar Reunião";
