@@ -66,7 +66,6 @@ public protocol CoordinatableView: View {
 
 /// Rotas principais da aplicação
 public enum AppRoute {
-    case main
     case settings(SettingsTab)
     case transcriptionDetails(Transcription)
     case permissionSetup
@@ -84,4 +83,3 @@ public enum AppRoute {
 // MARK: - Type Aliases
 
 // Type alias para facilitar uso do Coordinator base
-// Note: AppCoordinator is now a concrete class, not just a typealias
