@@ -1019,7 +1019,7 @@ extension RecordingManager {
     }
     private static let markdownFormatInstruction = """
     <OUTPUT_FORMAT>
-    Always format the output as Markdown.
+    ALWAYS format the output as Markdown. When formatting using Markdown, use traditional formatting conventions for ordered or unordered lists, **bold**, *italics*, and headings as well.
     </OUTPUT_FORMAT>
     """
 
