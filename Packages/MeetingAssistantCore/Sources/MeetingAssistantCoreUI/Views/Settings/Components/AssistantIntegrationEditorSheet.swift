@@ -116,6 +116,7 @@ public struct AssistantIntegrationEditorSheet: View {
                     } label: {
                         Text("settings.assistant.integrations.editor.delete".localized)
                     }
+                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
                 }
 
                 Spacer()

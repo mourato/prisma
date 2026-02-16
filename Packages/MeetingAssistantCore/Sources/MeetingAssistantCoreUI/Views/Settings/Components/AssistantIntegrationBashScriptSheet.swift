@@ -149,9 +149,10 @@ public struct AssistantIntegrationBashScriptSheet: View {
 
     private var actionsSection: some View {
         HStack {
-            Button("settings.assistant.integrations.script.clear".localized) {
+            Button("settings.assistant.integrations.script.clear".localized, role: .destructive) {
                 script = ""
             }
+            .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
 
             Spacer()
 

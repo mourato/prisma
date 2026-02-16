@@ -795,6 +795,8 @@ public class AppSettingsStore: ObservableObject {
         static let assistantSelectedPresetKey = "assistantSelectedPresetKey"
         static let assistantBorderColor = "assistantBorderColor"
         static let assistantBorderStyle = "assistantBorderStyle"
+        static let assistantBorderWidth = "assistantBorderWidth"
+        static let assistantGlowSize = "assistantGlowSize"
         static let assistantIntegrations = "assistantIntegrations"
         static let assistantSelectedIntegrationId = "assistantSelectedIntegrationId"
         static let assistantRaycastEnabled = "assistantRaycastEnabled"
@@ -1075,6 +1077,16 @@ public class AppSettingsStore: ObservableObject {
     /// Style for the Assistant mode screen border (stroke or glow).
     @Published public var assistantBorderStyle: AssistantBorderStyle {
         didSet { UserDefaults.standard.set(assistantBorderStyle.rawValue, forKey: Keys.assistantBorderStyle) }
+    }
+
+    /// Width for the Assistant mode screen border.
+    @Published public var assistantBorderWidth: Double {
+        didSet { UserDefaults.standard.set(assistantBorderWidth, forKey: Keys.assistantBorderWidth) }
+    }
+
+    /// Size for the Assistant mode glow effect.
+    @Published public var assistantGlowSize: Double {
+        didSet { UserDefaults.standard.set(assistantGlowSize, forKey: Keys.assistantGlowSize) }
     }
 
     /// Configured Assistant integrations (Raycast is pre-seeded by default).
@@ -1652,6 +1664,10 @@ public class AppSettingsStore: ObservableObject {
         assistantBorderColor = rawBorderColor.flatMap { AssistantBorderColor(rawValue: $0) } ?? .green
         let rawBorderStyle = UserDefaults.standard.string(forKey: Keys.assistantBorderStyle)
         assistantBorderStyle = rawBorderStyle.flatMap { AssistantBorderStyle(rawValue: $0) } ?? .stroke
+        let storedBorderWidth = UserDefaults.standard.object(forKey: Keys.assistantBorderWidth) as? NSNumber
+        assistantBorderWidth = max(1, storedBorderWidth?.doubleValue ?? 10)
+        let storedGlowSize = UserDefaults.standard.object(forKey: Keys.assistantGlowSize) as? NSNumber
+        assistantGlowSize = max(0, storedGlowSize?.doubleValue ?? 20)
 
         // Load recording indicator settings
         recordingIndicatorEnabled = Self.loadBoolDefaultIfUnset(
@@ -2038,6 +2054,8 @@ public class AppSettingsStore: ObservableObject {
         assistantSelectedPresetKey = .rightOption
         assistantBorderColor = .green
         assistantBorderStyle = .stroke
+        assistantBorderWidth = 10
+        assistantGlowSize = 20
         assistantIntegrations = [AssistantIntegrationConfig.defaultRaycast]
         assistantSelectedIntegrationId = AssistantIntegrationConfig.defaultRaycast.id
         assistantRaycastEnabled = false

@@ -63,11 +63,11 @@ public struct MAModifierShortcutEditor: View {
                 }
 
                 if shortcut != nil {
-                    Button {
+                    Button(role: .destructive) {
                         clearShortcut()
                     } label: {
                         Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
                             .imageScale(.large)
                     }
                     .buttonStyle(.plain)

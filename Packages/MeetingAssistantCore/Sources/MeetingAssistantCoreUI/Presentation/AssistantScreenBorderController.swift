@@ -22,8 +22,6 @@ public final class AssistantScreenBorderController {
     // MARK: - Configuration
 
     private enum Constants {
-        static let borderWidth: CGFloat = 10
-        static let glowRadius: CGFloat = 20
         static let animationDuration: TimeInterval = 0.2
     }
 
@@ -61,10 +59,12 @@ public final class AssistantScreenBorderController {
         // Create the border view using SwiftUI with current settings
         let borderColor = Color(settingsStore.assistantBorderColor.nsColor)
         let borderStyle = settingsStore.assistantBorderStyle
+        let borderWidth = max(CGFloat(settingsStore.assistantBorderWidth), 1)
+        let glowRadius = max(CGFloat(settingsStore.assistantGlowSize), 0)
 
         let borderView = AssistantScreenBorderView(
-            borderWidth: Constants.borderWidth,
-            glowRadius: Constants.glowRadius,
+            borderWidth: borderWidth,
+            glowRadius: glowRadius,
             borderColor: borderColor,
             style: borderStyle
         )
@@ -163,23 +163,28 @@ private struct AssistantScreenBorderView: View {
 
     /// Renders an inner glow effect (equivalent to CSS box-shadow: inset).
     private func glowBorder(size: CGSize) -> some View {
-        ZStack {
+        let effectiveGlow = max(glowRadius, 0)
+        let spreadStep = max(effectiveGlow / 4, 1.5)
+        let blurStep = max(effectiveGlow / 6, 1)
+
+        let glowStack = ZStack {
             // Multiple layered rectangles to create the glow effect
             ForEach(0..<3, id: \.self) { layer in
                 Rectangle()
                     .stroke(
                         borderColor.opacity(0.6 - Double(layer) * 0.15),
-                        lineWidth: borderWidth + CGFloat(layer) * 4
+                        lineWidth: borderWidth + CGFloat(layer) * spreadStep
                     )
-                    .blur(radius: CGFloat(layer) * 6 + 2)
+                    .blur(radius: CGFloat(layer) * blurStep + 2)
             }
 
             // Core bright border
             Rectangle()
                 .stroke(borderColor, lineWidth: borderWidth / 2)
-                .blur(radius: 1)
+                .blur(radius: min(max(effectiveGlow / 8, 1), 8))
         }
-        .frame(width: size.width, height: size.height)
+
+        return glowStack.frame(width: size.width, height: size.height)
     }
 }
 

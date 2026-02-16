@@ -124,6 +124,7 @@ public struct InstalledAppsSelectionList: View {
                     .accessibilityLabel("settings.markdown_targets.remove".localized)
             }
             .buttonStyle(.borderless)
+            .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
             .controlSize(.regular)
         }
         .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)

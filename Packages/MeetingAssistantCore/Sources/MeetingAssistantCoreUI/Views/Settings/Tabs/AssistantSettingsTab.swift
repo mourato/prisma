@@ -134,6 +134,37 @@ public struct AssistantSettingsTab: View {
                     .pickerStyle(.segmented)
                     .frame(width: MeetingAssistantDesignSystem.Layout.maxPickerWidth)
                 }
+
+                Divider()
+
+                HStack {
+                    Text("settings.assistant.border_width".localized)
+                        .font(.body)
+                        .fontWeight(.medium)
+
+                    Spacer()
+
+                    Stepper(value: $viewModel.borderWidth, in: 1...30, step: 1) {
+                        Text("\(Int(viewModel.borderWidth)) px")
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(width: MeetingAssistantDesignSystem.Layout.maxPickerWidth)
+                }
+
+                HStack {
+                    Text("settings.assistant.glow_size".localized)
+                        .font(.body)
+                        .fontWeight(.medium)
+
+                    Spacer()
+
+                    Stepper(value: $viewModel.glowSize, in: 0...60, step: 1) {
+                        Text("\(Int(viewModel.glowSize)) px")
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(width: MeetingAssistantDesignSystem.Layout.maxPickerWidth)
+                    .disabled(viewModel.borderStyle != .glow)
+                }
             }
         }
     }
