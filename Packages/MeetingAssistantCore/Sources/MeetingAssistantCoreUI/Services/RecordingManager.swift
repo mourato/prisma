@@ -833,7 +833,7 @@ extension RecordingManager {
 
         let snapshot = await contextAwarenessService.captureSnapshot(
             options: .init(
-                includeActiveApp: settings.contextAwarenessIncludeActiveApp,
+                includeActiveApp: true,
                 includeClipboard: settings.contextAwarenessIncludeClipboard,
                 includeWindowOCR: settings.contextAwarenessIncludeWindowOCR,
                 includeAccessibilityText: settings.contextAwarenessIncludeAccessibilityText,
@@ -858,8 +858,13 @@ extension RecordingManager {
         do {
             let snapshot = try await textContextProvider.fetchTextContext()
             let guarded = textContextGuardrails.apply(to: snapshot.text, policy: textContextPolicy)
-            let trimmed = guarded.trimmingCharacters(in: .whitespacesAndNewlines)
-            return trimmed.isEmpty ? nil : trimmed
+            var normalized = guarded.trimmingCharacters(in: .whitespacesAndNewlines)
+
+            if settings.contextAwarenessRedactSensitiveData {
+                normalized = ContextAwarenessPrivacy.redactSensitiveText(normalized) ?? ""
+            }
+
+            return normalized.isEmpty ? nil : normalized
         } catch {
             return nil
         }

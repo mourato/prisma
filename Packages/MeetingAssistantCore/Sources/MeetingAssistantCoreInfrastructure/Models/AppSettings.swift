@@ -824,7 +824,6 @@ public class AppSettingsStore: ObservableObject {
         static let autoExportSummaries = "autoExportSummaries"
         static let contextAwarenessEnabled = "contextAwarenessEnabled"
         static let contextAwarenessExplicitActionOnly = "contextAwarenessExplicitActionOnly"
-        static let contextAwarenessIncludeActiveApp = "contextAwarenessIncludeActiveApp"
         static let contextAwarenessIncludeClipboard = "contextAwarenessIncludeClipboard"
         static let contextAwarenessIncludeWindowOCR = "contextAwarenessIncludeWindowOCR"
         static let contextAwarenessIncludeAccessibilityText = "contextAwarenessIncludeAccessibilityText"
@@ -1331,7 +1330,6 @@ public class AppSettingsStore: ObservableObject {
         didSet {
             UserDefaults.standard.set(contextAwarenessEnabled, forKey: Keys.contextAwarenessEnabled)
             if contextAwarenessEnabled {
-                contextAwarenessIncludeActiveApp = true
                 contextAwarenessIncludeAccessibilityText = true
             }
         }
@@ -1340,11 +1338,6 @@ public class AppSettingsStore: ObservableObject {
     /// Restricts context capture to explicit user actions (dictation/commands).
     @Published public var contextAwarenessExplicitActionOnly: Bool {
         didSet { UserDefaults.standard.set(contextAwarenessExplicitActionOnly, forKey: Keys.contextAwarenessExplicitActionOnly) }
-    }
-
-    /// Includes active app metadata (app name and focused window title when available).
-    @Published public var contextAwarenessIncludeActiveApp: Bool {
-        didSet { UserDefaults.standard.set(contextAwarenessIncludeActiveApp, forKey: Keys.contextAwarenessIncludeActiveApp) }
     }
 
     /// Includes clipboard text in context metadata.
@@ -1629,10 +1622,6 @@ public class AppSettingsStore: ObservableObject {
             forKey: Keys.contextAwarenessExplicitActionOnly,
             defaultValue: true
         )
-        contextAwarenessIncludeActiveApp = Self.loadBoolDefaultIfUnset(
-            forKey: Keys.contextAwarenessIncludeActiveApp,
-            defaultValue: true
-        )
         contextAwarenessIncludeClipboard = UserDefaults.standard.bool(forKey: Keys.contextAwarenessIncludeClipboard)
         contextAwarenessIncludeWindowOCR = UserDefaults.standard.bool(forKey: Keys.contextAwarenessIncludeWindowOCR)
         contextAwarenessIncludeAccessibilityText = Self.loadBoolDefaultIfUnset(
@@ -1665,7 +1654,6 @@ public class AppSettingsStore: ObservableObject {
         let hasGlobalBrowserSetting = UserDefaults.standard.object(forKey: Keys.webTargetBrowserBundleIdentifiers) != nil
 
         if loadedContextAwarenessEnabled {
-            contextAwarenessIncludeActiveApp = true
             contextAwarenessIncludeAccessibilityText = true
         }
 
