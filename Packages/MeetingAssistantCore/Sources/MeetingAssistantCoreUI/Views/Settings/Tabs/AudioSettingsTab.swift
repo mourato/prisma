@@ -86,6 +86,8 @@ public struct AudioSettingsTab: View {
                             description: "settings.general.mute_output_desc".localized,
                             isOn: $viewModel.muteOutputDuringRecording
                         )
+                        
+                        Divider()
 
                         MAToggleRow(
                             "settings.general.auto_increase_microphone_volume".localized,
