@@ -821,7 +821,14 @@ extension RecordingManager {
 
     private func capturePostProcessingContext(for meeting: Meeting) async -> (context: String?, items: [TranscriptionContextItem]) {
         let settings = AppSettingsStore.shared
-        guard settings.contextAwarenessEnabled else { return (nil, []) }
+        guard settings.contextAwarenessEnabled else {
+            AppLogger.debug(
+                "Context awareness disabled, skipping context capture",
+                category: .recordingManager,
+                extra: ["reasonCode": "context.disabled"]
+            )
+            return (nil, [])
+        }
 
         let snapshot = await contextAwarenessService.captureSnapshot(
             options: .init(
@@ -862,6 +869,32 @@ extension RecordingManager {
             }
         }
 
+        if settings.contextAwarenessIncludeWindowOCR, snapshot.activeWindowOCRText == nil {
+            AppLogger.debug(
+                "Context capture finished without OCR text",
+                category: .recordingManager,
+                extra: ["reasonCode": "context.ocr_missing"]
+            )
+        }
+
+        if items.isEmpty {
+            AppLogger.info(
+                "Context capture finished with no context items",
+                category: .recordingManager,
+                extra: ["reasonCode": "context.empty"]
+            )
+        } else {
+            AppLogger.debug(
+                "Context capture finished",
+                category: .recordingManager,
+                extra: [
+                    "reasonCode": "context.captured",
+                    "itemCount": items.count,
+                    "sources": items.map(\ .source.rawValue).joined(separator: ",")
+                ]
+            )
+        }
+
         return (context, items)
     }
 
@@ -869,6 +902,11 @@ extension RecordingManager {
         guard settings.contextAwarenessIncludeAccessibilityText else { return nil }
 
         guard AccessibilityPermissionService.isTrusted() else {
+            AppLogger.warning(
+                "Focused text capture skipped: accessibility permission not granted",
+                category: .recordingManager,
+                extra: ["reasonCode": "focused_text.permission_denied"]
+            )
             AccessibilityPermissionService.requestPermission()
             return nil
         }
@@ -884,6 +922,14 @@ extension RecordingManager {
 
             return normalized.isEmpty ? nil : normalized
         } catch {
+            AppLogger.warning(
+                "Focused text capture failed",
+                category: .recordingManager,
+                extra: [
+                    "reasonCode": "focused_text.provider_failed",
+                    "error": error.localizedDescription,
+                ]
+            )
             return nil
         }
     }
