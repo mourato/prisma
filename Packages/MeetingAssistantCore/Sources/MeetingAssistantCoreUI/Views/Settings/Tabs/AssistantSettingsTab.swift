@@ -214,14 +214,12 @@ public struct AssistantSettingsTab: View {
 
             Spacer()
 
-            if integration.shortcutDefinition != nil {
-                MAModifierShortcutEditor(
-                    shortcut: integrationShortcutBinding(for: integration.id),
-                    conflictMessage: integrationShortcutConflictMessages[integration.id],
-                    showsTitle: false,
-                    maxInputWidth: 260
-                )
-            }
+            MAModifierShortcutEditor(
+                shortcut: integrationShortcutBinding(for: integration.id),
+                conflictMessage: integrationShortcutConflictMessages[integration.id],
+                showsTitle: false,
+                maxInputWidth: 260
+            )
 
             Button {
                 editingIntegration = integration

@@ -124,6 +124,8 @@ public class ShortcutSettingsViewModel: ObservableObject {
         guard let normalizedValue = normalizedShortcutDefinition(newValue) else {
             settings.dictationModifierShortcutGesture = nil
             settings.dictationShortcutDefinition = nil
+            settings.dictationSelectedPresetKey = .notSpecified
+            dictationSelectedPresetKey = .notSpecified
             dictationModifierConflictMessage = nil
             return
         }
@@ -157,6 +159,8 @@ public class ShortcutSettingsViewModel: ObservableObject {
         guard let normalizedValue = normalizedShortcutDefinition(newValue) else {
             settings.meetingModifierShortcutGesture = nil
             settings.meetingShortcutDefinition = nil
+            settings.meetingSelectedPresetKey = .notSpecified
+            meetingSelectedPresetKey = .notSpecified
             meetingModifierConflictMessage = nil
             return
         }

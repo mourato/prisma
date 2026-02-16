@@ -48,17 +48,32 @@ public struct MAModifierShortcutEditor: View {
                     .fontWeight(.medium)
             }
 
-            Button {
-                openRecordingPopover()
-            } label: {
-                shortcutInputField
-            }
-            .buttonStyle(.plain)
-            .frame(maxWidth: maxInputWidth, alignment: .leading)
-            .popover(isPresented: $isPopoverPresented, arrowEdge: .top) {
-                recordingPopover
-                    .frame(width: 360)
-                    .padding(MeetingAssistantDesignSystem.Layout.spacing12)
+            HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                Button {
+                    openRecordingPopover()
+                } label: {
+                    shortcutInputField
+                }
+                .buttonStyle(.plain)
+                .frame(maxWidth: maxInputWidth, alignment: .leading)
+                .popover(isPresented: $isPopoverPresented, arrowEdge: .top) {
+                    recordingPopover
+                        .frame(width: 360)
+                        .padding(MeetingAssistantDesignSystem.Layout.spacing12)
+                }
+
+                if shortcut != nil {
+                    Button {
+                        clearShortcut()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.secondary)
+                            .imageScale(.large)
+                    }
+                    .buttonStyle(.plain)
+                    .help("settings.shortcuts.modifier.clear".localized)
+                    .accessibilityLabel("settings.shortcuts.modifier.clear".localized)
+                }
             }
 
             if let conflict = conflictMessage, !isPopoverPresented {
@@ -201,6 +216,17 @@ public struct MAModifierShortcutEditor: View {
 
     private func openRecordingPopover() {
         isPopoverPresented = true
+    }
+
+    private func clearShortcut() {
+        closeTask?.cancel()
+        restartTask?.cancel()
+        attemptedShortcut = nil
+        localStatus = .idle
+        localConflictMessage = nil
+        stopRecording(cancelled: true)
+        shortcut = nil
+        isPopoverPresented = false
     }
 
     private func beginRecordingSession(resetState: Bool) {

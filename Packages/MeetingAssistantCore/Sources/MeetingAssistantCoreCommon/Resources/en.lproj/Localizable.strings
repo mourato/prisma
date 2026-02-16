@@ -420,6 +420,7 @@
 "settings.shortcuts.modifier.none" = "No keys recorded.";
 "settings.shortcuts.modifier.conflict" = "This shortcut is already assigned to \"%@\".";
 "settings.shortcuts.modifier.input_placeholder" = "Click to record shortcut";
+"settings.shortcuts.modifier.clear" = "Clear shortcut";
 "settings.shortcuts.modifier.popover.recording" = "Recording";
 "settings.shortcuts.modifier.popover.example" = "Example: ⌘G";
 "settings.shortcuts.modifier.popover.success" = "Shortcut captured successfully.";

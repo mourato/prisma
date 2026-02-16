@@ -419,6 +419,7 @@
 "settings.shortcuts.modifier.none" = "Nenhuma tecla gravada.";
 "settings.shortcuts.modifier.conflict" = "Este atalho já está vinculado a \"%@\".";
 "settings.shortcuts.modifier.input_placeholder" = "Clique para gravar atalho";
+"settings.shortcuts.modifier.clear" = "Limpar atalho";
 "settings.shortcuts.modifier.popover.recording" = "Gravando";
 "settings.shortcuts.modifier.popover.example" = "Exemplo: ⌘G";
 "settings.shortcuts.modifier.popover.success" = "Atalho capturado com sucesso.";

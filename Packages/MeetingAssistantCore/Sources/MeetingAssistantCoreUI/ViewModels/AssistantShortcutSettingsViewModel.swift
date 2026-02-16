@@ -155,9 +155,7 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
 
         integration.shortcutDefinition = shortcut
         integration.modifierShortcutGesture = shortcut?.asModifierShortcutGesture
-        if shortcut != nil {
-            integration.shortcutPresetKey = .custom
-        }
+        integration.shortcutPresetKey = shortcut == nil ? .notSpecified : .custom
 
         return saveIntegrationWithModifierValidation(integration)
     }
@@ -383,6 +381,8 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
         guard let normalizedValue = normalizedShortcutDefinition(newValue) else {
             settings.assistantModifierShortcutGesture = nil
             settings.assistantShortcutDefinition = nil
+            settings.assistantSelectedPresetKey = .notSpecified
+            selectedPresetKey = .notSpecified
             assistantModifierConflictMessage = nil
             return
         }
