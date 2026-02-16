@@ -27,6 +27,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private var currentMode: FloatingRecordingIndicatorMode = .recording
     private var meetingType: MeetingType?
+    private var visibilityTransitionID: UInt64 = 0
 
     /// Whether the indicator is currently visible.
     @Published public private(set) var isVisible = false
@@ -71,6 +72,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
     /// - Parameter type: The type of meeting being recorded.
     public func show(mode: FloatingRecordingIndicatorMode = .recording, type: MeetingType? = nil) {
         guard shouldShowIndicator(for: mode) else { return }
+        visibilityTransitionID &+= 1
         currentMode = mode
         meetingType = type
 
@@ -116,19 +118,21 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         // Position the panel
         positionPanel(panel, at: settingsStore.recordingIndicatorPosition)
 
-        if shouldCreatePanel {
-            if isRunningTests {
-                panel.alphaValue = 1
-                panel.orderFront(nil)
-            } else {
-                // Show with fade-in animation
-                panel.alphaValue = 0
-                panel.orderFront(nil)
-                NSAnimationContext.runAnimationGroup { context in
-                    context.duration = 0.2
-                    panel.animator().alphaValue = 1
-                }
+        if isRunningTests {
+            panel.alphaValue = 1
+            panel.orderFrontRegardless()
+        } else if shouldCreatePanel {
+            // Show with fade-in animation
+            panel.alphaValue = 0
+            panel.orderFrontRegardless()
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.2
+                panel.animator().alphaValue = 1
             }
+        } else {
+            // If panel is being reused after a previous hide animation, force it visible and on top.
+            panel.alphaValue = 1
+            panel.orderFrontRegardless()
         }
 
         isVisible = true
@@ -137,6 +141,8 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
     /// Hide the floating indicator.
     public func hide() {
         guard let panelToClose = panel else { return }
+        visibilityTransitionID &+= 1
+        let transitionID = visibilityTransitionID
 
         // Stop monitoring audio levels
         audioMonitor.stopMonitoring()
@@ -154,6 +160,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
             } completionHandler: { [weak self, weak panelToClose] in
                 Task { @MainActor [weak self, weak panelToClose] in
                     guard let self, let panelToClose else { return }
+                    guard self.visibilityTransitionID == transitionID else { return }
                     panelToClose.close()
                     if self.panel === panelToClose {
                         self.panel = nil
@@ -298,7 +305,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
     }
 
     private func positionPanel(_ panel: NSPanel, at position: RecordingIndicatorPosition) {
-        guard let screen = NSScreen.main else { return }
+        guard let screen = activeTargetScreen(for: panel) else { return }
 
         let screenFrame = screen.visibleFrame
         let panelSize = panel.frame.size
@@ -315,5 +322,22 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         }
 
         panel.setFrameOrigin(NSPoint(x: x, y: y))
+    }
+
+    private func activeTargetScreen(for panel: NSPanel) -> NSScreen? {
+        if let keyWindowScreen = NSApp.keyWindow?.screen {
+            return keyWindowScreen
+        }
+
+        if let mainWindowScreen = NSApp.mainWindow?.screen {
+            return mainWindowScreen
+        }
+
+        let mouseLocation = NSEvent.mouseLocation
+        if let mouseScreen = NSScreen.screens.first(where: { NSMouseInRect(mouseLocation, $0.frame, false) }) {
+            return mouseScreen
+        }
+
+        return panel.screen ?? NSScreen.main
     }
 }
