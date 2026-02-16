@@ -187,6 +187,10 @@ public struct EnhancementsSettingsTab: View {
     private var markdownTargetsSection: some View {
         MAGroup("settings.markdown_targets.title".localized, icon: "textformat") {
             VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                Text("settings.markdown_targets.app.title".localized)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                
                 InstalledAppsSelectionList(
                     descriptionKey: "settings.markdown_targets.description",
                     emptyKey: "settings.markdown_targets.empty",
@@ -195,6 +199,10 @@ public struct EnhancementsSettingsTab: View {
                 )
 
                 Divider()
+                
+                Text("settings.web_targets.browsers.title".localized)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
 
                 InstalledAppsSelectionList(
                     descriptionKey: "settings.web_targets.browsers.description",

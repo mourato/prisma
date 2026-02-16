@@ -8,13 +8,21 @@ import SwiftUI
 
 public struct MAThemePicker: View {
     @Binding private var selection: AppThemeColor
+    private let circleSpacing: CGFloat
+    private let itemFrameSize: CGFloat
 
-    public init(selection: Binding<AppThemeColor>) {
+    public init(
+        selection: Binding<AppThemeColor>,
+        circleSpacing: CGFloat = MeetingAssistantDesignSystem.Layout.spacing12,
+        itemFrameSize: CGFloat = 40
+    ) {
         _selection = selection
+        self.circleSpacing = circleSpacing
+        self.itemFrameSize = itemFrameSize
     }
 
     public var body: some View {
-        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+        HStack(spacing: circleSpacing) {
             ForEach(AppThemeColor.allCases, id: \.self) { color in
                 colorCircle(color)
             }
@@ -60,7 +68,7 @@ public struct MAThemePicker: View {
             }
         }
         .buttonStyle(.plain)
-        .frame(width: 40, height: 40)
+        .frame(width: itemFrameSize, height: itemFrameSize)
         .contentShape(Rectangle())
     }
 }

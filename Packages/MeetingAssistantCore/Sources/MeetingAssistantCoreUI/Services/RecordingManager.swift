@@ -1027,16 +1027,22 @@ extension RecordingManager {
         let settings = AppSettingsStore.shared
         guard let folder = settings.summaryExportFolder else { return }
 
-        let template = settings.summaryTemplate.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !template.isEmpty else { return }
+        let content: String
+        if settings.summaryTemplateEnabled {
+            let template = settings.summaryTemplate.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !template.isEmpty else { return }
+            content = MarkdownRenderer().renderWithTemplate(template, meeting: transcription.meeting, transcription: transcription)
+        } else {
+            let plainContent = transcription.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !plainContent.isEmpty else { return }
+            content = plainContent
+        }
 
         guard folder.startAccessingSecurityScopedResource() else {
             AppLogger.error("Failed to access export folder security-scoped resource", category: .recordingManager)
             return
         }
         defer { folder.stopAccessingSecurityScopedResource() }
-
-        let content = MarkdownRenderer().renderWithTemplate(template, meeting: transcription.meeting, transcription: transcription)
 
         let dateFormatter = DateFormatter()
         dateFormatter.locale = Locale(identifier: "en_US_POSIX")
