@@ -32,7 +32,7 @@ public struct MAModifierShortcutEditor: View {
         shortcut: Binding<ShortcutDefinition?>,
         conflictMessage: String?,
         showsTitle: Bool = true,
-        maxInputWidth: CGFloat? = 320
+        maxInputWidth: CGFloat? = 200
     ) {
         _shortcut = shortcut
         self.conflictMessage = conflictMessage
