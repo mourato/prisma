@@ -89,7 +89,7 @@ public final class AssistantTextSelectionService {
         }
     }
 
-    private func restorePasteboard(_ snapshot: PasteboardSnapshot) {
+    func restorePasteboard(_ snapshot: PasteboardSnapshot) {
         pasteboard.clearContents()
         guard !snapshot.isEmpty else { return }
 
