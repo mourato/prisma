@@ -53,15 +53,11 @@ public final class SettingsCoordinator: Coordinator {
     }
 
     public func goBack() {
-        // Voltar para tela principal
-        parentCoordinator?.navigate(to: .main)
+        dismiss()
     }
 
     public func dismiss() {
-        // Notificar coordinator pai
-        if let parent = parentCoordinator as? AppCoordinator {
-            parent.childCoordinatorDidFinish(self)
-        }
+        parentCoordinator = nil
     }
 
     // MARK: - Navigation Methods
