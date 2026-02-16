@@ -64,9 +64,7 @@ public struct AssistantIntegrationEditorSheet: View {
                         set: { newValue in
                             draft.integration.shortcutDefinition = newValue
                             draft.integration.modifierShortcutGesture = newValue?.asModifierShortcutGesture
-                            if newValue != nil {
-                                draft.integration.shortcutPresetKey = .custom
-                            }
+                            draft.integration.shortcutPresetKey = newValue == nil ? .notSpecified : .custom
                         }
                     ),
                     conflictMessage: shortcutConflictMessage
