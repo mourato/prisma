@@ -79,7 +79,6 @@ public struct MetricsDashboardSettingsTab: View {
                 }
                 .labelsHidden()
                 .pickerStyle(.menu)
-                .frame(width: MeetingAssistantDesignSystem.Layout.maxPickerWidth)
             }
         }
     }

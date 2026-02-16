@@ -189,7 +189,6 @@ public struct AIProviderIntegrationCard: View {
             )
             .textFieldStyle(.plain)
             .multilineTextAlignment(.trailing)
-            .frame(maxWidth: MeetingAssistantDesignSystem.Layout.maxTextFieldWidth)
         }
         .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
     }
