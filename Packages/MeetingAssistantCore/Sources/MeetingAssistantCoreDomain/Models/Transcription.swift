@@ -195,6 +195,7 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
 public struct TranscriptionContextItem: Identifiable, Codable, Hashable, Sendable {
     public enum Source: String, Codable, Sendable {
         case activeApp
+        case activeTabURL
         case windowTitle
         case accessibilityText
         case clipboard

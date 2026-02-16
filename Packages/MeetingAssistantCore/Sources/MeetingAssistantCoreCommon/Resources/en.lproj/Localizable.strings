@@ -521,11 +521,13 @@
 "transcription.info.transcription" = "Transcription";
 "transcription.info.post_processing" = "Post-Processing";
 "transcription.info.no_post_processing" = "No post-processing applied";
+"transcription.info.url_not_captured" = "URL not captured";
 "transcription.info.unknown_input" = "Unknown Input";
 "transcription.info.loading" = "Loading details...";
 "transcription.context.title" = "Context sent";
 "transcription.context.none" = "No context was sent";
 "transcription.context.source.active_app" = "Active app";
+"transcription.context.source.active_tab_url" = "Active tab URL";
 "transcription.context.source.window_title" = "Window title";
 "transcription.context.source.accessibility_text" = "Focused UI text";
 "transcription.context.source.clipboard" = "Clipboard";
