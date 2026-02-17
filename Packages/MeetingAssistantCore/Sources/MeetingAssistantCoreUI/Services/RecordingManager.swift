@@ -1673,6 +1673,10 @@ extension RecordingManager {
 }
 
 extension RecordingManager {
+    private enum StatusMonitoringConstants {
+        static let pollingIntervalSeconds: Double = 30
+    }
+
     /// Start periodic status monitoring.
     private func startStatusMonitoring() async {
         statusCheckTask?.cancel()
@@ -1680,7 +1684,7 @@ extension RecordingManager {
         statusCheckTask = Task { @Sendable @MainActor [weak self] in
             while !Task.isCancelled {
                 await self?.checkServiceStatus()
-                try? await Task.sleep(for: .seconds(5))
+                try? await Task.sleep(for: .seconds(StatusMonitoringConstants.pollingIntervalSeconds))
             }
         }
     }

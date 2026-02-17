@@ -16,6 +16,7 @@ public struct FloatingRecordingIndicatorView: View {
     let style: RecordingIndicatorStyle
     let mode: FloatingRecordingIndicatorMode
     let meetingType: MeetingType? // Added
+    let isAnimationActive: Bool
     let onStop: @Sendable () -> Void
     let onCancel: @Sendable () -> Void
 
@@ -32,6 +33,7 @@ public struct FloatingRecordingIndicatorView: View {
         style: RecordingIndicatorStyle,
         mode: FloatingRecordingIndicatorMode,
         meetingType: MeetingType? = nil, // Added default nil
+        isAnimationActive: Bool = true,
         recordingManager: RecordingManager = .shared,
         settingsStore: AppSettingsStore = .shared,
         onStop: @escaping @Sendable () -> Void,
@@ -41,6 +43,7 @@ public struct FloatingRecordingIndicatorView: View {
         self.style = style
         self.mode = mode
         self.meetingType = meetingType
+        self.isAnimationActive = isAnimationActive
         self.recordingManager = recordingManager
         self.settingsStore = settingsStore
         self.onStop = onStop
@@ -163,7 +166,12 @@ public struct FloatingRecordingIndicatorView: View {
         Circle()
             .fill(isRecordingMode ? MeetingAssistantDesignSystem.Colors.recording : MeetingAssistantDesignSystem.Colors.accent)
             .frame(width: MeetingAssistantDesignSystem.Layout.recordingIndicatorDotSize, height: MeetingAssistantDesignSystem.Layout.recordingIndicatorDotSize)
-            .modifier(PulsingModifier(isActive: isRecordingMode || isStartingMode, speed: isRecordingMode ? 0.9 : 1.2))
+            .modifier(
+                PulsingModifier(
+                    isActive: isAnimationActive && (isRecordingMode || isStartingMode),
+                    speed: isRecordingMode ? 0.9 : 1.2
+                )
+            )
     }
 
     private func controlHeight(for size: IndicatorSize) -> CGFloat {
@@ -248,6 +256,7 @@ public struct FloatingRecordingIndicatorView: View {
             AudioVisualizer(
                 audioMeter: audioMonitor.audioMeter,
                 mode: visualizerModeForIndicator,
+                isAnimationActive: isAnimationActive,
                 barCount: waveCount(for: size),
                 maxHeight: waveformHeight(for: size),
                 barWidth: MeetingAssistantDesignSystem.Layout.recordingIndicatorWaveformBarWidth,
@@ -256,14 +265,26 @@ public struct FloatingRecordingIndicatorView: View {
             )
 
             if isRecordingMode, isMeetingRecording {
-                TimelineView(.periodic(from: .now, by: 1.0)) { context in
-                    Text(formatRecordingDuration(at: context.date))
-                        .font(.system(size: 13, weight: .medium))
-                        .monospacedDigit()
-                        .lineLimit(1)
-                        .fixedSize(horizontal: true, vertical: false)
-                        .layoutPriority(1)
-                        .foregroundStyle(MeetingAssistantDesignSystem.Colors.overlayForeground)
+                Group {
+                    if isAnimationActive {
+                        TimelineView(.periodic(from: .now, by: 1.0)) { context in
+                            Text(formatRecordingDuration(at: context.date))
+                                .font(.system(size: 13, weight: .medium))
+                                .monospacedDigit()
+                                .lineLimit(1)
+                                .fixedSize(horizontal: true, vertical: false)
+                                .layoutPriority(1)
+                                .foregroundStyle(MeetingAssistantDesignSystem.Colors.overlayForeground)
+                        }
+                    } else {
+                        Text(formatRecordingDuration(at: Date()))
+                            .font(.system(size: 13, weight: .medium))
+                            .monospacedDigit()
+                            .lineLimit(1)
+                            .fixedSize(horizontal: true, vertical: false)
+                            .layoutPriority(1)
+                            .foregroundStyle(MeetingAssistantDesignSystem.Colors.overlayForeground)
+                    }
                 }
                 .accessibilityLabel("recording_indicator.duration".localized)
             }
@@ -537,6 +558,7 @@ enum AudioVisualizerMode: Sendable {
 struct AudioVisualizer: View {
     let audioMeter: AudioMeter
     let mode: AudioVisualizerMode
+    let isAnimationActive: Bool
     let barCount: Int
     let maxHeight: CGFloat
     let barWidth: CGFloat
@@ -554,6 +576,7 @@ struct AudioVisualizer: View {
     init(
         audioMeter: AudioMeter,
         mode: AudioVisualizerMode,
+        isAnimationActive: Bool = true,
         barCount: Int,
         maxHeight: CGFloat,
         barWidth: CGFloat = MeetingAssistantDesignSystem.Layout.spacing4,
@@ -562,6 +585,7 @@ struct AudioVisualizer: View {
     ) {
         self.audioMeter = audioMeter
         self.mode = mode
+        self.isAnimationActive = isAnimationActive
         self.barCount = barCount
         self.maxHeight = maxHeight
         self.barWidth = barWidth
@@ -602,11 +626,13 @@ struct AudioVisualizer: View {
                     .fill(Color.white)
                     .frame(width: barWidth, height: barHeights[index])
                     .animation(
-                        .interactiveSpring(
-                            response: 0.2, // Controls the speed of the spring (lower is faster)
-                            dampingFraction: 0.5, // Controls the bounciness (lower is bouncier)
-                            blendDuration: 0.2
-                        ),
+                        isAnimationActive
+                            ? .interactiveSpring(
+                                response: 0.2, // Controls the speed of the spring (lower is faster)
+                                dampingFraction: 0.5, // Controls the bounciness (lower is bouncier)
+                                blendDuration: 0.2
+                            )
+                            : nil,
                         value: barHeights[index]
                     )
             }
@@ -618,16 +644,29 @@ struct AudioVisualizer: View {
     }
 
     private var processingBars: some View {
-        TimelineView(.animation) { timeline in
-            let time = timeline.date.timeIntervalSinceReferenceDate
-            HStack(spacing: barSpacing) {
-                ForEach(0..<barCount, id: \.self) { index in
-                    Capsule()
-                        .fill(Color.white)
-                        .frame(width: barWidth, height: processingHeight(for: index, time: time))
+        Group {
+            if isAnimationActive {
+                TimelineView(.animation) { timeline in
+                    let time = timeline.date.timeIntervalSinceReferenceDate
+                    HStack(spacing: barSpacing) {
+                        ForEach(0..<barCount, id: \.self) { index in
+                            Capsule()
+                                .fill(Color.white)
+                                .frame(width: barWidth, height: processingHeight(for: index, time: time))
+                        }
+                    }
+                    .frame(height: maxHeight, alignment: .center)
                 }
+            } else {
+                HStack(spacing: barSpacing) {
+                    ForEach(0..<barCount, id: \.self) { _ in
+                        Capsule()
+                            .fill(Color.white)
+                            .frame(width: barWidth, height: minHeight)
+                    }
+                }
+                .frame(height: maxHeight, alignment: .center)
             }
-            .frame(height: maxHeight, alignment: .center)
         }
     }
 
