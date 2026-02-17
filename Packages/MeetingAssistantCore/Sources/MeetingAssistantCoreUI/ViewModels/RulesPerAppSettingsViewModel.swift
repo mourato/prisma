@@ -40,6 +40,7 @@ public final class RulesPerAppSettingsViewModel: ObservableObject {
 
     private let settings: AppSettingsStore
     private var cancellables = Set<AnyCancellable>()
+    private let knownBrowserBundleIdentifiers = Set(BrowserProviderRegistry.defaultProviders().keys)
 
     public init(settings: AppSettingsStore = .shared) {
         self.settings = settings
@@ -78,6 +79,10 @@ public final class RulesPerAppSettingsViewModel: ObservableObject {
         }
     }
 
+    public var effectiveWebTargetBrowserBundleIdentifiers: [String] {
+        settings.effectiveWebTargetBrowserBundleIdentifiers
+    }
+
     public func openAddAppSheet() {
         showAddAppSheet = true
         ensureAppCatalogLoaded()
@@ -108,11 +113,12 @@ public final class RulesPerAppSettingsViewModel: ObservableObject {
             return
         }
 
+        let isBrowser = knownBrowserBundleIdentifiers.contains(normalized)
         var updated = settings.dictationAppRules
         updated.append(
             DictationAppRule(
                 bundleIdentifier: app.bundleIdentifier,
-                forceMarkdownOutput: true,
+                forceMarkdownOutput: !isBrowser,
                 outputLanguage: .original
             )
         )

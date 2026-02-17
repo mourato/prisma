@@ -728,6 +728,8 @@ public class AppSettingsStore: ObservableObject {
         "com.microsoft.edgemac",
     ]
 
+    private static let knownWebTargetBrowserBundleIdentifiers: Set<String> = Set(BrowserProviderRegistry.defaultProviders().keys)
+
     /// Default list of apps monitored to start/stop meeting recordings.
     public static let defaultMonitoredMeetingBundleIdentifiers: [String] = [
         "com.apple.Safari",
@@ -1399,6 +1401,15 @@ public class AppSettingsStore: ObservableObject {
             if markdownTargets != markdownTargetBundleIdentifiers {
                 markdownTargetBundleIdentifiers = markdownTargets
             }
+
+            let synchronizedBrowsers = synchronizedWebTargetBrowsers(
+                from: dictationAppRules,
+                legacyBrowsers: webTargetBrowserBundleIdentifiers
+            )
+
+            if synchronizedBrowsers != webTargetBrowserBundleIdentifiers {
+                webTargetBrowserBundleIdentifiers = synchronizedBrowsers
+            }
         }
     }
 
@@ -1410,6 +1421,14 @@ public class AppSettingsStore: ObservableObject {
     /// Browser bundle identifiers used for matching web targets.
     @Published public var webTargetBrowserBundleIdentifiers: [String] {
         didSet { save(webTargetBrowserBundleIdentifiers, forKey: Keys.webTargetBrowserBundleIdentifiers) }
+    }
+
+    /// Browser bundle identifiers currently in effect for web target matching.
+    public var effectiveWebTargetBrowserBundleIdentifiers: [String] {
+        synchronizedWebTargetBrowsers(
+            from: dictationAppRules,
+            legacyBrowsers: webTargetBrowserBundleIdentifiers
+        )
     }
 
     /// Bundle identifiers monitored to auto-start/stop meetings.
@@ -1788,6 +1807,7 @@ public class AppSettingsStore: ObservableObject {
         }
 
         migrateLegacyMarkdownTargetsToDictationAppRulesIfNeeded()
+        migrateLegacyWebTargetBrowsersToDictationAppRulesIfNeeded()
         applyLanguage(selectedLanguage)
     }
 
@@ -2031,6 +2051,26 @@ public class AppSettingsStore: ObservableObject {
         dictationAppRules = migratedRules.isEmpty ? Self.defaultDictationAppRules : migratedRules
     }
 
+    private func migrateLegacyWebTargetBrowsersToDictationAppRulesIfNeeded() {
+        let browserRules = webTargetBrowserBundleIdentifiers.map {
+            DictationAppRule(bundleIdentifier: $0, forceMarkdownOutput: false, outputLanguage: .original)
+        }
+
+        let migratedRules = Self.normalizedDictationAppRules(dictationAppRules + browserRules)
+        if migratedRules != dictationAppRules {
+            dictationAppRules = migratedRules
+        }
+
+        let synchronizedBrowsers = synchronizedWebTargetBrowsers(
+            from: dictationAppRules,
+            legacyBrowsers: webTargetBrowserBundleIdentifiers
+        )
+
+        if synchronizedBrowsers != webTargetBrowserBundleIdentifiers {
+            webTargetBrowserBundleIdentifiers = synchronizedBrowsers
+        }
+    }
+
     private static func normalizedDictationAppRules(_ rules: [DictationAppRule]) -> [DictationAppRule] {
         var seenBundleIdentifiers = Set<String>()
         var ordered: [DictationAppRule] = []
@@ -2063,7 +2103,7 @@ public class AppSettingsStore: ObservableObject {
         for identifier in identifiers {
             // Trim whitespace but preserve original casing for storage.
             let trimmed = identifier.trimmingCharacters(in: .whitespacesAndNewlines)
-            let normalizedKey = trimmed.lowercased()
+            let normalizedKey = Self.normalizeBundleIdentifier(trimmed)
 
             guard !trimmed.isEmpty, !seenKeys.contains(normalizedKey) else { continue }
             seenKeys.insert(normalizedKey)
@@ -2071,6 +2111,30 @@ public class AppSettingsStore: ObservableObject {
         }
 
         return ordered
+    }
+
+    private func synchronizedWebTargetBrowsers(
+        from rules: [DictationAppRule],
+        legacyBrowsers: [String]
+    ) -> [String] {
+        let legacy = deduplicatedNormalizedBundleIdentifiers(legacyBrowsers)
+        let legacyNormalized = Set(legacy.map(Self.normalizeBundleIdentifier))
+
+        let browsersFromRules = deduplicatedNormalizedBundleIdentifiers(
+            rules
+                .map(\.bundleIdentifier)
+                .filter { bundleIdentifier in
+                    let normalizedBundleIdentifier = Self.normalizeBundleIdentifier(bundleIdentifier)
+                    return Self.knownWebTargetBrowserBundleIdentifiers.contains(normalizedBundleIdentifier)
+                        || legacyNormalized.contains(normalizedBundleIdentifier)
+                }
+        )
+
+        return browsersFromRules.isEmpty ? legacy : browsersFromRules
+    }
+
+    private static func normalizeBundleIdentifier(_ value: String) -> String {
+        value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 
     /// Encodes and saves a Codable value to UserDefaults.

@@ -145,7 +145,7 @@ struct TranscriptionInfoPopover: View {
 
         let configuredBrowsers = Set(
             AppSettingsStore.shared
-                .webTargetBrowserBundleIdentifiers
+                .effectiveWebTargetBrowserBundleIdentifiers
                 .map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
         )
 
