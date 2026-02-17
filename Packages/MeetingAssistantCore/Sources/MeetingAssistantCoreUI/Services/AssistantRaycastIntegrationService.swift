@@ -32,29 +32,23 @@ public final class AssistantRaycastIntegrationService: AssistantDeepLinkDispatch
     }
 
     private let openURL: (URL) -> Bool
-    private let copyToClipboardHandler: (String) -> Void
     private let maxDeepLinkLength: Int
 
     public init(
         workspace: NSWorkspace = .shared,
-        pasteboard: NSPasteboard = .general,
+        pasteboard _: NSPasteboard = .general,
         maxDeepLinkLength: Int = 3_800
     ) {
         openURL = { url in workspace.open(url) }
-        copyToClipboardHandler = { text in
-            pasteboard.clearContents()
-            pasteboard.setString(text, forType: .string)
-        }
         self.maxDeepLinkLength = maxDeepLinkLength
     }
 
     public init(
         openURL: @escaping (URL) -> Bool,
-        copyToClipboard: @escaping (String) -> Void,
+        copyToClipboard _: @escaping (String) -> Void,
         maxDeepLinkLength: Int = 3_800
     ) {
         self.openURL = openURL
-        copyToClipboardHandler = copyToClipboard
         self.maxDeepLinkLength = maxDeepLinkLength
     }
 
@@ -142,26 +136,14 @@ public final class AssistantRaycastIntegrationService: AssistantDeepLinkDispatch
         }
 
         if fullURL.absoluteString.count > maxDeepLinkLength {
-            copyToClipboard(command)
             AppLogger.warning(
-                "Raycast dispatch using clipboard fallback due to deeplink length",
+                "Raycast dispatch exceeds recommended deeplink length; opening deeplink with inline payload",
                 category: .assistant,
                 extra: [
                     "fullURLLength": fullURL.absoluteString.count,
                     "maxLength": maxDeepLinkLength,
                 ]
             )
-
-            components.queryItems = queryItems.filter { item in
-                !Constants.dispatchQueryNames.contains(item.name)
-            }
-            guard let baseURL = components.url, openURL(baseURL) else {
-                AppLogger.error("Raycast dispatch failed during clipboard fallback open", category: .assistant)
-                throw AssistantIntegrationDispatchError.openFailed
-            }
-
-            AppLogger.info("Raycast opened with clipboard fallback", category: .assistant)
-            return .openedWithClipboardFallback
         }
 
         guard openURL(fullURL) else {
@@ -209,10 +191,6 @@ public final class AssistantRaycastIntegrationService: AssistantDeepLinkDispatch
         default:
             return false
         }
-    }
-
-    private func copyToClipboard(_ text: String) {
-        copyToClipboardHandler(text)
     }
 
     private func payloadSummary(from components: URLComponents) -> String {
