@@ -275,10 +275,7 @@
 "settings.markdown_targets.empty" = "Nenhum app selecionado ainda.";
 "settings.markdown_targets.add" = "Adicionar app";
 "settings.markdown_targets.remove" = "Remover app";
-"settings.web_targets.browsers.title" = "Navegadores";
-"settings.web_targets.browsers.description" = "Navegadores usados para identificar sites nos alvos web em Aprimoramentos e Reuniões.";
 "settings.web_targets.browsers.empty" = "Nenhum navegador selecionado ainda.";
-"settings.web_targets.browsers.add" = "Adicionar navegador";
 "settings.markdown_targets.websites.title" = "Sites";
 "settings.markdown_targets.websites.desc" = "Força a formatação em Markdown no ditado quando esses sites estão ativos em navegadores compatíveis.";
 "settings.markdown_targets.websites.empty" = "Nenhum site selecionado ainda.";

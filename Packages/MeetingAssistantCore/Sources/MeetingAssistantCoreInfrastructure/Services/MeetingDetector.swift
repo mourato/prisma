@@ -157,7 +157,7 @@ public class MeetingDetector: ObservableObject {
     ) -> MeetingApp? {
         let targets = settings.webMeetingTargets
         guard !targets.isEmpty else { return nil }
-        let configuredBrowsers = Set(settings.webTargetBrowserBundleIdentifiers.map(normalizeBundleIdentifier))
+        let configuredBrowsers = Set(settings.effectiveWebTargetBrowserBundleIdentifiers.map(normalizeBundleIdentifier))
         let monitoredWebBundles = monitoredBundleIdentifiers.union(configuredBrowsers)
 
         for runningApp in runningApps {
@@ -170,7 +170,7 @@ public class MeetingDetector: ObservableObject {
                     for: url,
                     bundleIdentifier: normalizedBundleId,
                     targets: targets,
-                    fallbackBrowserBundleIdentifiers: settings.webTargetBrowserBundleIdentifiers
+                    fallbackBrowserBundleIdentifiers: settings.effectiveWebTargetBrowserBundleIdentifiers
                 ) {
                     return match.app
                 }
@@ -180,7 +180,7 @@ public class MeetingDetector: ObservableObject {
             if let match = WebTargetDetection.matchTargetByWindowTitle(
                 bundleIdentifier: normalizedBundleId,
                 targets: targets,
-                fallbackBrowserBundleIdentifiers: settings.webTargetBrowserBundleIdentifiers,
+                fallbackBrowserBundleIdentifiers: settings.effectiveWebTargetBrowserBundleIdentifiers,
                 patternProvider: { target in
                     target.urlPatterns + target.app.windowTitlePatterns
                 }

@@ -324,7 +324,8 @@ public struct MeetingSettingsTab: View {
     }
 
     private func browserNames(from bundleIdentifiers: [String]) -> String {
-        let effectiveBundleIdentifiers = bundleIdentifiers.isEmpty ? meetingViewModel.settings.webTargetBrowserBundleIdentifiers : bundleIdentifiers
+        let fallbackBundleIdentifiers = meetingViewModel.settings.effectiveWebTargetBrowserBundleIdentifiers
+        let effectiveBundleIdentifiers = bundleIdentifiers.isEmpty ? fallbackBundleIdentifiers : bundleIdentifiers
         if effectiveBundleIdentifiers.isEmpty {
             return "settings.web_targets.browsers.empty".localized
         }
