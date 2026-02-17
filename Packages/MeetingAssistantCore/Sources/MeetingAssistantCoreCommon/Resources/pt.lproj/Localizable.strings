@@ -256,7 +256,6 @@
 "settings.rules_per_app.markdown.title" = "Forçar Saída em Markdown";
 "settings.rules_per_app.markdown.description" = "Sempre formatar a saída do ditado como Markdown quando este app estiver ativo.";
 "settings.rules_per_app.language.title" = "Forçar Tradução";
-"settings.rules_per_app.language.description" = "Escolha o idioma de saída para o pós-processamento do ditado.";
 "settings.rules_per_app.language.option.original" = "Não traduzir (usar idioma original)";
 "settings.rules_per_app.language.option.english" = "Inglês";
 "settings.rules_per_app.language.option.spanish" = "Espanhol";

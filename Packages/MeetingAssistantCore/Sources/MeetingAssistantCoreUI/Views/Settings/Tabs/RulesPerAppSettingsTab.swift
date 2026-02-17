@@ -142,14 +142,12 @@ public struct RulesPerAppSettingsTab: View {
                         isOn: forceMarkdownBinding(for: resolvedRule.rule.bundleIdentifier)
                     )
 
-                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                    HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
                         Text("settings.rules_per_app.language.title".localized)
-                            .font(.subheadline)
-                            .fontWeight(.medium)
+                            .font(.body)
+                            .fontWeight(.regular)
 
-                        Text("settings.rules_per_app.language.description".localized)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        Spacer()
 
                         Picker(
                             "settings.rules_per_app.language.title".localized,
@@ -160,17 +158,18 @@ public struct RulesPerAppSettingsTab: View {
                             }
                         }
                         .pickerStyle(.menu)
-                        
-                        Button(role: .destructive) {
-                            viewModel.removeRule(bundleIdentifier: resolvedRule.rule.bundleIdentifier)
-                            expandedBundleIdentifiers.remove(resolvedRule.rule.bundleIdentifier)
-                        } label: {
-                            Label("settings.rules_per_app.remove_app".localized, systemImage: "trash")
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
+                        .labelsHidden()
                     }
+
+                    Button(role: .destructive) {
+                        viewModel.removeRule(bundleIdentifier: resolvedRule.rule.bundleIdentifier)
+                        expandedBundleIdentifiers.remove(resolvedRule.rule.bundleIdentifier)
+                    } label: {
+                        Label("settings.rules_per_app.remove_app".localized, systemImage: "trash")
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
                 }
                 .padding(.top, MeetingAssistantDesignSystem.Layout.spacing8)
             },
@@ -192,6 +191,10 @@ public struct RulesPerAppSettingsTab: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
+
+                    Spacer()
+
+                    appRuleSummary(for: resolvedRule.rule)
                 }
             }
         )
@@ -363,6 +366,31 @@ public struct RulesPerAppSettingsTab: View {
                 viewModel.setOutputLanguage(language, for: bundleIdentifier)
             }
         )
+    }
+
+    @ViewBuilder
+    private func appRuleSummary(for rule: DictationAppRule) -> some View {
+        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+            if rule.forceMarkdownOutput {
+                Text("MD")
+                    .font(.caption2)
+                    .fontWeight(.semibold)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(
+                        Capsule()
+                            .fill(MeetingAssistantDesignSystem.Colors.subtleFill2)
+                    )
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel("settings.rules_per_app.markdown.title".localized)
+            }
+
+            if rule.outputLanguage != .original {
+                Text(rule.outputLanguage.flagEmoji)
+                    .font(.headline)
+                    .accessibilityLabel(rule.outputLanguage.localizedName)
+            }
+        }
     }
 }
 

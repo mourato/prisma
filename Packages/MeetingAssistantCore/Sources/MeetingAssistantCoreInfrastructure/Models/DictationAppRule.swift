@@ -15,7 +15,36 @@ public enum DictationOutputLanguage: String, CaseIterable, Codable, Hashable, Se
     case hindi
     case arabic
 
-    public var displayName: String {
+    public var flagEmoji: String {
+        switch self {
+        case .original:
+            "🌐"
+        case .english:
+            "🇬🇧"
+        case .spanish:
+            "🇪🇸"
+        case .portuguese:
+            "🇧🇷"
+        case .french:
+            "🇫🇷"
+        case .german:
+            "🇩🇪"
+        case .chinese:
+            "🇨🇳"
+        case .japanese:
+            "🇯🇵"
+        case .korean:
+            "🇰🇷"
+        case .italian:
+            "🇮🇹"
+        case .hindi:
+            "🇮🇳"
+        case .arabic:
+            "🇸🇦"
+        }
+    }
+
+    public var localizedName: String {
         switch self {
         case .original:
             "settings.rules_per_app.language.option.original".localized
@@ -42,6 +71,10 @@ public enum DictationOutputLanguage: String, CaseIterable, Codable, Hashable, Se
         case .arabic:
             "settings.rules_per_app.language.option.arabic".localized
         }
+    }
+
+    public var displayName: String {
+        "\(flagEmoji) \(localizedName)"
     }
 
     public var instructionDisplayName: String {
