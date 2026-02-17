@@ -255,7 +255,7 @@
 "settings.rules_per_app.added" = "Adicionado";
 "settings.rules_per_app.markdown.title" = "Forçar Saída em Markdown";
 "settings.rules_per_app.language.title" = "Forçar Tradução";
-"settings.rules_per_app.language.option.original" = "Não traduzir (usar idioma original)";
+"settings.rules_per_app.language.option.original" = "Usar idioma original";
 "settings.rules_per_app.language.option.english" = "Inglês";
 "settings.rules_per_app.language.option.spanish" = "Espanhol";
 "settings.rules_per_app.language.option.portuguese" = "Português";
