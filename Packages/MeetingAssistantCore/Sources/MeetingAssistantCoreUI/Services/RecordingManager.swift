@@ -1295,7 +1295,7 @@ extension RecordingManager {
                for: url,
                bundleIdentifier: normalized,
                targets: webTargets,
-               fallbackBrowserBundleIdentifiers: settings.webTargetBrowserBundleIdentifiers
+               fallbackBrowserBundleIdentifiers: settings.effectiveWebTargetBrowserBundleIdentifiers
            ) != nil
         {
             return true
@@ -1304,7 +1304,7 @@ extension RecordingManager {
         if WebTargetDetection.matchTargetByWindowTitle(
             bundleIdentifier: normalized,
             targets: webTargets,
-            fallbackBrowserBundleIdentifiers: settings.webTargetBrowserBundleIdentifiers
+            fallbackBrowserBundleIdentifiers: settings.effectiveWebTargetBrowserBundleIdentifiers
         ) != nil {
             return true
         }

@@ -12,24 +12,15 @@ import SwiftUI
 
 /// Tab for configuring AI post-processing settings.
 public struct EnhancementsSettingsTab: View {
-    @StateObject private var viewModel = AISettingsViewModel(settings: .shared)
-    @StateObject private var postProcessingViewModel = PostProcessingSettingsViewModel()
-    @StateObject private var webBrowserTargetsViewModel: InstalledAppsSelectionViewModel
-    @StateObject private var markdownWebTargetsViewModel: WebMarkdownTargetsViewModel
+    @StateObject private var viewModel: AISettingsViewModel
+    @StateObject private var postProcessingViewModel: PostProcessingSettingsViewModel
     @State private var supportStatus: TextContextSupportStatus = .unknown
     @State private var hasScreenRecordingPermission = CGPreflightScreenCaptureAccess()
     private let supportChecker = TextContextSupportChecker()
 
     public init(settings: AppSettingsStore = .shared) {
-        _webBrowserTargetsViewModel = StateObject(
-            wrappedValue: InstalledAppsSelectionViewModel(
-                defaultBundleIdentifiers: AppSettingsStore.defaultWebTargetBrowserBundleIdentifiers,
-                hasConfigured: { settings.hasConfiguredWebTargetBrowsers },
-                loadBundleIdentifiers: { settings.webTargetBrowserBundleIdentifiers },
-                saveBundleIdentifiers: { settings.webTargetBrowserBundleIdentifiers = $0 }
-            )
-        )
-        _markdownWebTargetsViewModel = StateObject(wrappedValue: WebMarkdownTargetsViewModel(settings: settings))
+        _viewModel = StateObject(wrappedValue: AISettingsViewModel(settings: settings))
+        _postProcessingViewModel = StateObject(wrappedValue: PostProcessingSettingsViewModel(settings: settings))
     }
 
     public var body: some View {
@@ -41,7 +32,6 @@ public struct EnhancementsSettingsTab: View {
                     postProcessingSection
                 }
                 contextAwarenessSection
-                markdownTargetsSection
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -53,26 +43,6 @@ public struct EnhancementsSettingsTab: View {
                 onCancel: { postProcessingViewModel.showSystemPromptEditor = false },
                 onRestoreDefault: { postProcessingViewModel.resetSystemPrompt() }
             )
-        }
-        .sheet(isPresented: $markdownWebTargetsViewModel.showEditor) {
-            WebMarkdownTargetEditorSheet(
-                target: markdownWebTargetsViewModel.editingTarget,
-                onSave: markdownWebTargetsViewModel.handleSave,
-                onCancel: { markdownWebTargetsViewModel.showEditor = false }
-            )
-        }
-        .alert(
-            "settings.markdown_targets.websites.delete_confirm_title".localized,
-            isPresented: $markdownWebTargetsViewModel.showDeleteConfirmation
-        ) {
-            Button("common.cancel".localized, role: .cancel) {}
-            Button("common.delete".localized, role: .destructive) {
-                markdownWebTargetsViewModel.executeDelete()
-            }
-        } message: {
-            if let target = markdownWebTargetsViewModel.targetToDelete {
-                Text("settings.markdown_targets.websites.delete_confirm_message".localized(with: target.displayName))
-            }
         }
     }
 
@@ -180,130 +150,6 @@ public struct EnhancementsSettingsTab: View {
                 }
             }
         }
-    }
-
-    private var markdownTargetsSection: some View {
-        MAGroup("settings.markdown_targets.title".localized, icon: "textformat") {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
-                Text("settings.web_targets.browsers.title".localized)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-
-                InstalledAppsSelectionList(
-                    descriptionKey: "settings.web_targets.browsers.description",
-                    emptyKey: "settings.web_targets.browsers.empty",
-                    addButtonKey: "settings.web_targets.browsers.add",
-                    viewModel: webBrowserTargetsViewModel
-                )
-
-                Divider()
-
-                markdownWebTargetsSection
-            }
-        }
-    }
-
-    private var markdownWebTargetsSection: some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-            Text("settings.markdown_targets.websites.title".localized)
-                .font(.subheadline)
-                .fontWeight(.medium)
-
-            Text("settings.markdown_targets.websites.desc".localized)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            if markdownWebTargetsViewModel.targets.isEmpty {
-                Text("settings.markdown_targets.websites.empty".localized)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            } else {
-                VStack(spacing: 0) {
-                    ForEach(Array(markdownWebTargetsViewModel.targets.enumerated()), id: \.element.id) { index, target in
-                        markdownWebTargetRow(target)
-
-                        if index < markdownWebTargetsViewModel.targets.count - 1 {
-                            Divider()
-                        }
-                    }
-                }
-                .background(MeetingAssistantDesignSystem.Colors.subtleFill2)
-                .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
-            }
-
-            HStack {
-                Spacer()
-                Button {
-                    markdownWebTargetsViewModel.addTarget()
-                } label: {
-                    Label("settings.markdown_targets.websites.add".localized, systemImage: "plus")
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.regular)
-            }
-        }
-    }
-
-    private func markdownWebTargetRow(_ target: WebContextTarget) -> some View {
-        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
-            Image(systemName: "globe")
-                .font(.title3)
-                .foregroundStyle(MeetingAssistantDesignSystem.Colors.iconHighlight)
-                .frame(width: 24)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(target.displayName)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                Text(target.urlPatterns.joined(separator: ", "))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text(browserNames(from: target.browserBundleIdentifiers))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer()
-
-            Button {
-                markdownWebTargetsViewModel.editTarget(target)
-            } label: {
-                Image(systemName: "pencil")
-                    .accessibilityLabel("settings.markdown_targets.websites.edit".localized)
-            }
-            .buttonStyle(.borderless)
-            .controlSize(.regular)
-
-            Button(role: .destructive) {
-                markdownWebTargetsViewModel.confirmDelete(target)
-            } label: {
-                Image(systemName: "trash")
-                    .accessibilityLabel("settings.markdown_targets.websites.delete".localized)
-            }
-            .buttonStyle(.borderless)
-            .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
-            .controlSize(.regular)
-        }
-        .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)
-        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
-    }
-
-    private func browserNames(from bundleIdentifiers: [String]) -> String {
-        let fallbackBundleIdentifiers = viewModel.settings.webTargetBrowserBundleIdentifiers
-
-        // If both the target-specific list and the global fallback list are empty,
-        // no browsers will actually match. Reflect that in the UI instead of
-        // suggesting that any browser is allowed.
-        if bundleIdentifiers.isEmpty && fallbackBundleIdentifiers.isEmpty {
-            return "settings.web_targets.browsers.empty".localized
-        }
-
-        let effectiveBundleIdentifiers = bundleIdentifiers.isEmpty ? fallbackBundleIdentifiers : bundleIdentifiers
-        let names = effectiveBundleIdentifiers
-            .map { WebTargetEditorSupport.browserDisplayName(for: $0) }
-            .sorted()
-        let display = names.joined(separator: ", ")
-        return "settings.markdown_targets.websites.browsers".localized(with: display)
     }
 
     @ViewBuilder
