@@ -12,6 +12,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
     case metrics
     case dictation
     case assistant
+    case integrations
     case meetings
     case transcriptions
     case general
@@ -27,6 +28,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
         .metrics,
         .dictation,
         .assistant,
+        .integrations,
         .meetings,
         .transcriptions,
     ]
@@ -46,6 +48,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
         case .meetings: "settings.section.meetings".localized
         case .audio: "settings.section.audio".localized
         case .assistant: "settings.section.assistant".localized
+        case .integrations: "settings.section.integrations".localized
         case .transcriptions: "settings.section.history".localized
         case .enhancements: "settings.section.ai".localized
         case .permissions: "settings.section.permissions".localized
@@ -60,6 +63,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
         case .meetings: "bubble.left.and.text.bubble.right"
         case .audio: "speaker.wave.2"
         case .assistant: "sparkles"
+        case .integrations: "puzzlepiece.extension"
         case .transcriptions: "clock"
         case .enhancements: "sparkles"
         case .permissions: "checkmark.shield"

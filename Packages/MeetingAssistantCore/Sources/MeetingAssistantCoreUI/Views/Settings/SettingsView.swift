@@ -44,7 +44,7 @@ public struct SettingsView: View {
         .navigationTitle(selectedSection.title)
         .frame(minWidth: LayoutConstants.windowWidth, minHeight: LayoutConstants.windowHeight)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onReceive(navigationService.$requestedSettingsSection.compactMap { $0 }) { sectionId in
+        .onReceive(navigationService.$requestedSettingsSection.compactMap(\.self)) { sectionId in
             if let section = SettingsSection(rawValue: sectionId) {
                 selectedSection = section
             }
@@ -108,6 +108,8 @@ public struct SettingsView: View {
             MeetingSettingsTab()
         case .assistant:
             AssistantSettingsTab()
+        case .integrations:
+            IntegrationsSettingsTab()
         case .audio:
             AudioSettingsTab()
         case .transcriptions:

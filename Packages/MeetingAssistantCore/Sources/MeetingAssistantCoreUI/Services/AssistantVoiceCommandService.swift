@@ -167,25 +167,38 @@ public final class AssistantVoiceCommandService: ObservableObject {
                 ]
             )
 
-            let selectedTextResult = try await textSelectionService.captureSelectedText()
-            let selectedText = selectedTextResult.text
-            let selectionSnapshotToRestore = executionFlow == .integrationDispatch ? selectedTextResult.snapshot : nil
+            let selectedTextResult: (text: String, snapshot: AssistantTextSelectionService.PasteboardSnapshot)?
+            let sourceText: String
 
-            defer {
-                if let selectionSnapshotToRestore {
-                    textSelectionService.restorePasteboard(selectionSnapshotToRestore)
+            if executionFlow == .integrationDispatch {
+                selectedTextResult = nil
+                sourceText = command
+
+                if AssistantPayloadLogging.shouldLogPayloadDetails {
+                    AppLogger.debug(
+                        "Assistant integration source payload",
+                        category: .assistant,
+                        extra: [
+                            "length": sourceText.count,
+                            "preview": AssistantPayloadLogging.payloadPreview(sourceText),
+                        ]
+                    )
                 }
-            }
+            } else {
+                let selectedTextCapture = try await textSelectionService.captureSelectedText()
+                selectedTextResult = selectedTextCapture
+                sourceText = selectedTextCapture.text
 
-            if AssistantPayloadLogging.shouldLogPayloadDetails {
-                AppLogger.debug(
-                    "Assistant selected text payload",
-                    category: .assistant,
-                    extra: [
-                        "length": selectedText.count,
-                        "preview": AssistantPayloadLogging.payloadPreview(selectedText),
-                    ]
-                )
+                if AssistantPayloadLogging.shouldLogPayloadDetails {
+                    AppLogger.debug(
+                        "Assistant selected text payload",
+                        category: .assistant,
+                        extra: [
+                            "length": sourceText.count,
+                            "preview": AssistantPayloadLogging.payloadPreview(sourceText),
+                        ]
+                    )
+                }
             }
 
             guard let beforeAICommand = try await applyScriptIfNeeded(
@@ -206,7 +219,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
             )
 
             let processedCommand = try await postProcessingService.processTranscription(
-                selectedText,
+                sourceText,
                 with: integrationPrompt
             )
 
@@ -230,8 +243,8 @@ public final class AssistantVoiceCommandService: ObservableObject {
                 return
             }
 
-            let commandToDispatch = normalizedCommand(commandForDispatch, fallback: command)
-            let finalCommand = normalizedCommand(commandToDispatch, fallback: selectedText)
+            let commandToDispatch = normalizedCommand(commandForDispatch, fallback: beforeAICommand)
+            let finalCommand = normalizedCommand(commandToDispatch, fallback: sourceText)
 
             if AssistantPayloadLogging.shouldLogPayloadDetails {
                 AppLogger.debug(
@@ -252,7 +265,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
 
                 let dispatchResult = try dispatchToRaycast(
                     with: finalCommand,
-                    rawText: selectedText,
+                    rawText: command,
                     selectedIntegration: selectedIntegration
                 )
                 if dispatchResult == .openedWithClipboardFallback {
@@ -270,6 +283,9 @@ public final class AssistantVoiceCommandService: ObservableObject {
                     ]
                 )
             } else {
+                guard let selectedTextResult else {
+                    throw AssistantVoiceCommandError.noSelectionFound
+                }
                 try await textSelectionService.replaceSelectedText(
                     with: finalCommand,
                     restoring: selectedTextResult.snapshot
