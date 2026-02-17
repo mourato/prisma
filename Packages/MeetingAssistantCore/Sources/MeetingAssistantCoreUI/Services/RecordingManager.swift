@@ -34,6 +34,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     @Published public private(set) var lastError: Error?
     @Published public private(set) var hasRequiredPermissions = false
     @Published public private(set) var recordingSource: RecordingSource = .microphone
+    @Published public private(set) var dictationSessionOutputLanguageOverride: DictationOutputLanguage?
 
     // MARK: - Protocol Publishers
 
@@ -304,6 +305,7 @@ public extension RecordingManager {
         }
 
         recordingSource = source
+        dictationSessionOutputLanguageOverride = nil
 
         // Prevent re-entrancy during async setup
         guard !isStartOperationInFlight else { return }
@@ -551,6 +553,7 @@ public extension RecordingManager {
             } else {
                 postProcessingContext = nil
                 postProcessingContextItems = []
+                dictationSessionOutputLanguageOverride = nil
                 currentMeeting = nil // Clear current meeting if done
                 activeStartTelemetry = nil
             }
@@ -566,6 +569,7 @@ public extension RecordingManager {
             postProcessingContext = nil
             postProcessingContextItems = []
             isStartingRecording = false
+            dictationSessionOutputLanguageOverride = nil
             activeStartTelemetry = nil
         }
     }
@@ -597,6 +601,7 @@ public extension RecordingManager {
         currentMeeting = nil
         postProcessingContext = nil
         postProcessingContextItems = []
+        dictationSessionOutputLanguageOverride = nil
         activeStartTelemetry = nil
         await RecordingExclusivityCoordinator.shared.endRecording()
         SoundFeedbackService.shared.playRecordingCancelledSound()
@@ -674,6 +679,19 @@ public extension RecordingManager {
 }
 
 extension RecordingManager {
+    public var effectiveDictationOutputLanguageForCurrentRecording: DictationOutputLanguage {
+        if let override = dictationSessionOutputLanguageOverride {
+            return override
+        }
+
+        let settings = AppSettingsStore.shared
+        return matchingDictationAppRule(settings: settings)?.outputLanguage ?? .original
+    }
+
+    public func setDictationSessionOutputLanguageOverride(_ language: DictationOutputLanguage?) {
+        dictationSessionOutputLanguageOverride = language
+    }
+
     // MARK: - Private Methods
 
     private func setupBindings() {
@@ -931,6 +949,7 @@ extension RecordingManager {
         currentMeeting = nil
         postProcessingContext = nil
         postProcessingContextItems = []
+        dictationSessionOutputLanguageOverride = nil
         activeStartTelemetry = nil
         postStartContextCaptureTask = nil
     }
@@ -1240,7 +1259,8 @@ extension RecordingManager {
             appliedInstructions.append(Self.markdownFormatInstruction)
         }
 
-        if let outputLanguage = forcedOutputLanguageForDictation(settings: settings) {
+        let outputLanguage = outputLanguageForDictation(settings: settings)
+        if outputLanguage != .original {
             appliedInstructions.append(Self.translationInstruction(for: outputLanguage))
         }
 
@@ -1268,9 +1288,13 @@ extension RecordingManager {
         }
     }
 
-    private func forcedOutputLanguageForDictation(settings: AppSettingsStore) -> DictationOutputLanguage? {
-        guard let rule = matchingDictationAppRule(settings: settings) else { return nil }
-        return rule.outputLanguage == .original ? nil : rule.outputLanguage
+    private func outputLanguageForDictation(settings: AppSettingsStore) -> DictationOutputLanguage {
+        if let override = dictationSessionOutputLanguageOverride {
+            return override
+        }
+
+        guard let rule = matchingDictationAppRule(settings: settings) else { return .original }
+        return rule.outputLanguage
     }
 
     private func shouldForceMarkdownForDictation(settings: AppSettingsStore) -> Bool {

@@ -80,6 +80,10 @@ public struct FloatingRecordingIndicatorView: View {
 
                 if isRecordingMode {
                     promptSelectionPill(size: size)
+
+                    if isDictationRecording {
+                        languageSelectionPill(size: size)
+                    }
                 }
             }
             .onDisappear {
@@ -323,6 +327,28 @@ public struct FloatingRecordingIndicatorView: View {
         .highPriorityGesture(TapGesture())
     }
 
+    private func languagePickerControl(size: IndicatorSize) -> some View {
+        Menu {
+            ForEach(DictationOutputLanguage.allCases, id: \.self) { language in
+                Button {
+                    recordingManager.setDictationSessionOutputLanguageOverride(language)
+                } label: {
+                    Text(language.displayName)
+                }
+            }
+        } label: {
+            Text(currentDictationOutputLanguage.flagEmoji)
+                .font(languageFlagFont(for: size))
+                .frame(width: 20, height: 20)
+                .contentShape(Rectangle())
+                .accessibilityLabel(currentDictationOutputLanguage.localizedName)
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .help("settings.rules_per_app.language.title".localized)
+        .highPriorityGesture(TapGesture())
+    }
+
     private var promptPickerPrompts: [PostProcessingPrompt] {
         isDictationRecording ? settingsStore.dictationAvailablePrompts : settingsStore.meetingAvailablePrompts
     }
@@ -417,6 +443,20 @@ public struct FloatingRecordingIndicatorView: View {
 
     private func promptSelectionPill(size: IndicatorSize) -> some View {
         promptPickerControl(size: size)
+            .frame(width: promptSize(for: size), height: controlHeight(for: size))
+            .background(MeetingAssistantDesignSystem.Colors.overlayBackground)
+            .overlay(
+                Capsule()
+                    .strokeBorder(Color.white.opacity(0.15), lineWidth: 1.5)
+            )
+            .clipShape(Capsule())
+            .onHover { hovering in
+                handlePromptRegionHover(hovering)
+            }
+    }
+
+    private func languageSelectionPill(size: IndicatorSize) -> some View {
+        languagePickerControl(size: size)
             .frame(width: promptSize(for: size), height: controlHeight(for: size))
             .background(MeetingAssistantDesignSystem.Colors.overlayBackground)
             .overlay(
@@ -529,6 +569,19 @@ public struct FloatingRecordingIndicatorView: View {
         case .mini:
             13
         }
+    }
+
+    private func languageFlagFont(for size: IndicatorSize) -> Font {
+        switch size {
+        case .classic:
+            .title3
+        case .mini:
+            .subheadline
+        }
+    }
+
+    private var currentDictationOutputLanguage: DictationOutputLanguage {
+        recordingManager.effectiveDictationOutputLanguageForCurrentRecording
     }
 
     private func promptIconImage(for size: IndicatorSize) -> NSImage {
