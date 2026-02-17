@@ -51,7 +51,7 @@ public struct FloatingRecordingIndicatorView: View {
         switch mode {
         case .error:
             errorView
-        case .recording, .processing:
+        case .starting, .recording, .processing:
             switch style {
             case .classic:
                 indicatorPill(size: .classic)
@@ -163,7 +163,7 @@ public struct FloatingRecordingIndicatorView: View {
         Circle()
             .fill(isRecordingMode ? MeetingAssistantDesignSystem.Colors.recording : MeetingAssistantDesignSystem.Colors.accent)
             .frame(width: MeetingAssistantDesignSystem.Layout.recordingIndicatorDotSize, height: MeetingAssistantDesignSystem.Layout.recordingIndicatorDotSize)
-            .modifier(PulsingModifier(isActive: isRecordingMode, speed: isRecordingMode ? 0.9 : 1.4))
+            .modifier(PulsingModifier(isActive: isRecordingMode || isStartingMode, speed: isRecordingMode ? 0.9 : 1.2))
     }
 
     private func controlHeight(for size: IndicatorSize) -> CGFloat {
@@ -177,6 +177,13 @@ public struct FloatingRecordingIndicatorView: View {
 
     private var isRecordingMode: Bool {
         if case .recording = mode {
+            return true
+        }
+        return false
+    }
+
+    private var isStartingMode: Bool {
+        if case .starting = mode {
             return true
         }
         return false
