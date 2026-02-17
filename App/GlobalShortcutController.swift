@@ -435,7 +435,12 @@ final class GlobalShortcutController {
         switch action {
         case .startRecording:
             let source: RecordingSource = type == .dictation ? .microphone : .all
-            await recordingManager.startRecording(source: source)
+            let triggerLabel = type == .dictation ? "shortcut.dictation" : "shortcut.meeting"
+            await recordingManager.startRecording(
+                source: source,
+                requestedAt: Date(),
+                triggerLabel: triggerLabel
+            )
         case .stopRecording:
             await recordingManager.stopRecording()
         }

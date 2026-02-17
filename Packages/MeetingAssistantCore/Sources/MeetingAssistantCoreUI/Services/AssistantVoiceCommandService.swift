@@ -63,6 +63,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
 
     public func startRecording(flow: AssistantExecutionFlow = .assistantMode) async {
         guard !isRecording, !isProcessing else { return }
+        let requestedAt = Date()
 
         guard !recordingManager.isRecording else {
             AppLogger.info("Assistant start blocked because Recording is active", category: .assistant)
@@ -94,6 +95,12 @@ public final class AssistantVoiceCommandService: ObservableObject {
             isRecording = true
             indicator.show(mode: .recording)
             screenBorder.show()
+            let now = Date()
+            PerformanceMonitor.shared.reportMetric(
+                name: "assistant_start_requested_to_recorder_ms",
+                value: now.timeIntervalSince(requestedAt) * 1000,
+                unit: "ms"
+            )
         } catch {
             await RecordingExclusivityCoordinator.shared.endAssistant()
             showError(.failedToStartRecording)
