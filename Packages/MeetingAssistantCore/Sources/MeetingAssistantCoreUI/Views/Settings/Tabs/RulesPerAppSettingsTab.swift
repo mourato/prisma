@@ -138,7 +138,6 @@ public struct RulesPerAppSettingsTab: View {
                 VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
                     MAToggleRow(
                         "settings.rules_per_app.markdown.title".localized,
-                        description: "settings.rules_per_app.markdown.description".localized,
                         isOn: forceMarkdownBinding(for: resolvedRule.rule.bundleIdentifier)
                     )
 
@@ -160,18 +159,9 @@ public struct RulesPerAppSettingsTab: View {
                         .pickerStyle(.menu)
                         .labelsHidden()
                     }
-
-                    Button(role: .destructive) {
-                        viewModel.removeRule(bundleIdentifier: resolvedRule.rule.bundleIdentifier)
-                        expandedBundleIdentifiers.remove(resolvedRule.rule.bundleIdentifier)
-                    } label: {
-                        Label("settings.rules_per_app.remove_app".localized, systemImage: "trash")
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
                 }
                 .padding(.top, MeetingAssistantDesignSystem.Layout.spacing8)
+                .padding(.bottom, MeetingAssistantDesignSystem.Layout.spacing8)
             },
             label: {
                 HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
@@ -195,6 +185,17 @@ public struct RulesPerAppSettingsTab: View {
                     Spacer()
 
                     appRuleSummary(for: resolvedRule.rule)
+
+                    Button(role: .destructive) {
+                        viewModel.removeRule(bundleIdentifier: resolvedRule.rule.bundleIdentifier)
+                        expandedBundleIdentifiers.remove(resolvedRule.rule.bundleIdentifier)
+                    } label: {
+                        Image(systemName: "trash")
+                    }
+                    .buttonStyle(.borderless)
+                    .controlSize(.small)
+                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
+                    .accessibilityLabel("settings.rules_per_app.remove_app".localized)
                 }
             }
         )
