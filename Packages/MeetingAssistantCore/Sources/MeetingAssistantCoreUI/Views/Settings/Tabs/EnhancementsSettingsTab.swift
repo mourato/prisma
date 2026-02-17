@@ -14,7 +14,6 @@ import SwiftUI
 public struct EnhancementsSettingsTab: View {
     @StateObject private var viewModel = AISettingsViewModel(settings: .shared)
     @StateObject private var postProcessingViewModel = PostProcessingSettingsViewModel()
-    @StateObject private var markdownTargetsViewModel: InstalledAppsSelectionViewModel
     @StateObject private var webBrowserTargetsViewModel: InstalledAppsSelectionViewModel
     @StateObject private var markdownWebTargetsViewModel: WebMarkdownTargetsViewModel
     @State private var supportStatus: TextContextSupportStatus = .unknown
@@ -22,14 +21,6 @@ public struct EnhancementsSettingsTab: View {
     private let supportChecker = TextContextSupportChecker()
 
     public init(settings: AppSettingsStore = .shared) {
-        _markdownTargetsViewModel = StateObject(
-            wrappedValue: InstalledAppsSelectionViewModel(
-                defaultBundleIdentifiers: AppSettingsStore.defaultMarkdownTargetBundleIdentifiers,
-                hasConfigured: { settings.hasConfiguredMarkdownTargets },
-                loadBundleIdentifiers: { settings.markdownTargetBundleIdentifiers },
-                saveBundleIdentifiers: { settings.markdownTargetBundleIdentifiers = $0 }
-            )
-        )
         _webBrowserTargetsViewModel = StateObject(
             wrappedValue: InstalledAppsSelectionViewModel(
                 defaultBundleIdentifiers: AppSettingsStore.defaultWebTargetBrowserBundleIdentifiers,
@@ -194,19 +185,6 @@ public struct EnhancementsSettingsTab: View {
     private var markdownTargetsSection: some View {
         MAGroup("settings.markdown_targets.title".localized, icon: "textformat") {
             VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
-                Text("settings.markdown_targets.app.title".localized)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                
-                InstalledAppsSelectionList(
-                    descriptionKey: "settings.markdown_targets.description",
-                    emptyKey: "settings.markdown_targets.empty",
-                    addButtonKey: "settings.markdown_targets.add",
-                    viewModel: markdownTargetsViewModel
-                )
-
-                Divider()
-                
                 Text("settings.web_targets.browsers.title".localized)
                     .font(.subheadline)
                     .fontWeight(.medium)
