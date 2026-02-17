@@ -21,7 +21,8 @@ public class MeetingDetector: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
 
     /// Poll interval in seconds
-    private let pollInterval: TimeInterval = 2.0
+    private let pollInterval: TimeInterval = 10.0
+    private let pollTimerTolerance: TimeInterval = 2.0
 
     private init(settings: AppSettingsStore = .shared) {
         self.settings = settings
@@ -48,6 +49,7 @@ public class MeetingDetector: ObservableObject {
                 self?.checkForMeetings()
             }
         }
+        monitoringTimer?.tolerance = pollTimerTolerance
     }
 
     /// Stop monitoring for meeting apps.

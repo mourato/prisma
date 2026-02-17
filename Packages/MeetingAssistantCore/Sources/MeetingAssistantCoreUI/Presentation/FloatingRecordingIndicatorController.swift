@@ -77,6 +77,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         visibilityTransitionID &+= 1
         currentMode = mode
         meetingType = type
+        isVisible = true
 
         let panel = ensurePanel(for: mode, type: type)
 
@@ -103,7 +104,6 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
             panel.orderFrontRegardless()
         }
 
-        isVisible = true
     }
 
     /// Hide the floating indicator.
@@ -232,6 +232,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
             style: settingsStore.recordingIndicatorStyle,
             mode: currentMode,
             meetingType: meetingType,
+            isAnimationActive: isVisible,
             onStop: {
                 Task { @MainActor in
                     await RecordingManager.shared.stopRecording()
