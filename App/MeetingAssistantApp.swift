@@ -100,6 +100,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         globalShortcutController.start()
         assistantShortcutController.start()
         setupRecordingObservation()
+        floatingIndicatorController.prewarm()
         updateMenuTitles() // Initial update
 
         // Warmup transcription model
@@ -154,18 +155,27 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupRecordingObservation() {
         recordingManager.isRecordingPublisher
             .combineLatest(
+                recordingManager.isStartingPublisher,
                 recordingManager.isTranscribingPublisher,
-                assistantVoiceCommandService.$isRecording,
-                recordingManager.currentMeetingPublisher
+                assistantVoiceCommandService.$isRecording
             )
+            .combineLatest(recordingManager.currentMeetingPublisher)
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] isRecording, isTranscribing, isAssistantRecording, currentMeeting in
-                self?.updateStatusIcon(isRecording: isRecording || isAssistantRecording)
+            .sink { [weak self] state, currentMeeting in
+                let (isRecording, isStarting, isTranscribing, isAssistantRecording) = state
+                self?.updateStatusIcon(isRecording: isRecording || isAssistantRecording || isStarting)
                 self?.updateFloatingIndicator(
                     isRecording: isRecording || isAssistantRecording,
+                    isStarting: isStarting,
                     isTranscribing: isTranscribing,
                     meetingType: currentMeeting?.type
                 )
+                if (isRecording || isStarting),
+                   AppSettingsStore.shared.recordingIndicatorEnabled,
+                   AppSettingsStore.shared.recordingIndicatorStyle != .none
+                {
+                    self?.recordingManager.noteIndicatorShownForStartIfNeeded()
+                }
                 self?.updateMenuTitles()
             }
             .store(in: &cancellables)
@@ -176,7 +186,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if recordingManager.isRecording {
             await recordingManager.stopRecording(transcribe: true)
         } else {
-            await recordingManager.startRecording(source: source)
+            let triggerLabel = source == .microphone ? "menu.dictation" : "menu.meeting"
+            await recordingManager.startRecording(
+                source: source,
+                requestedAt: Date(),
+                triggerLabel: triggerLabel
+            )
         }
     }
 
@@ -578,9 +593,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem?.button?.image = image
     }
 
-    private func updateFloatingIndicator(isRecording: Bool, isTranscribing: Bool, meetingType: MeetingType? = nil) {
+    private func updateFloatingIndicator(
+        isRecording: Bool,
+        isStarting: Bool,
+        isTranscribing: Bool,
+        meetingType: MeetingType? = nil
+    ) {
         if isRecording {
             floatingIndicatorController.show(mode: .recording, type: meetingType)
+        } else if isStarting {
+            floatingIndicatorController.show(mode: .starting, type: meetingType)
         } else if isTranscribing {
             floatingIndicatorController.show(mode: .processing, type: meetingType)
         } else {

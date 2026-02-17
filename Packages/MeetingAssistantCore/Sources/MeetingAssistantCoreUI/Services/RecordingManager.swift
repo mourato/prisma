@@ -27,6 +27,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     // MARK: - Published State
 
     @Published public private(set) var isRecording = false
+    @Published public private(set) var isStartingRecording = false
     @Published public private(set) var isTranscribing = false
     @Published public private(set) var meetingState: MeetingState = .idle
     @Published public private(set) var currentMeeting: Meeting?
@@ -46,6 +47,10 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
     public var isTranscribingPublisher: AnyPublisher<Bool, Never> {
         $isTranscribing.eraseToAnyPublisher()
+    }
+
+    public var isStartingPublisher: AnyPublisher<Bool, Never> {
+        $isStartingRecording.eraseToAnyPublisher()
     }
 
     public var currentMeetingPublisher: AnyPublisher<Meeting?, Never> {
@@ -78,11 +83,23 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
     private var cancellables = Set<AnyCancellable>()
     private var statusCheckTask: Task<Void, Never>?
-    private var isStarting = false
+    private var isStartOperationInFlight = false
+    private var postStartContextCaptureTask: Task<Void, Never>?
+    private var activeStartTelemetry: RecordingStartTelemetry?
     private var postProcessingContext: String?
     private var postProcessingContextItems: [TranscriptionContextItem] = []
     private var dictationStartBundleIdentifier: String?
     private var dictationStartURL: URL?
+
+    private struct RecordingStartTelemetry {
+        let traceID = UUID().uuidString
+        let triggerLabel: String
+        let source: RecordingSource
+        let requestedAt: Date
+        let managerEntryAt: Date
+        var recorderStartedAt: Date?
+        var indicatorShownAt: Date?
+    }
 
     // MARK: - Computed Properties for Actor State
 
@@ -264,6 +281,18 @@ public extension RecordingManager {
     /// - Parameters:
     ///   - source: The audio source to record.
     func startRecording(source: RecordingSource = .microphone) async {
+        await startRecording(
+            source: source,
+            requestedAt: Date(),
+            triggerLabel: "recording.start.default"
+        )
+    }
+
+    func startRecording(
+        source: RecordingSource,
+        requestedAt: Date,
+        triggerLabel: String
+    ) async {
         guard !isRecording else {
             AppLogger.info("Attempted to start recording but already recording", category: .recordingManager)
             return
@@ -277,24 +306,26 @@ public extension RecordingManager {
         recordingSource = source
 
         // Prevent re-entrancy during async setup
-        guard !isStarting else { return }
-        isStarting = true
-        defer { isStarting = false }
+        guard !isStartOperationInFlight else { return }
+        isStartOperationInFlight = true
+        defer { isStartOperationInFlight = false }
+
+        let managerEntryAt = Date()
+        activeStartTelemetry = RecordingStartTelemetry(
+            triggerLabel: triggerLabel,
+            source: source,
+            requestedAt: requestedAt,
+            managerEntryAt: managerEntryAt
+        )
+        isStartingRecording = true
 
         do {
-            var meeting = createMeeting(type: resolveMeetingType())
+            let meeting = createMeeting(type: resolveMeetingType())
             dictationStartBundleIdentifier = nil
             dictationStartURL = nil
-            let activeContext = try? await activeAppContextProvider.fetchActiveAppContext()
-            if source == .microphone {
-                dictationStartBundleIdentifier = activeContext?.bundleIdentifier
-                dictationStartURL = activeBrowserURL(for: activeContext?.bundleIdentifier)
-            }
-            meeting = applyStartAppContext(meeting, source: source, activeContext: activeContext)
             currentMeeting = meeting
-            let contextCapture = await capturePostProcessingContext(for: meeting)
-            postProcessingContext = contextCapture.context
-            postProcessingContextItems = contextCapture.items
+            postProcessingContext = nil
+            postProcessingContextItems = []
 
             // We only need one output URL because AudioRecorder handles mixing
             let audioURL = storage.createRecordingURL(for: meeting, type: .merged)
@@ -302,10 +333,16 @@ public extension RecordingManager {
             let outputURL = audioURL
             try await startRecorder(to: outputURL, source: source)
 
+            let recorderStartAt = Date()
+            markRecorderStartedAt(recorderStartAt)
+
             isRecording = true
+            isStartingRecording = false
             meetingState = .recording // Sync state
             currentMeeting?.state = .recording // Sync entity state
             currentMeeting?.audioFilePath = outputURL.path
+
+            startContextCaptureAfterRecordingStart(meetingID: meeting.id, source: source)
 
             // Play start recording sound feedback
             SoundFeedbackService.shared.playRecordingStartSound()
@@ -317,11 +354,50 @@ public extension RecordingManager {
             ])
 
         } catch {
+            isStartingRecording = false
             await RecordingExclusivityCoordinator.shared.endRecording()
+            postStartContextCaptureTask?.cancel()
+            postStartContextCaptureTask = nil
             postProcessingContext = nil
             postProcessingContextItems = []
+            activeStartTelemetry = nil
             await handleStartRecordingError(error)
         }
+    }
+
+    func noteIndicatorShownForStartIfNeeded() {
+        guard var telemetry = activeStartTelemetry else { return }
+        guard telemetry.indicatorShownAt == nil else { return }
+
+        let now = Date()
+        telemetry.indicatorShownAt = now
+        activeStartTelemetry = telemetry
+
+        let requestedToIndicatorMs = now.timeIntervalSince(telemetry.requestedAt) * 1000
+        PerformanceMonitor.shared.reportMetric(
+            name: "recording_start_requested_to_indicator_ms",
+            value: requestedToIndicatorMs,
+            unit: "ms"
+        )
+
+        if let recorderStartedAt = telemetry.recorderStartedAt {
+            let recorderToIndicatorMs = now.timeIntervalSince(recorderStartedAt) * 1000
+            PerformanceMonitor.shared.reportMetric(
+                name: "recording_start_recorder_to_indicator_ms",
+                value: recorderToIndicatorMs,
+                unit: "ms"
+            )
+        }
+
+        AppLogger.debug(
+            "Recording startup indicator is visible",
+            category: .performance,
+            extra: [
+                "trace": telemetry.traceID,
+                "trigger": telemetry.triggerLabel,
+                "source": telemetry.source.rawValue,
+            ]
+        )
     }
 
     private func resolveMeetingType() -> MeetingType {
@@ -409,13 +485,17 @@ public extension RecordingManager {
             error: error,
             extra: ["state": "start_failed"]
         )
+        isStartingRecording = false
         lastError = error
+        postStartContextCaptureTask?.cancel()
+        postStartContextCaptureTask = nil
 
         // Cleanup partial starts
         _ = await micRecorder.stopRecording()
         _ = await systemRecorder.stopRecording()
 
         currentMeeting = nil
+        activeStartTelemetry = nil
     }
 
     /// Stop recording and optionally transcribe.
@@ -428,6 +508,10 @@ public extension RecordingManager {
             AppLogger.info("Attempted to stop recording but not recording", category: .recordingManager)
             return
         }
+
+        postStartContextCaptureTask?.cancel()
+        postStartContextCaptureTask = nil
+        isStartingRecording = false
 
         do {
             // Stop both recorders
@@ -468,6 +552,7 @@ public extension RecordingManager {
                 postProcessingContext = nil
                 postProcessingContextItems = []
                 currentMeeting = nil // Clear current meeting if done
+                activeStartTelemetry = nil
             }
 
         } catch {
@@ -480,6 +565,8 @@ public extension RecordingManager {
             await RecordingExclusivityCoordinator.shared.endRecording()
             postProcessingContext = nil
             postProcessingContextItems = []
+            isStartingRecording = false
+            activeStartTelemetry = nil
         }
     }
 
@@ -492,6 +579,8 @@ public extension RecordingManager {
         // Stop recorders
         _ = await micRecorder.stopRecording()
         _ = await systemRecorder.stopRecording()
+        postStartContextCaptureTask?.cancel()
+        postStartContextCaptureTask = nil
 
         // Cleanup temporary files
         await cleanupTemporaryFiles()
@@ -504,9 +593,11 @@ public extension RecordingManager {
 
         // Reset state
         isRecording = false
+        isStartingRecording = false
         currentMeeting = nil
         postProcessingContext = nil
         postProcessingContextItems = []
+        activeStartTelemetry = nil
         await RecordingExclusivityCoordinator.shared.endRecording()
         SoundFeedbackService.shared.playRecordingCancelledSound()
 
@@ -589,7 +680,14 @@ extension RecordingManager {
         // Sync with audio recorder state
         micRecorder.isRecordingPublisher
             .receive(on: DispatchQueue.main)
-            .assign(to: &$isRecording)
+            .sink { [weak self] isRecording in
+                guard let self else { return }
+                self.isRecording = isRecording
+                if isRecording {
+                    self.isStartingRecording = false
+                }
+            }
+            .store(in: &cancellables)
     }
 
     private func cleanupTemporaryFiles() async {
@@ -603,11 +701,108 @@ extension RecordingManager {
         setSystemAudioURL(nil)
     }
 
+    private func markRecorderStartedAt(_ recorderStartedAt: Date) {
+        guard var telemetry = activeStartTelemetry else { return }
+        telemetry.recorderStartedAt = recorderStartedAt
+        activeStartTelemetry = telemetry
+
+        AppLogger.debug(
+            "Recording startup reached recorder",
+            category: .performance,
+            extra: [
+                "trace": telemetry.traceID,
+                "trigger": telemetry.triggerLabel,
+                "source": telemetry.source.rawValue,
+            ]
+        )
+
+        PerformanceMonitor.shared.reportMetric(
+            name: "recording_start_requested_to_recorder_ms",
+            value: recorderStartedAt.timeIntervalSince(telemetry.requestedAt) * 1000,
+            unit: "ms"
+        )
+        PerformanceMonitor.shared.reportMetric(
+            name: "recording_start_entry_to_recorder_ms",
+            value: recorderStartedAt.timeIntervalSince(telemetry.managerEntryAt) * 1000,
+            unit: "ms"
+        )
+    }
+
+    private func startContextCaptureAfterRecordingStart(meetingID: UUID, source: RecordingSource) {
+        postStartContextCaptureTask?.cancel()
+        postStartContextCaptureTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            let contextCaptureStartAt = Date()
+
+            let activeContext = try? await self.activeAppContextProvider.fetchActiveAppContext()
+            guard !Task.isCancelled else { return }
+            guard var meeting = self.currentMeeting, meeting.id == meetingID else { return }
+
+            if source == .microphone {
+                self.dictationStartBundleIdentifier = activeContext?.bundleIdentifier
+                self.dictationStartURL = self.activeBrowserURL(for: activeContext?.bundleIdentifier)
+            } else {
+                self.dictationStartBundleIdentifier = nil
+                self.dictationStartURL = nil
+            }
+
+            meeting = self.applyStartAppContext(meeting, source: source, activeContext: activeContext)
+            self.currentMeeting = meeting
+
+            let captureResult = await self.capturePostProcessingContextWithTimeout(for: meeting)
+            guard !Task.isCancelled else { return }
+            guard self.currentMeeting?.id == meetingID else { return }
+
+            self.postProcessingContext = captureResult.context
+            self.postProcessingContextItems = captureResult.items
+
+            if captureResult.didTimeout {
+                AppLogger.warning(
+                    "Context capture timed out after recording start",
+                    category: .recordingManager
+                )
+            }
+
+            PerformanceMonitor.shared.reportMetric(
+                name: "recording_start_context_capture_ms",
+                value: Date().timeIntervalSince(contextCaptureStartAt) * 1000,
+                unit: "ms"
+            )
+        }
+    }
+
+    private func capturePostProcessingContextWithTimeout(
+        for meeting: Meeting
+    ) async -> (context: String?, items: [TranscriptionContextItem], didTimeout: Bool) {
+        await withTaskGroup(
+            of: (context: String?, items: [TranscriptionContextItem], didTimeout: Bool).self,
+            returning: (context: String?, items: [TranscriptionContextItem], didTimeout: Bool).self
+        ) { group in
+            group.addTask { [weak self] in
+                guard let self else {
+                    return (nil, [], false)
+                }
+                let capture = await self.capturePostProcessingContext(for: meeting)
+                return (capture.context, capture.items, false)
+            }
+
+            group.addTask {
+                try? await Task.sleep(nanoseconds: Constants.startContextCaptureTimeout)
+                return (nil, [], true)
+            }
+
+            let firstResult = await group.next() ?? (nil, [], true)
+            group.cancelAll()
+            return firstResult
+        }
+    }
+
     private enum Constants {
         static let processingProgress: Double = 10.0
         static let postProcessingProgress: Double = 90.0
         static let aiProcessingProgress: Double = 92.0
         static let statusResetDelay: Int = 3
+        static let startContextCaptureTimeout: UInt64 = 1_500_000_000
     }
 
     private func processRecordedAudio(micURL: URL?, sysURL: URL?) async throws -> URL {
@@ -731,10 +926,13 @@ extension RecordingManager {
         }
 
         isTranscribing = false
+        isStartingRecording = false
         meetingState = .idle
         currentMeeting = nil
         postProcessingContext = nil
         postProcessingContextItems = []
+        activeStartTelemetry = nil
+        postStartContextCaptureTask = nil
     }
 
     private func beginTranscriptionUIStateIfNeeded() {
@@ -863,6 +1061,7 @@ extension RecordingManager {
 
         if isDictationMode(for: meeting),
            settings.contextAwarenessIncludeAccessibilityText,
+           snapshot.activeAccessibilityText == nil,
            let focusedText = await captureFocusedTextContext(settings: settings),
            !items.contains(where: { $0.source == .focusedText && $0.text == focusedText })
         {
@@ -1507,11 +1706,15 @@ extension RecordingManager {
 
     /// Resets the manager and actor state to idle.
     public func reset() async {
+        postStartContextCaptureTask?.cancel()
+        postStartContextCaptureTask = nil
         await recordingActor.reset()
         isRecording = false
+        isStartingRecording = false
         isTranscribing = false
         currentMeeting = nil
         lastError = nil
+        activeStartTelemetry = nil
     }
 
 }
