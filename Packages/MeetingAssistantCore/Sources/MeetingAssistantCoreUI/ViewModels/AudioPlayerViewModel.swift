@@ -11,6 +11,11 @@ import SwiftUI
 /// View model for audio playback and waveform visualization.
 @MainActor
 public final class AudioPlayerViewModel: ObservableObject {
+    private enum Constants {
+        static let playbackUpdateInterval: TimeInterval = 0.1
+        static let timerToleranceRatio: Double = 0.25
+    }
+
     private var audioPlayer: AVAudioPlayer?
     private var timer: AnyCancellable?
 
@@ -65,7 +70,12 @@ public final class AudioPlayerViewModel: ObservableObject {
     }
 
     private func startTimer() {
-        timer = Timer.publish(every: 0.05, on: .main, in: .common)
+        timer = Timer.publish(
+            every: Constants.playbackUpdateInterval,
+            tolerance: Constants.playbackUpdateInterval * Constants.timerToleranceRatio,
+            on: .main,
+            in: .common
+        )
             .autoconnect()
             .sink { [weak self] _ in
                 guard let self, let player = audioPlayer else { return }

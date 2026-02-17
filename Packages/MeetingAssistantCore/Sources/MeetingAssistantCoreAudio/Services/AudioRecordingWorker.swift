@@ -30,6 +30,7 @@ actor AudioRecordingWorker {
 
     /// Processing task
     private var processingTask: Task<Void, Never>?
+    private var bufferSignalContinuation: AsyncStream<Void>.Continuation?
 
     init() {}
 
@@ -72,6 +73,8 @@ actor AudioRecordingWorker {
         // Cancel any existing processing task
         processingTask?.cancel()
         processingTask = nil
+        bufferSignalContinuation?.finish()
+        bufferSignalContinuation = nil
 
         // Clear buffer queue
         bufferQueue.clear()
@@ -141,18 +144,25 @@ actor AudioRecordingWorker {
         }
 
         // Start processing task
+        let bufferSignalStream = AsyncStream<Void> { continuation in
+            self.bufferSignalContinuation = continuation
+        }
+
         processingTask = Task {
-            await self.processBuffers()
+            await self.processBuffers(bufferSignalStream)
         }
     }
 
     func stop() async -> URL? {
         // Mark as stopping but don't cancel yet - allow loop to drain queue
         _isStopping.store(true, ordering: .relaxed)
+        bufferSignalContinuation?.yield(())
 
         // Wait for task to finish processing remaining buffers
         await processingTask?.value
         processingTask = nil
+        bufferSignalContinuation?.finish()
+        bufferSignalContinuation = nil
 
         // Clear queue after task completes
         bufferQueue.clear()
@@ -169,20 +179,28 @@ actor AudioRecordingWorker {
 
     nonisolated func process(_ buffer: AVAudioPCMBuffer) {
         bufferQueue.enqueue(buffer)
+        Task {
+            await self.notifyBufferAvailable()
+        }
     }
 
-    private func processBuffers() async {
-        while true {
-            if let buffer = bufferQueue.dequeue() {
+    private func notifyBufferAvailable() {
+        bufferSignalContinuation?.yield(())
+    }
+
+    private func processBuffers(_ bufferSignalStream: AsyncStream<Void>) async {
+        for await _ in bufferSignalStream {
+            while let buffer = bufferQueue.dequeue() {
                 processBufferInternal(buffer)
-            } else {
-                // If queue is empty AND we are stopping, we can exit the loop
-                if _isStopping.load(ordering: .relaxed) || Task.isCancelled {
-                    break
-                }
-                // Wait a bit before checking again
-                try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
             }
+
+            if _isStopping.load(ordering: .relaxed) || Task.isCancelled {
+                break
+            }
+        }
+
+        while let buffer = bufferQueue.dequeue() {
+            processBufferInternal(buffer)
         }
     }
 
