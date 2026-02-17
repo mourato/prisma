@@ -7,6 +7,7 @@
 "settings.section.transcriptions" = "Transcriptions";
 "settings.section.history" = "History";
 "settings.section.assistant" = "Assistant";
+"settings.section.integrations" = "Integrations";
 "settings.section.ai" = "Enhancements";
 "settings.section.service" = "AI Service";
 "settings.section.permissions" = "Permissions";
@@ -297,6 +298,7 @@
 "settings.shortcuts.toggle_recording_desc" = "Starts or stops the current recording";
 "settings.shortcuts.reset" = "Reset to Default Shortcuts";
 "settings.assistant.header_desc" = "Configure the Assistant shortcut to edit selected text with voice commands in any app.";
+"settings.integrations.header_desc" = "Configure integrations to dispatch transcribed and post-processed voice commands without requiring selected text.";
 "settings.assistant.controls" = "Assistant Shortcut";
 "settings.assistant.toggle_command" = "Start/Stop Assistant";
 "settings.assistant.toggle_command_desc" = "Hold or press to record a voice command for the selected text";
@@ -395,9 +397,9 @@
 "assistant.error.stop_failed" = "Unable to stop Assistant recording.";
 "assistant.error.recording_in_progress" = "A recording is in progress. Stop it before using Assistant.";
 "assistant.error.processing_failed" = "Unable to process the Assistant command.";
-"assistant.error.integration_disabled" = "The selected integration is disabled in Assistant settings.";
-"assistant.error.raycast_integration_disabled" = "Raycast integration is disabled in Assistant settings.";
-"assistant.error.raycast_deeplink_invalid" = "Raycast deeplink is invalid. Check Assistant Integrations settings.";
+"assistant.error.integration_disabled" = "The selected integration is disabled in Integrations settings.";
+"assistant.error.raycast_integration_disabled" = "Raycast integration is disabled in Integrations settings.";
+"assistant.error.raycast_deeplink_invalid" = "Raycast deeplink is invalid. Check Integrations settings.";
 "assistant.error.raycast_open_failed" = "Unable to open Raycast with the configured deeplink.";
 "assistant.error.raycast_opened_clipboard_fallback" = "Raycast opened and command copied to clipboard due to URL length.";
 

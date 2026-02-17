@@ -7,6 +7,7 @@
 "settings.section.transcriptions" = "Transcrições";
 "settings.section.history" = "Histórico";
 "settings.section.assistant" = "Assistant";
+"settings.section.integrations" = "Integrações";
 "settings.section.ai" = "Aprimoramentos";
 "settings.section.service" = "Serviço de IA";
 "settings.section.permissions" = "Permissões";
@@ -296,6 +297,7 @@
 "settings.shortcuts.toggle_recording_desc" = "Inicia ou encerra a gravação atual";
 "settings.shortcuts.reset" = "Resetar para atalhos padrão";
 "settings.assistant.header_desc" = "Configure o atalho do Assistant para editar o texto selecionado com comandos de voz em qualquer app.";
+"settings.integrations.header_desc" = "Configure integrações para enviar comandos de voz transcritos e pós-processados sem exigir texto selecionado.";
 "settings.assistant.controls" = "Atalho do Assistant";
 "settings.assistant.toggle_command" = "Iniciar/Parar Assistant";
 "settings.assistant.toggle_command_desc" = "Segure ou pressione para gravar um comando de voz para o texto selecionado";
@@ -394,9 +396,9 @@
 "assistant.error.stop_failed" = "Não foi possível finalizar a gravação do Assistant.";
 "assistant.error.recording_in_progress" = "Há uma gravação em andamento. Finalize antes de usar o Assistant.";
 "assistant.error.processing_failed" = "Não foi possível processar o comando do Assistant.";
-"assistant.error.integration_disabled" = "A integração selecionada está desativada nas configurações do Assistant.";
-"assistant.error.raycast_integration_disabled" = "A integração com Raycast está desativada nas configurações do Assistant.";
-"assistant.error.raycast_deeplink_invalid" = "O deeplink do Raycast é inválido. Verifique Integrações no Assistant.";
+"assistant.error.integration_disabled" = "A integração selecionada está desativada nas configurações de Integrações.";
+"assistant.error.raycast_integration_disabled" = "A integração com Raycast está desativada nas configurações de Integrações.";
+"assistant.error.raycast_deeplink_invalid" = "O deeplink do Raycast é inválido. Verifique as configurações de Integrações.";
 "assistant.error.raycast_open_failed" = "Não foi possível abrir o Raycast com o deeplink configurado.";
 "assistant.error.raycast_opened_clipboard_fallback" = "Raycast aberto e comando copiado para a área de transferência por limite de URL.";
 
