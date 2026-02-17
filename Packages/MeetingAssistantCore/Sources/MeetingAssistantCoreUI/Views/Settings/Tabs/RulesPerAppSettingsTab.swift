@@ -1,0 +1,244 @@
+import MeetingAssistantCoreCommon
+import MeetingAssistantCoreInfrastructure
+import SwiftUI
+
+public struct RulesPerAppSettingsTab: View {
+    @StateObject private var viewModel: RulesPerAppSettingsViewModel
+    @State private var expandedBundleIdentifiers = Set<String>()
+
+    public init(settings: AppSettingsStore = .shared) {
+        _viewModel = StateObject(wrappedValue: RulesPerAppSettingsViewModel(settings: settings))
+    }
+
+    public var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.sectionSpacing) {
+                MAGroup("settings.rules_per_app.title".localized, icon: "slider.horizontal.3") {
+                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                        Text("settings.rules_per_app.description".localized)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        rulesList
+
+                        HStack {
+                            Spacer()
+                            Button {
+                                viewModel.openAddAppSheet()
+                            } label: {
+                                Label("settings.rules_per_app.add_app".localized, systemImage: "plus")
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.regular)
+                        }
+                    }
+                }
+            }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .sheet(isPresented: $viewModel.showAddAppSheet) {
+            addAppSheet
+        }
+    }
+
+    @ViewBuilder
+    private var rulesList: some View {
+        if viewModel.resolvedRules.isEmpty {
+            Text("settings.rules_per_app.empty".localized)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        } else {
+            VStack(spacing: 0) {
+                ForEach(Array(viewModel.resolvedRules.enumerated()), id: \.element.id) { index, resolvedRule in
+                    disclosureRow(for: resolvedRule)
+
+                    if index < viewModel.resolvedRules.count - 1 {
+                        Divider()
+                    }
+                }
+            }
+            .background(MeetingAssistantDesignSystem.Colors.subtleFill2)
+            .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+        }
+    }
+
+    private func disclosureRow(for resolvedRule: ResolvedDictationAppRule) -> some View {
+        DisclosureGroup(
+            isExpanded: expansionBinding(for: resolvedRule.rule.bundleIdentifier),
+            content: {
+                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                    MAToggleRow(
+                        "settings.rules_per_app.markdown.title".localized,
+                        description: "settings.rules_per_app.markdown.description".localized,
+                        isOn: forceMarkdownBinding(for: resolvedRule.rule.bundleIdentifier)
+                    )
+
+                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                        Text("settings.rules_per_app.language.title".localized)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+
+                        Text("settings.rules_per_app.language.description".localized)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        Picker(
+                            "settings.rules_per_app.language.title".localized,
+                            selection: outputLanguageBinding(for: resolvedRule.rule.bundleIdentifier)
+                        ) {
+                            ForEach(DictationOutputLanguage.allCases, id: \.self) { language in
+                                Text(language.displayName).tag(language)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                    }
+
+                    Button(role: .destructive) {
+                        viewModel.removeRule(bundleIdentifier: resolvedRule.rule.bundleIdentifier)
+                        expandedBundleIdentifiers.remove(resolvedRule.rule.bundleIdentifier)
+                    } label: {
+                        Label("settings.rules_per_app.remove_app".localized, systemImage: "trash")
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
+                }
+                .padding(.top, MeetingAssistantDesignSystem.Layout.spacing8)
+            },
+            label: {
+                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                    AppIconView(
+                        bundleIdentifier: resolvedRule.rule.bundleIdentifier,
+                        fallbackSystemName: "app.fill",
+                        size: 20,
+                        cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius
+                    )
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(resolvedRule.displayName)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        Text(resolvedRule.rule.bundleIdentifier)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        )
+        .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)
+        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
+    }
+
+    private var addAppSheet: some View {
+        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+            Text("settings.rules_per_app.add_app".localized)
+                .font(.title3)
+                .fontWeight(.semibold)
+
+            TextField("settings.rules_per_app.search_placeholder".localized, text: $viewModel.searchText)
+                .textFieldStyle(.roundedBorder)
+
+            if viewModel.isLoadingAppCatalog {
+                VStack {
+                    Spacer()
+                    ProgressView("settings.rules_per_app.loading_apps".localized)
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity)
+            } else if viewModel.filteredAppCatalog.isEmpty {
+                VStack {
+                    Spacer()
+                    Text("settings.rules_per_app.no_results".localized)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity)
+            } else {
+                List(viewModel.filteredAppCatalog) { app in
+                    HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                        AppIconView(
+                            bundleIdentifier: app.bundleIdentifier,
+                            fallbackSystemName: "app.fill",
+                            size: 20,
+                            cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius
+                        )
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(app.displayName)
+                                .font(.subheadline)
+                            Text(app.bundleIdentifier)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer()
+
+                        if viewModel.isAppAlreadyConfigured(app) {
+                            Text("settings.rules_per_app.added".localized)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Button("settings.rules_per_app.add".localized) {
+                                viewModel.addAppRule(for: app)
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .controlSize(.small)
+                        }
+                    }
+                }
+                .listStyle(.inset)
+            }
+
+            HStack {
+                Spacer()
+                Button("common.cancel".localized) {
+                    viewModel.dismissAddAppSheet()
+                }
+                .keyboardShortcut(.cancelAction)
+            }
+        }
+        .padding()
+        .frame(minWidth: 560, minHeight: 520)
+    }
+
+    private func expansionBinding(for bundleIdentifier: String) -> Binding<Bool> {
+        Binding(
+            get: { expandedBundleIdentifiers.contains(bundleIdentifier) },
+            set: { isExpanded in
+                if isExpanded {
+                    expandedBundleIdentifiers.insert(bundleIdentifier)
+                } else {
+                    expandedBundleIdentifiers.remove(bundleIdentifier)
+                }
+            }
+        )
+    }
+
+    private func forceMarkdownBinding(for bundleIdentifier: String) -> Binding<Bool> {
+        Binding(
+            get: {
+                viewModel.resolvedRules.first { $0.rule.bundleIdentifier == bundleIdentifier }?.rule.forceMarkdownOutput ?? false
+            },
+            set: { isEnabled in
+                viewModel.setForceMarkdown(isEnabled, for: bundleIdentifier)
+            }
+        )
+    }
+
+    private func outputLanguageBinding(for bundleIdentifier: String) -> Binding<DictationOutputLanguage> {
+        Binding(
+            get: {
+                viewModel.resolvedRules.first { $0.rule.bundleIdentifier == bundleIdentifier }?.rule.outputLanguage ?? .original
+            },
+            set: { language in
+                viewModel.setOutputLanguage(language, for: bundleIdentifier)
+            }
+        )
+    }
+}
+
+#Preview {
+    RulesPerAppSettingsTab()
+}

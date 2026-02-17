@@ -713,6 +713,11 @@ public class AppSettingsStore: ObservableObject {
         "net.shinyfrog.bear",
     ]
 
+    /// Default per-app dictation rules.
+    public static let defaultDictationAppRules: [DictationAppRule] = defaultMarkdownTargetBundleIdentifiers.map {
+        DictationAppRule(bundleIdentifier: $0, forceMarkdownOutput: true, outputLanguage: .original)
+    }
+
     /// Default list of websites that should force Markdown formatting for dictation.
     public static let defaultMarkdownWebTargets: [WebContextTarget] = []
 
@@ -831,6 +836,7 @@ public class AppSettingsStore: ObservableObject {
         static let contextAwarenessRedactSensitiveData = "contextAwarenessRedactSensitiveData"
         static let contextAwarenessExcludedBundleIDs = "contextAwarenessExcludedBundleIDs"
         static let markdownTargetBundleIdentifiers = "markdownTargetBundleIdentifiers"
+        static let dictationAppRules = "dictationAppRules"
         static let markdownWebTargets = "markdownWebTargets"
         static let webTargetBrowserBundleIdentifiers = "webTargetBrowserBundleIdentifiers"
         static let monitoredMeetingBundleIdentifiers = "monitoredMeetingBundleIdentifiers"
@@ -1375,6 +1381,27 @@ public class AppSettingsStore: ObservableObject {
         didSet { save(markdownTargetBundleIdentifiers, forKey: Keys.markdownTargetBundleIdentifiers) }
     }
 
+    /// Per-app dictation overrides (Markdown and output language).
+    @Published public var dictationAppRules: [DictationAppRule] {
+        didSet {
+            let normalizedRules = Self.normalizedDictationAppRules(dictationAppRules)
+            if normalizedRules != dictationAppRules {
+                dictationAppRules = normalizedRules
+                return
+            }
+
+            save(dictationAppRules, forKey: Keys.dictationAppRules)
+
+            let markdownTargets = dictationAppRules
+                .filter(\.forceMarkdownOutput)
+                .map(\.bundleIdentifier)
+
+            if markdownTargets != markdownTargetBundleIdentifiers {
+                markdownTargetBundleIdentifiers = markdownTargets
+            }
+        }
+    }
+
     /// Website targets that should force Markdown formatting for dictation.
     @Published public var markdownWebTargets: [WebContextTarget] {
         didSet { save(markdownWebTargets, forKey: Keys.markdownWebTargets) }
@@ -1398,6 +1425,11 @@ public class AppSettingsStore: ObservableObject {
     /// Indicates whether the Markdown targets list has been explicitly configured.
     public var hasConfiguredMarkdownTargets: Bool {
         UserDefaults.standard.object(forKey: Keys.markdownTargetBundleIdentifiers) != nil
+    }
+
+    /// Indicates whether the per-app dictation rules list has been explicitly configured.
+    public var hasConfiguredDictationAppRules: Bool {
+        UserDefaults.standard.object(forKey: Keys.dictationAppRules) != nil
     }
 
     /// Indicates whether Markdown web targets have been explicitly configured.
@@ -1639,6 +1671,10 @@ public class AppSettingsStore: ObservableObject {
         contextAwarenessExcludedBundleIDs = Self.loadDecoded([String].self, forKey: Keys.contextAwarenessExcludedBundleIDs) ?? []
         markdownTargetBundleIdentifiers = Self.loadDecoded([String].self, forKey: Keys.markdownTargetBundleIdentifiers)
             ?? Self.defaultMarkdownTargetBundleIdentifiers
+        dictationAppRules = Self.normalizedDictationAppRules(
+            Self.loadDecoded([DictationAppRule].self, forKey: Keys.dictationAppRules)
+                ?? Self.defaultDictationAppRules
+        )
         markdownWebTargets = Self.loadDecoded([WebContextTarget].self, forKey: Keys.markdownWebTargets)
             ?? Self.defaultMarkdownWebTargets
         webTargetBrowserBundleIdentifiers = Self.loadDecoded([String].self, forKey: Keys.webTargetBrowserBundleIdentifiers)
@@ -1751,6 +1787,7 @@ public class AppSettingsStore: ObservableObject {
             migrateWebTargetBrowsersToGlobalSettingIfNeeded()
         }
 
+        migrateLegacyMarkdownTargetsToDictationAppRulesIfNeeded()
         applyLanguage(selectedLanguage)
     }
 
@@ -1982,6 +2019,43 @@ public class AppSettingsStore: ObservableObject {
         }
     }
 
+    private func migrateLegacyMarkdownTargetsToDictationAppRulesIfNeeded() {
+        guard !hasConfiguredDictationAppRules else { return }
+
+        let migratedRules = Self.normalizedDictationAppRules(
+            markdownTargetBundleIdentifiers.map {
+                DictationAppRule(bundleIdentifier: $0, forceMarkdownOutput: true, outputLanguage: .original)
+            }
+        )
+
+        dictationAppRules = migratedRules.isEmpty ? Self.defaultDictationAppRules : migratedRules
+    }
+
+    private static func normalizedDictationAppRules(_ rules: [DictationAppRule]) -> [DictationAppRule] {
+        var seenBundleIdentifiers = Set<String>()
+        var ordered: [DictationAppRule] = []
+
+        for rule in rules {
+            let trimmedBundleIdentifier = rule.bundleIdentifier.trimmingCharacters(in: .whitespacesAndNewlines)
+            let normalizedBundleIdentifier = trimmedBundleIdentifier.lowercased()
+
+            guard !trimmedBundleIdentifier.isEmpty, !seenBundleIdentifiers.contains(normalizedBundleIdentifier) else {
+                continue
+            }
+
+            seenBundleIdentifiers.insert(normalizedBundleIdentifier)
+            ordered.append(
+                DictationAppRule(
+                    bundleIdentifier: trimmedBundleIdentifier,
+                    forceMarkdownOutput: rule.forceMarkdownOutput,
+                    outputLanguage: rule.outputLanguage
+                )
+            )
+        }
+
+        return ordered
+    }
+
     private func deduplicatedNormalizedBundleIdentifiers(_ identifiers: [String]) -> [String] {
         var seenKeys = Set<String>()
         var ordered: [String] = []
@@ -2074,6 +2148,7 @@ public class AppSettingsStore: ObservableObject {
         summaryTemplateEnabled = true
         contextAwarenessExplicitActionOnly = true
         markdownTargetBundleIdentifiers = Self.defaultMarkdownTargetBundleIdentifiers
+        dictationAppRules = Self.defaultDictationAppRules
         markdownWebTargets = Self.defaultMarkdownWebTargets
         webTargetBrowserBundleIdentifiers = Self.defaultWebTargetBrowserBundleIdentifiers
         monitoredMeetingBundleIdentifiers = Self.defaultMonitoredMeetingBundleIdentifiers

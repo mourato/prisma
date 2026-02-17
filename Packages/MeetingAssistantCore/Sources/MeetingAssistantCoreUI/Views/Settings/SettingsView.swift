@@ -102,6 +102,8 @@ public struct SettingsView: View {
             MetricsDashboardSettingsTab()
         case .general:
             GeneralSettingsTab()
+        case .rulesPerApp:
+            RulesPerAppSettingsTab()
         case .dictation:
             DictationSettingsTab()
         case .meetings:

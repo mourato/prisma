@@ -1004,7 +1004,7 @@ extension RecordingManager {
     ) -> DomainPostProcessingPrompt? {
         if isDictation {
             let basePrompt = settings.selectedDictationPrompt ?? .cleanTranscription
-            let resolvedPrompt = markdownPromptIfNeeded(prompt: basePrompt, settings: settings)
+            let resolvedPrompt = promptWithDictationRuleOverrides(prompt: basePrompt, settings: settings)
             return domainPrompt(from: resolvedPrompt)
         }
 
@@ -1031,17 +1031,23 @@ extension RecordingManager {
         DomainPostProcessingPrompt(id: prompt.id, title: prompt.title, content: prompt.promptText, isDefault: false)
     }
 
-    private func markdownPromptIfNeeded(
+    private func promptWithDictationRuleOverrides(
         prompt: PostProcessingPrompt,
         settings: AppSettingsStore
     ) -> PostProcessingPrompt {
-        guard shouldForceMarkdownForDictation(settings: settings) else { return prompt }
+        var appliedInstructions: [String] = []
 
-        let augmentedText = """
-        \(prompt.promptText)
+        if shouldForceMarkdownForDictation(settings: settings) {
+            appliedInstructions.append(Self.markdownFormatInstruction)
+        }
 
-        \(Self.markdownFormatInstruction)
-        """
+        if let outputLanguage = forcedOutputLanguageForDictation(settings: settings) {
+            appliedInstructions.append(Self.translationInstruction(for: outputLanguage))
+        }
+
+        guard !appliedInstructions.isEmpty else { return prompt }
+
+        let augmentedText = ([prompt.promptText] + appliedInstructions).joined(separator: "\n\n")
 
         return PostProcessingPrompt(
             id: prompt.id,
@@ -1054,9 +1060,29 @@ extension RecordingManager {
         )
     }
 
+    private func matchingDictationAppRule(settings: AppSettingsStore) -> DictationAppRule? {
+        guard let bundleIdentifier = dictationStartBundleIdentifier else { return nil }
+        let normalized = WebTargetDetection.normalizeBundleIdentifier(bundleIdentifier)
+
+        return settings.dictationAppRules.first {
+            WebTargetDetection.normalizeBundleIdentifier($0.bundleIdentifier) == normalized
+        }
+    }
+
+    private func forcedOutputLanguageForDictation(settings: AppSettingsStore) -> DictationOutputLanguage? {
+        guard let rule = matchingDictationAppRule(settings: settings) else { return nil }
+        return rule.outputLanguage == .original ? nil : rule.outputLanguage
+    }
+
     private func shouldForceMarkdownForDictation(settings: AppSettingsStore) -> Bool {
         guard let bundleIdentifier = dictationStartBundleIdentifier else { return false }
         let normalized = WebTargetDetection.normalizeBundleIdentifier(bundleIdentifier)
+
+        if let rule = matchingDictationAppRule(settings: settings), rule.forceMarkdownOutput {
+            return true
+        }
+
+        // Backward compatibility for users that only have the legacy list.
         let appTargets = Set(settings.markdownTargetBundleIdentifiers.map(WebTargetDetection.normalizeBundleIdentifier))
         if appTargets.contains(normalized) {
             return true
@@ -1107,6 +1133,14 @@ extension RecordingManager {
     ALWAYS format the output as Markdown. When formatting using Markdown, use traditional formatting conventions for ordered or unordered lists, **bold**, *italics*, and headings as well.
     </OUTPUT_FORMAT>
     """
+
+    private static func translationInstruction(for language: DictationOutputLanguage) -> String {
+        """
+        <OUTPUT_LANGUAGE>
+        Translate the final output to \(language.instructionDisplayName). This requirement overrides any instruction that says to keep the original language.
+        </OUTPUT_LANGUAGE>
+        """
+    }
 
     private func exportSummary(transcription: Transcription) async {
         let settings = AppSettingsStore.shared
