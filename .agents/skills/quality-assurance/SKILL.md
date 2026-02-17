@@ -14,6 +14,7 @@ Core policy alignment:
 - Use the risk matrix and Fast/Full lanes from `AGENTS.md`.
 - Keep hard gates at push/merge, not on every local edit.
 - Codacy is deprecated in this repository; rely on local scripts and CI.
+- When running checks via AI agents, prefer compact `*-agent` targets to reduce context volume while preserving failure diagnostics.
 
 ## Verification by Lane
 
@@ -54,16 +55,30 @@ Run these only when relevant to the changed scope:
 make build
 make test
 make lint
+make preflight
 
 # Optional, scope-based
 make arch-check
 make preview-check
 
+# Compact AI-agent mode (machine-readable summary + log artifacts)
+make build-agent
+make test-agent
+make lint-agent
+make preflight-agent
+
 # Targeted test workflows
 ./scripts/run-tests.sh --file <TestFile>
 ./scripts/run-tests.sh --test <testName>
 ./scripts/run-tests.sh --verbose
+./scripts/run-tests.sh --agent
 ```
+
+Compact-mode notes:
+
+- Full logs are written under `${MA_AGENT_LOG_DIR:-/tmp/ma-agent}`.
+- Scripts emit deterministic `AGENT_*` summary lines for pass/fail parsing.
+- Use compact mode for iteration; keep `make build` + `make test` as merge gates for Medium/High tasks.
 
 ## Hooks and automation
 

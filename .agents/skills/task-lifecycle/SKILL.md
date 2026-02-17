@@ -72,6 +72,7 @@ Repeat the following loop until the task is complete:
    - Fast lane: staged lint/format and targeted tests when relevant.
    - Full lane: run targeted tests and/or `make build` as needed while iterating.
    - Prefer `make preflight` before final push/merge to run the canonical scripted gates (`build + test + lint`).
+   - For AI-driven runs where token budget matters, use compact targets (`make preflight-agent`, `make build-agent`, `make test-agent`, `make lint-agent`) and inspect logs under `${MA_AGENT_LOG_DIR:-/tmp/ma-agent}`.
    - Run `make arch-check` when changing architecture boundaries/access control/import rules.
    - Run `make preview-check` when adding/changing SwiftUI views.
    - If tests touch module internals, ensure the test target depends on that module explicitly in `Package.swift`.
@@ -103,6 +104,7 @@ Before the final push/merge, perform a local review using **[code-review](../cod
    - Full lane minimum: `make build` + `make test`
    - `make lint` is recommended (mandatory for broad refactors)
    - Preferred single command: `make preflight`
+   - Agent compact commands are for low-noise diagnostics and do not replace required merge gates.
 5. **Atomic commits for review fixes**: Commit review-driven changes separately from feature work.
 
 ## Phase 4: Integration (Push / Merge)

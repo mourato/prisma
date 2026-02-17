@@ -5,7 +5,7 @@
 # with CI/CD pipelines and headless environments.
 # =============================================================================
 
-.PHONY: help build build-debug build-release test test-swift test-verbose test-strict lint lint-fix arch-check preview-check preflight clean run run-release dmg setup docs docs-preview docs-clean
+.PHONY: help build build-debug build-release build-agent test test-agent test-swift test-verbose test-strict lint lint-agent lint-fix arch-check preview-check preflight preflight-agent clean run run-release dmg setup docs docs-preview docs-clean
 
 # Default target
 help:
@@ -16,19 +16,23 @@ help:
 	@echo "  make build          - Build debug version (default)"
 	@echo "  make build-debug    - Build debug version explicitly"
 	@echo "  make build-release  - Build release version"
+	@echo "  make build-agent    - Build debug with compact machine-readable output"
 	@echo ""
 	@echo "Test Commands:"
 	@echo "  make test           - Run all tests (xcodebuild - IDE compatible)"
+	@echo "  make test-agent     - Run compact swift test output for AI agents"
 	@echo "  make test-swift     - Run tests with swift test (faster, no IDE parity)"
 	@echo "  make test-verbose   - Run tests with verbose output"
 	@echo "  make test-strict    - Run tests with strict concurrency checking"
 	@echo ""
 	@echo "Code Quality:"
 	@echo "  make lint           - Run linting checks"
+	@echo "  make lint-agent     - Run lint with compact machine-readable output"
 	@echo "  make lint-fix       - Auto-fix linting issues"
 	@echo "  make arch-check     - Run architecture boundary checks"
 	@echo "  make preview-check  - Verify all SwiftUI views have previews"
 	@echo "  make preflight      - Run preflight script (build + test + lint)"
+	@echo "  make preflight-agent - Run preflight in compact machine-readable mode"
 	@echo "  make health         - Run comprehensive code health check"
 	@echo ""
 	@echo "Run Commands:"
@@ -63,6 +67,7 @@ PROJECT_DIR = $(shell pwd)
 XCODEPROJ = $(PROJECT_DIR)/MeetingAssistant.xcodeproj
 DERIVED_DATA = $(PROJECT_DIR)/.xcode-build
 DIST_DIR = $(PROJECT_DIR)/dist
+AGENT_LOG_DIR ?= /tmp/ma-agent
 
 # Colors for output
 RED = \033[0;31m
@@ -75,38 +80,13 @@ NC = \033[0m
 build: build-debug
 
 build-debug:
-	@echo -e "$(BLUE)Building $(APP_NAME) (Debug)...$(NC)"
-	@echo -e "$(YELLOW)Note: Auto-formatting is disabled. Run 'make format' explicitly if needed.$(NC)"
-	@xcodebuild -project "$(XCODEPROJ)" \
-		-scheme "$(APP_NAME)" \
-		-configuration Debug \
-		-derivedDataPath "$(DERIVED_DATA)" \
-		-destination 'platform=macOS' \
-		build \
-		> /tmp/ma-build-debug.log 2>&1; \
-	STATUS=$$?; \
-	grep -E "(Compiling|Linking|Signing|BUILD|error:|warning:)" /tmp/ma-build-debug.log | head -20 || true; \
-	if [ $$STATUS -ne 0 ]; then \
-		exit $$STATUS; \
-	fi
-	@echo -e "$(GREEN)✓ Debug build completed$(NC)"
+	@./scripts/run-build.sh --configuration Debug
 
 build-release:
-	@echo -e "$(BLUE)Building $(APP_NAME) (Release)...$(NC)"
-	@xcodebuild -project "$(XCODEPROJ)" \
-		-scheme "$(APP_NAME)" \
-		-configuration Release \
-		-derivedDataPath "$(DERIVED_DATA)" \
-		-destination 'platform=macOS' \
-		-enableThreadSanitizer YES \
-		build \
-		> /tmp/ma-build-release.log 2>&1; \
-	STATUS=$$?; \
-	grep -E "(Compiling|Linking|Signing|BUILD|error:|warning:)" /tmp/ma-build-release.log | head -30 || true; \
-	if [ $$STATUS -ne 0 ]; then \
-		exit $$STATUS; \
-	fi
-	@echo -e "$(GREEN)✓ Release build completed$(NC)"
+	@./scripts/run-build.sh --configuration Release
+
+build-agent:
+	@MA_AGENT_MODE=1 MA_AGENT_LOG_DIR="$(AGENT_LOG_DIR)" ./scripts/run-build.sh --configuration Debug --agent
 
 # Test Commands
 test:
@@ -127,6 +107,9 @@ test:
 	fi; \
 	exit $$EXIT_CODE
 
+test-agent:
+	@MA_AGENT_MODE=1 MA_AGENT_LOG_DIR="$(AGENT_LOG_DIR)" ./scripts/run-tests.sh --agent
+
 test-swift:
 	@echo -e "$(BLUE)Running tests (swift test)...$(NC)"
 	@echo -e "$(YELLOW)Warning: Faster but may differ from Xcode IDE results$(NC)"
@@ -145,6 +128,9 @@ lint:
 	@echo -e "$(BLUE)Running SwiftLint...$(NC)"
 	@./scripts/lint.sh
 
+lint-agent:
+	@MA_AGENT_MODE=1 MA_AGENT_LOG_DIR="$(AGENT_LOG_DIR)" ./scripts/lint.sh --agent
+
 lint-fix:
 	@echo -e "$(BLUE)Auto-fixing lint issues...$(NC)"
 	@./scripts/lint-fix.sh
@@ -160,6 +146,9 @@ preview-check:
 preflight:
 	@echo -e "$(BLUE)Running preflight checks...$(NC)"
 	@./scripts/preflight.sh
+
+preflight-agent:
+	@MA_AGENT_MODE=1 MA_AGENT_LOG_DIR="$(AGENT_LOG_DIR)" ./scripts/preflight.sh --agent
 
 format:
 	@echo -e "$(BLUE)Running SwiftFormat...$(NC)"
