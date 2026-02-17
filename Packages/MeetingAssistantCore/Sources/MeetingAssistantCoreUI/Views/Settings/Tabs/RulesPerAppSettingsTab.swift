@@ -126,6 +126,8 @@ public struct RulesPerAppSettingsTab: View {
             }
             .background(MeetingAssistantDesignSystem.Colors.subtleFill2)
             .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+            
+            Spacer()
         }
     }
 
@@ -158,28 +160,29 @@ public struct RulesPerAppSettingsTab: View {
                             }
                         }
                         .pickerStyle(.menu)
+                        
+                        Button(role: .destructive) {
+                            viewModel.removeRule(bundleIdentifier: resolvedRule.rule.bundleIdentifier)
+                            expandedBundleIdentifiers.remove(resolvedRule.rule.bundleIdentifier)
+                        } label: {
+                            Label("settings.rules_per_app.remove_app".localized, systemImage: "trash")
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
                     }
-
-                    Button(role: .destructive) {
-                        viewModel.removeRule(bundleIdentifier: resolvedRule.rule.bundleIdentifier)
-                        expandedBundleIdentifiers.remove(resolvedRule.rule.bundleIdentifier)
-                    } label: {
-                        Label("settings.rules_per_app.remove_app".localized, systemImage: "trash")
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
                 }
                 .padding(.top, MeetingAssistantDesignSystem.Layout.spacing8)
             },
             label: {
-                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
                     AppIconView(
                         bundleIdentifier: resolvedRule.rule.bundleIdentifier,
                         fallbackSystemName: "app.fill",
-                        size: 20,
+                        size: 32,
                         cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius
                     )
+                    .padding(.leading, 8)
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(resolvedRule.displayName)
@@ -227,7 +230,7 @@ public struct RulesPerAppSettingsTab: View {
                         AppIconView(
                             bundleIdentifier: app.bundleIdentifier,
                             fallbackSystemName: "app.fill",
-                            size: 20,
+                            size: 32,
                             cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius
                         )
 
