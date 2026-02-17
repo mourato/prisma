@@ -110,7 +110,7 @@ final class AssistantRaycastIntegrationServiceTests: XCTestCase {
         }
     }
 
-    func testDispatch_WhenURLExceedsLimit_UsesClipboardFallback() throws {
+    func testDispatch_WhenURLExceedsLimit_OpensDeepLinkWithInlinePayload() throws {
         var openedURLs: [URL] = []
         var copiedText: String?
         let service = makeService(
@@ -129,15 +129,15 @@ final class AssistantRaycastIntegrationServiceTests: XCTestCase {
             baseDeepLink: "raycast://extensions/raycast/raycast-ai/ai-chat"
         )
 
-        XCTAssertEqual(result, .openedWithClipboardFallback)
-        XCTAssertEqual(copiedText, String(repeating: "x", count: 120))
+        XCTAssertEqual(result, .openedDeepLink)
+        XCTAssertNil(copiedText)
         XCTAssertEqual(openedURLs.count, 1)
 
         let components = try XCTUnwrap(URLComponents(url: openedURLs[0], resolvingAgainstBaseURL: false))
         let dispatchValues = components.queryItems?
             .filter { ["fallbackText", "text", "query", "prompt"].contains($0.name) }
             .compactMap { $0.value } ?? []
-        XCTAssertTrue(dispatchValues.isEmpty)
+        XCTAssertEqual(dispatchValues, Array(repeating: String(repeating: "x", count: 120), count: 4))
     }
 
     private func makeService(

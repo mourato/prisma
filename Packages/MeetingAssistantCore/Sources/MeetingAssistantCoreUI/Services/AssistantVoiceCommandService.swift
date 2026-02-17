@@ -221,13 +221,17 @@ public final class AssistantVoiceCommandService: ObservableObject {
                 title: "assistant.raycast.prompt_title".localized,
                 promptText: assistantPromptInstructions(
                     baseInstructions: normalizedPromptInstructions(from: selectedIntegration),
-                    voiceCommand: beforeAICommand
+                    voiceCommand: beforeAICommand,
+                    executionFlow: executionFlow
                 )
             )
 
             let processedCommand = try await postProcessingService.processTranscription(
                 sourceText,
-                with: integrationPrompt
+                with: integrationPrompt,
+                systemPromptOverride: executionFlow == .integrationDispatch
+                    ? AIPromptTemplates.assistantSystemPrompt
+                    : nil
             )
 
             if AssistantPayloadLogging.shouldLogPayloadDetails {
@@ -250,8 +254,23 @@ public final class AssistantVoiceCommandService: ObservableObject {
                 return
             }
 
-            let commandToDispatch = normalizedCommand(commandForDispatch, fallback: beforeAICommand)
-            let finalCommand = normalizedCommand(commandToDispatch, fallback: sourceText)
+            let processedCommandForDispatch: String
+            if executionFlow == .integrationDispatch {
+                processedCommandForDispatch = try requireNonEmptyCommand(
+                    processedCommand,
+                    fallback: nil
+                )
+            } else {
+                processedCommandForDispatch = normalizedCommand(processedCommand, fallback: beforeAICommand)
+            }
+
+            let commandToDispatch = normalizedCommand(
+                commandForDispatch,
+                fallback: processedCommandForDispatch
+            )
+            let finalCommand = executionFlow == .integrationDispatch
+                ? commandToDispatch
+                : normalizedCommand(commandToDispatch, fallback: sourceText)
 
             if AssistantPayloadLogging.shouldLogPayloadDetails {
                 AppLogger.debug(
@@ -275,9 +294,6 @@ public final class AssistantVoiceCommandService: ObservableObject {
                     rawText: command,
                     selectedIntegration: selectedIntegration
                 )
-                if dispatchResult == .openedWithClipboardFallback {
-                    indicator.showError("settings.assistant.integrations.test_success_clipboard_fallback".localized)
-                }
                 AppLogger.info(
                     "Assistant integration dispatch completed",
                     category: .assistant,
@@ -465,9 +481,39 @@ public final class AssistantVoiceCommandService: ObservableObject {
 
     private func assistantPromptInstructions(
         baseInstructions: String?,
-        voiceCommand: String
+        voiceCommand: String,
+        executionFlow: AssistantExecutionFlow
     ) -> String {
         let normalizedVoiceCommand = voiceCommand.trimmingCharacters(in: .whitespacesAndNewlines)
+        if executionFlow == .integrationDispatch {
+            let immutableInstructions = """
+            You are preparing text that will be sent to another AI assistant through a deep link.
+            Rewrite or clean the command while preserving the user's intent and language.
+            Never answer the command.
+            Return only the final command text.
+            """
+            guard let baseInstructions,
+                  !baseInstructions.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            else {
+                return """
+                \(immutableInstructions)
+
+                User command:
+                \(normalizedVoiceCommand)
+                """
+            }
+
+            return """
+            \(immutableInstructions)
+
+            Additional user instructions:
+            \(baseInstructions)
+
+            User command:
+            \(normalizedVoiceCommand)
+            """
+        }
+
         guard let baseInstructions,
               !baseInstructions.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         else {
@@ -480,6 +526,22 @@ public final class AssistantVoiceCommandService: ObservableObject {
         Comando do usuário:
         \(normalizedVoiceCommand)
         """
+    }
+
+    private func requireNonEmptyCommand(_ command: String, fallback: String?) throws -> String {
+        let normalized = command.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !normalized.isEmpty {
+            return normalized
+        }
+
+        if let fallback {
+            let normalizedFallback = fallback.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !normalizedFallback.isEmpty {
+                return normalizedFallback
+            }
+        }
+
+        throw AssistantVoiceCommandError.processingFailed
     }
 
     private func showError(_ error: AssistantVoiceCommandError) {
