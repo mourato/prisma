@@ -2,7 +2,7 @@
 # =============================================================================
 # profile-performance.sh - Performance profiling workflow for MeetingAssistant
 # =============================================================================
-# Uses Instruments to profile CPU, Memory, and Core Animation performance
+# Uses xctrace to profile CPU, Memory, and Animation performance
 # CLI-first approach for CI/CD integration
 # =============================================================================
 
@@ -115,17 +115,29 @@ run_profile() {
     echo -e "${BLUE}Starting ${profile_type} profiling...${NC}"
 
     # Launch app and start profiling
-    local instruments_cmd="xcrun instruments -t '${template_name}' -D '${output_file}' '${APP_PATH}'"
+    local xctrace_cmd=(
+        xcrun xctrace record
+        --template "${template_name}"
+        --time-limit "${DURATION}s"
+        --output "${output_file}"
+        --launch -- "${APP_PATH}"
+    )
 
     if [ $VERBOSE -eq 1 ]; then
-        echo -e "${YELLOW}Command: ${instruments_cmd}${NC}"
+        echo -e "${YELLOW}Command: ${xctrace_cmd[*]}${NC}"
     fi
 
-    # Run instruments with timeout
-    timeout "${DURATION}" bash -c "${instruments_cmd}" 2>/dev/null || true
+    # xctrace may return non-zero after timed recording even when trace is saved.
+    set +e
+    "${xctrace_cmd[@]}" >/dev/null 2>&1
+    local exit_code=$?
+    set -e
 
-    if [ -f "${output_file}" ]; then
+    if [ -e "${output_file}" ]; then
         echo -e "${GREEN}✓ ${profile_type} profile saved: ${output_file}${NC}"
+        if [ $VERBOSE -eq 1 ] && [ $exit_code -ne 0 ]; then
+            echo -e "${YELLOW}xctrace exited with code ${exit_code}, but trace output exists.${NC}"
+        fi
     else
         echo -e "${RED}✗ Failed to create ${profile_type} profile${NC}"
     fi
@@ -141,12 +153,12 @@ case $PROFILE_TYPE in
         run_profile "memory" "Allocations"
         ;;
     "animation")
-        run_profile "animation" "Core Animation"
+        run_profile "animation" "Animation Hitches"
         ;;
     "all")
         run_profile "cpu" "Time Profiler"
         run_profile "memory" "Allocations"
-        run_profile "animation" "Core Animation"
+        run_profile "animation" "Animation Hitches"
         ;;
     *)
         echo -e "${RED}Invalid profile type: ${PROFILE_TYPE}${NC}"

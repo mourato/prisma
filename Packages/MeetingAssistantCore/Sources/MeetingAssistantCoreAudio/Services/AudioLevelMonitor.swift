@@ -34,6 +34,7 @@ public final class AudioLevelMonitor: ObservableObject {
     private enum Constants {
         static let silenceThresholdDb: Float = -80
         static let silenceDurationSeconds: TimeInterval = 4
+        static let timerToleranceRatio: Double = 0.25
     }
 
     // MARK: - Private State
@@ -47,10 +48,10 @@ public final class AudioLevelMonitor: ObservableObject {
     /// Creates a new audio level monitor.
     /// - Parameters:
     ///   - audioRecorder: The AudioRecorder instance to monitor.
-    ///   - samplingInterval: How often to sample audio levels. Default: 0.05s (20Hz).
+    ///   - samplingInterval: How often to sample audio levels. Default: 0.1s (10Hz).
     public init(
         audioRecorder: AudioRecorder = .shared,
-        samplingInterval: TimeInterval = 0.03
+        samplingInterval: TimeInterval = 0.1
     ) {
         self.audioRecorder = audioRecorder
         self.samplingInterval = samplingInterval
@@ -65,7 +66,12 @@ public final class AudioLevelMonitor: ObservableObject {
         isSilenceWarningVisible = false
         silenceElapsed = 0
 
-        timer = Timer.publish(every: samplingInterval, on: .main, in: .common)
+        timer = Timer.publish(
+            every: samplingInterval,
+            tolerance: samplingInterval * Constants.timerToleranceRatio,
+            on: .main,
+            in: .common
+        )
             .autoconnect()
             .sink { [weak self] _ in
                 self?.sampleCurrentLevel()

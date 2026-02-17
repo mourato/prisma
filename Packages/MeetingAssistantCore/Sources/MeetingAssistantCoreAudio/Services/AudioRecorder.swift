@@ -32,7 +32,8 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         static let fallbackSampleRate: Double = 48_000.0
         static let fallbackChannels: Int = 1
         static let fallbackBitRate: Int = 128_000
-        static let fallbackMeterUpdateInterval: TimeInterval = 0.1
+        static let fallbackMeterUpdateInterval: TimeInterval = 0.2
+        static let fallbackMeterTimerToleranceRatio: Double = 0.25
         static let outputMuteDelayAfterStart: UInt64 = 200_000_000 // 200ms
         static let retriableEngineStartErrorCodes: Set<Int> = [-10_875, -10_877]
     }
@@ -624,6 +625,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
                 self?.updateFallbackMeters()
             }
         }
+        fallbackMeterTimer?.tolerance = Constants.fallbackMeterUpdateInterval * Constants.fallbackMeterTimerToleranceRatio
 
         AppLogger.info("Fallback mic recorder started", category: .recordingManager, extra: ["path": outputURL.path])
     }
