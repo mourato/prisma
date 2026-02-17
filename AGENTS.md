@@ -89,6 +89,7 @@ Before implementation, run a quick clarification pass when needed:
 - [ ] Use Fast lane for low-risk tasks and Full lane for medium/high-risk tasks.
 - [ ] Keep hard gates at push/merge stage (`make test`, plus `make build` for Full lane).
 - [ ] Prefer `make preflight` (scripted build + test + lint) before push/merge.
+- [ ] For AI-agent runs, prefer compact targets (`make preflight-agent`, `make build-agent`, `make test-agent`, `make lint-agent`) to reduce context tokens while preserving diagnostics.
 - [ ] Run `make arch-check` only for architecture boundary/access-control changes.
 - [ ] Run `make preview-check` when SwiftUI views are added or modified.
 - [ ] Use `git worktree remove` + `git worktree prune` for cleanup.
@@ -123,6 +124,21 @@ make build-release
 make dmg
 ```
 
+Compact commands for AI agents (machine-readable output + log artifacts):
+
+```bash
+make build-agent
+make test-agent
+make lint-agent
+make preflight-agent
+```
+
+Agent artifacts and summaries:
+
+- Log directory defaults to `/tmp/ma-agent` (override with `MA_AGENT_LOG_DIR`).
+- Scripts emit deterministic summary lines (`AGENT_STEP`, `AGENT_STATUS`, `AGENT_DURATION_SEC`, `AGENT_LOG`, `AGENT_ERROR_COUNT`, `AGENT_SUMMARY`, `AGENT_RESULT_JSON`).
+- On failures, scripts print compact excerpts and tail logs while keeping full logs on disk.
+
 Quick start:
 
 ```bash
@@ -134,7 +150,9 @@ Common workflows:
 
 - Development: `make build && make run`
 - Pre-merge validation: `make preflight`
+- Agent-focused pre-merge validation: `make preflight-agent`
 - Testing: `make test`
+- Agent-focused testing: `make test-agent`
 - Release: `make lint && make test && make build-release && make dmg`
 - CI-style local check: `make ci-build` (includes `make arch-check`)
 
@@ -191,10 +209,12 @@ Use CLI-driven tests for consistency with CI:
 
 ```bash
 make test
+make test-agent
 make test-verbose
 ./scripts/run-tests.sh --file RecordingViewModelTests
 ./scripts/run-tests.sh --test testInitialState
 ./scripts/run-tests.sh --verbose
+./scripts/run-tests.sh --agent
 make ci-test
 ```
 
