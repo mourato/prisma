@@ -10,6 +10,7 @@ import SwiftUI
 
 /// Mode for the floating indicator.
 public enum FloatingRecordingIndicatorMode: Sendable {
+    case starting
     case recording
     case processing
     case error(message: String)
@@ -22,6 +23,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
     // MARK: - Properties
 
     private var panel: NSPanel?
+    private var hostingView: NSHostingView<AnyView>?
     private let audioMonitor: AudioLevelMonitor
     private let settingsStore: AppSettingsStore
     private var cancellables = Set<AnyCancellable>()
@@ -76,41 +78,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         currentMode = mode
         meetingType = type
 
-        let shouldCreatePanel = panel == nil
-
-        // Create the panel
-        let style = settingsStore.recordingIndicatorStyle
-        let panelWidth = panelWidth(for: style, mode: mode, type: type)
-        let panelHeight = panelHeight(for: style, mode: mode)
-        let contentRect = NSRect(
-            x: 0,
-            y: 0,
-            width: panelWidth,
-            height: panelHeight
-        )
-
-        let panel = panel ?? NSPanel(
-            contentRect: contentRect,
-            styleMask: [.borderless, .nonactivatingPanel],
-            backing: .buffered,
-            defer: false
-        )
-
-        if shouldCreatePanel {
-            panel.level = .screenSaver
-            panel.ignoresMouseEvents = false
-            panel.isFloatingPanel = true
-            panel.hidesOnDeactivate = false
-            panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
-            panel.isOpaque = false
-            panel.backgroundColor = .clear
-            panel.hasShadow = false
-            panel.isMovableByWindowBackground = false
-
-            self.panel = panel
-        } else {
-            panel.setContentSize(NSSize(width: panelWidth, height: panelHeight))
-        }
+        let panel = ensurePanel(for: mode, type: type)
 
         updateMode(mode)
         updateContent()
@@ -121,12 +89,12 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         if isRunningTests {
             panel.alphaValue = 1
             panel.orderFrontRegardless()
-        } else if shouldCreatePanel {
+        } else if !isVisible {
             // Show with fade-in animation
             panel.alphaValue = 0
             panel.orderFrontRegardless()
             NSAnimationContext.runAnimationGroup { context in
-                context.duration = 0.2
+                context.duration = 0.12
                 panel.animator().alphaValue = 1
             }
         } else {
@@ -140,7 +108,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
 
     /// Hide the floating indicator.
     public func hide() {
-        guard let panelToClose = panel else { return }
+        guard let panelToHide = panel else { return }
         visibilityTransitionID &+= 1
         let transitionID = visibilityTransitionID
 
@@ -148,28 +116,36 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         audioMonitor.stopMonitoring()
 
         if isRunningTests {
-            panelToClose.close()
-            if panel === panelToClose {
-                panel = nil
-            }
+            panelToHide.orderOut(nil)
+            panelToHide.alphaValue = 1
         } else {
             // Fade out animation
             NSAnimationContext.runAnimationGroup { context in
-                context.duration = 0.15
-                panelToClose.animator().alphaValue = 0
-            } completionHandler: { [weak self, weak panelToClose] in
-                Task { @MainActor [weak self, weak panelToClose] in
-                    guard let self, let panelToClose else { return }
+                context.duration = 0.1
+                panelToHide.animator().alphaValue = 0
+            } completionHandler: { [weak self, weak panelToHide] in
+                Task { @MainActor [weak self, weak panelToHide] in
+                    guard let self, let panelToHide else { return }
                     guard self.visibilityTransitionID == transitionID else { return }
-                    panelToClose.close()
-                    if self.panel === panelToClose {
-                        self.panel = nil
-                    }
+                    panelToHide.orderOut(nil)
+                    panelToHide.alphaValue = 1
                 }
             }
         }
 
         isVisible = false
+    }
+
+    /// Pre-creates the panel and hosting view so the first recording indicator paint is immediate.
+    public func prewarm() {
+        guard !isRunningTests else { return }
+        guard settingsStore.recordingIndicatorEnabled, settingsStore.recordingIndicatorStyle != .none else { return }
+        let panel = ensurePanel(for: .starting, type: nil)
+        updateMode(.starting)
+        updateContent()
+        positionPanel(panel, at: settingsStore.recordingIndicatorPosition)
+        panel.orderOut(nil)
+        panel.alphaValue = 1
     }
 
     /// Update the floating indicator mode without recreating the panel.
@@ -194,6 +170,37 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
     }
 
     // MARK: - Private Helpers
+
+    private func ensurePanel(for mode: FloatingRecordingIndicatorMode, type: MeetingType?) -> NSPanel {
+        let style = settingsStore.recordingIndicatorStyle
+        let panelWidth = panelWidth(for: style, mode: mode, type: type)
+        let panelHeight = panelHeight(for: style, mode: mode)
+
+        if let panel {
+            panel.setContentSize(NSSize(width: panelWidth, height: panelHeight))
+            return panel
+        }
+
+        let contentRect = NSRect(x: 0, y: 0, width: panelWidth, height: panelHeight)
+        let panel = NSPanel(
+            contentRect: contentRect,
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
+        panel.level = .screenSaver
+        panel.ignoresMouseEvents = false
+        panel.isFloatingPanel = true
+        panel.hidesOnDeactivate = false
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
+        panel.isOpaque = false
+        panel.backgroundColor = .clear
+        panel.hasShadow = false
+        panel.isMovableByWindowBackground = false
+
+        self.panel = panel
+        return panel
+    }
 
     private func setupBindings() {
         // Observe position changes
@@ -236,14 +243,24 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
                 }
             }
         )
-        panel.contentView = NSHostingView(
-            rootView: indicatorView.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        let rootView = AnyView(
+            indicatorView.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         )
+        if let hostingView {
+            hostingView.rootView = rootView
+            panel.contentView = hostingView
+        } else {
+            let newHostingView = NSHostingView(rootView: rootView)
+            hostingView = newHostingView
+            panel.contentView = newHostingView
+        }
     }
 
     private func updateMode(_ mode: FloatingRecordingIndicatorMode) {
         currentMode = mode
         switch mode {
+        case .starting:
+            audioMonitor.stopMonitoring()
         case .recording:
             audioMonitor.stopMonitoring()
             audioMonitor.startMonitoring()
@@ -261,7 +278,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         switch mode {
         case .error:
             Constants.panelHeightClassic
-        case .recording, .processing:
+        case .starting, .recording, .processing:
             switch style {
             case .classic:
                 Constants.panelHeightClassic
@@ -281,7 +298,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         switch mode {
         case .error:
             return Constants.panelWidthError
-        case .recording, .processing:
+        case .starting, .recording, .processing:
             let hasActiveMeeting = RecordingManager.shared.currentMeeting != nil
             let isMeetingType = hasActiveMeeting && RecordingManager.shared.recordingSource != .microphone
             switch style {
@@ -299,7 +316,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         switch mode {
         case .error:
             true
-        case .recording, .processing:
+        case .starting, .recording, .processing:
             settingsStore.recordingIndicatorEnabled && settingsStore.recordingIndicatorStyle != .none
         }
     }
