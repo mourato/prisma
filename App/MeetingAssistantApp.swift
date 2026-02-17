@@ -153,32 +153,45 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func setupRecordingObservation() {
-        recordingManager.isRecordingPublisher
-            .combineLatest(
-                recordingManager.isStartingPublisher,
-                recordingManager.isTranscribingPublisher,
-                assistantVoiceCommandService.$isRecording
-            )
-            .combineLatest(recordingManager.currentMeetingPublisher)
+        Publishers.MergeMany(
+            recordingManager.isRecordingPublisher.map { _ in () }.eraseToAnyPublisher(),
+            recordingManager.isStartingPublisher.map { _ in () }.eraseToAnyPublisher(),
+            recordingManager.isTranscribingPublisher.map { _ in () }.eraseToAnyPublisher(),
+            assistantVoiceCommandService.$isRecording.map { _ in () }.eraseToAnyPublisher(),
+            recordingManager.currentMeetingPublisher.map { _ in () }.eraseToAnyPublisher()
+        )
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] state, currentMeeting in
-                let (isRecording, isStarting, isTranscribing, isAssistantRecording) = state
-                self?.updateStatusIcon(isRecording: isRecording || isAssistantRecording || isStarting)
-                self?.updateFloatingIndicator(
-                    isRecording: isRecording || isAssistantRecording,
-                    isStarting: isStarting,
-                    isTranscribing: isTranscribing,
-                    meetingType: currentMeeting?.type
-                )
-                if (isRecording || isStarting),
-                   AppSettingsStore.shared.recordingIndicatorEnabled,
-                   AppSettingsStore.shared.recordingIndicatorStyle != .none
-                {
-                    self?.recordingManager.noteIndicatorShownForStartIfNeeded()
-                }
-                self?.updateMenuTitles()
+            .sink { [weak self] _ in
+                self?.refreshRecordingUIState()
             }
             .store(in: &cancellables)
+
+        refreshRecordingUIState()
+    }
+
+    private func refreshRecordingUIState() {
+        let isRecording = recordingManager.isRecording
+        let isStarting = recordingManager.isStartingRecording
+        let isTranscribing = recordingManager.isTranscribing
+        let isAssistantRecording = assistantVoiceCommandService.isRecording
+        let currentMeetingType = recordingManager.currentMeeting?.type
+
+        updateStatusIcon(isRecording: isRecording || isAssistantRecording || isStarting)
+        updateFloatingIndicator(
+            isRecording: isRecording || isAssistantRecording,
+            isStarting: isStarting,
+            isTranscribing: isTranscribing,
+            meetingType: currentMeetingType
+        )
+
+        if (isRecording || isStarting),
+           AppSettingsStore.shared.recordingIndicatorEnabled,
+           AppSettingsStore.shared.recordingIndicatorStyle != .none
+        {
+            recordingManager.noteIndicatorShownForStartIfNeeded()
+        }
+
+        updateMenuTitles()
     }
 
     /// Toggle recording state when global shortcut is activated.
