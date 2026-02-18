@@ -35,4 +35,13 @@ final class AssistantShortcutSettingsViewModelTests: XCTestCase {
         XCTAssertEqual(settings.assistantSelectedPresetKey, .notSpecified)
         XCTAssertEqual(viewModel.selectedPresetKey, .notSpecified)
     }
+
+    func testUseEnterToStopRecordingPersistsInSettings() async {
+        let viewModel = AssistantShortcutSettingsViewModel()
+
+        viewModel.useEnterToStopRecording = true
+        await Task.yield()
+
+        XCTAssertTrue(settings.assistantUseEnterToStopRecording)
+    }
 }
