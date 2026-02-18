@@ -250,6 +250,7 @@
 "settings.rules_per_app.description" = "Configure dictation behavior per app. Rules are applied when dictation starts with that app in the foreground.";
 "settings.rules_per_app.empty" = "No app rules configured yet.";
 "settings.rules_per_app.add_app" = "Add App";
+"settings.rules_per_app.edit_app" = "Edit App Rule";
 "settings.rules_per_app.remove_app" = "Remove App Rule";
 "settings.rules_per_app.search_placeholder" = "Search by app name or bundle identifier";
 "settings.rules_per_app.loading_apps" = "Loading installed applications...";
@@ -270,6 +271,10 @@
 "settings.rules_per_app.language.option.italian" = "Italian";
 "settings.rules_per_app.language.option.hindi" = "Hindi";
 "settings.rules_per_app.language.option.arabic" = "Arabic";
+"settings.rules_per_app.editor_title" = "App Rule — %@";
+"settings.rules_per_app.custom_prompt.title" = "Site/App Priority Instructions";
+"settings.rules_per_app.custom_prompt.hint" = "Optional. These instructions are appended to both system and user prompts with highest priority for this app/site.";
+"settings.rules_per_app.custom_prompt.badge_accessibility" = "Has custom site or app instructions";
 "settings.markdown_targets.title" = "Markdown Website Targets";
 "settings.markdown_targets.app.title" = "Apps";
 "settings.markdown_targets.description" = "Force Markdown formatting for dictation when these apps are active.";
@@ -290,7 +295,7 @@
 "settings.markdown_targets.websites.url_desc" = "One pattern per line (or comma-separated). Example: docs.example.com";
 "settings.markdown_targets.websites.auto_record.title" = "Auto-start Meeting Recording";
 "settings.markdown_targets.websites.auto_record.desc" = "When enabled, this site can trigger automatic meeting recording mode if auto-start is enabled globally.";
-"settings.markdown_targets.websites.summary.markdown_on" = "Markdown";
+"settings.markdown_targets.websites.summary.markdown_on" = "MD";
 "settings.markdown_targets.websites.summary.markdown_off" = "No Markdown";
 "settings.markdown_targets.websites.summary.auto_record" = "Auto Record";
 "settings.markdown_targets.websites.delete_confirm_title" = "Delete website target?";

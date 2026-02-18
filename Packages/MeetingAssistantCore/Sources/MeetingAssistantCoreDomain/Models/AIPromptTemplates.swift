@@ -5,6 +5,8 @@ import Foundation
 /// System prompt templates for post-processing transcriptions.
 /// These templates define the base instructions for the AI model.
 public enum AIPromptTemplates {
+    public static let siteOrAppPriorityTag = "SITE_OR_APP_PRIORITY_INSTRUCTIONS"
+
     /// Default system prompt for meeting transcription post-processing.
     public static let defaultSystemPrompt = """
     You are an assistant specialized in processing transcriptions.
@@ -71,7 +73,7 @@ public enum AIPromptTemplates {
     /// - Parameter transcription: The transcription text to process.
     /// - Returns: Formatted user message for the AI.
     public static func userMessage(transcription: String) -> String {
-        """
+        return """
         <TRANSCRIPTION>
         \(transcription)
         </TRANSCRIPTION>
@@ -86,7 +88,31 @@ public enum AIPromptTemplates {
     ///   - prompt: The specific processing instructions.
     /// - Returns: Formatted user message for the AI.
     public static func userMessage(transcription: String, prompt: String) -> String {
-        """
+        userMessage(transcription: transcription, prompt: prompt, priorityInstructions: nil)
+    }
+
+    /// Constructs a user message with transcription and specific prompt, plus optional site/app priority instructions.
+    /// - Parameters:
+    ///   - transcription: The transcription text to process.
+    ///   - prompt: The specific processing instructions.
+    ///   - priorityInstructions: Optional site/app-specific instructions that override other prompts.
+    /// - Returns: Formatted user message for the AI.
+    public static func userMessage(transcription: String, prompt: String, priorityInstructions: String?) -> String {
+        let priorityBlock: String
+        if let priorityInstructions {
+            priorityBlock = """
+
+            <SITE_APP_PRIORITY>
+            The following site/app-specific instructions have highest priority.
+            If they conflict with other user instructions or the system prompt, these must win.
+            \(priorityInstructions)
+            </SITE_APP_PRIORITY>
+            """
+        } else {
+            priorityBlock = ""
+        }
+
+        return """
         <TRANSCRIPTION>
         \(transcription)
         </TRANSCRIPTION>
@@ -94,9 +120,56 @@ public enum AIPromptTemplates {
         <INSTRUCTIONS>
         \(prompt)
         </INSTRUCTIONS>
+        \(priorityBlock)
 
         Process the transcription above according to the instructions provided.
         """
+    }
+
+    /// Appends explicit site/app priority instructions to a base system prompt.
+    /// - Parameters:
+    ///   - basePrompt: The base system prompt.
+    ///   - priorityInstructions: Optional site/app-specific instructions that override other prompts.
+    /// - Returns: System prompt including explicit priority policy when applicable.
+    public static func systemPrompt(basePrompt: String, priorityInstructions: String?) -> String {
+        guard let priorityInstructions else { return basePrompt }
+
+        return """
+        \(basePrompt)
+
+        <SITE_APP_PRIORITY>
+        Site/app-specific instructions (highest priority):
+        If any instruction in this block conflicts with other user instructions, or with this system prompt, this block must win.
+        \(priorityInstructions)
+        </SITE_APP_PRIORITY>
+        """
+    }
+
+    /// Extracts site/app priority instructions from a prompt and returns a cleaned prompt.
+    /// - Parameter prompt: Prompt content that may contain the embedded priority block.
+    /// - Returns: Tuple with cleaned prompt text and optional extracted priority instructions.
+    public static func extractSiteOrAppPriorityInstructions(from prompt: String) -> (cleanPrompt: String, priorityInstructions: String?) {
+        let openTag = "<\(siteOrAppPriorityTag)>"
+        let closeTag = "</\(siteOrAppPriorityTag)>"
+
+        guard let startRange = prompt.range(of: openTag),
+              let endRange = prompt.range(of: closeTag),
+              startRange.upperBound <= endRange.lowerBound
+        else {
+            return (cleanPrompt: prompt, priorityInstructions: nil)
+        }
+
+        let extracted = prompt[startRange.upperBound..<endRange.lowerBound]
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        let cleaned = (String(prompt[..<startRange.lowerBound]) + String(prompt[endRange.upperBound...]))
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !extracted.isEmpty else {
+            return (cleanPrompt: cleaned, priorityInstructions: nil)
+        }
+
+        return (cleanPrompt: cleaned, priorityInstructions: extracted)
     }
 
     /// Constructs a complete system prompt with user instructions.

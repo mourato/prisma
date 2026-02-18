@@ -111,15 +111,18 @@ public struct DictationAppRule: Identifiable, Codable, Hashable, Sendable {
     public let bundleIdentifier: String
     public var forceMarkdownOutput: Bool
     public var outputLanguage: DictationOutputLanguage
+    public var customPromptInstructions: String?
 
     public init(
         bundleIdentifier: String,
         forceMarkdownOutput: Bool = true,
-        outputLanguage: DictationOutputLanguage = .original
+        outputLanguage: DictationOutputLanguage = .original,
+        customPromptInstructions: String? = nil
     ) {
         self.bundleIdentifier = bundleIdentifier
         self.forceMarkdownOutput = forceMarkdownOutput
         self.outputLanguage = outputLanguage
+        self.customPromptInstructions = customPromptInstructions?.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     public var id: String {

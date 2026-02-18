@@ -1292,6 +1292,10 @@ extension RecordingManager {
             appliedInstructions.append(Self.translationInstruction(for: outputLanguage))
         }
 
+        if let customInstructions = effectiveCustomPromptInstructionsForDictation(settings: settings) {
+            appliedInstructions.append(Self.siteOrAppPriorityInstructionBlock(customInstructions))
+        }
+
         guard !appliedInstructions.isEmpty else { return prompt }
 
         let augmentedText = ([prompt.promptText] + appliedInstructions).joined(separator: "\n\n")
@@ -1305,6 +1309,24 @@ extension RecordingManager {
             description: prompt.description,
             isPredefined: prompt.isPredefined
         )
+    }
+
+    private func effectiveCustomPromptInstructionsForDictation(settings: AppSettingsStore) -> String? {
+        if let websiteTarget = matchingWebContextTargetForDictation(settings: settings),
+           let instructions = websiteTarget.customPromptInstructions?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !instructions.isEmpty
+        {
+            return instructions
+        }
+
+        if let appRule = matchingDictationAppRule(settings: settings),
+           let instructions = appRule.customPromptInstructions?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !instructions.isEmpty
+        {
+            return instructions
+        }
+
+        return nil
     }
 
     private func matchingDictationAppRule(settings: AppSettingsStore) -> DictationAppRule? {
@@ -1402,6 +1424,14 @@ extension RecordingManager {
         <OUTPUT_LANGUAGE>
         Translate the final output to \(language.instructionDisplayName). This requirement overrides any instruction that says to keep the original language.
         </OUTPUT_LANGUAGE>
+        """
+    }
+
+    private static func siteOrAppPriorityInstructionBlock(_ instructions: String) -> String {
+        """
+        <\(AIPromptTemplates.siteOrAppPriorityTag)>
+        \(instructions)
+        </\(AIPromptTemplates.siteOrAppPriorityTag)>
         """
     }
 

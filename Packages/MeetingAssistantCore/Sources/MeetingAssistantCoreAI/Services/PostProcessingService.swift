@@ -252,10 +252,16 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
         prompt: PostProcessingPrompt,
         systemPromptOverride: String?
     ) throws {
-        let systemMessage = systemPromptOverride ?? settings.systemPrompt
+        let extracted = AIPromptTemplates.extractSiteOrAppPriorityInstructions(from: prompt.promptText)
+        let baseSystemMessage = systemPromptOverride ?? settings.systemPrompt
+        let systemMessage = AIPromptTemplates.systemPrompt(
+            basePrompt: baseSystemMessage,
+            priorityInstructions: extracted.priorityInstructions
+        )
         let userContent = AIPromptTemplates.userMessage(
             transcription: transcription,
-            prompt: prompt.promptText
+            prompt: extracted.cleanPrompt,
+            priorityInstructions: extracted.priorityInstructions
         )
         let encoder = JSONEncoder()
 

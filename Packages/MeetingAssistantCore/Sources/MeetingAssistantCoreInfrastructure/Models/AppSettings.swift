@@ -2188,7 +2188,8 @@ public class AppSettingsStore: ObservableObject {
                 DictationAppRule(
                     bundleIdentifier: trimmedBundleIdentifier,
                     forceMarkdownOutput: rule.forceMarkdownOutput,
-                    outputLanguage: rule.outputLanguage
+                    outputLanguage: rule.outputLanguage,
+                    customPromptInstructions: rule.customPromptInstructions
                 )
             )
         }
