@@ -252,6 +252,7 @@
 "settings.rules_per_app.add_app" = "Add App";
 "settings.rules_per_app.edit_app" = "Edit App Rule";
 "settings.rules_per_app.remove_app" = "Remove App Rule";
+"settings.rules_per_app.actions" = "Rule Actions";
 "settings.rules_per_app.search_placeholder" = "Search by app name or bundle identifier";
 "settings.rules_per_app.loading_apps" = "Loading installed applications...";
 "settings.rules_per_app.no_results" = "No applications found for the current search.";
