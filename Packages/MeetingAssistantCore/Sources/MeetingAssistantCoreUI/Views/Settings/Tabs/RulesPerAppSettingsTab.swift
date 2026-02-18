@@ -13,13 +13,9 @@ public struct RulesPerAppSettingsTab: View {
     }
 
     public var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.sectionSpacing) {
-                appRulesSection
-                websitesSection
-            }
-            .padding()
-            .frame(maxWidth: .infinity, alignment: .leading)
+        SettingsScrollableContent {
+            appRulesSection
+            websitesSection
         }
         .sheet(isPresented: $viewModel.showAddAppSheet) {
             addAppSheet

@@ -17,82 +17,78 @@ public struct DictationSettingsTab: View {
     public init() {}
 
     public var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.sectionSpacing) {
-                // Keyboard Shortcut
-                MAShortcutSettingsSection(
-                    groupTitle: "settings.shortcuts.dictation".localized,
-                    descriptionText: "settings.shortcuts.dictation_desc".localized,
-                    settingsContent: {
-                        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
-                            MAModifierShortcutEditor(
-                                shortcut: $shortcutsViewModel.dictationShortcutDefinition,
-                                conflictMessage: shortcutsViewModel.dictationModifierConflictMessage
-                            )
-
-                            Divider()
-
-                            MAToggleRow(
-                                "settings.shortcuts.use_escape".localized,
-                                description: "settings.shortcuts.use_escape_desc".localized,
-                                isOn: $shortcutsViewModel.useEscapeToCancelRecording
-                            )
-                        }
-                    }
-                )
-
-                // Workflow
-                MAGroup("settings.dictation.workflow".localized, icon: "cpu") {
-                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
-                        MAToggleRow(
-                            "settings.general.auto_copy_transcription".localized,
-                            description: "settings.general.auto_copy_transcription_desc".localized,
-                            isOn: $viewModel.autoCopyTranscriptionToClipboard
+        SettingsScrollableContent {
+            // Keyboard Shortcut
+            MAShortcutSettingsSection(
+                groupTitle: "settings.shortcuts.dictation".localized,
+                descriptionText: "settings.shortcuts.dictation_desc".localized,
+                settingsContent: {
+                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                        MAModifierShortcutEditor(
+                            shortcut: $shortcutsViewModel.dictationShortcutDefinition,
+                            conflictMessage: shortcutsViewModel.dictationModifierConflictMessage
                         )
 
                         Divider()
 
                         MAToggleRow(
-                            "settings.general.auto_paste_transcription".localized,
-                            isOn: $viewModel.autoPasteTranscriptionToActiveApp
+                            "settings.shortcuts.use_escape".localized,
+                            description: "settings.shortcuts.use_escape_desc".localized,
+                            isOn: $shortcutsViewModel.useEscapeToCancelRecording
                         )
                     }
                 }
+            )
 
-                // Dictation Prompts Section
-                MAGroup("settings.dictation.prompts".localized, icon: "sparkles") {
-                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.cardPadding) {
-                        HStack {
-                            Text("settings.post_processing.choose_active".localized)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+            // Workflow
+            MAGroup("settings.dictation.workflow".localized, icon: "cpu") {
+                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
+                    MAToggleRow(
+                        "settings.general.auto_copy_transcription".localized,
+                        description: "settings.general.auto_copy_transcription_desc".localized,
+                        isOn: $viewModel.autoCopyTranscriptionToClipboard
+                    )
 
-                            Spacer()
+                    Divider()
 
-                            Button {
-                                promptViewModel.editingPrompt = nil
-                                promptViewModel.showPromptEditor = true
-                            } label: {
-                                Label(
-                                    "settings.post_processing.new_prompt".localized,
-                                    systemImage: "plus"
-                                )
-                            }
-                            .buttonStyle(.bordered)
-                            .controlSize(.regular)
+                    MAToggleRow(
+                        "settings.general.auto_paste_transcription".localized,
+                        isOn: $viewModel.autoPasteTranscriptionToActiveApp
+                    )
+                }
+            }
+
+            // Dictation Prompts Section
+            MAGroup("settings.dictation.prompts".localized, icon: "sparkles") {
+                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.cardPadding) {
+                    HStack {
+                        Text("settings.post_processing.choose_active".localized)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        Spacer()
+
+                        Button {
+                            promptViewModel.editingPrompt = nil
+                            promptViewModel.showPromptEditor = true
+                        } label: {
+                            Label(
+                                "settings.post_processing.new_prompt".localized,
+                                systemImage: "plus"
+                            )
                         }
+                        .buttonStyle(.bordered)
+                        .controlSize(.regular)
+                    }
 
-                        VStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-                            noPostProcessingRow()
-                            ForEach(promptViewModel.availablePrompts) { prompt in
-                                promptRow(prompt: prompt)
-                            }
+                    VStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                        noPostProcessingRow()
+                        ForEach(promptViewModel.availablePrompts) { prompt in
+                            promptRow(prompt: prompt)
                         }
                     }
                 }
             }
-            .padding()
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .sheet(isPresented: $promptViewModel.showPromptEditor) {
             PromptEditorSheet(

@@ -30,169 +30,165 @@ public struct MeetingSettingsTab: View {
     }
 
     public var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.sectionSpacing) {
-                // Keyboard Shortcut (Existing)
-                MAShortcutSettingsSection(
-                    groupTitle: "settings.shortcuts.meeting".localized,
-                    descriptionText: "settings.shortcuts.meeting_desc".localized,
-                    settingsContent: {
-                        MAModifierShortcutEditor(
-                            shortcut: $shortcutsViewModel.meetingShortcutDefinition,
-                            conflictMessage: shortcutsViewModel.meetingModifierConflictMessage
-                        )
-                    }
-                )
+        SettingsScrollableContent {
+            // Keyboard Shortcut (Existing)
+            MAShortcutSettingsSection(
+                groupTitle: "settings.shortcuts.meeting".localized,
+                descriptionText: "settings.shortcuts.meeting_desc".localized,
+                settingsContent: {
+                    MAModifierShortcutEditor(
+                        shortcut: $shortcutsViewModel.meetingShortcutDefinition,
+                        conflictMessage: shortcutsViewModel.meetingModifierConflictMessage
+                    )
+                }
+            )
 
-                // Automation (Existing)
-                MAGroup("settings.meetings.workflow".localized, icon: "bolt.fill") {
-                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
-                        MAToggleRow(
-                            "settings.general.auto_start".localized,
-                            isOn: $meetingViewModel.settings.autoStartRecording
-                        )
+            // Automation (Existing)
+            MAGroup("settings.meetings.workflow".localized, icon: "bolt.fill") {
+                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
+                    MAToggleRow(
+                        "settings.general.auto_start".localized,
+                        isOn: $meetingViewModel.settings.autoStartRecording
+                    )
+
+                    Divider()
+
+                    MAToggleRow(
+                        "settings.general.merge_audio".localized,
+                        isOn: $meetingViewModel.settings.shouldMergeAudioFiles
+                    )
+                }
+            }
+
+            // Speaker Identification Section
+            MAGroup("settings.meetings.speaker_identification".localized, icon: "person.wave.2.fill") {
+                SpeakerIdentificationSettingsSection(settings: meetingViewModel.settings)
+            }
+
+            // Summary Export Section
+            MAGroup("settings.meetings.export".localized, icon: "folder.fill") {
+                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
+                    MAToggleRow(
+                        "settings.meetings.auto_export".localized,
+                        description: "settings.meetings.auto_export_desc".localized,
+                        isOn: $meetingViewModel.settings.autoExportSummaries
+                    )
+
+                    if meetingViewModel.settings.autoExportSummaries {
+                        Divider()
+
+                        HStack {
+                            Text("settings.meetings.export_location".localized)
+                            Spacer()
+                            if let url = meetingViewModel.settings.summaryExportFolder {
+                                Text(url.lastPathComponent)
+                                    .foregroundStyle(.secondary)
+                                    .truncationMode(.middle)
+                            } else {
+                                Text("settings.meetings.no_folder_selected".localized)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Button("common.select".localized) {
+                                meetingViewModel.selectExportFolder()
+                            }
+                        }
+
+                        Text("settings.meetings.export_location_desc".localized)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
 
                         Divider()
 
                         MAToggleRow(
-                            "settings.general.merge_audio".localized,
-                            isOn: $meetingViewModel.settings.shouldMergeAudioFiles
-                        )
-                    }
-                }
-
-                // Speaker Identification Section
-                MAGroup("settings.meetings.speaker_identification".localized, icon: "person.wave.2.fill") {
-                    SpeakerIdentificationSettingsSection(settings: meetingViewModel.settings)
-                }
-
-                // Summary Export Section
-                MAGroup("settings.meetings.export".localized, icon: "folder.fill") {
-                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
-                        MAToggleRow(
-                            "settings.meetings.auto_export".localized,
-                            description: "settings.meetings.auto_export_desc".localized,
-                            isOn: $meetingViewModel.settings.autoExportSummaries
+                            "settings.meetings.template_enabled".localized,
+                            description: "settings.meetings.template_enabled_desc".localized,
+                            isOn: $meetingViewModel.settings.summaryTemplateEnabled
                         )
 
-                        if meetingViewModel.settings.autoExportSummaries {
+                        if meetingViewModel.settings.summaryExportFolder == nil {
+                            Text("settings.meetings.export_location_required".localized)
+                                .font(.caption)
+                                .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
+                        }
+
+                        if meetingViewModel.settings.summaryTemplateEnabled {
                             Divider()
+
+                            HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                                Image(systemName: "doc.text")
+                                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.iconHighlight)
+                                Text("settings.meetings.template".localized)
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                            }
+
+                            Text("settings.meetings.template_desc".localized)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
 
                             HStack {
-                                Text("settings.meetings.export_location".localized)
                                 Spacer()
-                                if let url = meetingViewModel.settings.summaryExportFolder {
-                                    Text(url.lastPathComponent)
-                                        .foregroundStyle(.secondary)
-                                        .truncationMode(.middle)
-                                } else {
-                                    Text("settings.meetings.no_folder_selected".localized)
-                                        .foregroundStyle(.secondary)
+                                Button {
+                                    showSummaryTemplateEditor = true
+                                } label: {
+                                    Label("settings.meetings.template.edit".localized, systemImage: "pencil")
                                 }
-                                Button("common.select".localized) {
-                                    meetingViewModel.selectExportFolder()
-                                }
-                            }
-
-                            Text("settings.meetings.export_location_desc".localized)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-
-                            Divider()
-
-                            MAToggleRow(
-                                "settings.meetings.template_enabled".localized,
-                                description: "settings.meetings.template_enabled_desc".localized,
-                                isOn: $meetingViewModel.settings.summaryTemplateEnabled
-                            )
-
-                            if meetingViewModel.settings.summaryExportFolder == nil {
-                                Text("settings.meetings.export_location_required".localized)
-                                    .font(.caption)
-                                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
-                            }
-
-                            if meetingViewModel.settings.summaryTemplateEnabled {
-                                Divider()
-
-                                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-                                    Image(systemName: "doc.text")
-                                        .foregroundStyle(MeetingAssistantDesignSystem.Colors.iconHighlight)
-                                    Text("settings.meetings.template".localized)
-                                        .font(.subheadline)
-                                        .fontWeight(.semibold)
-                                }
-
-                                Text("settings.meetings.template_desc".localized)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-
-                                HStack {
-                                    Spacer()
-                                    Button {
-                                        showSummaryTemplateEditor = true
-                                    } label: {
-                                        Label("settings.meetings.template.edit".localized, systemImage: "pencil")
-                                    }
-                                    .buttonStyle(.bordered)
-                                    .controlSize(.regular)
-                                }
+                                .buttonStyle(.bordered)
+                                .controlSize(.regular)
                             }
                         }
                     }
                 }
-
-                // Meeting Prompts Section
-                MAGroup("settings.meetings.prompts".localized, icon: "sparkles") {
-                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.cardPadding) {
-                        MAToggleRow(
-                            "settings.meetings.autodetect_type".localized,
-                            description: "settings.meetings.autodetect_type_desc".localized,
-                            isOn: $meetingViewModel.settings.meetingTypeAutoDetectEnabled
-                        )
-
-                        HStack {
-                            Text("settings.post_processing.choose_active".localized)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-
-                            Spacer()
-
-                            Button {
-                                meetingViewModel.editingPrompt = nil
-                                meetingViewModel.showPromptEditor = true
-                            } label: {
-                                Label(
-                                    "settings.post_processing.new_prompt".localized,
-                                    systemImage: "plus"
-                                )
-                            }
-                            .buttonStyle(.bordered)
-                            .controlSize(.regular)
-                        }
-
-                        VStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-                            noPostProcessingRow()
-                            ForEach(meetingViewModel.availablePrompts) { prompt in
-                                promptRow(prompt: prompt)
-                            }
-                        }
-                    }
-                }
-
-                InstalledAppsSelectionSection(
-                    titleKey: "settings.general.monitored_apps",
-                    descriptionKey: "settings.general.monitored_apps_desc",
-                    emptyKey: "settings.general.monitored_apps_empty",
-                    addButtonKey: "settings.general.monitored_apps_add",
-                    icon: "app.badge",
-                    viewModel: monitoredAppsViewModel
-                )
-
-                webTargetsSection
             }
-            .padding()
-            .frame(maxWidth: .infinity, alignment: .leading)
+
+            // Meeting Prompts Section
+            MAGroup("settings.meetings.prompts".localized, icon: "sparkles") {
+                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.cardPadding) {
+                    MAToggleRow(
+                        "settings.meetings.autodetect_type".localized,
+                        description: "settings.meetings.autodetect_type_desc".localized,
+                        isOn: $meetingViewModel.settings.meetingTypeAutoDetectEnabled
+                    )
+
+                    HStack {
+                        Text("settings.post_processing.choose_active".localized)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        Spacer()
+
+                        Button {
+                            meetingViewModel.editingPrompt = nil
+                            meetingViewModel.showPromptEditor = true
+                        } label: {
+                            Label(
+                                "settings.post_processing.new_prompt".localized,
+                                systemImage: "plus"
+                            )
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.regular)
+                    }
+
+                    VStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                        noPostProcessingRow()
+                        ForEach(meetingViewModel.availablePrompts) { prompt in
+                            promptRow(prompt: prompt)
+                        }
+                    }
+                }
+            }
+
+            InstalledAppsSelectionSection(
+                titleKey: "settings.general.monitored_apps",
+                descriptionKey: "settings.general.monitored_apps_desc",
+                emptyKey: "settings.general.monitored_apps_empty",
+                addButtonKey: "settings.general.monitored_apps_add",
+                icon: "app.badge",
+                viewModel: monitoredAppsViewModel
+            )
+
+            webTargetsSection
         }
         .sheet(isPresented: $meetingViewModel.showPromptEditor) {
             PromptEditorSheet(
