@@ -23,6 +23,19 @@ Core context:
 
 `AGENTS.md` is the single source of truth for workflow policy. Skills must extend this SOP, not redefine it.
 
+### Reusable Blocks First (required before implementation)
+
+Treat the project as a set of reusable building blocks (logic and UI), not one-off solutions.
+
+- Run a quick reusable-block scan before coding:
+  - Search for existing services/use cases/helpers/components that already solve the problem.
+  - Evaluate repeated or emerging patterns in the requested change.
+- Use this decision order:
+  - **Reuse** an existing block when it already fits.
+  - **Extend** an existing block when the need is adjacent and can remain coherent.
+  - **Create** a new block when the pattern is new to the project or existing blocks cannot be safely extended.
+- Avoid copy-paste implementations of behavior or UI composition when a reusable block is viable.
+
 ### Risk matrix (required before implementation)
 
 Classify each task before coding:
@@ -55,11 +68,13 @@ Before implementation, run a quick clarification pass when needed:
 
 1. **Fast lane (Low risk)**:
    - Worktree is recommended; direct branch work is acceptable for small low-risk changes.
+   - Start with a reusable-block scan (`reuse -> extend -> create`) for both logic and UI.
    - Implement in small slices.
    - Pre-commit checks: staged lint/format + targeted tests when relevant.
    - Before push/merge: run `make test`.
 2. **Full lane (Medium/High risk)**:
    - Worktree is mandatory (never implement in `main/`).
+   - Start with a reusable-block scan (`reuse -> extend -> create`) for both logic and UI.
    - Implement in small slices.
    - During development run relevant checks (targeted tests and/or `make build` as needed).
    - Before push/merge (hard gate):
@@ -82,6 +97,7 @@ Before implementation, run a quick clarification pass when needed:
 ## Optimized workflow checklist
 
 - [ ] Open the Sequential Thinking tool before planning a task so each reasoning step is recorded.
+- [ ] Before coding, scan for reusable blocks and repeated/new patterns; apply `reuse -> extend -> create`.
 - [ ] Use `gh` for every GitHub interaction (issues, PRs, repos) rather than manual HTTP/UI visits.
 - [ ] Consider deepwiki only when local context is insufficient for a holistic, repository-wide perspective.
 - [ ] Classify risk (Low/Medium/High) before coding and pick Fast or Full lane accordingly.
@@ -181,6 +197,8 @@ General style and architecture rules:
 
 - Import only modules required by each file.
 - Prefer dependency inversion through domain protocols over direct cross-module concrete dependencies.
+- Prefer reusable logic blocks (services/use cases/helpers) over duplicating behavior across features.
+- When implementing a new behavior, first evaluate reuse/expansion of existing blocks before creating new ones.
 - When moving types between modules, review access control deliberately (`public` only when required).
 - Keep tests aligned with module ownership when internals are exercised.
 
@@ -190,6 +208,7 @@ UI design-system rules:
 - Prefer design-system spacing/radius tokens over magic numbers.
 - Prefer design-system components over ad-hoc container styling.
 - Use `MA*` components directly in Settings (`MACard`, `MAGroup`, `MAToggleRow`, `MACallout`, `MABadge`, `MAActionButton`, `MAThemePicker`).
+- Reuse or extend existing `MA*` components before creating new custom containers or repeated style wrappers.
 - Destructive actions (`remove`, `delete`, `clear` when irreversible) must use red styling (`.destructive` role and/or `MeetingAssistantDesignSystem.Colors.error` in custom button styles).
 - Non-destructive reset controls (for example, clearing a shortcut input) must remain neutral.
 - Every SwiftUI `struct ...: View` under `MeetingAssistantCoreUI` must include at least one `#Preview`.

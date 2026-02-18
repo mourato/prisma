@@ -18,10 +18,12 @@ Guidelines for maintaining consistent project documentation and visibility into 
 ## 2. Agent Documentation
 
 - **Living Guidance**: Ensure `AGENTS.md` reflects the current state of tools, scripts, and skills.
+- **Reusable Blocks Policy**: Keep the `reuse -> extend -> create` rule synchronized between `AGENTS.md` and affected implementation skills.
 - **Compact Execution Mode**: When script execution modes change (for example `*-agent` targets), update `AGENTS.md` and relevant skills with command usage, log locations, and output contracts.
 - **Design System Guidance**: Keep the UI Design System tokens/components documented (and referenced from `AGENTS.md` / relevant skills).
 - **Preview Standard**: Keep `docs/PREVIEW_GUIDELINES.md` and preview-related skills updated when UI preview rules change.
 - **Clean Registry**: Periodically audit `.agents/skills` to remove stale or redundant guidance.
+- **Redundancy Audit**: Periodically audit repeated UI/logic guidance and consolidate duplicate instructions into reusable skill sections.
 - **B2 Module Awareness**: Keep docs aligned with the current module split (`Common`, `Domain`, `Infrastructure`, `Data`, `Audio`, `AI`, `UI`, compatibility `Core`).
 - **Path Validity**: After file moves between modules, update all documentation links and examples to the new canonical paths.
 
