@@ -3,6 +3,15 @@ name: build-macos-apps
 description: Build professional native macOS apps in Swift with SwiftUI and AppKit. Full lifecycle - build, debug, test, optimize, ship. CLI-only, no Xcode.
 ---
 
+## Role
+
+This skill is a **workflow router** for macOS app work in this repository.
+
+- Use this skill to classify request intent and select a workflow.
+- Use `macos-development` as the canonical source for deep technical guidance.
+- Use `quality-assurance` for verification policy and risk-based gates.
+- Prefer repo-native commands (`make`, `scripts/*`) over generic template commands.
+
 <essential_principles>
 ## How We Work
 
@@ -14,9 +23,9 @@ The user does not write code. The user does not read code. The user describes wh
 
 Never say "this should work." Prove it:
 ```bash
-xcodebuild build 2>&1 | xcsift  # Build passes
-xcodebuild test                  # Tests pass
-open .../App.app                 # App launches
+make build-agent     # Build passes with compact diagnostics
+make test-agent      # Tests pass with compact diagnostics
+make preflight-agent # Build + test + lint verification
 ```
 If you didn't run it, you don't know it works.
 
@@ -75,6 +84,10 @@ What would you like to do?
 7. Something else
 
 **Then read the matching workflow from `workflows/` and follow it.**
+
+When a workflow step references details not specific to this repo, resolve through:
+- `../macos-development/workflows/`
+- `../macos-development/references/`
 </intake>
 
 <routing>
@@ -94,13 +107,16 @@ What would you like to do?
 
 ```bash
 # 1. Does it build?
-xcodebuild -scheme AppName build 2>&1 | xcsift
+make build-agent
 
 # 2. Do tests pass?
-xcodebuild -scheme AppName test
+make test-agent
 
-# 3. Does it launch? (if UI changed)
-open ./build/Build/Products/Debug/AppName.app
+# 3. Full gate when needed (medium/high risk or pre-merge)
+make preflight-agent
+
+# 4. Does it launch? (if UI changed)
+make run
 ```
 
 Report to the user:
@@ -131,7 +147,9 @@ Report to the user:
 <reference_index>
 ## Domain Knowledge
 
-All in `references/`:
+Canonical references live in `../macos-development/references/`.
+
+This skill keeps wrapper files in `references/` to avoid path breakage.
 
 **Architecture:** app-architecture, swiftui-patterns, appkit-integration, concurrency-patterns
 **Data:** data-persistence, networking
@@ -144,7 +162,9 @@ All in `references/`:
 <workflows_index>
 ## Workflows
 
-All in `workflows/`:
+Canonical workflows live in `../macos-development/workflows/`.
+
+This skill keeps wrapper files in `workflows/` to avoid path breakage.
 
 | File | Purpose |
 |------|---------|
@@ -155,3 +175,13 @@ All in `workflows/`:
 | optimize-performance.md | Profile and speed up |
 | ship-app.md | Sign, notarize, distribute |
 </workflows_index>
+
+<related_skills>
+## Related Skills
+
+- **[macos-development](../macos-development/SKILL.md)** - canonical macOS/Swift architecture and lifecycle guidance.
+- **[quality-assurance](../quality-assurance/SKILL.md)** - risk-based verification lanes and hard gates.
+- **[swift-concurrency-expert](../swift-concurrency-expert/SKILL.md)** - Swift 6.2 concurrency review/fixes.
+- **[swiftui-performance-audit](../swiftui-performance-audit/SKILL.md)** - SwiftUI performance diagnostics and optimization.
+- **[swiftui-animation](../swiftui-animation/SKILL.md)** - advanced animation/transition patterns.
+</related_skills>
