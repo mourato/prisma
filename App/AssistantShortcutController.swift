@@ -16,8 +16,10 @@ final class AssistantShortcutController {
     private var integrationPresetStates: [UUID: ShortcutActivationState] = [:]
     private var registeredIntegrationShortcutIDs = Set<UUID>()
     private let layerTimeoutNanoseconds: UInt64 = 1_000_000_000
+    private let layerLeaderDoubleTapInterval: TimeInterval = 0.35
     private var isShortcutLayerArmed = false
     private var shortcutLayerTask: Task<Void, Never>?
+    private var lastLayerLeaderTapTime: Date?
     private let shortcutLayerFeedbackController = ShortcutLayerFeedbackController()
 
     private lazy var shortcutHandler = SmartShortcutHandler(
@@ -594,6 +596,10 @@ final class AssistantShortcutController {
 
     private func handleShortcutDown(activationModeOverride: ShortcutActivationMode? = nil) async {
         if shouldUseAssistantShortcutLayer {
+            let activationMode = activationModeOverride ?? settings.assistantShortcutActivationMode
+            if activationMode == .doubleTap {
+                return
+            }
             armShortcutLayer()
             return
         }
@@ -603,6 +609,10 @@ final class AssistantShortcutController {
 
     private func handleShortcutUp(activationModeOverride: ShortcutActivationMode? = nil) async {
         if shouldUseAssistantShortcutLayer {
+            let activationMode = activationModeOverride ?? settings.assistantShortcutActivationMode
+            if activationMode == .doubleTap {
+                registerLayerLeaderTap()
+            }
             return
         }
 
@@ -702,6 +712,7 @@ final class AssistantShortcutController {
 
     private func resetShortcutState() {
         lastEscapePressTime = nil
+        lastLayerLeaderTapTime = nil
         disarmShortcutLayer(showFeedback: false)
         presetState.reset()
         shortcutHandler.reset()
@@ -745,6 +756,23 @@ final class AssistantShortcutController {
         } else {
             shortcutLayerFeedbackController.hide()
         }
+    }
+
+    private func registerLayerLeaderTap() {
+        let now = Date()
+        guard let previousTap = lastLayerLeaderTapTime else {
+            lastLayerLeaderTapTime = now
+            return
+        }
+
+        let elapsed = now.timeIntervalSince(previousTap)
+        guard elapsed <= layerLeaderDoubleTapInterval else {
+            lastLayerLeaderTapTime = now
+            return
+        }
+
+        lastLayerLeaderTapTime = nil
+        armShortcutLayer()
     }
 
     private func handleShortcutLayerKeyDown(_ event: NSEvent) -> Bool {
