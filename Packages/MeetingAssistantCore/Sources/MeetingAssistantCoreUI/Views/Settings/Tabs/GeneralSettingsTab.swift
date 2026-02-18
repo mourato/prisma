@@ -11,6 +11,8 @@ import SwiftUI
 /// Main tab for core application settings like language, appearance, and storage.
 public struct GeneralSettingsTab: View {
     @StateObject private var viewModel = GeneralSettingsViewModel()
+    @State private var shortcutDoubleTapIntervalInput = ""
+    @State private var autoDeletePeriodDaysInput = ""
 
     public init() {}
 
@@ -55,14 +57,21 @@ public struct GeneralSettingsTab: View {
 
                             Spacer()
 
-                            Stepper(
-                                value: $viewModel.shortcutDoubleTapIntervalMilliseconds,
-                                in: AppSettingsStore.shortcutDoubleTapIntervalRangeMilliseconds,
-                                step: 25
-                            ) {
-                                Text("\(Int(viewModel.shortcutDoubleTapIntervalMilliseconds)) ms")
+                            HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                                TextField("", text: $shortcutDoubleTapIntervalInput)
+                                    .textFieldStyle(.roundedBorder)
+                                    .multilineTextAlignment(.trailing)
+                                    .frame(width: 84)
+                                    .onChange(of: shortcutDoubleTapIntervalInput) { _, newValue in
+                                        applyShortcutDoubleTapIntervalInput(newValue)
+                                    }
+                                    .onSubmit {
+                                        syncShortcutDoubleTapIntervalInputFromModel()
+                                    }
+
+                                Text("ms")
                                     .font(.body)
-                                    .frame(minWidth: 74, alignment: .trailing)
+                                    .foregroundStyle(.secondary)
                             }
                         }
                     }
@@ -178,9 +187,21 @@ public struct GeneralSettingsTab: View {
 
                                         Spacer()
 
-                                        Stepper(value: $viewModel.autoDeletePeriodDays, in: 1...365) {
-                                            Text("\(viewModel.autoDeletePeriodDays) " + "settings.general.days".localized)
+                                        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                                            TextField("", text: $autoDeletePeriodDaysInput)
+                                                .textFieldStyle(.roundedBorder)
+                                                .multilineTextAlignment(.trailing)
+                                                .frame(width: 84)
+                                                .onChange(of: autoDeletePeriodDaysInput) { _, newValue in
+                                                    applyAutoDeletePeriodDaysInput(newValue)
+                                                }
+                                                .onSubmit {
+                                                    syncAutoDeletePeriodDaysInputFromModel()
+                                                }
+
+                                            Text("settings.general.days".localized)
                                                 .font(.body)
+                                                .foregroundStyle(.secondary)
                                         }
                                     }
                                     .padding(.leading, MeetingAssistantDesignSystem.Layout.indentation)
@@ -237,6 +258,53 @@ public struct GeneralSettingsTab: View {
                 Text(error)
             }
         }
+        .onAppear {
+            syncShortcutDoubleTapIntervalInputFromModel()
+            syncAutoDeletePeriodDaysInputFromModel()
+        }
+    }
+
+    private func applyShortcutDoubleTapIntervalInput(_ rawValue: String) {
+        let digitsOnly = rawValue.filter(\.isNumber)
+        if digitsOnly != rawValue {
+            shortcutDoubleTapIntervalInput = digitsOnly
+            return
+        }
+
+        guard !digitsOnly.isEmpty, let value = Double(digitsOnly) else { return }
+        let validRange = AppSettingsStore.shortcutDoubleTapIntervalRangeMilliseconds
+        let clampedValue = min(max(value, validRange.lowerBound), validRange.upperBound)
+
+        viewModel.shortcutDoubleTapIntervalMilliseconds = clampedValue
+        let normalizedValue = "\(Int(clampedValue))"
+        if shortcutDoubleTapIntervalInput != normalizedValue {
+            shortcutDoubleTapIntervalInput = normalizedValue
+        }
+    }
+
+    private func syncShortcutDoubleTapIntervalInputFromModel() {
+        shortcutDoubleTapIntervalInput = "\(Int(viewModel.shortcutDoubleTapIntervalMilliseconds))"
+    }
+
+    private func applyAutoDeletePeriodDaysInput(_ rawValue: String) {
+        let digitsOnly = rawValue.filter(\.isNumber)
+        if digitsOnly != rawValue {
+            autoDeletePeriodDaysInput = digitsOnly
+            return
+        }
+
+        guard !digitsOnly.isEmpty, let value = Int(digitsOnly) else { return }
+        let clampedValue = min(max(value, 1), 365)
+
+        viewModel.autoDeletePeriodDays = clampedValue
+        let normalizedValue = "\(clampedValue)"
+        if autoDeletePeriodDaysInput != normalizedValue {
+            autoDeletePeriodDaysInput = normalizedValue
+        }
+    }
+
+    private func syncAutoDeletePeriodDaysInputFromModel() {
+        autoDeletePeriodDaysInput = "\(viewModel.autoDeletePeriodDays)"
     }
 }
 

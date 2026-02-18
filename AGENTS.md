@@ -207,6 +207,9 @@ UI design-system rules:
 - Prefer semantic colors (`.primary`, `.secondary`, materials) and design-system tokens over hardcoded `Color(...)`.
 - Prefer design-system spacing/radius tokens over magic numbers.
 - Prefer design-system components over ad-hoc container styling.
+- Use `Stepper` only for small bounded option sets (around 6 steps/items or fewer).
+- For bounded sets larger than ~6 options, prefer a `Picker` (usually `.menu` in Settings).
+- When values are not a small finite set (or can vary freely), prefer `TextField` input with appropriate validation (for numeric values, numeric-only validation).
 - Use `MA*` components directly in Settings (`MACard`, `MAGroup`, `MAToggleRow`, `MACallout`, `MABadge`, `MAActionButton`, `MAThemePicker`).
 - Reuse or extend existing `MA*` components before creating new custom containers or repeated style wrappers.
 - Destructive actions (`remove`, `delete`, `clear` when irreversible) must use red styling (`.destructive` role and/or `MeetingAssistantDesignSystem.Colors.error` in custom button styles).
