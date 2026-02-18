@@ -67,6 +67,14 @@ private extension ShortcutDefinition {
 /// App delegate for menu bar setup and lifecycle management.
 @MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
+    private struct RecordingUIRenderState: Equatable {
+        let isRecording: Bool
+        let isStarting: Bool
+        let isTranscribing: Bool
+        let isAssistantRecording: Bool
+        let meetingTypeRawValue: String?
+    }
+
     private let logger = Logger(subsystem: "MeetingAssistant", category: "AppDelegate")
     private var statusItem: NSStatusItem?
     private var contextMenu: NSMenu?
@@ -84,6 +92,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     )
     private var cancellables = Set<AnyCancellable>()
     private var dockObserver: AnyCancellable?
+    private var lastRecordingUIRenderState: RecordingUIRenderState?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Initialize Monitoring Services
@@ -175,10 +184,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let isTranscribing = recordingManager.isTranscribing
         let isAssistantRecording = assistantVoiceCommandService.isRecording
         let currentMeetingType = recordingManager.currentMeeting?.type
+        let renderState = RecordingUIRenderState(
+            isRecording: isRecording,
+            isStarting: isStarting,
+            isTranscribing: isTranscribing,
+            isAssistantRecording: isAssistantRecording,
+            meetingTypeRawValue: currentMeetingType?.rawValue
+        )
+
+        guard renderState != lastRecordingUIRenderState else {
+            return
+        }
+        lastRecordingUIRenderState = renderState
 
         updateStatusIcon(isRecording: isRecording || isAssistantRecording || isStarting)
         updateFloatingIndicator(
             isRecording: isRecording || isAssistantRecording,
+            isAssistantRecording: isAssistantRecording,
             isStarting: isStarting,
             isTranscribing: isTranscribing,
             meetingType: currentMeetingType
@@ -608,12 +630,30 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func updateFloatingIndicator(
         isRecording: Bool,
+        isAssistantRecording: Bool,
         isStarting: Bool,
         isTranscribing: Bool,
         meetingType: MeetingType? = nil
     ) {
         if isRecording {
-            floatingIndicatorController.show(mode: .recording, type: meetingType)
+            if isAssistantRecording {
+                floatingIndicatorController.show(
+                    mode: .recording,
+                    type: meetingType,
+                    onStop: { [weak self] in
+                        Task { @MainActor [weak self] in
+                            await self?.assistantVoiceCommandService.stopAndProcess()
+                        }
+                    },
+                    onCancel: { [weak self] in
+                        Task { @MainActor [weak self] in
+                            await self?.assistantVoiceCommandService.cancelRecording()
+                        }
+                    }
+                )
+            } else {
+                floatingIndicatorController.show(mode: .recording, type: meetingType)
+            }
         } else if isStarting {
             floatingIndicatorController.show(mode: .starting, type: meetingType)
         } else if isTranscribing {

@@ -27,7 +27,7 @@ final class AssistantShortcutController {
     )
 
     private let presetState = ShortcutActivationState()
-    private let escapeDoublePressInterval: TimeInterval = 0.5
+    private let escapeDoublePressInterval: TimeInterval = 1.0
     private var lastEscapePressTime: Date?
 
     init(
@@ -386,25 +386,33 @@ final class AssistantShortcutController {
         }
 
         guard event.keyCode == PresetShortcutKey.escapeKeyCode else {
-            lastEscapePressTime = nil
             return
         }
 
-        let now = Date()
-        guard let lastEscapePressTime, now.timeIntervalSince(lastEscapePressTime) <= escapeDoublePressInterval else {
-            self.lastEscapePressTime = now
+        guard didConfirmDoubleEscapePress() else {
             return
         }
-        self.lastEscapePressTime = nil
 
         Task { @MainActor [weak self] in
             guard let self else { return }
-            guard assistantService.isRecording else {
-                return
-            }
-
             await assistantService.cancelRecording()
         }
+    }
+
+    private func didConfirmDoubleEscapePress() -> Bool {
+        let now = Date()
+        guard let lastEscapePressTime else {
+            self.lastEscapePressTime = now
+            return false
+        }
+
+        guard now.timeIntervalSince(lastEscapePressTime) <= escapeDoublePressInterval else {
+            self.lastEscapePressTime = now
+            return false
+        }
+
+        self.lastEscapePressTime = nil
+        return true
     }
 
     private func handleKeyUp(_ event: NSEvent) {

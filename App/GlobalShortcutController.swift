@@ -31,7 +31,7 @@ final class GlobalShortcutController {
     )
 
     private let presetState = ShortcutActivationState()
-    private let escapeDoublePressInterval: TimeInterval = 0.5
+    private let escapeDoublePressInterval: TimeInterval = 1.0
     private var lastEscapePressTime: Date?
 
     init(
@@ -213,7 +213,9 @@ final class GlobalShortcutController {
     private func installFlagsChangedMonitors() {
         if flagsMonitor == nil {
             flagsMonitor = KeyboardEventMonitor(mask: .flagsChanged) { [weak self] event in
-                self?.handleFlagsChanged(event)
+                Task { @MainActor [weak self] in
+                    self?.handleFlagsChanged(event)
+                }
             }
             flagsMonitor?.start()
         }
@@ -227,7 +229,9 @@ final class GlobalShortcutController {
     private func installKeyDownMonitors() {
         if keyDownMonitor == nil {
             keyDownMonitor = KeyboardEventMonitor(mask: .keyDown) { [weak self] event in
-                self?.handleKeyDown(event)
+                Task { @MainActor [weak self] in
+                    self?.handleKeyDown(event)
+                }
             }
             keyDownMonitor?.start()
         }
@@ -236,7 +240,9 @@ final class GlobalShortcutController {
     private func installKeyUpMonitors() {
         if keyUpMonitor == nil {
             keyUpMonitor = KeyboardEventMonitor(mask: .keyUp) { [weak self] event in
-                self?.handleKeyUp(event)
+                Task { @MainActor [weak self] in
+                    self?.handleKeyUp(event)
+                }
             }
             keyUpMonitor?.start()
         }
@@ -346,21 +352,31 @@ final class GlobalShortcutController {
         guard settings.useEscapeToCancelRecording else { return }
         guard !event.isARepeat else { return }
         guard event.keyCode == PresetShortcutKey.escapeKeyCode else {
-            lastEscapePressTime = nil
             return
         }
 
-        let now = Date()
-        guard let lastEscapePressTime, now.timeIntervalSince(lastEscapePressTime) <= escapeDoublePressInterval else {
-            self.lastEscapePressTime = now
-            return
-        }
-        self.lastEscapePressTime = nil
+        guard didConfirmDoubleEscapePress() else { return }
 
         Task { @MainActor in
-            guard self.recordingManager.isRecording else { return }
-            await self.recordingManager.stopRecording(transcribe: false)
+            guard self.recordingManager.isRecording || self.recordingManager.isStartingRecording else { return }
+            await self.recordingManager.cancelRecording()
         }
+    }
+
+    private func didConfirmDoubleEscapePress() -> Bool {
+        let now = Date()
+        guard let lastEscapePressTime else {
+            self.lastEscapePressTime = now
+            return false
+        }
+
+        guard now.timeIntervalSince(lastEscapePressTime) <= escapeDoublePressInterval else {
+            self.lastEscapePressTime = now
+            return false
+        }
+
+        self.lastEscapePressTime = nil
+        return true
     }
 
     private func handleKeyUp(_ event: NSEvent) {
