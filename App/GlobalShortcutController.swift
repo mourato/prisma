@@ -13,6 +13,7 @@ final class GlobalShortcutController {
     private var keyUpMonitor: KeyboardEventMonitor?
 
     private lazy var dictationHandler = SmartShortcutHandler(
+        doubleTapInterval: currentDoubleTapInterval,
         isRecordingProvider: { [weak self] in self?.recordingManager.isRecording ?? false },
         actionHandler: { [weak self] action in
             Task { @MainActor [weak self] in
@@ -22,6 +23,7 @@ final class GlobalShortcutController {
     )
 
     private lazy var meetingHandler = SmartShortcutHandler(
+        doubleTapInterval: currentDoubleTapInterval,
         isRecordingProvider: { [weak self] in self?.recordingManager.isRecording ?? false },
         actionHandler: { [weak self] action in
             Task { @MainActor [weak self] in
@@ -45,6 +47,7 @@ final class GlobalShortcutController {
     func start() {
         setupKeyboardShortcutHandlers()
         observeSettings()
+        applyGlobalDoubleTapInterval()
         refreshCustomShortcutRegistration()
         refreshEventMonitors()
     }
@@ -148,6 +151,14 @@ final class GlobalShortcutController {
         settings.$dictationShortcutActivationMode
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
+                self?.resetShortcutState()
+            }
+            .store(in: &cancellables)
+
+        settings.$shortcutDoubleTapIntervalMilliseconds
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.applyGlobalDoubleTapInterval()
                 self?.resetShortcutState()
             }
             .store(in: &cancellables)
@@ -527,6 +538,16 @@ final class GlobalShortcutController {
         meetingHandler.reset()
         lastEscapePressTime = nil
         presetState.reset()
+    }
+
+    private var currentDoubleTapInterval: TimeInterval {
+        settings.shortcutDoubleTapIntervalMilliseconds / 1_000
+    }
+
+    private func applyGlobalDoubleTapInterval() {
+        let interval = currentDoubleTapInterval
+        dictationHandler.setDoubleTapInterval(interval)
+        meetingHandler.setDoubleTapInterval(interval)
     }
 
     private func activationMode(for type: ShortcutType) -> ShortcutActivationMode {

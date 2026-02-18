@@ -39,6 +39,32 @@ public struct GeneralSettingsTab: View {
                             "settings.general.show_settings_on_launch".localized,
                             isOn: $viewModel.showSettingsOnLaunch
                         )
+
+                        Divider()
+
+                        HStack(alignment: .center, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing4) {
+                                Text("settings.general.shortcut_double_tap_interval".localized)
+                                    .font(.body)
+                                    .foregroundStyle(.primary)
+
+                                Text("settings.general.shortcut_double_tap_interval_desc".localized)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            Spacer()
+
+                            Stepper(
+                                value: $viewModel.shortcutDoubleTapIntervalMilliseconds,
+                                in: AppSettingsStore.shortcutDoubleTapIntervalRangeMilliseconds,
+                                step: 25
+                            ) {
+                                Text("\(Int(viewModel.shortcutDoubleTapIntervalMilliseconds)) ms")
+                                    .font(.body)
+                                    .frame(minWidth: 74, alignment: .trailing)
+                            }
+                        }
                     }
                 }
 

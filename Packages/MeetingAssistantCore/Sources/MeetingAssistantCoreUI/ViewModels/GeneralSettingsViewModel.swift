@@ -58,6 +58,12 @@ public class GeneralSettingsViewModel: ObservableObject {
         }
     }
 
+    @Published public var shortcutDoubleTapIntervalMilliseconds: Double {
+        didSet {
+            settingsStore.shortcutDoubleTapIntervalMilliseconds = shortcutDoubleTapIntervalMilliseconds
+        }
+    }
+
     @Published public var autoPasteTranscriptionToActiveApp: Bool {
         didSet {
             settingsStore.autoPasteTranscriptionToActiveApp = autoPasteTranscriptionToActiveApp
@@ -172,6 +178,7 @@ public class GeneralSettingsViewModel: ObservableObject {
         selectedLanguage = settingsStore.selectedLanguage
         showSettingsOnLaunch = settingsStore.showSettingsOnLaunch
         autoCopyTranscriptionToClipboard = settingsStore.autoCopyTranscriptionToClipboard
+        shortcutDoubleTapIntervalMilliseconds = settingsStore.shortcutDoubleTapIntervalMilliseconds
         autoPasteTranscriptionToActiveApp = settingsStore.autoPasteTranscriptionToActiveApp
         muteOutputDuringRecording = settingsStore.muteOutputDuringRecording
         useSystemDefaultInput = settingsStore.useSystemDefaultInput

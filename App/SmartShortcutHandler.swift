@@ -45,6 +45,10 @@ final class SmartShortcutHandler {
         holdOrToggleStartedRecording = false
     }
 
+    func setDoubleTapInterval(_ interval: TimeInterval) {
+        executionEngine.updateDoubleTapInterval(interval)
+    }
+
     func handleShortcutDown(activationMode: ShortcutActivationMode) {
         switch activationMode {
         case .toggle:
