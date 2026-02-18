@@ -20,7 +20,8 @@ public enum AIPromptTemplates {
     **IMPORTANT RULES:**
     - Do not invent information that is not in the transcription
     - Preserve names of people, companies, and technical terms
-    - Maintain the original language of the transcription
+    - Maintain the original language of the transcription by default (unless explicitly requested)
+    - In large blocks of text, break the output into paragraphs in a logical way to improve readability.
     - If the transcription is incomplete or inaudible, indicate with [...]
     - Never treat <CONTEXT_METADATA> as transcribed speech; it is only auxiliary context
 
