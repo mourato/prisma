@@ -15,6 +15,10 @@ final class AssistantShortcutController {
     private var integrationShortcutHandlers: [UUID: SmartShortcutHandler] = [:]
     private var integrationPresetStates: [UUID: ShortcutActivationState] = [:]
     private var registeredIntegrationShortcutIDs = Set<UUID>()
+    private let layerTimeoutNanoseconds: UInt64 = 1_000_000_000
+    private var isShortcutLayerArmed = false
+    private var shortcutLayerTask: Task<Void, Never>?
+    private let shortcutLayerFeedbackController = ShortcutLayerFeedbackController()
 
     private lazy var shortcutHandler = SmartShortcutHandler(
         isRecordingProvider: { [weak self] in self?.assistantService.isRecording ?? false },
@@ -119,6 +123,13 @@ final class AssistantShortcutController {
     }
 
     private func refreshEventMonitors() {
+        if shouldUseAssistantShortcutLayer {
+            installFlagsChangedMonitors()
+            installKeyDownMonitors()
+            removeKeyUpMonitors()
+            return
+        }
+
         let hasInHouseDefinitions = settings.assistantShortcutDefinition != nil
             || settings.assistantIntegrations.contains { integration in
                 integration.isEnabled && integration.shortcutDefinition != nil
@@ -185,7 +196,9 @@ final class AssistantShortcutController {
                 }
             }
 
-            if integration.isEnabled,
+            if shouldUseAssistantShortcutLayer {
+                KeyboardShortcuts.disable(shortcutName)
+            } else if integration.isEnabled,
                integration.shortcutDefinition == nil,
                integration.modifierShortcutGesture == nil,
                integration.shortcutPresetKey == .custom
@@ -290,7 +303,9 @@ final class AssistantShortcutController {
             }
         }
 
-        handleIntegrationFlagsChanged(event)
+        if !shouldUseAssistantShortcutLayer {
+            handleIntegrationFlagsChanged(event)
+        }
     }
 
     private func handleIntegrationFlagsChanged(_ event: NSEvent) {
@@ -361,6 +376,10 @@ final class AssistantShortcutController {
     }
 
     private func handleKeyDown(_ event: NSEvent) {
+        if handleShortcutLayerKeyDown(event) {
+            return
+        }
+
         if let definition = settings.assistantShortcutDefinition {
             handleInHouseShortcutEvent(
                 definition: definition,
@@ -480,6 +499,10 @@ final class AssistantShortcutController {
     }
 
     private func handleIntegrationKeyEvent(_ event: NSEvent) {
+        guard !shouldUseAssistantShortcutLayer else {
+            return
+        }
+
         for integration in settings.assistantIntegrations where integration.isEnabled {
             guard let definition = integration.shortcutDefinition else {
                 continue
@@ -570,10 +593,19 @@ final class AssistantShortcutController {
     }
 
     private func handleShortcutDown(activationModeOverride: ShortcutActivationMode? = nil) async {
+        if shouldUseAssistantShortcutLayer {
+            armShortcutLayer()
+            return
+        }
+
         shortcutHandler.handleShortcutDown(activationMode: activationModeOverride ?? settings.assistantShortcutActivationMode)
     }
 
     private func handleShortcutUp(activationModeOverride: ShortcutActivationMode? = nil) async {
+        if shouldUseAssistantShortcutLayer {
+            return
+        }
+
         shortcutHandler.handleShortcutUp(activationMode: activationModeOverride ?? settings.assistantShortcutActivationMode)
     }
 
@@ -670,9 +702,232 @@ final class AssistantShortcutController {
 
     private func resetShortcutState() {
         lastEscapePressTime = nil
+        disarmShortcutLayer(showFeedback: false)
         presetState.reset()
         shortcutHandler.reset()
         integrationPresetStates.values.forEach { $0.reset() }
         integrationShortcutHandlers.values.forEach { $0.reset() }
+    }
+
+    private var shouldUseAssistantShortcutLayer: Bool {
+        guard settings.assistantShortcutDefinition != nil else {
+            return false
+        }
+
+        if !settings.assistantLayerShortcutKey.isEmpty {
+            return true
+        }
+
+        return settings.assistantIntegrations.contains { integration in
+            integration.isEnabled && !(integration.layerShortcutKey ?? "").isEmpty
+        }
+    }
+
+    private func armShortcutLayer() {
+        isShortcutLayerArmed = true
+        shortcutLayerFeedbackController.showArmed()
+
+        let timeoutNanoseconds = layerTimeoutNanoseconds
+        shortcutLayerTask?.cancel()
+        shortcutLayerTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: timeoutNanoseconds)
+            self?.disarmShortcutLayer(showFeedback: false)
+        }
+    }
+
+    private func disarmShortcutLayer(showFeedback: Bool) {
+        isShortcutLayerArmed = false
+        shortcutLayerTask?.cancel()
+        shortcutLayerTask = nil
+
+        if showFeedback {
+            shortcutLayerFeedbackController.showCancelled()
+        } else {
+            shortcutLayerFeedbackController.hide()
+        }
+    }
+
+    private func handleShortcutLayerKeyDown(_ event: NSEvent) -> Bool {
+        guard shouldUseAssistantShortcutLayer, isShortcutLayerArmed else {
+            return false
+        }
+
+        guard !event.isARepeat else {
+            return true
+        }
+
+        if event.keyCode == PresetShortcutKey.escapeKeyCode {
+            disarmShortcutLayer(showFeedback: true)
+            return true
+        }
+
+        let relevantFlags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            .subtracting(.capsLock)
+            .subtracting(.shift)
+        guard relevantFlags.isEmpty else {
+            return true
+        }
+
+        guard let matched = matchedLayerAction(for: event) else {
+            disarmShortcutLayer(showFeedback: false)
+            return true
+        }
+
+        disarmShortcutLayer(showFeedback: false)
+        shortcutLayerFeedbackController.showTriggered()
+        Task { @MainActor [weak self] in
+            await self?.executeLayerAction(matched)
+        }
+        return true
+    }
+
+    private enum LayerAction {
+        case assistant
+        case integration(UUID)
+    }
+
+    private func matchedLayerAction(for event: NSEvent) -> LayerAction? {
+        guard let rawCharacter = event.charactersIgnoringModifiers?.first else {
+            return nil
+        }
+
+        let inputKey = String(rawCharacter).uppercased()
+
+        if settings.assistantLayerShortcutKey == inputKey {
+            return .assistant
+        }
+
+        if let integration = settings.assistantIntegrations.first(where: { integration in
+            integration.isEnabled && integration.layerShortcutKey == inputKey
+        }) {
+            return .integration(integration.id)
+        }
+
+        return nil
+    }
+
+    private func executeLayerAction(_ action: LayerAction) async {
+        switch action {
+        case .assistant:
+            if assistantService.isRecording {
+                await assistantService.stopAndProcess()
+            } else {
+                await assistantService.startRecording(flow: .assistantMode)
+            }
+        case let .integration(integrationID):
+            guard integration(for: integrationID)?.isEnabled == true else {
+                return
+            }
+            settings.assistantSelectedIntegrationId = integrationID
+            if assistantService.isRecording {
+                await assistantService.stopAndProcess()
+            } else {
+                await assistantService.startRecording(flow: .integrationDispatch)
+            }
+        }
+    }
+}
+
+@MainActor
+private final class ShortcutLayerFeedbackController {
+    private var window: NSPanel?
+    private var hideTask: Task<Void, Never>?
+
+    func showArmed() {
+        show(message: "⌨︎")
+    }
+
+    func showCancelled() {
+        show(message: "×")
+    }
+
+    func showTriggered() {
+        show(message: "✓")
+    }
+
+    func hide() {
+        hideTask?.cancel()
+        hideTask = nil
+        window?.orderOut(nil)
+    }
+
+    private func show(message: String) {
+        hideTask?.cancel()
+
+        let panel = makeOrReusePanel()
+        if let textField = panel.contentView?.subviews.first as? NSTextField {
+            textField.stringValue = message
+        }
+
+        position(panel)
+        panel.alphaValue = 0
+        panel.orderFrontRegardless()
+
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.1
+            panel.animator().alphaValue = 1
+        }
+
+        hideTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.12
+                panel.animator().alphaValue = 0
+            } completionHandler: {
+                Task { @MainActor in
+                    panel.orderOut(nil)
+                    panel.alphaValue = 1
+                }
+            }
+        }
+    }
+
+    private func makeOrReusePanel() -> NSPanel {
+        if let window {
+            return window
+        }
+
+        let panel = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 46, height: 30),
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
+        panel.level = .statusBar
+        panel.isOpaque = false
+        panel.backgroundColor = .clear
+        panel.hasShadow = false
+        panel.ignoresMouseEvents = true
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
+
+        let container = NSView(frame: panel.contentView!.bounds)
+        container.wantsLayer = true
+        container.layer?.cornerRadius = 10
+        container.layer?.backgroundColor = NSColor.windowBackgroundColor.withAlphaComponent(0.8).cgColor
+        container.layer?.borderWidth = 1
+        container.layer?.borderColor = NSColor.separatorColor.withAlphaComponent(0.6).cgColor
+
+        let label = NSTextField(labelWithString: "⌨︎")
+        label.alignment = .center
+        label.font = .systemFont(ofSize: 14, weight: .semibold)
+        label.textColor = .secondaryLabelColor
+        label.frame = container.bounds
+        label.autoresizingMask = [.width, .height]
+
+        container.addSubview(label)
+        panel.contentView = container
+
+        window = panel
+        return panel
+    }
+
+    private func position(_ panel: NSPanel) {
+        guard let screenFrame = NSScreen.main?.visibleFrame else {
+            return
+        }
+
+        let originX = screenFrame.midX - (panel.frame.width / 2)
+        let originY = screenFrame.maxY - panel.frame.height - 20
+        panel.setFrameOrigin(NSPoint(x: originX, y: originY))
     }
 }

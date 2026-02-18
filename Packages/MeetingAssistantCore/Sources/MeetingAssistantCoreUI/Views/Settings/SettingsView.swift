@@ -111,7 +111,7 @@ public struct SettingsView: View {
         case .assistant:
             AssistantSettingsTab()
         case .integrations:
-            IntegrationsSettingsTab()
+            AssistantSettingsTab()
         case .audio:
             AudioSettingsTab()
         case .transcriptions:

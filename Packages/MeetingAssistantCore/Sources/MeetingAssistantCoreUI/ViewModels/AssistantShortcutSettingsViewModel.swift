@@ -20,6 +20,8 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
     @Published public var assistantShortcutDefinition: ShortcutDefinition?
     @Published public var assistantModifierConflictMessage: String?
     @Published public var isRecordingCustomShortcut: Bool = false
+    @Published public var assistantLayerShortcutKey: String
+    @Published public var assistantLayerShortcutConflictMessage: String?
     @Published public var borderColor: AssistantBorderColor
     @Published public var borderStyle: AssistantBorderStyle
     @Published public var borderWidth: Double
@@ -32,6 +34,8 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
         assistantShortcutDefinition = settings.assistantShortcutDefinition
         assistantModifierConflictMessage = nil
         isRecordingCustomShortcut = settings.assistantSelectedPresetKey == .custom
+        assistantLayerShortcutKey = settings.assistantLayerShortcutKey
+        assistantLayerShortcutConflictMessage = nil
         borderColor = settings.assistantBorderColor
         borderStyle = settings.assistantBorderStyle
         let normalizedBorderWidth = Self.normalizedBorderWidthValue(settings.assistantBorderWidth)
@@ -72,6 +76,13 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
             .dropFirst()
             .sink { [weak self] newValue in
                 self?.settings.assistantBorderColor = newValue
+            }
+            .store(in: &cancellables)
+
+        $assistantLayerShortcutKey
+            .dropFirst()
+            .sink { [weak self] newValue in
+                self?.handleAssistantLayerShortcutKeyChange(newValue)
             }
             .store(in: &cancellables)
 
@@ -164,5 +175,41 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
         }
 
         return definition.isValid ? definition : nil
+    }
+
+    private func handleAssistantLayerShortcutKeyChange(_ newValue: String) {
+        let normalized = normalizedLayerShortcutKey(newValue)
+        if normalized != newValue {
+            assistantLayerShortcutKey = normalized
+            return
+        }
+
+        guard !normalized.isEmpty else {
+            assistantLayerShortcutConflictMessage = nil
+            settings.assistantLayerShortcutKey = "A"
+            assistantLayerShortcutKey = "A"
+            return
+        }
+
+        let hasConflict = settings.assistantIntegrations.contains { integration in
+            integration.isEnabled && (integration.layerShortcutKey ?? "") == normalized
+        }
+
+        if hasConflict {
+            assistantLayerShortcutConflictMessage = "settings.assistant.layer.duplicate_key".localized
+            assistantLayerShortcutKey = settings.assistantLayerShortcutKey
+            return
+        }
+
+        assistantLayerShortcutConflictMessage = nil
+        settings.assistantLayerShortcutKey = normalized
+    }
+
+    private func normalizedLayerShortcutKey(_ value: String) -> String {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let character = trimmed.first else {
+            return ""
+        }
+        return String(character).uppercased()
     }
 }

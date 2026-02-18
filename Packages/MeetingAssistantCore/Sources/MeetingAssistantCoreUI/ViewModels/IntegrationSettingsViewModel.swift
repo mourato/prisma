@@ -122,6 +122,9 @@ public final class IntegrationSettingsViewModel: ObservableObject {
     @discardableResult
     public func saveIntegrationWithModifierValidation(_ integration: AssistantIntegrationConfig) -> String? {
         let normalized = normalizedIntegration(integration)
+        if let conflictMessage = layerShortcutConflictMessage(for: normalized) {
+            return conflictMessage
+        }
         if let conflictMessage = modifierConflictMessage(for: normalized) {
             return conflictMessage
         }
@@ -131,16 +134,20 @@ public final class IntegrationSettingsViewModel: ObservableObject {
     }
 
     @discardableResult
-    public func setIntegrationShortcutDefinition(_ shortcut: ShortcutDefinition?, for id: UUID) -> String? {
+    public func setIntegrationLayerShortcutKey(_ key: String, for id: UUID) -> String? {
         guard var integration = integration(for: id) else {
             return nil
         }
 
-        integration.shortcutDefinition = shortcut
-        integration.modifierShortcutGesture = shortcut?.asModifierShortcutGesture
-        integration.shortcutPresetKey = shortcut == nil ? .notSpecified : .custom
+        let normalizedKey = normalizedLayerShortcutKey(key)
+        integration.layerShortcutKey = normalizedKey.isEmpty ? nil : normalizedKey
 
-        return saveIntegrationWithModifierValidation(integration)
+        if let conflict = layerShortcutConflictMessage(for: integration) {
+            return conflict
+        }
+
+        saveIntegration(integration)
+        return nil
     }
 
     public func applyPreset(_ preset: AssistantIntegrationPreset, to id: UUID) {
@@ -278,6 +285,9 @@ public final class IntegrationSettingsViewModel: ObservableObject {
 
     private func normalizedIntegration(_ integration: AssistantIntegrationConfig) -> AssistantIntegrationConfig {
         var normalized = integration
+        normalized.layerShortcutKey = normalizedLayerShortcutKey(integration.layerShortcutKey ?? "").isEmpty
+            ? nil
+            : normalizedLayerShortcutKey(integration.layerShortcutKey ?? "")
         let resolvedShortcut = normalizedShortcutDefinition(integration.shortcutDefinition) ??
             normalizedShortcutDefinition(integration.modifierShortcutGesture?.asShortcutDefinition) ??
             normalizedShortcutDefinition(
@@ -343,6 +353,33 @@ public final class IntegrationSettingsViewModel: ObservableObject {
         }
 
         return definition.isValid ? definition : nil
+    }
+
+    private func normalizedLayerShortcutKey(_ value: String) -> String {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let character = trimmed.first else {
+            return ""
+        }
+        return String(character).uppercased()
+    }
+
+    private func layerShortcutConflictMessage(for integration: AssistantIntegrationConfig) -> String? {
+        guard integration.isEnabled,
+              let key = integration.layerShortcutKey,
+              !key.isEmpty
+        else {
+            return nil
+        }
+
+        if settings.assistantLayerShortcutKey == key {
+            return "settings.assistant.layer.duplicate_key".localized
+        }
+
+        let hasConflict = assistantIntegrations.contains { existing in
+            existing.id != integration.id && existing.isEnabled && existing.layerShortcutKey == key
+        }
+
+        return hasConflict ? "settings.assistant.layer.duplicate_key".localized : nil
     }
 
     private static func executeScript(script: String, input: String) async throws -> String? {
