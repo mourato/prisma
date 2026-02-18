@@ -1,0 +1,50 @@
+import SwiftUI
+
+enum SettingsMotion {
+    static let sectionDuration: Double = 0.18
+    static let sectionAnimation: Animation = .easeInOut(duration: sectionDuration)
+
+    static func sectionTransition() -> AnyTransition {
+        .move(edge: .top).combined(with: .opacity)
+    }
+}
+
+extension Binding {
+    func animated(using animation: Animation = SettingsMotion.sectionAnimation) -> Binding<Value> {
+        Binding(
+            get: { wrappedValue },
+            set: { newValue in
+                withAnimation(animation) {
+                    wrappedValue = newValue
+                }
+            }
+        )
+    }
+}
+
+extension View {
+    @ViewBuilder
+    func settingsPulseSymbolEffect<V: Equatable>(
+        value: V,
+        reduceMotion: Bool,
+        options: SymbolEffectOptions = .repeating
+    ) -> some View {
+        if reduceMotion {
+            self
+        } else {
+            symbolEffect(.pulse, options: options, value: value)
+        }
+    }
+
+    @ViewBuilder
+    func settingsPulseSymbolEffect(
+        isActive: Bool,
+        reduceMotion: Bool
+    ) -> some View {
+        if reduceMotion {
+            self
+        } else {
+            symbolEffect(.pulse, isActive: isActive)
+        }
+    }
+}

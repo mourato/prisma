@@ -13,37 +13,7 @@ public struct AudioSettingsTab: View {
     @StateObject private var viewModel = GeneralSettingsViewModel()
     @State private var draggingDevice: AudioInputDevice?
 
-    private enum Motion {
-        static let duration: Double = 0.18
-    }
-
-    private var sectionTransition: AnyTransition {
-        .move(edge: .top).combined(with: .opacity)
-    }
-
     public init() {}
-
-    private var useSystemDefaultInputBinding: Binding<Bool> {
-        Binding(
-            get: { viewModel.useSystemDefaultInput },
-            set: { newValue in
-                withAnimation(.easeInOut(duration: Motion.duration)) {
-                    viewModel.useSystemDefaultInput = newValue
-                }
-            }
-        )
-    }
-
-    private var soundFeedbackEnabledBinding: Binding<Bool> {
-        Binding(
-            get: { viewModel.soundFeedbackEnabled },
-            set: { newValue in
-                withAnimation(.easeInOut(duration: Motion.duration)) {
-                    viewModel.soundFeedbackEnabled = newValue
-                }
-            }
-        )
-    }
 
     public var body: some View {
         ScrollView {
@@ -54,7 +24,7 @@ public struct AudioSettingsTab: View {
                         MAToggleRow(
                             "settings.general.use_system_default_input".localized,
                             description: "settings.general.use_system_default_input_desc".localized,
-                            isOn: useSystemDefaultInputBinding
+                            isOn: $viewModel.useSystemDefaultInput.animated()
                         )
 
                         if !viewModel.useSystemDefaultInput {
@@ -109,7 +79,7 @@ public struct AudioSettingsTab: View {
                                     }
                                 }
                             }
-                            .transition(sectionTransition)
+                            .transition(SettingsMotion.sectionTransition())
                         }
 
                         Divider()
@@ -136,7 +106,7 @@ public struct AudioSettingsTab: View {
                         MAToggleRow(
                             "settings.general.sound_feedback.enabled".localized,
                             description: "settings.general.sound_feedback.enabled_desc".localized,
-                            isOn: soundFeedbackEnabledBinding
+                            isOn: $viewModel.soundFeedbackEnabled.animated()
                         )
 
                         if viewModel.soundFeedbackEnabled {
@@ -155,7 +125,7 @@ public struct AudioSettingsTab: View {
                                     selection: $viewModel.recordingStopSound
                                 )
                             }
-                            .transition(sectionTransition)
+                            .transition(SettingsMotion.sectionTransition())
                         }
                     }
                 }

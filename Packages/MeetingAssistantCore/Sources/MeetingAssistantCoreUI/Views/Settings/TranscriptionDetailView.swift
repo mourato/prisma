@@ -114,12 +114,8 @@ public struct TranscriptionDetailView: View {
                 }
             }
         } label: {
-            if reduceMotion {
-                Label("transcription.ai_actions".localized, systemImage: "sparkles")
-            } else {
-                Label("transcription.ai_actions".localized, systemImage: "sparkles")
-                    .symbolEffect(.pulse, options: .repeating, value: isProcessing)
-            }
+            Label("transcription.ai_actions".localized, systemImage: "sparkles")
+                .settingsPulseSymbolEffect(value: isProcessing, reduceMotion: reduceMotion)
         }
         .buttonStyle(.bordered)
         .tint(.orange)
