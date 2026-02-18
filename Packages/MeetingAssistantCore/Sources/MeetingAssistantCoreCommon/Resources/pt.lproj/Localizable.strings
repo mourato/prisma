@@ -8,7 +8,7 @@
 "settings.section.history" = "Histórico";
 "settings.section.assistant" = "Assistant";
 "settings.section.integrations" = "Integrações";
-"settings.section.rules_per_app" = "Regras por App";
+"settings.section.rules_per_app" = "Regras";
 "settings.section.ai" = "Aprimoramentos";
 "settings.section.service" = "Serviço de IA";
 "settings.section.permissions" = "Permissões";
@@ -106,7 +106,7 @@
 "settings.meetings.autodetect_type_desc" = "Classifica o tipo de reunião a partir da transcrição e escolhe automaticamente o melhor prompt para o resumo.";
 "settings.meetings.no_prompts" = "Nenhum prompt ainda";
 "settings.meetings.web_targets.title" = "Alvos Web de Reunião";
-"settings.meetings.web_targets.desc" = "Identifica reuniões por URL quando o navegador está ativo.";
+"settings.meetings.web_targets.desc" = "Identifica reuniões pela URL da aba ativa em navegadores compatíveis. O macOS pode pedir permissão de automação para o Meeting Assistant ler essa URL.";
 "settings.meetings.web_targets.empty" = "Nenhum alvo web configurado ainda.";
 "settings.meetings.web_targets.add" = "Adicionar alvo web";
 "settings.meetings.web_targets.edit" = "Editar alvo web";
@@ -277,7 +277,7 @@
 "settings.markdown_targets.remove" = "Remover app";
 "settings.web_targets.browsers.empty" = "Nenhum navegador selecionado ainda.";
 "settings.markdown_targets.websites.title" = "Sites";
-"settings.markdown_targets.websites.desc" = "Força a formatação em Markdown no ditado quando esses sites estão ativos em navegadores compatíveis.";
+"settings.markdown_targets.websites.desc" = "Configura regras de ditado por site usando a URL da aba ativa em navegadores compatíveis. O macOS pode pedir permissão de automação para ler essa URL.";
 "settings.markdown_targets.websites.empty" = "Nenhum site selecionado ainda.";
 "settings.markdown_targets.websites.add" = "Adicionar site";
 "settings.markdown_targets.websites.edit" = "Editar alvo de site";
@@ -287,6 +287,11 @@
 "settings.markdown_targets.websites.name_label" = "Nome de exibicao";
 "settings.markdown_targets.websites.url_label" = "Padroes de URL";
 "settings.markdown_targets.websites.url_desc" = "Um padrao por linha (ou separado por virgula). Exemplo: docs.exemplo.com";
+"settings.markdown_targets.websites.auto_record.title" = "Iniciar Gravação de Reunião Automaticamente";
+"settings.markdown_targets.websites.auto_record.desc" = "Quando ativado, este site pode disparar o modo de gravação automática de reunião se o auto início global estiver ativo.";
+"settings.markdown_targets.websites.summary.markdown_on" = "Markdown";
+"settings.markdown_targets.websites.summary.markdown_off" = "Sem Markdown";
+"settings.markdown_targets.websites.summary.auto_record" = "Gravação Auto";
 "settings.markdown_targets.websites.delete_confirm_title" = "Excluir alvo de site?";
 "settings.markdown_targets.websites.delete_confirm_message" = "Tem certeza que deseja excluir \"%@\"?";
 "settings.web_targets.any_browser" = "Qualquer navegador detectado";
@@ -468,7 +473,7 @@
 /* Permissions Settings */
 "settings.permissions.title" = "Permissões";
 "settings.permissions.about" = "Sobre Permissões";
-"settings.permissions.description" = "O Meeting Assistant precisa de acesso ao microfone para gravar ditados. A gravação de tela é necessária apenas para capturar áudio do sistema.";
+"settings.permissions.description" = "O Meeting Assistant precisa de acesso ao microfone para gravar ditados. A gravação de tela é necessária apenas para capturar áudio do sistema. Para regras por site e detecção de reuniões web, o macOS pode pedir permissão de automação para ler a URL da aba ativa em navegadores compatíveis.";
 "settings.permissions.status" = "Status das Permissões";
 "permissions.warning" = "Algumas permissões são necessárias dependendo do que você grava.";
 

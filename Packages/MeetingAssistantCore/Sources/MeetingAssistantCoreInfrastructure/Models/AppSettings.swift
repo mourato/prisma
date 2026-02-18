@@ -2113,7 +2113,10 @@ public class AppSettingsStore: ObservableObject {
                 id: target.id,
                 displayName: target.displayName,
                 urlPatterns: target.urlPatterns,
-                browserBundleIdentifiers: []
+                browserBundleIdentifiers: [],
+                forceMarkdownOutput: target.forceMarkdownOutput,
+                outputLanguage: target.outputLanguage,
+                autoStartMeetingRecording: target.autoStartMeetingRecording
             )
         }
 

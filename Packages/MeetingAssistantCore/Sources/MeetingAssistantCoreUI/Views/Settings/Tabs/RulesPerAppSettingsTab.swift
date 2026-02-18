@@ -126,7 +126,7 @@ public struct RulesPerAppSettingsTab: View {
             }
             .background(MeetingAssistantDesignSystem.Colors.subtleFill2)
             .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
-            
+
             Spacer()
         }
     }
@@ -297,6 +297,8 @@ public struct RulesPerAppSettingsTab: View {
 
             Spacer()
 
+            websiteRuleSummary(for: target)
+
             Button {
                 markdownWebTargetsViewModel.editTarget(target)
             } label: {
@@ -367,6 +369,47 @@ public struct RulesPerAppSettingsTab: View {
                 viewModel.setOutputLanguage(language, for: bundleIdentifier)
             }
         )
+    }
+
+    @ViewBuilder
+    private func websiteRuleSummary(for target: WebContextTarget) -> some View {
+        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+            Text(
+                target.forceMarkdownOutput
+                    ? "settings.markdown_targets.websites.summary.markdown_on".localized
+                    : "settings.markdown_targets.websites.summary.markdown_off".localized
+            )
+            .font(.caption2)
+            .fontWeight(.semibold)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(
+                Capsule()
+                    .fill(MeetingAssistantDesignSystem.Colors.subtleFill2)
+            )
+            .foregroundStyle(.secondary)
+            .accessibilityLabel("settings.rules_per_app.markdown.title".localized)
+
+            if target.outputLanguage != .original {
+                Text(target.outputLanguage.flagEmoji)
+                    .font(.headline)
+                    .accessibilityLabel(target.outputLanguage.localizedName)
+            }
+
+            if target.autoStartMeetingRecording {
+                Text("settings.markdown_targets.websites.summary.auto_record".localized)
+                    .font(.caption2)
+                    .fontWeight(.semibold)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(
+                        Capsule()
+                            .fill(MeetingAssistantDesignSystem.Colors.subtleFill2)
+                    )
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel("settings.markdown_targets.websites.auto_record.title".localized)
+            }
+        }
     }
 
     @ViewBuilder
