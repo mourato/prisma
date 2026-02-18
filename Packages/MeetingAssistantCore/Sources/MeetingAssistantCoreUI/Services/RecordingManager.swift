@@ -320,6 +320,9 @@ public extension RecordingManager {
             managerEntryAt: managerEntryAt
         )
         isStartingRecording = true
+        await Task.yield()
+        SoundFeedbackService.shared.playRecordingStartSound()
+        await Task.yield()
 
         do {
             let meeting = createMeeting(type: resolveMeetingType())
@@ -345,9 +348,6 @@ public extension RecordingManager {
             currentMeeting?.audioFilePath = outputURL.path
 
             startContextCaptureAfterRecordingStart(meetingID: meeting.id, source: source)
-
-            // Play start recording sound feedback
-            SoundFeedbackService.shared.playRecordingStartSound()
 
             AppLogger.info("Recording started successfully", category: .recordingManager, extra: [
                 "app": meeting.appName,
