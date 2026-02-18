@@ -1056,13 +1056,23 @@ extension RecordingManager {
 
     private func capturePostProcessingContext(for meeting: Meeting) async -> (context: String?, items: [TranscriptionContextItem]) {
         let settings = AppSettingsStore.shared
+        let activeTabURL = activeBrowserURL(for: meeting.appBundleIdentifier)?.absoluteString
+
         guard settings.contextAwarenessEnabled else {
             AppLogger.debug(
                 "Context awareness disabled, skipping context capture",
                 category: .recordingManager,
                 extra: ["reasonCode": "context.disabled"]
             )
-            return (nil, [])
+
+            guard let activeTabURL else {
+                return (nil, [])
+            }
+
+            return (
+                nil,
+                [TranscriptionContextItem(source: .activeTabURL, text: activeTabURL)]
+            )
         }
 
         let snapshot = await contextAwarenessService.captureSnapshot(
@@ -1080,7 +1090,7 @@ extension RecordingManager {
         var context = contextAwarenessService.makePostProcessingContext(from: snapshot)
         var items = makeContextItems(from: snapshot)
 
-        if let activeTabURL = activeBrowserURL(for: meeting.appBundleIdentifier)?.absoluteString {
+        if let activeTabURL {
             items.append(TranscriptionContextItem(source: .activeTabURL, text: activeTabURL))
 
             let activeTabURLBlock = "- Active tab URL: \(activeTabURL)"

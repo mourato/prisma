@@ -30,6 +30,8 @@
 	<true/>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2024. Todos os direitos reservados.</string>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>O Meeting Assistant precisa controlar navegadores para capturar a URL da aba ativa durante a gravação.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>O Meeting Assistant precisa acessar o microfone para capturar áudio quando a captura de tela não estiver disponível.</string>
 	<key>NSPrincipalClass</key>
