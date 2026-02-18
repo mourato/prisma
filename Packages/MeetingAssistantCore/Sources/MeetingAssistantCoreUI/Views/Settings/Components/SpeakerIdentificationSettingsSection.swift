@@ -9,6 +9,7 @@ import SwiftUI
 public struct SpeakerIdentificationSettingsSection: View {
     @ObservedObject private var settings: AppSettingsStore
     @ObservedObject private var modelManager: FluidAIModelManager
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(
         settings: AppSettingsStore = .shared,
@@ -88,7 +89,6 @@ public struct SpeakerIdentificationSettingsSection: View {
                 }
             }
             .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing4)
-            .animation(.easeInOut(duration: 0.2), value: phase)
         }
     }
 
@@ -102,12 +102,12 @@ public struct SpeakerIdentificationSettingsSection: View {
         case .downloadingASR, .downloadingDiarization:
             Image(systemName: "arrow.down.circle.fill")
                 .foregroundStyle(MeetingAssistantDesignSystem.Colors.accent)
-                .symbolEffect(.pulse)
+                .symbolEffect(.pulse, isActive: !reduceMotion)
                 .accessibilityLabel("settings.ai.downloading".localized)
         case .loadingASR, .loadingDiarization:
             Image(systemName: "gearshape.circle.fill")
                 .foregroundStyle(MeetingAssistantDesignSystem.Colors.warning)
-                .symbolEffect(.pulse)
+                .symbolEffect(.pulse, isActive: !reduceMotion)
                 .accessibilityLabel("settings.ai.loading".localized)
         case .ready:
             Image(systemName: "checkmark.circle.fill")

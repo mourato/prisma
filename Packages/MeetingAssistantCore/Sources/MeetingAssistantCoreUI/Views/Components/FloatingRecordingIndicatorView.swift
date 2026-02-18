@@ -275,6 +275,7 @@ public struct FloatingRecordingIndicatorView: View {
                             Text(formatRecordingDuration(at: context.date))
                                 .font(.system(size: 13, weight: .medium))
                                 .monospacedDigit()
+                                .contentTransition(.numericText())
                                 .lineLimit(1)
                                 .fixedSize(horizontal: true, vertical: false)
                                 .layoutPriority(1)
@@ -284,6 +285,7 @@ public struct FloatingRecordingIndicatorView: View {
                         Text(formatRecordingDuration(at: Date()))
                             .font(.system(size: 13, weight: .medium))
                             .monospacedDigit()
+                            .contentTransition(.numericText())
                             .lineLimit(1)
                             .fixedSize(horizontal: true, vertical: false)
                             .layoutPriority(1)
@@ -438,7 +440,6 @@ public struct FloatingRecordingIndicatorView: View {
         .onHover { hovering in
             handleMainRegionHover(hovering)
         }
-        .animation(.spring(response: 0.22, dampingFraction: 0.86), value: isHovering)
     }
 
     private func promptSelectionPill(size: IndicatorSize) -> some View {
@@ -678,16 +679,6 @@ struct AudioVisualizer: View {
                 Capsule()
                     .fill(Color.white)
                     .frame(width: barWidth, height: barHeights[index])
-                    .animation(
-                        isAnimationActive
-                            ? .interactiveSpring(
-                                response: 0.2, // Controls the speed of the spring (lower is faster)
-                                dampingFraction: 0.5, // Controls the bounciness (lower is bouncier)
-                                blendDuration: 0.2
-                            )
-                            : nil,
-                        value: barHeights[index]
-                    )
             }
         }
         .frame(height: maxHeight, alignment: .center)
@@ -752,8 +743,19 @@ struct AudioVisualizer: View {
             newHeights.append(targetHeight)
         }
 
-        // Update state directly; animation modifier handles the transition
-        barHeights = newHeights
+        if isAnimationActive {
+            withAnimation(
+                .interactiveSpring(
+                    response: 0.2,
+                    dampingFraction: 0.5,
+                    blendDuration: 0.2
+                )
+            ) {
+                barHeights = newHeights
+            }
+        } else {
+            barHeights = newHeights
+        }
     }
 }
 

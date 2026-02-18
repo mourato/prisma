@@ -12,7 +12,26 @@ import SwiftUI
 public struct PostProcessingSettingsTab: View {
     @StateObject private var viewModel = PostProcessingSettingsViewModel()
 
+    private enum Motion {
+        static let duration: Double = 0.18
+    }
+
+    private var sectionTransition: AnyTransition {
+        .move(edge: .top).combined(with: .opacity)
+    }
+
     public init() {}
+
+    private var postProcessingEnabledBinding: Binding<Bool> {
+        Binding(
+            get: { viewModel.settings.postProcessingEnabled },
+            set: { newValue in
+                withAnimation(.easeInOut(duration: Motion.duration)) {
+                    viewModel.settings.postProcessingEnabled = newValue
+                }
+            }
+        )
+    }
 
     public var body: some View {
         ScrollView {
@@ -20,12 +39,15 @@ public struct PostProcessingSettingsTab: View {
                 enableToggleSection
 
                 if viewModel.settings.postProcessingEnabled {
-                    if viewModel.settings.aiConfiguration.isValid {
-                        systemPromptSection
-                        userPromptsSection
-                    } else {
-                        connectionWarningSection
+                    Group {
+                        if viewModel.settings.aiConfiguration.isValid {
+                            systemPromptSection
+                            userPromptsSection
+                        } else {
+                            connectionWarningSection
+                        }
                     }
+                    .transition(sectionTransition)
                 }
             }
             .padding()
@@ -65,7 +87,7 @@ public struct PostProcessingSettingsTab: View {
             MAToggleRow(
                 "settings.post_processing.enabled".localized,
                 description: "settings.post_processing.description".localized,
-                isOn: $viewModel.settings.postProcessingEnabled
+                isOn: postProcessingEnabledBinding
             )
         }
     }
@@ -157,7 +179,7 @@ public struct PostProcessingSettingsTab: View {
                 Spacer()
 
                 if isSelected {
-                    selectionIndicator(isSelected: isSelected)
+                    selectionIndicator
                 }
 
                 promptMenu(prompt: prompt, isSelected: isSelected)
@@ -204,10 +226,9 @@ public struct PostProcessingSettingsTab: View {
         }
     }
 
-    private func selectionIndicator(isSelected: Bool) -> some View {
+    private var selectionIndicator: some View {
         Image(systemName: "checkmark.circle.fill")
             .foregroundStyle(MeetingAssistantDesignSystem.Colors.success)
-            .symbolEffect(.bounce, value: isSelected)
     }
 
     private func promptMenu(prompt: PostProcessingPrompt, isSelected: Bool) -> some View {

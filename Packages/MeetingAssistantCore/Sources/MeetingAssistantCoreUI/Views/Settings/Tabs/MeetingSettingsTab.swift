@@ -352,7 +352,6 @@ public struct MeetingSettingsTab: View {
             if isSelected {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundStyle(MeetingAssistantDesignSystem.Colors.success)
-                    .symbolEffect(.bounce, value: isSelected)
             }
 
             promptMenu(prompt: prompt, isSelected: isSelected, isAutoDetectEnabled: isAutoDetectEnabled)
@@ -487,7 +486,6 @@ public struct MeetingSettingsTab: View {
             if isSelected {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundStyle(.green)
-                    .symbolEffect(.bounce, value: isSelected)
             }
 
             Image(systemName: "ellipsis.circle")
