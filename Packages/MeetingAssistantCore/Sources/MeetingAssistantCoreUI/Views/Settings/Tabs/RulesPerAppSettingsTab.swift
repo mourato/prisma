@@ -5,7 +5,6 @@ import SwiftUI
 public struct RulesPerAppSettingsTab: View {
     @StateObject private var viewModel: RulesPerAppSettingsViewModel
     @StateObject private var markdownWebTargetsViewModel: WebMarkdownTargetsViewModel
-    @State private var expandedBundleIdentifiers = Set<String>()
 
     public init(settings: AppSettingsStore = .shared) {
         _viewModel = StateObject(wrappedValue: RulesPerAppSettingsViewModel(settings: settings))
@@ -19,6 +18,22 @@ public struct RulesPerAppSettingsTab: View {
         }
         .sheet(isPresented: $viewModel.showAddAppSheet) {
             addAppSheet
+        }
+        .sheet(isPresented: $viewModel.showRuleEditor) {
+            if let editingRule = editingAppRule {
+                AppRuleEditorSheet(
+                    resolvedRule: editingRule,
+                    onSave: { forceMarkdownOutput, outputLanguage, customPromptInstructions in
+                        viewModel.saveRule(
+                            bundleIdentifier: editingRule.rule.bundleIdentifier,
+                            forceMarkdownOutput: forceMarkdownOutput,
+                            outputLanguage: outputLanguage,
+                            customPromptInstructions: customPromptInstructions
+                        )
+                    },
+                    onCancel: viewModel.dismissRuleEditor
+                )
+            }
         }
         .sheet(isPresented: $markdownWebTargetsViewModel.showEditor) {
             WebMarkdownTargetEditorSheet(
@@ -102,7 +117,7 @@ public struct RulesPerAppSettingsTab: View {
         } else {
             VStack(spacing: 0) {
                 ForEach(Array(viewModel.resolvedRules.enumerated()), id: \.element.id) { index, resolvedRule in
-                    disclosureRow(for: resolvedRule)
+                    appRow(for: resolvedRule)
 
                     if index < viewModel.resolvedRules.count - 1 {
                         Divider()
@@ -116,74 +131,48 @@ public struct RulesPerAppSettingsTab: View {
         }
     }
 
-    private func disclosureRow(for resolvedRule: ResolvedDictationAppRule) -> some View {
-        DisclosureGroup(
-            isExpanded: expansionBinding(for: resolvedRule.rule.bundleIdentifier),
-            content: {
-                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
-                    MAToggleRow(
-                        "settings.rules_per_app.markdown.title".localized,
-                        isOn: forceMarkdownBinding(for: resolvedRule.rule.bundleIdentifier)
-                    )
+    private func appRow(for resolvedRule: ResolvedDictationAppRule) -> some View {
+        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+            AppIconView(
+                bundleIdentifier: resolvedRule.rule.bundleIdentifier,
+                fallbackSystemName: "app.fill",
+                size: 32,
+                cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius
+            )
+            .padding(.leading, 8)
 
-                    HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
-                        Text("settings.rules_per_app.language.title".localized)
-                            .font(.body)
-                            .fontWeight(.regular)
-
-                        Spacer()
-
-                        Picker(
-                            "settings.rules_per_app.language.title".localized,
-                            selection: outputLanguageBinding(for: resolvedRule.rule.bundleIdentifier)
-                        ) {
-                            ForEach(DictationOutputLanguage.allCases, id: \.self) { language in
-                                Text(language.displayName).tag(language)
-                            }
-                        }
-                        .pickerStyle(.menu)
-                        .labelsHidden()
-                    }
-                }
-                .padding(.top, MeetingAssistantDesignSystem.Layout.spacing8)
-                .padding(.bottom, MeetingAssistantDesignSystem.Layout.spacing8)
-            },
-            label: {
-                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-                    AppIconView(
-                        bundleIdentifier: resolvedRule.rule.bundleIdentifier,
-                        fallbackSystemName: "app.fill",
-                        size: 32,
-                        cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius
-                    )
-                    .padding(.leading, 8)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(resolvedRule.displayName)
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                        Text(resolvedRule.rule.bundleIdentifier)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Spacer()
-
-                    appRuleSummary(for: resolvedRule.rule)
-
-                    Button(role: .destructive) {
-                        viewModel.removeRule(bundleIdentifier: resolvedRule.rule.bundleIdentifier)
-                        expandedBundleIdentifiers.remove(resolvedRule.rule.bundleIdentifier)
-                    } label: {
-                        Image(systemName: "trash")
-                    }
-                    .buttonStyle(.borderless)
-                    .controlSize(.small)
-                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
-                    .accessibilityLabel("settings.rules_per_app.remove_app".localized)
-                }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(resolvedRule.displayName)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                Text(resolvedRule.rule.bundleIdentifier)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-        )
+
+            Spacer()
+
+            appRuleSummary(for: resolvedRule.rule)
+
+            Button {
+                viewModel.editRule(bundleIdentifier: resolvedRule.rule.bundleIdentifier)
+            } label: {
+                Image(systemName: "pencil")
+            }
+            .buttonStyle(.borderless)
+            .controlSize(.regular)
+            .accessibilityLabel("settings.rules_per_app.edit_app".localized)
+
+            Button(role: .destructive) {
+                viewModel.removeRule(bundleIdentifier: resolvedRule.rule.bundleIdentifier)
+            } label: {
+                Image(systemName: "trash")
+            }
+            .buttonStyle(.borderless)
+            .controlSize(.small)
+            .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
+            .accessibilityLabel("settings.rules_per_app.remove_app".localized)
+        }
         .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)
         .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
     }
@@ -315,39 +304,9 @@ public struct RulesPerAppSettingsTab: View {
         )
     }
 
-    private func expansionBinding(for bundleIdentifier: String) -> Binding<Bool> {
-        Binding(
-            get: { expandedBundleIdentifiers.contains(bundleIdentifier) },
-            set: { isExpanded in
-                if isExpanded {
-                    expandedBundleIdentifiers.insert(bundleIdentifier)
-                } else {
-                    expandedBundleIdentifiers.remove(bundleIdentifier)
-                }
-            }
-        )
-    }
-
-    private func forceMarkdownBinding(for bundleIdentifier: String) -> Binding<Bool> {
-        Binding(
-            get: {
-                viewModel.resolvedRules.first { $0.rule.bundleIdentifier == bundleIdentifier }?.rule.forceMarkdownOutput ?? false
-            },
-            set: { isEnabled in
-                viewModel.setForceMarkdown(isEnabled, for: bundleIdentifier)
-            }
-        )
-    }
-
-    private func outputLanguageBinding(for bundleIdentifier: String) -> Binding<DictationOutputLanguage> {
-        Binding(
-            get: {
-                viewModel.resolvedRules.first { $0.rule.bundleIdentifier == bundleIdentifier }?.rule.outputLanguage ?? .original
-            },
-            set: { language in
-                viewModel.setOutputLanguage(language, for: bundleIdentifier)
-            }
-        )
+    private var editingAppRule: ResolvedDictationAppRule? {
+        guard let bundleIdentifier = viewModel.editingRuleBundleIdentifier else { return nil }
+        return viewModel.resolvedRules.first { $0.rule.bundleIdentifier == bundleIdentifier }
     }
 
     @ViewBuilder
@@ -373,6 +332,15 @@ public struct RulesPerAppSettingsTab: View {
                 Text(target.outputLanguage.flagEmoji)
                     .font(.headline)
                     .accessibilityLabel(target.outputLanguage.localizedName)
+            }
+
+            if let customPromptInstructions = target.customPromptInstructions,
+               !customPromptInstructions.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            {
+                Image(systemName: "text.append")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel("settings.rules_per_app.custom_prompt.badge_accessibility".localized)
             }
 
             if target.autoStartMeetingRecording {
@@ -412,6 +380,15 @@ public struct RulesPerAppSettingsTab: View {
                 Text(rule.outputLanguage.flagEmoji)
                     .font(.headline)
                     .accessibilityLabel(rule.outputLanguage.localizedName)
+            }
+
+            if let customPromptInstructions = rule.customPromptInstructions,
+               !customPromptInstructions.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            {
+                Image(systemName: "text.append")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel("settings.rules_per_app.custom_prompt.badge_accessibility".localized)
             }
         }
     }

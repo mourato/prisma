@@ -34,6 +34,8 @@ public struct ResolvedDictationAppRule: Identifiable, Hashable, Sendable {
 @MainActor
 public final class RulesPerAppSettingsViewModel: ObservableObject {
     @Published public var showAddAppSheet = false
+    @Published public var showRuleEditor = false
+    @Published public var editingRuleBundleIdentifier: String?
     @Published public var searchText = ""
     @Published public private(set) var appCatalog: [InstalledApplicationRecord] = []
     @Published public private(set) var isLoadingAppCatalog = false
@@ -128,6 +130,36 @@ public final class RulesPerAppSettingsViewModel: ObservableObject {
     public func removeRule(bundleIdentifier: String) {
         let normalized = normalizeBundleIdentifier(bundleIdentifier)
         settings.dictationAppRules.removeAll { normalizeBundleIdentifier($0.bundleIdentifier) == normalized }
+
+        if normalizeBundleIdentifier(editingRuleBundleIdentifier ?? "") == normalized {
+            editingRuleBundleIdentifier = nil
+            showRuleEditor = false
+        }
+    }
+
+    public func editRule(bundleIdentifier: String) {
+        editingRuleBundleIdentifier = bundleIdentifier
+        showRuleEditor = true
+    }
+
+    public func dismissRuleEditor() {
+        editingRuleBundleIdentifier = nil
+        showRuleEditor = false
+    }
+
+    public func saveRule(
+        bundleIdentifier: String,
+        forceMarkdownOutput: Bool,
+        outputLanguage: DictationOutputLanguage,
+        customPromptInstructions: String?
+    ) {
+        updateRule(bundleIdentifier: bundleIdentifier) { rule in
+            rule.forceMarkdownOutput = forceMarkdownOutput
+            rule.outputLanguage = outputLanguage
+            let normalized = customPromptInstructions?.trimmingCharacters(in: .whitespacesAndNewlines)
+            rule.customPromptInstructions = (normalized?.isEmpty == false) ? normalized : nil
+        }
+        dismissRuleEditor()
     }
 
     public func setForceMarkdown(_ isEnabled: Bool, for bundleIdentifier: String) {

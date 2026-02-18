@@ -249,6 +249,7 @@
 "settings.rules_per_app.description" = "Configure o comportamento do ditado por aplicativo. As regras são aplicadas quando o ditado inicia com esse app em primeiro plano.";
 "settings.rules_per_app.empty" = "Nenhuma regra por app configurada ainda.";
 "settings.rules_per_app.add_app" = "Adicionar App";
+"settings.rules_per_app.edit_app" = "Editar Regra do App";
 "settings.rules_per_app.remove_app" = "Remover Regra do App";
 "settings.rules_per_app.search_placeholder" = "Buscar por nome do app ou bundle identifier";
 "settings.rules_per_app.loading_apps" = "Carregando aplicativos instalados...";
@@ -269,6 +270,10 @@
 "settings.rules_per_app.language.option.italian" = "Italiano";
 "settings.rules_per_app.language.option.hindi" = "Hindi";
 "settings.rules_per_app.language.option.arabic" = "Árabe";
+"settings.rules_per_app.editor_title" = "Regra do App — %@";
+"settings.rules_per_app.custom_prompt.title" = "Instruções Prioritárias de Site/App";
+"settings.rules_per_app.custom_prompt.hint" = "Opcional. Essas instruções são anexadas ao prompt do sistema e ao do usuário com prioridade máxima para este app/site.";
+"settings.rules_per_app.custom_prompt.badge_accessibility" = "Tem instruções customizadas de site ou app";
 "settings.markdown_targets.title" = "Alvos Web para Markdown";
 "settings.markdown_targets.app.title" = "Apps";
 "settings.markdown_targets.description" = "Força a formatação em Markdown no ditado quando esses apps estão ativos.";
@@ -289,7 +294,7 @@
 "settings.markdown_targets.websites.url_desc" = "Um padrao por linha (ou separado por virgula). Exemplo: docs.exemplo.com";
 "settings.markdown_targets.websites.auto_record.title" = "Iniciar Gravação de Reunião Automaticamente";
 "settings.markdown_targets.websites.auto_record.desc" = "Quando ativado, este site pode disparar o modo de gravação automática de reunião se o auto início global estiver ativo.";
-"settings.markdown_targets.websites.summary.markdown_on" = "Markdown";
+"settings.markdown_targets.websites.summary.markdown_on" = "MD";
 "settings.markdown_targets.websites.summary.markdown_off" = "Sem Markdown";
 "settings.markdown_targets.websites.summary.auto_record" = "Gravação Auto";
 "settings.markdown_targets.websites.delete_confirm_title" = "Excluir alvo de site?";

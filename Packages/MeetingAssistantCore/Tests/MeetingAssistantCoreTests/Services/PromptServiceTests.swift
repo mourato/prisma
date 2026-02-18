@@ -40,4 +40,43 @@ final class PromptServiceTests: XCTestCase {
         XCTAssertFalse(promptText.contains("Valid Transcription"))
         XCTAssertTrue(promptText.contains("Key Topics Discussed"))
     }
+
+    func testExtractSiteOrAppPriorityInstructions_WhenPresent_ReturnsCleanPromptAndExtractedBlock() {
+        let prompt = """
+        Base instructions.
+
+        <SITE_OR_APP_PRIORITY_INSTRUCTIONS>
+        Always write in lowercase.
+        </SITE_OR_APP_PRIORITY_INSTRUCTIONS>
+        """
+
+        let extracted = AIPromptTemplates.extractSiteOrAppPriorityInstructions(from: prompt)
+
+        XCTAssertEqual(extracted.cleanPrompt, "Base instructions.")
+        XCTAssertEqual(extracted.priorityInstructions, "Always write in lowercase.")
+    }
+
+    func testSystemPrompt_WithPriorityInstructions_AppendsExplicitPrecedence() {
+        let system = AIPromptTemplates.systemPrompt(
+            basePrompt: "Base system prompt",
+            priorityInstructions: "Always write in lowercase."
+        )
+
+        XCTAssertTrue(system.contains("Base system prompt"))
+        XCTAssertTrue(system.contains("highest priority"))
+        XCTAssertTrue(system.contains("Always write in lowercase."))
+    }
+
+    func testUserMessage_WithPriorityInstructions_IncludesPriorityBlock() {
+        let userMessage = AIPromptTemplates.userMessage(
+            transcription: "hello world",
+            prompt: "Summarize",
+            priorityInstructions: "Always write in lowercase."
+        )
+
+        XCTAssertTrue(userMessage.contains("<TRANSCRIPTION>"))
+        XCTAssertTrue(userMessage.contains("<INSTRUCTIONS>"))
+        XCTAssertTrue(userMessage.contains("<SITE_APP_PRIORITY>"))
+        XCTAssertTrue(userMessage.contains("Always write in lowercase."))
+    }
 }

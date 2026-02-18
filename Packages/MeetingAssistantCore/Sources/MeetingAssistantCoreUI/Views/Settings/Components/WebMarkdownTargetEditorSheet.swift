@@ -12,6 +12,7 @@ public struct WebMarkdownTargetEditorSheet: View {
     @State private var forceMarkdownOutput: Bool
     @State private var outputLanguage: DictationOutputLanguage
     @State private var autoStartMeetingRecording: Bool
+    @State private var customPromptInstructions: String
 
     public init(
         target: WebContextTarget?,
@@ -27,6 +28,7 @@ public struct WebMarkdownTargetEditorSheet: View {
         _forceMarkdownOutput = State(initialValue: target?.forceMarkdownOutput ?? true)
         _outputLanguage = State(initialValue: target?.outputLanguage ?? .original)
         _autoStartMeetingRecording = State(initialValue: target?.autoStartMeetingRecording ?? false)
+        _customPromptInstructions = State(initialValue: target?.customPromptInstructions ?? "")
     }
 
     public var body: some View {
@@ -73,6 +75,23 @@ public struct WebMarkdownTargetEditorSheet: View {
                         description: "settings.markdown_targets.websites.auto_record.desc".localized,
                         isOn: $autoStartMeetingRecording
                     )
+
+                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                        Text("settings.rules_per_app.custom_prompt.title".localized)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        Text("settings.rules_per_app.custom_prompt.hint".localized)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+
+                        TextEditor(text: $customPromptInstructions)
+                            .font(.body)
+                            .frame(minHeight: 120)
+                            .padding(MeetingAssistantDesignSystem.Layout.textAreaPadding)
+                            .background(MeetingAssistantDesignSystem.Colors.subtleFill2)
+                            .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+                    }
                 }
             )
         }
@@ -97,8 +116,14 @@ public struct WebMarkdownTargetEditorSheet: View {
             browserBundleIdentifiers: [],
             forceMarkdownOutput: forceMarkdownOutput,
             outputLanguage: outputLanguage,
-            autoStartMeetingRecording: autoStartMeetingRecording
+            autoStartMeetingRecording: autoStartMeetingRecording,
+            customPromptInstructions: normalizedCustomPromptInstructions
         )
+    }
+
+    private var normalizedCustomPromptInstructions: String? {
+        let trimmed = customPromptInstructions.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
     }
 }
 

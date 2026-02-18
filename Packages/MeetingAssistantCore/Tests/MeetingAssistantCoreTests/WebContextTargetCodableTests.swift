@@ -22,6 +22,7 @@ final class WebContextTargetCodableTests: XCTestCase {
         XCTAssertTrue(decoded.forceMarkdownOutput)
         XCTAssertEqual(decoded.outputLanguage, .original)
         XCTAssertFalse(decoded.autoStartMeetingRecording)
+        XCTAssertNil(decoded.customPromptInstructions)
     }
 
     func testDecodingPayloadWithNewFields_PreservesValues() throws {
@@ -34,7 +35,8 @@ final class WebContextTargetCodableTests: XCTestCase {
           "browserBundleIdentifiers": ["com.apple.Safari"],
           "forceMarkdownOutput": false,
           "outputLanguage": "french",
-          "autoStartMeetingRecording": true
+          "autoStartMeetingRecording": true,
+          "customPromptInstructions": "Always answer in lowercase."
         }
         """
 
@@ -47,5 +49,6 @@ final class WebContextTargetCodableTests: XCTestCase {
         XCTAssertFalse(decoded.forceMarkdownOutput)
         XCTAssertEqual(decoded.outputLanguage, .french)
         XCTAssertTrue(decoded.autoStartMeetingRecording)
+        XCTAssertEqual(decoded.customPromptInstructions, "Always answer in lowercase.")
     }
 }
