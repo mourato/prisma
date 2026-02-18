@@ -114,74 +114,17 @@ public struct DictationSettingsTab: View {
     private func promptRow(prompt: PostProcessingPrompt) -> some View {
         let isSelected = promptViewModel.effectiveSelectedPromptId == prompt.id
 
-        return Button {
-            promptViewModel.selectPrompt(prompt.id, forceSelect: true)
-        } label: {
-            HStack(spacing: 12) {
-                promptIcon(prompt: prompt, isSelected: isSelected)
-                promptInfo(prompt: prompt, isSelected: isSelected)
-
-                Spacer()
-
-                if isSelected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(MeetingAssistantDesignSystem.Colors.success)
-                }
-
-                promptMenu(prompt: prompt, isSelected: isSelected)
+        return PromptSelectionRow(
+            iconSystemName: prompt.icon,
+            title: prompt.title,
+            description: prompt.description,
+            isSelected: isSelected,
+            onSelect: {
+                promptViewModel.selectPrompt(prompt.id, forceSelect: true)
             }
-            .padding(MeetingAssistantDesignSystem.Layout.spacing10)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .background(isSelected ? MeetingAssistantDesignSystem.Colors.selectionFill : Color.clear)
-        .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.cardCornerRadius))
-        .overlay(
-            RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.cardCornerRadius)
-                .stroke(isSelected ? MeetingAssistantDesignSystem.Colors.selectionStroke : Color.clear, lineWidth: 1)
-        )
-        .contextMenu {
+        ) {
             promptMenuContent(prompt: prompt, isSelected: isSelected)
         }
-    }
-
-    private func promptIcon(prompt: PostProcessingPrompt, isSelected: Bool) -> some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
-                .fill(isSelected ? MeetingAssistantDesignSystem.Colors.accent : MeetingAssistantDesignSystem.Colors.subtleFill)
-                .frame(width: 36, height: 36)
-
-            Image(systemName: prompt.icon)
-                .font(.subheadline)
-                .foregroundStyle(isSelected ? MeetingAssistantDesignSystem.Colors.onAccent : .primary)
-        }
-    }
-
-    private func promptInfo(prompt: PostProcessingPrompt, isSelected: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(prompt.title)
-                .font(.body)
-                .fontWeight(isSelected ? .bold : .medium)
-
-            if let description = prompt.description {
-                Text(description)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-        }
-    }
-
-    private func promptMenu(prompt: PostProcessingPrompt, isSelected: Bool) -> some View {
-        Menu {
-            promptMenuContent(prompt: prompt, isSelected: isSelected)
-        } label: {
-            Image(systemName: "ellipsis.circle")
-                .foregroundStyle(.secondary)
-        }
-        .menuStyle(.borderlessButton)
-        .fixedSize()
-        .highPriorityGesture(TapGesture())
     }
 
     @ViewBuilder
@@ -219,52 +162,19 @@ public struct DictationSettingsTab: View {
     private func noPostProcessingRow() -> some View {
         let isSelected = promptViewModel.effectiveSelectedPromptId == AppSettingsStore.noPostProcessingPromptId
 
-        return Button {
-            promptViewModel.selectPrompt(AppSettingsStore.noPostProcessingPromptId, forceSelect: true)
-        } label: {
-            HStack(spacing: 12) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(isSelected ? SettingsDesignSystem.Colors.accent : Color.primary.opacity(0.05))
-                        .frame(width: 36, height: 36)
-
-                    Image(systemName: "nosign")
-                        .font(.subheadline)
-                        .foregroundStyle(isSelected ? SettingsDesignSystem.Colors.onAccent : .primary)
-                }
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("recording_indicator.prompt.none".localized)
-                        .font(.body)
-                        .fontWeight(isSelected ? .bold : .medium)
-
-                    Text("recording_indicator.prompt.none_desc".localized)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-
-                Spacer()
-
-                if isSelected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
-                }
-
-                Image(systemName: "ellipsis.circle")
-                    .foregroundStyle(.secondary)
-                    .opacity(0) // Keep layout aligned with prompt rows
-            }
-            .padding(10)
-            .contentShape(Rectangle())
+        return PromptSelectionRow(
+            iconSystemName: "nosign",
+            title: "recording_indicator.prompt.none".localized,
+            description: "recording_indicator.prompt.none_desc".localized,
+            isSelected: isSelected,
+            onSelect: {
+                promptViewModel.selectPrompt(AppSettingsStore.noPostProcessingPromptId, forceSelect: true)
+            },
+            showMenu: false,
+            preserveMenuSpacing: true
+        ) {
+            EmptyView()
         }
-        .buttonStyle(.plain)
-        .background(isSelected ? SettingsDesignSystem.Colors.accent.opacity(0.08) : Color.clear)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(isSelected ? SettingsDesignSystem.Colors.accent.opacity(0.3) : Color.clear, lineWidth: 1)
-        )
     }
 }
 

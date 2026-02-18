@@ -105,7 +105,7 @@ Before implementation, run a quick clarification pass when needed:
 - [ ] Use Fast lane for low-risk tasks and Full lane for medium/high-risk tasks.
 - [ ] Keep hard gates at push/merge stage (`make test`, plus `make build` for Full lane).
 - [ ] Prefer `make preflight` (scripted build + test + lint) before push/merge.
-- [ ] For AI-agent runs, prefer compact targets (`make preflight-agent`, `make build-agent`, `make test-agent`, `make lint-agent`) to reduce context tokens while preserving diagnostics.
+- [ ] For AI-agent runs, ALWAYS use compact targets (`make preflight-agent`, `make build-agent`, `make test-agent`, `make lint-agent`) to reduce context tokens while preserving diagnostics.
 - [ ] Run `make arch-check` only for architecture boundary/access-control changes.
 - [ ] Run `make preview-check` when SwiftUI views are added or modified.
 - [ ] Use `git worktree remove` + `git worktree prune` for cleanup.
