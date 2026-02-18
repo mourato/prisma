@@ -337,7 +337,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
     }
 
     public func cancelRecording() async {
-        guard isRecording else { return }
+        guard isRecording || audioRecorder.isRecording else { return }
 
         _ = await audioRecorder.stopRecording()
         isRecording = false
