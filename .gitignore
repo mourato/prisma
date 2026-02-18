@@ -78,6 +78,7 @@ scratch/
 *.processed.wav
 performance-reports/
 default.profraw
+.swiftlint-cache/
 
 # Build artifacts
 dist/

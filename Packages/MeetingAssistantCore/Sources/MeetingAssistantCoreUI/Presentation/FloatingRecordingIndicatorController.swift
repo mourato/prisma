@@ -9,7 +9,7 @@ import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
 /// Mode for the floating indicator.
-public enum FloatingRecordingIndicatorMode: Sendable {
+public enum FloatingRecordingIndicatorMode: Sendable, Equatable {
     case starting
     case recording
     case processing
@@ -27,8 +27,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
     private let audioMonitor: AudioLevelMonitor
     private let settingsStore: AppSettingsStore
     private var cancellables = Set<AnyCancellable>()
-    private var currentMode: FloatingRecordingIndicatorMode = .recording
-    private var meetingType: MeetingType?
+    private var currentRenderState = RecordingIndicatorRenderState(mode: .recording, kind: .dictation)
     private var visibilityTransitionID: UInt64 = 0
     private var onStopAction: @Sendable () -> Void = {
         Task { @MainActor in
@@ -108,17 +107,40 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         onCancel: @escaping @Sendable () -> Void
     ) {
         guard shouldShowIndicator(for: mode) else { return }
+        let renderState = RecordingIndicatorRenderState.fromLegacy(mode: mode, meetingType: type)
+        show(renderState: renderState, onStop: onStop, onCancel: onCancel)
+    }
+
+    public func show(renderState: RecordingIndicatorRenderState) {
+        onStopAction = {
+            Task { @MainActor in
+                await RecordingManager.shared.stopRecording()
+            }
+        }
+        onCancelAction = {
+            Task { @MainActor in
+                await RecordingManager.shared.cancelRecording()
+            }
+        }
+        show(renderState: renderState, onStop: onStopAction, onCancel: onCancelAction)
+    }
+
+    public func show(
+        renderState: RecordingIndicatorRenderState,
+        onStop: @escaping @Sendable () -> Void,
+        onCancel: @escaping @Sendable () -> Void
+    ) {
+        guard shouldShowIndicator(for: renderState.mode) else { return }
         let wasVisible = isVisible
         visibilityTransitionID &+= 1
-        currentMode = mode
-        meetingType = type
+        currentRenderState = renderState
         onStopAction = onStop
         onCancelAction = onCancel
         isVisible = true
 
-        let panel = ensurePanel(for: mode, type: type)
+        let panel = ensurePanel(for: renderState)
 
-        updateMode(mode)
+        updateMode(renderState.mode)
         updateContent()
 
         // Position the panel
@@ -183,7 +205,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
     public func prewarm() {
         guard !isRunningTests else { return }
         guard settingsStore.recordingIndicatorEnabled, settingsStore.recordingIndicatorStyle != .none else { return }
-        let panel = ensurePanel(for: .starting, type: nil)
+        let panel = ensurePanel(for: RecordingIndicatorRenderState(mode: .starting, kind: .dictation))
         updateMode(.starting)
         updateContent()
         positionPanel(panel, at: settingsStore.recordingIndicatorPosition)
@@ -194,8 +216,27 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
     /// Update the floating indicator mode without recreating the panel.
     public func update(mode: FloatingRecordingIndicatorMode) {
         guard isVisible else { return }
-        updateMode(mode)
+        update(renderState: currentRenderState.with(mode: mode))
+    }
+
+    public func update(mode: FloatingRecordingIndicatorMode, type: MeetingType?) {
+        guard isVisible else { return }
+        update(renderState: RecordingIndicatorRenderState.fromLegacy(mode: mode, meetingType: type))
+    }
+
+    public func update(renderState: RecordingIndicatorRenderState) {
+        guard isVisible else { return }
+        currentRenderState = renderState
+        updateMode(renderState.mode)
         updateContent()
+
+        if let panel {
+            let style = settingsStore.recordingIndicatorStyle
+            let panelWidth = panelWidth(for: style, renderState: renderState)
+            let panelHeight = panelHeight(for: style, mode: renderState.mode)
+            panel.setContentSize(NSSize(width: panelWidth, height: panelHeight))
+            positionPanel(panel, at: settingsStore.recordingIndicatorPosition)
+        }
     }
 
     public func showError(_ message: String, autoHideAfter delay: TimeInterval = 3.0) {
@@ -214,10 +255,10 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
 
     // MARK: - Private Helpers
 
-    private func ensurePanel(for mode: FloatingRecordingIndicatorMode, type: MeetingType?) -> NSPanel {
+    private func ensurePanel(for renderState: RecordingIndicatorRenderState) -> NSPanel {
         let style = settingsStore.recordingIndicatorStyle
-        let panelWidth = panelWidth(for: style, mode: mode, type: type)
-        let panelHeight = panelHeight(for: style, mode: mode)
+        let panelWidth = panelWidth(for: style, renderState: renderState)
+        let panelHeight = panelHeight(for: style, mode: renderState.mode)
 
         if let panel {
             panel.setContentSize(NSSize(width: panelWidth, height: panelHeight))
@@ -262,7 +303,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
                 // Recreate panel with new style
                 hide()
                 if newStyle != .none {
-                    show(mode: currentMode)
+                    show(renderState: currentRenderState)
                 }
             }
             .store(in: &cancellables)
@@ -273,8 +314,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         let indicatorView = FloatingRecordingIndicatorView(
             audioMonitor: audioMonitor,
             style: settingsStore.recordingIndicatorStyle,
-            mode: currentMode,
-            meetingType: meetingType,
+            mode: currentRenderState.mode,
             isAnimationActive: isVisible && !prefersReducedMotion,
             onStop: onStopAction,
             onCancel: onCancelAction
@@ -293,7 +333,6 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
     }
 
     private func updateMode(_ mode: FloatingRecordingIndicatorMode) {
-        currentMode = mode
         switch mode {
         case .starting:
             audioMonitor.stopMonitoring()
@@ -328,15 +367,13 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
 
     private func panelWidth(
         for style: RecordingIndicatorStyle,
-        mode: FloatingRecordingIndicatorMode,
-        type _: MeetingType?
+        renderState: RecordingIndicatorRenderState
     ) -> CGFloat {
-        switch mode {
+        switch renderState.mode {
         case .error:
             return Constants.panelWidthError
         case .starting, .recording, .processing:
-            let hasActiveMeeting = RecordingManager.shared.currentMeeting != nil
-            let isMeetingType = hasActiveMeeting && RecordingManager.shared.recordingSource != .microphone
+            let isMeetingType = renderState.kind == .meeting
             switch style {
             case .classic:
                 return isMeetingType ? Constants.panelWidthClassicMeeting : Constants.panelWidthClassicDictation

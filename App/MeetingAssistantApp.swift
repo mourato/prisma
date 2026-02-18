@@ -635,11 +635,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         isTranscribing: Bool,
         meetingType: MeetingType? = nil
     ) {
+        let recordingState = indicatorRenderState(mode: .recording, meetingType: meetingType)
+        let startingState = indicatorRenderState(mode: .starting, meetingType: meetingType)
+        let processingState = indicatorRenderState(mode: .processing, meetingType: meetingType)
+
         if isRecording {
             if isAssistantRecording {
                 floatingIndicatorController.show(
-                    mode: .recording,
-                    type: meetingType,
+                    renderState: recordingState,
                     onStop: { [weak self] in
                         Task { @MainActor [weak self] in
                             await self?.assistantVoiceCommandService.stopAndProcess()
@@ -652,15 +655,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     }
                 )
             } else {
-                floatingIndicatorController.show(mode: .recording, type: meetingType)
+                floatingIndicatorController.show(renderState: recordingState)
             }
         } else if isStarting {
-            floatingIndicatorController.show(mode: .starting, type: meetingType)
+            floatingIndicatorController.show(renderState: startingState)
         } else if isTranscribing {
-            floatingIndicatorController.show(mode: .processing, type: meetingType)
+            floatingIndicatorController.show(renderState: processingState)
         } else {
             floatingIndicatorController.hide()
         }
+    }
+
+    private func indicatorRenderState(mode: FloatingRecordingIndicatorMode, meetingType: MeetingType?) -> RecordingIndicatorRenderState {
+        RecordingIndicatorRenderState.fromLegacy(mode: mode, meetingType: meetingType)
     }
 
     /// Applies the dock visibility setting by changing the app's activation policy.
