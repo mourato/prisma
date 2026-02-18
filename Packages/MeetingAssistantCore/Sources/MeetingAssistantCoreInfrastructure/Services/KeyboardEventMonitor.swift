@@ -9,6 +9,7 @@ public final class KeyboardEventMonitor {
     private let mask: NSEvent.EventTypeMask
     private let handler: (NSEvent) -> Void
     private let shouldReturnEvent: Bool
+    private let shouldReturnLocalEvent: ((NSEvent) -> Bool)?
 
     public init(
         mask: NSEvent.EventTypeMask,
@@ -17,6 +18,18 @@ public final class KeyboardEventMonitor {
     ) {
         self.mask = mask
         self.shouldReturnEvent = shouldReturnEvent
+        shouldReturnLocalEvent = nil
+        self.handler = handler
+    }
+
+    public init(
+        mask: NSEvent.EventTypeMask,
+        shouldReturnLocalEvent: @escaping (NSEvent) -> Bool,
+        handler: @escaping (NSEvent) -> Void
+    ) {
+        self.mask = mask
+        shouldReturnEvent = true
+        self.shouldReturnLocalEvent = shouldReturnLocalEvent
         self.handler = handler
     }
 
@@ -32,7 +45,12 @@ public final class KeyboardEventMonitor {
         // Add local monitor (for events when app is active)
         localMonitor = NSEvent.addLocalMonitorForEvents(matching: mask) { [weak self] event in
             self?.handler(event)
-            return self?.shouldReturnEvent == true ? event : nil
+            guard let self else {
+                return event
+            }
+
+            let shouldReturn = self.shouldReturnLocalEvent?(event) ?? self.shouldReturnEvent
+            return shouldReturn ? event : nil
         }
     }
 

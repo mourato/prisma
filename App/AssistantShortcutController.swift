@@ -20,6 +20,7 @@ final class AssistantShortcutController {
     private var shortcutLayerTask: Task<Void, Never>?
     private var lastLayerLeaderTapTime: Date?
     private let shortcutLayerFeedbackController = ShortcutLayerFeedbackController()
+    private let shortcutLayerKeySuppressor = ShortcutLayerKeySuppressor()
 
     private lazy var shortcutHandler = SmartShortcutHandler(
         doubleTapInterval: currentDoubleTapInterval,
@@ -241,7 +242,13 @@ final class AssistantShortcutController {
 
     private func installKeyDownMonitors() {
         if keyDownMonitor == nil {
-            keyDownMonitor = KeyboardEventMonitor(mask: .keyDown) { [weak self] event in
+            keyDownMonitor = KeyboardEventMonitor(
+                mask: .keyDown,
+                shouldReturnLocalEvent: { [weak self] _ in
+                    guard let self else { return true }
+                    return !(self.shouldUseAssistantShortcutLayer && self.isShortcutLayerArmed)
+                }
+            ) { [weak self] event in
                 Task { @MainActor in
                     self?.handleKeyDown(event)
                 }
@@ -746,6 +753,7 @@ final class AssistantShortcutController {
 
     private func armShortcutLayer() {
         isShortcutLayerArmed = true
+        shortcutLayerKeySuppressor.start()
         shortcutLayerFeedbackController.showArmed()
 
         let timeoutNanoseconds = layerTimeoutNanoseconds
@@ -758,6 +766,7 @@ final class AssistantShortcutController {
 
     private func disarmShortcutLayer(showFeedback: Bool) {
         isShortcutLayerArmed = false
+        shortcutLayerKeySuppressor.stop()
         shortcutLayerTask?.cancel()
         shortcutLayerTask = nil
 
@@ -893,6 +902,90 @@ final class AssistantShortcutController {
             return true
         default:
             return false
+        }
+    }
+}
+
+private final class ShortcutLayerKeySuppressor {
+    private var eventTap: CFMachPort?
+    private var runLoopSource: CFRunLoopSource?
+
+    func start() {
+        guard eventTap == nil else {
+            return
+        }
+
+        let mask = (1 << CGEventType.keyDown.rawValue) | (1 << CGEventType.keyUp.rawValue)
+        let callback: CGEventTapCallBack = { _, type, event, userInfo in
+            guard let userInfo else {
+                return Unmanaged.passUnretained(event)
+            }
+
+            let suppressor = Unmanaged<ShortcutLayerKeySuppressor>
+                .fromOpaque(userInfo)
+                .takeUnretainedValue()
+            return suppressor.handle(type: type, event: event)
+        }
+
+        guard let eventTap = CGEvent.tapCreate(
+            tap: .cgSessionEventTap,
+            place: .headInsertEventTap,
+            options: .defaultTap,
+            eventsOfInterest: CGEventMask(mask),
+            callback: callback,
+            userInfo: Unmanaged.passUnretained(self).toOpaque()
+        ) else {
+            AppLogger.warning(
+                "Failed to create shortcut layer key suppressor tap",
+                category: .assistant
+            )
+            return
+        }
+
+        let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, eventTap, 0)
+        guard let source else {
+            AppLogger.warning(
+                "Failed to create runloop source for shortcut layer key suppressor",
+                category: .assistant
+            )
+            return
+        }
+
+        self.eventTap = eventTap
+        runLoopSource = source
+
+        CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
+        CGEvent.tapEnable(tap: eventTap, enable: true)
+    }
+
+    func stop() {
+        if let eventTap {
+            CGEvent.tapEnable(tap: eventTap, enable: false)
+        }
+
+        if let runLoopSource {
+            CFRunLoopRemoveSource(CFRunLoopGetMain(), runLoopSource, .commonModes)
+        }
+
+        runLoopSource = nil
+        eventTap = nil
+    }
+
+    deinit {
+        stop()
+    }
+
+    private func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
+        switch type {
+        case .tapDisabledByTimeout, .tapDisabledByUserInput:
+            if let eventTap {
+                CGEvent.tapEnable(tap: eventTap, enable: true)
+            }
+            return Unmanaged.passUnretained(event)
+        case .keyDown, .keyUp:
+            return nil
+        default:
+            return Unmanaged.passUnretained(event)
         }
     }
 }
