@@ -35,6 +35,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
             await RecordingManager.shared.stopRecording()
         }
     }
+
     private var onCancelAction: @Sendable () -> Void = {
         Task { @MainActor in
             await RecordingManager.shared.cancelRecording()
@@ -165,7 +166,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
             } completionHandler: { [weak self, weak panelToHide] in
                 Task { @MainActor [weak self, weak panelToHide] in
                     guard let self, let panelToHide else { return }
-                    guard self.visibilityTransitionID == transitionID else { return }
+                    guard visibilityTransitionID == transitionID else { return }
                     panelToHide.orderOut(nil)
                     panelToHide.alphaValue = 1
                 }
@@ -274,7 +275,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
             style: settingsStore.recordingIndicatorStyle,
             mode: currentMode,
             meetingType: meetingType,
-            isAnimationActive: isVisible,
+            isAnimationActive: isVisible && !prefersReducedMotion,
             onStop: onStopAction,
             onCancel: onCancelAction
         )

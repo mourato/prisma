@@ -13,6 +13,7 @@ public struct TranscriptionDetailView: View {
     let isSourceEditable: Bool
     let onApplyPrompt: (PostProcessingPrompt) -> Void
     let onUpdateSource: (Bool) -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(
         transcription: Transcription,
@@ -113,8 +114,12 @@ public struct TranscriptionDetailView: View {
                 }
             }
         } label: {
-            Label("transcription.ai_actions".localized, systemImage: "sparkles")
-                .symbolEffect(.pulse, options: .repeating, value: isProcessing)
+            if reduceMotion {
+                Label("transcription.ai_actions".localized, systemImage: "sparkles")
+            } else {
+                Label("transcription.ai_actions".localized, systemImage: "sparkles")
+                    .symbolEffect(.pulse, options: .repeating, value: isProcessing)
+            }
         }
         .buttonStyle(.bordered)
         .tint(.orange)

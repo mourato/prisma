@@ -12,7 +12,37 @@ import SwiftUI
 public struct GeneralSettingsTab: View {
     @StateObject private var viewModel = GeneralSettingsViewModel()
 
+    private enum Motion {
+        static let duration: Double = 0.18
+    }
+
+    private var sectionTransition: AnyTransition {
+        .move(edge: .top).combined(with: .opacity)
+    }
+
     public init() {}
+
+    private var recordingIndicatorEnabledBinding: Binding<Bool> {
+        Binding(
+            get: { viewModel.recordingIndicatorEnabled },
+            set: { newValue in
+                withAnimation(.easeInOut(duration: Motion.duration)) {
+                    viewModel.recordingIndicatorEnabled = newValue
+                }
+            }
+        )
+    }
+
+    private var autoDeleteTranscriptionsBinding: Binding<Bool> {
+        Binding(
+            get: { viewModel.autoDeleteTranscriptions },
+            set: { newValue in
+                withAnimation(.easeInOut(duration: Motion.duration)) {
+                    viewModel.autoDeleteTranscriptions = newValue
+                }
+            }
+        )
+    }
 
     public var body: some View {
         ScrollView {
@@ -95,43 +125,46 @@ public struct GeneralSettingsTab: View {
                         MAToggleRow(
                             "settings.general.recording_indicator.enabled".localized,
                             description: "settings.general.recording_indicator.enabled_desc".localized,
-                            isOn: $viewModel.recordingIndicatorEnabled
+                            isOn: recordingIndicatorEnabledBinding
                         )
 
                         if viewModel.recordingIndicatorEnabled {
-                            Divider()
+                            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
+                                Divider()
 
-                            HStack {
-                                Text("settings.general.recording_indicator.style".localized)
-                                    .font(.body)
+                                HStack {
+                                    Text("settings.general.recording_indicator.style".localized)
+                                        .font(.body)
 
-                                Spacer()
+                                    Spacer()
 
-                                Picker("", selection: $viewModel.recordingIndicatorStyle) {
-                                    ForEach(RecordingIndicatorStyle.allCases, id: \.self) { style in
-                                        Text(style.displayName).tag(style)
+                                    Picker("", selection: $viewModel.recordingIndicatorStyle) {
+                                        ForEach(RecordingIndicatorStyle.allCases, id: \.self) { style in
+                                            Text(style.displayName).tag(style)
+                                        }
                                     }
+                                    .labelsHidden()
+                                    .pickerStyle(.segmented)
                                 }
-                                .labelsHidden()
-                                .pickerStyle(.segmented)
-                            }
 
-                            Divider()
+                                Divider()
 
-                            HStack {
-                                Text("settings.general.recording_indicator.position".localized)
-                                    .font(.body)
+                                HStack {
+                                    Text("settings.general.recording_indicator.position".localized)
+                                        .font(.body)
 
-                                Spacer()
+                                    Spacer()
 
-                                Picker("", selection: $viewModel.recordingIndicatorPosition) {
-                                    ForEach(RecordingIndicatorPosition.allCases, id: \.self) { pos in
-                                        Text(pos.displayName).tag(pos)
+                                    Picker("", selection: $viewModel.recordingIndicatorPosition) {
+                                        ForEach(RecordingIndicatorPosition.allCases, id: \.self) { pos in
+                                            Text(pos.displayName).tag(pos)
+                                        }
                                     }
+                                    .labelsHidden()
+                                    .pickerStyle(.segmented)
                                 }
-                                .labelsHidden()
-                                .pickerStyle(.segmented)
                             }
+                            .transition(sectionTransition)
                         }
                     }
                 }
@@ -164,35 +197,38 @@ public struct GeneralSettingsTab: View {
                             MAToggleRow(
                                 "settings.general.auto_delete".localized,
                                 description: "settings.general.auto_delete_desc".localized,
-                                isOn: $viewModel.autoDeleteTranscriptions
+                                isOn: autoDeleteTranscriptionsBinding
                             )
 
                             if viewModel.autoDeleteTranscriptions {
-                                HStack {
-                                    Text("settings.general.keep_for".localized)
-                                        .font(.body)
-
-                                    Spacer()
-
-                                    Stepper(value: $viewModel.autoDeletePeriodDays, in: 1...365) {
-                                        Text("\(viewModel.autoDeletePeriodDays) " + "settings.general.days".localized)
+                                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                                    HStack {
+                                        Text("settings.general.keep_for".localized)
                                             .font(.body)
-                                    }
-                                }
-                                .padding(.leading, MeetingAssistantDesignSystem.Layout.indentation)
 
-                                Button {
-                                    viewModel.performCleanup()
-                                } label: {
-                                    Text(String(
-                                        format: "settings.storage.cleanup_now".localized,
-                                        viewModel.autoDeletePeriodDays
-                                    ))
+                                        Spacer()
+
+                                        Stepper(value: $viewModel.autoDeletePeriodDays, in: 1...365) {
+                                            Text("\(viewModel.autoDeletePeriodDays) " + "settings.general.days".localized)
+                                                .font(.body)
+                                        }
+                                    }
+                                    .padding(.leading, MeetingAssistantDesignSystem.Layout.indentation)
+
+                                    Button {
+                                        viewModel.performCleanup()
+                                    } label: {
+                                        Text(String(
+                                            format: "settings.storage.cleanup_now".localized,
+                                            viewModel.autoDeletePeriodDays
+                                        ))
+                                    }
+                                    .buttonStyle(.bordered)
+                                    .disabled(viewModel.cleanupInProgress)
+                                    .padding(.leading, MeetingAssistantDesignSystem.Layout.indentation)
+                                    .padding(.top, MeetingAssistantDesignSystem.Layout.smallPadding)
                                 }
-                                .buttonStyle(.bordered)
-                                .disabled(viewModel.cleanupInProgress)
-                                .padding(.leading, MeetingAssistantDesignSystem.Layout.indentation)
-                                .padding(.top, MeetingAssistantDesignSystem.Layout.smallPadding)
+                                .transition(sectionTransition)
                             }
                         }
                     }
