@@ -360,7 +360,6 @@
 "settings.assistant.integrations.new" = "New Integration";
 "settings.assistant.integrations.editor.title" = "Edit Prompt";
 "settings.assistant.integrations.editor.title.integration" = "Edit Integration";
-"settings.assistant.integrations.editor.shortcut" = "Keyboard Shortcut";
 "settings.assistant.integrations.editor.instructions" = "Instructions (Optional)";
 "settings.assistant.integrations.editor.placeholders.title" = "Placeholders";
 "settings.assistant.integrations.editor.placeholders.subtitle" = "Click to copy and use in URLs/Deeplinks.";

@@ -414,6 +414,37 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
         )
     }
 
+    /// Legacy initializer kept for compatibility with existing tests and callers.
+    public init(
+        id: UUID = UUID(),
+        name: String,
+        kind: Kind = .deeplink,
+        isEnabled: Bool,
+        deepLink: String,
+        promptInstructions: String? = nil,
+        selectedPreset: AssistantIntegrationPreset? = nil,
+        shortcutPresetKey: PresetShortcutKey = .notSpecified,
+        shortcutActivationMode: ShortcutActivationMode = .holdOrToggle,
+        modifierShortcutGesture: ModifierShortcutGesture? = nil,
+        advancedScript: AssistantIntegrationScriptConfig? = nil
+    ) {
+        self.init(
+            id: id,
+            name: name,
+            kind: kind,
+            isEnabled: isEnabled,
+            deepLink: deepLink,
+            promptInstructions: promptInstructions,
+            selectedPreset: selectedPreset,
+            shortcutDefinition: nil,
+            layerShortcutKey: nil,
+            shortcutPresetKey: shortcutPresetKey,
+            shortcutActivationMode: shortcutActivationMode,
+            modifierShortcutGesture: modifierShortcutGesture,
+            advancedScript: advancedScript
+        )
+    }
+
     private enum CodingKeys: String, CodingKey {
         case id
         case name
