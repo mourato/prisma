@@ -10,6 +10,7 @@ import SwiftUI
 
 public struct MetricsDashboardSettingsTab: View {
     @StateObject private var viewModel = MetricsDashboardViewModel()
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @MainActor
     public init() {}
@@ -126,10 +127,10 @@ public struct MetricsDashboardSettingsTab: View {
                             }
                             .frame(height: ActivityHeatmap.scrollHeight)
                             .onAppear {
-                                scrollToLatest(in: proxy)
+                                scrollToLatest(in: proxy, animated: true)
                             }
                             .onReceive(viewModel.$dailyBuckets.dropFirst()) { _ in
-                                scrollToLatest(in: proxy)
+                                scrollToLatest(in: proxy, animated: false)
                             }
                         }
                     }
@@ -505,9 +506,13 @@ public struct MetricsDashboardSettingsTab: View {
         return "metrics.activity.tooltip.words_on_date".localized(with: wordsText, dayText)
     }
 
-    private func scrollToLatest(in proxy: ScrollViewProxy) {
+    private func scrollToLatest(in proxy: ScrollViewProxy, animated: Bool) {
         DispatchQueue.main.async {
-            withAnimation(.easeOut(duration: 0.2)) {
+            if animated && !reduceMotion {
+                withAnimation(.easeOut(duration: 0.2)) {
+                    proxy.scrollTo(ActivityHeatmap.latestAnchorID, anchor: .trailing)
+                }
+            } else {
                 proxy.scrollTo(ActivityHeatmap.latestAnchorID, anchor: .trailing)
             }
         }
@@ -572,6 +577,7 @@ private struct MetricStatCard: View {
 
                     Text(value)
                         .font(.title3.weight(.semibold))
+                        .contentTransition(.numericText())
 
                     Text(detail)
                         .font(.caption)

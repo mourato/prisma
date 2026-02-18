@@ -13,7 +13,37 @@ public struct AudioSettingsTab: View {
     @StateObject private var viewModel = GeneralSettingsViewModel()
     @State private var draggingDevice: AudioInputDevice?
 
+    private enum Motion {
+        static let duration: Double = 0.18
+    }
+
+    private var sectionTransition: AnyTransition {
+        .move(edge: .top).combined(with: .opacity)
+    }
+
     public init() {}
+
+    private var useSystemDefaultInputBinding: Binding<Bool> {
+        Binding(
+            get: { viewModel.useSystemDefaultInput },
+            set: { newValue in
+                withAnimation(.easeInOut(duration: Motion.duration)) {
+                    viewModel.useSystemDefaultInput = newValue
+                }
+            }
+        )
+    }
+
+    private var soundFeedbackEnabledBinding: Binding<Bool> {
+        Binding(
+            get: { viewModel.soundFeedbackEnabled },
+            set: { newValue in
+                withAnimation(.easeInOut(duration: Motion.duration)) {
+                    viewModel.soundFeedbackEnabled = newValue
+                }
+            }
+        )
+    }
 
     public var body: some View {
         ScrollView {
@@ -24,59 +54,62 @@ public struct AudioSettingsTab: View {
                         MAToggleRow(
                             "settings.general.use_system_default_input".localized,
                             description: "settings.general.use_system_default_input_desc".localized,
-                            isOn: $viewModel.useSystemDefaultInput
+                            isOn: useSystemDefaultInputBinding
                         )
 
                         if !viewModel.useSystemDefaultInput {
-                            Text("settings.general.audio_devices_desc".localized)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                                Text("settings.general.audio_devices_desc".localized)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
 
-                            VStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-                                ForEach(viewModel.availableDevices) { device in
-                                    HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
-                                        Image(systemName: device.isAvailable ? "mic" : "mic.slash")
-                                            .foregroundStyle(device.isAvailable ? .primary : .secondary)
-                                            .frame(width: 20)
-
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            Text(device.name)
-                                                .font(.body)
+                                VStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                                    ForEach(viewModel.availableDevices) { device in
+                                        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                                            Image(systemName: device.isAvailable ? "mic" : "mic.slash")
                                                 .foregroundStyle(device.isAvailable ? .primary : .secondary)
-                                            if device.isDefault {
-                                                Text("settings.general.device_default".localized)
-                                                    .font(.caption2)
-                                                    .foregroundStyle(.blue)
+                                                .frame(width: 20)
+
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text(device.name)
+                                                    .font(.body)
+                                                    .foregroundStyle(device.isAvailable ? .primary : .secondary)
+                                                if device.isDefault {
+                                                    Text("settings.general.device_default".localized)
+                                                        .font(.caption2)
+                                                        .foregroundStyle(.blue)
+                                                }
                                             }
+
+                                            Spacer()
+
+                                            if !device.isAvailable {
+                                                Text("settings.general.device_unavailable".localized)
+                                                    .font(.caption2)
+                                                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
+                                            }
+
+                                            Image(systemName: "line.3.horizontal")
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
                                         }
-
-                                        Spacer()
-
-                                        if !device.isAvailable {
-                                            Text("settings.general.device_unavailable".localized)
-                                                .font(.caption2)
-                                                .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
+                                        .padding(MeetingAssistantDesignSystem.Layout.spacing8)
+                                        .background(MeetingAssistantDesignSystem.Colors.subtleFill2)
+                                        .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+                                        .onDrag {
+                                            draggingDevice = device
+                                            return NSItemProvider(object: device.id as NSString)
                                         }
-
-                                        Image(systemName: "line.3.horizontal")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
+                                        .onDrop(of: [.text], delegate: DeviceDropDelegate(
+                                            item: device,
+                                            listData: $viewModel.availableDevices,
+                                            current: $draggingDevice,
+                                            onMove: viewModel.moveDevice
+                                        ))
                                     }
-                                    .padding(MeetingAssistantDesignSystem.Layout.spacing8)
-                                    .background(MeetingAssistantDesignSystem.Colors.subtleFill2)
-                                    .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
-                                    .onDrag {
-                                        draggingDevice = device
-                                        return NSItemProvider(object: device.id as NSString)
-                                    }
-                                    .onDrop(of: [.text], delegate: DeviceDropDelegate(
-                                        item: device,
-                                        listData: $viewModel.availableDevices,
-                                        current: $draggingDevice,
-                                        onMove: viewModel.moveDevice
-                                    ))
                                 }
                             }
+                            .transition(sectionTransition)
                         }
 
                         Divider()
@@ -86,7 +119,7 @@ public struct AudioSettingsTab: View {
                             description: "settings.general.mute_output_desc".localized,
                             isOn: $viewModel.muteOutputDuringRecording
                         )
-                        
+
                         Divider()
 
                         MAToggleRow(
@@ -103,23 +136,26 @@ public struct AudioSettingsTab: View {
                         MAToggleRow(
                             "settings.general.sound_feedback.enabled".localized,
                             description: "settings.general.sound_feedback.enabled_desc".localized,
-                            isOn: $viewModel.soundFeedbackEnabled
+                            isOn: soundFeedbackEnabledBinding
                         )
 
                         if viewModel.soundFeedbackEnabled {
-                            Divider()
+                            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
+                                Divider()
 
-                            soundPickerRow(
-                                title: "settings.general.sound_feedback.start_sound".localized,
-                                selection: $viewModel.recordingStartSound
-                            )
+                                soundPickerRow(
+                                    title: "settings.general.sound_feedback.start_sound".localized,
+                                    selection: $viewModel.recordingStartSound
+                                )
 
-                            Divider()
+                                Divider()
 
-                            soundPickerRow(
-                                title: "settings.general.sound_feedback.stop_sound".localized,
-                                selection: $viewModel.recordingStopSound
-                            )
+                                soundPickerRow(
+                                    title: "settings.general.sound_feedback.stop_sound".localized,
+                                    selection: $viewModel.recordingStopSound
+                                )
+                            }
+                            .transition(sectionTransition)
                         }
                     }
                 }

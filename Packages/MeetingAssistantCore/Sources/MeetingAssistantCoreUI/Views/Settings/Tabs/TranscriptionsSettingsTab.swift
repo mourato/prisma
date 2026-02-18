@@ -272,7 +272,6 @@ public struct TranscriptionsSettingsTab: View {
             Image(systemName: "doc.text.badge.plus")
                 .font(.system(size: 40))
                 .foregroundStyle(.tertiary)
-                .symbolEffect(.pulse)
 
             VStack(spacing: 4) {
                 Text("settings.transcriptions.empty_title".localized)
