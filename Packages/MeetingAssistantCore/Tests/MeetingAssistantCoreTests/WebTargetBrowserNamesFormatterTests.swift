@@ -1,5 +1,4 @@
 import XCTest
-@testable import MeetingAssistantCore
 @testable import MeetingAssistantCoreUI
 
 final class WebTargetBrowserNamesFormatterTests: XCTestCase {
