@@ -57,6 +57,8 @@
 "settings.general.recording" = "Recording";
 "settings.general.auto_start" = "Automatically start recording when meeting is detected";
 "settings.general.show_settings_on_launch" = "Show settings window on app launch";
+"settings.general.shortcut_double_tap_interval" = "Shortcut double-tap interval";
+"settings.general.shortcut_double_tap_interval_desc" = "Defines the maximum time between taps for double-tap shortcuts across the app.";
 "settings.general.recordings_path" = "Recordings folder:";
 "settings.general.audio_format" = "Audio Format";
 "settings.general.merge_audio" = "Merge audio files after recording";

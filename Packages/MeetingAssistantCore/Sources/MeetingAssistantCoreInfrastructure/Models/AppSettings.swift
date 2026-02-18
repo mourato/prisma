@@ -818,6 +818,9 @@ public class AppSettingsStore: ObservableObject {
         ),
     ]
 
+    public static let defaultShortcutDoubleTapIntervalMilliseconds: Double = 350
+    public static let shortcutDoubleTapIntervalRangeMilliseconds: ClosedRange<Double> = 150...1_000
+
     // MARK: - Keys
 
     private enum Keys {
@@ -840,6 +843,7 @@ public class AppSettingsStore: ObservableObject {
         static let deletedPromptIds = "postProcessingDeletedPromptIds"
         static let shortcutActivationMode = "shortcutActivationMode"
         static let dictationShortcutActivationMode = "dictationShortcutActivationMode"
+        static let shortcutDoubleTapIntervalMilliseconds = "shortcutDoubleTapIntervalMilliseconds"
         static let useEscapeToCancelRecording = "useEscapeToCancelRecording"
         static let selectedPresetKey = "selectedPresetKey"
         static let dictationSelectedPresetKey = "dictationSelectedPresetKey"
@@ -1059,6 +1063,16 @@ public class AppSettingsStore: ObservableObject {
     /// How keyboard shortcuts activate Dictation.
     @Published public var dictationShortcutActivationMode: ShortcutActivationMode {
         didSet { UserDefaults.standard.set(dictationShortcutActivationMode.rawValue, forKey: Keys.dictationShortcutActivationMode) }
+    }
+
+    /// Double-tap window applied globally to all shortcut handlers.
+    @Published public var shortcutDoubleTapIntervalMilliseconds: Double {
+        didSet {
+            UserDefaults.standard.set(
+                shortcutDoubleTapIntervalMilliseconds,
+                forKey: Keys.shortcutDoubleTapIntervalMilliseconds
+            )
+        }
     }
 
     /// Whether pressing Escape cancels recording.
@@ -1627,6 +1641,10 @@ public class AppSettingsStore: ObservableObject {
         dictationShortcutActivationMode = rawDictationActivationMode
             .flatMap { ShortcutActivationMode(rawValue: $0) }
             ?? resolvedActivationMode
+        shortcutDoubleTapIntervalMilliseconds = Self.loadDouble(
+            forKey: Keys.shortcutDoubleTapIntervalMilliseconds,
+            defaultValue: Self.defaultShortcutDoubleTapIntervalMilliseconds
+        )
         useEscapeToCancelRecording = UserDefaults.standard.bool(forKey: Keys.useEscapeToCancelRecording)
 
         let rawPresetKey = UserDefaults.standard.string(forKey: Keys.selectedPresetKey)
@@ -2048,6 +2066,11 @@ public class AppSettingsStore: ObservableObject {
         return value ?? defaultValue
     }
 
+    private static func loadDouble(forKey key: String, defaultValue: Double) -> Double {
+        let value = UserDefaults.standard.object(forKey: key) as? Double
+        return value ?? defaultValue
+    }
+
     private static func loadBoolDefaultIfUnset(forKey key: String, defaultValue: Bool) -> Bool {
         guard UserDefaults.standard.object(forKey: key) != nil else {
             return defaultValue
@@ -2253,6 +2276,7 @@ public class AppSettingsStore: ObservableObject {
         autoIncreaseMicrophoneVolume = false
         shortcutActivationMode = .holdOrToggle
         dictationShortcutActivationMode = .holdOrToggle
+        shortcutDoubleTapIntervalMilliseconds = Self.defaultShortcutDoubleTapIntervalMilliseconds
         useEscapeToCancelRecording = false
         selectedPresetKey = .fn
         dictationShortcutDefinition = nil

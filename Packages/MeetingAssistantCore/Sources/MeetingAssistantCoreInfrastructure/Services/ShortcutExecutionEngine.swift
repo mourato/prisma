@@ -16,7 +16,7 @@ public final class ShortcutExecutionEngine {
     private var lastTapWasRecording = false
 
     private let holdThreshold: TimeInterval
-    private let doubleTapInterval: TimeInterval
+    private var doubleTapInterval: TimeInterval
 
     public init(
         holdThreshold: TimeInterval = 0.35,
@@ -24,6 +24,13 @@ public final class ShortcutExecutionEngine {
     ) {
         self.holdThreshold = holdThreshold
         self.doubleTapInterval = doubleTapInterval
+    }
+
+    public func updateDoubleTapInterval(_ interval: TimeInterval) {
+        guard interval > 0 else {
+            return
+        }
+        doubleTapInterval = interval
     }
 
     public func reset() {

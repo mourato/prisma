@@ -16,13 +16,13 @@ final class AssistantShortcutController {
     private var integrationPresetStates: [UUID: ShortcutActivationState] = [:]
     private var registeredIntegrationShortcutIDs = Set<UUID>()
     private let layerTimeoutNanoseconds: UInt64 = 1_000_000_000
-    private let layerLeaderDoubleTapInterval: TimeInterval = 0.35
     private var isShortcutLayerArmed = false
     private var shortcutLayerTask: Task<Void, Never>?
     private var lastLayerLeaderTapTime: Date?
     private let shortcutLayerFeedbackController = ShortcutLayerFeedbackController()
 
     private lazy var shortcutHandler = SmartShortcutHandler(
+        doubleTapInterval: currentDoubleTapInterval,
         isRecordingProvider: { [weak self] in self?.assistantService.isRecording ?? false },
         actionHandler: { [weak self] (action: SmartShortcutHandler.Action) in
             guard let self else { return }
@@ -47,6 +47,7 @@ final class AssistantShortcutController {
     func start() {
         setupKeyboardShortcutHandlers()
         observeSettings()
+        applyGlobalDoubleTapInterval()
         refreshCustomShortcutRegistration()
         refreshIntegrationCustomShortcutRegistrations()
         refreshEventMonitors()
@@ -85,6 +86,14 @@ final class AssistantShortcutController {
         settings.$assistantShortcutActivationMode
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
+                self?.resetShortcutState()
+            }
+            .store(in: &cancellables)
+
+        settings.$shortcutDoubleTapIntervalMilliseconds
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.applyGlobalDoubleTapInterval()
                 self?.resetShortcutState()
             }
             .store(in: &cancellables)
@@ -667,6 +676,7 @@ final class AssistantShortcutController {
 
     private func makeIntegrationShortcutHandler(for integrationID: UUID) -> SmartShortcutHandler {
         SmartShortcutHandler(
+            doubleTapInterval: currentDoubleTapInterval,
             isRecordingProvider: { [weak self] in self?.assistantService.isRecording ?? false },
             actionHandler: { [weak self] action in
                 Task { @MainActor in
@@ -766,13 +776,23 @@ final class AssistantShortcutController {
         }
 
         let elapsed = now.timeIntervalSince(previousTap)
-        guard elapsed <= layerLeaderDoubleTapInterval else {
+        guard elapsed <= currentDoubleTapInterval else {
             lastLayerLeaderTapTime = now
             return
         }
 
         lastLayerLeaderTapTime = nil
         armShortcutLayer()
+    }
+
+    private var currentDoubleTapInterval: TimeInterval {
+        settings.shortcutDoubleTapIntervalMilliseconds / 1_000
+    }
+
+    private func applyGlobalDoubleTapInterval() {
+        let interval = currentDoubleTapInterval
+        shortcutHandler.setDoubleTapInterval(interval)
+        integrationShortcutHandlers.values.forEach { $0.setDoubleTapInterval(interval) }
     }
 
     private func handleShortcutLayerKeyDown(_ event: NSEvent) -> Bool {
