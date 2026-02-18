@@ -85,7 +85,6 @@ dist/
 .xcode-build/
 .xcode-build-tests/
 
-
 #Ignore vscode AI rules
 .github/instructions/codacy.instructions.md
 
