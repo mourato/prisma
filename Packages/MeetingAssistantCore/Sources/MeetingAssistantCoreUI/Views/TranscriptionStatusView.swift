@@ -26,8 +26,6 @@ public struct TranscriptionStatusView: View {
         }
         .padding(MeetingAssistantDesignSystem.Layout.spacing12)
         .background(statusBackground, in: RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.cardCornerRadius))
-        .animation(.easeInOut(duration: 0.2), value: isExpanded)
-        .animation(.easeInOut(duration: 0.3), value: viewModel.phase)
     }
 
     // MARK: - Main Status Row
@@ -53,7 +51,7 @@ public struct TranscriptionStatusView: View {
         }
         .contentShape(Rectangle())
         .onTapGesture {
-            withAnimation {
+            withAnimation(.easeInOut(duration: 0.2)) {
                 isExpanded.toggle()
             }
         }
