@@ -28,6 +28,7 @@ NC='\033[0m'
 PROFILE_TYPE="cpu"
 DURATION=30
 VERBOSE=0
+EXTRACT_METRICS=1
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -56,6 +57,14 @@ while [[ $# -gt 0 ]]; do
             VERBOSE=1
             shift
             ;;
+        --no-report)
+            EXTRACT_METRICS=0
+            shift
+            ;;
+        --report)
+            EXTRACT_METRICS=1
+            shift
+            ;;
         --help|-h)
             echo "Usage: $0 [options]"
             echo ""
@@ -70,6 +79,8 @@ while [[ $# -gt 0 ]]; do
             echo "Options:"
             echo "  --duration, -d SECS  Profile duration in seconds (default: 30)"
             echo "  --verbose, -v        Verbose output"
+            echo "  --report             Export post-run metrics (default: on)"
+            echo "  --no-report          Skip post-run metrics extraction"
             echo "  --help, -h           Show this help"
             echo ""
             echo "Examples:"
@@ -135,6 +146,9 @@ run_profile() {
 
     if [ -e "${output_file}" ]; then
         echo -e "${GREEN}✓ ${profile_type} profile saved: ${output_file}${NC}"
+        if [ "${EXTRACT_METRICS}" -eq 1 ]; then
+            extract_metrics "${output_file}" "${profile_type}"
+        fi
         if [ $VERBOSE -eq 1 ] && [ $exit_code -ne 0 ]; then
             echo -e "${YELLOW}xctrace exited with code ${exit_code}, but trace output exists.${NC}"
         fi
@@ -142,6 +156,46 @@ run_profile() {
         echo -e "${RED}✗ Failed to create ${profile_type} profile${NC}"
     fi
     echo ""
+}
+
+extract_metrics() {
+    local trace_file=$1
+    local profile_type=$2
+    local script_path="${PROJECT_DIR}/scripts/extract-trace-metrics.py"
+    local metrics_file="${REPORT_PREFIX}_${profile_type}_metrics.txt"
+    local json_file="${REPORT_PREFIX}_${profile_type}_metrics.json"
+
+    if [ ! -f "${script_path}" ]; then
+        echo -e "${YELLOW}Metrics extractor not found: ${script_path}${NC}"
+        return
+    fi
+
+    if ! command -v python3 >/dev/null 2>&1; then
+        echo -e "${YELLOW}python3 not found; skipping metrics extraction${NC}"
+        return
+    fi
+
+    local extractor_cmd=(
+        python3 "${script_path}"
+        --trace "${trace_file}"
+        --out "${metrics_file}"
+        --json-out "${json_file}"
+    )
+
+    if [ $VERBOSE -eq 1 ]; then
+        echo -e "${YELLOW}Metrics command: ${extractor_cmd[*]}${NC}"
+    fi
+
+    set +e
+    "${extractor_cmd[@]}" >/dev/null 2>&1
+    local metrics_exit=$?
+    set -e
+
+    if [ $metrics_exit -eq 0 ] && [ -f "${metrics_file}" ]; then
+        echo -e "${GREEN}✓ ${profile_type} metrics saved: ${metrics_file}${NC}"
+    else
+        echo -e "${YELLOW}Could not extract ${profile_type} metrics automatically${NC}"
+    fi
 }
 
 # Run profiles based on type

@@ -11,6 +11,16 @@ _Attribution: copied from @Dimillian’s `Dimillian/Skills` (2025-12-31)._
 
 Audit SwiftUI view performance end-to-end, from instrumentation and baselining to root-cause analysis and concrete remediation steps.
 
+## Scope Boundaries
+
+Use this skill when the dominant symptom is in SwiftUI render/update behavior.
+
+Out of scope for this skill:
+- Audio pipeline timing/callback pressure (`audio-realtime`)
+- Compiler diagnostics related to actor isolation/Sendable (`swift-concurrency-expert`)
+- Networking latency and API throughput (`networking`)
+- Generic app-wide resource tuning not tied to SwiftUI rendering (`performance`)
+
 ## Workflow Decision Tree
 
 - If the user provides code, start with "Code-First Review."
@@ -44,6 +54,9 @@ Explain how to collect data with Instruments:
 - Reproduce the exact interaction (scroll, navigation, animation).
 - Capture SwiftUI timeline and Time Profiler.
 - Export or screenshot the relevant lanes and the call tree.
+
+Repository baseline command:
+- Prefer `make profile-report` when a reproducible before/after capture is needed.
 
 Ask for:
 - Trace export or screenshots of SwiftUI lanes + Time Profiler call tree.

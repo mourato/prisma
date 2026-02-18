@@ -5,6 +5,7 @@
 1. references/cli-observability.md
 2. references/concurrency-patterns.md
 3. references/swiftui-patterns.md
+4. ../../swiftui-performance-audit/SKILL.md (when symptoms involve rendering, update storms, layout thrash, or animation hitches)
 </required_reading>
 
 <philosophy>
@@ -58,14 +59,9 @@ time open -W ./build/Build/Products/Debug/AppName.app
 - Objects retained longer than needed
 - Duplicate data in memory
 
-**SwiftUI re-renders:**
-```swift
-// Add to any view to see why it re-renders
-var body: some View {
-    let _ = Self._printChanges()
-    // ...
-}
-```
+**SwiftUI re-renders / layout thrash / animation hitches:**
+- Route diagnosis and remediation through `swiftui-performance-audit`.
+- Keep this workflow focused on system-level measurement and bottleneck isolation.
 
 ## Step 4: Common Optimizations
 

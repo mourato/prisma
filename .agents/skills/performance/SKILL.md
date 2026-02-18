@@ -26,3 +26,23 @@ Standards for maintaining a fast, responsive, and resource-efficient application
 - **Measure First**: Profile the application using Instruments (Time Profiler, Allocations) before attempting optimizations.
 - **Performance Baselines**: Establish baselines for critical paths (e.g., audio processing) and monitor them during testing.
 - **XCTMetric**: Use performance tests to detect regressions in efficiency.
+
+## 4. Baseline KPIs (Track Before/After)
+
+- **CPU**: average CPU % for target interaction and peak CPU %
+- **Wakeups**: wakeups/sec over a fixed idle or interaction window
+- **Memory**: peak resident size and growth trend over time
+- **Responsiveness**: interaction latency and hitch/drop indicators where available
+- **Startup**: launch-to-first-interaction time
+
+Prefer repeatable extraction via:
+
+```bash
+make profile-report
+```
+
+## 5. Skill Routing
+
+- Use `swiftui-performance-audit` for SwiftUI rendering/update/layout/animation runtime issues.
+- Use `audio-realtime` for capture/processing callback pressure and low-latency audio constraints.
+- Use this `performance` skill for app-wide/system-level optimization that is not primarily SwiftUI-rendering bound.

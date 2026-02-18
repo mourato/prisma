@@ -17,6 +17,7 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 source "${SCRIPT_DIR}/lib/agent-output.sh"
 
 AGENT_MODE=0
+STRICT_CONCURRENCY=0
 if ma_agent_mode_enabled; then
     AGENT_MODE=1
 fi
@@ -28,8 +29,12 @@ while [[ $# -gt 0 ]]; do
             MA_AGENT_MODE=1
             shift
             ;;
+        --strict-concurrency)
+            STRICT_CONCURRENCY=1
+            shift
+            ;;
         --help|-h)
-            echo "Usage: $0 [--agent]"
+            echo "Usage: $0 [--agent] [--strict-concurrency]"
             exit 0
             ;;
         *)
@@ -43,7 +48,11 @@ cd "${PROJECT_ROOT}"
 
 if [ "${AGENT_MODE}" -eq 0 ]; then
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "  Preflight: build + test + lint"
+    if [ "${STRICT_CONCURRENCY}" -eq 1 ]; then
+        echo "  Preflight: build + test + test-strict + lint"
+    else
+        echo "  Preflight: build + test + lint"
+    fi
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
     echo "[1/3] make build"
@@ -55,8 +64,16 @@ if [ "${AGENT_MODE}" -eq 0 ]; then
         ./scripts/run-tests.sh
     fi
 
-    echo "[3/3] make lint"
-    make lint
+    if [ "${STRICT_CONCURRENCY}" -eq 1 ]; then
+        echo "[3/4] make test-strict"
+        make test-strict
+
+        echo "[4/4] make lint"
+        make lint
+    else
+        echo "[3/3] make lint"
+        make lint
+    fi
 
     echo "✓ Preflight completed successfully"
     exit 0
@@ -95,6 +112,18 @@ if ! make lint-agent; then
     ma_agent_write_result_json "${RESULT_PATH}" "preflight" "FAIL" "${DURATION}" "${LOG_DIR}" 1 "${SUMMARY}"
     ma_agent_emit_result "preflight" "FAIL" "${DURATION}" "${LOG_DIR}" 1 "${SUMMARY}" "${RESULT_PATH}"
     exit 1
+fi
+
+if [ "${STRICT_CONCURRENCY}" -eq 1 ]; then
+    echo "AGENT_NOTE=running strict concurrency gate"
+    if ! MA_AGENT_MODE=1 ./scripts/run-tests.sh --strict --agent; then
+        SUMMARY="Preflight failed during strict concurrency test"
+        END_TIME=$(date +%s)
+        DURATION=$((END_TIME - START_TIME))
+        ma_agent_write_result_json "${RESULT_PATH}" "preflight" "FAIL" "${DURATION}" "${LOG_DIR}" 1 "${SUMMARY}"
+        ma_agent_emit_result "preflight" "FAIL" "${DURATION}" "${LOG_DIR}" 1 "${SUMMARY}" "${RESULT_PATH}"
+        exit 1
+    fi
 fi
 
 END_TIME=$(date +%s)
