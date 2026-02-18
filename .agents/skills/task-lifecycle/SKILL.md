@@ -12,6 +12,7 @@ This skill defines the **MANDATORY** operational standards for every coding task
 The lifecycle is designed to guarantee:
 - Risk-proportional quality gates
 - Isolation via Worktrees when risk justifies it
+- Reuse-first implementation decisions (`reuse -> extend -> create`) for logic and UI blocks
 - Atomic commits (small, intention-revealing, buildable)
 - A consistent local code review ritual before final push/merge
 - Cleanup (worktree + branches, including remote when applicable)
@@ -44,12 +45,16 @@ Worktree policy:
 - **Fast lane**: Worktree is recommended. Direct branch work is acceptable for very small low-risk tasks.
 
 1. **Context Identification**: Analyze the task and identify the target files.
-2. **Clarification & Confirmation (when needed)**:
+2. **Reusable Block Scan (required)**:
+   - Search for existing logic/UI blocks that can satisfy the change (services, use cases, helpers, design-system components).
+   - Apply the decision order: **reuse -> extend -> create**.
+   - Create a new block only when the pattern is new in the project or existing blocks cannot be safely extended.
+3. **Clarification & Confirmation (when needed)**:
    - If requirements are ambiguous, incomplete, or have high-impact trade-offs, ask concise confirmation questions before implementation.
    - This step is optional when the request is already specific enough and low-risk.
    - Do not assume behavior, scope, acceptance criteria, or destructive intent when uncertainty remains.
-3. **Branching**: Create a fresh branch from `main` (for Codex sessions prefer `codex/<task-name>`).
-4. **Setup Worktree (Full lane or optional Fast lane)**: Create and enter a new Git Worktree.
+4. **Branching**: Create a fresh branch from `main` (for Codex sessions prefer `codex/<task-name>`).
+5. **Setup Worktree (Full lane or optional Fast lane)**: Create and enter a new Git Worktree.
    ```bash
    git worktree add -b <branch-name> ../<folder-name> main
    cd ../<folder-name>
@@ -67,7 +72,7 @@ Work inside the selected lane context (worktree for Full lane; branch or worktre
 
 Repeat the following loop until the task is complete:
 
-1. **Implement a small, coherent slice**: Prefer incremental changes.
+1. **Implement a small, coherent slice**: Prefer incremental changes that follow the selected reusable-block strategy (`reuse`, `extend`, or `create`).
 2. **Run proportional checks during development**:
    - Fast lane: staged lint/format and targeted tests when relevant.
    - Full lane: run targeted tests and/or `make build` as needed while iterating.

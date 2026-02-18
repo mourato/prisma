@@ -14,6 +14,7 @@ Project architectural standards ensuring testability, maintainability, and clear
 - **MVVM / Clean Architecture**: Separate presentation logic (ViewModels) from business logic (Services/Repositories) and views (SwiftUI/AppKit).
 - **Dependency Injection (DI)**: Inject dependencies explicitly through initializers. Avoid direct usage of `.shared` singletons within ViewModels to facilitate unit testing.
 - **Protocol-Oriented Programming (POP)**: Use protocols to define abstractions. Favor composition over class-based inheritance.
+- **Reusable Blocks First**: For both logic and UI-supporting abstractions, apply `reuse -> extend -> create` before introducing new types.
 
 ## 2. Project Layers
 
@@ -26,3 +27,4 @@ Project architectural standards ensuring testability, maintainability, and clear
 - **Lean ViewModels**: Delegate heavy logic (networking, filtering, processing) to dedicated services.
 - **Async Flow**: Adopt `Async/Await` or `Combine` for managing asynchronous data streams instead of nested completion closures.
 - **State Management**: Use `@Published` and `@ObservedObject` carefully to ensure predictable UI updates.
+- **Extraction over Duplication**: When behavior starts repeating, extract it into a reusable use case/service/helper in the appropriate module.

@@ -19,6 +19,17 @@ Activate this skill when working with:
 
 Route to `swiftui-animation` when the task is primarily about advanced transitions, motion choreography, matched geometry, or shader-based effects.
 
+## Reusable Components First
+
+Before writing new UI code, treat the interface as reusable blocks:
+
+- Search existing design-system/UI blocks first (`MACard`, `MAGroup`, `MAToggleRow`, `MACallout`, `MABadge`, `MAActionButton`, `MAThemePicker` and related components).
+- Apply `reuse -> extend -> create`:
+  - **Reuse** when an existing component already fits.
+  - **Extend** when the component can absorb the variant without breaking existing usage.
+  - **Create** only when the pattern is genuinely new or cannot be represented coherently by extension.
+- Avoid copy-paste view composition for repeated visual structures.
+
 ## Key Concepts
 
 ### State Management
@@ -131,6 +142,7 @@ Use the project's Design System tokens/components to keep UI consistent and DRY:
 
 - Tokens: `MeetingAssistantDesignSystem`
 - Components: `MACard`, `MAGroup`, `MAToggleRow`, `MACallout`, `MABadge`, `MAActionButton`, `MAThemePicker`
+- Always evaluate reusing/extending these components before introducing custom wrappers in feature views.
 
 ```swift
 // Use MAGroup for labeled sections
