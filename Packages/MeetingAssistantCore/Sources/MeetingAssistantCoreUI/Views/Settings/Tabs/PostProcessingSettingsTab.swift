@@ -12,26 +12,7 @@ import SwiftUI
 public struct PostProcessingSettingsTab: View {
     @StateObject private var viewModel = PostProcessingSettingsViewModel()
 
-    private enum Motion {
-        static let duration: Double = 0.18
-    }
-
-    private var sectionTransition: AnyTransition {
-        .move(edge: .top).combined(with: .opacity)
-    }
-
     public init() {}
-
-    private var postProcessingEnabledBinding: Binding<Bool> {
-        Binding(
-            get: { viewModel.settings.postProcessingEnabled },
-            set: { newValue in
-                withAnimation(.easeInOut(duration: Motion.duration)) {
-                    viewModel.settings.postProcessingEnabled = newValue
-                }
-            }
-        )
-    }
 
     public var body: some View {
         ScrollView {
@@ -47,7 +28,7 @@ public struct PostProcessingSettingsTab: View {
                             connectionWarningSection
                         }
                     }
-                    .transition(sectionTransition)
+                    .transition(SettingsMotion.sectionTransition())
                 }
             }
             .padding()
@@ -87,7 +68,7 @@ public struct PostProcessingSettingsTab: View {
             MAToggleRow(
                 "settings.post_processing.enabled".localized,
                 description: "settings.post_processing.description".localized,
-                isOn: postProcessingEnabledBinding
+                isOn: $viewModel.settings.postProcessingEnabled.animated()
             )
         }
     }

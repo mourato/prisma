@@ -102,12 +102,12 @@ public struct SpeakerIdentificationSettingsSection: View {
         case .downloadingASR, .downloadingDiarization:
             Image(systemName: "arrow.down.circle.fill")
                 .foregroundStyle(MeetingAssistantDesignSystem.Colors.accent)
-                .symbolEffect(.pulse, isActive: !reduceMotion)
+                .settingsPulseSymbolEffect(isActive: true, reduceMotion: reduceMotion)
                 .accessibilityLabel("settings.ai.downloading".localized)
         case .loadingASR, .loadingDiarization:
             Image(systemName: "gearshape.circle.fill")
                 .foregroundStyle(MeetingAssistantDesignSystem.Colors.warning)
-                .symbolEffect(.pulse, isActive: !reduceMotion)
+                .settingsPulseSymbolEffect(isActive: true, reduceMotion: reduceMotion)
                 .accessibilityLabel("settings.ai.loading".localized)
         case .ready:
             Image(systemName: "checkmark.circle.fill")
