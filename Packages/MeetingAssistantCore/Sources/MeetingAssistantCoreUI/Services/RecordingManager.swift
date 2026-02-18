@@ -1321,6 +1321,12 @@ extension RecordingManager {
             return override
         }
 
+        if let websiteTarget = matchingWebContextTargetForDictation(settings: settings),
+           websiteTarget.outputLanguage != .original
+        {
+            return websiteTarget.outputLanguage
+        }
+
         guard let rule = matchingDictationAppRule(settings: settings) else { return .original }
         return rule.outputLanguage
     }
@@ -1328,6 +1334,10 @@ extension RecordingManager {
     private func shouldForceMarkdownForDictation(settings: AppSettingsStore) -> Bool {
         guard let bundleIdentifier = dictationStartBundleIdentifier else { return false }
         let normalized = WebTargetDetection.normalizeBundleIdentifier(bundleIdentifier)
+
+        if let websiteTarget = matchingWebContextTargetForDictation(settings: settings) {
+            return websiteTarget.forceMarkdownOutput
+        }
 
         if let rule = matchingDictationAppRule(settings: settings), rule.forceMarkdownOutput {
             return true
@@ -1339,29 +1349,31 @@ extension RecordingManager {
             return true
         }
 
+        return false
+    }
+
+    private func matchingWebContextTargetForDictation(settings: AppSettingsStore) -> WebContextTarget? {
+        guard let bundleIdentifier = dictationStartBundleIdentifier else { return nil }
+        let normalized = WebTargetDetection.normalizeBundleIdentifier(bundleIdentifier)
         let webTargets = settings.markdownWebTargets
-        guard !webTargets.isEmpty else { return false }
+        guard !webTargets.isEmpty else { return nil }
 
         if let url = dictationStartURL,
-           WebTargetDetection.matchTarget(
+           let target = WebTargetDetection.matchTarget(
                for: url,
                bundleIdentifier: normalized,
                targets: webTargets,
                fallbackBrowserBundleIdentifiers: settings.effectiveWebTargetBrowserBundleIdentifiers
-           ) != nil
+           )
         {
-            return true
+            return target
         }
 
-        if WebTargetDetection.matchTargetByWindowTitle(
+        return WebTargetDetection.matchTargetByWindowTitle(
             bundleIdentifier: normalized,
             targets: webTargets,
             fallbackBrowserBundleIdentifiers: settings.effectiveWebTargetBrowserBundleIdentifiers
-        ) != nil {
-            return true
-        }
-
-        return false
+        )
     }
 
     private func activeBrowserURL(for bundleIdentifier: String?) -> URL? {
