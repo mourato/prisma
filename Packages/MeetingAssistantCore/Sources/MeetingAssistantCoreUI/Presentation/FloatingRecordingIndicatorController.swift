@@ -85,8 +85,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
     /// Show the floating indicator.
     /// Automatically reads style and position from settings.
     /// - Parameter mode: Whether to present recording or processing visuals.
-    /// - Parameter type: The type of meeting being recorded.
-    public func show(mode: FloatingRecordingIndicatorMode = .recording, type: MeetingType? = nil) {
+    public func show(mode: FloatingRecordingIndicatorMode = .recording) {
         onStopAction = {
             Task { @MainActor in
                 await RecordingManager.shared.stopRecording()
@@ -97,17 +96,16 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
                 await RecordingManager.shared.cancelRecording()
             }
         }
-        show(mode: mode, type: type, onStop: onStopAction, onCancel: onCancelAction)
+        show(mode: mode, onStop: onStopAction, onCancel: onCancelAction)
     }
 
     public func show(
         mode: FloatingRecordingIndicatorMode = .recording,
-        type: MeetingType? = nil,
         onStop: @escaping @Sendable () -> Void,
         onCancel: @escaping @Sendable () -> Void
     ) {
         guard shouldShowIndicator(for: mode) else { return }
-        let renderState = RecordingIndicatorRenderState.fromLegacy(mode: mode, meetingType: type)
+        let renderState = currentRenderState.with(mode: mode)
         show(renderState: renderState, onStop: onStop, onCancel: onCancel)
     }
 
@@ -217,11 +215,6 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
     public func update(mode: FloatingRecordingIndicatorMode) {
         guard isVisible else { return }
         update(renderState: currentRenderState.with(mode: mode))
-    }
-
-    public func update(mode: FloatingRecordingIndicatorMode, type: MeetingType?) {
-        guard isVisible else { return }
-        update(renderState: RecordingIndicatorRenderState.fromLegacy(mode: mode, meetingType: type))
     }
 
     public func update(renderState: RecordingIndicatorRenderState) {
