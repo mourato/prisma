@@ -143,6 +143,9 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         visibilityTransitionID &+= 1
         let transitionID = visibilityTransitionID
 
+        isVisible = false
+        updateContent()
+
         // Stop monitoring audio levels
         audioMonitor.stopMonitoring()
 
@@ -164,7 +167,10 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
             }
         }
 
-        isVisible = false
+        if let hostingView {
+            hostingView.rootView = AnyView(EmptyView())
+            panelToHide.contentView = hostingView
+        }
     }
 
     /// Pre-creates the panel and hosting view so the first recording indicator paint is immediate.

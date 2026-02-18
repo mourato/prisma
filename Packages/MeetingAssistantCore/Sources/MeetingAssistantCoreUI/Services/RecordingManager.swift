@@ -576,7 +576,25 @@ public extension RecordingManager {
 
     /// Cancel recording and discard audio files.
     func cancelRecording() async {
-        guard isRecording else { return }
+        guard isRecording || isStartingRecording else { return }
+
+        if !isRecording {
+            AppLogger.info("Cancelling recording during startup...", category: .recordingManager)
+            _ = await micRecorder.stopRecording()
+            _ = await systemRecorder.stopRecording()
+            postStartContextCaptureTask?.cancel()
+            postStartContextCaptureTask = nil
+            isStartingRecording = false
+            currentMeeting = nil
+            postProcessingContext = nil
+            postProcessingContextItems = []
+            dictationSessionOutputLanguageOverride = nil
+            activeStartTelemetry = nil
+            await RecordingExclusivityCoordinator.shared.endRecording()
+            SoundFeedbackService.shared.playRecordingCancelledSound()
+            AppLogger.info("Recording startup cancelled", category: .recordingManager)
+            return
+        }
 
         AppLogger.info("Cancelling recording...", category: .recordingManager)
 
