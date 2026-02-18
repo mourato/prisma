@@ -169,7 +169,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             assistantVoiceCommandService.$isRecording.map { _ in () }.eraseToAnyPublisher(),
             recordingManager.currentMeetingPublisher.map { _ in () }.eraseToAnyPublisher()
         )
-            .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.refreshRecordingUIState()
             }
