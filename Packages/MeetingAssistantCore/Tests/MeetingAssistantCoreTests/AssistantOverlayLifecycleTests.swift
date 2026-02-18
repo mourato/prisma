@@ -32,6 +32,26 @@ final class AssistantOverlayLifecycleTests: XCTestCase {
         XCTAssertFalse(controller.isVisible)
     }
 
+    func testFloatingIndicatorRenderStateShowUpdateHideDoesNotCrash() async throws {
+        try skipIfOverlayLifecycleDisabled()
+
+        guard NSScreen.main != nil else {
+            throw XCTSkip("No main screen available in current test environment")
+        }
+
+        let controller = FloatingRecordingIndicatorController()
+        let meetingState = RecordingIndicatorRenderState(mode: .recording, kind: .meeting, meetingType: .standup)
+        let processingState = meetingState.with(mode: .processing)
+
+        controller.show(renderState: meetingState)
+        controller.update(renderState: processingState)
+        controller.hide()
+
+        try await Task.sleep(nanoseconds: 250_000_000)
+
+        XCTAssertFalse(controller.isVisible)
+    }
+
     func testAssistantBorderRapidShowHideDoesNotCrash() async throws {
         try skipIfOverlayLifecycleDisabled()
 

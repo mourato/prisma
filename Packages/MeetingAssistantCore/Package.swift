@@ -116,6 +116,7 @@ let package = Package(
             dependencies: [
                 "MeetingAssistantCore",
                 "MeetingAssistantCoreAudio",
+                "MeetingAssistantCoreUI",
                 "MeetingAssistantCoreDomain",
             ],
             path: "Tests/MeetingAssistantCoreTests"

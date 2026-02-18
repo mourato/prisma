@@ -58,4 +58,18 @@ final class AppSettingsStorePromptManagementTests: XCTestCase {
         XCTAssertEqual(restoredPrompt?.title, "Standup Custom")
         XCTAssertEqual(restoredPrompt?.promptText, "Custom standup instructions")
     }
+
+    func testMeetingNoPostProcessingSelection_DisablesPromptResolution() {
+        settings.selectedPromptId = AppSettingsStore.noPostProcessingPromptId
+
+        XCTAssertTrue(settings.isMeetingPostProcessingDisabled)
+        XCTAssertNil(settings.selectedPrompt)
+    }
+
+    func testDictationNoPostProcessingSelection_DisablesPromptResolution() {
+        settings.dictationSelectedPromptId = AppSettingsStore.noPostProcessingPromptId
+
+        XCTAssertTrue(settings.isDictationPostProcessingDisabled)
+        XCTAssertNil(settings.selectedDictationPrompt)
+    }
 }
