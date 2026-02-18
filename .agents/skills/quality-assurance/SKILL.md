@@ -13,7 +13,6 @@ Core policy alignment:
 
 - Use the risk matrix and Fast/Full lanes from `AGENTS.md`.
 - Keep hard gates at push/merge, not on every local edit.
-- Codacy is deprecated in this repository; rely on local scripts and CI.
 - When running checks via AI agents, prefer compact `*-agent` targets to reduce context volume while preserving failure diagnostics.
 
 ## Verification by Lane
