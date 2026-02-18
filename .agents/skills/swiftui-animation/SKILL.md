@@ -7,6 +7,15 @@ description: This skill provides comprehensive guidance for implementing advance
 
 Expert guidance for implementing advanced SwiftUI animations and Metal shader integration. Covers animation curves, springs, transitions, matched geometry effects, PhaseAnimator, KeyframeAnimator, and GPU-accelerated shader effects.
 
+## Scope Boundaries
+
+Use this skill when animation/motion behavior is the core implementation concern.
+
+Out of scope for this skill:
+- Generic SwiftUI state/layout patterns without motion complexity (`swiftui-patterns`)
+- Runtime render/update performance diagnosis (`swiftui-performance-audit`)
+- Pure visual ideation/high-fidelity creative direction (`native-app-designer`)
+
 ## When to Use This Skill
 
 - Understanding motion design principles and when to use animation
@@ -182,6 +191,12 @@ Circle()
 8. **Let people cancel motion** - Don't force users to wait for animations to complete
 9. **Test on device** - Simulator animation timing differs
 10. **Profile shader performance** - GPU time matters for complex effects
+
+## Repository Validation
+
+- For animation hitch checks, start with `make profile-animation`.
+- For repeatable before/after metrics, prefer `make profile-report`.
+- Keep previews deterministic and run `make preview-check` when animation views are added or changed.
 
 ## Troubleshooting
 

@@ -5,7 +5,7 @@
 # with CI/CD pipelines and headless environments.
 # =============================================================================
 
-.PHONY: help build build-debug build-release build-agent test test-agent test-swift test-verbose test-strict lint lint-agent lint-fix arch-check preview-check preflight preflight-agent clean run run-release dmg setup docs docs-preview docs-clean profile profile-report profile-cpu profile-memory profile-animation
+.PHONY: help build build-debug build-release build-agent test test-agent test-swift test-verbose test-strict lint lint-agent lint-fix arch-check preview-check preflight preflight-agent clean run run-release dmg setup docs docs-preview docs-clean profile profile-report profile-cpu profile-memory profile-animation profile-animation-report
 
 # Default target
 help:
@@ -48,6 +48,7 @@ help:
 	@echo "  make profile-cpu    - Profile CPU usage with Time Profiler"
 	@echo "  make profile-memory - Profile memory usage with Allocations"
 	@echo "  make profile-animation - Profile Core Animation performance"
+	@echo "  make profile-animation-report - Profile animation and export metrics"
 	@echo ""
 	@echo "Maintenance:"
 	@echo "  make clean          - Clean build artifacts"
@@ -198,6 +199,10 @@ profile-memory: build-debug
 profile-animation: build-debug
 	@echo -e "$(BLUE)Running animation profiling...$(NC)"
 	@./scripts/profile-performance.sh --animation
+
+profile-animation-report: build-debug
+	@echo -e "$(BLUE)Running animation profiling with report extraction...$(NC)"
+	@./scripts/profile-performance.sh --animation --report
 
 
 # CI/CD Commands

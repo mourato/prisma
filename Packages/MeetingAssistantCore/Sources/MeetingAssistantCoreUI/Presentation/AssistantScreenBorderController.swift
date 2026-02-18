@@ -29,6 +29,10 @@ public final class AssistantScreenBorderController {
         ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
     }
 
+    private var prefersReducedMotion: Bool {
+        NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+    }
+
     // MARK: - Initialization
 
     public init(settingsStore: AppSettingsStore = .shared) {
@@ -70,7 +74,7 @@ public final class AssistantScreenBorderController {
         )
         window.contentView = NSHostingView(rootView: borderView)
 
-        if isRunningTests {
+        if isRunningTests || prefersReducedMotion {
             window.alphaValue = 1
             window.orderFront(nil)
         } else {
@@ -88,12 +92,14 @@ public final class AssistantScreenBorderController {
 
     /// Hide the border overlay.
     public func hide() {
-        if isRunningTests {
+        guard let window = borderWindow else { return }
+
+        if isRunningTests || prefersReducedMotion {
+            window.orderOut(nil)
+            window.alphaValue = 1
             isVisible = false
             return
         }
-
-        guard let window = borderWindow else { return }
 
         NSAnimationContext.runAnimationGroup { context in
             context.duration = Constants.animationDuration

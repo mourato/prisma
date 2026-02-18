@@ -17,6 +17,8 @@ Activate this skill when working with:
 - SwiftUI views and modifiers
 - View lifecycle and composition
 
+Route to `swiftui-animation` when the task is primarily about advanced transitions, motion choreography, matched geometry, or shader-based effects.
+
 ## Key Concepts
 
 ### State Management

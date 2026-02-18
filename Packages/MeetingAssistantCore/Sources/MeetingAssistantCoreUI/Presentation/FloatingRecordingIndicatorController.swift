@@ -61,6 +61,10 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
     }
 
+    private var prefersReducedMotion: Bool {
+        NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+    }
+
     // MARK: - Initialization
 
     /// Creates a new floating recording indicator controller.
@@ -103,6 +107,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         onCancel: @escaping @Sendable () -> Void
     ) {
         guard shouldShowIndicator(for: mode) else { return }
+        let wasVisible = isVisible
         visibilityTransitionID &+= 1
         currentMode = mode
         meetingType = type
@@ -118,10 +123,10 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         // Position the panel
         positionPanel(panel, at: settingsStore.recordingIndicatorPosition)
 
-        if isRunningTests {
+        if isRunningTests || prefersReducedMotion {
             panel.alphaValue = 1
             panel.orderFrontRegardless()
-        } else if !isVisible {
+        } else if !wasVisible {
             // Show with fade-in animation
             panel.alphaValue = 0
             panel.orderFrontRegardless()
@@ -149,7 +154,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         // Stop monitoring audio levels
         audioMonitor.stopMonitoring()
 
-        if isRunningTests {
+        if isRunningTests || prefersReducedMotion {
             panelToHide.orderOut(nil)
             panelToHide.alphaValue = 1
         } else {

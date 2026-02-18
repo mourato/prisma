@@ -324,6 +324,13 @@ Performance routing notes:
 - Use `audio-realtime` when the bottleneck is in capture/processing pipelines rather than SwiftUI rendering.
 - Prefer `make profile-report` for repeatable trace capture + metric extraction before/after fixes.
 
+Animation routing notes:
+
+- Use `swiftui-animation` for advanced motion behavior (transitions, matched geometry, animation orchestration, shader effects).
+- Use `swiftui-patterns` for general view composition/state patterns when animation is not the core problem.
+- Use `native-app-designer` only for high-fidelity visual/motion design exploration, not implementation rules.
+- Respect motion accessibility: prefer reduced motion paths when `accessibilityDisplayShouldReduceMotion` is enabled.
+
 Concurrency routing notes:
 
 - Use `swift-concurrency-expert` for compiler diagnostics, actor isolation fixes, Sendable remediation, and Swift 6 migration work.
