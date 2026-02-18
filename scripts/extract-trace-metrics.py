@@ -17,6 +17,16 @@ from pathlib import Path
 from typing import Any
 
 
+ANIMATION_KEYWORDS = ("hitch", "frame", "fps", "vsync", "animation")
+
+
+def is_animation_schema(schema: str | None) -> bool:
+    if not schema:
+        return False
+    lowered = schema.lower()
+    return any(keyword in lowered for keyword in ANIMATION_KEYWORDS)
+
+
 def run_xctrace_export(args: list[str]) -> str:
     result = subprocess.run(
         ["/usr/bin/xcrun", "xctrace", "export", *args],
@@ -128,12 +138,46 @@ def summarize_schema_rows(schema: str, rows: list[dict[str, str]]) -> dict[str, 
         if key in last_row:
             summary[f"last_{key}"] = last_row[key]
 
+    animation_metric_keys = (
+        "hitch-count",
+        "hitches",
+        "total-hitches",
+        "avg-frame-time",
+        "frame-time",
+        "frame-rate",
+        "fps",
+        "vsync-miss-count",
+    )
+    for key in animation_metric_keys:
+        if key in first_row:
+            summary[f"first_{key}"] = first_row[key]
+        if key in last_row:
+            summary[f"last_{key}"] = last_row[key]
+
+        delta = delta_metric(rows, key)
+        if delta is not None:
+            summary[f"delta_{key}"] = round(delta, 3)
+
+    summary["is_animation_schema"] = is_animation_schema(schema)
+
     return summary
 
 
 def choose_primary_summary(summaries: list[dict[str, Any]]) -> dict[str, Any] | None:
     if not summaries:
         return None
+
+    animation_candidates = [
+        item for item in summaries if item.get("rows", 0) > 0 and item.get("is_animation_schema")
+    ]
+    if animation_candidates:
+        with_hitch_delta = [
+            item
+            for item in animation_candidates
+            if any(str(key).startswith("delta_hitch") for key in item.keys())
+        ]
+        if with_hitch_delta:
+            return sorted(with_hitch_delta, key=lambda item: item.get("rows", 0), reverse=True)[0]
 
     with_wakeups = [
         item for item in summaries if item.get("rows", 0) > 0 and "wakeups_per_sec" in item
@@ -196,6 +240,18 @@ def write_text_report(
             "last_avg-cpu",
             "first_max-cpu",
             "last_max-cpu",
+            "first_hitch-count",
+            "last_hitch-count",
+            "delta_hitch-count",
+            "first_total-hitches",
+            "last_total-hitches",
+            "delta_total-hitches",
+            "first_frame-rate",
+            "last_frame-rate",
+            "delta_frame-rate",
+            "first_fps",
+            "last_fps",
+            "delta_fps",
         ):
             if key in primary:
                 lines.append(f"{key.replace('-', '_')}={primary[key]}")

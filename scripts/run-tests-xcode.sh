@@ -24,6 +24,7 @@ NC='\033[0m'
 AGENT_MODE=0
 QUIET=0
 VERBOSE=0
+BUNDLE_ERROR_PATTERN="Failed to create a bundle instance representing"
 
 if ma_agent_mode_enabled; then
     AGENT_MODE=1
@@ -79,6 +80,16 @@ run_xcode_tests() {
         test
 }
 
+run_swift_fallback_tests() {
+    local fallback_log_path="$1"
+
+    if [ "${AGENT_MODE}" -eq 1 ]; then
+        MA_AGENT_MODE=0 "${SCRIPT_DIR}/run-tests.sh" --quiet >"${fallback_log_path}" 2>&1
+    else
+        "${SCRIPT_DIR}/run-tests.sh" --quiet >"${fallback_log_path}" 2>&1
+    fi
+}
+
 START_TIME=$(date +%s)
 if [ "${VERBOSE}" -eq 1 ] && [ "${AGENT_MODE}" -eq 0 ] && [ "${QUIET}" -eq 0 ]; then
     (run_xcode_tests) 2>&1 | tee "${LOG_PATH}"
@@ -90,20 +101,58 @@ fi
 END_TIME=$(date +%s)
 DURATION=$((END_TIME - START_TIME))
 
+FALLBACK_USED=0
+FALLBACK_LOG_PATH="${LOG_PATH%.log}-swift-fallback.log"
+if [ "${EXIT_CODE}" -ne 0 ] && grep -q "${BUNDLE_ERROR_PATTERN}" "${LOG_PATH}"; then
+    FALLBACK_USED=1
+    if [ "${AGENT_MODE}" -eq 0 ] && [ "${QUIET}" -eq 0 ]; then
+        echo -e "${YELLOW}xcodebuild runner failed to instantiate .xctest bundle; retrying via swift test fallback...${NC}"
+    fi
+
+    FALLBACK_START_TIME=$(date +%s)
+    run_swift_fallback_tests "${FALLBACK_LOG_PATH}"
+    FALLBACK_EXIT_CODE=$?
+    FALLBACK_END_TIME=$(date +%s)
+    FALLBACK_DURATION=$((FALLBACK_END_TIME - FALLBACK_START_TIME))
+    DURATION=$((DURATION + FALLBACK_DURATION))
+
+    if [ "${FALLBACK_EXIT_CODE}" -eq 0 ]; then
+        EXIT_CODE=0
+    fi
+fi
+
 if [ "${AGENT_MODE}" -eq 1 ]; then
     STATUS="FAIL"
     RESULT_LINE="Tests failed"
     if [ "${EXIT_CODE}" -eq 0 ]; then
         STATUS="PASS"
         RESULT_LINE="All tests passed"
+        if [ "${FALLBACK_USED}" -eq 1 ]; then
+            RESULT_LINE="xcodebuild runner failed; swift test fallback passed"
+        fi
+    elif [ "${FALLBACK_USED}" -eq 1 ]; then
+        RESULT_LINE="xcodebuild runner failed; swift test fallback also failed"
     fi
 
     if [ "${EXIT_CODE}" -ne 0 ]; then
         ma_agent_failure_excerpt "${LOG_PATH}" "error:|fatal error:|Test Case .* failed|Test Suite .* failed|failed" 20 80
+        if [ "${FALLBACK_USED}" -eq 1 ] && [ -f "${FALLBACK_LOG_PATH}" ]; then
+            ma_agent_failure_excerpt "${FALLBACK_LOG_PATH}" "error:|fatal error:|Test Case .* failed|Test Suite .* failed|failed" 20 80
+        fi
     fi
 
     ERROR_COUNT="$(ma_agent_error_count "${LOG_PATH}")"
-    ma_agent_write_result_json "${RESULT_PATH}" "test" "${STATUS}" "${DURATION}" "${LOG_PATH}" "${ERROR_COUNT}" "${RESULT_LINE}"
+    if [ "${FALLBACK_USED}" -eq 1 ] && [ -f "${FALLBACK_LOG_PATH}" ]; then
+        FALLBACK_ERROR_COUNT="$(ma_agent_error_count "${FALLBACK_LOG_PATH}")"
+        ERROR_COUNT=$((ERROR_COUNT + FALLBACK_ERROR_COUNT))
+    fi
+
+    RESULT_LOG_PATH="${LOG_PATH}"
+    if [ "${FALLBACK_USED}" -eq 1 ] && [ -f "${FALLBACK_LOG_PATH}" ]; then
+        RESULT_LOG_PATH="${LOG_PATH};${FALLBACK_LOG_PATH}"
+    fi
+
+    ma_agent_write_result_json "${RESULT_PATH}" "test" "${STATUS}" "${DURATION}" "${RESULT_LOG_PATH}" "${ERROR_COUNT}" "${RESULT_LINE}"
     ma_agent_emit_result "test" "${STATUS}" "${DURATION}" "${LOG_PATH}" "${ERROR_COUNT}" "${RESULT_LINE}" "${RESULT_PATH}"
     exit "${EXIT_CODE}"
 fi
@@ -111,11 +160,20 @@ fi
 if [ "${EXIT_CODE}" -ne 0 ] && [ "${VERBOSE}" -eq 0 ]; then
     echo ""
     cat "${LOG_PATH}"
+    if [ "${FALLBACK_USED}" -eq 1 ] && [ -f "${FALLBACK_LOG_PATH}" ]; then
+        echo ""
+        cat "${FALLBACK_LOG_PATH}"
+    fi
 fi
 
 RESULT_LINE="Tests failed"
 if [ "${EXIT_CODE}" -eq 0 ]; then
     RESULT_LINE="All tests passed"
+    if [ "${FALLBACK_USED}" -eq 1 ]; then
+        RESULT_LINE="xcodebuild runner failed; swift test fallback passed"
+    fi
+elif [ "${FALLBACK_USED}" -eq 1 ]; then
+    RESULT_LINE="xcodebuild runner failed; swift test fallback also failed"
 fi
 
 if [ "${EXIT_CODE}" -eq 0 ]; then
