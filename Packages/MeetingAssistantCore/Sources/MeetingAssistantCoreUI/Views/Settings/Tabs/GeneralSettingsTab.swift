@@ -12,37 +12,7 @@ import SwiftUI
 public struct GeneralSettingsTab: View {
     @StateObject private var viewModel = GeneralSettingsViewModel()
 
-    private enum Motion {
-        static let duration: Double = 0.18
-    }
-
-    private var sectionTransition: AnyTransition {
-        .move(edge: .top).combined(with: .opacity)
-    }
-
     public init() {}
-
-    private var recordingIndicatorEnabledBinding: Binding<Bool> {
-        Binding(
-            get: { viewModel.recordingIndicatorEnabled },
-            set: { newValue in
-                withAnimation(.easeInOut(duration: Motion.duration)) {
-                    viewModel.recordingIndicatorEnabled = newValue
-                }
-            }
-        )
-    }
-
-    private var autoDeleteTranscriptionsBinding: Binding<Bool> {
-        Binding(
-            get: { viewModel.autoDeleteTranscriptions },
-            set: { newValue in
-                withAnimation(.easeInOut(duration: Motion.duration)) {
-                    viewModel.autoDeleteTranscriptions = newValue
-                }
-            }
-        )
-    }
 
     public var body: some View {
         ScrollView {
@@ -125,7 +95,7 @@ public struct GeneralSettingsTab: View {
                         MAToggleRow(
                             "settings.general.recording_indicator.enabled".localized,
                             description: "settings.general.recording_indicator.enabled_desc".localized,
-                            isOn: recordingIndicatorEnabledBinding
+                            isOn: $viewModel.recordingIndicatorEnabled.animated()
                         )
 
                         if viewModel.recordingIndicatorEnabled {
@@ -164,7 +134,7 @@ public struct GeneralSettingsTab: View {
                                     .pickerStyle(.segmented)
                                 }
                             }
-                            .transition(sectionTransition)
+                            .transition(SettingsMotion.sectionTransition())
                         }
                     }
                 }
@@ -197,7 +167,7 @@ public struct GeneralSettingsTab: View {
                             MAToggleRow(
                                 "settings.general.auto_delete".localized,
                                 description: "settings.general.auto_delete_desc".localized,
-                                isOn: autoDeleteTranscriptionsBinding
+                                isOn: $viewModel.autoDeleteTranscriptions.animated()
                             )
 
                             if viewModel.autoDeleteTranscriptions {
@@ -228,7 +198,7 @@ public struct GeneralSettingsTab: View {
                                     .padding(.leading, MeetingAssistantDesignSystem.Layout.indentation)
                                     .padding(.top, MeetingAssistantDesignSystem.Layout.smallPadding)
                                 }
-                                .transition(sectionTransition)
+                                .transition(SettingsMotion.sectionTransition())
                             }
                         }
                     }
