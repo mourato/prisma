@@ -121,7 +121,7 @@ public class ShortcutSettingsViewModel: ObservableObject {
             return
         }
 
-        guard let normalizedValue = normalizedShortcutDefinition(newValue) else {
+        guard let normalizedValue = ShortcutDefinitionNormalizer.normalized(newValue) else {
             settings.dictationModifierShortcutGesture = nil
             settings.dictationShortcutDefinition = nil
             settings.dictationSelectedPresetKey = .notSpecified
@@ -156,7 +156,7 @@ public class ShortcutSettingsViewModel: ObservableObject {
             return
         }
 
-        guard let normalizedValue = normalizedShortcutDefinition(newValue) else {
+        guard let normalizedValue = ShortcutDefinitionNormalizer.normalized(newValue) else {
             settings.meetingModifierShortcutGesture = nil
             settings.meetingShortcutDefinition = nil
             settings.meetingSelectedPresetKey = .notSpecified
@@ -184,30 +184,5 @@ public class ShortcutSettingsViewModel: ObservableObject {
         settings.meetingSelectedPresetKey = .custom
         meetingSelectedPresetKey = .custom
         meetingModifierConflictMessage = nil
-    }
-
-    private func normalizedShortcutDefinition(_ definition: ShortcutDefinition?) -> ShortcutDefinition? {
-        guard var definition else {
-            return nil
-        }
-
-        if definition.primaryKey == nil {
-            guard let modifier = definition.modifiers.first else {
-                return nil
-            }
-            definition = ShortcutDefinition(
-                modifiers: [modifier],
-                primaryKey: nil,
-                trigger: .doubleTap
-            )
-        } else {
-            definition = ShortcutDefinition(
-                modifiers: definition.modifiers,
-                primaryKey: definition.primaryKey,
-                trigger: .singleTap
-            )
-        }
-
-        return definition.isValid ? definition : nil
     }
 }

@@ -122,7 +122,7 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
             return
         }
 
-        guard let normalizedValue = normalizedShortcutDefinition(newValue) else {
+        guard let normalizedValue = ShortcutDefinitionNormalizer.normalized(newValue) else {
             settings.assistantModifierShortcutGesture = nil
             settings.assistantShortcutDefinition = nil
             settings.assistantSelectedPresetKey = .notSpecified
@@ -152,33 +152,8 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
         assistantModifierConflictMessage = nil
     }
 
-    private func normalizedShortcutDefinition(_ definition: ShortcutDefinition?) -> ShortcutDefinition? {
-        guard var definition else {
-            return nil
-        }
-
-        if definition.primaryKey == nil {
-            guard let modifier = definition.modifiers.first else {
-                return nil
-            }
-            definition = ShortcutDefinition(
-                modifiers: [modifier],
-                primaryKey: nil,
-                trigger: .doubleTap
-            )
-        } else {
-            definition = ShortcutDefinition(
-                modifiers: definition.modifiers,
-                primaryKey: definition.primaryKey,
-                trigger: .singleTap
-            )
-        }
-
-        return definition.isValid ? definition : nil
-    }
-
     private func handleAssistantLayerShortcutKeyChange(_ newValue: String) {
-        let normalized = normalizedLayerShortcutKey(newValue)
+        let normalized = LayerShortcutKeyNormalizer.normalized(newValue)
         if normalized != newValue {
             assistantLayerShortcutKey = normalized
             return
@@ -203,13 +178,5 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
 
         assistantLayerShortcutConflictMessage = nil
         settings.assistantLayerShortcutKey = normalized
-    }
-
-    private func normalizedLayerShortcutKey(_ value: String) -> String {
-        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let character = trimmed.first else {
-            return ""
-        }
-        return String(character).uppercased()
     }
 }

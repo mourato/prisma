@@ -15,24 +15,20 @@ public struct PostProcessingSettingsTab: View {
     public init() {}
 
     public var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.sectionSpacing) {
-                enableToggleSection
+        SettingsScrollableContent {
+            enableToggleSection
 
-                if viewModel.settings.postProcessingEnabled {
-                    Group {
-                        if viewModel.settings.aiConfiguration.isValid {
-                            systemPromptSection
-                            userPromptsSection
-                        } else {
-                            connectionWarningSection
-                        }
+            if viewModel.settings.postProcessingEnabled {
+                Group {
+                    if viewModel.settings.aiConfiguration.isValid {
+                        systemPromptSection
+                        userPromptsSection
+                    } else {
+                        connectionWarningSection
                     }
-                    .transition(SettingsMotion.sectionTransition())
                 }
+                .transition(SettingsMotion.sectionTransition())
             }
-            .padding()
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .sheet(isPresented: $viewModel.showPromptEditor) {
             PromptEditorSheet(
