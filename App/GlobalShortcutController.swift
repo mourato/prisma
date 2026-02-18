@@ -358,8 +358,42 @@ final class GlobalShortcutController {
         guard didConfirmDoubleEscapePress() else { return }
 
         Task { @MainActor in
-            guard self.recordingManager.isRecording || self.recordingManager.isStartingRecording else { return }
+            let wasRecording = self.recordingManager.isRecording
+            let wasStarting = self.recordingManager.isStartingRecording
+
+            guard wasRecording || wasStarting else {
+                AppLogger.debug(
+                    "ESC cancel ignored",
+                    category: .uiController,
+                    extra: [
+                        "scope": "global",
+                        "reason": "not_recording",
+                    ]
+                )
+                return
+            }
+
+            AppLogger.info(
+                "ESC cancel requested",
+                category: .uiController,
+                extra: [
+                    "scope": "global",
+                    "wasRecording": wasRecording,
+                    "wasStarting": wasStarting,
+                ]
+            )
+
             await self.recordingManager.cancelRecording()
+
+            AppLogger.info(
+                "ESC cancel completed",
+                category: .uiController,
+                extra: [
+                    "scope": "global",
+                    "isRecording": self.recordingManager.isRecording,
+                    "isStarting": self.recordingManager.isStartingRecording,
+                ]
+            )
         }
     }
 
@@ -367,15 +401,41 @@ final class GlobalShortcutController {
         let now = Date()
         guard let lastEscapePressTime else {
             self.lastEscapePressTime = now
+            AppLogger.debug(
+                "ESC first press detected",
+                category: .uiController,
+                extra: [
+                    "scope": "global",
+                    "windowSec": escapeDoublePressInterval,
+                ]
+            )
             return false
         }
 
-        guard now.timeIntervalSince(lastEscapePressTime) <= escapeDoublePressInterval else {
+        let elapsed = now.timeIntervalSince(lastEscapePressTime)
+        guard elapsed <= escapeDoublePressInterval else {
             self.lastEscapePressTime = now
+            AppLogger.debug(
+                "ESC double-press timeout",
+                category: .uiController,
+                extra: [
+                    "scope": "global",
+                    "elapsedSec": elapsed,
+                    "windowSec": escapeDoublePressInterval,
+                ]
+            )
             return false
         }
 
         self.lastEscapePressTime = nil
+        AppLogger.info(
+            "ESC double-press confirmed",
+            category: .uiController,
+            extra: [
+                "scope": "global",
+                "elapsedSec": elapsed,
+            ]
+        )
         return true
     }
 

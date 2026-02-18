@@ -395,7 +395,27 @@ final class AssistantShortcutController {
 
         Task { @MainActor [weak self] in
             guard let self else { return }
+            let wasRecording = assistantService.isRecording
+
+            AppLogger.info(
+                "ESC cancel requested",
+                category: .assistant,
+                extra: [
+                    "scope": "assistant",
+                    "wasRecording": wasRecording,
+                ]
+            )
+
             await assistantService.cancelRecording()
+
+            AppLogger.info(
+                "ESC cancel completed",
+                category: .assistant,
+                extra: [
+                    "scope": "assistant",
+                    "isRecording": assistantService.isRecording,
+                ]
+            )
         }
     }
 
@@ -403,15 +423,41 @@ final class AssistantShortcutController {
         let now = Date()
         guard let lastEscapePressTime else {
             self.lastEscapePressTime = now
+            AppLogger.debug(
+                "ESC first press detected",
+                category: .assistant,
+                extra: [
+                    "scope": "assistant",
+                    "windowSec": escapeDoublePressInterval,
+                ]
+            )
             return false
         }
 
-        guard now.timeIntervalSince(lastEscapePressTime) <= escapeDoublePressInterval else {
+        let elapsed = now.timeIntervalSince(lastEscapePressTime)
+        guard elapsed <= escapeDoublePressInterval else {
             self.lastEscapePressTime = now
+            AppLogger.debug(
+                "ESC double-press timeout",
+                category: .assistant,
+                extra: [
+                    "scope": "assistant",
+                    "elapsedSec": elapsed,
+                    "windowSec": escapeDoublePressInterval,
+                ]
+            )
             return false
         }
 
         self.lastEscapePressTime = nil
+        AppLogger.info(
+            "ESC double-press confirmed",
+            category: .assistant,
+            extra: [
+                "scope": "assistant",
+                "elapsedSec": elapsed,
+            ]
+        )
         return true
     }
 
