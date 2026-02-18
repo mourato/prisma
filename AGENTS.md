@@ -317,6 +317,19 @@ Notes:
 - Prefer canonical references under `.agents/skills/macos-development/` when overlap exists.
 - Keep verification aligned to repo commands: `make build|test|lint` and `*-agent` variants.
 
+Performance routing notes:
+
+- Use `swiftui-performance-audit` first for SwiftUI runtime issues (janky scrolling, excessive view updates, layout thrash, animation hitches).
+- Use `performance` for system/resource profiling outside SwiftUI rendering (CPU, memory, energy, startup, I/O).
+- Use `audio-realtime` when the bottleneck is in capture/processing pipelines rather than SwiftUI rendering.
+- Prefer `make profile-report` for repeatable trace capture + metric extraction before/after fixes.
+
+Concurrency routing notes:
+
+- Use `swift-concurrency-expert` for compiler diagnostics, actor isolation fixes, Sendable remediation, and Swift 6 migration work.
+- Use `concurrency` only for foundational/conceptual guidance when no concrete compiler issue is in scope.
+- For code changes touching concurrency, prefer running `make test-strict` and optionally `./scripts/preflight.sh --strict-concurrency` before merge.
+
 Skills index (loaded conditionally):
 
 | Skill | Trigger |

@@ -142,7 +142,16 @@ private struct AssistantScreenBorderView: View {
     let borderColor: Color
     let style: AssistantBorderStyle
 
+    private var shouldPrintChanges: Bool {
+        ProcessInfo.processInfo.environment["MA_SWIFTUI_PRINT_CHANGES"] == "1"
+    }
+
     var body: some View {
+#if DEBUG
+        if shouldPrintChanges {
+            let _ = Self._printChanges()
+        }
+#endif
         GeometryReader { geometry in
             switch style {
             case .stroke:
