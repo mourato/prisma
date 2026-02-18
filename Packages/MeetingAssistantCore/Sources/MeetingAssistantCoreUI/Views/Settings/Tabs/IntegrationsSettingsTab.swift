@@ -4,6 +4,7 @@ import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
+import Foundation
 import SwiftUI
 
 public struct IntegrationsSettingsTab: View {
@@ -149,12 +150,13 @@ public struct IntegrationsSettingsTab: View {
 
             Spacer()
 
-            MAModifierShortcutEditor(
-                shortcut: integrationShortcutBinding(for: integration.id),
+            MAActionLayerKeyEditor(
+                title: "settings.assistant.layer.integration_key".localized,
+                key: integrationLayerKeyBinding(for: integration.id),
                 conflictMessage: integrationShortcutConflictMessages[integration.id],
-                showsTitle: false,
-                maxInputWidth: 260
+                maxInputWidth: 74
             )
+            .frame(maxWidth: 180)
 
             Button {
                 editingIntegration = integration
@@ -183,13 +185,13 @@ public struct IntegrationsSettingsTab: View {
         )
     }
 
-    private func integrationShortcutBinding(for id: UUID) -> Binding<ShortcutDefinition?> {
+    private func integrationLayerKeyBinding(for id: UUID) -> Binding<String> {
         Binding(
             get: {
-                viewModel.integration(for: id)?.shortcutDefinition
+                viewModel.integration(for: id)?.layerShortcutKey ?? ""
             },
             set: { newValue in
-                let conflictMessage = viewModel.setIntegrationShortcutDefinition(newValue, for: id)
+                let conflictMessage = viewModel.setIntegrationLayerShortcutKey(newValue, for: id)
                 integrationShortcutConflictMessages[id] = conflictMessage
             }
         )

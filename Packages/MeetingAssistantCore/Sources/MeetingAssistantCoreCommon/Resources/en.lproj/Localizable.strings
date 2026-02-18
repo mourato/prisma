@@ -324,6 +324,10 @@
 "settings.assistant.controls" = "Assistant Shortcut";
 "settings.assistant.toggle_command" = "Start/Stop Assistant";
 "settings.assistant.toggle_command_desc" = "Hold or press to record a voice command for the selected text";
+"settings.assistant.layer.description" = "After triggering the Assistant shortcut, press one key (A, R, 1, etc.) to choose the action.";
+"settings.assistant.layer.assistant_key" = "Assistant action key";
+"settings.assistant.layer.integration_key" = "Integration key";
+"settings.assistant.layer.duplicate_key" = "This key is already in use by another Assistant layer action.";
 "settings.assistant.tips_title" = "Tips";
 "settings.assistant.fn_key_title" = "Using the Fn key";
 "settings.assistant.fn_key_desc" = "To use the Fn key alone:\n• Open System Settings → Keyboard\n• Click \"Press 🌐 key to\" dropdown\n• Select \"Do Nothing\"\n• This allows the app to detect the Fn key press";
@@ -357,8 +361,6 @@
 "settings.assistant.integrations.editor.title" = "Edit Prompt";
 "settings.assistant.integrations.editor.title.integration" = "Edit Integration";
 "settings.assistant.integrations.editor.shortcut" = "Keyboard Shortcut";
-"settings.assistant.integrations.editor.hotkey" = "Hotkey";
-"settings.assistant.integrations.editor.hotkey_config" = "Shortcut Trigger";
 "settings.assistant.integrations.editor.instructions" = "Instructions (Optional)";
 "settings.assistant.integrations.editor.placeholders.title" = "Placeholders";
 "settings.assistant.integrations.editor.placeholders.subtitle" = "Click to copy and use in URLs/Deeplinks.";

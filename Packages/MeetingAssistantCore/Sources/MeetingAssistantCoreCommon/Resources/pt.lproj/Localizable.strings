@@ -323,6 +323,10 @@
 "settings.assistant.controls" = "Atalho do Assistant";
 "settings.assistant.toggle_command" = "Iniciar/Parar Assistant";
 "settings.assistant.toggle_command_desc" = "Segure ou pressione para gravar um comando de voz para o texto selecionado";
+"settings.assistant.layer.description" = "Após acionar o atalho do Assistente, pressione uma tecla (A, R, 1, etc.) para escolher a ação.";
+"settings.assistant.layer.assistant_key" = "Tecla da ação do Assistente";
+"settings.assistant.layer.integration_key" = "Tecla da integração";
+"settings.assistant.layer.duplicate_key" = "Essa tecla já está sendo usada por outra ação da camada do Assistente.";
 "settings.assistant.tips_title" = "Dicas";
 "settings.assistant.fn_key_title" = "Usando a tecla Fn";
 "settings.assistant.fn_key_desc" = "Para usar a tecla Fn sozinha:\n• Abra Configurações do Sistema → Teclado\n• Clique no dropdown \"Pressionar tecla 🌐 para\"\n• Selecione \"Não fazer nada\"\n• Isso permite que o app detecte a tecla Fn";
@@ -356,8 +360,6 @@
 "settings.assistant.integrations.editor.title" = "Editar Prompt";
 "settings.assistant.integrations.editor.title.integration" = "Editar Integração";
 "settings.assistant.integrations.editor.shortcut" = "Atalho de Teclado";
-"settings.assistant.integrations.editor.hotkey" = "Hotkey";
-"settings.assistant.integrations.editor.hotkey_config" = "Acionamento do Atalho";
 "settings.assistant.integrations.editor.instructions" = "Instruções (Opcional)";
 "settings.assistant.integrations.editor.placeholders.title" = "Placeholders";
 "settings.assistant.integrations.editor.placeholders.subtitle" = "Clique para copiar e usar em URLs/Deeplinks.";

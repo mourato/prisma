@@ -54,20 +54,21 @@ public struct AssistantIntegrationEditorSheet: View {
             }
 
             VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-                Text("settings.assistant.integrations.editor.hotkey".localized)
+                Text("settings.assistant.layer.integration_key".localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                MAModifierShortcutEditor(
-                    shortcut: Binding(
-                        get: { draft.integration.shortcutDefinition },
+                MAActionLayerKeyEditor(
+                    title: "settings.assistant.layer.integration_key".localized,
+                    key: Binding(
+                        get: { draft.integration.layerShortcutKey ?? "" },
                         set: { newValue in
-                            draft.integration.shortcutDefinition = newValue
-                            draft.integration.modifierShortcutGesture = newValue?.asModifierShortcutGesture
-                            draft.integration.shortcutPresetKey = newValue == nil ? .notSpecified : .custom
+                            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                            draft.integration.layerShortcutKey = trimmed.isEmpty ? nil : String(trimmed.prefix(1)).uppercased()
                         }
                     ),
-                    conflictMessage: shortcutConflictMessage
+                    conflictMessage: shortcutConflictMessage,
+                    maxInputWidth: 90
                 )
             }
 
@@ -129,10 +130,7 @@ public struct AssistantIntegrationEditorSheet: View {
         }
         .padding(MeetingAssistantDesignSystem.Layout.spacing20)
         .frame(minWidth: 560, minHeight: 480)
-        .onChange(of: draft.integration.shortcutPresetKey) { _, _ in
-            shortcutConflictMessage = nil
-        }
-        .onChange(of: draft.integration.shortcutDefinition) { _, _ in
+        .onChange(of: draft.integration.layerShortcutKey) { _, _ in
             shortcutConflictMessage = nil
         }
         .onDisappear {

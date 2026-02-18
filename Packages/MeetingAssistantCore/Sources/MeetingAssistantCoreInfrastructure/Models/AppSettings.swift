@@ -344,6 +344,7 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
     public var promptInstructions: String?
     public var selectedPreset: AssistantIntegrationPreset?
     public var shortcutDefinition: ShortcutDefinition?
+    public var layerShortcutKey: String?
     public var shortcutPresetKey: PresetShortcutKey
     public var shortcutActivationMode: ShortcutActivationMode
     public var modifierShortcutGesture: ModifierShortcutGesture?
@@ -358,6 +359,7 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
         promptInstructions: String? = nil,
         selectedPreset: AssistantIntegrationPreset? = nil,
         shortcutDefinition: ShortcutDefinition? = nil,
+        layerShortcutKey: String? = nil,
         shortcutPresetKey: PresetShortcutKey = .notSpecified,
         shortcutActivationMode: ShortcutActivationMode = .holdOrToggle,
         modifierShortcutGesture: ModifierShortcutGesture? = nil,
@@ -373,6 +375,7 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
         self.shortcutDefinition = shortcutDefinition.flatMap {
             normalizedInHouseShortcutDefinition($0, activationMode: shortcutActivationMode)
         }
+        self.layerShortcutKey = Self.normalizedLayerShortcutKey(layerShortcutKey)
         self.shortcutPresetKey = shortcutPresetKey
         self.shortcutActivationMode = shortcutActivationMode
         self.modifierShortcutGesture = modifierShortcutGesture
@@ -388,6 +391,7 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
         deepLink: String,
         promptInstructions: String? = nil,
         selectedPreset: AssistantIntegrationPreset? = nil,
+        layerShortcutKey: String? = nil,
         shortcutPresetKey: PresetShortcutKey = .notSpecified,
         shortcutActivationMode: ShortcutActivationMode = .holdOrToggle,
         modifierShortcutGesture: ModifierShortcutGesture? = nil,
@@ -402,6 +406,7 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
             promptInstructions: promptInstructions,
             selectedPreset: selectedPreset,
             shortcutDefinition: nil,
+            layerShortcutKey: layerShortcutKey,
             shortcutPresetKey: shortcutPresetKey,
             shortcutActivationMode: shortcutActivationMode,
             modifierShortcutGesture: modifierShortcutGesture,
@@ -418,6 +423,7 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
         case promptInstructions
         case selectedPreset
         case shortcutDefinition
+        case layerShortcutKey
         case shortcutPresetKey
         case shortcutActivationMode
         case modifierShortcutGesture
@@ -451,11 +457,26 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
                 normalizedInHouseShortcutDefinition($0.asShortcutDefinition, activationMode: shortcutActivationMode)
             }
         shortcutDefinition = normalizedDecodedShortcut ?? normalizedGestureShortcut ?? normalizedLegacyShortcut
+        layerShortcutKey = Self.normalizedLayerShortcutKey(
+            try container.decodeIfPresent(String.self, forKey: .layerShortcutKey)
+        )
 
         if modifierShortcutGesture == nil {
             modifierShortcutGesture = shortcutDefinition?.asModifierShortcutGesture
         }
         advancedScript = try container.decodeIfPresent(AssistantIntegrationScriptConfig.self, forKey: .advancedScript)
+    }
+
+    private static func normalizedLayerShortcutKey(_ value: String?) -> String? {
+        guard let rawValue = value?.trimmingCharacters(in: .whitespacesAndNewlines), !rawValue.isEmpty else {
+            return nil
+        }
+
+        guard let firstCharacter = rawValue.first else {
+            return nil
+        }
+
+        return String(firstCharacter).uppercased()
     }
 
     public static var defaultRaycast: AssistantIntegrationConfig {
@@ -465,6 +486,7 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
             kind: .deeplink,
             isEnabled: false,
             deepLink: defaultRaycastDeepLink,
+            layerShortcutKey: "R",
             shortcutPresetKey: .custom,
             shortcutActivationMode: .toggle
         )
@@ -800,6 +822,7 @@ public class AppSettingsStore: ObservableObject {
         static let assistantShortcutActivationMode = "assistantShortcutActivationMode"
         static let assistantUseEscapeToCancelRecording = "assistantUseEscapeToCancelRecording"
         static let assistantSelectedPresetKey = "assistantSelectedPresetKey"
+        static let assistantLayerShortcutKey = "assistantLayerShortcutKey"
         static let assistantBorderColor = "assistantBorderColor"
         static let assistantBorderStyle = "assistantBorderStyle"
         static let assistantBorderWidth = "assistantBorderWidth"
@@ -1075,6 +1098,11 @@ public class AppSettingsStore: ObservableObject {
     /// Selected preset shortcut key for Assistant activation.
     @Published public var assistantSelectedPresetKey: PresetShortcutKey {
         didSet { UserDefaults.standard.set(assistantSelectedPresetKey.rawValue, forKey: Keys.assistantSelectedPresetKey) }
+    }
+
+    /// Single-key action used inside Assistant shortcut layer to trigger Assistant mode.
+    @Published public var assistantLayerShortcutKey: String {
+        didSet { UserDefaults.standard.set(assistantLayerShortcutKey, forKey: Keys.assistantLayerShortcutKey) }
     }
 
     /// Color for the Assistant mode screen border.
@@ -1614,6 +1642,9 @@ public class AppSettingsStore: ObservableObject {
 
         let rawAssistantPresetKey = UserDefaults.standard.string(forKey: Keys.assistantSelectedPresetKey)
         assistantSelectedPresetKey = rawAssistantPresetKey.flatMap { PresetShortcutKey(rawValue: $0) } ?? .rightOption
+        assistantLayerShortcutKey = Self.normalizedLayerShortcutKey(
+            UserDefaults.standard.string(forKey: Keys.assistantLayerShortcutKey)
+        ) ?? "A"
 
         let loadedIntegrations = Self.loadDecoded([AssistantIntegrationConfig].self, forKey: Keys.assistantIntegrations)
         assistantIntegrations = loadedIntegrations ?? [AssistantIntegrationConfig.defaultRaycast]
@@ -1811,6 +1842,18 @@ public class AppSettingsStore: ObservableObject {
         applyLanguage(selectedLanguage)
     }
 
+    private static func normalizedLayerShortcutKey(_ value: String?) -> String? {
+        guard let rawValue = value?.trimmingCharacters(in: .whitespacesAndNewlines), !rawValue.isEmpty else {
+            return nil
+        }
+
+        guard let firstCharacter = rawValue.first else {
+            return nil
+        }
+
+        return String(firstCharacter).uppercased()
+    }
+
     // MARK: - Private Helpers
 
     private static let defaultSummaryTemplate = """
@@ -1891,6 +1934,7 @@ public class AppSettingsStore: ObservableObject {
 
         normalizedIntegrations = normalizedIntegrations.map { integration in
             var normalized = integration
+            normalized.layerShortcutKey = Self.normalizedLayerShortcutKey(normalized.layerShortcutKey)
 
             let normalizedShortcut = normalized.shortcutDefinition
                 .flatMap {
@@ -1920,6 +1964,7 @@ public class AppSettingsStore: ObservableObject {
             normalized.shortcutPresetKey = .custom
             normalized.shortcutActivationMode = .toggle
             normalized.deepLink = AssistantIntegrationConfig.defaultRaycastDeepLink
+            normalized.layerShortcutKey = normalized.layerShortcutKey ?? "R"
             return normalized
         }
 
