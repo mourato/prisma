@@ -243,22 +243,11 @@ public struct MeetingSettingsTab: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                if webTargetsViewModel.targets.isEmpty {
-                    Text("settings.meetings.web_targets.empty".localized)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                } else {
-                    VStack(spacing: 0) {
-                        ForEach(Array(webTargetsViewModel.targets.enumerated()), id: \.element.id) { index, target in
-                            webTargetRow(target)
-
-                            if index < webTargetsViewModel.targets.count - 1 {
-                                Divider()
-                            }
-                        }
-                    }
-                    .background(MeetingAssistantDesignSystem.Colors.subtleFill2)
-                    .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+                SettingsInlineList(
+                    items: webTargetsViewModel.targets,
+                    emptyText: "settings.meetings.web_targets.empty".localized
+                ) { target in
+                    webTargetRow(target)
                 }
 
                 HStack {
@@ -320,17 +309,11 @@ public struct MeetingSettingsTab: View {
     }
 
     private func browserNames(from bundleIdentifiers: [String]) -> String {
-        let fallbackBundleIdentifiers = meetingViewModel.settings.effectiveWebTargetBrowserBundleIdentifiers
-        let effectiveBundleIdentifiers = bundleIdentifiers.isEmpty ? fallbackBundleIdentifiers : bundleIdentifiers
-        if effectiveBundleIdentifiers.isEmpty {
-            return "settings.web_targets.browsers.empty".localized
-        }
-
-        let names = effectiveBundleIdentifiers
-            .map { WebTargetEditorSupport.browserDisplayName(for: $0) }
-            .sorted()
-
-        return "settings.meetings.web_targets.browsers".localized(with: names.joined(separator: ", "))
+        WebTargetBrowserNamesFormatter.formattedNames(
+            bundleIdentifiers: bundleIdentifiers,
+            fallbackBundleIdentifiers: meetingViewModel.settings.effectiveWebTargetBrowserBundleIdentifiers,
+            localizedListKey: "settings.meetings.web_targets.browsers"
+        )
     }
 
     // MARK: - Prompt Row
@@ -339,82 +322,18 @@ public struct MeetingSettingsTab: View {
         let isAutoDetectEnabled = meetingViewModel.settings.meetingTypeAutoDetectEnabled
         let isSelected = !isAutoDetectEnabled && meetingViewModel.selectedPromptId == prompt.id
 
-        let row = HStack(spacing: 12) {
-            promptIcon(prompt: prompt, isSelected: isSelected)
-            promptInfo(prompt: prompt, isSelected: isSelected)
-
-            Spacer()
-
-            if isSelected {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.success)
-            }
-
-            promptMenu(prompt: prompt, isSelected: isSelected, isAutoDetectEnabled: isAutoDetectEnabled)
-        }
-        .padding(MeetingAssistantDesignSystem.Layout.spacing10)
-        .contentShape(Rectangle())
-
-        return Group {
-            if isAutoDetectEnabled {
-                row
-            } else {
-                Button {
-                    meetingViewModel.selectPrompt(prompt.id)
-                } label: {
-                    row
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .background(isSelected ? MeetingAssistantDesignSystem.Colors.selectionFill : Color.clear)
-        .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.cardCornerRadius))
-        .overlay(
-            RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.cardCornerRadius)
-                .stroke(isSelected ? MeetingAssistantDesignSystem.Colors.selectionStroke : MeetingAssistantDesignSystem.Colors.separator.opacity(0.4), lineWidth: 1)
-        )
-        .contextMenu {
+        return PromptSelectionRow(
+            iconSystemName: prompt.icon,
+            title: prompt.title,
+            description: prompt.description,
+            isSelected: isSelected,
+            onSelect: isAutoDetectEnabled ? nil : {
+                meetingViewModel.selectPrompt(prompt.id)
+            },
+            unselectedStrokeColor: MeetingAssistantDesignSystem.Colors.separator.opacity(0.4)
+        ) {
             promptMenuContent(prompt: prompt, isSelected: isSelected, isAutoDetectEnabled: isAutoDetectEnabled)
         }
-    }
-
-    private func promptIcon(prompt: PostProcessingPrompt, isSelected: Bool) -> some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
-                .fill(isSelected ? MeetingAssistantDesignSystem.Colors.accent : MeetingAssistantDesignSystem.Colors.subtleFill)
-                .frame(width: 36, height: 36)
-
-            Image(systemName: prompt.icon)
-                .font(.subheadline)
-                .foregroundStyle(isSelected ? MeetingAssistantDesignSystem.Colors.onAccent : .primary)
-        }
-    }
-
-    private func promptInfo(prompt: PostProcessingPrompt, isSelected: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(prompt.title)
-                .font(.body)
-                .fontWeight(isSelected ? .bold : .medium)
-
-            if let description = prompt.description {
-                Text(description)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-        }
-    }
-
-    private func promptMenu(prompt: PostProcessingPrompt, isSelected: Bool, isAutoDetectEnabled: Bool) -> some View {
-        Menu {
-            promptMenuContent(prompt: prompt, isSelected: isSelected, isAutoDetectEnabled: isAutoDetectEnabled)
-        } label: {
-            Image(systemName: "ellipsis.circle")
-                .foregroundStyle(.secondary)
-        }
-        .menuStyle(.borderlessButton)
-        .fixedSize()
-        .highPriorityGesture(TapGesture())
     }
 
     @ViewBuilder
@@ -455,60 +374,20 @@ public struct MeetingSettingsTab: View {
         let isAutoDetectEnabled = meetingViewModel.settings.meetingTypeAutoDetectEnabled
         let isSelected = !isAutoDetectEnabled && meetingViewModel.selectedPromptId == AppSettingsStore.noPostProcessingPromptId
 
-        let row = HStack(spacing: 12) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(isSelected ? SettingsDesignSystem.Colors.accent : Color.primary.opacity(0.05))
-                    .frame(width: 36, height: 36)
-
-                Image(systemName: "nosign")
-                    .font(.subheadline)
-                    .foregroundStyle(isSelected ? SettingsDesignSystem.Colors.onAccent : .primary)
-            }
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text("recording_indicator.prompt.none".localized)
-                    .font(.body)
-                    .fontWeight(isSelected ? .bold : .medium)
-
-                Text("recording_indicator.prompt.none_desc".localized)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-
-            Spacer()
-
-            if isSelected {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
-            }
-
-            Image(systemName: "ellipsis.circle")
-                .foregroundStyle(.secondary)
-                .opacity(0) // Keep layout aligned with prompt rows
+        return PromptSelectionRow(
+            iconSystemName: "nosign",
+            title: "recording_indicator.prompt.none".localized,
+            description: "recording_indicator.prompt.none_desc".localized,
+            isSelected: isSelected,
+            onSelect: isAutoDetectEnabled ? nil : {
+                meetingViewModel.selectPrompt(AppSettingsStore.noPostProcessingPromptId, forceSelect: true)
+            },
+            unselectedStrokeColor: Color.secondary.opacity(0.1),
+            showMenu: false,
+            preserveMenuSpacing: true
+        ) {
+            EmptyView()
         }
-        .padding(10)
-        .contentShape(Rectangle())
-
-        return Group {
-            if isAutoDetectEnabled {
-                row
-            } else {
-                Button {
-                    meetingViewModel.selectPrompt(AppSettingsStore.noPostProcessingPromptId, forceSelect: true)
-                } label: {
-                    row
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .background(isSelected ? SettingsDesignSystem.Colors.accent.opacity(0.08) : Color.clear)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(isSelected ? SettingsDesignSystem.Colors.accent.opacity(0.3) : Color.secondary.opacity(0.1), lineWidth: 1)
-        )
     }
 }
 

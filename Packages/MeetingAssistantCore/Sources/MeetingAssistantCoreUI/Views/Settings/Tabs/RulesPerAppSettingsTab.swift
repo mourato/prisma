@@ -72,22 +72,11 @@ public struct RulesPerAppSettingsTab: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                if markdownWebTargetsViewModel.targets.isEmpty {
-                    Text("settings.markdown_targets.websites.empty".localized)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                } else {
-                    VStack(spacing: 0) {
-                        ForEach(Array(markdownWebTargetsViewModel.targets.enumerated()), id: \.element.id) { index, target in
-                            websiteRow(target)
-
-                            if index < markdownWebTargetsViewModel.targets.count - 1 {
-                                Divider()
-                            }
-                        }
-                    }
-                    .background(MeetingAssistantDesignSystem.Colors.subtleFill2)
-                    .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+                SettingsInlineList(
+                    items: markdownWebTargetsViewModel.targets,
+                    emptyText: "settings.markdown_targets.websites.empty".localized
+                ) { target in
+                    websiteRow(target)
                 }
 
                 HStack {
@@ -319,17 +308,11 @@ public struct RulesPerAppSettingsTab: View {
     }
 
     private func browserNames(from bundleIdentifiers: [String]) -> String {
-        let fallbackBundleIdentifiers = viewModel.effectiveWebTargetBrowserBundleIdentifiers
-
-        if bundleIdentifiers.isEmpty && fallbackBundleIdentifiers.isEmpty {
-            return "settings.web_targets.browsers.empty".localized
-        }
-
-        let effectiveBundleIdentifiers = bundleIdentifiers.isEmpty ? fallbackBundleIdentifiers : bundleIdentifiers
-        let names = effectiveBundleIdentifiers
-            .map { WebTargetEditorSupport.browserDisplayName(for: $0) }
-            .sorted()
-        return "settings.markdown_targets.websites.browsers".localized(with: names.joined(separator: ", "))
+        WebTargetBrowserNamesFormatter.formattedNames(
+            bundleIdentifiers: bundleIdentifiers,
+            fallbackBundleIdentifiers: viewModel.effectiveWebTargetBrowserBundleIdentifiers,
+            localizedListKey: "settings.markdown_targets.websites.browsers"
+        )
     }
 
     private func expansionBinding(for bundleIdentifier: String) -> Binding<Bool> {
