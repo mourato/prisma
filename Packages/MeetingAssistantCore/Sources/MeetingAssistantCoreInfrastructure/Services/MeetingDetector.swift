@@ -157,9 +157,11 @@ public class MeetingDetector: ObservableObject {
         in runningApps: [NSRunningApplication],
         monitoredBundleIdentifiers: Set<String>
     ) -> MeetingApp? {
-        let targets = settings.webMeetingTargets
-        guard !targets.isEmpty else { return nil }
-        let configuredBrowsers = Set(settings.effectiveWebTargetBrowserBundleIdentifiers.map(normalizeBundleIdentifier))
+        let meetingTargets = settings.webMeetingTargets
+        let autoStartTargets = settings.markdownWebTargets.filter(\.autoStartMeetingRecording)
+        guard !meetingTargets.isEmpty || !autoStartTargets.isEmpty else { return nil }
+        let fallbackBrowsers = settings.effectiveWebTargetBrowserBundleIdentifiers
+        let configuredBrowsers = Set(fallbackBrowsers.map(normalizeBundleIdentifier))
         let monitoredWebBundles = monitoredBundleIdentifiers.union(configuredBrowsers)
 
         for runningApp in runningApps {
@@ -171,23 +173,40 @@ public class MeetingDetector: ObservableObject {
                 if let match = WebTargetDetection.matchTarget(
                     for: url,
                     bundleIdentifier: normalizedBundleId,
-                    targets: targets,
-                    fallbackBrowserBundleIdentifiers: settings.effectiveWebTargetBrowserBundleIdentifiers
+                    targets: meetingTargets,
+                    fallbackBrowserBundleIdentifiers: fallbackBrowsers
                 ) {
                     return match.app
+                }
+
+                if WebTargetDetection.matchTarget(
+                    for: url,
+                    bundleIdentifier: normalizedBundleId,
+                    targets: autoStartTargets,
+                    fallbackBrowserBundleIdentifiers: fallbackBrowsers
+                ) != nil {
+                    return .unknown
                 }
                 continue
             }
 
             if let match = WebTargetDetection.matchTargetByWindowTitle(
                 bundleIdentifier: normalizedBundleId,
-                targets: targets,
-                fallbackBrowserBundleIdentifiers: settings.effectiveWebTargetBrowserBundleIdentifiers,
+                targets: meetingTargets,
+                fallbackBrowserBundleIdentifiers: fallbackBrowsers,
                 patternProvider: { target in
                     target.urlPatterns + target.app.windowTitlePatterns
                 }
             ) {
                 return match.app
+            }
+
+            if WebTargetDetection.matchTargetByWindowTitle(
+                bundleIdentifier: normalizedBundleId,
+                targets: autoStartTargets,
+                fallbackBrowserBundleIdentifiers: fallbackBrowsers
+            ) != nil {
+                return .unknown
             }
         }
 
