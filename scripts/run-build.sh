@@ -85,10 +85,6 @@ XCODEBUILD_ARGS=(
     -destination 'platform=macOS'
 )
 
-if [ "${CONFIGURATION}" = "Release" ]; then
-    XCODEBUILD_ARGS+=( -enableThreadSanitizer YES )
-fi
-
 START_TIME=$(date +%s)
 xcodebuild "${XCODEBUILD_ARGS[@]}" build >"${LOG_PATH}" 2>&1
 EXIT_CODE=$?

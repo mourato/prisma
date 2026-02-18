@@ -90,25 +90,10 @@ build-agent:
 
 # Test Commands
 test:
-	@echo -e "$(BLUE)Running tests (xcodebuild)...$(NC)"
-	@echo -e "$(YELLOW)Uses same build system as Xcode IDE for guaranteed parity$(NC)"
-	@cd "$(PROJECT_DIR)/Packages/MeetingAssistantCore" && \
-	xcodebuild -scheme MeetingAssistantCore \
-		-derivedDataPath "$(DERIVED_DATA)" \
-		-destination 'platform=macOS' \
-		test \
-		2>&1 | tee /tmp/test-output.log; \
-	EXIT_CODE=$${PIPESTATUS[0]}; \
-	if [ $$EXIT_CODE -eq 0 ]; then \
-		echo -e "$(GREEN)✓ All tests passed!$(NC)"; \
-	else \
-		echo -e "$(RED)✗ Tests failed!$(NC)"; \
-		echo -e "$(YELLOW)Full output: /tmp/test-output.log$(NC)"; \
-	fi; \
-	exit $$EXIT_CODE
+	@./scripts/run-tests-xcode.sh
 
 test-agent:
-	@MA_AGENT_MODE=1 MA_AGENT_LOG_DIR="$(AGENT_LOG_DIR)" ./scripts/run-tests.sh --agent
+	@MA_AGENT_MODE=1 MA_AGENT_LOG_DIR="$(AGENT_LOG_DIR)" ./scripts/run-tests-xcode.sh --agent
 
 test-swift:
 	@echo -e "$(BLUE)Running tests (swift test)...$(NC)"

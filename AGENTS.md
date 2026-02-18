@@ -301,6 +301,22 @@ Rules index:
 | `.agents/rules/testing.md` | Testing guidelines |
 | `.agents/rules/type-security.md` | Type safety patterns |
 
+## Skill precedence (macOS/Swift)
+
+Use this order to reduce overlap and noise when multiple skills could apply:
+
+1. `build-macos-apps` — intake/routing only (select workflow quickly)
+2. `macos-development` — canonical macOS/Swift implementation guidance
+3. `swift-concurrency-expert` — concurrency compliance/remediation (Swift 6.2+)
+4. `swiftui-performance-audit` — SwiftUI runtime performance diagnosis and fixes
+5. `swiftui-animation` — advanced animation/transition/shader work when explicitly needed
+
+Notes:
+
+- Treat `build-macos-apps` as orchestrator, not canonical technical reference.
+- Prefer canonical references under `.agents/skills/macos-development/` when overlap exists.
+- Keep verification aligned to repo commands: `make build|test|lint` and `*-agent` variants.
+
 Skills index (loaded conditionally):
 
 | Skill | Trigger |
@@ -313,9 +329,14 @@ Skills index (loaded conditionally):
 | `.agents/skills/keychain-security/` | KeychainManager, KeychainProvider, storeSecret |
 | `.agents/skills/localization/` | Bundle.safeModule, String.localized, accessibility |
 | `.agents/skills/menubar/` | NSStatusItem, NSMenu, NSPopover |
+| `.agents/skills/macos-development/` | macOS apps with SwiftUI/AppKit, lifecycle and platform integration |
+| `.agents/skills/build-macos-apps/` | request intake and workflow routing for CLI-first macOS app tasks |
 | `.agents/skills/skill-development/` | create skill, develop plugin |
 | `.agents/skills/skills-discovery/` | search skills, registry |
 | `.agents/skills/preview-coverage/` | SwiftUI preview requirements, preview state coverage |
+| `.agents/skills/swift-concurrency-expert/` | Swift 6.2 concurrency review/remediation and compiler error fixes |
 | `.agents/skills/swift-package-manager/` | Package.swift, SPM dependencies |
+| `.agents/skills/swiftui-animation/` | advanced SwiftUI animation, transitions, matched geometry, Metal shaders |
+| `.agents/skills/swiftui-performance-audit/` | SwiftUI runtime performance audits and optimization guidance |
 | `.agents/skills/swiftui-patterns/` | SwiftUI views, @State, NavigationStack |
 | `.agents/skills/testing-xctest/` | XCTest, @Test, mock, XCTAssert |
