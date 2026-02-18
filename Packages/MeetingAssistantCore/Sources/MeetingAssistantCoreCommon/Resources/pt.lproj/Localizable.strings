@@ -359,7 +359,6 @@
 "settings.assistant.integrations.new" = "Nova Integração";
 "settings.assistant.integrations.editor.title" = "Editar Prompt";
 "settings.assistant.integrations.editor.title.integration" = "Editar Integração";
-"settings.assistant.integrations.editor.shortcut" = "Atalho de Teclado";
 "settings.assistant.integrations.editor.instructions" = "Instruções (Opcional)";
 "settings.assistant.integrations.editor.placeholders.title" = "Placeholders";
 "settings.assistant.integrations.editor.placeholders.subtitle" = "Clique para copiar e usar em URLs/Deeplinks.";

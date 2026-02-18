@@ -756,6 +756,10 @@ final class AssistantShortcutController {
             return true
         }
 
+        if isModifierKeyCode(event.keyCode) {
+            return true
+        }
+
         if event.keyCode == PresetShortcutKey.escapeKeyCode {
             disarmShortcutLayer(showFeedback: true)
             return true
@@ -824,6 +828,23 @@ final class AssistantShortcutController {
             } else {
                 await assistantService.startRecording(flow: .integrationDispatch)
             }
+        }
+    }
+
+    private func isModifierKeyCode(_ keyCode: UInt16) -> Bool {
+        switch keyCode {
+        case PresetShortcutKey.leftCommandKeyCode,
+             PresetShortcutKey.rightCommandKeyCode,
+             PresetShortcutKey.leftOptionKeyCode,
+             PresetShortcutKey.rightOptionKeyCode,
+             PresetShortcutKey.leftShiftKeyCode,
+             PresetShortcutKey.rightShiftKeyCode,
+             PresetShortcutKey.leftControlKeyCode,
+             PresetShortcutKey.rightControlKeyCode,
+             PresetShortcutKey.fnKeyCode:
+            return true
+        default:
+            return false
         }
     }
 }

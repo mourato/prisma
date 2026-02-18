@@ -134,6 +134,19 @@ public final class IntegrationSettingsViewModel: ObservableObject {
     }
 
     @discardableResult
+    public func setIntegrationShortcutDefinition(_ shortcut: ShortcutDefinition?, for id: UUID) -> String? {
+        guard var integration = integration(for: id) else {
+            return nil
+        }
+
+        integration.shortcutDefinition = shortcut
+        integration.modifierShortcutGesture = shortcut?.asModifierShortcutGesture
+        integration.shortcutPresetKey = shortcut == nil ? .notSpecified : .custom
+
+        return saveIntegrationWithModifierValidation(integration)
+    }
+
+    @discardableResult
     public func setIntegrationLayerShortcutKey(_ key: String, for id: UUID) -> String? {
         guard var integration = integration(for: id) else {
             return nil
