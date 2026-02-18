@@ -132,7 +132,7 @@ public struct RulesPerAppSettingsTab: View {
     }
 
     private func appRow(for resolvedRule: ResolvedDictationAppRule) -> some View {
-        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
             AppIconView(
                 bundleIdentifier: resolvedRule.rule.bundleIdentifier,
                 fallbackSystemName: "app.fill",
@@ -154,24 +154,26 @@ public struct RulesPerAppSettingsTab: View {
 
             appRuleSummary(for: resolvedRule.rule)
 
-            Button {
-                viewModel.editRule(bundleIdentifier: resolvedRule.rule.bundleIdentifier)
-            } label: {
-                Image(systemName: "pencil")
-            }
-            .buttonStyle(.borderless)
-            .controlSize(.regular)
-            .accessibilityLabel("settings.rules_per_app.edit_app".localized)
+            Menu {
+                Button {
+                    viewModel.editRule(bundleIdentifier: resolvedRule.rule.bundleIdentifier)
+                } label: {
+                    Label("settings.rules_per_app.edit_app".localized, systemImage: "pencil")
+                }
 
-            Button(role: .destructive) {
-                viewModel.removeRule(bundleIdentifier: resolvedRule.rule.bundleIdentifier)
+                Button(role: .destructive) {
+                    viewModel.removeRule(bundleIdentifier: resolvedRule.rule.bundleIdentifier)
+                } label: {
+                    Label("settings.rules_per_app.remove_app".localized, systemImage: "trash")
+                }
             } label: {
-                Image(systemName: "trash")
+                Image(systemName: "ellipsis.circle")
+                    .foregroundStyle(.secondary)
             }
-            .buttonStyle(.borderless)
-            .controlSize(.small)
-            .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
-            .accessibilityLabel("settings.rules_per_app.remove_app".localized)
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            .highPriorityGesture(TapGesture())
+            .accessibilityLabel("settings.rules_per_app.actions".localized)
         }
         .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)
         .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
@@ -273,24 +275,26 @@ public struct RulesPerAppSettingsTab: View {
 
             websiteRuleSummary(for: target)
 
-            Button {
-                markdownWebTargetsViewModel.editTarget(target)
-            } label: {
-                Image(systemName: "pencil")
-                    .accessibilityLabel("settings.markdown_targets.websites.edit".localized)
-            }
-            .buttonStyle(.borderless)
-            .controlSize(.regular)
+            Menu {
+                Button {
+                    markdownWebTargetsViewModel.editTarget(target)
+                } label: {
+                    Label("settings.markdown_targets.websites.edit".localized, systemImage: "pencil")
+                }
 
-            Button(role: .destructive) {
-                markdownWebTargetsViewModel.confirmDelete(target)
+                Button(role: .destructive) {
+                    markdownWebTargetsViewModel.confirmDelete(target)
+                } label: {
+                    Label("settings.markdown_targets.websites.delete".localized, systemImage: "trash")
+                }
             } label: {
-                Image(systemName: "trash")
-                    .accessibilityLabel("settings.markdown_targets.websites.delete".localized)
+                Image(systemName: "ellipsis.circle")
+                    .foregroundStyle(.secondary)
             }
-            .buttonStyle(.borderless)
-            .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
-            .controlSize(.regular)
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            .highPriorityGesture(TapGesture())
+            .accessibilityLabel("settings.rules_per_app.actions".localized)
         }
         .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)
         .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)

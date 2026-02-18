@@ -251,6 +251,7 @@
 "settings.rules_per_app.add_app" = "Adicionar App";
 "settings.rules_per_app.edit_app" = "Editar Regra do App";
 "settings.rules_per_app.remove_app" = "Remover Regra do App";
+"settings.rules_per_app.actions" = "Ações da Regra";
 "settings.rules_per_app.search_placeholder" = "Buscar por nome do app ou bundle identifier";
 "settings.rules_per_app.loading_apps" = "Carregando aplicativos instalados...";
 "settings.rules_per_app.no_results" = "Nenhum aplicativo encontrado para a busca atual.";
