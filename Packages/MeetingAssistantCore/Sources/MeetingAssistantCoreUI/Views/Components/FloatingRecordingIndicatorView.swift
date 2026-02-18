@@ -15,7 +15,6 @@ public struct FloatingRecordingIndicatorView: View {
     @ObservedObject private var settingsStore: AppSettingsStore
     let style: RecordingIndicatorStyle
     let mode: FloatingRecordingIndicatorMode
-    let meetingType: MeetingType? // Added
     let isAnimationActive: Bool
     let onStop: @Sendable () -> Void
     let onCancel: @Sendable () -> Void
@@ -32,7 +31,6 @@ public struct FloatingRecordingIndicatorView: View {
         audioMonitor: AudioLevelMonitor,
         style: RecordingIndicatorStyle,
         mode: FloatingRecordingIndicatorMode,
-        meetingType: MeetingType? = nil, // Added default nil
         isAnimationActive: Bool = true,
         recordingManager: RecordingManager = .shared,
         settingsStore: AppSettingsStore = .shared,
@@ -42,7 +40,6 @@ public struct FloatingRecordingIndicatorView: View {
         self.audioMonitor = audioMonitor
         self.style = style
         self.mode = mode
-        self.meetingType = meetingType
         self.isAnimationActive = isAnimationActive
         self.recordingManager = recordingManager
         self.settingsStore = settingsStore
