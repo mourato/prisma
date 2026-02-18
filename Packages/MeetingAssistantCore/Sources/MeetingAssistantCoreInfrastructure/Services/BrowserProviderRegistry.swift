@@ -4,9 +4,9 @@ import Foundation
 public enum BrowserProviderRegistry {
     public static func defaultProviders() -> [String: BrowserActiveTabURLProviding] {
         let providers: [String: BrowserActiveTabURLProviding?] = [
-            "com.apple.Safari": BrowserActiveTabURLProvider(
+            "com.apple.Safari": provider(
                 applicationName: "Safari",
-                scriptTemplate: BrowserScriptTemplates.safari
+                templates: [BrowserScriptTemplates.safariFrontDocument, BrowserScriptTemplates.safariCurrentTab]
             ),
             "com.google.Chrome": BrowserActiveTabURLProvider(
                 applicationName: "Google Chrome",
@@ -32,10 +32,6 @@ public enum BrowserProviderRegistry {
                 applicationName: "Opera",
                 scriptTemplate: BrowserScriptTemplates.chromium
             ),
-            "org.mozilla.firefox": BrowserActiveTabURLProvider(
-                applicationName: "Firefox",
-                scriptTemplate: BrowserScriptTemplates.firefox
-            ),
             "com.microsoft.edgemac": BrowserActiveTabURLProvider(
                 applicationName: "Microsoft Edge",
                 scriptTemplate: BrowserScriptTemplates.chromium
@@ -53,30 +49,81 @@ public enum BrowserProviderRegistry {
 
     public static func provider(for bundleIdentifier: String) -> BrowserActiveTabURLProviding? {
         let normalizedBundleIdentifier = normalizeBundleIdentifier(bundleIdentifier)
+        guard !normalizedBundleIdentifier.isEmpty else { return nil }
+
+        if isFirefoxBundleIdentifier(normalizedBundleIdentifier) {
+            return nil
+        }
 
         if let knownProvider = defaultProviders()[normalizedBundleIdentifier] {
             return knownProvider
         }
 
-        guard
-            let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier)
-                ?? NSWorkspace.shared.urlForApplication(withBundleIdentifier: normalizedBundleIdentifier)
-        else {
+        guard isLikelyBrowserBundleIdentifier(normalizedBundleIdentifier) else {
+            return nil
+        }
+
+        guard let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier) ?? NSWorkspace.shared.urlForApplication(withBundleIdentifier: normalizedBundleIdentifier) else {
             return nil
         }
 
         let applicationName = appURL.deletingPathExtension().lastPathComponent
-        let candidates = [BrowserScriptTemplates.chromium, BrowserScriptTemplates.safari, BrowserScriptTemplates.firefox]
-            .compactMap { BrowserActiveTabURLProvider(applicationName: applicationName, scriptTemplate: $0) }
+        return provider(
+            applicationName: applicationName,
+            templates: [
+                BrowserScriptTemplates.chromium,
+                BrowserScriptTemplates.safariFrontDocument,
+                BrowserScriptTemplates.safariCurrentTab,
+            ]
+        )
+    }
 
-        guard !candidates.isEmpty else {
-            return nil
+    public static func isLikelyBrowserBundleIdentifier(_ bundleIdentifier: String) -> Bool {
+        let normalizedBundleIdentifier = normalizeBundleIdentifier(bundleIdentifier)
+        guard !normalizedBundleIdentifier.isEmpty else { return false }
+
+        if defaultProviders()[normalizedBundleIdentifier] != nil {
+            return true
         }
 
-        return FallbackBrowserActiveTabURLProvider(providers: candidates)
+        if isFirefoxBundleIdentifier(normalizedBundleIdentifier) {
+            return true
+        }
+
+        return [
+            "chromium",
+            "chrome",
+            "brave",
+            "vivaldi",
+            "opera",
+            "edge",
+            "arc",
+            "browser",
+        ].contains { normalizedBundleIdentifier.contains($0) }
     }
 
     private static func normalizeBundleIdentifier(_ value: String) -> String {
         value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    private static func isFirefoxBundleIdentifier(_ normalizedBundleIdentifier: String) -> Bool {
+        normalizedBundleIdentifier.hasPrefix("org.mozilla.")
+            || normalizedBundleIdentifier.contains("firefox")
+    }
+
+    private static func provider(
+        applicationName: String,
+        templates: [String]
+    ) -> BrowserActiveTabURLProviding? {
+        let providers = templates.compactMap {
+            BrowserActiveTabURLProvider(applicationName: applicationName, scriptTemplate: $0)
+        }
+
+        guard !providers.isEmpty else { return nil }
+        if providers.count == 1 {
+            return providers[0]
+        }
+
+        return FallbackBrowserActiveTabURLProvider(providers: providers)
     }
 }

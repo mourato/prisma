@@ -781,8 +781,6 @@ public class AppSettingsStore: ObservableObject {
         "com.microsoft.edgemac",
     ]
 
-    private static let knownWebTargetBrowserBundleIdentifiers: Set<String> = Set(BrowserProviderRegistry.defaultProviders().keys)
-
     /// Default list of apps monitored to start/stop meeting recordings.
     public static let defaultMonitoredMeetingBundleIdentifiers: [String] = [
         "com.apple.Safari",
@@ -2224,7 +2222,7 @@ public class AppSettingsStore: ObservableObject {
                 .map(\.bundleIdentifier)
                 .filter { bundleIdentifier in
                     let normalizedBundleIdentifier = Self.normalizeBundleIdentifier(bundleIdentifier)
-                    return Self.knownWebTargetBrowserBundleIdentifiers.contains(normalizedBundleIdentifier)
+                    return BrowserProviderRegistry.isLikelyBrowserBundleIdentifier(normalizedBundleIdentifier)
                         || legacyNormalized.contains(normalizedBundleIdentifier)
                 }
         )

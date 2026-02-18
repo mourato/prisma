@@ -8,6 +8,7 @@ public protocol BrowserActiveTabURLProviding {
 public final class BrowserActiveTabURLProvider: BrowserActiveTabURLProviding {
     private let logger = Logger(subsystem: "MeetingAssistant", category: "BrowserActiveTabURLProvider")
     private let script: NSAppleScript
+    private static let automationPermissionDeniedErrorCode = -1_743
 
     public init?(applicationName: String, scriptTemplate: String) {
         let source = String(format: scriptTemplate, applicationName)
@@ -21,7 +22,14 @@ public final class BrowserActiveTabURLProvider: BrowserActiveTabURLProviding {
         var errorInfo: NSDictionary?
         let output = script.executeAndReturnError(&errorInfo)
         if let errorInfo {
-            logger.debug("AppleScript error: \(errorInfo)")
+            let errorNumber = errorInfo[NSAppleScript.errorNumber] as? Int
+            let errorMessage = errorInfo[NSAppleScript.errorMessage] as? String ?? "unknown"
+
+            if errorNumber == Self.automationPermissionDeniedErrorCode {
+                logger.warning("AppleScript automation permission denied: \(errorMessage, privacy: .public)")
+            } else {
+                logger.debug("AppleScript error [\(errorNumber ?? 0)]: \(errorMessage, privacy: .public)")
+            }
             return nil
         }
 
@@ -32,9 +40,9 @@ public final class BrowserActiveTabURLProvider: BrowserActiveTabURLProviding {
 }
 
 public enum BrowserScriptTemplates {
-    public static let safari = "tell application \"%@\" to get URL of current tab of front window"
+    public static let safariFrontDocument = "tell application \"%@\" to get URL of front document"
+    public static let safariCurrentTab = "tell application \"%@\" to get URL of current tab of front window"
     public static let chromium = "tell application \"%@\" to get URL of active tab of front window"
-    public static let firefox = "tell application \"%@\" to get URL of active tab of front window"
 }
 
 public final class FallbackBrowserActiveTabURLProvider: BrowserActiveTabURLProviding {
