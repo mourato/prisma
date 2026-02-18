@@ -21,6 +21,8 @@ final class AssistantShortcutController {
     private var lastLayerLeaderTapTime: Date?
     private let shortcutLayerFeedbackController = ShortcutLayerFeedbackController()
     private let shortcutLayerKeySuppressor = ShortcutLayerKeySuppressor()
+    private let returnKeyCode: UInt16 = 0x24
+    private let keypadEnterKeyCode: UInt16 = 0x4c
 
     private lazy var shortcutHandler = SmartShortcutHandler(
         doubleTapInterval: currentDoubleTapInterval,
@@ -124,6 +126,13 @@ final class AssistantShortcutController {
             }
             .store(in: &cancellables)
 
+        settings.$assistantUseEnterToStopRecording
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.refreshEventMonitors()
+            }
+            .store(in: &cancellables)
+
         settings.$assistantIntegrations
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
@@ -154,6 +163,7 @@ final class AssistantShortcutController {
             }
         let needsShortcutKeyMonitoring = hasInHouseDefinitions
         let needsEscapeMonitoring = settings.assistantUseEscapeToCancelRecording
+        let needsEnterStopMonitoring = settings.assistantUseEnterToStopRecording
 
         if needsModifierMonitoring {
             installFlagsChangedMonitors()
@@ -161,7 +171,7 @@ final class AssistantShortcutController {
             removeFlagsChangedMonitors()
         }
 
-        if needsEscapeMonitoring || needsShortcutKeyMonitoring {
+        if needsEscapeMonitoring || needsShortcutKeyMonitoring || needsEnterStopMonitoring {
             installKeyDownMonitors()
         } else {
             removeKeyDownMonitors()
@@ -394,6 +404,10 @@ final class AssistantShortcutController {
     }
 
     private func handleKeyDown(_ event: NSEvent) {
+        if handleSingleEnterStop(event) {
+            return
+        }
+
         if handleShortcutLayerKeyDown(event) {
             return
         }
@@ -753,7 +767,10 @@ final class AssistantShortcutController {
 
     private func armShortcutLayer() {
         isShortcutLayerArmed = true
-        shortcutLayerKeySuppressor.start()
+        shortcutLayerKeySuppressor.start { [weak self] event in
+            guard let self else { return false }
+            return self.handleShortcutLayerKeyDown(event)
+        }
         shortcutLayerFeedbackController.showArmed()
 
         let timeoutNanoseconds = layerTimeoutNanoseconds
@@ -842,6 +859,38 @@ final class AssistantShortcutController {
         return true
     }
 
+    private func handleSingleEnterStop(_ event: NSEvent) -> Bool {
+        guard settings.assistantUseEnterToStopRecording else {
+            return false
+        }
+
+        guard assistantService.isRecording else {
+            return false
+        }
+
+        guard !event.isARepeat else {
+            return false
+        }
+
+        guard event.keyCode == returnKeyCode || event.keyCode == keypadEnterKeyCode else {
+            return false
+        }
+
+        let relevantFlags = event.modifierFlags
+            .intersection(.deviceIndependentFlagsMask)
+            .subtracting([.capsLock, .numericPad])
+
+        guard relevantFlags.isEmpty else {
+            return false
+        }
+
+        Task { @MainActor [weak self] in
+            await self?.assistantService.stopAndProcess()
+        }
+
+        return true
+    }
+
     private enum LayerAction {
         case assistant
         case integration(UUID)
@@ -909,11 +958,15 @@ final class AssistantShortcutController {
 private final class ShortcutLayerKeySuppressor {
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
+    private var suppressedKeyCodes = Set<UInt16>()
+    private var keyDownHandler: ((NSEvent) -> Bool)?
 
-    func start() {
+    func start(keyDownHandler: @escaping (NSEvent) -> Bool) {
         guard eventTap == nil else {
             return
         }
+
+        self.keyDownHandler = keyDownHandler
 
         let mask = (1 << CGEventType.keyDown.rawValue) | (1 << CGEventType.keyUp.rawValue)
         let callback: CGEventTapCallBack = { _, type, event, userInfo in
@@ -969,6 +1022,8 @@ private final class ShortcutLayerKeySuppressor {
 
         runLoopSource = nil
         eventTap = nil
+        suppressedKeyCodes.removeAll()
+        keyDownHandler = nil
     }
 
     deinit {
@@ -982,7 +1037,24 @@ private final class ShortcutLayerKeySuppressor {
                 CGEvent.tapEnable(tap: eventTap, enable: true)
             }
             return Unmanaged.passUnretained(event)
-        case .keyDown, .keyUp:
+        case .keyDown:
+            guard let nsEvent = NSEvent(cgEvent: event) else {
+                return Unmanaged.passUnretained(event)
+            }
+
+            guard keyDownHandler?(nsEvent) == true else {
+                return Unmanaged.passUnretained(event)
+            }
+
+            let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
+            suppressedKeyCodes.insert(keyCode)
+            return nil
+        case .keyUp:
+            let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
+            guard suppressedKeyCodes.contains(keyCode) else {
+                return Unmanaged.passUnretained(event)
+            }
+            suppressedKeyCodes.remove(keyCode)
             return nil
         default:
             return Unmanaged.passUnretained(event)

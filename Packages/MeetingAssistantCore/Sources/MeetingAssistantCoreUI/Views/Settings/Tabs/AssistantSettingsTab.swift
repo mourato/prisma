@@ -121,6 +121,11 @@ public struct AssistantSettingsTab: View {
                         "settings.assistant.use_escape".localized,
                         isOn: $viewModel.useEscapeToCancelRecording
                     )
+
+                    MAToggleRow(
+                        "settings.assistant.use_enter_stop".localized,
+                        isOn: $viewModel.useEnterToStopRecording
+                    )
                 }
             }
         )

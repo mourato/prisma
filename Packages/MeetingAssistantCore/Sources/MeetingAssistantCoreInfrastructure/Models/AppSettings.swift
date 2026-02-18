@@ -854,6 +854,7 @@ public class AppSettingsStore: ObservableObject {
         static let meetingModifierShortcutGesture = "meetingModifierShortcutGesture"
         static let assistantShortcutActivationMode = "assistantShortcutActivationMode"
         static let assistantUseEscapeToCancelRecording = "assistantUseEscapeToCancelRecording"
+        static let assistantUseEnterToStopRecording = "assistantUseEnterToStopRecording"
         static let assistantSelectedPresetKey = "assistantSelectedPresetKey"
         static let assistantLayerShortcutKey = "assistantLayerShortcutKey"
         static let assistantBorderColor = "assistantBorderColor"
@@ -1136,6 +1137,11 @@ public class AppSettingsStore: ObservableObject {
     /// Whether pressing Escape cancels Assistant recording.
     @Published public var assistantUseEscapeToCancelRecording: Bool {
         didSet { UserDefaults.standard.set(assistantUseEscapeToCancelRecording, forKey: Keys.assistantUseEscapeToCancelRecording) }
+    }
+
+    /// Whether pressing Enter stops Assistant recording and starts post-processing.
+    @Published public var assistantUseEnterToStopRecording: Bool {
+        didSet { UserDefaults.standard.set(assistantUseEnterToStopRecording, forKey: Keys.assistantUseEnterToStopRecording) }
     }
 
     /// Selected preset shortcut key for Assistant activation.
@@ -1686,6 +1692,7 @@ public class AppSettingsStore: ObservableObject {
         assistantShortcutActivationMode = rawAssistantActivation
             .flatMap { ShortcutActivationMode(rawValue: $0) } ?? .holdOrToggle
         assistantUseEscapeToCancelRecording = UserDefaults.standard.bool(forKey: Keys.assistantUseEscapeToCancelRecording)
+        assistantUseEnterToStopRecording = UserDefaults.standard.bool(forKey: Keys.assistantUseEnterToStopRecording)
 
         let rawAssistantPresetKey = UserDefaults.standard.string(forKey: Keys.assistantSelectedPresetKey)
         assistantSelectedPresetKey = rawAssistantPresetKey.flatMap { PresetShortcutKey(rawValue: $0) } ?? .rightOption
@@ -2289,6 +2296,7 @@ public class AppSettingsStore: ObservableObject {
         meetingModifierShortcutGesture = nil
         assistantShortcutActivationMode = .holdOrToggle
         assistantUseEscapeToCancelRecording = false
+        assistantUseEnterToStopRecording = false
         assistantSelectedPresetKey = .rightOption
         assistantBorderColor = .green
         assistantBorderStyle = .stroke

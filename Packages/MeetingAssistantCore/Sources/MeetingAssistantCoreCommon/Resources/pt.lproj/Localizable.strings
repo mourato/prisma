@@ -344,6 +344,7 @@
 "settings.assistant.fn_key_title" = "Usando a tecla Fn";
 "settings.assistant.fn_key_desc" = "Para usar a tecla Fn sozinha:\n• Abra Configurações do Sistema → Teclado\n• Clique no dropdown \"Pressionar tecla 🌐 para\"\n• Selecione \"Não fazer nada\"\n• Isso permite que o app detecte a tecla Fn";
 "settings.assistant.use_escape" = "Pressione Escape duas vezes para cancelar a gravação do Assistant";
+"settings.assistant.use_enter_stop" = "Pressione Enter uma vez para encerrar a gravação do Assistant e processar";
 "settings.assistant.integrations.title" = "Integrações";
 "settings.assistant.integrations.description" = "Configure para onde a saída do Assistant deve ser enviada após o processamento por voz.";
 "settings.assistant.integrations.output_mode" = "Modo de Saída";
