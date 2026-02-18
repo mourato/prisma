@@ -9,6 +9,9 @@ public struct WebMarkdownTargetEditorSheet: View {
 
     @State private var displayName: String
     @State private var urlPatternsText: String
+    @State private var forceMarkdownOutput: Bool
+    @State private var outputLanguage: DictationOutputLanguage
+    @State private var autoStartMeetingRecording: Bool
 
     public init(
         target: WebContextTarget?,
@@ -21,6 +24,9 @@ public struct WebMarkdownTargetEditorSheet: View {
 
         _displayName = State(initialValue: target?.displayName ?? "")
         _urlPatternsText = State(initialValue: (target?.urlPatterns ?? []).joined(separator: "\n"))
+        _forceMarkdownOutput = State(initialValue: target?.forceMarkdownOutput ?? true)
+        _outputLanguage = State(initialValue: target?.outputLanguage ?? .original)
+        _autoStartMeetingRecording = State(initialValue: target?.autoStartMeetingRecording ?? false)
     }
 
     public var body: some View {
@@ -36,7 +42,38 @@ public struct WebMarkdownTargetEditorSheet: View {
                 onSave: { onSave(buildTarget()) },
                 onCancel: onCancel,
                 displayName: $displayName,
-                urlPatternsText: $urlPatternsText
+                urlPatternsText: $urlPatternsText,
+                additionalContent: {
+                    MAToggleRow(
+                        "settings.rules_per_app.markdown.title".localized,
+                        isOn: $forceMarkdownOutput
+                    )
+
+                    HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                        Text("settings.rules_per_app.language.title".localized)
+                            .font(.body)
+                            .fontWeight(.regular)
+
+                        Spacer()
+
+                        Picker(
+                            "settings.rules_per_app.language.title".localized,
+                            selection: $outputLanguage
+                        ) {
+                            ForEach(DictationOutputLanguage.allCases, id: \.self) { language in
+                                Text(language.displayName).tag(language)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .labelsHidden()
+                    }
+
+                    MAToggleRow(
+                        "settings.markdown_targets.websites.auto_record.title".localized,
+                        description: "settings.markdown_targets.websites.auto_record.desc".localized,
+                        isOn: $autoStartMeetingRecording
+                    )
+                }
             )
         }
         .padding()
@@ -57,7 +94,10 @@ public struct WebMarkdownTargetEditorSheet: View {
             id: target?.id ?? UUID(),
             displayName: displayName.trimmingCharacters(in: .whitespacesAndNewlines),
             urlPatterns: parsedURLPatterns,
-            browserBundleIdentifiers: []
+            browserBundleIdentifiers: [],
+            forceMarkdownOutput: forceMarkdownOutput,
+            outputLanguage: outputLanguage,
+            autoStartMeetingRecording: autoStartMeetingRecording
         )
     }
 }
@@ -67,7 +107,10 @@ public struct WebMarkdownTargetEditorSheet: View {
         target: WebContextTarget(
             displayName: "Docs",
             urlPatterns: ["docs.example.com"],
-            browserBundleIdentifiers: AppSettingsStore.defaultWebTargetBrowserBundleIdentifiers
+            browserBundleIdentifiers: AppSettingsStore.defaultWebTargetBrowserBundleIdentifiers,
+            forceMarkdownOutput: true,
+            outputLanguage: .english,
+            autoStartMeetingRecording: true
         ),
         onSave: { _ in },
         onCancel: {}

@@ -1,16 +1,39 @@
 import MeetingAssistantCoreCommon
 import SwiftUI
 
-struct WebTargetEditorFields: View {
+struct WebTargetEditorFields<AdditionalContent: View>: View {
     let nameLabelKey: String
     let urlLabelKey: String
     let urlDescriptionKey: String
     let canSave: Bool
     let onSave: () -> Void
     let onCancel: () -> Void
+    let additionalContent: AdditionalContent
 
     @Binding var displayName: String
     @Binding var urlPatternsText: String
+
+    init(
+        nameLabelKey: String,
+        urlLabelKey: String,
+        urlDescriptionKey: String,
+        canSave: Bool,
+        onSave: @escaping () -> Void,
+        onCancel: @escaping () -> Void,
+        displayName: Binding<String>,
+        urlPatternsText: Binding<String>,
+        @ViewBuilder additionalContent: () -> AdditionalContent
+    ) {
+        self.nameLabelKey = nameLabelKey
+        self.urlLabelKey = urlLabelKey
+        self.urlDescriptionKey = urlDescriptionKey
+        self.canSave = canSave
+        self.onSave = onSave
+        self.onCancel = onCancel
+        _displayName = displayName
+        _urlPatternsText = urlPatternsText
+        self.additionalContent = additionalContent()
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
@@ -40,6 +63,8 @@ struct WebTargetEditorFields: View {
                     .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
             }
 
+            additionalContent
+
             HStack {
                 Spacer()
                 Button("common.cancel".localized) {
@@ -53,6 +78,32 @@ struct WebTargetEditorFields: View {
                 .buttonStyle(.borderedProminent)
                 .disabled(!canSave)
             }
+        }
+    }
+}
+
+extension WebTargetEditorFields where AdditionalContent == EmptyView {
+    init(
+        nameLabelKey: String,
+        urlLabelKey: String,
+        urlDescriptionKey: String,
+        canSave: Bool,
+        onSave: @escaping () -> Void,
+        onCancel: @escaping () -> Void,
+        displayName: Binding<String>,
+        urlPatternsText: Binding<String>
+    ) {
+        self.init(
+            nameLabelKey: nameLabelKey,
+            urlLabelKey: urlLabelKey,
+            urlDescriptionKey: urlDescriptionKey,
+            canSave: canSave,
+            onSave: onSave,
+            onCancel: onCancel,
+            displayName: displayName,
+            urlPatternsText: urlPatternsText
+        ) {
+            EmptyView()
         }
     }
 }

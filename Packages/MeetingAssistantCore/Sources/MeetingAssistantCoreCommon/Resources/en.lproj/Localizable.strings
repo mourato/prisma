@@ -8,7 +8,7 @@
 "settings.section.history" = "History";
 "settings.section.assistant" = "Assistant";
 "settings.section.integrations" = "Integrations";
-"settings.section.rules_per_app" = "Rules per App";
+"settings.section.rules_per_app" = "Rules";
 "settings.section.ai" = "Enhancements";
 "settings.section.service" = "AI Service";
 "settings.section.permissions" = "Permissions";
@@ -106,7 +106,7 @@
 "settings.meetings.autodetect_type_desc" = "Classifies the meeting type from the transcript and automatically chooses the best prompt for the summary.";
 "settings.meetings.no_prompts" = "No prompts yet";
 "settings.meetings.web_targets.title" = "Web Meeting Targets";
-"settings.meetings.web_targets.desc" = "Match meetings by URL when your browser is active.";
+"settings.meetings.web_targets.desc" = "Match meetings by active-tab URL in supported browsers. macOS may ask for browser automation permission so Meeting Assistant can read that URL.";
 "settings.meetings.web_targets.empty" = "No web targets configured yet.";
 "settings.meetings.web_targets.add" = "Add Web Target";
 "settings.meetings.web_targets.edit" = "Edit web target";
@@ -278,7 +278,7 @@
 "settings.markdown_targets.remove" = "Remove App";
 "settings.web_targets.browsers.empty" = "No browsers selected yet.";
 "settings.markdown_targets.websites.title" = "Websites";
-"settings.markdown_targets.websites.desc" = "Force Markdown formatting for dictation when these sites are active in supported browsers.";
+"settings.markdown_targets.websites.desc" = "Configure website-specific dictation rules using the active-tab URL in supported browsers. macOS may ask for browser automation permission to read that URL.";
 "settings.markdown_targets.websites.empty" = "No websites selected yet.";
 "settings.markdown_targets.websites.add" = "Add Website";
 "settings.markdown_targets.websites.edit" = "Edit website target";
@@ -288,6 +288,11 @@
 "settings.markdown_targets.websites.name_label" = "Display name";
 "settings.markdown_targets.websites.url_label" = "URL patterns";
 "settings.markdown_targets.websites.url_desc" = "One pattern per line (or comma-separated). Example: docs.example.com";
+"settings.markdown_targets.websites.auto_record.title" = "Auto-start Meeting Recording";
+"settings.markdown_targets.websites.auto_record.desc" = "When enabled, this site can trigger automatic meeting recording mode if auto-start is enabled globally.";
+"settings.markdown_targets.websites.summary.markdown_on" = "Markdown";
+"settings.markdown_targets.websites.summary.markdown_off" = "No Markdown";
+"settings.markdown_targets.websites.summary.auto_record" = "Auto Record";
 "settings.markdown_targets.websites.delete_confirm_title" = "Delete website target?";
 "settings.markdown_targets.websites.delete_confirm_message" = "Are you sure you want to delete \"%@\"?";
 "settings.web_targets.any_browser" = "Any detected browser";
@@ -469,7 +474,7 @@
 /* Permissions Settings */
 "settings.permissions.title" = "Permissions";
 "settings.permissions.about" = "About Permissions";
-"settings.permissions.description" = "Meeting Assistant needs microphone access to record dictation. Screen recording is only required for system audio capture.";
+"settings.permissions.description" = "Meeting Assistant needs microphone access to record dictation. Screen recording is only required for system audio capture. For website rules and web meeting detection, macOS may ask for browser automation permission to read the active-tab URL from supported browsers.";
 "settings.permissions.status" = "Permissions Status";
 "permissions.warning" = "Some permissions are required depending on what you record.";
 
