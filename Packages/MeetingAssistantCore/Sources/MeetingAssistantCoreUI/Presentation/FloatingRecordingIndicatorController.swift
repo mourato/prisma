@@ -30,6 +30,16 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
     private var currentMode: FloatingRecordingIndicatorMode = .recording
     private var meetingType: MeetingType?
     private var visibilityTransitionID: UInt64 = 0
+    private var onStopAction: @Sendable () -> Void = {
+        Task { @MainActor in
+            await RecordingManager.shared.stopRecording()
+        }
+    }
+    private var onCancelAction: @Sendable () -> Void = {
+        Task { @MainActor in
+            await RecordingManager.shared.cancelRecording()
+        }
+    }
 
     /// Whether the indicator is currently visible.
     @Published public private(set) var isVisible = false
@@ -73,10 +83,31 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
     /// - Parameter mode: Whether to present recording or processing visuals.
     /// - Parameter type: The type of meeting being recorded.
     public func show(mode: FloatingRecordingIndicatorMode = .recording, type: MeetingType? = nil) {
+        onStopAction = {
+            Task { @MainActor in
+                await RecordingManager.shared.stopRecording()
+            }
+        }
+        onCancelAction = {
+            Task { @MainActor in
+                await RecordingManager.shared.cancelRecording()
+            }
+        }
+        show(mode: mode, type: type, onStop: onStopAction, onCancel: onCancelAction)
+    }
+
+    public func show(
+        mode: FloatingRecordingIndicatorMode = .recording,
+        type: MeetingType? = nil,
+        onStop: @escaping @Sendable () -> Void,
+        onCancel: @escaping @Sendable () -> Void
+    ) {
         guard shouldShowIndicator(for: mode) else { return }
         visibilityTransitionID &+= 1
         currentMode = mode
         meetingType = type
+        onStopAction = onStop
+        onCancelAction = onCancel
         isVisible = true
 
         let panel = ensurePanel(for: mode, type: type)
@@ -233,16 +264,8 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
             mode: currentMode,
             meetingType: meetingType,
             isAnimationActive: isVisible,
-            onStop: {
-                Task { @MainActor in
-                    await RecordingManager.shared.stopRecording()
-                }
-            },
-            onCancel: {
-                Task { @MainActor in
-                    await RecordingManager.shared.cancelRecording()
-                }
-            }
+            onStop: onStopAction,
+            onCancel: onCancelAction
         )
         let rootView = AnyView(
             indicatorView.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
