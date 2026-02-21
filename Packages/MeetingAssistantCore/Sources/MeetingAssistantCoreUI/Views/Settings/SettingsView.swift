@@ -104,6 +104,8 @@ public struct SettingsView: View {
             GeneralSettingsTab()
         case .rulesPerApp:
             RulesPerAppSettingsTab()
+        case .vocabulary:
+            VocabularySettingsTab()
         case .dictation:
             DictationSettingsTab()
         case .meetings:

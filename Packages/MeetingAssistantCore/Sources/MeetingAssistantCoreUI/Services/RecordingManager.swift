@@ -929,6 +929,7 @@ extension RecordingManager {
                 meeting: meetingEntity,
                 inputSource: resolveInputSourceLabel(for: meeting),
                 contextItems: config.postProcessingContextItems,
+                vocabularyReplacementRules: settings.vocabularyReplacementRules,
                 applyPostProcessing: config.applyPostProcessing,
                 postProcessingPrompt: config.postProcessingPrompt,
                 defaultPostProcessingPrompt: config.defaultPostProcessingPrompt,

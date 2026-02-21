@@ -32,6 +32,7 @@ public final class TranscribeAudioUseCase: Sendable {
         meeting: MeetingEntity,
         inputSource: String? = nil,
         contextItems: [TranscriptionContextItem] = [],
+        vocabularyReplacementRules: [VocabularyReplacementRule] = [],
         applyPostProcessing: Bool = false,
         postProcessingPrompt: DomainPostProcessingPrompt? = nil,
         defaultPostProcessingPrompt: DomainPostProcessingPrompt? = nil,
@@ -57,6 +58,14 @@ public final class TranscribeAudioUseCase: Sendable {
             throw DomainTranscriptionError.transcriptionFailed(error.localizedDescription)
         }
         let transcriptionDuration = Date().timeIntervalSince(transcriptionStartTime)
+        let replacedTranscriptionText = applyVocabularyReplacements(
+            to: response.text,
+            with: vocabularyReplacementRules
+        )
+        let replacedSegments = applyVocabularyReplacements(
+            to: response.segments,
+            with: vocabularyReplacementRules
+        )
 
         // Aplicar pós-processamento se solicitado
         var processedContent: String?
@@ -65,7 +74,7 @@ public final class TranscribeAudioUseCase: Sendable {
         var meetingType: String?
         var postProcessingDuration: Double = 0
         let postProcessingInput = mergedPostProcessingInput(
-            transcriptionText: response.text,
+            transcriptionText: replacedTranscriptionText,
             context: postProcessingContext
         )
 
@@ -118,34 +127,24 @@ public final class TranscribeAudioUseCase: Sendable {
             }
         }
 
-        // Criar entidade de transcrição
-        var config = TranscriptionEntity.Configuration(
-            text: processedContent ?? response.text,
-            rawText: response.text,
-            segments: response.segments.map { segment in
-                TranscriptionEntity.Segment(
-                    speaker: segment.speaker,
-                    text: segment.text,
-                    startTime: segment.startTime,
-                    endTime: segment.endTime
-                )
-            },
-            language: response.language
-        )
-        config.contextItems = contextItems
-        config.processedContent = processedContent
-        config.postProcessingPromptId = promptId
-        config.postProcessingPromptTitle = promptTitle
-        config.modelName = response.model
-        config.meetingType = meetingType
-        config.inputSource = inputSource
-        config.transcriptionDuration = transcriptionDuration
-        config.postProcessingDuration = processedContent == nil ? 0 : postProcessingDuration
-        config.postProcessingModel = processedContent == nil ? nil : postProcessingModel
-
         let transcription = TranscriptionEntity(
             meeting: meeting,
-            config: config
+            config: buildConfiguration(
+                .init(
+                    response: response,
+                    replacedText: replacedTranscriptionText,
+                    replacedSegments: replacedSegments,
+                    contextItems: contextItems,
+                    processedContent: processedContent,
+                    promptId: promptId,
+                    promptTitle: promptTitle,
+                    meetingType: meetingType,
+                    inputSource: inputSource,
+                    transcriptionDuration: transcriptionDuration,
+                    postProcessingDuration: postProcessingDuration,
+                    postProcessingModel: postProcessingModel
+                )
+            )
         )
 
         // Salvar transcrição
@@ -220,6 +219,93 @@ public final class TranscribeAudioUseCase: Sendable {
             .replacingOccurrences(of: "  ", with: " ")
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .lowercased()
+    }
+
+    private func applyVocabularyReplacements(
+        to text: String,
+        with rules: [VocabularyReplacementRule]
+    ) -> String {
+        var output = text
+
+        for rule in rules {
+            let find = rule.find.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !find.isEmpty else { continue }
+
+            let escapedFind = NSRegularExpression.escapedPattern(for: find)
+            let pattern = "\\b\(escapedFind)\\b"
+
+            guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else {
+                continue
+            }
+
+            let escapedReplacement = NSRegularExpression.escapedTemplate(for: rule.replace)
+            let range = NSRange(output.startIndex..<output.endIndex, in: output)
+            output = regex.stringByReplacingMatches(
+                in: output,
+                options: [],
+                range: range,
+                withTemplate: escapedReplacement
+            )
+        }
+
+        return output
+    }
+
+    private func applyVocabularyReplacements(
+        to segments: [DomainTranscriptionSegment],
+        with rules: [VocabularyReplacementRule]
+    ) -> [DomainTranscriptionSegment] {
+        segments.map { segment in
+            DomainTranscriptionSegment(
+                id: segment.id,
+                speaker: segment.speaker,
+                text: applyVocabularyReplacements(to: segment.text, with: rules),
+                startTime: segment.startTime,
+                endTime: segment.endTime
+            )
+        }
+    }
+
+    private struct ConfigurationBuildInput {
+        let response: DomainTranscriptionResponse
+        let replacedText: String
+        let replacedSegments: [DomainTranscriptionSegment]
+        let contextItems: [TranscriptionContextItem]
+        let processedContent: String?
+        let promptId: UUID?
+        let promptTitle: String?
+        let meetingType: String?
+        let inputSource: String?
+        let transcriptionDuration: Double
+        let postProcessingDuration: Double
+        let postProcessingModel: String?
+    }
+
+    private func buildConfiguration(_ input: ConfigurationBuildInput) -> TranscriptionEntity.Configuration {
+        var config = TranscriptionEntity.Configuration(
+            text: input.processedContent ?? input.replacedText,
+            rawText: input.response.text,
+            segments: input.replacedSegments.map { segment in
+                TranscriptionEntity.Segment(
+                    speaker: segment.speaker,
+                    text: segment.text,
+                    startTime: segment.startTime,
+                    endTime: segment.endTime
+                )
+            },
+            language: input.response.language
+        )
+        config.contextItems = input.contextItems
+        config.processedContent = input.processedContent
+        config.postProcessingPromptId = input.promptId
+        config.postProcessingPromptTitle = input.promptTitle
+        config.modelName = input.response.model
+        config.meetingType = input.meetingType
+        config.inputSource = input.inputSource
+        config.transcriptionDuration = input.transcriptionDuration
+        config.postProcessingDuration = input.processedContent == nil ? 0 : input.postProcessingDuration
+        config.postProcessingModel = input.processedContent == nil ? nil : input.postProcessingModel
+        return config
     }
 
     private func mergedPostProcessingInput(transcriptionText: String, context: String?) -> String {

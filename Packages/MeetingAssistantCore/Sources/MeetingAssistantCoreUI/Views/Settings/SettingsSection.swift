@@ -17,6 +17,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
     case transcriptions
     case general
     case rulesPerApp
+    case vocabulary
     case enhancements
     case audio
     case permissions
@@ -36,6 +37,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
     public static let settingsSections: [SettingsSection] = [
         .general,
         .rulesPerApp,
+        .vocabulary,
         .enhancements,
         .audio,
         .permissions,
@@ -52,6 +54,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
         case .integrations: "settings.section.integrations".localized
         case .transcriptions: "settings.section.history".localized
         case .rulesPerApp: "settings.section.rules_per_app".localized
+        case .vocabulary: "settings.section.vocabulary".localized
         case .enhancements: "settings.section.ai".localized
         case .permissions: "settings.section.permissions".localized
         }
@@ -68,6 +71,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
         case .integrations: "puzzlepiece.extension"
         case .transcriptions: "clock"
         case .rulesPerApp: "slider.horizontal.3"
+        case .vocabulary: "character.book.closed"
         case .enhancements: "sparkles"
         case .permissions: "checkmark.shield"
         }
