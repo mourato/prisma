@@ -80,7 +80,9 @@ public final class CoreDataTranscriptionStorageRepository: TranscriptionStorageR
                     summaryGroundedInTranscript: mo.summaryGroundedInTranscript,
                     summaryContainsSpeculation: mo.summaryContainsSpeculation,
                     summaryHumanReviewed: mo.summaryHumanReviewed,
-                    summaryConfidenceScore: mo.summaryConfidenceScore
+                    summaryConfidenceScore: mo.summaryConfidenceScore,
+                    transcriptConfidenceScore: mo.transcriptConfidenceScore,
+                    transcriptContainsUncertainty: mo.transcriptContainsUncertainty
                 )
             }
         }

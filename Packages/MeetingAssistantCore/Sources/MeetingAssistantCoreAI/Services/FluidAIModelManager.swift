@@ -392,11 +392,11 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
     }
 
     /// Transcribe audio from a URL
-    /// Returns: Tuple of (full text, segments)
+    /// Returns: Tuple of (full text, segments, confidence score)
     func transcribe(
         audioURL: URL,
         progress: (@Sendable (Double) -> Void)? = nil
-    ) async throws -> (text: String, segments: [AsrSegment]) {
+    ) async throws -> (text: String, segments: [AsrSegment], confidenceScore: Double?) {
         guard let manager = asrManager, modelState == .loaded else {
             throw FluidError.modelNotLoaded
         }
@@ -432,7 +432,7 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
             )
         }
 
-        return (result.text, mappedSegments)
+        return (result.text, mappedSegments, Double(result.confidence))
     }
 
     private func convertTo16kHz(buffer: AVAudioPCMBuffer) throws -> AVAudioPCMBuffer {

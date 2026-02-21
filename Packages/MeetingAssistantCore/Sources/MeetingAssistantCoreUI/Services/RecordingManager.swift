@@ -79,6 +79,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     private let textContextGuardrails: TextContextGuardrails
     private let textContextPolicy: TextContextPolicy
     private let transcribeAudioUseCase: TranscribeAudioUseCase
+    private let transcriptPreprocessor = TranscriptIntelligencePreprocessor()
     private let activeAppContextProvider: any ActiveAppContextProvider
     private var browserProviders: [String: BrowserActiveTabURLProviding] = BrowserProviderRegistry.defaultProviders()
 
@@ -1508,6 +1509,7 @@ extension RecordingManager {
             rawText: entity.rawText,
             processedContent: entity.processedContent,
             canonicalSummary: entity.canonicalSummary,
+            qualityProfile: entity.qualityProfile,
             postProcessingPromptId: entity.postProcessingPromptId,
             postProcessingPromptTitle: entity.postProcessingPromptTitle,
             language: entity.language,
@@ -1516,7 +1518,8 @@ extension RecordingManager {
             inputSource: entity.inputSource, // Entity might not have inputSource? check config
             transcriptionDuration: entity.transcriptionDuration, // Entity has it?
             postProcessingDuration: entity.postProcessingDuration,
-            postProcessingModel: entity.postProcessingModel
+            postProcessingModel: entity.postProcessingModel,
+            meetingType: entity.meetingType
         )
     }
 
@@ -1560,7 +1563,11 @@ extension RecordingManager {
         )
     }
 
-    private func applyPostProcessing(rawText: String, meeting: Meeting?) async -> PostProcessingResult {
+    private func applyPostProcessing(
+        postProcessingInput: String,
+        meeting: Meeting?,
+        qualityProfile: TranscriptionQualityProfile?
+    ) async -> PostProcessingResult {
         transcriptionStatus.updateProgress(phase: .postProcessing, percentage: Constants.postProcessingProgress)
 
         let settings = AppSettingsStore.shared
@@ -1571,14 +1578,19 @@ extension RecordingManager {
 
         let type = meeting?.type ?? currentMeeting?.type ?? .general
         let prompt = await resolvePostProcessingPrompt(
-            rawText: rawText,
+            rawText: postProcessingInput,
             isDictation: isDictation,
             meetingType: type,
             settings: settings
         )
 
         transcriptionStatus.updateProgress(phase: .postProcessing, percentage: Constants.aiProcessingProgress)
-        return await runPostProcessing(rawText: rawText, prompt: prompt, settings: settings)
+        return await runPostProcessing(
+            postProcessingInput: postProcessingInput,
+            prompt: prompt,
+            settings: settings,
+            qualityProfile: qualityProfile
+        )
     }
 
     private func isDictationMode(for meeting: Meeting?) -> Bool {
@@ -1652,15 +1664,19 @@ extension RecordingManager {
     }
 
     private func runPostProcessing(
-        rawText: String,
+        postProcessingInput: String,
         prompt: PostProcessingPrompt,
-        settings: AppSettingsStore
+        settings: AppSettingsStore,
+        qualityProfile: TranscriptionQualityProfile?
     ) async -> PostProcessingResult {
         do {
             let startTime = Date()
-            let structuredResult = try await postProcessingService.processTranscriptionStructured(rawText, with: prompt)
+            let structuredResult = try await postProcessingService.processTranscriptionStructured(postProcessingInput, with: prompt)
             let duration = Date().timeIntervalSince(startTime)
             let model = settings.aiConfiguration.selectedModel
+            let canonicalSummary = qualityProfile.map { profile in
+                recalibrateCanonicalSummary(structuredResult.canonicalSummary, with: profile)
+            } ?? structuredResult.canonicalSummary
             AppLogger.info(
                 "Post-processing complete",
                 category: .recordingManager,
@@ -1668,7 +1684,7 @@ extension RecordingManager {
             )
             return PostProcessingResult(
                 processedContent: structuredResult.processedText,
-                canonicalSummary: structuredResult.canonicalSummary,
+                canonicalSummary: canonicalSummary,
                 promptId: prompt.id,
                 promptTitle: prompt.title,
                 duration: duration,
@@ -1902,19 +1918,51 @@ extension RecordingManager {
         let transcriptionStart = Date()
         let response = try await performTranscription(audioURL: audioURL)
         let transcriptionProcessingDuration = Date().timeIntervalSince(transcriptionStart)
+        let settings = AppSettingsStore.shared
+        let replacedText = applyVocabularyReplacements(
+            to: response.text,
+            with: settings.vocabularyReplacementRules
+        )
+        let replacedSegments = applyVocabularyReplacements(
+            to: response.segments,
+            with: settings.vocabularyReplacementRules
+        )
+        let qualityProfile = transcriptPreprocessor.preprocess(
+            transcriptionText: replacedText,
+            segments: replacedSegments.map {
+                DomainTranscriptionSegment(
+                    id: $0.id,
+                    speaker: $0.speaker,
+                    text: $0.text,
+                    startTime: $0.startTime,
+                    endTime: $0.endTime
+                )
+            },
+            asrConfidenceScore: response.confidenceScore
+        )
+        let postProcessingInput = mergedPostProcessingInput(
+            transcriptionText: qualityProfile.normalizedTextForIntelligence,
+            qualityProfile: qualityProfile,
+            context: postProcessingContext
+        )
 
         let meeting = updatedMeeting(for: transcription.meeting, audioDuration: audioDuration)
-        let postProcessing = await applyPostProcessing(rawText: response.text, meeting: meeting)
+        let postProcessing = await applyPostProcessing(
+            postProcessingInput: postProcessingInput,
+            meeting: meeting,
+            qualityProfile: qualityProfile
+        )
 
         return Transcription(
             id: transcription.id,
             meeting: meeting,
             contextItems: transcription.contextItems,
-            segments: response.segments,
-            text: postProcessing.processedContent ?? response.text,
+            segments: replacedSegments,
+            text: postProcessing.processedContent ?? replacedText,
             rawText: response.text,
             processedContent: postProcessing.processedContent,
             canonicalSummary: postProcessing.canonicalSummary,
+            qualityProfile: qualityProfile,
             postProcessingPromptId: postProcessing.promptId,
             postProcessingPromptTitle: postProcessing.promptTitle,
             language: response.language,
@@ -1923,7 +1971,121 @@ extension RecordingManager {
             inputSource: transcription.inputSource,
             transcriptionDuration: transcriptionProcessingDuration,
             postProcessingDuration: postProcessing.duration,
-            postProcessingModel: postProcessing.model
+            postProcessingModel: postProcessing.model,
+            meetingType: transcription.meeting.type.rawValue
+        )
+    }
+
+    private func applyVocabularyReplacements(
+        to text: String,
+        with rules: [VocabularyReplacementRule]
+    ) -> String {
+        var output = text
+
+        for rule in rules {
+            let find = rule.find.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !find.isEmpty else { continue }
+
+            let escapedFind = NSRegularExpression.escapedPattern(for: find)
+            let pattern = "\\b\(escapedFind)\\b"
+
+            guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else {
+                continue
+            }
+
+            let escapedReplacement = NSRegularExpression.escapedTemplate(for: rule.replace)
+            let range = NSRange(output.startIndex..<output.endIndex, in: output)
+            output = regex.stringByReplacingMatches(
+                in: output,
+                options: [],
+                range: range,
+                withTemplate: escapedReplacement
+            )
+        }
+
+        return output
+    }
+
+    private func applyVocabularyReplacements(
+        to segments: [Transcription.Segment],
+        with rules: [VocabularyReplacementRule]
+    ) -> [Transcription.Segment] {
+        segments.map { segment in
+            Transcription.Segment(
+                id: segment.id,
+                speaker: segment.speaker,
+                text: applyVocabularyReplacements(to: segment.text, with: rules),
+                startTime: segment.startTime,
+                endTime: segment.endTime
+            )
+        }
+    }
+
+    private func mergedPostProcessingInput(
+        transcriptionText: String,
+        qualityProfile: TranscriptionQualityProfile,
+        context: String?
+    ) -> String {
+        var blocks = [transcriptionText]
+        blocks.append(qualityMetadataBlock(from: qualityProfile))
+
+        if let context {
+            let trimmedContext = context.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmedContext.isEmpty {
+                blocks.append(
+                    """
+                    <CONTEXT_METADATA>
+                    \(trimmedContext)
+                    </CONTEXT_METADATA>
+                    """
+                )
+            }
+        }
+
+        return blocks.joined(separator: "\n\n")
+    }
+
+    private func qualityMetadataBlock(from qualityProfile: TranscriptionQualityProfile) -> String {
+        let markerLines: [String]
+        if qualityProfile.markers.isEmpty {
+            markerLines = ["none"]
+        } else {
+            markerLines = qualityProfile.markers.map { marker in
+                "- [\(marker.reason.rawValue)] \(marker.snippet) [\(marker.startTime)-\(marker.endTime)]"
+            }
+        }
+
+        return """
+        <TRANSCRIPT_QUALITY>
+        normalizationVersion: \(qualityProfile.normalizationVersion)
+        overallConfidence: \(qualityProfile.overallConfidence)
+        containsUncertainty: \(qualityProfile.containsUncertainty)
+        markers:
+        \(markerLines.joined(separator: "\n"))
+        </TRANSCRIPT_QUALITY>
+        """
+    }
+
+    private func recalibrateCanonicalSummary(
+        _ summary: CanonicalSummary,
+        with qualityProfile: TranscriptionQualityProfile
+    ) -> CanonicalSummary {
+        let trustFlags = CanonicalSummary.TrustFlags(
+            isGroundedInTranscript: summary.trustFlags.isGroundedInTranscript,
+            containsSpeculation: summary.trustFlags.containsSpeculation || qualityProfile.containsUncertainty,
+            isHumanReviewed: summary.trustFlags.isHumanReviewed,
+            confidenceScore: min(summary.trustFlags.confidenceScore, qualityProfile.overallConfidence)
+        )
+
+        return CanonicalSummary(
+            schemaVersion: summary.schemaVersion,
+            generatedAt: summary.generatedAt,
+            summary: summary.summary,
+            keyPoints: summary.keyPoints,
+            decisions: summary.decisions,
+            actionItems: summary.actionItems,
+            openQuestions: summary.openQuestions,
+            trustFlags: trustFlags
         )
     }
 

@@ -29,11 +29,14 @@ public final class TranscriptionMO: NSManagedObject {
     @NSManaged public var meetingType: String?
     @NSManaged public var contextItemsData: Data?
     @NSManaged public var canonicalSummaryData: Data?
+    @NSManaged public var transcriptionQualityData: Data?
     @NSManaged public var canonicalSummarySchemaVersion: Int16
     @NSManaged public var summaryGroundedInTranscript: Bool
     @NSManaged public var summaryContainsSpeculation: Bool
     @NSManaged public var summaryHumanReviewed: Bool
     @NSManaged public var summaryConfidenceScore: Double
+    @NSManaged public var transcriptConfidenceScore: Double
+    @NSManaged public var transcriptContainsUncertainty: Bool
 
     // Relacionamentos
     @NSManaged public var meeting: MeetingMO
@@ -76,6 +79,8 @@ extension TranscriptionMO {
     private static let contextItemsEncoder = JSONEncoder()
     private static let canonicalSummaryDecoder = JSONDecoder()
     private static let canonicalSummaryEncoder = JSONEncoder()
+    private static let transcriptionQualityDecoder = JSONDecoder()
+    private static let transcriptionQualityEncoder = JSONEncoder()
 
     /// Converte Managed Object para Domain Entity
     func toDomain() -> TranscriptionEntity {
@@ -98,6 +103,7 @@ extension TranscriptionMO {
         config.postProcessingModel = postProcessingModel
         config.meetingType = meetingType
         config.canonicalSummary = decodeCanonicalSummary()
+        config.qualityProfile = decodeTranscriptionQuality()
 
         return TranscriptionEntity(meeting: meeting.toDomain(), config: config)
     }
@@ -120,6 +126,7 @@ extension TranscriptionMO {
         meetingType = entity.meetingType
         contextItemsData = encodeContextItems(entity.contextItems)
         applyCanonicalSummary(entity.canonicalSummary)
+        applyTranscriptionQuality(entity.qualityProfile)
 
         self.meeting = meeting
 
@@ -150,6 +157,7 @@ extension TranscriptionMO {
         transcriptionMO.meetingType = entity.meetingType
         transcriptionMO.contextItemsData = transcriptionMO.encodeContextItems(entity.contextItems)
         transcriptionMO.applyCanonicalSummary(entity.canonicalSummary)
+        transcriptionMO.applyTranscriptionQuality(entity.qualityProfile)
         transcriptionMO.meeting = meeting
 
         // Criar segmentos
@@ -185,6 +193,11 @@ extension TranscriptionMO {
         }
     }
 
+    private func decodeTranscriptionQuality() -> TranscriptionQualityProfile? {
+        guard let data = transcriptionQualityData else { return nil }
+        return try? Self.transcriptionQualityDecoder.decode(TranscriptionQualityProfile.self, from: data)
+    }
+
     private func applyCanonicalSummary(_ summary: CanonicalSummary?) {
         guard let summary else {
             canonicalSummaryData = nil
@@ -212,6 +225,26 @@ extension TranscriptionMO {
         summaryContainsSpeculation = summary.trustFlags.containsSpeculation
         summaryHumanReviewed = summary.trustFlags.isHumanReviewed
         summaryConfidenceScore = summary.trustFlags.confidenceScore
+    }
+
+    private func applyTranscriptionQuality(_ qualityProfile: TranscriptionQualityProfile?) {
+        guard let qualityProfile else {
+            transcriptionQualityData = nil
+            transcriptConfidenceScore = 0.5
+            transcriptContainsUncertainty = false
+            return
+        }
+
+        guard let encoded = try? Self.transcriptionQualityEncoder.encode(qualityProfile) else {
+            transcriptionQualityData = nil
+            transcriptConfidenceScore = 0.5
+            transcriptContainsUncertainty = false
+            return
+        }
+
+        transcriptionQualityData = encoded
+        transcriptConfidenceScore = qualityProfile.overallConfidence
+        transcriptContainsUncertainty = qualityProfile.containsUncertainty
     }
 
     private static func clampSchemaVersion(_ version: Int) -> Int16 {

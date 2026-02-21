@@ -9,7 +9,7 @@ import Foundation
 /// Configuração programática do modelo CoreData
 public enum CoreDataModel {
     /// Versão atual do modelo
-    public static let currentVersion = "1.1"
+    public static let currentVersion = "1.2"
 
     /// Cria o modelo CoreData programaticamente
     // swiftlint:disable function_body_length
@@ -197,6 +197,12 @@ public enum CoreDataModel {
         canonicalSummaryDataAttribute.isOptional = true
         canonicalSummaryDataAttribute.allowsExternalBinaryDataStorage = true
 
+        let transcriptionQualityDataAttribute = NSAttributeDescription()
+        transcriptionQualityDataAttribute.name = "transcriptionQualityData"
+        transcriptionQualityDataAttribute.attributeType = .binaryDataAttributeType
+        transcriptionQualityDataAttribute.isOptional = true
+        transcriptionQualityDataAttribute.allowsExternalBinaryDataStorage = true
+
         let canonicalSummarySchemaVersionAttribute = NSAttributeDescription()
         canonicalSummarySchemaVersionAttribute.name = "canonicalSummarySchemaVersion"
         canonicalSummarySchemaVersionAttribute.attributeType = .integer16AttributeType
@@ -227,6 +233,18 @@ public enum CoreDataModel {
         summaryConfidenceScoreAttribute.isOptional = false
         summaryConfidenceScoreAttribute.defaultValue = 0.0
 
+        let transcriptConfidenceScoreAttribute = NSAttributeDescription()
+        transcriptConfidenceScoreAttribute.name = "transcriptConfidenceScore"
+        transcriptConfidenceScoreAttribute.attributeType = .doubleAttributeType
+        transcriptConfidenceScoreAttribute.isOptional = false
+        transcriptConfidenceScoreAttribute.defaultValue = 0.5
+
+        let transcriptContainsUncertaintyAttribute = NSAttributeDescription()
+        transcriptContainsUncertaintyAttribute.name = "transcriptContainsUncertainty"
+        transcriptContainsUncertaintyAttribute.attributeType = .booleanAttributeType
+        transcriptContainsUncertaintyAttribute.isOptional = false
+        transcriptContainsUncertaintyAttribute.defaultValue = false
+
         transcriptionEntity.properties = [
             transcriptionIdAttribute,
             transcriptionTextAttribute,
@@ -244,11 +262,14 @@ public enum CoreDataModel {
             meetingTypeAttribute,
             transcriptionContextItemsAttribute,
             canonicalSummaryDataAttribute,
+            transcriptionQualityDataAttribute,
             canonicalSummarySchemaVersionAttribute,
             summaryGroundedInTranscriptAttribute,
             summaryContainsSpeculationAttribute,
             summaryHumanReviewedAttribute,
             summaryConfidenceScoreAttribute,
+            transcriptConfidenceScoreAttribute,
+            transcriptContainsUncertaintyAttribute,
         ]
 
         // Relacionamentos
