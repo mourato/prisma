@@ -83,6 +83,15 @@ public protocol PostProcessingRepository: Sendable {
 
     /// Processa texto de transcrição usando prompt específico
     func processTranscription(_ transcription: String, with prompt: DomainPostProcessingPrompt) async throws -> String
+
+    /// Process transcription with canonical structured summary contract.
+    func processTranscriptionStructured(_ transcription: String) async throws -> DomainPostProcessingResult
+
+    /// Process transcription with canonical structured summary contract using a specific prompt.
+    func processTranscriptionStructured(
+        _ transcription: String,
+        with prompt: DomainPostProcessingPrompt
+    ) async throws -> DomainPostProcessingResult
 }
 
 // MARK: - Storage Domain Protocols
@@ -164,6 +173,30 @@ public enum DomainPostProcessingError: Error, Sendable {
     case invalidPrompt
     case processingFailed(String)
     case networkError(Error)
+}
+
+/// Indicates how the canonical summary output was produced.
+public enum DomainPostProcessingOutputState: String, Codable, Sendable {
+    case structured
+    case repaired
+    case deterministicFallback
+}
+
+/// Structured output for hardened post-processing.
+public struct DomainPostProcessingResult: Sendable {
+    public let processedText: String
+    public let canonicalSummary: CanonicalSummary
+    public let outputState: DomainPostProcessingOutputState
+
+    public init(
+        processedText: String,
+        canonicalSummary: CanonicalSummary,
+        outputState: DomainPostProcessingOutputState
+    ) {
+        self.processedText = processedText
+        self.canonicalSummary = canonicalSummary
+        self.outputState = outputState
+    }
 }
 
 /// Prompt de pós-processamento do domínio

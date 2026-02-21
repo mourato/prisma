@@ -69,6 +69,15 @@ public protocol PostProcessingServiceProtocol: ObservableObject {
 
     /// Process a raw transcription using a specific prompt.
     func processTranscription(_ transcription: String, with prompt: PostProcessingPrompt) async throws -> String
+
+    /// Process transcription using hardened structured summary pipeline.
+    func processTranscriptionStructured(_ transcription: String) async throws -> DomainPostProcessingResult
+
+    /// Process transcription using hardened structured summary pipeline and a specific prompt.
+    func processTranscriptionStructured(
+        _ transcription: String,
+        with prompt: PostProcessingPrompt
+    ) async throws -> DomainPostProcessingResult
 }
 
 // MARK: - Notification Service Protocol

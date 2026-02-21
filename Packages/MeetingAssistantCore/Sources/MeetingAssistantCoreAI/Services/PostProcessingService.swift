@@ -2,16 +2,13 @@ import Foundation
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
-import os.log
 
 // MARK: - Post-Processing Service
 
 /// Service for post-processing transcriptions using AI.
 @MainActor
-public class PostProcessingService: ObservableObject, PostProcessingServiceProtocol {
+public final class PostProcessingService: ObservableObject, PostProcessingServiceProtocol {
     public static let shared = PostProcessingService()
-
-    // ...
 
     private enum Constants {
         /// Maximum tokens for AI response (suitable for long meeting notes).
@@ -33,9 +30,15 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
 
     private let settings = AppSettingsStore.shared
 
+    private let summaryResponseParser = CanonicalSummaryResponseParser()
+    private let summaryPromptComposer = CanonicalSummaryPromptComposer()
+    private let summaryRepairComposer = CanonicalSummaryRepairComposer()
+    private let summaryFallbackBuilder = DeterministicSummaryFallbackBuilder()
+    private let summaryRenderer = CanonicalSummaryRenderer()
+
     private init() {}
 
-    // MARK: - Public API
+    // MARK: - Public API (Legacy String)
 
     /// Processes a transcription using the currently selected prompt.
     /// - Parameter transcription: The raw transcription text.
@@ -74,23 +77,13 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
         with prompt: PostProcessingPrompt,
         systemPromptOverride: String?
     ) async throws -> String {
-        // Input validation
-        let trimmedTranscription = transcription.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedTranscription.isEmpty else {
-            throw PostProcessingError.emptyTranscription
-        }
-
-        guard trimmedTranscription.count <= Constants.maxInputCharacters else {
-            throw PostProcessingError.transcriptionTooLong(trimmedTranscription.count)
-        }
-
+        _ = try validateInput(transcription)
         guard settings.aiConfiguration.isValid else {
             throw PostProcessingError.noAPIConfigured
         }
 
         isProcessing = true
         lastError = nil
-
         defer { isProcessing = false }
 
         do {
@@ -111,9 +104,86 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
         }
     }
 
-    // MARK: - Private Methods
+    // MARK: - Public API (Structured)
 
-    // MARK: - Private Methods
+    public func processTranscriptionStructured(_ transcription: String) async throws -> DomainPostProcessingResult {
+        guard settings.postProcessingEnabled else {
+            let fallback = summaryFallbackBuilder.build(providerOutput: "", transcription: transcription)
+            AppLogger.info("Post-processing disabled, returning deterministic structured fallback", category: .transcriptionEngine)
+            return fallback
+        }
+
+        guard let prompt = settings.selectedPrompt else {
+            throw PostProcessingError.noPromptSelected
+        }
+
+        return try await processTranscriptionStructured(transcription, with: prompt)
+    }
+
+    public func processTranscriptionStructured(
+        _ transcription: String,
+        with prompt: PostProcessingPrompt
+    ) async throws -> DomainPostProcessingResult {
+        try await processTranscriptionStructured(
+            transcription,
+            with: prompt,
+            systemPromptOverride: nil
+        )
+    }
+
+    private func processTranscriptionStructured(
+        _ transcription: String,
+        with prompt: PostProcessingPrompt,
+        systemPromptOverride: String?
+    ) async throws -> DomainPostProcessingResult {
+        _ = try validateInput(transcription)
+        guard settings.aiConfiguration.isValid else {
+            throw PostProcessingError.noAPIConfigured
+        }
+
+        isProcessing = true
+        lastError = nil
+        defer { isProcessing = false }
+
+        do {
+            let result = try await sendToAIStructured(
+                transcription: transcription,
+                prompt: prompt,
+                systemPromptOverride: systemPromptOverride
+            )
+
+            AppLogger.info(
+                "Structured post-processing completed",
+                category: .transcriptionEngine,
+                extra: ["output_state": result.outputState.rawValue]
+            )
+            return result
+        } catch let error as PostProcessingError {
+            lastError = error
+            throw error
+        } catch {
+            let processingError = PostProcessingError.requestFailed(error)
+            lastError = processingError
+            throw processingError
+        }
+    }
+
+    // MARK: - Shared Validation
+
+    private func validateInput(_ transcription: String) throws -> String {
+        let trimmedTranscription = transcription.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedTranscription.isEmpty else {
+            throw PostProcessingError.emptyTranscription
+        }
+
+        guard trimmedTranscription.count <= Constants.maxInputCharacters else {
+            throw PostProcessingError.transcriptionTooLong(trimmedTranscription.count)
+        }
+
+        return trimmedTranscription
+    }
+
+    // MARK: - Legacy Pipeline
 
     private func sendToAI(
         transcription: String,
@@ -152,6 +222,110 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
         throw lastError ?? PostProcessingError.invalidResponse
     }
 
+    // MARK: - Structured Pipeline
+
+    private func sendToAIStructured(
+        transcription: String,
+        prompt: PostProcessingPrompt,
+        systemPromptOverride: String?
+    ) async throws -> DomainPostProcessingResult {
+        var lastError: Error?
+        let structuredPrompt = makeStructuredPrompt(from: prompt)
+
+        for attempt in 0..<Constants.maxRetryAttempts {
+            do {
+                let rawOutput = try await performAIRequest(
+                    transcription: transcription,
+                    prompt: structuredPrompt,
+                    systemPromptOverride: systemPromptOverride
+                )
+
+                if let summary = tryParseCanonicalSummary(rawOutput) {
+                    return makeStructuredResult(summary, outputState: .structured)
+                }
+
+                AppLogger.warning(
+                    "Structured summary parse failed, attempting repair",
+                    category: .transcriptionEngine
+                )
+
+                if let repairedOutput = try? await performRepairRequest(
+                    malformedOutput: rawOutput,
+                    transcription: transcription,
+                    originalPrompt: prompt,
+                    systemPromptOverride: systemPromptOverride
+                ), let repairedSummary = tryParseCanonicalSummary(repairedOutput) {
+                    return makeStructuredResult(repairedSummary, outputState: .repaired)
+                }
+
+                AppLogger.warning(
+                    "Structured summary repair failed, using deterministic fallback",
+                    category: .transcriptionEngine
+                )
+                return summaryFallbackBuilder.build(providerOutput: rawOutput, transcription: transcription)
+            } catch {
+                lastError = error
+
+                guard shouldRetry(error: error), attempt < Constants.maxRetryAttempts - 1 else {
+                    throw error
+                }
+
+                let multiplier = Int(pow(2.0, Double(attempt)))
+                let delay = Constants.baseRetryDelay * UInt64(multiplier)
+
+                AppLogger.warning(
+                    "Structured AI request failed, retrying",
+                    category: .transcriptionEngine,
+                    extra: ["attempt": attempt + 1, "delay_ms": delay / 1_000_000]
+                )
+
+                try await Task.sleep(nanoseconds: delay)
+            }
+        }
+
+        throw lastError ?? PostProcessingError.invalidResponse
+    }
+
+    private func makeStructuredPrompt(from prompt: PostProcessingPrompt) -> PostProcessingPrompt {
+        var structuredPrompt = prompt
+        structuredPrompt.promptText = summaryPromptComposer.structuredPrompt(from: prompt.promptText)
+        return structuredPrompt
+    }
+
+    private func tryParseCanonicalSummary(_ output: String) -> CanonicalSummary? {
+        try? summaryResponseParser.parse(from: output)
+    }
+
+    private func makeStructuredResult(
+        _ summary: CanonicalSummary,
+        outputState: DomainPostProcessingOutputState
+    ) -> DomainPostProcessingResult {
+        DomainPostProcessingResult(
+            processedText: summaryRenderer.render(summary),
+            canonicalSummary: summary,
+            outputState: outputState
+        )
+    }
+
+    private func performRepairRequest(
+        malformedOutput: String,
+        transcription: String,
+        originalPrompt: PostProcessingPrompt,
+        systemPromptOverride: String?
+    ) async throws -> String {
+        let baseSystemPrompt = systemPromptOverride ?? settings.systemPrompt
+        let systemPrompt = summaryRepairComposer.systemPrompt(basePrompt: baseSystemPrompt)
+        let userPrompt = summaryRepairComposer.userMessage(
+            malformedOutput: malformedOutput,
+            transcription: transcription,
+            originalPrompt: originalPrompt.promptText
+        )
+
+        return try await performCustomAIRequest(systemPrompt: systemPrompt, userContent: userPrompt)
+    }
+
+    // MARK: - Request/Response
+
     private func performAIRequest(
         transcription: String,
         prompt: PostProcessingPrompt,
@@ -184,6 +358,29 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
         let (data, response) = try await URLSession.shared.data(for: request)
         try validateHTTPResponse(response, data: data)
 
+        return try parseSuccessResponse(data: data, provider: config.provider)
+    }
+
+    private func performCustomAIRequest(systemPrompt: String, userContent: String) async throws -> String {
+        let config = settings.aiConfiguration
+        let apiKey = try getAPIKey(for: config.provider)
+        let url = try buildURL(for: config)
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = Constants.requestTimeoutSeconds
+
+        configureAuthHeaders(for: &request, provider: config.provider, apiKey: apiKey)
+        try setCustomRequestBody(
+            for: &request,
+            config: config,
+            systemMessage: systemPrompt,
+            userContent: userContent
+        )
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validateHTTPResponse(response, data: data)
         return try parseSuccessResponse(data: data, provider: config.provider)
     }
 
@@ -263,6 +460,21 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
             prompt: extracted.cleanPrompt,
             priorityInstructions: extracted.priorityInstructions
         )
+
+        try setCustomRequestBody(
+            for: &request,
+            config: config,
+            systemMessage: systemMessage,
+            userContent: userContent
+        )
+    }
+
+    private func setCustomRequestBody(
+        for request: inout URLRequest,
+        config: AIConfiguration,
+        systemMessage: String,
+        userContent: String
+    ) throws {
         let encoder = JSONEncoder()
 
         do {
@@ -299,7 +511,7 @@ public class PostProcessingService: ObservableObject, PostProcessingServiceProto
             throw PostProcessingError.invalidResponse
         }
 
-        guard (200...299).contains(httpResponse.statusCode) else {
+        guard (200 ... 299).contains(httpResponse.statusCode) else {
             let decoder = JSONDecoder()
             if let errorResponse = try? decoder.decode(OpenAIErrorResponse.self, from: data) {
                 throw PostProcessingError.apiError(errorResponse.error.message)

@@ -1507,6 +1507,7 @@ extension RecordingManager {
             text: entity.text,
             rawText: entity.rawText,
             processedContent: entity.processedContent,
+            canonicalSummary: entity.canonicalSummary,
             postProcessingPromptId: entity.postProcessingPromptId,
             postProcessingPromptTitle: entity.postProcessingPromptTitle,
             language: entity.language,
@@ -1543,12 +1544,20 @@ extension RecordingManager {
 
     private struct PostProcessingResult {
         let processedContent: String?
+        let canonicalSummary: CanonicalSummary?
         let promptId: UUID?
         let promptTitle: String?
         let duration: Double
         let model: String?
 
-        static let empty = PostProcessingResult(processedContent: nil, promptId: nil, promptTitle: nil, duration: 0, model: nil)
+        static let empty = PostProcessingResult(
+            processedContent: nil,
+            canonicalSummary: nil,
+            promptId: nil,
+            promptTitle: nil,
+            duration: 0,
+            model: nil
+        )
     }
 
     private func applyPostProcessing(rawText: String, meeting: Meeting?) async -> PostProcessingResult {
@@ -1649,11 +1658,22 @@ extension RecordingManager {
     ) async -> PostProcessingResult {
         do {
             let startTime = Date()
-            let processed = try await postProcessingService.processTranscription(rawText, with: prompt)
+            let structuredResult = try await postProcessingService.processTranscriptionStructured(rawText, with: prompt)
             let duration = Date().timeIntervalSince(startTime)
             let model = settings.aiConfiguration.selectedModel
-            AppLogger.info("Post-processing complete", category: .recordingManager, extra: ["prompt": prompt.title])
-            return PostProcessingResult(processedContent: processed, promptId: prompt.id, promptTitle: prompt.title, duration: duration, model: model)
+            AppLogger.info(
+                "Post-processing complete",
+                category: .recordingManager,
+                extra: ["prompt": prompt.title, "output_state": structuredResult.outputState.rawValue]
+            )
+            return PostProcessingResult(
+                processedContent: structuredResult.processedText,
+                canonicalSummary: structuredResult.canonicalSummary,
+                promptId: prompt.id,
+                promptTitle: prompt.title,
+                duration: duration,
+                model: model
+            )
         } catch {
             AppLogger.error("Post-processing failed, using raw transcription", category: .recordingManager, error: error)
             return .empty
@@ -1894,6 +1914,7 @@ extension RecordingManager {
             text: postProcessing.processedContent ?? response.text,
             rawText: response.text,
             processedContent: postProcessing.processedContent,
+            canonicalSummary: postProcessing.canonicalSummary,
             postProcessingPromptId: postProcessing.promptId,
             postProcessingPromptTitle: postProcessing.promptTitle,
             language: response.language,
