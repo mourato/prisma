@@ -69,6 +69,7 @@ public final class TranscribeAudioUseCase: Sendable {
 
         // Aplicar pós-processamento se solicitado
         var processedContent: String?
+        var canonicalSummary: CanonicalSummary?
         var promptId: UUID?
         var promptTitle: String?
         var meetingType: String?
@@ -87,7 +88,12 @@ public final class TranscribeAudioUseCase: Sendable {
             do {
                 if let prompt = postProcessingPrompt {
                     // Prompt específico fornecido
-                    processedContent = try await postProcessingRepo.processTranscription(postProcessingInput, with: prompt)
+                    let structuredResult = try await postProcessingRepo.processTranscriptionStructured(
+                        postProcessingInput,
+                        with: prompt
+                    )
+                    processedContent = structuredResult.processedText
+                    canonicalSummary = structuredResult.canonicalSummary
                     promptId = prompt.id
                     promptTitle = prompt.title
                 } else {
@@ -101,23 +107,42 @@ public final class TranscribeAudioUseCase: Sendable {
                            normalizedType != "general",
                            let match = findPrompt(for: normalizedType, in: availablePrompts)
                         {
-                            processedContent = try await postProcessingRepo.processTranscription(postProcessingInput, with: match)
+                            let structuredResult = try await postProcessingRepo.processTranscriptionStructured(
+                                postProcessingInput,
+                                with: match
+                            )
+                            processedContent = structuredResult.processedText
+                            canonicalSummary = structuredResult.canonicalSummary
                             promptId = match.id
                             promptTitle = match.title
                         } else if let fallback = defaultPostProcessingPrompt {
-                            processedContent = try await postProcessingRepo.processTranscription(postProcessingInput, with: fallback)
+                            let structuredResult = try await postProcessingRepo.processTranscriptionStructured(
+                                postProcessingInput,
+                                with: fallback
+                            )
+                            processedContent = structuredResult.processedText
+                            canonicalSummary = structuredResult.canonicalSummary
                             promptId = fallback.id
                             promptTitle = fallback.title
                         } else {
-                            processedContent = try await postProcessingRepo.processTranscription(postProcessingInput)
+                            let structuredResult = try await postProcessingRepo.processTranscriptionStructured(postProcessingInput)
+                            processedContent = structuredResult.processedText
+                            canonicalSummary = structuredResult.canonicalSummary
                         }
                     } else if let fallback = defaultPostProcessingPrompt {
                         // Sem autodetecção: usar prompt default (quando fornecido).
-                        processedContent = try await postProcessingRepo.processTranscription(postProcessingInput, with: fallback)
+                        let structuredResult = try await postProcessingRepo.processTranscriptionStructured(
+                            postProcessingInput,
+                            with: fallback
+                        )
+                        processedContent = structuredResult.processedText
+                        canonicalSummary = structuredResult.canonicalSummary
                         promptId = fallback.id
                         promptTitle = fallback.title
                     } else {
-                        processedContent = try await postProcessingRepo.processTranscription(postProcessingInput)
+                        let structuredResult = try await postProcessingRepo.processTranscriptionStructured(postProcessingInput)
+                        processedContent = structuredResult.processedText
+                        canonicalSummary = structuredResult.canonicalSummary
                     }
                 }
             } catch {
@@ -136,6 +161,7 @@ public final class TranscribeAudioUseCase: Sendable {
                     replacedSegments: replacedSegments,
                     contextItems: contextItems,
                     processedContent: processedContent,
+                    canonicalSummary: canonicalSummary,
                     promptId: promptId,
                     promptTitle: promptTitle,
                     meetingType: meetingType,
@@ -272,6 +298,7 @@ public final class TranscribeAudioUseCase: Sendable {
         let replacedSegments: [DomainTranscriptionSegment]
         let contextItems: [TranscriptionContextItem]
         let processedContent: String?
+        let canonicalSummary: CanonicalSummary?
         let promptId: UUID?
         let promptTitle: String?
         let meetingType: String?
@@ -297,6 +324,7 @@ public final class TranscribeAudioUseCase: Sendable {
         )
         config.contextItems = input.contextItems
         config.processedContent = input.processedContent
+        config.canonicalSummary = input.canonicalSummary
         config.postProcessingPromptId = input.promptId
         config.postProcessingPromptTitle = input.promptTitle
         config.modelName = input.response.model
