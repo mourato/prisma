@@ -252,6 +252,11 @@ public struct DomainTranscriptionMetadata: Identifiable, Codable, Hashable, Send
     public let isPostProcessed: Bool
     public let duration: Double
     public let audioFilePath: String?
+    public let summarySchemaVersion: Int
+    public let summaryGroundedInTranscript: Bool
+    public let summaryContainsSpeculation: Bool
+    public let summaryHumanReviewed: Bool
+    public let summaryConfidenceScore: Double
 
     public init(
         id: UUID,
@@ -265,7 +270,12 @@ public struct DomainTranscriptionMetadata: Identifiable, Codable, Hashable, Send
         language: String,
         isPostProcessed: Bool,
         duration: Double,
-        audioFilePath: String?
+        audioFilePath: String?,
+        summarySchemaVersion: Int = 0,
+        summaryGroundedInTranscript: Bool = false,
+        summaryContainsSpeculation: Bool = false,
+        summaryHumanReviewed: Bool = false,
+        summaryConfidenceScore: Double = 0.0
     ) {
         self.id = id
         self.meetingId = meetingId
@@ -279,5 +289,10 @@ public struct DomainTranscriptionMetadata: Identifiable, Codable, Hashable, Send
         self.isPostProcessed = isPostProcessed
         self.duration = duration
         self.audioFilePath = audioFilePath
+        self.summarySchemaVersion = summarySchemaVersion
+        self.summaryGroundedInTranscript = summaryGroundedInTranscript
+        self.summaryContainsSpeculation = summaryContainsSpeculation
+        self.summaryHumanReviewed = summaryHumanReviewed
+        self.summaryConfidenceScore = summaryConfidenceScore
     }
 }

@@ -22,6 +22,9 @@ public struct TranscriptionEntity: Identifiable, Codable, Hashable, Sendable {
     /// Conteúdo processado de pós-processamento AI (nil se não processado).
     public var processedContent: String?
 
+    /// Canonical and versioned summary payload (nil when unavailable).
+    public var canonicalSummary: CanonicalSummary?
+
     /// ID do prompt usado para pós-processamento (nil se não processado).
     public var postProcessingPromptId: UUID?
 
@@ -48,6 +51,7 @@ public struct TranscriptionEntity: Identifiable, Codable, Hashable, Sendable {
         public var text: String
         public var rawText: String
         public var processedContent: String?
+        public var canonicalSummary: CanonicalSummary?
         public var postProcessingPromptId: UUID?
         public var postProcessingPromptTitle: String?
         public var language: String = "pt"
@@ -81,6 +85,7 @@ public struct TranscriptionEntity: Identifiable, Codable, Hashable, Sendable {
         text = config.text
         rawText = config.rawText
         processedContent = config.processedContent
+        canonicalSummary = config.canonicalSummary
         postProcessingPromptId = config.postProcessingPromptId
         postProcessingPromptTitle = config.postProcessingPromptTitle
         language = config.language
@@ -102,6 +107,7 @@ public struct TranscriptionEntity: Identifiable, Codable, Hashable, Sendable {
         text: String,
         rawText: String,
         processedContent: String? = nil,
+        canonicalSummary: CanonicalSummary? = nil,
         postProcessingPromptId: UUID? = nil,
         postProcessingPromptTitle: String? = nil,
         language: String = "pt",
@@ -111,6 +117,7 @@ public struct TranscriptionEntity: Identifiable, Codable, Hashable, Sendable {
         var config = Configuration(text: text, rawText: rawText, segments: segments, language: language)
         config.id = id
         config.processedContent = processedContent
+        config.canonicalSummary = canonicalSummary
         config.postProcessingPromptId = postProcessingPromptId
         config.postProcessingPromptTitle = postProcessingPromptTitle
         config.createdAt = createdAt

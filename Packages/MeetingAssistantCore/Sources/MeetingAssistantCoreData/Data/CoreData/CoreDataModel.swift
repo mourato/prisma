@@ -9,7 +9,7 @@ import Foundation
 /// Configuração programática do modelo CoreData
 public enum CoreDataModel {
     /// Versão atual do modelo
-    public static let currentVersion = "1.0"
+    public static let currentVersion = "1.1"
 
     /// Cria o modelo CoreData programaticamente
     // swiftlint:disable function_body_length
@@ -191,6 +191,42 @@ public enum CoreDataModel {
         transcriptionContextItemsAttribute.isOptional = true
         transcriptionContextItemsAttribute.allowsExternalBinaryDataStorage = true
 
+        let canonicalSummaryDataAttribute = NSAttributeDescription()
+        canonicalSummaryDataAttribute.name = "canonicalSummaryData"
+        canonicalSummaryDataAttribute.attributeType = .binaryDataAttributeType
+        canonicalSummaryDataAttribute.isOptional = true
+        canonicalSummaryDataAttribute.allowsExternalBinaryDataStorage = true
+
+        let canonicalSummarySchemaVersionAttribute = NSAttributeDescription()
+        canonicalSummarySchemaVersionAttribute.name = "canonicalSummarySchemaVersion"
+        canonicalSummarySchemaVersionAttribute.attributeType = .integer16AttributeType
+        canonicalSummarySchemaVersionAttribute.isOptional = false
+        canonicalSummarySchemaVersionAttribute.defaultValue = 0
+
+        let summaryGroundedInTranscriptAttribute = NSAttributeDescription()
+        summaryGroundedInTranscriptAttribute.name = "summaryGroundedInTranscript"
+        summaryGroundedInTranscriptAttribute.attributeType = .booleanAttributeType
+        summaryGroundedInTranscriptAttribute.isOptional = false
+        summaryGroundedInTranscriptAttribute.defaultValue = false
+
+        let summaryContainsSpeculationAttribute = NSAttributeDescription()
+        summaryContainsSpeculationAttribute.name = "summaryContainsSpeculation"
+        summaryContainsSpeculationAttribute.attributeType = .booleanAttributeType
+        summaryContainsSpeculationAttribute.isOptional = false
+        summaryContainsSpeculationAttribute.defaultValue = false
+
+        let summaryHumanReviewedAttribute = NSAttributeDescription()
+        summaryHumanReviewedAttribute.name = "summaryHumanReviewed"
+        summaryHumanReviewedAttribute.attributeType = .booleanAttributeType
+        summaryHumanReviewedAttribute.isOptional = false
+        summaryHumanReviewedAttribute.defaultValue = false
+
+        let summaryConfidenceScoreAttribute = NSAttributeDescription()
+        summaryConfidenceScoreAttribute.name = "summaryConfidenceScore"
+        summaryConfidenceScoreAttribute.attributeType = .doubleAttributeType
+        summaryConfidenceScoreAttribute.isOptional = false
+        summaryConfidenceScoreAttribute.defaultValue = 0.0
+
         transcriptionEntity.properties = [
             transcriptionIdAttribute,
             transcriptionTextAttribute,
@@ -207,6 +243,12 @@ public enum CoreDataModel {
             postProcessingModelAttribute,
             meetingTypeAttribute,
             transcriptionContextItemsAttribute,
+            canonicalSummaryDataAttribute,
+            canonicalSummarySchemaVersionAttribute,
+            summaryGroundedInTranscriptAttribute,
+            summaryContainsSpeculationAttribute,
+            summaryHumanReviewedAttribute,
+            summaryConfidenceScoreAttribute,
         ]
 
         // Relacionamentos

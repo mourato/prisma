@@ -102,6 +102,40 @@ final class CoreDataRepositoryTests: XCTestCase {
         XCTAssertEqual(fetched?.segments.first?.text, "Hi")
     }
 
+    func testSaveAndFetchTranscription_WithCanonicalSummary() async throws {
+        // Given
+        let meeting = MeetingEntity(app: .googleMeet)
+        try await meetingRepo.saveMeeting(meeting)
+
+        let summary = CanonicalSummary(
+            summary: "Project status is on track.",
+            keyPoints: ["Milestone A completed"],
+            decisions: ["Ship beta next week"],
+            actionItems: [.init(title: "Prepare release notes", owner: "PM")],
+            openQuestions: ["Do we need a migration guide?"],
+            trustFlags: .init(
+                isGroundedInTranscript: true,
+                containsSpeculation: false,
+                isHumanReviewed: true,
+                confidenceScore: 0.92
+            )
+        )
+
+        var config = TranscriptionEntity.Configuration(text: "Raw text", rawText: "Raw text")
+        config.canonicalSummary = summary
+        let transcription = TranscriptionEntity(meeting: meeting, config: config)
+
+        // When
+        try await transcriptionRepo.saveTranscription(transcription)
+        let fetched = try await transcriptionRepo.fetchTranscription(by: transcription.id)
+
+        // Then
+        XCTAssertEqual(fetched?.canonicalSummary?.schemaVersion, CanonicalSummary.currentSchemaVersion)
+        XCTAssertEqual(fetched?.canonicalSummary?.summary, "Project status is on track.")
+        XCTAssertEqual(fetched?.canonicalSummary?.trustFlags.isGroundedInTranscript, true)
+        XCTAssertEqual(fetched?.canonicalSummary?.trustFlags.confidenceScore ?? -1, 0.92, accuracy: 0.001)
+    }
+
     func testFetchTranscriptionsForMeeting() async throws {
         // Given
         let meeting = MeetingEntity(app: .googleMeet)
@@ -119,5 +153,29 @@ final class CoreDataRepositoryTests: XCTestCase {
 
         // Then
         XCTAssertEqual(results.count, 2)
+    }
+
+    func testSaveTranscription_RejectsInvalidCanonicalSummary() async throws {
+        // Given
+        let meeting = MeetingEntity(app: .googleMeet)
+        try await meetingRepo.saveMeeting(meeting)
+
+        let invalidSummary = CanonicalSummary(
+            schemaVersion: 0,
+            summary: "",
+            trustFlags: .init(confidenceScore: 1.2)
+        )
+
+        var config = TranscriptionEntity.Configuration(text: "Raw text", rawText: "Raw text")
+        config.canonicalSummary = invalidSummary
+        let transcription = TranscriptionEntity(meeting: meeting, config: config)
+
+        // When / Then
+        do {
+            try await transcriptionRepo.saveTranscription(transcription)
+            XCTFail("Expected validation error for canonical summary payload")
+        } catch let error as CanonicalSummaryValidationError {
+            XCTAssertEqual(error, .unsupportedSchemaVersion(0))
+        }
     }
 }

@@ -750,6 +750,7 @@ public final class FileSystemStorageService: StorageService {
         config.id = transcription.id
         config.contextItems = transcription.contextItems
         config.processedContent = transcription.processedContent
+        config.canonicalSummary = transcription.canonicalSummary
         config.postProcessingPromptId = transcription.postProcessingPromptId
         config.postProcessingPromptTitle = transcription.postProcessingPromptTitle
         config.createdAt = transcription.createdAt
@@ -783,7 +784,12 @@ public final class FileSystemStorageService: StorageService {
             isPostProcessed: mo.processedContent != nil,
             duration: mo.meeting.endTime?.timeIntervalSince(mo.meeting.startTime) ?? 0,
             audioFilePath: mo.meeting.audioFilePath,
-            inputSource: mo.inputSource
+            inputSource: mo.inputSource,
+            summarySchemaVersion: Int(mo.canonicalSummarySchemaVersion),
+            summaryGroundedInTranscript: mo.summaryGroundedInTranscript,
+            summaryContainsSpeculation: mo.summaryContainsSpeculation,
+            summaryHumanReviewed: mo.summaryHumanReviewed,
+            summaryConfidenceScore: mo.summaryConfidenceScore
         )
     }
 
@@ -816,6 +822,7 @@ public final class FileSystemStorageService: StorageService {
             text: entity.text,
             rawText: entity.rawText,
             processedContent: entity.processedContent,
+            canonicalSummary: entity.canonicalSummary,
             postProcessingPromptId: entity.postProcessingPromptId,
             postProcessingPromptTitle: entity.postProcessingPromptTitle,
             language: entity.language,
