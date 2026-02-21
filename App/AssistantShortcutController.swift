@@ -50,6 +50,7 @@ final class AssistantShortcutController {
     func start() {
         setupKeyboardShortcutHandlers()
         observeSettings()
+        observeAssistantRecordingState()
         applyGlobalDoubleTapInterval()
         refreshCustomShortcutRegistration()
         refreshIntegrationCustomShortcutRegistrations()
@@ -143,11 +144,21 @@ final class AssistantShortcutController {
             .store(in: &cancellables)
     }
 
+    private func observeAssistantRecordingState() {
+        assistantService.$isRecording
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.refreshEventMonitors()
+            }
+            .store(in: &cancellables)
+    }
+
     private func refreshEventMonitors() {
         if shouldUseAssistantShortcutLayer {
             installFlagsChangedMonitors()
             installKeyDownMonitors()
             removeKeyUpMonitors()
+            refreshShortcutLayerKeySuppression()
             return
         }
 
@@ -182,6 +193,8 @@ final class AssistantShortcutController {
         } else {
             removeKeyUpMonitors()
         }
+
+        refreshShortcutLayerKeySuppression()
     }
 
     private func refreshCustomShortcutRegistration() {
@@ -256,7 +269,7 @@ final class AssistantShortcutController {
                 mask: .keyDown,
                 shouldReturnLocalEvent: { [weak self] _ in
                     guard let self else { return true }
-                    return !(self.shouldUseAssistantShortcutLayer && self.isShortcutLayerArmed)
+                    return !self.shouldSuppressKeyDownEvents
                 }
             ) { [weak self] event in
                 Task { @MainActor in
@@ -292,6 +305,7 @@ final class AssistantShortcutController {
         removeFlagsChangedMonitors()
         removeKeyDownMonitors()
         removeKeyUpMonitors()
+        shortcutLayerKeySuppressor.stop()
     }
 
     private func handleFlagsChanged(_ event: NSEvent) {
@@ -765,12 +779,39 @@ final class AssistantShortcutController {
         }
     }
 
-    private func armShortcutLayer() {
-        isShortcutLayerArmed = true
+    private var shouldSuppressEnterStopWhileRecording: Bool {
+        AssistantShortcutSuppressionPolicy.shouldSuppressEnterStopWhileRecording(
+            assistantUseEnterToStopRecording: settings.assistantUseEnterToStopRecording,
+            isAssistantRecording: assistantService.isRecording
+        )
+    }
+
+    private var shouldSuppressKeyDownEvents: Bool {
+        AssistantShortcutSuppressionPolicy.shouldSuppressKeyDownEvents(
+            shouldUseAssistantShortcutLayer: shouldUseAssistantShortcutLayer,
+            isShortcutLayerArmed: isShortcutLayerArmed,
+            shouldSuppressEnterStopWhileRecording: shouldSuppressEnterStopWhileRecording
+        )
+    }
+
+    private func refreshShortcutLayerKeySuppression() {
+        guard shouldSuppressKeyDownEvents else {
+            shortcutLayerKeySuppressor.stop()
+            return
+        }
+
         shortcutLayerKeySuppressor.start { [weak self] event in
             guard let self else { return false }
-            return self.handleShortcutLayerKeyDown(event)
+            if self.handleShortcutLayerKeyDown(event) {
+                return true
+            }
+            return self.handleSingleEnterStop(event)
         }
+    }
+
+    private func armShortcutLayer() {
+        isShortcutLayerArmed = true
+        refreshShortcutLayerKeySuppression()
         shortcutLayerFeedbackController.showArmed()
 
         let timeoutNanoseconds = layerTimeoutNanoseconds
@@ -783,7 +824,7 @@ final class AssistantShortcutController {
 
     private func disarmShortcutLayer(showFeedback: Bool) {
         isShortcutLayerArmed = false
-        shortcutLayerKeySuppressor.stop()
+        refreshShortcutLayerKeySuppression()
         shortcutLayerTask?.cancel()
         shortcutLayerTask = nil
 
