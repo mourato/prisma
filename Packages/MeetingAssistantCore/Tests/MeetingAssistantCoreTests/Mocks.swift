@@ -155,6 +155,45 @@ class MockPostProcessingService: PostProcessingServiceProtocol {
             isActive: true
         ))
     }
+
+    func processTranscriptionStructured(_ transcription: String) async throws -> DomainPostProcessingResult {
+        let processedText = try await processTranscription(transcription)
+        let summary = CanonicalSummary(
+            summary: processedText,
+            trustFlags: .init(
+                isGroundedInTranscript: true,
+                containsSpeculation: false,
+                isHumanReviewed: false,
+                confidenceScore: 0.8
+            )
+        )
+        return DomainPostProcessingResult(
+            processedText: processedText,
+            canonicalSummary: summary,
+            outputState: .structured
+        )
+    }
+
+    func processTranscriptionStructured(
+        _ transcription: String,
+        with prompt: PostProcessingPrompt
+    ) async throws -> DomainPostProcessingResult {
+        let processedText = try await processTranscription(transcription, with: prompt)
+        let summary = CanonicalSummary(
+            summary: processedText,
+            trustFlags: .init(
+                isGroundedInTranscript: true,
+                containsSpeculation: false,
+                isHumanReviewed: false,
+                confidenceScore: 0.8
+            )
+        )
+        return DomainPostProcessingResult(
+            processedText: processedText,
+            canonicalSummary: summary,
+            outputState: .structured
+        )
+    }
 }
 
 // MARK: - Mock Storage Service

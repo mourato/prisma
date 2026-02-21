@@ -21,7 +21,21 @@ final class TranscribeAudioPostProcessingTests: XCTestCase {
         transcriptionRepository.transcribeHandler = { _, _ in response }
 
         let prompt = DomainPostProcessingPrompt(title: "Summarize", content: "Summarize this")
-        postProcessingRepository.processTranscription_2Handler = { _, _ in "Processed transcript" }
+        postProcessingRepository.processTranscriptionStructured_2Handler = { _, _ in
+            DomainPostProcessingResult(
+                processedText: "Processed transcript",
+                canonicalSummary: CanonicalSummary(
+                    summary: "Processed transcript",
+                    trustFlags: .init(
+                        isGroundedInTranscript: true,
+                        containsSpeculation: false,
+                        isHumanReviewed: false,
+                        confidenceScore: 0.9
+                    )
+                ),
+                outputState: .structured
+            )
+        }
 
         storageRepository.saveTranscriptionHandler = { _ in }
 
@@ -42,9 +56,11 @@ final class TranscribeAudioPostProcessingTests: XCTestCase {
         )
 
         XCTAssertEqual(transcription.text, "Processed transcript")
+        XCTAssertEqual(transcription.canonicalSummary?.summary, "Processed transcript")
         XCTAssertEqual(postProcessingRepository.processTranscriptionCalls.count, 0)
-        XCTAssertEqual(postProcessingRepository.processTranscription_2Calls.count, 1)
-        XCTAssertEqual(postProcessingRepository.processTranscription_2Calls.first?.prompt.id, prompt.id)
+        XCTAssertEqual(postProcessingRepository.processTranscription_2Calls.count, 0)
+        XCTAssertEqual(postProcessingRepository.processTranscriptionStructured_2Calls.count, 1)
+        XCTAssertEqual(postProcessingRepository.processTranscriptionStructured_2Calls.first?.prompt.id, prompt.id)
     }
 
     func testExecuteWithContext_MetadataIsWrappedInDedicatedBlock() async throws {
@@ -64,9 +80,21 @@ final class TranscribeAudioPostProcessingTests: XCTestCase {
         }
 
         var receivedInput: String?
-        postProcessingRepository.processTranscription_2Handler = { input, _ in
+        postProcessingRepository.processTranscriptionStructured_2Handler = { input, _ in
             receivedInput = input
-            return "Processed transcript"
+            return DomainPostProcessingResult(
+                processedText: "Processed transcript",
+                canonicalSummary: CanonicalSummary(
+                    summary: "Processed transcript",
+                    trustFlags: .init(
+                        isGroundedInTranscript: true,
+                        containsSpeculation: false,
+                        isHumanReviewed: false,
+                        confidenceScore: 0.9
+                    )
+                ),
+                outputState: .structured
+            )
         }
         storageRepository.saveTranscriptionHandler = { _ in }
 
@@ -94,6 +122,61 @@ final class TranscribeAudioPostProcessingTests: XCTestCase {
         XCTAssertTrue(input.contains("- Active app: Safari"))
     }
 
+    func testExecuteWithDeterministicFallback_PersistsCanonicalSummaryTrustFlags() async throws {
+        let transcriptionRepository = MeetingAssistantCoreDomain.MacroMockTranscriptionRepository()
+        let storageRepository = MeetingAssistantCoreDomain.MacroMockTranscriptionStorageRepository()
+        let postProcessingRepository = MeetingAssistantCoreDomain.MacroMockPostProcessingRepository()
+
+        transcriptionRepository.healthCheckHandler = { () async throws -> Bool in true }
+        transcriptionRepository.transcribeHandler = { _, _ in
+            DomainTranscriptionResponse(
+                text: "Base transcript",
+                language: "en",
+                durationSeconds: 1.0,
+                model: "test-model",
+                processedAt: "now"
+            )
+        }
+
+        let prompt = DomainPostProcessingPrompt(title: "Summarize", content: "Summarize this")
+        postProcessingRepository.processTranscriptionStructured_2Handler = { _, _ in
+            DomainPostProcessingResult(
+                processedText: "Fallback summary",
+                canonicalSummary: CanonicalSummary(
+                    summary: "Fallback summary",
+                    trustFlags: .init(
+                        isGroundedInTranscript: false,
+                        containsSpeculation: true,
+                        isHumanReviewed: false,
+                        confidenceScore: 0.2
+                    )
+                ),
+                outputState: .deterministicFallback
+            )
+        }
+        storageRepository.saveTranscriptionHandler = { _ in }
+
+        let useCase = TranscribeAudioUseCase(
+            transcriptionRepository: transcriptionRepository,
+            transcriptionStorageRepository: storageRepository,
+            postProcessingRepository: postProcessingRepository
+        )
+
+        let meeting = MeetingEntity(app: .googleMeet)
+        let audioURL = URL(fileURLWithPath: "/tmp/test.wav")
+
+        let transcription = try await useCase.execute(
+            audioURL: audioURL,
+            meeting: meeting,
+            applyPostProcessing: true,
+            postProcessingPrompt: prompt
+        )
+
+        XCTAssertEqual(transcription.canonicalSummary?.summary, "Fallback summary")
+        XCTAssertEqual(transcription.canonicalSummary?.trustFlags.containsSpeculation, true)
+        XCTAssertEqual(transcription.canonicalSummary?.trustFlags.confidenceScore ?? -1, 0.2, accuracy: 0.001)
+    }
+
     func testExecute_AppliesVocabularyReplacementsBeforePostProcessing() async throws {
         let transcriptionRepository = MeetingAssistantCoreDomain.MacroMockTranscriptionRepository()
         let storageRepository = MeetingAssistantCoreDomain.MacroMockTranscriptionStorageRepository()
@@ -111,9 +194,21 @@ final class TranscribeAudioPostProcessingTests: XCTestCase {
         }
 
         var receivedInput: String?
-        postProcessingRepository.processTranscription_2Handler = { input, _ in
+        postProcessingRepository.processTranscriptionStructured_2Handler = { input, _ in
             receivedInput = input
-            return "Processed transcript"
+            return DomainPostProcessingResult(
+                processedText: "Processed transcript",
+                canonicalSummary: CanonicalSummary(
+                    summary: "Processed transcript",
+                    trustFlags: .init(
+                        isGroundedInTranscript: true,
+                        containsSpeculation: false,
+                        isHumanReviewed: false,
+                        confidenceScore: 0.9
+                    )
+                ),
+                outputState: .structured
+            )
         }
         storageRepository.saveTranscriptionHandler = { _ in }
 
