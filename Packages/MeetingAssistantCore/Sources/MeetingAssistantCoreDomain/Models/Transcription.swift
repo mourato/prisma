@@ -20,6 +20,9 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
     /// Processed content from AI post-processing (nil if not processed).
     public var processedContent: String?
 
+    /// Canonical and versioned summary payload (nil when unavailable).
+    public var canonicalSummary: CanonicalSummary?
+
     /// ID of the prompt used for post-processing (nil if not processed).
     public var postProcessingPromptId: UUID?
 
@@ -46,6 +49,7 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
         text: String,
         rawText: String,
         processedContent: String? = nil,
+        canonicalSummary: CanonicalSummary? = nil,
         postProcessingPromptId: UUID? = nil,
         postProcessingPromptTitle: String? = nil,
         language: String = "pt",
@@ -64,6 +68,7 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
         self.text = text
         self.rawText = rawText
         self.processedContent = processedContent
+        self.canonicalSummary = canonicalSummary
         self.postProcessingPromptId = postProcessingPromptId
         self.postProcessingPromptTitle = postProcessingPromptTitle
         self.language = language
@@ -93,6 +98,7 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
             text: text,
             rawText: text,
             processedContent: nil,
+            canonicalSummary: nil,
             postProcessingPromptId: nil,
             postProcessingPromptTitle: nil,
             language: language,

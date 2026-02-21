@@ -28,6 +28,12 @@ public final class TranscriptionMO: NSManagedObject {
     @NSManaged public var postProcessingModel: String?
     @NSManaged public var meetingType: String?
     @NSManaged public var contextItemsData: Data?
+    @NSManaged public var canonicalSummaryData: Data?
+    @NSManaged public var canonicalSummarySchemaVersion: Int16
+    @NSManaged public var summaryGroundedInTranscript: Bool
+    @NSManaged public var summaryContainsSpeculation: Bool
+    @NSManaged public var summaryHumanReviewed: Bool
+    @NSManaged public var summaryConfidenceScore: Double
 
     // Relacionamentos
     @NSManaged public var meeting: MeetingMO
@@ -68,6 +74,8 @@ public extension TranscriptionMO {
 extension TranscriptionMO {
     private static let contextItemsDecoder = JSONDecoder()
     private static let contextItemsEncoder = JSONEncoder()
+    private static let canonicalSummaryDecoder = JSONDecoder()
+    private static let canonicalSummaryEncoder = JSONEncoder()
 
     /// Converte Managed Object para Domain Entity
     func toDomain() -> TranscriptionEntity {
@@ -89,6 +97,7 @@ extension TranscriptionMO {
         config.postProcessingDuration = postProcessingDuration
         config.postProcessingModel = postProcessingModel
         config.meetingType = meetingType
+        config.canonicalSummary = decodeCanonicalSummary()
 
         return TranscriptionEntity(meeting: meeting.toDomain(), config: config)
     }
@@ -110,6 +119,7 @@ extension TranscriptionMO {
         postProcessingModel = entity.postProcessingModel
         meetingType = entity.meetingType
         contextItemsData = encodeContextItems(entity.contextItems)
+        applyCanonicalSummary(entity.canonicalSummary)
 
         self.meeting = meeting
 
@@ -139,6 +149,7 @@ extension TranscriptionMO {
         transcriptionMO.postProcessingModel = entity.postProcessingModel
         transcriptionMO.meetingType = entity.meetingType
         transcriptionMO.contextItemsData = transcriptionMO.encodeContextItems(entity.contextItems)
+        transcriptionMO.applyCanonicalSummary(entity.canonicalSummary)
         transcriptionMO.meeting = meeting
 
         // Criar segmentos
@@ -158,5 +169,53 @@ extension TranscriptionMO {
     private func encodeContextItems(_ items: [TranscriptionContextItem]) -> Data? {
         guard !items.isEmpty else { return nil }
         return try? Self.contextItemsEncoder.encode(items)
+    }
+
+    private func decodeCanonicalSummary() -> CanonicalSummary? {
+        guard let data = canonicalSummaryData else { return nil }
+        guard let summary = try? Self.canonicalSummaryDecoder.decode(CanonicalSummary.self, from: data) else {
+            return nil
+        }
+
+        do {
+            try summary.validate()
+            return summary
+        } catch {
+            return nil
+        }
+    }
+
+    private func applyCanonicalSummary(_ summary: CanonicalSummary?) {
+        guard let summary else {
+            canonicalSummaryData = nil
+            canonicalSummarySchemaVersion = 0
+            summaryGroundedInTranscript = false
+            summaryContainsSpeculation = false
+            summaryHumanReviewed = false
+            summaryConfidenceScore = 0.0
+            return
+        }
+
+        guard let encodedSummary = try? Self.canonicalSummaryEncoder.encode(summary) else {
+            canonicalSummaryData = nil
+            canonicalSummarySchemaVersion = 0
+            summaryGroundedInTranscript = false
+            summaryContainsSpeculation = false
+            summaryHumanReviewed = false
+            summaryConfidenceScore = 0.0
+            return
+        }
+
+        canonicalSummaryData = encodedSummary
+        canonicalSummarySchemaVersion = Self.clampSchemaVersion(summary.schemaVersion)
+        summaryGroundedInTranscript = summary.trustFlags.isGroundedInTranscript
+        summaryContainsSpeculation = summary.trustFlags.containsSpeculation
+        summaryHumanReviewed = summary.trustFlags.isHumanReviewed
+        summaryConfidenceScore = summary.trustFlags.confidenceScore
+    }
+
+    private static func clampSchemaVersion(_ version: Int) -> Int16 {
+        let clamped = max(0, min(version, Int(Int16.max)))
+        return Int16(clamped)
     }
 }

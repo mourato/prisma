@@ -15,6 +15,7 @@ public final class CoreDataTranscriptionStorageRepository: TranscriptionStorageR
     }
 
     public func saveTranscription(_ transcription: TranscriptionEntity) async throws {
+        try validateCanonicalSummary(for: transcription)
         try await stack.performBackgroundTask { context in
             let meetingRequest = MeetingMO.fetchRequest(for: transcription.meeting.id)
             let meetingMO = try context.fetch(meetingRequest).first ?? MeetingMO.create(from: transcription.meeting, in: context)
@@ -74,7 +75,12 @@ public final class CoreDataTranscriptionStorageRepository: TranscriptionStorageR
                     language: mo.language,
                     isPostProcessed: mo.processedContent != nil,
                     duration: mo.meeting.endTime?.timeIntervalSince(mo.meeting.startTime) ?? 0,
-                    audioFilePath: mo.meeting.audioFilePath
+                    audioFilePath: mo.meeting.audioFilePath,
+                    summarySchemaVersion: Int(mo.canonicalSummarySchemaVersion),
+                    summaryGroundedInTranscript: mo.summaryGroundedInTranscript,
+                    summaryContainsSpeculation: mo.summaryContainsSpeculation,
+                    summaryHumanReviewed: mo.summaryHumanReviewed,
+                    summaryConfidenceScore: mo.summaryConfidenceScore
                 )
             }
         }
@@ -91,6 +97,7 @@ public final class CoreDataTranscriptionStorageRepository: TranscriptionStorageR
     }
 
     public func updateTranscription(_ transcription: TranscriptionEntity) async throws {
+        try validateCanonicalSummary(for: transcription)
         try await stack.performBackgroundTask { context in
             let meetingRequest = MeetingMO.fetchRequest(for: transcription.meeting.id)
             let meetingMO = try context.fetch(meetingRequest).first ?? MeetingMO.create(from: transcription.meeting, in: context)
@@ -102,5 +109,10 @@ public final class CoreDataTranscriptionStorageRepository: TranscriptionStorageR
                 try context.save()
             }
         }
+    }
+
+    private func validateCanonicalSummary(for transcription: TranscriptionEntity) throws {
+        guard let summary = transcription.canonicalSummary else { return }
+        try summary.validate()
     }
 }

@@ -16,6 +16,11 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
     public let duration: TimeInterval
     public let audioFilePath: String?
     public let inputSource: String?
+    public let summarySchemaVersion: Int
+    public let summaryGroundedInTranscript: Bool
+    public let summaryContainsSpeculation: Bool
+    public let summaryHumanReviewed: Bool
+    public let summaryConfidenceScore: Double
 
     private enum CodingKeys: String, CodingKey {
         case id
@@ -32,6 +37,11 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
         case duration
         case audioFilePath
         case inputSource
+        case summarySchemaVersion
+        case summaryGroundedInTranscript
+        case summaryContainsSpeculation
+        case summaryHumanReviewed
+        case summaryConfidenceScore
     }
 
     public init(
@@ -48,7 +58,12 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
         isPostProcessed: Bool,
         duration: TimeInterval,
         audioFilePath: String?,
-        inputSource: String?
+        inputSource: String?,
+        summarySchemaVersion: Int = 0,
+        summaryGroundedInTranscript: Bool = false,
+        summaryContainsSpeculation: Bool = false,
+        summaryHumanReviewed: Bool = false,
+        summaryConfidenceScore: Double = 0.0
     ) {
         self.id = id
         self.meetingId = meetingId
@@ -64,6 +79,11 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
         self.duration = duration
         self.audioFilePath = audioFilePath
         self.inputSource = inputSource
+        self.summarySchemaVersion = summarySchemaVersion
+        self.summaryGroundedInTranscript = summaryGroundedInTranscript
+        self.summaryContainsSpeculation = summaryContainsSpeculation
+        self.summaryHumanReviewed = summaryHumanReviewed
+        self.summaryConfidenceScore = summaryConfidenceScore
     }
 
     public init(from decoder: Decoder) throws {
@@ -83,6 +103,11 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
         let duration = try container.decode(TimeInterval.self, forKey: .duration)
         let audioFilePath = try container.decodeIfPresent(String.self, forKey: .audioFilePath)
         let inputSource = try container.decodeIfPresent(String.self, forKey: .inputSource)
+        let summarySchemaVersion = try container.decodeIfPresent(Int.self, forKey: .summarySchemaVersion) ?? 0
+        let summaryGroundedInTranscript = try container.decodeIfPresent(Bool.self, forKey: .summaryGroundedInTranscript) ?? false
+        let summaryContainsSpeculation = try container.decodeIfPresent(Bool.self, forKey: .summaryContainsSpeculation) ?? false
+        let summaryHumanReviewed = try container.decodeIfPresent(Bool.self, forKey: .summaryHumanReviewed) ?? false
+        let summaryConfidenceScore = try container.decodeIfPresent(Double.self, forKey: .summaryConfidenceScore) ?? 0.0
 
         self.init(
             id: id,
@@ -98,7 +123,12 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
             isPostProcessed: isPostProcessed,
             duration: duration,
             audioFilePath: audioFilePath,
-            inputSource: inputSource
+            inputSource: inputSource,
+            summarySchemaVersion: summarySchemaVersion,
+            summaryGroundedInTranscript: summaryGroundedInTranscript,
+            summaryContainsSpeculation: summaryContainsSpeculation,
+            summaryHumanReviewed: summaryHumanReviewed,
+            summaryConfidenceScore: summaryConfidenceScore
         )
     }
 }
