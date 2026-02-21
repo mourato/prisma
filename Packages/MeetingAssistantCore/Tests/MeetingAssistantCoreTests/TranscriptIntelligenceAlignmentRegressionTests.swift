@@ -4,7 +4,7 @@ import Foundation
 import XCTest
 
 @MainActor
-final class TranscriptAlignmentBenchmarkTests: XCTestCase {
+final class TranscriptIntelligenceAlignmentRegressionTests: XCTestCase {
     func testASRConfidencePropagatesToEntityQualityProfile() async throws {
         let transcriptionRepository = MeetingAssistantCoreDomain.MacroMockTranscriptionRepository()
         let storageRepository = MeetingAssistantCoreDomain.MacroMockTranscriptionStorageRepository()

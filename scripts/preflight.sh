@@ -6,6 +6,7 @@
 # 1) build
 # 2) test
 # 3) lint
+# 4) summary benchmark gate
 # =============================================================================
 
 set -euo pipefail
@@ -18,6 +19,7 @@ source "${SCRIPT_DIR}/lib/agent-output.sh"
 
 AGENT_MODE=0
 STRICT_CONCURRENCY=0
+SUMMARY_BENCHMARK_MODE="${MA_SUMMARY_BENCHMARK_GATE_MODE:-report-only}"
 if ma_agent_mode_enabled; then
     AGENT_MODE=1
 fi
@@ -44,14 +46,25 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+if [ "${SUMMARY_BENCHMARK_MODE}" != "report-only" ] && [ "${SUMMARY_BENCHMARK_MODE}" != "enforce" ]; then
+    echo "Invalid MA_SUMMARY_BENCHMARK_GATE_MODE: ${SUMMARY_BENCHMARK_MODE}"
+    echo "Valid values: report-only, enforce"
+    exit 1
+fi
+
+BENCHMARK_ARG="--report-only"
+if [ "${SUMMARY_BENCHMARK_MODE}" = "enforce" ]; then
+    BENCHMARK_ARG="--enforce"
+fi
+
 cd "${PROJECT_ROOT}"
 
 if [ "${AGENT_MODE}" -eq 0 ]; then
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     if [ "${STRICT_CONCURRENCY}" -eq 1 ]; then
-        echo "  Preflight: build + test + test-strict + lint"
+        echo "  Preflight: build + test + test-strict + lint + summary-benchmark(${SUMMARY_BENCHMARK_MODE})"
     else
-        echo "  Preflight: build + test + lint"
+        echo "  Preflight: build + test + lint + summary-benchmark(${SUMMARY_BENCHMARK_MODE})"
     fi
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
@@ -68,11 +81,15 @@ if [ "${AGENT_MODE}" -eq 0 ]; then
         echo "[3/4] make test-strict"
         make test-strict
 
-        echo "[4/4] make lint"
+        echo "[4/5] make lint"
         make lint
+        echo "[5/5] summary benchmark (${SUMMARY_BENCHMARK_MODE})"
+        ./scripts/run-summary-benchmark.sh "${BENCHMARK_ARG}"
     else
-        echo "[3/3] make lint"
+        echo "[3/4] make lint"
         make lint
+        echo "[4/4] summary benchmark (${SUMMARY_BENCHMARK_MODE})"
+        ./scripts/run-summary-benchmark.sh "${BENCHMARK_ARG}"
     fi
 
     echo "✓ Preflight completed successfully"
@@ -107,6 +124,15 @@ fi
 
 if ! make lint-agent; then
     SUMMARY="Preflight failed during lint"
+    END_TIME=$(date +%s)
+    DURATION=$((END_TIME - START_TIME))
+    ma_agent_write_result_json "${RESULT_PATH}" "preflight" "FAIL" "${DURATION}" "${LOG_DIR}" 1 "${SUMMARY}"
+    ma_agent_emit_result "preflight" "FAIL" "${DURATION}" "${LOG_DIR}" 1 "${SUMMARY}" "${RESULT_PATH}"
+    exit 1
+fi
+
+if ! MA_AGENT_MODE=1 ./scripts/run-summary-benchmark.sh "${BENCHMARK_ARG}" --agent; then
+    SUMMARY="Preflight failed during summary benchmark"
     END_TIME=$(date +%s)
     DURATION=$((END_TIME - START_TIME))
     ma_agent_write_result_json "${RESULT_PATH}" "preflight" "FAIL" "${DURATION}" "${LOG_DIR}" 1 "${SUMMARY}"
