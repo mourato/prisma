@@ -57,6 +57,7 @@ final class TranscribeAudioPostProcessingTests: XCTestCase {
 
         XCTAssertEqual(transcription.text, "Processed transcript")
         XCTAssertEqual(transcription.canonicalSummary?.summary, "Processed transcript")
+        XCTAssertNotNil(transcription.qualityProfile)
         XCTAssertEqual(postProcessingRepository.processTranscriptionCalls.count, 0)
         XCTAssertEqual(postProcessingRepository.processTranscription_2Calls.count, 0)
         XCTAssertEqual(postProcessingRepository.processTranscriptionStructured_2Calls.count, 1)
@@ -117,6 +118,8 @@ final class TranscribeAudioPostProcessingTests: XCTestCase {
         )
 
         let input = try XCTUnwrap(receivedInput)
+        XCTAssertTrue(input.contains("<TRANSCRIPT_QUALITY>"))
+        XCTAssertTrue(input.contains("</TRANSCRIPT_QUALITY>"))
         XCTAssertTrue(input.contains("<CONTEXT_METADATA>"))
         XCTAssertTrue(input.contains("</CONTEXT_METADATA>"))
         XCTAssertTrue(input.contains("- Active app: Safari"))
@@ -232,7 +235,9 @@ final class TranscribeAudioPostProcessingTests: XCTestCase {
             postProcessingPrompt: prompt
         )
 
-        XCTAssertEqual(receivedInput, "OpenAI shipped it")
+        let input = try XCTUnwrap(receivedInput)
+        XCTAssertTrue(input.contains("OpenAI shipped it"))
+        XCTAssertTrue(input.contains("<TRANSCRIPT_QUALITY>"))
     }
 
     func testExecute_AppliesVocabularyReplacementsWithoutChangingRawText() async throws {

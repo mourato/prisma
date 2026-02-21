@@ -66,6 +66,12 @@ class MockTranscriptionClient: TranscriptionService {
 
     var shouldFailHealthCheck = false
     var shouldFailTranscription = false
+    var mockText = "Mock transcription text"
+    var mockLanguage = "pt"
+    var mockDurationSeconds = 10.0
+    var mockModel = "mock-model"
+    var mockConfidenceScore: Double?
+    var mockSegments: [Transcription.Segment] = []
 
     // Call tracking properties
     var healthCheckCallCount = 0
@@ -113,11 +119,13 @@ class MockTranscriptionClient: TranscriptionService {
             throw NSError(domain: "MockTranscription", code: 2, userInfo: [NSLocalizedDescriptionKey: "Transcription failed"])
         }
         return TranscriptionResponse(
-            text: "Mock transcription text",
-            language: "pt",
-            durationSeconds: 10.0,
-            model: "mock-model",
-            processedAt: Date().ISO8601Format()
+            text: mockText,
+            segments: mockSegments,
+            language: mockLanguage,
+            durationSeconds: mockDurationSeconds,
+            model: mockModel,
+            processedAt: Date().ISO8601Format(),
+            confidenceScore: mockConfidenceScore
         )
     }
 }
@@ -204,6 +212,7 @@ class MockStorageService: StorageService, @unchecked Sendable {
     var createRecordingURLCalled = false
     var cleanupTemporaryFilesCalled = false
     var saveTranscriptionCalled = false
+    var savedTranscriptions: [Transcription] = []
 
     // Call tracking properties
     var createRecordingURLParams: [(meeting: Meeting, type: RecordingType)] = []
@@ -224,6 +233,7 @@ class MockStorageService: StorageService, @unchecked Sendable {
 
     func saveTranscription(_ transcription: Transcription) async throws {
         saveTranscriptionCalled = true
+        savedTranscriptions.append(transcription)
     }
 
     func loadTranscriptions() async throws -> [Transcription] {
