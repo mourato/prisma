@@ -23,6 +23,9 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
     /// Canonical and versioned summary payload (nil when unavailable).
     public var canonicalSummary: CanonicalSummary?
 
+    /// Transcript quality profile used by downstream intelligence stages.
+    public var qualityProfile: TranscriptionQualityProfile?
+
     /// ID of the prompt used for post-processing (nil if not processed).
     public var postProcessingPromptId: UUID?
 
@@ -50,6 +53,7 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
         rawText: String,
         processedContent: String? = nil,
         canonicalSummary: CanonicalSummary? = nil,
+        qualityProfile: TranscriptionQualityProfile? = nil,
         postProcessingPromptId: UUID? = nil,
         postProcessingPromptTitle: String? = nil,
         language: String = "pt",
@@ -69,6 +73,7 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
         self.rawText = rawText
         self.processedContent = processedContent
         self.canonicalSummary = canonicalSummary
+        self.qualityProfile = qualityProfile
         self.postProcessingPromptId = postProcessingPromptId
         self.postProcessingPromptTitle = postProcessingPromptTitle
         self.language = language
@@ -99,6 +104,7 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
             rawText: text,
             processedContent: nil,
             canonicalSummary: nil,
+            qualityProfile: nil,
             postProcessingPromptId: nil,
             postProcessingPromptTitle: nil,
             language: language,
@@ -228,6 +234,7 @@ public struct TranscriptionResponse: Codable, Sendable {
     public let model: String
     public let processedAt: String
     public let segments: [Transcription.Segment]
+    public let confidenceScore: Double?
 
     enum CodingKeys: String, CodingKey {
         case text
@@ -236,6 +243,7 @@ public struct TranscriptionResponse: Codable, Sendable {
         case durationSeconds = "duration_seconds"
         case model
         case processedAt = "processed_at"
+        case confidenceScore = "confidence_score"
     }
 
     public init(
@@ -244,7 +252,8 @@ public struct TranscriptionResponse: Codable, Sendable {
         language: String,
         durationSeconds: Double,
         model: String,
-        processedAt: String
+        processedAt: String,
+        confidenceScore: Double? = nil
     ) {
         self.text = text
         self.language = language
@@ -252,5 +261,6 @@ public struct TranscriptionResponse: Codable, Sendable {
         self.model = model
         self.processedAt = processedAt
         self.segments = segments
+        self.confidenceScore = confidenceScore
     }
 }

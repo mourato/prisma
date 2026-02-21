@@ -41,7 +41,7 @@ public class LocalTranscriptionClient {
         let startTime = Date()
 
         // Perform transcription
-        let (text, segmentsFromASR) = try await manager.transcribe(
+        let (text, segmentsFromASR, confidenceScore) = try await manager.transcribe(
             audioURL: audioURL,
             progress: onProgress
         )
@@ -105,7 +105,8 @@ public class LocalTranscriptionClient {
             language: "auto",
             durationSeconds: duration,
             model: "parakeet-tdt-0.6b-v3-coreml",
-            processedAt: processedAt
+            processedAt: processedAt,
+            confidenceScore: confidenceScore
         )
     }
 

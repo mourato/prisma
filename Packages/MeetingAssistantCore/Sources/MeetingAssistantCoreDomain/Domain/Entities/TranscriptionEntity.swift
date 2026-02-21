@@ -25,6 +25,9 @@ public struct TranscriptionEntity: Identifiable, Codable, Hashable, Sendable {
     /// Canonical and versioned summary payload (nil when unavailable).
     public var canonicalSummary: CanonicalSummary?
 
+    /// Transcript quality profile used by downstream intelligence stages.
+    public var qualityProfile: TranscriptionQualityProfile?
+
     /// ID do prompt usado para pós-processamento (nil se não processado).
     public var postProcessingPromptId: UUID?
 
@@ -52,6 +55,7 @@ public struct TranscriptionEntity: Identifiable, Codable, Hashable, Sendable {
         public var rawText: String
         public var processedContent: String?
         public var canonicalSummary: CanonicalSummary?
+        public var qualityProfile: TranscriptionQualityProfile?
         public var postProcessingPromptId: UUID?
         public var postProcessingPromptTitle: String?
         public var language: String = "pt"
@@ -86,6 +90,7 @@ public struct TranscriptionEntity: Identifiable, Codable, Hashable, Sendable {
         rawText = config.rawText
         processedContent = config.processedContent
         canonicalSummary = config.canonicalSummary
+        qualityProfile = config.qualityProfile
         postProcessingPromptId = config.postProcessingPromptId
         postProcessingPromptTitle = config.postProcessingPromptTitle
         language = config.language
@@ -118,6 +123,7 @@ public struct TranscriptionEntity: Identifiable, Codable, Hashable, Sendable {
         config.id = id
         config.processedContent = processedContent
         config.canonicalSummary = canonicalSummary
+        config.qualityProfile = nil
         config.postProcessingPromptId = postProcessingPromptId
         config.postProcessingPromptTitle = postProcessingPromptTitle
         config.createdAt = createdAt

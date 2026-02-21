@@ -7,16 +7,19 @@ public final class TranscribeAudioUseCase: Sendable {
     private let transcriptionRepository: TranscriptionRepository
     private let transcriptionStorageRepository: TranscriptionStorageRepository
     private let postProcessingRepository: PostProcessingRepository?
+    private let transcriptPreprocessor: TranscriptIntelligencePreprocessor
 
     /// Inicializa o caso de uso com dependências
     public init(
         transcriptionRepository: TranscriptionRepository,
         transcriptionStorageRepository: TranscriptionStorageRepository,
-        postProcessingRepository: PostProcessingRepository? = nil
+        postProcessingRepository: PostProcessingRepository? = nil,
+        transcriptPreprocessor: TranscriptIntelligencePreprocessor = .init()
     ) {
         self.transcriptionRepository = transcriptionRepository
         self.transcriptionStorageRepository = transcriptionStorageRepository
         self.postProcessingRepository = postProcessingRepository
+        self.transcriptPreprocessor = transcriptPreprocessor
     }
 
     /// Executa o caso de uso para transcrever áudio
@@ -66,6 +69,11 @@ public final class TranscribeAudioUseCase: Sendable {
             to: response.segments,
             with: vocabularyReplacementRules
         )
+        let qualityProfile = transcriptPreprocessor.preprocess(
+            transcriptionText: replacedTranscriptionText,
+            segments: replacedSegments,
+            asrConfidenceScore: response.confidenceScore
+        )
 
         // Aplicar pós-processamento se solicitado
         var processedContent: String?
@@ -75,7 +83,8 @@ public final class TranscribeAudioUseCase: Sendable {
         var meetingType: String?
         var postProcessingDuration: Double = 0
         let postProcessingInput = mergedPostProcessingInput(
-            transcriptionText: replacedTranscriptionText,
+            transcriptionText: qualityProfile.normalizedTextForIntelligence,
+            qualityProfile: qualityProfile,
             context: postProcessingContext
         )
 
@@ -93,7 +102,10 @@ public final class TranscribeAudioUseCase: Sendable {
                         with: prompt
                     )
                     processedContent = structuredResult.processedText
-                    canonicalSummary = structuredResult.canonicalSummary
+                    canonicalSummary = recalibrateCanonicalSummary(
+                        structuredResult.canonicalSummary,
+                        with: qualityProfile
+                    )
                     promptId = prompt.id
                     promptTitle = prompt.title
                 } else {
@@ -112,7 +124,10 @@ public final class TranscribeAudioUseCase: Sendable {
                                 with: match
                             )
                             processedContent = structuredResult.processedText
-                            canonicalSummary = structuredResult.canonicalSummary
+                            canonicalSummary = recalibrateCanonicalSummary(
+                                structuredResult.canonicalSummary,
+                                with: qualityProfile
+                            )
                             promptId = match.id
                             promptTitle = match.title
                         } else if let fallback = defaultPostProcessingPrompt {
@@ -121,13 +136,19 @@ public final class TranscribeAudioUseCase: Sendable {
                                 with: fallback
                             )
                             processedContent = structuredResult.processedText
-                            canonicalSummary = structuredResult.canonicalSummary
+                            canonicalSummary = recalibrateCanonicalSummary(
+                                structuredResult.canonicalSummary,
+                                with: qualityProfile
+                            )
                             promptId = fallback.id
                             promptTitle = fallback.title
                         } else {
                             let structuredResult = try await postProcessingRepo.processTranscriptionStructured(postProcessingInput)
                             processedContent = structuredResult.processedText
-                            canonicalSummary = structuredResult.canonicalSummary
+                            canonicalSummary = recalibrateCanonicalSummary(
+                                structuredResult.canonicalSummary,
+                                with: qualityProfile
+                            )
                         }
                     } else if let fallback = defaultPostProcessingPrompt {
                         // Sem autodetecção: usar prompt default (quando fornecido).
@@ -136,13 +157,19 @@ public final class TranscribeAudioUseCase: Sendable {
                             with: fallback
                         )
                         processedContent = structuredResult.processedText
-                        canonicalSummary = structuredResult.canonicalSummary
+                        canonicalSummary = recalibrateCanonicalSummary(
+                            structuredResult.canonicalSummary,
+                            with: qualityProfile
+                        )
                         promptId = fallback.id
                         promptTitle = fallback.title
                     } else {
                         let structuredResult = try await postProcessingRepo.processTranscriptionStructured(postProcessingInput)
                         processedContent = structuredResult.processedText
-                        canonicalSummary = structuredResult.canonicalSummary
+                        canonicalSummary = recalibrateCanonicalSummary(
+                            structuredResult.canonicalSummary,
+                            with: qualityProfile
+                        )
                     }
                 }
             } catch {
@@ -159,6 +186,7 @@ public final class TranscribeAudioUseCase: Sendable {
                     response: response,
                     replacedText: replacedTranscriptionText,
                     replacedSegments: replacedSegments,
+                    qualityProfile: qualityProfile,
                     contextItems: contextItems,
                     processedContent: processedContent,
                     canonicalSummary: canonicalSummary,
@@ -296,6 +324,7 @@ public final class TranscribeAudioUseCase: Sendable {
         let response: DomainTranscriptionResponse
         let replacedText: String
         let replacedSegments: [DomainTranscriptionSegment]
+        let qualityProfile: TranscriptionQualityProfile
         let contextItems: [TranscriptionContextItem]
         let processedContent: String?
         let canonicalSummary: CanonicalSummary?
@@ -325,6 +354,7 @@ public final class TranscribeAudioUseCase: Sendable {
         config.contextItems = input.contextItems
         config.processedContent = input.processedContent
         config.canonicalSummary = input.canonicalSummary
+        config.qualityProfile = input.qualityProfile
         config.postProcessingPromptId = input.promptId
         config.postProcessingPromptTitle = input.promptTitle
         config.modelName = input.response.model
@@ -336,19 +366,72 @@ public final class TranscribeAudioUseCase: Sendable {
         return config
     }
 
-    private func mergedPostProcessingInput(transcriptionText: String, context: String?) -> String {
-        guard let context else { return transcriptionText }
+    private func mergedPostProcessingInput(
+        transcriptionText: String,
+        qualityProfile: TranscriptionQualityProfile,
+        context: String?
+    ) -> String {
+        var blocks = [transcriptionText]
+        blocks.append(qualityMetadataBlock(from: qualityProfile))
 
-        let trimmedContext = context.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedContext.isEmpty else { return transcriptionText }
+        if let context {
+            let trimmedContext = context.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmedContext.isEmpty {
+                blocks.append(
+                    """
+                    <CONTEXT_METADATA>
+                    \(trimmedContext)
+                    </CONTEXT_METADATA>
+                    """
+                )
+            }
+        }
+
+        return blocks.joined(separator: "\n\n")
+    }
+
+    private func qualityMetadataBlock(from qualityProfile: TranscriptionQualityProfile) -> String {
+        let markerLines: [String]
+        if qualityProfile.markers.isEmpty {
+            markerLines = ["none"]
+        } else {
+            markerLines = qualityProfile.markers.map { marker in
+                "- [\(marker.reason.rawValue)] \(marker.snippet) [\(marker.startTime)-\(marker.endTime)]"
+            }
+        }
 
         return """
-        \(transcriptionText)
-
-        <CONTEXT_METADATA>
-        \(trimmedContext)
-        </CONTEXT_METADATA>
+        <TRANSCRIPT_QUALITY>
+        normalizationVersion: \(qualityProfile.normalizationVersion)
+        overallConfidence: \(qualityProfile.overallConfidence)
+        containsUncertainty: \(qualityProfile.containsUncertainty)
+        markers:
+        \(markerLines.joined(separator: "\n"))
+        </TRANSCRIPT_QUALITY>
         """
+    }
+
+    private func recalibrateCanonicalSummary(
+        _ summary: CanonicalSummary,
+        with qualityProfile: TranscriptionQualityProfile
+    ) -> CanonicalSummary {
+        let trustFlags = CanonicalSummary.TrustFlags(
+            isGroundedInTranscript: summary.trustFlags.isGroundedInTranscript,
+            containsSpeculation: summary.trustFlags.containsSpeculation || qualityProfile.containsUncertainty,
+            isHumanReviewed: summary.trustFlags.isHumanReviewed,
+            confidenceScore: min(summary.trustFlags.confidenceScore, qualityProfile.overallConfidence)
+        )
+
+        return CanonicalSummary(
+            schemaVersion: summary.schemaVersion,
+            generatedAt: summary.generatedAt,
+            summary: summary.summary,
+            keyPoints: summary.keyPoints,
+            decisions: summary.decisions,
+            actionItems: summary.actionItems,
+            openQuestions: summary.openQuestions,
+            trustFlags: trustFlags
+        )
     }
 }
 

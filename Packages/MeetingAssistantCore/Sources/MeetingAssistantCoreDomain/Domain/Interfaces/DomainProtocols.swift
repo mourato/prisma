@@ -230,6 +230,7 @@ public struct DomainTranscriptionResponse: Codable, Sendable {
     public let model: String
     public let processedAt: String
     public let segments: [DomainTranscriptionSegment]
+    public let confidenceScore: Double?
 
     public init(
         text: String,
@@ -237,7 +238,8 @@ public struct DomainTranscriptionResponse: Codable, Sendable {
         language: String,
         durationSeconds: Double,
         model: String,
-        processedAt: String
+        processedAt: String,
+        confidenceScore: Double? = nil
     ) {
         self.text = text
         self.language = language
@@ -245,6 +247,7 @@ public struct DomainTranscriptionResponse: Codable, Sendable {
         self.model = model
         self.processedAt = processedAt
         self.segments = segments
+        self.confidenceScore = confidenceScore
     }
 }
 
@@ -290,6 +293,8 @@ public struct DomainTranscriptionMetadata: Identifiable, Codable, Hashable, Send
     public let summaryContainsSpeculation: Bool
     public let summaryHumanReviewed: Bool
     public let summaryConfidenceScore: Double
+    public let transcriptConfidenceScore: Double
+    public let transcriptContainsUncertainty: Bool
 
     public init(
         id: UUID,
@@ -308,7 +313,9 @@ public struct DomainTranscriptionMetadata: Identifiable, Codable, Hashable, Send
         summaryGroundedInTranscript: Bool = false,
         summaryContainsSpeculation: Bool = false,
         summaryHumanReviewed: Bool = false,
-        summaryConfidenceScore: Double = 0.0
+        summaryConfidenceScore: Double = 0.0,
+        transcriptConfidenceScore: Double = 0.5,
+        transcriptContainsUncertainty: Bool = false
     ) {
         self.id = id
         self.meetingId = meetingId
@@ -327,5 +334,7 @@ public struct DomainTranscriptionMetadata: Identifiable, Codable, Hashable, Send
         self.summaryContainsSpeculation = summaryContainsSpeculation
         self.summaryHumanReviewed = summaryHumanReviewed
         self.summaryConfidenceScore = summaryConfidenceScore
+        self.transcriptConfidenceScore = transcriptConfidenceScore
+        self.transcriptContainsUncertainty = transcriptContainsUncertainty
     }
 }

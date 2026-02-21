@@ -751,6 +751,7 @@ public final class FileSystemStorageService: StorageService {
         config.contextItems = transcription.contextItems
         config.processedContent = transcription.processedContent
         config.canonicalSummary = transcription.canonicalSummary
+        config.qualityProfile = transcription.qualityProfile
         config.postProcessingPromptId = transcription.postProcessingPromptId
         config.postProcessingPromptTitle = transcription.postProcessingPromptTitle
         config.createdAt = transcription.createdAt
@@ -789,7 +790,9 @@ public final class FileSystemStorageService: StorageService {
             summaryGroundedInTranscript: mo.summaryGroundedInTranscript,
             summaryContainsSpeculation: mo.summaryContainsSpeculation,
             summaryHumanReviewed: mo.summaryHumanReviewed,
-            summaryConfidenceScore: mo.summaryConfidenceScore
+            summaryConfidenceScore: mo.summaryConfidenceScore,
+            transcriptConfidenceScore: mo.transcriptConfidenceScore,
+            transcriptContainsUncertainty: mo.transcriptContainsUncertainty
         )
     }
 
@@ -823,6 +826,7 @@ public final class FileSystemStorageService: StorageService {
             rawText: entity.rawText,
             processedContent: entity.processedContent,
             canonicalSummary: entity.canonicalSummary,
+            qualityProfile: entity.qualityProfile,
             postProcessingPromptId: entity.postProcessingPromptId,
             postProcessingPromptTitle: entity.postProcessingPromptTitle,
             language: entity.language,

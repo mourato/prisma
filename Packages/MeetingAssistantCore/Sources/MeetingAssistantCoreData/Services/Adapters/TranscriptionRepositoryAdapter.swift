@@ -47,7 +47,8 @@ public final class TranscriptionRepositoryAdapter: TranscriptionRepository {
             language: response.language,
             durationSeconds: response.durationSeconds,
             model: response.model,
-            processedAt: response.processedAt
+            processedAt: response.processedAt,
+            confidenceScore: response.confidenceScore
         )
     }
 }

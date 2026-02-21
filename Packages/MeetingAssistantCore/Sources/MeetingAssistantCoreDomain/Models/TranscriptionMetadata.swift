@@ -21,6 +21,8 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
     public let summaryContainsSpeculation: Bool
     public let summaryHumanReviewed: Bool
     public let summaryConfidenceScore: Double
+    public let transcriptConfidenceScore: Double
+    public let transcriptContainsUncertainty: Bool
 
     private enum CodingKeys: String, CodingKey {
         case id
@@ -42,6 +44,8 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
         case summaryContainsSpeculation
         case summaryHumanReviewed
         case summaryConfidenceScore
+        case transcriptConfidenceScore
+        case transcriptContainsUncertainty
     }
 
     public init(
@@ -63,7 +67,9 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
         summaryGroundedInTranscript: Bool = false,
         summaryContainsSpeculation: Bool = false,
         summaryHumanReviewed: Bool = false,
-        summaryConfidenceScore: Double = 0.0
+        summaryConfidenceScore: Double = 0.0,
+        transcriptConfidenceScore: Double = 0.5,
+        transcriptContainsUncertainty: Bool = false
     ) {
         self.id = id
         self.meetingId = meetingId
@@ -84,6 +90,8 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
         self.summaryContainsSpeculation = summaryContainsSpeculation
         self.summaryHumanReviewed = summaryHumanReviewed
         self.summaryConfidenceScore = summaryConfidenceScore
+        self.transcriptConfidenceScore = transcriptConfidenceScore
+        self.transcriptContainsUncertainty = transcriptContainsUncertainty
     }
 
     public init(from decoder: Decoder) throws {
@@ -108,6 +116,8 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
         let summaryContainsSpeculation = try container.decodeIfPresent(Bool.self, forKey: .summaryContainsSpeculation) ?? false
         let summaryHumanReviewed = try container.decodeIfPresent(Bool.self, forKey: .summaryHumanReviewed) ?? false
         let summaryConfidenceScore = try container.decodeIfPresent(Double.self, forKey: .summaryConfidenceScore) ?? 0.0
+        let transcriptConfidenceScore = try container.decodeIfPresent(Double.self, forKey: .transcriptConfidenceScore) ?? 0.5
+        let transcriptContainsUncertainty = try container.decodeIfPresent(Bool.self, forKey: .transcriptContainsUncertainty) ?? false
 
         self.init(
             id: id,
@@ -128,7 +138,9 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
             summaryGroundedInTranscript: summaryGroundedInTranscript,
             summaryContainsSpeculation: summaryContainsSpeculation,
             summaryHumanReviewed: summaryHumanReviewed,
-            summaryConfidenceScore: summaryConfidenceScore
+            summaryConfidenceScore: summaryConfidenceScore,
+            transcriptConfidenceScore: transcriptConfidenceScore,
+            transcriptContainsUncertainty: transcriptContainsUncertainty
         )
     }
 }
