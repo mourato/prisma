@@ -896,6 +896,7 @@ public class AppSettingsStore: ObservableObject {
         static let contextAwarenessExcludedBundleIDs = "contextAwarenessExcludedBundleIDs"
         static let markdownTargetBundleIdentifiers = "markdownTargetBundleIdentifiers"
         static let dictationAppRules = "dictationAppRules"
+        static let vocabularyReplacementRules = "vocabularyReplacementRules"
         static let markdownWebTargets = "markdownWebTargets"
         static let webTargetBrowserBundleIdentifiers = "webTargetBrowserBundleIdentifiers"
         static let monitoredMeetingBundleIdentifiers = "monitoredMeetingBundleIdentifiers"
@@ -1490,6 +1491,19 @@ public class AppSettingsStore: ObservableObject {
         }
     }
 
+    /// Deterministic find-and-replace rules applied before post-processing.
+    @Published public var vocabularyReplacementRules: [VocabularyReplacementRule] {
+        didSet {
+            let normalizedRules = Self.normalizedVocabularyReplacementRules(vocabularyReplacementRules)
+            if normalizedRules != vocabularyReplacementRules {
+                vocabularyReplacementRules = normalizedRules
+                return
+            }
+
+            save(vocabularyReplacementRules, forKey: Keys.vocabularyReplacementRules)
+        }
+    }
+
     /// Website targets that should force Markdown formatting for dictation.
     @Published public var markdownWebTargets: [WebContextTarget] {
         didSet { save(markdownWebTargets, forKey: Keys.markdownWebTargets) }
@@ -1778,6 +1792,9 @@ public class AppSettingsStore: ObservableObject {
         dictationAppRules = Self.normalizedDictationAppRules(
             Self.loadDecoded([DictationAppRule].self, forKey: Keys.dictationAppRules)
                 ?? Self.defaultDictationAppRules
+        )
+        vocabularyReplacementRules = Self.normalizedVocabularyReplacementRules(
+            Self.loadDecoded([VocabularyReplacementRule].self, forKey: Keys.vocabularyReplacementRules) ?? []
         )
         markdownWebTargets = Self.loadDecoded([WebContextTarget].self, forKey: Keys.markdownWebTargets)
             ?? Self.defaultMarkdownWebTargets
@@ -2204,6 +2221,32 @@ public class AppSettingsStore: ObservableObject {
         return ordered
     }
 
+    private static func normalizedVocabularyReplacementRules(
+        _ rules: [VocabularyReplacementRule]
+    ) -> [VocabularyReplacementRule] {
+        var seenFindValues = Set<String>()
+        var ordered: [VocabularyReplacementRule] = []
+
+        for rule in rules {
+            let normalizedFind = rule.find.trimmingCharacters(in: .whitespacesAndNewlines)
+            let normalizedFindKey = normalizedFind.lowercased()
+            guard !normalizedFind.isEmpty, !seenFindValues.contains(normalizedFindKey) else {
+                continue
+            }
+
+            seenFindValues.insert(normalizedFindKey)
+            ordered.append(
+                VocabularyReplacementRule(
+                    id: rule.id,
+                    find: normalizedFind,
+                    replace: rule.replace.trimmingCharacters(in: .whitespacesAndNewlines)
+                )
+            )
+        }
+
+        return ordered
+    }
+
     private func deduplicatedNormalizedBundleIdentifiers(_ identifiers: [String]) -> [String] {
         var seenKeys = Set<String>()
         var ordered: [String] = []
@@ -2323,6 +2366,7 @@ public class AppSettingsStore: ObservableObject {
         contextAwarenessExplicitActionOnly = true
         markdownTargetBundleIdentifiers = Self.defaultMarkdownTargetBundleIdentifiers
         dictationAppRules = Self.defaultDictationAppRules
+        vocabularyReplacementRules = []
         markdownWebTargets = Self.defaultMarkdownWebTargets
         webTargetBrowserBundleIdentifiers = Self.defaultWebTargetBrowserBundleIdentifiers
         monitoredMeetingBundleIdentifiers = Self.defaultMonitoredMeetingBundleIdentifiers

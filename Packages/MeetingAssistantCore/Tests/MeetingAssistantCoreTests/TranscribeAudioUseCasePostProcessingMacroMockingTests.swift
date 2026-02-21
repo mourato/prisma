@@ -93,4 +93,98 @@ final class TranscribeAudioPostProcessingTests: XCTestCase {
         XCTAssertTrue(input.contains("</CONTEXT_METADATA>"))
         XCTAssertTrue(input.contains("- Active app: Safari"))
     }
+
+    func testExecute_AppliesVocabularyReplacementsBeforePostProcessing() async throws {
+        let transcriptionRepository = MeetingAssistantCoreDomain.MacroMockTranscriptionRepository()
+        let storageRepository = MeetingAssistantCoreDomain.MacroMockTranscriptionStorageRepository()
+        let postProcessingRepository = MeetingAssistantCoreDomain.MacroMockPostProcessingRepository()
+
+        transcriptionRepository.healthCheckHandler = { () async throws -> Bool in true }
+        transcriptionRepository.transcribeHandler = { _, _ in
+            DomainTranscriptionResponse(
+                text: "open ay eye shipped it",
+                language: "en",
+                durationSeconds: 1.0,
+                model: "test-model",
+                processedAt: "now"
+            )
+        }
+
+        var receivedInput: String?
+        postProcessingRepository.processTranscription_2Handler = { input, _ in
+            receivedInput = input
+            return "Processed transcript"
+        }
+        storageRepository.saveTranscriptionHandler = { _ in }
+
+        let useCase = TranscribeAudioUseCase(
+            transcriptionRepository: transcriptionRepository,
+            transcriptionStorageRepository: storageRepository,
+            postProcessingRepository: postProcessingRepository
+        )
+
+        let meeting = MeetingEntity(app: .googleMeet)
+        let audioURL = URL(fileURLWithPath: "/tmp/test.wav")
+        let prompt = DomainPostProcessingPrompt(title: "Summarize", content: "Summarize this")
+
+        _ = try await useCase.execute(
+            audioURL: audioURL,
+            meeting: meeting,
+            vocabularyReplacementRules: [
+                VocabularyReplacementRule(find: "open ay eye", replace: "OpenAI"),
+            ],
+            applyPostProcessing: true,
+            postProcessingPrompt: prompt
+        )
+
+        XCTAssertEqual(receivedInput, "OpenAI shipped it")
+    }
+
+    func testExecute_AppliesVocabularyReplacementsWithoutChangingRawText() async throws {
+        let transcriptionRepository = MeetingAssistantCoreDomain.MacroMockTranscriptionRepository()
+        let storageRepository = MeetingAssistantCoreDomain.MacroMockTranscriptionStorageRepository()
+
+        transcriptionRepository.healthCheckHandler = { () async throws -> Bool in true }
+        transcriptionRepository.transcribeHandler = { _, _ in
+            DomainTranscriptionResponse(
+                text: "OPEN AY EYE updates",
+                segments: [
+                    DomainTranscriptionSegment(
+                        speaker: "Speaker 1",
+                        text: "open ay eye status",
+                        startTime: 0,
+                        endTime: 1
+                    ),
+                ],
+                language: "en",
+                durationSeconds: 1.0,
+                model: "test-model",
+                processedAt: "now"
+            )
+        }
+
+        storageRepository.saveTranscriptionHandler = { _ in }
+
+        let useCase = TranscribeAudioUseCase(
+            transcriptionRepository: transcriptionRepository,
+            transcriptionStorageRepository: storageRepository,
+            postProcessingRepository: nil
+        )
+
+        let meeting = MeetingEntity(app: .googleMeet)
+        let audioURL = URL(fileURLWithPath: "/tmp/test.wav")
+
+        let transcription = try await useCase.execute(
+            audioURL: audioURL,
+            meeting: meeting,
+            vocabularyReplacementRules: [
+                VocabularyReplacementRule(find: "open ay eye", replace: "OpenAI"),
+            ],
+            applyPostProcessing: false
+        )
+
+        XCTAssertEqual(transcription.text, "OpenAI updates")
+        XCTAssertEqual(transcription.rawText, "OPEN AY EYE updates")
+        XCTAssertEqual(transcription.segments.first?.text, "OpenAI status")
+    }
 }
