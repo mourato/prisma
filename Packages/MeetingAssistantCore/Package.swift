@@ -115,11 +115,15 @@ let package = Package(
             name: "MeetingAssistantCoreTests",
             dependencies: [
                 "MeetingAssistantCore",
+                "MeetingAssistantCoreAI",
                 "MeetingAssistantCoreAudio",
                 "MeetingAssistantCoreUI",
                 "MeetingAssistantCoreDomain",
             ],
-            path: "Tests/MeetingAssistantCoreTests"
+            path: "Tests/MeetingAssistantCoreTests",
+            resources: [
+                .process("Resources"),
+            ]
         ),
     ]
 )

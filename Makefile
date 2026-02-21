@@ -5,7 +5,7 @@
 # with CI/CD pipelines and headless environments.
 # =============================================================================
 
-.PHONY: help build build-debug build-release build-agent test test-agent test-swift test-verbose test-strict lint lint-agent lint-fix arch-check preview-check preflight preflight-agent clean run run-release dmg setup docs docs-preview docs-clean profile profile-report profile-cpu profile-memory profile-animation profile-animation-report
+.PHONY: help build build-debug build-release build-agent test test-agent test-swift test-verbose test-strict benchmark-summary benchmark-summary-agent lint lint-agent lint-fix arch-check preview-check preflight preflight-agent clean run run-release dmg setup docs docs-preview docs-clean profile profile-report profile-cpu profile-memory profile-animation profile-animation-report
 
 # Default target
 help:
@@ -24,6 +24,8 @@ help:
 	@echo "  make test-swift     - Run tests with swift test (faster, no IDE parity)"
 	@echo "  make test-verbose   - Run tests with verbose output"
 	@echo "  make test-strict    - Run tests with strict concurrency checking"
+	@echo "  make benchmark-summary - Run summary benchmark gate in report-only mode"
+	@echo "  make benchmark-summary-agent - Run summary benchmark in compact mode"
 	@echo ""
 	@echo "Code Quality:"
 	@echo "  make lint           - Run linting checks"
@@ -109,6 +111,12 @@ test-verbose:
 test-strict:
 	@echo -e "$(BLUE)Running tests (Strict Concurrency)...$(NC)"
 	@./scripts/run-tests.sh --strict
+
+benchmark-summary:
+	@./scripts/run-summary-benchmark.sh --report-only
+
+benchmark-summary-agent:
+	@MA_AGENT_MODE=1 MA_AGENT_LOG_DIR="$(AGENT_LOG_DIR)" ./scripts/run-summary-benchmark.sh --report-only --agent
 
 # Code Quality
 lint:

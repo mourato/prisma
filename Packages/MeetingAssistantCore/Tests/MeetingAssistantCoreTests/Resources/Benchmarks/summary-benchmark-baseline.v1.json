@@ -1,0 +1,15 @@
+{
+  "generatedAt" : "2026-02-21T23:33:18Z",
+  "metrics" : {
+    "actionItemsTitleF1" : 1,
+    "decisionsF1" : 1,
+    "hallucinationRate" : 0,
+    "keyPointsF1" : 1,
+    "openQuestionsF1" : 1,
+    "schemaValidityRate" : 1,
+    "summaryTokenF1" : 1,
+    "trustFlagsAccuracy" : 1
+  },
+  "schemaVersion" : 1,
+  "source" : "commit:f23ba39"
+}
