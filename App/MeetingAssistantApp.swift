@@ -72,6 +72,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let isStarting: Bool
         let isTranscribing: Bool
         let isAssistantRecording: Bool
+        let isAssistantProcessing: Bool
         let meetingTypeRawValue: String?
     }
 
@@ -167,6 +168,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             recordingManager.isStartingPublisher.map { _ in () }.eraseToAnyPublisher(),
             recordingManager.isTranscribingPublisher.map { _ in () }.eraseToAnyPublisher(),
             assistantVoiceCommandService.$isRecording.map { _ in () }.eraseToAnyPublisher(),
+            assistantVoiceCommandService.$isProcessing.map { _ in () }.eraseToAnyPublisher(),
             recordingManager.currentMeetingPublisher.map { _ in () }.eraseToAnyPublisher()
         )
             .sink { [weak self] _ in
@@ -182,12 +184,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let isStarting = recordingManager.isStartingRecording
         let isTranscribing = recordingManager.isTranscribing
         let isAssistantRecording = assistantVoiceCommandService.isRecording
+        let isAssistantProcessing = assistantVoiceCommandService.isProcessing
+        let isProcessing = isTranscribing || isAssistantProcessing
         let currentMeetingType = recordingManager.currentMeeting?.type
         let renderState = RecordingUIRenderState(
             isRecording: isRecording,
             isStarting: isStarting,
             isTranscribing: isTranscribing,
             isAssistantRecording: isAssistantRecording,
+            isAssistantProcessing: isAssistantProcessing,
             meetingTypeRawValue: currentMeetingType?.rawValue
         )
 
@@ -201,7 +206,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             isRecording: isRecording || isAssistantRecording,
             isAssistantRecording: isAssistantRecording,
             isStarting: isStarting,
-            isTranscribing: isTranscribing,
+            isProcessing: isProcessing,
             meetingType: currentMeetingType
         )
 
@@ -631,7 +636,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         isRecording: Bool,
         isAssistantRecording: Bool,
         isStarting: Bool,
-        isTranscribing: Bool,
+        isProcessing: Bool,
         meetingType: MeetingType? = nil
     ) {
         let recordingState = indicatorRenderState(mode: .recording, meetingType: meetingType)
@@ -658,7 +663,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         } else if isStarting {
             floatingIndicatorController.show(renderState: startingState)
-        } else if isTranscribing {
+        } else if isProcessing {
             floatingIndicatorController.show(renderState: processingState)
         } else {
             floatingIndicatorController.hide()
