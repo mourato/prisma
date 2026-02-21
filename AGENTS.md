@@ -17,6 +17,7 @@ Core context:
 
 - For every reasoning or planning task, use the Sequential Thinking tool to capture each step of the thought process before acting.
 - Whenever you need to read from, write to, or otherwise interact with GitHub (issues, PRs, repos), drive those interactions through the GitHub CLI (`gh`).
+- When submitting multiline content through `gh` (issue bodies, comments, PR descriptions), prefer `--body-file` with a literal heredoc (`<<'EOF'`) to avoid shell interpolation issues (for example with backticks).
 - For holistic or repository-wide analysis, feel free to leverage deepwiki to collect broader context, but keep it optional when the information is already contained locally.
 
 ## ✅ Standard Task SOP (Mandatory)
@@ -99,6 +100,7 @@ Before implementation, run a quick clarification pass when needed:
 - [ ] Open the Sequential Thinking tool before planning a task so each reasoning step is recorded.
 - [ ] Before coding, scan for reusable blocks and repeated/new patterns; apply `reuse -> extend -> create`.
 - [ ] Use `gh` for every GitHub interaction (issues, PRs, repos) rather than manual HTTP/UI visits.
+- [ ] For multiline GitHub content, use `gh ... --body-file <file>` (or heredoc-backed file) instead of inline `--body`.
 - [ ] Consider deepwiki only when local context is insufficient for a holistic, repository-wide perspective.
 - [ ] Classify risk (Low/Medium/High) before coding and pick Fast or Full lane accordingly.
 - [ ] Run a clarification pass when needed; ask concise confirmation questions instead of assuming missing requirements.

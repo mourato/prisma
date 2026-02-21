@@ -119,6 +119,29 @@ Before opening a PR (or before merging locally), ensure:
 - [ ] Lint completed when required by scope
 - [ ] Documentation updated when behavior/contracts changed
 
+### GitHub CLI Body Safety
+
+When sending multiline or formatted text to GitHub via `gh`, prefer `--body-file` over inline `--body`.
+This avoids shell parsing/interpolation issues (especially with backticks and mixed-language text).
+
+```bash
+# Issue comment
+cat <<'EOF' >/tmp/gh-comment.md
+Implemented transcript quality alignment end-to-end.
+- Added ASR confidence propagation
+- Added transcript quality persistence
+EOF
+gh issue comment 103 --body-file /tmp/gh-comment.md
+
+# Create or edit issue/PR body
+cat <<'EOF' >/tmp/gh-body.md
+## Summary
+Detailed multiline content here.
+EOF
+gh issue edit 103 --body-file /tmp/gh-body.md
+gh pr edit 456 --body-file /tmp/gh-body.md
+```
+
 ### Branch Cleanup (After Merge)
 
 After merging into `main`, remove temporary branches and worktrees (never delete `main`).
