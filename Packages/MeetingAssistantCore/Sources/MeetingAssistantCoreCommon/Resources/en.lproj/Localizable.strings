@@ -813,6 +813,17 @@
 "transcription.qa.error.generic" = "Failed to answer the question. Please try again.";
 "transcription.qa.error.no_retry_context" = "There is no previous question to retry.";
 "transcription.qa.summary_title" = "Meeting summary";
+"transcription.qa.navigation.back" = "Back";
+"transcription.qa.navigation.forward" = "Forward";
+"transcription.qa.dictation.start" = "Start dictation";
+"transcription.qa.dictation.stop" = "Stop dictation";
+"transcription.qa.dictation.processing" = "Transcribing question...";
+"transcription.qa.dictation.error.busy" = "Another recording is currently active.";
+"transcription.qa.dictation.error.microphone_permission" = "Microphone permission is required to dictate a question.";
+"transcription.qa.dictation.error.start_failed" = "Could not start dictation.";
+"transcription.qa.dictation.error.stop_failed" = "Could not stop dictation.";
+"transcription.qa.dictation.error.transcription" = "Failed to transcribe dictated question.";
+"transcription.qa.dictation.error.empty_result" = "No speech was detected in dictation.";
 
 /* Notifications */
 "notification.transcription_completed" = "Transcription Completed";

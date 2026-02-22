@@ -386,4 +386,16 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
 
         XCTAssertEqual(viewModel.qaQuestion, "")
     }
+
+    func testEnhancementsModelSelectionUpdatesGlobalSettings() {
+        let settings = AppSettingsStore.shared
+        let originalModel = settings.enhancementsAISelection.selectedModel
+        defer {
+            settings.updateEnhancementsSelectedModel(originalModel)
+        }
+
+        settings.updateEnhancementsSelectedModel("gpt-4o-mini")
+
+        XCTAssertEqual(settings.enhancementsAISelection.selectedModel, "gpt-4o-mini")
+    }
 }

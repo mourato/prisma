@@ -5,7 +5,6 @@ import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
-import OSLog
 import SwiftUI
 
 // MARK: - Main Tab
@@ -20,15 +19,40 @@ public struct TranscriptionsSettingsTab: View {
     }
 
     @StateObject private var viewModel = TranscriptionSettingsViewModel()
+    @StateObject private var aiSettingsViewModel = AISettingsViewModel(settings: .shared)
+    @StateObject private var dictationService = MeetingQuestionDictationService()
+    @ObservedObject private var settings = AppSettingsStore.shared
     @State private var searchReloadTask: Task<Void, Never>?
-    @State private var conversationTranscriptionID: UUID?
+    @State private var navigationHistory = TranscriptionsNavigationHistory()
+
+    private var currentRoute: TranscriptionsPageRoute {
+        navigationHistory.currentRoute
+    }
 
     public var body: some View {
         VStack(spacing: 0) {
             contentSection
         }
+        .toolbar {
+            ToolbarItemGroup(placement: .navigation) {
+                Button(action: navigateBack) {
+                    Image(systemName: "chevron.left")
+                }
+                .help("transcription.qa.navigation.back".localized)
+                .accessibilityLabel("transcription.qa.navigation.back".localized)
+                .disabled(!navigationHistory.canGoBack)
+
+                Button(action: navigateForward) {
+                    Image(systemName: "chevron.right")
+                }
+                .help("transcription.qa.navigation.forward".localized)
+                .accessibilityLabel("transcription.qa.navigation.forward".localized)
+                .disabled(!navigationHistory.canGoForward)
+            }
+        }
         .task {
             await viewModel.loadTranscriptions()
+            syncSelectionForCurrentRoute()
         }
         .onReceive(NotificationCenter.default.publisher(for: .meetingAssistantTranscriptionSaved)) { _ in
             Task {
@@ -61,12 +85,12 @@ public struct TranscriptionsSettingsTab: View {
         .onDisappear {
             searchReloadTask?.cancel()
             searchReloadTask = nil
+            Task {
+                await dictationService.cancel()
+            }
         }
         .onChange(of: viewModel.transcriptions) { _, transcriptions in
-            guard let conversationTranscriptionID else { return }
-            if !transcriptions.contains(where: { $0.id == conversationTranscriptionID }) {
-                closeConversationPanel()
-            }
+            sanitizeNavigationHistory(using: transcriptions)
         }
         .alert(
             "settings.transcriptions.error_load".localized,
@@ -87,21 +111,19 @@ public struct TranscriptionsSettingsTab: View {
 
     // MARK: - Content Section
 
+    @ViewBuilder
     private var contentSection: some View {
-        HSplitView {
-            leftPanel
-                .frame(minWidth: 620, idealWidth: 780, maxWidth: .infinity)
-
-            if let conversationTranscriptionID {
-                conversationPanel(transcriptionID: conversationTranscriptionID)
-                    .frame(minWidth: 360, idealWidth: 480, maxWidth: 640)
-            }
+        switch currentRoute {
+        case .list:
+            listPage
+        case let .conversation(transcriptionID):
+            conversationPage(transcriptionID: transcriptionID)
         }
     }
 
-    // MARK: - Left Panel
+    // MARK: - List Page
 
-    private var leftPanel: some View {
+    private var listPage: some View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
                 searchAndFolderRow
@@ -319,7 +341,7 @@ public struct TranscriptionsSettingsTab: View {
                                 .font(.body)
                                 .fontWeight(.semibold)
                                 .foregroundStyle(.secondary)
-                                .padding(.top, 12) // Align with card content
+                                .padding(.top, 12)
                                 .frame(width: 50, alignment: .trailing)
 
                             TranscriptionCardView(
@@ -351,6 +373,143 @@ public struct TranscriptionsSettingsTab: View {
         .listStyle(.plain)
     }
 
+    // MARK: - Conversation Page
+
+    private func conversationPage(transcriptionID: UUID) -> some View {
+        let activeTranscription = viewModel.selectedTranscription?.id == transcriptionID ? viewModel.selectedTranscription : nil
+
+        return MeetingConversationView(
+            transcription: activeTranscription,
+            isLoadingTranscription: activeTranscription == nil,
+            turns: viewModel.qaHistory(for: transcriptionID),
+            questionText: viewModel.qaQuestion,
+            onQuestionChange: { newValue in
+                dictationService.clearError()
+                viewModel.qaQuestion = newValue
+            },
+            onAsk: {
+                guard let transcription = viewModel.selectedTranscription, transcription.id == transcriptionID else { return }
+                Task {
+                    await viewModel.submitQuestion(for: transcription)
+                }
+            },
+            onRetry: { question in
+                guard let transcription = viewModel.selectedTranscription, transcription.id == transcriptionID else { return }
+                Task {
+                    await viewModel.retryQuestion(question, for: transcription)
+                }
+            },
+            isAnswering: viewModel.isAnsweringQuestion,
+            currentErrorMessage: viewModel.qaErrorMessage,
+            selectedProvider: settings.enhancementsAISelection.provider,
+            selectedModel: settings.enhancementsAISelection.selectedModel,
+            availableModels: aiSettingsViewModel.enhancementsAvailableModels,
+            isLoadingModels: aiSettingsViewModel.isLoadingEnhancementsModels,
+            onModelChange: { model in
+                settings.updateEnhancementsSelectedModel(model)
+            },
+            onRefreshModels: {
+                aiSettingsViewModel.refreshEnhancementsModelsManually()
+            },
+            dictationState: dictationService.state,
+            dictationErrorMessage: dictationService.errorMessage,
+            onToggleDictation: {
+                handleDictationToggle()
+            },
+            onBack: {
+                navigateBack()
+            }
+        )
+    }
+
+    // MARK: - Navigation
+
+    private func openConversation(for metadata: TranscriptionMetadata) {
+        navigationHistory.push(.conversation(metadata.id))
+        viewModel.selectedId = metadata.id
+        dictationService.clearError()
+    }
+
+    private func navigateBack() {
+        guard navigationHistory.goBack() != nil else { return }
+        syncSelectionForCurrentRoute()
+    }
+
+    private func navigateForward() {
+        guard navigationHistory.goForward() != nil else { return }
+        syncSelectionForCurrentRoute()
+    }
+
+    private func syncSelectionForCurrentRoute() {
+        switch currentRoute {
+        case .list:
+            Task {
+                await dictationService.cancel()
+            }
+        case let .conversation(transcriptionID):
+            if viewModel.selectedId != transcriptionID {
+                viewModel.selectedId = transcriptionID
+            }
+        }
+    }
+
+    private func sanitizeNavigationHistory(using transcriptions: [TranscriptionMetadata]) {
+        let validIDs = Set(transcriptions.map(\.id))
+        navigationHistory.sanitize(validConversationIDs: validIDs)
+        syncSelectionForCurrentRoute()
+    }
+
+    // MARK: - Actions
+
+    private func handleTranscriptionAction(_ action: TranscriptionCardView.TranscriptionAction, for metadata: TranscriptionMetadata) {
+        switch action {
+        case .askAboutMeeting:
+            openConversation(for: metadata)
+        case let .copy(text):
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(text, forType: .string)
+        case let .reprocess(prompt):
+            if let transcription = viewModel.selectedTranscription, transcription.id == metadata.id {
+                Task {
+                    await viewModel.applyPostProcessing(prompt: prompt, to: transcription)
+                }
+            }
+        case .info:
+            break
+        case .retryTranscription:
+            Task {
+                await viewModel.retryTranscription(for: metadata)
+            }
+        case .delete:
+            Task {
+                await viewModel.deleteTranscription(metadata)
+            }
+        }
+    }
+
+    private func handleDictationToggle() {
+        Task {
+            if let transcribedText = await dictationService.toggleDictation() {
+                appendDictationText(transcribedText)
+            }
+        }
+    }
+
+    private func appendDictationText(_ text: String) {
+        let normalized = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalized.isEmpty else { return }
+
+        let current = viewModel.qaQuestion.trimmingCharacters(in: .whitespacesAndNewlines)
+        if current.isEmpty {
+            viewModel.qaQuestion = normalized
+            return
+        }
+
+        viewModel.qaQuestion = "\(current) \(normalized)"
+    }
+
+    // MARK: - Formatting
+
     private func formatHeaderDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
@@ -370,150 +529,6 @@ public struct TranscriptionsSettingsTab: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
         return formatter.string(from: date)
-    }
-
-    private func handleTranscriptionAction(_ action: TranscriptionCardView.TranscriptionAction, for metadata: TranscriptionMetadata) {
-        switch action {
-        case .askAboutMeeting:
-            openConversation(for: metadata)
-        case let .copy(text):
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(text, forType: .string)
-        case let .reprocess(prompt):
-            if let transcription = viewModel.selectedTranscription, transcription.id == metadata.id {
-                Task {
-                    await viewModel.applyPostProcessing(prompt: prompt, to: transcription)
-                }
-            }
-        case .info:
-            // Info is handled locally in the view via popover, this likely won't be called if logic is in view
-            // But if we wanted to show a global panel, we'd do it here.
-            // Since we implemented popover in card, this case might be unused or for logging.
-            break
-        case .retryTranscription:
-            Task {
-                await viewModel.retryTranscription(for: metadata)
-            }
-        case .delete:
-            Task {
-                await viewModel.deleteTranscription(metadata)
-                if conversationTranscriptionID == metadata.id {
-                    closeConversationPanel()
-                }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func conversationPanel(transcriptionID: UUID) -> some View {
-        let activeTranscription = viewModel.selectedTranscription?.id == transcriptionID ? viewModel.selectedTranscription : nil
-
-        MeetingConversationView(
-            transcription: activeTranscription,
-            isLoadingTranscription: activeTranscription == nil,
-            turns: viewModel.qaHistory(for: transcriptionID),
-            questionText: viewModel.qaQuestion,
-            onQuestionChange: { newValue in
-                viewModel.qaQuestion = newValue
-            },
-            onAsk: {
-                guard let transcription = viewModel.selectedTranscription, transcription.id == transcriptionID else { return }
-                Task {
-                    await viewModel.submitQuestion(for: transcription)
-                }
-            },
-            onRetry: { question in
-                guard let transcription = viewModel.selectedTranscription, transcription.id == transcriptionID else { return }
-                Task {
-                    await viewModel.retryQuestion(question, for: transcription)
-                }
-            },
-            isAnswering: viewModel.isAnsweringQuestion,
-            currentErrorMessage: viewModel.qaErrorMessage,
-            onClose: {
-                closeConversationPanel()
-            }
-        )
-    }
-
-    private func openConversation(for metadata: TranscriptionMetadata) {
-        conversationTranscriptionID = metadata.id
-        viewModel.selectedId = metadata.id
-        viewModel.clearQuestionComposer()
-        Task {
-            await viewModel.loadFullTranscription(id: metadata.id)
-        }
-    }
-
-    private func closeConversationPanel() {
-        conversationTranscriptionID = nil
-        viewModel.clearQuestionComposer()
-    }
-
-    // MARK: - Right Panel
-
-    private var rightPanel: some View {
-        Group {
-            if let selected = viewModel.selectedTranscription {
-                TranscriptionDetailView(
-                    transcription: selected,
-                    isProcessing: viewModel.isProcessingAI,
-                    isSourceEditable: isSourceEditable(selected),
-                    onApplyPrompt: { prompt in
-                        Task {
-                            await viewModel.applyPostProcessing(prompt: prompt, to: selected)
-                        }
-                    },
-                    onUpdateSource: { isMeeting in
-                        if let metadata = viewModel.transcriptions.first(where: { $0.id == selected.id }) {
-                            Task {
-                                await viewModel.updateSource(for: metadata, isMeeting: isMeeting)
-                            }
-                        }
-                    },
-                    isQnAEnabled: viewModel.isMeetingQnAEnabled,
-                    qaQuestion: viewModel.qaQuestion,
-                    onQuestionChange: { newValue in
-                        viewModel.qaQuestion = newValue
-                    },
-                    onAskQuestion: {
-                        Task {
-                            await viewModel.submitQuestion(for: selected)
-                        }
-                    },
-                    onRetryQuestion: {
-                        Task {
-                            await viewModel.retryLastQuestion(for: selected)
-                        }
-                    },
-                    qaResponse: viewModel.qaResponse,
-                    qaErrorMessage: viewModel.qaErrorMessage,
-                    isAnsweringQuestion: viewModel.isAnsweringQuestion
-                )
-            } else {
-                noSelectionView
-            }
-        }
-    }
-
-    private func isSourceEditable(_ transcription: Transcription) -> Bool {
-        transcription.meeting.app == .unknown || transcription.meeting.app == .manualMeeting
-    }
-
-    private var noSelectionView: some View {
-        VStack(spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
-            Image(systemName: "doc.text.magnifyingglass")
-                .font(.system(size: 64))
-                .foregroundStyle(.tertiary)
-                .opacity(0.5)
-
-            Text("settings.transcriptions.no_selection".localized)
-                .font(.headline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
@@ -602,5 +617,5 @@ struct TranscriptionRowView: View {
 
 #Preview {
     TranscriptionsSettingsTab()
-        .frame(width: 800, height: 600)
+        .frame(width: 900, height: 620)
 }

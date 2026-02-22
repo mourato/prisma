@@ -801,6 +801,17 @@
 "transcription.qa.error.generic" = "Falha ao responder a pergunta. Tente novamente.";
 "transcription.qa.error.no_retry_context" = "Não há pergunta anterior para tentar novamente.";
 "transcription.qa.summary_title" = "Resumo da reunião";
+"transcription.qa.navigation.back" = "Voltar";
+"transcription.qa.navigation.forward" = "Avançar";
+"transcription.qa.dictation.start" = "Iniciar ditado";
+"transcription.qa.dictation.stop" = "Parar ditado";
+"transcription.qa.dictation.processing" = "Transcrevendo pergunta...";
+"transcription.qa.dictation.error.busy" = "Já existe outra gravação em andamento.";
+"transcription.qa.dictation.error.microphone_permission" = "Permissão de microfone é necessária para ditar uma pergunta.";
+"transcription.qa.dictation.error.start_failed" = "Não foi possível iniciar o ditado.";
+"transcription.qa.dictation.error.stop_failed" = "Não foi possível parar o ditado.";
+"transcription.qa.dictation.error.transcription" = "Falha ao transcrever a pergunta ditada.";
+"transcription.qa.dictation.error.empty_result" = "Nenhuma fala foi detectada no ditado.";
 
 /* Notificações */
 "notification.transcription_completed" = "Transcrição Concluída";
