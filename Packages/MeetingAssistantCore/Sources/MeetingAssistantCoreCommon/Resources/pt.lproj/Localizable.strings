@@ -98,6 +98,11 @@
 "settings.meetings.template_desc" = "Template usado para formatar os resumos exportados.";
 "settings.meetings.template_enabled" = "Aplicar template";
 "settings.meetings.template_enabled_desc" = "Quando desativado, a exportacao usa o texto do resumo diretamente.";
+"settings.meetings.export_safety_policy" = "Politica de seguranca da exportacao";
+"settings.meetings.export_safety_policy_desc" = "Bloqueia exportacoes nao conformes usando metadados de confianca do resumo canonico e registra trilha auditavel de decisao.";
+"settings.meetings.export_safety_policy.permissive" = "Permissiva";
+"settings.meetings.export_safety_policy.standard" = "Padrao";
+"settings.meetings.export_safety_policy.strict" = "Restrita";
 "settings.meetings.template.edit" = "Editar template";
 "settings.meetings.template.editor_title" = "Editar template de exportacao";
 "settings.meetings.template.editor_hint" = "Placeholders disponiveis: {{meeting_title}}, {{meeting_date}}, {{duration}}, {{summary}}.";
