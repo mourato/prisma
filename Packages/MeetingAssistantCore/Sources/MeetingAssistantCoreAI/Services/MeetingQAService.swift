@@ -62,7 +62,7 @@ public final class MeetingQAService: ObservableObject, MeetingQAServiceProtocol 
             throw MeetingQAError.disabled
         }
 
-        guard !settings.aiConfiguration.baseURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+        guard !settings.resolvedEnhancementsAIConfiguration.baseURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw MeetingQAError.noAPIConfigured
         }
 
@@ -136,9 +136,9 @@ public final class MeetingQAService: ObservableObject, MeetingQAServiceProtocol 
     }
 
     private func performRequest(question: String, transcription: Transcription) async throws -> String {
-        let config = settings.aiConfiguration
+        let config = settings.resolvedEnhancementsAIConfiguration
         let apiKey = try getAPIKey(for: config.provider)
-        let url = try buildURL(for: config)
+        let url = try buildURL(for: config, apiKey: apiKey)
         let (systemPrompt, userPrompt) = buildPrompts(question: question, transcription: transcription)
 
         var request = URLRequest(url: url)
@@ -155,6 +155,14 @@ public final class MeetingQAService: ObservableObject, MeetingQAServiceProtocol 
                 maxTokens: Constants.maxTokens,
                 system: systemPrompt,
                 messages: [AIChatMessage(role: "user", content: userPrompt)]
+            )
+            request.httpBody = try JSONEncoder().encode(payload)
+
+        case .google:
+            let payload = GeminiGenerateContentRequest(
+                systemInstruction: GeminiSystemInstruction(parts: [GeminiPart(text: systemPrompt)]),
+                contents: [GeminiContent(role: "user", parts: [GeminiPart(text: userPrompt)])],
+                generationConfig: GeminiGenerationConfig(maxOutputTokens: Constants.maxTokens)
             )
             request.httpBody = try JSONEncoder().encode(payload)
 
@@ -279,6 +287,13 @@ public final class MeetingQAService: ObservableObject, MeetingQAServiceProtocol 
             }
             return text
 
+        case .google:
+            let response = try decoder.decode(GeminiGenerateContentResponse.self, from: data)
+            guard let text = response.candidates?.first?.content?.parts.first?.text else {
+                throw MeetingQAError.invalidResponse
+            }
+            return text
+
         case .openai, .groq, .custom:
             let response = try decoder.decode(OpenAIChatResponse.self, from: data)
             guard let content = response.choices.first?.message.content else {
@@ -303,6 +318,10 @@ public final class MeetingQAService: ObservableObject, MeetingQAServiceProtocol 
                 throw MeetingQAError.requestFailed(anthropicError.error.message)
             }
 
+            if let geminiError = try? decoder.decode(GeminiErrorResponse.self, from: data) {
+                throw MeetingQAError.requestFailed(geminiError.error.message)
+            }
+
             let raw = String(data: data, encoding: .utf8) ?? ""
             throw MeetingQAError.requestFailed("HTTP \(httpResponse.statusCode): \(raw)")
         }
@@ -316,18 +335,33 @@ public final class MeetingQAService: ObservableObject, MeetingQAServiceProtocol 
         return key
     }
 
-    private func buildURL(for config: AIConfiguration) throws -> URL {
+    private func buildURL(for config: AIConfiguration, apiKey: String) throws -> URL {
         let base = config.baseURL.hasSuffix("/") ? String(config.baseURL.dropLast()) : config.baseURL
         let endpoint: String
 
         switch config.provider {
         case .anthropic:
             endpoint = "\(base)/messages"
+        case .google:
+            let rawModel = config.selectedModel.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !rawModel.isEmpty else {
+                throw MeetingQAError.noAPIConfigured
+            }
+            let model = rawModel.hasPrefix("models/") ? rawModel : "models/\(rawModel)"
+            endpoint = "\(base)/\(model):generateContent"
         case .openai, .groq, .custom:
             endpoint = "\(base)/chat/completions"
         }
 
-        guard let url = URL(string: endpoint) else {
+        guard var components = URLComponents(string: endpoint) else {
+            throw MeetingQAError.invalidURL
+        }
+
+        if config.provider == .google {
+            components.queryItems = [URLQueryItem(name: "key", value: apiKey)]
+        }
+
+        guard let url = components.url else {
             throw MeetingQAError.invalidURL
         }
 

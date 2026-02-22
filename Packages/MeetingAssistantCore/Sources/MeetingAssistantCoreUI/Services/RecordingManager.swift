@@ -1015,7 +1015,7 @@ extension RecordingManager {
         let isDictation = isDictationMode(for: meeting)
         let kernelMode: IntelligenceKernelMode = isDictation ? .dictation : .meeting
         let applyPostProcessing = settings.postProcessingEnabled
-            && settings.aiConfiguration.isValid
+            && settings.resolvedEnhancementsAIConfiguration.isValid
             && settings.isIntelligenceKernelModeEnabled(kernelMode)
 
         let disabledForRecording = isDictation
@@ -1051,7 +1051,7 @@ extension RecordingManager {
             applyPostProcessing: true,
             postProcessingPrompt: prompt,
             defaultPostProcessingPrompt: autoDetectMeetingType ? defaultMeetingPrompt : nil,
-            postProcessingModel: settings.aiConfiguration.selectedModel,
+            postProcessingModel: settings.resolvedEnhancementsAIConfiguration.selectedModel,
             autoDetectMeetingType: autoDetectMeetingType,
             availablePrompts: availablePrompts,
             postProcessingContext: postProcessingContext,
@@ -1679,7 +1679,7 @@ extension RecordingManager {
         transcriptionStatus.updateProgress(phase: .postProcessing, percentage: Constants.postProcessingProgress)
 
         let settings = AppSettingsStore.shared
-        guard settings.postProcessingEnabled, settings.aiConfiguration.isValid else { return .empty }
+        guard settings.postProcessingEnabled, settings.resolvedEnhancementsAIConfiguration.isValid else { return .empty }
 
         let isDictation = isDictationMode(for: meeting)
         guard !isPostProcessingDisabled(isDictation: isDictation, settings: settings) else { return .empty }
@@ -1781,7 +1781,7 @@ extension RecordingManager {
             let startTime = Date()
             let structuredResult = try await postProcessingService.processTranscriptionStructured(postProcessingInput, with: prompt)
             let duration = Date().timeIntervalSince(startTime)
-            let model = settings.aiConfiguration.selectedModel
+            let model = settings.resolvedEnhancementsAIConfiguration.selectedModel
             let canonicalSummary = qualityProfile.map { profile in
                 recalibrateCanonicalSummary(structuredResult.canonicalSummary, with: profile)
             } ?? structuredResult.canonicalSummary

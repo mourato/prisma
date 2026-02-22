@@ -90,3 +90,89 @@ public struct AnthropicErrorResponse: Codable {
 
     public let error: ErrorDetail
 }
+
+// MARK: - Google Gemini
+
+public struct GeminiPart: Codable, Sendable {
+    public let text: String
+
+    public init(text: String) {
+        self.text = text
+    }
+}
+
+public struct GeminiContent: Codable, Sendable {
+    public let role: String?
+    public let parts: [GeminiPart]
+
+    public init(role: String? = nil, parts: [GeminiPart]) {
+        self.role = role
+        self.parts = parts
+    }
+}
+
+public struct GeminiSystemInstruction: Codable, Sendable {
+    public let parts: [GeminiPart]
+
+    public init(parts: [GeminiPart]) {
+        self.parts = parts
+    }
+}
+
+public struct GeminiGenerationConfig: Codable, Sendable {
+    public let maxOutputTokens: Int
+
+    enum CodingKeys: String, CodingKey {
+        case maxOutputTokens = "maxOutputTokens"
+    }
+
+    public init(maxOutputTokens: Int) {
+        self.maxOutputTokens = maxOutputTokens
+    }
+}
+
+public struct GeminiGenerateContentRequest: Codable, Sendable {
+    public let systemInstruction: GeminiSystemInstruction
+    public let contents: [GeminiContent]
+    public let generationConfig: GeminiGenerationConfig
+
+    public init(
+        systemInstruction: GeminiSystemInstruction,
+        contents: [GeminiContent],
+        generationConfig: GeminiGenerationConfig
+    ) {
+        self.systemInstruction = systemInstruction
+        self.contents = contents
+        self.generationConfig = generationConfig
+    }
+}
+
+public struct GeminiGenerateContentResponse: Codable, Sendable {
+    public struct Candidate: Codable, Sendable {
+        public let content: GeminiContent?
+    }
+
+    public let candidates: [Candidate]?
+}
+
+public struct GeminiErrorResponse: Codable, Sendable {
+    public struct ErrorDetail: Codable, Sendable {
+        public let message: String
+    }
+
+    public let error: ErrorDetail
+}
+
+public struct GeminiModelsResponse: Codable, Sendable {
+    public struct GeminiModel: Codable, Sendable {
+        public let name: String
+        public let displayName: String?
+
+        enum CodingKeys: String, CodingKey {
+            case name
+            case displayName = "displayName"
+        }
+    }
+
+    public let models: [GeminiModel]
+}

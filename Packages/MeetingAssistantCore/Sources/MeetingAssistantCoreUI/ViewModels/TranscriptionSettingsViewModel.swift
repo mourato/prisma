@@ -31,6 +31,28 @@ public class TranscriptionSettingsViewModel: ObservableObject {
         static let nameAppPrefix = "name:"
     }
 
+    public struct QATurn: Identifiable, Hashable, Sendable {
+        public let id: UUID
+        public let question: String
+        public let response: MeetingQAResponse?
+        public let errorMessage: String?
+        public let createdAt: Date
+
+        public init(
+            id: UUID = UUID(),
+            question: String,
+            response: MeetingQAResponse?,
+            errorMessage: String?,
+            createdAt: Date = Date()
+        ) {
+            self.id = id
+            self.question = question
+            self.response = response
+            self.errorMessage = errorMessage
+            self.createdAt = createdAt
+        }
+    }
+
     @Published public var transcriptions: [TranscriptionMetadata] = []
     @Published public var selectedTranscription: Transcription?
     @Published public var selectedId: UUID? {
@@ -50,6 +72,7 @@ public class TranscriptionSettingsViewModel: ObservableObject {
     @Published public private(set) var qaResponse: MeetingQAResponse?
     @Published public private(set) var isAnsweringQuestion = false
     @Published public private(set) var qaErrorMessage: String?
+    @Published public private(set) var qaHistoryByTranscription: [UUID: [QATurn]] = [:]
 
     @Published public var isLoading = true
     @Published public var sourceFilter: RecordingSourceFilter = .all
@@ -83,6 +106,10 @@ public class TranscriptionSettingsViewModel: ObservableObject {
 
     public var isMeetingQnAEnabled: Bool {
         settings.meetingQnAEnabled
+    }
+
+    public func qaHistory(for transcriptionID: UUID) -> [QATurn] {
+        qaHistoryByTranscription[transcriptionID] ?? []
     }
 
     public var filteredTranscriptions: [TranscriptionMetadata] {
@@ -305,6 +332,17 @@ public class TranscriptionSettingsViewModel: ObservableObject {
         await askQuestion(lastAskedQuestion, for: transcription)
     }
 
+    public func retryQuestion(_ question: String, for transcription: Transcription) async {
+        let trimmedQuestion = question.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedQuestion.isEmpty else {
+            qaErrorMessage = "transcription.qa.error.empty_question".localized
+            return
+        }
+
+        qaQuestion = trimmedQuestion
+        await askQuestion(trimmedQuestion, for: transcription)
+    }
+
     private func askQuestion(_ question: String, for transcription: Transcription) async {
         guard !isAnsweringQuestion else { return }
 
@@ -317,10 +355,34 @@ public class TranscriptionSettingsViewModel: ObservableObject {
         do {
             let response = try await meetingQAService.ask(question: question, transcription: transcription)
             qaResponse = response
+            appendQATurn(
+                QATurn(
+                    question: question,
+                    response: response,
+                    errorMessage: nil
+                ),
+                transcriptionID: transcription.id
+            )
         } catch let error as MeetingQAError {
             qaErrorMessage = localizedQuestionError(for: error)
+            appendQATurn(
+                QATurn(
+                    question: question,
+                    response: nil,
+                    errorMessage: qaErrorMessage
+                ),
+                transcriptionID: transcription.id
+            )
         } catch {
             qaErrorMessage = "transcription.qa.error.generic".localized
+            appendQATurn(
+                QATurn(
+                    question: question,
+                    response: nil,
+                    errorMessage: qaErrorMessage
+                ),
+                transcriptionID: transcription.id
+            )
         }
     }
 
@@ -353,6 +415,17 @@ public class TranscriptionSettingsViewModel: ObservableObject {
         lastQuestionTranscriptionId = nil
     }
 
+    public func clearQuestionComposer() {
+        qaQuestion = ""
+        qaErrorMessage = nil
+    }
+
+    private func appendQATurn(_ turn: QATurn, transcriptionID: UUID) {
+        var turns = qaHistoryByTranscription[transcriptionID] ?? []
+        turns.append(turn)
+        qaHistoryByTranscription[transcriptionID] = turns
+    }
+
     public func openRecordingsDirectory() {
         NSWorkspace.shared.open(storage.recordingsDirectory)
     }
@@ -383,7 +456,7 @@ public class TranscriptionSettingsViewModel: ObservableObject {
             )
 
             let duration = Date().timeIntervalSince(startTime)
-            let config = AppSettingsStore.shared.aiConfiguration
+            let config = AppSettingsStore.shared.resolvedEnhancementsAIConfiguration
             let modelUsed = config.selectedModel
 
             let updatedTranscription = Transcription(

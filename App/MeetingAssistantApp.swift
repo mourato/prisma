@@ -285,8 +285,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         contextMenu?.addItem(NSMenuItem.separator())
 
         contextMenu?.addItem(createMenuItem(
-            key: "menubar.dictations",
-            action: #selector(openDictations),
+            key: "menubar.history",
+            action: #selector(openHistory),
             systemImage: SettingsSection.transcriptions.icon
         ))
 
@@ -552,7 +552,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NavigationService.shared.openSettings()
     }
 
-    @objc private func openDictations() {
+    @objc private func openHistory() {
         NavigationService.shared.openSettings(section: SettingsSection.transcriptions.rawValue)
     }
 

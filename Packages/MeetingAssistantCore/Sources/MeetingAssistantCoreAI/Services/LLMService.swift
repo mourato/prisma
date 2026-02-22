@@ -6,7 +6,7 @@ import MeetingAssistantCoreInfrastructure
 public protocol LLMService: Sendable {
     func validateURL(_ urlString: String) -> URL?
     func fetchAvailableModels(baseURL: URL, apiKey: String, provider: AIProvider) async throws -> [LLMModel]
-    func testConnection(baseURL: URL, apiKey: String) async throws -> Bool
+    func testConnection(baseURL: URL, apiKey: String, provider: AIProvider) async throws -> Bool
 }
 
 public struct DefaultLLMService: LLMService {
@@ -26,7 +26,7 @@ public struct DefaultLLMService: LLMService {
     }
 
     public func fetchAvailableModels(baseURL: URL, apiKey: String, provider: AIProvider) async throws -> [LLMModel] {
-        let request = try buildModelsRequest(baseURL: baseURL, apiKey: apiKey)
+        let request = try buildModelsRequest(baseURL: baseURL, apiKey: apiKey, provider: provider)
         let (data, response) = try await session.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse,
@@ -35,20 +35,28 @@ public struct DefaultLLMService: LLMService {
             throw URLError(.badServerResponse)
         }
 
+        if provider == .google {
+            let response = try JSONDecoder().decode(GeminiModelsResponse.self, from: data)
+            return response.models.map { model in
+                let normalizedID = model.name.hasPrefix("models/")
+                    ? String(model.name.dropFirst("models/".count))
+                    : model.name
+                return LLMModel(
+                    id: normalizedID,
+                    object: "model",
+                    created: nil,
+                    ownedBy: "google"
+                )
+            }
+            .sorted { $0.id < $1.id }
+        }
+
         let modelsResponse = try JSONDecoder().decode(LLMModelsResponse.self, from: data)
         return modelsResponse.data.sorted { $0.id < $1.id }
     }
 
-    public func testConnection(baseURL: URL, apiKey: String) async throws -> Bool {
-        // Append "models" to the base URL for verification, as most providers (OpenAI, Groq, Anthropic)
-        // return 404 on the base URL but successfully list models on /models.
-        let validationURL = baseURL.appendingPathComponent("models")
-        var request = URLRequest(url: validationURL)
-        request.httpMethod = "GET"
-        request.timeoutInterval = requestTimeout
-        if !apiKey.isEmpty {
-            request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        }
+    public func testConnection(baseURL: URL, apiKey: String, provider: AIProvider) async throws -> Bool {
+        let request = try buildModelsRequest(baseURL: baseURL, apiKey: apiKey, provider: provider)
 
         let (_, response) = try await session.data(for: request)
         if let httpResponse = response as? HTTPURLResponse {
@@ -57,15 +65,39 @@ public struct DefaultLLMService: LLMService {
         return false
     }
 
-    private func buildModelsRequest(baseURL: URL, apiKey: String) throws -> URLRequest {
-        let modelsURL = baseURL.appendingPathComponent("models")
+    private func buildModelsRequest(baseURL: URL, apiKey: String, provider: AIProvider) throws -> URLRequest {
+        let modelsURL: URL
+        switch provider {
+        case .google:
+            guard var components = URLComponents(
+                url: baseURL.appendingPathComponent("models"),
+                resolvingAgainstBaseURL: false
+            ) else {
+                throw URLError(.badURL)
+            }
+            components.queryItems = [URLQueryItem(name: "key", value: apiKey)]
+            guard let url = components.url else {
+                throw URLError(.badURL)
+            }
+            modelsURL = url
+        case .openai, .groq, .anthropic, .custom:
+            modelsURL = baseURL.appendingPathComponent("models")
+        }
+
         var request = URLRequest(url: modelsURL)
         request.httpMethod = "GET"
         request.timeoutInterval = requestTimeout
 
-        if !apiKey.isEmpty {
+        switch provider {
+        case .anthropic:
+            request.setValue(apiKey, forHTTPHeaderField: "x-api-key")
+            request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+        case .google:
+            break
+        case .openai, .groq, .custom:
             request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         }
+
         return request
     }
 }

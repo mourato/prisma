@@ -11,6 +11,7 @@ public enum AIProvider: String, CaseIterable, Codable, Sendable {
     case openai
     case anthropic
     case groq
+    case google
     case custom
 
     public var displayName: String {
@@ -18,6 +19,7 @@ public enum AIProvider: String, CaseIterable, Codable, Sendable {
         case .openai: "OpenAI"
         case .anthropic: "Anthropic"
         case .groq: "Groq"
+        case .google: "Google"
         case .custom: "ai.provider.custom".localized
         }
     }
@@ -27,6 +29,7 @@ public enum AIProvider: String, CaseIterable, Codable, Sendable {
         case .openai: "https://api.openai.com/v1"
         case .anthropic: "https://api.anthropic.com/v1"
         case .groq: "https://api.groq.com/openai/v1"
+        case .google: "https://generativelanguage.googleapis.com/v1beta"
         case .custom: ""
         }
     }
@@ -36,6 +39,7 @@ public enum AIProvider: String, CaseIterable, Codable, Sendable {
         case .openai: "brain"
         case .anthropic: "sparkles"
         case .groq: "bolt.fill"
+        case .google: "g.circle"
         case .custom: "server.rack"
         }
     }
@@ -45,6 +49,7 @@ public enum AIProvider: String, CaseIterable, Codable, Sendable {
         case .openai: URL(string: "https://platform.openai.com/api-keys")
         case .anthropic: URL(string: "https://console.anthropic.com/settings/keys")
         case .groq: URL(string: "https://console.groq.com/keys")
+        case .google: URL(string: "https://aistudio.google.com/app/apikey")
         case .custom: nil
         }
     }
@@ -738,6 +743,21 @@ public struct AIConfiguration: Codable, Equatable, Sendable {
     }
 }
 
+public struct EnhancementsAISelection: Codable, Equatable, Sendable {
+    public var provider: AIProvider
+    public var selectedModel: String
+
+    public init(provider: AIProvider, selectedModel: String) {
+        self.provider = provider
+        self.selectedModel = selectedModel
+    }
+
+    public static let `default` = EnhancementsAISelection(
+        provider: .openai,
+        selectedModel: ""
+    )
+}
+
 // MARK: - App Settings Store
 
 /// Centralized settings manager using UserDefaults.
@@ -823,6 +843,7 @@ public class AppSettingsStore: ObservableObject {
 
     private enum Keys {
         static let aiConfiguration = "aiConfiguration"
+        static let enhancementsAISelection = "enhancementsAISelection"
         static let systemPrompt = "postProcessingSystemPrompt"
         static let userPrompts = "postProcessingUserPrompts"
         static let selectedPromptId = "postProcessingSelectedPromptId"
@@ -911,6 +932,11 @@ public class AppSettingsStore: ObservableObject {
         didSet { save(aiConfiguration, forKey: Keys.aiConfiguration) }
     }
 
+    /// Provider/model selection for meeting intelligence features.
+    @Published public var enhancementsAISelection: EnhancementsAISelection {
+        didSet { save(enhancementsAISelection, forKey: Keys.enhancementsAISelection) }
+    }
+
     // MARK: - AI Configuration Helpers
 
     /// Updates the selected model for the current AI provider.
@@ -933,6 +959,31 @@ public class AppSettingsStore: ObservableObject {
             config.selectedModel = selectedModel
         }
         aiConfiguration = config
+    }
+
+    public func updateEnhancementsProvider(_ provider: AIProvider) {
+        var selection = enhancementsAISelection
+        guard selection.provider != provider else { return }
+        selection.provider = provider
+        selection.selectedModel = ""
+        enhancementsAISelection = selection
+    }
+
+    public func updateEnhancementsSelectedModel(_ model: String) {
+        var selection = enhancementsAISelection
+        selection.selectedModel = model
+        enhancementsAISelection = selection
+    }
+
+    /// Resolves the runtime configuration for Enhancements (post-processing + Q&A).
+    public var resolvedEnhancementsAIConfiguration: AIConfiguration {
+        let provider = enhancementsAISelection.provider
+        let baseURL = provider == .custom ? aiConfiguration.baseURL : provider.defaultBaseURL
+        return AIConfiguration(
+            provider: provider,
+            baseURL: baseURL,
+            selectedModel: enhancementsAISelection.selectedModel
+        )
     }
 
     // MARK: - Post-Processing Properties
@@ -1649,7 +1700,9 @@ public class AppSettingsStore: ObservableObject {
     // MARK: - Initialization
 
     private init() {
-        aiConfiguration = Self.loadAIConfiguration()
+        let loadedAIConfiguration = Self.loadAIConfiguration()
+        aiConfiguration = loadedAIConfiguration
+        enhancementsAISelection = Self.loadEnhancementsAISelection(defaultingTo: loadedAIConfiguration)
 
         systemPrompt = UserDefaults.standard.string(forKey: Keys.systemPrompt) ?? AIPromptTemplates.defaultSystemPrompt
 
@@ -1802,7 +1855,7 @@ public class AppSettingsStore: ObservableObject {
         ) ?? .standard
         meetingQnAEnabled = Self.loadBoolDefaultIfUnset(
             forKey: Keys.meetingQnAEnabled,
-            defaultValue: false
+            defaultValue: true
         )
         let loadedContextAwarenessEnabled = UserDefaults.standard.bool(forKey: Keys.contextAwarenessEnabled)
         contextAwarenessEnabled = loadedContextAwarenessEnabled
@@ -2113,6 +2166,15 @@ public class AppSettingsStore: ObservableObject {
         return config
     }
 
+    private static func loadEnhancementsAISelection(defaultingTo config: AIConfiguration) -> EnhancementsAISelection {
+        if let selection = loadDecoded(EnhancementsAISelection.self, forKey: Keys.enhancementsAISelection) {
+            return selection
+        }
+
+        // Backward-compatible bootstrap from the existing global AI configuration.
+        return EnhancementsAISelection(provider: config.provider, selectedModel: config.selectedModel)
+    }
+
     private static func loadUUID(forKey key: String) -> UUID? {
         UserDefaults.standard.string(forKey: key).flatMap(UUID.init(uuidString:))
     }
@@ -2349,6 +2411,7 @@ public class AppSettingsStore: ObservableObject {
     /// Reset all settings to defaults.
     public func resetToDefaults() {
         aiConfiguration = .default
+        enhancementsAISelection = .default
         systemPrompt = AIPromptTemplates.defaultSystemPrompt
         userPrompts = []
         dictationPrompts = []
@@ -2402,6 +2465,7 @@ public class AppSettingsStore: ObservableObject {
         meetingTypeAutoDetectEnabled = false
         summaryTemplateEnabled = true
         summaryExportSafetyPolicyLevel = .standard
+        meetingQnAEnabled = true
         contextAwarenessExplicitActionOnly = true
         markdownTargetBundleIdentifiers = Self.defaultMarkdownTargetBundleIdentifiers
         dictationAppRules = Self.defaultDictationAppRules

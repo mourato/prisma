@@ -42,9 +42,9 @@ public struct AIProviderIntegrationCard: View {
                 VStack(spacing: 0) {
                     providerRow
                     Divider()
-                    modelRow
-                    Divider()
                     apiKeyRow
+                    Divider()
+                    modelRow
                     if viewModel.settings.aiConfiguration.provider == .custom {
                         Divider()
                         baseURLRow
@@ -324,7 +324,7 @@ private struct PreviewLLMService: LLMService {
         []
     }
 
-    func testConnection(baseURL: URL, apiKey: String) async throws -> Bool {
+    func testConnection(baseURL: URL, apiKey: String, provider: AIProvider) async throws -> Bool {
         true
     }
 }

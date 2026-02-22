@@ -24,6 +24,13 @@ public class AISettingsViewModel: ObservableObject {
     @Published public private(set) var lastModelsRefreshAt: Date?
     @Published public private(set) var lastModelsRefreshSucceeded = false
     @Published public private(set) var lastModelsRefreshResultText: String?
+    @Published public var enhancementsAvailableModels: [LLMModel] = []
+    @Published public var isLoadingEnhancementsModels = false
+    @Published public var enhancementsModelsFetchError: String?
+    @Published public private(set) var enhancementsLastModelsRefreshAt: Date?
+    @Published public private(set) var enhancementsLastModelsRefreshSucceeded = false
+    @Published public private(set) var enhancementsLastModelsRefreshResultText: String?
+    @Published public private(set) var isEnhancementsProviderKeySaved = false
     @Published public var actionError: String?
 
     private let logger = Logger(subsystem: "MeetingAssistant", category: "AISettingsViewModel")
@@ -31,6 +38,7 @@ public class AISettingsViewModel: ObservableObject {
     private let llmService: LLMService
     private var cancellables = Set<AnyCancellable>()
     private var lastAutomaticModelsFetchAt: Date?
+    private var lastAutomaticEnhancementsModelsFetchAt: Date?
     private let automaticModelsFetchThrottleInterval: TimeInterval = 15
 
     public var canRefreshModels: Bool {
@@ -44,6 +52,15 @@ public class AISettingsViewModel: ObservableObject {
     public var modelsRefreshSummary: String? {
         guard let result = lastModelsRefreshResultText,
               let refreshedAt = lastModelsRefreshAt
+        else { return nil }
+
+        let refreshTime = DateFormatter.localizedString(from: refreshedAt, dateStyle: .none, timeStyle: .short)
+        return "\(result) • \(refreshTime)"
+    }
+
+    public var enhancementsModelsRefreshSummary: String? {
+        guard let result = enhancementsLastModelsRefreshResultText,
+              let refreshedAt = enhancementsLastModelsRefreshAt
         else { return nil }
 
         let refreshTime = DateFormatter.localizedString(from: refreshedAt, dateStyle: .none, timeStyle: .short)
@@ -72,8 +89,20 @@ public class AISettingsViewModel: ObservableObject {
             }
             .store(in: &cancellables)
 
+        settings.$enhancementsAISelection
+            .map(\.provider)
+            .removeDuplicates()
+            .dropFirst()
+            .sink { [weak self] _ in
+                guard let self else { return }
+                settings.updateEnhancementsSelectedModel("")
+                refreshEnhancementsProviderCredentialState()
+            }
+            .store(in: &cancellables)
+
         // Initial load for current provider
         refreshProviderCredentialState()
+        refreshEnhancementsProviderCredentialState()
     }
 
     private func updateUIStates() {
@@ -144,7 +173,8 @@ public class AISettingsViewModel: ObservableObject {
             do {
                 let success = try await llmService.testConnection(
                     baseURL: url,
-                    apiKey: apiKeySnapshot
+                    apiKey: apiKeySnapshot,
+                    provider: settings.aiConfiguration.provider
                 )
 
                 if success {
@@ -153,6 +183,7 @@ public class AISettingsViewModel: ObservableObject {
                     self.isKeySaved = !apiKeySnapshot.isEmpty
                     self.clearTransientAPIKey()
                     self.updateUIStates()
+                    self.refreshEnhancementsCredentialStateIfNeeded()
                     await self.fetchAvailableModels()
                 } else {
                     self.connectionStatus = .failure("settings.ai.connection.invalid_response".localized)
@@ -172,6 +203,14 @@ public class AISettingsViewModel: ObservableObject {
         Task { [weak self] in
             guard let self else { return }
             await fetchAvailableModels(trigger: .manual)
+        }
+    }
+
+    @discardableResult
+    public func refreshEnhancementsModelsManually() -> Task<Void, Never> {
+        Task { [weak self] in
+            guard let self else { return }
+            await fetchEnhancementsAvailableModels(trigger: .manual)
         }
     }
 
@@ -219,6 +258,78 @@ public class AISettingsViewModel: ObservableObject {
         }
     }
 
+    public func refreshEnhancementsProviderCredentialState() {
+        isEnhancementsProviderKeySaved = keychain.existsAPIKey(for: settings.enhancementsAISelection.provider)
+        enhancementsModelsFetchError = nil
+
+        if isEnhancementsProviderKeySaved {
+            Task {
+                await fetchEnhancementsAvailableModels()
+            }
+        } else {
+            enhancementsAvailableModels = []
+            enhancementsLastModelsRefreshResultText = nil
+            enhancementsLastModelsRefreshAt = nil
+            enhancementsLastModelsRefreshSucceeded = false
+        }
+    }
+
+    public func fetchEnhancementsAvailableModels(trigger: ModelFetchTrigger = .automatic) async {
+        if trigger == .automatic,
+           let lastFetch = lastAutomaticEnhancementsModelsFetchAt,
+           Date().timeIntervalSince(lastFetch) < automaticModelsFetchThrottleInterval
+        {
+            return
+        }
+
+        let config = settings.resolvedEnhancementsAIConfiguration
+        guard let baseURL = llmService.validateURL(config.baseURL) else {
+            enhancementsModelsFetchError = "settings.ai.connection.invalid_url".localized
+            registerEnhancementsModelsRefreshResult(
+                success: false,
+                message: "settings.ai.connection.invalid_url".localized
+            )
+            return
+        }
+
+        guard isEnhancementsProviderKeySaved else {
+            enhancementsAvailableModels = []
+            enhancementsModelsFetchError = "transcription.qa.error.no_api".localized
+            registerEnhancementsModelsRefreshResult(
+                success: false,
+                message: "settings.ai.models.fetch_failed".localized
+            )
+            return
+        }
+
+        if trigger == .automatic {
+            lastAutomaticEnhancementsModelsFetchAt = Date()
+        }
+
+        isLoadingEnhancementsModels = true
+        enhancementsModelsFetchError = nil
+        defer { isLoadingEnhancementsModels = false }
+
+        do {
+            let apiKey = try keychain.retrieveAPIKey(for: config.provider) ?? ""
+            enhancementsAvailableModels = try await llmService.fetchAvailableModels(
+                baseURL: baseURL,
+                apiKey: apiKey,
+                provider: config.provider
+            )
+            registerEnhancementsModelsRefreshResult(
+                success: true,
+                message: String(format: "settings.ai.models_loaded".localized, enhancementsAvailableModels.count)
+            )
+        } catch {
+            enhancementsModelsFetchError = error.localizedDescription
+            registerEnhancementsModelsRefreshResult(
+                success: false,
+                message: "settings.ai.models.fetch_failed".localized
+            )
+        }
+    }
+
     /// Removes the API key for the current provider from the Keychain.
     public func removeAPIKey() {
         actionError = nil
@@ -230,12 +341,18 @@ public class AISettingsViewModel: ObservableObject {
             connectionStatus = .unknown
             updateUIStates()
             availableModels = []
+            refreshEnhancementsCredentialStateIfNeeded()
             // swiftformat:disable:next redundantSelf
             logger.info("API Key removed from Keychain for \(self.settings.aiConfiguration.provider.displayName)")
         } catch {
             actionError = "settings.ai.remove_failed".localized
             logger.error("Failed to remove API key: \(error.localizedDescription)")
         }
+    }
+
+    private func refreshEnhancementsCredentialStateIfNeeded() {
+        guard settings.enhancementsAISelection.provider == settings.aiConfiguration.provider else { return }
+        refreshEnhancementsProviderCredentialState()
     }
 
     private var normalizedAPIKeyText: String {
@@ -258,6 +375,12 @@ public class AISettingsViewModel: ObservableObject {
         lastModelsRefreshSucceeded = success
         lastModelsRefreshResultText = message
         lastModelsRefreshAt = Date()
+    }
+
+    private func registerEnhancementsModelsRefreshResult(success: Bool, message: String) {
+        enhancementsLastModelsRefreshSucceeded = success
+        enhancementsLastModelsRefreshResultText = message
+        enhancementsLastModelsRefreshAt = Date()
     }
 
     private func connectionErrorMessage(from error: Error) -> String {
