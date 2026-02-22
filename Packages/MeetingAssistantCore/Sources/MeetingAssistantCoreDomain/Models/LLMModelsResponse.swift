@@ -18,6 +18,13 @@ public struct LLMModel: Codable, Identifiable, Equatable, Sendable {
         case id, object, created
         case ownedBy = "owned_by"
     }
+
+    public init(id: String, object: String? = nil, created: Int? = nil, ownedBy: String? = nil) {
+        self.id = id
+        self.object = object
+        self.created = created
+        self.ownedBy = ownedBy
+    }
 }
 
 /// Response from the `/models` endpoint of OpenAI-compatible APIs.

@@ -38,6 +38,7 @@ public struct TranscriptionCardView: View {
     @State private var showInfoPopover = false
 
     public enum TranscriptionAction {
+        case askAboutMeeting
         case copy(text: String)
         case reprocess(prompt: PostProcessingPrompt)
         case retryTranscription
@@ -127,6 +128,14 @@ public struct TranscriptionCardView: View {
                 Spacer()
 
                 HStack(spacing: 12) {
+                    Button {
+                        onAction(.askAboutMeeting)
+                    } label: {
+                        Label("transcription.qa.title".localized, systemImage: "bubble.left.and.bubble.right")
+                            .font(.caption)
+                    }
+                    .buttonStyle(.bordered)
+
                     Button {
                         onAction(.copy(text: currentText))
                     } label: {

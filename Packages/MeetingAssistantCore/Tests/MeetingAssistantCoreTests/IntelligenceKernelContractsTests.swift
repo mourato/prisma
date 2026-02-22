@@ -16,9 +16,11 @@ final class IntelligenceKernelContractsTests: XCTestCase {
     func testMeetingQAServiceSupportsKernelRequestContract() async throws {
         let originalMeetingQnAEnabled = AppSettingsStore.shared.meetingQnAEnabled
         let originalAIConfiguration = AppSettingsStore.shared.aiConfiguration
+        let originalEnhancementsAISelection = AppSettingsStore.shared.enhancementsAISelection
         defer {
             AppSettingsStore.shared.meetingQnAEnabled = originalMeetingQnAEnabled
             AppSettingsStore.shared.aiConfiguration = originalAIConfiguration
+            AppSettingsStore.shared.enhancementsAISelection = originalEnhancementsAISelection
             MockKernelQANetworkURLProtocol.requestHandler = nil
         }
 
@@ -26,6 +28,10 @@ final class IntelligenceKernelContractsTests: XCTestCase {
         AppSettingsStore.shared.aiConfiguration = AIConfiguration(
             provider: .openai,
             baseURL: "https://example.com/v1",
+            selectedModel: "gpt-4o-mini"
+        )
+        AppSettingsStore.shared.enhancementsAISelection = EnhancementsAISelection(
+            provider: .openai,
             selectedModel: "gpt-4o-mini"
         )
 

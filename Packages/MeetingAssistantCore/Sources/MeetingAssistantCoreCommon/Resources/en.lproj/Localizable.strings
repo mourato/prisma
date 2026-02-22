@@ -5,7 +5,7 @@
 "settings.section.meetings" = "Meetings";
 "settings.section.audio" = "Sound";
 "settings.section.transcriptions" = "Transcriptions";
-"settings.section.dictations" = "Dictations";
+"settings.section.history" = "History";
 "settings.section.assistant" = "Assistant";
 "settings.section.integrations" = "Integrations";
 "settings.section.rules_per_app" = "Rules";
@@ -212,6 +212,9 @@
 "settings.ai.no_models" = "No models available";
 "settings.ai.ready" = "Ready";
 "settings.ai.failed" = "Failed";
+"settings.enhancements.meeting_intelligence_model" = "Meeting Intelligence Model";
+"settings.enhancements.qa_enabled_desc" = "Enable grounded Q&A on saved meetings.";
+"settings.enhancements.model_warning_desc" = "Configure provider API key and choose a model in Meeting Intelligence Model to run post-processing and meeting Q&A.";
 
 /* Post-Processing Settings */
 "settings.post_processing.title" = "Post-Processing";
@@ -734,7 +737,7 @@
 "menubar.record_meeting" = "Record Meeting";
 "menubar.assistant" = "Assistant";
 "menubar.stop_assistant" = "Stop Assistant";
-"menubar.dictations" = "Dictations";
+"menubar.history" = "History";
 
 /* Settings */
 "settings.title" = "Settings";
@@ -809,6 +812,7 @@
 "transcription.qa.error.invalid_response" = "Invalid response from provider. Please retry.";
 "transcription.qa.error.generic" = "Failed to answer the question. Please try again.";
 "transcription.qa.error.no_retry_context" = "There is no previous question to retry.";
+"transcription.qa.summary_title" = "Meeting summary";
 
 /* Notifications */
 "notification.transcription_completed" = "Transcription Completed";

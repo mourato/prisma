@@ -20,7 +20,7 @@ public struct PostProcessingSettingsTab: View {
 
             if viewModel.settings.postProcessingEnabled {
                 Group {
-                    if viewModel.settings.aiConfiguration.isValid {
+                    if viewModel.settings.resolvedEnhancementsAIConfiguration.isValid {
                         systemPromptSection
                         userPromptsSection
                     } else {

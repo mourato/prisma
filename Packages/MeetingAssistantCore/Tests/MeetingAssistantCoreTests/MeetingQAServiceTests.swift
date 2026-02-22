@@ -6,17 +6,23 @@ import XCTest
 final class MeetingQAServiceTests: XCTestCase {
     private var originalMeetingQnAEnabled = false
     private var originalAIConfiguration = AIConfiguration.default
+    private var originalEnhancementsAISelection = EnhancementsAISelection.default
 
     override func setUp() async throws {
         try await super.setUp()
         let settings = AppSettingsStore.shared
         originalMeetingQnAEnabled = settings.meetingQnAEnabled
         originalAIConfiguration = settings.aiConfiguration
+        originalEnhancementsAISelection = settings.enhancementsAISelection
 
         settings.meetingQnAEnabled = true
         settings.aiConfiguration = AIConfiguration(
             provider: .openai,
             baseURL: "https://example.com/v1",
+            selectedModel: "gpt-4o-mini"
+        )
+        settings.enhancementsAISelection = EnhancementsAISelection(
+            provider: .openai,
             selectedModel: "gpt-4o-mini"
         )
     }
@@ -25,6 +31,7 @@ final class MeetingQAServiceTests: XCTestCase {
         let settings = AppSettingsStore.shared
         settings.meetingQnAEnabled = originalMeetingQnAEnabled
         settings.aiConfiguration = originalAIConfiguration
+        settings.enhancementsAISelection = originalEnhancementsAISelection
         MockMeetingQANetworkURLProtocol.requestHandler = nil
         try await super.tearDown()
     }
@@ -148,6 +155,59 @@ final class MeetingQAServiceTests: XCTestCase {
         XCTAssertEqual(callCount, 2)
         XCTAssertEqual(response.status, .answered)
         XCTAssertEqual(response.answer, "Budget approved.")
+    }
+
+    func testAskWithGoogleProviderParsesGeminiPayload() async throws {
+        let settings = AppSettingsStore.shared
+        settings.aiConfiguration = AIConfiguration(
+            provider: .google,
+            baseURL: AIProvider.google.defaultBaseURL,
+            selectedModel: "gemini-2.0-flash"
+        )
+        settings.enhancementsAISelection = EnhancementsAISelection(
+            provider: .google,
+            selectedModel: "gemini-2.0-flash"
+        )
+
+        let session = makeMockedSession()
+        MockMeetingQANetworkURLProtocol.requestHandler = { request in
+            XCTAssertTrue(request.url?.absoluteString.contains("models/gemini-2.0-flash:generateContent") ?? false)
+            XCTAssertTrue(request.url?.absoluteString.contains("key=test-key") ?? false)
+            let body = """
+            {
+              "candidates": [
+                {
+                  "content": {
+                    "parts": [
+                      {
+                        "text": "{\\\"status\\\":\\\"answered\\\",\\\"answer\\\":\\\"Launch is Friday.\\\",\\\"evidence\\\":[{\\\"speaker\\\":\\\"Ana\\\",\\\"startTime\\\":12,\\\"endTime\\\":16,\\\"excerpt\\\":\\\"Vamos lançar sexta.\\\"}]}"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+            """
+            return (
+                HTTPURLResponse(url: URL(string: "https://example.com")!, statusCode: 200, httpVersion: nil, headerFields: nil)!,
+                Data(body.utf8)
+            )
+        }
+
+        let service = MeetingQAService(
+            settings: .shared,
+            session: session,
+            apiKeyProvider: { _ in "test-key" },
+            sleepFunction: { _ in }
+        )
+
+        let response = try await service.ask(
+            question: "When are we launching?",
+            transcription: makeTranscription()
+        )
+
+        XCTAssertEqual(response.status, .answered)
+        XCTAssertEqual(response.answer, "Launch is Friday.")
     }
 
     private func makeMockedSession() -> URLSession {

@@ -78,7 +78,7 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
         systemPromptOverride: String?
     ) async throws -> String {
         _ = try validateInput(transcription)
-        guard settings.aiConfiguration.isValid else {
+        guard settings.resolvedEnhancementsAIConfiguration.isValid else {
             throw PostProcessingError.noAPIConfigured
         }
 
@@ -137,7 +137,7 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
         systemPromptOverride: String?
     ) async throws -> DomainPostProcessingResult {
         _ = try validateInput(transcription)
-        guard settings.aiConfiguration.isValid else {
+        guard settings.resolvedEnhancementsAIConfiguration.isValid else {
             throw PostProcessingError.noAPIConfigured
         }
 
@@ -331,9 +331,9 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
         prompt: PostProcessingPrompt,
         systemPromptOverride: String?
     ) async throws -> String {
-        let config = settings.aiConfiguration
+        let config = settings.resolvedEnhancementsAIConfiguration
         let apiKey = try getAPIKey(for: config.provider)
-        let url = try buildURL(for: config)
+        let url = try buildURL(for: config, apiKey: apiKey)
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -352,7 +352,7 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
         AppLogger.debug(
             "Sending post-processing request",
             category: .transcriptionEngine,
-            extra: ["url": url.absoluteString]
+            extra: ["url": sanitizedURLForLogging(url)]
         )
 
         let (data, response) = try await URLSession.shared.data(for: request)
@@ -362,9 +362,9 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
     }
 
     private func performCustomAIRequest(systemPrompt: String, userContent: String) async throws -> String {
-        let config = settings.aiConfiguration
+        let config = settings.resolvedEnhancementsAIConfiguration
         let apiKey = try getAPIKey(for: config.provider)
-        let url = try buildURL(for: config)
+        let url = try buildURL(for: config, apiKey: apiKey)
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -420,9 +420,15 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
         return apiKey
     }
 
-    private func buildURL(for config: AIConfiguration) throws -> URL {
-        let endpoint = buildEndpoint(for: config.provider, baseURL: config.baseURL)
-        guard let url = URL(string: endpoint) else {
+    private func buildURL(for config: AIConfiguration, apiKey: String) throws -> URL {
+        let endpoint = try buildEndpoint(for: config.provider, baseURL: config.baseURL, model: config.selectedModel)
+        guard var components = URLComponents(string: endpoint) else {
+            throw PostProcessingError.invalidURL
+        }
+        if config.provider == .google {
+            components.queryItems = [URLQueryItem(name: "key", value: apiKey)]
+        }
+        guard let url = components.url else {
             throw PostProcessingError.invalidURL
         }
         return url
@@ -437,6 +443,8 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
         case .anthropic:
             request.setValue(apiKey, forHTTPHeaderField: "x-api-key")
             request.setValue(Constants.anthropicAPIVersion, forHTTPHeaderField: "anthropic-version")
+        case .google:
+            break
         case .openai, .groq, .custom:
             request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         }
@@ -488,6 +496,14 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
                 )
                 request.httpBody = try encoder.encode(payload)
 
+            case .google:
+                let payload = GeminiGenerateContentRequest(
+                    systemInstruction: GeminiSystemInstruction(parts: [GeminiPart(text: systemMessage)]),
+                    contents: [GeminiContent(role: "user", parts: [GeminiPart(text: userContent)])],
+                    generationConfig: GeminiGenerationConfig(maxOutputTokens: Constants.maxTokens)
+                )
+                request.httpBody = try encoder.encode(payload)
+
             case .openai, .groq, .custom:
                 let messages = [
                     AIChatMessage(role: "system", content: systemMessage),
@@ -519,6 +535,9 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
             if let errorResponse = try? decoder.decode(AnthropicErrorResponse.self, from: data) {
                 throw PostProcessingError.apiError(errorResponse.error.message)
             }
+            if let errorResponse = try? decoder.decode(GeminiErrorResponse.self, from: data) {
+                throw PostProcessingError.apiError(errorResponse.error.message)
+            }
 
             // Fallback to raw string if possible
             let rawResponse = String(data: data, encoding: .utf8) ?? ""
@@ -538,6 +557,13 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
                 }
                 return text
 
+            case .google:
+                let response = try decoder.decode(GeminiGenerateContentResponse.self, from: data)
+                guard let text = response.candidates?.first?.content?.parts.first?.text else {
+                    throw PostProcessingError.invalidResponse
+                }
+                return text
+
             case .openai, .groq, .custom:
                 let response = try decoder.decode(OpenAIChatResponse.self, from: data)
                 guard let content = response.choices.first?.message.content else {
@@ -551,7 +577,7 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
         }
     }
 
-    private func buildEndpoint(for provider: AIProvider, baseURL: String) -> String {
+    private func buildEndpoint(for provider: AIProvider, baseURL: String, model: String) throws -> String {
         // Remove potential trailing slash to avoid double slash
         let base = baseURL.hasSuffix("/") ? String(baseURL.dropLast()) : baseURL
 
@@ -560,7 +586,28 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
             return "\(base)/chat/completions"
         case .anthropic:
             return "\(base)/messages"
+        case .google:
+            let rawModel = model.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !rawModel.isEmpty else {
+                throw PostProcessingError.noAPIConfigured
+            }
+            let normalizedModel = rawModel.hasPrefix("models/") ? rawModel : "models/\(rawModel)"
+            return "\(base)/\(normalizedModel):generateContent"
         }
+    }
+
+    private func sanitizedURLForLogging(_ url: URL) -> String {
+        guard var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
+            return url.absoluteString
+        }
+
+        if let queryItems = components.queryItems, !queryItems.isEmpty {
+            components.queryItems = queryItems.map { item in
+                URLQueryItem(name: item.name, value: "REDACTED")
+            }
+        }
+
+        return components.url?.absoluteString ?? url.absoluteString
     }
 
     deinit {

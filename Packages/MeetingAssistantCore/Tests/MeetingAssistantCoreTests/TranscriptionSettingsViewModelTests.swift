@@ -335,5 +335,55 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
         XCTAssertEqual(meetingQAService.lastQuestion, "When are we launching?")
         XCTAssertEqual(viewModel.qaResponse?.answer, "Launch is Friday.")
         XCTAssertNil(viewModel.qaErrorMessage)
+        XCTAssertEqual(viewModel.qaHistory(for: transcription.id).count, 2)
+    }
+
+    func testSubmitQuestion_AppendsHistoryForCurrentTranscription() async {
+        let transcription = Transcription(
+            meeting: Meeting(id: UUID(), app: .googleMeet, startTime: Date(), endTime: Date().addingTimeInterval(60)),
+            text: "Summary",
+            rawText: "Summary"
+        )
+        meetingQAService.nextResponse = MeetingQAResponse(
+            status: .answered,
+            answer: "Captured.",
+            evidence: [.init(speaker: "A", startTime: 0, endTime: 1, excerpt: "Captured.")]
+        )
+        viewModel.qaQuestion = "Question 1"
+
+        await viewModel.submitQuestion(for: transcription)
+
+        let history = viewModel.qaHistory(for: transcription.id)
+        XCTAssertEqual(history.count, 1)
+        XCTAssertEqual(history.first?.question, "Question 1")
+        XCTAssertEqual(history.first?.response?.answer, "Captured.")
+    }
+
+    func testLoadingDifferentTranscriptionResetsQuestionComposer() async {
+        let id1 = UUID()
+        let id2 = UUID()
+        storage.mockTranscriptions = [
+            Transcription(
+                id: id1,
+                meeting: Meeting(id: id1, app: .zoom, startTime: Date(), endTime: Date().addingTimeInterval(60)),
+                text: "One",
+                rawText: "One"
+            ),
+            Transcription(
+                id: id2,
+                meeting: Meeting(id: id2, app: .zoom, startTime: Date(), endTime: Date().addingTimeInterval(60)),
+                text: "Two",
+                rawText: "Two"
+            ),
+        ]
+        await viewModel.loadTranscriptions()
+
+        viewModel.qaQuestion = "Question"
+        viewModel.selectedId = id1
+        try? await Task.sleep(nanoseconds: 80_000_000)
+        viewModel.selectedId = id2
+        try? await Task.sleep(nanoseconds: 80_000_000)
+
+        XCTAssertEqual(viewModel.qaQuestion, "")
     }
 }

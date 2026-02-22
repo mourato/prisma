@@ -13,6 +13,10 @@ final class AISettingsViewModelTests: XCTestCase {
             baseURL: AIProvider.openai.defaultBaseURL,
             selectedModel: ""
         )
+        settings.enhancementsAISelection = EnhancementsAISelection(
+            provider: .openai,
+            selectedModel: ""
+        )
     }
 
     override func tearDown() async throws {
@@ -113,6 +117,41 @@ final class AISettingsViewModelTests: XCTestCase {
 
         XCTAssertEqual(viewModel.apiKeyText, "")
     }
+
+    func testRefreshEnhancementsModels_UsesEnhancementsProvider() async throws {
+        let keychain = MockKeychainProvider()
+        let llmService = MockLLMService()
+        try keychain.store("sk-google", for: KeychainManager.apiKeyKey(for: .google))
+        llmService.fetchModelsResult = [try XCTUnwrap(LLMModel.fixture(id: "gemini-2.0-flash"))]
+
+        settings.enhancementsAISelection = EnhancementsAISelection(
+            provider: .google,
+            selectedModel: ""
+        )
+
+        let viewModel = AISettingsViewModel(settings: settings, keychain: keychain, llmService: llmService)
+        viewModel.refreshEnhancementsProviderCredentialState()
+        let refreshTask = viewModel.refreshEnhancementsModelsManually()
+        await refreshTask.value
+
+        XCTAssertEqual(llmService.lastFetchedProvider, .google)
+        XCTAssertEqual(viewModel.enhancementsAvailableModels.map(\.id), ["gemini-2.0-flash"])
+    }
+
+    func testUpdatingEnhancementsSelection_DoesNotChangeDefaultAPISelection() async {
+        settings.updateAIConfiguration(
+            provider: .openai,
+            baseURL: AIProvider.openai.defaultBaseURL,
+            selectedModel: "gpt-4o-mini"
+        )
+
+        settings.updateEnhancementsProvider(.anthropic)
+        settings.updateEnhancementsSelectedModel("claude-3-7-sonnet")
+
+        XCTAssertEqual(settings.aiConfiguration.selectedModel, "gpt-4o-mini")
+        XCTAssertEqual(settings.enhancementsAISelection.provider, .anthropic)
+        XCTAssertEqual(settings.enhancementsAISelection.selectedModel, "claude-3-7-sonnet")
+    }
 }
 
 private final class MockKeychainProvider: KeychainProvider, @unchecked Sendable {
@@ -151,6 +190,7 @@ private final class MockLLMService: LLMService, @unchecked Sendable {
 
     private(set) var fetchCallCount = 0
     private(set) var lastFetchedAPIKey: String?
+    private(set) var lastFetchedProvider: AIProvider?
     private(set) var lastConnectionTestAPIKey: String?
 
     func validateURL(_ urlString: String) -> URL? {
@@ -160,13 +200,14 @@ private final class MockLLMService: LLMService, @unchecked Sendable {
     func fetchAvailableModels(baseURL: URL, apiKey: String, provider: AIProvider) async throws -> [LLMModel] {
         fetchCallCount += 1
         lastFetchedAPIKey = apiKey
+        lastFetchedProvider = provider
         if let fetchModelsError {
             throw fetchModelsError
         }
         return fetchModelsResult
     }
 
-    func testConnection(baseURL: URL, apiKey: String) async throws -> Bool {
+    func testConnection(baseURL: URL, apiKey: String, provider: AIProvider) async throws -> Bool {
         lastConnectionTestAPIKey = apiKey
         return testConnectionResult
     }

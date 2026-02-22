@@ -5,7 +5,7 @@
 "settings.section.meetings" = "Reuniões";
 "settings.section.audio" = "Som";
 "settings.section.transcriptions" = "Transcrições";
-"settings.section.dictations" = "Ditados";
+"settings.section.history" = "Histórico";
 "settings.section.assistant" = "Assistant";
 "settings.section.integrations" = "Integrações";
 "settings.section.rules_per_app" = "Regras";
@@ -211,6 +211,9 @@
 "settings.ai.loading" = "Carregando";
 "settings.ai.ready" = "Pronto";
 "settings.ai.failed" = "Falha";
+"settings.enhancements.meeting_intelligence_model" = "Modelo de Inteligência de Reunião";
+"settings.enhancements.qa_enabled_desc" = "Ativa o Q&A com evidências nas reuniões salvas.";
+"settings.enhancements.model_warning_desc" = "Configure a chave da API do provedor e escolha um modelo em Modelo de Inteligência de Reunião para executar pós-processamento e Q&A de reunião.";
 
 /* Post-Processing Settings */
 "settings.post_processing.title" = "Pós-Processamento";
@@ -732,7 +735,7 @@
 "menubar.record_meeting" = "Gravar Reunião";
 "menubar.assistant" = "Assistant";
 "menubar.stop_assistant" = "Parar Assistant";
-"menubar.dictations" = "Ditados";
+"menubar.history" = "Histórico";
 
 /* Settings */
 "settings.title" = "Configurações";
@@ -797,6 +800,7 @@
 "transcription.qa.error.invalid_response" = "Resposta inválida do provedor. Tente novamente.";
 "transcription.qa.error.generic" = "Falha ao responder a pergunta. Tente novamente.";
 "transcription.qa.error.no_retry_context" = "Não há pergunta anterior para tentar novamente.";
+"transcription.qa.summary_title" = "Resumo da reunião";
 
 /* Notificações */
 "notification.transcription_completed" = "Transcrição Concluída";

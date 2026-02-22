@@ -21,6 +21,7 @@ public struct TranscriptionsSettingsTab: View {
 
     @StateObject private var viewModel = TranscriptionSettingsViewModel()
     @State private var searchReloadTask: Task<Void, Never>?
+    @State private var conversationTranscriptionID: UUID?
 
     public var body: some View {
         VStack(spacing: 0) {
@@ -61,6 +62,12 @@ public struct TranscriptionsSettingsTab: View {
             searchReloadTask?.cancel()
             searchReloadTask = nil
         }
+        .onChange(of: viewModel.transcriptions) { _, transcriptions in
+            guard let conversationTranscriptionID else { return }
+            if !transcriptions.contains(where: { $0.id == conversationTranscriptionID }) {
+                closeConversationPanel()
+            }
+        }
         .alert(
             "settings.transcriptions.error_load".localized,
             isPresented: Binding(
@@ -81,8 +88,15 @@ public struct TranscriptionsSettingsTab: View {
     // MARK: - Content Section
 
     private var contentSection: some View {
-        leftPanel
-            .frame(maxWidth: .infinity)
+        HSplitView {
+            leftPanel
+                .frame(minWidth: 620, idealWidth: 780, maxWidth: .infinity)
+
+            if let conversationTranscriptionID {
+                conversationPanel(transcriptionID: conversationTranscriptionID)
+                    .frame(minWidth: 360, idealWidth: 480, maxWidth: 640)
+            }
+        }
     }
 
     // MARK: - Left Panel
@@ -360,6 +374,8 @@ public struct TranscriptionsSettingsTab: View {
 
     private func handleTranscriptionAction(_ action: TranscriptionCardView.TranscriptionAction, for metadata: TranscriptionMetadata) {
         switch action {
+        case .askAboutMeeting:
+            openConversation(for: metadata)
         case let .copy(text):
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(text, forType: .string)
@@ -381,8 +397,57 @@ public struct TranscriptionsSettingsTab: View {
         case .delete:
             Task {
                 await viewModel.deleteTranscription(metadata)
+                if conversationTranscriptionID == metadata.id {
+                    closeConversationPanel()
+                }
             }
         }
+    }
+
+    @ViewBuilder
+    private func conversationPanel(transcriptionID: UUID) -> some View {
+        let activeTranscription = viewModel.selectedTranscription?.id == transcriptionID ? viewModel.selectedTranscription : nil
+
+        MeetingConversationView(
+            transcription: activeTranscription,
+            isLoadingTranscription: activeTranscription == nil,
+            turns: viewModel.qaHistory(for: transcriptionID),
+            questionText: viewModel.qaQuestion,
+            onQuestionChange: { newValue in
+                viewModel.qaQuestion = newValue
+            },
+            onAsk: {
+                guard let transcription = viewModel.selectedTranscription, transcription.id == transcriptionID else { return }
+                Task {
+                    await viewModel.submitQuestion(for: transcription)
+                }
+            },
+            onRetry: { question in
+                guard let transcription = viewModel.selectedTranscription, transcription.id == transcriptionID else { return }
+                Task {
+                    await viewModel.retryQuestion(question, for: transcription)
+                }
+            },
+            isAnswering: viewModel.isAnsweringQuestion,
+            currentErrorMessage: viewModel.qaErrorMessage,
+            onClose: {
+                closeConversationPanel()
+            }
+        )
+    }
+
+    private func openConversation(for metadata: TranscriptionMetadata) {
+        conversationTranscriptionID = metadata.id
+        viewModel.selectedId = metadata.id
+        viewModel.clearQuestionComposer()
+        Task {
+            await viewModel.loadFullTranscription(id: metadata.id)
+        }
+    }
+
+    private func closeConversationPanel() {
+        conversationTranscriptionID = nil
+        viewModel.clearQuestionComposer()
     }
 
     // MARK: - Right Panel

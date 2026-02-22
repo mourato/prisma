@@ -52,6 +52,7 @@ public enum KeychainManager {
         case aiAPIKeyOpenAI = "ai_api_key_openai"
         case aiAPIKeyAnthropic = "ai_api_key_anthropic"
         case aiAPIKeyGroq = "ai_api_key_groq"
+        case aiAPIKeyGoogle = "ai_api_key_google"
         case aiAPIKeyCustom = "ai_api_key_custom"
     }
 
@@ -188,6 +189,8 @@ public enum KeychainManager {
             .aiAPIKeyAnthropic
         case .groq:
             .aiAPIKeyGroq
+        case .google:
+            .aiAPIKeyGoogle
         case .custom:
             .aiAPIKeyCustom
         }
