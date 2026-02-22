@@ -35,6 +35,22 @@ make test
 make run
 ```
 
+### Canonical xcodebuild usage
+
+Use the project wrapper (or pass equivalent flags) when invoking `xcodebuild` directly:
+
+```bash
+./scripts/xcodebuild-safe.sh
+```
+
+Equivalent raw command:
+
+```bash
+xcodebuild -project MeetingAssistant.xcodeproj -scheme MeetingAssistant -configuration Debug -destination 'platform=macOS' build
+```
+
+Avoid running bare `xcodebuild build` in this repository; it can trigger SwiftPM transitive-module resolution failures.
+
 ### B2 architecture layout
 
 The package uses a modular split and an aggregation target:

@@ -5,7 +5,7 @@
 # with CI/CD pipelines and headless environments.
 # =============================================================================
 
-.PHONY: help build build-debug build-release build-agent test test-agent test-swift test-verbose test-strict benchmark-summary benchmark-summary-agent lint lint-agent lint-fix arch-check preview-check preflight preflight-agent clean run run-release dmg setup docs docs-preview docs-clean profile profile-report profile-cpu profile-memory profile-animation profile-animation-report
+.PHONY: help build build-debug build-release build-agent xcodebuild-safe test test-agent test-swift test-verbose test-strict benchmark-summary benchmark-summary-agent lint lint-agent lint-fix arch-check preview-check preflight preflight-agent clean run run-release dmg setup docs docs-preview docs-clean profile profile-report profile-cpu profile-memory profile-animation profile-animation-report
 
 # Default target
 help:
@@ -17,6 +17,7 @@ help:
 	@echo "  make build-debug    - Build debug version explicitly"
 	@echo "  make build-release  - Build release version"
 	@echo "  make build-agent    - Build debug with compact machine-readable output"
+	@echo "  make xcodebuild-safe - Build via canonical direct xcodebuild wrapper"
 	@echo ""
 	@echo "Test Commands:"
 	@echo "  make test           - Run all tests (xcodebuild - IDE compatible)"
@@ -91,6 +92,9 @@ build-release:
 
 build-agent:
 	@MA_AGENT_MODE=1 MA_AGENT_LOG_DIR="$(AGENT_LOG_DIR)" ./scripts/run-build.sh --configuration Debug --agent
+
+xcodebuild-safe:
+	@./scripts/xcodebuild-safe.sh
 
 # Test Commands
 test:
