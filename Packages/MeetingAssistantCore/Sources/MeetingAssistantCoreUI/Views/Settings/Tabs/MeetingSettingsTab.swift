@@ -15,6 +15,7 @@ public struct MeetingSettingsTab: View {
     @StateObject private var monitoredAppsViewModel: InstalledAppsSelectionViewModel
     @StateObject private var webTargetsViewModel: WebMeetingTargetsViewModel
     @State private var showSummaryTemplateEditor = false
+    @State private var showMonitoringTargetsModal = false
 
     public init(settings: AppSettingsStore = .shared) {
         _meetingViewModel = StateObject(wrappedValue: MeetingSettingsViewModel(settings: settings))
@@ -42,6 +43,23 @@ public struct MeetingSettingsTab: View {
                     )
                 }
             )
+
+            MAGroup("settings.meetings.monitoring_access.title".localized, icon: "app.badge") {
+                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                    Text("settings.meetings.monitoring_access.desc".localized)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    HStack {
+                        Spacer()
+                        Button("settings.meetings.monitoring_access.button".localized) {
+                            showMonitoringTargetsModal = true
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.regular)
+                    }
+                }
+            }
 
             // Automation (Existing)
             MAGroup("settings.meetings.workflow".localized, icon: "bolt.fill") {
@@ -197,16 +215,6 @@ public struct MeetingSettingsTab: View {
                 }
             }
 
-            InstalledAppsSelectionSection(
-                titleKey: "settings.general.monitored_apps",
-                descriptionKey: "settings.general.monitored_apps_desc",
-                emptyKey: "settings.general.monitored_apps_empty",
-                addButtonKey: "settings.general.monitored_apps_add",
-                icon: "app.badge",
-                viewModel: monitoredAppsViewModel
-            )
-
-            webTargetsSection
         }
         .sheet(isPresented: $meetingViewModel.showPromptEditor) {
             PromptEditorSheet(
@@ -225,12 +233,8 @@ public struct MeetingSettingsTab: View {
                 onCancel: { showSummaryTemplateEditor = false }
             )
         }
-        .sheet(isPresented: $webTargetsViewModel.showEditor) {
-            WebMeetingTargetEditorSheet(
-                target: webTargetsViewModel.editingTarget,
-                onSave: webTargetsViewModel.handleSave,
-                onCancel: { webTargetsViewModel.showEditor = false }
-            )
+        .sheet(isPresented: $showMonitoringTargetsModal) {
+            monitoringTargetsSheet
         }
         .alert("settings.post_processing.delete_confirm_title".localized, isPresented: $meetingViewModel.showDeleteConfirmation) {
             Button("common.cancel".localized, role: .cancel) {}
@@ -241,6 +245,41 @@ public struct MeetingSettingsTab: View {
             if let prompt = meetingViewModel.promptToDelete {
                 Text("settings.post_processing.delete_confirm_message".localized(with: prompt.title))
             }
+        }
+    }
+
+    private var monitoringTargetsSheet: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("settings.meetings.monitoring_access.modal_title".localized)
+                    .font(.headline)
+                Spacer()
+            }
+            .padding()
+
+            Divider()
+
+            SettingsScrollableContent {
+                InstalledAppsSelectionSection(
+                    titleKey: "settings.general.monitored_apps",
+                    descriptionKey: "settings.general.monitored_apps_desc",
+                    emptyKey: "settings.general.monitored_apps_empty",
+                    addButtonKey: "settings.general.monitored_apps_add",
+                    icon: "app.badge",
+                    viewModel: monitoredAppsViewModel
+                )
+
+                webTargetsSection
+            }
+            .padding(.top, MeetingAssistantDesignSystem.Layout.spacing8)
+        }
+        .frame(width: 760, height: 640)
+        .sheet(isPresented: $webTargetsViewModel.showEditor) {
+            WebMeetingTargetEditorSheet(
+                target: webTargetsViewModel.editingTarget,
+                onSave: webTargetsViewModel.handleSave,
+                onCancel: { webTargetsViewModel.showEditor = false }
+            )
         }
         .alert("settings.meetings.web_targets.delete_confirm_title".localized, isPresented: $webTargetsViewModel.showDeleteConfirmation) {
             Button("common.cancel".localized, role: .cancel) {}
