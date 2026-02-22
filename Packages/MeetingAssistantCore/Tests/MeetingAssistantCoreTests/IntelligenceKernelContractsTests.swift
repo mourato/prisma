@@ -1,0 +1,113 @@
+import Foundation
+@testable import MeetingAssistantCore
+import XCTest
+
+@MainActor
+final class IntelligenceKernelContractsTests: XCTestCase {
+    func testAppSettingsReportsMeetingModeEnabledByDefault() {
+        let settings = AppSettingsStore.shared
+
+        XCTAssertEqual(settings.intelligenceKernelEnabled, FeatureFlags.enableIntelligenceKernel)
+        XCTAssertTrue(settings.isIntelligenceKernelModeEnabled(.meeting))
+        XCTAssertFalse(settings.isIntelligenceKernelModeEnabled(.dictation))
+        XCTAssertFalse(settings.isIntelligenceKernelModeEnabled(.assistant))
+    }
+
+    func testMeetingQAServiceSupportsKernelRequestContract() async throws {
+        let originalMeetingQnAEnabled = AppSettingsStore.shared.meetingQnAEnabled
+        let originalAIConfiguration = AppSettingsStore.shared.aiConfiguration
+        defer {
+            AppSettingsStore.shared.meetingQnAEnabled = originalMeetingQnAEnabled
+            AppSettingsStore.shared.aiConfiguration = originalAIConfiguration
+            MockKernelQANetworkURLProtocol.requestHandler = nil
+        }
+
+        AppSettingsStore.shared.meetingQnAEnabled = true
+        AppSettingsStore.shared.aiConfiguration = AIConfiguration(
+            provider: .openai,
+            baseURL: "https://example.com/v1",
+            selectedModel: "gpt-4o-mini"
+        )
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [MockKernelQANetworkURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+
+        MockKernelQANetworkURLProtocol.requestHandler = { _ in
+            let body = """
+            {
+              "choices": [
+                {
+                  "message": {
+                    "content": "{\\\"status\\\":\\\"answered\\\",\\\"answer\\\":\\\"Decision logged.\\\",\\\"evidence\\\":[{\\\"speaker\\\":\\\"Ana\\\",\\\"startTime\\\":2,\\\"endTime\\\":4,\\\"excerpt\\\":\\\"Decision logged\\\"}]}"
+                  }
+                }
+              ]
+            }
+            """
+            return (
+                HTTPURLResponse(url: URL(string: "https://example.com")!, statusCode: 200, httpVersion: nil, headerFields: nil)!,
+                Data(body.utf8)
+            )
+        }
+
+        let service = MeetingQAService(
+            settings: .shared,
+            session: session,
+            apiKeyProvider: { _ in "test-key" },
+            sleepFunction: { _ in }
+        )
+
+        let response = try await service.ask(
+            IntelligenceKernelQuestionRequest(
+                mode: .meeting,
+                question: "What did we decide?",
+                transcription: makeTranscription()
+            )
+        )
+
+        XCTAssertEqual(response.status, .answered)
+        XCTAssertEqual(response.answer, "Decision logged.")
+    }
+
+    private func makeTranscription() -> Transcription {
+        Transcription(
+            meeting: Meeting(id: UUID(), app: .googleMeet, startTime: Date(), endTime: Date().addingTimeInterval(60)),
+            segments: [
+                .init(speaker: "Ana", text: "Decision logged", startTime: 2, endTime: 4),
+            ],
+            text: "Decision logged",
+            rawText: "decision logged"
+        )
+    }
+}
+
+private final class MockKernelQANetworkURLProtocol: URLProtocol {
+    nonisolated(unsafe) static var requestHandler: ((URLRequest) throws -> (HTTPURLResponse, Data))?
+
+    override class func canInit(with request: URLRequest) -> Bool {
+        request.url != nil
+    }
+
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest {
+        request
+    }
+
+    override func startLoading() {
+        guard let handler = Self.requestHandler else {
+            client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
+            return
+        }
+
+        do {
+            let (response, data) = try handler(request)
+            client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+            client?.urlProtocol(self, didLoad: data)
+            client?.urlProtocolDidFinishLoading(self)
+        } catch {
+            client?.urlProtocol(self, didFailWithError: error)
+        }
+    }
+
+    override func stopLoading() {}
+}

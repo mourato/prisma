@@ -82,15 +82,32 @@ public protocol PostProcessingServiceProtocol: ObservableObject {
 
 // MARK: - Grounded Meeting Q&A Protocol
 
-/// Abstract interface for grounded, evidence-based meeting Q&A.
+/// Abstract interface for reusable, mode-aware intelligence Q&A.
 @MainActor
-public protocol MeetingQAServiceProtocol: ObservableObject {
+public protocol IntelligenceKernelServiceProtocol: ObservableObject {
     var isAnswering: Bool { get }
     var lastError: MeetingQAError? { get }
 
-    /// Ask a single-turn grounded question about a meeting transcription.
-    func ask(question: String, transcription: Transcription) async throws -> MeetingQAResponse
+    /// Ask a single-turn grounded question through the shared intelligence kernel.
+    func ask(_ request: IntelligenceKernelQuestionRequest) async throws -> MeetingQAResponse
 }
+
+public extension IntelligenceKernelServiceProtocol {
+    /// Compatibility helper for existing meeting-only call sites.
+    func ask(question: String, transcription: Transcription) async throws -> MeetingQAResponse {
+        try await ask(
+            IntelligenceKernelQuestionRequest(
+                mode: .meeting,
+                question: question,
+                transcription: transcription
+            )
+        )
+    }
+}
+
+/// Backward-compatible alias protocol for grounded meeting Q&A.
+@MainActor
+public protocol MeetingQAServiceProtocol: IntelligenceKernelServiceProtocol {}
 
 // MARK: - Notification Service Protocol
 

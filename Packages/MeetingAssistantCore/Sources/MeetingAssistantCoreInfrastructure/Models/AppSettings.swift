@@ -986,6 +986,25 @@ public class AppSettingsStore: ObservableObject {
         }
     }
 
+    /// Whether the shared intelligence kernel is globally enabled.
+    public var intelligenceKernelEnabled: Bool {
+        FeatureFlags.enableIntelligenceKernel
+    }
+
+    /// Returns whether a specific intelligence-kernel mode is enabled.
+    public func isIntelligenceKernelModeEnabled(_ mode: IntelligenceKernelMode) -> Bool {
+        guard intelligenceKernelEnabled else { return false }
+
+        switch mode {
+        case .meeting:
+            return FeatureFlags.enableMeetingIntelligenceMode
+        case .dictation:
+            return FeatureFlags.enableDictationIntelligenceMode
+        case .assistant:
+            return FeatureFlags.enableAssistantIntelligenceMode
+        }
+    }
+
     /// Whether speaker diarization is enabled.
     @Published public var isDiarizationEnabled: Bool {
         didSet {

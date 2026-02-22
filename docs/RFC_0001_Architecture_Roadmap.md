@@ -101,6 +101,21 @@ Accepted and enforced.
 
 ---
 
+## Proposal F — Reusable intelligence kernel (meeting-first)
+
+### Decision
+Accepted and implemented for Meeting mode.
+
+### Current status
+- Shared intelligence contracts are defined in `MeetingAssistantCoreDomain` (`IntelligenceKernelMode` + mode-aware request/result models).
+- Meeting mode execution is routed through shared kernel contracts.
+- Dictation and assistant extension points are documented and gated behind disabled flags for this phase.
+
+### References
+- `docs/INTELLIGENCE_KERNEL.md`
+
+---
+
 ## Operational outcomes from this phase
 
 - B2 modular split is fully integrated on `main` with green build/tests.
