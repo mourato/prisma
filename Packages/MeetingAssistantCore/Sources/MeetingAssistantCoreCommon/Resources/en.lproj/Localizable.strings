@@ -783,6 +783,22 @@
 "settings.transcriptions.yesterday" = "Yesterday";
 "transcription.empty_fallback" = "No transcription available";
 "transcription.no_segments" = "No segments available";
+"transcription.qa.title" = "Ask about this meeting";
+"transcription.qa.placeholder" = "Ask a question grounded in this transcript";
+"transcription.qa.ask" = "Ask";
+"transcription.qa.loading" = "Searching grounded evidence...";
+"transcription.qa.retry" = "Try again";
+"transcription.qa.not_found" = "I couldn't find enough grounded evidence in this meeting to answer that question.";
+"transcription.qa.evidence_title" = "Evidence";
+"transcription.qa.error.disabled" = "Meeting Q&A is disabled.";
+"transcription.qa.error.empty_question" = "Type a question before asking.";
+"transcription.qa.error.no_api" = "Configure an AI provider to use Meeting Q&A.";
+"transcription.qa.error.invalid_url" = "The AI provider URL is invalid.";
+"transcription.qa.error.timeout" = "Request timed out. Please try again.";
+"transcription.qa.error.network" = "Network unavailable. Check your connection and retry.";
+"transcription.qa.error.invalid_response" = "Invalid response from provider. Please retry.";
+"transcription.qa.error.generic" = "Failed to answer the question. Please try again.";
+"transcription.qa.error.no_retry_context" = "There is no previous question to retry.";
 
 /* Notifications */
 "notification.transcription_completed" = "Transcription Completed";

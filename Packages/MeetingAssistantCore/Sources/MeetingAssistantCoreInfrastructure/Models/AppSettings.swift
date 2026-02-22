@@ -886,6 +886,7 @@ public class AppSettingsStore: ObservableObject {
         static let summaryTemplate = "summaryTemplate"
         static let summaryTemplateEnabled = "summaryTemplateEnabled"
         static let autoExportSummaries = "autoExportSummaries"
+        static let meetingQnAEnabled = "meetingQnAEnabled"
         static let contextAwarenessEnabled = "contextAwarenessEnabled"
         static let contextAwarenessExplicitActionOnly = "contextAwarenessExplicitActionOnly"
         static let contextAwarenessIncludeClipboard = "contextAwarenessIncludeClipboard"
@@ -1411,6 +1412,11 @@ public class AppSettingsStore: ObservableObject {
         didSet { UserDefaults.standard.set(autoExportSummaries, forKey: Keys.autoExportSummaries) }
     }
 
+    /// Enables grounded single-turn Q&A in transcription detail.
+    @Published public var meetingQnAEnabled: Bool {
+        didSet { UserDefaults.standard.set(meetingQnAEnabled, forKey: Keys.meetingQnAEnabled) }
+    }
+
     /// Enables Context Awareness to enrich AI post-processing with active app context.
     @Published public var contextAwarenessEnabled: Bool {
         didSet {
@@ -1766,6 +1772,10 @@ public class AppSettingsStore: ObservableObject {
             defaultValue: true
         )
         autoExportSummaries = UserDefaults.standard.bool(forKey: Keys.autoExportSummaries)
+        meetingQnAEnabled = Self.loadBoolDefaultIfUnset(
+            forKey: Keys.meetingQnAEnabled,
+            defaultValue: false
+        )
         let loadedContextAwarenessEnabled = UserDefaults.standard.bool(forKey: Keys.contextAwarenessEnabled)
         contextAwarenessEnabled = loadedContextAwarenessEnabled
         contextAwarenessExplicitActionOnly = Self.loadBoolDefaultIfUnset(

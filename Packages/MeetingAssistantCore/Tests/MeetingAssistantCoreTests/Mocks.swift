@@ -204,6 +204,42 @@ class MockPostProcessingService: PostProcessingServiceProtocol {
     }
 }
 
+// MARK: - Mock Meeting Q&A Service
+
+@MainActor
+class MockMeetingQAService: MeetingQAServiceProtocol {
+    @Published var isAnswering = false
+    var lastError: MeetingQAError?
+
+    var askCallCount = 0
+    var lastQuestion: String?
+    var nextResponse = MeetingQAResponse(
+        status: .answered,
+        answer: "Mock answer",
+        evidence: [
+            MeetingQAEvidence(
+                speaker: "Speaker 1",
+                startTime: 0,
+                endTime: 5,
+                excerpt: "Mock evidence"
+            ),
+        ]
+    )
+    var nextError: MeetingQAError?
+
+    func ask(question: String, transcription _: Transcription) async throws -> MeetingQAResponse {
+        askCallCount += 1
+        lastQuestion = question
+
+        if let nextError {
+            lastError = nextError
+            throw nextError
+        }
+
+        return nextResponse
+    }
+}
+
 // MARK: - Mock Storage Service
 
 class MockStorageService: StorageService, @unchecked Sendable {
