@@ -1439,18 +1439,77 @@ extension RecordingManager {
 
     private func exportSummary(transcription: Transcription) async {
         let settings = AppSettingsStore.shared
-        guard let folder = settings.summaryExportFolder else { return }
+        let exportPolicyLevel = settings.summaryExportSafetyPolicyLevel
 
         let content: String
         if settings.summaryTemplateEnabled {
             let template = settings.summaryTemplate.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !template.isEmpty else { return }
+            guard !template.isEmpty else {
+                AppLogger.warning("Summary export blocked: template is empty", category: .security)
+                return
+            }
             content = MarkdownRenderer().renderWithTemplate(template, meeting: transcription.meeting, transcription: transcription)
         } else {
             let plainContent = transcription.text.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !plainContent.isEmpty else { return }
+            guard !plainContent.isEmpty else {
+                AppLogger.warning("Summary export blocked: summary text is empty", category: .security)
+                return
+            }
             content = plainContent
         }
+
+        let safetyEvaluator = SummaryExportSafetyEvaluator()
+        let safetyDecision = safetyEvaluator.evaluate(
+            transcription: transcription,
+            exportFolder: settings.summaryExportFolder,
+            candidateContent: content,
+            policyLevel: exportPolicyLevel
+        )
+        let auditTrailWriter = SummaryExportAuditTrailWriter()
+
+        if !safetyDecision.isCompliant {
+            let reasons = safetyDecision.blockReasons.map(\.message).joined(separator: " | ")
+            AppLogger.warning(
+                "Summary export blocked by safety policy",
+                category: .security,
+                extra: [
+                    "policy": exportPolicyLevel.rawValue,
+                    "reasons": reasons,
+                ]
+            )
+
+            let blockedEvent = SummaryExportAuditEvent(
+                timestamp: Date(),
+                transcriptionID: transcription.id,
+                meetingID: transcription.meeting.id,
+                outcome: .blocked,
+                policyLevel: exportPolicyLevel,
+                blockReasonCodes: safetyDecision.blockReasons.map(\.code),
+                blockReasonMessages: safetyDecision.blockReasons.map(\.message),
+                requiredMinimumConfidence: safetyDecision.requiredMinimumConfidence,
+                observedConfidence: safetyDecision.observedConfidence,
+                canonicalSummaryPresent: transcription.canonicalSummary != nil,
+                groundedInTranscript: transcription.canonicalSummary?.trustFlags.isGroundedInTranscript,
+                redactionApplied: false,
+                destinationPath: nil,
+                errorDescription: nil
+            )
+
+            do {
+                try auditTrailWriter.append(blockedEvent)
+            } catch {
+                AppLogger.error("Failed to append export audit event", category: .security, error: error)
+            }
+            return
+        }
+
+        guard let folder = settings.summaryExportFolder else { return }
+
+        let redactionApplied = exportPolicyLevel.appliesSensitiveRedaction
+        let exportContent = safetyEvaluator.applyRedactionIfNeeded(
+            to: content,
+            policyLevel: exportPolicyLevel
+        )
 
         guard folder.startAccessingSecurityScopedResource() else {
             AppLogger.error("Failed to access export folder security-scoped resource", category: .recordingManager)
@@ -1483,10 +1542,56 @@ extension RecordingManager {
         }
 
         do {
-            try content.write(to: destinationURL, atomically: true, encoding: .utf8)
+            try exportContent.write(to: destinationURL, atomically: true, encoding: .utf8)
             AppLogger.info("Summary exported to \(destinationURL.path)", category: .recordingManager)
+
+            let successEvent = SummaryExportAuditEvent(
+                timestamp: Date(),
+                transcriptionID: transcription.id,
+                meetingID: transcription.meeting.id,
+                outcome: .exported,
+                policyLevel: exportPolicyLevel,
+                blockReasonCodes: [],
+                blockReasonMessages: [],
+                requiredMinimumConfidence: safetyDecision.requiredMinimumConfidence,
+                observedConfidence: safetyDecision.observedConfidence,
+                canonicalSummaryPresent: transcription.canonicalSummary != nil,
+                groundedInTranscript: transcription.canonicalSummary?.trustFlags.isGroundedInTranscript,
+                redactionApplied: redactionApplied,
+                destinationPath: destinationURL.path,
+                errorDescription: nil
+            )
+
+            do {
+                try auditTrailWriter.append(successEvent)
+            } catch {
+                AppLogger.error("Failed to append export audit event", category: .security, error: error)
+            }
         } catch {
             AppLogger.error("Failed to export summary", category: .recordingManager, error: error)
+
+            let writeFailureEvent = SummaryExportAuditEvent(
+                timestamp: Date(),
+                transcriptionID: transcription.id,
+                meetingID: transcription.meeting.id,
+                outcome: .writeFailed,
+                policyLevel: exportPolicyLevel,
+                blockReasonCodes: [],
+                blockReasonMessages: [],
+                requiredMinimumConfidence: safetyDecision.requiredMinimumConfidence,
+                observedConfidence: safetyDecision.observedConfidence,
+                canonicalSummaryPresent: transcription.canonicalSummary != nil,
+                groundedInTranscript: transcription.canonicalSummary?.trustFlags.isGroundedInTranscript,
+                redactionApplied: redactionApplied,
+                destinationPath: destinationURL.path,
+                errorDescription: error.localizedDescription
+            )
+
+            do {
+                try auditTrailWriter.append(writeFailureEvent)
+            } catch {
+                AppLogger.error("Failed to append export audit event", category: .security, error: error)
+            }
         }
     }
 

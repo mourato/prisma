@@ -886,6 +886,7 @@ public class AppSettingsStore: ObservableObject {
         static let summaryTemplate = "summaryTemplate"
         static let summaryTemplateEnabled = "summaryTemplateEnabled"
         static let autoExportSummaries = "autoExportSummaries"
+        static let summaryExportSafetyPolicyLevel = "summaryExportSafetyPolicyLevel"
         static let meetingQnAEnabled = "meetingQnAEnabled"
         static let contextAwarenessEnabled = "contextAwarenessEnabled"
         static let contextAwarenessExplicitActionOnly = "contextAwarenessExplicitActionOnly"
@@ -1412,6 +1413,11 @@ public class AppSettingsStore: ObservableObject {
         didSet { UserDefaults.standard.set(autoExportSummaries, forKey: Keys.autoExportSummaries) }
     }
 
+    /// Export safety policy level used to validate and sanitize summary exports.
+    @Published public var summaryExportSafetyPolicyLevel: SummaryExportSafetyPolicyLevel {
+        didSet { UserDefaults.standard.set(summaryExportSafetyPolicyLevel.rawValue, forKey: Keys.summaryExportSafetyPolicyLevel) }
+    }
+
     /// Enables grounded single-turn Q&A in transcription detail.
     @Published public var meetingQnAEnabled: Bool {
         didSet { UserDefaults.standard.set(meetingQnAEnabled, forKey: Keys.meetingQnAEnabled) }
@@ -1772,6 +1778,9 @@ public class AppSettingsStore: ObservableObject {
             defaultValue: true
         )
         autoExportSummaries = UserDefaults.standard.bool(forKey: Keys.autoExportSummaries)
+        summaryExportSafetyPolicyLevel = SummaryExportSafetyPolicyLevel(
+            rawValue: UserDefaults.standard.string(forKey: Keys.summaryExportSafetyPolicyLevel) ?? ""
+        ) ?? .standard
         meetingQnAEnabled = Self.loadBoolDefaultIfUnset(
             forKey: Keys.meetingQnAEnabled,
             defaultValue: false
@@ -2373,6 +2382,7 @@ public class AppSettingsStore: ObservableObject {
         meetingPrompts = []
         meetingTypeAutoDetectEnabled = false
         summaryTemplateEnabled = true
+        summaryExportSafetyPolicyLevel = .standard
         contextAwarenessExplicitActionOnly = true
         markdownTargetBundleIdentifiers = Self.defaultMarkdownTargetBundleIdentifiers
         dictationAppRules = Self.defaultDictationAppRules
