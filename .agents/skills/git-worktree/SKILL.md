@@ -1,37 +1,26 @@
 ---
 name: git-worktree
-description: This skill should be used when using Git Worktrees for parallel development, managing multiple active branches, or handling dependencies in a worktree-first workflow.
+description: Optional/legacy guidance for Git Worktree operations and migration support; default project workflow uses a single checkout with feature branches.
 ---
 
 # Git Worktrees
 
 Git worktrees let you check out multiple branches into different directories at the same time.
 
-## Mandate: risk-based worktree usage
+Project default: do not use worktrees for routine development. Use a single checkout with feature branches.
 
-Follow `AGENTS.md` lane policy:
+## Policy
 
-- **Low risk (Fast lane)**: worktree is recommended.
-- **Medium/High risk (Full lane)**: worktree is mandatory.
+Worktrees are optional and should be used only for migration/maintenance scenarios.
 
-## This repo layout (recommended)
+## Optional operations cheatsheet
 
-This repository uses a "bare repo" layout:
-
-- `.bare/` is the actual Git repository (bare)
-- `main/` is the main working tree
-- task branches live in sibling folders (one folder per worktree)
-
-If you are currently in the `main/` worktree, create a new task worktree like this:
+If you choose to use worktrees in a local experiment, use standard Git operations:
 
 ```bash
 git worktree add -b codex/<task-name> ../<worktree-folder> main
 cd ../<worktree-folder>
 ```
-
-For Full lane tasks, do not implement changes in `main/`; use `main/` only to create/merge/remove task worktrees.
-
-## Operations cheatsheet
 
 ```bash
 # List active worktrees
@@ -61,4 +50,4 @@ Each worktree is a fresh directory.
 - A branch can only be checked out in one worktree at a time.
 - Prefer `git worktree remove` over `rm -rf` to keep Git state consistent.
 - Worktrees can multiply build outputs (DerivedData, `.build`); clean up when done.
-- For low-risk micro tasks, forcing worktree setup can add unnecessary overhead; use Fast lane discretion.
+- For this project, prefer the default branch-only workflow unless you have a specific operational reason.

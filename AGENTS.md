@@ -68,13 +68,13 @@ Before implementation, run a quick clarification pass when needed:
 ### Execution lanes
 
 1. **Fast lane (Low risk)**:
-   - Worktree is recommended; direct branch work is acceptable for small low-risk changes.
+  - Use a feature branch in the current checkout (no separate worktree required).
    - Start with a reusable-block scan (`reuse -> extend -> create`) for both logic and UI.
    - Implement in small slices.
    - Pre-commit checks: staged lint/format + targeted tests when relevant.
    - Before push/merge: run `make test`.
 2. **Full lane (Medium/High risk)**:
-   - Worktree is mandatory (never implement in `main/`).
+  - Use an isolated feature branch in the current checkout and keep commits atomic.
    - Start with a reusable-block scan (`reuse -> extend -> create`) for both logic and UI.
    - Implement in small slices.
    - During development run relevant checks (targeted tests and/or `make build` as needed).
@@ -92,8 +92,7 @@ Before implementation, run a quick clarification pass when needed:
    - Do not commit knowingly broken code.
 5. **Integration + cleanup**:
    - Push / merge into `main`.
-   - Prefer `git worktree remove <path>` then `git worktree prune`.
-   - Delete local/remote branch when applicable.
+  - Delete local/remote feature branch when applicable.
 
 ## Optimized workflow checklist
 
@@ -110,7 +109,7 @@ Before implementation, run a quick clarification pass when needed:
 - [ ] For AI-agent runs, ALWAYS use compact targets (`make preflight-agent`, `make build-agent`, `make test-agent`, `make lint-agent`) to reduce context tokens while preserving diagnostics.
 - [ ] Run `make arch-check` only for architecture boundary/access-control changes.
 - [ ] Run `make preview-check` when SwiftUI views are added or modified.
-- [ ] Use `git worktree remove` + `git worktree prune` for cleanup.
+- [ ] Delete merged local/remote feature branches during cleanup.
 - [ ] When a new limitation/trade-off is discovered, create or update a GitHub issue via `gh` with label `known-limitation`.
 - [ ] Localize user-facing text and respect module/skill responsibilities as outlined in the main SOP and skills index.
 - [ ] When UI text is removed, sanitize localization resources by removing now-unused keys from supported locales.
@@ -253,7 +252,6 @@ For the full standardized flow, follow the **Standard Task SOP** above and the s
 - `.agents/skills/task-lifecycle/SKILL.md`
 - `.agents/skills/git-workflow/SKILL.md`
 - `.agents/skills/code-review/SKILL.md`
-- `.agents/skills/git-worktree/SKILL.md`
 
 ## Security considerations
 
@@ -268,27 +266,25 @@ For the full standardized flow, follow the **Standard Task SOP** above and the s
 
 Use the Standard Task SOP (risk matrix + Fast/Full lanes) as policy.
 
-- **Low risk**: worktree recommended, Full review optional, minimum merge gate is `make test`.
-- **Medium/High risk**: worktree mandatory, semáforo review mandatory, merge gate includes `make build` + `make test`.
-- Always avoid direct implementation in `main/` for Medium/High tasks.
+- **Low risk**: branch in the current checkout, Full review optional, minimum merge gate is `make test`.
+- **Medium/High risk**: branch in the current checkout, semáforo review mandatory, merge gate includes `make build` + `make test`.
 
-Preferred worktree workflow:
+Preferred branch workflow:
 
 ```bash
-git worktree add -b <branch-name> ../<worktree-folder> main
-cd ../<worktree-folder>
+git checkout main
+git pull --ff-only
+git checkout -b <branch-name>
 # ... implement ...
-cd ../main
+git checkout main
 git merge <branch-name>
-git worktree remove ../<worktree-folder>
-git worktree prune
+git branch -d <branch-name>
 ```
 
 Detailed procedures:
 
 - `.agents/skills/task-lifecycle/SKILL.md`
 - `.agents/skills/git-workflow/SKILL.md`
-- `.agents/skills/git-worktree/SKILL.md`
 
 ## Project structure
 

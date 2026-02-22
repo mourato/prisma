@@ -11,11 +11,11 @@ This skill defines the **MANDATORY** operational standards for every coding task
 
 The lifecycle is designed to guarantee:
 - Risk-proportional quality gates
-- Isolation via Worktrees when risk justifies it
+- Isolation via dedicated feature branches
 - Reuse-first implementation decisions (`reuse -> extend -> create`) for logic and UI blocks
 - Atomic commits (small, intention-revealing, buildable)
 - A consistent local code review ritual before final push/merge
-- Cleanup (worktree + branches, including remote when applicable)
+- Cleanup (branches, including remote when applicable)
 
 Policy source:
 
@@ -39,10 +39,10 @@ Lane selection:
 
 ## Phase 1: Task Initialization
 
-Worktree policy:
+Branch policy:
 
-- **Full lane**: Worktree is mandatory. Never modify files in `main/`.
-- **Fast lane**: Worktree is recommended. Direct branch work is acceptable for very small low-risk tasks.
+- **Full lane**: Use an isolated feature branch in the current checkout.
+- **Fast lane**: Use a feature branch in the current checkout.
 
 1. **Context Identification**: Analyze the task and identify the target files.
 2. **Reusable Block Scan (required)**:
@@ -54,10 +54,11 @@ Worktree policy:
    - This step is optional when the request is already specific enough and low-risk.
    - Do not assume behavior, scope, acceptance criteria, or destructive intent when uncertainty remains.
 4. **Branching**: Create a fresh branch from `main` (for Codex sessions prefer `codex/<task-name>`).
-5. **Setup Worktree (Full lane or optional Fast lane)**: Create and enter a new Git Worktree.
+5. **Setup Branch**: Create and switch to a fresh branch from `main`.
    ```bash
-   git worktree add -b <branch-name> ../<folder-name> main
-   cd ../<folder-name>
+   git checkout main
+   git pull --ff-only
+   git checkout -b <branch-name>
    ```
 
 ## Phase 2: Implementation Loop (Green + Atomic)
@@ -68,7 +69,7 @@ Language policy:
 - Code comments must be written in **English**.
 
 
-Work inside the selected lane context (worktree for Full lane; branch or worktree for Fast lane).
+Work inside the selected lane context (feature branch in the current checkout).
 
 Repeat the following loop until the task is complete:
 
@@ -119,9 +120,9 @@ Before the final push/merge, perform a local review using **[code-review](../cod
    git push -u origin <branch-name>
    ```
 2. **Merge into `main`** using the team’s preferred approach (PR or local merge).
-   - If merging locally, return to the `main` worktree and merge:
+    - If merging locally, return to `main` and merge:
      ```bash
-     cd ../main
+       git checkout main
      git merge <branch-name>
      ```
 
@@ -129,16 +130,11 @@ Before the final push/merge, perform a local review using **[code-review](../cod
 
 Once the task is complete and verified:
 
-1. **Cleanup Directory**: Remove the worktree via Git.
-   ```bash
-   git worktree remove ../<folder-name>
-   git worktree prune
-   ```
-2. **Delete local branch** (never delete `main`):
+1. **Delete local branch** (never delete `main`):
    ```bash
    git branch -D <branch-name>
    ```
-3. **Delete remote branch (if it was pushed)**:
+2. **Delete remote branch (if it was pushed)**:
    ```bash
    git push origin --delete <branch-name>
    ```
@@ -148,4 +144,3 @@ Once the task is complete and verified:
 - **[git-workflow](../git-workflow/SKILL.md)**: Detailed commit and branching guidelines.
 - **[quality-assurance](../quality-assurance/SKILL.md)**: Standards for testing and build verification.
 - **[code-review](../code-review/SKILL.md)**: Mandatory pre-push review ritual and reporting format.
-- **[git-worktree](../git-worktree/SKILL.md)**: Worktree operations, pitfalls, and cleanup.
