@@ -254,6 +254,13 @@ public struct MeetingSettingsTab: View {
                 Text("settings.meetings.monitoring_access.modal_title".localized)
                     .font(.headline)
                 Spacer()
+                Button {
+                    showMonitoringTargetsModal = false
+                } label: {
+                    Image(systemName: "xmark")
+                }
+                .buttonStyle(.borderless)
+                .controlSize(.regular)
             }
             .padding()
 
@@ -270,10 +277,19 @@ public struct MeetingSettingsTab: View {
                 )
 
                 webTargetsSection
+
+                HStack {
+                    Spacer()
+                    Button("settings.meetings.monitoring_access.done".localized) {
+                        showMonitoringTargetsModal = false
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.regular)
+                }
             }
             .padding(.top, MeetingAssistantDesignSystem.Layout.spacing8)
         }
-        .frame(width: 760, height: 640)
+        .frame(width: 760, height: 560)
         .sheet(isPresented: $webTargetsViewModel.showEditor) {
             WebMeetingTargetEditorSheet(
                 target: webTargetsViewModel.editingTarget,

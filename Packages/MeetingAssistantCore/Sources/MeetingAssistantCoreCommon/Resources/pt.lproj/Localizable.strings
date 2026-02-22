@@ -115,6 +115,7 @@
 "settings.meetings.monitoring_access.desc" = "Configure quais apps e alvos web serão monitorados para detectar reuniões automaticamente.";
 "settings.meetings.monitoring_access.button" = "Configurar apps e sites monitorados";
 "settings.meetings.monitoring_access.modal_title" = "Apps e sites monitorados";
+"settings.meetings.monitoring_access.done" = "Done";
 "settings.meetings.web_targets.title" = "Alvos Web de Reunião";
 "settings.meetings.web_targets.desc" = "Identifica reuniões pela URL da aba ativa em navegadores compatíveis. O macOS pode pedir permissão de automação para o Meeting Assistant ler essa URL.";
 "settings.meetings.web_targets.empty" = "Nenhum alvo web configurado ainda.";
