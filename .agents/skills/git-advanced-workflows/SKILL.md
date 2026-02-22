@@ -98,7 +98,7 @@ git bisect run ./test.sh
 
 Work on multiple branches simultaneously without stashing or switching.
 
-See the dedicated **[git-worktree](../git-worktree/SKILL.md)** skill for detailed workflows, including the "Bare Repository" strategy.
+See the dedicated **[git-worktree](../git-worktree/SKILL.md)** skill for optional/legacy scenarios.
 
 ```bash
 # List existing worktrees
@@ -199,9 +199,9 @@ git bisect start HEAD v2.1.0
 git bisect run npm test
 ```
 
-### Workflow 4: Multi-Branch Development (Standard Task Initialization)
+### Workflow 4: Multi-Branch Development (Optional)
 
-**CRITICAL**: This is the mandatory entry point for any feature or fix.
+Use this only when a temporary parallel checkout is genuinely needed.
 
 ```bash
 # Main project directory

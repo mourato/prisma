@@ -1,6 +1,6 @@
 ---
 name: git-workflow
-description: This skill should be used when working with Git, branching, commits, worktrees, or pull requests.
+description: This skill should be used when working with Git, branching, commits, or pull requests.
 ---
 
 # Git Workflow
@@ -19,10 +19,10 @@ Activate this skill whenever you are:
 
 ## Core Principles
 
-### 1. Risk-based Worktree Workflow
+### 1. Risk-based Branch Workflow
 Follow `AGENTS.md` lane selection:
-1. **Low risk (Fast lane)**: worktree is recommended; direct branch work is acceptable for small tasks.
-2. **Medium/High risk (Full lane)**: worktree is mandatory.
+1. **Low risk (Fast lane)**: use a feature branch in the current checkout.
+2. **Medium/High risk (Full lane)**: use an isolated feature branch in the current checkout.
 3. **Before merge**: apply lane hard gates (`make test` for Fast; `make build && make test` for Full).
 
 ### 2. Atomic Commits
@@ -103,10 +103,9 @@ Suggest committing changes automatically when:
 ### Standard Task Initialization
 
 ```bash
-# From the main directory
-git worktree add -b feature/my-new-feature ../my-new-feature main
-cd ../my-new-feature
-# Execute changes here
+git checkout main
+git pull --ff-only
+git checkout -b feature/my-new-feature
 ```
 
 ### Pull Requests
@@ -144,7 +143,7 @@ gh pr edit 456 --body-file /tmp/gh-body.md
 
 ### Branch Cleanup (After Merge)
 
-After merging into `main`, remove temporary branches and worktrees (never delete `main`).
+After merging into `main`, remove temporary branches (never delete `main`).
 
 ```bash
 # Local branch

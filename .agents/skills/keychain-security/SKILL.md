@@ -69,4 +69,4 @@ let value = try keychain.retrieve(for: .aiAPIKeyOpenAI)
 ## References
 
 - `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreInfrastructure/Services/KeychainManager.swift`
-- `AGENTS.md` (worktree-first + language policy)
+- `AGENTS.md` (branch workflow + language policy)

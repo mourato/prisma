@@ -30,7 +30,7 @@ Guidelines for maintaining consistent project documentation and visibility into 
 ## 3. Consistency
 
 - **Commit Messages**: Enforce Conventional Commits consistently to ensure a readable history.
-- **Worktree Mandate**: Adhere to the Worktree-first development workflow for every task.
+- **Branch Workflow**: Use the single-checkout feature-branch workflow defined in `AGENTS.md`.
 - **UI Quality Gate**: Run `make preview-check` when UI views are added/changed.
 
 ## 4. Language

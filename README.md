@@ -56,15 +56,14 @@ Guideline: import only required modules in each file, and expose cross-module AP
 - Code comments are maintained in English.
 - UI strings must use localization keys (`"key".localized`), not hardcoded literals.
 
-### Worktree-first workflow (mandatory)
+### Branch workflow (mandatory)
 
-All changes (code or docs) must be done in a dedicated Git worktree.
-
-From the `main/` worktree:
+All changes (code or docs) must be done in a dedicated Git branch in the current checkout.
 
 ```bash
-git worktree add -b <branch-name> ../<worktree-folder> main
-cd ../<worktree-folder>
+git checkout main
+git pull --ff-only
+git checkout -b <branch-name>
 ```
 
 See `AGENTS.md` for the full workflow and project standards.
