@@ -115,6 +115,7 @@
 "settings.meetings.monitoring_access.desc" = "Configure which apps and web targets are monitored to detect meetings automatically.";
 "settings.meetings.monitoring_access.button" = "Configure monitored apps and sites";
 "settings.meetings.monitoring_access.modal_title" = "Monitored apps and sites";
+"settings.meetings.monitoring_access.done" = "Done";
 "settings.meetings.web_targets.title" = "Web Meeting Targets";
 "settings.meetings.web_targets.desc" = "Match meetings by active-tab URL in supported browsers. macOS may ask for browser automation permission so Meeting Assistant can read that URL.";
 "settings.meetings.web_targets.empty" = "No web targets configured yet.";
