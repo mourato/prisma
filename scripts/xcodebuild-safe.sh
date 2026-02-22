@@ -7,6 +7,7 @@ set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 XCODEPROJ="${PROJECT_DIR}/MeetingAssistant.xcodeproj"
+DERIVED_DATA_PATH=""
 
 SCHEME="MeetingAssistant"
 CONFIGURATION="Debug"
@@ -21,8 +22,16 @@ while [[ $# -gt 0 ]]; do
             SCHEME="$2"
             shift 2
             ;;
+        --project)
+            XCODEPROJ="$2"
+            shift 2
+            ;;
         --configuration|-c)
             CONFIGURATION="$2"
+            shift 2
+            ;;
+        --derived-data)
+            DERIVED_DATA_PATH="$2"
             shift 2
             ;;
         --destination)
@@ -39,7 +48,9 @@ Usage: scripts/xcodebuild-safe.sh [options] [-- <extra xcodebuild args>]
 
 Options:
   --scheme <name>            Xcode scheme (default: MeetingAssistant)
+    --project <path>           Xcode project path (default: <repo>/MeetingAssistant.xcodeproj)
   --configuration, -c <cfg>  Build configuration (default: Debug)
+    --derived-data <path>      Derived data path (optional)
   --destination <dest>       Destination (default: platform=macOS)
   --action <action>          xcodebuild action (default: build)
 
@@ -72,6 +83,13 @@ CMD=(
     -project "${XCODEPROJ}"
     -scheme "${SCHEME}"
     -configuration "${CONFIGURATION}"
+)
+
+if [[ -n "${DERIVED_DATA_PATH}" ]]; then
+    CMD+=( -derivedDataPath "${DERIVED_DATA_PATH}" )
+fi
+
+CMD+=(
     -destination "${DESTINATION}"
     "${ACTION}"
 )

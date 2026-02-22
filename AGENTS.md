@@ -136,6 +136,7 @@ Primary build/release commands:
 ```bash
 make build
 make preflight
+make preflight-fast
 make run
 make build-release
 make dmg
@@ -148,7 +149,14 @@ make build-agent
 make test-agent
 make lint-agent
 make preflight-agent
+make preflight-agent-fast
 ```
+
+`preflight` execution order policy:
+
+- Default: `build -> test -> lint -> summary-benchmark`
+- With `STRICT_LINT=1`: `build -> lint(strict) -> test -> summary-benchmark`
+- Fast mode (`make preflight-fast` / `make preflight-agent-fast`): `lint -> build -> test` (skips summary benchmark for faster local feedback)
 
 Canonical direct `xcodebuild` usage (when Make targets are not suitable):
 
@@ -177,7 +185,9 @@ Common workflows:
 
 - Development: `make build && make run`
 - Pre-merge validation: `make preflight`
+- Fast local validation: `make preflight-fast`
 - Agent-focused pre-merge validation: `make preflight-agent`
+- Fast local validation (agent): `make preflight-agent-fast`
 - Testing: `make test`
 - Agent-focused testing: `make test-agent`
 - Release: `make lint && make test && make build-release && make dmg`

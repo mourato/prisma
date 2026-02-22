@@ -5,7 +5,7 @@
 # with CI/CD pipelines and headless environments.
 # =============================================================================
 
-.PHONY: help build build-debug build-release build-agent xcodebuild-safe test test-agent test-swift test-verbose test-strict benchmark-summary benchmark-summary-agent lint lint-agent lint-fix arch-check preview-check preflight preflight-agent clean run run-release dmg setup docs docs-preview docs-clean profile profile-report profile-cpu profile-memory profile-animation profile-animation-report
+.PHONY: help build build-debug build-release build-agent xcodebuild-safe test test-agent test-swift test-verbose test-strict benchmark-summary benchmark-summary-agent lint lint-agent lint-fix arch-check preview-check preflight preflight-fast preflight-agent preflight-agent-fast clean run run-release dmg setup docs docs-preview docs-clean profile profile-report profile-cpu profile-memory profile-animation profile-animation-report
 
 # Default target
 help:
@@ -34,8 +34,10 @@ help:
 	@echo "  make lint-fix       - Auto-fix linting issues"
 	@echo "  make arch-check     - Run architecture boundary checks"
 	@echo "  make preview-check  - Verify all SwiftUI views have previews"
-	@echo "  make preflight      - Run preflight script (build + test + lint)"
+	@echo "  make preflight      - Run preflight script (build + test + lint + benchmark)"
+	@echo "  make preflight-fast - Run fast preflight (lint + build + test)"
 	@echo "  make preflight-agent - Run preflight in compact machine-readable mode"
+	@echo "  make preflight-agent-fast - Run fast preflight in compact machine-readable mode"
 	@echo "  make health         - Run comprehensive code health check"
 	@echo ""
 	@echo "Run Commands:"
@@ -146,8 +148,15 @@ preflight:
 	@echo -e "$(BLUE)Running preflight checks...$(NC)"
 	@./scripts/preflight.sh
 
+preflight-fast:
+	@echo -e "$(BLUE)Running fast preflight checks...$(NC)"
+	@./scripts/preflight.sh --fast
+
 preflight-agent:
 	@MA_AGENT_MODE=1 MA_AGENT_LOG_DIR="$(AGENT_LOG_DIR)" ./scripts/preflight.sh --agent
+
+preflight-agent-fast:
+	@MA_AGENT_MODE=1 MA_AGENT_LOG_DIR="$(AGENT_LOG_DIR)" ./scripts/preflight.sh --agent --fast
 
 format:
 	@echo -e "$(BLUE)Running SwiftFormat...$(NC)"

@@ -77,8 +77,10 @@ Repeat the following loop until the task is complete:
 2. **Run proportional checks during development**:
    - Fast lane: staged lint/format and targeted tests when relevant.
    - Full lane: run targeted tests and/or `make build` as needed while iterating.
-   - Prefer `make preflight` before final push/merge to run the canonical scripted gates (`build + test + lint`).
-   - For AI-driven runs where token budget matters, use compact targets (`make preflight-agent`, `make build-agent`, `make test-agent`, `make lint-agent`) and inspect logs under `${MA_AGENT_LOG_DIR:-/tmp/ma-agent}`.
+   - Prefer `make preflight` before final push/merge to run the canonical scripted gates (`build + test + lint + summary benchmark`).
+   - Use `make preflight-fast` for faster local feedback (`lint + build + test`, skips summary benchmark).
+   - When `STRICT_LINT=1`, preflight runs lint before tests to fail earlier on style violations.
+   - For AI-driven runs where token budget matters, use compact targets (`make preflight-agent`, `make preflight-agent-fast`, `make build-agent`, `make test-agent`, `make lint-agent`) and inspect logs under `${MA_AGENT_LOG_DIR:-/tmp/ma-agent}`.
    - Run `make arch-check` when changing architecture boundaries/access control/import rules.
    - Run `make preview-check` when adding/changing SwiftUI views.
    - If tests touch module internals, ensure the test target depends on that module explicitly in `Package.swift`.
