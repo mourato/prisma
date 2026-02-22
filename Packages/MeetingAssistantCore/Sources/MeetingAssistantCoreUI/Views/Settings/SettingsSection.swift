@@ -52,7 +52,7 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
         case .audio: "settings.section.audio".localized
         case .assistant: "settings.section.assistant".localized
         case .integrations: "settings.section.integrations".localized
-        case .transcriptions: "settings.section.history".localized
+        case .transcriptions: "settings.section.dictations".localized
         case .rulesPerApp: "settings.section.rules_per_app".localized
         case .vocabulary: "settings.section.vocabulary".localized
         case .enhancements: "settings.section.ai".localized
