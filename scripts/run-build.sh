@@ -77,16 +77,27 @@ if [ ! -d "${XCODEPROJ}" ]; then
     exit 1
 fi
 
-XCODEBUILD_ARGS=(
-    -project "${XCODEPROJ}"
-    -scheme "${APP_NAME}"
-    -configuration "${CONFIGURATION}"
-    -derivedDataPath "${DERIVED_DATA}"
-    -destination 'platform=macOS'
-)
+SAFE_XCODEBUILD_SCRIPT="${SCRIPT_DIR}/xcodebuild-safe.sh"
+
+if [ ! -x "${SAFE_XCODEBUILD_SCRIPT}" ]; then
+    MSG="Safe xcodebuild wrapper not executable at ${SAFE_XCODEBUILD_SCRIPT}"
+    if [ "${AGENT_MODE}" -eq 1 ]; then
+        ma_agent_write_result_json "${RESULT_PATH}" "build" "FAIL" 0 "${LOG_PATH}" 1 "${MSG}"
+        ma_agent_emit_result "build" "FAIL" 0 "${LOG_PATH}" 1 "${MSG}" "${RESULT_PATH}"
+    else
+        echo "Error: ${MSG}"
+    fi
+    exit 1
+fi
 
 START_TIME=$(date +%s)
-xcodebuild "${XCODEBUILD_ARGS[@]}" build >"${LOG_PATH}" 2>&1
+"${SAFE_XCODEBUILD_SCRIPT}" \
+    --project "${XCODEPROJ}" \
+    --scheme "${APP_NAME}" \
+    --configuration "${CONFIGURATION}" \
+    --derived-data "${DERIVED_DATA}" \
+    --destination 'platform=macOS' \
+    --action build >"${LOG_PATH}" 2>&1
 EXIT_CODE=$?
 END_TIME=$(date +%s)
 DURATION=$((END_TIME - START_TIME))
