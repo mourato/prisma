@@ -105,6 +105,24 @@ public struct MeetingSettingsTab: View {
                             isOn: $meetingViewModel.settings.summaryTemplateEnabled
                         )
 
+                        Divider()
+
+                        HStack {
+                            Text("settings.meetings.export_safety_policy".localized)
+                            Spacer()
+                            Picker("", selection: $meetingViewModel.settings.summaryExportSafetyPolicyLevel) {
+                                ForEach(SummaryExportSafetyPolicyLevel.allCases, id: \.self) { level in
+                                    Text(exportSafetyPolicyLabel(level)).tag(level)
+                                }
+                            }
+                            .labelsHidden()
+                            .pickerStyle(.menu)
+                        }
+
+                        Text("settings.meetings.export_safety_policy_desc".localized)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
                         if meetingViewModel.settings.summaryExportFolder == nil {
                             Text("settings.meetings.export_location_required".localized)
                                 .font(.caption)
@@ -314,6 +332,17 @@ public struct MeetingSettingsTab: View {
             fallbackBundleIdentifiers: meetingViewModel.settings.effectiveWebTargetBrowserBundleIdentifiers,
             localizedListKey: "settings.meetings.web_targets.browsers"
         )
+    }
+
+    private func exportSafetyPolicyLabel(_ level: SummaryExportSafetyPolicyLevel) -> String {
+        switch level {
+        case .permissive:
+            return "settings.meetings.export_safety_policy.permissive".localized
+        case .standard:
+            return "settings.meetings.export_safety_policy.standard".localized
+        case .strict:
+            return "settings.meetings.export_safety_policy.strict".localized
+        }
     }
 
     // MARK: - Prompt Row

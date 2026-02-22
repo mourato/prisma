@@ -98,6 +98,11 @@
 "settings.meetings.template_desc" = "Template used to format exported summaries.";
 "settings.meetings.template_enabled" = "Apply template";
 "settings.meetings.template_enabled_desc" = "When disabled, exports use the summary text directly.";
+"settings.meetings.export_safety_policy" = "Export safety policy";
+"settings.meetings.export_safety_policy_desc" = "Blocks non-compliant exports using canonical summary trust metadata and writes an auditable decision trail.";
+"settings.meetings.export_safety_policy.permissive" = "Permissive";
+"settings.meetings.export_safety_policy.standard" = "Standard";
+"settings.meetings.export_safety_policy.strict" = "Strict";
 "settings.meetings.template.edit" = "Edit template";
 "settings.meetings.template.editor_title" = "Edit export template";
 "settings.meetings.template.editor_hint" = "Available placeholders: {{meeting_title}}, {{meeting_date}}, {{duration}}, {{summary}}.";
