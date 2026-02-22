@@ -5,7 +5,7 @@
 "settings.section.meetings" = "Reuniões";
 "settings.section.audio" = "Som";
 "settings.section.transcriptions" = "Transcrições";
-"settings.section.history" = "Histórico";
+"settings.section.dictations" = "Ditados";
 "settings.section.assistant" = "Assistant";
 "settings.section.integrations" = "Integrações";
 "settings.section.rules_per_app" = "Regras";
@@ -675,10 +675,10 @@
 
 /* Filters */
 "filter.source.all" = "Todas";
-"filter.source.dictations" = "Gravações";
+"filter.source.dictations" = "Ditados";
 "filter.source.meetings" = "Reuniões";
 "transcription.source.meeting" = "Reunião";
-"transcription.source.recording" = "Gravação";
+"transcription.source.dictation" = "Ditado";
 
 /* Date Filters */
 "filter.date.today" = "Hoje";
@@ -732,7 +732,7 @@
 "menubar.record_meeting" = "Gravar Reunião";
 "menubar.assistant" = "Assistant";
 "menubar.stop_assistant" = "Parar Assistant";
-"menubar.history" = "Histórico";
+"menubar.dictations" = "Ditados";
 
 /* Settings */
 "settings.title" = "Configurações";

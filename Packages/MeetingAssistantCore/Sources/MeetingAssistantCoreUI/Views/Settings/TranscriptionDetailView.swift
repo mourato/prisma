@@ -375,9 +375,9 @@ public struct TranscriptionDetailView: View {
     private var sourceSelection: SourceSelection {
         switch transcription.meeting.app {
         case .unknown:
-            return .recording
+            return .dictation
         case .importedFile:
-            return .recording
+            return .dictation
         default:
             return .meeting
         }
@@ -385,13 +385,13 @@ public struct TranscriptionDetailView: View {
 }
 
 private enum SourceSelection: String, CaseIterable {
-    case recording
+    case dictation
     case meeting
 
     var title: String {
         switch self {
-        case .recording:
-            "transcription.source.recording".localized
+        case .dictation:
+            "transcription.source.dictation".localized
         case .meeting:
             "transcription.source.meeting".localized
         }

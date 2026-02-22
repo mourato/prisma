@@ -5,7 +5,7 @@
 "settings.section.meetings" = "Meetings";
 "settings.section.audio" = "Sound";
 "settings.section.transcriptions" = "Transcriptions";
-"settings.section.history" = "History";
+"settings.section.dictations" = "Dictations";
 "settings.section.assistant" = "Assistant";
 "settings.section.integrations" = "Integrations";
 "settings.section.rules_per_app" = "Rules";
@@ -677,10 +677,10 @@
 
 /* Filters */
 "filter.source.all" = "All";
-"filter.source.dictations" = "Recordings";
+"filter.source.dictations" = "Dictations";
 "filter.source.meetings" = "Meetings";
 "transcription.source.meeting" = "Meeting";
-"transcription.source.recording" = "Recording";
+"transcription.source.dictation" = "Dictation";
 
 /* Date Filters */
 "filter.date.today" = "Today";
@@ -734,7 +734,7 @@
 "menubar.record_meeting" = "Record Meeting";
 "menubar.assistant" = "Assistant";
 "menubar.stop_assistant" = "Stop Assistant";
-"menubar.history" = "History";
+"menubar.dictations" = "Dictations";
 
 /* Settings */
 "settings.title" = "Settings";
