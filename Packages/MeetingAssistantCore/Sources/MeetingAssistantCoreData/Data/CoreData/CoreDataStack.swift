@@ -23,6 +23,7 @@ public final class CoreDataStack: Sendable {
     public var backgroundContext: NSManagedObjectContext {
         let context = persistentContainer.newBackgroundContext()
         context.mergePolicy = NSMergePolicy.mergeByPropertyObjectTrump
+        context.shouldDeleteInaccessibleFaults = true
         return context
     }
 
@@ -38,26 +39,74 @@ public final class CoreDataStack: Sendable {
             description.type = NSInMemoryStoreType
             description.shouldMigrateStoreAutomatically = true
             description.shouldInferMappingModelAutomatically = true
+            description.shouldAddStoreAsynchronously = false
             persistentContainer.persistentStoreDescriptions = [description]
         } else {
-            for description in persistentContainer.persistentStoreDescriptions {
-                description.shouldMigrateStoreAutomatically = true
-                description.shouldInferMappingModelAutomatically = true
-            }
+            let storeURL = Self.persistentStoreURL(for: name)
+            ensurePersistentStoreDirectoryExists(for: storeURL)
+
+            let description = NSPersistentStoreDescription(url: storeURL)
+            description.type = NSSQLiteStoreType
+            description.shouldMigrateStoreAutomatically = true
+            description.shouldInferMappingModelAutomatically = true
+            description.shouldAddStoreAsynchronously = false
+            persistentContainer.persistentStoreDescriptions = [description]
         }
 
+        var loadError: Error?
         persistentContainer.loadPersistentStores { [weak self] storeDescription, error in
             if let error {
                 self?.logger.error("Failed to load persistent stores: \(error.localizedDescription)")
-                fatalError("CoreData store failed to load: \(error.localizedDescription)")
+                loadError = error
+                return
             }
 
             self?.logger.info("CoreData store loaded successfully: \(storeDescription.url?.absoluteString ?? "unknown")")
         }
 
+        if let loadError {
+            logger.fault("Primary persistent store failed. Falling back to in-memory store: \(loadError.localizedDescription)")
+            Self.installInMemoryFallbackStore(on: persistentContainer, logger: logger)
+        }
+
         // Configurar contexto principal
         mainContext.automaticallyMergesChangesFromParent = true
         mainContext.mergePolicy = NSMergePolicy.mergeByPropertyObjectTrump
+        mainContext.shouldDeleteInaccessibleFaults = true
+    }
+
+    private static func persistentStoreURL(for storeName: String) -> URL {
+        let appSupportURLs = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)
+        let appSupport = appSupportURLs.first ?? FileManager.default.temporaryDirectory
+        let baseDirectory = appSupport.appendingPathComponent("MeetingAssistant", isDirectory: true)
+        return baseDirectory.appendingPathComponent("\(storeName).sqlite", isDirectory: false)
+    }
+
+    private func ensurePersistentStoreDirectoryExists(for storeURL: URL) {
+        let directory = storeURL.deletingLastPathComponent()
+        do {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        } catch {
+            logger.error("Failed to create CoreData store directory: \(directory.path, privacy: .public). Error: \(error.localizedDescription)")
+        }
+    }
+
+    private static func installInMemoryFallbackStore(on container: NSPersistentContainer, logger: Logger) {
+        let coordinator = container.persistentStoreCoordinator
+        for store in coordinator.persistentStores {
+            do {
+                try coordinator.remove(store)
+            } catch {
+                logger.error("Failed to remove persistent store before in-memory fallback: \(error.localizedDescription)")
+            }
+        }
+
+        do {
+            try coordinator.addPersistentStore(ofType: NSInMemoryStoreType, configurationName: nil, at: nil)
+            logger.notice("In-memory CoreData fallback store installed")
+        } catch {
+            logger.fault("Failed to install in-memory CoreData fallback store: \(error.localizedDescription)")
+        }
     }
 
     /// Executa operação em background context de forma thread-safe
