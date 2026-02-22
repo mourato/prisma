@@ -13,6 +13,14 @@ public struct TranscriptionDetailView: View {
     let isSourceEditable: Bool
     let onApplyPrompt: (PostProcessingPrompt) -> Void
     let onUpdateSource: (Bool) -> Void
+    let isQnAEnabled: Bool
+    let qaQuestion: String
+    let onQuestionChange: (String) -> Void
+    let onAskQuestion: () -> Void
+    let onRetryQuestion: () -> Void
+    let qaResponse: MeetingQAResponse?
+    let qaErrorMessage: String?
+    let isAnsweringQuestion: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(
@@ -20,13 +28,29 @@ public struct TranscriptionDetailView: View {
         isProcessing: Bool = false,
         isSourceEditable: Bool = false,
         onApplyPrompt: @escaping (PostProcessingPrompt) -> Void = { _ in },
-        onUpdateSource: @escaping (Bool) -> Void = { _ in }
+        onUpdateSource: @escaping (Bool) -> Void = { _ in },
+        isQnAEnabled: Bool = false,
+        qaQuestion: String = "",
+        onQuestionChange: @escaping (String) -> Void = { _ in },
+        onAskQuestion: @escaping () -> Void = {},
+        onRetryQuestion: @escaping () -> Void = {},
+        qaResponse: MeetingQAResponse? = nil,
+        qaErrorMessage: String? = nil,
+        isAnsweringQuestion: Bool = false
     ) {
         self.transcription = transcription
         self.isProcessing = isProcessing
         self.isSourceEditable = isSourceEditable
         self.onApplyPrompt = onApplyPrompt
         self.onUpdateSource = onUpdateSource
+        self.isQnAEnabled = isQnAEnabled
+        self.qaQuestion = qaQuestion
+        self.onQuestionChange = onQuestionChange
+        self.onAskQuestion = onAskQuestion
+        self.onRetryQuestion = onRetryQuestion
+        self.qaResponse = qaResponse
+        self.qaErrorMessage = qaErrorMessage
+        self.isAnsweringQuestion = isAnsweringQuestion
     }
 
     public var body: some View {
@@ -42,6 +66,11 @@ public struct TranscriptionDetailView: View {
                         originalTranscriptSection
                     } else {
                         transcriptSection
+                    }
+
+                    if isQnAEnabled {
+                        Divider()
+                        groundedQnASection
                     }
                 }
                 .padding()
@@ -251,6 +280,98 @@ public struct TranscriptionDetailView: View {
         return text
     }
 
+    private var groundedQnASection: some View {
+        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+            Text("transcription.qa.title".localized)
+                .font(.headline)
+
+            HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                TextField(
+                    "transcription.qa.placeholder".localized,
+                    text: Binding(
+                        get: { qaQuestion },
+                        set: { onQuestionChange($0) }
+                    )
+                )
+                .textFieldStyle(.roundedBorder)
+
+                Button("transcription.qa.ask".localized) {
+                    onAskQuestion()
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(qaQuestion.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isAnsweringQuestion)
+            }
+
+            if isAnsweringQuestion {
+                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                    ProgressView()
+                    Text("transcription.qa.loading".localized)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            if let qaErrorMessage, !qaErrorMessage.isEmpty {
+                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                    Text(qaErrorMessage)
+                        .font(.caption)
+                        .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
+
+                    Button("transcription.qa.retry".localized) {
+                        onRetryQuestion()
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(isAnsweringQuestion)
+                }
+            }
+
+            if let qaResponse {
+                if qaResponse.status == .notFound {
+                    Text("transcription.qa.not_found".localized)
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                } else {
+                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                        Text(qaResponse.answer)
+                            .font(.body)
+                            .textSelection(.enabled)
+
+                        if !qaResponse.evidence.isEmpty {
+                            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                                Text("transcription.qa.evidence_title".localized)
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+
+                                ForEach(Array(qaResponse.evidence.enumerated()), id: \.offset) { _, item in
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("[\(formatTimestamp(item.startTime))–\(formatTimestamp(item.endTime))] \(item.speaker)")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                        Text(item.excerpt)
+                                            .font(.caption)
+                                    }
+                                    .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing10)
+                                    .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
+                                    .background(
+                                        MeetingAssistantDesignSystem.Colors.subtleFill,
+                                        in: RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func formatTimestamp(_ value: Double) -> String {
+        let totalSeconds = max(0, Int(value.rounded()))
+        let minutes = totalSeconds / 60
+        let seconds = totalSeconds % 60
+        return String(format: "%02d:%02d", minutes, seconds)
+    }
+
     private var sourceSelection: SourceSelection {
         switch transcription.meeting.app {
         case .unknown:
@@ -301,7 +422,24 @@ private extension Transcription {
 }
 
 #Preview("Processed") {
-    TranscriptionDetailView(transcription: .previewDetailForSettings, isProcessing: false)
+    TranscriptionDetailView(
+        transcription: .previewDetailForSettings,
+        isProcessing: false,
+        isQnAEnabled: true,
+        qaQuestion: "What was decided about previews?",
+        qaResponse: MeetingQAResponse(
+            status: .answered,
+            answer: "The team decided to prioritize screens with startup side effects in the next phase.",
+            evidence: [
+                MeetingQAEvidence(
+                    speaker: "Speaker 2",
+                    startTime: 10,
+                    endTime: 21,
+                    excerpt: "Vou priorizar as telas com side effects na fase seguinte."
+                ),
+            ]
+        )
+    )
         .frame(width: 860, height: 620)
 }
 

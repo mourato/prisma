@@ -46,6 +46,10 @@ public class TranscriptionSettingsViewModel: ObservableObject {
     }
 
     @Published public var isProcessingAI = false
+    @Published public var qaQuestion = ""
+    @Published public private(set) var qaResponse: MeetingQAResponse?
+    @Published public private(set) var isAnsweringQuestion = false
+    @Published public private(set) var qaErrorMessage: String?
 
     @Published public var isLoading = true
     @Published public var sourceFilter: RecordingSourceFilter = .all
@@ -57,16 +61,28 @@ public class TranscriptionSettingsViewModel: ObservableObject {
     private let storage: StorageService
     private let recordingManager: RecordingManager
     private let meetingRepository: MeetingRepository
+    private let meetingQAService: any MeetingQAServiceProtocol
+    private let settings: AppSettingsStore
     private let logger = Logger(subsystem: "MeetingAssistant", category: "TranscriptionSettingsViewModel")
+    private var lastAskedQuestion: String?
+    private var lastQuestionTranscriptionId: UUID?
 
     public init(
         storage: StorageService = FileSystemStorageService.shared,
         recordingManager: RecordingManager = .shared,
-        meetingRepository: MeetingRepository = CoreDataMeetingRepository()
+        meetingRepository: MeetingRepository = CoreDataMeetingRepository(),
+        meetingQAService: any MeetingQAServiceProtocol = MeetingQAService.shared,
+        settings: AppSettingsStore = .shared
     ) {
         self.storage = storage
         self.recordingManager = recordingManager
         self.meetingRepository = meetingRepository
+        self.meetingQAService = meetingQAService
+        self.settings = settings
+    }
+
+    public var isMeetingQnAEnabled: Bool {
+        settings.meetingQnAEnabled
     }
 
     public var filteredTranscriptions: [TranscriptionMetadata] {
@@ -258,10 +274,83 @@ public class TranscriptionSettingsViewModel: ObservableObject {
 
     public func loadFullTranscription(id: UUID) async {
         do {
+            if selectedTranscription?.id != id {
+                resetQuestionState()
+            }
             selectedTranscription = try await storage.loadTranscription(by: id)
         } catch {
             logger.error("Failed to load full transcription: \(error.localizedDescription)")
         }
+    }
+
+    public func submitQuestion(for transcription: Transcription) async {
+        let trimmedQuestion = qaQuestion.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedQuestion.isEmpty else {
+            qaErrorMessage = "transcription.qa.error.empty_question".localized
+            return
+        }
+
+        await askQuestion(trimmedQuestion, for: transcription)
+    }
+
+    public func retryLastQuestion(for transcription: Transcription) async {
+        guard let lastAskedQuestion,
+              lastQuestionTranscriptionId == transcription.id
+        else {
+            qaErrorMessage = "transcription.qa.error.no_retry_context".localized
+            return
+        }
+
+        qaQuestion = lastAskedQuestion
+        await askQuestion(lastAskedQuestion, for: transcription)
+    }
+
+    private func askQuestion(_ question: String, for transcription: Transcription) async {
+        guard !isAnsweringQuestion else { return }
+
+        isAnsweringQuestion = true
+        qaErrorMessage = nil
+        lastAskedQuestion = question
+        lastQuestionTranscriptionId = transcription.id
+        defer { isAnsweringQuestion = false }
+
+        do {
+            let response = try await meetingQAService.ask(question: question, transcription: transcription)
+            qaResponse = response
+        } catch let error as MeetingQAError {
+            qaErrorMessage = localizedQuestionError(for: error)
+        } catch {
+            qaErrorMessage = "transcription.qa.error.generic".localized
+        }
+    }
+
+    private func localizedQuestionError(for error: MeetingQAError) -> String {
+        switch error {
+        case .disabled:
+            "transcription.qa.error.disabled".localized
+        case .emptyQuestion:
+            "transcription.qa.error.empty_question".localized
+        case .noAPIConfigured:
+            "transcription.qa.error.no_api".localized
+        case .invalidURL:
+            "transcription.qa.error.invalid_url".localized
+        case .timeout:
+            "transcription.qa.error.timeout".localized
+        case .networkUnavailable:
+            "transcription.qa.error.network".localized
+        case .invalidResponse:
+            "transcription.qa.error.invalid_response".localized
+        case .requestFailed:
+            "transcription.qa.error.generic".localized
+        }
+    }
+
+    private func resetQuestionState() {
+        qaQuestion = ""
+        qaResponse = nil
+        qaErrorMessage = nil
+        lastAskedQuestion = nil
+        lastQuestionTranscriptionId = nil
     }
 
     public func openRecordingsDirectory() {

@@ -405,7 +405,25 @@ public struct TranscriptionsSettingsTab: View {
                                 await viewModel.updateSource(for: metadata, isMeeting: isMeeting)
                             }
                         }
-                    }
+                    },
+                    isQnAEnabled: viewModel.isMeetingQnAEnabled,
+                    qaQuestion: viewModel.qaQuestion,
+                    onQuestionChange: { newValue in
+                        viewModel.qaQuestion = newValue
+                    },
+                    onAskQuestion: {
+                        Task {
+                            await viewModel.submitQuestion(for: selected)
+                        }
+                    },
+                    onRetryQuestion: {
+                        Task {
+                            await viewModel.retryLastQuestion(for: selected)
+                        }
+                    },
+                    qaResponse: viewModel.qaResponse,
+                    qaErrorMessage: viewModel.qaErrorMessage,
+                    isAnsweringQuestion: viewModel.isAnsweringQuestion
                 )
             } else {
                 noSelectionView

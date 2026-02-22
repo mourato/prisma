@@ -771,6 +771,22 @@
 "settings.transcriptions.yesterday" = "Ontem";
 "transcription.empty_fallback" = "Nenhuma transcrição disponível";
 "transcription.no_segments" = "Nenhum segmento disponível";
+"transcription.qa.title" = "Perguntar sobre esta reunião";
+"transcription.qa.placeholder" = "Faça uma pergunta com base nesta transcrição";
+"transcription.qa.ask" = "Perguntar";
+"transcription.qa.loading" = "Buscando evidências no conteúdo...";
+"transcription.qa.retry" = "Tentar novamente";
+"transcription.qa.not_found" = "Não encontrei evidências suficientes nesta reunião para responder essa pergunta.";
+"transcription.qa.evidence_title" = "Evidências";
+"transcription.qa.error.disabled" = "Q&A de reunião está desativado.";
+"transcription.qa.error.empty_question" = "Digite uma pergunta antes de enviar.";
+"transcription.qa.error.no_api" = "Configure um provedor de IA para usar o Q&A de reunião.";
+"transcription.qa.error.invalid_url" = "A URL do provedor de IA é inválida.";
+"transcription.qa.error.timeout" = "A solicitação expirou. Tente novamente.";
+"transcription.qa.error.network" = "Rede indisponível. Verifique sua conexão e tente novamente.";
+"transcription.qa.error.invalid_response" = "Resposta inválida do provedor. Tente novamente.";
+"transcription.qa.error.generic" = "Falha ao responder a pergunta. Tente novamente.";
+"transcription.qa.error.no_retry_context" = "Não há pergunta anterior para tentar novamente.";
 
 /* Notificações */
 "notification.transcription_completed" = "Transcrição Concluída";

@@ -80,6 +80,18 @@ public protocol PostProcessingServiceProtocol: ObservableObject {
     ) async throws -> DomainPostProcessingResult
 }
 
+// MARK: - Grounded Meeting Q&A Protocol
+
+/// Abstract interface for grounded, evidence-based meeting Q&A.
+@MainActor
+public protocol MeetingQAServiceProtocol: ObservableObject {
+    var isAnswering: Bool { get }
+    var lastError: MeetingQAError? { get }
+
+    /// Ask a single-turn grounded question about a meeting transcription.
+    func ask(question: String, transcription: Transcription) async throws -> MeetingQAResponse
+}
+
 // MARK: - Notification Service Protocol
 
 /// Abstract interface for notification services.
