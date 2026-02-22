@@ -39,13 +39,8 @@ fi
 mkdir -p "${DIST_DIR}"
 
 # Build Release
-echo -e "${YELLOW}[1/3]${NC} Building with xcodebuild (Release)..."
-xcodebuild -project "${XCODEPROJ}" \
-    -scheme "${APP_NAME}" \
-    -configuration Release \
-    -derivedDataPath "${DERIVED_DATA}" \
-    -destination 'platform=macOS' \
-    build
+echo -e "${YELLOW}[1/3]${NC} Building with canonical build entrypoint (Release)..."
+"${PROJECT_DIR}/scripts/run-build.sh" --configuration Release
 
 # Check build result
 BUILD_DIR="${DERIVED_DATA}/Build/Products/Release"

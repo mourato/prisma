@@ -37,9 +37,10 @@ The user does not write code. The user does not read code. The user describes wh
 ### 1. Prove, Don't Promise
 Never say "this should work." Prove it:
 ```bash
-xcodebuild build 2>&1 | xcsift  # Build passes
-xcodebuild test                  # Tests pass
-open .../App.app                 # App launches
+make build-agent                 # Build passes (compact diagnostics)
+make test-agent                  # Tests pass (compact diagnostics)
+make preflight-agent             # Build + test + lint verification
+make run                         # App launches (for visual/manual checks)
 ```
 
 ### 2. Tests for Correctness, Eyes for Quality
@@ -126,13 +127,16 @@ What would you like to do?
 ## After Every Change
 ```bash
 # 1. Does it build?
-xcodebuild -scheme AppName build 2>&1 | xcsift
+make build-agent
 
 # 2. Do tests pass?
-xcodebuild -scheme AppName test
+make test-agent
 
-# 3. Does it launch? (if UI changed)
-open ./build/Build/Products/Debug/AppName.app
+# 3. Full gate when needed (medium/high risk or pre-merge)
+make preflight-agent
+
+# 4. Does it launch? (if UI changed)
+make run
 ```
 </verification_loop>
 

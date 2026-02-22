@@ -166,7 +166,7 @@ xcodebuild test -project AppName.xcodeproj -scheme AppName
 <tools_quick_reference>
 ```bash
 # Build errors (structured JSON)
-xcodebuild build 2>&1 | xcsift
+./scripts/xcodebuild-safe.sh 2>&1 | xcsift
 
 # Real-time logs
 log stream --level debug --predicate 'subsystem == "com.company.App"'
@@ -193,6 +193,6 @@ lldb -n AppName
 xcrun xctrace record --template 'Time Profiler' --attach AppName
 
 # Thread issues (build flag)
-xcodebuild build -enableThreadSanitizer YES
+./scripts/xcodebuild-safe.sh -- --enableThreadSanitizer YES
 ```
 </tools_quick_reference>
