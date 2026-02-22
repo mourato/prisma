@@ -221,6 +221,15 @@ public final class FileSystemStorageService: StorageService {
     }
 
     public func saveTranscription(_ transcription: Transcription) async throws {
+        guard transcription.meeting.app != .unknown else {
+            AppLogger.info(
+                "Skipped transcription persistence for dictation",
+                category: .databaseManager,
+                extra: ["id": transcription.id.uuidString]
+            )
+            return
+        }
+
         let entity = Self.convertToEntity(transcription)
         try await coreDataTranscriptionRepository.saveTranscription(entity)
         AppLogger.info("Saved transcription (Core Data)", category: .databaseManager, extra: ["id": transcription.id.uuidString])
