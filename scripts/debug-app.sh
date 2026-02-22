@@ -34,14 +34,8 @@ if [ ! -d "${XCODEPROJ}" ]; then
 fi
 
 # Build Debug
-echo -e "${YELLOW}[1/2]${NC} Building with xcodebuild (Debug)..."
-xcodebuild -project "${XCODEPROJ}" \
-    -scheme "${APP_NAME}" \
-    -configuration Debug \
-    -derivedDataPath "${DERIVED_DATA}" \
-    -destination 'platform=macOS' \
-    build \
-    2>&1 | grep -E "(Compiling|Linking|Signing|BUILD|error:|warning:)" | head -20
+echo -e "${YELLOW}[1/2]${NC} Building with canonical build entrypoint (Debug)..."
+"${PROJECT_DIR}/scripts/run-build.sh" --configuration Debug
 
 BUILD_DIR="${DERIVED_DATA}/Build/Products/Debug"
 APP_PATH="${BUILD_DIR}/${APP_NAME}.app"
@@ -56,34 +50,7 @@ echo -e "${GREEN}✓ Build completed${NC}"
 if [[ "$1" == "--test" || "$1" == "-t" ]]; then
     echo -e "${YELLOW}[2/2]${NC} Running tests..."
     echo ""
-    TEST_LOG="${PROJECT_DIR}/.xcode-build/test-output.log"
-    mkdir -p "${PROJECT_DIR}/.xcode-build"
-
-    set +e
-    xcodebuild test -project "${XCODEPROJ}" \
-        -scheme "${APP_NAME}" \
-        -destination 'platform=macOS' \
-        CODE_SIGN_IDENTITY="-" \
-        2>&1 | tee "${TEST_LOG}" | grep -E "(Test Suite|Test Case|error:|warning:|failed|passed)" | head -30
-    XCODE_TEST_EXIT=${PIPESTATUS[0]}
-    set -e
-
-    if [[ ${XCODE_TEST_EXIT} -ne 0 ]] || grep -q "There are no test bundles available to test" "${TEST_LOG}"; then
-        echo -e "${YELLOW}No test bundle configured in app scheme. Falling back to Swift Package tests...${NC}"
-        echo ""
-        SWIFT_TEST_LOG="${PROJECT_DIR}/.xcode-build/test-output-swift.log"
-
-        set +e
-        swift test --package-path "${PROJECT_DIR}/Packages/MeetingAssistantCore" \
-            2>&1 | tee "${SWIFT_TEST_LOG}" | grep -E "(Test Suite|Test Case|error:|warning:|failed|passed)" | head -40
-        SWIFT_TEST_EXIT=${PIPESTATUS[0]}
-        set -e
-
-        if [[ ${SWIFT_TEST_EXIT} -ne 0 ]]; then
-            echo -e "${RED}Error: Swift Package fallback tests failed. See ${SWIFT_TEST_LOG}${NC}"
-            exit ${SWIFT_TEST_EXIT}
-        fi
-    fi
+    "${PROJECT_DIR}/scripts/run-tests-xcode.sh"
     echo -e "${GREEN}✓ Tests completed${NC}"
 elif [[ "$1" == "--run" || "$1" == "-r" ]]; then
     echo -e "${YELLOW}[2/2]${NC} Running ${APP_NAME}..."

@@ -31,7 +31,7 @@ Output includes structured errors with file paths and line numbers:
 
 **Alternative** (human-readable):
 ```bash
-xcodebuild build 2>&1 | xcbeautify
+xcodebuild -project MyApp.xcodeproj -scheme MyApp -destination 'platform=macOS' build 2>&1 | xcbeautify
 ```
 </build_output>
 

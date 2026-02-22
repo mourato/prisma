@@ -150,6 +150,16 @@ make lint-agent
 make preflight-agent
 ```
 
+Canonical direct `xcodebuild` usage (when Make targets are not suitable):
+
+```bash
+./scripts/xcodebuild-safe.sh
+# equivalent explicit form:
+# xcodebuild -project MeetingAssistant.xcodeproj -scheme MeetingAssistant -configuration Debug -destination 'platform=macOS' build
+```
+
+Avoid bare `xcodebuild build` in this repository; it can trigger unstable SwiftPM transitive-module resolution.
+
 Agent artifacts and summaries:
 
 - Log directory defaults to `/tmp/ma-agent` (override with `MA_AGENT_LOG_DIR`).
