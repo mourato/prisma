@@ -1012,8 +1012,11 @@ extension RecordingManager {
     }
 
     private func makeUseCaseConfig(meeting: Meeting, settings: AppSettingsStore) -> UseCaseConfig {
-        let applyPostProcessing = settings.postProcessingEnabled && settings.aiConfiguration.isValid
         let isDictation = isDictationMode(for: meeting)
+        let kernelMode: IntelligenceKernelMode = isDictation ? .dictation : .meeting
+        let applyPostProcessing = settings.postProcessingEnabled
+            && settings.aiConfiguration.isValid
+            && settings.isIntelligenceKernelModeEnabled(kernelMode)
 
         let disabledForRecording = isDictation
             ? settings.isDictationPostProcessingDisabled

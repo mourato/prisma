@@ -96,3 +96,14 @@ The audio pipeline is designed for high performance and low latency, capturing m
 - `.agents/rules/architecture.md`
 - `.agents/skills/audio-realtime/SKILL.md`
 - `.agents/skills/quality-assurance/SKILL.md`
+- `docs/INTELLIGENCE_KERNEL.md`
+
+## 5. Intelligence kernel (meeting-first)
+
+The reusable intelligence kernel is the mode-aware abstraction for post-processing, grounded Q&A, and validation metadata.
+
+- Shared contracts are defined in `MeetingAssistantCoreDomain` (`IntelligenceKernelMode`, request/result models).
+- Current active mode is **meeting**, with `MeetingQAService` implementing the shared Q&A contract.
+- Dictation and assistant are explicit extension modes behind feature flags, not enabled in this phase.
+
+See `docs/INTELLIGENCE_KERNEL.md` for extension points and rollout policy.

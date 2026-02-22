@@ -227,6 +227,10 @@ class MockMeetingQAService: MeetingQAServiceProtocol {
     )
     var nextError: MeetingQAError?
 
+    func ask(_ request: IntelligenceKernelQuestionRequest) async throws -> MeetingQAResponse {
+        try await ask(question: request.question, transcription: request.transcription)
+    }
+
     func ask(question: String, transcription _: Transcription) async throws -> MeetingQAResponse {
         askCallCount += 1
         lastQuestion = question

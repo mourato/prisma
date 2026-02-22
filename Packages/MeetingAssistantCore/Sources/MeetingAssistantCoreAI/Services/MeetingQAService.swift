@@ -49,6 +49,10 @@ public final class MeetingQAService: ObservableObject, MeetingQAServiceProtocol 
     }
 
     public func ask(question: String, transcription: Transcription) async throws -> MeetingQAResponse {
+        guard settings.isIntelligenceKernelModeEnabled(.meeting) else {
+            throw MeetingQAError.disabled
+        }
+
         let trimmedQuestion = question.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedQuestion.isEmpty else {
             throw MeetingQAError.emptyQuestion
@@ -87,6 +91,19 @@ public final class MeetingQAService: ObservableObject, MeetingQAServiceProtocol 
             let wrapped = MeetingQAError.requestFailed(error.localizedDescription)
             lastError = wrapped
             throw wrapped
+        }
+    }
+
+    public func ask(_ request: IntelligenceKernelQuestionRequest) async throws -> MeetingQAResponse {
+        guard settings.isIntelligenceKernelModeEnabled(request.mode) else {
+            throw MeetingQAError.disabled
+        }
+
+        switch request.mode {
+        case .meeting:
+            return try await ask(question: request.question, transcription: request.transcription)
+        case .dictation, .assistant:
+            throw MeetingQAError.disabled
         }
     }
 
