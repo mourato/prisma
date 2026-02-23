@@ -108,6 +108,10 @@ public class TranscriptionSettingsViewModel: ObservableObject {
         settings.meetingQnAEnabled
     }
 
+    public func canOpenMeetingConversation(for metadata: TranscriptionMetadata) -> Bool {
+        metadata.supportsMeetingConversation
+    }
+
     public func qaHistory(for transcriptionID: UUID) -> [QATurn] {
         qaHistoryByTranscription[transcriptionID] ?? []
     }
@@ -155,18 +159,14 @@ public class TranscriptionSettingsViewModel: ObservableObject {
     }
 
     private func matchesSourceFilter(_ transcription: TranscriptionMetadata) -> Bool {
-        let app = MeetingApp(rawValue: transcription.appRawValue) ?? .unknown
-
         switch sourceFilter {
         case .all:
             return true
         case .dictations:
             // Dictation = Unknown app source (menu bar dictation) AND not imported file.
-            if app == .importedFile { return false }
-            return app == .unknown
+            return transcription.meetingApp == .unknown
         case .meetings:
-            if app == .importedFile { return false }
-            return app != .unknown
+            return transcription.meetingApp.supportsMeetingConversation
         }
     }
 
@@ -344,6 +344,11 @@ public class TranscriptionSettingsViewModel: ObservableObject {
     }
 
     private func askQuestion(_ question: String, for transcription: Transcription) async {
+        guard transcription.supportsMeetingConversation else {
+            qaErrorMessage = localizedQuestionError(for: .disabled)
+            return
+        }
+
         guard !isAnsweringQuestion else { return }
 
         isAnsweringQuestion = true
@@ -435,8 +440,7 @@ public class TranscriptionSettingsViewModel: ObservableObject {
     }
 
     public func availablePrompts(for metadata: TranscriptionMetadata) -> [PostProcessingPrompt] {
-        let app = MeetingApp(rawValue: metadata.appRawValue) ?? .unknown
-        if app == .unknown || app == .importedFile {
+        if !metadata.supportsMeetingConversation {
             return AppSettingsStore.shared.dictationAvailablePrompts
         }
         return AppSettingsStore.shared.meetingAvailablePrompts

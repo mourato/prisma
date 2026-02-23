@@ -425,6 +425,7 @@ public struct TranscriptionsSettingsTab: View {
     // MARK: - Navigation
 
     private func openConversation(for metadata: TranscriptionMetadata) {
+        guard viewModel.canOpenMeetingConversation(for: metadata) else { return }
         navigationHistory.push(.conversation(metadata.id))
         viewModel.selectedId = metadata.id
         dictationService.clearError()
@@ -488,6 +489,10 @@ public struct TranscriptionsSettingsTab: View {
     }
 
     private func handleDictationToggle() {
+        guard viewModel.selectedTranscription?.supportsMeetingConversation == true else {
+            return
+        }
+
         Task {
             if let transcribedText = await dictationService.toggleDictation() {
                 appendDictationText(transcribedText)

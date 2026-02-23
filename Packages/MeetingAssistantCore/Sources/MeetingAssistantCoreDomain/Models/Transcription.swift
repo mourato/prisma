@@ -124,6 +124,11 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
         return URL(fileURLWithPath: path)
     }
 
+    /// Whether meeting-only conversation features should be enabled.
+    public var supportsMeetingConversation: Bool {
+        meeting.app.supportsMeetingConversation
+    }
+
     /// Cached formatter for transcription dates.
     private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()

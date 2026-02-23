@@ -128,13 +128,15 @@ public struct TranscriptionCardView: View {
                 Spacer()
 
                 HStack(spacing: 12) {
-                    Button {
-                        onAction(.askAboutMeeting)
-                    } label: {
-                        Label("transcription.qa.title".localized, systemImage: "bubble.left.and.bubble.right")
-                            .font(.caption)
+                    if transcription.supportsMeetingConversation {
+                        Button {
+                            onAction(.askAboutMeeting)
+                        } label: {
+                            Label("transcription.qa.title".localized, systemImage: "bubble.left.and.bubble.right")
+                                .font(.caption)
+                        }
+                        .buttonStyle(.bordered)
                     }
-                    .buttonStyle(.bordered)
 
                     Button {
                         onAction(.copy(text: currentText))
@@ -210,16 +212,12 @@ public struct TranscriptionCardView: View {
     }
 
     private var isSegmentedTabEnabled: Bool {
-        isMeetingSource && AppSettingsStore.shared.isDiarizationEnabled
-    }
-
-    private var isMeetingSource: Bool {
-        appSource != .unknown && appSource != .importedFile
+        transcription.supportsMeetingConversation && AppSettingsStore.shared.isDiarizationEnabled
     }
 
     private var filteredPrompts: [PostProcessingPrompt] {
         let settings = AppSettingsStore.shared
-        let typeSpecificPrompts = isMeetingSource ? settings.meetingAvailablePrompts : settings.dictationAvailablePrompts
+        let typeSpecificPrompts = transcription.supportsMeetingConversation ? settings.meetingAvailablePrompts : settings.dictationAvailablePrompts
         let allowedIDs = Set(availablePrompts.map { $0.id })
 
         guard !allowedIDs.isEmpty else {
