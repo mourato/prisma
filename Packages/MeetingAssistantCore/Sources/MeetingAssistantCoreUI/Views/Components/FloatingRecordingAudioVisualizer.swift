@@ -22,7 +22,7 @@ struct AudioVisualizer: View {
     let gateStart: Double = 0.35
     let gateWidth: Double = 0.2
     let inputGain: Double = 1.05
-    let peakBlendRatio: Double = 0.6
+    let peakBlendRatio: Double = 0.35
     let compressionKnee: Double = 0.15
 
     private let sensitivityMultipliers: [Double]
