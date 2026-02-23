@@ -1,14 +1,6 @@
 ---
 name: native-app-designer
 description: This skill should be used when creating high-fidelity macOS/iOS designs, focusing on organic motion, glassmorphism, and premium native-feel interactions.
-allowed-tools: Read,Write,Edit,Bash,mcp__magic__21st_magic_component_builder,mcp__magic__21st_magic_component_refiner,mcp__stability-ai__stability-ai-generate-image,mcp__firecrawl__firecrawl_search
-category: Design & Creative
-tags:
-  - ios
-  - swiftui
-  - animations
-  - motion
-  - ux
 ---
 
 # Native App Designer
