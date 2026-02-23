@@ -88,7 +88,8 @@ public final class TranscribeAudioUseCase: Sendable {
         let postProcessingInput = mergedPostProcessingInput(
             transcriptionText: qualityProfile.normalizedTextForIntelligence,
             qualityProfile: qualityProfile,
-            context: postProcessingContext
+            context: postProcessingContext,
+            includeQualityMetadata: kernelMode == .meeting
         )
 
         if applyPostProcessing, let postProcessingRepo = postProcessingRepository {
@@ -465,10 +466,13 @@ public final class TranscribeAudioUseCase: Sendable {
     private func mergedPostProcessingInput(
         transcriptionText: String,
         qualityProfile: TranscriptionQualityProfile,
-        context: String?
+        context: String?,
+        includeQualityMetadata: Bool
     ) -> String {
         var blocks = [transcriptionText]
-        blocks.append(qualityMetadataBlock(from: qualityProfile))
+        if includeQualityMetadata {
+            blocks.append(qualityMetadataBlock(from: qualityProfile))
+        }
 
         if let context {
             let trimmedContext = context.trimmingCharacters(in: .whitespacesAndNewlines)
