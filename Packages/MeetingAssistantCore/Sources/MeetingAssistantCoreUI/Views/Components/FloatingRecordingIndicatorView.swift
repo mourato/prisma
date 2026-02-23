@@ -17,6 +17,8 @@ public struct FloatingRecordingIndicatorView: View {
     let style: RecordingIndicatorStyle
     let mode: FloatingRecordingIndicatorMode
     let isAnimationActive: Bool
+    private let previewForceDictationRecording: Bool
+    private let previewLanguageOverride: DictationOutputLanguage?
     let onStop: @Sendable () -> Void
     let onCancel: @Sendable () -> Void
 
@@ -35,6 +37,8 @@ public struct FloatingRecordingIndicatorView: View {
         style: RecordingIndicatorStyle,
         mode: FloatingRecordingIndicatorMode,
         isAnimationActive: Bool = true,
+        previewForceDictationRecording: Bool = false,
+        previewLanguageOverride: DictationOutputLanguage? = nil,
         recordingManager: RecordingManager = .shared,
         settingsStore: AppSettingsStore = .shared,
         onStop: @escaping @Sendable () -> Void,
@@ -44,6 +48,8 @@ public struct FloatingRecordingIndicatorView: View {
         self.style = style
         self.mode = mode
         self.isAnimationActive = isAnimationActive
+        self.previewForceDictationRecording = previewForceDictationRecording
+        self.previewLanguageOverride = previewLanguageOverride
         self.recordingManager = recordingManager
         self.settingsStore = settingsStore
         self.onStop = onStop
@@ -327,6 +333,7 @@ public struct FloatingRecordingIndicatorView: View {
     }
 
     private var isDictationRecording: Bool {
+        if previewForceDictationRecording { return true }
         guard recordingManager.isRecording else { return false }
         // Assistant recordings use the shared AudioRecorder directly and do not create a Meeting.
         // In that case we should render the dictation-style indicator (without duration).
@@ -424,8 +431,8 @@ public struct FloatingRecordingIndicatorView: View {
                 }
             }
         } label: {
-            Text(currentDictationOutputLanguage.flagEmoji)
-                .font(languageFlagFont(for: size))
+            Image(nsImage: languageFlagImage(for: size))
+                .renderingMode(.original)
                 .frame(width: 20, height: 20)
                 .contentShape(Rectangle())
                 .accessibilityLabel(currentDictationOutputLanguage.localizedName)
@@ -531,7 +538,7 @@ public struct FloatingRecordingIndicatorView: View {
     private func promptSelectionPill(size: IndicatorSize) -> some View {
         promptPickerControl(size: size)
             .frame(width: promptSize(for: size), height: controlHeight(for: size))
-            .background(.regularMaterial)
+            .background(.ultraThinMaterial)
             .background(MeetingAssistantDesignSystem.Colors.recordingIndicatorAuxiliaryBackground)
             .overlay(
                 Capsule()
@@ -552,7 +559,7 @@ public struct FloatingRecordingIndicatorView: View {
     private func languageSelectionPill(size: IndicatorSize) -> some View {
         languagePickerControl(size: size)
             .frame(width: promptSize(for: size), height: controlHeight(for: size))
-            .background(.regularMaterial)
+            .background(.ultraThinMaterial)
             .background(MeetingAssistantDesignSystem.Colors.recordingIndicatorAuxiliaryBackground)
             .overlay(
                 Capsule()
@@ -690,17 +697,20 @@ public struct FloatingRecordingIndicatorView: View {
         }
     }
 
-    private func languageFlagFont(for size: IndicatorSize) -> Font {
+    private func languageFlagPointSize(for size: IndicatorSize) -> CGFloat {
         switch size {
         case .classic:
-            .title3
+            18
         case .mini:
-            .subheadline
+            13
         }
     }
 
     private var currentDictationOutputLanguage: DictationOutputLanguage {
-        recordingManager.effectiveDictationOutputLanguageForCurrentRecording
+        if let previewLanguageOverride {
+            return previewLanguageOverride
+        }
+        return recordingManager.effectiveDictationOutputLanguageForCurrentRecording
     }
 
     private func promptIconImage(for size: IndicatorSize) -> NSImage {
@@ -717,6 +727,40 @@ public struct FloatingRecordingIndicatorView: View {
         let configured = rawImage.withSymbolConfiguration(symbolConfig) ?? rawImage
         configured.isTemplate = false
         return configured
+    }
+
+    private func languageFlagImage(for size: IndicatorSize) -> NSImage {
+        emojiImage(currentDictationOutputLanguage.flagEmoji, pointSize: languageFlagPointSize(for: size))
+    }
+
+    private func emojiImage(_ emoji: String, pointSize: CGFloat) -> NSImage {
+        let imageSize = NSSize(width: 20, height: 20)
+        let image = NSImage(size: imageSize)
+        image.lockFocus()
+
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.alignment = .center
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: pointSize),
+            .paragraphStyle: paragraphStyle,
+        ]
+
+        let attributed = NSAttributedString(string: emoji, attributes: attributes)
+        let measuredRect = attributed.boundingRect(
+            with: NSSize(width: imageSize.width, height: .greatestFiniteMagnitude),
+            options: [.usesLineFragmentOrigin, .usesFontLeading]
+        )
+        let drawRect = NSRect(
+            x: 0,
+            y: floor((imageSize.height - measuredRect.height) / 2),
+            width: imageSize.width,
+            height: measuredRect.height
+        )
+        attributed.draw(in: drawRect)
+
+        image.unlockFocus()
+        image.isTemplate = false
+        return image
     }
 }
 
@@ -736,7 +780,11 @@ struct AudioVisualizer: View {
     let barWidth: CGFloat
     let barSpacing: CGFloat
     let minHeight: CGFloat
-    let hardThreshold: Double = 0.50
+    let gateStart: Double = 0.35
+    let gateWidth: Double = 0.2
+    let inputGain: Double = 1.05
+    let peakBlendRatio: Double = 0.6
+    let compressionKnee: Double = 0.15
 
     private let sensitivityMultipliers: [Double]
     private let phaseOffsets: [Double]
@@ -801,8 +849,8 @@ struct AudioVisualizer: View {
             }
         }
         .frame(height: maxHeight, alignment: .center)
-        .onChange(of: audioMeter.averagePower) { _, newValue in
-            updateBars(with: Float(newValue))
+        .onChange(of: audioMeter) { _, newValue in
+            updateBars(with: Float(effectiveLevel(from: newValue)))
         }
     }
 
@@ -842,13 +890,15 @@ struct AudioVisualizer: View {
     }
 
     private func updateBars(with audioLevel: Float) {
-        let rawLevel = max(0, min(1, Double(audioLevel)))
-        let adjustedLevel = rawLevel < hardThreshold ? 0 : (rawLevel - hardThreshold) / (1.0 - hardThreshold)
+        let boosted = min(1.0, max(0.0, Double(audioLevel) * inputGain))
+        let rawLevel = max(0, min(1, boosted))
+        let gatedLevel = smoothstep(edge0: gateStart, edge1: gateStart + gateWidth, value: rawLevel)
+        let adjustedLevel = softKneeCompressedLevel(gatedLevel)
 
         let range = maxHeight - minHeight
         let center = barCount / 2
 
-        var newHeights: [CGFloat] = []
+        var targetHeights: [CGFloat] = []
 
         for i in 0..<barCount {
             let distanceFromCenter = abs(i - center)
@@ -859,23 +909,35 @@ struct AudioVisualizer: View {
 
             // Calculate target height directly
             let targetHeight = minHeight + CGFloat(sensitivityAdjustedLevel) * range
-            newHeights.append(targetHeight)
+            targetHeights.append(targetHeight)
         }
 
         if isAnimationActive && !reduceMotion {
-            withAnimation(
-                .interactiveSpring(
-                    response: 0.2,
-                    dampingFraction: 0.5,
-                    blendDuration: 0.2
-                )
-            ) {
-                barHeights = newHeights
+            let currentAverage = barHeights.reduce(0, +) / CGFloat(max(barHeights.count, 1))
+            let targetAverage = targetHeights.reduce(0, +) / CGFloat(max(targetHeights.count, 1))
+            let isRising = targetAverage >= currentAverage
+            let duration = isRising ? 0.04 : 0.02
+            withAnimation(.easeOut(duration: duration)) {
+                barHeights = targetHeights
             }
             return
         }
 
-        barHeights = newHeights
+        barHeights = targetHeights
+    }
+
+    private func effectiveLevel(from meter: AudioMeter) -> Double {
+        max(meter.averagePower, meter.peakPower * peakBlendRatio)
+    }
+
+    private func smoothstep(edge0: Double, edge1: Double, value: Double) -> Double {
+        let t = min(1.0, max(0.0, (value - edge0) / (edge1 - edge0)))
+        return t * t * (3 - 2 * t)
+    }
+
+    private func softKneeCompressedLevel(_ level: Double) -> Double {
+        let numerator = level * level
+        return numerator / (numerator + compressionKnee)
     }
 
     private static func deterministicValue(index: Int, count: Int, range: ClosedRange<Double>, seed: Double) -> Double {
@@ -1009,28 +1071,34 @@ struct RecordingIndicatorPostProcessingWarningDescriptor: Equatable {
 
 // MARK: - Preview
 
-#Preview("Classic") {
+#Preview("Classic", traits: .sizeThatFitsLayout) {
     let monitor = AudioLevelMonitor()
-    return FloatingRecordingIndicatorView(
+    FloatingRecordingIndicatorView(
         audioMonitor: monitor,
         style: .classic,
         mode: .recording,
+        previewForceDictationRecording: true,
+        previewLanguageOverride: .spanish,
         onStop: {},
         onCancel: {}
     )
     .padding()
-    .background(MeetingAssistantDesignSystem.Colors.neutral.opacity(0.3))
+    .frame(width: 520, height: 120)
+    .background(MeetingAssistantDesignSystem.Colors.neutral.opacity(0.8))
 }
 
-#Preview("Mini") {
+#Preview("Mini", traits: .sizeThatFitsLayout) {
     let monitor = AudioLevelMonitor()
-    return FloatingRecordingIndicatorView(
+    FloatingRecordingIndicatorView(
         audioMonitor: monitor,
         style: .mini,
         mode: .recording,
+        previewForceDictationRecording: true,
+        previewLanguageOverride: .english,
         onStop: {},
         onCancel: {}
     )
     .padding()
-    .background(MeetingAssistantDesignSystem.Colors.neutral.opacity(0.3))
+    .frame(width: 420, height: 100)
+    .background(MeetingAssistantDesignSystem.Colors.neutral.opacity(0.8))
 }
