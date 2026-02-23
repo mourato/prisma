@@ -21,7 +21,7 @@ This matrix defines ownership, overlap, and action for all skills under `.agents
 | localization | Security/Data | Canonical | Localization plus accessibility text practices | swiftui-patterns | Keep |
 | macos-development | macOS/Swift Core | Canonical | Implementation guidance for macOS SwiftUI/AppKit | build-macos-apps | Keep; deep implementation owner |
 | menubar | SwiftUI/UI/UX | Canonical | NSStatusItem/popover/floating-panel patterns | macos-development | Keep |
-| native-app-designer | SwiftUI/UI/UX | Canonical | Visual direction and high-fidelity motion design | swiftui-animation, swiftui-patterns | Keep |
+| native-app-designer | SwiftUI/UI/UX | Primary (UI/UX) | Primary UI/UX direction and experience-quality baseline for macOS/iOS interfaces | swiftui-animation, swiftui-patterns, macos-development | Keep; consult first for interface tasks |
 | networking | Security/Data | Canonical (transport) | URLSession, request modeling, resiliency | security, keychain-security | Keep; transport owner |
 | performance | Runtime/Performance | Canonical (system) | App-wide CPU/memory/startup optimization | swiftui-performance-audit, debugging-strategies | Keep; non-SwiftUI-rendering owner |
 | preview-coverage | SwiftUI/UI/UX | Canonical | SwiftUI preview requirements and coverage | swiftui-patterns | Keep |

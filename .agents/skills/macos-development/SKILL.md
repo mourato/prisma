@@ -13,6 +13,7 @@ Use this skill as the canonical implementation reference for macOS Swift/SwiftUI
 
 - This skill owns implementation guidance for platform lifecycle, architecture usage, UI integration, and system APIs.
 - This skill does not replace specialist skills:
+  - `native-app-designer` for primary UI/UX direction and experience analysis
   - `quality-assurance` for verification lanes and merge gates
   - `swift-concurrency-expert` for Swift 6.2 diagnostics/remediation
   - `swiftui-performance-audit` for SwiftUI runtime bottlenecks
@@ -66,6 +67,7 @@ make test
 ## Related Skills
 
 - `../build-macos-apps/SKILL.md` (intake/router)
+- `../native-app-designer/SKILL.md` (primary UI/UX direction)
 - `../quality-assurance/SKILL.md` (verification policy)
 - `../swiftui-patterns/SKILL.md`
 - `../menubar/SKILL.md`
