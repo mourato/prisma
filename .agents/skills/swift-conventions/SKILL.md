@@ -1,30 +1,35 @@
 ---
 name: swift-conventions
-description: This skill should be used when applying Swift coding conventions, type safety patterns, or module organization.
+description: This skill should be used when the user asks to "apply Swift style conventions", "improve type safety", "refactor API naming", or "organize Swift modules".
 ---
 
 # Swift Coding Conventions
 
 ## Overview
 
-Standards designed for consistency, readability, and type safety across the Swift codebase.
+Standards for consistency, readability, and type safety in this Swift codebase.
+
+## Scope Boundaries
+
+- Use this skill for Swift-specific conventions and type-safety patterns.
+- Use `../code-quality/SKILL.md` for broader readability and maintainability guidance that is not language-specific.
 
 ## 1. Type Safety & Modeling
 
-- **Avoid Any**: Use strong types instead of `Any` or `NSObject`.
-- **Result Type**: Use `Result<Success, Failure>` for modeling operations that can fail.
-- **Enums**: Model complex states with enums and associated values to ensure exhaustive handling.
-- **Codable**: Use `Codable` for all data serialization and deserialization.
+- **Avoid Any**: Prefer strong types over `Any` or `NSObject`.
+- **Result Type**: Use `Result<Success, Failure>` for fallible operations.
+- **Enums**: Model complex states with enums and associated values for exhaustive handling.
+- **Codable**: Use `Codable` for structured serialization/deserialization.
 
 ## 2. Language Patterns
 
-- **Optionals**: Avoid force unwrapping (`!`). Prefer `guard let` or `if let`.
-- **Properties**: Use computed properties for simple data transformations instead of auxiliary methods.
-- **Closures**: Mark closures as `@Sendable` when passed across concurrency boundaries.
+- **Optionals**: Avoid force unwrap (`!`); prefer `guard let` or `if let`.
+- **Properties**: Use computed properties for simple transformations.
+- **Closures**: Mark closures as `@Sendable` across concurrency boundaries.
 
 ## 3. Organization & Style
 
-- **Naming**: `lowerCamelCase` for properties and functions; `UpperCamelCase` for types.
-- **Imports**: Group imports alphabetically (e.g., `CoreData`, `Foundation`, `OSLog`).
-- **Standard Library**: Prefer native Swift types and methods over Foundation equivalents where possible.
-- **Resources**: Use `Bundle.module` when accessing resources within Swift Packages.
+- **Naming**: `lowerCamelCase` for members and `UpperCamelCase` for types.
+- **Imports**: Keep imports minimal and consistently ordered.
+- **Standard Library**: Prefer native Swift APIs over heavier Foundation alternatives when equivalent.
+- **Resources**: Use `Bundle.module` for Swift Package resources.

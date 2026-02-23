@@ -1,6 +1,6 @@
 ---
 name: git-worktree
-description: Optional/legacy guidance for Git Worktree operations and migration support; default project workflow uses a single checkout with feature branches.
+description: This skill should be used when the user asks to "use git worktree", "migrate away from worktrees", or "handle legacy worktree setup" in this repository.
 ---
 
 # Git Worktrees

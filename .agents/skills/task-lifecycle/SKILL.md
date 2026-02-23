@@ -1,11 +1,18 @@
 ---
 name: task-lifecycle
-description: This skill should be used when following the project's task lifecycle, from initialization and branching to implementation, verification, and cleanup.
+description: This skill should be used when the user asks to "run the task lifecycle", "classify risk lane", "prepare implementation workflow", or "enforce pre-merge gates".
 ---
 
 # Universal Task Lifecycle
 
 ## Overview
+
+## Scope Boundaries
+
+- This skill owns macro task sequencing (risk, lane, lifecycle phases).
+- Use ../git-workflow/SKILL.md for detailed Git operations.
+- Use ../quality-assurance/SKILL.md for verification strategy and command policy.
+- Use ../code-review/SKILL.md for review findings format and severity ritual.
 
 This skill defines the **MANDATORY** operational standards for every coding task performed on this codebase.
 

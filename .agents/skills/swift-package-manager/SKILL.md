@@ -1,6 +1,6 @@
 ---
 name: swift-package-manager
-description: This skill should be used when managing dependencies, configuring package definitions, or troubleshooting SPM issues.
+description: This skill should be used when the user asks to "edit Package.swift", "manage SPM dependencies", "fix package resolution", or "troubleshoot Swift Package Manager".
 ---
 
 # Dependency Management (SPM)

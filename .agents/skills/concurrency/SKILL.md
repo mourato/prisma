@@ -1,6 +1,6 @@
 ---
 name: concurrency
-description: This skill should be used when managing parallel execution, thread safety, async/await, actors, or MainActor isolation.
+description: This skill should be used when the user asks for conceptual guidance on "async/await", "actors", or "thread-safety patterns" without requesting concrete Swift 6.2 compiler remediation.
 ---
 
 # Concurrency (Bridge Skill)

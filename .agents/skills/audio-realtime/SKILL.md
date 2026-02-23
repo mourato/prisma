@@ -1,6 +1,6 @@
 ---
 name: audio-realtime
-description: This skill should be used when working with low-latency audio capture, processing, or real-time thread safety and performance constraints.
+description: This skill should be used when the user asks to "fix audio glitches", "optimize low-latency audio", "debug underruns", or "update real-time audio callbacks".
 ---
 
 # Real-Time Audio Processing

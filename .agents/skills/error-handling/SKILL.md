@@ -1,6 +1,6 @@
 ---
 name: error-handling
-description: This skill should be used when implementing robust error management, custom error types, or structured error propagation and logging.
+description: This skill should be used when the user asks to "design error types", "improve error propagation", "add recovery paths", or "standardize error logging".
 ---
 
 # Error Handling & Propagation

@@ -1,6 +1,6 @@
 ---
 name: localization
-description: This skill should be used when working with localization, accessibility, VoiceOver, or multilingual support in Swift Packages.
+description: This skill should be used when the user asks to "localize UI text", "update Localizable.strings", "improve VoiceOver labels", or "add accessibility localization".
 ---
 
 # Localization and Accessibility

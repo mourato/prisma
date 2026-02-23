@@ -1,6 +1,6 @@
 ---
 name: swiftui-animation
-description: This skill provides comprehensive guidance for implementing advanced SwiftUI animations, transitions, matched geometry effects, and Metal shader integration. Use when building animations, view transitions, hero animations, or GPU-accelerated effects in SwiftUI apps for iOS and macOS.
+description: This skill should be used when the user asks to "implement SwiftUI transitions", "create advanced animations", "use matched geometry", or "apply shader-based motion effects".
 ---
 
 # SwiftUI Animation Expert

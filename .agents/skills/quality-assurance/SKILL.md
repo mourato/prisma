@@ -1,6 +1,6 @@
 ---
 name: quality-assurance
-description: This skill should be used when writing unit tests, mocking dependencies, or verifying task completeness with automated checks.
+description: This skill should be used when the user asks to "write tests", "create mocks", "define verification gates", or "run quality checks before merge".
 ---
 
 # Quality Assurance Standards

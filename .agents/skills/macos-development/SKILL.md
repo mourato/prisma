@@ -1,162 +1,78 @@
 ---
 name: macos-development
-description: This skill should be used when building macOS applications with SwiftUI/AppKit, focusing on lifecycle management, memory safety, and platform integration.
+description: This skill should be used when the user asks to "implement a macOS feature", "integrate SwiftUI with AppKit", "fix macOS lifecycle issues", or "apply platform-specific patterns".
 ---
 
 # macOS Development Standards
 
-## Overview
+## Role
 
-Guidelines for building robust, modern macOS applications with a focus on efficiency and platform consistency.
+Use this skill as the canonical implementation reference for macOS Swift/SwiftUI/AppKit work in this repository.
 
-## 1. Memory & Lifecycle
+## Scope Boundary
 
-- **Ownership**: Choose between `struct` (value types) for data and `class` (reference types) for identity and shared state.
-- **Capture Groups**: Use `[weak self]` in closures that create strong reference cycles (e.g., escaping closures, timers).
-- **Initialization**: Implement `deinit` to release system resources (file handles, observers, hardware taps) explicitly.
-- **View Lifecycle**: Manage state carefully within SwiftUI (`onAppear`, `onDisappear`) or AppKit (`viewWillAppear`, `viewDidDisappear`).
+- This skill owns implementation guidance for platform lifecycle, architecture usage, UI integration, and system APIs.
+- This skill does not replace specialist skills:
+  - `quality-assurance` for verification lanes and merge gates
+  - `swift-concurrency-expert` for Swift 6.2 diagnostics/remediation
+  - `swiftui-performance-audit` for SwiftUI runtime bottlenecks
+  - `swiftui-animation` for advanced animation systems
 
-## 2. Platform Integration
+## Core Standards
 
-- **Appearance**: Support standard macOS appearance modes (Light/Dark) and use system colors where possible.
-- **Accessibility**: Ensure all interactive elements have labels and support VoiceOver.
-- **Sandbox**: Adhere to App Sandbox requirements; manage entitlements and user-selected files correctly.
+### Memory and Lifecycle
 
-## 3. Best Practices
+- Use value/reference semantics intentionally (`struct` vs `class`).
+- Prevent retain cycles in escaping closures.
+- Release observers, taps, and file handles deterministically.
+- Keep side effects bounded to lifecycle entry points.
 
-- **Resource Usage**: Monitor CPU and energy impact, especially for background recording or processing tasks.
-- **Interactivity**: Use standard macOS patterns for menus, popovers, and shortcuts to maintain user familiarity.
+### Platform Integration
 
-<essential_principles>
-## How We Work
+- Follow native macOS interaction patterns.
+- Keep accessibility labels/actions complete for interactive UI.
+- Respect sandbox and entitlement constraints.
+- Use AppKit bridging only where SwiftUI is insufficient.
 
-**The user is the product owner. Claude is the developer.**
+### Swift Concurrency Baseline
 
-The user does not write code. The user does not read code. The user describes what they want and judges whether the result is acceptable. Claude implements, verifies, and reports outcomes.
+- Protect shared mutable state with actors.
+- Keep UI-bound state under `@MainActor`.
+- Check cancellation for long-running tasks.
+- Avoid blocking primitives with async/await code paths.
 
-### 1. Prove, Don't Promise
-Never say "this should work." Prove it:
+## Implementation Workflow
+
+1. Reusable-block scan first: `reuse -> extend -> create`.
+2. Implement in small, verifiable slices.
+3. Run scoped checks during development (`make build-agent`, targeted tests).
+4. Apply required merge gates through `quality-assurance`.
+
+## Command Baseline
+
 ```bash
-make build-agent                 # Build passes (compact diagnostics)
-make test-agent                  # Tests pass (compact diagnostics)
-make preflight-agent             # Build + test + lint verification
-make run                         # App launches (for visual/manual checks)
-```
-
-### 2. Tests for Correctness, Eyes for Quality
-| Question | How to Answer |
-|----------|---------------|
-| Does the logic work? | Write test, see it pass |
-| Does it look right? | Launch app, user looks at it |
-| Does it feel right? | User uses it |
-| Does it crash? | Test + launch |
-| Is it fast enough? | Profiler |
-
-### 3. Report Outcomes, Not Code
-**Bad:** "I refactored DataService to use async/await with weak self capture"
-**Good:** "Fixed the memory leak. `leaks` now shows 0 leaks. App tested stable for 5 minutes."
-
-### 4. Small Steps, Always Verified
-```
-Change → Verify → Report → Next change
-```
-Each change is verified before the next.
-
-### 5. Swift 6 Concurrency First
-- Actors protect mutable shared state.
-- `@MainActor` for UI-related code.
-- Check task cancellation in long-running operations.
-- Avoid `DispatchSemaphore` with async/await.
-</essential_principles>
-
-<core_guidelines>
-## Swift Best Practices
-
-### Fundamental Principles
-1. **Clarity at point of use** is paramount.
-2. **Clarity over brevity**.
-3. **Name by role, not type**.
-4. **Async ≠ background** - explicitly move work to background if needed.
-
-### Essential Patterns
-#### Async/Await
-```swift
-func fetchData() async -> (String, Int) {
-    async let stringData = fetchString()
-    async let intData = fetchInt()
-    return await (stringData, intData)
-}
-```
-
-#### MainActor for UI
-```swift
-@MainActor
-class ContentViewModel: ObservableObject {
-    @Published var images: [UIImage] = []
-    func fetchData() async throws {
-        self.images = try await fetchImages()
-    }
-}
-```
-</core_guidelines>
-
-<intake>
-**Ask the user:**
-What would you like to do?
-1. Build a new app
-2. Debug an existing app
-3. Add a feature
-4. Write/run tests
-5. Optimize performance
-6. Ship/release
-7. Something else
-</intake>
-
-<routing>
-| Response | Workflow |
-|----------|----------|
-| 1, "new", "create", "build", "start" | `workflows/build-new-app.md` |
-| 2, "broken", "fix", "debug", "crash", "bug" | `workflows/debug-app.md` |
-| 3, "add", "feature", "implement", "change" | `workflows/add-feature.md` |
-| 4, "test", "tests", "TDD", "coverage" | `workflows/write-tests.md` |
-| 5, "slow", "optimize", "performance", "fast" | `workflows/optimize-performance.md` |
-| 6, "ship", "release", "notarize", "App Store" | `workflows/ship-app.md` |
-</routing>
-
-<verification_loop>
-## After Every Change
-```bash
-# 1. Does it build?
 make build-agent
-
-# 2. Do tests pass?
 make test-agent
-
-# 3. Full gate when needed (medium/high risk or pre-merge)
 make preflight-agent
-
-# 4. Does it launch? (if UI changed)
-make run
 ```
-</verification_loop>
 
-<related_skills>
+For final merge in Medium/High risk work:
+
+```bash
+make build
+make test
+```
+
 ## Related Skills
 
-For domain-specific guidance, see:
-- **[swiftui-patterns](../swiftui-patterns/SKILL.md)** - SwiftUI state management and view patterns
-- **[menubar](../menubar/SKILL.md)** - NSStatusItem and menu bar app patterns
-- **[audio-realtime](../audio-realtime/SKILL.md)** - Real-time audio processing constraints
-- **[localization](../localization/SKILL.md)** - i18n and accessibility patterns
-- **[swift-package-manager](../swift-package-manager/SKILL.md)** - SPM and Xcode project generation
-</related_skills>
+- `../build-macos-apps/SKILL.md` (intake/router)
+- `../quality-assurance/SKILL.md` (verification policy)
+- `../swiftui-patterns/SKILL.md`
+- `../menubar/SKILL.md`
+- `../audio-realtime/SKILL.md`
+- `../localization/SKILL.md`
+- `../swift-package-manager/SKILL.md`
 
-<reference_index>
-## Domain Knowledge (in `references/`)
-**Architecture:** app-architecture, swiftui-patterns, concurrency
-**Swift:** swift6-features, api-design, availability-patterns
-**System:** system-apis, app-extensions, data-persistence, networking
-**Development:** project-scaffolding, cli-workflow, testing-tdd, testing-debugging
-**Polish:** design-system, macos-polish, security-code-signing
-</reference_index>
+## Reference Index
 
+Use detailed references under `references/` for architecture, system APIs, testing, design system, and packaging topics.

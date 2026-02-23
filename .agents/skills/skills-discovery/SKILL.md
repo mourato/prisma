@@ -1,6 +1,6 @@
 ---
 name: skills-discovery
-description: This skill should be used when searching for, installing, or managing Agent Skills from the registry to extend capabilities.
+description: This skill should be used when the user asks to "find skills", "search the skills registry", "install a skill", or "manage installed skills".
 ---
 
 # Skills Discovery

@@ -1,6 +1,6 @@
 ---
 name: data-persistence
-description: This skill should be used when implementing data storage, loading, migration planning, or cloud synchronization.
+description: This skill should be used when the user asks to "store/load data", "design repositories", "plan migrations", or "implement persistence synchronization".
 ---
 
 # Data Persistence Strategies

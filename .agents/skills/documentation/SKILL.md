@@ -1,6 +1,6 @@
 ---
 name: documentation
-description: This skill should be used when working with Documentation, DocC, MARK comments, resource loading, or documentation research via context7.
+description: This skill should be used when the user asks to "write/update documentation", "add DocC comments", "improve MARK organization", or "research API docs".
 ---
 
 # Documentation Standards
