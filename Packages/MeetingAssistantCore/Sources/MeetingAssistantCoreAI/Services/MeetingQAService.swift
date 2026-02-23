@@ -53,6 +53,10 @@ public final class MeetingQAService: ObservableObject, MeetingQAServiceProtocol 
             throw MeetingQAError.disabled
         }
 
+        guard transcription.supportsMeetingConversation else {
+            throw MeetingQAError.disabled
+        }
+
         let trimmedQuestion = question.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedQuestion.isEmpty else {
             throw MeetingQAError.emptyQuestion

@@ -306,6 +306,20 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.qaErrorMessage, "transcription.qa.error.empty_question".localized)
     }
 
+    func testSubmitQuestionForDictationSetsDisabledErrorAndSkipsService() async {
+        let transcription = Transcription(
+            meeting: Meeting(id: UUID(), app: .unknown, startTime: Date(), endTime: Date().addingTimeInterval(60)),
+            text: "Resumo",
+            rawText: "Resumo"
+        )
+
+        viewModel.qaQuestion = "What did we decide?"
+        await viewModel.submitQuestion(for: transcription)
+
+        XCTAssertEqual(meetingQAService.askCallCount, 0)
+        XCTAssertEqual(viewModel.qaErrorMessage, "transcription.qa.error.disabled".localized)
+    }
+
     func testRetryLastQuestionAfterTimeoutUsesSameQuestion() async {
         let transcription = Transcription(
             meeting: Meeting(id: UUID(), app: .googleMeet, startTime: Date(), endTime: Date().addingTimeInterval(60)),

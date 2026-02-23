@@ -80,6 +80,11 @@ public enum MeetingApp: String, CaseIterable, Codable, Sendable {
         case .unknown: "questionmark.circle"
         }
     }
+
+    /// Whether this source should expose meeting-only conversation features.
+    public var supportsMeetingConversation: Bool {
+        self != .unknown && self != .importedFile
+    }
 }
 
 /// Represents an active or completed meeting.

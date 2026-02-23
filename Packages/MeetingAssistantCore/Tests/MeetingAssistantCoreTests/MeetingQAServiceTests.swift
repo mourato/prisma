@@ -186,6 +186,29 @@ final class MeetingQAServiceTests: XCTestCase {
         }
     }
 
+    func testAskFailsForDictationTranscription() async {
+        let service = MeetingQAService(
+            settings: .shared,
+            session: makeMockedSession(),
+            apiKeyProvider: { _ in "test-key" },
+            sleepFunction: { _ in }
+        )
+
+        do {
+            _ = try await service.ask(
+                question: "What did we decide?",
+                transcription: makeTranscription(app: .unknown)
+            )
+            XCTFail("Expected ask to fail for dictation transcription")
+        } catch let error as MeetingQAError {
+            guard case .disabled = error else {
+                return XCTFail("Expected .disabled, got \(error)")
+            }
+        } catch {
+            XCTFail("Unexpected error type: \(error)")
+        }
+    }
+
     func testAskWithGoogleProviderParsesGeminiPayload() async throws {
         let settings = AppSettingsStore.shared
         settings.aiConfiguration = AIConfiguration(
@@ -245,9 +268,9 @@ final class MeetingQAServiceTests: XCTestCase {
         return URLSession(configuration: configuration)
     }
 
-    private func makeTranscription() -> Transcription {
+    private func makeTranscription(app: MeetingApp = .googleMeet) -> Transcription {
         Transcription(
-            meeting: Meeting(id: UUID(), app: .googleMeet, startTime: Date(), endTime: Date().addingTimeInterval(60)),
+            meeting: Meeting(id: UUID(), app: app, startTime: Date(), endTime: Date().addingTimeInterval(60)),
             segments: [
                 .init(speaker: "Ana", text: "Vamos lançar sexta.", startTime: 12, endTime: 16),
                 .init(speaker: "João", text: "Fechamos o orçamento hoje.", startTime: 30, endTime: 38),

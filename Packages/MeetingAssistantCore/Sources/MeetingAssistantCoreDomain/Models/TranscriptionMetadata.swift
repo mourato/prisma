@@ -24,6 +24,15 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
     public let transcriptConfidenceScore: Double
     public let transcriptContainsUncertainty: Bool
 
+    public var meetingApp: MeetingApp {
+        MeetingApp(rawValue: appRawValue) ?? .unknown
+    }
+
+    /// Whether meeting-only conversation features should be enabled.
+    public var supportsMeetingConversation: Bool {
+        meetingApp.supportsMeetingConversation
+    }
+
     private enum CodingKeys: String, CodingKey {
         case id
         case meetingId
