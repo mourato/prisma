@@ -106,6 +106,12 @@ public class GeneralSettingsViewModel: ObservableObject {
         }
     }
 
+    @Published public var recordingIndicatorAnimationSpeed: RecordingIndicatorAnimationSpeed {
+        didSet {
+            settingsStore.recordingIndicatorAnimationSpeed = recordingIndicatorAnimationSpeed
+        }
+    }
+
     @Published public var autoDeleteTranscriptions: Bool {
         didSet {
             settingsStore.autoDeleteTranscriptions = autoDeleteTranscriptions
@@ -186,6 +192,7 @@ public class GeneralSettingsViewModel: ObservableObject {
         recordingIndicatorEnabled = settingsStore.recordingIndicatorEnabled
         recordingIndicatorStyle = settingsStore.recordingIndicatorStyle
         recordingIndicatorPosition = settingsStore.recordingIndicatorPosition
+        recordingIndicatorAnimationSpeed = settingsStore.recordingIndicatorAnimationSpeed
         autoDeleteTranscriptions = settingsStore.autoDeleteTranscriptions
         autoDeletePeriodDays = settingsStore.autoDeletePeriodDays
         soundFeedbackEnabled = settingsStore.soundFeedbackEnabled

@@ -1,4 +1,5 @@
 import MeetingAssistantCoreAudio
+import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
 // MARK: - Audio Visualizer (Native implementation based on VoiceInk)
@@ -12,6 +13,7 @@ struct AudioVisualizer: View {
     let audioMeter: AudioMeter
     let mode: AudioVisualizerMode
     let isAnimationActive: Bool
+    let animationSpeed: RecordingIndicatorAnimationSpeed
     let barCount: Int
     let maxHeight: CGFloat
     let barWidth: CGFloat
@@ -35,6 +37,7 @@ struct AudioVisualizer: View {
         audioMeter: AudioMeter,
         mode: AudioVisualizerMode,
         isAnimationActive: Bool = true,
+        animationSpeed: RecordingIndicatorAnimationSpeed = .normal,
         barCount: Int,
         maxHeight: CGFloat,
         barWidth: CGFloat = MeetingAssistantDesignSystem.Layout.spacing4,
@@ -44,6 +47,7 @@ struct AudioVisualizer: View {
         self.audioMeter = audioMeter
         self.mode = mode
         self.isAnimationActive = isAnimationActive
+        self.animationSpeed = animationSpeed
         self.barCount = barCount
         self.maxHeight = maxHeight
         self.barWidth = barWidth
@@ -96,11 +100,12 @@ struct AudioVisualizer: View {
             if isAnimationActive, !reduceMotion {
                 TimelineView(.animation) { timeline in
                     let time = timeline.date.timeIntervalSinceReferenceDate
+                    let adjustedTime = time * frequencyMultiplier
                     HStack(spacing: barSpacing) {
                         ForEach(0..<barCount, id: \.self) { index in
                             Capsule()
                                 .fill(Color.white)
-                                .frame(width: barWidth, height: processingHeight(for: index, time: time))
+                                .frame(width: barWidth, height: processingHeight(for: index, time: adjustedTime))
                         }
                     }
                     .frame(height: maxHeight, alignment: .center)
@@ -153,8 +158,14 @@ struct AudioVisualizer: View {
             let currentAverage = barHeights.reduce(0, +) / CGFloat(max(barHeights.count, 1))
             let targetAverage = targetHeights.reduce(0, +) / CGFloat(max(targetHeights.count, 1))
             let isRising = targetAverage >= currentAverage
-            let duration = isRising ? 0.04 : 0.02
-            withAnimation(.easeOut(duration: duration)) {
+            let baseResponse = isRising ? 0.18 : 0.12
+            withAnimation(
+                .spring(
+                    response: baseResponse * responseMultiplier,
+                    dampingFraction: 0.86,
+                    blendDuration: 0.05
+                )
+            ) {
                 barHeights = targetHeights
             }
             return
@@ -175,6 +186,28 @@ struct AudioVisualizer: View {
     private func softKneeCompressedLevel(_ level: Double) -> Double {
         let numerator = level * level
         return numerator / (numerator + compressionKnee)
+    }
+
+    private var responseMultiplier: Double {
+        switch animationSpeed {
+        case .slow:
+            1.30
+        case .normal:
+            1.00
+        case .fast:
+            0.75
+        }
+    }
+
+    private var frequencyMultiplier: Double {
+        switch animationSpeed {
+        case .slow:
+            0.80
+        case .normal:
+            1.00
+        case .fast:
+            1.25
+        }
     }
 
     private static func deterministicValue(index: Int, count: Int, range: ClosedRange<Double>, seed: Double) -> Double {

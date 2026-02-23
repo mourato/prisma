@@ -839,6 +839,11 @@
 "settings.general.recording_indicator.position" = "Position";
 "settings.general.recording_indicator.position.top" = "Top";
 "settings.general.recording_indicator.position.bottom" = "Bottom";
+"settings.general.recording_indicator.animation_speed" = "Animation Speed";
+"settings.general.recording_indicator.animation_speed_desc" = "Adjust waveform animation speed for recording and processing bars.";
+"settings.general.recording_indicator.animation_speed.slow" = "Slow";
+"settings.general.recording_indicator.animation_speed.normal" = "Normal";
+"settings.general.recording_indicator.animation_speed.fast" = "Fast";
 "recording_indicator.silence_warning" = "No microphone audio detected";
 "recording_indicator.stop.help" = "Stop and transcribe";
 "recording_indicator.cancel.help" = "Cancel and discard";

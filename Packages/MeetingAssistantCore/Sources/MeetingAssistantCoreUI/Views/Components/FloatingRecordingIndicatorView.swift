@@ -344,6 +344,7 @@ public struct FloatingRecordingIndicatorView: View {
                 audioMeter: audioMonitor.audioMeter,
                 mode: visualizerModeForIndicator,
                 isAnimationActive: isAnimationActive,
+                animationSpeed: settingsStore.recordingIndicatorAnimationSpeed,
                 barCount: FloatingRecordingIndicatorViewUtilities.waveCount(for: size),
                 maxHeight: FloatingRecordingIndicatorViewUtilities.waveformHeight(for: size),
                 barWidth: MeetingAssistantDesignSystem.Layout.recordingIndicatorWaveformBarWidth,
