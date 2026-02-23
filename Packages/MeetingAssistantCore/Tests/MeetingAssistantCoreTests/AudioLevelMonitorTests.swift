@@ -3,7 +3,7 @@ import XCTest
 
 @MainActor
 final class AudioLevelMonitorTests: XCTestCase {
-    func testIngestLevels_UsesFastAttackAndSlowerRelease() {
+    func testIngestLevels_UsesFastAttackAndFastRelease() {
         let monitor = AudioLevelMonitor(samplingInterval: 0.03)
 
         monitor.ingestLevels(averageDB: -6, peakDB: -6)
@@ -11,8 +11,8 @@ final class AudioLevelMonitorTests: XCTestCase {
         XCTAssertEqual(monitor.audioMeter.peakPower, 0.8, accuracy: 0.001)
 
         monitor.ingestLevels(averageDB: -60, peakDB: -60)
-        XCTAssertEqual(monitor.audioMeter.averagePower, 0.56, accuracy: 0.001)
-        XCTAssertEqual(monitor.audioMeter.peakPower, 0.56, accuracy: 0.001)
+        XCTAssertEqual(monitor.audioMeter.averagePower, 0.224, accuracy: 0.001)
+        XCTAssertEqual(monitor.audioMeter.peakPower, 0.224, accuracy: 0.001)
     }
 
     func testIngestLevels_ShowsSilenceWarningAfterConfiguredDuration() {
