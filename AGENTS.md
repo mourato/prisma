@@ -347,9 +347,10 @@ Use this order to reduce overlap and noise when multiple skills could apply:
 
 1. `build-macos-apps` — intake/routing only (select workflow quickly)
 2. `macos-development` — canonical macOS/Swift implementation guidance
-3. `swift-concurrency-expert` — concurrency compliance/remediation (Swift 6.2+)
-4. `swiftui-performance-audit` — SwiftUI runtime performance diagnosis and fixes
-5. `swiftui-animation` — advanced animation/transition/shader work when explicitly needed
+3. `native-app-designer` — primary UI/UX direction and experience quality baseline for macOS/iOS interfaces
+4. `swift-concurrency-expert` — concurrency compliance/remediation (Swift 6.2+)
+5. `swiftui-performance-audit` — SwiftUI runtime performance diagnosis and fixes
+6. `swiftui-animation` — advanced animation/transition/shader work when explicitly needed
 
 Notes:
 
@@ -366,9 +367,9 @@ Performance routing notes:
 
 Animation routing notes:
 
+- For any macOS/iOS UI/UX task, consult `native-app-designer` first to define visual/interaction direction and UX acceptance criteria.
+- Use `swiftui-patterns` for general view composition/state patterns after UX direction is defined.
 - Use `swiftui-animation` for advanced motion behavior (transitions, matched geometry, animation orchestration, shader effects).
-- Use `swiftui-patterns` for general view composition/state patterns when animation is not the core problem.
-- Use `native-app-designer` only for high-fidelity visual/motion design exploration, not implementation rules.
 - Respect motion accessibility: prefer reduced motion paths when `accessibilityDisplayShouldReduceMotion` is enabled.
 
 Concurrency routing notes:
@@ -389,6 +390,7 @@ Skills index (loaded conditionally):
 | `.agents/skills/keychain-security/` | KeychainManager, KeychainProvider, storeSecret |
 | `.agents/skills/localization/` | Bundle.safeModule, String.localized, accessibility |
 | `.agents/skills/menubar/` | NSStatusItem, NSMenu, NSPopover |
+| `.agents/skills/native-app-designer/` | primary UI/UX direction, interface quality analysis, visual/motion design for macOS/iOS |
 | `.agents/skills/macos-development/` | macOS apps with SwiftUI/AppKit, lifecycle and platform integration |
 | `.agents/skills/build-macos-apps/` | request intake and workflow routing for CLI-first macOS app tasks |
 | `.agents/skills/skill-development/` | create skill, develop plugin |

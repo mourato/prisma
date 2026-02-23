@@ -9,6 +9,11 @@ description: This skill should be used when the user asks to "build SwiftUI view
 
 Recommended patterns for SwiftUI development in the Meeting Assistant project.
 
+## Mandatory Pairing
+
+For macOS/iOS interface tasks, consult `../native-app-designer/SKILL.md` first to define UX/UI direction and acceptance criteria.
+Then use this skill to implement view composition, state handling, and layout patterns.
+
 ## When to Use
 
 Activate this skill when working with:

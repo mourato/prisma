@@ -11,6 +11,7 @@ Use this skill as an orchestrator only.
 
 - Route user intent to the right workflow quickly.
 - Delegate implementation rules to `../macos-development/SKILL.md`.
+- Delegate UI/UX direction to `../native-app-designer/SKILL.md`.
 - Delegate verification policy to `../quality-assurance/SKILL.md`.
 - Delegate specialist domains to their dedicated skills.
 
@@ -19,6 +20,7 @@ Use this skill as an orchestrator only.
 Use this skill for intake and routing. Do not duplicate deep implementation guidance here.
 
 - Architecture, platform lifecycle, and AppKit/SwiftUI implementation -> `macos-development`
+- UI/UX direction and experience quality baseline -> `native-app-designer`
 - Test strategy and merge gates -> `quality-assurance`
 - Swift concurrency remediation -> `swift-concurrency-expert`
 - SwiftUI runtime performance -> `swiftui-performance-audit`
@@ -75,6 +77,7 @@ make test
 ## Related Skills
 
 - `../macos-development/SKILL.md`
+- `../native-app-designer/SKILL.md`
 - `../quality-assurance/SKILL.md`
 - `../swift-concurrency-expert/SKILL.md`
 - `../swiftui-performance-audit/SKILL.md`
