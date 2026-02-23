@@ -1,6 +1,6 @@
 ---
 name: native-app-designer
-description: This skill should be used when creating high-fidelity macOS/iOS designs, focusing on organic motion, glassmorphism, and premium native-feel interactions.
+description: This skill should be used in every macOS/iOS project and task for creating high-fidelity macOS/iOS user interfaces, focusing on organic motion, glassmorphism, and premium native-feel interactions.
 ---
 
 # Native App Designer
