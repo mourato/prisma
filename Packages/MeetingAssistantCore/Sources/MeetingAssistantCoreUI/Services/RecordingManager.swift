@@ -83,6 +83,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     private let transcribeAudioUseCase: TranscribeAudioUseCase
     private let transcriptPreprocessor = TranscriptIntelligencePreprocessor()
     private let activeAppContextProvider: any ActiveAppContextProvider
+    private let apiKeyExists: (AIProvider) -> Bool
     private var browserProviders: [String: BrowserActiveTabURLProviding] = BrowserProviderRegistry.defaultProviders()
 
     private var cancellables = Set<AnyCancellable>()
@@ -160,7 +161,10 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         ),
         textContextGuardrails: TextContextGuardrails = TextContextGuardrails(),
         textContextPolicy: TextContextPolicy = .default,
-        activeAppContextProvider: any ActiveAppContextProvider = NSWorkspaceActiveAppContextProvider()
+        activeAppContextProvider: any ActiveAppContextProvider = NSWorkspaceActiveAppContextProvider(),
+        apiKeyExists: @escaping (AIProvider) -> Bool = { provider in
+            KeychainManager.existsAPIKey(for: provider)
+        }
     ) {
         self.micRecorder = micRecorder
         self.systemRecorder = systemRecorder
@@ -175,6 +179,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         self.textContextGuardrails = textContextGuardrails
         self.textContextPolicy = textContextPolicy
         self.activeAppContextProvider = activeAppContextProvider
+        self.apiKeyExists = apiKeyExists
 
         // Initialize UseCase with Adapters
         transcribeAudioUseCase = TranscribeAudioUseCase(
@@ -1028,12 +1033,13 @@ extension RecordingManager {
         let kernelMode = postProcessingKernelMode(for: meeting)
         let isDictation = kernelMode == .dictation
         let readinessIssue = settings.postProcessingEnabled
-            ? settings.enhancementsInferenceReadinessIssue(for: kernelMode, apiKeyExists: nil)
+            ? settings.enhancementsInferenceReadinessIssue(for: kernelMode, apiKeyExists: apiKeyExists)
             : nil
         setPostProcessingReadinessWarning(issue: readinessIssue, mode: kernelMode)
         let applyPostProcessing = Self.shouldApplyEnhancementsPostProcessing(
             settings: settings,
-            kernelMode: kernelMode
+            kernelMode: kernelMode,
+            apiKeyExists: apiKeyExists
         )
 
         let disabledForRecording = isDictation
@@ -1117,6 +1123,27 @@ extension RecordingManager {
         )
     }
 
+#if DEBUG
+    func debugResolvePostProcessingConfiguration(
+        meeting: Meeting,
+        settings: AppSettingsStore = .shared
+    ) -> (
+        kernelMode: IntelligenceKernelMode,
+        applyPostProcessing: Bool,
+        promptId: UUID?,
+        promptTitle: String?
+    ) {
+        let kernelMode = postProcessingKernelMode(for: meeting)
+        let config = makeUseCaseConfig(meeting: meeting, settings: settings)
+        return (
+            kernelMode: kernelMode,
+            applyPostProcessing: config.applyPostProcessing,
+            promptId: config.postProcessingPrompt?.id,
+            promptTitle: config.postProcessingPrompt?.title
+        )
+    }
+#endif
+
     static func shouldApplyEnhancementsPostProcessing(
         settings: AppSettingsStore,
         kernelMode: IntelligenceKernelMode,
@@ -1143,8 +1170,9 @@ extension RecordingManager {
         settings: AppSettingsStore = .shared,
         apiKeyExists: ((AIProvider) -> Bool)? = nil
     ) {
+        let resolvedAPIKeyExists = apiKeyExists ?? self.apiKeyExists
         let issue = settings.postProcessingEnabled
-            ? settings.enhancementsInferenceReadinessIssue(for: kernelMode, apiKeyExists: apiKeyExists)
+            ? settings.enhancementsInferenceReadinessIssue(for: kernelMode, apiKeyExists: resolvedAPIKeyExists)
             : nil
         setPostProcessingReadinessWarning(issue: issue, mode: kernelMode)
     }
@@ -1785,7 +1813,7 @@ extension RecordingManager {
         let settings = AppSettingsStore.shared
         guard settings.postProcessingEnabled else { return .empty }
         let kernelMode = postProcessingKernelMode(for: meeting)
-        let readinessIssue = settings.enhancementsInferenceReadinessIssue(for: kernelMode, apiKeyExists: nil)
+        let readinessIssue = settings.enhancementsInferenceReadinessIssue(for: kernelMode, apiKeyExists: apiKeyExists)
         setPostProcessingReadinessWarning(issue: readinessIssue, mode: kernelMode)
         if let readinessIssue {
             let reasonCode = readinessIssue.rawValue
