@@ -18,6 +18,11 @@ public struct DictationSettingsTab: View {
 
     public var body: some View {
         SettingsScrollableContent {
+            SettingsSectionHeader(
+                title: "settings.section.dictation".localized,
+                description: "settings.shortcuts.header_desc".localized
+            )
+
             // Keyboard Shortcut
             MAShortcutSettingsSection(
                 groupTitle: "settings.shortcuts.dictation".localized,
@@ -121,7 +126,8 @@ public struct DictationSettingsTab: View {
             isSelected: isSelected,
             onSelect: {
                 promptViewModel.selectPrompt(prompt.id, forceSelect: true)
-            }
+            },
+            menuAccessibilityLabel: "transcription.ai_actions".localized
         ) {
             promptMenuContent(prompt: prompt, isSelected: isSelected)
         }
@@ -171,7 +177,8 @@ public struct DictationSettingsTab: View {
                 promptViewModel.selectPrompt(AppSettingsStore.noPostProcessingPromptId, forceSelect: true)
             },
             showMenu: false,
-            preserveMenuSpacing: true
+            preserveMenuSpacing: true,
+            menuAccessibilityLabel: "transcription.ai_actions".localized
         ) {
             EmptyView()
         }

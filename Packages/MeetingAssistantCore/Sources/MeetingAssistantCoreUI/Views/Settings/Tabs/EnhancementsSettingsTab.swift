@@ -12,10 +12,15 @@ import SwiftUI
 
 /// Tab for configuring AI post-processing settings.
 public struct EnhancementsSettingsTab: View {
+    private enum EnhancementsPageRoute: Hashable {
+        case systemGuidelines
+    }
+
     @StateObject private var viewModel: AISettingsViewModel
     @StateObject private var postProcessingViewModel: PostProcessingSettingsViewModel
     @State private var supportStatus: TextContextSupportStatus = .unknown
     @State private var hasScreenRecordingPermission = CGPreflightScreenCaptureAccess()
+    @State private var systemGuidelinesDraft = ""
     private let supportChecker = TextContextSupportChecker()
 
     public init(settings: AppSettingsStore = .shared) {
@@ -24,8 +29,13 @@ public struct EnhancementsSettingsTab: View {
     }
 
     public var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.sectionSpacing) {
+        NavigationStack {
+            SettingsScrollableContent {
+                SettingsSectionHeader(
+                    title: "settings.section.ai".localized,
+                    description: "settings.post_processing.description".localized
+                )
+
                 mainSection
                 if postProcessingViewModel.settings.postProcessingEnabled {
                     aiProviderIntegrationCard
@@ -34,23 +44,19 @@ public struct EnhancementsSettingsTab: View {
                 }
                 contextAwarenessSection
             }
-            .padding()
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .sheet(isPresented: $postProcessingViewModel.showSystemPromptEditor) {
-            SystemPromptEditorSheet(
-                initialPrompt: postProcessingViewModel.settings.systemPrompt,
-                onSave: postProcessingViewModel.handleSaveSystemPrompt,
-                onCancel: { postProcessingViewModel.showSystemPromptEditor = false },
-                onRestoreDefault: { postProcessingViewModel.resetSystemPrompt() }
-            )
+            .navigationDestination(for: EnhancementsPageRoute.self) { route in
+                switch route {
+                case .systemGuidelines:
+                    systemGuidelinesPage
+                }
+            }
         }
     }
 
     // MARK: - Sections
 
     private var mainSection: some View {
-        MAGroup("settings.general.title".localized, icon: "brain") {
+        MAGroup("settings.section.ai".localized, icon: "brain") {
             MAToggleRow(
                 "settings.post_processing.enabled".localized,
                 description: "settings.post_processing.description".localized,
@@ -153,7 +159,6 @@ public struct EnhancementsSettingsTab: View {
         }
     }
 
-    @ViewBuilder
     private var contextAwarenessSupportStatus: some View {
         VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
             switch supportStatus {
@@ -186,7 +191,6 @@ public struct EnhancementsSettingsTab: View {
         .task { await refreshSupportStatus() }
     }
 
-    @ViewBuilder
     private var screenRecordingSupportStatus: some View {
         VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
             if !hasScreenRecordingPermission {
@@ -232,6 +236,10 @@ public struct EnhancementsSettingsTab: View {
 
                 Divider()
 
+                Text("settings.enhancements.provider_model.help".localized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
                 HStack {
                     Text("settings.ai.provider".localized)
                         .foregroundStyle(.secondary)
@@ -246,17 +254,25 @@ public struct EnhancementsSettingsTab: View {
                     .fixedSize()
                 }
 
+                if shouldShowProviderKeyWarning {
+                    MACallout(
+                        kind: .warning,
+                        title: "settings.enhancements.provider_key_missing_title".localized,
+                        message: "settings.enhancements.provider_key_missing_desc".localized
+                    )
+                }
+
                 HStack {
                     Text("settings.ai.model".localized)
                         .foregroundStyle(.secondary)
                     Spacer()
 
-                    if postProcessingViewModel.settings.enhancementsAISelection.provider == .custom {
+                    if isEnhancementsCustomProvider {
                         TextField(
-                            "",
+                            "settings.enhancements.custom_model_placeholder".localized,
                             text: enhancementsModelBinding
                         )
-                        .textFieldStyle(.plain)
+                        .textFieldStyle(.roundedBorder)
                         .multilineTextAlignment(.trailing)
                         .frame(maxWidth: MeetingAssistantDesignSystem.Layout.maxCompactTextFieldWidth)
                     } else {
@@ -295,6 +311,14 @@ public struct EnhancementsSettingsTab: View {
                         .labelsHidden()
                         .disabled(viewModel.isLoadingEnhancementsModels || viewModel.enhancementsAvailableModels.isEmpty)
                     }
+                }
+
+                if shouldShowEmptyModelCallout {
+                    MACallout(
+                        kind: .info,
+                        title: "settings.enhancements.models_empty_title".localized,
+                        message: "settings.enhancements.models_empty_desc".localized
+                    )
                 }
 
                 if let refreshSummary = viewModel.enhancementsModelsRefreshSummary {
@@ -346,33 +370,74 @@ public struct EnhancementsSettingsTab: View {
 
     private var systemPromptSection: some View {
         MAGroup("settings.post_processing.system_prompt".localized, icon: "terminal.fill") {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.itemSpacing) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                Text("settings.post_processing.base_instructions".localized)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+
+                Text(postProcessingViewModel.settings.systemPrompt)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+
+                Divider()
+
+                SettingsDrillDownListRow(
+                    destination: EnhancementsPageRoute.systemGuidelines,
+                    title: "settings.post_processing.edit_system_guidelines".localized,
+                    subtitle: systemGuidelinesSummary,
+                    accessibilityHint: "settings.post_processing.system_guidelines.accessibility_hint".localized
+                )
+            }
+        }
+    }
+
+    private var systemGuidelinesPage: some View {
+        SettingsScrollableContent {
+            MAGroup("settings.post_processing.system_prompt".localized, icon: "terminal.fill") {
+                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                    HStack {
                         Text("settings.post_processing.base_instructions".localized)
                             .font(.subheadline)
                             .fontWeight(.medium)
-
-                        Text(postProcessingViewModel.settings.systemPrompt)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(2)
+                        Spacer()
+                        Button("settings.post_processing.restore_default".localized) {
+                            restoreSystemGuidelines()
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.regular)
                     }
 
-                    Spacer()
+                    Text("prompt.instructions_hint".localized)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
 
-                    Button {
-                        postProcessingViewModel.showSystemPromptEditor = true
-                    } label: {
-                        Label(
-                            "settings.post_processing.edit_system_guidelines".localized,
-                            systemImage: "pencil"
+                    TextEditor(text: $systemGuidelinesDraft)
+                        .font(.body)
+                        .frame(minHeight: 250)
+                        .padding(MeetingAssistantDesignSystem.Layout.textAreaPadding)
+                        .background(MeetingAssistantDesignSystem.Colors.textBackground)
+                        .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
+                                .stroke(MeetingAssistantDesignSystem.Colors.separator, lineWidth: 1)
                         )
+
+                    HStack {
+                        Spacer()
+                        Button("common.save".localized) {
+                            saveSystemGuidelines()
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(MeetingAssistantDesignSystem.Colors.accent)
+                        .disabled(systemGuidelinesDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.regular)
                 }
             }
+        }
+        .navigationTitle("settings.post_processing.system_prompt_editor_title".localized)
+        .onAppear {
+            systemGuidelinesDraft = postProcessingViewModel.settings.systemPrompt
         }
     }
 
@@ -410,6 +475,37 @@ public struct EnhancementsSettingsTab: View {
         let config = postProcessingViewModel.settings.resolvedEnhancementsAIConfiguration
         let hasModel = !config.selectedModel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         return config.isValid && hasModel
+    }
+
+    private var isEnhancementsCustomProvider: Bool {
+        postProcessingViewModel.settings.enhancementsAISelection.provider == .custom
+    }
+
+    private var shouldShowProviderKeyWarning: Bool {
+        !isEnhancementsCustomProvider && !viewModel.isEnhancementsProviderKeySaved
+    }
+
+    private var shouldShowEmptyModelCallout: Bool {
+        !isEnhancementsCustomProvider &&
+            viewModel.isEnhancementsProviderKeySaved &&
+            !viewModel.isLoadingEnhancementsModels &&
+            viewModel.enhancementsAvailableModels.isEmpty
+    }
+
+    private var systemGuidelinesSummary: String {
+        let isDefault = postProcessingViewModel.settings.systemPrompt == AIPromptTemplates.defaultSystemPrompt
+        return isDefault
+            ? "settings.post_processing.system_guidelines.default_summary".localized
+            : "settings.post_processing.system_guidelines.custom_summary".localized
+    }
+
+    private func restoreSystemGuidelines() {
+        postProcessingViewModel.resetSystemPrompt()
+        systemGuidelinesDraft = postProcessingViewModel.settings.systemPrompt
+    }
+
+    private func saveSystemGuidelines() {
+        postProcessingViewModel.handleSaveSystemPrompt(systemGuidelinesDraft)
     }
 
     private func parseBundleIDs(from rawValue: String) -> [String] {

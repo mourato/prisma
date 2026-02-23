@@ -1,10 +1,10 @@
+import Foundation
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
-import Foundation
 import SwiftUI
 
 public struct AssistantSettingsTab: View {
@@ -21,15 +21,19 @@ public struct AssistantSettingsTab: View {
     @State private var editingIntegration: AssistantIntegrationConfig?
     @State private var advancedIntegrationDraft: AssistantIntegrationConfig?
     @State private var integrationShortcutConflictMessages: [UUID: String] = [:]
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init() {}
 
     public var body: some View {
         SettingsScrollableContent {
-            headerSection
+            SettingsSectionHeader(
+                title: "settings.section.assistant".localized,
+                description: "settings.assistant.header_desc".localized
+            )
             assistantControlsSection
-            integrationsSection
             visualFeedbackSection
+            integrationsSection
         }
         .onAppear {
             glowSizeInput = String(Int(viewModel.glowSize))
@@ -86,13 +90,6 @@ public struct AssistantSettingsTab: View {
         }
     }
 
-    private var headerSection: some View {
-        Text("settings.assistant.header_desc".localized)
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
     private var assistantControlsSection: some View {
         MAShortcutSettingsSection(
             groupTitle: "settings.assistant.controls".localized,
@@ -131,33 +128,34 @@ public struct AssistantSettingsTab: View {
         )
     }
 
-    private var integrationsSection: some View {
-        AssistantIntegrationsSection(
-            viewModel: integrationViewModel,
-            editingIntegration: $editingIntegration,
-            integrationShortcutConflictMessages: $integrationShortcutConflictMessages
-        )
-    }
-
     private var visualFeedbackSection: some View {
         MAGroup(
             "settings.assistant.visual_feedback".localized,
             icon: "rectangle.inset.filled"
         ) {
             VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
-                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
-                    Text("settings.assistant.border_color".localized)
-                        .font(.body)
-                        .fontWeight(.medium)
+                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                    previewButton
+
+                    if isPreviewRunning {
+                        Label("settings.assistant.preview_running".localized, systemImage: "waveform.path")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .opacity(reduceMotion ? 1 : 0.75)
+                            .animation(
+                                reduceMotion
+                                    ? nil
+                                    : .easeInOut(duration: 0.8).repeatForever(autoreverses: true),
+                                value: isPreviewRunning
+                            )
+                    }
 
                     Spacer()
-
-                    MAThemePicker(
-                        selection: $viewModel.borderColor,
-                        circleSpacing: MeetingAssistantDesignSystem.Layout.spacing4,
-                        itemFrameSize: 34
-                    )
                 }
+
+                Text("settings.assistant.visual_feedback_desc".localized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
 
                 Divider()
 
@@ -177,6 +175,20 @@ public struct AssistantSettingsTab: View {
                     .pickerStyle(.segmented)
                 }
 
+                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                    Text("settings.assistant.border_color".localized)
+                        .font(.body)
+                        .fontWeight(.medium)
+
+                    Spacer()
+
+                    MAThemePicker(
+                        selection: $viewModel.borderColor,
+                        circleSpacing: MeetingAssistantDesignSystem.Layout.spacing4,
+                        itemFrameSize: 34
+                    )
+                }
+
                 Divider()
 
                 if viewModel.borderStyle == .stroke {
@@ -186,8 +198,6 @@ public struct AssistantSettingsTab: View {
                             .fontWeight(.medium)
 
                         Spacer()
-
-                        previewButton
 
                         Picker("", selection: borderWidthSelection) {
                             ForEach(AssistantShortcutSettingsViewModel.borderWidthOptions, id: \.self) { option in
@@ -206,8 +216,6 @@ public struct AssistantSettingsTab: View {
 
                         Spacer()
 
-                        previewButton
-
                         HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
                             TextField("", text: glowSizeInputBinding)
                                 .textFieldStyle(.roundedBorder)
@@ -225,11 +233,19 @@ public struct AssistantSettingsTab: View {
         }
     }
 
+    private var integrationsSection: some View {
+        AssistantIntegrationsSection(
+            viewModel: integrationViewModel,
+            editingIntegration: $editingIntegration,
+            integrationShortcutConflictMessages: $integrationShortcutConflictMessages
+        )
+    }
+
     private var previewButton: some View {
         Button("settings.assistant.preview".localized) {
             runVisualFeedbackPreview()
         }
-        .buttonStyle(.bordered)
+        .buttonStyle(.borderedProminent)
         .controlSize(.regular)
         .disabled(isPreviewRunning)
     }

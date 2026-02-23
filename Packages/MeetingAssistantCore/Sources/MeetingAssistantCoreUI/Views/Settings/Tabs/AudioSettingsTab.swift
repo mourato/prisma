@@ -12,126 +12,130 @@ import SwiftUI
 public struct AudioSettingsTab: View {
     @StateObject private var viewModel = GeneralSettingsViewModel()
     @State private var draggingDevice: AudioInputDevice?
+    @State private var previewingSound: SoundFeedbackSound?
+    @State private var previewResetTask: Task<Void, Never>?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init() {}
 
     public var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.sectionSpacing) {
-                // Audio Devices
-                MAGroup("settings.general.audio_devices".localized, icon: "mic.fill") {
-                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
-                        MAToggleRow(
-                            "settings.general.use_system_default_input".localized,
-                            description: "settings.general.use_system_default_input_desc".localized,
-                            isOn: $viewModel.useSystemDefaultInput.animated()
-                        )
+        SettingsScrollableContent {
+            SettingsSectionHeader(
+                title: "settings.section.audio".localized,
+                description: "settings.general.audio_devices_desc".localized
+            )
 
-                        if !viewModel.useSystemDefaultInput {
-                            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
-                                Text("settings.general.audio_devices_desc".localized)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+            // Audio Devices
+            MAGroup("settings.general.audio_devices".localized, icon: "mic.fill") {
+                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                    MAToggleRow(
+                        "settings.general.use_system_default_input".localized,
+                        description: "settings.general.use_system_default_input_desc".localized,
+                        isOn: $viewModel.useSystemDefaultInput.animated()
+                    )
 
-                                VStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-                                    ForEach(viewModel.availableDevices) { device in
-                                        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
-                                            Image(systemName: device.isAvailable ? "mic" : "mic.slash")
+                    if !viewModel.useSystemDefaultInput {
+                        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                            Text("settings.general.audio_devices_desc".localized)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+
+                            VStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                                ForEach(viewModel.availableDevices) { device in
+                                    HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                                        Image(systemName: device.isAvailable ? "mic" : "mic.slash")
+                                            .foregroundStyle(device.isAvailable ? .primary : .secondary)
+                                            .frame(width: 20)
+
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(device.name)
+                                                .font(.body)
                                                 .foregroundStyle(device.isAvailable ? .primary : .secondary)
-                                                .frame(width: 20)
-
-                                            VStack(alignment: .leading, spacing: 2) {
-                                                Text(device.name)
-                                                    .font(.body)
-                                                    .foregroundStyle(device.isAvailable ? .primary : .secondary)
-                                                if device.isDefault {
-                                                    Text("settings.general.device_default".localized)
-                                                        .font(.caption2)
-                                                        .foregroundStyle(.blue)
-                                                }
-                                            }
-
-                                            Spacer()
-
-                                            if !device.isAvailable {
-                                                Text("settings.general.device_unavailable".localized)
+                                            if device.isDefault {
+                                                Text("settings.general.device_default".localized)
                                                     .font(.caption2)
-                                                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
+                                                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.accent)
                                             }
+                                        }
 
-                                            Image(systemName: "line.3.horizontal")
-                                                .font(.caption)
-                                                .foregroundStyle(.secondary)
+                                        Spacer()
+
+                                        if !device.isAvailable {
+                                            Text("settings.general.device_unavailable".localized)
+                                                .font(.caption2)
+                                                .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
                                         }
-                                        .padding(MeetingAssistantDesignSystem.Layout.spacing8)
-                                        .background(MeetingAssistantDesignSystem.Colors.subtleFill2)
-                                        .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
-                                        .onDrag {
-                                            draggingDevice = device
-                                            return NSItemProvider(object: device.id as NSString)
-                                        }
-                                        .onDrop(of: [.text], delegate: DeviceDropDelegate(
-                                            item: device,
-                                            listData: $viewModel.availableDevices,
-                                            current: $draggingDevice,
-                                            onMove: viewModel.moveDevice
-                                        ))
+
+                                        Image(systemName: "line.3.horizontal")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
                                     }
+                                    .padding(MeetingAssistantDesignSystem.Layout.spacing8)
+                                    .background(MeetingAssistantDesignSystem.Colors.subtleFill2)
+                                    .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+                                    .onDrag {
+                                        draggingDevice = device
+                                        return NSItemProvider(object: device.id as NSString)
+                                    }
+                                    .onDrop(of: [.text], delegate: DeviceDropDelegate(
+                                        item: device,
+                                        listData: $viewModel.availableDevices,
+                                        current: $draggingDevice,
+                                        onMove: viewModel.moveDevice
+                                    ))
                                 }
                             }
-                            .transition(SettingsMotion.sectionTransition())
                         }
-
-                        Divider()
-
-                        MAToggleRow(
-                            "settings.general.mute_output_during_recording".localized,
-                            description: "settings.general.mute_output_desc".localized,
-                            isOn: $viewModel.muteOutputDuringRecording
-                        )
-
-                        Divider()
-
-                        MAToggleRow(
-                            "settings.general.auto_increase_microphone_volume".localized,
-                            tooltip: "settings.general.auto_increase_microphone_volume_tooltip".localized,
-                            isOn: $viewModel.autoIncreaseMicrophoneVolume
-                        )
+                        .transition(SettingsMotion.sectionTransition(reduceMotion: reduceMotion))
                     }
+
+                    Divider()
+
+                    MAToggleRow(
+                        "settings.general.mute_output_during_recording".localized,
+                        description: "settings.general.mute_output_desc".localized,
+                        isOn: $viewModel.muteOutputDuringRecording
+                    )
+
+                    Divider()
+
+                    MAToggleRow(
+                        "settings.general.auto_increase_microphone_volume".localized,
+                        tooltip: "settings.general.auto_increase_microphone_volume_tooltip".localized,
+                        isOn: $viewModel.autoIncreaseMicrophoneVolume
+                    )
                 }
+            }
 
-                // Sound Feedback
-                MAGroup("settings.general.sound_feedback".localized, icon: "speaker.wave.2.fill") {
-                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
-                        MAToggleRow(
-                            "settings.general.sound_feedback.enabled".localized,
-                            description: "settings.general.sound_feedback.enabled_desc".localized,
-                            isOn: $viewModel.soundFeedbackEnabled.animated()
-                        )
+            // Sound Feedback
+            MAGroup("settings.general.sound_feedback".localized, icon: "speaker.wave.2.fill") {
+                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
+                    MAToggleRow(
+                        "settings.general.sound_feedback.enabled".localized,
+                        description: "settings.general.sound_feedback.enabled_desc".localized,
+                        isOn: $viewModel.soundFeedbackEnabled.animated()
+                    )
 
-                        if viewModel.soundFeedbackEnabled {
-                            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
-                                Divider()
+                    if viewModel.soundFeedbackEnabled {
+                        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
+                            Divider()
 
-                                soundPickerRow(
-                                    title: "settings.general.sound_feedback.start_sound".localized,
-                                    selection: $viewModel.recordingStartSound
-                                )
+                            soundPickerRow(
+                                title: "settings.general.sound_feedback.start_sound".localized,
+                                selection: $viewModel.recordingStartSound
+                            )
 
-                                Divider()
+                            Divider()
 
-                                soundPickerRow(
-                                    title: "settings.general.sound_feedback.stop_sound".localized,
-                                    selection: $viewModel.recordingStopSound
-                                )
-                            }
-                            .transition(SettingsMotion.sectionTransition())
+                            soundPickerRow(
+                                title: "settings.general.sound_feedback.stop_sound".localized,
+                                selection: $viewModel.recordingStopSound
+                            )
                         }
+                        .transition(SettingsMotion.sectionTransition(reduceMotion: reduceMotion))
                     }
                 }
             }
-            .padding()
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -153,14 +157,31 @@ public struct AudioSettingsTab: View {
             .frame(width: MeetingAssistantDesignSystem.Layout.smallPickerWidth)
 
             Button {
-                SoundFeedbackService.shared.preview(selection.wrappedValue)
+                previewSound(selection.wrappedValue)
             } label: {
-                Image(systemName: "play.circle.fill")
+                Image(systemName: previewingSound == selection.wrappedValue ? "speaker.wave.2.circle.fill" : "play.circle.fill")
                     .font(.title3)
+                    .settingsPulseSymbolEffect(
+                        isActive: previewingSound == selection.wrappedValue,
+                        reduceMotion: reduceMotion
+                    )
             }
             .buttonStyle(.borderless)
             .disabled(selection.wrappedValue == .none)
             .accessibilityLabel("settings.general.sound_feedback.preview".localized)
+            .accessibilityHint("settings.general.sound_feedback.enabled_desc".localized)
+        }
+    }
+
+    private func previewSound(_ sound: SoundFeedbackSound) {
+        guard sound != .none else { return }
+        previewResetTask?.cancel()
+        previewingSound = sound
+        SoundFeedbackService.shared.preview(sound)
+        previewResetTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(900))
+            guard !Task.isCancelled else { return }
+            previewingSound = nil
         }
     }
 }

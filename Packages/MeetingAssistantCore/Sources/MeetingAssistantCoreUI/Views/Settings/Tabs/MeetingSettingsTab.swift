@@ -10,12 +10,15 @@ import SwiftUI
 
 /// Tab for meeting-specific settings like app monitoring and automation.
 public struct MeetingSettingsTab: View {
+    private enum MeetingPageRoute: Hashable {
+        case monitoringTargets
+    }
+
     @StateObject private var meetingViewModel: MeetingSettingsViewModel
     @StateObject private var shortcutsViewModel = ShortcutSettingsViewModel()
     @StateObject private var monitoredAppsViewModel: InstalledAppsSelectionViewModel
     @StateObject private var webTargetsViewModel: WebMeetingTargetsViewModel
     @State private var showSummaryTemplateEditor = false
-    @State private var showMonitoringTargetsModal = false
 
     public init(settings: AppSettingsStore = .shared) {
         _meetingViewModel = StateObject(wrappedValue: MeetingSettingsViewModel(settings: settings))
@@ -31,8 +34,51 @@ public struct MeetingSettingsTab: View {
     }
 
     public var body: some View {
+        NavigationStack {
+            mainPage
+                .navigationDestination(for: MeetingPageRoute.self) { route in
+                    switch route {
+                    case .monitoringTargets:
+                        monitoringTargetsPage
+                    }
+                }
+        }
+        .sheet(isPresented: $meetingViewModel.showPromptEditor) {
+            PromptEditorSheet(
+                prompt: meetingViewModel.editingPrompt,
+                onSave: meetingViewModel.handleSavePrompt,
+                onCancel: { meetingViewModel.showPromptEditor = false }
+            )
+        }
+        .sheet(isPresented: $showSummaryTemplateEditor) {
+            SummaryTemplateEditorSheet(
+                initialTemplate: meetingViewModel.settings.summaryTemplate,
+                onSave: { updatedTemplate in
+                    meetingViewModel.settings.summaryTemplate = updatedTemplate
+                    showSummaryTemplateEditor = false
+                },
+                onCancel: { showSummaryTemplateEditor = false }
+            )
+        }
+        .alert("settings.post_processing.delete_confirm_title".localized, isPresented: $meetingViewModel.showDeleteConfirmation) {
+            Button("common.cancel".localized, role: .cancel) {}
+            Button("common.delete".localized, role: .destructive) {
+                meetingViewModel.executeDelete()
+            }
+        } message: {
+            if let prompt = meetingViewModel.promptToDelete {
+                Text("settings.post_processing.delete_confirm_message".localized(with: prompt.title))
+            }
+        }
+    }
+
+    private var mainPage: some View {
         SettingsScrollableContent {
-            // Keyboard Shortcut (Existing)
+            SettingsSectionHeader(
+                title: "settings.section.meetings".localized,
+                description: "settings.shortcuts.meeting_desc".localized
+            )
+
             MAShortcutSettingsSection(
                 groupTitle: "settings.shortcuts.meeting".localized,
                 descriptionText: "settings.shortcuts.meeting_desc".localized,
@@ -45,23 +91,14 @@ public struct MeetingSettingsTab: View {
             )
 
             MAGroup("settings.meetings.monitoring_access.title".localized, icon: "app.badge") {
-                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
-                    Text("settings.meetings.monitoring_access.desc".localized)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    HStack {
-                        Spacer()
-                        Button("settings.meetings.monitoring_access.button".localized) {
-                            showMonitoringTargetsModal = true
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.regular)
-                    }
-                }
+                SettingsDrillDownListRow(
+                    destination: MeetingPageRoute.monitoringTargets,
+                    title: "settings.meetings.monitoring_access.button".localized,
+                    subtitle: "settings.meetings.monitoring_access.desc".localized,
+                    accessibilityHint: "settings.meetings.monitoring_access.accessibility_hint".localized
+                )
             }
 
-            // Automation (Existing)
             MAGroup("settings.meetings.workflow".localized, icon: "bolt.fill") {
                 VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
                     MAToggleRow(
@@ -78,12 +115,10 @@ public struct MeetingSettingsTab: View {
                 }
             }
 
-            // Speaker Identification Section
             MAGroup("settings.meetings.speaker_identification".localized, icon: "person.wave.2.fill") {
                 SpeakerIdentificationSettingsSection(settings: meetingViewModel.settings)
             }
 
-            // Summary Export Section
             MAGroup("settings.meetings.export".localized, icon: "folder.fill") {
                 VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
                     MAToggleRow(
@@ -177,7 +212,6 @@ public struct MeetingSettingsTab: View {
                 }
             }
 
-            // Meeting Prompts Section
             MAGroup("settings.meetings.prompts".localized, icon: "sparkles") {
                 VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.cardPadding) {
                     MAToggleRow(
@@ -214,82 +248,29 @@ public struct MeetingSettingsTab: View {
                     }
                 }
             }
-
-        }
-        .sheet(isPresented: $meetingViewModel.showPromptEditor) {
-            PromptEditorSheet(
-                prompt: meetingViewModel.editingPrompt,
-                onSave: meetingViewModel.handleSavePrompt,
-                onCancel: { meetingViewModel.showPromptEditor = false }
-            )
-        }
-        .sheet(isPresented: $showSummaryTemplateEditor) {
-            SummaryTemplateEditorSheet(
-                initialTemplate: meetingViewModel.settings.summaryTemplate,
-                onSave: { updatedTemplate in
-                    meetingViewModel.settings.summaryTemplate = updatedTemplate
-                    showSummaryTemplateEditor = false
-                },
-                onCancel: { showSummaryTemplateEditor = false }
-            )
-        }
-        .sheet(isPresented: $showMonitoringTargetsModal) {
-            monitoringTargetsSheet
-        }
-        .alert("settings.post_processing.delete_confirm_title".localized, isPresented: $meetingViewModel.showDeleteConfirmation) {
-            Button("common.cancel".localized, role: .cancel) {}
-            Button("common.delete".localized, role: .destructive) {
-                meetingViewModel.executeDelete()
-            }
-        } message: {
-            if let prompt = meetingViewModel.promptToDelete {
-                Text("settings.post_processing.delete_confirm_message".localized(with: prompt.title))
-            }
         }
     }
 
-    private var monitoringTargetsSheet: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text("settings.meetings.monitoring_access.modal_title".localized)
-                    .font(.headline)
-                Spacer()
-                Button {
-                    showMonitoringTargetsModal = false
-                } label: {
-                    Image(systemName: "xmark")
-                }
-                .buttonStyle(.borderless)
-                .controlSize(.regular)
-            }
-            .padding()
+    private var monitoringTargetsPage: some View {
+        SettingsScrollableContent {
+            MACallout(
+                kind: .info,
+                title: "settings.meetings.monitoring_access.context_title".localized,
+                message: "settings.meetings.monitoring_access.context_desc".localized
+            )
 
-            Divider()
+            InstalledAppsSelectionSection(
+                titleKey: "settings.general.monitored_apps",
+                descriptionKey: "settings.general.monitored_apps_desc",
+                emptyKey: "settings.general.monitored_apps_empty",
+                addButtonKey: "settings.general.monitored_apps_add",
+                icon: "app.badge",
+                viewModel: monitoredAppsViewModel
+            )
 
-            SettingsScrollableContent {
-                InstalledAppsSelectionSection(
-                    titleKey: "settings.general.monitored_apps",
-                    descriptionKey: "settings.general.monitored_apps_desc",
-                    emptyKey: "settings.general.monitored_apps_empty",
-                    addButtonKey: "settings.general.monitored_apps_add",
-                    icon: "app.badge",
-                    viewModel: monitoredAppsViewModel
-                )
-
-                webTargetsSection
-
-                HStack {
-                    Spacer()
-                    Button("settings.meetings.monitoring_access.done".localized) {
-                        showMonitoringTargetsModal = false
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.regular)
-                }
-            }
-            .padding(.top, MeetingAssistantDesignSystem.Layout.spacing8)
+            webTargetsSection
         }
-        .frame(width: 760, height: 560)
+        .navigationTitle("settings.meetings.monitoring_access.modal_title".localized)
         .sheet(isPresented: $webTargetsViewModel.showEditor) {
             WebMeetingTargetEditorSheet(
                 target: webTargetsViewModel.editingTarget,
@@ -358,27 +339,25 @@ public struct MeetingSettingsTab: View {
 
             Spacer()
 
-            Button {
-                webTargetsViewModel.editTarget(target)
-            } label: {
-                Image(systemName: "pencil")
-                    .accessibilityLabel("settings.meetings.web_targets.edit".localized)
-            }
-            .buttonStyle(.borderless)
-            .controlSize(.regular)
+            SettingsContextMenuButton(accessibilityLabel: "settings.rules_per_app.actions".localized) {
+                Button {
+                    webTargetsViewModel.editTarget(target)
+                } label: {
+                    Label("settings.meetings.web_targets.edit".localized, systemImage: "pencil")
+                }
 
-            Button(role: .destructive) {
-                webTargetsViewModel.confirmDelete(target)
-            } label: {
-                Image(systemName: "trash")
-                    .accessibilityLabel("settings.meetings.web_targets.delete".localized)
+                Button(role: .destructive) {
+                    webTargetsViewModel.confirmDelete(target)
+                } label: {
+                    Label("settings.meetings.web_targets.delete".localized, systemImage: "trash")
+                }
             }
-            .buttonStyle(.borderless)
-            .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
-            .controlSize(.regular)
         }
         .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)
         .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(webTargetAccessibilityLabel(for: target))
+        .accessibilityHint("settings.rules_per_app.actions".localized)
     }
 
     private func browserNames(from bundleIdentifiers: [String]) -> String {
@@ -392,11 +371,11 @@ public struct MeetingSettingsTab: View {
     private func exportSafetyPolicyLabel(_ level: SummaryExportSafetyPolicyLevel) -> String {
         switch level {
         case .permissive:
-            return "settings.meetings.export_safety_policy.permissive".localized
+            "settings.meetings.export_safety_policy.permissive".localized
         case .standard:
-            return "settings.meetings.export_safety_policy.standard".localized
+            "settings.meetings.export_safety_policy.standard".localized
         case .strict:
-            return "settings.meetings.export_safety_policy.strict".localized
+            "settings.meetings.export_safety_policy.strict".localized
         }
     }
 
@@ -414,7 +393,8 @@ public struct MeetingSettingsTab: View {
             onSelect: isAutoDetectEnabled ? nil : {
                 meetingViewModel.selectPrompt(prompt.id)
             },
-            unselectedStrokeColor: MeetingAssistantDesignSystem.Colors.separator.opacity(0.4)
+            unselectedStrokeColor: MeetingAssistantDesignSystem.Colors.separator.opacity(0.4),
+            menuAccessibilityLabel: "transcription.ai_actions".localized
         ) {
             promptMenuContent(prompt: prompt, isSelected: isSelected, isAutoDetectEnabled: isAutoDetectEnabled)
         }
@@ -468,10 +448,17 @@ public struct MeetingSettingsTab: View {
             },
             unselectedStrokeColor: Color.secondary.opacity(0.1),
             showMenu: false,
-            preserveMenuSpacing: true
+            preserveMenuSpacing: true,
+            menuAccessibilityLabel: "transcription.ai_actions".localized
         ) {
             EmptyView()
         }
+    }
+
+    private func webTargetAccessibilityLabel(for target: WebMeetingTarget) -> String {
+        [target.displayName, target.urlPatterns.joined(separator: ", "), browserNames(from: target.browserBundleIdentifiers)]
+            .filter { !$0.isEmpty }
+            .joined(separator: ", ")
     }
 }
 

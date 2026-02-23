@@ -115,7 +115,9 @@
 "settings.meetings.monitoring_access.desc" = "Configure which apps and web targets are monitored to detect meetings automatically.";
 "settings.meetings.monitoring_access.button" = "Configure monitored apps and sites";
 "settings.meetings.monitoring_access.modal_title" = "Monitored apps and sites";
-"settings.meetings.monitoring_access.done" = "Done";
+"settings.meetings.monitoring_access.accessibility_hint" = "Opens monitored apps and sites settings.";
+"settings.meetings.monitoring_access.context_title" = "Monitoring scope";
+"settings.meetings.monitoring_access.context_desc" = "Choose desktop apps and web targets that should trigger automatic meeting detection.";
 "settings.meetings.web_targets.title" = "Web Meeting Targets";
 "settings.meetings.web_targets.desc" = "Match meetings by active-tab URL in supported browsers. macOS may ask for browser automation permission so Meeting Assistant can read that URL.";
 "settings.meetings.web_targets.empty" = "No web targets configured yet.";
@@ -215,6 +217,12 @@
 "settings.enhancements.meeting_intelligence_model" = "Meeting Intelligence Model";
 "settings.enhancements.qa_enabled_desc" = "Enable grounded Q&A on saved meetings.";
 "settings.enhancements.model_warning_desc" = "Configure provider API key and choose a model in Meeting Intelligence Model to run post-processing and meeting Q&A.";
+"settings.enhancements.provider_model.help" = "Choose the provider and model used for post-processing and meeting Q&A.";
+"settings.enhancements.provider_key_missing_title" = "Provider API key required";
+"settings.enhancements.provider_key_missing_desc" = "Save an API key in Integrations before selecting provider-managed models.";
+"settings.enhancements.custom_model_placeholder" = "Enter custom model ID";
+"settings.enhancements.models_empty_title" = "No models found";
+"settings.enhancements.models_empty_desc" = "Refresh models or verify provider configuration.";
 
 /* Post-Processing Settings */
 "settings.post_processing.title" = "Post-Processing";
@@ -234,6 +242,9 @@
 "settings.post_processing.delete_confirm_message" = "Are you sure you want to delete the prompt \"%@\"? This action cannot be undone.";
 "settings.post_processing.edit_system_guidelines" = "Edit Guidelines";
 "settings.post_processing.system_prompt_editor_title" = "System Guidelines";
+"settings.post_processing.system_guidelines.default_summary" = "Default guidelines active";
+"settings.post_processing.system_guidelines.custom_summary" = "Custom guidelines active";
+"settings.post_processing.system_guidelines.accessibility_hint" = "Opens System Guidelines editor.";
 "settings.post_processing.duplicate" = "Duplicate";
 "settings.post_processing.select" = "Activate";
 "settings.post_processing.is_active" = "Active";
@@ -378,6 +389,8 @@
 "settings.assistant.fn_key_desc" = "To use the Fn key alone:\n• Open System Settings → Keyboard\n• Click \"Press 🌐 key to\" dropdown\n• Select \"Do Nothing\"\n• This allows the app to detect the Fn key press";
 "settings.assistant.use_escape" = "Press Escape twice to cancel Assistant recording";
 "settings.assistant.use_enter_stop" = "Press Enter once to stop Assistant recording and process";
+"settings.assistant.visual_feedback_desc" = "Adjust border appearance and run a short preview to validate visibility.";
+"settings.assistant.preview_running" = "Preview running…";
 "settings.assistant.integrations.title" = "Integrations";
 "settings.assistant.integrations.description" = "Configure where Assistant output should be delivered after voice processing.";
 "settings.assistant.integrations.output_mode" = "Output Mode";

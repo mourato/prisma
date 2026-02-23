@@ -14,6 +14,10 @@ public struct VocabularySettingsTab: View {
 
     public var body: some View {
         SettingsScrollableContent {
+            SettingsSectionHeader(
+                title: "settings.section.vocabulary".localized,
+                description: "settings.vocabulary.description".localized
+            )
             MAGroup("settings.vocabulary.title".localized, icon: "character.book.closed") {
                 VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
                     Text("settings.vocabulary.description".localized)
@@ -82,7 +86,7 @@ public struct VocabularySettingsTab: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            Menu {
+            SettingsContextMenuButton(accessibilityLabel: "settings.vocabulary.actions".localized) {
                 Button {
                     ruleFindInput = rule.find
                     ruleReplaceInput = rule.replace
@@ -96,17 +100,13 @@ public struct VocabularySettingsTab: View {
                 } label: {
                     Label("settings.vocabulary.delete_rule".localized, systemImage: "trash")
                 }
-            } label: {
-                Image(systemName: "ellipsis.circle")
-                    .foregroundStyle(.secondary)
             }
-            .menuStyle(.borderlessButton)
-            .fixedSize()
-            .highPriorityGesture(TapGesture())
-            .accessibilityLabel("settings.vocabulary.actions".localized)
         }
         .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)
         .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(vocabularyRowAccessibilityLabel(for: rule))
+        .accessibilityHint("settings.vocabulary.actions".localized)
     }
 
     private var editorSheet: some View {
@@ -185,6 +185,11 @@ public struct VocabularySettingsTab: View {
             ruleFindInput = ""
             ruleReplaceInput = ""
         }
+    }
+
+    private func vocabularyRowAccessibilityLabel(for rule: VocabularyReplacementRule) -> String {
+        [rule.find, rule.replace.isEmpty ? "settings.vocabulary.empty_replace".localized : rule.replace]
+            .joined(separator: ", ")
     }
 }
 

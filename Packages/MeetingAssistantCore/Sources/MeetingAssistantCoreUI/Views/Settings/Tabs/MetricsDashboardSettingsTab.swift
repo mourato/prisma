@@ -16,30 +16,36 @@ public struct MetricsDashboardSettingsTab: View {
     public init() {}
 
     public var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.sectionSpacing) {
-                if let errorMessage = viewModel.errorMessage {
-                    MACard {
-                        Text(errorMessage)
-                            .foregroundStyle(.secondary)
-                    }
-                }
+        SettingsScrollableContent {
+            SettingsSectionHeader(
+                title: "settings.section.metrics".localized,
+                description: "metrics.hero.subtitle".localized(
+                    with: Formatters.formattedNumber(viewModel.summary.wordsDictated),
+                    viewModel.summary.sessionsRecorded
+                )
+            )
 
-                activityHeatmapSection
-                filtersSection
-                heroSection
-
-                if viewModel.summary.sessionsRecorded == 0, !viewModel.isLoading {
-                    emptyStateSection
-                } else {
-                    summarySection
-
-                    hourlyPeaksSection
-                    weekdayPeaksSection
+            if let errorMessage = viewModel.errorMessage {
+                SettingsStateBlock(
+                    kind: .warning,
+                    title: "common.error".localized,
+                    message: errorMessage,
+                    actionTitle: "settings.service.verify".localized
+                ) {
+                    Task { await viewModel.load() }
                 }
             }
-            .padding()
-            .frame(maxWidth: .infinity, alignment: .leading)
+
+            activityHeatmapSection
+            filtersSection
+
+            if viewModel.summary.sessionsRecorded == 0, !viewModel.isLoading {
+                emptyStateSection
+            } else {
+                summarySection
+                hourlyPeaksSection
+                weekdayPeaksSection
+            }
         }
         .task {
             await viewModel.load()
@@ -47,22 +53,6 @@ public struct MetricsDashboardSettingsTab: View {
         .onReceive(NotificationCenter.default.publisher(for: .meetingAssistantTranscriptionSaved)) { notification in
             Task { await viewModel.handleTranscriptionSaved(notification) }
         }
-    }
-
-    private var heroSection: some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-            Text("metrics.hero.title".localized(with: formattedTimeSaved))
-                .font(.title2.weight(.bold))
-                .foregroundStyle(.white)
-
-            Text("metrics.hero.subtitle".localized(with: Formatters.formattedNumber(viewModel.summary.wordsDictated), viewModel.summary.sessionsRecorded))
-                .font(.subheadline)
-                .foregroundStyle(.white.opacity(0.9))
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(MeetingAssistantDesignSystem.Layout.heroPadding)
-        .background(MeetingAssistantDesignSystem.Colors.dashboardHeroGradient)
-        .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.heroCornerRadius, style: .continuous))
     }
 
     private var filtersSection: some View {
@@ -91,11 +81,17 @@ public struct MetricsDashboardSettingsTab: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                if viewModel.dailyBuckets.isEmpty {
+                if viewModel.isLoading {
                     ProgressView()
                         .tint(MeetingAssistantDesignSystem.Colors.accent)
                         .frame(maxWidth: .infinity, minHeight: ActivityHeatmap.scrollHeight)
                         .padding(.vertical, ActivityHeatmap.verticalPadding)
+                } else if viewModel.dailyBuckets.isEmpty {
+                    SettingsStateBlock(
+                        kind: .empty,
+                        title: "metrics.empty.title".localized,
+                        message: "metrics.empty.subtitle".localized
+                    )
                 } else {
                     HStack(alignment: .top, spacing: ActivityHeatmap.weekdayToGridSpacing) {
                         weekdayLegendColumn
@@ -243,23 +239,11 @@ public struct MetricsDashboardSettingsTab: View {
     }
 
     private var emptyStateSection: some View {
-        MACard {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
-                Text("metrics.empty.title".localized)
-                    .font(.headline)
-                Text("metrics.empty.subtitle".localized)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    private var formattedTimeSaved: String {
-        formattedDuration(viewModel.summary.timeSaved)
-    }
-
-    private var formattedTimeSavedAccessibility: String {
-        formattedDuration(viewModel.summary.timeSaved, style: .full)
+        SettingsStateBlock(
+            kind: .empty,
+            title: "metrics.empty.title".localized,
+            message: "metrics.empty.subtitle".localized
+        )
     }
 
     private func weekdayLabel(for weekday: Int) -> String {
@@ -272,10 +256,6 @@ public struct MetricsDashboardSettingsTab: View {
         let formatter = DateFormatter()
         formatter.locale = Locale.current
         return formatter.shortWeekdaySymbols
-    }
-
-    private func formattedDuration(_ interval: TimeInterval, style: DateComponentsFormatter.UnitsStyle = .abbreviated) -> String {
-        Formatters.formattedDuration(interval, style: style, fallback: "–")
     }
 
     private var activityCalendar: Calendar {
@@ -437,7 +417,7 @@ public struct MetricsDashboardSettingsTab: View {
     }
 
     private var maxDailyWords: Int {
-        viewModel.dailyBuckets.map { $0.words }.max() ?? 0
+        viewModel.dailyBuckets.map(\.words).max() ?? 0
     }
 
     private func activitySquare(for bucket: MetricsDailyBucket) -> some View {
@@ -449,18 +429,18 @@ public struct MetricsDashboardSettingsTab: View {
                 .fill(heatmapColor(for: bucket.words))
         }
         .frame(width: ActivityHeatmap.squareSize, height: ActivityHeatmap.squareSize)
-            .overlay(
-                RoundedRectangle(cornerRadius: 2, style: .continuous)
-                    .stroke(
-                        bucket.words > 0 && bucket.words == maxDailyWords
-                            ? MeetingAssistantDesignSystem.Colors.accent
-                            : .clear,
-                        lineWidth: bucket.words > 0 && bucket.words == maxDailyWords ? 1 : 0
-                    )
-            )
-                    .help(heatmapTooltip(for: bucket))
-            .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(Text(heatmapTooltip(for: bucket)))
+        .overlay(
+            RoundedRectangle(cornerRadius: 2, style: .continuous)
+                .stroke(
+                    bucket.words > 0 && bucket.words == maxDailyWords
+                        ? MeetingAssistantDesignSystem.Colors.accent
+                        : Color.secondary.opacity(0.2),
+                    lineWidth: bucket.words > 0 && bucket.words == maxDailyWords ? 1 : 0.5
+                )
+        )
+        .help(heatmapTooltip(for: bucket))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(heatmapTooltip(for: bucket)))
     }
 
     private var heatmapLegend: some View {
@@ -508,7 +488,7 @@ public struct MetricsDashboardSettingsTab: View {
 
     private func scrollToLatest(in proxy: ScrollViewProxy, animated: Bool) {
         DispatchQueue.main.async {
-            if animated && !reduceMotion {
+            if animated, !reduceMotion {
                 withAnimation(.easeOut(duration: 0.2)) {
                     proxy.scrollTo(ActivityHeatmap.latestAnchorID, anchor: .trailing)
                 }
@@ -625,7 +605,7 @@ private enum ActivityHeatmap {
     static let squareSize: CGFloat = 10
     static let spacing: CGFloat = 2
     static let verticalPadding: CGFloat = 8
-    static let baseColor = Color(nsColor: .quaternaryLabelColor)
+    static let baseColor = MeetingAssistantDesignSystem.Colors.subtleFill
     static let monthHeaderHeight: CGFloat = 14
     static let monthToGridSpacing: CGFloat = 6
     static let weekdayLabelWidth: CGFloat = 24
