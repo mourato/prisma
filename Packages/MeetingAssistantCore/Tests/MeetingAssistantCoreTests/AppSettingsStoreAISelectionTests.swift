@@ -27,6 +27,17 @@ final class AppSettingsStoreAISelectionTests: XCTestCase {
         XCTAssertEqual(resolved.selectedModel, "gemini-2.0-flash")
     }
 
+    func testResolvedEnhancementsConfiguration_NormalizesLegacyGoogleModelID() {
+        settings.enhancementsAISelection = EnhancementsAISelection(
+            provider: .google,
+            selectedModel: "models/gemini-2.0-flash-001"
+        )
+
+        let resolved = settings.resolvedEnhancementsAIConfiguration
+        XCTAssertEqual(resolved.provider, .google)
+        XCTAssertEqual(resolved.selectedModel, "gemini-2.0-flash")
+    }
+
     func testResolvedEnhancementsConfigurationUsesAPIBaseURLForCustomProvider() {
         settings.updateAIConfiguration(provider: .custom, baseURL: "https://proxy.example.com/v1", selectedModel: "base")
         settings.enhancementsAISelection = EnhancementsAISelection(
@@ -142,5 +153,27 @@ final class AppSettingsStoreAISelectionTests: XCTestCase {
 
         XCTAssertEqual(settings.enhancementsAISelection.selectedModel, "")
         XCTAssertNil(settings.enhancementsProviderSelectedModels[AIProvider.google.rawValue])
+    }
+
+    func testBackfillEnhancementsSelectionModels_NormalizesLegacyGoogleModelID() {
+        settings.updateAIConfiguration(
+            provider: .google,
+            baseURL: AIProvider.google.defaultBaseURL,
+            selectedModel: "models/gemini-2.0-flash-001"
+        )
+        settings.enhancementsAISelection = EnhancementsAISelection(provider: .google, selectedModel: "")
+        settings.enhancementsProviderSelectedModels = [:]
+
+        settings.backfillEnhancementsSelectionModelsIfNeeded()
+
+        XCTAssertEqual(settings.enhancementsAISelection.selectedModel, "gemini-2.0-flash")
+        XCTAssertEqual(settings.enhancementsProviderSelectedModels[AIProvider.google.rawValue], "gemini-2.0-flash")
+    }
+
+    func testUpdateEnhancementsProviderSelectedModel_NormalizesGoogleModelID() {
+        settings.updateEnhancementsProviderSelectedModel("models/gemini-2.0-flash-001", for: .google)
+
+        XCTAssertEqual(settings.enhancementsSelectedModel(for: .google), "gemini-2.0-flash")
+        XCTAssertEqual(settings.enhancementsProviderSelectedModels[AIProvider.google.rawValue], "gemini-2.0-flash")
     }
 }

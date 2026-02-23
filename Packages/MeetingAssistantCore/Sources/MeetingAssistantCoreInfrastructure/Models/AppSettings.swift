@@ -991,7 +991,7 @@ public class AppSettingsStore: ObservableObject {
 
     public func updateEnhancementsSelectedModel(_ model: String) {
         var selection = enhancementsAISelection
-        let normalizedModel = normalizedEnhancementsModelID(model)
+        let normalizedModel = normalizedEnhancementsModelID(model, for: selection.provider)
         selection.selectedModel = normalizedModel
         enhancementsAISelection = selection
         setEnhancementsProviderSelectedModel(normalizedModel, for: selection.provider)
@@ -1007,7 +1007,7 @@ public class AppSettingsStore: ObservableObject {
 
     public func updateEnhancementsDictationSelectedModel(_ model: String) {
         var selection = enhancementsDictationAISelection
-        let normalizedModel = normalizedEnhancementsModelID(model)
+        let normalizedModel = normalizedEnhancementsModelID(model, for: selection.provider)
         selection.selectedModel = normalizedModel
         enhancementsDictationAISelection = selection
         setEnhancementsProviderSelectedModel(normalizedModel, for: selection.provider)
@@ -1018,7 +1018,7 @@ public class AppSettingsStore: ObservableObject {
         model: String,
         for mode: IntelligenceKernelMode
     ) {
-        let normalizedModel = normalizedEnhancementsModelID(model)
+        let normalizedModel = normalizedEnhancementsModelID(model, for: provider)
         switch mode {
         case .meeting:
             enhancementsAISelection = EnhancementsAISelection(provider: provider, selectedModel: normalizedModel)
@@ -1029,12 +1029,12 @@ public class AppSettingsStore: ObservableObject {
     }
 
     public func updateEnhancementsProviderSelectedModel(_ model: String, for provider: AIProvider) {
-        setEnhancementsProviderSelectedModel(normalizedEnhancementsModelID(model), for: provider)
+        setEnhancementsProviderSelectedModel(normalizedEnhancementsModelID(model, for: provider), for: provider)
     }
 
     public func enhancementsSelectedModel(for provider: AIProvider) -> String {
         let model = enhancementsProviderSelectedModels[provider.rawValue] ?? ""
-        return normalizedEnhancementsModelID(model)
+        return normalizedEnhancementsModelID(model, for: provider)
     }
 
     /// Resolves the runtime configuration for Enhancements (post-processing + Q&A).
@@ -1046,10 +1046,11 @@ public class AppSettingsStore: ObservableObject {
         let selection = enhancementsSelection(for: mode)
         let provider = selection.provider
         let baseURL = provider == .custom ? aiConfiguration.baseURL : provider.defaultBaseURL
+        let selectedModel = normalizedEnhancementsModelID(selection.selectedModel, for: provider)
         return AIConfiguration(
             provider: provider,
             baseURL: baseURL,
-            selectedModel: selection.selectedModel
+            selectedModel: selectedModel
         )
     }
 
@@ -2652,8 +2653,32 @@ public class AppSettingsStore: ObservableObject {
         }
     }
 
-    private func normalizedEnhancementsModelID(_ model: String) -> String {
-        model.trimmingCharacters(in: .whitespacesAndNewlines)
+    private func normalizedEnhancementsModelID(_ model: String, for provider: AIProvider) -> String {
+        Self.normalizedEnhancementsModelID(model, for: provider)
+    }
+
+    private static func normalizedEnhancementsModelID(_ model: String, for provider: AIProvider) -> String {
+        let trimmed = model.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return "" }
+
+        guard provider == .google else { return trimmed }
+        return normalizedGoogleEnhancementsModelID(trimmed)
+    }
+
+    private static func normalizedGoogleEnhancementsModelID(_ model: String) -> String {
+        let withoutPrefix: String
+        if model.hasPrefix("models/") {
+            withoutPrefix = String(model.dropFirst("models/".count))
+        } else {
+            withoutPrefix = model
+        }
+
+        switch withoutPrefix.lowercased() {
+        case "gemini-2.0-flash-001":
+            return "gemini-2.0-flash"
+        default:
+            return withoutPrefix
+        }
     }
 
     public func backfillEnhancementsSelectionModelsIfNeeded() {
@@ -2693,21 +2718,29 @@ public class AppSettingsStore: ObservableObject {
         legacyConfiguration: AIConfiguration
     ) -> EnhancementsAISelection {
         let providerKey = selection.provider.rawValue
-        let normalizedSelectedModel = selection.selectedModel.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalizedSelectedModel = normalizedEnhancementsModelID(
+            selection.selectedModel,
+            for: selection.provider
+        )
 
         if !normalizedSelectedModel.isEmpty {
             providerSelectedModels[providerKey] = normalizedSelectedModel
             return EnhancementsAISelection(provider: selection.provider, selectedModel: normalizedSelectedModel)
         }
 
-        if let providerModel = providerSelectedModels[providerKey]?.trimmingCharacters(in: .whitespacesAndNewlines),
+        if let providerModel = providerSelectedModels[providerKey].map({
+            normalizedEnhancementsModelID($0, for: selection.provider)
+        }),
            !providerModel.isEmpty
         {
             providerSelectedModels[providerKey] = providerModel
             return EnhancementsAISelection(provider: selection.provider, selectedModel: providerModel)
         }
 
-        let normalizedLegacyModel = legacyConfiguration.selectedModel.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalizedLegacyModel = normalizedEnhancementsModelID(
+            legacyConfiguration.selectedModel,
+            for: selection.provider
+        )
         if legacyConfiguration.provider == selection.provider,
            !normalizedLegacyModel.isEmpty
         {
@@ -2720,11 +2753,12 @@ public class AppSettingsStore: ObservableObject {
     }
 
     private func setEnhancementsProviderSelectedModel(_ model: String, for provider: AIProvider) {
+        let normalizedModel = normalizedEnhancementsModelID(model, for: provider)
         var updated = enhancementsProviderSelectedModels
-        if model.isEmpty {
+        if normalizedModel.isEmpty {
             updated.removeValue(forKey: provider.rawValue)
         } else {
-            updated[provider.rawValue] = model
+            updated[provider.rawValue] = normalizedModel
         }
         enhancementsProviderSelectedModels = updated
     }
