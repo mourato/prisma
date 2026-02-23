@@ -35,8 +35,10 @@ public final class AudioLevelMonitor: ObservableObject {
         static let silenceThresholdDb: Float = -80
         static let silenceDurationSeconds: TimeInterval = 4
         static let timerToleranceRatio: Double = 0.05
-        static let levelAttackSmoothingFactor: Double = 0.35
-        static let levelReleaseSmoothingFactor: Double = 0.75
+        static let levelAttackSmoothingFactor: Double = 0.70
+        static let levelReleaseSmoothingFactor: Double = 0.97
+        static let meterMinDb: Float = -60
+        static let meterMaxDb: Float = -6
     }
 
     // MARK: - Private State
@@ -55,7 +57,7 @@ public final class AudioLevelMonitor: ObservableObject {
     ///   - samplingInterval: How often to sample audio levels. Default: 0.08s (~12.5Hz).
     public init(
         audioRecorder: AudioRecorder = .shared,
-        samplingInterval: TimeInterval = 0.08
+        samplingInterval: TimeInterval = 0.03
     ) {
         self.audioRecorder = audioRecorder
         self.samplingInterval = samplingInterval
@@ -114,8 +116,16 @@ public final class AudioLevelMonitor: ObservableObject {
         updateSilenceWarning(with: averageDB)
 
         // Normalize from dB to 0...1 range
-        let normalizedAverage = normalizeDecibels(averageDB, minDB: -60, maxDB: 0)
-        let normalizedPeak = normalizeDecibels(peakDB, minDB: -60, maxDB: 0)
+        let normalizedAverage = normalizeDecibels(
+            averageDB,
+            minDB: Constants.meterMinDb,
+            maxDB: Constants.meterMaxDb
+        )
+        let normalizedPeak = normalizeDecibels(
+            peakDB,
+            minDB: Constants.meterMinDb,
+            maxDB: Constants.meterMaxDb
+        )
 
         smoothedAveragePower = applyAsymmetricSmoothing(
             current: smoothedAveragePower,
