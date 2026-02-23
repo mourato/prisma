@@ -86,6 +86,8 @@ public final class AssistantVoiceCommandService: ObservableObject {
             return
         }
 
+        recordingManager.refreshPostProcessingReadinessWarning(for: .assistant, settings: settings)
+
         do {
             let outputURL = makeTemporaryRecordingURL()
             currentRecordingURL = outputURL
@@ -102,6 +104,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
                 unit: "ms"
             )
         } catch {
+            recordingManager.clearPostProcessingReadinessWarning()
             await RecordingExclusivityCoordinator.shared.endAssistant()
             showError(.failedToStartRecording)
         }
@@ -111,6 +114,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
         guard isRecording else { return }
         guard !isProcessing else { return }
 
+        recordingManager.refreshPostProcessingReadinessWarning(for: .assistant, settings: settings)
         isProcessing = true
         indicator.update(mode: .processing)
 
@@ -124,6 +128,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
             screenBorder.hide()
             cleanupRecordingFile(recordingURL ?? currentRecordingURL)
             currentRecordingURL = nil
+            recordingManager.clearPostProcessingReadinessWarning()
         }
 
         do {
@@ -346,6 +351,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
         currentExecutionFlow = .assistantMode
         await RecordingExclusivityCoordinator.shared.endAssistant()
         SoundFeedbackService.shared.playRecordingCancelledSound()
+        recordingManager.clearPostProcessingReadinessWarning()
         indicator.hide()
         screenBorder.hide()
         cleanupRecordingFile(currentRecordingURL)

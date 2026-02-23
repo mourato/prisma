@@ -1,6 +1,7 @@
 // TranscribeAudioUseCase - Caso de uso para transcrever áudio
 
 import Foundation
+import MeetingAssistantCoreCommon
 
 /// Caso de uso para transcrever arquivo de áudio
 public final class TranscribeAudioUseCase: Sendable {
@@ -174,8 +175,11 @@ public final class TranscribeAudioUseCase: Sendable {
                 }
             } catch {
                 // Pós-processamento falhou, mas transcrição foi bem-sucedida
-                // swiftlint:disable:next disallow_print_and_nslog
-                print("Post-processing failed: \(error)")
+                AppLogger.error(
+                    "Post-processing failed; continuing with raw transcription",
+                    category: .transcriptionEngine,
+                    error: error
+                )
             }
         }
 

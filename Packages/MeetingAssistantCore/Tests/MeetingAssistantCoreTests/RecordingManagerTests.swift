@@ -194,6 +194,91 @@ final class RecordingManagerTests: XCTestCase {
         XCTAssertTrue(shouldApply)
     }
 
+    func testRefreshPostProcessingReadinessWarning_SetsIssueForMeetingMode() throws {
+        let manager = try XCTUnwrap(manager)
+        let settings = AppSettingsStore.shared
+        let originalPostProcessing = settings.postProcessingEnabled
+        let originalMeetingSelection = settings.enhancementsAISelection
+
+        defer {
+            settings.postProcessingEnabled = originalPostProcessing
+            settings.enhancementsAISelection = originalMeetingSelection
+            manager.clearPostProcessingReadinessWarning()
+        }
+
+        settings.postProcessingEnabled = true
+        settings.enhancementsAISelection = EnhancementsAISelection(provider: .openai, selectedModel: " ")
+
+        manager.refreshPostProcessingReadinessWarning(for: .meeting, settings: settings, apiKeyExists: { _ in true })
+
+        XCTAssertEqual(manager.postProcessingReadinessWarningIssue, .missingModel)
+        XCTAssertEqual(manager.postProcessingReadinessWarningMode, .meeting)
+    }
+
+    func testRefreshPostProcessingReadinessWarning_SetsIssueForAssistantMode() throws {
+        let manager = try XCTUnwrap(manager)
+        let settings = AppSettingsStore.shared
+        let originalPostProcessing = settings.postProcessingEnabled
+        let originalDictationSelection = settings.enhancementsDictationAISelection
+
+        defer {
+            settings.postProcessingEnabled = originalPostProcessing
+            settings.enhancementsDictationAISelection = originalDictationSelection
+            manager.clearPostProcessingReadinessWarning()
+        }
+
+        settings.postProcessingEnabled = true
+        settings.enhancementsDictationAISelection = EnhancementsAISelection(provider: .openai, selectedModel: "")
+
+        manager.refreshPostProcessingReadinessWarning(for: .assistant, settings: settings, apiKeyExists: { _ in true })
+
+        XCTAssertEqual(manager.postProcessingReadinessWarningIssue, .missingModel)
+        XCTAssertEqual(manager.postProcessingReadinessWarningMode, .assistant)
+    }
+
+    func testRefreshPostProcessingReadinessWarning_ClearsIssueWhenConfigurationIsReady() throws {
+        let manager = try XCTUnwrap(manager)
+        let settings = AppSettingsStore.shared
+        let originalPostProcessing = settings.postProcessingEnabled
+        let originalMeetingSelection = settings.enhancementsAISelection
+
+        defer {
+            settings.postProcessingEnabled = originalPostProcessing
+            settings.enhancementsAISelection = originalMeetingSelection
+            manager.clearPostProcessingReadinessWarning()
+        }
+
+        settings.postProcessingEnabled = true
+        settings.enhancementsAISelection = EnhancementsAISelection(provider: .openai, selectedModel: "gpt-4o-mini")
+
+        manager.refreshPostProcessingReadinessWarning(for: .meeting, settings: settings, apiKeyExists: { _ in true })
+
+        XCTAssertNil(manager.postProcessingReadinessWarningIssue)
+        XCTAssertNil(manager.postProcessingReadinessWarningMode)
+    }
+
+    func testReset_ClearsPostProcessingReadinessWarningState() async throws {
+        let manager = try XCTUnwrap(manager)
+        let settings = AppSettingsStore.shared
+        let originalPostProcessing = settings.postProcessingEnabled
+        let originalMeetingSelection = settings.enhancementsAISelection
+
+        defer {
+            settings.postProcessingEnabled = originalPostProcessing
+            settings.enhancementsAISelection = originalMeetingSelection
+        }
+
+        settings.postProcessingEnabled = true
+        settings.enhancementsAISelection = EnhancementsAISelection(provider: .openai, selectedModel: "")
+        manager.refreshPostProcessingReadinessWarning(for: .meeting, settings: settings, apiKeyExists: { _ in true })
+        XCTAssertEqual(manager.postProcessingReadinessWarningIssue, .missingModel)
+
+        await manager.reset()
+
+        XCTAssertNil(manager.postProcessingReadinessWarningIssue)
+        XCTAssertNil(manager.postProcessingReadinessWarningMode)
+    }
+
     // MARK: - Error Handling Tests
 
     func testStartRecording_FailsWhenSystemRecorderFails() async throws {

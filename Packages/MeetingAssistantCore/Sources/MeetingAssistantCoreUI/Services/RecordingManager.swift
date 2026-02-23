@@ -35,6 +35,8 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     @Published public private(set) var hasRequiredPermissions = false
     @Published public private(set) var recordingSource: RecordingSource = .microphone
     @Published public private(set) var dictationSessionOutputLanguageOverride: DictationOutputLanguage?
+    @Published public private(set) var postProcessingReadinessWarningIssue: EnhancementsInferenceReadinessIssue?
+    @Published public private(set) var postProcessingReadinessWarningMode: IntelligenceKernelMode?
 
     // MARK: - Protocol Publishers
 
@@ -307,6 +309,7 @@ public extension RecordingManager {
 
         recordingSource = source
         dictationSessionOutputLanguageOverride = nil
+        refreshPostProcessingReadinessWarning(for: source == .microphone ? .dictation : .meeting)
 
         // Prevent re-entrancy during async setup
         guard !isStartOperationInFlight else { return }
@@ -499,6 +502,7 @@ public extension RecordingManager {
 
         currentMeeting = nil
         activeStartTelemetry = nil
+        clearPostProcessingReadinessWarning()
     }
 
     /// Stop recording and optionally transcribe.
@@ -557,6 +561,7 @@ public extension RecordingManager {
                 dictationSessionOutputLanguageOverride = nil
                 currentMeeting = nil // Clear current meeting if done
                 activeStartTelemetry = nil
+                clearPostProcessingReadinessWarning()
             }
 
         } catch {
@@ -572,6 +577,7 @@ public extension RecordingManager {
             isStartingRecording = false
             dictationSessionOutputLanguageOverride = nil
             activeStartTelemetry = nil
+            clearPostProcessingReadinessWarning()
         }
     }
 
@@ -591,6 +597,7 @@ public extension RecordingManager {
             postProcessingContextItems = []
             dictationSessionOutputLanguageOverride = nil
             activeStartTelemetry = nil
+            clearPostProcessingReadinessWarning()
             await RecordingExclusivityCoordinator.shared.endRecording()
             SoundFeedbackService.shared.playRecordingCancelledSound()
             AppLogger.info("Recording startup cancelled", category: .recordingManager)
@@ -622,6 +629,7 @@ public extension RecordingManager {
         postProcessingContextItems = []
         dictationSessionOutputLanguageOverride = nil
         activeStartTelemetry = nil
+        clearPostProcessingReadinessWarning()
         await RecordingExclusivityCoordinator.shared.endRecording()
         SoundFeedbackService.shared.playRecordingCancelledSound()
 
@@ -665,6 +673,7 @@ public extension RecordingManager {
             audioFilePath: audioURL.path
         )
         currentMeeting = meeting
+        refreshPostProcessingReadinessWarning(for: .meeting)
 
         AppLogger.info(
             "Starting transcription for imported file",
@@ -972,6 +981,7 @@ extension RecordingManager {
         dictationSessionOutputLanguageOverride = nil
         activeStartTelemetry = nil
         postStartContextCaptureTask = nil
+        clearPostProcessingReadinessWarning()
     }
 
     private func beginTranscriptionUIStateIfNeeded() {
@@ -1014,21 +1024,22 @@ extension RecordingManager {
     private func makeUseCaseConfig(meeting: Meeting, settings: AppSettingsStore) -> UseCaseConfig {
         let isDictation = isDictationMode(for: meeting)
         let kernelMode: IntelligenceKernelMode = isDictation ? .dictation : .meeting
+        let readinessIssue = settings.postProcessingEnabled
+            ? settings.enhancementsInferenceReadinessIssue(for: kernelMode, apiKeyExists: nil)
+            : nil
+        setPostProcessingReadinessWarning(issue: readinessIssue, mode: kernelMode)
         let applyPostProcessing = Self.shouldApplyEnhancementsPostProcessing(
             settings: settings,
             kernelMode: kernelMode
         )
-        let enhancementsReady = settings.isEnhancementsInferenceReady(for: kernelMode)
 
         let disabledForRecording = isDictation
             ? settings.isDictationPostProcessingDisabled
             : settings.isMeetingPostProcessingDisabled
         let shouldApplyPostProcessing = applyPostProcessing && !disabledForRecording
 
-        if settings.postProcessingEnabled, !enhancementsReady {
-            let reasonCode = settings
-                .enhancementsInferenceReadinessIssue(for: kernelMode, apiKeyExists: nil)?
-                .rawValue ?? "enhancements.not_ready"
+        if settings.postProcessingEnabled, let readinessIssue {
+            let reasonCode = readinessIssue.rawValue
             AppLogger.info(
                 "Post-processing disabled for this recording: enhancements configuration not ready",
                 category: .recordingManager,
@@ -1091,6 +1102,30 @@ extension RecordingManager {
         return settings.postProcessingEnabled
             && readinessIssue == nil
             && kernelModeEnabled
+    }
+
+    func refreshPostProcessingReadinessWarning(
+        for kernelMode: IntelligenceKernelMode,
+        settings: AppSettingsStore = .shared,
+        apiKeyExists: ((AIProvider) -> Bool)? = nil
+    ) {
+        let issue = settings.postProcessingEnabled
+            ? settings.enhancementsInferenceReadinessIssue(for: kernelMode, apiKeyExists: apiKeyExists)
+            : nil
+        setPostProcessingReadinessWarning(issue: issue, mode: kernelMode)
+    }
+
+    func clearPostProcessingReadinessWarning() {
+        postProcessingReadinessWarningIssue = nil
+        postProcessingReadinessWarningMode = nil
+    }
+
+    private func setPostProcessingReadinessWarning(
+        issue: EnhancementsInferenceReadinessIssue?,
+        mode: IntelligenceKernelMode
+    ) {
+        postProcessingReadinessWarningIssue = issue
+        postProcessingReadinessWarningMode = issue == nil ? nil : mode
     }
 
     private func capturePostProcessingContext(for meeting: Meeting) async -> (context: String?, items: [TranscriptionContextItem]) {
@@ -1715,10 +1750,10 @@ extension RecordingManager {
         let settings = AppSettingsStore.shared
         guard settings.postProcessingEnabled else { return .empty }
         let kernelMode: IntelligenceKernelMode = isDictationMode(for: meeting) ? .dictation : .meeting
-        guard settings.isEnhancementsInferenceReady(for: kernelMode) else {
-            let reasonCode = settings
-                .enhancementsInferenceReadinessIssue(for: kernelMode, apiKeyExists: nil)?
-                .rawValue ?? "enhancements.not_ready"
+        let readinessIssue = settings.enhancementsInferenceReadinessIssue(for: kernelMode, apiKeyExists: nil)
+        setPostProcessingReadinessWarning(issue: readinessIssue, mode: kernelMode)
+        if let readinessIssue {
+            let reasonCode = readinessIssue.rawValue
             AppLogger.info(
                 "Post-processing skipped: enhancements configuration not ready",
                 category: .recordingManager,
@@ -2011,6 +2046,7 @@ extension RecordingManager {
         currentMeeting = nil
         lastError = nil
         activeStartTelemetry = nil
+        clearPostProcessingReadinessWarning()
     }
 
 }
