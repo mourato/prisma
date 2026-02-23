@@ -6,9 +6,6 @@ public struct SettingsDrillDownListRow<Destination: Hashable>: View {
     private let subtitle: String?
     private let accessibilityHint: String?
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var isHovering = false
-
     public init(
         destination: Destination,
         title: String,
@@ -22,8 +19,8 @@ public struct SettingsDrillDownListRow<Destination: Hashable>: View {
     }
 
     public var body: some View {
-        List {
-            NavigationLink(value: destination) {
+        NavigationLink(value: destination) {
+            HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
                 VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing4) {
                     Text(title)
                         .font(.body)
@@ -33,25 +30,27 @@ public struct SettingsDrillDownListRow<Destination: Hashable>: View {
                         Text(subtitle)
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
+                            .lineLimit(nil)
                     }
                 }
-                .scaleEffect(isHovering ? 1.01 : 1)
-                .animation(
-                    reduceMotion ? nil : .spring(response: 0.28, dampingFraction: 0.82),
-                    value: isHovering
-                )
+
+                Spacer(minLength: MeetingAssistantDesignSystem.Layout.spacing8)
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
             }
-            .accessibilityElement(children: .combine)
-            .modifier(OptionalAccessibilityHintModifier(accessibilityHint: accessibilityHint))
+            .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)
+            .padding(.vertical, subtitle == nil
+                ? MeetingAssistantDesignSystem.Layout.spacing10
+                : MeetingAssistantDesignSystem.Layout.spacing8)
+            .background(MeetingAssistantDesignSystem.Colors.subtleFill2)
+            .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+            .contentShape(Rectangle())
         }
-        .listStyle(.inset)
-        .scrollDisabled(true)
-        .environment(\.defaultMinListRowHeight, subtitle == nil ? 40 : 56)
-        .frame(minHeight: subtitle == nil ? 56 : 86)
-        .onHover { hovering in
-            isHovering = hovering
-        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .modifier(OptionalAccessibilityHintModifier(accessibilityHint: accessibilityHint))
     }
 }
 

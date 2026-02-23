@@ -157,6 +157,35 @@ final class MeetingQAServiceTests: XCTestCase {
         XCTAssertEqual(response.answer, "Budget approved.")
     }
 
+    func testAskFailsWhenEnhancementsModelIsMissing() async {
+        let settings = AppSettingsStore.shared
+        settings.enhancementsAISelection = EnhancementsAISelection(
+            provider: .openai,
+            selectedModel: "   "
+        )
+
+        let service = MeetingQAService(
+            settings: .shared,
+            session: makeMockedSession(),
+            apiKeyProvider: { _ in "test-key" },
+            sleepFunction: { _ in }
+        )
+
+        do {
+            _ = try await service.ask(
+                question: "What did we decide?",
+                transcription: makeTranscription()
+            )
+            XCTFail("Expected ask to fail when selected model is missing")
+        } catch let error as MeetingQAError {
+            guard case .noAPIConfigured = error else {
+                return XCTFail("Expected .noAPIConfigured, got \(error)")
+            }
+        } catch {
+            XCTFail("Unexpected error type: \(error)")
+        }
+    }
+
     func testAskWithGoogleProviderParsesGeminiPayload() async throws {
         let settings = AppSettingsStore.shared
         settings.aiConfiguration = AIConfiguration(

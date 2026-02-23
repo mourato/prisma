@@ -152,6 +152,75 @@ final class AISettingsViewModelTests: XCTestCase {
         XCTAssertEqual(settings.enhancementsAISelection.provider, .anthropic)
         XCTAssertEqual(settings.enhancementsAISelection.selectedModel, "claude-3-7-sonnet")
     }
+
+    func testPrepareEnhancementsProvider_UpdatesActiveProviderWithoutMutatingMeetingSelection() async {
+        settings.enhancementsAISelection = EnhancementsAISelection(
+            provider: .openai,
+            selectedModel: "gpt-4o-mini"
+        )
+
+        let viewModel = AISettingsViewModel(settings: settings, keychain: MockKeychainProvider(), llmService: MockLLMService())
+
+        viewModel.prepareEnhancementsProvider(.anthropic)
+
+        XCTAssertEqual(viewModel.activeEnhancementsProvider, .anthropic)
+        XCTAssertEqual(settings.enhancementsAISelection.provider, .openai)
+        XCTAssertEqual(settings.enhancementsAISelection.selectedModel, "gpt-4o-mini")
+    }
+
+    func testTestEnhancementsAPIConnection_OnSuccessPersistsProviderKey() async throws {
+        let keychain = MockKeychainProvider()
+        let llmService = MockLLMService()
+        llmService.testConnectionResult = true
+        settings.enhancementsAISelection = EnhancementsAISelection(
+            provider: .openai,
+            selectedModel: "gpt-4o-mini"
+        )
+
+        let viewModel = AISettingsViewModel(settings: settings, keychain: keychain, llmService: llmService)
+        viewModel.enhancementsAPIKeyText = "sk-enhancements"
+
+        let task = viewModel.testEnhancementsAPIConnection()
+        await task.value
+
+        XCTAssertEqual(try keychain.retrieveAPIKey(for: .openai), "sk-enhancements")
+        XCTAssertEqual(viewModel.enhancementsConnectionStatus, .success)
+        XCTAssertTrue(viewModel.isEnhancementsProviderKeySaved)
+        XCTAssertEqual(viewModel.enhancementsAPIKeyText, "")
+        XCTAssertEqual(llmService.lastConnectionTestAPIKey, "sk-enhancements")
+    }
+
+    func testRefreshEnhancementsProviderModels_UsesOnlyProvidersWithSavedKey() async throws {
+        let keychain = MockKeychainProvider()
+        let llmService = MockLLMService()
+        try keychain.store("sk-openai", for: KeychainManager.apiKeyKey(for: .openai))
+        try keychain.store("sk-google", for: KeychainManager.apiKeyKey(for: .google))
+        llmService.fetchModelsResultsByProvider = [
+            .openai: [try XCTUnwrap(LLMModel.fixture(id: "gpt-4o-mini"))],
+            .google: [try XCTUnwrap(LLMModel.fixture(id: "gemini-2.0-flash"))],
+        ]
+
+        let viewModel = AISettingsViewModel(settings: settings, keychain: keychain, llmService: llmService)
+
+        let task = viewModel.refreshEnhancementsProviderModelsManually()
+        await task.value
+
+        XCTAssertTrue(
+            viewModel.enhancementsProviderModels.contains(
+                where: { $0.provider == .openai && $0.modelID == "gpt-4o-mini" }
+            )
+        )
+        XCTAssertTrue(
+            viewModel.enhancementsProviderModels.contains(
+                where: { $0.provider == .google && $0.modelID == "gemini-2.0-flash" }
+            )
+        )
+        XCTAssertFalse(
+            viewModel.enhancementsProviderModels.contains(
+                where: { $0.provider == .anthropic }
+            )
+        )
+    }
 }
 
 private final class MockKeychainProvider: KeychainProvider, @unchecked Sendable {
@@ -184,6 +253,7 @@ private final class MockKeychainProvider: KeychainProvider, @unchecked Sendable 
 
 private final class MockLLMService: LLMService, @unchecked Sendable {
     var fetchModelsResult: [LLMModel] = []
+    var fetchModelsResultsByProvider: [AIProvider: [LLMModel]] = [:]
     var fetchModelsError: Error?
     var testConnectionResult = true
     var validateURLResult = URL(string: "https://api.openai.com/v1")
@@ -203,6 +273,9 @@ private final class MockLLMService: LLMService, @unchecked Sendable {
         lastFetchedProvider = provider
         if let fetchModelsError {
             throw fetchModelsError
+        }
+        if let providerModels = fetchModelsResultsByProvider[provider] {
+            return providerModels
         }
         return fetchModelsResult
     }

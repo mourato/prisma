@@ -58,4 +58,26 @@ final class AppSettingsStoreAISelectionTests: XCTestCase {
         XCTAssertEqual(settings.enhancementsAISelection.provider, .anthropic)
         XCTAssertEqual(settings.enhancementsAISelection.selectedModel, "")
     }
+
+    func testEnhancementsInferenceReadinessIssue_MissingModel() {
+        settings.enhancementsAISelection = EnhancementsAISelection(
+            provider: .openai,
+            selectedModel: "   "
+        )
+
+        let issue = settings.enhancementsInferenceReadinessIssue(apiKeyExists: { _ in true })
+
+        XCTAssertEqual(issue, .missingModel)
+    }
+
+    func testEnhancementsInferenceReadinessIssue_ReturnsNilWhenConfigurationIsReady() {
+        settings.enhancementsAISelection = EnhancementsAISelection(
+            provider: .openai,
+            selectedModel: "gpt-4o-mini"
+        )
+
+        let issue = settings.enhancementsInferenceReadinessIssue(apiKeyExists: { _ in true })
+
+        XCTAssertNil(issue)
+    }
 }

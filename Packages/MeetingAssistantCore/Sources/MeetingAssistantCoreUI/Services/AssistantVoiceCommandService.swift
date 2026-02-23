@@ -229,6 +229,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
             let processedCommand = try await postProcessingService.processTranscription(
                 sourceText,
                 with: integrationPrompt,
+                mode: .assistant,
                 systemPromptOverride: executionFlow == .integrationDispatch
                     ? AIPromptTemplates.assistantSystemPrompt
                     : nil
