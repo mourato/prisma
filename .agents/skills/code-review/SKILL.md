@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: This skill should be used when conducting code reviews, analyzing performance, UX, security, or concurrency in new changes.
+description: This skill should be used when the user asks to "review this change", "do a code review", "audit this PR", or "find risks before merge".
 ---
 
 # Code Review (Meeting Assistant)

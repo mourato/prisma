@@ -1,6 +1,6 @@
 ---
 name: git-workflow
-description: This skill should be used when working with Git, branching, commits, or pull requests.
+description: This skill should be used when the user asks for standard Git flow such as "create branch", "commit changes", "prepare PR", or "merge safely".
 ---
 
 # Git Workflow

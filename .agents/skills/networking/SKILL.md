@@ -1,28 +1,34 @@
 ---
 name: networking
-description: This skill should be used when building API clients, modeling networking requests/responses, or configuring URLSession security.
+description: This skill should be used when the user asks to "build API client", "model request/response", "configure URLSession", or "improve network resiliency/security".
 ---
 
 # Networking Standards
 
 ## Overview
 
-Best practices for reliable and secure network communication in the Meeting Assistant project.
+Best practices for reliable, secure network communication in this project.
+
+## Scope Boundaries
+
+- Use this skill for transport configuration, request/response modeling, retries, and resiliency.
+- Use `../security/SKILL.md` for cross-cutting security posture and threat model decisions.
+- Use `../keychain-security/SKILL.md` when API credentials must be persisted locally.
 
 ## 1. Implementation
 
-- **URLSession**: Use native `URLSession` as the primary networking engine.
-- **Timeouts**: Configure realistic timeouts (typically 15-30 seconds).
-- **JSON Modeling**: Use `Codable` for request and response structures. Avoid generic dictionaries.
+- **URLSession**: Use `URLSession` as the default networking engine.
+- **Timeouts**: Configure realistic per-endpoint timeouts.
+- **Typed Models**: Use `Codable` request/response models.
 
 ## 2. Reliability & Resiliency
 
-- **Retry Logic**: Implement retry strategies for transient failures (e.g., 5xx status codes or timeouts).
-- **Validation**: Always validate HTTP status codes and response headers before processing the body.
-- **Reachability**: Handle offline states gracefully and provide UI feedback.
+- **Retry Logic**: Retry only transient failures with bounded policy.
+- **Validation**: Validate status codes and headers before decoding.
+- **Offline Handling**: Model offline/timeout states explicitly for the UI layer.
 
 ## 3. Security
 
-- **HTTPS**: Enforce HTTPS for all production communication. App Transport Security (ATS) must remain enabled.
-- **Certificate Pinning**: Consider pinning certificates for sensitive backend communication if required by security policy.
-- **Secrets**: Never hardcode API keys. Use environmental variables or secure local storage.
+- **HTTPS**: Require HTTPS and keep ATS constraints active.
+- **Pinning**: Use certificate pinning only when policy requires it.
+- **Secrets**: Never hardcode credentials.

@@ -1,6 +1,6 @@
 ---
 name: architecture
-description: This skill should be used when designing new modules, refactoring existing ones, or applying MVVM, Clean Architecture, and Dependency Injection principles.
+description: This skill should be used when the user asks to "design module boundaries", "apply Clean Architecture", "refactor architecture", or "define dependency injection" in this project.
 ---
 
 # Architecture Principles

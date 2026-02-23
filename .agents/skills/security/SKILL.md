@@ -1,27 +1,34 @@
 ---
 name: security
-description: This skill should be used when implementing security measures, secret management, data validation, or platform security like biometrics.
+description: This skill should be used when the user asks to "improve security posture", "validate untrusted input", "protect sensitive data", or "apply platform security controls".
 ---
 
 # Security Best Practices
 
 ## Overview
 
-Core requirements for ensuring user data privacy and application integrity.
+Core requirements for user data privacy and application integrity.
+
+## Scope Boundaries
+
+- Use this skill for baseline threat modeling and secure-by-default controls.
+- Use `../keychain-security/SKILL.md` for credential persistence implementation.
+- Use `../networking/SKILL.md` for transport and API client hardening.
 
 ## 1. Secret Management
 
-- **No Hardcoding**: Never store API keys, tokens, or passwords in the source code.
-- **Secure Storage**: Use variables of environment, configuration files (appropriately ignored by Git), or secure servers.
-- **Keychain**: Always use the system Keychain for local storage of sensitive credentials.
+- **No Hardcoding**: Never commit API keys, tokens, or passwords.
+- **Secure Storage**: Use Keychain and approved configuration boundaries.
+- **Least Exposure**: Avoid logging or displaying sensitive values.
 
 ## 2. Data Validation
 
-- **Input Sanitization**: Validate all user input and data received from external sources (APIs, files).
-- **Type Safety**: Leverage the Swift type system to enforce valid data states and prevent injection or corruption.
+- **Input Sanitization**: Validate external input at module boundaries.
+- **Type Safety**: Use strongly typed models and explicit validation rules.
+- **Fail Closed**: Reject invalid data explicitly instead of permissive fallback.
 
 ## 3. Platform Security
 
-- **Biometrics**: Use `LocalAuthentication` for protecting access to sensitive features or data.
-- **Transport Security**: Maintain App Transport Security (ATS) settings to require HTTPS for all network communication.
-- **Permissions**: Request only the minimum necessary system permissions (e.g., Microphone, Accessibility) and explain the usage to the user.
+- **Biometrics**: Use `LocalAuthentication` where sensitive actions require user presence.
+- **Transport Security**: Keep ATS enabled and enforce HTTPS.
+- **Permissions**: Request minimum required capabilities with clear rationale.

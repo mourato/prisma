@@ -1,22 +1,24 @@
 ---
 name: debugging-strategies
-description: This skill should be used when investigating bugs, performance issues, or unexpected behavior using systematic debugging techniques and profiling tools.
+description: This skill should be used when the user asks to "debug a bug", "investigate a crash", "analyze flaky behavior", or "trace an unknown root cause" across subsystems.
 ---
 
 # Debugging Strategies
 
-Transform debugging from frustrating guesswork into systematic problem-solving with proven strategies, powerful tools, and methodical approaches.
+Transform debugging from guesswork into systematic investigation.
 
 ## When to Use This Skill
 
 - Tracking down elusive bugs
-- Investigating performance issues
-- Understanding unfamiliar codebases
-- Debugging production issues
-- Analyzing crash dumps and stack traces
-- Profiling application performance
-- Investigating memory leaks
-- Debugging distributed systems
+- Investigating crashes and flaky behavior
+- Triaging performance symptoms before root cause is confirmed
+- Analyzing production regressions and incident timelines
+
+## Scope Boundaries
+
+- Use this skill for cross-cutting investigation methodology when root cause is unknown.
+- Use `../swiftui-performance-audit/SKILL.md` when the issue is specifically SwiftUI rendering/update/layout/animation runtime behavior.
+- Use `../performance/SKILL.md` for app-wide optimization once the bottleneck is known and is not SwiftUI-rendering-centric.
 
 ## Core Principles
 

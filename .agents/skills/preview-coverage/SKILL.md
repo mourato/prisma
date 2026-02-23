@@ -1,6 +1,6 @@
 ---
 name: preview-coverage
-description: This skill should be used when adding or refactoring SwiftUI views to ensure each UI element has deterministic Xcode previews with high state coverage.
+description: This skill should be used when the user asks to "add #Preview", "improve preview state coverage", or "validate SwiftUI previews" in MeetingAssistantCoreUI.
 ---
 
 # Preview Coverage

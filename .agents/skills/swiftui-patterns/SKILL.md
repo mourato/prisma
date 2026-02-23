@@ -1,6 +1,6 @@
 ---
 name: swiftui-patterns
-description: This skill should be used when working with SwiftUI views, state management, layouts, or design system components.
+description: This skill should be used when the user asks to "build SwiftUI views", "improve state management", "refactor SwiftUI layouts", or "use design system components".
 ---
 
 # SwiftUI Patterns

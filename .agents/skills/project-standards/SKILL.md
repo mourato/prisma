@@ -1,6 +1,6 @@
 ---
 name: project-standards
-description: This skill should be used when updating project-wide documentation, tracking technical debt, or maintaining AGENTS.md.
+description: This skill should be used when the user asks to "update AGENTS.md", "document project policy", "track known limitations", or "align repository standards".
 ---
 
 # Project Operational Standards

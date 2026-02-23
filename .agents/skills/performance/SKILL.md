@@ -1,6 +1,6 @@
 ---
 name: performance
-description: This skill should be used when optimizing Swift applications, managing resources, or profiling performance with Instruments.
+description: This skill should be used when the user asks to "optimize CPU/memory/startup", "profile with Instruments", or "improve app-wide performance" outside primary SwiftUI rendering issues.
 ---
 
 # Performance Optimization

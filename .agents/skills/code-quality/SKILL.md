@@ -1,13 +1,18 @@
 ---
 name: code-quality
-description: This skill should be used when applying naming conventions, maintaining code readability, or refactoring for better maintainability.
+description: This skill should be used when the user asks to "improve code readability", "rename for clarity", "refactor duplicated logic", or "apply clean code conventions".
 ---
 
 # Code Quality Standards
 
 ## Overview
 
-Fundamental rules for writing clean, self-explanatory, and maintainable Swift code.
+Fundamental rules for writing clean, self-explanatory, and maintainable code.
+
+## Scope Boundaries
+
+- Use this skill for language-agnostic readability and maintainability principles.
+- Use `../swift-conventions/SKILL.md` when the task is specifically about Swift syntax, type-system idioms, or Swift API style.
 
 ## 1. Function & Variable Naming
 
@@ -19,10 +24,10 @@ Fundamental rules for writing clean, self-explanatory, and maintainable Swift co
 
 - **Small Functions**: Keep functions focused on a single responsibility. Aim for a maximum of 20-30 lines.
 - **Flattened Logic**: Use `guard` statements and early returns to avoid deeply nested `if` blocks.
-- **Comments**: Write comments that explain the "Why" (design decisions, edge cases) rather than the "What" (which should be obvious from the code).
+- **Comments**: Explain the why (design decisions, edge cases), not the obvious what.
 
 ## 3. Tooling & Verification
 
-- **Linting**: Ensure `swiftlint` and `swiftformat` are run before any commit.
-- **Refactoring**: Apply the "Boy Scout Rule"—leave the code slightly better than you found it.
-- **Review Size**: Keep code changes small and atomic to ensure effective review.
+- **Linting**: Ensure `swiftlint` and `swiftformat` run before commit.
+- **Refactoring**: Apply the Boy Scout Rule and leave code cleaner than found.
+- **Review Size**: Keep changes small and atomic to improve review quality.
