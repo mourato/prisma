@@ -858,6 +858,7 @@ public class AppSettingsStore: ObservableObject {
         static let dictationPrompts = "dictationPrompts"
         static let dictationSelectedPromptId = "dictationSelectedPromptId"
         static let postProcessingEnabled = "postProcessingEnabled"
+        static let dictationStructuredPostProcessingEnabled = "dictationStructuredPostProcessingEnabled"
         static let isDiarizationEnabled = "isDiarizationEnabled"
         static let minSpeakers = "minSpeakers"
         static let maxSpeakers = "maxSpeakers"
@@ -1144,6 +1145,17 @@ public class AppSettingsStore: ObservableObject {
     @Published public var postProcessingEnabled: Bool {
         didSet {
             UserDefaults.standard.set(postProcessingEnabled, forKey: Keys.postProcessingEnabled)
+        }
+    }
+
+    /// Whether dictation should use the structured JSON post-processing pipeline.
+    /// Default: false (fast direct pipeline).
+    @Published public var dictationStructuredPostProcessingEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(
+                dictationStructuredPostProcessingEnabled,
+                forKey: Keys.dictationStructuredPostProcessingEnabled
+            )
         }
     }
 
@@ -1830,6 +1842,10 @@ public class AppSettingsStore: ObservableObject {
         deletedPromptIds = Self.loadDecoded(Set<UUID>.self, forKey: Keys.deletedPromptIds) ?? []
 
         postProcessingEnabled = UserDefaults.standard.bool(forKey: Keys.postProcessingEnabled)
+        dictationStructuredPostProcessingEnabled = Self.loadBoolDefaultIfUnset(
+            forKey: Keys.dictationStructuredPostProcessingEnabled,
+            defaultValue: false
+        )
         isDiarizationEnabled = UserDefaults.standard.bool(forKey: Keys.isDiarizationEnabled)
 
         minSpeakers = Self.loadOptionalInt(forKey: Keys.minSpeakers)
@@ -2587,6 +2603,7 @@ public class AppSettingsStore: ObservableObject {
         selectedPromptId = nil
         dictationSelectedPromptId = nil
         postProcessingEnabled = false
+        dictationStructuredPostProcessingEnabled = false
         isDiarizationEnabled = false
         minSpeakers = nil
         maxSpeakers = nil

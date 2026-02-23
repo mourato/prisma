@@ -110,7 +110,7 @@ final class TranscriptIntelligenceAlignmentRegressionTests: XCTestCase {
         }
 
         var capturedInput: String?
-        postProcessingRepository.processTranscriptionStructured_2Handler = { input, _ in
+        postProcessingRepository.processTranscriptionStructured_4Handler = { input, _, _ in
             capturedInput = input
             return DomainPostProcessingResult(
                 processedText: "ok",
@@ -163,7 +163,7 @@ final class TranscriptIntelligenceAlignmentRegressionTests: XCTestCase {
                 confidenceScore: 0.55
             )
         }
-        postProcessingRepository.processTranscriptionStructured_2Handler = { _, _ in
+        postProcessingRepository.processTranscriptionStructured_4Handler = { _, _, _ in
             DomainPostProcessingResult(
                 processedText: "summary",
                 canonicalSummary: CanonicalSummary(

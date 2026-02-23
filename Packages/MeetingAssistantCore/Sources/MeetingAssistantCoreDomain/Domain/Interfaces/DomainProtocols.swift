@@ -81,17 +81,81 @@ public protocol PostProcessingRepository: Sendable {
     /// Processa texto de transcrição usando prompt selecionado
     func processTranscription(_ transcription: String) async throws -> String
 
+    /// Processa texto de transcrição usando prompt selecionado e modo do kernel.
+    func processTranscription(
+        _ transcription: String,
+        mode: IntelligenceKernelMode
+    ) async throws -> String
+
     /// Processa texto de transcrição usando prompt específico
     func processTranscription(_ transcription: String, with prompt: DomainPostProcessingPrompt) async throws -> String
 
+    /// Processa texto de transcrição usando prompt específico e modo do kernel.
+    func processTranscription(
+        _ transcription: String,
+        with prompt: DomainPostProcessingPrompt,
+        mode: IntelligenceKernelMode
+    ) async throws -> String
+
     /// Process transcription with canonical structured summary contract.
     func processTranscriptionStructured(_ transcription: String) async throws -> DomainPostProcessingResult
+
+    /// Process transcription with canonical structured summary contract and kernel mode.
+    func processTranscriptionStructured(
+        _ transcription: String,
+        mode: IntelligenceKernelMode
+    ) async throws -> DomainPostProcessingResult
 
     /// Process transcription with canonical structured summary contract using a specific prompt.
     func processTranscriptionStructured(
         _ transcription: String,
         with prompt: DomainPostProcessingPrompt
     ) async throws -> DomainPostProcessingResult
+
+    /// Process transcription with canonical structured summary contract using a specific prompt and kernel mode.
+    func processTranscriptionStructured(
+        _ transcription: String,
+        with prompt: DomainPostProcessingPrompt,
+        mode: IntelligenceKernelMode
+    ) async throws -> DomainPostProcessingResult
+}
+
+public extension PostProcessingRepository {
+    func processTranscription(
+        _ transcription: String,
+        mode _: IntelligenceKernelMode
+    ) async throws -> String {
+        try await processTranscription(transcription)
+    }
+
+    func processTranscription(
+        _ transcription: String,
+        with prompt: DomainPostProcessingPrompt,
+        mode _: IntelligenceKernelMode
+    ) async throws -> String {
+        try await processTranscription(
+            transcription,
+            with: prompt
+        )
+    }
+
+    func processTranscriptionStructured(
+        _ transcription: String,
+        mode _: IntelligenceKernelMode
+    ) async throws -> DomainPostProcessingResult {
+        try await processTranscriptionStructured(transcription)
+    }
+
+    func processTranscriptionStructured(
+        _ transcription: String,
+        with prompt: DomainPostProcessingPrompt,
+        mode _: IntelligenceKernelMode
+    ) async throws -> DomainPostProcessingResult {
+        try await processTranscriptionStructured(
+            transcription,
+            with: prompt
+        )
+    }
 }
 
 // MARK: - Storage Domain Protocols
