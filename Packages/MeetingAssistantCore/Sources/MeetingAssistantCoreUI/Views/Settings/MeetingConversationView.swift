@@ -267,8 +267,6 @@ public struct MeetingConversationView: View {
                     .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
             }
 
-            modelRow
-
             HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
                 TextField(
                     "transcription.qa.placeholder".localized,
@@ -278,6 +276,8 @@ public struct MeetingConversationView: View {
                     )
                 )
                 .textFieldStyle(.roundedBorder)
+
+                inlineModelControl
 
                 dictationButton
 
@@ -292,61 +292,41 @@ public struct MeetingConversationView: View {
     }
 
     @ViewBuilder
-    private var modelRow: some View {
-        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-            Text("settings.ai.model".localized)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            Spacer()
-
-            if selectedProvider == .custom {
-                TextField(
-                    "settings.ai.model_placeholder".localized,
-                    text: Binding(
-                        get: { selectedModel },
-                        set: { onModelChange($0) }
-                    )
+    private var inlineModelControl: some View {
+        if selectedProvider == .custom {
+            TextField(
+                "settings.ai.model_placeholder".localized,
+                text: Binding(
+                    get: { selectedModel },
+                    set: { onModelChange($0) }
                 )
-                .textFieldStyle(.roundedBorder)
-                .frame(maxWidth: 260)
-            } else {
-                Button {
-                    onRefreshModels()
-                } label: {
-                    if isLoadingModels {
-                        ProgressView()
-                            .controlSize(.small)
-                    } else {
-                        Image(systemName: "arrow.clockwise")
+            )
+            .textFieldStyle(.roundedBorder)
+            .frame(maxWidth: MeetingAssistantDesignSystem.Layout.maxCompactTextFieldWidth)
+            .accessibilityLabel("settings.ai.model".localized)
+        } else {
+            Picker(
+                "",
+                selection: Binding(
+                    get: { selectedModel },
+                    set: { onModelChange($0) }
+                )
+            ) {
+                if isLoadingModels {
+                    Text("settings.ai.loading".localized).tag("")
+                } else if availableModels.isEmpty {
+                    Text("settings.ai.no_models".localized).tag("")
+                } else {
+                    Text("settings.ai.model_select".localized).tag("")
+                    ForEach(availableModels) { model in
+                        Text(model.id).tag(model.id)
                     }
                 }
-                .buttonStyle(.borderless)
-                .help("settings.ai.model_refresh".localized)
-                .disabled(isLoadingModels)
-
-                Picker(
-                    "",
-                    selection: Binding(
-                        get: { selectedModel },
-                        set: { onModelChange($0) }
-                    )
-                ) {
-                    if isLoadingModels {
-                        Text("settings.ai.loading".localized).tag("")
-                    } else if availableModels.isEmpty {
-                        Text("settings.ai.no_models".localized).tag("")
-                    } else {
-                        Text("settings.ai.model_select".localized).tag("")
-                        ForEach(availableModels) { model in
-                            Text(model.id).tag(model.id)
-                        }
-                    }
-                }
-                .pickerStyle(.menu)
-                .labelsHidden()
-                .disabled(isLoadingModels || availableModels.isEmpty)
             }
+            .pickerStyle(.menu)
+            .labelsHidden()
+            .disabled(isLoadingModels || availableModels.isEmpty)
+            .accessibilityLabel("settings.ai.model".localized)
         }
     }
 
@@ -493,6 +473,56 @@ public struct MeetingConversationView: View {
         onRefreshModels: {},
         dictationState: .idle,
         dictationErrorMessage: "transcription.qa.dictation.error.transcription".localized,
+        onToggleDictation: {},
+        onBack: {}
+    )
+    .frame(width: 700, height: 700)
+}
+
+#Preview("Custom Provider Inline Model") {
+    MeetingConversationView(
+        transcription: .previewConversation,
+        isLoadingTranscription: false,
+        turns: [],
+        questionText: "Summarize action items",
+        onQuestionChange: { _ in },
+        onAsk: {},
+        onRetry: { _ in },
+        isAnswering: false,
+        currentErrorMessage: nil,
+        selectedProvider: .custom,
+        selectedModel: "my-local-model",
+        availableModels: [],
+        isLoadingModels: false,
+        onModelChange: { _ in },
+        onRefreshModels: {},
+        dictationState: .idle,
+        dictationErrorMessage: nil,
+        onToggleDictation: {},
+        onBack: {}
+    )
+    .frame(width: 700, height: 700)
+}
+
+#Preview("No Models Inline Picker") {
+    MeetingConversationView(
+        transcription: .previewConversation,
+        isLoadingTranscription: false,
+        turns: [],
+        questionText: "What decisions were made?",
+        onQuestionChange: { _ in },
+        onAsk: {},
+        onRetry: { _ in },
+        isAnswering: false,
+        currentErrorMessage: nil,
+        selectedProvider: .openai,
+        selectedModel: "",
+        availableModels: [],
+        isLoadingModels: false,
+        onModelChange: { _ in },
+        onRefreshModels: {},
+        dictationState: .idle,
+        dictationErrorMessage: nil,
         onToggleDictation: {},
         onBack: {}
     )
