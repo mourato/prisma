@@ -32,11 +32,11 @@ public final class AudioLevelMonitor: ObservableObject {
     private var silenceElapsed: TimeInterval = 0
 
     private enum Constants {
-        static let silenceThresholdDb: Float = -65
+        static let silenceThresholdDb: Float = -50
         static let silenceDurationSeconds: TimeInterval = 4
         static let timerToleranceRatio: Double = 0.05
         static let levelAttackSmoothingFactor: Double = 0.80
-        static let levelReleaseSmoothingFactor: Double = 0.30
+        static let levelReleaseSmoothingFactor: Double = 0.65
         static let meterMinDb: Float = -60
         static let meterMaxDb: Float = -6
     }
