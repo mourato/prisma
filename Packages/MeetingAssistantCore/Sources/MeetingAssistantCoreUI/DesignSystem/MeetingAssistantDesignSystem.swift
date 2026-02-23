@@ -57,6 +57,9 @@ public enum MeetingAssistantDesignSystem {
         public static let overlayDivider = Color.white.opacity(0.2)
         public static let overlayForeground = Color.white
         public static let overlayForegroundMuted = Color.white.opacity(0.85)
+        public static let recordingIndicatorMaterialTint = Color.black.opacity(0.22)
+        public static let recordingIndicatorStroke = Color.white.opacity(0.22)
+        public static let recordingIndicatorAuxiliaryBackground = Color.black.opacity(0.14)
 
         public static let windowBackground = Color(NSColor.windowBackgroundColor)
         public static let controlBackground = Color(NSColor.controlBackgroundColor)
@@ -142,6 +145,14 @@ public enum MeetingAssistantDesignSystem {
         public static let shadowY: CGFloat = 5
         public static let shadowRadiusSmall: CGFloat = 6
         public static let shadowYSmall: CGFloat = 3
+        public static let recordingIndicatorMainShadowRadius: CGFloat = 10
+        public static let recordingIndicatorMainShadowY: CGFloat = 5
+        public static let recordingIndicatorAuxShadowRadius: CGFloat = 6
+        public static let recordingIndicatorAuxShadowY: CGFloat = 3
+        public static let recordingIndicatorHoverEnterResponse: CGFloat = 0.22
+        public static let recordingIndicatorHoverEnterDamping: CGFloat = 0.86
+        public static let recordingIndicatorHoverExitResponse: CGFloat = 0.26
+        public static let recordingIndicatorHoverExitDamping: CGFloat = 0.9
 
         public static let maxCompactTextFieldWidth: CGFloat = 200
         public static let textAreaPadding: CGFloat = spacing8

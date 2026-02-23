@@ -793,6 +793,10 @@
 "recording_indicator.prompt.help" = "Escolher prompt de pós-processamento";
 "recording_indicator.prompt.none" = "Sem pós-processamento";
 "recording_indicator.prompt.none_desc" = "Pular o pós-processamento por IA após a gravação.";
+"recording_indicator.silence_warning.confirmation.title" = "Nenhum áudio do microfone detectado";
+"recording_indicator.silence_warning.action.continue" = "Continuar ouvindo";
+"recording_indicator.silence_warning.action.stop" = "Parar e transcrever";
+"recording_indicator.silence_warning.action.discard" = "Descartar gravação";
 "settings.transcriptions.today" = "Hoje";
 "settings.transcriptions.yesterday" = "Ontem";
 "transcription.empty_fallback" = "Nenhuma transcrição disponível";

@@ -19,11 +19,13 @@ public struct FloatingRecordingIndicatorView: View {
     let onStop: @Sendable () -> Void
     let onCancel: @Sendable () -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isHovering = false
     @State private var hoverCollapseTask: Task<Void, Never>?
     @State private var isMainRegionHovered = false
     @State private var isPromptRegionHovered = false
     @State private var isPromptSessionArmed = false
+    @State private var isSilenceWarningDialogPresented = false
 
     // Removed IndicatorMetrics in favor of MeetingAssistantDesignSystem.Layout
 
@@ -103,14 +105,13 @@ public struct FloatingRecordingIndicatorView: View {
 
     private var leadingControls: some View {
         HStack(spacing: controlSpacing(for: currentIndicatorSize)) {
-            Button(action: onStop) {
-                Image(systemName: "checkmark")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.overlayForeground)
-                    .frame(width: 20, height: 20)
+            ActionIconButton(
+                symbol: "checkmark",
+                helpKey: "recording_indicator.stop.help",
+                keyboardShortcut: nil
+            ) {
+                onStop()
             }
-            .buttonStyle(.plain)
-            .help("recording_indicator.stop.help".localized)
 
             divider
         }
@@ -134,10 +135,29 @@ public struct FloatingRecordingIndicatorView: View {
                 x: MeetingAssistantDesignSystem.Layout.shadowX,
                 y: MeetingAssistantDesignSystem.Layout.shadowYSmall
             )
-            .contentShape(Rectangle())
+            .overlay(
+                Capsule()
+                    .strokeBorder(MeetingAssistantDesignSystem.Colors.recordingIndicatorStroke, lineWidth: 1)
+            )
+            .contentShape(Capsule())
             .onTapGesture {
-                onCancel()
-                audioMonitor.dismissSilenceWarning()
+                isSilenceWarningDialogPresented = true
+            }
+            .confirmationDialog(
+                "recording_indicator.silence_warning.confirmation.title".localized,
+                isPresented: $isSilenceWarningDialogPresented
+            ) {
+                Button("recording_indicator.silence_warning.action.continue".localized) {
+                    audioMonitor.dismissSilenceWarning()
+                }
+                Button("recording_indicator.silence_warning.action.stop".localized) {
+                    onStop()
+                    audioMonitor.dismissSilenceWarning()
+                }
+                Button("recording_indicator.silence_warning.action.discard".localized, role: .destructive) {
+                    onCancel()
+                    audioMonitor.dismissSilenceWarning()
+                }
             }
     }
 
@@ -151,14 +171,13 @@ public struct FloatingRecordingIndicatorView: View {
         HStack(spacing: controlSpacing(for: currentIndicatorSize)) {
             divider
 
-            Button(action: onCancel) {
-                Image(systemName: "trash")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.overlayForeground)
-                    .frame(width: 20, height: 16)
+            ActionIconButton(
+                symbol: "trash",
+                helpKey: "recording_indicator.cancel.help",
+                keyboardShortcut: .escape
+            ) {
+                onCancel()
             }
-            .buttonStyle(.plain)
-            .help("recording_indicator.cancel.help".localized)
         }
     }
 
@@ -276,7 +295,7 @@ public struct FloatingRecordingIndicatorView: View {
                                 .lineLimit(1)
                                 .fixedSize(horizontal: true, vertical: false)
                                 .layoutPriority(1)
-                                .foregroundStyle(MeetingAssistantDesignSystem.Colors.overlayForeground)
+                                .foregroundStyle(MeetingAssistantDesignSystem.Colors.overlayForegroundMuted)
                         }
                     } else {
                         Text(formatRecordingDuration(at: Date()))
@@ -286,7 +305,7 @@ public struct FloatingRecordingIndicatorView: View {
                             .lineLimit(1)
                             .fixedSize(horizontal: true, vertical: false)
                             .layoutPriority(1)
-                            .foregroundStyle(MeetingAssistantDesignSystem.Colors.overlayForeground)
+                            .foregroundStyle(MeetingAssistantDesignSystem.Colors.overlayForegroundMuted)
                     }
                 }
                 .accessibilityLabel("recording_indicator.duration".localized)
@@ -421,17 +440,18 @@ public struct FloatingRecordingIndicatorView: View {
         }
         .padding(.horizontal, MeetingAssistantDesignSystem.Layout.recordingIndicatorSidePadding)
         .frame(height: controlHeight(for: size))
-        .background(MeetingAssistantDesignSystem.Colors.overlayBackground)
+        .background(.ultraThinMaterial)
+        .background(MeetingAssistantDesignSystem.Colors.recordingIndicatorMaterialTint)
         .overlay(
             Capsule()
-                .strokeBorder(Color.white.opacity(0.15), lineWidth: 1.5)
+                .strokeBorder(MeetingAssistantDesignSystem.Colors.recordingIndicatorStroke, lineWidth: 1.2)
         )
         .clipShape(Capsule())
         .shadow(
             color: .black.opacity(0.15),
-            radius: MeetingAssistantDesignSystem.Layout.shadowRadius,
+            radius: MeetingAssistantDesignSystem.Layout.recordingIndicatorMainShadowRadius,
             x: MeetingAssistantDesignSystem.Layout.shadowX,
-            y: MeetingAssistantDesignSystem.Layout.shadowY
+            y: MeetingAssistantDesignSystem.Layout.recordingIndicatorMainShadowY
         )
         .contentShape(Capsule())
         .onHover { hovering in
@@ -442,12 +462,19 @@ public struct FloatingRecordingIndicatorView: View {
     private func promptSelectionPill(size: IndicatorSize) -> some View {
         promptPickerControl(size: size)
             .frame(width: promptSize(for: size), height: controlHeight(for: size))
-            .background(MeetingAssistantDesignSystem.Colors.overlayBackground)
+            .background(.regularMaterial)
+            .background(MeetingAssistantDesignSystem.Colors.recordingIndicatorAuxiliaryBackground)
             .overlay(
                 Capsule()
-                    .strokeBorder(Color.white.opacity(0.15), lineWidth: 1.5)
+                    .strokeBorder(MeetingAssistantDesignSystem.Colors.recordingIndicatorStroke, lineWidth: 1)
             )
             .clipShape(Capsule())
+            .shadow(
+                color: .black.opacity(0.12),
+                radius: MeetingAssistantDesignSystem.Layout.recordingIndicatorAuxShadowRadius,
+                x: MeetingAssistantDesignSystem.Layout.shadowX,
+                y: MeetingAssistantDesignSystem.Layout.recordingIndicatorAuxShadowY
+            )
             .onHover { hovering in
                 handlePromptRegionHover(hovering)
             }
@@ -456,12 +483,19 @@ public struct FloatingRecordingIndicatorView: View {
     private func languageSelectionPill(size: IndicatorSize) -> some View {
         languagePickerControl(size: size)
             .frame(width: promptSize(for: size), height: controlHeight(for: size))
-            .background(MeetingAssistantDesignSystem.Colors.overlayBackground)
+            .background(.regularMaterial)
+            .background(MeetingAssistantDesignSystem.Colors.recordingIndicatorAuxiliaryBackground)
             .overlay(
                 Capsule()
-                    .strokeBorder(Color.white.opacity(0.15), lineWidth: 1.5)
+                    .strokeBorder(MeetingAssistantDesignSystem.Colors.recordingIndicatorStroke, lineWidth: 1)
             )
             .clipShape(Capsule())
+            .shadow(
+                color: .black.opacity(0.12),
+                radius: MeetingAssistantDesignSystem.Layout.recordingIndicatorAuxShadowRadius,
+                x: MeetingAssistantDesignSystem.Layout.shadowX,
+                y: MeetingAssistantDesignSystem.Layout.recordingIndicatorAuxShadowY
+            )
             .onHover { hovering in
                 handlePromptRegionHover(hovering)
             }
@@ -474,8 +508,17 @@ public struct FloatingRecordingIndicatorView: View {
         if hovering {
             isPromptSessionArmed = true
             hoverCollapseTask?.cancel()
-            withAnimation(.spring(response: 0.22, dampingFraction: 0.86)) {
+            if reduceMotion {
                 isHovering = true
+            } else {
+                withAnimation(
+                    .spring(
+                        response: MeetingAssistantDesignSystem.Layout.recordingIndicatorHoverEnterResponse,
+                        dampingFraction: MeetingAssistantDesignSystem.Layout.recordingIndicatorHoverEnterDamping
+                    )
+                ) {
+                    isHovering = true
+                }
             }
             return
         }
@@ -508,8 +551,17 @@ public struct FloatingRecordingIndicatorView: View {
             guard !isMainRegionHovered else { return }
             if isPromptRegionHovered, isPromptSessionArmed { return }
 
-            withAnimation(.easeOut(duration: 0.14)) {
+            if reduceMotion {
                 isHovering = false
+            } else {
+                withAnimation(
+                    .spring(
+                        response: MeetingAssistantDesignSystem.Layout.recordingIndicatorHoverExitResponse,
+                        dampingFraction: MeetingAssistantDesignSystem.Layout.recordingIndicatorHoverExitDamping
+                    )
+                ) {
+                    isHovering = false
+                }
             }
             isPromptSessionArmed = false
         }
@@ -622,6 +674,7 @@ struct AudioVisualizer: View {
     private let secondaryOffsets: [Double]
     private let amplitudeScales: [Double]
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var barHeights: [CGFloat]
 
     init(
@@ -643,17 +696,17 @@ struct AudioVisualizer: View {
         self.barSpacing = barSpacing
         self.minHeight = minHeight
 
-        sensitivityMultipliers = (0..<barCount).map { _ in
-            Double.random(in: 0.6...1.4)
+        sensitivityMultipliers = (0..<barCount).map { index in
+            Self.deterministicValue(index: index, count: barCount, range: 0.72...1.18, seed: 0.37)
         }
-        phaseOffsets = (0..<barCount).map { _ in
-            Double.random(in: 0...Double.pi * 2)
+        phaseOffsets = (0..<barCount).map { index in
+            Self.deterministicValue(index: index, count: barCount, range: 0...(Double.pi * 2), seed: 0.61)
         }
-        secondaryOffsets = (0..<barCount).map { _ in
-            Double.random(in: 0...Double.pi * 2)
+        secondaryOffsets = (0..<barCount).map { index in
+            Self.deterministicValue(index: index, count: barCount, range: 0...(Double.pi * 2), seed: 1.13)
         }
-        amplitudeScales = (0..<barCount).map { _ in
-            Double.random(in: 0.75...1.1)
+        amplitudeScales = (0..<barCount).map { index in
+            Self.deterministicValue(index: index, count: barCount, range: 0.82...1.07, seed: 1.87)
         }
 
         _barHeights = State(initialValue: Array(repeating: minHeight, count: barCount))
@@ -686,7 +739,7 @@ struct AudioVisualizer: View {
 
     private var processingBars: some View {
         Group {
-            if isAnimationActive {
+            if isAnimationActive && !reduceMotion {
                 TimelineView(.animation) { timeline in
                     let time = timeline.date.timeIntervalSinceReferenceDate
                     HStack(spacing: barSpacing) {
@@ -732,7 +785,7 @@ struct AudioVisualizer: View {
             let distanceFromCenter = abs(i - center)
             let positionMultiplier = 1.0 - (Double(distanceFromCenter) / Double(center)) * 0.4
 
-            // Use randomized sensitivity
+            // Apply deterministic per-bar sensitivity for stable visual identity across mounts.
             let sensitivityAdjustedLevel = adjustedLevel * positionMultiplier * sensitivityMultipliers[i]
 
             // Calculate target height directly
@@ -740,7 +793,7 @@ struct AudioVisualizer: View {
             newHeights.append(targetHeight)
         }
 
-        if isAnimationActive {
+        if isAnimationActive && !reduceMotion {
             withAnimation(
                 .interactiveSpring(
                     response: 0.2,
@@ -750,9 +803,17 @@ struct AudioVisualizer: View {
             ) {
                 barHeights = newHeights
             }
-        } else {
-            barHeights = newHeights
+            return
         }
+
+        barHeights = newHeights
+    }
+
+    private static func deterministicValue(index: Int, count: Int, range: ClosedRange<Double>, seed: Double) -> Double {
+        guard count > 0 else { return range.lowerBound }
+        let normalized = Double(index + 1) / Double(count + 1)
+        let wave = (sin((normalized + seed) * .pi * 2) + 1) / 2
+        return range.lowerBound + (range.upperBound - range.lowerBound) * wave
     }
 }
 
@@ -762,24 +823,78 @@ struct AudioVisualizer: View {
 private struct PulsingModifier: ViewModifier {
     let isActive: Bool
     let speed: Double
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isPulsing = false
 
     func body(content: Content) -> some View {
         content
-            .opacity(isPulsing ? 0.6 : 1.0)
-            .scaleEffect(isPulsing ? 1.15 : 1.0)
+            .opacity(isPulsing ? 0.75 : 1.0)
+            .scaleEffect(isPulsing ? 1.08 : 1.0)
             .onAppear { updateAnimation() }
             .onChange(of: isActive) { _, _ in updateAnimation() }
             .onChange(of: speed) { _, _ in updateAnimation() }
+            .onChange(of: reduceMotion) { _, _ in updateAnimation() }
     }
 
     private func updateAnimation() {
-        guard isActive else {
+        guard isActive, !reduceMotion else {
             isPulsing = false
             return
         }
         withAnimation(.easeInOut(duration: speed).repeatForever(autoreverses: true)) {
             isPulsing = true
+        }
+    }
+}
+
+private struct ActionIconButton: View {
+    let symbol: String
+    let helpKey: String
+    let keyboardShortcut: KeyEquivalent?
+    let action: @Sendable () -> Void
+
+    @State private var isHovered = false
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(MeetingAssistantDesignSystem.Colors.overlayForeground)
+                .frame(width: 20, height: 20)
+                .padding(4)
+                .background(controlBackground)
+                .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .focusable(true)
+        .focused($isFocused)
+        .help(helpKey.localized)
+        .onHover { hovering in
+            isHovered = hovering
+        }
+        .modifier(KeyboardShortcutModifier(key: keyboardShortcut))
+    }
+
+    private var controlBackground: some ShapeStyle {
+        if isFocused {
+            return AnyShapeStyle(MeetingAssistantDesignSystem.Colors.accent.opacity(0.35))
+        }
+        if isHovered {
+            return AnyShapeStyle(Color.white.opacity(0.14))
+        }
+        return AnyShapeStyle(Color.clear)
+    }
+}
+
+private struct KeyboardShortcutModifier: ViewModifier {
+    let key: KeyEquivalent?
+
+    func body(content: Content) -> some View {
+        if let key {
+            content.keyboardShortcut(key, modifiers: [])
+        } else {
+            content
         }
     }
 }
