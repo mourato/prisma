@@ -36,8 +36,8 @@ public final class AudioLevelMonitor: ObservableObject {
         static let silenceDurationSeconds: TimeInterval = 4
         static let timerToleranceRatio: Double = 0.05
         static let levelAttackSmoothingFactor: Double = 0.80
-        static let levelReleaseSmoothingFactor: Double = 0.72
-        static let meterMinDb: Float = -60
+        static let levelReleaseSmoothingFactor: Double = 0.90
+        static let meterMinDb: Float = -50
         static let meterMaxDb: Float = -6
     }
 
