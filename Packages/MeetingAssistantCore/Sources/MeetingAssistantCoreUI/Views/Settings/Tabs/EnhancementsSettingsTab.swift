@@ -40,7 +40,6 @@ public struct EnhancementsSettingsTab: View {
                 mainSection
                 if postProcessingViewModel.settings.postProcessingEnabled {
                     meetingIntelligenceSection
-                    postProcessingSection
                 }
                 contextAwarenessSection
             }
@@ -58,23 +57,34 @@ public struct EnhancementsSettingsTab: View {
     // MARK: - Sections
 
     private var mainSection: some View {
-        MAGroup("settings.section.ai".localized, icon: "brain") {
+        MAGroup("settings.post_processing.title".localized, icon: "brain") {
             VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.itemSpacing) {
                 MAToggleRow(
                     "settings.post_processing.enabled".localized,
                     description: "settings.post_processing.description".localized,
                     isOn: $postProcessingViewModel.settings.postProcessingEnabled
                 )
-
-                Divider()
-
-                SettingsDrillDownListRow(
-                    destination: EnhancementsPageRoute.providerModels,
-                    title: "settings.enhancements.provider_models.title".localized,
-                    accessibilityHint: "settings.enhancements.provider_models.drilldown_hint".localized
-                )
-
-                Divider()
+                
+                VStack(alignment: .leading, spacing: 0) {
+                    
+                    Divider()
+                    
+                    SettingsDrillDownListRow(
+                        destination: EnhancementsPageRoute.systemGuidelines,
+                        title: "settings.post_processing.edit_system_prompt".localized,
+                        accessibilityHint: "settings.post_processing.system_guidelines.accessibility_hint".localized
+                    )
+                    
+                    Divider()
+                    
+                    SettingsDrillDownListRow(
+                        destination: EnhancementsPageRoute.providerModels,
+                        title: "settings.enhancements.provider_models.title".localized,
+                        accessibilityHint: "settings.enhancements.provider_models.drilldown_hint".localized
+                    )
+                    
+                    Divider()
+                }
 
                 providerModelsQuickSummary
             }
@@ -256,54 +266,11 @@ public struct EnhancementsSettingsTab: View {
         }
     }
 
-    // MARK: - Post-Processing
-
-    @ViewBuilder
-    private var postProcessingSection: some View {
-        if postProcessingViewModel.settings.isEnhancementsInferenceReady {
-            systemPromptSection
-        } else {
-            connectionWarningSection
-        }
-    }
-
-    private var connectionWarningSection: some View {
-        MACallout(
-            kind: .warning,
-            title: "settings.post_processing.warning_title".localized,
-            message: "settings.enhancements.model_warning_desc".localized
-        )
-    }
-
     private var providerModelsPage: some View {
         EnhancementsProviderModelsPage(
             viewModel: viewModel,
             postProcessingViewModel: postProcessingViewModel
         )
-    }
-
-    private var systemPromptSection: some View {
-        MAGroup("settings.post_processing.system_prompt".localized, icon: "terminal.fill") {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-                Text("settings.post_processing.base_instructions".localized)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-
-                Text(postProcessingViewModel.settings.systemPrompt)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-
-                Divider()
-
-                SettingsDrillDownListRow(
-                    destination: EnhancementsPageRoute.systemGuidelines,
-                    title: "settings.post_processing.edit_system_guidelines".localized,
-                    subtitle: systemGuidelinesSummary,
-                    accessibilityHint: "settings.post_processing.system_guidelines.accessibility_hint".localized
-                )
-            }
-        }
     }
 
     private var systemGuidelinesPage: some View {
@@ -399,13 +366,6 @@ public struct EnhancementsSettingsTab: View {
             return "settings.enhancements.provider_models.summary.no_model".localized(with: selection.provider.displayName)
         }
         return "settings.enhancements.provider_models.summary".localized(with: selection.provider.displayName, selectedModel)
-    }
-
-    private var systemGuidelinesSummary: String {
-        let isDefault = postProcessingViewModel.settings.systemPrompt == AIPromptTemplates.defaultSystemPrompt
-        return isDefault
-            ? "settings.post_processing.system_guidelines.default_summary".localized
-            : "settings.post_processing.system_guidelines.custom_summary".localized
     }
 
     private func restoreSystemGuidelines() {
