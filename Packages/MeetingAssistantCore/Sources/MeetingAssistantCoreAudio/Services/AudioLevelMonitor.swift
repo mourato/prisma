@@ -36,7 +36,7 @@ public final class AudioLevelMonitor: ObservableObject {
         static let silenceDurationSeconds: TimeInterval = 4
         static let timerToleranceRatio: Double = 0.05
         static let levelAttackSmoothingFactor: Double = 0.80
-        static let levelReleaseSmoothingFactor: Double = 0.65
+        static let levelReleaseSmoothingFactor: Double = 0.72
         static let meterMinDb: Float = -60
         static let meterMaxDb: Float = -6
     }
@@ -118,17 +118,31 @@ public final class AudioLevelMonitor: ObservableObject {
 
         updateSilenceWarning(with: averageDB)
 
-        // Normalize from dB to 0...1 range
-        let normalizedAverage = normalizeDecibels(
-            averageDB,
-            minDB: Constants.meterMinDb,
-            maxDB: Constants.meterMaxDb
-        )
-        let normalizedPeak = normalizeDecibels(
-            peakDB,
-            minDB: Constants.meterMinDb,
-            maxDB: Constants.meterMaxDb
-        )
+        // Normalize from dB to 0...1 range.
+        // Apply the configured silence threshold as a hard cutoff so that
+        // any dB value at-or-below `silenceThresholdDb` maps to 0 (no bar movement).
+        let normalizedAverage: Float
+        let normalizedPeak: Float
+
+        if averageDB <= Constants.silenceThresholdDb {
+            normalizedAverage = 0.0
+        } else {
+            normalizedAverage = normalizeDecibels(
+                averageDB,
+                minDB: Constants.meterMinDb,
+                maxDB: Constants.meterMaxDb
+            )
+        }
+
+        if peakDB <= Constants.silenceThresholdDb {
+            normalizedPeak = 0.0
+        } else {
+            normalizedPeak = normalizeDecibels(
+                peakDB,
+                minDB: Constants.meterMinDb,
+                maxDB: Constants.meterMaxDb
+            )
+        }
 
         smoothedAveragePower = applyAsymmetricSmoothing(
             current: smoothedAveragePower,
