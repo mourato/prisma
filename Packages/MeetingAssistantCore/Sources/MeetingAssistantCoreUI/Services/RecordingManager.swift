@@ -1734,9 +1734,9 @@ extension RecordingManager {
                 try auditTrailWriter.append(writeFailureEvent)
             } catch {
                 AppLogger.error("Failed to append export audit event", category: .security, error: error)
-            }
         }
     }
+}
 
     private func convertToModel(_ entity: TranscriptionEntity, audioDuration: Double?, transcriptionStart: Date) -> Transcription {
         Transcription(
