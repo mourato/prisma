@@ -13,6 +13,10 @@ public struct RulesPerAppSettingsTab: View {
 
     public var body: some View {
         SettingsScrollableContent {
+            SettingsSectionHeader(
+                title: "settings.section.rules_per_app".localized,
+                description: "settings.rules_per_app.description".localized
+            )
             appRulesSection
             websitesSection
         }
@@ -154,7 +158,7 @@ public struct RulesPerAppSettingsTab: View {
 
             appRuleSummary(for: resolvedRule.rule)
 
-            Menu {
+            SettingsContextMenuButton(accessibilityLabel: "settings.rules_per_app.actions".localized) {
                 Button {
                     viewModel.editRule(bundleIdentifier: resolvedRule.rule.bundleIdentifier)
                 } label: {
@@ -166,17 +170,13 @@ public struct RulesPerAppSettingsTab: View {
                 } label: {
                     Label("settings.rules_per_app.remove_app".localized, systemImage: "trash")
                 }
-            } label: {
-                Image(systemName: "ellipsis.circle")
-                    .foregroundStyle(.secondary)
             }
-            .menuStyle(.borderlessButton)
-            .fixedSize()
-            .highPriorityGesture(TapGesture())
-            .accessibilityLabel("settings.rules_per_app.actions".localized)
         }
         .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)
         .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(appRowAccessibilityLabel(for: resolvedRule))
+        .accessibilityHint("settings.rules_per_app.actions".localized)
     }
 
     private var addAppSheet: some View {
@@ -275,7 +275,7 @@ public struct RulesPerAppSettingsTab: View {
 
             websiteRuleSummary(for: target)
 
-            Menu {
+            SettingsContextMenuButton(accessibilityLabel: "settings.rules_per_app.actions".localized) {
                 Button {
                     markdownWebTargetsViewModel.editTarget(target)
                 } label: {
@@ -287,17 +287,13 @@ public struct RulesPerAppSettingsTab: View {
                 } label: {
                     Label("settings.markdown_targets.websites.delete".localized, systemImage: "trash")
                 }
-            } label: {
-                Image(systemName: "ellipsis.circle")
-                    .foregroundStyle(.secondary)
             }
-            .menuStyle(.borderlessButton)
-            .fixedSize()
-            .highPriorityGesture(TapGesture())
-            .accessibilityLabel("settings.rules_per_app.actions".localized)
         }
         .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)
         .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(websiteRowAccessibilityLabel(for: target))
+        .accessibilityHint("settings.rules_per_app.actions".localized)
     }
 
     private func browserNames(from bundleIdentifiers: [String]) -> String {
@@ -313,7 +309,6 @@ public struct RulesPerAppSettingsTab: View {
         return viewModel.resolvedRules.first { $0.rule.bundleIdentifier == bundleIdentifier }
     }
 
-    @ViewBuilder
     private func websiteRuleSummary(for target: WebContextTarget) -> some View {
         HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
             Text(
@@ -363,7 +358,6 @@ public struct RulesPerAppSettingsTab: View {
         }
     }
 
-    @ViewBuilder
     private func appRuleSummary(for rule: DictationAppRule) -> some View {
         HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
             if rule.forceMarkdownOutput {
@@ -395,6 +389,55 @@ public struct RulesPerAppSettingsTab: View {
                     .accessibilityLabel("settings.rules_per_app.custom_prompt.badge_accessibility".localized)
             }
         }
+    }
+
+    private func appRowAccessibilityLabel(for resolvedRule: ResolvedDictationAppRule) -> String {
+        [resolvedRule.displayName, resolvedRule.rule.bundleIdentifier, appRuleSummaryAccessibility(for: resolvedRule.rule)]
+            .filter { !$0.isEmpty }
+            .joined(separator: ", ")
+    }
+
+    private func websiteRowAccessibilityLabel(for target: WebContextTarget) -> String {
+        [target.displayName, target.urlPatterns.joined(separator: ", "), websiteRuleSummaryAccessibility(for: target)]
+            .filter { !$0.isEmpty }
+            .joined(separator: ", ")
+    }
+
+    private func appRuleSummaryAccessibility(for rule: DictationAppRule) -> String {
+        var parts: [String] = []
+        if rule.forceMarkdownOutput {
+            parts.append("settings.rules_per_app.markdown.title".localized)
+        }
+        if rule.outputLanguage != .original {
+            parts.append(rule.outputLanguage.localizedName)
+        }
+        if let customPromptInstructions = rule.customPromptInstructions,
+           !customPromptInstructions.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        {
+            parts.append("settings.rules_per_app.custom_prompt.badge_accessibility".localized)
+        }
+        return parts.joined(separator: ", ")
+    }
+
+    private func websiteRuleSummaryAccessibility(for target: WebContextTarget) -> String {
+        var parts: [String] = []
+        parts.append(
+            target.forceMarkdownOutput
+                ? "settings.markdown_targets.websites.summary.markdown_on".localized
+                : "settings.markdown_targets.websites.summary.markdown_off".localized
+        )
+        if target.outputLanguage != .original {
+            parts.append(target.outputLanguage.localizedName)
+        }
+        if let customPromptInstructions = target.customPromptInstructions,
+           !customPromptInstructions.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        {
+            parts.append("settings.rules_per_app.custom_prompt.badge_accessibility".localized)
+        }
+        if target.autoStartMeetingRecording {
+            parts.append("settings.markdown_targets.websites.summary.auto_record".localized)
+        }
+        return parts.joined(separator: ", ")
     }
 }
 

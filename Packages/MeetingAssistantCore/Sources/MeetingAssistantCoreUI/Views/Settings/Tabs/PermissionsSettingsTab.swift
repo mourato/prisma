@@ -26,21 +26,33 @@ public struct PermissionsSettingsTab: View {
     }
 
     public var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.sectionSpacing) {
-                MAGroup("settings.permissions.about".localized, icon: "info.circle") {
-                    Text("settings.permissions.description".localized)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                }
+        SettingsScrollableContent {
+            SettingsSectionHeader(
+                title: "settings.section.permissions".localized,
+                description: "settings.permissions.description".localized
+            )
 
-                MAGroup("settings.permissions.status".localized, icon: "checkmark.shield") {
-                    PermissionStatusView(viewModel: viewModel, requiredSource: .all)
-                        .padding(.top, MeetingAssistantDesignSystem.Layout.spacing4)
+            MAGroup("settings.permissions.status".localized, icon: "checkmark.shield") {
+                PermissionStatusView(viewModel: viewModel, requiredSource: .all)
+                    .padding(.top, MeetingAssistantDesignSystem.Layout.spacing4)
+            }
+
+            if viewModel.allPermissionsGranted {
+                SettingsStateBlock(
+                    kind: .success,
+                    title: "common.ok".localized,
+                    message: "permissions.system_title".localized
+                )
+            } else {
+                SettingsStateBlock(
+                    kind: .warning,
+                    title: "permissions.action_required".localized,
+                    message: "permissions.warning".localized,
+                    actionTitle: "permissions.configure".localized
+                ) {
+                    viewModel.openScreenSystemSettings()
                 }
             }
-            .padding()
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .task {
             await RecordingManager.shared.checkPermission()

@@ -24,6 +24,7 @@ public struct TranscriptionsSettingsTab: View {
     @ObservedObject private var settings = AppSettingsStore.shared
     @State private var searchReloadTask: Task<Void, Never>?
     @State private var navigationHistory = TranscriptionsNavigationHistory()
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var currentRoute: TranscriptionsPageRoute {
         navigationHistory.currentRoute
@@ -92,21 +93,6 @@ public struct TranscriptionsSettingsTab: View {
         .onChange(of: viewModel.transcriptions) { _, transcriptions in
             sanitizeNavigationHistory(using: transcriptions)
         }
-        .alert(
-            "settings.transcriptions.error_load".localized,
-            isPresented: Binding(
-                get: { viewModel.errorMessage != nil },
-                set: { if !$0 { viewModel.errorMessage = nil } }
-            )
-        ) {
-            Button("common.ok".localized, role: .cancel) {
-                viewModel.errorMessage = nil
-            }
-        } message: {
-            if let errorMessage = viewModel.errorMessage {
-                Text(errorMessage)
-            }
-        }
     }
 
     // MARK: - Content Section
@@ -126,6 +112,11 @@ public struct TranscriptionsSettingsTab: View {
     private var listPage: some View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
+                SettingsSectionHeader(
+                    title: "settings.section.history".localized,
+                    description: "settings.transcriptions.items_found".localized(with: viewModel.filteredTranscriptions.count)
+                )
+
                 searchAndFolderRow
 
                 HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
@@ -139,28 +130,30 @@ public struct TranscriptionsSettingsTab: View {
                         .frame(width: MeetingAssistantDesignSystem.Layout.narrowPickerWidth)
                 }
 
-                Text(
-                    "settings.transcriptions.items_found".localized(with: viewModel.filteredTranscriptions.count)
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                if let errorMessage = viewModel.errorMessage {
+                    SettingsStateBlock(
+                        kind: .warning,
+                        title: "settings.transcriptions.error_load".localized,
+                        message: errorMessage,
+                        actionTitle: "settings.service.verify".localized
+                    ) {
+                        Task {
+                            await viewModel.loadTranscriptions()
+                        }
+                    }
+                }
             }
             .padding(MeetingAssistantDesignSystem.Layout.spacing24)
 
             Divider()
 
             if viewModel.isLoading {
-                VStack {
-                    Spacer()
-                    ProgressView()
-                        .controlSize(.large)
-                    Text("settings.transcriptions.loading".localized)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .padding(.top, MeetingAssistantDesignSystem.Layout.spacing8)
-                    Spacer()
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                SettingsStateBlock(
+                    kind: .loading,
+                    title: "settings.transcriptions.loading".localized
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .padding(MeetingAssistantDesignSystem.Layout.spacing24)
             } else if viewModel.filteredTranscriptions.isEmpty {
                 emptyState
             } else {
@@ -304,22 +297,11 @@ public struct TranscriptionsSettingsTab: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
-            Image(systemName: "doc.text.badge.plus")
-                .font(.system(size: 40))
-                .foregroundStyle(.tertiary)
-
-            VStack(spacing: 4) {
-                Text("settings.transcriptions.empty_title".localized)
-                    .font(.headline)
-                    .foregroundStyle(.secondary)
-
-                Text("settings.transcriptions.empty_desc".localized)
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-                    .multilineTextAlignment(.center)
-            }
-        }
+        SettingsStateBlock(
+            kind: .empty,
+            title: "settings.transcriptions.empty_title".localized,
+            message: "settings.transcriptions.empty_desc".localized
+        )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()
     }
@@ -351,11 +333,19 @@ public struct TranscriptionsSettingsTab: View {
                                 audioURL: transcription.audioFilePath != nil ? URL(fileURLWithPath: transcription.audioFilePath!) : nil,
                                 availablePrompts: viewModel.availablePrompts(for: transcription),
                                 onToggleExpand: {
-                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                    let toggleSelection = {
                                         if viewModel.selectedId == transcription.id {
                                             viewModel.selectedId = nil
                                         } else {
                                             viewModel.selectedId = transcription.id
+                                        }
+                                    }
+
+                                    if reduceMotion {
+                                        toggleSelection()
+                                    } else {
+                                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                            toggleSelection()
                                         }
                                     }
                                 },
@@ -378,48 +368,58 @@ public struct TranscriptionsSettingsTab: View {
     private func conversationPage(transcriptionID: UUID) -> some View {
         let activeTranscription = viewModel.selectedTranscription?.id == transcriptionID ? viewModel.selectedTranscription : nil
 
-        return MeetingConversationView(
-            transcription: activeTranscription,
-            isLoadingTranscription: activeTranscription == nil,
-            turns: viewModel.qaHistory(for: transcriptionID),
-            questionText: viewModel.qaQuestion,
-            onQuestionChange: { newValue in
-                dictationService.clearError()
-                viewModel.qaQuestion = newValue
-            },
-            onAsk: {
-                guard let transcription = viewModel.selectedTranscription, transcription.id == transcriptionID else { return }
-                Task {
-                    await viewModel.submitQuestion(for: transcription)
+        return VStack(spacing: 0) {
+            SettingsSectionHeader(
+                title: "settings.section.history".localized,
+                description: activeTranscription?.meeting.appName
+            )
+            .padding(MeetingAssistantDesignSystem.Layout.spacing16)
+
+            Divider()
+
+            MeetingConversationView(
+                transcription: activeTranscription,
+                isLoadingTranscription: activeTranscription == nil,
+                turns: viewModel.qaHistory(for: transcriptionID),
+                questionText: viewModel.qaQuestion,
+                onQuestionChange: { newValue in
+                    dictationService.clearError()
+                    viewModel.qaQuestion = newValue
+                },
+                onAsk: {
+                    guard let transcription = viewModel.selectedTranscription, transcription.id == transcriptionID else { return }
+                    Task {
+                        await viewModel.submitQuestion(for: transcription)
+                    }
+                },
+                onRetry: { question in
+                    guard let transcription = viewModel.selectedTranscription, transcription.id == transcriptionID else { return }
+                    Task {
+                        await viewModel.retryQuestion(question, for: transcription)
+                    }
+                },
+                isAnswering: viewModel.isAnsweringQuestion,
+                currentErrorMessage: viewModel.qaErrorMessage,
+                selectedProvider: settings.enhancementsAISelection.provider,
+                selectedModel: settings.enhancementsAISelection.selectedModel,
+                availableModels: aiSettingsViewModel.enhancementsAvailableModels,
+                isLoadingModels: aiSettingsViewModel.isLoadingEnhancementsModels,
+                onModelChange: { model in
+                    settings.updateEnhancementsSelectedModel(model)
+                },
+                onRefreshModels: {
+                    aiSettingsViewModel.refreshEnhancementsModelsManually()
+                },
+                dictationState: dictationService.state,
+                dictationErrorMessage: dictationService.errorMessage,
+                onToggleDictation: {
+                    handleDictationToggle()
+                },
+                onBack: {
+                    navigateBack()
                 }
-            },
-            onRetry: { question in
-                guard let transcription = viewModel.selectedTranscription, transcription.id == transcriptionID else { return }
-                Task {
-                    await viewModel.retryQuestion(question, for: transcription)
-                }
-            },
-            isAnswering: viewModel.isAnsweringQuestion,
-            currentErrorMessage: viewModel.qaErrorMessage,
-            selectedProvider: settings.enhancementsAISelection.provider,
-            selectedModel: settings.enhancementsAISelection.selectedModel,
-            availableModels: aiSettingsViewModel.enhancementsAvailableModels,
-            isLoadingModels: aiSettingsViewModel.isLoadingEnhancementsModels,
-            onModelChange: { model in
-                settings.updateEnhancementsSelectedModel(model)
-            },
-            onRefreshModels: {
-                aiSettingsViewModel.refreshEnhancementsModelsManually()
-            },
-            dictationState: dictationService.state,
-            dictationErrorMessage: dictationService.errorMessage,
-            onToggleDictation: {
-                handleDictationToggle()
-            },
-            onBack: {
-                navigateBack()
-            }
-        )
+            )
+        }
     }
 
     // MARK: - Navigation
@@ -514,7 +514,7 @@ public struct TranscriptionsSettingsTab: View {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
-        formatter.locale = Locale(identifier: "pt_BR")
+        formatter.locale = Locale.current
 
         if Calendar.current.isDateInToday(date) {
             return "settings.transcriptions.today".localized
@@ -527,7 +527,8 @@ public struct TranscriptionsSettingsTab: View {
 
     private func formatTime(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm"
+        formatter.timeStyle = .short
+        formatter.locale = Locale.current
         return formatter.string(from: date)
     }
 }
@@ -549,13 +550,14 @@ struct TranscriptionRowView: View {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
-        formatter.locale = Locale(identifier: "pt_BR")
+        formatter.locale = Locale.current
         return formatter.string(from: metadata.createdAt)
     }
 
     private var formattedTime: String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm"
+        formatter.timeStyle = .short
+        formatter.locale = Locale.current
         return formatter.string(from: metadata.createdAt)
     }
 

@@ -4,8 +4,12 @@ enum SettingsMotion {
     static let sectionDuration: Double = 0.18
     static let sectionAnimation: Animation = .easeInOut(duration: sectionDuration)
 
-    static func sectionTransition() -> AnyTransition {
-        .move(edge: .top).combined(with: .opacity)
+    static func sectionTransition(reduceMotion: Bool = false) -> AnyTransition {
+        reduceMotion ? .opacity : .move(edge: .top).combined(with: .opacity)
+    }
+
+    static func sectionAnimation(reduceMotion: Bool) -> Animation? {
+        reduceMotion ? nil : sectionAnimation
     }
 }
 
@@ -24,8 +28,21 @@ extension Binding {
 
 extension View {
     @ViewBuilder
-    func settingsPulseSymbolEffect<V: Equatable>(
-        value: V,
+    func settingsAnimated(
+        reduceMotion: Bool,
+        animation: Animation = SettingsMotion.sectionAnimation,
+        value: some Equatable
+    ) -> some View {
+        if reduceMotion {
+            self
+        } else {
+            self.animation(animation, value: value)
+        }
+    }
+
+    @ViewBuilder
+    func settingsPulseSymbolEffect(
+        value: some Equatable,
         reduceMotion: Bool,
         options: SymbolEffectOptions = .repeating
     ) -> some View {

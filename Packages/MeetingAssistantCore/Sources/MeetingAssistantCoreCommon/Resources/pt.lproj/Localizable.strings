@@ -115,7 +115,9 @@
 "settings.meetings.monitoring_access.desc" = "Configure quais apps e alvos web serão monitorados para detectar reuniões automaticamente.";
 "settings.meetings.monitoring_access.button" = "Configurar apps e sites monitorados";
 "settings.meetings.monitoring_access.modal_title" = "Apps e sites monitorados";
-"settings.meetings.monitoring_access.done" = "Done";
+"settings.meetings.monitoring_access.accessibility_hint" = "Abre as configurações de apps e sites monitorados.";
+"settings.meetings.monitoring_access.context_title" = "Escopo de monitoramento";
+"settings.meetings.monitoring_access.context_desc" = "Escolha apps desktop e alvos web que devem acionar a detecção automática de reuniões.";
 "settings.meetings.web_targets.title" = "Alvos Web de Reunião";
 "settings.meetings.web_targets.desc" = "Identifica reuniões pela URL da aba ativa em navegadores compatíveis. O macOS pode pedir permissão de automação para o Meeting Assistant ler essa URL.";
 "settings.meetings.web_targets.empty" = "Nenhum alvo web configurado ainda.";
@@ -214,6 +216,12 @@
 "settings.enhancements.meeting_intelligence_model" = "Modelo de Inteligência de Reunião";
 "settings.enhancements.qa_enabled_desc" = "Ativa o Q&A com evidências nas reuniões salvas.";
 "settings.enhancements.model_warning_desc" = "Configure a chave da API do provedor e escolha um modelo em Modelo de Inteligência de Reunião para executar pós-processamento e Q&A de reunião.";
+"settings.enhancements.provider_model.help" = "Escolha o provedor e o modelo usados no pós-processamento e no Q&A de reuniões.";
+"settings.enhancements.provider_key_missing_title" = "Chave de API do provedor obrigatória";
+"settings.enhancements.provider_key_missing_desc" = "Salve uma chave de API em Integrações antes de selecionar modelos gerenciados pelo provedor.";
+"settings.enhancements.custom_model_placeholder" = "Informe o ID do modelo customizado";
+"settings.enhancements.models_empty_title" = "Nenhum modelo encontrado";
+"settings.enhancements.models_empty_desc" = "Atualize os modelos ou revise a configuração do provedor.";
 
 /* Post-Processing Settings */
 "settings.post_processing.title" = "Pós-Processamento";
@@ -233,6 +241,9 @@
 "settings.post_processing.delete_confirm_message" = "Tem certeza que deseja excluir o prompt \"%@\"? Esta ação não pode ser desfeita.";
 "settings.post_processing.edit_system_guidelines" = "Editar Instruções";
 "settings.post_processing.system_prompt_editor_title" = "Instruções do Sistema";
+"settings.post_processing.system_guidelines.default_summary" = "Diretrizes padrão ativas";
+"settings.post_processing.system_guidelines.custom_summary" = "Diretrizes customizadas ativas";
+"settings.post_processing.system_guidelines.accessibility_hint" = "Abre o editor de Diretrizes do Sistema.";
 "settings.post_processing.duplicate" = "Duplicar";
 "settings.post_processing.select" = "Ativar";
 "settings.post_processing.is_active" = "Ativo";
@@ -377,6 +388,8 @@
 "settings.assistant.fn_key_desc" = "Para usar a tecla Fn sozinha:\n• Abra Configurações do Sistema → Teclado\n• Clique no dropdown \"Pressionar tecla 🌐 para\"\n• Selecione \"Não fazer nada\"\n• Isso permite que o app detecte a tecla Fn";
 "settings.assistant.use_escape" = "Pressione Escape duas vezes para cancelar a gravação do Assistant";
 "settings.assistant.use_enter_stop" = "Pressione Enter uma vez para encerrar a gravação do Assistant e processar";
+"settings.assistant.visual_feedback_desc" = "Ajuste a aparência da borda e execute uma prévia rápida para validar a visibilidade.";
+"settings.assistant.preview_running" = "Prévia em execução…";
 "settings.assistant.integrations.title" = "Integrações";
 "settings.assistant.integrations.description" = "Configure para onde a saída do Assistant deve ser enviada após o processamento por voz.";
 "settings.assistant.integrations.output_mode" = "Modo de Saída";

@@ -15,6 +15,8 @@ public struct PromptSelectionRow<MenuContent: View>: View {
     private let unselectedStrokeColor: Color
     private let showMenu: Bool
     private let preserveMenuSpacing: Bool
+    private let menuAccessibilityLabel: String
+    private let menuAccessibilityHint: String?
     private let menuContent: () -> MenuContent
 
     public init(
@@ -26,6 +28,8 @@ public struct PromptSelectionRow<MenuContent: View>: View {
         unselectedStrokeColor: Color = .clear,
         showMenu: Bool = true,
         preserveMenuSpacing: Bool = false,
+        menuAccessibilityLabel: String,
+        menuAccessibilityHint: String? = nil,
         @ViewBuilder menuContent: @escaping () -> MenuContent
     ) {
         self.iconSystemName = iconSystemName
@@ -36,6 +40,8 @@ public struct PromptSelectionRow<MenuContent: View>: View {
         self.unselectedStrokeColor = unselectedStrokeColor
         self.showMenu = showMenu
         self.preserveMenuSpacing = preserveMenuSpacing
+        self.menuAccessibilityLabel = menuAccessibilityLabel
+        self.menuAccessibilityHint = menuAccessibilityHint
         self.menuContent = menuContent
     }
 
@@ -109,15 +115,12 @@ public struct PromptSelectionRow<MenuContent: View>: View {
     @ViewBuilder
     private var trailingMenu: some View {
         if showMenu {
-            Menu {
+            SettingsContextMenuButton(
+                accessibilityLabel: menuAccessibilityLabel,
+                accessibilityHint: menuAccessibilityHint
+            ) {
                 menuContent()
-            } label: {
-                Image(systemName: "ellipsis.circle")
-                    .foregroundStyle(.secondary)
             }
-            .menuStyle(.borderlessButton)
-            .fixedSize()
-            .highPriorityGesture(TapGesture())
         } else if preserveMenuSpacing {
             Image(systemName: "ellipsis.circle")
                 .foregroundStyle(.secondary)
@@ -133,7 +136,8 @@ public struct PromptSelectionRow<MenuContent: View>: View {
         description: "Description",
         isSelected: true,
         onSelect: {},
-        showMenu: true
+        showMenu: true,
+        menuAccessibilityLabel: "transcription.ai_actions".localized
     ) {
         Button("Select") {}
     }

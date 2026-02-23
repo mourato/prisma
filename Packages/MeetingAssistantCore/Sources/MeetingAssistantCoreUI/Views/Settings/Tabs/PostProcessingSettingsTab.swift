@@ -153,7 +153,8 @@ public struct PostProcessingSettingsTab: View {
             isSelected: isSelected,
             onSelect: {
                 viewModel.selectPrompt(prompt.id)
-            }
+            },
+            menuAccessibilityLabel: "transcription.ai_actions".localized
         ) {
             promptMenuContent(prompt: prompt, isSelected: isSelected)
         }
