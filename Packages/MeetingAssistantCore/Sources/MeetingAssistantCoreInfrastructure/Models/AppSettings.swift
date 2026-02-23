@@ -2117,6 +2117,7 @@ public class AppSettingsStore: ObservableObject {
 
         migrateLegacyMarkdownTargetsToDictationAppRulesIfNeeded()
         migrateLegacyWebTargetBrowsersToDictationAppRulesIfNeeded()
+        backfillEnhancementsSelectionModelsIfNeeded()
         applyLanguage(selectedLanguage)
     }
 
@@ -2653,6 +2654,69 @@ public class AppSettingsStore: ObservableObject {
 
     private func normalizedEnhancementsModelID(_ model: String) -> String {
         model.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    public func backfillEnhancementsSelectionModelsIfNeeded() {
+        var updatedProviderSelectedModels = enhancementsProviderSelectedModels
+        let updatedMeetingSelection = Self.withBackfilledEnhancementsModel(
+            for: enhancementsAISelection,
+            providerSelectedModels: &updatedProviderSelectedModels,
+            legacyConfiguration: aiConfiguration
+        )
+        let updatedDictationSelection = Self.withBackfilledEnhancementsModel(
+            for: enhancementsDictationAISelection,
+            providerSelectedModels: &updatedProviderSelectedModels,
+            legacyConfiguration: aiConfiguration
+        )
+
+        guard updatedMeetingSelection != enhancementsAISelection
+            || updatedDictationSelection != enhancementsDictationAISelection
+            || updatedProviderSelectedModels != enhancementsProviderSelectedModels
+        else {
+            return
+        }
+
+        enhancementsAISelection = updatedMeetingSelection
+        enhancementsDictationAISelection = updatedDictationSelection
+        enhancementsProviderSelectedModels = updatedProviderSelectedModels
+
+        // Persist reconciliation explicitly so startup migrations are stable
+        // even when property observers are not triggered during initialization.
+        save(enhancementsAISelection, forKey: Keys.enhancementsAISelection)
+        save(enhancementsDictationAISelection, forKey: Keys.enhancementsDictationAISelection)
+        save(enhancementsProviderSelectedModels, forKey: Keys.enhancementsProviderSelectedModels)
+    }
+
+    private static func withBackfilledEnhancementsModel(
+        for selection: EnhancementsAISelection,
+        providerSelectedModels: inout [String: String],
+        legacyConfiguration: AIConfiguration
+    ) -> EnhancementsAISelection {
+        let providerKey = selection.provider.rawValue
+        let normalizedSelectedModel = selection.selectedModel.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if !normalizedSelectedModel.isEmpty {
+            providerSelectedModels[providerKey] = normalizedSelectedModel
+            return EnhancementsAISelection(provider: selection.provider, selectedModel: normalizedSelectedModel)
+        }
+
+        if let providerModel = providerSelectedModels[providerKey]?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !providerModel.isEmpty
+        {
+            providerSelectedModels[providerKey] = providerModel
+            return EnhancementsAISelection(provider: selection.provider, selectedModel: providerModel)
+        }
+
+        let normalizedLegacyModel = legacyConfiguration.selectedModel.trimmingCharacters(in: .whitespacesAndNewlines)
+        if legacyConfiguration.provider == selection.provider,
+           !normalizedLegacyModel.isEmpty
+        {
+            providerSelectedModels[providerKey] = normalizedLegacyModel
+            return EnhancementsAISelection(provider: selection.provider, selectedModel: normalizedLegacyModel)
+        }
+
+        providerSelectedModels.removeValue(forKey: providerKey)
+        return EnhancementsAISelection(provider: selection.provider, selectedModel: "")
     }
 
     private func setEnhancementsProviderSelectedModel(_ model: String, for provider: AIProvider) {

@@ -13,6 +13,7 @@ public struct FloatingRecordingIndicatorView: View {
     @ObservedObject var audioMonitor: AudioLevelMonitor
     @ObservedObject private var recordingManager: RecordingManager
     @ObservedObject private var settingsStore: AppSettingsStore
+    private let navigationService = NavigationService.shared
     let style: RecordingIndicatorStyle
     let mode: FloatingRecordingIndicatorMode
     let isAnimationActive: Bool
@@ -93,11 +94,18 @@ public struct FloatingRecordingIndicatorView: View {
                 isPromptSessionArmed = false
             }
 
-            if isRecordingMode, audioMonitor.isSilenceWarningVisible {
-                silenceWarningOverlay
-                    .padding(.top, 2)
-                    .transition(.move(edge: .top).combined(with: .opacity))
+            VStack(spacing: MeetingAssistantDesignSystem.Layout.spacing4) {
+                if let warningDescriptor = postProcessingWarningDescriptor {
+                    postProcessingReadinessWarningOverlay(warningDescriptor)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
+
+                if isRecordingMode, audioMonitor.isSilenceWarningVisible {
+                    silenceWarningOverlay
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
             }
+            .padding(.top, 2)
         }
     }
 
@@ -161,6 +169,48 @@ public struct FloatingRecordingIndicatorView: View {
             }
     }
 
+    private func postProcessingReadinessWarningOverlay(
+        _ descriptor: RecordingIndicatorPostProcessingWarningDescriptor
+    ) -> some View {
+        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.white)
+
+            Text(descriptor.localizedMessage)
+                .font(.caption.bold())
+                .foregroundStyle(.white)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+
+            Button("recording_indicator.post_processing_warning.open_settings".localized) {
+                descriptor.openSettings { section in
+                    navigationService.openSettings(section: section)
+                }
+            }
+            .buttonStyle(.plain)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.white)
+            .underline()
+        }
+        .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing10)
+        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing6)
+        .background(MeetingAssistantDesignSystem.Colors.warning.opacity(0.95))
+        .clipShape(Capsule())
+        .shadow(
+            color: .black.opacity(0.2),
+            radius: MeetingAssistantDesignSystem.Layout.shadowRadiusSmall,
+            x: MeetingAssistantDesignSystem.Layout.shadowX,
+            y: MeetingAssistantDesignSystem.Layout.shadowYSmall
+        )
+        .overlay(
+            Capsule()
+                .strokeBorder(MeetingAssistantDesignSystem.Colors.recordingIndicatorStroke, lineWidth: 1)
+        )
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("recording_indicator.post_processing_warning.open_settings".localized)
+    }
+
     private var divider: some View {
         Rectangle()
             .fill(MeetingAssistantDesignSystem.Colors.overlayDivider)
@@ -215,6 +265,25 @@ public struct FloatingRecordingIndicatorView: View {
             return true
         }
         return false
+    }
+
+    private var isProcessingMode: Bool {
+        if case .processing = mode {
+            return true
+        }
+        return false
+    }
+
+    private var postProcessingWarningDescriptor: RecordingIndicatorPostProcessingWarningDescriptor? {
+        guard isRecordingMode || isProcessingMode else { return nil }
+        guard settingsStore.postProcessingEnabled else { return nil }
+        guard let issue = recordingManager.postProcessingReadinessWarningIssue,
+              let warningMode = recordingManager.postProcessingReadinessWarningMode
+        else {
+            return nil
+        }
+
+        return RecordingIndicatorPostProcessingWarningDescriptor(issue: issue, mode: warningMode)
     }
 
     private var visualizerModeForIndicator: AudioVisualizerMode {
@@ -896,6 +965,45 @@ private struct KeyboardShortcutModifier: ViewModifier {
         } else {
             content
         }
+    }
+}
+
+struct RecordingIndicatorPostProcessingWarningDescriptor: Equatable {
+    let issue: EnhancementsInferenceReadinessIssue
+    let mode: IntelligenceKernelMode
+
+    var settingsSection: String {
+        SettingsSection.enhancements.rawValue
+    }
+
+    var localizedMessage: String {
+        messageKey.localized(with: modeDisplayName)
+    }
+
+    var messageKey: String {
+        switch issue {
+        case .missingModel:
+            "recording_indicator.post_processing_warning.missing_model"
+        case .missingAPIKey:
+            "recording_indicator.post_processing_warning.missing_api_key"
+        case .invalidBaseURL:
+            "recording_indicator.post_processing_warning.invalid_base_url"
+        }
+    }
+
+    private var modeDisplayName: String {
+        switch mode {
+        case .meeting:
+            "recording_indicator.post_processing_warning.mode.meeting".localized
+        case .dictation:
+            "recording_indicator.post_processing_warning.mode.dictation".localized
+        case .assistant:
+            "recording_indicator.post_processing_warning.mode.assistant".localized
+        }
+    }
+
+    func openSettings(using openSection: (String) -> Void) {
+        openSection(settingsSection)
     }
 }
 

@@ -80,4 +80,67 @@ final class AppSettingsStoreAISelectionTests: XCTestCase {
 
         XCTAssertNil(issue)
     }
+
+    func testBackfillEnhancementsSelectionModels_FillsMeetingSelectionFromLegacyConfiguration() {
+        settings.updateAIConfiguration(
+            provider: .openai,
+            baseURL: AIProvider.openai.defaultBaseURL,
+            selectedModel: "gpt-4o-mini"
+        )
+        settings.enhancementsAISelection = EnhancementsAISelection(provider: .openai, selectedModel: " ")
+        settings.enhancementsProviderSelectedModels = [:]
+
+        settings.backfillEnhancementsSelectionModelsIfNeeded()
+
+        XCTAssertEqual(settings.enhancementsAISelection.selectedModel, "gpt-4o-mini")
+        XCTAssertEqual(settings.enhancementsProviderSelectedModels[AIProvider.openai.rawValue], "gpt-4o-mini")
+    }
+
+    func testBackfillEnhancementsSelectionModels_FillsDictationSelectionFromProviderStoredModel() {
+        settings.enhancementsDictationAISelection = EnhancementsAISelection(provider: .anthropic, selectedModel: "")
+        settings.enhancementsProviderSelectedModels = [AIProvider.anthropic.rawValue: "claude-3-7-sonnet"]
+
+        settings.backfillEnhancementsSelectionModelsIfNeeded()
+
+        XCTAssertEqual(settings.enhancementsDictationAISelection.selectedModel, "claude-3-7-sonnet")
+    }
+
+    func testBackfillEnhancementsSelectionModels_AssistantUsesBackfilledDictationSelection() {
+        settings.enhancementsDictationAISelection = EnhancementsAISelection(provider: .openai, selectedModel: "")
+        settings.enhancementsProviderSelectedModels = [AIProvider.openai.rawValue: "gpt-4.1-mini"]
+
+        settings.backfillEnhancementsSelectionModelsIfNeeded()
+
+        let assistantConfiguration = settings.resolvedEnhancementsAIConfiguration(for: .assistant)
+        XCTAssertEqual(assistantConfiguration.provider, .openai)
+        XCTAssertEqual(assistantConfiguration.selectedModel, "gpt-4.1-mini")
+    }
+
+    func testBackfillEnhancementsSelectionModels_DoesNotOverrideExistingSelection() {
+        settings.enhancementsAISelection = EnhancementsAISelection(
+            provider: .openai,
+            selectedModel: "gpt-4.1-mini"
+        )
+        settings.enhancementsProviderSelectedModels = [AIProvider.openai.rawValue: "gpt-4o-mini"]
+
+        settings.backfillEnhancementsSelectionModelsIfNeeded()
+
+        XCTAssertEqual(settings.enhancementsAISelection.selectedModel, "gpt-4.1-mini")
+        XCTAssertEqual(settings.enhancementsProviderSelectedModels[AIProvider.openai.rawValue], "gpt-4.1-mini")
+    }
+
+    func testBackfillEnhancementsSelectionModels_DoesNotFillWhenNoValidLegacySourceExists() {
+        settings.updateAIConfiguration(
+            provider: .openai,
+            baseURL: AIProvider.openai.defaultBaseURL,
+            selectedModel: "   "
+        )
+        settings.enhancementsAISelection = EnhancementsAISelection(provider: .google, selectedModel: " ")
+        settings.enhancementsProviderSelectedModels = [:]
+
+        settings.backfillEnhancementsSelectionModelsIfNeeded()
+
+        XCTAssertEqual(settings.enhancementsAISelection.selectedModel, "")
+        XCTAssertNil(settings.enhancementsProviderSelectedModels[AIProvider.google.rawValue])
+    }
 }
