@@ -43,7 +43,9 @@ public final class TranscribeAudioUseCase: Sendable {
         postProcessingModel: String? = nil,
         autoDetectMeetingType: Bool = false,
         availablePrompts: [DomainPostProcessingPrompt] = [],
-        postProcessingContext: String? = nil
+        postProcessingContext: String? = nil,
+        kernelMode: IntelligenceKernelMode = .meeting,
+        dictationStructuredPostProcessingEnabled: Bool = false
     ) async throws -> TranscriptionEntity {
         // Verificar saúde do serviço
         guard try await transcriptionRepository.healthCheck() else {
@@ -94,25 +96,43 @@ public final class TranscribeAudioUseCase: Sendable {
             defer {
                 postProcessingDuration = Date().timeIntervalSince(postProcessingStartTime)
             }
+            let useStructuredPipeline = shouldUseStructuredPostProcessing(
+                mode: kernelMode,
+                dictationStructuredPostProcessingEnabled: dictationStructuredPostProcessingEnabled
+            )
 
             do {
                 if let prompt = postProcessingPrompt {
                     // Prompt específico fornecido
-                    let structuredResult = try await postProcessingRepo.processTranscriptionStructured(
-                        postProcessingInput,
-                        with: prompt
-                    )
-                    processedContent = structuredResult.processedText
-                    canonicalSummary = recalibrateCanonicalSummary(
-                        structuredResult.canonicalSummary,
-                        with: qualityProfile
-                    )
+                    if useStructuredPipeline {
+                        let structuredResult = try await postProcessingRepo.processTranscriptionStructured(
+                            postProcessingInput,
+                            with: prompt,
+                            mode: kernelMode
+                        )
+                        processedContent = structuredResult.processedText
+                        canonicalSummary = recalibrateCanonicalSummary(
+                            structuredResult.canonicalSummary,
+                            with: qualityProfile
+                        )
+                    } else {
+                        processedContent = try await postProcessingRepo.processTranscription(
+                            postProcessingInput,
+                            with: prompt,
+                            mode: kernelMode
+                        )
+                        canonicalSummary = nil
+                    }
                     promptId = prompt.id
                     promptTitle = prompt.title
                 } else {
                     if autoDetectMeetingType, !availablePrompts.isEmpty {
                         // Autodetecção: classifica o tipo e tenta escolher o prompt mais apropriado.
-                        let classification = try await classifyMeeting(text: postProcessingInput, repository: postProcessingRepo)
+                        let classification = try await classifyMeeting(
+                            text: postProcessingInput,
+                            mode: kernelMode,
+                            repository: postProcessingRepo
+                        )
                         meetingType = classification
 
                         let normalizedType = classification?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -120,57 +140,109 @@ public final class TranscribeAudioUseCase: Sendable {
                            normalizedType != "general",
                            let match = findPrompt(for: normalizedType, in: availablePrompts)
                         {
-                            let structuredResult = try await postProcessingRepo.processTranscriptionStructured(
-                                postProcessingInput,
-                                with: match
-                            )
-                            processedContent = structuredResult.processedText
-                            canonicalSummary = recalibrateCanonicalSummary(
-                                structuredResult.canonicalSummary,
-                                with: qualityProfile
-                            )
+                            if useStructuredPipeline {
+                                let structuredResult = try await postProcessingRepo.processTranscriptionStructured(
+                                    postProcessingInput,
+                                    with: match,
+                                    mode: kernelMode
+                                )
+                                processedContent = structuredResult.processedText
+                                canonicalSummary = recalibrateCanonicalSummary(
+                                    structuredResult.canonicalSummary,
+                                    with: qualityProfile
+                                )
+                            } else {
+                                processedContent = try await postProcessingRepo.processTranscription(
+                                    postProcessingInput,
+                                    with: match,
+                                    mode: kernelMode
+                                )
+                                canonicalSummary = nil
+                            }
                             promptId = match.id
                             promptTitle = match.title
                         } else if let fallback = defaultPostProcessingPrompt {
-                            let structuredResult = try await postProcessingRepo.processTranscriptionStructured(
-                                postProcessingInput,
-                                with: fallback
-                            )
-                            processedContent = structuredResult.processedText
-                            canonicalSummary = recalibrateCanonicalSummary(
-                                structuredResult.canonicalSummary,
-                                with: qualityProfile
-                            )
+                            if useStructuredPipeline {
+                                let structuredResult = try await postProcessingRepo.processTranscriptionStructured(
+                                    postProcessingInput,
+                                    with: fallback,
+                                    mode: kernelMode
+                                )
+                                processedContent = structuredResult.processedText
+                                canonicalSummary = recalibrateCanonicalSummary(
+                                    structuredResult.canonicalSummary,
+                                    with: qualityProfile
+                                )
+                            } else {
+                                processedContent = try await postProcessingRepo.processTranscription(
+                                    postProcessingInput,
+                                    with: fallback,
+                                    mode: kernelMode
+                                )
+                                canonicalSummary = nil
+                            }
                             promptId = fallback.id
                             promptTitle = fallback.title
                         } else {
-                            let structuredResult = try await postProcessingRepo.processTranscriptionStructured(postProcessingInput)
+                            if useStructuredPipeline {
+                                let structuredResult = try await postProcessingRepo.processTranscriptionStructured(
+                                    postProcessingInput,
+                                    mode: kernelMode
+                                )
+                                processedContent = structuredResult.processedText
+                                canonicalSummary = recalibrateCanonicalSummary(
+                                    structuredResult.canonicalSummary,
+                                    with: qualityProfile
+                                )
+                            } else {
+                                processedContent = try await postProcessingRepo.processTranscription(
+                                    postProcessingInput,
+                                    mode: kernelMode
+                                )
+                                canonicalSummary = nil
+                            }
+                        }
+                    } else if let fallback = defaultPostProcessingPrompt {
+                        // Sem autodetecção: usar prompt default (quando fornecido).
+                        if useStructuredPipeline {
+                            let structuredResult = try await postProcessingRepo.processTranscriptionStructured(
+                                postProcessingInput,
+                                with: fallback,
+                                mode: kernelMode
+                            )
                             processedContent = structuredResult.processedText
                             canonicalSummary = recalibrateCanonicalSummary(
                                 structuredResult.canonicalSummary,
                                 with: qualityProfile
                             )
+                        } else {
+                            processedContent = try await postProcessingRepo.processTranscription(
+                                postProcessingInput,
+                                with: fallback,
+                                mode: kernelMode
+                            )
+                            canonicalSummary = nil
                         }
-                    } else if let fallback = defaultPostProcessingPrompt {
-                        // Sem autodetecção: usar prompt default (quando fornecido).
-                        let structuredResult = try await postProcessingRepo.processTranscriptionStructured(
-                            postProcessingInput,
-                            with: fallback
-                        )
-                        processedContent = structuredResult.processedText
-                        canonicalSummary = recalibrateCanonicalSummary(
-                            structuredResult.canonicalSummary,
-                            with: qualityProfile
-                        )
                         promptId = fallback.id
                         promptTitle = fallback.title
                     } else {
-                        let structuredResult = try await postProcessingRepo.processTranscriptionStructured(postProcessingInput)
-                        processedContent = structuredResult.processedText
-                        canonicalSummary = recalibrateCanonicalSummary(
-                            structuredResult.canonicalSummary,
-                            with: qualityProfile
-                        )
+                        if useStructuredPipeline {
+                            let structuredResult = try await postProcessingRepo.processTranscriptionStructured(
+                                postProcessingInput,
+                                mode: kernelMode
+                            )
+                            processedContent = structuredResult.processedText
+                            canonicalSummary = recalibrateCanonicalSummary(
+                                structuredResult.canonicalSummary,
+                                with: qualityProfile
+                            )
+                        } else {
+                            processedContent = try await postProcessingRepo.processTranscription(
+                                postProcessingInput,
+                                mode: kernelMode
+                            )
+                            canonicalSummary = nil
+                        }
                     }
                 }
             } catch {
@@ -213,7 +285,11 @@ public final class TranscribeAudioUseCase: Sendable {
 
     // MARK: - Private Helpers
 
-    private func classifyMeeting(text: String, repository: PostProcessingRepository) async throws -> String? {
+    private func classifyMeeting(
+        text: String,
+        mode: IntelligenceKernelMode,
+        repository: PostProcessingRepository
+    ) async throws -> String? {
         let classifierPrompt = DomainPostProcessingPrompt(
             id: UUID(),
             title: "Classifier",
@@ -226,8 +302,24 @@ public final class TranscribeAudioUseCase: Sendable {
             isDefault: false
         )
 
-        let jsonString = try await repository.processTranscription(text, with: classifierPrompt)
+        let jsonString = try await repository.processTranscription(
+            text,
+            with: classifierPrompt,
+            mode: mode
+        )
         return parseMeetingType(from: jsonString)
+    }
+
+    private func shouldUseStructuredPostProcessing(
+        mode: IntelligenceKernelMode,
+        dictationStructuredPostProcessingEnabled: Bool
+    ) -> Bool {
+        switch mode {
+        case .meeting:
+            true
+        case .dictation, .assistant:
+            dictationStructuredPostProcessingEnabled
+        }
     }
 
     private func findPrompt(for type: String, in prompts: [DomainPostProcessingPrompt]) -> DomainPostProcessingPrompt? {

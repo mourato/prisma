@@ -9,13 +9,31 @@ import MeetingAssistantCoreInfrastructure
 @MainActor
 public final class PostProcessingRepositoryAdapter: PostProcessingRepository {
     private let postProcessingService: any PostProcessingServiceProtocol
+    private let settings: AppSettingsStore
 
     public init(postProcessingService: any PostProcessingServiceProtocol) {
         self.postProcessingService = postProcessingService
+        settings = .shared
     }
 
     public func processTranscription(_ transcription: String) async throws -> String {
         try await postProcessingService.processTranscription(transcription)
+    }
+
+    public func processTranscription(
+        _ transcription: String,
+        mode: IntelligenceKernelMode
+    ) async throws -> String {
+        if let prompt = selectedPrompt(for: mode) {
+            return try await postProcessingService.processTranscription(
+                transcription,
+                with: prompt,
+                mode: mode,
+                systemPromptOverride: nil
+            )
+        }
+
+        return try await postProcessingService.processTranscription(transcription)
     }
 
     public func processTranscription(
@@ -32,8 +50,42 @@ public final class PostProcessingRepositoryAdapter: PostProcessingRepository {
         return try await postProcessingService.processTranscription(transcription, with: legacyPrompt)
     }
 
+    public func processTranscription(
+        _ transcription: String,
+        with prompt: DomainPostProcessingPrompt,
+        mode: IntelligenceKernelMode
+    ) async throws -> String {
+        let legacyPrompt = PostProcessingPrompt(
+            id: prompt.id,
+            title: prompt.title,
+            promptText: prompt.content,
+            isActive: true
+        )
+        return try await postProcessingService.processTranscription(
+            transcription,
+            with: legacyPrompt,
+            mode: mode,
+            systemPromptOverride: nil
+        )
+    }
+
     public func processTranscriptionStructured(_ transcription: String) async throws -> DomainPostProcessingResult {
         try await postProcessingService.processTranscriptionStructured(transcription)
+    }
+
+    public func processTranscriptionStructured(
+        _ transcription: String,
+        mode: IntelligenceKernelMode
+    ) async throws -> DomainPostProcessingResult {
+        if let prompt = selectedPrompt(for: mode) {
+            return try await postProcessingService.processTranscriptionStructured(
+                transcription,
+                with: prompt,
+                mode: mode
+            )
+        }
+
+        return try await postProcessingService.processTranscriptionStructured(transcription)
     }
 
     public func processTranscriptionStructured(
@@ -47,5 +99,32 @@ public final class PostProcessingRepositoryAdapter: PostProcessingRepository {
             isActive: true
         )
         return try await postProcessingService.processTranscriptionStructured(transcription, with: legacyPrompt)
+    }
+
+    public func processTranscriptionStructured(
+        _ transcription: String,
+        with prompt: DomainPostProcessingPrompt,
+        mode: IntelligenceKernelMode
+    ) async throws -> DomainPostProcessingResult {
+        let legacyPrompt = PostProcessingPrompt(
+            id: prompt.id,
+            title: prompt.title,
+            promptText: prompt.content,
+            isActive: true
+        )
+        return try await postProcessingService.processTranscriptionStructured(
+            transcription,
+            with: legacyPrompt,
+            mode: mode
+        )
+    }
+
+    private func selectedPrompt(for mode: IntelligenceKernelMode) -> PostProcessingPrompt? {
+        switch mode {
+        case .meeting:
+            settings.selectedPrompt
+        case .dictation, .assistant:
+            settings.selectedDictationPrompt ?? .cleanTranscription
+        }
     }
 }

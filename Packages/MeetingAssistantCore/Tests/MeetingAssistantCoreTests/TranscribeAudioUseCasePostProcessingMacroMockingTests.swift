@@ -21,8 +21,10 @@ final class TranscribeAudioPostProcessingTests: XCTestCase {
         transcriptionRepository.transcribeHandler = { _, _ in response }
 
         let prompt = DomainPostProcessingPrompt(title: "Summarize", content: "Summarize this")
-        postProcessingRepository.processTranscriptionStructured_2Handler = { _, _ in
-            DomainPostProcessingResult(
+        var receivedPrompt: DomainPostProcessingPrompt?
+        postProcessingRepository.processTranscriptionStructured_4Handler = { _, providedPrompt, _ in
+            receivedPrompt = providedPrompt
+            return DomainPostProcessingResult(
                 processedText: "Processed transcript",
                 canonicalSummary: CanonicalSummary(
                     summary: "Processed transcript",
@@ -60,8 +62,8 @@ final class TranscribeAudioPostProcessingTests: XCTestCase {
         XCTAssertNotNil(transcription.qualityProfile)
         XCTAssertEqual(postProcessingRepository.processTranscriptionCalls.count, 0)
         XCTAssertEqual(postProcessingRepository.processTranscription_2Calls.count, 0)
-        XCTAssertEqual(postProcessingRepository.processTranscriptionStructured_2Calls.count, 1)
-        XCTAssertEqual(postProcessingRepository.processTranscriptionStructured_2Calls.first?.prompt.id, prompt.id)
+        XCTAssertEqual(postProcessingRepository.processTranscriptionStructured_4Calls.count, 1)
+        XCTAssertEqual(receivedPrompt?.id, prompt.id)
     }
 
     func testExecuteWithContext_MetadataIsWrappedInDedicatedBlock() async throws {
@@ -81,7 +83,7 @@ final class TranscribeAudioPostProcessingTests: XCTestCase {
         }
 
         var receivedInput: String?
-        postProcessingRepository.processTranscriptionStructured_2Handler = { input, _ in
+        postProcessingRepository.processTranscriptionStructured_4Handler = { input, _, _ in
             receivedInput = input
             return DomainPostProcessingResult(
                 processedText: "Processed transcript",
@@ -125,6 +127,140 @@ final class TranscribeAudioPostProcessingTests: XCTestCase {
         XCTAssertTrue(input.contains("- Active app: Safari"))
     }
 
+    func testExecute_DictationStructuredDisabled_UsesFastPipelineWithoutCanonicalSummary() async throws {
+        let transcriptionRepository = MeetingAssistantCoreDomain.MacroMockTranscriptionRepository()
+        let storageRepository = MeetingAssistantCoreDomain.MacroMockTranscriptionStorageRepository()
+        let postProcessingRepository = MeetingAssistantCoreDomain.MacroMockPostProcessingRepository()
+
+        transcriptionRepository.healthCheckHandler = { () async throws -> Bool in true }
+        transcriptionRepository.transcribeHandler = { _, _ in
+            DomainTranscriptionResponse(
+                text: "Raw dictation",
+                language: "en",
+                durationSeconds: 1.0,
+                model: "test-model",
+                processedAt: "now"
+            )
+        }
+
+        var receivedMode: IntelligenceKernelMode?
+        postProcessingRepository.processTranscription_4Handler = { _, _, mode in
+            receivedMode = mode
+            return "Fast dictation"
+        }
+        storageRepository.saveTranscriptionHandler = { _ in }
+
+        let useCase = TranscribeAudioUseCase(
+            transcriptionRepository: transcriptionRepository,
+            transcriptionStorageRepository: storageRepository,
+            postProcessingRepository: postProcessingRepository
+        )
+
+        let transcription = try await useCase.execute(
+            audioURL: URL(fileURLWithPath: "/tmp/test.wav"),
+            meeting: MeetingEntity(app: .unknown),
+            applyPostProcessing: true,
+            postProcessingPrompt: DomainPostProcessingPrompt(title: "Dictation", content: "Clean this"),
+            kernelMode: .dictation,
+            dictationStructuredPostProcessingEnabled: false
+        )
+
+        XCTAssertEqual(transcription.text, "Fast dictation")
+        XCTAssertNil(transcription.canonicalSummary)
+        XCTAssertEqual(receivedMode, .dictation)
+        XCTAssertEqual(postProcessingRepository.processTranscription_4Calls.count, 1)
+        XCTAssertEqual(postProcessingRepository.processTranscriptionStructured_4Calls.count, 0)
+    }
+
+    func testExecute_DictationStructuredEnabled_UsesStructuredPipeline() async throws {
+        let transcriptionRepository = MeetingAssistantCoreDomain.MacroMockTranscriptionRepository()
+        let storageRepository = MeetingAssistantCoreDomain.MacroMockTranscriptionStorageRepository()
+        let postProcessingRepository = MeetingAssistantCoreDomain.MacroMockPostProcessingRepository()
+
+        transcriptionRepository.healthCheckHandler = { () async throws -> Bool in true }
+        transcriptionRepository.transcribeHandler = { _, _ in
+            DomainTranscriptionResponse(
+                text: "Raw dictation",
+                language: "en",
+                durationSeconds: 1.0,
+                model: "test-model",
+                processedAt: "now"
+            )
+        }
+
+        postProcessingRepository.processTranscriptionStructured_4Handler = { _, _, mode in
+            XCTAssertEqual(mode, .dictation)
+            return DomainPostProcessingResult(
+                processedText: "Structured dictation",
+                canonicalSummary: CanonicalSummary(summary: "Structured dictation"),
+                outputState: .structured
+            )
+        }
+        storageRepository.saveTranscriptionHandler = { _ in }
+
+        let useCase = TranscribeAudioUseCase(
+            transcriptionRepository: transcriptionRepository,
+            transcriptionStorageRepository: storageRepository,
+            postProcessingRepository: postProcessingRepository
+        )
+
+        let transcription = try await useCase.execute(
+            audioURL: URL(fileURLWithPath: "/tmp/test.wav"),
+            meeting: MeetingEntity(app: .unknown),
+            applyPostProcessing: true,
+            postProcessingPrompt: DomainPostProcessingPrompt(title: "Dictation", content: "JSON"),
+            kernelMode: .dictation,
+            dictationStructuredPostProcessingEnabled: true
+        )
+
+        XCTAssertEqual(transcription.text, "Structured dictation")
+        XCTAssertEqual(transcription.canonicalSummary?.summary, "Structured dictation")
+        XCTAssertEqual(postProcessingRepository.processTranscription_4Calls.count, 0)
+        XCTAssertEqual(postProcessingRepository.processTranscriptionStructured_4Calls.count, 1)
+    }
+
+    func testExecute_DictationFastPipelineFailure_FallsBackToRawASR() async throws {
+        let transcriptionRepository = MeetingAssistantCoreDomain.MacroMockTranscriptionRepository()
+        let storageRepository = MeetingAssistantCoreDomain.MacroMockTranscriptionStorageRepository()
+        let postProcessingRepository = MeetingAssistantCoreDomain.MacroMockPostProcessingRepository()
+
+        transcriptionRepository.healthCheckHandler = { () async throws -> Bool in true }
+        transcriptionRepository.transcribeHandler = { _, _ in
+            DomainTranscriptionResponse(
+                text: "Raw dictation fallback",
+                language: "en",
+                durationSeconds: 1.0,
+                model: "test-model",
+                processedAt: "now"
+            )
+        }
+
+        postProcessingRepository.processTranscription_4Handler = { _, _, _ in
+            struct MockFailure: Error {}
+            throw MockFailure()
+        }
+        storageRepository.saveTranscriptionHandler = { _ in }
+
+        let useCase = TranscribeAudioUseCase(
+            transcriptionRepository: transcriptionRepository,
+            transcriptionStorageRepository: storageRepository,
+            postProcessingRepository: postProcessingRepository
+        )
+
+        let transcription = try await useCase.execute(
+            audioURL: URL(fileURLWithPath: "/tmp/test.wav"),
+            meeting: MeetingEntity(app: .unknown),
+            applyPostProcessing: true,
+            postProcessingPrompt: DomainPostProcessingPrompt(title: "Dictation", content: "Clean this"),
+            kernelMode: .dictation,
+            dictationStructuredPostProcessingEnabled: false
+        )
+
+        XCTAssertEqual(transcription.text, "Raw dictation fallback")
+        XCTAssertNil(transcription.processedContent)
+        XCTAssertNil(transcription.canonicalSummary)
+    }
+
     func testExecuteWithDeterministicFallback_PersistsCanonicalSummaryTrustFlags() async throws {
         let transcriptionRepository = MeetingAssistantCoreDomain.MacroMockTranscriptionRepository()
         let storageRepository = MeetingAssistantCoreDomain.MacroMockTranscriptionStorageRepository()
@@ -142,7 +278,7 @@ final class TranscribeAudioPostProcessingTests: XCTestCase {
         }
 
         let prompt = DomainPostProcessingPrompt(title: "Summarize", content: "Summarize this")
-        postProcessingRepository.processTranscriptionStructured_2Handler = { _, _ in
+        postProcessingRepository.processTranscriptionStructured_4Handler = { _, _, _ in
             DomainPostProcessingResult(
                 processedText: "Fallback summary",
                 canonicalSummary: CanonicalSummary(
@@ -197,7 +333,7 @@ final class TranscribeAudioPostProcessingTests: XCTestCase {
         }
 
         var receivedInput: String?
-        postProcessingRepository.processTranscriptionStructured_2Handler = { input, _ in
+        postProcessingRepository.processTranscriptionStructured_4Handler = { input, _, _ in
             receivedInput = input
             return DomainPostProcessingResult(
                 processedText: "Processed transcript",

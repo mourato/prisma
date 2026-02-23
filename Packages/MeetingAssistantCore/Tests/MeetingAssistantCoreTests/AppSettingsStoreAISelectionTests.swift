@@ -58,6 +58,28 @@ final class AppSettingsStoreAISelectionTests: XCTestCase {
         XCTAssertTrue(settings.meetingQnAEnabled)
     }
 
+    func testResetDefaultsDisablesDictationStructuredPostProcessing() {
+        settings.dictationStructuredPostProcessingEnabled = true
+
+        settings.resetToDefaults()
+
+        XCTAssertFalse(settings.dictationStructuredPostProcessingEnabled)
+    }
+
+    func testDictationStructuredPostProcessingSettingIsPersisted() {
+        settings.dictationStructuredPostProcessingEnabled = true
+        XCTAssertEqual(
+            UserDefaults.standard.object(forKey: "dictationStructuredPostProcessingEnabled") as? Bool,
+            true
+        )
+
+        settings.dictationStructuredPostProcessingEnabled = false
+        XCTAssertEqual(
+            UserDefaults.standard.object(forKey: "dictationStructuredPostProcessingEnabled") as? Bool,
+            false
+        )
+    }
+
     func testUpdateEnhancementsProviderClearsSelectedModel() {
         settings.enhancementsAISelection = EnhancementsAISelection(
             provider: .openai,

@@ -954,7 +954,9 @@ extension RecordingManager {
                 postProcessingModel: config.postProcessingModel,
                 autoDetectMeetingType: config.autoDetectMeetingType,
                 availablePrompts: config.availablePrompts,
-                postProcessingContext: config.postProcessingContext
+                postProcessingContext: config.postProcessingContext,
+                kernelMode: config.kernelMode,
+                dictationStructuredPostProcessingEnabled: config.dictationStructuredPostProcessingEnabled
             )
 
             let transcription = convertToModel(transcriptionEntity, audioDuration: audioDuration, transcriptionStart: transcriptionStart)
@@ -1001,7 +1003,9 @@ extension RecordingManager {
     }
 
     private struct UseCaseConfig {
+        let kernelMode: IntelligenceKernelMode
         let applyPostProcessing: Bool
+        let dictationStructuredPostProcessingEnabled: Bool
         let postProcessingPrompt: DomainPostProcessingPrompt?
         let defaultPostProcessingPrompt: DomainPostProcessingPrompt?
         let postProcessingModel: String?
@@ -1078,7 +1082,9 @@ extension RecordingManager {
                 ]
             )
             return UseCaseConfig(
+                kernelMode: kernelMode,
                 applyPostProcessing: false,
+                dictationStructuredPostProcessingEnabled: settings.dictationStructuredPostProcessingEnabled,
                 postProcessingPrompt: nil,
                 defaultPostProcessingPrompt: nil,
                 postProcessingModel: nil,
@@ -1112,7 +1118,9 @@ extension RecordingManager {
         )
 
         return UseCaseConfig(
+            kernelMode: kernelMode,
             applyPostProcessing: true,
+            dictationStructuredPostProcessingEnabled: settings.dictationStructuredPostProcessingEnabled,
             postProcessingPrompt: prompt,
             defaultPostProcessingPrompt: autoDetectMeetingType ? defaultMeetingPrompt : nil,
             postProcessingModel: settings.resolvedEnhancementsAIConfiguration(for: kernelMode).selectedModel,
@@ -1842,7 +1850,8 @@ extension RecordingManager {
             prompt: prompt,
             settings: settings,
             qualityProfile: qualityProfile,
-            isDictation: isDictation
+            kernelMode: kernelMode,
+            dictationStructuredPostProcessingEnabled: settings.dictationStructuredPostProcessingEnabled
         )
     }
 
@@ -1929,28 +1938,59 @@ extension RecordingManager {
         prompt: PostProcessingPrompt,
         settings: AppSettingsStore,
         qualityProfile: TranscriptionQualityProfile?,
-        isDictation: Bool
+        kernelMode: IntelligenceKernelMode,
+        dictationStructuredPostProcessingEnabled: Bool
     ) async -> PostProcessingResult {
         do {
             let startTime = Date()
-            let kernelMode: IntelligenceKernelMode = isDictation ? .dictation : .meeting
-            let structuredResult = try await postProcessingService.processTranscriptionStructured(
-                postProcessingInput,
-                with: prompt,
-                mode: kernelMode
-            )
+            let useStructuredPipeline = kernelMode == .meeting || dictationStructuredPostProcessingEnabled
+            let pipeline = useStructuredPipeline ? "structured" : "fast"
+            let processedContent: String
+            let canonicalSummary: CanonicalSummary?
+
+            if useStructuredPipeline {
+                let structuredResult = try await postProcessingService.processTranscriptionStructured(
+                    postProcessingInput,
+                    with: prompt,
+                    mode: kernelMode
+                )
+                processedContent = structuredResult.processedText
+                canonicalSummary = qualityProfile.map { profile in
+                    recalibrateCanonicalSummary(structuredResult.canonicalSummary, with: profile)
+                } ?? structuredResult.canonicalSummary
+                AppLogger.info(
+                    "Post-processing complete",
+                    category: .recordingManager,
+                    extra: [
+                        "mode": kernelMode.rawValue,
+                        "pipeline": pipeline,
+                        "prompt": prompt.title,
+                        "output_state": structuredResult.outputState.rawValue,
+                    ]
+                )
+            } else {
+                processedContent = try await postProcessingService.processTranscription(
+                    postProcessingInput,
+                    with: prompt,
+                    mode: kernelMode,
+                    systemPromptOverride: nil
+                )
+                canonicalSummary = nil
+                AppLogger.info(
+                    "Post-processing complete",
+                    category: .recordingManager,
+                    extra: [
+                        "mode": kernelMode.rawValue,
+                        "pipeline": pipeline,
+                        "prompt": prompt.title,
+                    ]
+                )
+            }
+
             let duration = Date().timeIntervalSince(startTime)
             let model = settings.resolvedEnhancementsAIConfiguration(for: kernelMode).selectedModel
-            let canonicalSummary = qualityProfile.map { profile in
-                recalibrateCanonicalSummary(structuredResult.canonicalSummary, with: profile)
-            } ?? structuredResult.canonicalSummary
-            AppLogger.info(
-                "Post-processing complete",
-                category: .recordingManager,
-                extra: ["prompt": prompt.title, "output_state": structuredResult.outputState.rawValue]
-            )
             return PostProcessingResult(
-                processedContent: structuredResult.processedText,
+                processedContent: processedContent,
                 canonicalSummary: canonicalSummary,
                 promptId: prompt.id,
                 promptTitle: prompt.title,

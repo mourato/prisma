@@ -14,15 +14,37 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
         /// Maximum tokens for AI response (suitable for long meeting notes).
         static let maxTokens = 4_096
         /// Request timeout in seconds (AI responses can be slow for long texts).
-        static let requestTimeoutSeconds: TimeInterval = 120
+        static let meetingRequestTimeoutSeconds: TimeInterval = 120
+        /// Dictation budget for the main post-processing request.
+        static let dictationRequestTimeoutSeconds: TimeInterval = 25
+        /// Dictation budget for timeout fallback fast request.
+        static let dictationFallbackTimeoutSeconds: TimeInterval = 8
         /// Anthropic API version header value.
         static let anthropicAPIVersion = "2023-06-01"
         /// Maximum input characters to prevent excessive API costs.
         static let maxInputCharacters = 100_000
-        /// Maximum retry attempts for recoverable errors.
-        static let maxRetryAttempts = 3
+        /// Retry count for meeting profile (3 attempts total).
+        static let meetingRetryCount = 2
         /// Base delay for exponential backoff (in nanoseconds).
         static let baseRetryDelay: UInt64 = 1_000_000_000 // 1 second
+    }
+
+    private struct RequestProfile {
+        let name: String
+        let timeoutSeconds: TimeInterval
+        let retryCount: Int
+        let useStructuredPipeline: Bool
+        let useRepair: Bool
+        let pipeline: String
+    }
+
+    private struct RequestTraceContext {
+        let mode: IntelligenceKernelMode
+        let provider: AIProvider
+        let model: String
+        let promptId: String
+        let promptTitle: String
+        let pipeline: String
     }
 
     @Published public private(set) var isProcessing = false
@@ -103,26 +125,92 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
             throw PostProcessingError.noAPIConfigured
         }
 
+        let requestProfile = profile(for: mode, prefersStructuredPipeline: false)
+        let requestConfig = settings.resolvedEnhancementsAIConfiguration(for: mode)
+        let traceContext = makeTraceContext(
+            mode: mode,
+            provider: requestConfig.provider,
+            model: requestConfig.selectedModel,
+            prompt: prompt,
+            pipeline: requestProfile.pipeline
+        )
+
         isProcessing = true
         lastError = nil
-        defer { isProcessing = false }
+        let startedAt = Date()
+        defer {
+            isProcessing = false
+            reportDictationPostProcessingDurationIfNeeded(mode: mode, startedAt: startedAt)
+        }
 
         do {
             let result = try await sendToAI(
                 transcription: transcription,
                 prompt: prompt,
                 mode: mode,
-                systemPromptOverride: systemPromptOverride
+                systemPromptOverride: systemPromptOverride,
+                requestProfile: requestProfile,
+                traceContext: traceContext
             )
-            AppLogger.info("Post-processing completed", category: .transcriptionEngine)
+            AppLogger.info(
+                "Post-processing completed",
+                category: .transcriptionEngine,
+                extra: traceExtra(
+                    from: traceContext,
+                    attempt: 1,
+                    elapsedMilliseconds: Date().timeIntervalSince(startedAt) * 1_000
+                )
+            )
             return result
-        } catch let error as PostProcessingError {
-            lastError = error
-            throw error
         } catch {
-            let processingError = PostProcessingError.requestFailed(error)
-            lastError = processingError
-            throw processingError
+            let processingError = normalizePostProcessingError(error)
+
+            guard shouldTriggerDictationTimeoutFallback(for: mode, error: processingError) else {
+                lastError = processingError
+                throw processingError
+            }
+
+            PerformanceMonitor.shared.reportMetric(
+                name: "dictation_timeout_count",
+                value: 1,
+                unit: "count"
+            )
+            PerformanceMonitor.shared.reportMetric(
+                name: "dictation_fallback_triggered",
+                value: 1,
+                unit: "count"
+            )
+
+            let fallbackProfile = dictationFallbackProfile()
+            let fallbackPrompt = PostProcessingPrompt.cleanTranscription
+            let fallbackTraceContext = makeTraceContext(
+                mode: mode,
+                provider: requestConfig.provider,
+                model: requestConfig.selectedModel,
+                prompt: fallbackPrompt,
+                pipeline: fallbackProfile.pipeline
+            )
+
+            AppLogger.warning(
+                "Dictation post-processing timed out; running fast fallback",
+                category: .transcriptionEngine,
+                extra: traceExtra(from: traceContext, attempt: 1, elapsedMilliseconds: Date().timeIntervalSince(startedAt) * 1_000)
+            )
+
+            do {
+                return try await sendToAI(
+                    transcription: transcription,
+                    prompt: fallbackPrompt,
+                    mode: mode,
+                    systemPromptOverride: nil,
+                    requestProfile: fallbackProfile,
+                    traceContext: fallbackTraceContext
+                )
+            } catch {
+                let fallbackError = normalizePostProcessingError(error)
+                lastError = fallbackError
+                throw fallbackError
+            }
         }
     }
 
@@ -184,31 +272,121 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
             throw PostProcessingError.noAPIConfigured
         }
 
+        let requestProfile = profile(for: mode, prefersStructuredPipeline: true)
+        let requestConfig = settings.resolvedEnhancementsAIConfiguration(for: mode)
+        let traceContext = makeTraceContext(
+            mode: mode,
+            provider: requestConfig.provider,
+            model: requestConfig.selectedModel,
+            prompt: prompt,
+            pipeline: requestProfile.pipeline
+        )
+
+        if !requestProfile.useStructuredPipeline {
+            let fastResult = try await processTranscription(
+                transcription,
+                with: prompt,
+                mode: mode,
+                systemPromptOverride: systemPromptOverride
+            )
+            let fallbackSummary = summaryFallbackBuilder.build(
+                providerOutput: fastResult,
+                transcription: transcription
+            )
+            return DomainPostProcessingResult(
+                processedText: fastResult,
+                canonicalSummary: fallbackSummary.canonicalSummary,
+                outputState: .deterministicFallback
+            )
+        }
+
         isProcessing = true
         lastError = nil
-        defer { isProcessing = false }
+        let startedAt = Date()
+        defer {
+            isProcessing = false
+            reportDictationPostProcessingDurationIfNeeded(mode: mode, startedAt: startedAt)
+        }
 
         do {
             let result = try await sendToAIStructured(
                 transcription: transcription,
                 prompt: prompt,
                 mode: mode,
-                systemPromptOverride: systemPromptOverride
+                systemPromptOverride: systemPromptOverride,
+                requestProfile: requestProfile,
+                traceContext: traceContext
             )
 
             AppLogger.info(
                 "Structured post-processing completed",
                 category: .transcriptionEngine,
-                extra: ["output_state": result.outputState.rawValue]
+                extra: traceExtra(
+                    from: traceContext,
+                    attempt: 1,
+                    elapsedMilliseconds: Date().timeIntervalSince(startedAt) * 1_000,
+                    extra: ["output_state": result.outputState.rawValue]
+                )
             )
             return result
-        } catch let error as PostProcessingError {
-            lastError = error
-            throw error
         } catch {
-            let processingError = PostProcessingError.requestFailed(error)
-            lastError = processingError
-            throw processingError
+            let processingError = normalizePostProcessingError(error)
+
+            guard shouldTriggerDictationTimeoutFallback(for: mode, error: processingError) else {
+                lastError = processingError
+                throw processingError
+            }
+
+            PerformanceMonitor.shared.reportMetric(
+                name: "dictation_timeout_count",
+                value: 1,
+                unit: "count"
+            )
+            PerformanceMonitor.shared.reportMetric(
+                name: "dictation_fallback_triggered",
+                value: 1,
+                unit: "count"
+            )
+
+            let fallbackProfile = dictationFallbackProfile()
+            let fallbackPrompt = PostProcessingPrompt.cleanTranscription
+            let fallbackTraceContext = makeTraceContext(
+                mode: mode,
+                provider: requestConfig.provider,
+                model: requestConfig.selectedModel,
+                prompt: fallbackPrompt,
+                pipeline: fallbackProfile.pipeline
+            )
+
+            AppLogger.warning(
+                "Structured dictation timed out; running fast fallback",
+                category: .transcriptionEngine,
+                extra: traceExtra(from: traceContext, attempt: 1, elapsedMilliseconds: Date().timeIntervalSince(startedAt) * 1_000)
+            )
+
+            do {
+                let fallbackText = try await sendToAI(
+                    transcription: transcription,
+                    prompt: fallbackPrompt,
+                    mode: mode,
+                    systemPromptOverride: nil,
+                    requestProfile: fallbackProfile,
+                    traceContext: fallbackTraceContext
+                )
+                let fallbackSummary = summaryFallbackBuilder.build(
+                    providerOutput: fallbackText,
+                    transcription: transcription
+                )
+                return DomainPostProcessingResult(
+                    processedText: fallbackText,
+                    canonicalSummary: fallbackSummary.canonicalSummary,
+                    outputState: .deterministicFallback
+                )
+            } catch {
+                let fallbackError = normalizePostProcessingError(error)
+                lastError = fallbackError
+                throw fallbackError
+            }
         }
     }
 
@@ -227,28 +405,151 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
         return trimmedTranscription
     }
 
+    private func profile(
+        for mode: IntelligenceKernelMode,
+        prefersStructuredPipeline: Bool
+    ) -> RequestProfile {
+        switch mode {
+        case .meeting:
+            return RequestProfile(
+                name: "meetingProfile",
+                timeoutSeconds: Constants.meetingRequestTimeoutSeconds,
+                retryCount: Constants.meetingRetryCount,
+                useStructuredPipeline: prefersStructuredPipeline,
+                useRepair: prefersStructuredPipeline,
+                pipeline: prefersStructuredPipeline ? "structured" : "fast"
+            )
+        case .dictation, .assistant:
+            let canUseStructured = prefersStructuredPipeline && settings.dictationStructuredPostProcessingEnabled
+            return RequestProfile(
+                name: "dictationProfile",
+                timeoutSeconds: Constants.dictationRequestTimeoutSeconds,
+                retryCount: 0,
+                useStructuredPipeline: canUseStructured,
+                useRepair: false,
+                pipeline: canUseStructured ? "structured" : "fast"
+            )
+        }
+    }
+
+    private func dictationFallbackProfile() -> RequestProfile {
+        RequestProfile(
+            name: "dictationFallbackProfile",
+            timeoutSeconds: Constants.dictationFallbackTimeoutSeconds,
+            retryCount: 0,
+            useStructuredPipeline: false,
+            useRepair: false,
+            pipeline: "fast"
+        )
+    }
+
+    private func makeTraceContext(
+        mode: IntelligenceKernelMode,
+        provider: AIProvider,
+        model: String,
+        prompt: PostProcessingPrompt,
+        pipeline: String
+    ) -> RequestTraceContext {
+        RequestTraceContext(
+            mode: mode,
+            provider: provider,
+            model: model,
+            promptId: prompt.id.uuidString,
+            promptTitle: prompt.title,
+            pipeline: pipeline
+        )
+    }
+
+    private func traceExtra(
+        from context: RequestTraceContext,
+        attempt: Int,
+        elapsedMilliseconds: Double?,
+        extra: [String: Any] = [:]
+    ) -> [String: Any] {
+        var payload: [String: Any] = [
+            "mode": context.mode.rawValue,
+            "provider": context.provider.rawValue,
+            "model": context.model,
+            "promptId": context.promptId,
+            "promptTitle": context.promptTitle,
+            "pipeline": context.pipeline,
+            "attempt": attempt,
+        ]
+
+        if let elapsedMilliseconds {
+            payload["elapsed_ms"] = elapsedMilliseconds
+        }
+
+        for (key, value) in extra {
+            payload[key] = value
+        }
+
+        return payload
+    }
+
+    private func normalizePostProcessingError(_ error: Error) -> PostProcessingError {
+        if let error = error as? PostProcessingError {
+            return error
+        }
+        return .requestFailed(error)
+    }
+
+    private func shouldTriggerDictationTimeoutFallback(
+        for mode: IntelligenceKernelMode,
+        error: PostProcessingError
+    ) -> Bool {
+        mode == .dictation && isTimeoutError(error)
+    }
+
+    private func isTimeoutError(_ error: Error) -> Bool {
+        if case let PostProcessingError.requestFailed(underlyingError) = error {
+            return isTimeoutError(underlyingError)
+        }
+
+        let nsError = error as NSError
+        return nsError.domain == NSURLErrorDomain && nsError.code == NSURLErrorTimedOut
+    }
+
+    private func reportDictationPostProcessingDurationIfNeeded(
+        mode: IntelligenceKernelMode,
+        startedAt: Date
+    ) {
+        guard mode == .dictation else { return }
+        PerformanceMonitor.shared.reportMetric(
+            name: "dictation_post_processing_ms",
+            value: Date().timeIntervalSince(startedAt) * 1_000,
+            unit: "ms"
+        )
+    }
+
     // MARK: - Legacy Pipeline
 
     private func sendToAI(
         transcription: String,
         prompt: PostProcessingPrompt,
         mode: IntelligenceKernelMode,
-        systemPromptOverride: String?
+        systemPromptOverride: String?,
+        requestProfile: RequestProfile,
+        traceContext: RequestTraceContext
     ) async throws -> String {
         var lastError: Error?
+        let attemptCount = max(1, requestProfile.retryCount + 1)
 
-        for attempt in 0..<Constants.maxRetryAttempts {
+        for attempt in 0..<attemptCount {
             do {
                 return try await performAIRequest(
                     transcription: transcription,
                     prompt: prompt,
                     mode: mode,
-                    systemPromptOverride: systemPromptOverride
+                    systemPromptOverride: systemPromptOverride,
+                    timeoutSeconds: requestProfile.timeoutSeconds,
+                    traceContext: traceContext,
+                    attempt: attempt + 1
                 )
             } catch {
                 lastError = error
 
-                guard shouldRetry(error: error), attempt < Constants.maxRetryAttempts - 1 else {
+                guard shouldRetry(error: error), attempt < attemptCount - 1 else {
                     throw error
                 }
 
@@ -258,7 +559,12 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
                 AppLogger.warning(
                     "AI request failed, retrying",
                     category: .transcriptionEngine,
-                    extra: ["attempt": attempt + 1, "delay_ms": delay / 1_000_000]
+                    extra: traceExtra(
+                        from: traceContext,
+                        attempt: attempt + 1,
+                        elapsedMilliseconds: nil,
+                        extra: ["delay_ms": delay / 1_000_000]
+                    )
                 )
 
                 try await Task.sleep(nanoseconds: delay)
@@ -274,18 +580,24 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
         transcription: String,
         prompt: PostProcessingPrompt,
         mode: IntelligenceKernelMode,
-        systemPromptOverride: String?
+        systemPromptOverride: String?,
+        requestProfile: RequestProfile,
+        traceContext: RequestTraceContext
     ) async throws -> DomainPostProcessingResult {
         var lastError: Error?
         let structuredPrompt = makeStructuredPrompt(from: prompt)
+        let attemptCount = max(1, requestProfile.retryCount + 1)
 
-        for attempt in 0..<Constants.maxRetryAttempts {
+        for attempt in 0..<attemptCount {
             do {
                 let rawOutput = try await performAIRequest(
                     transcription: transcription,
                     prompt: structuredPrompt,
                     mode: mode,
-                    systemPromptOverride: systemPromptOverride
+                    systemPromptOverride: systemPromptOverride,
+                    timeoutSeconds: requestProfile.timeoutSeconds,
+                    traceContext: traceContext,
+                    attempt: attempt + 1
                 )
 
                 if let summary = tryParseCanonicalSummary(rawOutput) {
@@ -294,28 +606,35 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
 
                 AppLogger.warning(
                     "Structured summary parse failed, attempting repair",
-                    category: .transcriptionEngine
+                    category: .transcriptionEngine,
+                    extra: traceExtra(from: traceContext, attempt: attempt + 1, elapsedMilliseconds: nil)
                 )
 
-                if let repairedOutput = try? await performRepairRequest(
-                    malformedOutput: rawOutput,
-                    transcription: transcription,
-                    originalPrompt: prompt,
-                    mode: mode,
-                    systemPromptOverride: systemPromptOverride
-                ), let repairedSummary = tryParseCanonicalSummary(repairedOutput) {
-                    return makeStructuredResult(repairedSummary, outputState: .repaired)
+                if requestProfile.useRepair {
+                    if let repairedOutput = try? await performRepairRequest(
+                        malformedOutput: rawOutput,
+                        transcription: transcription,
+                        originalPrompt: prompt,
+                        mode: mode,
+                        systemPromptOverride: systemPromptOverride,
+                        timeoutSeconds: requestProfile.timeoutSeconds,
+                        traceContext: traceContext,
+                        attempt: attempt + 1
+                    ), let repairedSummary = tryParseCanonicalSummary(repairedOutput) {
+                        return makeStructuredResult(repairedSummary, outputState: .repaired)
+                    }
                 }
 
                 AppLogger.warning(
                     "Structured summary repair failed, using deterministic fallback",
-                    category: .transcriptionEngine
+                    category: .transcriptionEngine,
+                    extra: traceExtra(from: traceContext, attempt: attempt + 1, elapsedMilliseconds: nil)
                 )
                 return summaryFallbackBuilder.build(providerOutput: rawOutput, transcription: transcription)
             } catch {
                 lastError = error
 
-                guard shouldRetry(error: error), attempt < Constants.maxRetryAttempts - 1 else {
+                guard shouldRetry(error: error), attempt < attemptCount - 1 else {
                     throw error
                 }
 
@@ -325,7 +644,12 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
                 AppLogger.warning(
                     "Structured AI request failed, retrying",
                     category: .transcriptionEngine,
-                    extra: ["attempt": attempt + 1, "delay_ms": delay / 1_000_000]
+                    extra: traceExtra(
+                        from: traceContext,
+                        attempt: attempt + 1,
+                        elapsedMilliseconds: nil,
+                        extra: ["delay_ms": delay / 1_000_000]
+                    )
                 )
 
                 try await Task.sleep(nanoseconds: delay)
@@ -361,7 +685,10 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
         transcription: String,
         originalPrompt: PostProcessingPrompt,
         mode: IntelligenceKernelMode,
-        systemPromptOverride: String?
+        systemPromptOverride: String?,
+        timeoutSeconds: TimeInterval,
+        traceContext: RequestTraceContext,
+        attempt: Int
     ) async throws -> String {
         let baseSystemPrompt = systemPromptOverride ?? settings.systemPrompt
         let systemPrompt = summaryRepairComposer.systemPrompt(basePrompt: baseSystemPrompt)
@@ -374,7 +701,10 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
         return try await performCustomAIRequest(
             mode: mode,
             systemPrompt: systemPrompt,
-            userContent: userPrompt
+            userContent: userPrompt,
+            timeoutSeconds: timeoutSeconds,
+            traceContext: traceContext,
+            attempt: attempt
         )
     }
 
@@ -384,8 +714,12 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
         transcription: String,
         prompt: PostProcessingPrompt,
         mode: IntelligenceKernelMode,
-        systemPromptOverride: String?
+        systemPromptOverride: String?,
+        timeoutSeconds: TimeInterval,
+        traceContext: RequestTraceContext,
+        attempt: Int
     ) async throws -> String {
+        let requestStartedAt = Date()
         let config = settings.resolvedEnhancementsAIConfiguration(for: mode)
         let apiKey = try getAPIKey(for: config.provider)
         let url = try buildURL(for: config, apiKey: apiKey)
@@ -393,7 +727,7 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = Constants.requestTimeoutSeconds
+        request.timeoutInterval = timeoutSeconds
 
         configureAuthHeaders(for: &request, provider: config.provider, apiKey: apiKey)
         try setRequestBody(
@@ -407,20 +741,39 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
         AppLogger.debug(
             "Sending post-processing request",
             category: .transcriptionEngine,
-            extra: ["url": sanitizedURLForLogging(url)]
+            extra: traceExtra(
+                from: traceContext,
+                attempt: attempt,
+                elapsedMilliseconds: nil,
+                extra: ["url": sanitizedURLForLogging(url)]
+            )
         )
 
         let (data, response) = try await URLSession.shared.data(for: request)
         try validateHTTPResponse(response, data: data)
 
-        return try parseSuccessResponse(data: data, provider: config.provider)
+        let output = try parseSuccessResponse(data: data, provider: config.provider)
+        AppLogger.debug(
+            "Post-processing provider request succeeded",
+            category: .transcriptionEngine,
+            extra: traceExtra(
+                from: traceContext,
+                attempt: attempt,
+                elapsedMilliseconds: Date().timeIntervalSince(requestStartedAt) * 1_000
+            )
+        )
+        return output
     }
 
     private func performCustomAIRequest(
         mode: IntelligenceKernelMode,
         systemPrompt: String,
-        userContent: String
+        userContent: String,
+        timeoutSeconds: TimeInterval,
+        traceContext: RequestTraceContext,
+        attempt: Int
     ) async throws -> String {
+        let requestStartedAt = Date()
         let config = settings.resolvedEnhancementsAIConfiguration(for: mode)
         let apiKey = try getAPIKey(for: config.provider)
         let url = try buildURL(for: config, apiKey: apiKey)
@@ -428,7 +781,7 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = Constants.requestTimeoutSeconds
+        request.timeoutInterval = timeoutSeconds
 
         configureAuthHeaders(for: &request, provider: config.provider, apiKey: apiKey)
         try setCustomRequestBody(
@@ -440,7 +793,17 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
 
         let (data, response) = try await URLSession.shared.data(for: request)
         try validateHTTPResponse(response, data: data)
-        return try parseSuccessResponse(data: data, provider: config.provider)
+        let output = try parseSuccessResponse(data: data, provider: config.provider)
+        AppLogger.debug(
+            "Custom post-processing provider request succeeded",
+            category: .transcriptionEngine,
+            extra: traceExtra(
+                from: traceContext,
+                attempt: attempt,
+                elapsedMilliseconds: Date().timeIntervalSince(requestStartedAt) * 1_000
+            )
+        )
+        return output
     }
 
     private func shouldRetry(error: Error) -> Bool {
