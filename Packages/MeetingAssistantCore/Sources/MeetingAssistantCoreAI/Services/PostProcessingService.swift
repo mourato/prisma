@@ -68,6 +68,7 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
         try await processTranscription(
             transcription,
             with: prompt,
+            mode: .meeting,
             systemPromptOverride: nil
         )
     }
@@ -77,8 +78,28 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
         with prompt: PostProcessingPrompt,
         systemPromptOverride: String?
     ) async throws -> String {
+        try await processTranscription(
+            transcription,
+            with: prompt,
+            mode: .meeting,
+            systemPromptOverride: systemPromptOverride
+        )
+    }
+
+    public func processTranscription(
+        _ transcription: String,
+        with prompt: PostProcessingPrompt,
+        mode: IntelligenceKernelMode,
+        systemPromptOverride: String?
+    ) async throws -> String {
         _ = try validateInput(transcription)
-        guard settings.resolvedEnhancementsAIConfiguration.isValid else {
+        guard settings.isEnhancementsInferenceReady(for: mode) else {
+            let reasonCode = settings.enhancementsInferenceReadinessIssue(for: mode, apiKeyExists: nil)?.rawValue ?? "enhancements.not_ready"
+            AppLogger.info(
+                "Post-processing blocked: enhancements configuration not ready",
+                category: .transcriptionEngine,
+                extra: ["reasonCode": reasonCode]
+            )
             throw PostProcessingError.noAPIConfigured
         }
 
@@ -90,6 +111,7 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
             let result = try await sendToAI(
                 transcription: transcription,
                 prompt: prompt,
+                mode: mode,
                 systemPromptOverride: systemPromptOverride
             )
             AppLogger.info("Post-processing completed", category: .transcriptionEngine)
@@ -127,6 +149,20 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
         try await processTranscriptionStructured(
             transcription,
             with: prompt,
+            mode: .meeting,
+            systemPromptOverride: nil
+        )
+    }
+
+    public func processTranscriptionStructured(
+        _ transcription: String,
+        with prompt: PostProcessingPrompt,
+        mode: IntelligenceKernelMode
+    ) async throws -> DomainPostProcessingResult {
+        try await processTranscriptionStructured(
+            transcription,
+            with: prompt,
+            mode: mode,
             systemPromptOverride: nil
         )
     }
@@ -134,10 +170,17 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
     private func processTranscriptionStructured(
         _ transcription: String,
         with prompt: PostProcessingPrompt,
+        mode: IntelligenceKernelMode,
         systemPromptOverride: String?
     ) async throws -> DomainPostProcessingResult {
         _ = try validateInput(transcription)
-        guard settings.resolvedEnhancementsAIConfiguration.isValid else {
+        guard settings.isEnhancementsInferenceReady(for: mode) else {
+            let reasonCode = settings.enhancementsInferenceReadinessIssue(for: mode, apiKeyExists: nil)?.rawValue ?? "enhancements.not_ready"
+            AppLogger.info(
+                "Structured post-processing blocked: enhancements configuration not ready",
+                category: .transcriptionEngine,
+                extra: ["reasonCode": reasonCode]
+            )
             throw PostProcessingError.noAPIConfigured
         }
 
@@ -149,6 +192,7 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
             let result = try await sendToAIStructured(
                 transcription: transcription,
                 prompt: prompt,
+                mode: mode,
                 systemPromptOverride: systemPromptOverride
             )
 
@@ -188,6 +232,7 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
     private func sendToAI(
         transcription: String,
         prompt: PostProcessingPrompt,
+        mode: IntelligenceKernelMode,
         systemPromptOverride: String?
     ) async throws -> String {
         var lastError: Error?
@@ -197,6 +242,7 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
                 return try await performAIRequest(
                     transcription: transcription,
                     prompt: prompt,
+                    mode: mode,
                     systemPromptOverride: systemPromptOverride
                 )
             } catch {
@@ -227,6 +273,7 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
     private func sendToAIStructured(
         transcription: String,
         prompt: PostProcessingPrompt,
+        mode: IntelligenceKernelMode,
         systemPromptOverride: String?
     ) async throws -> DomainPostProcessingResult {
         var lastError: Error?
@@ -237,6 +284,7 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
                 let rawOutput = try await performAIRequest(
                     transcription: transcription,
                     prompt: structuredPrompt,
+                    mode: mode,
                     systemPromptOverride: systemPromptOverride
                 )
 
@@ -253,6 +301,7 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
                     malformedOutput: rawOutput,
                     transcription: transcription,
                     originalPrompt: prompt,
+                    mode: mode,
                     systemPromptOverride: systemPromptOverride
                 ), let repairedSummary = tryParseCanonicalSummary(repairedOutput) {
                     return makeStructuredResult(repairedSummary, outputState: .repaired)
@@ -311,6 +360,7 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
         malformedOutput: String,
         transcription: String,
         originalPrompt: PostProcessingPrompt,
+        mode: IntelligenceKernelMode,
         systemPromptOverride: String?
     ) async throws -> String {
         let baseSystemPrompt = systemPromptOverride ?? settings.systemPrompt
@@ -321,7 +371,11 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
             originalPrompt: originalPrompt.promptText
         )
 
-        return try await performCustomAIRequest(systemPrompt: systemPrompt, userContent: userPrompt)
+        return try await performCustomAIRequest(
+            mode: mode,
+            systemPrompt: systemPrompt,
+            userContent: userPrompt
+        )
     }
 
     // MARK: - Request/Response
@@ -329,9 +383,10 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
     private func performAIRequest(
         transcription: String,
         prompt: PostProcessingPrompt,
+        mode: IntelligenceKernelMode,
         systemPromptOverride: String?
     ) async throws -> String {
-        let config = settings.resolvedEnhancementsAIConfiguration
+        let config = settings.resolvedEnhancementsAIConfiguration(for: mode)
         let apiKey = try getAPIKey(for: config.provider)
         let url = try buildURL(for: config, apiKey: apiKey)
 
@@ -361,8 +416,12 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
         return try parseSuccessResponse(data: data, provider: config.provider)
     }
 
-    private func performCustomAIRequest(systemPrompt: String, userContent: String) async throws -> String {
-        let config = settings.resolvedEnhancementsAIConfiguration
+    private func performCustomAIRequest(
+        mode: IntelligenceKernelMode,
+        systemPrompt: String,
+        userContent: String
+    ) async throws -> String {
+        let config = settings.resolvedEnhancementsAIConfiguration(for: mode)
         let apiKey = try getAPIKey(for: config.provider)
         let url = try buildURL(for: config, apiKey: apiKey)
 

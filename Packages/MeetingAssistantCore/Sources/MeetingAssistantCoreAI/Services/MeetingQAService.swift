@@ -62,8 +62,13 @@ public final class MeetingQAService: ObservableObject, MeetingQAServiceProtocol 
             throw MeetingQAError.disabled
         }
 
-        guard !settings.resolvedEnhancementsAIConfiguration.baseURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            throw MeetingQAError.noAPIConfigured
+        if let readinessIssue = settings.enhancementsInferenceReadinessIssue(for: .meeting, apiKeyExists: enhancementsAPIKeyExists) {
+            AppLogger.info(
+                "Meeting Q&A blocked: enhancements configuration not ready",
+                category: .transcriptionEngine,
+                extra: ["reasonCode": readinessIssue.rawValue]
+            )
+            throw meetingQAError(for: readinessIssue)
         }
 
         isAnswering = true
@@ -136,7 +141,7 @@ public final class MeetingQAService: ObservableObject, MeetingQAServiceProtocol 
     }
 
     private func performRequest(question: String, transcription: Transcription) async throws -> String {
-        let config = settings.resolvedEnhancementsAIConfiguration
+        let config = settings.resolvedEnhancementsAIConfiguration(for: .meeting)
         let apiKey = try getAPIKey(for: config.provider)
         let url = try buildURL(for: config, apiKey: apiKey)
         let (systemPrompt, userPrompt) = buildPrompts(question: question, transcription: transcription)
@@ -333,6 +338,22 @@ public final class MeetingQAService: ObservableObject, MeetingQAServiceProtocol 
             throw MeetingQAError.noAPIConfigured
         }
         return key
+    }
+
+    private func enhancementsAPIKeyExists(for provider: AIProvider) -> Bool {
+        guard let key = try? apiKeyProvider(provider) else {
+            return false
+        }
+        return !key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private func meetingQAError(for issue: EnhancementsInferenceReadinessIssue) -> MeetingQAError {
+        switch issue {
+        case .invalidBaseURL:
+            return .invalidURL
+        case .missingAPIKey, .missingModel:
+            return .noAPIConfigured
+        }
     }
 
     private func buildURL(for config: AIConfiguration, apiKey: String) throws -> URL {

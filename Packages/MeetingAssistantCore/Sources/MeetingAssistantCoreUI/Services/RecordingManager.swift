@@ -1014,14 +1014,27 @@ extension RecordingManager {
     private func makeUseCaseConfig(meeting: Meeting, settings: AppSettingsStore) -> UseCaseConfig {
         let isDictation = isDictationMode(for: meeting)
         let kernelMode: IntelligenceKernelMode = isDictation ? .dictation : .meeting
-        let applyPostProcessing = settings.postProcessingEnabled
-            && settings.resolvedEnhancementsAIConfiguration.isValid
-            && settings.isIntelligenceKernelModeEnabled(kernelMode)
+        let applyPostProcessing = Self.shouldApplyEnhancementsPostProcessing(
+            settings: settings,
+            kernelMode: kernelMode
+        )
+        let enhancementsReady = settings.isEnhancementsInferenceReady(for: kernelMode)
 
         let disabledForRecording = isDictation
             ? settings.isDictationPostProcessingDisabled
             : settings.isMeetingPostProcessingDisabled
         let shouldApplyPostProcessing = applyPostProcessing && !disabledForRecording
+
+        if settings.postProcessingEnabled, !enhancementsReady {
+            let reasonCode = settings
+                .enhancementsInferenceReadinessIssue(for: kernelMode, apiKeyExists: nil)?
+                .rawValue ?? "enhancements.not_ready"
+            AppLogger.info(
+                "Post-processing disabled for this recording: enhancements configuration not ready",
+                category: .recordingManager,
+                extra: ["reasonCode": reasonCode]
+            )
+        }
 
         guard shouldApplyPostProcessing else {
             return UseCaseConfig(
@@ -1051,12 +1064,33 @@ extension RecordingManager {
             applyPostProcessing: true,
             postProcessingPrompt: prompt,
             defaultPostProcessingPrompt: autoDetectMeetingType ? defaultMeetingPrompt : nil,
-            postProcessingModel: settings.resolvedEnhancementsAIConfiguration.selectedModel,
+            postProcessingModel: settings.resolvedEnhancementsAIConfiguration(for: kernelMode).selectedModel,
             autoDetectMeetingType: autoDetectMeetingType,
             availablePrompts: availablePrompts,
             postProcessingContext: postProcessingContext,
             postProcessingContextItems: postProcessingContextItems
         )
+    }
+
+    static func shouldApplyEnhancementsPostProcessing(
+        settings: AppSettingsStore,
+        kernelMode: IntelligenceKernelMode,
+        apiKeyExists: ((AIProvider) -> Bool)? = nil
+    ) -> Bool {
+        let readinessIssue = settings.enhancementsInferenceReadinessIssue(for: kernelMode, apiKeyExists: apiKeyExists)
+        let kernelModeEnabled: Bool
+        switch kernelMode {
+        case .dictation:
+            // Dictation post-processing still runs on the legacy pipeline while
+            // dictation intelligence-kernel mode remains feature-flagged off.
+            kernelModeEnabled = true
+        case .meeting, .assistant:
+            kernelModeEnabled = settings.isIntelligenceKernelModeEnabled(kernelMode)
+        }
+
+        return settings.postProcessingEnabled
+            && readinessIssue == nil
+            && kernelModeEnabled
     }
 
     private func capturePostProcessingContext(for meeting: Meeting) async -> (context: String?, items: [TranscriptionContextItem]) {
@@ -1679,7 +1713,19 @@ extension RecordingManager {
         transcriptionStatus.updateProgress(phase: .postProcessing, percentage: Constants.postProcessingProgress)
 
         let settings = AppSettingsStore.shared
-        guard settings.postProcessingEnabled, settings.resolvedEnhancementsAIConfiguration.isValid else { return .empty }
+        guard settings.postProcessingEnabled else { return .empty }
+        let kernelMode: IntelligenceKernelMode = isDictationMode(for: meeting) ? .dictation : .meeting
+        guard settings.isEnhancementsInferenceReady(for: kernelMode) else {
+            let reasonCode = settings
+                .enhancementsInferenceReadinessIssue(for: kernelMode, apiKeyExists: nil)?
+                .rawValue ?? "enhancements.not_ready"
+            AppLogger.info(
+                "Post-processing skipped: enhancements configuration not ready",
+                category: .recordingManager,
+                extra: ["reasonCode": reasonCode]
+            )
+            return .empty
+        }
 
         let isDictation = isDictationMode(for: meeting)
         guard !isPostProcessingDisabled(isDictation: isDictation, settings: settings) else { return .empty }
@@ -1697,7 +1743,8 @@ extension RecordingManager {
             postProcessingInput: postProcessingInput,
             prompt: prompt,
             settings: settings,
-            qualityProfile: qualityProfile
+            qualityProfile: qualityProfile,
+            isDictation: isDictation
         )
     }
 
@@ -1775,13 +1822,19 @@ extension RecordingManager {
         postProcessingInput: String,
         prompt: PostProcessingPrompt,
         settings: AppSettingsStore,
-        qualityProfile: TranscriptionQualityProfile?
+        qualityProfile: TranscriptionQualityProfile?,
+        isDictation: Bool
     ) async -> PostProcessingResult {
         do {
             let startTime = Date()
-            let structuredResult = try await postProcessingService.processTranscriptionStructured(postProcessingInput, with: prompt)
+            let kernelMode: IntelligenceKernelMode = isDictation ? .dictation : .meeting
+            let structuredResult = try await postProcessingService.processTranscriptionStructured(
+                postProcessingInput,
+                with: prompt,
+                mode: kernelMode
+            )
             let duration = Date().timeIntervalSince(startTime)
-            let model = settings.resolvedEnhancementsAIConfiguration.selectedModel
+            let model = settings.resolvedEnhancementsAIConfiguration(for: kernelMode).selectedModel
             let canonicalSummary = qualityProfile.map { profile in
                 recalibrateCanonicalSummary(structuredResult.canonicalSummary, with: profile)
             } ?? structuredResult.canonicalSummary

@@ -758,6 +758,12 @@ public struct EnhancementsAISelection: Codable, Equatable, Sendable {
     )
 }
 
+public enum EnhancementsInferenceReadinessIssue: String, Sendable {
+    case invalidBaseURL = "enhancements.invalid_base_url"
+    case missingAPIKey = "enhancements.missing_api_key"
+    case missingModel = "enhancements.missing_model"
+}
+
 // MARK: - App Settings Store
 
 /// Centralized settings manager using UserDefaults.
@@ -844,6 +850,8 @@ public class AppSettingsStore: ObservableObject {
     private enum Keys {
         static let aiConfiguration = "aiConfiguration"
         static let enhancementsAISelection = "enhancementsAISelection"
+        static let enhancementsDictationAISelection = "enhancementsDictationAISelection"
+        static let enhancementsProviderSelectedModels = "enhancementsProviderSelectedModels"
         static let systemPrompt = "postProcessingSystemPrompt"
         static let userPrompts = "postProcessingUserPrompts"
         static let selectedPromptId = "postProcessingSelectedPromptId"
@@ -937,6 +945,18 @@ public class AppSettingsStore: ObservableObject {
         didSet { save(enhancementsAISelection, forKey: Keys.enhancementsAISelection) }
     }
 
+    /// Provider/model selection for dictation intelligence features.
+    /// Assistant mode reuses this selection automatically.
+    @Published public var enhancementsDictationAISelection: EnhancementsAISelection {
+        didSet { save(enhancementsDictationAISelection, forKey: Keys.enhancementsDictationAISelection) }
+    }
+
+    /// Per-provider model selection used by provider cards in Enhancements setup.
+    /// Keys are `AIProvider.rawValue`.
+    @Published public var enhancementsProviderSelectedModels: [String: String] {
+        didSet { save(enhancementsProviderSelectedModels, forKey: Keys.enhancementsProviderSelectedModels) }
+    }
+
     // MARK: - AI Configuration Helpers
 
     /// Updates the selected model for the current AI provider.
@@ -965,25 +985,114 @@ public class AppSettingsStore: ObservableObject {
         var selection = enhancementsAISelection
         guard selection.provider != provider else { return }
         selection.provider = provider
-        selection.selectedModel = ""
+        selection.selectedModel = enhancementsSelectedModel(for: provider)
         enhancementsAISelection = selection
     }
 
     public func updateEnhancementsSelectedModel(_ model: String) {
         var selection = enhancementsAISelection
-        selection.selectedModel = model
+        let normalizedModel = normalizedEnhancementsModelID(model)
+        selection.selectedModel = normalizedModel
         enhancementsAISelection = selection
+        setEnhancementsProviderSelectedModel(normalizedModel, for: selection.provider)
+    }
+
+    public func updateEnhancementsDictationProvider(_ provider: AIProvider) {
+        var selection = enhancementsDictationAISelection
+        guard selection.provider != provider else { return }
+        selection.provider = provider
+        selection.selectedModel = enhancementsSelectedModel(for: provider)
+        enhancementsDictationAISelection = selection
+    }
+
+    public func updateEnhancementsDictationSelectedModel(_ model: String) {
+        var selection = enhancementsDictationAISelection
+        let normalizedModel = normalizedEnhancementsModelID(model)
+        selection.selectedModel = normalizedModel
+        enhancementsDictationAISelection = selection
+        setEnhancementsProviderSelectedModel(normalizedModel, for: selection.provider)
+    }
+
+    public func updateEnhancementsSelection(
+        provider: AIProvider,
+        model: String,
+        for mode: IntelligenceKernelMode
+    ) {
+        let normalizedModel = normalizedEnhancementsModelID(model)
+        switch mode {
+        case .meeting:
+            enhancementsAISelection = EnhancementsAISelection(provider: provider, selectedModel: normalizedModel)
+        case .dictation, .assistant:
+            enhancementsDictationAISelection = EnhancementsAISelection(provider: provider, selectedModel: normalizedModel)
+        }
+        setEnhancementsProviderSelectedModel(normalizedModel, for: provider)
+    }
+
+    public func updateEnhancementsProviderSelectedModel(_ model: String, for provider: AIProvider) {
+        setEnhancementsProviderSelectedModel(normalizedEnhancementsModelID(model), for: provider)
+    }
+
+    public func enhancementsSelectedModel(for provider: AIProvider) -> String {
+        let model = enhancementsProviderSelectedModels[provider.rawValue] ?? ""
+        return normalizedEnhancementsModelID(model)
     }
 
     /// Resolves the runtime configuration for Enhancements (post-processing + Q&A).
     public var resolvedEnhancementsAIConfiguration: AIConfiguration {
-        let provider = enhancementsAISelection.provider
+        resolvedEnhancementsAIConfiguration(for: .meeting)
+    }
+
+    public func resolvedEnhancementsAIConfiguration(for mode: IntelligenceKernelMode) -> AIConfiguration {
+        let selection = enhancementsSelection(for: mode)
+        let provider = selection.provider
         let baseURL = provider == .custom ? aiConfiguration.baseURL : provider.defaultBaseURL
         return AIConfiguration(
             provider: provider,
             baseURL: baseURL,
-            selectedModel: enhancementsAISelection.selectedModel
+            selectedModel: selection.selectedModel
         )
+    }
+
+    public var enhancementsInferenceReadinessIssue: EnhancementsInferenceReadinessIssue? {
+        enhancementsInferenceReadinessIssue(for: .meeting, apiKeyExists: nil)
+    }
+
+    public var isEnhancementsInferenceReady: Bool {
+        enhancementsInferenceReadinessIssue == nil
+    }
+
+    public func isEnhancementsInferenceReady(for mode: IntelligenceKernelMode) -> Bool {
+        enhancementsInferenceReadinessIssue(for: mode, apiKeyExists: nil) == nil
+    }
+
+    public func enhancementsInferenceReadinessIssue(
+        apiKeyExists: ((AIProvider) -> Bool)?
+    ) -> EnhancementsInferenceReadinessIssue? {
+        enhancementsInferenceReadinessIssue(for: .meeting, apiKeyExists: apiKeyExists)
+    }
+
+    public func enhancementsInferenceReadinessIssue(
+        for mode: IntelligenceKernelMode,
+        apiKeyExists: ((AIProvider) -> Bool)?
+    ) -> EnhancementsInferenceReadinessIssue? {
+        let config = resolvedEnhancementsAIConfiguration(for: mode)
+        let provider = enhancementsSelection(for: mode).provider
+        let hasKey = apiKeyExists?(provider) ?? KeychainManager.existsAPIKey(for: provider)
+        let hasModel = !config.selectedModel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+
+        guard Self.isValidHTTPURLString(config.baseURL) else {
+            return .invalidBaseURL
+        }
+
+        guard hasKey else {
+            return .missingAPIKey
+        }
+
+        guard hasModel else {
+            return .missingModel
+        }
+
+        return nil
     }
 
     // MARK: - Post-Processing Properties
@@ -1701,8 +1810,15 @@ public class AppSettingsStore: ObservableObject {
 
     private init() {
         let loadedAIConfiguration = Self.loadAIConfiguration()
+        let loadedEnhancementsSelection = Self.loadEnhancementsAISelection(defaultingTo: loadedAIConfiguration)
+        let loadedDictationSelection = Self.loadEnhancementsDictationAISelection(defaultingTo: loadedEnhancementsSelection)
         aiConfiguration = loadedAIConfiguration
-        enhancementsAISelection = Self.loadEnhancementsAISelection(defaultingTo: loadedAIConfiguration)
+        enhancementsAISelection = loadedEnhancementsSelection
+        enhancementsDictationAISelection = loadedDictationSelection
+        enhancementsProviderSelectedModels = Self.loadEnhancementsProviderSelectedModels(
+            defaultMeetingSelection: loadedEnhancementsSelection,
+            defaultDictationSelection: loadedDictationSelection
+        )
 
         systemPrompt = UserDefaults.standard.string(forKey: Keys.systemPrompt) ?? AIPromptTemplates.defaultSystemPrompt
 
@@ -2175,6 +2291,43 @@ public class AppSettingsStore: ObservableObject {
         return EnhancementsAISelection(provider: config.provider, selectedModel: config.selectedModel)
     }
 
+    private static func loadEnhancementsDictationAISelection(
+        defaultingTo selection: EnhancementsAISelection
+    ) -> EnhancementsAISelection {
+        if let dictationSelection = loadDecoded(EnhancementsAISelection.self, forKey: Keys.enhancementsDictationAISelection) {
+            return dictationSelection
+        }
+
+        return selection
+    }
+
+    private static func loadEnhancementsProviderSelectedModels(
+        defaultMeetingSelection: EnhancementsAISelection,
+        defaultDictationSelection: EnhancementsAISelection
+    ) -> [String: String] {
+        let loaded = loadDecoded([String: String].self, forKey: Keys.enhancementsProviderSelectedModels) ?? [:]
+        var normalized: [String: String] = [:]
+
+        for (providerRawValue, model) in loaded {
+            guard AIProvider(rawValue: providerRawValue) != nil else { continue }
+            let normalizedModel = model.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !normalizedModel.isEmpty else { continue }
+            normalized[providerRawValue] = normalizedModel
+        }
+
+        let meetingModel = defaultMeetingSelection.selectedModel.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !meetingModel.isEmpty {
+            normalized[defaultMeetingSelection.provider.rawValue] = meetingModel
+        }
+
+        let dictationModel = defaultDictationSelection.selectedModel.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !dictationModel.isEmpty {
+            normalized[defaultDictationSelection.provider.rawValue] = dictationModel
+        }
+
+        return normalized
+    }
+
     private static func loadUUID(forKey key: String) -> UUID? {
         UserDefaults.standard.string(forKey: key).flatMap(UUID.init(uuidString:))
     }
@@ -2214,6 +2367,17 @@ public class AppSettingsStore: ObservableObject {
             relativeTo: nil,
             bookmarkDataIsStale: &isStale
         )
+    }
+
+    private static func isValidHTTPURLString(_ value: String) -> Bool {
+        guard let url = URL(string: value),
+              let scheme = url.scheme?.lowercased(),
+              ["http", "https"].contains(scheme)
+        else {
+            return false
+        }
+
+        return !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private static func loadDictationPresetKey(fallback: PresetShortcutKey) -> PresetShortcutKey {
@@ -2412,6 +2576,8 @@ public class AppSettingsStore: ObservableObject {
     public func resetToDefaults() {
         aiConfiguration = .default
         enhancementsAISelection = .default
+        enhancementsDictationAISelection = .default
+        enhancementsProviderSelectedModels = [:]
         systemPrompt = AIPromptTemplates.defaultSystemPrompt
         userPrompts = []
         dictationPrompts = []
@@ -2474,6 +2640,29 @@ public class AppSettingsStore: ObservableObject {
         webTargetBrowserBundleIdentifiers = Self.defaultWebTargetBrowserBundleIdentifiers
         monitoredMeetingBundleIdentifiers = Self.defaultMonitoredMeetingBundleIdentifiers
         webMeetingTargets = Self.defaultWebMeetingTargets
+    }
+
+    private func enhancementsSelection(for mode: IntelligenceKernelMode) -> EnhancementsAISelection {
+        switch mode {
+        case .meeting:
+            enhancementsAISelection
+        case .dictation, .assistant:
+            enhancementsDictationAISelection
+        }
+    }
+
+    private func normalizedEnhancementsModelID(_ model: String) -> String {
+        model.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func setEnhancementsProviderSelectedModel(_ model: String, for provider: AIProvider) {
+        var updated = enhancementsProviderSelectedModels
+        if model.isEmpty {
+            updated.removeValue(forKey: provider.rawValue)
+        } else {
+            updated[provider.rawValue] = model
+        }
+        enhancementsProviderSelectedModels = updated
     }
 
     // MARK: - Prompt Management

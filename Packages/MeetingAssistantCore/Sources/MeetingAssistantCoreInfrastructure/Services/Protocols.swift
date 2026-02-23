@@ -70,6 +70,14 @@ public protocol PostProcessingServiceProtocol: ObservableObject {
     /// Process a raw transcription using a specific prompt.
     func processTranscription(_ transcription: String, with prompt: PostProcessingPrompt) async throws -> String
 
+    /// Process a raw transcription using a specific prompt and a kernel mode-aware configuration.
+    func processTranscription(
+        _ transcription: String,
+        with prompt: PostProcessingPrompt,
+        mode: IntelligenceKernelMode,
+        systemPromptOverride: String?
+    ) async throws -> String
+
     /// Process transcription using hardened structured summary pipeline.
     func processTranscriptionStructured(_ transcription: String) async throws -> DomainPostProcessingResult
 
@@ -78,6 +86,38 @@ public protocol PostProcessingServiceProtocol: ObservableObject {
         _ transcription: String,
         with prompt: PostProcessingPrompt
     ) async throws -> DomainPostProcessingResult
+
+    /// Process transcription using hardened structured summary pipeline and a specific prompt with mode-aware configuration.
+    func processTranscriptionStructured(
+        _ transcription: String,
+        with prompt: PostProcessingPrompt,
+        mode: IntelligenceKernelMode
+    ) async throws -> DomainPostProcessingResult
+}
+
+public extension PostProcessingServiceProtocol {
+    func processTranscription(
+        _ transcription: String,
+        with prompt: PostProcessingPrompt,
+        mode _: IntelligenceKernelMode,
+        systemPromptOverride: String?
+    ) async throws -> String {
+        try await processTranscription(
+            transcription,
+            with: prompt
+        )
+    }
+
+    func processTranscriptionStructured(
+        _ transcription: String,
+        with prompt: PostProcessingPrompt,
+        mode _: IntelligenceKernelMode
+    ) async throws -> DomainPostProcessingResult {
+        try await processTranscriptionStructured(
+            transcription,
+            with: prompt
+        )
+    }
 }
 
 // MARK: - Grounded Meeting Q&A Protocol

@@ -155,6 +155,15 @@ class MockPostProcessingService: PostProcessingServiceProtocol {
         return "Processed: \(text)"
     }
 
+    func processTranscription(
+        _ text: String,
+        with prompt: PostProcessingPrompt,
+        mode _: IntelligenceKernelMode,
+        systemPromptOverride _: String?
+    ) async throws -> String {
+        try await processTranscription(text, with: prompt)
+    }
+
     func processTranscription(_ text: String) async throws -> String {
         try await processTranscription(text, with: PostProcessingPrompt(
             id: UUID(),
@@ -200,6 +209,17 @@ class MockPostProcessingService: PostProcessingServiceProtocol {
             processedText: processedText,
             canonicalSummary: summary,
             outputState: .structured
+        )
+    }
+
+    func processTranscriptionStructured(
+        _ transcription: String,
+        with prompt: PostProcessingPrompt,
+        mode _: IntelligenceKernelMode
+    ) async throws -> DomainPostProcessingResult {
+        try await processTranscriptionStructured(
+            transcription,
+            with: prompt
         )
     }
 }

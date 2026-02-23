@@ -14,6 +14,7 @@ import SwiftUI
 public struct EnhancementsSettingsTab: View {
     private enum EnhancementsPageRoute: Hashable {
         case systemGuidelines
+        case providerModels
     }
 
     @StateObject private var viewModel: AISettingsViewModel
@@ -38,8 +39,7 @@ public struct EnhancementsSettingsTab: View {
 
                 mainSection
                 if postProcessingViewModel.settings.postProcessingEnabled {
-                    aiProviderIntegrationCard
-                    meetingIntelligenceModelSection
+                    meetingIntelligenceSection
                     postProcessingSection
                 }
                 contextAwarenessSection
@@ -48,6 +48,8 @@ public struct EnhancementsSettingsTab: View {
                 switch route {
                 case .systemGuidelines:
                     systemGuidelinesPage
+                case .providerModels:
+                    providerModelsPage
                 }
             }
         }
@@ -57,11 +59,25 @@ public struct EnhancementsSettingsTab: View {
 
     private var mainSection: some View {
         MAGroup("settings.section.ai".localized, icon: "brain") {
-            MAToggleRow(
-                "settings.post_processing.enabled".localized,
-                description: "settings.post_processing.description".localized,
-                isOn: $postProcessingViewModel.settings.postProcessingEnabled
-            )
+            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.itemSpacing) {
+                MAToggleRow(
+                    "settings.post_processing.enabled".localized,
+                    description: "settings.post_processing.description".localized,
+                    isOn: $postProcessingViewModel.settings.postProcessingEnabled
+                )
+
+                Divider()
+
+                SettingsDrillDownListRow(
+                    destination: EnhancementsPageRoute.providerModels,
+                    title: "settings.enhancements.provider_models.title".localized,
+                    accessibilityHint: "settings.enhancements.provider_models.drilldown_hint".localized
+                )
+
+                Divider()
+
+                providerModelsQuickSummary
+            }
         }
     }
 
@@ -219,13 +235,7 @@ public struct EnhancementsSettingsTab: View {
         .task { refreshScreenRecordingPermission() }
     }
 
-    // MARK: - AI Provider Integration Card
-
-    private var aiProviderIntegrationCard: some View {
-        AIProviderIntegrationCard(viewModel: viewModel)
-    }
-
-    private var meetingIntelligenceModelSection: some View {
+    private var meetingIntelligenceSection: some View {
         MAGroup("settings.enhancements.meeting_intelligence_model".localized, icon: "bubble.left.and.bubble.right.fill") {
             VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.itemSpacing) {
                 MAToggleRow(
@@ -234,117 +244,14 @@ public struct EnhancementsSettingsTab: View {
                     isOn: $postProcessingViewModel.settings.meetingQnAEnabled
                 )
 
-                Divider()
-
-                Text("settings.enhancements.provider_model.help".localized)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                HStack {
-                    Text("settings.ai.provider".localized)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    Picker("", selection: enhancementsProviderBinding) {
-                        ForEach(AIProvider.allCases, id: \.self) { provider in
-                            Text(provider.displayName).tag(provider)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                    .labelsHidden()
-                    .fixedSize()
-                }
-
-                if shouldShowProviderKeyWarning {
-                    MACallout(
-                        kind: .warning,
-                        title: "settings.enhancements.provider_key_missing_title".localized,
-                        message: "settings.enhancements.provider_key_missing_desc".localized
-                    )
-                }
-
-                HStack {
-                    Text("settings.ai.model".localized)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-
-                    if isEnhancementsCustomProvider {
-                        TextField(
-                            "settings.enhancements.custom_model_placeholder".localized,
-                            text: enhancementsModelBinding
-                        )
-                        .textFieldStyle(.roundedBorder)
-                        .multilineTextAlignment(.trailing)
-                        .frame(maxWidth: MeetingAssistantDesignSystem.Layout.maxCompactTextFieldWidth)
-                    } else {
-                        if viewModel.isEnhancementsProviderKeySaved {
-                            Button {
-                                viewModel.refreshEnhancementsModelsManually()
-                            } label: {
-                                if viewModel.isLoadingEnhancementsModels {
-                                    ProgressView()
-                                        .controlSize(.small)
-                                        .scaleEffect(0.6)
-                                } else {
-                                    Image(systemName: "arrow.clockwise")
-                                        .accessibilityLabel("settings.ai.model_refresh".localized)
-                                        .fontWeight(.medium)
-                                }
-                            }
-                            .controlSize(.regular)
-                            .buttonStyle(.borderless)
-                            .disabled(viewModel.isLoadingEnhancementsModels)
-                        }
-
-                        Picker("", selection: enhancementsModelBinding) {
-                            if viewModel.isLoadingEnhancementsModels {
-                                Text("settings.ai.loading".localized).tag("")
-                            } else if viewModel.enhancementsAvailableModels.isEmpty {
-                                Text("settings.ai.no_models".localized).tag("")
-                            } else {
-                                Text("settings.ai.model_select".localized).tag("")
-                                ForEach(viewModel.enhancementsAvailableModels) { model in
-                                    Text(model.id).tag(model.id)
-                                }
-                            }
-                        }
-                        .pickerStyle(.menu)
-                        .labelsHidden()
-                        .disabled(viewModel.isLoadingEnhancementsModels || viewModel.enhancementsAvailableModels.isEmpty)
-                    }
-                }
-
-                if shouldShowEmptyModelCallout {
+                if !postProcessingViewModel.settings.isEnhancementsInferenceReady {
+                    Divider()
                     MACallout(
                         kind: .info,
-                        title: "settings.enhancements.models_empty_title".localized,
-                        message: "settings.enhancements.models_empty_desc".localized
+                        title: "settings.enhancements.selector.moved_title".localized,
+                        message: "settings.enhancements.selector.moved_message".localized
                     )
                 }
-
-                if let refreshSummary = viewModel.enhancementsModelsRefreshSummary {
-                    HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
-                        Image(systemName: viewModel.enhancementsLastModelsRefreshSucceeded ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                            .foregroundStyle(
-                                viewModel.enhancementsLastModelsRefreshSucceeded
-                                    ? MeetingAssistantDesignSystem.Colors.success
-                                    : MeetingAssistantDesignSystem.Colors.warning
-                            )
-                        Text(refreshSummary)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-                if !isEnhancementsSelectionReady {
-                    MACallout(
-                        kind: .warning,
-                        title: "settings.post_processing.warning_title".localized,
-                        message: "settings.enhancements.model_warning_desc".localized
-                    )
-                }
-            }
-            .task {
-                viewModel.refreshEnhancementsProviderCredentialState()
             }
         }
     }
@@ -353,7 +260,7 @@ public struct EnhancementsSettingsTab: View {
 
     @ViewBuilder
     private var postProcessingSection: some View {
-        if isEnhancementsSelectionReady {
+        if postProcessingViewModel.settings.isEnhancementsInferenceReady {
             systemPromptSection
         } else {
             connectionWarningSection
@@ -365,6 +272,13 @@ public struct EnhancementsSettingsTab: View {
             kind: .warning,
             title: "settings.post_processing.warning_title".localized,
             message: "settings.enhancements.model_warning_desc".localized
+        )
+    }
+
+    private var providerModelsPage: some View {
+        EnhancementsProviderModelsPage(
+            viewModel: viewModel,
+            postProcessingViewModel: postProcessingViewModel
         )
     }
 
@@ -452,44 +366,39 @@ public struct EnhancementsSettingsTab: View {
         )
     }
 
-    private var enhancementsProviderBinding: Binding<AIProvider> {
-        Binding(
-            get: { postProcessingViewModel.settings.enhancementsAISelection.provider },
-            set: { newProvider in
-                postProcessingViewModel.settings.updateEnhancementsProvider(newProvider)
-                viewModel.refreshEnhancementsProviderCredentialState()
-            }
-        )
+    private var providerModelsQuickSummary: some View {
+        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
+            modelSummaryRow(
+                title: "settings.enhancements.selector.meeting.title".localized,
+                summary: selectionSummary(for: postProcessingViewModel.settings.enhancementsAISelection)
+            )
+            modelSummaryRow(
+                title: "settings.enhancements.selector.dictation.title".localized,
+                summary: selectionSummary(for: postProcessingViewModel.settings.enhancementsDictationAISelection)
+            )
+        }
     }
 
-    private var enhancementsModelBinding: Binding<String> {
-        Binding(
-            get: { postProcessingViewModel.settings.enhancementsAISelection.selectedModel },
-            set: { newModel in
-                postProcessingViewModel.settings.updateEnhancementsSelectedModel(newModel)
-            }
-        )
+    private func modelSummaryRow(title: String, summary: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Spacer(minLength: MeetingAssistantDesignSystem.Layout.spacing8)
+            Text(summary)
+                .font(.caption)
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .foregroundStyle(.secondary)
+        }
     }
 
-    private var isEnhancementsSelectionReady: Bool {
-        let config = postProcessingViewModel.settings.resolvedEnhancementsAIConfiguration
-        let hasModel = !config.selectedModel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        return config.isValid && hasModel
-    }
-
-    private var isEnhancementsCustomProvider: Bool {
-        postProcessingViewModel.settings.enhancementsAISelection.provider == .custom
-    }
-
-    private var shouldShowProviderKeyWarning: Bool {
-        !isEnhancementsCustomProvider && !viewModel.isEnhancementsProviderKeySaved
-    }
-
-    private var shouldShowEmptyModelCallout: Bool {
-        !isEnhancementsCustomProvider &&
-            viewModel.isEnhancementsProviderKeySaved &&
-            !viewModel.isLoadingEnhancementsModels &&
-            viewModel.enhancementsAvailableModels.isEmpty
+    private func selectionSummary(for selection: EnhancementsAISelection) -> String {
+        let selectedModel = selection.selectedModel.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !selectedModel.isEmpty else {
+            return "settings.enhancements.provider_models.summary.no_model".localized(with: selection.provider.displayName)
+        }
+        return "settings.enhancements.provider_models.summary".localized(with: selection.provider.displayName, selectedModel)
     }
 
     private var systemGuidelinesSummary: String {
