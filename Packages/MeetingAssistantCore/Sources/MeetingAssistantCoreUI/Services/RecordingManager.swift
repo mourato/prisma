@@ -2248,10 +2248,12 @@ extension RecordingManager {
             },
             asrConfidenceScore: response.confidenceScore
         )
+        let includeQualityMetadata = !isDictationMode(for: transcription.meeting)
         let postProcessingInput = mergedPostProcessingInput(
             transcriptionText: qualityProfile.normalizedTextForIntelligence,
             qualityProfile: qualityProfile,
-            context: postProcessingContext
+            context: postProcessingContext,
+            includeQualityMetadata: includeQualityMetadata
         )
 
         let meeting = updatedMeeting(for: transcription.meeting, audioDuration: audioDuration)
@@ -2332,10 +2334,13 @@ extension RecordingManager {
     private func mergedPostProcessingInput(
         transcriptionText: String,
         qualityProfile: TranscriptionQualityProfile,
-        context: String?
+        context: String?,
+        includeQualityMetadata: Bool
     ) -> String {
         var blocks = [transcriptionText]
-        blocks.append(qualityMetadataBlock(from: qualityProfile))
+        if includeQualityMetadata {
+            blocks.append(qualityMetadataBlock(from: qualityProfile))
+        }
 
         if let context {
             let trimmedContext = context.trimmingCharacters(in: .whitespacesAndNewlines)
