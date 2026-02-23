@@ -279,6 +279,116 @@ final class RecordingManagerTests: XCTestCase {
         XCTAssertNil(manager.postProcessingReadinessWarningMode)
     }
 
+    func testStopRecording_DictationUsesDictationPromptSelection() async throws {
+        let manager = try XCTUnwrap(manager)
+        let mockPostProcessing = try XCTUnwrap(mockPostProcessing)
+        let settings = AppSettingsStore.shared
+        let keychain = DefaultKeychainProvider()
+        let providerKey = KeychainManager.apiKeyKey(for: .openai)
+
+        let originalPostProcessing = settings.postProcessingEnabled
+        let originalMeetingSelection = settings.enhancementsAISelection
+        let originalDictationSelection = settings.enhancementsDictationAISelection
+        let originalMeetingPrompts = settings.meetingPrompts
+        let originalDictationPrompts = settings.dictationPrompts
+        let originalSelectedPromptId = settings.selectedPromptId
+        let originalDictationSelectedPromptId = settings.dictationSelectedPromptId
+
+        let meetingPrompt = PostProcessingPrompt(
+            title: "Meeting Prompt Test",
+            promptText: "MEETING_PROMPT_SENTINEL",
+            isActive: true
+        )
+        let dictationPrompt = PostProcessingPrompt(
+            title: "Dictation Prompt Test",
+            promptText: "DICTATION_PROMPT_SENTINEL",
+            isActive: true
+        )
+
+        defer {
+            settings.postProcessingEnabled = originalPostProcessing
+            settings.enhancementsAISelection = originalMeetingSelection
+            settings.enhancementsDictationAISelection = originalDictationSelection
+            settings.meetingPrompts = originalMeetingPrompts
+            settings.dictationPrompts = originalDictationPrompts
+            settings.selectedPromptId = originalSelectedPromptId
+            settings.dictationSelectedPromptId = originalDictationSelectedPromptId
+            try? keychain.delete(for: providerKey)
+        }
+
+        try keychain.store("sk-test-openai", for: providerKey)
+        settings.postProcessingEnabled = true
+        settings.enhancementsAISelection = EnhancementsAISelection(provider: .openai, selectedModel: "gpt-4o-mini")
+        settings.enhancementsDictationAISelection = EnhancementsAISelection(provider: .openai, selectedModel: "gpt-4o-mini")
+        settings.meetingPrompts = [meetingPrompt]
+        settings.dictationPrompts = [dictationPrompt]
+        settings.selectedPromptId = meetingPrompt.id
+        settings.dictationSelectedPromptId = dictationPrompt.id
+
+        await manager.startRecording(source: .microphone)
+        await manager.stopRecording()
+
+        XCTAssertGreaterThan(mockPostProcessing.processTranscriptionCallCount, 0)
+        XCTAssertEqual(mockPostProcessing.lastPromptTitle, dictationPrompt.title)
+        XCTAssertTrue(mockPostProcessing.lastPromptText?.contains("DICTATION_PROMPT_SENTINEL") ?? false)
+        XCTAssertFalse(mockPostProcessing.lastPromptText?.contains("MEETING_PROMPT_SENTINEL") ?? true)
+    }
+
+    func testStopRecording_MeetingUsesMeetingPromptSelection() async throws {
+        let manager = try XCTUnwrap(manager)
+        let mockPostProcessing = try XCTUnwrap(mockPostProcessing)
+        let settings = AppSettingsStore.shared
+        let keychain = DefaultKeychainProvider()
+        let providerKey = KeychainManager.apiKeyKey(for: .openai)
+
+        let originalPostProcessing = settings.postProcessingEnabled
+        let originalMeetingSelection = settings.enhancementsAISelection
+        let originalDictationSelection = settings.enhancementsDictationAISelection
+        let originalMeetingPrompts = settings.meetingPrompts
+        let originalDictationPrompts = settings.dictationPrompts
+        let originalSelectedPromptId = settings.selectedPromptId
+        let originalDictationSelectedPromptId = settings.dictationSelectedPromptId
+
+        let meetingPrompt = PostProcessingPrompt(
+            title: "Meeting Prompt Test 2",
+            promptText: "MEETING_PROMPT_SENTINEL_2",
+            isActive: true
+        )
+        let dictationPrompt = PostProcessingPrompt(
+            title: "Dictation Prompt Test 2",
+            promptText: "DICTATION_PROMPT_SENTINEL_2",
+            isActive: true
+        )
+
+        defer {
+            settings.postProcessingEnabled = originalPostProcessing
+            settings.enhancementsAISelection = originalMeetingSelection
+            settings.enhancementsDictationAISelection = originalDictationSelection
+            settings.meetingPrompts = originalMeetingPrompts
+            settings.dictationPrompts = originalDictationPrompts
+            settings.selectedPromptId = originalSelectedPromptId
+            settings.dictationSelectedPromptId = originalDictationSelectedPromptId
+            try? keychain.delete(for: providerKey)
+        }
+
+        try keychain.store("sk-test-openai", for: providerKey)
+        settings.postProcessingEnabled = true
+        settings.enhancementsAISelection = EnhancementsAISelection(provider: .openai, selectedModel: "gpt-4o-mini")
+        settings.enhancementsDictationAISelection = EnhancementsAISelection(provider: .openai, selectedModel: "gpt-4o-mini")
+        settings.meetingPrompts = [meetingPrompt]
+        settings.dictationPrompts = [dictationPrompt]
+        settings.selectedPromptId = meetingPrompt.id
+        settings.dictationSelectedPromptId = dictationPrompt.id
+
+        await manager.startRecording(source: .all)
+        await manager.stopRecording()
+
+        XCTAssertGreaterThan(mockPostProcessing.processTranscriptionCallCount, 0)
+        XCTAssertEqual(mockPostProcessing.lastPromptTitle, meetingPrompt.title)
+        XCTAssertTrue(mockPostProcessing.lastPromptText?.contains("MEETING_PROMPT_SENTINEL_2") ?? false)
+        XCTAssertFalse(mockPostProcessing.lastPromptText?.contains("DICTATION_PROMPT_SENTINEL_2") ?? true)
+    }
+
     // MARK: - Error Handling Tests
 
     func testStartRecording_FailsWhenSystemRecorderFails() async throws {

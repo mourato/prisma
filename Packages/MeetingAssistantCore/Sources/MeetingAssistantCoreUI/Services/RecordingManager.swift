@@ -92,6 +92,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     private var activeStartTelemetry: RecordingStartTelemetry?
     private var postProcessingContext: String?
     private var postProcessingContextItems: [TranscriptionContextItem] = []
+    private var activePostProcessingKernelMode: IntelligenceKernelMode?
     private var dictationStartBundleIdentifier: String?
     private var dictationStartURL: URL?
 
@@ -308,6 +309,7 @@ public extension RecordingManager {
         }
 
         recordingSource = source
+        activePostProcessingKernelMode = source == .microphone ? .dictation : .meeting
         dictationSessionOutputLanguageOverride = nil
         refreshPostProcessingReadinessWarning(for: source == .microphone ? .dictation : .meeting)
 
@@ -673,6 +675,7 @@ public extension RecordingManager {
             audioFilePath: audioURL.path
         )
         currentMeeting = meeting
+        activePostProcessingKernelMode = .meeting
         refreshPostProcessingReadinessWarning(for: .meeting)
 
         AppLogger.info(
@@ -1022,8 +1025,8 @@ extension RecordingManager {
     }
 
     private func makeUseCaseConfig(meeting: Meeting, settings: AppSettingsStore) -> UseCaseConfig {
-        let isDictation = isDictationMode(for: meeting)
-        let kernelMode: IntelligenceKernelMode = isDictation ? .dictation : .meeting
+        let kernelMode = postProcessingKernelMode(for: meeting)
+        let isDictation = kernelMode == .dictation
         let readinessIssue = settings.postProcessingEnabled
             ? settings.enhancementsInferenceReadinessIssue(for: kernelMode, apiKeyExists: nil)
             : nil
@@ -1048,6 +1051,26 @@ extension RecordingManager {
         }
 
         guard shouldApplyPostProcessing else {
+            let reasonCode: String
+            if !settings.postProcessingEnabled {
+                reasonCode = "post_processing.disabled"
+            } else if let readinessIssue {
+                reasonCode = readinessIssue.rawValue
+            } else if disabledForRecording {
+                reasonCode = isDictation ? "dictation.prompt.disabled" : "meeting.prompt.disabled"
+            } else {
+                reasonCode = "post_processing.unknown"
+            }
+
+            AppLogger.info(
+                "Post-processing skipped for this recording",
+                category: .recordingManager,
+                extra: [
+                    "mode": kernelMode.rawValue,
+                    "reasonCode": reasonCode,
+                    "isDictation": isDictation,
+                ]
+            )
             return UseCaseConfig(
                 applyPostProcessing: false,
                 postProcessingPrompt: nil,
@@ -1070,6 +1093,17 @@ extension RecordingManager {
         )
 
         let autoDetectMeetingType = !isDictation && meeting.type == .autodetect
+
+        AppLogger.info(
+            "Post-processing configured for this recording",
+            category: .recordingManager,
+            extra: [
+                "mode": kernelMode.rawValue,
+                "isDictation": isDictation,
+                "promptTitle": prompt?.title ?? "nil",
+                "autoDetectMeetingType": autoDetectMeetingType,
+            ]
+        )
 
         return UseCaseConfig(
             applyPostProcessing: true,
@@ -1118,6 +1152,7 @@ extension RecordingManager {
     func clearPostProcessingReadinessWarning() {
         postProcessingReadinessWarningIssue = nil
         postProcessingReadinessWarningMode = nil
+        activePostProcessingKernelMode = nil
     }
 
     private func setPostProcessingReadinessWarning(
@@ -1749,7 +1784,7 @@ extension RecordingManager {
 
         let settings = AppSettingsStore.shared
         guard settings.postProcessingEnabled else { return .empty }
-        let kernelMode: IntelligenceKernelMode = isDictationMode(for: meeting) ? .dictation : .meeting
+        let kernelMode = postProcessingKernelMode(for: meeting)
         let readinessIssue = settings.enhancementsInferenceReadinessIssue(for: kernelMode, apiKeyExists: nil)
         setPostProcessingReadinessWarning(issue: readinessIssue, mode: kernelMode)
         if let readinessIssue {
@@ -1762,7 +1797,7 @@ extension RecordingManager {
             return .empty
         }
 
-        let isDictation = isDictationMode(for: meeting)
+        let isDictation = kernelMode == .dictation
         guard !isPostProcessingDisabled(isDictation: isDictation, settings: settings) else { return .empty }
 
         let type = meeting?.type ?? currentMeeting?.type ?? .general
@@ -1794,6 +1829,14 @@ extension RecordingManager {
         }
 
         return meeting?.isDictation == true || recordingSource == .microphone
+    }
+
+    private func postProcessingKernelMode(for meeting: Meeting?) -> IntelligenceKernelMode {
+        if let activePostProcessingKernelMode {
+            return activePostProcessingKernelMode
+        }
+
+        return isDictationMode(for: meeting) ? .dictation : .meeting
     }
 
     private func isPostProcessingDisabled(isDictation: Bool, settings: AppSettingsStore) -> Bool {
