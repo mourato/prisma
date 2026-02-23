@@ -144,10 +144,16 @@ class MockPostProcessingService: PostProcessingServiceProtocol {
     var shouldFail = false
     var processTranscriptionCallCount = 0
     var lastProcessText: String?
+    var lastPrompt: PostProcessingPrompt?
+    var lastPromptTitle: String?
+    var lastPromptText: String?
 
     func processTranscription(_ text: String, with prompt: PostProcessingPrompt) async throws -> String {
         processTranscriptionCallCount += 1
         lastProcessText = text
+        lastPrompt = prompt
+        lastPromptTitle = prompt.title
+        lastPromptText = prompt.promptText
 
         if shouldFail {
             throw PostProcessingError.apiError("Mock failure")
