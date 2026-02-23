@@ -147,6 +147,29 @@ public struct GeneralSettingsTab: View {
                                 .labelsHidden()
                                 .pickerStyle(.segmented)
                             }
+
+                            Divider()
+
+                            VStack(
+                                alignment: .leading,
+                                spacing: MeetingAssistantDesignSystem.Layout.spacing8
+                            ) {
+                                Text("settings.general.recording_indicator.animation_speed".localized)
+                                    .font(.body)
+                                    .foregroundStyle(.primary)
+
+                                Text("settings.general.recording_indicator.animation_speed_desc".localized)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+
+                                Picker("", selection: $viewModel.recordingIndicatorAnimationSpeed) {
+                                    ForEach(RecordingIndicatorAnimationSpeed.allCases, id: \.self) { speed in
+                                        Text(speed.displayName).tag(speed)
+                                    }
+                                }
+                                .labelsHidden()
+                                .pickerStyle(.segmented)
+                            }
                         }
                         .transition(SettingsMotion.sectionTransition(reduceMotion: reduceMotion))
                     }

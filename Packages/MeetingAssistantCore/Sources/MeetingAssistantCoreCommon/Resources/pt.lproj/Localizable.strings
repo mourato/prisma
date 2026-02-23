@@ -828,6 +828,11 @@
 "settings.general.recording_indicator.position" = "Posição";
 "settings.general.recording_indicator.position.top" = "Topo";
 "settings.general.recording_indicator.position.bottom" = "Rodapé";
+"settings.general.recording_indicator.animation_speed" = "Velocidade da animação";
+"settings.general.recording_indicator.animation_speed_desc" = "Ajusta a velocidade da animação das barras em gravação e processamento.";
+"settings.general.recording_indicator.animation_speed.slow" = "Lento";
+"settings.general.recording_indicator.animation_speed.normal" = "Normal";
+"settings.general.recording_indicator.animation_speed.fast" = "Rápido";
 "recording_indicator.silence_warning" = "Nenhum áudio do microfone detectado";
 "recording_indicator.stop.help" = "Parar e transcrever";
 "recording_indicator.cancel.help" = "Cancelar e descartar";

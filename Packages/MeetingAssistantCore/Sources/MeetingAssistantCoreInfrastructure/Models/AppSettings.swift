@@ -208,6 +208,24 @@ public enum RecordingIndicatorPosition: String, CaseIterable, Codable, Sendable 
     }
 }
 
+/// Speed options for recording indicator waveform animations.
+public enum RecordingIndicatorAnimationSpeed: String, CaseIterable, Codable, Sendable {
+    case slow
+    case normal
+    case fast
+
+    public var displayName: String {
+        switch self {
+        case .slow:
+            "settings.general.recording_indicator.animation_speed.slow".localized
+        case .normal:
+            "settings.general.recording_indicator.animation_speed.normal".localized
+        case .fast:
+            "settings.general.recording_indicator.animation_speed.fast".localized
+        }
+    }
+}
+
 // MARK: - App Theme Configuration
 
 /// Available colors for the application's accent theme.
@@ -898,6 +916,7 @@ public class AppSettingsStore: ObservableObject {
         static let recordingIndicatorEnabled = "recordingIndicatorEnabled"
         static let recordingIndicatorStyle = "recordingIndicatorStyle"
         static let recordingIndicatorPosition = "recordingIndicatorPosition"
+        static let recordingIndicatorAnimationSpeed = "recordingIndicatorAnimationSpeed"
         static let autoDeleteTranscriptions = "autoDeleteTranscriptions"
         static let autoDeletePeriodDays = "autoDeletePeriodDays"
         static let appAccentColor = "appAccentColor"
@@ -1524,6 +1543,16 @@ public class AppSettingsStore: ObservableObject {
         didSet { UserDefaults.standard.set(recordingIndicatorPosition.rawValue, forKey: Keys.recordingIndicatorPosition) }
     }
 
+    /// Animation speed profile used by the floating recording indicator waveform bars.
+    @Published public var recordingIndicatorAnimationSpeed: RecordingIndicatorAnimationSpeed {
+        didSet {
+            UserDefaults.standard.set(
+                recordingIndicatorAnimationSpeed.rawValue,
+                forKey: Keys.recordingIndicatorAnimationSpeed
+            )
+        }
+    }
+
     /// Whether retention limit for old recordings and transcriptions is enabled.
     @Published public var autoDeleteTranscriptions: Bool {
         didSet { UserDefaults.standard.set(autoDeleteTranscriptions, forKey: Keys.autoDeleteTranscriptions) }
@@ -2057,6 +2086,9 @@ public class AppSettingsStore: ObservableObject {
         recordingIndicatorStyle = rawIndicatorStyle.flatMap { RecordingIndicatorStyle(rawValue: $0) } ?? .mini
         let rawIndicatorPosition = UserDefaults.standard.string(forKey: Keys.recordingIndicatorPosition)
         recordingIndicatorPosition = rawIndicatorPosition.flatMap { RecordingIndicatorPosition(rawValue: $0) } ?? .bottom
+        let rawIndicatorAnimationSpeed = UserDefaults.standard.string(forKey: Keys.recordingIndicatorAnimationSpeed)
+        recordingIndicatorAnimationSpeed = rawIndicatorAnimationSpeed
+            .flatMap { RecordingIndicatorAnimationSpeed(rawValue: $0) } ?? .normal
 
         autoDeleteTranscriptions = UserDefaults.standard.bool(forKey: Keys.autoDeleteTranscriptions)
         let rawDays = UserDefaults.standard.object(forKey: Keys.autoDeletePeriodDays) as? Int
@@ -2638,6 +2670,7 @@ public class AppSettingsStore: ObservableObject {
         recordingIndicatorEnabled = true
         recordingIndicatorStyle = .mini
         recordingIndicatorPosition = .bottom
+        recordingIndicatorAnimationSpeed = .normal
         autoDeleteTranscriptions = false
         autoDeletePeriodDays = 30
         appAccentColor = .system

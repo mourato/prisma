@@ -32,11 +32,11 @@ public final class AudioLevelMonitor: ObservableObject {
     private var silenceElapsed: TimeInterval = 0
 
     private enum Constants {
-        static let silenceThresholdDb: Float = -80
+        static let silenceThresholdDb: Float = -65
         static let silenceDurationSeconds: TimeInterval = 4
         static let timerToleranceRatio: Double = 0.05
-        static let levelAttackSmoothingFactor: Double = 0.70
-        static let levelReleaseSmoothingFactor: Double = 0.97
+        static let levelAttackSmoothingFactor: Double = 0.80
+        static let levelReleaseSmoothingFactor: Double = 0.30
         static let meterMinDb: Float = -60
         static let meterMaxDb: Float = -6
     }
@@ -44,7 +44,6 @@ public final class AudioLevelMonitor: ObservableObject {
     // MARK: - Private State
 
     private var timer: AnyCancellable?
-    private var cancellables = Set<AnyCancellable>()
     private weak var audioRecorder: AudioRecorder?
     private var smoothedAveragePower: Double = 0
     private var smoothedPeakPower: Double = 0
@@ -54,7 +53,7 @@ public final class AudioLevelMonitor: ObservableObject {
     /// Creates a new audio level monitor.
     /// - Parameters:
     ///   - audioRecorder: The AudioRecorder instance to monitor.
-    ///   - samplingInterval: How often to sample audio levels. Default: 0.08s (~12.5Hz).
+    ///   - samplingInterval: How often to sample audio levels. Default: 0.03s (~33Hz).
     public init(
         audioRecorder: AudioRecorder = .shared,
         samplingInterval: TimeInterval = 0.03
@@ -110,8 +109,12 @@ public final class AudioLevelMonitor: ObservableObject {
         guard let recorder = audioRecorder else { return }
 
         // Get current average and peak power from AudioRecorder
-        let averageDB = recorder.currentAveragePower
-        let peakDB = recorder.currentPeakPower
+        ingestLevels(averageDB: recorder.currentAveragePower, peakDB: recorder.currentPeakPower)
+    }
+
+    /// Ingests a pair of dB levels and updates published meter/warning state.
+    /// Exposed as internal for deterministic unit testing without audio hardware.
+    func ingestLevels(averageDB: Float, peakDB: Float) {
 
         updateSilenceWarning(with: averageDB)
 
