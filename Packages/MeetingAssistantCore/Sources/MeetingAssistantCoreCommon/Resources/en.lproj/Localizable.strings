@@ -281,6 +281,7 @@
 "settings.post_processing.delete_confirm_title" = "Delete Prompt?";
 "settings.post_processing.delete_confirm_message" = "Are you sure you want to delete the prompt \"%@\"? This action cannot be undone.";
 "settings.post_processing.edit_system_guidelines" = "Edit Guidelines";
+"settings.post_processing.edit_system_prompt" = "Edit System Prompt";
 "settings.post_processing.system_prompt_editor_title" = "System Guidelines";
 "settings.post_processing.system_guidelines.default_summary" = "Default guidelines active";
 "settings.post_processing.system_guidelines.custom_summary" = "Custom guidelines active";

@@ -121,9 +121,6 @@ public class AISettingsViewModel: ObservableObject {
                 if activeEnhancementsProvider == provider {
                     refreshEnhancementsProviderCredentialState(provider: provider)
                 }
-                Task {
-                    await fetchEnhancementsProviderModels()
-                }
             }
             .store(in: &cancellables)
 
@@ -323,9 +320,6 @@ public class AISettingsViewModel: ObservableObject {
             enhancementsLastModelsRefreshSucceeded = false
         }
 
-        Task {
-            await fetchEnhancementsProviderModels()
-        }
     }
 
     public func prepareEnhancementsProvider(_ provider: AIProvider) {
@@ -388,7 +382,6 @@ public class AISettingsViewModel: ObservableObject {
                     self.enhancementsConnectionStatus = .success
                     self.clearTransientEnhancementsAPIKey()
                     await self.fetchEnhancementsAvailableModels(trigger: .manual, provider: provider)
-                    await self.fetchEnhancementsProviderModels(trigger: .manual)
 
                     if self.settings.aiConfiguration.provider == provider {
                         self.refreshProviderCredentialState()
@@ -415,9 +408,6 @@ public class AISettingsViewModel: ObservableObject {
             enhancementsConnectionStatus = .unknown
             enhancementsAvailableModels = []
             enhancementsModelsFetchError = nil
-            Task {
-                await fetchEnhancementsProviderModels(trigger: .manual)
-            }
 
             if settings.aiConfiguration.provider == provider {
                 refreshProviderCredentialState()
