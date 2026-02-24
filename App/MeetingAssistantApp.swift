@@ -215,7 +215,7 @@ extension AppDelegate {
             meetingType: currentMeetingType
         )
 
-        if (isRecording || isStarting),
+        if isRecording || isStarting,
            AppSettingsStore.shared.recordingIndicatorEnabled,
            AppSettingsStore.shared.recordingIndicatorStyle != .none
         {
