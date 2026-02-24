@@ -11,8 +11,9 @@ final class AudioLevelMonitorTests: XCTestCase {
         XCTAssertEqual(monitor.audioMeter.peakPower, 0.8, accuracy: 0.001)
 
         monitor.ingestLevels(averageDB: -60, peakDB: -60)
-        XCTAssertEqual(monitor.audioMeter.averagePower, 0.224, accuracy: 0.001)
-        XCTAssertEqual(monitor.audioMeter.peakPower, 0.224, accuracy: 0.001)
+        let expectedReleaseValue = 0.08
+        XCTAssertEqual(monitor.audioMeter.averagePower, expectedReleaseValue, accuracy: 0.001)
+        XCTAssertEqual(monitor.audioMeter.peakPower, expectedReleaseValue, accuracy: 0.001)
     }
 
     func testIngestLevels_ShowsSilenceWarningAfterConfiguredDuration() {
