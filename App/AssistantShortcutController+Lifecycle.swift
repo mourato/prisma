@@ -1,17 +1,10 @@
 import Combine
 import Foundation
 import KeyboardShortcuts
+import MeetingAssistantCore
 
 @MainActor
 extension AssistantShortcutController {
-    init(
-        assistantService: AssistantVoiceCommandService,
-        settings: AppSettingsStore = .shared
-    ) {
-        self.assistantService = assistantService
-        self.settings = settings
-    }
-
     func start() {
         setupKeyboardShortcutHandlers()
         observeSettings()

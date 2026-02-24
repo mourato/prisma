@@ -1,5 +1,6 @@
 import AppKit
 import CoreGraphics
+import MeetingAssistantCore
 
 internal final class ShortcutLayerKeySuppressor {
     private var eventTap: CFMachPort?
