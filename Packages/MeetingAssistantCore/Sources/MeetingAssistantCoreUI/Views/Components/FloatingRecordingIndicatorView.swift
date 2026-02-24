@@ -441,7 +441,10 @@ public struct FloatingRecordingIndicatorView: View {
             )
             Image(nsImage: flagIcon)
                 .renderingMode(.original)
-                .frame(width: 20, height: 20)
+                .resizable()
+                .interpolation(.high)
+                .scaledToFit()
+                .frame(width: 24, height: 24, alignment: .center)
                 .contentShape(Rectangle())
                 .accessibilityLabel(currentDictationOutputLanguage.localizedName)
         }
@@ -667,7 +670,7 @@ public struct FloatingRecordingIndicatorView: View {
         style: .classic,
         mode: .recording,
         previewForceDictationRecording: true,
-        previewLanguageOverride: .spanish,
+        previewLanguageOverride: .portuguese,
         onStop: {},
         onCancel: {}
     )
