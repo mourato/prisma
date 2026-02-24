@@ -212,7 +212,7 @@ enum FloatingRecordingIndicatorViewUtilities {
     private static func promptIconSize(for size: FloatingRecordingIndicatorView.IndicatorSize) -> CGFloat {
         switch size {
         case .classic:
-            15
+            13
         case .mini:
             13
         }
@@ -228,7 +228,7 @@ enum FloatingRecordingIndicatorViewUtilities {
     }
 
     private static func emojiImage(_ emoji: String, pointSize: CGFloat) -> NSImage {
-        let imageSize = NSSize(width: 20, height: 20)
+        let imageSize = NSSize(width: 24, height: 24)
         let image = NSImage(size: imageSize)
         image.lockFocus()
 
@@ -246,9 +246,9 @@ enum FloatingRecordingIndicatorViewUtilities {
         )
         let drawRect = NSRect(
             x: 0,
-            y: floor((imageSize.height - measuredRect.height) / 2),
-            width: imageSize.width,
-            height: measuredRect.height
+            y: (imageSize.height - pointSize) / 2,
+            width: imageSize.width * 1.06,
+            height: pointSize * 1.06
         )
         attributed.draw(in: drawRect)
 
