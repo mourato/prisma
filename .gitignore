@@ -66,8 +66,6 @@ Packages/*/.home/
 .env
 .env.local
 
-# Tuist
-.tuist/
 *.xcodeproj  # Agora gerado, não versionado
 *.xcworkspace
 
