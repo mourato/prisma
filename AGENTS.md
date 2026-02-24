@@ -1,8 +1,9 @@
 # AGENTS.md - Meeting Assistant Development Guide
 
-**Document Status:** v2.2 | Updated: Feb 24, 2026 | Maintained by: Team
+**Document Status:** v2.3 | Updated: Feb 24, 2026 | Maintained by: Team
 
 **Recent Changes:**
+- v2.3: Added SwiftLint policy source-of-truth routing to skills
 - v2.2: Progressive Disclosure refactor—moved task-specific guidance to `.agents/docs/`; hard constraints now explicit; HumanLayer best practices applied
 - v2.1: Clarified edge cases in concurrency tasks
 - v2.0: Restructured for clarity
@@ -46,6 +47,7 @@ The repository uses a CLI-first workflow for reproducible local and CI execution
 - **Broad context**: Use deepwiki for repository-wide perspective (optional if local context suffices)
 - **Build & test**: See [Build and Test Reference](./.agents/docs/build-and-test.md)
 - **Skill routing**: See [Skill Routing Guide](./.agents/docs/skill-routing.md)
+- **Code style source of truth**: `.swiftlint.yml` defines enforceable style budgets/rules. Keep lint-mapped writing guidance in `.agents/skills/swift-conventions/SKILL.md` and update that skill in the same PR whenever `.swiftlint.yml` changes.
 
 ---
 

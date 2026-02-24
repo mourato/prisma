@@ -22,7 +22,8 @@ Fundamental rules for writing clean, self-explanatory, and maintainable code.
 
 ## 2. Code Structure
 
-- **Small Functions**: Keep functions focused on a single responsibility. Aim for a maximum of 20-30 lines.
+- **Small Functions**: Keep functions focused on a single responsibility and split logic when readability drops.
+- **Size Limits**: For Swift files, use the budgets defined in `../swift-conventions/SKILL.md` (sourced from `.swiftlint.yml`) instead of ad-hoc line limits.
 - **Flattened Logic**: Use `guard` statements and early returns to avoid deeply nested `if` blocks.
 - **Comments**: Explain the why (design decisions, edge cases), not the obvious what.
 
