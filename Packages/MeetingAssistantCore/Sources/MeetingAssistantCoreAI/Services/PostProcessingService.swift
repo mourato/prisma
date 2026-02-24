@@ -60,6 +60,13 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
 
     private init() {}
 
+    deinit {
+        AppLogger.debug("PostProcessingService deinitialized", category: .transcriptionEngine)
+    }
+}
+
+extension PostProcessingService {
+
     // MARK: - Public API (Legacy String)
 
     /// Processes a transcription using the currently selected prompt.
@@ -1032,7 +1039,4 @@ public final class PostProcessingService: ObservableObject, PostProcessingServic
         return components.url?.absoluteString ?? url.absoluteString
     }
 
-    deinit {
-        AppLogger.debug("PostProcessingService deinitialized", category: .transcriptionEngine)
-    }
 }

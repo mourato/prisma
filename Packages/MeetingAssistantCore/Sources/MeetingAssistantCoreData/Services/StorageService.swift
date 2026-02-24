@@ -169,6 +169,13 @@ public final class FileSystemStorageService: StorageService {
         setupDirectories()
     }
 
+    deinit {
+        AppLogger.debug("FileSystemStorageService deinitialized", category: .databaseManager)
+    }
+}
+
+extension FileSystemStorageService {
+
     private func setupDirectories() {
         do {
             try FileManager.default.createDirectory(at: defaultRecordingsDirectory, withIntermediateDirectories: true)
@@ -847,10 +854,6 @@ public final class FileSystemStorageService: StorageService {
             postProcessingModel: entity.postProcessingModel,
             meetingType: entity.meetingType
         )
-    }
-
-    deinit {
-        AppLogger.debug("FileSystemStorageService deinitialized", category: .databaseManager)
     }
 
     // MARK: - Path Validation
