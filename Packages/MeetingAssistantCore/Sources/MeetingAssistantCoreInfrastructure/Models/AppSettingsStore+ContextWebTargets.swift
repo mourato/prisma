@@ -1,0 +1,172 @@
+import Foundation
+import MeetingAssistantCoreDomain
+
+@MainActor
+extension AppSettingsStore {
+    func migrateWebTargetBrowsersToGlobalSettingIfNeeded() {
+        let legacyMarkdownBrowsers = markdownWebTargets.flatMap(\.browserBundleIdentifiers)
+        let legacyMeetingBrowsers = webMeetingTargets.flatMap(\.browserBundleIdentifiers)
+        let mergedBrowsers = deduplicatedNormalizedBundleIdentifiers(
+            webTargetBrowserBundleIdentifiers + legacyMarkdownBrowsers + legacyMeetingBrowsers
+        )
+
+        if mergedBrowsers != webTargetBrowserBundleIdentifiers {
+            webTargetBrowserBundleIdentifiers = mergedBrowsers
+        }
+
+        let migratedMarkdownTargets = markdownWebTargets.map { target in
+            WebContextTarget(
+                id: target.id,
+                displayName: target.displayName,
+                urlPatterns: target.urlPatterns,
+                browserBundleIdentifiers: [],
+                forceMarkdownOutput: target.forceMarkdownOutput,
+                outputLanguage: target.outputLanguage,
+                autoStartMeetingRecording: target.autoStartMeetingRecording
+            )
+        }
+
+        if migratedMarkdownTargets != markdownWebTargets {
+            markdownWebTargets = migratedMarkdownTargets
+        }
+
+        let migratedMeetingTargets = webMeetingTargets.map { target in
+            WebMeetingTarget(
+                id: target.id,
+                app: target.app,
+                displayName: target.displayName,
+                urlPatterns: target.urlPatterns,
+                browserBundleIdentifiers: []
+            )
+        }
+
+        if migratedMeetingTargets != webMeetingTargets {
+            webMeetingTargets = migratedMeetingTargets
+        }
+    }
+
+    func migrateLegacyMarkdownTargetsToDictationAppRulesIfNeeded() {
+        guard !hasConfiguredDictationAppRules else { return }
+
+        let migratedRules = Self.normalizedDictationAppRules(
+            markdownTargetBundleIdentifiers.map {
+                DictationAppRule(bundleIdentifier: $0, forceMarkdownOutput: true, outputLanguage: .original)
+            }
+        )
+
+        dictationAppRules = migratedRules.isEmpty ? Self.defaultDictationAppRules : migratedRules
+    }
+
+    func migrateLegacyWebTargetBrowsersToDictationAppRulesIfNeeded() {
+        let browserRules = webTargetBrowserBundleIdentifiers.map {
+            DictationAppRule(bundleIdentifier: $0, forceMarkdownOutput: false, outputLanguage: .original)
+        }
+
+        let migratedRules = Self.normalizedDictationAppRules(dictationAppRules + browserRules)
+        if migratedRules != dictationAppRules {
+            dictationAppRules = migratedRules
+        }
+
+        let synchronizedBrowsers = synchronizedWebTargetBrowsers(
+            from: dictationAppRules,
+            legacyBrowsers: webTargetBrowserBundleIdentifiers
+        )
+
+        if synchronizedBrowsers != webTargetBrowserBundleIdentifiers {
+            webTargetBrowserBundleIdentifiers = synchronizedBrowsers
+        }
+    }
+
+    static func normalizedDictationAppRules(_ rules: [DictationAppRule]) -> [DictationAppRule] {
+        var seenBundleIdentifiers = Set<String>()
+        var ordered: [DictationAppRule] = []
+
+        for rule in rules {
+            let trimmedBundleIdentifier = rule.bundleIdentifier.trimmingCharacters(in: .whitespacesAndNewlines)
+            let normalizedBundleIdentifier = trimmedBundleIdentifier.lowercased()
+
+            guard !trimmedBundleIdentifier.isEmpty, !seenBundleIdentifiers.contains(normalizedBundleIdentifier) else {
+                continue
+            }
+
+            seenBundleIdentifiers.insert(normalizedBundleIdentifier)
+            ordered.append(
+                DictationAppRule(
+                    bundleIdentifier: trimmedBundleIdentifier,
+                    forceMarkdownOutput: rule.forceMarkdownOutput,
+                    outputLanguage: rule.outputLanguage,
+                    customPromptInstructions: rule.customPromptInstructions
+                )
+            )
+        }
+
+        return ordered
+    }
+
+    static func normalizedVocabularyReplacementRules(
+        _ rules: [VocabularyReplacementRule]
+    ) -> [VocabularyReplacementRule] {
+        var seenFindValues = Set<String>()
+        var ordered: [VocabularyReplacementRule] = []
+
+        for rule in rules {
+            let normalizedFind = rule.find.trimmingCharacters(in: .whitespacesAndNewlines)
+            let normalizedFindKey = normalizedFind.lowercased()
+            guard !normalizedFind.isEmpty, !seenFindValues.contains(normalizedFindKey) else {
+                continue
+            }
+
+            seenFindValues.insert(normalizedFindKey)
+            ordered.append(
+                VocabularyReplacementRule(
+                    id: rule.id,
+                    find: normalizedFind,
+                    replace: rule.replace.trimmingCharacters(in: .whitespacesAndNewlines)
+                )
+            )
+        }
+
+        return ordered
+    }
+
+    private func deduplicatedNormalizedBundleIdentifiers(_ identifiers: [String]) -> [String] {
+        var seenKeys = Set<String>()
+        var ordered: [String] = []
+
+        for identifier in identifiers {
+            // Trim whitespace but preserve original casing for storage.
+            let trimmed = identifier.trimmingCharacters(in: .whitespacesAndNewlines)
+            let normalizedKey = Self.normalizeBundleIdentifier(trimmed)
+
+            guard !trimmed.isEmpty, !seenKeys.contains(normalizedKey) else { continue }
+            seenKeys.insert(normalizedKey)
+            ordered.append(trimmed)
+        }
+
+        return ordered
+    }
+
+    func synchronizedWebTargetBrowsers(
+        from rules: [DictationAppRule],
+        legacyBrowsers: [String]
+    ) -> [String] {
+        let legacy = deduplicatedNormalizedBundleIdentifiers(legacyBrowsers)
+        let legacyNormalized = Set(legacy.map(Self.normalizeBundleIdentifier))
+
+        let browsersFromRules = deduplicatedNormalizedBundleIdentifiers(
+            rules
+                .map(\.bundleIdentifier)
+                .filter { bundleIdentifier in
+                    let normalizedBundleIdentifier = Self.normalizeBundleIdentifier(bundleIdentifier)
+                    return BrowserProviderRegistry.isLikelyBrowserBundleIdentifier(normalizedBundleIdentifier)
+                        || legacyNormalized.contains(normalizedBundleIdentifier)
+                }
+        )
+
+        return browsersFromRules.isEmpty ? legacy : browsersFromRules
+    }
+
+    private static func normalizeBundleIdentifier(_ value: String) -> String {
+        value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+}
