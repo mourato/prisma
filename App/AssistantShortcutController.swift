@@ -4,26 +4,26 @@ import MeetingAssistantCore
 
 @MainActor
 final class AssistantShortcutController {
-    private let assistantService: AssistantVoiceCommandService
-    private let settings: AppSettingsStore
-    private var cancellables = Set<AnyCancellable>()
+    let assistantService: AssistantVoiceCommandService
+    let settings: AppSettingsStore
+    var cancellables = Set<AnyCancellable>()
 
-    private var flagsMonitor: KeyboardEventMonitor?
-    private var keyDownMonitor: KeyboardEventMonitor?
-    private var keyUpMonitor: KeyboardEventMonitor?
-    private var integrationShortcutHandlers: [UUID: SmartShortcutHandler] = [:]
-    private var integrationPresetStates: [UUID: ShortcutActivationState] = [:]
-    private var registeredIntegrationShortcutIDs = Set<UUID>()
-    private let layerTimeoutNanoseconds: UInt64 = 1_000_000_000
-    private var isShortcutLayerArmed = false
-    private var shortcutLayerTask: Task<Void, Never>?
-    private var lastLayerLeaderTapTime: Date?
-    private let shortcutLayerFeedbackController = ShortcutLayerFeedbackController()
-    private let shortcutLayerKeySuppressor = ShortcutLayerKeySuppressor()
-    private let returnKeyCode: UInt16 = 0x24
-    private let keypadEnterKeyCode: UInt16 = 0x4c
+    var flagsMonitor: KeyboardEventMonitor?
+    var keyDownMonitor: KeyboardEventMonitor?
+    var keyUpMonitor: KeyboardEventMonitor?
+    var integrationShortcutHandlers: [UUID: SmartShortcutHandler] = [:]
+    var integrationPresetStates: [UUID: ShortcutActivationState] = [:]
+    var registeredIntegrationShortcutIDs = Set<UUID>()
+    let layerTimeoutNanoseconds: UInt64 = 1_000_000_000
+    var isShortcutLayerArmed = false
+    var shortcutLayerTask: Task<Void, Never>?
+    var lastLayerLeaderTapTime: Date?
+    let shortcutLayerFeedbackController = ShortcutLayerFeedbackController()
+    let shortcutLayerKeySuppressor = ShortcutLayerKeySuppressor()
+    let returnKeyCode: UInt16 = 0x24
+    let keypadEnterKeyCode: UInt16 = 0x4c
 
-    private lazy var shortcutHandler = SmartShortcutHandler(
+    lazy var shortcutHandler = SmartShortcutHandler(
         doubleTapInterval: currentDoubleTapInterval,
         isRecordingProvider: { [weak self] in self?.assistantService.isRecording ?? false },
         actionHandler: { [weak self] (action: SmartShortcutHandler.Action) in
@@ -34,9 +34,17 @@ final class AssistantShortcutController {
         }
     )
 
-    private let presetState = ShortcutActivationState()
-    private let escapeDoublePressInterval: TimeInterval = 1.0
-    private var lastEscapePressTime: Date?
+    let presetState = ShortcutActivationState()
+    let escapeDoublePressInterval: TimeInterval = 1.0
+    var lastEscapePressTime: Date?
+
+    init(
+        assistantService: AssistantVoiceCommandService,
+        settings: AppSettingsStore = .shared
+    ) {
+        self.assistantService = assistantService
+        self.settings = settings
+    }
 
     deinit {
         Task { @MainActor [weak self] in
