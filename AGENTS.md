@@ -1,336 +1,216 @@
 # AGENTS.md - Meeting Assistant Development Guide
 
-This file defines operational standards for AI agents and developers working in this repository.
+**Document Status:** v2.2 | Updated: Feb 24, 2026 | Maintained by: Team
 
-## Project overview
-
-Meeting Assistant is a macOS app focused on local-first meeting capture, transcription, and AI-powered post-processing. The project follows a modular Swift Package architecture and a CLI-first workflow for reproducible local and CI execution.
-
-Core context:
-
-- Platform: macOS 14+
-- UI approach: SwiftUI-first with AppKit integrations where required (`NSStatusItem`, non-activating overlays)
-- Architecture style: skill-based guidance + modular Clean Architecture boundaries
-- Canonical agent directory: `.agents/` (`.agent` is a compatibility symlink)
-
-## Tool usage policy
-
-- For every reasoning or planning task, use the Sequential Thinking tool to capture each step of the thought process before acting.
-- Whenever you need to read from, write to, or otherwise interact with GitHub (issues, PRs, repos), drive those interactions through the GitHub CLI (`gh`).
-- When submitting multiline content through `gh` (issue bodies, comments, PR descriptions), prefer `--body-file` with a literal heredoc (`<<'EOF'`) to avoid shell interpolation issues (for example with backticks).
-- For holistic or repository-wide analysis, feel free to leverage deepwiki to collect broader context, but keep it optional when the information is already contained locally.
-
-## ✅ Standard Task SOP (Mandatory)
-
-`AGENTS.md` is the single source of truth for workflow policy. Skills must extend this SOP, not redefine it.
-
-### Reusable Blocks First (required before implementation)
-
-Treat the project as a set of reusable building blocks (logic and UI), not one-off solutions.
-
-- Run a quick reusable-block scan before coding:
-  - Search for existing services/use cases/helpers/components that already solve the problem.
-  - Evaluate repeated or emerging patterns in the requested change.
-- Use this decision order:
-  - **Reuse** an existing block when it already fits.
-  - **Extend** an existing block when the need is adjacent and can remain coherent.
-  - **Create** a new block when the pattern is new to the project or existing blocks cannot be safely extended.
-- Avoid copy-paste implementations of behavior or UI composition when a reusable block is viable.
-
-### Risk matrix (required before implementation)
-
-Classify each task before coding:
-
-- **Low risk**:
-  - Docs-only / comments-only changes
-  - Localization/resource text updates without behavior changes
-  - Non-functional refactors confined to one file/module
-- **Medium risk**:
-  - Feature or bugfix in one subsystem
-  - Public API changes inside one package
-  - UI behavior/state logic changes
-- **High risk**:
-  - Audio pipeline, concurrency/actor isolation, persistence, security/permissions
-  - Cross-module architecture changes
-  - Large deltas (roughly >300 added lines or broad refactors)
-
-If uncertain, choose the higher risk level.
-
-### Clarification and confirmation (default behavior)
-
-Before implementation, run a quick clarification pass when needed:
-
-- If requirements are ambiguous, incomplete, or have meaningful trade-offs, ask concise confirmation questions before coding.
-- Agents are explicitly authorized by default to ask those questions whenever they prevent wrong assumptions or rework.
-- This planning/clarification step is optional when the request is already specific enough and low-risk.
-- Do not silently assume behavior, scope, acceptance criteria, or destructive intent when uncertainty remains.
-
-### Execution lanes
-
-1. **Fast lane (Low risk)**:
-  - Use a feature branch in the current checkout (no separate worktree required).
-   - Start with a reusable-block scan (`reuse -> extend -> create`) for both logic and UI.
-   - Implement in small slices.
-   - Pre-commit checks: staged lint/format + targeted tests when relevant.
-   - Before push/merge: run `make test`.
-2. **Full lane (Medium/High risk)**:
-  - Use an isolated feature branch in the current checkout and keep commits atomic.
-   - Start with a reusable-block scan (`reuse -> extend -> create`) for both logic and UI.
-   - Implement in small slices.
-   - During development run relevant checks (targeted tests and/or `make build` as needed).
-   - Before push/merge (hard gate):
-     - `make build`
-     - `make test`
-     - `make lint` (recommended; mandatory for broad refactors)
-3. **Code review ritual (risk-based)**:
-   - Full semáforo review (🔴/🟡/🟢) is mandatory for Medium/High.
-   - Lightweight checklist review is acceptable for Low.
-   - Always fix **🔴 Critical** and **🟡 Medium** findings before merge.
-4. **Atomic commits**:
-   - Split commits by intent (feature vs refactor vs tests vs cleanup).
-   - Use Conventional Commits (see `.agents/skills/git-workflow/SKILL.md`).
-   - Do not commit knowingly broken code.
-5. **Integration + cleanup**:
-   - Push / merge into `main`.
-  - Delete local/remote feature branch when applicable.
-
-## Optimized workflow checklist
-
-- [ ] Open the Sequential Thinking tool before planning a task so each reasoning step is recorded.
-- [ ] Before coding, scan for reusable blocks and repeated/new patterns; apply `reuse -> extend -> create`.
-- [ ] Use `gh` for every GitHub interaction (issues, PRs, repos) rather than manual HTTP/UI visits.
-- [ ] For multiline GitHub content, use `gh ... --body-file <file>` (or heredoc-backed file) instead of inline `--body`.
-- [ ] Consider deepwiki only when local context is insufficient for a holistic, repository-wide perspective.
-- [ ] Classify risk (Low/Medium/High) before coding and pick Fast or Full lane accordingly.
-- [ ] Run a clarification pass when needed; ask concise confirmation questions instead of assuming missing requirements.
-- [ ] Use Fast lane for low-risk tasks and Full lane for medium/high-risk tasks.
-- [ ] Keep hard gates at push/merge stage (`make test`, plus `make build` for Full lane).
-- [ ] Prefer `make preflight` (scripted build + test + lint) before push/merge.
-- [ ] For AI-agent runs, ALWAYS use compact targets (`make preflight-agent`, `make build-agent`, `make test-agent`, `make lint-agent`) to reduce context tokens while preserving diagnostics.
-- [ ] Run `make arch-check` only for architecture boundary/access-control changes.
-- [ ] Run `make preview-check` when SwiftUI views are added or modified.
-- [ ] Delete merged local/remote feature branches during cleanup.
-- [ ] When a new limitation/trade-off is discovered, create or update a GitHub issue via `gh` with label `known-limitation`.
-- [ ] Localize user-facing text and respect module/skill responsibilities as outlined in the main SOP and skills index.
-- [ ] When UI text is removed, sanitize localization resources by removing now-unused keys from supported locales.
+**Recent Changes:**
+- v2.2: Progressive Disclosure refactor—moved task-specific guidance to `.agents/docs/`; hard constraints now explicit; HumanLayer best practices applied
+- v2.1: Clarified edge cases in concurrency tasks
+- v2.0: Restructured for clarity
 
 ---
 
-### Module split (B2 standard)
+## Identity & Purpose
 
-`MeetingAssistantCore` is an aggregation target over specialized modules:
+You are an AI agent for code guidance in Meeting Assistant, a macOS app focused on local-first meeting capture, transcription, and AI-powered post-processing. Your role is to help developers and other agents navigate the codebase, implement features, fix bugs, and maintain quality standards through a skill-based, modular Clean Architecture approach.
 
-- `MeetingAssistantCoreCommon` — shared models/utilities/resources (`String.localized`, logging, helpers)
+The repository uses a CLI-first workflow for reproducible local and CI execution, managed through the `.agents/` directory (with `.agent` as compatibility symlink).
+
+---
+
+## Core Context: WHY / WHAT / HOW
+
+### WHY: Purpose & Value
+- **Local-first**: Sensitive meeting data never leaves the device
+- **Modular**: Clean Architecture boundaries enable safe, focused changes
+- **Tooled**: CLI-first and script-driven for reproducibility (CI + local agents)
+
+### WHAT: Tech Stack & Architecture
+- **Platform**: macOS 14+ (Swift 5.9+)
+- **UI**: SwiftUI-first with AppKit integrations (`NSStatusItem`, non-activating overlays)
+- **Architecture**: Modular Swift Package (`MeetingAssistantCore` aggregates 7 specialized packages)
+- **Canonical agent directory**: `.agents/` (skills, rules, docs, guides)
+
+**Module Structure:**
+- `MeetingAssistantCoreCommon` — shared utilities, resources, logging
 - `MeetingAssistantCoreDomain` — entities, protocols, use cases
-- `MeetingAssistantCoreInfrastructure` — adapters/integration services (Keychain, networking, providers)
-- `MeetingAssistantCoreData` — persistence repositories and storage concerns
-- `MeetingAssistantCoreAudio` — audio capture, buffering, worker pipeline
-- `MeetingAssistantCoreAI` — transcription/post-processing/rendering services
-- `MeetingAssistantCoreUI` — view models, coordinators, SwiftUI/AppKit presentation
-- `MeetingAssistantCore` — compatibility export surface for app/test imports
+- `MeetingAssistantCoreInfrastructure` — adapters (Keychain, networking, providers)
+- `MeetingAssistantCoreData` — persistence repositories, storage
+- `MeetingAssistantCoreAudio` — audio capture, buffering, processing
+- `MeetingAssistantCoreAI` — transcription, post-processing, rendering
+- `MeetingAssistantCoreUI` — ViewModels, coordinators, SwiftUI/AppKit presentation
+- `MeetingAssistantCore` — compatibility export surface (app/test imports)
 
-## Build and test commands
+### HOW: Workflow & Tools
+- **Reasoning**: Always use Sequential Thinking for planning tasks
+- **GitHub**: Drive interactions through `gh` CLI (issues, PRs, comments); use `--body-file` for multiline content
+- **Broad context**: Use deepwiki for repository-wide perspective (optional if local context suffices)
+- **Build & test**: See [Build and Test Reference](./.agents/docs/build-and-test.md)
+- **Skill routing**: See [Skill Routing Guide](./.agents/docs/skill-routing.md)
 
-Primary build/release commands:
+---
 
+## Core Values & Precedence
+
+When trade-offs arise, apply this priority order:
+
+1. **Safety & Correctness** — memory safety, data integrity, security first
+2. **Completeness** — feature-complete, no silent failures
+3. **Helpfulness** — clear guidance, actionable advice
+4. **Speed** — optimize cycle time after quality
+
+**In case of conflict:** Safety always before helpfulness. Correctness before speed. Refuse unsafe requests even if helpful.
+
+---
+
+## Hard Constraints (⛔ Never Violate)
+
+These are inviolable rules that apply to every task:
+
+- ⛔ **Always reuse/extend/create:** Before coding, scan for existing services/use cases/helpers. Use decision order: **Reuse** → **Extend** → **Create**. Never copy code.
+- ⛔ **Always classify risk first:** Before implementation, classify task as Low/Medium/High risk. Never skip this step.
+- ⛔ **Always ask, never assume:** If requirements are ambiguous or incomplete, ask concise clarification questions. Never silently assume behavior, scope, or acceptance criteria.
+- ⛔ **Never commit knowingly broken code:** Split commits by intent (feature, refactor, tests, cleanup). Use Conventional Commits.
+- ⛔ **Always localize UI text:** User-facing strings must use `"key".localized`. Never hardcode. Remove orphaned keys from `Localizable.strings` when text is deleted.
+- ⛔ **Never hardcode secrets:** API keys, tokens, credentials always use Keychain. Never store in source/tests/scripts.
+- ⛔ **Never exceed 600 lines per file:** If longer, split logically into 2+ files (≥200 chars each).
+- ⛔ **Always run hard gates before merge:** `make test` + `make build` (mandatory). `make lint` for broad refactors.
+
+---
+
+## Standard Task SOP (Mandatory)
+
+## Standard Task SOP (Mandatory)
+
+`AGENTS.md` is the single source of truth for workflow policy.
+
+### Risk Matrix (Classify First)
+
+Before implementation, classify your task:
+
+| Risk | Characteristics | Lane |
+|------|-----------------|------|
+| **Low** | Docs/comments only, localization updates, non-functional refactors (single file/module) | Fast |
+| **Medium** | Feature or bugfix in one subsystem, public API changes in one package, UI state logic | Full |
+| **High** | Audio pipeline, concurrency/actor isolation, persistence, security, cross-module architecture, >300 lines added | Full |
+
+**Rule:** When uncertain, choose higher risk.
+
+### Execution Lanes
+
+**Fast Lane (Low Risk):**
+- Use feature branch in current checkout
+- Scan for reusable blocks (reuse → extend → create)
+- Implement in small slices
+- Pre-commit: lint/format + targeted tests
+- **Merge gate:** `make test`
+
+**Full Lane (Medium/High Risk):**
+- Use feature branch; keep commits atomic
+- Scan reusable blocks upfront
+- Small slices, frequent verification
+- **Before push/merge (hard gates, no exceptions):**
+  - `make build`
+  - `make test`
+  - `make lint` (mandatory for broad refactors)
+- **Code review:** Full semáforo review (🔴/🟡/🟢). Fix all Critical + Medium findings before merge.
+
+**Branch Workflow:**
 ```bash
-make build
-make preflight
-make preflight-fast
-make run
-make build-release
-make dmg
-```
-
-Compact commands for AI agents (machine-readable output + log artifacts):
-
-```bash
-make build-agent
-make test-agent
-make lint-agent
-make preflight-agent
-make preflight-agent-fast
-```
-
-`preflight` execution order policy:
-
-- Default: `build -> test -> lint -> summary-benchmark`
-- With `STRICT_LINT=1`: `build -> lint(strict) -> test -> summary-benchmark`
-- Fast mode (`make preflight-fast` / `make preflight-agent-fast`): `lint -> build -> test` (skips summary benchmark for faster local feedback)
-
-Canonical direct `xcodebuild` usage (when Make targets are not suitable):
-
-```bash
-./scripts/xcodebuild-safe.sh
-# equivalent explicit form:
-# xcodebuild -project MeetingAssistant.xcodeproj -scheme MeetingAssistant -configuration Debug -destination 'platform=macOS' build
-```
-
-Avoid bare `xcodebuild build` in this repository; it can trigger unstable SwiftPM transitive-module resolution.
-
-Agent artifacts and summaries:
-
-- Log directory defaults to `/tmp/ma-agent` (override with `MA_AGENT_LOG_DIR`).
-- Scripts emit deterministic summary lines (`AGENT_STEP`, `AGENT_STATUS`, `AGENT_DURATION_SEC`, `AGENT_LOG`, `AGENT_ERROR_COUNT`, `AGENT_SUMMARY`, `AGENT_RESULT_JSON`).
-- On failures, scripts print compact excerpts and tail logs while keeping full logs on disk.
-
-Quick start:
-
-```bash
-make setup
-make
-```
-
-Common workflows:
-
-- Development: `make build && make run`
-- Pre-merge validation: `make preflight`
-- Fast local validation: `make preflight-fast`
-- Agent-focused pre-merge validation: `make preflight-agent`
-- Fast local validation (agent): `make preflight-agent-fast`
-- Testing: `make test`
-- Agent-focused testing: `make test-agent`
-- Release: `make lint && make test && make build-release && make dmg`
-- CI-style local check: `make ci-build` (includes `make arch-check`)
-
-Lint and formatting:
-
-```bash
-./scripts/lint.sh
-./scripts/lint-fix.sh
-make arch-check
-make preview-check
-make format
-```
-
-Formatting is not implicit on every build; run `make format` (or `make lint-fix`) when needed.
-
-## Code style guidelines
-
-Language and localization policy:
-
-- All documentation must be written in English.
-- All code comments must be written in English.
-- User-facing strings must be localized via `"key".localized` (never hardcode UI strings).
-- Removing UI text requires localization sanitization: delete orphaned keys from `Localizable.strings` files and confirm no source references remain.
-
-General style and architecture rules:
-
-- Import only modules required by each file.
-- Prefer dependency inversion through domain protocols over direct cross-module concrete dependencies.
-- Prefer reusable logic blocks (services/use cases/helpers) over duplicating behavior across features.
-- When implementing a new behavior, first evaluate reuse/expansion of existing blocks before creating new ones.
-- When moving types between modules, review access control deliberately (`public` only when required).
-- Keep tests aligned with module ownership when internals are exercised.
-- NEVER exceed the limit of 600 lines per file. If it's longer than that, break the code logically into more files (of at least 200 characters each).
-
-UI design-system rules:
-
-- Prefer semantic colors (`.primary`, `.secondary`, materials) and design-system tokens over hardcoded `Color(...)`.
-- Prefer design-system spacing/radius tokens over magic numbers.
-- Prefer design-system components over ad-hoc container styling.
-- Use `Stepper` only for small bounded option sets (around 6 steps/items or fewer).
-- For bounded sets larger than ~6 options, prefer a `Picker` (usually `.menu` in Settings).
-- When values are not a small finite set (or can vary freely), prefer `TextField` input with appropriate validation (for numeric values, numeric-only validation).
-- Use `MA*` components directly in Settings (`MACard`, `MAGroup`, `MAToggleRow`, `MACallout`, `MABadge`, `MAActionButton`, `MAThemePicker`).
-- Reuse or extend existing `MA*` components before creating new custom containers or repeated style wrappers.
-- Destructive actions (`remove`, `delete`, `clear` when irreversible) must use red styling (`.destructive` role and/or `MeetingAssistantDesignSystem.Colors.error` in custom button styles).
-- Non-destructive reset controls (for example, clearing a shortcut input) must remain neutral.
-- Every SwiftUI `struct ...: View` under `MeetingAssistantCoreUI` must include at least one `#Preview`.
-- For stateful UI, prefer multiple previews covering key states (e.g., loading/success/error).
-- For views with startup side effects, gate them in preview mode via `PreviewRuntime.isRunning`.
-
-Design-system references:
-
-- Tokens: `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreUI/DesignSystem/MeetingAssistantDesignSystem.swift`
-- Components: `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreUI/DesignSystem/Components/`
-- Preview guidelines: `docs/PREVIEW_GUIDELINES.md`
-- Preview check script: `scripts/preview-check.sh`
-
-## Testing instructions
-
-Use CLI-driven tests for consistency with CI:
-
-```bash
-make test
-make test-agent
-make test-verbose
-./scripts/run-tests.sh --file RecordingViewModelTests
-./scripts/run-tests.sh --test testInitialState
-./scripts/run-tests.sh --verbose
-./scripts/run-tests.sh --agent
-make ci-test
-```
-
-Minimum verification before merging:
-
-- `make test`
-- `make build`
-
-To keep quality high and cycle time low, use risk-based verification gates and lane selection from the Standard Task SOP above.
-
-For the full standardized flow, follow the **Standard Task SOP** above and the skills:
-- `.agents/skills/task-lifecycle/SKILL.md`
-- `.agents/skills/git-workflow/SKILL.md`
-- `.agents/skills/code-review/SKILL.md`
-
-## Security considerations
-
-- Never hardcode secrets, API keys, or tokens in source code, test fixtures, scripts, or docs.
-- Use Keychain-backed secret handling patterns and providers when credentials are required.
-- Apply least-privilege thinking for entitlements, capabilities, and integrations.
-- Validate and sanitize external input at module boundaries (network payloads, file content, provider responses).
-- Avoid logging sensitive data (keys, tokens, full transcripts, personal identifiers).
-- Follow `.agents/rules/security.md` and `.agents/skills/keychain-security/` for concrete implementation guidance.
-
-## Task lifecycle (risk-based)
-
-Use the Standard Task SOP (risk matrix + Fast/Full lanes) as policy.
-
-- **Low risk**: branch in the current checkout, Full review optional, minimum merge gate is `make test`.
-- **Medium/High risk**: branch in the current checkout, semáforo review mandatory, merge gate includes `make build` + `make test`.
-
-Preferred branch workflow:
-
-```bash
-git checkout main
-git pull --ff-only
+git checkout main && git pull --ff-only
 git checkout -b <branch-name>
 # ... implement ...
-git checkout main
-git merge <branch-name>
+git checkout main && git merge <branch-name>
 git branch -d <branch-name>
 ```
 
-Detailed procedures:
+### Clarification & Confirmation
 
-- `.agents/skills/task-lifecycle/SKILL.md`
-- `.agents/skills/git-workflow/SKILL.md`
+If requirements are ambiguous, incomplete, or have meaningful trade-offs:
+- Ask concise confirmation questions **before coding**
+- Agents are explicitly authorized to ask to prevent wrong assumptions
+- Do not silently assume behavior, scope, acceptance criteria, or intent
 
-## Project structure
+### Reusable Blocks First (Decision Order)
 
-- `App/` — main app target (entry point, Info.plist, entitlements)
+Before implementing new behavior:
+
+1. **Reuse** — Does existing block fit? Use it.
+2. **Extend** — Is existing block adjacent? Extend it safely.
+3. **Create** — Is this genuinely new? Create a focused new block.
+
+Never copy-paste implementations across the codebase.
+
+---
+
+## Red Flags & Self-Check
+
+Before responding or committing code, verify:
+
+- **Reusable blocks:** Did I scan for existing solutions?
+- **Risk classified:** Did I classify task as Low/Medium/High?
+- **Assumptions checked:** Did I ask clarification or assume silently?
+- **Hard constraints:** Am I violating any of the 8 hard constraints above?
+- **Code review:** Did I plan for appropriate review depth (lightweight vs. full semáforo)?
+- **Merge gates:** Did I verify `make test` + `make build` will pass?
+
+**Signals of deviation:**
+- "I assumed this was okay..." → Violates clarification hard constraint
+- "I'll just copy this logic..." → Violates reuse/extend/create hard constraint
+- "This is Low risk, so I'll skip testing" → Violates hard gates
+- "I know this breaks something, but..." → Violates "never commit broken code"
+
+When deviations occur, document in GitHub issue with label `known-limitation` or `needs-review`.
+
+---
+
+## Security Considerations
+
+- Never hardcode secrets, API keys, or tokens in source code, test fixtures, scripts, or docs.
+- Use Keychain-backed secret handling patterns via `KeychainManager`.
+- Apply least-privilege thinking for entitlements, capabilities, and integrations.
+- Validate and sanitize external input at module boundaries (network payloads, file content, provider responses).
+- Avoid logging sensitive data (keys, tokens, full transcripts, personal identifiers).
+- See `.agents/rules/security.md` and `.agents/skills/keychain-security/` for implementation guidance.
+
+---
+
+## Task Lifecycle Summary
+
+See [Task Lifecycle Skill](./.agents/skills/task-lifecycle/SKILL.md) for full procedures.
+
+**Low risk:** Feature branch, lightweight review optional, merge gate: `make test`
+
+**Medium/High risk:** Feature branch, semáforo review mandatory, merge gates: `make build` + `make test`
+
+---
+
+## Project Structure
+
+- `App/` — main app target
 - `Packages/MeetingAssistantCore/` — Swift package root
-- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreCommon/` — shared utilities/resources
-- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreDomain/` — domain layer
-- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreInfrastructure/` — infrastructure layer
-- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreData/` — data layer
-- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreAudio/` — audio subsystem
-- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreAI/` — AI/transcription subsystem
-- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreUI/` — UI/presentation layer
-- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/` — compatibility exports
+- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCore{Common,Domain,Infrastructure,Data,Audio,AI,UI}/`
 - `docs/` — technical documentation
-- `.agents/` — agent rules and skills (canonical)
+- `.agents/` — agent guidance (rules, skills, docs, this file)
 
-## Extended references
+---
 
-Rules index:
+## Additional References
 
-| Document | What it covers |
-|----------|----------------|
+### Key Documentation
+
+| Resource | Purpose |
+|----------|---------|
+| [Build and Test Reference](./.agents/docs/build-and-test.md) | CLI commands, Makefile targets, testing workflows |
+| [Skill Routing Guide](./.agents/docs/skill-routing.md) | When to use which skill; problem-specific routing |
+| [Skills Index](./.agents/SKILLS_INDEX.md) | Complete skill registry with triggers |
+
+### Agent Guidelines
+
+| Document | Scope |
+|----------|-------|
 | `.agents/rules/architecture.md` | MVVM / Clean Architecture patterns |
 | `.agents/rules/clean-code.md` | Code quality guidelines |
-| `.agents/rules/concurrency.md` | Async/await, actors, thread safety |
+| `.agents/rules/concurrency.md` | Async/await, actors, thread safety patterns |
 | `.agents/rules/data-persistency.md` | Data storage strategies |
 | `.agents/rules/error-handling.md` | Error propagation and logging |
 | `.agents/rules/external-dependencies.md` | Dependency management |
@@ -342,64 +222,53 @@ Rules index:
 | `.agents/rules/testing.md` | Testing guidelines |
 | `.agents/rules/type-security.md` | Type safety patterns |
 
-## Skill precedence (macOS/Swift)
+### Skills (Conditional, Load When Relevant)
 
-Use this order to reduce overlap and noise when multiple skills could apply:
+See [Skills Index](./.agents/SKILLS_INDEX.md) for full registry. Common entry points:
 
-1. `build-macos-apps` — intake/routing only (select workflow quickly)
-2. `macos-development` — canonical macOS/Swift implementation guidance
-3. `native-app-designer` — primary UI/UX direction and experience quality baseline for macOS/iOS interfaces
-4. `swift-concurrency-expert` — concurrency compliance/remediation (Swift 6.2+)
-5. `swiftui-performance-audit` — SwiftUI runtime performance diagnosis and fixes
-6. `swiftui-animation` — advanced animation/transition/shader work when explicitly needed
+- **UI/UX work** → `native-app-designer` (primary) then `swiftui-patterns` / `swiftui-animation` / `swiftui-performance-audit`
+- **macOS platform** → `macos-development`
+- **Swift 6.2 concurrency** → `swift-concurrency-expert` (compiler errors) or `concurrency` (concepts)
+- **Performance issues** → `swiftui-performance-audit` (UI) or `performance` (system-level) or `audio-realtime` (audio)
+- **Build/test workflows** → `build-macos-apps` or consult [Build and Test Reference](./.agents/docs/build-and-test.md)
+- **Code quality** → `code-quality` or `code-review` (for semáforo reviews)
 
-Notes:
+---
 
-- Treat `build-macos-apps` as orchestrator, not canonical technical reference.
-- Prefer canonical references under `.agents/skills/macos-development/` when overlap exists.
-- Keep verification aligned to repo commands: `make build|test|lint` and `*-agent` variants.
+## Deviation & Resolution SOP
 
-Performance routing notes:
+If a task or agent deviates from hard constraints, follow these steps:
 
-- Use `swiftui-performance-audit` first for SwiftUI runtime issues (janky scrolling, excessive view updates, layout thrash, animation hitches).
-- Use `performance` for system/resource profiling outside SwiftUI rendering (CPU, memory, energy, startup, I/O).
-- Use `audio-realtime` when the bottleneck is in capture/processing pipelines rather than SwiftUI rendering.
-- Prefer `make profile-report` for repeatable trace capture + metric extraction before/after fixes.
+1. **Identify the violation** — Which of the 8 hard constraints was breached?
+2. **Minimal test case** — Create smallest reproducible example
+3. **Update guidance** — Refine AGENTS.md or relevant skill to prevent recurrence
+4. **Add example** — To relevant skill or `.agents/docs/` file, showing correct behavior
+5. **Mark for review** — Update document version, create GitHub issue if systemic
+6. **Communicate** — Link GitHub issue, escalate if needed
 
-Animation routing notes:
+**Example:**
 
-- For any macOS/iOS UI/UX task, consult `native-app-designer` first to define visual/interaction direction and UX acceptance criteria.
-- Use `swiftui-patterns` for general view composition/state patterns after UX direction is defined.
-- Use `swiftui-animation` for advanced motion behavior (transitions, matched geometry, animation orchestration, shader effects).
-- Respect motion accessibility: prefer reduced motion paths when `accessibilityDisplayShouldReduceMotion` is enabled.
+```
+Issue: Agent ignored hard constraint (copied code without evaluating reuse/extend/create)
 
-Concurrency routing notes:
+Root cause: Constraint explanation was vague
 
-- Use `swift-concurrency-expert` for compiler diagnostics, actor isolation fixes, Sendable remediation, and Swift 6 migration work.
-- Use `concurrency` only for foundational/conceptual guidance when no concrete compiler issue is in scope.
-- For code changes touching concurrency, prefer running `make test-strict` and optionally `./scripts/preflight.sh --strict-concurrency` before merge.
+Fix: Updated AGENTS.md hard constraint with clearer wording
 
-Skills index (loaded conditionally):
+Added example: Before/after showing how to evaluate reusable blocks
 
-| Skill | Trigger |
-|-------|---------|
-| `.agents/skills/audio-realtime/` | AVAudioSourceNode, AudioRecorder, ProcessTap |
-| `.agents/skills/debugging-strategies/` | bugs, crash, performance issue |
-| `.agents/skills/documentation/` | DocC comments, API documentation |
-| `.agents/skills/git-advanced-workflows/` | rebase, bisect, cherry-pick |
-| `.agents/skills/git-workflow/` | git commit, branches, PRs |
-| `.agents/skills/keychain-security/` | KeychainManager, KeychainProvider, storeSecret |
-| `.agents/skills/localization/` | Bundle.safeModule, String.localized, accessibility |
-| `.agents/skills/menubar/` | NSStatusItem, NSMenu, NSPopover |
-| `.agents/skills/native-app-designer/` | primary UI/UX direction, interface quality analysis, visual/motion design for macOS/iOS |
-| `.agents/skills/macos-development/` | macOS apps with SwiftUI/AppKit, lifecycle and platform integration |
-| `.agents/skills/build-macos-apps/` | request intake and workflow routing for CLI-first macOS app tasks |
-| `.agents/skills/skill-development/` | create skill, develop plugin |
-| `.agents/skills/skills-discovery/` | search skills, registry |
-| `.agents/skills/preview-coverage/` | SwiftUI preview requirements, preview state coverage |
-| `.agents/skills/swift-concurrency-expert/` | Swift 6.2 concurrency review/remediation and compiler error fixes |
-| `.agents/skills/swift-package-manager/` | Package.swift, SPM dependencies |
-| `.agents/skills/swiftui-animation/` | advanced SwiftUI animation, transitions, matched geometry, Metal shaders |
-| `.agents/skills/swiftui-performance-audit/` | SwiftUI runtime performance audits and optimization guidance |
-| `.agents/skills/swiftui-patterns/` | SwiftUI views, @State, NavigationStack |
-| `.agents/skills/testing-xctest/` | XCTest, @Test, mock, XCTAssert |
+v2.2 changelog → "Hard constraints now explicit with examples"
+
+Create issue #123 label:known-limitation describing pattern to avoid
+```
+
+---
+
+## Evolution & Feedback
+
+This document evolves as the team discovers edge cases and patterns.
+
+- **Report ambiguities** → Create issue with label `agents-guidance-unclear`
+- **Suggest improvements** → Open PR to `.agents/skills/` or `AGENTS.md`
+- **Track limitations** → Label issues `known-limitation` with context and workarounds
+- **3-month review cycle** → Document reviewed every 90 days or on major model/tool changes
