@@ -222,6 +222,7 @@ General style and architecture rules:
 - When implementing a new behavior, first evaluate reuse/expansion of existing blocks before creating new ones.
 - When moving types between modules, review access control deliberately (`public` only when required).
 - Keep tests aligned with module ownership when internals are exercised.
+- NEVER exceed the limit of 600 lines per file. If it's longer than that, break the code logically into more files (of at least 200 characters each).
 
 UI design-system rules:
 
