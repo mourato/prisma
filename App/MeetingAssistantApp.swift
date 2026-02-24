@@ -94,6 +94,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var cancellables = Set<AnyCancellable>()
     private var dockObserver: AnyCancellable?
     private var lastRecordingUIRenderState: RecordingUIRenderState?
+}
+
+extension AppDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Initialize Monitoring Services
@@ -356,88 +359,130 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    private enum ShortcutDisplaySource {
+        case inHouse(ShortcutDefinition)
+        case preset(String)
+        case custom
+        case none
+    }
+
     private func applyShortcut(to item: NSMenuItem, title: String, shortcutName: KeyboardShortcuts.Name) {
         let settings = AppSettingsStore.shared
-        var presetString: String?
-        var inHouseShortcut: ShortcutDefinition?
-        var isCustom = false
-
-        if shortcutName == .dictationToggle {
-            if let definition = settings.dictationShortcutDefinition {
-                inHouseShortcut = definition
-                isCustom = false
-            } else if settings.dictationModifierShortcutGesture != nil {
-                isCustom = false
-            } else if settings.dictationSelectedPresetKey != .custom, settings.dictationSelectedPresetKey != .notSpecified {
-                presetString = settings.dictationSelectedPresetKey.displayName
-            } else {
-                isCustom = true
-            }
-        } else if shortcutName == .assistantCommand {
-            if let definition = settings.assistantShortcutDefinition {
-                inHouseShortcut = definition
-                isCustom = false
-            } else if settings.assistantModifierShortcutGesture != nil {
-                isCustom = false
-            } else if settings.assistantSelectedPresetKey != .custom, settings.assistantSelectedPresetKey != .notSpecified {
-                presetString = settings.assistantSelectedPresetKey.displayName
-            } else {
-                isCustom = true
-            }
-        } else if shortcutName == .meetingToggle {
-            if let definition = settings.meetingShortcutDefinition {
-                inHouseShortcut = definition
-                isCustom = false
-            } else if settings.meetingModifierShortcutGesture != nil {
-                isCustom = false
-            } else if settings.meetingSelectedPresetKey != .custom, settings.meetingSelectedPresetKey != .notSpecified {
-                presetString = settings.meetingSelectedPresetKey.displayName
-            } else {
-                isCustom = true
-            }
-        }
-
-        if let inHouseShortcut {
-            if applyShortcutDefinition(inHouseShortcut, to: item, title: title) {
+        switch resolveShortcutDisplaySource(for: shortcutName, settings: settings) {
+        case let .inHouse(shortcut):
+            if applyShortcutDefinition(shortcut, to: item, title: title) {
                 return
             }
-            item.title = "\(title) [\(inHouseShortcut.menuDisplayString)]"
+            item.title = "\(title) [\(shortcut.menuDisplayString)]"
             clearShortcut(from: item)
-        } else if let presetString {
+        case let .preset(presetString):
             item.title = "\(title) [\(presetString)]"
             clearShortcut(from: item)
-        } else if isCustom, let shortcut = KeyboardShortcuts.Shortcut(name: shortcutName) {
-            item.title = title
-
-            // Robust key equivalent handling
-            let desc = shortcut.description
-            let modifierSymbols = ["⌘", "⌥", "⌃", "⇧"]
-            var cleanKey = desc
-            for symbol in modifierSymbols {
-                cleanKey = cleanKey.replacingOccurrences(of: symbol, with: "")
+        case .custom:
+            guard let shortcut = KeyboardShortcuts.Shortcut(name: shortcutName) else {
+                item.title = title
+                clearShortcut(from: item)
+                return
             }
-            cleanKey = cleanKey.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-
-            // Map special key descriptions back to NSMenuItem key equivalents
-            switch cleanKey {
-            case "space": item.keyEquivalent = " "
-            case "return", "enter": item.keyEquivalent = "\r"
-            case "tab": item.keyEquivalent = "\t"
-            case "backspace", "delete": item.keyEquivalent = String(UnicodeScalar(NSBackspaceCharacter)!)
-            case "escape", "esc": item.keyEquivalent = "\u{1b}"
-            case "left": item.keyEquivalent = String(UnicodeScalar(NSLeftArrowFunctionKey)!)
-            case "right": item.keyEquivalent = String(UnicodeScalar(NSRightArrowFunctionKey)!)
-            case "up": item.keyEquivalent = String(UnicodeScalar(NSUpArrowFunctionKey)!)
-            case "down": item.keyEquivalent = String(UnicodeScalar(NSDownArrowFunctionKey)!)
-            default:
-                // For regular keys, use the first character of the stripped string
-                item.keyEquivalent = String(cleanKey.prefix(1))
-            }
-
-            item.keyEquivalentModifierMask = shortcut.modifiers
-        } else {
+            applyCustomShortcut(shortcut, to: item, title: title)
+        case .none:
             item.title = title
             clearShortcut(from: item)
+        }
+    }
+
+    private func resolveShortcutDisplaySource(
+        for shortcutName: KeyboardShortcuts.Name,
+        settings: AppSettingsStore
+    ) -> ShortcutDisplaySource {
+        switch shortcutName {
+        case .dictationToggle:
+            resolveShortcutDisplaySource(
+                definition: settings.dictationShortcutDefinition,
+                hasModifierShortcut: settings.dictationModifierShortcutGesture != nil,
+                selectedPresetKey: settings.dictationSelectedPresetKey
+            )
+        case .assistantCommand:
+            resolveShortcutDisplaySource(
+                definition: settings.assistantShortcutDefinition,
+                hasModifierShortcut: settings.assistantModifierShortcutGesture != nil,
+                selectedPresetKey: settings.assistantSelectedPresetKey
+            )
+        case .meetingToggle:
+            resolveShortcutDisplaySource(
+                definition: settings.meetingShortcutDefinition,
+                hasModifierShortcut: settings.meetingModifierShortcutGesture != nil,
+                selectedPresetKey: settings.meetingSelectedPresetKey
+            )
+        default:
+            .custom
+        }
+    }
+
+    private func resolveShortcutDisplaySource(
+        definition: ShortcutDefinition?,
+        hasModifierShortcut: Bool,
+        selectedPresetKey: PresetShortcutKey
+    ) -> ShortcutDisplaySource {
+        if let definition {
+            return .inHouse(definition)
+        }
+        if hasModifierShortcut {
+            return .none
+        }
+        if selectedPresetKey != .custom, selectedPresetKey != .notSpecified {
+            return .preset(selectedPresetKey.displayName)
+        }
+        return .custom
+    }
+
+    private func applyCustomShortcut(
+        _ shortcut: KeyboardShortcuts.Shortcut,
+        to item: NSMenuItem,
+        title: String
+    ) {
+        item.title = title
+        let normalizedKey = normalizedShortcutKey(from: shortcut.description)
+        item.keyEquivalent = menuKeyEquivalent(from: normalizedKey) ?? String(normalizedKey.prefix(1))
+        item.keyEquivalentModifierMask = shortcut.modifiers
+    }
+
+    private func normalizedShortcutKey(from description: String) -> String {
+        let modifierSymbols = ["⌘", "⌥", "⌃", "⇧"]
+        var cleanKey = description
+        for symbol in modifierSymbols {
+            cleanKey = cleanKey.replacingOccurrences(of: symbol, with: "")
+        }
+        return cleanKey.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    private func menuKeyEquivalent(from normalizedKey: String) -> String? {
+        switch normalizedKey {
+        case "space":
+            return " "
+        case "return", "enter":
+            return "\r"
+        case "tab":
+            return "\t"
+        case "backspace", "delete":
+            guard let scalar = UnicodeScalar(NSBackspaceCharacter) else { return nil }
+            return String(scalar)
+        case "escape", "esc":
+            return "\u{1b}"
+        case "left":
+            guard let scalar = UnicodeScalar(NSLeftArrowFunctionKey) else { return nil }
+            return String(scalar)
+        case "right":
+            guard let scalar = UnicodeScalar(NSRightArrowFunctionKey) else { return nil }
+            return String(scalar)
+        case "up":
+            guard let scalar = UnicodeScalar(NSUpArrowFunctionKey) else { return nil }
+            return String(scalar)
+        case "down":
+            guard let scalar = UnicodeScalar(NSDownArrowFunctionKey) else { return nil }
+            return String(scalar)
+        default:
+            return normalizedKey.first.map(String.init)
         }
     }
 
@@ -476,35 +521,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             let normalized = primaryKey.display
                 .trimmingCharacters(in: .whitespacesAndNewlines)
                 .lowercased()
-
-            switch normalized {
-            case "return", "enter":
-                return "\r"
-            case "tab":
-                return "\t"
-            case "backspace", "delete":
-                guard let scalar = UnicodeScalar(NSBackspaceCharacter) else { return nil }
-                return String(scalar)
-            case "escape", "esc":
-                return "\u{1b}"
-            case "left":
-                guard let scalar = UnicodeScalar(NSLeftArrowFunctionKey) else { return nil }
-                return String(scalar)
-            case "right":
-                guard let scalar = UnicodeScalar(NSRightArrowFunctionKey) else { return nil }
-                return String(scalar)
-            case "up":
-                guard let scalar = UnicodeScalar(NSUpArrowFunctionKey) else { return nil }
-                return String(scalar)
-            case "down":
-                guard let scalar = UnicodeScalar(NSDownArrowFunctionKey) else { return nil }
-                return String(scalar)
-            default:
-                guard let first = normalized.first else {
-                    return nil
-                }
-                return String(first)
-            }
+            return menuKeyEquivalent(from: normalized)
         }
     }
 
