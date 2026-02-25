@@ -32,6 +32,10 @@ extension AssistantShortcutController {
         )
     }
 
+    private var shouldPropagateEscapeForDoublePressCancel: Bool {
+        settings.assistantUseEscapeToCancelRecording || settings.useEscapeToCancelRecording
+    }
+
     func refreshShortcutLayerKeySuppression() {
         guard shouldSuppressKeyDownEvents else {
             shortcutLayerKeySuppressor.stop()
@@ -104,11 +108,9 @@ extension AssistantShortcutController {
         }
 
         if event.keyCode == PresetShortcutKey.escapeKeyCode {
-            // Always allow Escape to propagate when escape cancel is enabled,
-            // regardless of whether we're recording or not.
-            // This ensures both Dictation mode and Assistant mode can receive
-            // the Escape event for double-press cancel detection.
-            if settings.assistantUseEscapeToCancelRecording {
+            // Always allow Escape to propagate when double-press cancel is enabled
+            // for either Assistant or Dictation mode.
+            if shouldPropagateEscapeForDoublePressCancel {
                 // If recording, disarm the layer silently
                 if assistantService.isRecording {
                     disarmShortcutLayer(showFeedback: false)
@@ -120,7 +122,7 @@ extension AssistantShortcutController {
                 // (for Dictation) or AssistantShortcuts (for Assistant) can handle it
                 return false
             }
-            // Escape cancel is disabled, just disarm the layer
+            // Escape double-press cancel is disabled for both modes; just disarm the layer
             disarmShortcutLayer(showFeedback: true)
             return true
         }

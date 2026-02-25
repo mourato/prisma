@@ -55,6 +55,9 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         static let panelWidthMiniDictation: CGFloat = 188
         static let panelWidthError: CGFloat = MeetingAssistantDesignSystem.Layout.recordingIndicatorPanelWidth
         static let screenPadding: CGFloat = 40
+        static let panelShadowInset: CGFloat = MeetingAssistantDesignSystem.Layout.recordingIndicatorMainShadowRadius
+            + abs(MeetingAssistantDesignSystem.Layout.recordingIndicatorMainShadowY)
+            + 4
     }
 
     private var isRunningTests: Bool {
@@ -225,9 +228,8 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
 
         if let panel {
             let style = settingsStore.recordingIndicatorStyle
-            let panelWidth = panelWidth(for: style, renderState: renderState)
-            let panelHeight = panelHeight(for: style, mode: renderState.mode)
-            panel.setContentSize(NSSize(width: panelWidth, height: panelHeight))
+            let contentSize = panelContentSize(for: style, renderState: renderState)
+            panel.setContentSize(contentSize)
             positionPanel(panel, at: settingsStore.recordingIndicatorPosition)
         }
     }
@@ -250,15 +252,14 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
 
     private func ensurePanel(for renderState: RecordingIndicatorRenderState) -> NSPanel {
         let style = settingsStore.recordingIndicatorStyle
-        let panelWidth = panelWidth(for: style, renderState: renderState)
-        let panelHeight = panelHeight(for: style, mode: renderState.mode)
+        let contentSize = panelContentSize(for: style, renderState: renderState)
 
         if let panel {
-            panel.setContentSize(NSSize(width: panelWidth, height: panelHeight))
+            panel.setContentSize(contentSize)
             return panel
         }
 
-        let contentRect = NSRect(x: 0, y: 0, width: panelWidth, height: panelHeight)
+        let contentRect = NSRect(x: 0, y: 0, width: contentSize.width, height: contentSize.height)
         let panel = NSPanel(
             contentRect: contentRect,
             styleMask: [.borderless, .nonactivatingPanel],
@@ -313,7 +314,9 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
             onCancel: onCancelAction
         )
         let rootView = AnyView(
-            indicatorView.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            indicatorView
+                .padding(Constants.panelShadowInset)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         )
         if let hostingView {
             hostingView.rootView = rootView
@@ -387,6 +390,16 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         }
     }
 
+    private func panelContentSize(
+        for style: RecordingIndicatorStyle,
+        renderState: RecordingIndicatorRenderState
+    ) -> NSSize {
+        let contentWidth = panelWidth(for: style, renderState: renderState)
+        let contentHeight = panelHeight(for: style, mode: renderState.mode)
+        let inset = Constants.panelShadowInset * 2
+        return NSSize(width: contentWidth + inset, height: contentHeight + inset)
+    }
+
     private func positionPanel(_ panel: NSPanel, at position: RecordingIndicatorPosition) {
         guard let screen = activeTargetScreen(for: panel) else { return }
 
@@ -399,9 +412,9 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         // Position vertically based on setting
         let y: CGFloat = switch position {
         case .top:
-            screenFrame.origin.y + screenFrame.height - panelSize.height - Constants.screenPadding
+            screenFrame.origin.y + screenFrame.height - panelSize.height - Constants.screenPadding + Constants.panelShadowInset
         case .bottom:
-            screenFrame.origin.y + Constants.screenPadding
+            screenFrame.origin.y + Constants.screenPadding - Constants.panelShadowInset
         }
 
         panel.setFrameOrigin(NSPoint(x: x, y: y))
