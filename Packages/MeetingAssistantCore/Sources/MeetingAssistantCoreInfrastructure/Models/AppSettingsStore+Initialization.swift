@@ -62,87 +62,99 @@ extension AppSettingsStore {
 
     // MARK: - Static Initialization Helpers
 
+    /// Struct for AI configuration values to avoid large tuple.
+    struct AIConfigurationValues {
+        let aiConfiguration: AIConfiguration
+        let enhancementsAISelection: EnhancementsAISelection
+        let enhancementsDictationAISelection: EnhancementsAISelection
+        let enhancementsProviderSelectedModels: [String: String]
+    }
+
     /// Loads AI configuration properties from the context.
-    static func loadAIConfigurationValues(from context: InitializationContext) -> (
-        aiConfiguration: AIConfiguration,
-        enhancementsAISelection: EnhancementsAISelection,
-        enhancementsDictationAISelection: EnhancementsAISelection,
-        enhancementsProviderSelectedModels: [String: String]
-    ) {
+    static func loadAIConfigurationValues(from context: InitializationContext) -> AIConfigurationValues {
         let enhancementsProviderSelectedModels = loadEnhancementsProviderSelectedModels(
             defaultMeetingSelection: context.loadedEnhancementsSelection,
             defaultDictationSelection: context.loadedDictationSelection
         )
-        return (
-            context.loadedAIConfiguration,
-            context.loadedEnhancementsSelection,
-            context.loadedDictationSelection,
-            enhancementsProviderSelectedModels
+        return AIConfigurationValues(
+            aiConfiguration: context.loadedAIConfiguration,
+            enhancementsAISelection: context.loadedEnhancementsSelection,
+            enhancementsDictationAISelection: context.loadedDictationSelection,
+            enhancementsProviderSelectedModels: enhancementsProviderSelectedModels
         )
+    }
+
+    /// Struct for post-processing settings to avoid large tuple.
+    struct PostProcessingSettingsValues {
+        let systemPrompt: String
+        let userPrompts: [PostProcessingPrompt]
+        let dictationPrompts: [PostProcessingPrompt]
+        let deletedPromptIds: Set<UUID>
+        let postProcessingEnabled: Bool
+        let dictationStructuredPostProcessingEnabled: Bool
+        let isDiarizationEnabled: Bool
+        let minSpeakers: Int?
+        let maxSpeakers: Int?
+        let numSpeakers: Int?
+        let audioFormat: AudioFormat
+        let selectedPromptId: UUID?
+        let dictationSelectedPromptId: UUID?
+        let shouldMergeAudioFiles: Bool
     }
 
     /// Loads post-processing related properties.
-    static func loadPostProcessingSettings() -> (
-        systemPrompt: String,
-        userPrompts: [PostProcessingPrompt],
-        dictationPrompts: [PostProcessingPrompt],
-        deletedPromptIds: Set<UUID>,
-        postProcessingEnabled: Bool,
-        dictationStructuredPostProcessingEnabled: Bool,
-        isDiarizationEnabled: Bool,
-        minSpeakers: Int?,
-        maxSpeakers: Int?,
-        numSpeakers: Int?,
-        audioFormat: AudioFormat,
-        selectedPromptId: UUID?,
-        dictationSelectedPromptId: UUID?,
-        shouldMergeAudioFiles: Bool
-    ) {
-        (
-            UserDefaults.standard.string(forKey: Keys.systemPrompt) ?? AIPromptTemplates.defaultSystemPrompt,
-            loadDecoded([PostProcessingPrompt].self, forKey: Keys.userPrompts) ?? [],
-            loadDecoded([PostProcessingPrompt].self, forKey: Keys.dictationPrompts) ?? [],
-            loadDecoded(Set<UUID>.self, forKey: Keys.deletedPromptIds) ?? [],
-            UserDefaults.standard.bool(forKey: Keys.postProcessingEnabled),
-            loadBoolDefaultIfUnset(forKey: Keys.dictationStructuredPostProcessingEnabled, defaultValue: false),
-            UserDefaults.standard.bool(forKey: Keys.isDiarizationEnabled),
-            loadOptionalInt(forKey: Keys.minSpeakers),
-            loadOptionalInt(forKey: Keys.maxSpeakers),
-            loadOptionalInt(forKey: Keys.numSpeakers),
-            loadEnum(forKey: PostProcessingKeys.audioFormat, defaultValue: .m4a),
-            loadUUID(forKey: Keys.selectedPromptId),
-            loadUUID(forKey: Keys.dictationSelectedPromptId),
-            loadBoolDefaultIfUnset(forKey: PostProcessingKeys.shouldMergeAudioFiles, defaultValue: true)
+    static func loadPostProcessingSettings() -> PostProcessingSettingsValues {
+        PostProcessingSettingsValues(
+            systemPrompt: UserDefaults.standard.string(forKey: Keys.systemPrompt) ?? AIPromptTemplates.defaultSystemPrompt,
+            userPrompts: loadDecoded([PostProcessingPrompt].self, forKey: Keys.userPrompts) ?? [],
+            dictationPrompts: loadDecoded([PostProcessingPrompt].self, forKey: Keys.dictationPrompts) ?? [],
+            deletedPromptIds: loadDecoded(Set<UUID>.self, forKey: Keys.deletedPromptIds) ?? [],
+            postProcessingEnabled: UserDefaults.standard.bool(forKey: Keys.postProcessingEnabled),
+            dictationStructuredPostProcessingEnabled: loadBoolDefaultIfUnset(forKey: Keys.dictationStructuredPostProcessingEnabled, defaultValue: false),
+            isDiarizationEnabled: UserDefaults.standard.bool(forKey: Keys.isDiarizationEnabled),
+            minSpeakers: loadOptionalInt(forKey: Keys.minSpeakers),
+            maxSpeakers: loadOptionalInt(forKey: Keys.maxSpeakers),
+            numSpeakers: loadOptionalInt(forKey: Keys.numSpeakers),
+            audioFormat: loadEnum(forKey: PostProcessingKeys.audioFormat, defaultValue: .m4a),
+            selectedPromptId: loadUUID(forKey: Keys.selectedPromptId),
+            dictationSelectedPromptId: loadUUID(forKey: Keys.dictationSelectedPromptId),
+            shouldMergeAudioFiles: loadBoolDefaultIfUnset(forKey: PostProcessingKeys.shouldMergeAudioFiles, defaultValue: true)
         )
+    }
+
+    /// Struct for audio and language settings to avoid large tuple.
+    struct AudioAndLanguageSettingsValues {
+        let selectedLanguage: AppLanguage
+        let audioDevicePriority: [String]
+        let useSystemDefaultInput: Bool
+        let muteOutputDuringRecording: Bool
+        let autoIncreaseMicrophoneVolume: Bool
     }
 
     /// Loads audio and language settings.
-    static func loadAudioAndLanguageSettings() -> (
-        selectedLanguage: AppLanguage,
-        audioDevicePriority: [String],
-        useSystemDefaultInput: Bool,
-        muteOutputDuringRecording: Bool,
-        autoIncreaseMicrophoneVolume: Bool
-    ) {
-        (
-            loadEnum(forKey: Keys.selectedLanguage, defaultValue: .system),
-            UserDefaults.standard.stringArray(forKey: Keys.audioDevicePriority) ?? [],
-            loadBoolDefaultIfUnset(forKey: Keys.useSystemDefaultInput, defaultValue: true),
-            UserDefaults.standard.bool(forKey: Keys.muteOutputDuringRecording),
-            UserDefaults.standard.bool(forKey: Keys.autoIncreaseMicrophoneVolume)
+    static func loadAudioAndLanguageSettings() -> AudioAndLanguageSettingsValues {
+        AudioAndLanguageSettingsValues(
+            selectedLanguage: loadEnum(forKey: Keys.selectedLanguage, defaultValue: .system),
+            audioDevicePriority: UserDefaults.standard.stringArray(forKey: Keys.audioDevicePriority) ?? [],
+            useSystemDefaultInput: loadBoolDefaultIfUnset(forKey: Keys.useSystemDefaultInput, defaultValue: true),
+            muteOutputDuringRecording: UserDefaults.standard.bool(forKey: Keys.muteOutputDuringRecording),
+            autoIncreaseMicrophoneVolume: UserDefaults.standard.bool(forKey: Keys.autoIncreaseMicrophoneVolume)
         )
     }
 
+    /// Struct for shortcut activation settings to avoid large tuple.
+    struct ShortcutActivationSettingsValues {
+        let shortcutActivationMode: ShortcutActivationMode
+        let dictationShortcutActivationMode: ShortcutActivationMode
+        let shortcutDoubleTapIntervalMilliseconds: Double
+        let useEscapeToCancelRecording: Bool
+        let selectedPresetKey: PresetShortcutKey
+        let dictationSelectedPresetKey: PresetShortcutKey
+        let meetingSelectedPresetKey: PresetShortcutKey
+    }
+
     /// Loads shortcut activation settings.
-    static func loadShortcutActivationSettings() -> (
-        shortcutActivationMode: ShortcutActivationMode,
-        dictationShortcutActivationMode: ShortcutActivationMode,
-        shortcutDoubleTapIntervalMilliseconds: Double,
-        useEscapeToCancelRecording: Bool,
-        selectedPresetKey: PresetShortcutKey,
-        dictationSelectedPresetKey: PresetShortcutKey,
-        meetingSelectedPresetKey: PresetShortcutKey
-    ) {
+    static func loadShortcutActivationSettings() -> ShortcutActivationSettingsValues {
         let rawActivationMode = UserDefaults.standard.string(forKey: Keys.shortcutActivationMode)
         let resolvedActivationMode = rawActivationMode.flatMap { ShortcutActivationMode(rawValue: $0) } ?? .holdOrToggle
 
@@ -161,14 +173,14 @@ extension AppSettingsStore {
         let rawMeetingKey = UserDefaults.standard.string(forKey: Keys.meetingSelectedPresetKey)
         let meetingPresetKey = rawMeetingKey.flatMap { PresetShortcutKey(rawValue: $0) } ?? .notSpecified
 
-        return (
-            resolvedActivationMode,
-            dictationActivationMode,
-            loadDouble(forKey: Keys.shortcutDoubleTapIntervalMilliseconds, defaultValue: defaultShortcutDoubleTapIntervalMilliseconds),
-            UserDefaults.standard.bool(forKey: Keys.useEscapeToCancelRecording),
-            presetKey,
-            dictationPresetKey,
-            meetingPresetKey
+        return ShortcutActivationSettingsValues(
+            shortcutActivationMode: resolvedActivationMode,
+            dictationShortcutActivationMode: dictationActivationMode,
+            shortcutDoubleTapIntervalMilliseconds: loadDouble(forKey: Keys.shortcutDoubleTapIntervalMilliseconds, defaultValue: defaultShortcutDoubleTapIntervalMilliseconds),
+            useEscapeToCancelRecording: UserDefaults.standard.bool(forKey: Keys.useEscapeToCancelRecording),
+            selectedPresetKey: presetKey,
+            dictationSelectedPresetKey: dictationPresetKey,
+            meetingSelectedPresetKey: meetingPresetKey
         )
     }
 
@@ -185,18 +197,21 @@ extension AppSettingsStore {
         )
     }
 
+    /// Struct for assistant settings to avoid large tuple.
+    struct AssistantSettingsValues {
+        let assistantShortcutActivationMode: ShortcutActivationMode
+        let assistantUseEscapeToCancelRecording: Bool
+        let assistantUseEnterToStopRecording: Bool
+        let assistantSelectedPresetKey: PresetShortcutKey
+        let assistantLayerShortcutKey: String
+        let assistantIntegrations: [AssistantIntegrationConfig]
+        let assistantSelectedIntegrationId: UUID?
+        let assistantRaycastEnabled: Bool
+        let assistantRaycastDeepLink: String
+    }
+
     /// Loads assistant-specific settings.
-    static func loadAssistantSettings(from context: InitializationContext) -> (
-        assistantShortcutActivationMode: ShortcutActivationMode,
-        assistantUseEscapeToCancelRecording: Bool,
-        assistantUseEnterToStopRecording: Bool,
-        assistantSelectedPresetKey: PresetShortcutKey,
-        assistantLayerShortcutKey: String,
-        assistantIntegrations: [AssistantIntegrationConfig],
-        assistantSelectedIntegrationId: UUID?,
-        assistantRaycastEnabled: Bool,
-        assistantRaycastDeepLink: String
-    ) {
+    static func loadAssistantSettings(from context: InitializationContext) -> AssistantSettingsValues {
         let rawAssistantActivation = UserDefaults.standard.string(forKey: Keys.assistantShortcutActivationMode)
         let activationMode = rawAssistantActivation
             .flatMap { ShortcutActivationMode(rawValue: $0) } ?? .holdOrToggle
@@ -206,30 +221,33 @@ extension AppSettingsStore {
 
         let rawSelectedIntegrationId = UserDefaults.standard.string(forKey: Keys.assistantSelectedIntegrationId)
 
-        return (
-            activationMode,
-            UserDefaults.standard.bool(forKey: Keys.assistantUseEscapeToCancelRecording),
-            UserDefaults.standard.bool(forKey: Keys.assistantUseEnterToStopRecording),
-            presetKey,
-            normalizedLayerShortcutKey(UserDefaults.standard.string(forKey: Keys.assistantLayerShortcutKey)) ?? "A",
-            context.loadedIntegrations ?? [AssistantIntegrationConfig.defaultRaycast],
-            rawSelectedIntegrationId.flatMap(UUID.init(uuidString:)),
-            UserDefaults.standard.bool(forKey: Keys.assistantRaycastEnabled),
-            UserDefaults.standard.string(forKey: Keys.assistantRaycastDeepLink) ?? AssistantIntegrationConfig.defaultRaycastDeepLink
+        return AssistantSettingsValues(
+            assistantShortcutActivationMode: activationMode,
+            assistantUseEscapeToCancelRecording: UserDefaults.standard.bool(forKey: Keys.assistantUseEscapeToCancelRecording),
+            assistantUseEnterToStopRecording: UserDefaults.standard.bool(forKey: Keys.assistantUseEnterToStopRecording),
+            assistantSelectedPresetKey: presetKey,
+            assistantLayerShortcutKey: normalizedLayerShortcutKey(UserDefaults.standard.string(forKey: Keys.assistantLayerShortcutKey)) ?? "A",
+            assistantIntegrations: context.loadedIntegrations ?? [AssistantIntegrationConfig.defaultRaycast],
+            assistantSelectedIntegrationId: rawSelectedIntegrationId.flatMap(UUID.init(uuidString:)),
+            assistantRaycastEnabled: UserDefaults.standard.bool(forKey: Keys.assistantRaycastEnabled),
+            assistantRaycastDeepLink: UserDefaults.standard.string(forKey: Keys.assistantRaycastDeepLink) ?? AssistantIntegrationConfig.defaultRaycastDeepLink
         )
     }
 
+    /// Struct for meeting summary settings to avoid large tuple.
+    struct MeetingSummarySettingsValues {
+        let meetingTypeAutoDetectEnabled: Bool
+        let meetingPrompts: [PostProcessingPrompt]
+        let summaryExportFolder: URL?
+        let summaryTemplate: String
+        let summaryTemplateEnabled: Bool
+        let autoExportSummaries: Bool
+        let summaryExportSafetyPolicyLevel: SummaryExportSafetyPolicyLevel
+        let meetingQnAEnabled: Bool
+    }
+
     /// Loads meeting summary settings.
-    static func loadMeetingSummarySettings() -> (
-        meetingTypeAutoDetectEnabled: Bool,
-        meetingPrompts: [PostProcessingPrompt],
-        summaryExportFolder: URL?,
-        summaryTemplate: String,
-        summaryTemplateEnabled: Bool,
-        autoExportSummaries: Bool,
-        summaryExportSafetyPolicyLevel: SummaryExportSafetyPolicyLevel,
-        meetingQnAEnabled: Bool
-    ) {
+    static func loadMeetingSummarySettings() -> MeetingSummarySettingsValues {
         var prompts: [PostProcessingPrompt] = []
         if let data = UserDefaults.standard.data(forKey: Keys.meetingPrompts),
            let decoded = try? JSONDecoder().decode([PostProcessingPrompt].self, from: data)
@@ -237,80 +255,89 @@ extension AppSettingsStore {
             prompts = decoded
         }
 
-        return (
-            UserDefaults.standard.bool(forKey: Keys.meetingTypeAutoDetectEnabled),
-            prompts,
-            loadURLBookmark(forKey: Keys.summaryExportFolder),
-            UserDefaults.standard.string(forKey: Keys.summaryTemplate) ?? defaultSummaryTemplate,
-            loadBoolDefaultIfUnset(forKey: Keys.summaryTemplateEnabled, defaultValue: true),
-            UserDefaults.standard.bool(forKey: Keys.autoExportSummaries),
-            SummaryExportSafetyPolicyLevel(rawValue: UserDefaults.standard.string(forKey: Keys.summaryExportSafetyPolicyLevel) ?? "") ?? .standard,
-            loadBoolDefaultIfUnset(forKey: Keys.meetingQnAEnabled, defaultValue: true)
+        return MeetingSummarySettingsValues(
+            meetingTypeAutoDetectEnabled: UserDefaults.standard.bool(forKey: Keys.meetingTypeAutoDetectEnabled),
+            meetingPrompts: prompts,
+            summaryExportFolder: loadURLBookmark(forKey: Keys.summaryExportFolder),
+            summaryTemplate: UserDefaults.standard.string(forKey: Keys.summaryTemplate) ?? defaultSummaryTemplate,
+            summaryTemplateEnabled: loadBoolDefaultIfUnset(forKey: Keys.summaryTemplateEnabled, defaultValue: true),
+            autoExportSummaries: UserDefaults.standard.bool(forKey: Keys.autoExportSummaries),
+            summaryExportSafetyPolicyLevel: SummaryExportSafetyPolicyLevel(rawValue: UserDefaults.standard.string(forKey: Keys.summaryExportSafetyPolicyLevel) ?? "") ?? .standard,
+            meetingQnAEnabled: loadBoolDefaultIfUnset(forKey: Keys.meetingQnAEnabled, defaultValue: true)
         )
+    }
+
+    /// Struct for context awareness settings to avoid large tuple.
+    struct ContextAwarenessSettingsValues {
+        let contextAwarenessEnabled: Bool
+        let contextAwarenessExplicitActionOnly: Bool
+        let contextAwarenessIncludeClipboard: Bool
+        let contextAwarenessIncludeWindowOCR: Bool
+        let contextAwarenessIncludeAccessibilityText: Bool
+        let contextAwarenessProtectSensitiveApps: Bool
+        let contextAwarenessRedactSensitiveData: Bool
+        let contextAwarenessExcludedBundleIDs: [String]
     }
 
     /// Loads context awareness settings.
-    static func loadContextAwarenessSettings(from context: InitializationContext) -> (
-        contextAwarenessEnabled: Bool,
-        contextAwarenessExplicitActionOnly: Bool,
-        contextAwarenessIncludeClipboard: Bool,
-        contextAwarenessIncludeWindowOCR: Bool,
-        contextAwarenessIncludeAccessibilityText: Bool,
-        contextAwarenessProtectSensitiveApps: Bool,
-        contextAwarenessRedactSensitiveData: Bool,
-        contextAwarenessExcludedBundleIDs: [String]
-    ) {
-        (
-            context.loadedContextAwarenessEnabled,
-            loadBoolDefaultIfUnset(forKey: Keys.contextAwarenessExplicitActionOnly, defaultValue: true),
-            UserDefaults.standard.bool(forKey: Keys.contextAwarenessIncludeClipboard),
-            UserDefaults.standard.bool(forKey: Keys.contextAwarenessIncludeWindowOCR),
-            loadBoolDefaultIfUnset(forKey: Keys.contextAwarenessIncludeAccessibilityText, defaultValue: true),
-            loadBoolDefaultIfUnset(forKey: Keys.contextAwarenessProtectSensitiveApps, defaultValue: true),
-            loadBoolDefaultIfUnset(forKey: Keys.contextAwarenessRedactSensitiveData, defaultValue: true),
-            loadDecoded([String].self, forKey: Keys.contextAwarenessExcludedBundleIDs) ?? []
+    static func loadContextAwarenessSettings(from context: InitializationContext) -> ContextAwarenessSettingsValues {
+        ContextAwarenessSettingsValues(
+            contextAwarenessEnabled: context.loadedContextAwarenessEnabled,
+            contextAwarenessExplicitActionOnly: loadBoolDefaultIfUnset(forKey: Keys.contextAwarenessExplicitActionOnly, defaultValue: true),
+            contextAwarenessIncludeClipboard: UserDefaults.standard.bool(forKey: Keys.contextAwarenessIncludeClipboard),
+            contextAwarenessIncludeWindowOCR: UserDefaults.standard.bool(forKey: Keys.contextAwarenessIncludeWindowOCR),
+            contextAwarenessIncludeAccessibilityText: loadBoolDefaultIfUnset(forKey: Keys.contextAwarenessIncludeAccessibilityText, defaultValue: true),
+            contextAwarenessProtectSensitiveApps: loadBoolDefaultIfUnset(forKey: Keys.contextAwarenessProtectSensitiveApps, defaultValue: true),
+            contextAwarenessRedactSensitiveData: loadBoolDefaultIfUnset(forKey: Keys.contextAwarenessRedactSensitiveData, defaultValue: true),
+            contextAwarenessExcludedBundleIDs: loadDecoded([String].self, forKey: Keys.contextAwarenessExcludedBundleIDs) ?? []
         )
+    }
+
+    /// Struct for dictation rules and web targets to avoid large tuple.
+    struct DictationRulesAndWebTargetsValues {
+        let markdownTargetBundleIdentifiers: [String]
+        let dictationAppRules: [DictationAppRule]
+        let vocabularyReplacementRules: [VocabularyReplacementRule]
+        let markdownWebTargets: [WebContextTarget]
+        let webTargetBrowserBundleIdentifiers: [String]
+        let monitoredMeetingBundleIdentifiers: [String]
+        let webMeetingTargets: [WebMeetingTarget]
     }
 
     /// Loads dictation rules and web targets.
-    static func loadDictationRulesAndWebTargets() -> (
-        markdownTargetBundleIdentifiers: [String],
-        dictationAppRules: [DictationAppRule],
-        vocabularyReplacementRules: [VocabularyReplacementRule],
-        markdownWebTargets: [WebContextTarget],
-        webTargetBrowserBundleIdentifiers: [String],
-        monitoredMeetingBundleIdentifiers: [String],
-        webMeetingTargets: [WebMeetingTarget]
-    ) {
-        (
-            loadDecoded([String].self, forKey: Keys.markdownTargetBundleIdentifiers) ?? defaultMarkdownTargetBundleIdentifiers,
-            normalizedDictationAppRules(loadDecoded([DictationAppRule].self, forKey: Keys.dictationAppRules) ?? defaultDictationAppRules),
-            normalizedVocabularyReplacementRules(loadDecoded([VocabularyReplacementRule].self, forKey: Keys.vocabularyReplacementRules) ?? []),
-            loadDecoded([WebContextTarget].self, forKey: Keys.markdownWebTargets) ?? defaultMarkdownWebTargets,
-            loadDecoded([String].self, forKey: Keys.webTargetBrowserBundleIdentifiers) ?? defaultWebTargetBrowserBundleIdentifiers,
-            loadDecoded([String].self, forKey: Keys.monitoredMeetingBundleIdentifiers) ?? defaultMonitoredMeetingBundleIdentifiers,
-            loadDecoded([WebMeetingTarget].self, forKey: Keys.webMeetingTargets) ?? defaultWebMeetingTargets
+    static func loadDictationRulesAndWebTargets() -> DictationRulesAndWebTargetsValues {
+        DictationRulesAndWebTargetsValues(
+            markdownTargetBundleIdentifiers: loadDecoded([String].self, forKey: Keys.markdownTargetBundleIdentifiers) ?? defaultMarkdownTargetBundleIdentifiers,
+            dictationAppRules: normalizedDictationAppRules(loadDecoded([DictationAppRule].self, forKey: Keys.dictationAppRules) ?? defaultDictationAppRules),
+            vocabularyReplacementRules: normalizedVocabularyReplacementRules(loadDecoded([VocabularyReplacementRule].self, forKey: Keys.vocabularyReplacementRules) ?? []),
+            markdownWebTargets: loadDecoded([WebContextTarget].self, forKey: Keys.markdownWebTargets) ?? defaultMarkdownWebTargets,
+            webTargetBrowserBundleIdentifiers: loadDecoded([String].self, forKey: Keys.webTargetBrowserBundleIdentifiers) ?? defaultWebTargetBrowserBundleIdentifiers,
+            monitoredMeetingBundleIdentifiers: loadDecoded([String].self, forKey: Keys.monitoredMeetingBundleIdentifiers) ?? defaultMonitoredMeetingBundleIdentifiers,
+            webMeetingTargets: loadDecoded([WebMeetingTarget].self, forKey: Keys.webMeetingTargets) ?? defaultWebMeetingTargets
         )
     }
 
+    /// Struct for UI and indicator settings to avoid large tuple.
+    struct UIAndIndicatorSettingsValues {
+        let assistantBorderColor: AssistantBorderColor
+        let assistantBorderStyle: AssistantBorderStyle
+        let assistantBorderWidth: Double
+        let assistantGlowSize: Double
+        let recordingIndicatorEnabled: Bool
+        let recordingIndicatorStyle: RecordingIndicatorStyle
+        let recordingIndicatorPosition: RecordingIndicatorPosition
+        let recordingIndicatorAnimationSpeed: RecordingIndicatorAnimationSpeed
+        let autoDeleteTranscriptions: Bool
+        let autoDeletePeriodDays: Int
+        let appAccentColor: AppThemeColor
+        let soundFeedbackEnabled: Bool
+        let recordingStartSound: SoundFeedbackSound
+        let recordingStopSound: SoundFeedbackSound
+        let showInDock: Bool
+    }
+
     /// Loads UI and indicator settings.
-    static func loadUIAndIndicatorSettings() -> (
-        assistantBorderColor: AssistantBorderColor,
-        assistantBorderStyle: AssistantBorderStyle,
-        assistantBorderWidth: Double,
-        assistantGlowSize: Double,
-        recordingIndicatorEnabled: Bool,
-        recordingIndicatorStyle: RecordingIndicatorStyle,
-        recordingIndicatorPosition: RecordingIndicatorPosition,
-        recordingIndicatorAnimationSpeed: RecordingIndicatorAnimationSpeed,
-        autoDeleteTranscriptions: Bool,
-        autoDeletePeriodDays: Int,
-        appAccentColor: AppThemeColor,
-        soundFeedbackEnabled: Bool,
-        recordingStartSound: SoundFeedbackSound,
-        recordingStopSound: SoundFeedbackSound,
-        showInDock: Bool
-    ) {
+    static func loadUIAndIndicatorSettings() -> UIAndIndicatorSettingsValues {
         let rawBorderColor = UserDefaults.standard.string(forKey: Keys.assistantBorderColor)
         let rawBorderStyle = UserDefaults.standard.string(forKey: Keys.assistantBorderStyle)
         let storedBorderWidth = UserDefaults.standard.object(forKey: Keys.assistantBorderWidth) as? NSNumber
@@ -326,37 +353,42 @@ extension AppSettingsStore {
         let rawStartSound = UserDefaults.standard.string(forKey: Keys.recordingStartSound)
         let rawStopSound = UserDefaults.standard.string(forKey: Keys.recordingStopSound)
 
-        return (
-            rawBorderColor.flatMap { AssistantBorderColor(rawValue: $0) } ?? .green,
-            rawBorderStyle.flatMap { AssistantBorderStyle(rawValue: $0) } ?? .stroke,
-            max(1, storedBorderWidth?.doubleValue ?? 8),
-            max(0, storedGlowSize?.doubleValue ?? 20),
-            loadBoolDefaultIfUnset(forKey: Keys.recordingIndicatorEnabled, defaultValue: true),
-            rawIndicatorStyle.flatMap { RecordingIndicatorStyle(rawValue: $0) } ?? .mini,
-            rawIndicatorPosition.flatMap { RecordingIndicatorPosition(rawValue: $0) } ?? .bottom,
-            rawIndicatorAnimationSpeed.flatMap { RecordingIndicatorAnimationSpeed(rawValue: $0) } ?? .normal,
-            UserDefaults.standard.bool(forKey: Keys.autoDeleteTranscriptions),
-            rawDays ?? 30,
-            rawAccentColor.flatMap { AppThemeColor(rawValue: $0) } ?? .system,
-            UserDefaults.standard.bool(forKey: Keys.soundFeedbackEnabled),
-            rawStartSound.flatMap { SoundFeedbackSound(rawValue: $0) } ?? .pop,
-            rawStopSound.flatMap { SoundFeedbackSound(rawValue: $0) } ?? .glass,
-            UserDefaults.standard.bool(forKey: Keys.showInDock)
+        return UIAndIndicatorSettingsValues(
+            assistantBorderColor: rawBorderColor.flatMap { AssistantBorderColor(rawValue: $0) } ?? .green,
+            assistantBorderStyle: rawBorderStyle.flatMap { AssistantBorderStyle(rawValue: $0) } ?? .stroke,
+            assistantBorderWidth: max(1, storedBorderWidth?.doubleValue ?? 8),
+            assistantGlowSize: max(0, storedGlowSize?.doubleValue ?? 20),
+            recordingIndicatorEnabled: loadBoolDefaultIfUnset(forKey: Keys.recordingIndicatorEnabled, defaultValue: true),
+            recordingIndicatorStyle: rawIndicatorStyle.flatMap { RecordingIndicatorStyle(rawValue: $0) } ?? .mini,
+            recordingIndicatorPosition: rawIndicatorPosition.flatMap { RecordingIndicatorPosition(rawValue: $0) } ?? .bottom,
+            recordingIndicatorAnimationSpeed: rawIndicatorAnimationSpeed.flatMap { RecordingIndicatorAnimationSpeed(rawValue: $0) } ?? .normal,
+            autoDeleteTranscriptions: UserDefaults.standard.bool(forKey: Keys.autoDeleteTranscriptions),
+            autoDeletePeriodDays: rawDays ?? 30,
+            appAccentColor: rawAccentColor.flatMap { AppThemeColor(rawValue: $0) } ?? .system,
+            soundFeedbackEnabled: UserDefaults.standard.bool(forKey: Keys.soundFeedbackEnabled),
+            recordingStartSound: rawStartSound.flatMap { SoundFeedbackSound(rawValue: $0) } ?? .pop,
+            recordingStopSound: rawStopSound.flatMap { SoundFeedbackSound(rawValue: $0) } ?? .glass,
+            showInDock: UserDefaults.standard.bool(forKey: Keys.showInDock)
         )
+    }
+
+    /// Struct for resolving shortcut definitions to avoid excessive parameters.
+    struct ShortcutResolutionConfig {
+        let dictationModifierGesture: ModifierShortcutGesture?
+        let assistantModifierGesture: ModifierShortcutGesture?
+        let meetingModifierGesture: ModifierShortcutGesture?
+        let dictationPresetKey: PresetShortcutKey
+        let assistantPresetKey: PresetShortcutKey
+        let meetingPresetKey: PresetShortcutKey
+        let dictationActivationMode: ShortcutActivationMode
+        let assistantActivationMode: ShortcutActivationMode
+        let shortcutActivationMode: ShortcutActivationMode
     }
 
     /// Resolves shortcut definitions from loaded values or legacy presets.
     static func resolveShortcutDefinitionsValues(
         from context: InitializationContext,
-        dictationModifierGesture: ModifierShortcutGesture?,
-        assistantModifierGesture: ModifierShortcutGesture?,
-        meetingModifierGesture: ModifierShortcutGesture?,
-        dictationPresetKey: PresetShortcutKey,
-        assistantPresetKey: PresetShortcutKey,
-        meetingPresetKey: PresetShortcutKey,
-        dictationActivationMode: ShortcutActivationMode,
-        assistantActivationMode: ShortcutActivationMode,
-        shortcutActivationMode: ShortcutActivationMode
+        config: ShortcutResolutionConfig
     ) -> (
         dictation: ShortcutDefinition?,
         assistant: ShortcutDefinition?,
@@ -364,19 +396,19 @@ extension AppSettingsStore {
     ) {
         (
             context.loadedDictationShortcutDefinition ?? resolveShortcutDefinition(
-                explicitGesture: dictationModifierGesture,
-                legacyPresetKey: dictationPresetKey,
-                activationMode: dictationActivationMode
+                explicitGesture: config.dictationModifierGesture,
+                legacyPresetKey: config.dictationPresetKey,
+                activationMode: config.dictationActivationMode
             ),
             context.loadedAssistantShortcutDefinition ?? resolveShortcutDefinition(
-                explicitGesture: assistantModifierGesture,
-                legacyPresetKey: assistantPresetKey,
-                activationMode: assistantActivationMode
+                explicitGesture: config.assistantModifierGesture,
+                legacyPresetKey: config.assistantPresetKey,
+                activationMode: config.assistantActivationMode
             ),
             context.loadedMeetingShortcutDefinition ?? resolveShortcutDefinition(
-                explicitGesture: meetingModifierGesture,
-                legacyPresetKey: meetingPresetKey,
-                activationMode: shortcutActivationMode
+                explicitGesture: config.meetingModifierGesture,
+                legacyPresetKey: config.meetingPresetKey,
+                activationMode: config.shortcutActivationMode
             )
         )
     }
@@ -384,8 +416,7 @@ extension AppSettingsStore {
     /// Finalizes initialization by performing migrations and saving initial state.
     func finalizeInitialization(context: InitializationContext) {
         // Resolve shortcut definitions
-        let defs = Self.resolveShortcutDefinitionsValues(
-            from: context,
+        let shortcutConfig = ShortcutResolutionConfig(
             dictationModifierGesture: dictationModifierShortcutGesture,
             assistantModifierGesture: assistantModifierShortcutGesture,
             meetingModifierGesture: meetingModifierShortcutGesture,
@@ -395,6 +426,10 @@ extension AppSettingsStore {
             dictationActivationMode: dictationShortcutActivationMode,
             assistantActivationMode: assistantShortcutActivationMode,
             shortcutActivationMode: shortcutActivationMode
+        )
+        let defs = Self.resolveShortcutDefinitionsValues(
+            from: context,
+            config: shortcutConfig
         )
         dictationShortcutDefinition = defs.dictation
         assistantShortcutDefinition = defs.assistant
