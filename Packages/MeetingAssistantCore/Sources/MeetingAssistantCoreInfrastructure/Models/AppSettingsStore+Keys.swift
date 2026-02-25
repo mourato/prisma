@@ -42,7 +42,6 @@ extension AppSettingsStore {
         static let assistantUseEscapeToCancelRecording = "assistantUseEscapeToCancelRecording"
         static let assistantUseEnterToStopRecording = "assistantUseEnterToStopRecording"
         static let assistantSelectedPresetKey = "assistantSelectedPresetKey"
-        static let assistantLayerShortcutKey = "assistantLayerShortcutKey"
         static let assistantBorderColor = "assistantBorderColor"
         static let assistantBorderStyle = "assistantBorderStyle"
         static let assistantBorderWidth = "assistantBorderWidth"

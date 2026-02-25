@@ -103,24 +103,16 @@ func normalizedInHouseShortcutDefinition(
     activationMode: ShortcutActivationMode
 ) -> ShortcutDefinition? {
     _ = activationMode
-    let normalized: ShortcutDefinition
-    if let primaryKey = definition.primaryKey {
-        let canonicalModifiers = canonicalSimpleOrIntermediateModifiers(definition.modifiers)
-        normalized = ShortcutDefinition(
-            modifiers: canonicalModifiers,
-            primaryKey: primaryKey,
-            trigger: .singleTap
-        )
-    } else {
-        guard let canonicalModifier = canonicalAdvancedModifier(definition.modifiers) else {
-            return nil
-        }
-        normalized = ShortcutDefinition(
-            modifiers: [canonicalModifier],
-            primaryKey: nil,
-            trigger: .doubleTap
-        )
+    guard let primaryKey = definition.primaryKey else {
+        return nil
     }
+
+    let canonicalModifiers = canonicalSimpleOrIntermediateModifiers(definition.modifiers)
+    let normalized = ShortcutDefinition(
+        modifiers: canonicalModifiers,
+        primaryKey: primaryKey,
+        trigger: .singleTap
+    )
     return normalized.isValid ? normalized : nil
 }
 
@@ -146,31 +138,6 @@ func canonicalSimpleOrIntermediateModifiers(
         .sorted { lhs, rhs in
             lhs.sortOrder < rhs.sortOrder
         }
-}
-
-func canonicalAdvancedModifier(
-    _ modifiers: [ModifierShortcutKey]
-) -> ModifierShortcutKey? {
-    guard modifiers.count == 1 else {
-        return nil
-    }
-
-    switch modifiers[0] {
-    case .leftCommand, .rightCommand,
-         .leftShift, .rightShift,
-         .leftOption, .rightOption,
-         .leftControl, .rightControl,
-         .fn:
-        return modifiers[0]
-    case .command:
-        return .rightCommand
-    case .shift:
-        return .rightShift
-    case .option:
-        return .rightOption
-    case .control:
-        return .rightControl
-    }
 }
 
 // MARK: - Recording Indicator Configuration

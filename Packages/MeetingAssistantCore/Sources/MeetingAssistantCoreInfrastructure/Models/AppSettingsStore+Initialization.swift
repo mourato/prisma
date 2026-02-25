@@ -164,14 +164,14 @@ extension AppSettingsStore {
             ?? resolvedActivationMode
 
         let rawPresetKey = UserDefaults.standard.string(forKey: Keys.selectedPresetKey)
-        let presetKey = rawPresetKey.flatMap { PresetShortcutKey(rawValue: $0) } ?? .fn
+        let presetKey = rawPresetKey.flatMap { PresetShortcutKey(rawValue: $0) } ?? .custom
 
         let rawDictationKey = UserDefaults.standard.string(forKey: Keys.dictationSelectedPresetKey)
         let dictationPresetKey = rawDictationKey.flatMap { PresetShortcutKey(rawValue: $0) }
-            ?? (rawPresetKey.flatMap { PresetShortcutKey(rawValue: $0) } ?? .fn)
+            ?? (rawPresetKey.flatMap { PresetShortcutKey(rawValue: $0) } ?? .custom)
 
         let rawMeetingKey = UserDefaults.standard.string(forKey: Keys.meetingSelectedPresetKey)
-        let meetingPresetKey = rawMeetingKey.flatMap { PresetShortcutKey(rawValue: $0) } ?? .notSpecified
+        let meetingPresetKey = rawMeetingKey.flatMap { PresetShortcutKey(rawValue: $0) } ?? .custom
 
         return ShortcutActivationSettingsValues(
             shortcutActivationMode: resolvedActivationMode,
@@ -203,7 +203,6 @@ extension AppSettingsStore {
         let assistantUseEscapeToCancelRecording: Bool
         let assistantUseEnterToStopRecording: Bool
         let assistantSelectedPresetKey: PresetShortcutKey
-        let assistantLayerShortcutKey: String
         let assistantIntegrations: [AssistantIntegrationConfig]
         let assistantSelectedIntegrationId: UUID?
         let assistantRaycastEnabled: Bool
@@ -217,7 +216,7 @@ extension AppSettingsStore {
             .flatMap { ShortcutActivationMode(rawValue: $0) } ?? .holdOrToggle
 
         let rawAssistantPresetKey = UserDefaults.standard.string(forKey: Keys.assistantSelectedPresetKey)
-        let presetKey = rawAssistantPresetKey.flatMap { PresetShortcutKey(rawValue: $0) } ?? .rightOption
+        let presetKey = rawAssistantPresetKey.flatMap { PresetShortcutKey(rawValue: $0) } ?? .custom
 
         let rawSelectedIntegrationId = UserDefaults.standard.string(forKey: Keys.assistantSelectedIntegrationId)
 
@@ -226,7 +225,6 @@ extension AppSettingsStore {
             assistantUseEscapeToCancelRecording: UserDefaults.standard.bool(forKey: Keys.assistantUseEscapeToCancelRecording),
             assistantUseEnterToStopRecording: UserDefaults.standard.bool(forKey: Keys.assistantUseEnterToStopRecording),
             assistantSelectedPresetKey: presetKey,
-            assistantLayerShortcutKey: normalizedLayerShortcutKey(UserDefaults.standard.string(forKey: Keys.assistantLayerShortcutKey)) ?? "A",
             assistantIntegrations: context.loadedIntegrations ?? [AssistantIntegrationConfig.defaultRaycast],
             assistantSelectedIntegrationId: rawSelectedIntegrationId.flatMap(UUID.init(uuidString:)),
             assistantRaycastEnabled: UserDefaults.standard.bool(forKey: Keys.assistantRaycastEnabled),
@@ -395,21 +393,30 @@ extension AppSettingsStore {
         meeting: ShortcutDefinition?
     ) {
         (
-            context.loadedDictationShortcutDefinition ?? resolveShortcutDefinition(
+            context.loadedDictationShortcutDefinition
+                .flatMap { normalizedInHouseShortcutDefinition($0, activationMode: config.dictationActivationMode) } ??
+                resolveShortcutDefinition(
                 explicitGesture: config.dictationModifierGesture,
                 legacyPresetKey: config.dictationPresetKey,
                 activationMode: config.dictationActivationMode
-            ),
-            context.loadedAssistantShortcutDefinition ?? resolveShortcutDefinition(
+                ) ??
+                defaultDictationShortcutDefinition,
+            context.loadedAssistantShortcutDefinition
+                .flatMap { normalizedInHouseShortcutDefinition($0, activationMode: config.assistantActivationMode) } ??
+                resolveShortcutDefinition(
                 explicitGesture: config.assistantModifierGesture,
                 legacyPresetKey: config.assistantPresetKey,
                 activationMode: config.assistantActivationMode
-            ),
-            context.loadedMeetingShortcutDefinition ?? resolveShortcutDefinition(
+                ) ??
+                defaultAssistantShortcutDefinition,
+            context.loadedMeetingShortcutDefinition
+                .flatMap { normalizedInHouseShortcutDefinition($0, activationMode: config.shortcutActivationMode) } ??
+                resolveShortcutDefinition(
                 explicitGesture: config.meetingModifierGesture,
                 legacyPresetKey: config.meetingPresetKey,
                 activationMode: config.shortcutActivationMode
-            )
+                ) ??
+                defaultMeetingShortcutDefinition
         )
     }
 

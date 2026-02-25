@@ -279,11 +279,6 @@ public class AppSettingsStore: ObservableObject {
         didSet { UserDefaults.standard.set(assistantSelectedPresetKey.rawValue, forKey: Keys.assistantSelectedPresetKey) }
     }
 
-    /// Single-key action used inside Assistant shortcut layer to trigger Assistant mode.
-    @Published public var assistantLayerShortcutKey: String {
-        didSet { UserDefaults.standard.set(assistantLayerShortcutKey, forKey: Keys.assistantLayerShortcutKey) }
-    }
-
     /// Color for the Assistant mode screen border.
     @Published public var assistantBorderColor: AssistantBorderColor {
         didSet { UserDefaults.standard.set(assistantBorderColor.rawValue, forKey: Keys.assistantBorderColor) }
@@ -606,7 +601,6 @@ public class AppSettingsStore: ObservableObject {
         assistantUseEscapeToCancelRecording = assistant.assistantUseEscapeToCancelRecording
         assistantUseEnterToStopRecording = assistant.assistantUseEnterToStopRecording
         assistantSelectedPresetKey = assistant.assistantSelectedPresetKey
-        assistantLayerShortcutKey = assistant.assistantLayerShortcutKey
         assistantIntegrations = assistant.assistantIntegrations
         assistantSelectedIntegrationId = assistant.assistantSelectedIntegrationId
         assistantRaycastEnabled = assistant.assistantRaycastEnabled

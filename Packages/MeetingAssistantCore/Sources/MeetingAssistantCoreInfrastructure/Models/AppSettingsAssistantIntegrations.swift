@@ -79,14 +79,10 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
     public var promptInstructions: String?
     public var selectedPreset: AssistantIntegrationPreset?
     public var shortcutDefinition: ShortcutDefinition?
-    public var layerShortcutKey: String?
     public var shortcutPresetKey: PresetShortcutKey
     public var shortcutActivationMode: ShortcutActivationMode
     public var modifierShortcutGesture: ModifierShortcutGesture?
     public var advancedScript: AssistantIntegrationScriptConfig?
-    /// Enables leader key mode for this integration.
-    /// When enabled, the layer shortcut acts as a leader that requires a second action key.
-    public var leaderModeEnabled: Bool
 
     public init(
         id: UUID = UUID(),
@@ -97,12 +93,10 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
         promptInstructions: String? = nil,
         selectedPreset: AssistantIntegrationPreset? = nil,
         shortcutDefinition: ShortcutDefinition? = nil,
-        layerShortcutKey: String? = nil,
         shortcutPresetKey: PresetShortcutKey = .notSpecified,
         shortcutActivationMode: ShortcutActivationMode = .holdOrToggle,
         modifierShortcutGesture: ModifierShortcutGesture? = nil,
-        advancedScript: AssistantIntegrationScriptConfig? = nil,
-        leaderModeEnabled: Bool = false
+        advancedScript: AssistantIntegrationScriptConfig? = nil
     ) {
         self.id = id
         self.name = name
@@ -114,77 +108,10 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
         self.shortcutDefinition = shortcutDefinition.flatMap {
             normalizedInHouseShortcutDefinition($0, activationMode: shortcutActivationMode)
         }
-        self.layerShortcutKey = Self.normalizedLayerShortcutKey(layerShortcutKey)
         self.shortcutPresetKey = shortcutPresetKey
         self.shortcutActivationMode = shortcutActivationMode
         self.modifierShortcutGesture = modifierShortcutGesture
         self.advancedScript = advancedScript
-        self.leaderModeEnabled = leaderModeEnabled
-    }
-
-    public init(
-        id: UUID = UUID(),
-        name: String,
-        kind: Kind = .deeplink,
-        isEnabled: Bool,
-        deepLink: String,
-        promptInstructions: String? = nil,
-        selectedPreset: AssistantIntegrationPreset? = nil,
-        layerShortcutKey: String? = nil,
-        shortcutPresetKey: PresetShortcutKey = .notSpecified,
-        shortcutActivationMode: ShortcutActivationMode = .holdOrToggle,
-        modifierShortcutGesture: ModifierShortcutGesture? = nil,
-        advancedScript: AssistantIntegrationScriptConfig? = nil,
-        leaderModeEnabled: Bool = false
-    ) {
-        self.init(
-            id: id,
-            name: name,
-            kind: kind,
-            isEnabled: isEnabled,
-            deepLink: deepLink,
-            promptInstructions: promptInstructions,
-            selectedPreset: selectedPreset,
-            shortcutDefinition: nil,
-            layerShortcutKey: layerShortcutKey,
-            shortcutPresetKey: shortcutPresetKey,
-            shortcutActivationMode: shortcutActivationMode,
-            modifierShortcutGesture: modifierShortcutGesture,
-            advancedScript: advancedScript,
-            leaderModeEnabled: leaderModeEnabled
-        )
-    }
-
-    public init(
-        id: UUID = UUID(),
-        name: String,
-        kind: Kind = .deeplink,
-        isEnabled: Bool,
-        deepLink: String,
-        promptInstructions: String? = nil,
-        selectedPreset: AssistantIntegrationPreset? = nil,
-        shortcutPresetKey: PresetShortcutKey = .notSpecified,
-        shortcutActivationMode: ShortcutActivationMode = .holdOrToggle,
-        modifierShortcutGesture: ModifierShortcutGesture? = nil,
-        advancedScript: AssistantIntegrationScriptConfig? = nil,
-        leaderModeEnabled: Bool = false
-    ) {
-        self.init(
-            id: id,
-            name: name,
-            kind: kind,
-            isEnabled: isEnabled,
-            deepLink: deepLink,
-            promptInstructions: promptInstructions,
-            selectedPreset: selectedPreset,
-            shortcutDefinition: nil,
-            layerShortcutKey: nil,
-            shortcutPresetKey: shortcutPresetKey,
-            shortcutActivationMode: shortcutActivationMode,
-            modifierShortcutGesture: modifierShortcutGesture,
-            advancedScript: advancedScript,
-            leaderModeEnabled: leaderModeEnabled
-        )
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -196,11 +123,13 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
         case promptInstructions
         case selectedPreset
         case shortcutDefinition
-        case layerShortcutKey
         case shortcutPresetKey
         case shortcutActivationMode
         case modifierShortcutGesture
         case advancedScript
+
+        // Legacy keys kept only for backward-compatible decoding.
+        case layerShortcutKey
         case leaderModeEnabled
     }
 
@@ -218,8 +147,6 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
         shortcutPresetKey = try container.decodeIfPresent(PresetShortcutKey.self, forKey: .shortcutPresetKey) ?? .notSpecified
         shortcutActivationMode = try container.decodeIfPresent(ShortcutActivationMode.self, forKey: .shortcutActivationMode) ?? .holdOrToggle
         modifierShortcutGesture = try container.decodeIfPresent(ModifierShortcutGesture.self, forKey: .modifierShortcutGesture)
-        // Initialize leaderModeEnabled early to avoid closure capture issues
-        leaderModeEnabled = try container.decodeIfPresent(Bool.self, forKey: .leaderModeEnabled) ?? false
 
         let decodedShortcutDefinition = try container.decodeIfPresent(ShortcutDefinition.self, forKey: .shortcutDefinition)
         let normalizedDecodedShortcut = decodedShortcutDefinition.flatMap {
@@ -234,26 +161,32 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
                 normalizedInHouseShortcutDefinition($0.asShortcutDefinition, activationMode: shortcutActivationMode)
             }
         shortcutDefinition = normalizedDecodedShortcut ?? normalizedGestureShortcut ?? normalizedLegacyShortcut
-        layerShortcutKey = try Self.normalizedLayerShortcutKey(
-            container.decodeIfPresent(String.self, forKey: .layerShortcutKey)
-        )
 
         if modifierShortcutGesture == nil {
             modifierShortcutGesture = shortcutDefinition?.asModifierShortcutGesture
         }
+
         advancedScript = try container.decodeIfPresent(AssistantIntegrationScriptConfig.self, forKey: .advancedScript)
+
+        // Decode and ignore legacy fields to keep backward compatibility with older persisted payloads.
+        _ = try container.decodeIfPresent(String.self, forKey: .layerShortcutKey)
+        _ = try container.decodeIfPresent(Bool.self, forKey: .leaderModeEnabled)
     }
 
-    private static func normalizedLayerShortcutKey(_ value: String?) -> String? {
-        guard let rawValue = value?.trimmingCharacters(in: .whitespacesAndNewlines), !rawValue.isEmpty else {
-            return nil
-        }
-
-        guard let firstCharacter = rawValue.first else {
-            return nil
-        }
-
-        return String(firstCharacter).uppercased()
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(name, forKey: .name)
+        try container.encode(kind, forKey: .kind)
+        try container.encode(isEnabled, forKey: .isEnabled)
+        try container.encode(deepLink, forKey: .deepLink)
+        try container.encodeIfPresent(promptInstructions, forKey: .promptInstructions)
+        try container.encodeIfPresent(selectedPreset, forKey: .selectedPreset)
+        try container.encodeIfPresent(shortcutDefinition, forKey: .shortcutDefinition)
+        try container.encode(shortcutPresetKey, forKey: .shortcutPresetKey)
+        try container.encode(shortcutActivationMode, forKey: .shortcutActivationMode)
+        try container.encodeIfPresent(modifierShortcutGesture, forKey: .modifierShortcutGesture)
+        try container.encodeIfPresent(advancedScript, forKey: .advancedScript)
     }
 
     public static var defaultRaycast: AssistantIntegrationConfig {
@@ -263,10 +196,17 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
             kind: .deeplink,
             isEnabled: false,
             deepLink: defaultRaycastDeepLink,
-            layerShortcutKey: "R",
+            shortcutDefinition: defaultRaycastShortcut,
             shortcutPresetKey: .custom,
-            shortcutActivationMode: .toggle,
-            leaderModeEnabled: false
+            shortcutActivationMode: .toggle
+        )
+    }
+
+    private static var defaultRaycastShortcut: ShortcutDefinition {
+        ShortcutDefinition(
+            modifiers: [.option, .command],
+            primaryKey: .letter("R", keyCode: 0x0f),
+            trigger: .singleTap
         )
     }
 

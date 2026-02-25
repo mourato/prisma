@@ -82,45 +82,15 @@ public extension AppSettingsStore {
         ModifierShortcutConflictService.conflict(
             for: candidate,
             in: configuredShortcutBindings,
-            context: ShortcutConflictContext(layerBindings: configuredShortcutLayerBindings)
+            context: ShortcutConflictContext()
         )
     }
 
     var shortcutConflicts: [ShortcutConflict] {
         ModifierShortcutConflictService.allConflicts(
             in: configuredShortcutBindings,
-            context: ShortcutConflictContext(layerBindings: configuredShortcutLayerBindings)
+            context: ShortcutConflictContext()
         )
-    }
-
-    var configuredShortcutLayerBindings: [ShortcutLayerBinding] {
-        var bindings: [ShortcutLayerBinding] = []
-
-        if let assistantLayerKey = Self.normalizedLayerShortcutKey(assistantLayerShortcutKey) {
-            bindings.append(
-                ShortcutLayerBinding(
-                    actionID: .assistant,
-                    actionDisplayName: "settings.assistant.toggle_command".localized,
-                    layerKey: assistantLayerKey
-                )
-            )
-        }
-
-        for integration in assistantIntegrations where integration.isEnabled {
-            guard let integrationLayerKey = Self.normalizedLayerShortcutKey(integration.layerShortcutKey) else {
-                continue
-            }
-
-            bindings.append(
-                ShortcutLayerBinding(
-                    actionID: .assistantIntegration(integration.id),
-                    actionDisplayName: integration.name,
-                    layerKey: integrationLayerKey
-                )
-            )
-        }
-
-        return bindings
     }
 
     func upsertAssistantIntegration(_ integration: AssistantIntegrationConfig) {
@@ -206,7 +176,6 @@ extension AppSettingsStore {
 
         normalizedIntegrations = normalizedIntegrations.map { integration in
             var normalized = integration
-            normalized.layerShortcutKey = Self.normalizedLayerShortcutKey(normalized.layerShortcutKey)
 
             let normalizedShortcut = normalized.shortcutDefinition
                 .flatMap {
@@ -236,7 +205,9 @@ extension AppSettingsStore {
             normalized.shortcutPresetKey = .custom
             normalized.shortcutActivationMode = .toggle
             normalized.deepLink = AssistantIntegrationConfig.defaultRaycastDeepLink
-            normalized.layerShortcutKey = normalized.layerShortcutKey ?? "R"
+            if normalized.shortcutDefinition == nil {
+                normalized.shortcutDefinition = AssistantIntegrationConfig.defaultRaycast.shortcutDefinition
+            }
             return normalized
         }
 
