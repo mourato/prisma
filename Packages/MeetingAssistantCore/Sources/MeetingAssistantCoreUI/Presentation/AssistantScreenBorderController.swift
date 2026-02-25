@@ -15,6 +15,7 @@ public final class AssistantScreenBorderController {
 
     private var borderWindow: NSWindow?
     private let settingsStore: AppSettingsStore
+    private var hideTask: Task<Void, Never>?
 
     /// Whether the border is currently visible.
     public private(set) var isVisible = false
@@ -40,6 +41,8 @@ public final class AssistantScreenBorderController {
     }
 
     deinit {
+        hideTask?.cancel()
+        hideTask = nil
         borderWindow = nil
     }
 
@@ -94,7 +97,12 @@ public final class AssistantScreenBorderController {
     public func hide() {
         guard let window = borderWindow else { return }
 
-        if isRunningTests || prefersReducedMotion {
+        // Cancel any pending hide task to prevent race conditions
+        hideTask?.cancel()
+        hideTask = nil
+
+        // If already hidden or reducing motion, just hide immediately
+        if !isVisible || isRunningTests || prefersReducedMotion {
             window.orderOut(nil)
             window.alphaValue = 1
             isVisible = false
@@ -104,10 +112,11 @@ public final class AssistantScreenBorderController {
         NSAnimationContext.runAnimationGroup { context in
             context.duration = Constants.animationDuration
             window.animator().alphaValue = 0
-        } completionHandler: { [weak window] in
-            Task { @MainActor in
+        } completionHandler: { [weak self, weak window] in
+            Task { @MainActor [weak self, weak window] in
                 window?.orderOut(nil)
                 window?.alphaValue = 1
+                self?.hideTask = nil
             }
         }
 
