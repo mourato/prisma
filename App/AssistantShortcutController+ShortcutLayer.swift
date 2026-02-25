@@ -104,13 +104,23 @@ extension AssistantShortcutController {
         }
 
         if event.keyCode == PresetShortcutKey.escapeKeyCode {
-            // Check if we should cancel recording instead of just disarming the layer
-            if settings.assistantUseEscapeToCancelRecording && assistantService.isRecording {
-                // Let the escape handling in AssistantShortcuts process the cancel
-                // by returning false so the event propagates
-                disarmShortcutLayer(showFeedback: false)
+            // Always allow Escape to propagate when escape cancel is enabled,
+            // regardless of whether we're recording or not.
+            // This ensures both Dictation mode and Assistant mode can receive
+            // the Escape event for double-press cancel detection.
+            if settings.assistantUseEscapeToCancelRecording {
+                // If recording, disarm the layer silently
+                if assistantService.isRecording {
+                    disarmShortcutLayer(showFeedback: false)
+                } else {
+                    // If not recording, just disarm with feedback
+                    disarmShortcutLayer(showFeedback: true)
+                }
+                // Always allow the event to propagate so GlobalShortcutController
+                // (for Dictation) or AssistantShortcuts (for Assistant) can handle it
                 return false
             }
+            // Escape cancel is disabled, just disarm the layer
             disarmShortcutLayer(showFeedback: true)
             return true
         }
