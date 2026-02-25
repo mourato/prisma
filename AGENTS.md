@@ -75,7 +75,7 @@ These are inviolable rules that apply to every task:
 - ⛔ **Always localize UI text:** User-facing strings must use `"key".localized`. Never hardcode. Remove orphaned keys from `Localizable.strings` when text is deleted.
 - ⛔ **Never hardcode secrets:** API keys, tokens, credentials always use Keychain. Never store in source/tests/scripts.
 - ⛔ **Never exceed 600 lines per file:** If longer, split logically into 2+ files (≥200 chars each).
-- ⛔ **Always run hard gates before merge:** `make test` + `make build` (mandatory). `make lint` for broad refactors.
+- ⛔ **Always run hard gates before merge:** `make test-agent` + `make build-agent` (mandatory). `make lint` for broad refactors.
 
 ---
 
@@ -104,15 +104,15 @@ Before implementation, classify your task:
 - Scan for reusable blocks (reuse → extend → create)
 - Implement in small slices
 - Pre-commit: lint/format + targeted tests
-- **Merge gate:** `make test`
+- **Merge gate:** `make test-agent`
 
 **Full Lane (Medium/High Risk):**
 - Use feature branch; keep commits atomic
 - Scan reusable blocks upfront
 - Small slices, frequent verification
 - **Before push/merge (hard gates, no exceptions):**
-  - `make build`
-  - `make test`
+  - `make build-agent`
+  - `make test-agent`
   - `make lint` (mandatory for broad refactors)
 - **Code review:** Full semáforo review (🔴/🟡/🟢). Fix all Critical + Medium findings before merge.
 
@@ -153,7 +153,7 @@ Before responding or committing code, verify:
 - **Assumptions checked:** Did I ask clarification or assume silently?
 - **Hard constraints:** Am I violating any of the 8 hard constraints above?
 - **Code review:** Did I plan for appropriate review depth (lightweight vs. full semáforo)?
-- **Merge gates:** Did I verify `make test` + `make build` will pass?
+- **Merge gates:** Did I verify `make test-agent` + `make build-agent` will pass?
 
 **Signals of deviation:**
 - "I assumed this was okay..." → Violates clarification hard constraint
@@ -180,9 +180,9 @@ When deviations occur, document in GitHub issue with label `known-limitation` or
 
 See [Task Lifecycle Skill](./.agents/skills/task-lifecycle/SKILL.md) for full procedures.
 
-**Low risk:** Feature branch, lightweight review optional, merge gate: `make test`
+**Low risk:** Feature branch, lightweight review optional, merge gate: `make test-agent`
 
-**Medium/High risk:** Feature branch, semáforo review mandatory, merge gates: `make build` + `make test`
+**Medium/High risk:** Feature branch, semáforo review mandatory, merge gates: `make build-agent` + `make test-agent`
 
 ---
 
