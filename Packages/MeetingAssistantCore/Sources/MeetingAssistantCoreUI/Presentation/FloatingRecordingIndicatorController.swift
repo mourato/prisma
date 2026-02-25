@@ -55,6 +55,8 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         static let panelWidthMiniDictation: CGFloat = 188
         static let panelWidthError: CGFloat = MeetingAssistantDesignSystem.Layout.recordingIndicatorPanelWidth
         static let screenPadding: CGFloat = 40
+        /// Extra margin to accommodate shadow rendering outside the indicator bounds
+        static let shadowMargin: CGFloat = 20
     }
 
     private var isRunningTests: Bool {
@@ -312,8 +314,11 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
             onStop: onStopAction,
             onCancel: onCancelAction
         )
+        // Add padding to ensure shadow is not clipped by panel bounds
         let rootView = AnyView(
-            indicatorView.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            indicatorView
+                .padding(Constants.shadowMargin / 2)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         )
         if let hostingView {
             hostingView.rootView = rootView
@@ -343,39 +348,45 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         for style: RecordingIndicatorStyle,
         mode: FloatingRecordingIndicatorMode
     ) -> CGFloat {
+        let baseHeight: CGFloat
         switch mode {
         case .error:
-            Constants.panelHeightClassic
+            baseHeight = Constants.panelHeightClassic
         case .starting, .recording, .processing:
             switch style {
             case .classic:
-                Constants.panelHeightClassic
+                baseHeight = Constants.panelHeightClassic
             case .mini:
-                Constants.panelHeightMini
+                baseHeight = Constants.panelHeightMini
             case .none:
-                Constants.panelHeightMini
+                baseHeight = Constants.panelHeightMini
             }
         }
+        // Add margin for shadow rendering
+        return baseHeight + Constants.shadowMargin
     }
 
     private func panelWidth(
         for style: RecordingIndicatorStyle,
         renderState: RecordingIndicatorRenderState
     ) -> CGFloat {
+        let baseWidth: CGFloat
         switch renderState.mode {
         case .error:
-            return Constants.panelWidthError
+            baseWidth = Constants.panelWidthError
         case .starting, .recording, .processing:
             let isMeetingType = renderState.kind == .meeting
             switch style {
             case .classic:
-                return isMeetingType ? Constants.panelWidthClassicMeeting : Constants.panelWidthClassicDictation
+                baseWidth = isMeetingType ? Constants.panelWidthClassicMeeting : Constants.panelWidthClassicDictation
             case .mini:
-                return isMeetingType ? Constants.panelWidthMiniMeeting : Constants.panelWidthMiniDictation
+                baseWidth = isMeetingType ? Constants.panelWidthMiniMeeting : Constants.panelWidthMiniDictation
             case .none:
-                return Constants.panelWidthMiniDictation
+                baseWidth = Constants.panelWidthMiniDictation
             }
         }
+        // Add margin for shadow rendering
+        return baseWidth + Constants.shadowMargin
     }
 
     private func shouldShowIndicator(for mode: FloatingRecordingIndicatorMode) -> Bool {
