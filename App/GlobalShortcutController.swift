@@ -559,7 +559,7 @@ final class GlobalShortcutController {
     }
 }
 
-private enum ShortcutType {
+enum ShortcutType {
     case dictation
     case meeting
 }

@@ -421,10 +421,6 @@
 "settings.assistant.controls" = "Assistant Shortcut";
 "settings.assistant.toggle_command" = "Start/Stop Assistant";
 "settings.assistant.toggle_command_desc" = "Hold or press to record a voice command for the selected text";
-"settings.assistant.layer.description" = "After triggering the Assistant shortcut, press one key (A, R, 1, etc.) to choose the action.";
-"settings.assistant.layer.assistant_key" = "Assistant action key";
-"settings.assistant.layer.integration_key" = "Integration key";
-"settings.assistant.layer.duplicate_key" = "This key is already in use by another Assistant layer action.";
 "settings.assistant.tips_title" = "Tips";
 "settings.assistant.fn_key_title" = "Using the Fn key";
 "settings.assistant.fn_key_desc" = "To use the Fn key alone:\n• Open System Settings → Keyboard\n• Click \"Press 🌐 key to\" dropdown\n• Select \"Do Nothing\"\n• This allows the app to detect the Fn key press";
@@ -445,6 +441,8 @@
 "settings.assistant.integrations.default_name" = "Integration %d";
 "settings.assistant.integrations.integration_enabled" = "Enable Selected Integration";
 "settings.assistant.integrations.integration_deeplink" = "Integration URL/Deeplink";
+"settings.assistant.integrations.shortcut.direct" = "Direct shortcut";
+"settings.assistant.integrations.shortcut.not_configured" = "Not configured";
 "settings.assistant.integrations.raycast_enabled" = "Enable Raycast Integration";
 "settings.assistant.integrations.raycast_deeplink" = "Raycast command deeplink";
 "settings.assistant.integrations.valid_deeplink" = "Valid Raycast deeplink.";
@@ -553,6 +551,7 @@
 "settings.shortcuts.modifier.title" = "Modifier Shortcut";
 "settings.shortcuts.modifier.none" = "No keys recorded.";
 "settings.shortcuts.modifier.conflict" = "This shortcut is already assigned to \"%@\".";
+"settings.shortcuts.modifier.primary_key_required" = "This shortcut needs modifiers plus a primary key (for example, ⌥⌘A). For double-modifier behavior, use external remapping to F18/F19/F20.";
 "settings.shortcuts.modifier.input_placeholder" = "Click to record shortcut";
 "settings.shortcuts.modifier.clear" = "Clear shortcut";
 "settings.shortcuts.modifier.popover.recording" = "Recording";
@@ -570,15 +569,14 @@
 "settings.shortcuts.health.badge.fallback" = "Fallback";
 "settings.shortcuts.health.degraded.title" = "Shortcut capture degraded";
 "settings.shortcuts.health.degraded.message.permissions_accessibility" = "Accessibility permission is missing. Enable it to restore global shortcut capture.";
-"settings.shortcuts.health.degraded.message.permissions_input_monitoring" = "Input Monitoring permission is missing. Enable it to restore global shortcut capture.";
 "settings.shortcuts.health.degraded.message.monitors" = "Global shortcut capture is unstable. Restart the app and verify system permissions.";
 "settings.shortcuts.health.fallback.title" = "Operational fallback active";
-"settings.shortcuts.health.fallback.message.input_monitoring" = "Event tap could not start due to missing Input Monitoring. The system is running in monitor-only mode and may not suppress keys as expected.";
 "settings.shortcuts.health.fallback.message.generic" = "Event tap is unavailable. The system is running in monitor-only mode to keep shortcuts active with reduced behavior.";
-"settings.shortcuts.health.action.open_input_monitoring" = "Open Input Monitoring";
 "settings.shortcuts.health.action.open_accessibility" = "Open Accessibility";
 "settings.shortcuts.health.accessibility.hint.read_only" = "Shows the current shortcut capture status.";
 "settings.shortcuts.health.accessibility.hint.actionable" = "Shows the current shortcut capture status and allows opening the recommended setting.";
+"settings.shortcuts.external_remap.title" = "External remap (optional)";
+"settings.shortcuts.external_remap.message" = "For double-modifier behavior without extra permissions, remap gestures externally (for example with Karabiner/HyperKey): double right Shift → F18, double left Control → F19, double right Option → F20. Then assign F18/F19/F20 as normal shortcuts in this app.";
 
 /* Permissions Settings */
 "settings.permissions.title" = "Permissions";

@@ -421,10 +421,6 @@
 "settings.assistant.controls" = "Atalho do Assistant";
 "settings.assistant.toggle_command" = "Iniciar/Parar Assistant";
 "settings.assistant.toggle_command_desc" = "Segure ou pressione para gravar um comando de voz para o texto selecionado";
-"settings.assistant.layer.description" = "Após acionar o atalho do Assistente, pressione uma tecla (A, R, 1, etc.) para escolher a ação.";
-"settings.assistant.layer.assistant_key" = "Tecla da ação do Assistente";
-"settings.assistant.layer.integration_key" = "Tecla da integração";
-"settings.assistant.layer.duplicate_key" = "Essa tecla já está sendo usada por outra ação da camada do Assistente.";
 "settings.assistant.tips_title" = "Dicas";
 "settings.assistant.fn_key_title" = "Usando a tecla Fn";
 "settings.assistant.fn_key_desc" = "Para usar a tecla Fn sozinha:\n• Abra Configurações do Sistema → Teclado\n• Clique no dropdown \"Pressionar tecla 🌐 para\"\n• Selecione \"Não fazer nada\"\n• Isso permite que o app detecte a tecla Fn";
@@ -445,6 +441,8 @@
 "settings.assistant.integrations.default_name" = "Integração %d";
 "settings.assistant.integrations.integration_enabled" = "Ativar integração selecionada";
 "settings.assistant.integrations.integration_deeplink" = "URL/Deeplink da integração";
+"settings.assistant.integrations.shortcut.direct" = "Atalho direto";
+"settings.assistant.integrations.shortcut.not_configured" = "Não configurado";
 "settings.assistant.integrations.raycast_enabled" = "Ativar integração com Raycast";
 "settings.assistant.integrations.raycast_deeplink" = "Deeplink do comando no Raycast";
 "settings.assistant.integrations.valid_deeplink" = "Deeplink do Raycast válido.";
@@ -553,6 +551,7 @@
 "settings.shortcuts.modifier.title" = "Atalho de Modificadoras";
 "settings.shortcuts.modifier.none" = "Nenhuma tecla gravada.";
 "settings.shortcuts.modifier.conflict" = "Este atalho já está vinculado a \"%@\".";
+"settings.shortcuts.modifier.primary_key_required" = "Este atalho precisa de modificadoras mais uma tecla principal (por exemplo, ⌥⌘A). Para duplo modificador, use remapeamento externo para F18/F19/F20.";
 "settings.shortcuts.modifier.input_placeholder" = "Clique para gravar atalho";
 "settings.shortcuts.modifier.clear" = "Limpar atalho";
 "settings.shortcuts.modifier.popover.recording" = "Gravando";
@@ -570,15 +569,14 @@
 "settings.shortcuts.health.badge.fallback" = "Fallback";
 "settings.shortcuts.health.degraded.title" = "Captura de atalho degradada";
 "settings.shortcuts.health.degraded.message.permissions_accessibility" = "O acesso de Acessibilidade está ausente. Ative a permissão para restabelecer a captura global de atalhos.";
-"settings.shortcuts.health.degraded.message.permissions_input_monitoring" = "O acesso de Monitoramento de Entrada está ausente. Ative a permissão para restabelecer a captura global de atalhos.";
 "settings.shortcuts.health.degraded.message.monitors" = "A captura global de atalhos está instável. Reinicie o app e confirme as permissões do sistema.";
 "settings.shortcuts.health.fallback.title" = "Fallback operacional ativo";
-"settings.shortcuts.health.fallback.message.input_monitoring" = "O event tap não pôde ser ativado por falta de Monitoramento de Entrada. O sistema está em modo monitor-only e pode não suprimir teclas conforme esperado.";
 "settings.shortcuts.health.fallback.message.generic" = "O event tap está indisponível. O sistema está operando em modo monitor-only para manter os atalhos ativos com funcionalidade reduzida.";
-"settings.shortcuts.health.action.open_input_monitoring" = "Abrir Monitoramento de Entrada";
 "settings.shortcuts.health.action.open_accessibility" = "Abrir Acessibilidade";
 "settings.shortcuts.health.accessibility.hint.read_only" = "Mostra o estado atual da captura de atalhos.";
 "settings.shortcuts.health.accessibility.hint.actionable" = "Mostra o estado atual da captura de atalhos e permite abrir a configuração recomendada.";
+"settings.shortcuts.external_remap.title" = "Remapeamento externo (opcional)";
+"settings.shortcuts.external_remap.message" = "Para reproduzir comportamento de duplo modificador sem permissões extras, faça remapeamento externo (por exemplo com Karabiner/HyperKey): duplo Shift direito → F18, duplo Control esquerdo → F19, duplo Option direito → F20. Depois atribua F18/F19/F20 como atalhos normais no app.";
 
 /* Permissions Settings */
 "settings.permissions.title" = "Permissões";

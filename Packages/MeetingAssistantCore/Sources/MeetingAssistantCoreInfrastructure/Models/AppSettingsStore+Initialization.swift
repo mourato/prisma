@@ -441,6 +441,20 @@ extension AppSettingsStore {
         dictationShortcutDefinition = defs.dictation
         assistantShortcutDefinition = defs.assistant
         meetingShortcutDefinition = defs.meeting
+        dictationModifierShortcutGesture = defs.dictation?.asModifierShortcutGesture
+        assistantModifierShortcutGesture = defs.assistant?.asModifierShortcutGesture
+        meetingModifierShortcutGesture = defs.meeting?.asModifierShortcutGesture
+
+        if defs.dictation != nil {
+            dictationSelectedPresetKey = .custom
+            selectedPresetKey = .custom
+        }
+        if defs.assistant != nil {
+            assistantSelectedPresetKey = .custom
+        }
+        if defs.meeting != nil {
+            meetingSelectedPresetKey = .custom
+        }
 
         if contextAwarenessEnabled {
             contextAwarenessIncludeAccessibilityText = true

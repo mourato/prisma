@@ -20,7 +20,6 @@ public struct AssistantSettingsTab: View {
     @State private var glowSizeInput = ""
     @State private var editingIntegration: AssistantIntegrationConfig?
     @State private var advancedIntegrationDraft: AssistantIntegrationConfig?
-    @State private var integrationShortcutConflictMessages: [UUID: String] = [:]
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init() {}
@@ -108,15 +107,11 @@ public struct AssistantSettingsTab: View {
                         conflictMessage: viewModel.assistantModifierConflictMessage
                     )
 
-                    MAActionLayerKeyEditor(
-                        title: "settings.assistant.layer.assistant_key".localized,
-                        key: $viewModel.assistantLayerShortcutKey,
-                        conflictMessage: viewModel.assistantLayerShortcutConflictMessage
+                    MACallout(
+                        kind: .info,
+                        title: "settings.shortcuts.external_remap.title".localized,
+                        message: "settings.shortcuts.external_remap.message".localized
                     )
-
-                    Text("settings.assistant.layer.description".localized)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
 
                     Divider()
 
@@ -242,8 +237,7 @@ public struct AssistantSettingsTab: View {
     private var integrationsSection: some View {
         AssistantIntegrationsSection(
             viewModel: integrationViewModel,
-            editingIntegration: $editingIntegration,
-            integrationShortcutConflictMessages: $integrationShortcutConflictMessages
+            editingIntegration: $editingIntegration
         )
     }
 

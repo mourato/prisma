@@ -20,9 +20,9 @@ final class AssistantShortcutSettingsViewModelTests: XCTestCase {
     func testClearingAssistantShortcutSetsPresetToNotSpecified() async {
         let viewModel = AssistantShortcutSettingsViewModel()
         let shortcut = ShortcutDefinition(
-            modifiers: [.rightCommand],
-            primaryKey: nil,
-            trigger: .doubleTap
+            modifiers: [.command],
+            primaryKey: .letter("A", keyCode: 0x00),
+            trigger: .singleTap
         )
 
         viewModel.assistantShortcutDefinition = shortcut
@@ -32,7 +32,7 @@ final class AssistantShortcutSettingsViewModelTests: XCTestCase {
         viewModel.assistantShortcutDefinition = nil
         await Task.yield()
 
-        XCTAssertNil(settings.assistantShortcutDefinition)
+        XCTAssertEqual(settings.assistantShortcutDefinition, AppSettingsStore.defaultAssistantShortcutDefinition)
         XCTAssertNil(settings.assistantModifierShortcutGesture)
         XCTAssertEqual(settings.assistantSelectedPresetKey, .notSpecified)
         XCTAssertEqual(viewModel.selectedPresetKey, .notSpecified)
@@ -57,7 +57,6 @@ final class AssistantShortcutSettingsViewModelTests: XCTestCase {
             reasonToken: "event_tap_inactive",
             requiresGlobalCapture: true,
             accessibilityTrusted: true,
-            inputMonitoringTrusted: true,
             eventTapExpected: true,
             eventTapActive: false
         )
@@ -67,8 +66,22 @@ final class AssistantShortcutSettingsViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.shortcutCaptureHealthPresentation?.isFallback, true)
     }
 
-    func testAssistantShortcutConflictWithLayerLeaderShowsLayerConflictMessage() async {
-        settings.assistantLayerShortcutKey = "R"
+    func testAssistantShortcutConflictWithIntegrationShowsModifierConflictMessage() async {
+        let integration = AssistantIntegrationConfig(
+            name: "Raycast",
+            kind: .deeplink,
+            isEnabled: true,
+            deepLink: AssistantIntegrationConfig.defaultRaycastDeepLink,
+            shortcutDefinition: ShortcutDefinition(
+                modifiers: [.command],
+                primaryKey: .letter("R", keyCode: 0x0f),
+                trigger: .singleTap
+            ),
+            shortcutPresetKey: .custom,
+            shortcutActivationMode: .toggle
+        )
+        settings.assistantIntegrations = [integration]
+
         let viewModel = AssistantShortcutSettingsViewModel()
 
         viewModel.assistantShortcutDefinition = ShortcutDefinition(
@@ -81,7 +94,7 @@ final class AssistantShortcutSettingsViewModelTests: XCTestCase {
         XCTAssertNil(settings.assistantShortcutDefinition)
         XCTAssertEqual(
             viewModel.assistantModifierConflictMessage,
-            "settings.assistant.layer.duplicate_key".localized
+            "settings.shortcuts.modifier.conflict".localized(with: integration.name)
         )
     }
 }

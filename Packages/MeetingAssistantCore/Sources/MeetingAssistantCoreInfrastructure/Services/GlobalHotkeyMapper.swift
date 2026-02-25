@@ -1,14 +1,18 @@
 import Carbon
 import Foundation
-import MeetingAssistantCore
 
-struct GlobalHotkeyDescriptor {
-    let keyCode: UInt32
-    let modifiers: UInt32
+public struct GlobalHotkeyDescriptor {
+    public let keyCode: UInt32
+    public let modifiers: UInt32
+
+    public init(keyCode: UInt32, modifiers: UInt32) {
+        self.keyCode = keyCode
+        self.modifiers = modifiers
+    }
 }
 
-enum GlobalHotkeyMapper {
-    static func descriptor(for definition: ShortcutDefinition) -> GlobalHotkeyDescriptor? {
+public enum GlobalHotkeyMapper {
+    public static func descriptor(for definition: ShortcutDefinition) -> GlobalHotkeyDescriptor? {
         guard definition.trigger == .singleTap,
               let primaryKey = definition.primaryKey
         else {

@@ -21,8 +21,6 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
     @Published public var assistantShortcutDefinition: ShortcutDefinition?
     @Published public var assistantModifierConflictMessage: String?
     @Published public var isRecordingCustomShortcut: Bool = false
-    @Published public var assistantLayerShortcutKey: String
-    @Published public var assistantLayerShortcutConflictMessage: String?
     @Published public var borderColor: AssistantBorderColor
     @Published public var borderStyle: AssistantBorderStyle
     @Published public var borderWidth: Double
@@ -37,8 +35,6 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
         assistantShortcutDefinition = settings.assistantShortcutDefinition
         assistantModifierConflictMessage = nil
         isRecordingCustomShortcut = settings.assistantSelectedPresetKey == .custom
-        assistantLayerShortcutKey = settings.assistantLayerShortcutKey
-        assistantLayerShortcutConflictMessage = nil
         borderColor = settings.assistantBorderColor
         borderStyle = settings.assistantBorderStyle
         let normalizedBorderWidth = Self.normalizedBorderWidthValue(settings.assistantBorderWidth)
@@ -90,13 +86,6 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
             }
             .store(in: &cancellables)
 
-        $assistantLayerShortcutKey
-            .dropFirst()
-            .sink { [weak self] newValue in
-                self?.handleAssistantLayerShortcutKeyChange(newValue)
-            }
-            .store(in: &cancellables)
-
         $borderStyle
             .dropFirst()
             .sink { [weak self] newValue in
@@ -140,6 +129,16 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
             return
         }
 
+        if let newValue,
+           ShortcutDefinitionNormalizer.normalized(newValue) == nil
+        {
+            isApplyingModifierShortcutChange = true
+            assistantShortcutDefinition = settings.assistantShortcutDefinition
+            assistantModifierConflictMessage = "settings.shortcuts.modifier.primary_key_required".localized
+            isApplyingModifierShortcutChange = false
+            return
+        }
+
         guard let normalizedValue = ShortcutDefinitionNormalizer.normalized(newValue) else {
             settings.assistantModifierShortcutGesture = nil
             settings.assistantShortcutDefinition = nil
@@ -170,39 +169,10 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
         assistantModifierConflictMessage = nil
     }
 
-    private func handleAssistantLayerShortcutKeyChange(_ newValue: String) {
-        let normalized = LayerShortcutKeyNormalizer.normalized(newValue)
-        if normalized != newValue {
-            assistantLayerShortcutKey = normalized
-            return
-        }
-
-        guard !normalized.isEmpty else {
-            assistantLayerShortcutConflictMessage = nil
-            settings.assistantLayerShortcutKey = "A"
-            assistantLayerShortcutKey = "A"
-            return
-        }
-
-        let hasConflict = settings.assistantIntegrations.contains { integration in
-            integration.isEnabled && (integration.layerShortcutKey ?? "") == normalized
-        }
-
-        if hasConflict {
-            assistantLayerShortcutConflictMessage = "settings.assistant.layer.duplicate_key".localized
-            assistantLayerShortcutKey = settings.assistantLayerShortcutKey
-            return
-        }
-
-        assistantLayerShortcutConflictMessage = nil
-        settings.assistantLayerShortcutKey = normalized
-    }
-
     private func conflictMessage(for conflict: ShortcutConflict) -> String {
         switch conflict.reason {
-        case .layerLeaderKeyCollision:
-            return "settings.assistant.layer.duplicate_key".localized
-        case .identicalSignature,
+        case .layerLeaderKeyCollision,
+             .identicalSignature,
              .effectiveModifierOverlap,
              .sideSpecificVsAgnosticOverlap,
              .assistantIntegrationConcurrentActivation:
@@ -218,8 +188,6 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
         switch presentation.action {
         case .none:
             return
-        case .openInputMonitoringSettings:
-            InputMonitoringPermissionService.openSystemSettings()
         case .openAccessibilitySettings:
             AccessibilityPermissionService.openSystemSettings()
         }

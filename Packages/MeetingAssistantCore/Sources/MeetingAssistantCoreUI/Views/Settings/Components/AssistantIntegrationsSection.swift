@@ -10,16 +10,13 @@ import SwiftUI
 public struct AssistantIntegrationsSection: View {
     @ObservedObject private var viewModel: IntegrationSettingsViewModel
     @Binding private var editingIntegration: AssistantIntegrationConfig?
-    @Binding private var integrationShortcutConflictMessages: [UUID: String]
 
     public init(
         viewModel: IntegrationSettingsViewModel,
-        editingIntegration: Binding<AssistantIntegrationConfig?>,
-        integrationShortcutConflictMessages: Binding<[UUID: String]>
+        editingIntegration: Binding<AssistantIntegrationConfig?>
     ) {
         _viewModel = ObservedObject(wrappedValue: viewModel)
         _editingIntegration = editingIntegration
-        _integrationShortcutConflictMessages = integrationShortcutConflictMessages
     }
 
     public var body: some View {
@@ -96,31 +93,17 @@ public struct AssistantIntegrationsSection: View {
                 .font(.body)
                 .fontWeight(.medium)
 
-            Spacer()
-
-            // Leader mode toggle (P2.2)
-            if integration.layerShortcutKey != nil && !integration.layerShortcutKey!.isEmpty {
-                Toggle(
-                    "settings.assistant.integrations.leader_mode".localized,
-                    isOn: Binding(
-                        get: { integration.leaderModeEnabled },
-                        set: { newValue in
-                            viewModel.setIntegrationLeaderModeEnabled(newValue, for: integration.id)
-                        }
-                    )
-                )
-                .toggleStyle(.switch)
-                .controlSize(.small)
-                .help("settings.assistant.integrations.leader_mode.help".localized)
+            VStack(alignment: .trailing, spacing: MeetingAssistantDesignSystem.Layout.spacing2) {
+                Text("settings.assistant.integrations.shortcut.direct".localized)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                Text(shortcutSummary(for: integration))
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.primary)
             }
 
-            MAActionLayerKeyEditor(
-                title: "settings.assistant.layer.integration_key".localized,
-                key: integrationLayerKeyBinding(for: integration.id),
-                conflictMessage: integrationShortcutConflictMessages[integration.id],
-                maxInputWidth: 74
-            )
-            .frame(maxWidth: 180)
+            Spacer()
 
             Button {
                 editingIntegration = integration
@@ -149,23 +132,33 @@ public struct AssistantIntegrationsSection: View {
         )
     }
 
-    private func integrationLayerKeyBinding(for id: UUID) -> Binding<String> {
-        Binding(
-            get: {
-                viewModel.integration(for: id)?.layerShortcutKey ?? ""
-            },
-            set: { newValue in
-                let conflictMessage = viewModel.setIntegrationLayerShortcutKey(newValue, for: id)
-                integrationShortcutConflictMessages[id] = conflictMessage
+    private func shortcutSummary(for integration: AssistantIntegrationConfig) -> String {
+        guard let shortcut = integration.shortcutDefinition else {
+            return "settings.assistant.integrations.shortcut.not_configured".localized
+        }
+
+        let modifierTokens = shortcut.modifiers.map { modifier in
+            switch modifier {
+            case .leftCommand, .rightCommand, .command:
+                "⌘"
+            case .leftShift, .rightShift, .shift:
+                "⇧"
+            case .leftOption, .rightOption, .option:
+                "⌥"
+            case .leftControl, .rightControl, .control:
+                "⌃"
+            case .fn:
+                "Fn"
             }
-        )
+        }
+        let primary = shortcut.primaryKey?.display ?? ""
+        return (modifierTokens + [primary]).joined(separator: " ")
     }
 }
 
 #Preview {
     AssistantIntegrationsSection(
         viewModel: IntegrationSettingsViewModel(),
-        editingIntegration: .constant(nil),
-        integrationShortcutConflictMessages: .constant([:])
+        editingIntegration: .constant(nil)
     )
 }
