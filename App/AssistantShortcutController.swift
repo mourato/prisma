@@ -41,6 +41,9 @@ final class AssistantShortcutController {
     var hasRequestedInputMonitoringPermissionForGlobalCapture = false
     var hasOpenedAccessibilitySettingsForGlobalCapture = false
     var hasOpenedInputMonitoringSettingsForGlobalCapture = false
+    let healthCheckIntervalSeconds: TimeInterval = 15
+    var healthCheckTimer: Timer?
+    var shortcutCaptureHealthSnapshot: ShortcutCaptureHealthSnapshot?
 
     init(
         assistantService: AssistantVoiceCommandService,
@@ -50,12 +53,142 @@ final class AssistantShortcutController {
         self.settings = settings
     }
 
+    func emitShortcutDetected(
+        shortcutTarget: String,
+        source: String,
+        trigger: ShortcutActivationMode
+    ) {
+        emitShortcutDetected(
+            shortcutTarget: shortcutTarget,
+            source: source,
+            triggerToken: trigger.rawValue
+        )
+    }
+
+    func emitShortcutDetected(
+        shortcutTarget: String,
+        source: String,
+        triggerToken: String
+    ) {
+        ShortcutTelemetry.emit(
+            .shortcutDetected(
+                pipeline: "assistant_shortcuts",
+                scope: "assistant",
+                shortcutTarget: shortcutTarget,
+                source: source,
+                trigger: triggerToken
+            ),
+            category: .assistant
+        )
+    }
+
+    func emitShortcutRejected(
+        shortcutTarget: String,
+        source: String,
+        trigger: ShortcutActivationMode? = nil,
+        reason: String
+    ) {
+        emitShortcutRejected(
+            shortcutTarget: shortcutTarget,
+            source: source,
+            triggerToken: triggerToken(for: trigger),
+            reason: reason
+        )
+    }
+
+    func emitShortcutRejected(
+        shortcutTarget: String,
+        source: String,
+        triggerToken: String,
+        reason: String
+    ) {
+        ShortcutTelemetry.emit(
+            .shortcutRejected(
+                pipeline: "assistant_shortcuts",
+                scope: "assistant",
+                shortcutTarget: shortcutTarget,
+                source: source,
+                trigger: triggerToken,
+                reason: reason
+            ),
+            category: .assistant
+        )
+    }
+
+    func emitPermissionBlocked(
+        permission: String,
+        accessibilityTrusted: Bool,
+        inputMonitoringTrusted: Bool
+    ) {
+        ShortcutTelemetry.emit(
+            .permissionBlocked(
+                pipeline: "assistant_shortcuts",
+                scope: "assistant",
+                permission: permission,
+                accessibilityTrusted: accessibilityTrusted,
+                inputMonitoringTrusted: inputMonitoringTrusted
+            ),
+            category: .assistant
+        )
+    }
+
+    func emitLayerArmed(source: String, trigger: String) {
+        ShortcutTelemetry.emit(
+            .layerArmed(
+                pipeline: "assistant_shortcuts",
+                scope: "assistant",
+                source: source,
+                trigger: trigger,
+                timeoutMs: layerTimeoutMilliseconds
+            ),
+            category: .assistant
+        )
+    }
+
+    func emitLayerTimeout(source: String) {
+        ShortcutTelemetry.emit(
+            .layerTimeout(
+                pipeline: "assistant_shortcuts",
+                scope: "assistant",
+                source: source,
+                timeoutMs: layerTimeoutMilliseconds
+            ),
+            category: .assistant
+        )
+    }
+
+    func emitEventTapFallback(
+        fallbackMode: String,
+        reason: String,
+        inputMonitoringTrusted: Bool?
+    ) {
+        ShortcutTelemetry.emit(
+            .eventTapFallback(
+                pipeline: "assistant_shortcuts",
+                scope: "assistant",
+                fallbackMode: fallbackMode,
+                reason: reason,
+                inputMonitoringTrusted: inputMonitoringTrusted
+            ),
+            category: .assistant
+        )
+    }
+
+    var layerTimeoutMilliseconds: Int {
+        Int(layerTimeoutNanoseconds / 1_000_000)
+    }
+
+    func triggerToken(for mode: ShortcutActivationMode?) -> String {
+        mode?.rawValue ?? "unknown"
+    }
+
     convenience init(assistantService: AssistantVoiceCommandService) {
         self.init(assistantService: assistantService, settings: .shared)
     }
 
     deinit {
         Task { @MainActor [weak self] in
+            self?.stopShortcutCaptureHealthChecks()
             self?.removeEventMonitors()
         }
     }

@@ -1,4 +1,5 @@
 import Foundation
+import MeetingAssistantCoreCommon
 
 public enum ShortcutExecutionAction: Equatable, Sendable {
     case start
@@ -48,6 +49,7 @@ public final class ShortcutExecutionEngine {
     ) -> [ShortcutExecutionAction] {
         if isActive {
             guard !isPressed else {
+                emitShortcutRejected(trigger: trigger, reason: "transition_ignored_already_pressed")
                 return []
             }
             isPressed = true
@@ -55,6 +57,7 @@ public final class ShortcutExecutionEngine {
         }
 
         guard isPressed else {
+            emitShortcutRejected(trigger: trigger, reason: "transition_ignored_not_pressed")
             return []
         }
         isPressed = false
@@ -75,8 +78,10 @@ public final class ShortcutExecutionEngine {
                 return [.start]
             }
             startedRecording = false
+            emitShortcutRejected(trigger: trigger, reason: "hold_ignored_already_recording")
             return []
         case .doubleTap:
+            emitShortcutRejected(trigger: trigger, reason: "double_tap_wait_release")
             return []
         }
     }
@@ -107,6 +112,7 @@ public final class ShortcutExecutionEngine {
 
             lastTapTime = now
             lastTapWasRecording = isRecording
+            emitShortcutRejected(trigger: trigger, reason: "double_tap_wait_second_tap")
             return []
         }
     }
@@ -125,5 +131,19 @@ public final class ShortcutExecutionEngine {
     private func resetHoldState() {
         pressStartTime = nil
         startedRecording = false
+    }
+
+    private func emitShortcutRejected(trigger: ShortcutTrigger, reason: String) {
+        ShortcutTelemetry.emit(
+            .shortcutRejected(
+                pipeline: "shortcut_execution_engine",
+                scope: "engine",
+                shortcutTarget: "recording_toggle",
+                source: "execution_engine",
+                trigger: trigger.rawValue,
+                reason: reason
+            ),
+            category: .health
+        )
     }
 }

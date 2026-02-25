@@ -283,3 +283,156 @@ extension PresetShortcutKey {
         }
     }
 }
+
+enum ShortcutCaptureHealthResult: String {
+    case idle
+    case healthy
+    case degraded
+}
+
+struct ShortcutCaptureBackendExpectation: Equatable {
+    let needsGlobalCapture: Bool
+    let needsFlagsMonitor: Bool
+    let needsKeyDownMonitor: Bool
+    let needsKeyUpMonitor: Bool
+    let needsEventTap: Bool
+
+    static let none = ShortcutCaptureBackendExpectation(
+        needsGlobalCapture: false,
+        needsFlagsMonitor: false,
+        needsKeyDownMonitor: false,
+        needsKeyUpMonitor: false,
+        needsEventTap: false
+    )
+}
+
+struct ShortcutCaptureHealthSnapshot: Equatable {
+    let pipeline: String
+    let scope: String
+    let source: String
+    let checkedAt: Date
+    let result: ShortcutCaptureHealthResult
+    let requiresGlobalCapture: Bool
+    let accessibilityTrusted: Bool
+    let inputMonitoringTrusted: Bool
+    let flagsMonitorExpected: Bool
+    let flagsMonitorActive: Bool
+    let keyDownMonitorExpected: Bool
+    let keyDownMonitorActive: Bool
+    let keyUpMonitorExpected: Bool
+    let keyUpMonitorActive: Bool
+    let eventTapExpected: Bool
+    let eventTapActive: Bool
+    let degradationReasons: [String]
+
+    var reasonToken: String {
+        degradationReasons.isEmpty ? "none" : degradationReasons.joined(separator: ".")
+    }
+
+    var operationalSignature: String {
+        [
+            result.rawValue,
+            Self.boolToken(requiresGlobalCapture),
+            Self.boolToken(accessibilityTrusted),
+            Self.boolToken(inputMonitoringTrusted),
+            Self.boolToken(flagsMonitorExpected),
+            Self.boolToken(flagsMonitorActive),
+            Self.boolToken(keyDownMonitorExpected),
+            Self.boolToken(keyDownMonitorActive),
+            Self.boolToken(keyUpMonitorExpected),
+            Self.boolToken(keyUpMonitorActive),
+            Self.boolToken(eventTapExpected),
+            Self.boolToken(eventTapActive),
+            reasonToken,
+        ]
+        .joined(separator: "|")
+    }
+
+    init(
+        pipeline: String,
+        scope: String,
+        source: String,
+        checkedAt: Date = Date(),
+        expectation: ShortcutCaptureBackendExpectation,
+        accessibilityTrusted: Bool,
+        inputMonitoringTrusted: Bool,
+        flagsMonitorActive: Bool,
+        keyDownMonitorActive: Bool,
+        keyUpMonitorActive: Bool,
+        eventTapActive: Bool
+    ) {
+        let reasons = Self.computeDegradationReasons(
+            expectation: expectation,
+            accessibilityTrusted: accessibilityTrusted,
+            inputMonitoringTrusted: inputMonitoringTrusted,
+            flagsMonitorActive: flagsMonitorActive,
+            keyDownMonitorActive: keyDownMonitorActive,
+            keyUpMonitorActive: keyUpMonitorActive,
+            eventTapActive: eventTapActive
+        )
+
+        self.pipeline = pipeline
+        self.scope = scope
+        self.source = source
+        self.checkedAt = checkedAt
+        self.requiresGlobalCapture = expectation.needsGlobalCapture
+        self.accessibilityTrusted = accessibilityTrusted
+        self.inputMonitoringTrusted = inputMonitoringTrusted
+        self.flagsMonitorExpected = expectation.needsFlagsMonitor
+        self.flagsMonitorActive = flagsMonitorActive
+        self.keyDownMonitorExpected = expectation.needsKeyDownMonitor
+        self.keyDownMonitorActive = keyDownMonitorActive
+        self.keyUpMonitorExpected = expectation.needsKeyUpMonitor
+        self.keyUpMonitorActive = keyUpMonitorActive
+        self.eventTapExpected = expectation.needsEventTap
+        self.eventTapActive = eventTapActive
+        self.degradationReasons = reasons
+
+        if !expectation.needsGlobalCapture {
+            result = .idle
+        } else if reasons.isEmpty {
+            result = .healthy
+        } else {
+            result = .degraded
+        }
+    }
+
+    private static func computeDegradationReasons(
+        expectation: ShortcutCaptureBackendExpectation,
+        accessibilityTrusted: Bool,
+        inputMonitoringTrusted: Bool,
+        flagsMonitorActive: Bool,
+        keyDownMonitorActive: Bool,
+        keyUpMonitorActive: Bool,
+        eventTapActive: Bool
+    ) -> [String] {
+        guard expectation.needsGlobalCapture else {
+            return []
+        }
+
+        var reasons: [String] = []
+        if !accessibilityTrusted {
+            reasons.append("accessibility_denied")
+        }
+        if !inputMonitoringTrusted {
+            reasons.append("input_monitoring_denied")
+        }
+        if expectation.needsFlagsMonitor, !flagsMonitorActive {
+            reasons.append("flags_monitor_inactive")
+        }
+        if expectation.needsKeyDownMonitor, !keyDownMonitorActive {
+            reasons.append("key_down_monitor_inactive")
+        }
+        if expectation.needsKeyUpMonitor, !keyUpMonitorActive {
+            reasons.append("key_up_monitor_inactive")
+        }
+        if expectation.needsEventTap, !eventTapActive {
+            reasons.append("event_tap_inactive")
+        }
+        return reasons
+    }
+
+    private static func boolToken(_ value: Bool) -> String {
+        value ? "1" : "0"
+    }
+}

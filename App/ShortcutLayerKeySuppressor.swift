@@ -3,10 +3,16 @@ import CoreGraphics
 import MeetingAssistantCore
 
 final class ShortcutLayerKeySuppressor {
+    enum StartFailureReason: String {
+        case eventTapCreationFailed = "event_tap_creation_failed"
+        case runLoopSourceCreationFailed = "runloop_source_creation_failed"
+    }
+
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
     private var suppressedKeyCodes = Set<UInt16>()
     private var keyDownHandler: ((NSEvent) -> Bool)?
+    private(set) var lastStartFailureReason: StartFailureReason?
 
     var isActive: Bool {
         eventTap != nil && runLoopSource != nil
@@ -15,6 +21,7 @@ final class ShortcutLayerKeySuppressor {
     @discardableResult
     func start(keyDownHandler: @escaping (NSEvent) -> Bool) -> Bool {
         guard eventTap == nil else {
+            lastStartFailureReason = nil
             return true
         }
 
@@ -40,6 +47,7 @@ final class ShortcutLayerKeySuppressor {
             callback: callback,
             userInfo: Unmanaged.passUnretained(self).toOpaque()
         ) else {
+            lastStartFailureReason = .eventTapCreationFailed
             AppLogger.warning(
                 "Failed to create shortcut layer key suppressor tap",
                 category: .assistant
@@ -49,6 +57,7 @@ final class ShortcutLayerKeySuppressor {
 
         let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, eventTap, 0)
         guard let source else {
+            lastStartFailureReason = .runLoopSourceCreationFailed
             AppLogger.warning(
                 "Failed to create runloop source for shortcut layer key suppressor",
                 category: .assistant
@@ -57,6 +66,7 @@ final class ShortcutLayerKeySuppressor {
             return false
         }
 
+        lastStartFailureReason = nil
         self.eventTap = eventTap
         runLoopSource = source
 
@@ -78,6 +88,7 @@ final class ShortcutLayerKeySuppressor {
         eventTap = nil
         suppressedKeyCodes.removeAll()
         keyDownHandler = nil
+        lastStartFailureReason = nil
     }
 
     deinit {
