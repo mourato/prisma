@@ -52,6 +52,23 @@ extension AssistantShortcutController {
             return
         }
 
+        let accessibilityTrusted = AccessibilityPermissionService.isTrusted()
+        let inputMonitoringTrusted = InputMonitoringPermissionService.isTrusted()
+        guard inputMonitoringTrusted else {
+            shortcutLayerKeySuppressor.stop()
+            AppLogger.warning(
+                "Shortcut layer key suppressor unavailable due to Input Monitoring permission",
+                category: .assistant,
+                extra: [
+                    "shortcutLayerEnabled": shouldUseAssistantShortcutLayer,
+                    "shortcutLayerArmed": isShortcutLayerArmed,
+                    "accessibilityTrusted": accessibilityTrusted,
+                    "inputMonitoringTrusted": inputMonitoringTrusted,
+                ]
+            )
+            return
+        }
+
         AppLogger.debug(
             "Shortcut layer key suppressor enabled",
             category: .assistant,
@@ -78,7 +95,8 @@ extension AssistantShortcutController {
                 extra: [
                     "shortcutLayerEnabled": shouldUseAssistantShortcutLayer,
                     "shortcutLayerArmed": isShortcutLayerArmed,
-                    "accessibilityTrusted": AccessibilityPermissionService.isTrusted(),
+                    "accessibilityTrusted": accessibilityTrusted,
+                    "inputMonitoringTrusted": inputMonitoringTrusted,
                 ]
             )
         }

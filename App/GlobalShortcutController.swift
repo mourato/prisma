@@ -36,13 +36,20 @@ final class GlobalShortcutController {
     private let escapeDoublePressInterval: TimeInterval = 1.0
     private var lastEscapePressTime: Date?
     private var hasRequestedAccessibilityPermissionForGlobalCapture = false
+    private var hasRequestedInputMonitoringPermissionForGlobalCapture = false
+    private var hasOpenedAccessibilitySettingsForGlobalCapture = false
+    private var hasOpenedInputMonitoringSettingsForGlobalCapture = false
 
     init(
         recordingManager: RecordingManager,
-        settings: AppSettingsStore = .shared
+        settings: AppSettingsStore
     ) {
         self.recordingManager = recordingManager
         self.settings = settings
+    }
+
+    convenience init(recordingManager: RecordingManager) {
+        self.init(recordingManager: recordingManager, settings: .shared)
     }
 
     func start() {
@@ -202,7 +209,7 @@ final class GlobalShortcutController {
         }
 
         let needsGlobalCapture = needsModifierMonitoring || needsShortcutKeyMonitoring || needsEscapeMonitoring
-        ensureAccessibilityPermissionForGlobalCaptureIfNeeded(needsGlobalCapture: needsGlobalCapture)
+        ensureGlobalCapturePermissionsIfNeeded(needsGlobalCapture: needsGlobalCapture)
 
         AppLogger.debug(
             "Global shortcut monitor refresh",
@@ -290,21 +297,46 @@ final class GlobalShortcutController {
         removeKeyUpMonitors()
     }
 
-    private func ensureAccessibilityPermissionForGlobalCaptureIfNeeded(needsGlobalCapture: Bool) {
+    private func ensureGlobalCapturePermissionsIfNeeded(needsGlobalCapture: Bool) {
         guard needsGlobalCapture else { return }
-        guard !AccessibilityPermissionService.isTrusted() else { return }
 
-        if !hasRequestedAccessibilityPermissionForGlobalCapture {
+        let accessibilityTrusted = AccessibilityPermissionService.isTrusted()
+        let inputMonitoringTrusted = InputMonitoringPermissionService.isTrusted()
+
+        if !accessibilityTrusted,
+           !hasRequestedAccessibilityPermissionForGlobalCapture
+        {
             hasRequestedAccessibilityPermissionForGlobalCapture = true
             AccessibilityPermissionService.requestPermission()
+            if !hasOpenedAccessibilitySettingsForGlobalCapture {
+                hasOpenedAccessibilitySettingsForGlobalCapture = true
+                AccessibilityPermissionService.openSystemSettings()
+            }
         }
 
+        if !inputMonitoringTrusted,
+           !hasRequestedInputMonitoringPermissionForGlobalCapture
+        {
+            hasRequestedInputMonitoringPermissionForGlobalCapture = true
+            let didRequest = InputMonitoringPermissionService.requestPermission()
+            if !didRequest,
+               !hasOpenedInputMonitoringSettingsForGlobalCapture
+            {
+                hasOpenedInputMonitoringSettingsForGlobalCapture = true
+                InputMonitoringPermissionService.openSystemSettings()
+            }
+        }
+
+        guard !accessibilityTrusted || !inputMonitoringTrusted else { return }
+
         AppLogger.warning(
-            "Global shortcut capture requires Accessibility permission",
+            "Global shortcut capture missing required permissions",
             category: .uiController,
             extra: [
                 "scope": "global",
                 "needsGlobalCapture": needsGlobalCapture,
+                "accessibilityTrusted": accessibilityTrusted,
+                "inputMonitoringTrusted": inputMonitoringTrusted,
             ]
         )
     }
