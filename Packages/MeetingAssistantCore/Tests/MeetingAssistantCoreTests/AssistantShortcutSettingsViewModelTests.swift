@@ -8,9 +8,11 @@ final class AssistantShortcutSettingsViewModelTests: XCTestCase {
     override func setUp() async throws {
         settings = .shared
         settings.resetToDefaults()
+        ShortcutCaptureHealthStore.reset()
     }
 
     override func tearDown() async throws {
+        ShortcutCaptureHealthStore.reset()
         settings.resetToDefaults()
         settings = nil
     }
@@ -43,5 +45,25 @@ final class AssistantShortcutSettingsViewModelTests: XCTestCase {
         await Task.yield()
 
         XCTAssertTrue(settings.assistantUseEnterToStopRecording)
+    }
+
+    func testShortcutCaptureHealthPresentationUpdatesWhenAssistantFallbackIsActive() async {
+        let viewModel = AssistantShortcutSettingsViewModel()
+        XCTAssertNil(viewModel.shortcutCaptureHealthPresentation)
+
+        ShortcutCaptureHealthStore.updateHealth(
+            scope: .assistant,
+            result: "degraded",
+            reasonToken: "event_tap_inactive",
+            requiresGlobalCapture: true,
+            accessibilityTrusted: true,
+            inputMonitoringTrusted: true,
+            eventTapExpected: true,
+            eventTapActive: false
+        )
+        await Task.yield()
+
+        XCTAssertEqual(viewModel.shortcutCaptureHealthPresentation?.badgeKey, "settings.shortcuts.health.badge.fallback")
+        XCTAssertEqual(viewModel.shortcutCaptureHealthPresentation?.isFallback, true)
     }
 }

@@ -27,6 +27,7 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
     @Published public var borderStyle: AssistantBorderStyle
     @Published public var borderWidth: Double
     @Published public var glowSize: Double
+    @Published public private(set) var shortcutCaptureHealthPresentation: ShortcutCaptureHealthPresentation?
     private var isApplyingModifierShortcutChange = false
 
     public init() {
@@ -43,6 +44,7 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
         let normalizedBorderWidth = Self.normalizedBorderWidthValue(settings.assistantBorderWidth)
         borderWidth = normalizedBorderWidth
         glowSize = settings.assistantGlowSize
+        shortcutCaptureHealthPresentation = Self.makeShortcutCaptureHealthPresentation()
 
         if normalizedBorderWidth != settings.assistantBorderWidth {
             settings.assistantBorderWidth = normalizedBorderWidth
@@ -120,6 +122,13 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
                 self?.settings.assistantGlowSize = max(0, newValue)
             }
             .store(in: &cancellables)
+
+        NotificationCenter.default.publisher(for: .meetingAssistantShortcutCaptureHealthDidChange)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.refreshShortcutCaptureHealthPresentation()
+            }
+            .store(in: &cancellables)
     }
 
     private static func normalizedBorderWidthValue(_ value: Double) -> Double {
@@ -187,5 +196,30 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
 
         assistantLayerShortcutConflictMessage = nil
         settings.assistantLayerShortcutKey = normalized
+    }
+
+    public func openShortcutCaptureHealthAction() {
+        guard let presentation = shortcutCaptureHealthPresentation else {
+            return
+        }
+
+        switch presentation.action {
+        case .none:
+            return
+        case .openInputMonitoringSettings:
+            InputMonitoringPermissionService.openSystemSettings()
+        case .openAccessibilitySettings:
+            AccessibilityPermissionService.openSystemSettings()
+        }
+    }
+
+    private func refreshShortcutCaptureHealthPresentation() {
+        shortcutCaptureHealthPresentation = Self.makeShortcutCaptureHealthPresentation()
+    }
+
+    private static func makeShortcutCaptureHealthPresentation() -> ShortcutCaptureHealthPresentation? {
+        ShortcutCaptureHealthPresentation.from(
+            status: ShortcutCaptureHealthStore.status(for: .assistant)
+        )
     }
 }

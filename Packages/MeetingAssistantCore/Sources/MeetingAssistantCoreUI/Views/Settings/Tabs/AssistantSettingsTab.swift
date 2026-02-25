@@ -97,6 +97,12 @@ public struct AssistantSettingsTab: View {
             descriptionText: "settings.assistant.toggle_command_desc".localized,
             settingsContent: {
                 VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                    if let healthPresentation = viewModel.shortcutCaptureHealthPresentation {
+                        ShortcutCaptureHealthStatusView(presentation: healthPresentation) {
+                            viewModel.openShortcutCaptureHealthAction()
+                        }
+                    }
+
                     MAModifierShortcutEditor(
                         shortcut: $viewModel.assistantShortcutDefinition,
                         conflictMessage: viewModel.assistantModifierConflictMessage

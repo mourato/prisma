@@ -83,10 +83,18 @@ public struct MeetingSettingsTab: View {
                 groupTitle: "settings.shortcuts.meeting".localized,
                 descriptionText: "settings.shortcuts.meeting_desc".localized,
                 settingsContent: {
-                    MAModifierShortcutEditor(
-                        shortcut: $shortcutsViewModel.meetingShortcutDefinition,
-                        conflictMessage: shortcutsViewModel.meetingModifierConflictMessage
-                    )
+                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                        if let healthPresentation = shortcutsViewModel.shortcutCaptureHealthPresentation {
+                            ShortcutCaptureHealthStatusView(presentation: healthPresentation) {
+                                shortcutsViewModel.openShortcutCaptureHealthAction()
+                            }
+                        }
+
+                        MAModifierShortcutEditor(
+                            shortcut: $shortcutsViewModel.meetingShortcutDefinition,
+                            conflictMessage: shortcutsViewModel.meetingModifierConflictMessage
+                        )
+                    }
                 }
             )
 
