@@ -41,9 +41,12 @@ public struct SettingsDrillDownListRow<Destination: Hashable>: View {
                     .foregroundStyle(.secondary)
             }
             .padding(.horizontal, 0)
-            .padding(.vertical, subtitle == nil
-                ? MeetingAssistantDesignSystem.Layout.spacing16
-                : MeetingAssistantDesignSystem.Layout.spacing12)
+            .padding(
+                .vertical,
+                subtitle == nil
+                    ? MeetingAssistantDesignSystem.Layout.spacing16
+                    : MeetingAssistantDesignSystem.Layout.spacing12
+            )
             .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
             .contentShape(Rectangle())
         }

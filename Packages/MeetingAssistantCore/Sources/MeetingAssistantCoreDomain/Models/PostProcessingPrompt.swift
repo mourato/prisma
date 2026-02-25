@@ -370,7 +370,7 @@ public extension PostProcessingPrompt {
         promptText: """
         I'll analyze the standup transcription and translate it to English, focusing on:
         - What was done (Progress)
-        - What will be done (Planning) 
+        - What will be done (Planning)
         - Impediments/Blockers
 
         However, I notice that the actual transcription content appears to be missing from your message. The text shows only the placeholder tags `<TRANSCRIPTION>` and `<INSTRUCTIONS>`.

@@ -73,7 +73,7 @@ public enum AIPromptTemplates {
     /// - Parameter transcription: The transcription text to process.
     /// - Returns: Formatted user message for the AI.
     public static func userMessage(transcription: String) -> String {
-        return """
+        """
         <TRANSCRIPTION>
         \(transcription)
         </TRANSCRIPTION>
@@ -98,9 +98,8 @@ public enum AIPromptTemplates {
     ///   - priorityInstructions: Optional site/app-specific instructions that override other prompts.
     /// - Returns: Formatted user message for the AI.
     public static func userMessage(transcription: String, prompt: String, priorityInstructions: String?) -> String {
-        let priorityBlock: String
-        if let priorityInstructions {
-            priorityBlock = """
+        let priorityBlock = if let priorityInstructions {
+            """
 
             <SITE_APP_PRIORITY>
             The following site/app-specific instructions have highest priority.
@@ -109,7 +108,7 @@ public enum AIPromptTemplates {
             </SITE_APP_PRIORITY>
             """
         } else {
-            priorityBlock = ""
+            ""
         }
 
         return """

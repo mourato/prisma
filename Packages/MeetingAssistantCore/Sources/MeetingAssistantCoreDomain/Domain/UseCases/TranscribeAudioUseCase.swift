@@ -491,11 +491,10 @@ public final class TranscribeAudioUseCase: Sendable {
     }
 
     private func qualityMetadataBlock(from qualityProfile: TranscriptionQualityProfile) -> String {
-        let markerLines: [String]
-        if qualityProfile.markers.isEmpty {
-            markerLines = ["none"]
+        let markerLines: [String] = if qualityProfile.markers.isEmpty {
+            ["none"]
         } else {
-            markerLines = qualityProfile.markers.map { marker in
+            qualityProfile.markers.map { marker in
                 "- [\(marker.reason.rawValue)] \(marker.snippet) [\(marker.startTime)-\(marker.endTime)]"
             }
         }

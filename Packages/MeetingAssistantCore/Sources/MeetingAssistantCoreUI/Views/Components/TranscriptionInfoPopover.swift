@@ -241,19 +241,19 @@ struct TranscriptionInfoPopover: View {
     private func contextItemTitle(for source: TranscriptionContextItem.Source) -> String {
         switch source {
         case .activeApp:
-            return "transcription.context.source.active_app".localized
+            "transcription.context.source.active_app".localized
         case .activeTabURL:
-            return "transcription.context.source.active_tab_url".localized
+            "transcription.context.source.active_tab_url".localized
         case .windowTitle:
-            return "transcription.context.source.window_title".localized
+            "transcription.context.source.window_title".localized
         case .accessibilityText:
-            return "transcription.context.source.accessibility_text".localized
+            "transcription.context.source.accessibility_text".localized
         case .clipboard:
-            return "transcription.context.source.clipboard".localized
+            "transcription.context.source.clipboard".localized
         case .windowOCR:
-            return "transcription.context.source.window_ocr".localized
+            "transcription.context.source.window_ocr".localized
         case .focusedText:
-            return "transcription.context.source.focused_text".localized
+            "transcription.context.source.focused_text".localized
         }
     }
 

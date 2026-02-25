@@ -118,10 +118,10 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
                     error: error
                 )
                 self.error = error
-                self.onRecordingError?(error)
+                onRecordingError?(error)
 
-                if self.isRecording {
-                    _ = await self.stopRecording()
+                if isRecording {
+                    _ = await stopRecording()
                 }
             }
         }
@@ -169,7 +169,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         }
 
         // 1. Check Microphone Permissions first if needed
-        if (source == .microphone || source == .all) && AVCaptureDevice.authorizationStatus(for: .audio) != .authorized {
+        if source == .microphone || source == .all, AVCaptureDevice.authorizationStatus(for: .audio) != .authorized {
             AppLogger.error("Microphone permission denied. Cannot start recording.", category: .recordingManager)
             restoreOutputMuteIfNeeded()
             throw AudioRecorderError.permissionDenied
@@ -527,12 +527,12 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         outputMuteTask?.cancel()
         outputMuteTask = Task { @MainActor [weak self] in
             try? await Task.sleep(nanoseconds: Constants.outputMuteDelayAfterStart)
-            guard let self, self.isRecording else { return }
-            guard var session = self.outputMuteSession else { return }
+            guard let self, isRecording else { return }
+            guard var session = outputMuteSession else { return }
 
             do {
-                try self.muteController.applyMute(to: &session)
-                self.outputMuteSession = session
+                try muteController.applyMute(to: &session)
+                outputMuteSession = session
             } catch {
                 AppLogger.warning(
                     "Failed to mute system audio output",

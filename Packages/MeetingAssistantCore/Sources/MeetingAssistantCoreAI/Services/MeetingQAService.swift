@@ -85,14 +85,13 @@ public final class MeetingQAService: ObservableObject, MeetingQAServiceProtocol 
             lastError = error
             throw error
         } catch let urlError as URLError {
-            let mappedError: MeetingQAError
-            switch urlError.code {
+            let mappedError: MeetingQAError = switch urlError.code {
             case .timedOut:
-                mappedError = .timeout
+                .timeout
             case .notConnectedToInternet, .networkConnectionLost, .cannotConnectToHost:
-                mappedError = .networkUnavailable
+                .networkUnavailable
             default:
-                mappedError = .requestFailed(urlError.localizedDescription)
+                .requestFailed(urlError.localizedDescription)
             }
             lastError = mappedError
             throw mappedError
@@ -198,12 +197,10 @@ public final class MeetingQAService: ObservableObject, MeetingQAServiceProtocol 
         let summaryBlock = (summaryText?.isEmpty == false) ? summaryText! : "(none)"
 
         let evidenceSegments = Array(transcription.segments.prefix(Constants.maxSegmentsInPrompt))
-        let transcriptBlock: String
-
-        if evidenceSegments.isEmpty {
-            transcriptBlock = transcription.rawText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let transcriptBlock: String = if evidenceSegments.isEmpty {
+            transcription.rawText.trimmingCharacters(in: .whitespacesAndNewlines)
         } else {
-            transcriptBlock = evidenceSegments.map { segment in
+            evidenceSegments.map { segment in
                 let speaker = segment.speaker.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                     ? Transcription.unknownSpeaker
                     : segment.speaker
@@ -272,7 +269,7 @@ public final class MeetingQAService: ObservableObject, MeetingQAServiceProtocol 
 
     private func extractJSONCandidate(from text: String) -> String? {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.hasPrefix("{") && trimmed.hasSuffix("}") {
+        if trimmed.hasPrefix("{"), trimmed.hasSuffix("}") {
             return trimmed
         }
 
@@ -282,7 +279,7 @@ public final class MeetingQAService: ObservableObject, MeetingQAServiceProtocol 
             return nil
         }
 
-        return String(trimmed[firstBrace ... lastBrace])
+        return String(trimmed[firstBrace...lastBrace])
     }
 
     private func parseProviderResponse(data: Data, provider: AIProvider) throws -> String {
@@ -317,7 +314,7 @@ public final class MeetingQAService: ObservableObject, MeetingQAServiceProtocol 
             throw MeetingQAError.invalidResponse
         }
 
-        guard (200 ... 299).contains(httpResponse.statusCode) else {
+        guard (200...299).contains(httpResponse.statusCode) else {
             let decoder = JSONDecoder()
             if let openAIError = try? decoder.decode(OpenAIErrorResponse.self, from: data) {
                 throw MeetingQAError.requestFailed(openAIError.error.message)
@@ -354,9 +351,9 @@ public final class MeetingQAService: ObservableObject, MeetingQAServiceProtocol 
     private func meetingQAError(for issue: EnhancementsInferenceReadinessIssue) -> MeetingQAError {
         switch issue {
         case .invalidBaseURL:
-            return .invalidURL
+            .invalidURL
         case .missingAPIKey, .missingModel:
-            return .noAPIConfigured
+            .noAPIConfigured
         }
     }
 
@@ -398,7 +395,7 @@ public final class MeetingQAService: ObservableObject, MeetingQAServiceProtocol 
             switch qaError {
             case .timeout, .networkUnavailable:
                 return true
-            case .requestFailed(let message):
+            case let .requestFailed(message):
                 return message.contains("429") || message.contains("HTTP 5")
             default:
                 return false

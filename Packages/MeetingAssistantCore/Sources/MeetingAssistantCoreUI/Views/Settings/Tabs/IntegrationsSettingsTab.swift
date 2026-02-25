@@ -1,10 +1,10 @@
+import Foundation
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
-import Foundation
 import SwiftUI
 
 public struct IntegrationsSettingsTab: View {

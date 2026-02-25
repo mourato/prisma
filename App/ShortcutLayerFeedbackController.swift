@@ -1,7 +1,7 @@
 import AppKit
 
 @MainActor
-internal final class ShortcutLayerFeedbackController {
+final class ShortcutLayerFeedbackController {
     private var window: NSPanel?
     private var hideTask: Task<Void, Never>?
 

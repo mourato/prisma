@@ -12,7 +12,9 @@ public struct EnhancementsProviderModelsPage: View {
         case meeting
         case dictation
 
-        var id: String { rawValue }
+        var id: String {
+            rawValue
+        }
 
         var mode: IntelligenceKernelMode {
             switch self {
@@ -133,8 +135,8 @@ public struct EnhancementsProviderModelsPage: View {
                         .fill(isReady ? MeetingAssistantDesignSystem.Colors.success : MeetingAssistantDesignSystem.Colors.warning)
                         .frame(width: 7, height: 7)
                     Text(providerStatusText(isReady: isReady, issue: readinessIssue))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
                 }
             }
 
@@ -147,7 +149,6 @@ public struct EnhancementsProviderModelsPage: View {
         }
     }
 
-    @ViewBuilder
     private func expandedProviderContent(for provider: AIProvider) -> some View {
         VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing10) {
             apiKeySection(for: provider)
@@ -248,8 +249,7 @@ public struct EnhancementsProviderModelsPage: View {
     private func canTestAndSave(for provider: AIProvider) -> Bool {
         guard viewModel.activeEnhancementsProvider == provider else { return false }
         guard viewModel.enhancementsConnectionStatus != .testing else { return false }
-        let hasCredential = viewModel.isEnhancementsProviderKeySaved || viewModel.hasPendingEnhancementsAPIKeyInput
-        return hasCredential
+        return viewModel.isEnhancementsProviderKeySaved || viewModel.hasPendingEnhancementsAPIKeyInput
     }
 
     private func handleExpansionToggle(for provider: AIProvider) {
@@ -448,12 +448,11 @@ public struct EnhancementsProviderModelsPage: View {
     }
 
     private func isSelectedOption(_ option: EnhancementsProviderModelOption, for target: ModelSelectionTarget) -> Bool {
-        let selection: EnhancementsAISelection
-        switch target {
+        let selection: EnhancementsAISelection = switch target {
         case .meeting:
-            selection = postProcessingViewModel.settings.enhancementsAISelection
+            postProcessingViewModel.settings.enhancementsAISelection
         case .dictation:
-            selection = postProcessingViewModel.settings.enhancementsDictationAISelection
+            postProcessingViewModel.settings.enhancementsDictationAISelection
         }
 
         return selection.provider == option.provider && selection.selectedModel == option.modelID
@@ -462,15 +461,15 @@ public struct EnhancementsProviderModelsPage: View {
     private func providerDescription(for provider: AIProvider) -> String {
         switch provider {
         case .openai:
-            return "settings.enhancements.provider.openai.desc".localized
+            "settings.enhancements.provider.openai.desc".localized
         case .anthropic:
-            return "settings.enhancements.provider.anthropic.desc".localized
+            "settings.enhancements.provider.anthropic.desc".localized
         case .groq:
-            return "settings.enhancements.provider.groq.desc".localized
+            "settings.enhancements.provider.groq.desc".localized
         case .google:
-            return "settings.enhancements.provider.google.desc".localized
+            "settings.enhancements.provider.google.desc".localized
         case .custom:
-            return "settings.enhancements.provider.custom.desc".localized
+            "settings.enhancements.provider.custom.desc".localized
         }
     }
 
@@ -503,11 +502,22 @@ public struct EnhancementsProviderModelsPage: View {
 
 private struct PreviewEnhancementsKeychainProvider: KeychainProvider {
     func store(_ value: String, for key: KeychainManager.Key) throws {}
-    func retrieve(for key: KeychainManager.Key) throws -> String? { nil }
+    func retrieve(for key: KeychainManager.Key) throws -> String? {
+        nil
+    }
+
     func delete(for key: KeychainManager.Key) throws {}
-    func exists(for key: KeychainManager.Key) -> Bool { false }
-    func retrieveAPIKey(for provider: AIProvider) throws -> String? { nil }
-    func existsAPIKey(for provider: AIProvider) -> Bool { provider == .openai }
+    func exists(for key: KeychainManager.Key) -> Bool {
+        false
+    }
+
+    func retrieveAPIKey(for provider: AIProvider) throws -> String? {
+        nil
+    }
+
+    func existsAPIKey(for provider: AIProvider) -> Bool {
+        provider == .openai
+    }
 }
 
 private struct PreviewEnhancementsLLMService: LLMService {

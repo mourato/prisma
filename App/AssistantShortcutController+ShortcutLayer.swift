@@ -40,10 +40,10 @@ extension AssistantShortcutController {
 
         shortcutLayerKeySuppressor.start { [weak self] event in
             guard let self else { return false }
-            if self.handleShortcutLayerKeyDown(event) {
+            if handleShortcutLayerKeyDown(event) {
                 return true
             }
-            return self.handleSingleEnterStop(event)
+            return handleSingleEnterStop(event)
         }
     }
 
@@ -139,9 +139,9 @@ extension AssistantShortcutController {
              PresetShortcutKey.leftControlKeyCode,
              PresetShortcutKey.rightControlKeyCode,
              PresetShortcutKey.fnKeyCode:
-            return true
+            true
         default:
-            return false
+            false
         }
     }
 

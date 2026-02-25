@@ -161,12 +161,12 @@ public class TranscriptionSettingsViewModel: ObservableObject {
     private func matchesSourceFilter(_ transcription: TranscriptionMetadata) -> Bool {
         switch sourceFilter {
         case .all:
-            return true
+            true
         case .dictations:
             // Dictation = Unknown app source (menu bar dictation) AND not imported file.
-            return transcription.meetingApp == .unknown
+            transcription.meetingApp == .unknown
         case .meetings:
-            return transcription.meetingApp.supportsMeetingConversation
+            transcription.meetingApp.supportsMeetingConversation
         }
     }
 

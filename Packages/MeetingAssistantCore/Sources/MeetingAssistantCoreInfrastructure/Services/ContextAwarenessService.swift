@@ -86,7 +86,7 @@ public final class ContextAwarenessService: ContextAwarenessServiceProtocol {
         let frontmostBundleID = frontmostApp?.bundleIdentifier ?? "unknown"
 
         if options.protectSensitiveApps,
-              ContextAwarenessPrivacy.isCaptureBlocked(bundleIdentifier: frontmostApp?.bundleIdentifier, excludedBundleIDs: options.excludedBundleIDs)
+           ContextAwarenessPrivacy.isCaptureBlocked(bundleIdentifier: frontmostApp?.bundleIdentifier, excludedBundleIDs: options.excludedBundleIDs)
         {
             AppLogger.info(
                 "Context capture blocked for sensitive app",

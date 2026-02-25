@@ -138,7 +138,7 @@ public struct AIProviderIntegrationCard: View {
                         .buttonStyle(.borderless)
                         .disabled(viewModel.isLoadingModels || viewModel.connectionStatus == .testing)
                     }
-                    
+
                     Picker("", selection: selectedModelBinding) {
                         if viewModel.isLoadingModels {
                             Text("settings.ai.loading".localized).tag("")

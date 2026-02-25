@@ -202,9 +202,9 @@ public final class AXTextContextProvider: TextContextProvider {
     private func sanitizedReason(_ reason: ContextAcquisitionError) -> ContextAcquisitionError {
         switch reason {
         case .providerFailed:
-            return .providerFailed("redacted")
+            .providerFailed("redacted")
         default:
-            return reason
+            reason
         }
     }
 

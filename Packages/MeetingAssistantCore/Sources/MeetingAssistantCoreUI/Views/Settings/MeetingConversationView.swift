@@ -353,22 +353,22 @@ public struct MeetingConversationView: View {
     private var dictationButtonIcon: String {
         switch dictationState {
         case .idle:
-            return "mic.fill"
+            "mic.fill"
         case .recording:
-            return "stop.fill"
+            "stop.fill"
         case .processing:
-            return "hourglass"
+            "hourglass"
         }
     }
 
     private var dictationHelpText: String {
         switch dictationState {
         case .idle:
-            return "transcription.qa.dictation.start".localized
+            "transcription.qa.dictation.start".localized
         case .recording:
-            return "transcription.qa.dictation.stop".localized
+            "transcription.qa.dictation.stop".localized
         case .processing:
-            return "transcription.qa.dictation.processing".localized
+            "transcription.qa.dictation.processing".localized
         }
     }
 

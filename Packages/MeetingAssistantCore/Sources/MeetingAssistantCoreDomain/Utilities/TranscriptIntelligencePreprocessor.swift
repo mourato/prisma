@@ -180,7 +180,7 @@ public struct TranscriptIntelligencePreprocessor: Sendable {
         markers: [TranscriptionQualityProfile.UncertaintyMarker]
     ) -> Double {
         var base = min(1, max(0, asrConfidenceScore ?? 0.5))
-        let lexicalCount = markers.filter { $0.reason == .lexicalUncertainty }.count
+        let lexicalCount = markers.count(where: { $0.reason == .lexicalUncertainty })
         let lexicalPenalty = min(0.25, Double(lexicalCount) * 0.03)
         base -= lexicalPenalty
         return min(1, max(0, base))

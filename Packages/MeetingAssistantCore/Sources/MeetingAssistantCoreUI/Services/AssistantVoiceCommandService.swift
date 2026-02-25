@@ -100,7 +100,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
             let now = Date()
             PerformanceMonitor.shared.reportMetric(
                 name: "assistant_start_requested_to_recorder_ms",
-                value: now.timeIntervalSince(requestedAt) * 1000,
+                value: now.timeIntervalSince(requestedAt) * 1_000,
                 unit: "ms"
             )
         } catch {
@@ -260,14 +260,13 @@ public final class AssistantVoiceCommandService: ObservableObject {
                 return
             }
 
-            let processedCommandForDispatch: String
-            if executionFlow == .integrationDispatch {
-                processedCommandForDispatch = try requireNonEmptyCommand(
+            let processedCommandForDispatch: String = if executionFlow == .integrationDispatch {
+                try requireNonEmptyCommand(
                     processedCommand,
                     fallback: nil
                 )
             } else {
-                processedCommandForDispatch = normalizedCommand(processedCommand, fallback: beforeAICommand)
+                normalizedCommand(processedCommand, fallback: beforeAICommand)
             }
 
             let commandToDispatch = normalizedCommand(

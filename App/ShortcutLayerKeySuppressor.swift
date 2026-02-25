@@ -2,7 +2,7 @@ import AppKit
 import CoreGraphics
 import MeetingAssistantCore
 
-internal final class ShortcutLayerKeySuppressor {
+final class ShortcutLayerKeySuppressor {
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
     private var suppressedKeyCodes = Set<UInt16>()

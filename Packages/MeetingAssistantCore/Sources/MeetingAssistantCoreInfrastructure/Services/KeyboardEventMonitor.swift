@@ -49,7 +49,7 @@ public final class KeyboardEventMonitor {
                 return event
             }
 
-            let shouldReturn = self.shouldReturnLocalEvent?(event) ?? self.shouldReturnEvent
+            let shouldReturn = shouldReturnLocalEvent?(event) ?? shouldReturnEvent
             return shouldReturn ? event : nil
         }
     }

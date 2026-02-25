@@ -50,7 +50,7 @@ public struct CanonicalSummary: Codable, Hashable, Sendable {
             throw CanonicalSummaryValidationError.emptyActionItemTitle
         }
 
-        guard (0.0 ... 1.0).contains(trustFlags.confidenceScore) else {
+        guard (0.0...1.0).contains(trustFlags.confidenceScore) else {
             throw CanonicalSummaryValidationError.invalidConfidenceScore(trustFlags.confidenceScore)
         }
     }

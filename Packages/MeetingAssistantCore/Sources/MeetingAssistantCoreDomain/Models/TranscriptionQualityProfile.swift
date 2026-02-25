@@ -26,7 +26,7 @@ public struct TranscriptionQualityProfile: Codable, Hashable, Sendable {
 }
 
 public extension TranscriptionQualityProfile {
-    public struct UncertaintyMarker: Codable, Hashable, Sendable {
+    struct UncertaintyMarker: Codable, Hashable, Sendable {
         public let snippet: String
         public let startTime: Double
         public let endTime: Double
@@ -45,7 +45,7 @@ public extension TranscriptionQualityProfile {
         }
     }
 
-    public enum UncertaintyReason: String, Codable, Hashable, Sendable {
+    enum UncertaintyReason: String, Codable, Hashable, Sendable {
         case missingConfidence
         case lowASRConfidence
         case veryLowASRConfidence
