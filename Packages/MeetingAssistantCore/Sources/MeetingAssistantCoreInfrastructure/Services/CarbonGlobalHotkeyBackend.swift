@@ -4,7 +4,8 @@ import MeetingAssistantCoreCommon
 
 @MainActor
 public final class CarbonGlobalHotkeyBackend: GlobalHotkeyBackend {
-    private let signature: OSType = Self.fourCharCode("MAHK")
+    private static let hotkeySignature: OSType = fourCharCode("MAHK")
+    private let signature: OSType
 
     private var nextHotkeyID: UInt32 = 1
     private var eventHandlerRef: EventHandlerRef?
@@ -12,7 +13,9 @@ public final class CarbonGlobalHotkeyBackend: GlobalHotkeyBackend {
     private var registrationsByID: [UInt32: HotkeyRegistration] = [:]
     private var logicalToInternalID: [String: UInt32] = [:]
 
-    public init() {}
+    public init() {
+        signature = Self.hotkeySignature
+    }
 
     public var registeredHotkeyCount: Int {
         hotkeyRefs.count
