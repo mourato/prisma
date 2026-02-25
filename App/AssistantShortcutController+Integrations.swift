@@ -5,81 +5,16 @@ import MeetingAssistantCore
 extension AssistantShortcutController {
     func handleIntegrationFlagsChanged(_ event: NSEvent) {
         for integration in settings.assistantIntegrations where integration.isEnabled {
-            let shortcutTarget = "integration"
-            let presetState = integrationState(for: integration.id)
-            let shortcutHandler = integrationShortcutHandlers[integration.id] ?? makeIntegrationShortcutHandler(for: integration.id)
-            integrationShortcutHandlers[integration.id] = shortcutHandler
-            if let definition = integration.shortcutDefinition {
-                handleInHouseShortcutEvent(
-                    definition: definition,
-                    event: event,
-                    state: presetState,
-                    handler: shortcutHandler,
-                    shortcutTarget: shortcutTarget,
-                    detectionSource: "integration_in_house_definition",
-                    onDown: { [weak self] activationMode in
-                        Task { @MainActor [weak self] in
-                            await self?.handleIntegrationShortcutDown(
-                                integrationID: integration.id,
-                                activationModeOverride: activationMode
-                            )
-                        }
-                    },
-                    onUp: { [weak self] activationMode in
-                        Task { @MainActor [weak self] in
-                            await self?.handleIntegrationShortcutUp(
-                                integrationID: integration.id,
-                                activationModeOverride: activationMode
-                            )
-                        }
-                    }
-                )
-            } else if let gesture = integration.modifierShortcutGesture {
-                let isActive = presetState.isModifierGestureActive(gesture, event: event)
-                let wasPressed = shortcutHandler.isPressed
-                shortcutHandler.handleModifierChange(isActive: isActive)
-                let activationMode = gesture.triggerMode.asShortcutActivationMode
-
-                if isActive, !wasPressed {
-                    emitShortcutDetected(
-                        shortcutTarget: shortcutTarget,
-                        source: "integration_modifier_gesture",
-                        trigger: activationMode
-                    )
-                    Task { @MainActor [weak self] in
-                        await self?.handleIntegrationShortcutDown(
-                            integrationID: integration.id,
-                            activationModeOverride: activationMode
-                        )
-                    }
-                } else if !isActive, wasPressed {
-                    Task { @MainActor [weak self] in
-                        await self?.handleIntegrationShortcutUp(
-                            integrationID: integration.id,
-                            activationModeOverride: activationMode
-                        )
-                    }
-                }
-            } else if integration.shortcutPresetKey.requiresModifierMonitoring {
-                let isActive = presetState.isPresetActive(integration.shortcutPresetKey, event: event)
-                let wasPressed = shortcutHandler.isPressed
-                shortcutHandler.handleModifierChange(isActive: isActive)
-
-                if isActive, !wasPressed {
-                    emitShortcutDetected(
-                        shortcutTarget: shortcutTarget,
-                        source: "integration_preset",
-                        trigger: integration.shortcutActivationMode
-                    )
-                    Task { @MainActor [weak self] in
-                        await self?.handleIntegrationShortcutDown(integrationID: integration.id)
-                    }
-                } else if !isActive, wasPressed {
-                    Task { @MainActor [weak self] in
-                        await self?.handleIntegrationShortcutUp(integrationID: integration.id)
-                    }
-                }
-            }
+            let state = integrationState(for: integration.id)
+            let handler = integrationShortcutHandlers[integration.id] ?? makeIntegrationShortcutHandler(for: integration.id)
+            integrationShortcutHandlers[integration.id] = handler
+            routeIntegrationMonitorEvent(
+                integration,
+                event: event,
+                mode: .allSources,
+                state: state,
+                handler: handler
+            )
         }
     }
 
@@ -89,37 +24,15 @@ extension AssistantShortcutController {
         }
 
         for integration in settings.assistantIntegrations where integration.isEnabled {
-            let shortcutTarget = "integration"
-            guard let definition = integration.shortcutDefinition else {
-                continue
-            }
-
             let state = integrationState(for: integration.id)
             let handler = integrationShortcutHandlers[integration.id] ?? makeIntegrationShortcutHandler(for: integration.id)
             integrationShortcutHandlers[integration.id] = handler
-            handleInHouseShortcutEvent(
-                definition: definition,
+            routeIntegrationMonitorEvent(
+                integration,
                 event: event,
+                mode: .inHouseDefinitionOnly,
                 state: state,
                 handler: handler,
-                shortcutTarget: shortcutTarget,
-                detectionSource: "integration_in_house_definition",
-                onDown: { [weak self] activationMode in
-                    Task { @MainActor [weak self] in
-                        await self?.handleIntegrationShortcutDown(
-                            integrationID: integration.id,
-                            activationModeOverride: activationMode
-                        )
-                    }
-                },
-                onUp: { [weak self] activationMode in
-                    Task { @MainActor [weak self] in
-                        await self?.handleIntegrationShortcutUp(
-                            integrationID: integration.id,
-                            activationModeOverride: activationMode
-                        )
-                    }
-                }
             )
         }
     }
@@ -145,42 +58,10 @@ extension AssistantShortcutController {
             return
         }
 
-        guard integration.shortcutDefinition == nil else {
-            emitShortcutRejected(
-                shortcutTarget: "integration",
-                source: "integration_keyboardshortcuts_custom",
-                trigger: integration.shortcutActivationMode,
-                reason: "custom_overridden_by_in_house_definition"
-            )
-            return
-        }
-
-        guard integration.modifierShortcutGesture == nil else {
-            emitShortcutRejected(
-                shortcutTarget: "integration",
-                source: "integration_keyboardshortcuts_custom",
-                trigger: integration.shortcutActivationMode,
-                reason: "custom_overridden_by_modifier_gesture"
-            )
-            return
-        }
-
-        guard integration.shortcutPresetKey == .custom else {
-            emitShortcutRejected(
-                shortcutTarget: "integration",
-                source: "integration_keyboardshortcuts_custom",
-                trigger: integration.shortcutActivationMode,
-                reason: "preset_not_custom"
-            )
-            return
-        }
-
-        emitShortcutDetected(
-            shortcutTarget: "integration",
-            source: "integration_keyboardshortcuts_custom",
-            trigger: integration.shortcutActivationMode
+        let outcomes = shortcutRouter.routeCustomShortcutDown(
+            configuration: integrationRoutingConfiguration(for: integration)
         )
-        await handleIntegrationShortcutDown(integrationID: integrationID)
+        applyIntegrationRoutingOutcomes(outcomes, integrationID: integrationID)
     }
 
     func handleIntegrationCustomShortcutUp(integrationID: UUID) async {
@@ -193,7 +74,10 @@ extension AssistantShortcutController {
             return
         }
 
-        await handleIntegrationShortcutUp(integrationID: integrationID)
+        let outcomes = shortcutRouter.routeCustomShortcutUp(
+            configuration: integrationRoutingConfiguration(for: integration)
+        )
+        applyIntegrationRoutingOutcomes(outcomes, integrationID: integrationID)
     }
 
     func handleIntegrationShortcutDown(
@@ -263,5 +147,89 @@ extension AssistantShortcutController {
         let newState = ShortcutActivationState()
         integrationPresetStates[integrationID] = newState
         return newState
+    }
+
+    func integrationRoutingConfiguration(
+        for integration: AssistantIntegrationConfig
+    ) -> ShortcutEventRoutingConfiguration {
+        ShortcutEventRoutingConfiguration(
+            definition: integration.shortcutDefinition,
+            modifierGesture: integration.modifierShortcutGesture,
+            presetKey: integration.shortcutPresetKey,
+            presetRequiresModifierMonitoring: integration.shortcutPresetKey.requiresModifierMonitoring,
+            defaultActivationMode: integration.shortcutActivationMode,
+            sources: ShortcutEventRoutingSources(
+                inHouseDefinition: "integration_in_house_definition",
+                modifierGesture: "integration_modifier_gesture",
+                preset: "integration_preset",
+                customKeyboardShortcut: "integration_keyboardshortcuts_custom"
+            )
+        )
+    }
+
+    func routeIntegrationMonitorEvent(
+        _ integration: AssistantIntegrationConfig,
+        event: NSEvent,
+        mode: ShortcutEventRoutingMode,
+        state: ShortcutActivationState,
+        handler: SmartShortcutHandler
+    ) {
+        let result = shortcutRouter.routeMonitorEvent(
+            configuration: integrationRoutingConfiguration(for: integration),
+            mode: mode,
+            wasPressed: handler.isPressed,
+            isDefinitionActive: { definition in
+                state.isShortcutActive(definition, event: event)
+            },
+            isModifierGestureActive: { gesture in
+                state.isModifierGestureActive(gesture, event: event)
+            },
+            isPresetActive: { presetKey in
+                state.isPresetActive(presetKey, event: event)
+            }
+        )
+
+        if let nextPressedState = result.nextPressedState {
+            handler.handleModifierChange(isActive: nextPressedState)
+        }
+
+        applyIntegrationRoutingOutcomes(result.outcomes, integrationID: integration.id)
+    }
+
+    func applyIntegrationRoutingOutcomes(
+        _ outcomes: [ShortcutEventRoutingOutcome],
+        integrationID: UUID
+    ) {
+        for outcome in outcomes {
+            switch outcome {
+            case let .detected(source, trigger):
+                emitShortcutDetected(
+                    shortcutTarget: "integration",
+                    source: source,
+                    trigger: trigger
+                )
+            case let .rejected(source, trigger, reason):
+                emitShortcutRejected(
+                    shortcutTarget: "integration",
+                    source: source,
+                    trigger: trigger,
+                    reason: reason
+                )
+            case let .dispatchDown(activationMode):
+                Task { @MainActor [weak self] in
+                    await self?.handleIntegrationShortcutDown(
+                        integrationID: integrationID,
+                        activationModeOverride: activationMode
+                    )
+                }
+            case let .dispatchUp(activationMode):
+                Task { @MainActor [weak self] in
+                    await self?.handleIntegrationShortcutUp(
+                        integrationID: integrationID,
+                        activationModeOverride: activationMode
+                    )
+                }
+            }
+        }
     }
 }

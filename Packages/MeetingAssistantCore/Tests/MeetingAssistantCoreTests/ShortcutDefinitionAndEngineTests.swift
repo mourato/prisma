@@ -150,6 +150,134 @@ final class ShortcutDefinitionAndEngineTests: XCTestCase {
         XCTAssertEqual(secondTap, [.start])
     }
 
+    @MainActor
+    func testShortcutEventRoutingOrchestratorRoutesInHouseDefinitionTransition() {
+        let orchestrator = ShortcutEventRoutingOrchestrator()
+        let configuration = ShortcutEventRoutingConfiguration(
+            definition: ShortcutDefinition(
+                modifiers: [.leftCommand],
+                primaryKey: .letter("G", keyCode: 0x05),
+                trigger: .singleTap
+            ),
+            modifierGesture: nil,
+            presetKey: .custom,
+            presetRequiresModifierMonitoring: false,
+            defaultActivationMode: .toggle,
+            sources: ShortcutEventRoutingSources(
+                inHouseDefinition: "in_house_definition",
+                modifierGesture: "modifier_gesture",
+                preset: "preset",
+                customKeyboardShortcut: "keyboardshortcuts_custom"
+            )
+        )
+
+        let result = orchestrator.routeMonitorEvent(
+            configuration: configuration,
+            mode: .allSources,
+            wasPressed: false,
+            isDefinitionActive: { _ in true },
+            isModifierGestureActive: { _ in false },
+            isPresetActive: { _ in false }
+        )
+
+        XCTAssertEqual(result.nextPressedState, true)
+        XCTAssertEqual(
+            result.outcomes,
+            [
+                .detected(source: "in_house_definition", trigger: .toggle),
+                .dispatchDown(activationMode: .toggle),
+            ]
+        )
+    }
+
+    @MainActor
+    func testShortcutEventRoutingOrchestratorIgnoresNonDefinitionSourcesWhenModeIsInHouseOnly() {
+        let orchestrator = ShortcutEventRoutingOrchestrator()
+        let configuration = ShortcutEventRoutingConfiguration(
+            definition: nil,
+            modifierGesture: ModifierShortcutGesture(keys: [.rightCommand], triggerMode: .hold),
+            presetKey: .rightCommand,
+            presetRequiresModifierMonitoring: true,
+            defaultActivationMode: .toggle,
+            sources: ShortcutEventRoutingSources(
+                inHouseDefinition: "in_house_definition",
+                modifierGesture: "modifier_gesture",
+                preset: "preset",
+                customKeyboardShortcut: "keyboardshortcuts_custom"
+            )
+        )
+
+        let result = orchestrator.routeMonitorEvent(
+            configuration: configuration,
+            mode: .inHouseDefinitionOnly,
+            wasPressed: false,
+            isDefinitionActive: { _ in false },
+            isModifierGestureActive: { _ in true },
+            isPresetActive: { _ in true }
+        )
+
+        XCTAssertEqual(result, .none)
+    }
+
+    @MainActor
+    func testShortcutEventRoutingOrchestratorRoutesCustomShortcutDownForCustomPreset() {
+        let orchestrator = ShortcutEventRoutingOrchestrator()
+        let configuration = ShortcutEventRoutingConfiguration(
+            definition: nil,
+            modifierGesture: nil,
+            presetKey: .custom,
+            presetRequiresModifierMonitoring: false,
+            defaultActivationMode: .doubleTap,
+            sources: ShortcutEventRoutingSources(
+                inHouseDefinition: "in_house_definition",
+                modifierGesture: "modifier_gesture",
+                preset: "preset",
+                customKeyboardShortcut: "keyboardshortcuts_custom"
+            )
+        )
+
+        let outcomes = orchestrator.routeCustomShortcutDown(configuration: configuration)
+
+        XCTAssertEqual(
+            outcomes,
+            [
+                .detected(source: "keyboardshortcuts_custom", trigger: .doubleTap),
+                .dispatchDown(activationMode: .doubleTap),
+            ]
+        )
+    }
+
+    @MainActor
+    func testShortcutEventRoutingOrchestratorRejectsCustomShortcutWhenOverriddenByGesture() {
+        let orchestrator = ShortcutEventRoutingOrchestrator()
+        let configuration = ShortcutEventRoutingConfiguration(
+            definition: nil,
+            modifierGesture: ModifierShortcutGesture(keys: [.rightOption], triggerMode: .singleTap),
+            presetKey: .custom,
+            presetRequiresModifierMonitoring: false,
+            defaultActivationMode: .hold,
+            sources: ShortcutEventRoutingSources(
+                inHouseDefinition: "in_house_definition",
+                modifierGesture: "modifier_gesture",
+                preset: "preset",
+                customKeyboardShortcut: "keyboardshortcuts_custom"
+            )
+        )
+
+        let outcomes = orchestrator.routeCustomShortcutDown(configuration: configuration)
+
+        XCTAssertEqual(
+            outcomes,
+            [
+                .rejected(
+                    source: "keyboardshortcuts_custom",
+                    trigger: .hold,
+                    reason: "custom_overridden_by_modifier_gesture"
+                ),
+            ]
+        )
+    }
+
     func testShortcutTelemetryShortcutDetectedRecordUsesCanonicalPayload() {
         let record = ShortcutTelemetryEvent
             .shortcutDetected(

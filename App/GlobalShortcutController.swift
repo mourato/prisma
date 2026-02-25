@@ -11,6 +11,7 @@ final class GlobalShortcutController {
     private var flagsMonitor: KeyboardEventMonitor?
     private var keyDownMonitor: KeyboardEventMonitor?
     private var keyUpMonitor: KeyboardEventMonitor?
+    private let shortcutRouter = ShortcutEventRoutingOrchestrator()
 
     private lazy var dictationHandler = SmartShortcutHandler(
         doubleTapInterval: currentDoubleTapInterval,
@@ -367,87 +368,18 @@ final class GlobalShortcutController {
     // To match the original logic:
 
     private func handleFlagsChanged(_ event: NSEvent) {
-        // Dictation
-        if let definition = settings.dictationShortcutDefinition {
-            handleInHouseShortcutEvent(
-                definition: definition,
-                event: event,
-                handler: dictationHandler,
-                type: .dictation
-            )
-        } else if let gesture = settings.dictationModifierShortcutGesture {
-            let isActive = isModifierGestureActive(gesture, event: event)
-            let wasPressed = dictationHandler.isPressed
-            dictationHandler.handleModifierChange(isActive: isActive)
-            let activationMode = gesture.triggerMode.asShortcutActivationMode
-
-            if isActive, !wasPressed {
-                emitShortcutDetected(
-                    for: .dictation,
-                    source: "modifier_gesture",
-                    trigger: activationMode
-                )
-                Task { @MainActor in await handleShortcutDown(for: .dictation, activationModeOverride: activationMode) }
-            } else if !isActive, wasPressed {
-                Task { @MainActor in await handleShortcutUp(for: .dictation, activationModeOverride: activationMode) }
-            }
-        } else if settings.dictationSelectedPresetKey.requiresModifierMonitoring {
-            let isActive = isPresetActive(settings.dictationSelectedPresetKey, event: event)
-            let wasPressed = dictationHandler.isPressed
-            dictationHandler.handleModifierChange(isActive: isActive)
-
-            if isActive, !wasPressed {
-                emitShortcutDetected(
-                    for: .dictation,
-                    source: "preset",
-                    trigger: activationMode(for: .dictation)
-                )
-                Task { @MainActor in await handleShortcutDown(for: .dictation) }
-            } else if !isActive, wasPressed {
-                Task { @MainActor in await handleShortcutUp(for: .dictation) }
-            }
-        }
-
-        // Meeting
-        if let definition = settings.meetingShortcutDefinition {
-            handleInHouseShortcutEvent(
-                definition: definition,
-                event: event,
-                handler: meetingHandler,
-                type: .meeting
-            )
-        } else if let gesture = settings.meetingModifierShortcutGesture {
-            let isActive = isModifierGestureActive(gesture, event: event)
-            let wasPressed = meetingHandler.isPressed
-            meetingHandler.handleModifierChange(isActive: isActive)
-            let activationMode = gesture.triggerMode.asShortcutActivationMode
-
-            if isActive, !wasPressed {
-                emitShortcutDetected(
-                    for: .meeting,
-                    source: "modifier_gesture",
-                    trigger: activationMode
-                )
-                Task { @MainActor in await handleShortcutDown(for: .meeting, activationModeOverride: activationMode) }
-            } else if !isActive, wasPressed {
-                Task { @MainActor in await handleShortcutUp(for: .meeting, activationModeOverride: activationMode) }
-            }
-        } else if settings.meetingSelectedPresetKey.requiresModifierMonitoring {
-            let isActive = isPresetActive(settings.meetingSelectedPresetKey, event: event)
-            let wasPressed = meetingHandler.isPressed
-            meetingHandler.handleModifierChange(isActive: isActive)
-
-            if isActive, !wasPressed {
-                emitShortcutDetected(
-                    for: .meeting,
-                    source: "preset",
-                    trigger: activationMode(for: .meeting)
-                )
-                Task { @MainActor in await handleShortcutDown(for: .meeting) }
-            } else if !isActive, wasPressed {
-                Task { @MainActor in await handleShortcutUp(for: .meeting) }
-            }
-        }
+        routeShortcutMonitorEvent(
+            for: .dictation,
+            event: event,
+            mode: .allSources,
+            handler: dictationHandler
+        )
+        routeShortcutMonitorEvent(
+            for: .meeting,
+            event: event,
+            mode: .allSources,
+            handler: meetingHandler
+        )
     }
 
     private func handleKeyDown(_ event: NSEvent) {
@@ -465,23 +397,18 @@ final class GlobalShortcutController {
             )
         }
 
-        if let definition = settings.dictationShortcutDefinition {
-            handleInHouseShortcutEvent(
-                definition: definition,
-                event: event,
-                handler: dictationHandler,
-                type: .dictation
-            )
-        }
-
-        if let definition = settings.meetingShortcutDefinition {
-            handleInHouseShortcutEvent(
-                definition: definition,
-                event: event,
-                handler: meetingHandler,
-                type: .meeting
-            )
-        }
+        routeShortcutMonitorEvent(
+            for: .dictation,
+            event: event,
+            mode: .inHouseDefinitionOnly,
+            handler: dictationHandler
+        )
+        routeShortcutMonitorEvent(
+            for: .meeting,
+            event: event,
+            mode: .inHouseDefinitionOnly,
+            handler: meetingHandler
+        )
 
         guard settings.useEscapeToCancelRecording else {
             if event.keyCode == PresetShortcutKey.escapeKeyCode {
@@ -599,23 +526,18 @@ final class GlobalShortcutController {
     }
 
     private func handleKeyUp(_ event: NSEvent) {
-        if let definition = settings.dictationShortcutDefinition {
-            handleInHouseShortcutEvent(
-                definition: definition,
-                event: event,
-                handler: dictationHandler,
-                type: .dictation
-            )
-        }
-
-        if let definition = settings.meetingShortcutDefinition {
-            handleInHouseShortcutEvent(
-                definition: definition,
-                event: event,
-                handler: meetingHandler,
-                type: .meeting
-            )
-        }
+        routeShortcutMonitorEvent(
+            for: .dictation,
+            event: event,
+            mode: .inHouseDefinitionOnly,
+            handler: dictationHandler
+        )
+        routeShortcutMonitorEvent(
+            for: .meeting,
+            event: event,
+            mode: .inHouseDefinitionOnly,
+            handler: meetingHandler
+        )
     }
 }
 
@@ -744,93 +666,17 @@ private extension GlobalShortcutController {
     }
 
     func handleCustomShortcutDown(for type: ShortcutType) async {
-        let presetKey = type == .dictation ? settings.dictationSelectedPresetKey : settings.meetingSelectedPresetKey
-        let inHouseDefinition = type == .dictation ? settings.dictationShortcutDefinition : settings.meetingShortcutDefinition
-        if inHouseDefinition != nil {
-            emitShortcutRejected(
-                for: type,
-                source: "keyboardshortcuts_custom",
-                trigger: activationMode(for: type),
-                reason: "custom_overridden_by_in_house_definition"
-            )
-            return
-        }
-        if type == .dictation, settings.dictationModifierShortcutGesture != nil {
-            emitShortcutRejected(
-                for: type,
-                source: "keyboardshortcuts_custom",
-                trigger: activationMode(for: type),
-                reason: "custom_overridden_by_modifier_gesture"
-            )
-            return
-        }
-        if type == .meeting, settings.meetingModifierShortcutGesture != nil {
-            emitShortcutRejected(
-                for: type,
-                source: "keyboardshortcuts_custom",
-                trigger: activationMode(for: type),
-                reason: "custom_overridden_by_modifier_gesture"
-            )
-            return
-        }
-        guard presetKey == .custom else {
-            emitShortcutRejected(
-                for: type,
-                source: "keyboardshortcuts_custom",
-                trigger: activationMode(for: type),
-                reason: "preset_not_custom"
-            )
-            return
-        }
-
-        emitShortcutDetected(
-            for: type,
-            source: "keyboardshortcuts_custom",
-            trigger: activationMode(for: type)
+        let outcomes = shortcutRouter.routeCustomShortcutDown(
+            configuration: routingConfiguration(for: type)
         )
-        await handleShortcutDown(for: type)
+        applyRoutingOutcomes(outcomes, for: type)
     }
 
     func handleCustomShortcutUp(for type: ShortcutType) async {
-        let presetKey = type == .dictation ? settings.dictationSelectedPresetKey : settings.meetingSelectedPresetKey
-        let inHouseDefinition = type == .dictation ? settings.dictationShortcutDefinition : settings.meetingShortcutDefinition
-        if inHouseDefinition != nil {
-            emitShortcutRejected(
-                for: type,
-                source: "keyboardshortcuts_custom",
-                trigger: activationMode(for: type),
-                reason: "custom_overridden_by_in_house_definition"
-            )
-            return
-        }
-        if type == .dictation, settings.dictationModifierShortcutGesture != nil {
-            emitShortcutRejected(
-                for: type,
-                source: "keyboardshortcuts_custom",
-                trigger: activationMode(for: type),
-                reason: "custom_overridden_by_modifier_gesture"
-            )
-            return
-        }
-        if type == .meeting, settings.meetingModifierShortcutGesture != nil {
-            emitShortcutRejected(
-                for: type,
-                source: "keyboardshortcuts_custom",
-                trigger: activationMode(for: type),
-                reason: "custom_overridden_by_modifier_gesture"
-            )
-            return
-        }
-        guard presetKey == .custom else {
-            emitShortcutRejected(
-                for: type,
-                source: "keyboardshortcuts_custom",
-                trigger: activationMode(for: type),
-                reason: "preset_not_custom"
-            )
-            return
-        }
-        await handleShortcutUp(for: type)
+        let outcomes = shortcutRouter.routeCustomShortcutUp(
+            configuration: routingConfiguration(for: type)
+        )
+        applyRoutingOutcomes(outcomes, for: type)
     }
 
     func handleShortcutDown(
@@ -902,29 +748,92 @@ private extension GlobalShortcutController {
         presetState.isShortcutActive(definition, event: event)
     }
 
-    func handleInHouseShortcutEvent(
-        definition: ShortcutDefinition,
-        event: NSEvent,
-        handler: SmartShortcutHandler,
-        type: ShortcutType
-    ) {
-        let isActive = isShortcutActive(definition, event: event)
-        let wasPressed = handler.isPressed
-        handler.handleModifierChange(isActive: isActive)
-        let activationMode = definition.trigger.asShortcutActivationMode
+    func routingConfiguration(for type: ShortcutType) -> ShortcutEventRoutingConfiguration {
+        let definition: ShortcutDefinition?
+        let modifierGesture: ModifierShortcutGesture?
+        let presetKey: PresetShortcutKey
 
-        if isActive, !wasPressed {
-            emitShortcutDetected(
-                for: type,
-                source: "in_house_definition",
-                trigger: activationMode
+        switch type {
+        case .dictation:
+            definition = settings.dictationShortcutDefinition
+            modifierGesture = settings.dictationModifierShortcutGesture
+            presetKey = settings.dictationSelectedPresetKey
+        case .meeting:
+            definition = settings.meetingShortcutDefinition
+            modifierGesture = settings.meetingModifierShortcutGesture
+            presetKey = settings.meetingSelectedPresetKey
+        }
+
+        return ShortcutEventRoutingConfiguration(
+            definition: definition,
+            modifierGesture: modifierGesture,
+            presetKey: presetKey,
+            presetRequiresModifierMonitoring: presetKey.requiresModifierMonitoring,
+            defaultActivationMode: activationMode(for: type),
+            sources: ShortcutEventRoutingSources(
+                inHouseDefinition: "in_house_definition",
+                modifierGesture: "modifier_gesture",
+                preset: "preset",
+                customKeyboardShortcut: "keyboardshortcuts_custom"
             )
-            Task { @MainActor in
-                await handleShortcutDown(for: type, activationModeOverride: activationMode)
+        )
+    }
+
+    func routeShortcutMonitorEvent(
+        for type: ShortcutType,
+        event: NSEvent,
+        mode: ShortcutEventRoutingMode,
+        handler: SmartShortcutHandler
+    ) {
+        let result = shortcutRouter.routeMonitorEvent(
+            configuration: routingConfiguration(for: type),
+            mode: mode,
+            wasPressed: handler.isPressed,
+            isDefinitionActive: { [weak self] definition in
+                guard let self else { return false }
+                return self.isShortcutActive(definition, event: event)
+            },
+            isModifierGestureActive: { [weak self] gesture in
+                guard let self else { return false }
+                return self.isModifierGestureActive(gesture, event: event)
+            },
+            isPresetActive: { [weak self] presetKey in
+                guard let self else { return false }
+                return self.isPresetActive(presetKey, event: event)
             }
-        } else if !isActive, wasPressed {
-            Task { @MainActor in
-                await handleShortcutUp(for: type, activationModeOverride: activationMode)
+        )
+
+        if let nextPressedState = result.nextPressedState {
+            handler.handleModifierChange(isActive: nextPressedState)
+        }
+
+        applyRoutingOutcomes(result.outcomes, for: type)
+    }
+
+    func applyRoutingOutcomes(
+        _ outcomes: [ShortcutEventRoutingOutcome],
+        for type: ShortcutType
+    ) {
+        for outcome in outcomes {
+            switch outcome {
+            case let .detected(source, trigger):
+                emitShortcutDetected(for: type, source: source, trigger: trigger)
+            case let .rejected(source, trigger, reason):
+                emitShortcutRejected(for: type, source: source, trigger: trigger, reason: reason)
+            case let .dispatchDown(activationMode):
+                Task { @MainActor [weak self] in
+                    await self?.handleShortcutDown(
+                        for: type,
+                        activationModeOverride: activationMode
+                    )
+                }
+            case let .dispatchUp(activationMode):
+                Task { @MainActor [weak self] in
+                    await self?.handleShortcutUp(
+                        for: type,
+                        activationModeOverride: activationMode
+                    )
+                }
             }
         }
     }

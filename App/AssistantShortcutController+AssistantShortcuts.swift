@@ -4,51 +4,7 @@ import MeetingAssistantCore
 @MainActor
 extension AssistantShortcutController {
     func handleFlagsChanged(_ event: NSEvent) {
-        if let definition = settings.assistantShortcutDefinition {
-            handleInHouseShortcutEvent(
-                definition: definition,
-                event: event,
-                state: presetState,
-                handler: shortcutHandler,
-                onDown: { [weak self] activationMode in
-                    Task { @MainActor [weak self] in await self?.handleShortcutDown(activationModeOverride: activationMode) }
-                },
-                onUp: { [weak self] activationMode in
-                    Task { @MainActor [weak self] in await self?.handleShortcutUp(activationModeOverride: activationMode) }
-                }
-            )
-        } else if let gesture = settings.assistantModifierShortcutGesture {
-            let isActive = presetState.isModifierGestureActive(gesture, event: event)
-            let wasPressed = shortcutHandler.isPressed
-            shortcutHandler.handleModifierChange(isActive: isActive)
-            let activationMode = gesture.triggerMode.asShortcutActivationMode
-
-            if isActive, !wasPressed {
-                emitShortcutDetected(
-                    shortcutTarget: "assistant",
-                    source: "modifier_gesture",
-                    trigger: activationMode
-                )
-                Task { @MainActor [weak self] in await self?.handleShortcutDown(activationModeOverride: activationMode) }
-            } else if !isActive, wasPressed {
-                Task { @MainActor [weak self] in await self?.handleShortcutUp(activationModeOverride: activationMode) }
-            }
-        } else if settings.assistantSelectedPresetKey.requiresModifierMonitoring {
-            let isActive = presetState.isPresetActive(settings.assistantSelectedPresetKey, event: event)
-            let wasPressed = shortcutHandler.isPressed
-            shortcutHandler.handleModifierChange(isActive: isActive)
-
-            if isActive, !wasPressed {
-                emitShortcutDetected(
-                    shortcutTarget: "assistant",
-                    source: "preset",
-                    trigger: settings.assistantShortcutActivationMode
-                )
-                Task { @MainActor [weak self] in await self?.handleShortcutDown() }
-            } else if !isActive, wasPressed {
-                Task { @MainActor [weak self] in await self?.handleShortcutUp() }
-            }
-        }
+        routeAssistantMonitorEvent(event, mode: .allSources)
 
         if !shouldUseAssistantShortcutLayer {
             handleIntegrationFlagsChanged(event)
@@ -80,20 +36,7 @@ extension AssistantShortcutController {
             return
         }
 
-        if let definition = settings.assistantShortcutDefinition {
-            handleInHouseShortcutEvent(
-                definition: definition,
-                event: event,
-                state: presetState,
-                handler: shortcutHandler,
-                onDown: { [weak self] activationMode in
-                    Task { @MainActor [weak self] in await self?.handleShortcutDown(activationModeOverride: activationMode) }
-                },
-                onUp: { [weak self] activationMode in
-                    Task { @MainActor [weak self] in await self?.handleShortcutUp(activationModeOverride: activationMode) }
-                }
-            )
-        }
+        routeAssistantMonitorEvent(event, mode: .inHouseDefinitionOnly)
         handleIntegrationKeyEvent(event)
 
         guard settings.assistantUseEscapeToCancelRecording else {
@@ -158,92 +101,22 @@ extension AssistantShortcutController {
     }
 
     func handleKeyUp(_ event: NSEvent) {
-        if let definition = settings.assistantShortcutDefinition {
-            handleInHouseShortcutEvent(
-                definition: definition,
-                event: event,
-                state: presetState,
-                handler: shortcutHandler,
-                onDown: { [weak self] activationMode in
-                    Task { @MainActor [weak self] in await self?.handleShortcutDown(activationModeOverride: activationMode) }
-                },
-                onUp: { [weak self] activationMode in
-                    Task { @MainActor [weak self] in await self?.handleShortcutUp(activationModeOverride: activationMode) }
-                }
-            )
-        }
+        routeAssistantMonitorEvent(event, mode: .inHouseDefinitionOnly)
         handleIntegrationKeyEvent(event)
     }
 
     func handleCustomShortcutDown() async {
-        guard settings.assistantShortcutDefinition == nil else {
-            emitShortcutRejected(
-                shortcutTarget: "assistant",
-                source: "keyboardshortcuts_custom",
-                trigger: settings.assistantShortcutActivationMode,
-                reason: "custom_overridden_by_in_house_definition"
-            )
-            return
-        }
-        guard settings.assistantModifierShortcutGesture == nil else {
-            emitShortcutRejected(
-                shortcutTarget: "assistant",
-                source: "keyboardshortcuts_custom",
-                trigger: settings.assistantShortcutActivationMode,
-                reason: "custom_overridden_by_modifier_gesture"
-            )
-            return
-        }
-
-        guard settings.assistantSelectedPresetKey == .custom else {
-            emitShortcutRejected(
-                shortcutTarget: "assistant",
-                source: "keyboardshortcuts_custom",
-                trigger: settings.assistantShortcutActivationMode,
-                reason: "preset_not_custom"
-            )
-            return
-        }
-
-        emitShortcutDetected(
-            shortcutTarget: "assistant",
-            source: "keyboardshortcuts_custom",
-            trigger: settings.assistantShortcutActivationMode
+        let outcomes = shortcutRouter.routeCustomShortcutDown(
+            configuration: assistantRoutingConfiguration()
         )
-        await handleShortcutDown()
+        applyAssistantRoutingOutcomes(outcomes)
     }
 
     func handleCustomShortcutUp() async {
-        guard settings.assistantShortcutDefinition == nil else {
-            emitShortcutRejected(
-                shortcutTarget: "assistant",
-                source: "keyboardshortcuts_custom",
-                trigger: settings.assistantShortcutActivationMode,
-                reason: "custom_overridden_by_in_house_definition"
-            )
-            return
-        }
-        guard settings.assistantModifierShortcutGesture == nil else {
-            emitShortcutRejected(
-                shortcutTarget: "assistant",
-                source: "keyboardshortcuts_custom",
-                trigger: settings.assistantShortcutActivationMode,
-                reason: "custom_overridden_by_modifier_gesture"
-            )
-            return
-        }
-
-        guard settings.assistantSelectedPresetKey == .custom else {
-            emitShortcutRejected(
-                shortcutTarget: "assistant",
-                source: "keyboardshortcuts_custom",
-                trigger: settings.assistantShortcutActivationMode,
-                reason: "preset_not_custom"
-            )
-            return
-        }
-
-        await handleShortcutUp()
+        let outcomes = shortcutRouter.routeCustomShortcutUp(
+            configuration: assistantRoutingConfiguration()
+        )
+        applyAssistantRoutingOutcomes(outcomes)
     }
 
     func handleShortcutDown(activationModeOverride: ShortcutActivationMode? = nil) async {
@@ -285,30 +158,76 @@ extension AssistantShortcutController {
         shortcutHandler.handleShortcutUp(activationMode: activationModeOverride ?? settings.assistantShortcutActivationMode)
     }
 
-    func handleInHouseShortcutEvent(
-        definition: ShortcutDefinition,
-        event: NSEvent,
-        state: ShortcutActivationState,
-        handler: SmartShortcutHandler,
-        shortcutTarget: String = "assistant",
-        detectionSource: String = "in_house_definition",
-        onDown: @escaping (ShortcutActivationMode) -> Void,
-        onUp: @escaping (ShortcutActivationMode) -> Void
-    ) {
-        let isActive = state.isShortcutActive(definition, event: event)
-        let wasPressed = handler.isPressed
-        handler.handleModifierChange(isActive: isActive)
-        let activationMode = definition.trigger.asShortcutActivationMode
-
-        if isActive, !wasPressed {
-            emitShortcutDetected(
-                shortcutTarget: shortcutTarget,
-                source: detectionSource,
-                trigger: activationMode
+    func assistantRoutingConfiguration() -> ShortcutEventRoutingConfiguration {
+        ShortcutEventRoutingConfiguration(
+            definition: settings.assistantShortcutDefinition,
+            modifierGesture: settings.assistantModifierShortcutGesture,
+            presetKey: settings.assistantSelectedPresetKey,
+            presetRequiresModifierMonitoring: settings.assistantSelectedPresetKey.requiresModifierMonitoring,
+            defaultActivationMode: settings.assistantShortcutActivationMode,
+            sources: ShortcutEventRoutingSources(
+                inHouseDefinition: "in_house_definition",
+                modifierGesture: "modifier_gesture",
+                preset: "preset",
+                customKeyboardShortcut: "keyboardshortcuts_custom"
             )
-            onDown(activationMode)
-        } else if !isActive, wasPressed {
-            onUp(activationMode)
+        )
+    }
+
+    func routeAssistantMonitorEvent(
+        _ event: NSEvent,
+        mode: ShortcutEventRoutingMode
+    ) {
+        let result = shortcutRouter.routeMonitorEvent(
+            configuration: assistantRoutingConfiguration(),
+            mode: mode,
+            wasPressed: shortcutHandler.isPressed,
+            isDefinitionActive: { [weak self] definition in
+                guard let self else { return false }
+                return self.presetState.isShortcutActive(definition, event: event)
+            },
+            isModifierGestureActive: { [weak self] gesture in
+                guard let self else { return false }
+                return self.presetState.isModifierGestureActive(gesture, event: event)
+            },
+            isPresetActive: { [weak self] presetKey in
+                guard let self else { return false }
+                return self.presetState.isPresetActive(presetKey, event: event)
+            }
+        )
+
+        if let nextPressedState = result.nextPressedState {
+            shortcutHandler.handleModifierChange(isActive: nextPressedState)
+        }
+
+        applyAssistantRoutingOutcomes(result.outcomes)
+    }
+
+    func applyAssistantRoutingOutcomes(_ outcomes: [ShortcutEventRoutingOutcome]) {
+        for outcome in outcomes {
+            switch outcome {
+            case let .detected(source, trigger):
+                emitShortcutDetected(
+                    shortcutTarget: "assistant",
+                    source: source,
+                    trigger: trigger
+                )
+            case let .rejected(source, trigger, reason):
+                emitShortcutRejected(
+                    shortcutTarget: "assistant",
+                    source: source,
+                    trigger: trigger,
+                    reason: reason
+                )
+            case let .dispatchDown(activationMode):
+                Task { @MainActor [weak self] in
+                    await self?.handleShortcutDown(activationModeOverride: activationMode)
+                }
+            case let .dispatchUp(activationMode):
+                Task { @MainActor [weak self] in
+                    await self?.handleShortcutUp(activationModeOverride: activationMode)
+                }
+            }
         }
     }
 
