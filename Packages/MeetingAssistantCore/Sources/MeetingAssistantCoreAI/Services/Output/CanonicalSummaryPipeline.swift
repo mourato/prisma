@@ -151,7 +151,7 @@ struct CanonicalSummaryResponseParser {
         for index in text.indices {
             let char = text[index]
 
-            if char == "\"" && !isEscaped {
+            if char == "\"", !isEscaped {
                 isInsideString.toggle()
             }
 
@@ -202,11 +202,10 @@ struct DeterministicSummaryFallbackBuilder: Sendable {
             )
         )
 
-        let validatedSummary: CanonicalSummary
-        if (try? fallbackSummary.validate()) != nil {
-            validatedSummary = fallbackSummary
+        let validatedSummary: CanonicalSummary = if (try? fallbackSummary.validate()) != nil {
+            fallbackSummary
         } else {
-            validatedSummary = CanonicalSummary(
+            CanonicalSummary(
                 summary: "Summary unavailable due to malformed model output.",
                 trustFlags: .init(
                     isGroundedInTranscript: false,

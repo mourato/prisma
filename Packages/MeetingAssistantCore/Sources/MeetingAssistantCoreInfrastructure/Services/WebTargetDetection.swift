@@ -90,8 +90,8 @@ public enum WebTargetDetection {
         value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 
-    private static func targetSupportsBundle<T: WebTargetPattern>(
-        _ target: T,
+    private static func targetSupportsBundle(
+        _ target: some WebTargetPattern,
         normalizedBundleId: String,
         normalizedFallbackBrowsers: Set<String>
     ) -> Bool {

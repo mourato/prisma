@@ -17,8 +17,7 @@ public struct TextContextGuardrails: Sendable {
             minLines: policy.preferredLineWindow.lowerBound
         )
 
-        let trimmed = selectedLines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed
+        return selectedLines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private func splitLines(_ text: String) -> [String] {

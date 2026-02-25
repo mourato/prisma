@@ -64,25 +64,25 @@ public struct EnhancementsSettingsTab: View {
                     description: "settings.post_processing.description".localized,
                     isOn: $postProcessingViewModel.settings.postProcessingEnabled
                 )
-                
+
                 VStack(alignment: .leading, spacing: 0) {
-                    
+
                     Divider()
-                    
+
                     SettingsDrillDownListRow(
                         destination: EnhancementsPageRoute.systemGuidelines,
                         title: "settings.post_processing.edit_system_prompt".localized,
                         accessibilityHint: "settings.post_processing.system_guidelines.accessibility_hint".localized
                     )
-                    
+
                     Divider()
-                    
+
                     SettingsDrillDownListRow(
                         destination: EnhancementsPageRoute.providerModels,
                         title: "settings.enhancements.provider_models.title".localized,
                         accessibilityHint: "settings.enhancements.provider_models.drilldown_hint".localized
                     )
-                    
+
                     Divider()
                 }
 

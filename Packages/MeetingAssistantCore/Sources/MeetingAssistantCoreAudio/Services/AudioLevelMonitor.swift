@@ -79,10 +79,10 @@ public final class AudioLevelMonitor: ObservableObject {
             on: .main,
             in: .common
         )
-            .autoconnect()
-            .sink { [weak self] _ in
-                self?.sampleCurrentLevel()
-            }
+        .autoconnect()
+        .sink { [weak self] _ in
+            self?.sampleCurrentLevel()
+        }
     }
 
     /// Stop monitoring audio levels.

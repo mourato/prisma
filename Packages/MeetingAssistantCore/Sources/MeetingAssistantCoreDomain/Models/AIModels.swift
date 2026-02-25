@@ -123,7 +123,7 @@ public struct GeminiGenerationConfig: Codable, Sendable {
     public let maxOutputTokens: Int
 
     enum CodingKeys: String, CodingKey {
-        case maxOutputTokens = "maxOutputTokens"
+        case maxOutputTokens
     }
 
     public init(maxOutputTokens: Int) {
@@ -170,7 +170,7 @@ public struct GeminiModelsResponse: Codable, Sendable {
 
         enum CodingKeys: String, CodingKey {
             case name
-            case displayName = "displayName"
+            case displayName
         }
     }
 

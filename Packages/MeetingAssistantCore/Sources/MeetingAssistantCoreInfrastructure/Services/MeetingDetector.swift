@@ -26,7 +26,7 @@ public class MeetingDetector: ObservableObject {
 
     private init(settings: AppSettingsStore = .shared) {
         self.settings = settings
-        self.browserProviders = BrowserProviderRegistry.defaultProviders()
+        browserProviders = BrowserProviderRegistry.defaultProviders()
         setupAppNotifications()
     }
 
@@ -85,9 +85,9 @@ public class MeetingDetector: ObservableObject {
         }
 
         if let monitoredAppBundleID = firstCustomMonitoredApp(in: runningApps, monitoredBundleIdentifiers: monitoredBundleIdentifiers) {
-            if self.detectedMeeting != .unknown {
-                self.logger.info("Detected meeting in monitored app: \(monitoredAppBundleID)")
-                self.detectedMeeting = .unknown
+            if detectedMeeting != .unknown {
+                logger.info("Detected meeting in monitored app: \(monitoredAppBundleID)")
+                detectedMeeting = .unknown
             }
             return
         }

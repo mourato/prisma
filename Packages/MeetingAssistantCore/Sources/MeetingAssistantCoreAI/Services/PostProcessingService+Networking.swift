@@ -252,7 +252,7 @@ extension PostProcessingService {
             throw PostProcessingError.invalidResponse
         }
 
-        guard (200 ... 299).contains(httpResponse.statusCode) else {
+        guard (200...299).contains(httpResponse.statusCode) else {
             let decoder = JSONDecoder()
             if let errorResponse = try? decoder.decode(OpenAIErrorResponse.self, from: data) {
                 throw PostProcessingError.apiError(errorResponse.error.message)

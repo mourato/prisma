@@ -220,7 +220,7 @@ public final class RulesPerAppSettingsViewModel: ObservableObject {
 }
 
 extension RulesPerAppSettingsViewModel {
-    nonisolated private static var applicationSearchDirectories: [URL] {
+    private nonisolated static var applicationSearchDirectories: [URL] {
         let fileManager = FileManager.default
         let homeDirectory = fileManager.homeDirectoryForCurrentUser
 
@@ -233,7 +233,7 @@ extension RulesPerAppSettingsViewModel {
         ]
     }
 
-    nonisolated private static func discoverInstalledApplications() -> [InstalledApplicationRecord] {
+    private nonisolated static func discoverInstalledApplications() -> [InstalledApplicationRecord] {
         let fileManager = FileManager.default
         var seenBundleIdentifiers = Set<String>()
         var discovered: [InstalledApplicationRecord] = []
@@ -278,7 +278,7 @@ extension RulesPerAppSettingsViewModel {
         }
     }
 
-    nonisolated private static func appDisplayName(from bundle: Bundle, fallbackURL: URL) -> String {
+    private nonisolated static func appDisplayName(from bundle: Bundle, fallbackURL: URL) -> String {
         if let displayName = bundle.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String {
             let trimmed = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
             if !trimmed.isEmpty {

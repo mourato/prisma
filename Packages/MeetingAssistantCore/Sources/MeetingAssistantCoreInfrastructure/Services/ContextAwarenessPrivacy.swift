@@ -8,9 +8,9 @@ public enum ContextAwarenessPrivacy {
         case longNumericSequence = #"\b(?:\d[ -]?){13,19}\b"#
     }
 
-    nonisolated private static let maxExcludedBundleIDs = 100
+    private nonisolated static let maxExcludedBundleIDs = 100
 
-    nonisolated private static let defaultSensitiveBundleIDs: Set<String> = [
+    private nonisolated static let defaultSensitiveBundleIDs: Set<String> = [
         "com.apple.keychainaccess",
         "com.1password.1password",
         "com.agilebits.onepassword7",
@@ -20,15 +20,15 @@ public enum ContextAwarenessPrivacy {
         "proton.pass.mac",
     ]
 
-    nonisolated private static let replacementByPattern: [RedactionPattern: String] = [
+    private nonisolated static let replacementByPattern: [RedactionPattern: String] = [
         .email: "[REDACTED_EMAIL]",
         .url: "[REDACTED_URL]",
         .secretToken: "[REDACTED_SECRET]",
         .longNumericSequence: "[REDACTED_NUMBER]",
     ]
 
-    nonisolated private static let redactionOrder: [RedactionPattern] = [.secretToken, .email, .url, .longNumericSequence]
-    nonisolated private static let compiledRedactionRegexes: [RedactionPattern: NSRegularExpression] = {
+    private nonisolated static let redactionOrder: [RedactionPattern] = [.secretToken, .email, .url, .longNumericSequence]
+    private nonisolated static let compiledRedactionRegexes: [RedactionPattern: NSRegularExpression] = {
         var compiled: [RedactionPattern: NSRegularExpression] = [:]
         for pattern in RedactionPattern.allCases {
             if let regex = try? NSRegularExpression(pattern: pattern.rawValue, options: [.caseInsensitive]) {
@@ -38,7 +38,7 @@ public enum ContextAwarenessPrivacy {
         return compiled
     }()
 
-    nonisolated public static func redactSensitiveText(_ value: String?) -> String? {
+    public nonisolated static func redactSensitiveText(_ value: String?) -> String? {
         guard let value else { return nil }
         var output = value
 
@@ -62,7 +62,7 @@ public enum ContextAwarenessPrivacy {
         return output
     }
 
-    nonisolated public static func isCaptureBlocked(bundleIdentifier: String?, excludedBundleIDs: [String]) -> Bool {
+    public nonisolated static func isCaptureBlocked(bundleIdentifier: String?, excludedBundleIDs: [String]) -> Bool {
         guard let bundleIdentifier else { return false }
         let normalizedBundleID = bundleIdentifier.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard !normalizedBundleID.isEmpty else { return false }

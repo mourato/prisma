@@ -375,11 +375,11 @@ public struct TranscriptionDetailView: View {
     private var sourceSelection: SourceSelection {
         switch transcription.meeting.app {
         case .unknown:
-            return .dictation
+            .dictation
         case .importedFile:
-            return .dictation
+            .dictation
         default:
-            return .meeting
+            .meeting
         }
     }
 }
@@ -440,7 +440,7 @@ private extension Transcription {
             ]
         )
     )
-        .frame(width: 860, height: 620)
+    .frame(width: 860, height: 620)
 }
 
 #Preview("Processing Overlay") {

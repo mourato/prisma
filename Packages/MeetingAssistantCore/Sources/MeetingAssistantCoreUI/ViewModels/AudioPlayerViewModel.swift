@@ -76,15 +76,15 @@ public final class AudioPlayerViewModel: ObservableObject {
             on: .main,
             in: .common
         )
-            .autoconnect()
-            .sink { [weak self] _ in
-                guard let self, let player = audioPlayer else { return }
-                currentTime = player.currentTime
-                if !player.isPlaying {
-                    isPlaying = false
-                    stopTimer()
-                }
+        .autoconnect()
+        .sink { [weak self] _ in
+            guard let self, let player = audioPlayer else { return }
+            currentTime = player.currentTime
+            if !player.isPlaying {
+                isPlaying = false
+                stopTimer()
             }
+        }
     }
 
     private func stopTimer() {

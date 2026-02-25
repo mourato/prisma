@@ -174,12 +174,12 @@ extension AppDelegate {
             assistantVoiceCommandService.$isProcessing.map { _ in () }.eraseToAnyPublisher(),
             recordingManager.currentMeetingPublisher.map { _ in () }.eraseToAnyPublisher()
         )
-            // @Published emits in willSet; schedule refresh so re-reads observe committed values.
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.refreshRecordingUIState()
-            }
-            .store(in: &cancellables)
+        // @Published emits in willSet; schedule refresh so re-reads observe committed values.
+        .receive(on: DispatchQueue.main)
+        .sink { [weak self] _ in
+            self?.refreshRecordingUIState()
+        }
+        .store(in: &cancellables)
 
         refreshRecordingUIState()
     }

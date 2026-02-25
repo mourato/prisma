@@ -19,17 +19,17 @@ private extension ContextAcquisitionError {
     var logValue: String {
         switch self {
         case .permissionDenied:
-            return "permissionDenied"
+            "permissionDenied"
         case .noActiveApp:
-            return "noActiveApp"
+            "noActiveApp"
         case .noFocusedElement:
-            return "noFocusedElement"
+            "noFocusedElement"
         case .accessibilityUnsupported:
-            return "accessibilityUnsupported"
+            "accessibilityUnsupported"
         case .excludedApp:
-            return "excludedApp"
+            "excludedApp"
         case .providerFailed:
-            return "providerFailed"
+            "providerFailed"
         }
     }
 }

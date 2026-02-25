@@ -4,8 +4,8 @@ import MeetingAssistantCoreCommon
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
 
-extension FileSystemStorageService {
-    struct RetentionPreviewContext {
+public extension FileSystemStorageService {
+    internal struct RetentionPreviewContext {
         let retentionDays: Int
         let cutoffDate: Date
         let recordingsDir: URL
@@ -14,7 +14,7 @@ extension FileSystemStorageService {
         let transcriptionCandidates: [RetentionCleanupTranscriptionCandidate]
     }
 
-    func setupDirectories() {
+    internal func setupDirectories() {
         do {
             try FileManager.default.createDirectory(at: defaultRecordingsDirectory, withIntermediateDirectories: true)
             try FileManager.default.createDirectory(at: legacyTranscriptsDirectory, withIntermediateDirectories: true)
@@ -23,7 +23,7 @@ extension FileSystemStorageService {
         }
     }
 
-    public func createRecordingURL(for meeting: Meeting, type: RecordingType) -> URL {
+    func createRecordingURL(for meeting: Meeting, type: RecordingType) -> URL {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
         let timestamp = formatter.string(from: meeting.startTime)
@@ -46,7 +46,7 @@ extension FileSystemStorageService {
         return recordingsDirectory.appendingPathComponent(filename)
     }
 
-    public func cleanupTemporaryFiles(urls: [URL]) {
+    func cleanupTemporaryFiles(urls: [URL]) {
         for url in urls {
             do {
                 if FileManager.default.fileExists(atPath: url.path) {
@@ -68,7 +68,7 @@ extension FileSystemStorageService {
         }
     }
 
-    public func saveTranscription(_ transcription: Transcription) async throws {
+    func saveTranscription(_ transcription: Transcription) async throws {
         guard transcription.meeting.app != .unknown else {
             AppLogger.info(
                 "Skipped transcription persistence for dictation",
@@ -83,14 +83,14 @@ extension FileSystemStorageService {
         AppLogger.info("Saved transcription (Core Data)", category: .databaseManager, extra: ["id": transcription.id.uuidString])
     }
 
-    public func loadTranscriptions() async throws -> [Transcription] {
+    func loadTranscriptions() async throws -> [Transcription] {
         let entities = try await coreDataTranscriptionRepository.fetchAllTranscriptions()
         let models = entities.map(Self.convertToModel)
         AppLogger.info("Loaded transcriptions (Core Data)", category: .databaseManager, extra: ["count": models.count])
         return models
     }
 
-    public func loadAllMetadata() async throws -> [TranscriptionMetadata] {
+    func loadAllMetadata() async throws -> [TranscriptionMetadata] {
         try await loadMetadata(
             matching: TranscriptionMetadataQuery(
                 sourceFilter: .all,
@@ -101,7 +101,7 @@ extension FileSystemStorageService {
         )
     }
 
-    public func loadMetadata(matching query: TranscriptionMetadataQuery) async throws -> [TranscriptionMetadata] {
+    func loadMetadata(matching query: TranscriptionMetadataQuery) async throws -> [TranscriptionMetadata] {
         try await coreDataStack.performBackgroundTask { context in
             let request = TranscriptionMO.fetchRequest()
             request.fetchBatchSize = 100
@@ -113,19 +113,19 @@ extension FileSystemStorageService {
         }
     }
 
-    public func loadTranscription(by id: UUID) async throws -> Transcription? {
+    func loadTranscription(by id: UUID) async throws -> Transcription? {
         guard let entity = try await coreDataTranscriptionRepository.fetchTranscription(by: id) else {
             return nil
         }
         return Self.convertToModel(entity)
     }
 
-    public func deleteTranscription(by id: UUID) async throws {
+    func deleteTranscription(by id: UUID) async throws {
         try await coreDataTranscriptionRepository.deleteTranscription(by: id)
         AppLogger.info("Deleted transcription (Core Data)", category: .databaseManager, extra: ["id": id.uuidString])
     }
 
-    public func cleanupOldTranscriptions(olderThanDays days: Int) async throws {
+    func cleanupOldTranscriptions(olderThanDays days: Int) async throws {
         let allMetadata = try await loadAllMetadata()
         let cutoffDate = Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? Date()
         let toDelete = allMetadata.filter { $0.createdAt < cutoffDate }
@@ -141,7 +141,7 @@ extension FileSystemStorageService {
         try? await cleanupOrphanedRecordings()
     }
 
-    public func computeRetentionCleanupPreview(olderThanDays days: Int) async throws -> RetentionCleanupPreview {
+    func computeRetentionCleanupPreview(olderThanDays days: Int) async throws -> RetentionCleanupPreview {
         let retentionDays = max(1, days)
         let cutoffDate = Calendar.current.date(byAdding: .day, value: -retentionDays, to: Date()) ?? Date()
 
@@ -165,14 +165,14 @@ extension FileSystemStorageService {
         }.value
     }
 
-    static func standardizedAudioPaths(from transcriptions: [TranscriptionMetadata]) -> Set<String> {
+    internal static func standardizedAudioPaths(from transcriptions: [TranscriptionMetadata]) -> Set<String> {
         Set(transcriptions.compactMap { meta in
             guard let path = meta.audioFilePath else { return nil }
             return standardizePath(path: path)
         })
     }
 
-    static func computeRetentionCleanupPreviewSync(context: RetentionPreviewContext) -> RetentionCleanupPreview {
+    internal static func computeRetentionCleanupPreviewSync(context: RetentionPreviewContext) -> RetentionCleanupPreview {
         let fileManager = FileManager.default
         var audioURLsToDelete = collectAudioURLsFromDeletedTranscriptions(
             paths: context.audioPathsFromDeletedTranscriptions,
@@ -205,7 +205,7 @@ extension FileSystemStorageService {
         )
     }
 
-    static func computeAudioCandidates(
+    internal static func computeAudioCandidates(
         audioURLsToDelete: Set<URL>,
         fileByteSizeIfExists: (URL) -> Int64?,
         fileManager: FileManager
@@ -222,7 +222,7 @@ extension FileSystemStorageService {
         return audioFiles
     }
 
-    public func performRetentionCleanup(preview: RetentionCleanupPreview) async throws -> RetentionCleanupResult {
+    func performRetentionCleanup(preview: RetentionCleanupPreview) async throws -> RetentionCleanupResult {
         let audioToDelete = preview.audioFiles.map(\.url)
         let recordingsDirPath = recordingsDirectory.standardizedFileURL.path
         let transcriptionIdsToDelete = preview.transcriptions.map(\.id)
@@ -275,7 +275,7 @@ extension FileSystemStorageService {
         )
     }
 
-    public func cleanupOrphanedRecordings() async throws {
+    func cleanupOrphanedRecordings() async throws {
         let allMetadata = try await loadAllMetadata()
         let knownAudioPaths = Set(allMetadata.compactMap(\.audioFilePath))
         let recordingsDir = recordingsDirectory
@@ -322,11 +322,11 @@ extension FileSystemStorageService {
         }.value
     }
 
-    static func standardizePath(path: String) -> String {
+    internal static func standardizePath(path: String) -> String {
         URL(fileURLWithPath: path).standardizedFileURL.path
     }
 
-    static func normalizeDirectoryPath(_ path: String) -> String {
+    internal static func normalizeDirectoryPath(_ path: String) -> String {
         var normalized = path
         while normalized.hasSuffix("/") {
             normalized.removeLast()
@@ -334,7 +334,7 @@ extension FileSystemStorageService {
         return normalized
     }
 
-    static func buildMetadataPredicate(for query: TranscriptionMetadataQuery) -> NSPredicate? {
+    internal static func buildMetadataPredicate(for query: TranscriptionMetadataQuery) -> NSPredicate? {
         var predicates: [NSPredicate] = []
 
         switch query.sourceFilter {

@@ -153,11 +153,11 @@ private struct AssistantScreenBorderView: View {
     }
 
     var body: some View {
-#if DEBUG
+        #if DEBUG
         if shouldPrintChanges {
-            let _ = Self._printChanges()
+            _ = Self._printChanges()
         }
-#endif
+        #endif
         GeometryReader { geometry in
             switch style {
             case .stroke:

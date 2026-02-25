@@ -84,9 +84,9 @@ extension AssistantShortcutController {
             if shouldUseAssistantShortcutLayer {
                 KeyboardShortcuts.disable(shortcutName)
             } else if integration.isEnabled,
-               integration.shortcutDefinition == nil,
-               integration.modifierShortcutGesture == nil,
-               integration.shortcutPresetKey == .custom
+                      integration.shortcutDefinition == nil,
+                      integration.modifierShortcutGesture == nil,
+                      integration.shortcutPresetKey == .custom
             {
                 KeyboardShortcuts.enable(shortcutName)
             } else {
@@ -119,7 +119,7 @@ extension AssistantShortcutController {
                 mask: .keyDown,
                 shouldReturnLocalEvent: { [weak self] _ in
                     guard let self else { return true }
-                    return !self.shouldSuppressKeyDownEvents
+                    return !shouldSuppressKeyDownEvents
                 }
             ) { [weak self] event in
                 Task { @MainActor in

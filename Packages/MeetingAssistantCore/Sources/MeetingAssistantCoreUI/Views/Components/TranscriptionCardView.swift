@@ -218,7 +218,7 @@ public struct TranscriptionCardView: View {
     private var filteredPrompts: [PostProcessingPrompt] {
         let settings = AppSettingsStore.shared
         let typeSpecificPrompts = transcription.supportsMeetingConversation ? settings.meetingAvailablePrompts : settings.dictationAvailablePrompts
-        let allowedIDs = Set(availablePrompts.map { $0.id })
+        let allowedIDs = Set(availablePrompts.map(\.id))
 
         guard !allowedIDs.isEmpty else {
             return typeSpecificPrompts
