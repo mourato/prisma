@@ -11,7 +11,6 @@ public struct IntegrationsSettingsTab: View {
     @StateObject private var viewModel = IntegrationSettingsViewModel()
     @State private var editingIntegration: AssistantIntegrationConfig?
     @State private var advancedIntegrationDraft: AssistantIntegrationConfig?
-    @State private var integrationShortcutConflictMessages: [UUID: String] = [:]
 
     public init() {}
 
@@ -73,8 +72,7 @@ public struct IntegrationsSettingsTab: View {
     private var integrationsSection: some View {
         AssistantIntegrationsSection(
             viewModel: viewModel,
-            editingIntegration: $editingIntegration,
-            integrationShortcutConflictMessages: $integrationShortcutConflictMessages
+            editingIntegration: $editingIntegration
         )
     }
 }

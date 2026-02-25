@@ -53,24 +53,13 @@ public struct AssistantIntegrationEditorSheet: View {
                 }
             }
 
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-                Text("settings.assistant.layer.integration_key".localized)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                MAActionLayerKeyEditor(
-                    title: "settings.assistant.layer.integration_key".localized,
-                    key: Binding(
-                        get: { draft.integration.layerShortcutKey ?? "" },
-                        set: { newValue in
-                            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
-                            draft.integration.layerShortcutKey = trimmed.isEmpty ? nil : String(trimmed.prefix(1)).uppercased()
-                        }
-                    ),
-                    conflictMessage: shortcutConflictMessage,
-                    maxInputWidth: 90
-                )
-            }
+            MAModifierShortcutEditor(
+                shortcut: Binding(
+                    get: { draft.integration.shortcutDefinition },
+                    set: { draft.integration.shortcutDefinition = $0 }
+                ),
+                conflictMessage: shortcutConflictMessage
+            )
 
             if !isBuiltInIntegration {
                 VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
@@ -130,7 +119,7 @@ public struct AssistantIntegrationEditorSheet: View {
         }
         .padding(MeetingAssistantDesignSystem.Layout.spacing20)
         .frame(minWidth: 560, minHeight: 480)
-        .onChange(of: draft.integration.layerShortcutKey) { _, _ in
+        .onChange(of: draft.integration.shortcutDefinition) { _, _ in
             shortcutConflictMessage = nil
         }
         .onDisappear {

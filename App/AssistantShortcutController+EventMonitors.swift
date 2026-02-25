@@ -6,7 +6,7 @@ import MeetingAssistantCore
 extension AssistantShortcutController {
     func refreshEventMonitors() {
         // Global runtime now uses direct hotkeys + KeyboardShortcuts custom handlers.
-        // Keep monitor backend disabled for global capture to avoid Input Monitoring dependency.
+        // Keep monitor backend disabled for global capture.
         inputBackend.stopAllMonitoring()
         refreshDirectHotkeys()
 

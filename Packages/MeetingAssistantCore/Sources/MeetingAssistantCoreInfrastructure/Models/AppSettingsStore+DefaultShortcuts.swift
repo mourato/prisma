@@ -1,7 +1,7 @@
 import Foundation
 
 extension AppSettingsStore {
-    static var defaultDictationShortcutDefinition: ShortcutDefinition {
+    public static var defaultDictationShortcutDefinition: ShortcutDefinition {
         ShortcutDefinition(
             modifiers: [.option, .command],
             primaryKey: .letter("D", keyCode: 0x02),
@@ -9,7 +9,7 @@ extension AppSettingsStore {
         )
     }
 
-    static var defaultAssistantShortcutDefinition: ShortcutDefinition {
+    public static var defaultAssistantShortcutDefinition: ShortcutDefinition {
         ShortcutDefinition(
             modifiers: [.option, .command],
             primaryKey: .letter("A", keyCode: 0x00),
@@ -17,7 +17,7 @@ extension AppSettingsStore {
         )
     }
 
-    static var defaultMeetingShortcutDefinition: ShortcutDefinition {
+    public static var defaultMeetingShortcutDefinition: ShortcutDefinition {
         ShortcutDefinition(
             modifiers: [.option, .command],
             primaryKey: .letter("M", keyCode: 0x2e),

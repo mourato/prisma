@@ -347,6 +347,7 @@ private enum ShortcutKeyCode {
         0x40: 17,
         0x4f: 18,
         0x50: 19,
+        0x5a: 20,
     ]
 }
 

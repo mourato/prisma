@@ -121,10 +121,13 @@ public final class IntegrationSettingsViewModel: ObservableObject {
 
     @discardableResult
     public func saveIntegrationWithModifierValidation(_ integration: AssistantIntegrationConfig) -> String? {
-        let normalized = normalizedIntegration(integration)
-        if let conflictMessage = layerShortcutConflictMessage(for: normalized) {
-            return conflictMessage
+        if let shortcut = integration.shortcutDefinition,
+           ShortcutDefinitionNormalizer.normalized(shortcut) == nil
+        {
+            return "settings.shortcuts.modifier.primary_key_required".localized
         }
+
+        let normalized = normalizedIntegration(integration)
         if let conflictMessage = modifierConflictMessage(for: normalized) {
             return conflictMessage
         }
@@ -144,29 +147,6 @@ public final class IntegrationSettingsViewModel: ObservableObject {
         integration.shortcutPresetKey = shortcut == nil ? .notSpecified : .custom
 
         return saveIntegrationWithModifierValidation(integration)
-    }
-
-    @discardableResult
-    public func setIntegrationLayerShortcutKey(_ key: String, for id: UUID) -> String? {
-        guard var integration = integration(for: id) else {
-            return nil
-        }
-
-        let normalizedKey = LayerShortcutKeyNormalizer.normalized(key)
-        integration.layerShortcutKey = normalizedKey.isEmpty ? nil : normalizedKey
-
-        if let conflict = layerShortcutConflictMessage(for: integration) {
-            return conflict
-        }
-
-        saveIntegration(integration)
-        return nil
-    }
-
-    public func setIntegrationLeaderModeEnabled(_ enabled: Bool, for id: UUID) {
-        updateIntegration(id: id) { integration in
-            integration.leaderModeEnabled = enabled
-        }
     }
 
     public func applyPreset(_ preset: AssistantIntegrationPreset, to id: UUID) {
@@ -304,9 +284,6 @@ public final class IntegrationSettingsViewModel: ObservableObject {
 
     private func normalizedIntegration(_ integration: AssistantIntegrationConfig) -> AssistantIntegrationConfig {
         var normalized = integration
-        normalized.layerShortcutKey = LayerShortcutKeyNormalizer.normalized(integration.layerShortcutKey ?? "").isEmpty
-            ? nil
-            : LayerShortcutKeyNormalizer.normalized(integration.layerShortcutKey ?? "")
         let resolvedShortcut = ShortcutDefinitionNormalizer.normalized(integration.shortcutDefinition) ??
             ShortcutDefinitionNormalizer.normalized(integration.modifierShortcutGesture?.asShortcutDefinition) ??
             ShortcutDefinitionNormalizer.normalized(
@@ -347,33 +324,13 @@ public final class IntegrationSettingsViewModel: ObservableObject {
         }
 
         switch conflict.reason {
-        case .layerLeaderKeyCollision:
-            return "settings.assistant.layer.duplicate_key".localized
-        case .identicalSignature,
+        case .layerLeaderKeyCollision,
+             .identicalSignature,
              .effectiveModifierOverlap,
              .sideSpecificVsAgnosticOverlap,
              .assistantIntegrationConcurrentActivation:
             return "settings.shortcuts.modifier.conflict".localized(with: conflict.conflicting.actionDisplayName)
         }
-    }
-
-    private func layerShortcutConflictMessage(for integration: AssistantIntegrationConfig) -> String? {
-        guard integration.isEnabled,
-              let key = integration.layerShortcutKey,
-              !key.isEmpty
-        else {
-            return nil
-        }
-
-        if settings.assistantLayerShortcutKey == key {
-            return "settings.assistant.layer.duplicate_key".localized
-        }
-
-        let hasConflict = assistantIntegrations.contains { existing in
-            existing.id != integration.id && existing.isEnabled && existing.layerShortcutKey == key
-        }
-
-        return hasConflict ? "settings.assistant.layer.duplicate_key".localized : nil
     }
 
     private static func executeScript(script: String, input: String) async throws -> String? {
