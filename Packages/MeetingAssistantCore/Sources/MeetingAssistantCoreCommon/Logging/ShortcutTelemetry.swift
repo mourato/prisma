@@ -3,10 +3,8 @@ import Foundation
 public enum ShortcutTelemetryEventName: String, CaseIterable, Sendable {
     case shortcutDetected = "shortcut_detected"
     case shortcutRejected = "shortcut_rejected"
-    case permissionBlocked = "permission_blocked"
     case layerArmed = "layer_armed"
     case layerTimeout = "layer_timeout"
-    case eventTapFallback = "eventtap_fallback"
     case captureHealthChanged = "capture_health_changed"
 }
 
@@ -49,14 +47,6 @@ public enum ShortcutTelemetryEvent: Equatable, Sendable {
         reason: String
     )
 
-    case permissionBlocked(
-        pipeline: String,
-        scope: String,
-        permission: String,
-        accessibilityTrusted: Bool,
-        inputMonitoringTrusted: Bool
-    )
-
     case layerArmed(
         pipeline: String,
         scope: String,
@@ -72,14 +62,6 @@ public enum ShortcutTelemetryEvent: Equatable, Sendable {
         timeoutMs: Int
     )
 
-    case eventTapFallback(
-        pipeline: String,
-        scope: String,
-        fallbackMode: String,
-        reason: String,
-        inputMonitoringTrusted: Bool?
-    )
-
     case captureHealthChanged(
         pipeline: String,
         scope: String,
@@ -89,7 +71,6 @@ public enum ShortcutTelemetryEvent: Equatable, Sendable {
         reason: String?,
         requiresGlobalCapture: Bool,
         accessibilityTrusted: Bool,
-        inputMonitoringTrusted: Bool,
         flagsMonitorExpected: Bool,
         flagsMonitorActive: Bool,
         keyDownMonitorExpected: Bool,
@@ -132,20 +113,6 @@ public enum ShortcutTelemetryEvent: Equatable, Sendable {
                 )
             )
 
-        case let .permissionBlocked(pipeline, scope, permission, accessibilityTrusted, inputMonitoringTrusted):
-            return ShortcutTelemetryRecord(
-                name: .permissionBlocked,
-                level: .warning,
-                payload: basePayload(pipeline: pipeline, scope: scope).merging(
-                    [
-                        "permission": Self.sanitizeToken(permission),
-                        "accessibility_trusted": accessibilityTrusted ? "true" : "false",
-                        "input_monitoring_trusted": inputMonitoringTrusted ? "true" : "false",
-                    ],
-                    uniquingKeysWith: { _, new in new }
-                )
-            )
-
         case let .layerArmed(pipeline, scope, source, trigger, timeoutMs):
             return ShortcutTelemetryRecord(
                 name: .layerArmed,
@@ -174,23 +141,6 @@ public enum ShortcutTelemetryEvent: Equatable, Sendable {
                 )
             )
 
-        case let .eventTapFallback(pipeline, scope, fallbackMode, reason, inputMonitoringTrusted):
-            var payload = basePayload(pipeline: pipeline, scope: scope).merging(
-                [
-                    "fallback_mode": Self.sanitizeToken(fallbackMode),
-                    "reason": Self.sanitizeToken(reason),
-                ],
-                uniquingKeysWith: { _, new in new }
-            )
-            if let inputMonitoringTrusted {
-                payload["input_monitoring_trusted"] = inputMonitoringTrusted ? "true" : "false"
-            }
-            return ShortcutTelemetryRecord(
-                name: .eventTapFallback,
-                level: .warning,
-                payload: payload
-            )
-
         case let .captureHealthChanged(
             pipeline,
             scope,
@@ -200,7 +150,6 @@ public enum ShortcutTelemetryEvent: Equatable, Sendable {
             reason,
             requiresGlobalCapture,
             accessibilityTrusted,
-            inputMonitoringTrusted,
             flagsMonitorExpected,
             flagsMonitorActive,
             keyDownMonitorExpected,
@@ -218,7 +167,6 @@ public enum ShortcutTelemetryEvent: Equatable, Sendable {
                     "result": normalizedResult,
                     "requires_global_capture": requiresGlobalCapture ? "true" : "false",
                     "accessibility_trusted": accessibilityTrusted ? "true" : "false",
-                    "input_monitoring_trusted": inputMonitoringTrusted ? "true" : "false",
                     "flags_monitor_expected": flagsMonitorExpected ? "true" : "false",
                     "flags_monitor_active": flagsMonitorActive ? "true" : "false",
                     "key_down_monitor_expected": keyDownMonitorExpected ? "true" : "false",

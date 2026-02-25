@@ -115,12 +115,12 @@ public class ShortcutSettingsViewModel: ObservableObject {
         KeyboardShortcuts.reset(.dictationToggle)
         KeyboardShortcuts.reset(.meetingToggle)
         useEscapeToCancelRecording = false
-        selectedPresetKey = .fn
-        dictationSelectedPresetKey = .fn
-        meetingSelectedPresetKey = .notSpecified
-        dictationShortcutDefinition = nil
+        selectedPresetKey = .custom
+        dictationSelectedPresetKey = .custom
+        meetingSelectedPresetKey = .custom
+        dictationShortcutDefinition = AppSettingsStore.defaultDictationShortcutDefinition
         dictationModifierConflictMessage = nil
-        meetingShortcutDefinition = nil
+        meetingShortcutDefinition = AppSettingsStore.defaultMeetingShortcutDefinition
         meetingModifierConflictMessage = nil
         isRecordingCustomShortcut = false
     }
@@ -133,8 +133,6 @@ public class ShortcutSettingsViewModel: ObservableObject {
         switch presentation.action {
         case .none:
             return
-        case .openInputMonitoringSettings:
-            InputMonitoringPermissionService.openSystemSettings()
         case .openAccessibilitySettings:
             AccessibilityPermissionService.openSystemSettings()
         }
@@ -152,6 +150,16 @@ public class ShortcutSettingsViewModel: ObservableObject {
 
     private func handleDictationShortcutDefinitionChange(_ newValue: ShortcutDefinition?) {
         guard !isApplyingShortcutChange else {
+            return
+        }
+
+        if let newValue,
+           ShortcutDefinitionNormalizer.normalized(newValue) == nil
+        {
+            isApplyingShortcutChange = true
+            dictationShortcutDefinition = settings.dictationShortcutDefinition
+            dictationModifierConflictMessage = "settings.shortcuts.modifier.primary_key_required".localized
+            isApplyingShortcutChange = false
             return
         }
 
@@ -190,6 +198,16 @@ public class ShortcutSettingsViewModel: ObservableObject {
             return
         }
 
+        if let newValue,
+           ShortcutDefinitionNormalizer.normalized(newValue) == nil
+        {
+            isApplyingShortcutChange = true
+            meetingShortcutDefinition = settings.meetingShortcutDefinition
+            meetingModifierConflictMessage = "settings.shortcuts.modifier.primary_key_required".localized
+            isApplyingShortcutChange = false
+            return
+        }
+
         guard let normalizedValue = ShortcutDefinitionNormalizer.normalized(newValue) else {
             settings.meetingModifierShortcutGesture = nil
             settings.meetingShortcutDefinition = nil
@@ -222,9 +240,8 @@ public class ShortcutSettingsViewModel: ObservableObject {
 
     private func conflictMessage(for conflict: ShortcutConflict) -> String {
         switch conflict.reason {
-        case .layerLeaderKeyCollision:
-            return "settings.assistant.layer.duplicate_key".localized
-        case .identicalSignature,
+        case .layerLeaderKeyCollision,
+             .identicalSignature,
              .effectiveModifierOverlap,
              .sideSpecificVsAgnosticOverlap,
              .assistantIntegrationConcurrentActivation:

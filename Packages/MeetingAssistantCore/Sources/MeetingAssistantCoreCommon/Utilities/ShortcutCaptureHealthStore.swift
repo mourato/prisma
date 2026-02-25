@@ -17,7 +17,6 @@ public struct ShortcutCaptureHealthStatus: Equatable {
     public let reasonToken: String
     public let requiresGlobalCapture: Bool
     public let accessibilityTrusted: Bool
-    public let inputMonitoringTrusted: Bool
     public let eventTapExpected: Bool
     public let eventTapActive: Bool
 
@@ -27,7 +26,6 @@ public struct ShortcutCaptureHealthStatus: Equatable {
         reasonToken: String,
         requiresGlobalCapture: Bool,
         accessibilityTrusted: Bool,
-        inputMonitoringTrusted: Bool,
         eventTapExpected: Bool,
         eventTapActive: Bool
     ) {
@@ -36,7 +34,6 @@ public struct ShortcutCaptureHealthStatus: Equatable {
         self.reasonToken = reasonToken
         self.requiresGlobalCapture = requiresGlobalCapture
         self.accessibilityTrusted = accessibilityTrusted
-        self.inputMonitoringTrusted = inputMonitoringTrusted
         self.eventTapExpected = eventTapExpected
         self.eventTapActive = eventTapActive
     }
@@ -60,7 +57,6 @@ public enum ShortcutCaptureHealthStore {
         reasonToken: String,
         requiresGlobalCapture: Bool,
         accessibilityTrusted: Bool,
-        inputMonitoringTrusted: Bool,
         eventTapExpected: Bool,
         eventTapActive: Bool
     ) {
@@ -72,7 +68,6 @@ public enum ShortcutCaptureHealthStore {
             reasonToken: normalizedReasonToken,
             requiresGlobalCapture: requiresGlobalCapture,
             accessibilityTrusted: accessibilityTrusted,
-            inputMonitoringTrusted: inputMonitoringTrusted,
             eventTapExpected: eventTapExpected,
             eventTapActive: eventTapActive
         )
@@ -109,7 +104,6 @@ public enum ShortcutCaptureHealthStore {
             reasonToken: "",
             requiresGlobalCapture: false,
             accessibilityTrusted: true,
-            inputMonitoringTrusted: true,
             eventTapExpected: false,
             eventTapActive: false
         )
