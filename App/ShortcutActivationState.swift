@@ -340,7 +340,6 @@ struct ShortcutCaptureHealthSnapshot: Equatable {
     let result: ShortcutCaptureHealthResult
     let requiresGlobalCapture: Bool
     let accessibilityTrusted: Bool
-    let inputMonitoringTrusted: Bool
     let flagsMonitorExpected: Bool
     let flagsMonitorActive: Bool
     let keyDownMonitorExpected: Bool
@@ -360,7 +359,6 @@ struct ShortcutCaptureHealthSnapshot: Equatable {
             result.rawValue,
             Self.boolToken(requiresGlobalCapture),
             Self.boolToken(accessibilityTrusted),
-            Self.boolToken(inputMonitoringTrusted),
             Self.boolToken(flagsMonitorExpected),
             Self.boolToken(flagsMonitorActive),
             Self.boolToken(keyDownMonitorExpected),
@@ -381,7 +379,6 @@ struct ShortcutCaptureHealthSnapshot: Equatable {
         checkedAt: Date = Date(),
         expectation: ShortcutCaptureBackendExpectation,
         accessibilityTrusted: Bool,
-        inputMonitoringTrusted: Bool,
         flagsMonitorActive: Bool,
         keyDownMonitorActive: Bool,
         keyUpMonitorActive: Bool,
@@ -390,7 +387,6 @@ struct ShortcutCaptureHealthSnapshot: Equatable {
         let reasons = Self.computeDegradationReasons(
             expectation: expectation,
             accessibilityTrusted: accessibilityTrusted,
-            inputMonitoringTrusted: inputMonitoringTrusted,
             flagsMonitorActive: flagsMonitorActive,
             keyDownMonitorActive: keyDownMonitorActive,
             keyUpMonitorActive: keyUpMonitorActive,
@@ -403,7 +399,6 @@ struct ShortcutCaptureHealthSnapshot: Equatable {
         self.checkedAt = checkedAt
         self.requiresGlobalCapture = expectation.needsGlobalCapture
         self.accessibilityTrusted = accessibilityTrusted
-        self.inputMonitoringTrusted = inputMonitoringTrusted
         self.flagsMonitorExpected = expectation.needsFlagsMonitor
         self.flagsMonitorActive = flagsMonitorActive
         self.keyDownMonitorExpected = expectation.needsKeyDownMonitor
@@ -426,7 +421,6 @@ struct ShortcutCaptureHealthSnapshot: Equatable {
     private static func computeDegradationReasons(
         expectation: ShortcutCaptureBackendExpectation,
         accessibilityTrusted: Bool,
-        inputMonitoringTrusted: Bool,
         flagsMonitorActive: Bool,
         keyDownMonitorActive: Bool,
         keyUpMonitorActive: Bool,
@@ -439,9 +433,6 @@ struct ShortcutCaptureHealthSnapshot: Equatable {
         var reasons: [String] = []
         if !accessibilityTrusted {
             reasons.append("accessibility_denied")
-        }
-        if !inputMonitoringTrusted {
-            reasons.append("input_monitoring_denied")
         }
         if expectation.needsFlagsMonitor, !flagsMonitorActive {
             reasons.append("flags_monitor_inactive")

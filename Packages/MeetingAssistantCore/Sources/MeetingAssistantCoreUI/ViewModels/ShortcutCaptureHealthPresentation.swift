@@ -2,7 +2,6 @@ import MeetingAssistantCoreCommon
 
 public enum ShortcutCaptureHealthAction: Equatable {
     case none
-    case openInputMonitoringSettings
     case openAccessibilitySettings
 }
 
@@ -30,27 +29,14 @@ public struct ShortcutCaptureHealthPresentation: Equatable {
 
         let isFallback = status.scope == .assistant && status.eventTapExpected && !status.eventTapActive
         if isFallback {
-            if !status.inputMonitoringTrusted {
-                return ShortcutCaptureHealthPresentation(
-                    scope: status.scope,
-                    scopeLabelKey: scopeLabelKey,
-                    badgeKey: "settings.shortcuts.health.badge.fallback",
-                    titleKey: "settings.shortcuts.health.fallback.title",
-                    messageKey: "settings.shortcuts.health.fallback.message.input_monitoring",
-                    actionTitleKey: "settings.shortcuts.health.action.open_input_monitoring",
-                    action: .openInputMonitoringSettings,
-                    isFallback: true
-                )
-            }
-
             return ShortcutCaptureHealthPresentation(
                 scope: status.scope,
                 scopeLabelKey: scopeLabelKey,
                 badgeKey: "settings.shortcuts.health.badge.fallback",
                 titleKey: "settings.shortcuts.health.fallback.title",
                 messageKey: "settings.shortcuts.health.fallback.message.generic",
-                actionTitleKey: "settings.shortcuts.health.action.open_input_monitoring",
-                action: .openInputMonitoringSettings,
+                actionTitleKey: nil,
+                action: .none,
                 isFallback: true
             )
         }
@@ -64,19 +50,6 @@ public struct ShortcutCaptureHealthPresentation: Equatable {
                 messageKey: "settings.shortcuts.health.degraded.message.permissions_accessibility",
                 actionTitleKey: "settings.shortcuts.health.action.open_accessibility",
                 action: .openAccessibilitySettings,
-                isFallback: false
-            )
-        }
-
-        if !status.inputMonitoringTrusted {
-            return ShortcutCaptureHealthPresentation(
-                scope: status.scope,
-                scopeLabelKey: scopeLabelKey,
-                badgeKey: "settings.shortcuts.health.badge.degraded",
-                titleKey: "settings.shortcuts.health.degraded.title",
-                messageKey: "settings.shortcuts.health.degraded.message.permissions_input_monitoring",
-                actionTitleKey: "settings.shortcuts.health.action.open_input_monitoring",
-                action: .openInputMonitoringSettings,
                 isFallback: false
             )
         }

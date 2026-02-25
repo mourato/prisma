@@ -88,7 +88,7 @@ public struct ShortcutPrimaryKey: Codable, Equatable, Hashable, Sendable {
             return keyCode == 0x31
         case .function:
             guard let functionIndex else { return false }
-            return (1...19).contains(functionIndex)
+            return (1...20).contains(functionIndex)
         }
     }
 }
