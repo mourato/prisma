@@ -66,4 +66,22 @@ final class AssistantShortcutSettingsViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.shortcutCaptureHealthPresentation?.badgeKey, "settings.shortcuts.health.badge.fallback")
         XCTAssertEqual(viewModel.shortcutCaptureHealthPresentation?.isFallback, true)
     }
+
+    func testAssistantShortcutConflictWithLayerLeaderShowsLayerConflictMessage() async {
+        settings.assistantLayerShortcutKey = "R"
+        let viewModel = AssistantShortcutSettingsViewModel()
+
+        viewModel.assistantShortcutDefinition = ShortcutDefinition(
+            modifiers: [.command],
+            primaryKey: .letter("R", keyCode: 0x0f),
+            trigger: .singleTap
+        )
+        await Task.yield()
+
+        XCTAssertNil(settings.assistantShortcutDefinition)
+        XCTAssertEqual(
+            viewModel.assistantModifierConflictMessage,
+            "settings.assistant.layer.duplicate_key".localized
+        )
+    }
 }

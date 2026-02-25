@@ -158,7 +158,7 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
         if let conflict = settings.shortcutConflict(for: candidate) {
             isApplyingModifierShortcutChange = true
             assistantShortcutDefinition = settings.assistantShortcutDefinition
-            assistantModifierConflictMessage = "settings.shortcuts.modifier.conflict".localized(with: conflict.conflicting.actionDisplayName)
+            assistantModifierConflictMessage = conflictMessage(for: conflict)
             isApplyingModifierShortcutChange = false
             return
         }
@@ -196,6 +196,18 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
 
         assistantLayerShortcutConflictMessage = nil
         settings.assistantLayerShortcutKey = normalized
+    }
+
+    private func conflictMessage(for conflict: ShortcutConflict) -> String {
+        switch conflict.reason {
+        case .layerLeaderKeyCollision:
+            return "settings.assistant.layer.duplicate_key".localized
+        case .identicalSignature,
+             .effectiveModifierOverlap,
+             .sideSpecificVsAgnosticOverlap,
+             .assistantIntegrationConcurrentActivation:
+            return "settings.shortcuts.modifier.conflict".localized(with: conflict.conflicting.actionDisplayName)
+        }
     }
 
     public func openShortcutCaptureHealthAction() {
