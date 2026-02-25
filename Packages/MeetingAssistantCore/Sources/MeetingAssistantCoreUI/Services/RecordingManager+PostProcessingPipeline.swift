@@ -1,0 +1,242 @@
+import Foundation
+import MeetingAssistantCoreAI
+import MeetingAssistantCoreCommon
+import MeetingAssistantCoreDomain
+import MeetingAssistantCoreInfrastructure
+
+// MARK: - Post Processing Pipeline
+
+extension RecordingManager {
+    struct PostProcessingResult {
+        let processedContent: String?
+        let canonicalSummary: CanonicalSummary?
+        let promptId: UUID?
+        let promptTitle: String?
+        let duration: Double
+        let model: String?
+
+        static let empty = PostProcessingResult(
+            processedContent: nil,
+            canonicalSummary: nil,
+            promptId: nil,
+            promptTitle: nil,
+            duration: 0,
+            model: nil
+        )
+    }
+
+    func applyPostProcessing(
+        postProcessingInput: String,
+        meeting: Meeting?,
+        qualityProfile: TranscriptionQualityProfile?
+    ) async -> PostProcessingResult {
+        transcriptionStatus.updateProgress(phase: .postProcessing, percentage: Constants.postProcessingProgress)
+
+        let settings = AppSettingsStore.shared
+        guard settings.postProcessingEnabled else { return .empty }
+        let kernelMode = postProcessingKernelMode(for: meeting)
+        let readinessIssue = settings.enhancementsInferenceReadinessIssue(for: kernelMode, apiKeyExists: apiKeyExists)
+        setPostProcessingReadinessWarning(issue: readinessIssue, mode: kernelMode)
+        if let readinessIssue {
+            let reasonCode = readinessIssue.rawValue
+            AppLogger.info(
+                "Post-processing skipped: enhancements configuration not ready",
+                category: .recordingManager,
+                extra: ["reasonCode": reasonCode]
+            )
+            return .empty
+        }
+
+        let isDictation = kernelMode == .dictation
+        guard !isPostProcessingDisabled(isDictation: isDictation, settings: settings) else { return .empty }
+
+        let type = meeting?.type ?? currentMeeting?.type ?? .general
+        let prompt = await resolvePostProcessingPrompt(
+            rawText: postProcessingInput,
+            isDictation: isDictation,
+            meetingType: type,
+            settings: settings
+        )
+
+        transcriptionStatus.updateProgress(phase: .postProcessing, percentage: Constants.aiProcessingProgress)
+        return await runPostProcessing(
+            postProcessingInput: postProcessingInput,
+            prompt: prompt,
+            settings: settings,
+            qualityProfile: qualityProfile,
+            kernelMode: kernelMode,
+            dictationStructuredPostProcessingEnabled: settings.dictationStructuredPostProcessingEnabled
+        )
+    }
+
+    func resolvePostProcessingPrompt(
+        rawText: String,
+        isDictation: Bool,
+        meetingType: MeetingType,
+        settings: AppSettingsStore
+    ) async -> PostProcessingPrompt {
+        if isDictation {
+            return settings.selectedDictationPrompt ?? .cleanTranscription
+        }
+
+        if meetingType == .autodetect {
+            return await resolveAutodetectPrompt(rawText: rawText, settings: settings)
+        }
+
+        if meetingType != .general {
+            let strategy = PromptService.shared.strategy(for: meetingType)
+            let prompt = strategy.promptObject()
+            AppLogger.info("Using context-aware prompt for type: \(meetingType.displayName)", category: .transcriptionEngine)
+            return prompt
+        }
+
+        return settings.selectedPrompt ?? PromptService.shared.strategy(for: .general).promptObject()
+    }
+
+    func resolveAutodetectPrompt(rawText: String, settings: AppSettingsStore) async -> PostProcessingPrompt {
+        let fallback = settings.selectedPrompt ?? PromptService.shared.strategy(for: .general).promptObject()
+        let classifierPrompt = makeMeetingTypeClassifierPrompt()
+
+        do {
+            let jsonString = try await postProcessingService.processTranscription(rawText, with: classifierPrompt)
+            guard let detectedType = parseMeetingType(from: jsonString), detectedType != .general else { return fallback }
+            return resolveBuiltInMeetingPrompt(for: detectedType, fallbackGeneral: fallback)
+        } catch {
+            AppLogger.warning("Meeting type autodetect failed; falling back to general prompt", category: .recordingManager, extra: ["error": error.localizedDescription])
+            return fallback
+        }
+    }
+
+    func makeMeetingTypeClassifierPrompt() -> PostProcessingPrompt {
+        PostProcessingPrompt(
+            title: "Classifier",
+            promptText: """
+            Analyze the transcription and classify the meeting type.
+            Reply ONLY with JSON in the following format:
+            { "type": "VALUE" }
+            Allowed values: standup, presentation, design_review, one_on_one, planning, general.
+            """,
+            icon: "sparkles",
+            isPredefined: false
+        )
+    }
+
+    func runPostProcessing(
+        postProcessingInput: String,
+        prompt: PostProcessingPrompt,
+        settings: AppSettingsStore,
+        qualityProfile: TranscriptionQualityProfile?,
+        kernelMode: IntelligenceKernelMode,
+        dictationStructuredPostProcessingEnabled: Bool
+    ) async -> PostProcessingResult {
+        do {
+            let startTime = Date()
+            let useStructuredPipeline = kernelMode == .meeting || dictationStructuredPostProcessingEnabled
+            let pipeline = useStructuredPipeline ? "structured" : "fast"
+            let processedContent: String
+            let canonicalSummary: CanonicalSummary?
+
+            if useStructuredPipeline {
+                let structuredResult = try await postProcessingService.processTranscriptionStructured(
+                    postProcessingInput,
+                    with: prompt,
+                    mode: kernelMode
+                )
+                processedContent = structuredResult.processedText
+                canonicalSummary = qualityProfile.map { profile in
+                    recalibrateCanonicalSummary(structuredResult.canonicalSummary, with: profile)
+                } ?? structuredResult.canonicalSummary
+                AppLogger.info(
+                    "Post-processing complete",
+                    category: .recordingManager,
+                    extra: [
+                        "mode": kernelMode.rawValue,
+                        "pipeline": pipeline,
+                        "prompt": prompt.title,
+                        "output_state": structuredResult.outputState.rawValue,
+                    ]
+                )
+            } else {
+                processedContent = try await postProcessingService.processTranscription(
+                    postProcessingInput,
+                    with: prompt,
+                    mode: kernelMode,
+                    systemPromptOverride: nil
+                )
+                canonicalSummary = nil
+                AppLogger.info(
+                    "Post-processing complete",
+                    category: .recordingManager,
+                    extra: [
+                        "mode": kernelMode.rawValue,
+                        "pipeline": pipeline,
+                        "prompt": prompt.title,
+                    ]
+                )
+            }
+
+            let duration = Date().timeIntervalSince(startTime)
+            let model = settings.resolvedEnhancementsAIConfiguration(for: kernelMode).selectedModel
+            return PostProcessingResult(
+                processedContent: processedContent,
+                canonicalSummary: canonicalSummary,
+                promptId: prompt.id,
+                promptTitle: prompt.title,
+                duration: duration,
+                model: model
+            )
+        } catch {
+            AppLogger.error("Post-processing failed, using raw transcription", category: .recordingManager, error: error)
+            return .empty
+        }
+    }
+
+    func resolveBuiltInMeetingPrompt(for type: MeetingType, fallbackGeneral: PostProcessingPrompt) -> PostProcessingPrompt {
+        switch type {
+        case .standup:
+            .standup
+        case .presentation:
+            .presentation
+        case .designReview:
+            .designReview
+        case .oneOnOne:
+            .oneOnOne
+        case .planning:
+            .planning
+        case .general:
+            fallbackGeneral
+        case .autodetect:
+            fallbackGeneral
+        }
+    }
+
+    func parseMeetingType(from jsonString: String) -> MeetingType? {
+        if let type = parseMeetingTypeFromJSON(jsonString) {
+            return type
+        }
+
+        guard let startIndex = jsonString.firstIndex(of: "{"),
+              let endIndex = jsonString.lastIndex(of: "}")
+        else {
+            return nil
+        }
+
+        let candidate = String(jsonString[startIndex...endIndex])
+        return parseMeetingTypeFromJSON(candidate)
+    }
+
+    func parseMeetingTypeFromJSON(_ jsonString: String) -> MeetingType? {
+        guard let data = jsonString.data(using: .utf8),
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let rawType = object["type"] as? String
+        else {
+            return nil
+        }
+
+        let trimmed = rawType.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard let type = MeetingType(rawValue: trimmed) else { return nil }
+
+        let allowed: Set<MeetingType> = [.standup, .presentation, .designReview, .oneOnOne, .planning, .general]
+        return allowed.contains(type) ? type : nil
+    }
+}

@@ -22,21 +22,21 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
     // MARK: - Input Device
 
-    private let audioDeviceManager = AudioDeviceManager()
+    let audioDeviceManager = AudioDeviceManager()
 
     // MARK: - Published State
 
-    @Published public private(set) var isRecording = false
-    @Published public private(set) var isStartingRecording = false
-    @Published public private(set) var isTranscribing = false
-    @Published public private(set) var meetingState: MeetingState = .idle
-    @Published public private(set) var currentMeeting: Meeting?
-    @Published public private(set) var lastError: Error?
-    @Published public private(set) var hasRequiredPermissions = false
-    @Published public private(set) var recordingSource: RecordingSource = .microphone
-    @Published public private(set) var dictationSessionOutputLanguageOverride: DictationOutputLanguage?
-    @Published public private(set) var postProcessingReadinessWarningIssue: EnhancementsInferenceReadinessIssue?
-    @Published public private(set) var postProcessingReadinessWarningMode: IntelligenceKernelMode?
+    @Published public var isRecording = false
+    @Published public var isStartingRecording = false
+    @Published public var isTranscribing = false
+    @Published public var meetingState: MeetingState = .idle
+    @Published public var currentMeeting: Meeting?
+    @Published public var lastError: Error?
+    @Published public var hasRequiredPermissions = false
+    @Published public var recordingSource: RecordingSource = .microphone
+    @Published public var dictationSessionOutputLanguageOverride: DictationOutputLanguage?
+    @Published public var postProcessingReadinessWarningIssue: EnhancementsInferenceReadinessIssue?
+    @Published public var postProcessingReadinessWarningMode: IntelligenceKernelMode?
 
     // MARK: - Protocol Publishers
 
@@ -68,36 +68,36 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
     // MARK: - Services
 
-    private let micRecorder: any AudioRecordingService
-    private let systemRecorder: any AudioRecordingService
-    private let audioMerger: AudioMerger
-    private let meetingDetector: MeetingDetector
-    private let transcriptionClient: any TranscriptionService
-    private let postProcessingService: any PostProcessingServiceProtocol
-    private let storage: any StorageService
-    private let notificationService: NotificationService
-    private let contextAwarenessService: any ContextAwarenessServiceProtocol
-    private let textContextProvider: any TextContextProvider
-    private let textContextGuardrails: TextContextGuardrails
-    private let textContextPolicy: TextContextPolicy
-    private let transcribeAudioUseCase: TranscribeAudioUseCase
-    private let transcriptPreprocessor = TranscriptIntelligencePreprocessor()
-    private let activeAppContextProvider: any ActiveAppContextProvider
-    private let apiKeyExists: (AIProvider) -> Bool
-    private var browserProviders: [String: BrowserActiveTabURLProviding] = BrowserProviderRegistry.defaultProviders()
+    let micRecorder: any AudioRecordingService
+    let systemRecorder: any AudioRecordingService
+    let audioMerger: AudioMerger
+    let meetingDetector: MeetingDetector
+    let transcriptionClient: any TranscriptionService
+    let postProcessingService: any PostProcessingServiceProtocol
+    let storage: any StorageService
+    let notificationService: NotificationService
+    let contextAwarenessService: any ContextAwarenessServiceProtocol
+    let textContextProvider: any TextContextProvider
+    let textContextGuardrails: TextContextGuardrails
+    let textContextPolicy: TextContextPolicy
+    let transcribeAudioUseCase: TranscribeAudioUseCase
+    let transcriptPreprocessor = TranscriptIntelligencePreprocessor()
+    let activeAppContextProvider: any ActiveAppContextProvider
+    let apiKeyExists: (AIProvider) -> Bool
+    var browserProviders: [String: BrowserActiveTabURLProviding] = BrowserProviderRegistry.defaultProviders()
 
-    private var cancellables = Set<AnyCancellable>()
-    private var statusCheckTask: Task<Void, Never>?
-    private var isStartOperationInFlight = false
-    private var postStartContextCaptureTask: Task<Void, Never>?
-    private var activeStartTelemetry: RecordingStartTelemetry?
-    private var postProcessingContext: String?
-    private var postProcessingContextItems: [TranscriptionContextItem] = []
-    private var activePostProcessingKernelMode: IntelligenceKernelMode?
-    private var dictationStartBundleIdentifier: String?
-    private var dictationStartURL: URL?
+    var cancellables = Set<AnyCancellable>()
+    var statusCheckTask: Task<Void, Never>?
+    var isStartOperationInFlight = false
+    var postStartContextCaptureTask: Task<Void, Never>?
+    var activeStartTelemetry: RecordingStartTelemetry?
+    var postProcessingContext: String?
+    var postProcessingContextItems: [TranscriptionContextItem] = []
+    var activePostProcessingKernelMode: IntelligenceKernelMode?
+    var dictationStartBundleIdentifier: String?
+    var dictationStartURL: URL?
 
-    private struct RecordingStartTelemetry {
+    struct RecordingStartTelemetry {
         let traceID = UUID().uuidString
         let triggerLabel: String
         let source: RecordingSource
@@ -105,6 +105,16 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         let managerEntryAt: Date
         var recorderStartedAt: Date?
         var indicatorShownAt: Date?
+    }
+
+    // MARK: - Constants
+
+    enum Constants {
+        static let processingProgress: Double = 10.0
+        static let postProcessingProgress: Double = 90.0
+        static let aiProcessingProgress: Double = 92.0
+        static let statusResetDelay: Int = 3
+        static let startContextCaptureTimeout: UInt64 = 1_500_000_000
     }
 
     // MARK: - Computed Properties for Actor State
@@ -133,7 +143,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         Task { await self.recordingActor.setMergedAudioURL(url) }
     }
 
-    // MARK: - Storage
+    // MARK: - Initialization
 
     public init(
         micRecorder: any AudioRecordingService = AudioRecorder.shared,
@@ -220,11 +230,11 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         guard let bundleId = Bundle.main.bundleIdentifier else { return false }
         return !bundleId.lowercased().contains("xctest")
     }
-
 }
 
-public extension RecordingManager {
+// MARK: - Permissions
 
+public extension RecordingManager {
     func checkPermission() async {
         await checkPermission(for: recordingSource)
     }
@@ -284,9 +294,11 @@ public extension RecordingManager {
     func openAccessibilitySettings() {
         AccessibilityPermissionService.openSystemSettings()
     }
+}
 
-    // MARK: - Public API
+// MARK: - Recording Control
 
+public extension RecordingManager {
     /// Start recording audio for a meeting.
     /// - Parameters:
     ///   - source: The audio source to record.
@@ -386,7 +398,7 @@ public extension RecordingManager {
         telemetry.indicatorShownAt = now
         activeStartTelemetry = telemetry
 
-        let requestedToIndicatorMs = now.timeIntervalSince(telemetry.requestedAt) * 1000
+        let requestedToIndicatorMs = now.timeIntervalSince(telemetry.requestedAt) * 1_000
         PerformanceMonitor.shared.reportMetric(
             name: "recording_start_requested_to_indicator_ms",
             value: requestedToIndicatorMs,
@@ -394,7 +406,7 @@ public extension RecordingManager {
         )
 
         if let recorderStartedAt = telemetry.recorderStartedAt {
-            let recorderToIndicatorMs = now.timeIntervalSince(recorderStartedAt) * 1000
+            let recorderToIndicatorMs = now.timeIntervalSince(recorderStartedAt) * 1_000
             PerformanceMonitor.shared.reportMetric(
                 name: "recording_start_recorder_to_indicator_ms",
                 value: recorderToIndicatorMs,
@@ -425,19 +437,15 @@ public extension RecordingManager {
     }
 
     private func startRecorder(to url: URL, source: RecordingSource) async throws {
-        // Start recorder with source preference
-        // We assume micRecorder is capable of handling the source logic (AudioRecorder)
         AppLogger.debug(
             "Starting recorder",
             category: .recordingManager,
             extra: ["url": url.path, "source": source.rawValue]
         )
 
-        // Use specific overload if available, or fallback
         if let recorder = micRecorder as? AudioRecorder {
             try await recorder.startRecording(to: url, source: source, retryCount: 0)
         } else {
-            // Fallback for mocks or generic services
             try await micRecorder.startRecording(to: url, retryCount: 0)
         }
     }
@@ -447,7 +455,7 @@ public extension RecordingManager {
         return Meeting(app: app, type: type, state: .recording)
     }
 
-    private func applyStartAppContext(
+    func applyStartAppContext(
         _ meeting: Meeting,
         source: RecordingSource,
         activeContext: ActiveAppContext?
@@ -468,27 +476,6 @@ public extension RecordingManager {
             endTime: meeting.endTime,
             audioFilePath: meeting.audioFilePath
         )
-    }
-
-    private func generateRecordingPaths(for meeting: Meeting) async throws -> (URL, URL) {
-        setMicAudioURL(storage.createRecordingURL(for: meeting, type: .microphone))
-        setSystemAudioURL(storage.createRecordingURL(for: meeting, type: .system))
-        setMergedAudioURL(storage.createRecordingURL(for: meeting, type: .merged))
-
-        guard let micURL = await getMicAudioURL(), let systemURL = await getSystemAudioURL() else {
-            throw RecordingManagerError.noOutputPath
-        }
-        return (micURL, systemURL)
-    }
-
-    private func startRecorders(micURL: URL, systemURL: URL) async throws {
-        // Start microphone recording
-        AppLogger.debug("Starting microphone recording", category: .recordingManager, extra: ["url": micURL.path])
-        try await micRecorder.startRecording(to: micURL, retryCount: 0)
-
-        // Start system audio recording
-        AppLogger.debug("Starting system audio recording", category: .recordingManager, extra: ["url": systemURL.path])
-        try await systemRecorder.startRecording(to: systemURL, retryCount: 0)
     }
 
     private func handleStartRecordingError(_ error: Error) async {
@@ -711,11 +698,12 @@ public extension RecordingManager {
             }
             .store(in: &cancellables)
     }
-
 }
 
-extension RecordingManager {
-    public var effectiveDictationOutputLanguageForCurrentRecording: DictationOutputLanguage {
+// MARK: - Dictation Language
+
+public extension RecordingManager {
+    var effectiveDictationOutputLanguageForCurrentRecording: DictationOutputLanguage {
         if let override = dictationSessionOutputLanguageOverride {
             return override
         }
@@ -724,12 +712,14 @@ extension RecordingManager {
         return matchingDictationAppRule(settings: settings)?.outputLanguage ?? .original
     }
 
-    public func setDictationSessionOutputLanguageOverride(_ language: DictationOutputLanguage?) {
+    func setDictationSessionOutputLanguageOverride(_ language: DictationOutputLanguage?) {
         dictationSessionOutputLanguageOverride = language
     }
+}
 
-    // MARK: - Private Methods
+// MARK: - Private Helpers
 
+extension RecordingManager {
     private func setupBindings() {
         // Sync with audio recorder state
         micRecorder.isRecordingPublisher
@@ -738,7 +728,7 @@ extension RecordingManager {
                 guard let self else { return }
                 self.isRecording = isRecording
                 if isRecording {
-                    self.isStartingRecording = false
+                    isStartingRecording = false
                 }
             }
             .store(in: &cancellables)
@@ -772,91 +762,14 @@ extension RecordingManager {
 
         PerformanceMonitor.shared.reportMetric(
             name: "recording_start_requested_to_recorder_ms",
-            value: recorderStartedAt.timeIntervalSince(telemetry.requestedAt) * 1000,
+            value: recorderStartedAt.timeIntervalSince(telemetry.requestedAt) * 1_000,
             unit: "ms"
         )
         PerformanceMonitor.shared.reportMetric(
             name: "recording_start_entry_to_recorder_ms",
-            value: recorderStartedAt.timeIntervalSince(telemetry.managerEntryAt) * 1000,
+            value: recorderStartedAt.timeIntervalSince(telemetry.managerEntryAt) * 1_000,
             unit: "ms"
         )
-    }
-
-    private func startContextCaptureAfterRecordingStart(meetingID: UUID, source: RecordingSource) {
-        postStartContextCaptureTask?.cancel()
-        postStartContextCaptureTask = Task { @MainActor [weak self] in
-            guard let self else { return }
-            let contextCaptureStartAt = Date()
-
-            let activeContext = try? await self.activeAppContextProvider.fetchActiveAppContext()
-            guard !Task.isCancelled else { return }
-            guard var meeting = self.currentMeeting, meeting.id == meetingID else { return }
-
-            if source == .microphone {
-                self.dictationStartBundleIdentifier = activeContext?.bundleIdentifier
-                self.dictationStartURL = self.activeBrowserURL(for: activeContext?.bundleIdentifier)
-            } else {
-                self.dictationStartBundleIdentifier = nil
-                self.dictationStartURL = nil
-            }
-
-            meeting = self.applyStartAppContext(meeting, source: source, activeContext: activeContext)
-            self.currentMeeting = meeting
-
-            let captureResult = await self.capturePostProcessingContextWithTimeout(for: meeting)
-            guard !Task.isCancelled else { return }
-            guard self.currentMeeting?.id == meetingID else { return }
-
-            self.postProcessingContext = captureResult.context
-            self.postProcessingContextItems = captureResult.items
-
-            if captureResult.didTimeout {
-                AppLogger.warning(
-                    "Context capture timed out after recording start",
-                    category: .recordingManager
-                )
-            }
-
-            PerformanceMonitor.shared.reportMetric(
-                name: "recording_start_context_capture_ms",
-                value: Date().timeIntervalSince(contextCaptureStartAt) * 1000,
-                unit: "ms"
-            )
-        }
-    }
-
-    private func capturePostProcessingContextWithTimeout(
-        for meeting: Meeting
-    ) async -> (context: String?, items: [TranscriptionContextItem], didTimeout: Bool) {
-        await withTaskGroup(
-            of: (context: String?, items: [TranscriptionContextItem], didTimeout: Bool).self,
-            returning: (context: String?, items: [TranscriptionContextItem], didTimeout: Bool).self
-        ) { group in
-            group.addTask { [weak self] in
-                guard let self else {
-                    return (nil, [], false)
-                }
-                let capture = await self.capturePostProcessingContext(for: meeting)
-                return (capture.context, capture.items, false)
-            }
-
-            group.addTask {
-                try? await Task.sleep(nanoseconds: Constants.startContextCaptureTimeout)
-                return (nil, [], true)
-            }
-
-            let firstResult = await group.next() ?? (nil, [], true)
-            group.cancelAll()
-            return firstResult
-        }
-    }
-
-    private enum Constants {
-        static let processingProgress: Double = 10.0
-        static let postProcessingProgress: Double = 90.0
-        static let aiProcessingProgress: Double = 92.0
-        static let statusResetDelay: Int = 3
-        static let startContextCaptureTimeout: UInt64 = 1_500_000_000
     }
 
     private func processRecordedAudio(micURL: URL?, sysURL: URL?) async throws -> URL {
@@ -871,8 +784,6 @@ extension RecordingManager {
             if let micURL { inputURLs.append(micURL) }
             if let sysURL { inputURLs.append(sysURL) }
 
-            // If we have 2 files, we definitely need to merge (mix them)
-            // If we have 1 file, we only need to "merge" (export) if it's not already at the output URL OR if we want to ensure format compliance
             if inputURLs.count >= 2 {
                 AppLogger.info("Merging \(inputURLs.count) audio files...", category: .recordingManager)
                 let finalURL = try await audioMerger.mergeAudioFiles(
@@ -885,13 +796,11 @@ extension RecordingManager {
             } else if let singleURL = inputURLs.first {
                 AppLogger.info("Single audio source recorded. Skipping merge and using: \(singleURL.lastPathComponent)", category: .recordingManager)
 
-                // If the single file is already our output URL, we are done
                 if singleURL == outputURL {
                     await cleanupTemporaryFiles()
                     return outputURL
                 }
 
-                // Otherwise move it to output location
                 if FileManager.default.fileExists(atPath: outputURL.path) {
                     try FileManager.default.removeItem(at: outputURL)
                 }
@@ -922,1193 +831,9 @@ extension RecordingManager {
             return outputURL
         }
     }
-
 }
 
-extension RecordingManager {
-    private func transcribeRecording(audioURL: URL, meeting: Meeting) async {
-        beginTranscriptionUIStateIfNeeded()
-
-        let audioDuration = await getAudioDuration(from: audioURL)
-        transcriptionStatus.beginTranscription(audioDuration: audioDuration)
-
-        do {
-            try await performHealthCheck()
-
-            let settings = AppSettingsStore.shared
-            let transcriptionStart = Date()
-            let meetingEntity = makeMeetingEntity(meeting: meeting, audioDuration: audioDuration)
-            let config = makeUseCaseConfig(meeting: meeting, settings: settings)
-
-            meetingState = .processing(.transcribing)
-
-            let transcriptionEntity = try await transcribeAudioUseCase.execute(
-                audioURL: audioURL,
-                meeting: meetingEntity,
-                inputSource: resolveInputSourceLabel(for: meeting),
-                contextItems: config.postProcessingContextItems,
-                vocabularyReplacementRules: settings.vocabularyReplacementRules,
-                applyPostProcessing: config.applyPostProcessing,
-                postProcessingPrompt: config.postProcessingPrompt,
-                defaultPostProcessingPrompt: config.defaultPostProcessingPrompt,
-                postProcessingModel: config.postProcessingModel,
-                autoDetectMeetingType: config.autoDetectMeetingType,
-                availablePrompts: config.availablePrompts,
-                postProcessingContext: config.postProcessingContext,
-                kernelMode: config.kernelMode,
-                dictationStructuredPostProcessingEnabled: config.dictationStructuredPostProcessingEnabled
-            )
-
-            let transcription = convertToModel(transcriptionEntity, audioDuration: audioDuration, transcriptionStart: transcriptionStart)
-
-            meetingState = .processing(.generatingOutput)
-            currentMeeting?.state = .completed
-
-            TranscriptionDeliveryService.deliver(
-                transcription: transcription,
-                recordingSource: recordingSource
-            )
-
-            transcriptionStatus.completeTranscription(success: true)
-            notifySuccess(for: transcription)
-            scheduleStatusReset()
-
-            if settings.autoExportSummaries {
-                await exportSummary(transcription: transcription)
-            }
-        } catch {
-            handleTranscriptionError(error)
-            meetingState = .failed(error.localizedDescription)
-            currentMeeting?.state = .failed(error.localizedDescription)
-        }
-
-        isTranscribing = false
-        isStartingRecording = false
-        meetingState = .idle
-        currentMeeting = nil
-        postProcessingContext = nil
-        postProcessingContextItems = []
-        dictationSessionOutputLanguageOverride = nil
-        activeStartTelemetry = nil
-        postStartContextCaptureTask = nil
-        clearPostProcessingReadinessWarning()
-    }
-
-    private func beginTranscriptionUIStateIfNeeded() {
-        // stopRecording() may have already set `isTranscribing` to bridge the UI gap.
-        guard !isTranscribing else { return }
-        isTranscribing = true
-        meetingState = .processing(.transcribing)
-        currentMeeting?.state = .processing(.transcribing)
-    }
-
-    private struct UseCaseConfig {
-        let kernelMode: IntelligenceKernelMode
-        let applyPostProcessing: Bool
-        let dictationStructuredPostProcessingEnabled: Bool
-        let postProcessingPrompt: DomainPostProcessingPrompt?
-        let defaultPostProcessingPrompt: DomainPostProcessingPrompt?
-        let postProcessingModel: String?
-        let autoDetectMeetingType: Bool
-        let availablePrompts: [DomainPostProcessingPrompt]
-        let postProcessingContext: String?
-        let postProcessingContextItems: [TranscriptionContextItem]
-    }
-
-    private func makeMeetingEntity(meeting: Meeting, audioDuration: Double?) -> MeetingEntity {
-        var entity = MeetingEntity(
-            id: meeting.id,
-            app: DomainMeetingApp(rawValue: meeting.app.rawValue) ?? .unknown,
-            appBundleIdentifier: meeting.appBundleIdentifier,
-            appDisplayName: meeting.appDisplayName,
-            startTime: meeting.startTime,
-            endTime: meeting.endTime,
-            audioFilePath: meeting.audioFilePath
-        )
-
-        if entity.endTime == nil, let audioDuration {
-            entity.endTime = entity.startTime.addingTimeInterval(audioDuration)
-        }
-
-        return entity
-    }
-
-    private func makeUseCaseConfig(meeting: Meeting, settings: AppSettingsStore) -> UseCaseConfig {
-        let kernelMode = postProcessingKernelMode(for: meeting)
-        let isDictation = kernelMode == .dictation
-        let readinessIssue = settings.postProcessingEnabled
-            ? settings.enhancementsInferenceReadinessIssue(for: kernelMode, apiKeyExists: apiKeyExists)
-            : nil
-        setPostProcessingReadinessWarning(issue: readinessIssue, mode: kernelMode)
-        let applyPostProcessing = Self.shouldApplyEnhancementsPostProcessing(
-            settings: settings,
-            kernelMode: kernelMode,
-            apiKeyExists: apiKeyExists
-        )
-
-        let disabledForRecording = isDictation
-            ? settings.isDictationPostProcessingDisabled
-            : settings.isMeetingPostProcessingDisabled
-        let shouldApplyPostProcessing = applyPostProcessing && !disabledForRecording
-
-        if settings.postProcessingEnabled, let readinessIssue {
-            let reasonCode = readinessIssue.rawValue
-            AppLogger.info(
-                "Post-processing disabled for this recording: enhancements configuration not ready",
-                category: .recordingManager,
-                extra: ["reasonCode": reasonCode]
-            )
-        }
-
-        guard shouldApplyPostProcessing else {
-            let reasonCode: String
-            if !settings.postProcessingEnabled {
-                reasonCode = "post_processing.disabled"
-            } else if let readinessIssue {
-                reasonCode = readinessIssue.rawValue
-            } else if disabledForRecording {
-                reasonCode = isDictation ? "dictation.prompt.disabled" : "meeting.prompt.disabled"
-            } else {
-                reasonCode = "post_processing.unknown"
-            }
-
-            AppLogger.info(
-                "Post-processing skipped for this recording",
-                category: .recordingManager,
-                extra: [
-                    "mode": kernelMode.rawValue,
-                    "reasonCode": reasonCode,
-                    "isDictation": isDictation,
-                ]
-            )
-            return UseCaseConfig(
-                kernelMode: kernelMode,
-                applyPostProcessing: false,
-                dictationStructuredPostProcessingEnabled: settings.dictationStructuredPostProcessingEnabled,
-                postProcessingPrompt: nil,
-                defaultPostProcessingPrompt: nil,
-                postProcessingModel: nil,
-                autoDetectMeetingType: false,
-                availablePrompts: [],
-                postProcessingContext: nil,
-                postProcessingContextItems: postProcessingContextItems
-            )
-        }
-
-        let availablePrompts = makeAvailablePrompts(isDictation: isDictation, settings: settings)
-        let defaultMeetingPrompt = makeDefaultMeetingPrompt(isDictation: isDictation, settings: settings)
-        let prompt = resolvePostProcessingPromptForUseCase(
-            meeting: meeting,
-            isDictation: isDictation,
-            settings: settings,
-            defaultMeetingPrompt: defaultMeetingPrompt
-        )
-
-        let autoDetectMeetingType = !isDictation && meeting.type == .autodetect
-
-        AppLogger.info(
-            "Post-processing configured for this recording",
-            category: .recordingManager,
-            extra: [
-                "mode": kernelMode.rawValue,
-                "isDictation": isDictation,
-                "promptTitle": prompt?.title ?? "nil",
-                "autoDetectMeetingType": autoDetectMeetingType,
-            ]
-        )
-
-        return UseCaseConfig(
-            kernelMode: kernelMode,
-            applyPostProcessing: true,
-            dictationStructuredPostProcessingEnabled: settings.dictationStructuredPostProcessingEnabled,
-            postProcessingPrompt: prompt,
-            defaultPostProcessingPrompt: autoDetectMeetingType ? defaultMeetingPrompt : nil,
-            postProcessingModel: settings.resolvedEnhancementsAIConfiguration(for: kernelMode).selectedModel,
-            autoDetectMeetingType: autoDetectMeetingType,
-            availablePrompts: availablePrompts,
-            postProcessingContext: postProcessingContext,
-            postProcessingContextItems: postProcessingContextItems
-        )
-    }
-
-#if DEBUG
-    func debugResolvePostProcessingConfiguration(
-        meeting: Meeting,
-        settings: AppSettingsStore = .shared
-    ) -> (
-        kernelMode: IntelligenceKernelMode,
-        applyPostProcessing: Bool,
-        promptId: UUID?,
-        promptTitle: String?
-    ) {
-        let kernelMode = postProcessingKernelMode(for: meeting)
-        let config = makeUseCaseConfig(meeting: meeting, settings: settings)
-        return (
-            kernelMode: kernelMode,
-            applyPostProcessing: config.applyPostProcessing,
-            promptId: config.postProcessingPrompt?.id,
-            promptTitle: config.postProcessingPrompt?.title
-        )
-    }
-#endif
-
-    static func shouldApplyEnhancementsPostProcessing(
-        settings: AppSettingsStore,
-        kernelMode: IntelligenceKernelMode,
-        apiKeyExists: ((AIProvider) -> Bool)? = nil
-    ) -> Bool {
-        let readinessIssue = settings.enhancementsInferenceReadinessIssue(for: kernelMode, apiKeyExists: apiKeyExists)
-        let kernelModeEnabled: Bool
-        switch kernelMode {
-        case .dictation:
-            // Dictation post-processing still runs on the legacy pipeline while
-            // dictation intelligence-kernel mode remains feature-flagged off.
-            kernelModeEnabled = true
-        case .meeting, .assistant:
-            kernelModeEnabled = settings.isIntelligenceKernelModeEnabled(kernelMode)
-        }
-
-        return settings.postProcessingEnabled
-            && readinessIssue == nil
-            && kernelModeEnabled
-    }
-
-    func refreshPostProcessingReadinessWarning(
-        for kernelMode: IntelligenceKernelMode,
-        settings: AppSettingsStore = .shared,
-        apiKeyExists: ((AIProvider) -> Bool)? = nil
-    ) {
-        let resolvedAPIKeyExists = apiKeyExists ?? self.apiKeyExists
-        let issue = settings.postProcessingEnabled
-            ? settings.enhancementsInferenceReadinessIssue(for: kernelMode, apiKeyExists: resolvedAPIKeyExists)
-            : nil
-        setPostProcessingReadinessWarning(issue: issue, mode: kernelMode)
-    }
-
-    func clearPostProcessingReadinessWarning() {
-        postProcessingReadinessWarningIssue = nil
-        postProcessingReadinessWarningMode = nil
-        activePostProcessingKernelMode = nil
-    }
-
-    private func setPostProcessingReadinessWarning(
-        issue: EnhancementsInferenceReadinessIssue?,
-        mode: IntelligenceKernelMode
-    ) {
-        postProcessingReadinessWarningIssue = issue
-        postProcessingReadinessWarningMode = issue == nil ? nil : mode
-    }
-
-    private func capturePostProcessingContext(for meeting: Meeting) async -> (context: String?, items: [TranscriptionContextItem]) {
-        let settings = AppSettingsStore.shared
-        let activeTabURL = activeBrowserURL(for: meeting.appBundleIdentifier)?.absoluteString
-
-        guard settings.contextAwarenessEnabled else {
-            AppLogger.debug(
-                "Context awareness disabled, skipping context capture",
-                category: .recordingManager,
-                extra: ["reasonCode": "context.disabled"]
-            )
-
-            guard let activeTabURL else {
-                return (nil, [])
-            }
-
-            return (
-                nil,
-                [TranscriptionContextItem(source: .activeTabURL, text: activeTabURL)]
-            )
-        }
-
-        let snapshot = await contextAwarenessService.captureSnapshot(
-            options: .init(
-                includeActiveApp: true,
-                includeClipboard: settings.contextAwarenessIncludeClipboard,
-                includeWindowOCR: settings.contextAwarenessIncludeWindowOCR,
-                includeAccessibilityText: settings.contextAwarenessIncludeAccessibilityText,
-                protectSensitiveApps: settings.contextAwarenessProtectSensitiveApps,
-                redactSensitiveData: settings.contextAwarenessRedactSensitiveData,
-                excludedBundleIDs: settings.contextAwarenessExcludedBundleIDs
-            )
-        )
-
-        var context = contextAwarenessService.makePostProcessingContext(from: snapshot)
-        var items = makeContextItems(from: snapshot)
-
-        if let activeTabURL {
-            items.append(TranscriptionContextItem(source: .activeTabURL, text: activeTabURL))
-
-            let activeTabURLBlock = "- Active tab URL: \(activeTabURL)"
-            if let existingContext = context,
-               !existingContext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            {
-                context = "\(existingContext)\n\(activeTabURLBlock)"
-            } else {
-                context = """
-                CONTEXT_METADATA
-                \(activeTabURLBlock)
-                """
-            }
-        }
-
-        if isDictationMode(for: meeting),
-           settings.contextAwarenessIncludeAccessibilityText,
-           snapshot.activeAccessibilityText == nil,
-           let focusedText = await captureFocusedTextContext(settings: settings),
-           !items.contains(where: { $0.source == .focusedText && $0.text == focusedText })
-        {
-            items.append(TranscriptionContextItem(source: .focusedText, text: focusedText))
-
-            let focusedTextBlock = """
-            - Focused text:
-            \(focusedText)
-            """
-
-            if let existingContext = context,
-               !existingContext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            {
-                context = "\(existingContext)\n\(focusedTextBlock)"
-            } else {
-                context = """
-                CONTEXT_METADATA
-                \(focusedTextBlock)
-                """
-            }
-        }
-
-        if settings.contextAwarenessIncludeWindowOCR, snapshot.activeWindowOCRText == nil {
-            AppLogger.debug(
-                "Context capture finished without OCR text",
-                category: .recordingManager,
-                extra: ["reasonCode": "context.ocr_missing"]
-            )
-        }
-
-        if items.isEmpty {
-            AppLogger.info(
-                "Context capture finished with no context items",
-                category: .recordingManager,
-                extra: ["reasonCode": "context.empty"]
-            )
-        } else {
-            AppLogger.debug(
-                "Context capture finished",
-                category: .recordingManager,
-                extra: [
-                    "reasonCode": "context.captured",
-                    "itemCount": items.count,
-                    "sources": items.map(\ .source.rawValue).joined(separator: ",")
-                ]
-            )
-        }
-
-        return (context, items)
-    }
-
-    private func captureFocusedTextContext(settings: AppSettingsStore) async -> String? {
-        guard settings.contextAwarenessIncludeAccessibilityText else { return nil }
-
-        guard AccessibilityPermissionService.isTrusted() else {
-            AppLogger.warning(
-                "Focused text capture skipped: accessibility permission not granted",
-                category: .recordingManager,
-                extra: ["reasonCode": "focused_text.permission_denied"]
-            )
-            AccessibilityPermissionService.requestPermission()
-            return nil
-        }
-
-        do {
-            let snapshot = try await textContextProvider.fetchTextContext()
-            let guarded = textContextGuardrails.apply(to: snapshot.text, policy: textContextPolicy)
-            var normalized = guarded.trimmingCharacters(in: .whitespacesAndNewlines)
-
-            if settings.contextAwarenessRedactSensitiveData {
-                normalized = ContextAwarenessPrivacy.redactSensitiveText(normalized) ?? ""
-            }
-
-            return normalized.isEmpty ? nil : normalized
-        } catch {
-            AppLogger.warning(
-                "Focused text capture failed",
-                category: .recordingManager,
-                extra: [
-                    "reasonCode": "focused_text.provider_failed",
-                    "error": error.localizedDescription,
-                ]
-            )
-            return nil
-        }
-    }
-
-    private func makeContextItems(from snapshot: ContextAwarenessSnapshot) -> [TranscriptionContextItem] {
-        var items: [TranscriptionContextItem] = []
-
-        if let activeAppName = snapshot.activeAppName {
-            items.append(TranscriptionContextItem(source: .activeApp, text: activeAppName))
-        }
-
-        if let activeWindowTitle = snapshot.activeWindowTitle {
-            items.append(TranscriptionContextItem(source: .windowTitle, text: activeWindowTitle))
-        }
-
-        if let accessibilityText = snapshot.activeAccessibilityText {
-            items.append(TranscriptionContextItem(source: .accessibilityText, text: accessibilityText))
-        }
-
-        if let clipboardText = snapshot.clipboardText {
-            items.append(TranscriptionContextItem(source: .clipboard, text: clipboardText))
-        }
-
-        if let ocrText = snapshot.activeWindowOCRText {
-            items.append(TranscriptionContextItem(source: .windowOCR, text: ocrText))
-        }
-
-        return items
-    }
-
-    private func makeAvailablePrompts(isDictation: Bool, settings: AppSettingsStore) -> [DomainPostProcessingPrompt] {
-        guard !isDictation else { return [] }
-
-        let builtIn: [PostProcessingPrompt] = [.standup, .presentation, .designReview, .oneOnOne, .planning]
-        return (builtIn + settings.meetingPrompts).map(domainPrompt(from:))
-    }
-
-    private func makeDefaultMeetingPrompt(
-        isDictation: Bool,
-        settings: AppSettingsStore
-    ) -> DomainPostProcessingPrompt? {
-        guard !isDictation else { return nil }
-
-        if let selected = settings.selectedPrompt {
-            return domainPrompt(from: selected)
-        }
-
-        return domainPrompt(from: PromptService.shared.strategy(for: .general).promptObject())
-    }
-
-    private func resolvePostProcessingPromptForUseCase(
-        meeting: Meeting,
-        isDictation: Bool,
-        settings: AppSettingsStore,
-        defaultMeetingPrompt: DomainPostProcessingPrompt?
-    ) -> DomainPostProcessingPrompt? {
-        if isDictation {
-            let basePrompt = settings.selectedDictationPrompt ?? .cleanTranscription
-            let resolvedPrompt = promptWithDictationRuleOverrides(prompt: basePrompt, settings: settings)
-            return domainPrompt(from: resolvedPrompt)
-        }
-
-        switch meeting.type {
-        case .autodetect:
-            // Let the UseCase classify and pick a concrete prompt.
-            return nil
-        case .standup:
-            return domainPrompt(from: .standup)
-        case .presentation:
-            return domainPrompt(from: .presentation)
-        case .designReview:
-            return domainPrompt(from: .designReview)
-        case .oneOnOne:
-            return domainPrompt(from: .oneOnOne)
-        case .planning:
-            return domainPrompt(from: .planning)
-        case .general:
-            return defaultMeetingPrompt
-        }
-    }
-
-    private func domainPrompt(from prompt: PostProcessingPrompt) -> DomainPostProcessingPrompt {
-        DomainPostProcessingPrompt(id: prompt.id, title: prompt.title, content: prompt.promptText, isDefault: false)
-    }
-
-    private func promptWithDictationRuleOverrides(
-        prompt: PostProcessingPrompt,
-        settings: AppSettingsStore
-    ) -> PostProcessingPrompt {
-        var appliedInstructions: [String] = []
-
-        if shouldForceMarkdownForDictation(settings: settings) {
-            appliedInstructions.append(Self.markdownFormatInstruction)
-        }
-
-        let outputLanguage = outputLanguageForDictation(settings: settings)
-        if outputLanguage != .original {
-            appliedInstructions.append(Self.translationInstruction(for: outputLanguage))
-        }
-
-        if let customInstructions = effectiveCustomPromptInstructionsForDictation(settings: settings) {
-            appliedInstructions.append(Self.siteOrAppPriorityInstructionBlock(customInstructions))
-        }
-
-        guard !appliedInstructions.isEmpty else { return prompt }
-
-        let augmentedText = ([prompt.promptText] + appliedInstructions).joined(separator: "\n\n")
-
-        return PostProcessingPrompt(
-            id: prompt.id,
-            title: prompt.title,
-            promptText: augmentedText,
-            isActive: prompt.isActive,
-            icon: prompt.icon,
-            description: prompt.description,
-            isPredefined: prompt.isPredefined
-        )
-    }
-
-    private func effectiveCustomPromptInstructionsForDictation(settings: AppSettingsStore) -> String? {
-        if let websiteTarget = matchingWebContextTargetForDictation(settings: settings),
-           let instructions = websiteTarget.customPromptInstructions?.trimmingCharacters(in: .whitespacesAndNewlines),
-           !instructions.isEmpty
-        {
-            return instructions
-        }
-
-        if let appRule = matchingDictationAppRule(settings: settings),
-           let instructions = appRule.customPromptInstructions?.trimmingCharacters(in: .whitespacesAndNewlines),
-           !instructions.isEmpty
-        {
-            return instructions
-        }
-
-        return nil
-    }
-
-    private func matchingDictationAppRule(settings: AppSettingsStore) -> DictationAppRule? {
-        guard let bundleIdentifier = dictationStartBundleIdentifier else { return nil }
-        let normalized = WebTargetDetection.normalizeBundleIdentifier(bundleIdentifier)
-
-        return settings.dictationAppRules.first {
-            WebTargetDetection.normalizeBundleIdentifier($0.bundleIdentifier) == normalized
-        }
-    }
-
-    private func outputLanguageForDictation(settings: AppSettingsStore) -> DictationOutputLanguage {
-        if let override = dictationSessionOutputLanguageOverride {
-            return override
-        }
-
-        if let websiteTarget = matchingWebContextTargetForDictation(settings: settings),
-           websiteTarget.outputLanguage != .original
-        {
-            return websiteTarget.outputLanguage
-        }
-
-        guard let rule = matchingDictationAppRule(settings: settings) else { return .original }
-        return rule.outputLanguage
-    }
-
-    private func shouldForceMarkdownForDictation(settings: AppSettingsStore) -> Bool {
-        guard let bundleIdentifier = dictationStartBundleIdentifier else { return false }
-        let normalized = WebTargetDetection.normalizeBundleIdentifier(bundleIdentifier)
-
-        if let websiteTarget = matchingWebContextTargetForDictation(settings: settings) {
-            return websiteTarget.forceMarkdownOutput
-        }
-
-        if let rule = matchingDictationAppRule(settings: settings), rule.forceMarkdownOutput {
-            return true
-        }
-
-        // Backward compatibility for users that only have the legacy list.
-        let appTargets = Set(settings.markdownTargetBundleIdentifiers.map(WebTargetDetection.normalizeBundleIdentifier))
-        if appTargets.contains(normalized) {
-            return true
-        }
-
-        return false
-    }
-
-    private func matchingWebContextTargetForDictation(settings: AppSettingsStore) -> WebContextTarget? {
-        guard let bundleIdentifier = dictationStartBundleIdentifier else { return nil }
-        let normalized = WebTargetDetection.normalizeBundleIdentifier(bundleIdentifier)
-        let webTargets = settings.markdownWebTargets
-        guard !webTargets.isEmpty else { return nil }
-
-        if let url = dictationStartURL,
-           let target = WebTargetDetection.matchTarget(
-               for: url,
-               bundleIdentifier: normalized,
-               targets: webTargets,
-               fallbackBrowserBundleIdentifiers: settings.effectiveWebTargetBrowserBundleIdentifiers
-           )
-        {
-            return target
-        }
-
-        return WebTargetDetection.matchTargetByWindowTitle(
-            bundleIdentifier: normalized,
-            targets: webTargets,
-            fallbackBrowserBundleIdentifiers: settings.effectiveWebTargetBrowserBundleIdentifiers
-        )
-    }
-
-    private func activeBrowserURL(for bundleIdentifier: String?) -> URL? {
-        guard let bundleIdentifier else { return nil }
-        let normalized = WebTargetDetection.normalizeBundleIdentifier(bundleIdentifier)
-
-        if let provider = browserProviders[normalized] {
-            return provider.activeTabURL()
-        }
-
-        guard let provider = BrowserProviderRegistry.provider(for: bundleIdentifier) else {
-            return nil
-        }
-
-        browserProviders[normalized] = provider
-        return provider.activeTabURL()
-    }
-    private static let markdownFormatInstruction = """
-    <OUTPUT_FORMAT>
-    ALWAYS format the output as Markdown. When formatting using Markdown, use traditional formatting conventions for ordered or unordered lists, **bold**, *italics*, and headings as well.
-    </OUTPUT_FORMAT>
-    """
-
-    private static func translationInstruction(for language: DictationOutputLanguage) -> String {
-        """
-        <OUTPUT_LANGUAGE>
-        Translate the final output to \(language.instructionDisplayName). This requirement overrides any instruction that says to keep the original language.
-        </OUTPUT_LANGUAGE>
-        """
-    }
-
-    private static func siteOrAppPriorityInstructionBlock(_ instructions: String) -> String {
-        """
-        <\(AIPromptTemplates.siteOrAppPriorityTag)>
-        \(instructions)
-        </\(AIPromptTemplates.siteOrAppPriorityTag)>
-        """
-    }
-
-    private func exportSummary(transcription: Transcription) async {
-        let settings = AppSettingsStore.shared
-        let exportPolicyLevel = settings.summaryExportSafetyPolicyLevel
-
-        let content: String
-        if settings.summaryTemplateEnabled {
-            let template = settings.summaryTemplate.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !template.isEmpty else {
-                AppLogger.warning("Summary export blocked: template is empty", category: .security)
-                return
-            }
-            content = MarkdownRenderer().renderWithTemplate(template, meeting: transcription.meeting, transcription: transcription)
-        } else {
-            let plainContent = transcription.text.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !plainContent.isEmpty else {
-                AppLogger.warning("Summary export blocked: summary text is empty", category: .security)
-                return
-            }
-            content = plainContent
-        }
-
-        let safetyEvaluator = SummaryExportSafetyEvaluator()
-        let safetyDecision = safetyEvaluator.evaluate(
-            transcription: transcription,
-            exportFolder: settings.summaryExportFolder,
-            candidateContent: content,
-            policyLevel: exportPolicyLevel
-        )
-        let auditTrailWriter = SummaryExportAuditTrailWriter()
-
-        if !safetyDecision.isCompliant {
-            let reasons = safetyDecision.blockReasons.map(\.message).joined(separator: " | ")
-            AppLogger.warning(
-                "Summary export blocked by safety policy",
-                category: .security,
-                extra: [
-                    "policy": exportPolicyLevel.rawValue,
-                    "reasons": reasons,
-                ]
-            )
-
-            let blockedEvent = SummaryExportAuditEvent(
-                timestamp: Date(),
-                transcriptionID: transcription.id,
-                meetingID: transcription.meeting.id,
-                outcome: .blocked,
-                policyLevel: exportPolicyLevel,
-                blockReasonCodes: safetyDecision.blockReasons.map(\.code),
-                blockReasonMessages: safetyDecision.blockReasons.map(\.message),
-                requiredMinimumConfidence: safetyDecision.requiredMinimumConfidence,
-                observedConfidence: safetyDecision.observedConfidence,
-                canonicalSummaryPresent: transcription.canonicalSummary != nil,
-                groundedInTranscript: transcription.canonicalSummary?.trustFlags.isGroundedInTranscript,
-                redactionApplied: false,
-                destinationPath: nil,
-                errorDescription: nil
-            )
-
-            do {
-                try auditTrailWriter.append(blockedEvent)
-            } catch {
-                AppLogger.error("Failed to append export audit event", category: .security, error: error)
-            }
-            return
-        }
-
-        guard let folder = settings.summaryExportFolder else { return }
-
-        let redactionApplied = exportPolicyLevel.appliesSensitiveRedaction
-        let exportContent = safetyEvaluator.applyRedactionIfNeeded(
-            to: content,
-            policyLevel: exportPolicyLevel
-        )
-
-        guard folder.startAccessingSecurityScopedResource() else {
-            AppLogger.error("Failed to access export folder security-scoped resource", category: .recordingManager)
-            return
-        }
-        defer { folder.stopAccessingSecurityScopedResource() }
-
-        let dateFormatter = DateFormatter()
-        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
-        dateFormatter.timeZone = .current
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        let dateStr = dateFormatter.string(from: transcription.meeting.startTime)
-
-        let meetingTitle: String = {
-            let raw = transcription.meeting.type.displayName.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard let range = raw.range(of: " (") else { return raw }
-            return String(raw[..<range.lowerBound])
-        }()
-
-        let safeTitle = meetingTitle.components(separatedBy: CharacterSet(charactersIn: "/\\?%*|\"<>:")).joined(separator: " ").split(whereSeparator: \.isWhitespace).joined(separator: " ")
-
-        let titleComponent = safeTitle.isEmpty ? transcription.meeting.appName : safeTitle
-        let baseName = "\(dateStr) \(titleComponent)"
-
-        var destinationURL = folder.appendingPathComponent("\(baseName).md")
-        var attempt = 1
-        while FileManager.default.fileExists(atPath: destinationURL.path) {
-            attempt += 1
-            destinationURL = folder.appendingPathComponent("\(baseName)-\(attempt).md")
-        }
-
-        do {
-            try exportContent.write(to: destinationURL, atomically: true, encoding: .utf8)
-            AppLogger.info("Summary exported to \(destinationURL.path)", category: .recordingManager)
-
-            let successEvent = SummaryExportAuditEvent(
-                timestamp: Date(),
-                transcriptionID: transcription.id,
-                meetingID: transcription.meeting.id,
-                outcome: .exported,
-                policyLevel: exportPolicyLevel,
-                blockReasonCodes: [],
-                blockReasonMessages: [],
-                requiredMinimumConfidence: safetyDecision.requiredMinimumConfidence,
-                observedConfidence: safetyDecision.observedConfidence,
-                canonicalSummaryPresent: transcription.canonicalSummary != nil,
-                groundedInTranscript: transcription.canonicalSummary?.trustFlags.isGroundedInTranscript,
-                redactionApplied: redactionApplied,
-                destinationPath: destinationURL.path,
-                errorDescription: nil
-            )
-
-            do {
-                try auditTrailWriter.append(successEvent)
-            } catch {
-                AppLogger.error("Failed to append export audit event", category: .security, error: error)
-            }
-        } catch {
-            AppLogger.error("Failed to export summary", category: .recordingManager, error: error)
-
-            let writeFailureEvent = SummaryExportAuditEvent(
-                timestamp: Date(),
-                transcriptionID: transcription.id,
-                meetingID: transcription.meeting.id,
-                outcome: .writeFailed,
-                policyLevel: exportPolicyLevel,
-                blockReasonCodes: [],
-                blockReasonMessages: [],
-                requiredMinimumConfidence: safetyDecision.requiredMinimumConfidence,
-                observedConfidence: safetyDecision.observedConfidence,
-                canonicalSummaryPresent: transcription.canonicalSummary != nil,
-                groundedInTranscript: transcription.canonicalSummary?.trustFlags.isGroundedInTranscript,
-                redactionApplied: redactionApplied,
-                destinationPath: destinationURL.path,
-                errorDescription: error.localizedDescription
-            )
-
-            do {
-                try auditTrailWriter.append(writeFailureEvent)
-            } catch {
-                AppLogger.error("Failed to append export audit event", category: .security, error: error)
-        }
-    }
-}
-
-    private func convertToModel(_ entity: TranscriptionEntity, audioDuration: Double?, transcriptionStart: Date) -> Transcription {
-        Transcription(
-            id: entity.id,
-            meeting: Meeting(
-                id: entity.meeting.id,
-                app: MeetingApp(rawValue: entity.meeting.app.rawValue) ?? .unknown,
-                appBundleIdentifier: entity.meeting.appBundleIdentifier,
-                appDisplayName: entity.meeting.appDisplayName,
-                type: MeetingType(rawValue: entity.meetingType ?? "") ?? .general, // Map back
-                startTime: entity.meeting.startTime,
-                endTime: entity.meeting.endTime,
-                audioFilePath: entity.meeting.audioFilePath
-            ),
-            contextItems: entity.contextItems,
-            segments: entity.segments.map { Transcription.Segment(id: $0.id, speaker: $0.speaker, text: $0.text, startTime: $0.startTime, endTime: $0.endTime) },
-            text: entity.text,
-            rawText: entity.rawText,
-            processedContent: entity.processedContent,
-            canonicalSummary: entity.canonicalSummary,
-            qualityProfile: entity.qualityProfile,
-            postProcessingPromptId: entity.postProcessingPromptId,
-            postProcessingPromptTitle: entity.postProcessingPromptTitle,
-            language: entity.language,
-            createdAt: entity.createdAt,
-            modelName: entity.modelName,
-            inputSource: entity.inputSource, // Entity might not have inputSource? check config
-            transcriptionDuration: entity.transcriptionDuration, // Entity has it?
-            postProcessingDuration: entity.postProcessingDuration,
-            postProcessingModel: entity.postProcessingModel,
-            meetingType: entity.meetingType
-        )
-    }
-
-    // MARK: - Helper Methods
-
-    private func performHealthCheck() async throws {
-        transcriptionStatus.updateProgress(phase: .preparing)
-        let isHealthy = try await transcriptionClient.healthCheck()
-        guard isHealthy else {
-            throw TranscriptionError.serviceUnavailable
-        }
-    }
-
-    private func performTranscription(audioURL: URL) async throws -> TranscriptionResponse {
-        transcriptionStatus.updateProgress(phase: .processing, percentage: Constants.processingProgress)
-        return try await transcriptionClient.transcribe(
-            audioURL: audioURL,
-            onProgress: { [weak self] percentage in
-                Task { @MainActor in
-                    self?.transcriptionStatus.updateProgress(phase: .processing, percentage: percentage)
-                }
-            }
-        )
-    }
-
-    private struct PostProcessingResult {
-        let processedContent: String?
-        let canonicalSummary: CanonicalSummary?
-        let promptId: UUID?
-        let promptTitle: String?
-        let duration: Double
-        let model: String?
-
-        static let empty = PostProcessingResult(
-            processedContent: nil,
-            canonicalSummary: nil,
-            promptId: nil,
-            promptTitle: nil,
-            duration: 0,
-            model: nil
-        )
-    }
-
-    private func applyPostProcessing(
-        postProcessingInput: String,
-        meeting: Meeting?,
-        qualityProfile: TranscriptionQualityProfile?
-    ) async -> PostProcessingResult {
-        transcriptionStatus.updateProgress(phase: .postProcessing, percentage: Constants.postProcessingProgress)
-
-        let settings = AppSettingsStore.shared
-        guard settings.postProcessingEnabled else { return .empty }
-        let kernelMode = postProcessingKernelMode(for: meeting)
-        let readinessIssue = settings.enhancementsInferenceReadinessIssue(for: kernelMode, apiKeyExists: apiKeyExists)
-        setPostProcessingReadinessWarning(issue: readinessIssue, mode: kernelMode)
-        if let readinessIssue {
-            let reasonCode = readinessIssue.rawValue
-            AppLogger.info(
-                "Post-processing skipped: enhancements configuration not ready",
-                category: .recordingManager,
-                extra: ["reasonCode": reasonCode]
-            )
-            return .empty
-        }
-
-        let isDictation = kernelMode == .dictation
-        guard !isPostProcessingDisabled(isDictation: isDictation, settings: settings) else { return .empty }
-
-        let type = meeting?.type ?? currentMeeting?.type ?? .general
-        let prompt = await resolvePostProcessingPrompt(
-            rawText: postProcessingInput,
-            isDictation: isDictation,
-            meetingType: type,
-            settings: settings
-        )
-
-        transcriptionStatus.updateProgress(phase: .postProcessing, percentage: Constants.aiProcessingProgress)
-        return await runPostProcessing(
-            postProcessingInput: postProcessingInput,
-            prompt: prompt,
-            settings: settings,
-            qualityProfile: qualityProfile,
-            kernelMode: kernelMode,
-            dictationStructuredPostProcessingEnabled: settings.dictationStructuredPostProcessingEnabled
-        )
-    }
-
-    private func isDictationMode(for meeting: Meeting?) -> Bool {
-        if let meeting, meeting.app == .importedFile {
-            return false
-        }
-
-        // During active capture/transcription, source is the canonical mode signal.
-        if isRecording || isTranscribing {
-            return recordingSource == .microphone
-        }
-
-        return meeting?.isDictation == true || recordingSource == .microphone
-    }
-
-    private func postProcessingKernelMode(for meeting: Meeting?) -> IntelligenceKernelMode {
-        if let activePostProcessingKernelMode {
-            return activePostProcessingKernelMode
-        }
-
-        return isDictationMode(for: meeting) ? .dictation : .meeting
-    }
-
-    private func isPostProcessingDisabled(isDictation: Bool, settings: AppSettingsStore) -> Bool {
-        if isDictation { return settings.isDictationPostProcessingDisabled }
-        return settings.isMeetingPostProcessingDisabled
-    }
-
-    private func resolvePostProcessingPrompt(
-        rawText: String,
-        isDictation: Bool,
-        meetingType: MeetingType,
-        settings: AppSettingsStore
-    ) async -> PostProcessingPrompt {
-        if isDictation {
-            return settings.selectedDictationPrompt ?? .cleanTranscription
-        }
-
-        if meetingType == .autodetect {
-            return await resolveAutodetectPrompt(rawText: rawText, settings: settings)
-        }
-
-        if meetingType != .general {
-            let strategy = PromptService.shared.strategy(for: meetingType)
-            let prompt = strategy.promptObject()
-            AppLogger.info("Using context-aware prompt for type: \(meetingType.displayName)", category: .transcriptionEngine)
-            return prompt
-        }
-
-        return settings.selectedPrompt ?? PromptService.shared.strategy(for: .general).promptObject()
-    }
-
-    private func resolveAutodetectPrompt(rawText: String, settings: AppSettingsStore) async -> PostProcessingPrompt {
-        let fallback = settings.selectedPrompt ?? PromptService.shared.strategy(for: .general).promptObject()
-        let classifierPrompt = makeMeetingTypeClassifierPrompt()
-
-        do {
-            let jsonString = try await postProcessingService.processTranscription(rawText, with: classifierPrompt)
-            guard let detectedType = parseMeetingType(from: jsonString), detectedType != .general else { return fallback }
-            return resolveBuiltInMeetingPrompt(for: detectedType, fallbackGeneral: fallback)
-        } catch {
-            AppLogger.warning("Meeting type autodetect failed; falling back to general prompt", category: .recordingManager, extra: ["error": error.localizedDescription])
-            return fallback
-        }
-    }
-
-    private func makeMeetingTypeClassifierPrompt() -> PostProcessingPrompt {
-        PostProcessingPrompt(
-            title: "Classifier",
-            promptText: """
-            Analyze the transcription and classify the meeting type.
-            Reply ONLY with JSON in the following format:
-            { "type": "VALUE" }
-            Allowed values: standup, presentation, design_review, one_on_one, planning, general.
-            """,
-            icon: "sparkles",
-            isPredefined: false
-        )
-    }
-
-    private func runPostProcessing(
-        postProcessingInput: String,
-        prompt: PostProcessingPrompt,
-        settings: AppSettingsStore,
-        qualityProfile: TranscriptionQualityProfile?,
-        kernelMode: IntelligenceKernelMode,
-        dictationStructuredPostProcessingEnabled: Bool
-    ) async -> PostProcessingResult {
-        do {
-            let startTime = Date()
-            let useStructuredPipeline = kernelMode == .meeting || dictationStructuredPostProcessingEnabled
-            let pipeline = useStructuredPipeline ? "structured" : "fast"
-            let processedContent: String
-            let canonicalSummary: CanonicalSummary?
-
-            if useStructuredPipeline {
-                let structuredResult = try await postProcessingService.processTranscriptionStructured(
-                    postProcessingInput,
-                    with: prompt,
-                    mode: kernelMode
-                )
-                processedContent = structuredResult.processedText
-                canonicalSummary = qualityProfile.map { profile in
-                    recalibrateCanonicalSummary(structuredResult.canonicalSummary, with: profile)
-                } ?? structuredResult.canonicalSummary
-                AppLogger.info(
-                    "Post-processing complete",
-                    category: .recordingManager,
-                    extra: [
-                        "mode": kernelMode.rawValue,
-                        "pipeline": pipeline,
-                        "prompt": prompt.title,
-                        "output_state": structuredResult.outputState.rawValue,
-                    ]
-                )
-            } else {
-                processedContent = try await postProcessingService.processTranscription(
-                    postProcessingInput,
-                    with: prompt,
-                    mode: kernelMode,
-                    systemPromptOverride: nil
-                )
-                canonicalSummary = nil
-                AppLogger.info(
-                    "Post-processing complete",
-                    category: .recordingManager,
-                    extra: [
-                        "mode": kernelMode.rawValue,
-                        "pipeline": pipeline,
-                        "prompt": prompt.title,
-                    ]
-                )
-            }
-
-            let duration = Date().timeIntervalSince(startTime)
-            let model = settings.resolvedEnhancementsAIConfiguration(for: kernelMode).selectedModel
-            return PostProcessingResult(
-                processedContent: processedContent,
-                canonicalSummary: canonicalSummary,
-                promptId: prompt.id,
-                promptTitle: prompt.title,
-                duration: duration,
-                model: model
-            )
-        } catch {
-            AppLogger.error("Post-processing failed, using raw transcription", category: .recordingManager, error: error)
-            return .empty
-        }
-    }
-
-    private func resolveBuiltInMeetingPrompt(for type: MeetingType, fallbackGeneral: PostProcessingPrompt) -> PostProcessingPrompt {
-        switch type {
-        case .standup:
-            .standup
-        case .presentation:
-            .presentation
-        case .designReview:
-            .designReview
-        case .oneOnOne:
-            .oneOnOne
-        case .planning:
-            .planning
-        case .general:
-            fallbackGeneral
-        case .autodetect:
-            fallbackGeneral
-        }
-    }
-
-    private func parseMeetingType(from jsonString: String) -> MeetingType? {
-        if let type = parseMeetingTypeFromJSON(jsonString) {
-            return type
-        }
-
-        guard let startIndex = jsonString.firstIndex(of: "{"),
-              let endIndex = jsonString.lastIndex(of: "}")
-        else {
-            return nil
-        }
-
-        let candidate = String(jsonString[startIndex...endIndex])
-        return parseMeetingTypeFromJSON(candidate)
-    }
-
-    private func parseMeetingTypeFromJSON(_ jsonString: String) -> MeetingType? {
-        guard let data = jsonString.data(using: .utf8),
-              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let rawType = object["type"] as? String
-        else {
-            return nil
-        }
-
-        let trimmed = rawType.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        guard let type = MeetingType(rawValue: trimmed) else { return nil }
-
-        let allowed: Set<MeetingType> = [.standup, .presentation, .designReview, .oneOnOne, .planning, .general]
-        return allowed.contains(type) ? type : nil
-    }
-
-    private func notifySuccess(for transcription: Transcription) {
-        let suffix =
-            transcription.isPostProcessed
-                ? "notification.transcription_processed".localized
-                : "notification.transcription_transcribed".localized
-        let body = "notification.transcription_body".localized(
-            with: transcription.meeting.appName,
-            transcription.wordCount,
-            suffix
-        )
-
-        notificationService.sendNotification(
-            title: "notification.transcription_completed".localized,
-            body: body
-        )
-
-        NotificationCenter.default.post(
-            name: .meetingAssistantTranscriptionSaved,
-            object: nil,
-            userInfo: [AppNotifications.UserInfoKey.transcriptionId: transcription.id.uuidString]
-        )
-    }
-
-    private func handleTranscriptionError(_ error: Error) {
-        AppLogger.error("Transcription failed", category: .recordingManager, error: error)
-        lastError = error
-
-        transcriptionStatus.recordError(.transcriptionFailed(error.localizedDescription))
-        transcriptionStatus.completeTranscription(success: false)
-
-        notificationService.sendNotification(
-            title: "notification.transcription_failed".localized,
-            body: error.localizedDescription
-        )
-    }
-
-    private func scheduleStatusReset() {
-        Task { @MainActor in
-            // Task.sleep throws only if cancelled, which is not critical for status reset
-            try? await Task.sleep(for: .seconds(Constants.statusResetDelay))
-            self.transcriptionStatus.resetToIdle()
-        }
-    }
-
-    /// Get audio duration from file for progress estimation.
-    private func getAudioDuration(from url: URL) async -> Double? {
-        let asset = AVURLAsset(url: url)
-        do {
-            let duration = try await asset.load(.duration)
-            return duration.seconds
-        } catch {
-            AppLogger.error("Failed to load audio duration", category: .recordingManager, error: error)
-            return nil
-        }
-    }
-
-}
+// MARK: - Status Monitoring
 
 extension RecordingManager {
     private enum StatusMonitoringConstants {
@@ -2159,317 +884,16 @@ extension RecordingManager {
         activeStartTelemetry = nil
         clearPostProcessingReadinessWarning()
     }
-
 }
 
-// MARK: - Retry Transcription
+// MARK: - Menu Helpers
 
-extension RecordingManager {
-    /// Retry transcription for an existing entry using the currently active model.
-    /// - Parameter transcription: Existing transcription to overwrite with new results.
-    public func retryTranscription(for transcription: Transcription) async {
-        guard !isTranscribing else {
-            AppLogger.info("Already transcribing", category: .recordingManager)
-            return
-        }
-
-        guard let audioURL = resolveRetryAudioURL(for: transcription) else { return }
-
-        await runRetryTranscription(audioURL: audioURL, transcription: transcription)
-    }
-
-    private func resolveRetryAudioURL(for transcription: Transcription) -> URL? {
-        guard let audioURL = transcription.audioURL else {
-            AppLogger.error("Audio file missing for retry", category: .recordingManager, extra: ["id": transcription.id.uuidString])
-            lastError = AudioImportError.fileNotFound
-            return nil
-        }
-
-        guard FileManager.default.fileExists(atPath: audioURL.path) else {
-            AppLogger.error("Audio file not found for retry", category: .recordingManager, extra: ["path": audioURL.path])
-            lastError = AudioImportError.fileNotFound
-            return nil
-        }
-
-        return audioURL
-    }
-
-    private func runRetryTranscription(audioURL: URL, transcription: Transcription) async {
-        isTranscribing = true
-        let audioDuration = await getAudioDuration(from: audioURL)
-        transcriptionStatus.beginTranscription(audioDuration: audioDuration)
-
-        do {
-            let updated = try await performRetryTranscription(
-                audioURL: audioURL,
-                transcription: transcription,
-                audioDuration: audioDuration
-            )
-            try await storage.saveTranscription(updated)
-            transcriptionStatus.completeTranscription(success: true)
-            notifySuccess(for: updated)
-            scheduleStatusReset()
-        } catch {
-            handleTranscriptionError(error)
-        }
-
-        isTranscribing = false
-    }
-
-    private func performRetryTranscription(
-        audioURL: URL,
-        transcription: Transcription,
-        audioDuration: Double?
-    ) async throws -> Transcription {
-        try await performHealthCheck()
-
-        let transcriptionStart = Date()
-        let response = try await performTranscription(audioURL: audioURL)
-        let transcriptionProcessingDuration = Date().timeIntervalSince(transcriptionStart)
-        let settings = AppSettingsStore.shared
-        let replacedText = applyVocabularyReplacements(
-            to: response.text,
-            with: settings.vocabularyReplacementRules
-        )
-        let replacedSegments = applyVocabularyReplacements(
-            to: response.segments,
-            with: settings.vocabularyReplacementRules
-        )
-        let qualityProfile = transcriptPreprocessor.preprocess(
-            transcriptionText: replacedText,
-            segments: replacedSegments.map {
-                DomainTranscriptionSegment(
-                    id: $0.id,
-                    speaker: $0.speaker,
-                    text: $0.text,
-                    startTime: $0.startTime,
-                    endTime: $0.endTime
-                )
-            },
-            asrConfidenceScore: response.confidenceScore
-        )
-        let includeQualityMetadata = !isDictationMode(for: transcription.meeting)
-        let postProcessingInput = mergedPostProcessingInput(
-            transcriptionText: qualityProfile.normalizedTextForIntelligence,
-            qualityProfile: qualityProfile,
-            context: postProcessingContext,
-            includeQualityMetadata: includeQualityMetadata
-        )
-
-        let meeting = updatedMeeting(for: transcription.meeting, audioDuration: audioDuration)
-        let postProcessing = await applyPostProcessing(
-            postProcessingInput: postProcessingInput,
-            meeting: meeting,
-            qualityProfile: qualityProfile
-        )
-
-        return Transcription(
-            id: transcription.id,
-            meeting: meeting,
-            contextItems: transcription.contextItems,
-            segments: replacedSegments,
-            text: postProcessing.processedContent ?? replacedText,
-            rawText: response.text,
-            processedContent: postProcessing.processedContent,
-            canonicalSummary: postProcessing.canonicalSummary,
-            qualityProfile: qualityProfile,
-            postProcessingPromptId: postProcessing.promptId,
-            postProcessingPromptTitle: postProcessing.promptTitle,
-            language: response.language,
-            createdAt: transcription.createdAt,
-            modelName: response.model,
-            inputSource: transcription.inputSource,
-            transcriptionDuration: transcriptionProcessingDuration,
-            postProcessingDuration: postProcessing.duration,
-            postProcessingModel: postProcessing.model,
-            meetingType: transcription.meeting.type.rawValue
-        )
-    }
-
-    private func applyVocabularyReplacements(
-        to text: String,
-        with rules: [VocabularyReplacementRule]
-    ) -> String {
-        var output = text
-
-        for rule in rules {
-            let find = rule.find.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !find.isEmpty else { continue }
-
-            let escapedFind = NSRegularExpression.escapedPattern(for: find)
-            let pattern = "\\b\(escapedFind)\\b"
-
-            guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else {
-                continue
-            }
-
-            let escapedReplacement = NSRegularExpression.escapedTemplate(for: rule.replace)
-            let range = NSRange(output.startIndex..<output.endIndex, in: output)
-            output = regex.stringByReplacingMatches(
-                in: output,
-                options: [],
-                range: range,
-                withTemplate: escapedReplacement
-            )
-        }
-
-        return output
-    }
-
-    private func applyVocabularyReplacements(
-        to segments: [Transcription.Segment],
-        with rules: [VocabularyReplacementRule]
-    ) -> [Transcription.Segment] {
-        segments.map { segment in
-            Transcription.Segment(
-                id: segment.id,
-                speaker: segment.speaker,
-                text: applyVocabularyReplacements(to: segment.text, with: rules),
-                startTime: segment.startTime,
-                endTime: segment.endTime
-            )
-        }
-    }
-
-    private func mergedPostProcessingInput(
-        transcriptionText: String,
-        qualityProfile: TranscriptionQualityProfile,
-        context: String?,
-        includeQualityMetadata: Bool
-    ) -> String {
-        var blocks = [transcriptionText]
-        if includeQualityMetadata {
-            blocks.append(qualityMetadataBlock(from: qualityProfile))
-        }
-
-        if let context {
-            let trimmedContext = context.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !trimmedContext.isEmpty {
-                blocks.append(
-                    """
-                    <CONTEXT_METADATA>
-                    \(trimmedContext)
-                    </CONTEXT_METADATA>
-                    """
-                )
-            }
-        }
-
-        return blocks.joined(separator: "\n\n")
-    }
-
-    private func qualityMetadataBlock(from qualityProfile: TranscriptionQualityProfile) -> String {
-        let markerLines: [String]
-        if qualityProfile.markers.isEmpty {
-            markerLines = ["none"]
-        } else {
-            markerLines = qualityProfile.markers.map { marker in
-                "- [\(marker.reason.rawValue)] \(marker.snippet) [\(marker.startTime)-\(marker.endTime)]"
-            }
-        }
-
-        return """
-        <TRANSCRIPT_QUALITY>
-        normalizationVersion: \(qualityProfile.normalizationVersion)
-        overallConfidence: \(qualityProfile.overallConfidence)
-        containsUncertainty: \(qualityProfile.containsUncertainty)
-        markers:
-        \(markerLines.joined(separator: "\n"))
-        </TRANSCRIPT_QUALITY>
-        """
-    }
-
-    private func recalibrateCanonicalSummary(
-        _ summary: CanonicalSummary,
-        with qualityProfile: TranscriptionQualityProfile
-    ) -> CanonicalSummary {
-        let trustFlags = CanonicalSummary.TrustFlags(
-            isGroundedInTranscript: summary.trustFlags.isGroundedInTranscript,
-            containsSpeculation: summary.trustFlags.containsSpeculation || qualityProfile.containsUncertainty,
-            isHumanReviewed: summary.trustFlags.isHumanReviewed,
-            confidenceScore: min(summary.trustFlags.confidenceScore, qualityProfile.overallConfidence)
-        )
-
-        return CanonicalSummary(
-            schemaVersion: summary.schemaVersion,
-            generatedAt: summary.generatedAt,
-            summary: summary.summary,
-            keyPoints: summary.keyPoints,
-            decisions: summary.decisions,
-            actionItems: summary.actionItems,
-            openQuestions: summary.openQuestions,
-            trustFlags: trustFlags
-        )
-    }
-
-    private func updatedMeeting(for meeting: Meeting, audioDuration: Double?) -> Meeting {
-        guard let audioDuration else { return meeting }
-        guard meeting.endTime == nil else { return meeting }
-
-        var updatedMeeting = meeting
-        updatedMeeting.endTime = meeting.startTime.addingTimeInterval(audioDuration)
-        return updatedMeeting
-    }
-
-    private func resolveInputSourceLabel(for meeting: Meeting) -> String? {
-        if meeting.app == .importedFile {
-            return "meeting.app.imported".localized
-        }
-
-        switch recordingSource {
-        case .microphone:
-            return resolveMicrophoneDeviceName() ?? "recording.source.microphone".localized
-        case .system:
-            return "recording.source.system".localized
-        case .all:
-            let system = "recording.source.system".localized
-            let mic = resolveMicrophoneDeviceName()
-            if let mic {
-                return "\(system) + \(mic)"
-            }
-            let microphone = "recording.source.microphone".localized
-            return "\(system) + \(microphone)"
-        }
-    }
-
-    private func resolveMicrophoneDeviceName() -> String? {
-        let settings = AppSettingsStore.shared
-
-        if settings.useSystemDefaultInput {
-            return resolveSystemDefaultMicrophoneDeviceName()
-        }
-
-        for uid in settings.audioDevicePriority {
-            guard let id = audioDeviceManager.getAudioDeviceID(for: uid) else { continue }
-            if let name = audioDeviceManager.getDeviceName(for: id) {
-                return name
-            }
-        }
-
-        return resolveSystemDefaultMicrophoneDeviceName()
-    }
-
-    private func resolveSystemDefaultMicrophoneDeviceName() -> String? {
-        if let id = audioDeviceManager.getDefaultInputDeviceID(),
-           let name = audioDeviceManager.getDeviceName(for: id)
-        {
-            return name
-        }
-
-        if let device = audioDeviceManager.availableInputDevices.first(where: { $0.isDefault }) {
-            return device.name
-        }
-
-        return nil
-    }
-
-    // MARK: - Menu Helpers
-
-    public var dictationMenuKey: String {
+public extension RecordingManager {
+    var dictationMenuKey: String {
         (isRecording && recordingSource == .microphone) ? "menubar.stop_dictation" : "menubar.dictate"
     }
 
-    public var meetingMenuKey: String {
+    var meetingMenuKey: String {
         (isRecording && (recordingSource == .system || recordingSource == .all)) ? "menubar.stop_recording" : "menubar.record_meeting"
     }
 }
