@@ -113,6 +113,15 @@ public struct FloatingRecordingIndicatorView: View {
             }
             .padding(.top, 2)
         }
+        // Use drawingGroup to render the entire view hierarchy into a single bitmap
+        // This ensures shadows are rendered correctly without being clipped by NSPanel bounds
+        .drawingGroup()
+        .shadow(
+            color: .black.opacity(0.15),
+            radius: MeetingAssistantDesignSystem.Layout.recordingIndicatorMainShadowRadius,
+            x: MeetingAssistantDesignSystem.Layout.shadowX,
+            y: MeetingAssistantDesignSystem.Layout.recordingIndicatorMainShadowY
+        )
     }
 
     // MARK: - Shared Components
@@ -143,15 +152,16 @@ public struct FloatingRecordingIndicatorView: View {
             .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing4)
             .background(MeetingAssistantDesignSystem.Colors.recordingOverlayBackground)
             .clipShape(Capsule())
+            .overlay(
+                Capsule()
+                    .strokeBorder(MeetingAssistantDesignSystem.Colors.recordingIndicatorStroke, lineWidth: 1)
+            )
+            .drawingGroup()
             .shadow(
                 color: .black.opacity(0.2),
                 radius: MeetingAssistantDesignSystem.Layout.shadowRadiusSmall,
                 x: MeetingAssistantDesignSystem.Layout.shadowX,
                 y: MeetingAssistantDesignSystem.Layout.shadowYSmall
-            )
-            .overlay(
-                Capsule()
-                    .strokeBorder(MeetingAssistantDesignSystem.Colors.recordingIndicatorStroke, lineWidth: 1)
             )
             .contentShape(Capsule())
             .onTapGesture {
@@ -203,15 +213,16 @@ public struct FloatingRecordingIndicatorView: View {
         .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing6)
         .background(MeetingAssistantDesignSystem.Colors.warning.opacity(0.95))
         .clipShape(Capsule())
+        .overlay(
+            Capsule()
+                .strokeBorder(MeetingAssistantDesignSystem.Colors.recordingIndicatorStroke, lineWidth: 1)
+        )
+        .drawingGroup()
         .shadow(
             color: .black.opacity(0.2),
             radius: MeetingAssistantDesignSystem.Layout.shadowRadiusSmall,
             x: MeetingAssistantDesignSystem.Layout.shadowX,
             y: MeetingAssistantDesignSystem.Layout.shadowYSmall
-        )
-        .overlay(
-            Capsule()
-                .strokeBorder(MeetingAssistantDesignSystem.Colors.recordingIndicatorStroke, lineWidth: 1)
         )
         .accessibilityElement(children: .combine)
         .accessibilityHint("recording_indicator.post_processing_warning.open_settings".localized)
@@ -308,6 +319,7 @@ public struct FloatingRecordingIndicatorView: View {
         .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
         .background(MeetingAssistantDesignSystem.Colors.error.opacity(0.95))
         .clipShape(Capsule())
+        .drawingGroup()
         .shadow(
             color: .black.opacity(0.2),
             radius: MeetingAssistantDesignSystem.Layout.shadowRadiusSmall,
@@ -522,12 +534,6 @@ public struct FloatingRecordingIndicatorView: View {
                 .strokeBorder(MeetingAssistantDesignSystem.Colors.recordingIndicatorStroke, lineWidth: 1.2)
         )
         .clipShape(Capsule())
-        .shadow(
-            color: .black.opacity(0.15),
-            radius: MeetingAssistantDesignSystem.Layout.recordingIndicatorMainShadowRadius,
-            x: MeetingAssistantDesignSystem.Layout.shadowX,
-            y: MeetingAssistantDesignSystem.Layout.recordingIndicatorMainShadowY
-        )
         .contentShape(Capsule())
         .onHover { hovering in
             handleMainRegionHover(hovering)
@@ -547,12 +553,6 @@ public struct FloatingRecordingIndicatorView: View {
                     .strokeBorder(MeetingAssistantDesignSystem.Colors.recordingIndicatorStroke, lineWidth: 1)
             )
             .clipShape(Capsule())
-            .shadow(
-                color: .black.opacity(0.12),
-                radius: MeetingAssistantDesignSystem.Layout.recordingIndicatorAuxShadowRadius,
-                x: MeetingAssistantDesignSystem.Layout.shadowX,
-                y: MeetingAssistantDesignSystem.Layout.recordingIndicatorAuxShadowY
-            )
             .onHover { hovering in
                 handlePromptRegionHover(hovering)
             }
@@ -571,12 +571,6 @@ public struct FloatingRecordingIndicatorView: View {
                     .strokeBorder(MeetingAssistantDesignSystem.Colors.recordingIndicatorStroke, lineWidth: 1)
             )
             .clipShape(Capsule())
-            .shadow(
-                color: .black.opacity(0.12),
-                radius: MeetingAssistantDesignSystem.Layout.recordingIndicatorAuxShadowRadius,
-                x: MeetingAssistantDesignSystem.Layout.shadowX,
-                y: MeetingAssistantDesignSystem.Layout.recordingIndicatorAuxShadowY
-            )
             .onHover { hovering in
                 handlePromptRegionHover(hovering)
             }
