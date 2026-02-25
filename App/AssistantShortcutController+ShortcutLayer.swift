@@ -104,6 +104,13 @@ extension AssistantShortcutController {
         }
 
         if event.keyCode == PresetShortcutKey.escapeKeyCode {
+            // Check if we should cancel recording instead of just disarming the layer
+            if settings.assistantUseEscapeToCancelRecording && assistantService.isRecording {
+                // Let the escape handling in AssistantShortcuts process the cancel
+                // by returning false so the event propagates
+                disarmShortcutLayer(showFeedback: false)
+                return false
+            }
             disarmShortcutLayer(showFeedback: true)
             return true
         }
