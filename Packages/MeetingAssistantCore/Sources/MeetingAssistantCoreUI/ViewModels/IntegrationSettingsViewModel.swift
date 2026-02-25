@@ -163,6 +163,12 @@ public final class IntegrationSettingsViewModel: ObservableObject {
         return nil
     }
 
+    public func setIntegrationLeaderModeEnabled(_ enabled: Bool, for id: UUID) {
+        updateIntegration(id: id) { integration in
+            integration.leaderModeEnabled = enabled
+        }
+    }
+
     public func applyPreset(_ preset: AssistantIntegrationPreset, to id: UUID) {
         updateIntegration(id: id) { integration in
             integration.selectedPreset = preset

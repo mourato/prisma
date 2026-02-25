@@ -98,6 +98,22 @@ public struct AssistantIntegrationsSection: View {
 
             Spacer()
 
+            // Leader mode toggle (P2.2)
+            if integration.layerShortcutKey != nil && !integration.layerShortcutKey!.isEmpty {
+                Toggle(
+                    "settings.assistant.integrations.leader_mode".localized,
+                    isOn: Binding(
+                        get: { integration.leaderModeEnabled },
+                        set: { newValue in
+                            viewModel.setIntegrationLeaderModeEnabled(newValue, for: integration.id)
+                        }
+                    )
+                )
+                .toggleStyle(.switch)
+                .controlSize(.small)
+                .help("settings.assistant.integrations.leader_mode.help".localized)
+            }
+
             MAActionLayerKeyEditor(
                 title: "settings.assistant.layer.integration_key".localized,
                 key: integrationLayerKeyBinding(for: integration.id),
