@@ -11,6 +11,7 @@ final class AssistantShortcutController {
     var flagsMonitor: KeyboardEventMonitor?
     var keyDownMonitor: KeyboardEventMonitor?
     var keyUpMonitor: KeyboardEventMonitor?
+    let shortcutRouter = ShortcutEventRoutingOrchestrator()
     var integrationShortcutHandlers: [UUID: SmartShortcutHandler] = [:]
     var integrationPresetStates: [UUID: ShortcutActivationState] = [:]
     var registeredIntegrationShortcutIDs = Set<UUID>()
