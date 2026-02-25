@@ -8,7 +8,19 @@ extension AssistantShortcutController {
             installFlagsChangedMonitors()
             installKeyDownMonitors()
             removeKeyUpMonitors()
+            ensureAccessibilityPermissionForGlobalCaptureIfNeeded(needsGlobalCapture: true)
             refreshShortcutLayerKeySuppression()
+            AppLogger.debug(
+                "Assistant monitor refresh",
+                category: .assistant,
+                extra: [
+                    "shortcutLayer": true,
+                    "isShortcutLayerArmed": isShortcutLayerArmed,
+                    "shouldSuppressKeyDownEvents": shouldSuppressKeyDownEvents,
+                    "assistantUseEscapeToCancelRecording": settings.assistantUseEscapeToCancelRecording,
+                    "assistantUseEnterToStopRecording": settings.assistantUseEnterToStopRecording,
+                ]
+            )
             return
         }
 
@@ -45,6 +57,24 @@ extension AssistantShortcutController {
         }
 
         refreshShortcutLayerKeySuppression()
+
+        AppLogger.debug(
+            "Assistant monitor refresh",
+            category: .assistant,
+            extra: [
+                "shortcutLayer": false,
+                "needsModifierMonitoring": needsModifierMonitoring,
+                "needsShortcutKeyMonitoring": needsShortcutKeyMonitoring,
+                "needsEscapeMonitoring": needsEscapeMonitoring,
+                "needsEnterStopMonitoring": needsEnterStopMonitoring,
+                "assistantUseEscapeToCancelRecording": settings.assistantUseEscapeToCancelRecording,
+                "assistantUseEnterToStopRecording": settings.assistantUseEnterToStopRecording,
+                "shouldSuppressKeyDownEvents": shouldSuppressKeyDownEvents,
+            ]
+        )
+
+        let needsGlobalCapture = needsModifierMonitoring || needsShortcutKeyMonitoring || needsEscapeMonitoring || needsEnterStopMonitoring
+        ensureAccessibilityPermissionForGlobalCaptureIfNeeded(needsGlobalCapture: needsGlobalCapture)
     }
 
     func refreshCustomShortcutRegistration() {
@@ -108,6 +138,25 @@ extension AssistantShortcutController {
         }
     }
 
+    private func ensureAccessibilityPermissionForGlobalCaptureIfNeeded(needsGlobalCapture: Bool) {
+        guard needsGlobalCapture else { return }
+        guard !AccessibilityPermissionService.isTrusted() else { return }
+
+        if !hasRequestedAccessibilityPermissionForGlobalCapture {
+            hasRequestedAccessibilityPermissionForGlobalCapture = true
+            AccessibilityPermissionService.requestPermission()
+        }
+
+        AppLogger.warning(
+            "Assistant shortcut capture requires Accessibility permission",
+            category: .assistant,
+            extra: [
+                "scope": "assistant",
+                "needsGlobalCapture": needsGlobalCapture,
+            ]
+        )
+    }
+
     private func removeFlagsChangedMonitors() {
         flagsMonitor?.stop()
         flagsMonitor = nil
@@ -122,9 +171,32 @@ extension AssistantShortcutController {
                     // Always allow Escape to propagate so GlobalShortcutController
                     // can handle double-press cancel for Dictation mode
                     if event.keyCode == PresetShortcutKey.escapeKeyCode {
+                        AppLogger.debug(
+                            "ESC local propagation allowed (assistant keyDown monitor)",
+                            category: .assistant,
+                            extra: [
+                                "scope": "assistant",
+                                "shouldSuppressKeyDownEvents": self.shouldSuppressKeyDownEvents,
+                                "shortcutLayerArmed": self.isShortcutLayerArmed,
+                            ]
+                        )
                         return true
                     }
-                    return !self.shouldSuppressKeyDownEvents
+
+                    let shouldReturn = !self.shouldSuppressKeyDownEvents
+                    if !shouldReturn {
+                        AppLogger.debug(
+                            "Local keyDown suppressed by assistant policy",
+                            category: .assistant,
+                            extra: [
+                                "scope": "assistant",
+                                "keyCode": event.keyCode,
+                                "shortcutLayerArmed": self.isShortcutLayerArmed,
+                                "shouldSuppressEnterStopWhileRecording": self.shouldSuppressEnterStopWhileRecording,
+                            ]
+                        )
+                    }
+                    return shouldReturn
                 }
             ) { [weak self] event in
                 Task { @MainActor in

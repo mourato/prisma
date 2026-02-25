@@ -46,6 +46,22 @@ extension AssistantShortcutController {
     }
 
     func handleKeyDown(_ event: NSEvent) {
+        if event.keyCode == PresetShortcutKey.escapeKeyCode {
+            AppLogger.debug(
+                "ESC keyDown observed (assistant)",
+                category: .assistant,
+                extra: [
+                    "scope": "assistant",
+                    "isRepeat": event.isARepeat,
+                    "assistantUseEscapeToCancelRecording": settings.assistantUseEscapeToCancelRecording,
+                    "assistantIsRecording": assistantService.isRecording,
+                    "shortcutLayerEnabled": shouldUseAssistantShortcutLayer,
+                    "shortcutLayerArmed": isShortcutLayerArmed,
+                    "shouldSuppressKeyDownEvents": shouldSuppressKeyDownEvents,
+                ]
+            )
+        }
+
         if handleSingleEnterStop(event) {
             return
         }
@@ -71,10 +87,24 @@ extension AssistantShortcutController {
         handleIntegrationKeyEvent(event)
 
         guard settings.assistantUseEscapeToCancelRecording else {
+            if event.keyCode == PresetShortcutKey.escapeKeyCode {
+                AppLogger.debug(
+                    "ESC ignored because assistant escape cancel is disabled",
+                    category: .assistant,
+                    extra: ["scope": "assistant"]
+                )
+            }
             return
         }
 
         guard !event.isARepeat else {
+            if event.keyCode == PresetShortcutKey.escapeKeyCode {
+                AppLogger.debug(
+                    "ESC ignored because key event is repeat (assistant)",
+                    category: .assistant,
+                    extra: ["scope": "assistant"]
+                )
+            }
             return
         }
 
@@ -83,6 +113,11 @@ extension AssistantShortcutController {
         }
 
         guard didConfirmDoubleEscapePress() else {
+            AppLogger.debug(
+                "ESC waiting for second press (assistant)",
+                category: .assistant,
+                extra: ["scope": "assistant"]
+            )
             return
         }
 

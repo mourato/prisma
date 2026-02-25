@@ -8,9 +8,14 @@ final class ShortcutLayerKeySuppressor {
     private var suppressedKeyCodes = Set<UInt16>()
     private var keyDownHandler: ((NSEvent) -> Bool)?
 
-    func start(keyDownHandler: @escaping (NSEvent) -> Bool) {
+    var isActive: Bool {
+        eventTap != nil && runLoopSource != nil
+    }
+
+    @discardableResult
+    func start(keyDownHandler: @escaping (NSEvent) -> Bool) -> Bool {
         guard eventTap == nil else {
-            return
+            return true
         }
 
         self.keyDownHandler = keyDownHandler
@@ -39,7 +44,7 @@ final class ShortcutLayerKeySuppressor {
                 "Failed to create shortcut layer key suppressor tap",
                 category: .assistant
             )
-            return
+            return false
         }
 
         let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, eventTap, 0)
@@ -48,7 +53,8 @@ final class ShortcutLayerKeySuppressor {
                 "Failed to create runloop source for shortcut layer key suppressor",
                 category: .assistant
             )
-            return
+            self.keyDownHandler = nil
+            return false
         }
 
         self.eventTap = eventTap
@@ -56,6 +62,7 @@ final class ShortcutLayerKeySuppressor {
 
         CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
         CGEvent.tapEnable(tap: eventTap, enable: true)
+        return true
     }
 
     func stop() {

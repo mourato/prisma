@@ -35,6 +35,7 @@ final class GlobalShortcutController {
     private let presetState = ShortcutActivationState()
     private let escapeDoublePressInterval: TimeInterval = 1.0
     private var lastEscapePressTime: Date?
+    private var hasRequestedAccessibilityPermissionForGlobalCapture = false
 
     init(
         recordingManager: RecordingManager,
@@ -199,6 +200,20 @@ final class GlobalShortcutController {
         } else {
             removeKeyUpMonitors()
         }
+
+        let needsGlobalCapture = needsModifierMonitoring || needsShortcutKeyMonitoring || needsEscapeMonitoring
+        ensureAccessibilityPermissionForGlobalCaptureIfNeeded(needsGlobalCapture: needsGlobalCapture)
+
+        AppLogger.debug(
+            "Global shortcut monitor refresh",
+            category: .uiController,
+            extra: [
+                "needsModifierMonitoring": needsModifierMonitoring,
+                "needsShortcutKeyMonitoring": needsShortcutKeyMonitoring,
+                "needsEscapeMonitoring": needsEscapeMonitoring,
+                "useEscapeToCancelRecording": settings.useEscapeToCancelRecording,
+            ]
+        )
     }
 
     private func refreshCustomShortcutRegistration() {
@@ -275,6 +290,25 @@ final class GlobalShortcutController {
         removeKeyUpMonitors()
     }
 
+    private func ensureAccessibilityPermissionForGlobalCaptureIfNeeded(needsGlobalCapture: Bool) {
+        guard needsGlobalCapture else { return }
+        guard !AccessibilityPermissionService.isTrusted() else { return }
+
+        if !hasRequestedAccessibilityPermissionForGlobalCapture {
+            hasRequestedAccessibilityPermissionForGlobalCapture = true
+            AccessibilityPermissionService.requestPermission()
+        }
+
+        AppLogger.warning(
+            "Global shortcut capture requires Accessibility permission",
+            category: .uiController,
+            extra: [
+                "scope": "global",
+                "needsGlobalCapture": needsGlobalCapture,
+            ]
+        )
+    }
+
     // To match the original logic:
 
     private func handleFlagsChanged(_ event: NSEvent) {
@@ -342,6 +376,20 @@ final class GlobalShortcutController {
     }
 
     private func handleKeyDown(_ event: NSEvent) {
+        if event.keyCode == PresetShortcutKey.escapeKeyCode {
+            AppLogger.debug(
+                "ESC keyDown observed (global)",
+                category: .uiController,
+                extra: [
+                    "scope": "global",
+                    "isRepeat": event.isARepeat,
+                    "useEscapeToCancelRecording": settings.useEscapeToCancelRecording,
+                    "isRecording": recordingManager.isRecording,
+                    "isStarting": recordingManager.isStartingRecording,
+                ]
+            )
+        }
+
         if let definition = settings.dictationShortcutDefinition {
             handleInHouseShortcutEvent(
                 definition: definition,
@@ -360,13 +408,38 @@ final class GlobalShortcutController {
             )
         }
 
-        guard settings.useEscapeToCancelRecording else { return }
-        guard !event.isARepeat else { return }
+        guard settings.useEscapeToCancelRecording else {
+            if event.keyCode == PresetShortcutKey.escapeKeyCode {
+                AppLogger.debug(
+                    "ESC ignored because global escape cancel is disabled",
+                    category: .uiController,
+                    extra: ["scope": "global"]
+                )
+            }
+            return
+        }
+        guard !event.isARepeat else {
+            if event.keyCode == PresetShortcutKey.escapeKeyCode {
+                AppLogger.debug(
+                    "ESC ignored because key event is repeat (global)",
+                    category: .uiController,
+                    extra: ["scope": "global"]
+                )
+            }
+            return
+        }
         guard event.keyCode == PresetShortcutKey.escapeKeyCode else {
             return
         }
 
-        guard didConfirmDoubleEscapePress() else { return }
+        guard didConfirmDoubleEscapePress() else {
+            AppLogger.debug(
+                "ESC waiting for second press (global)",
+                category: .uiController,
+                extra: ["scope": "global"]
+            )
+            return
+        }
 
         Task { @MainActor in
             let wasRecording = self.recordingManager.isRecording

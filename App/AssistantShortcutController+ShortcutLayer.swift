@@ -39,15 +39,48 @@ extension AssistantShortcutController {
     func refreshShortcutLayerKeySuppression() {
         guard shouldSuppressKeyDownEvents else {
             shortcutLayerKeySuppressor.stop()
+            AppLogger.debug(
+                "Shortcut layer key suppressor disabled",
+                category: .assistant,
+                extra: [
+                    "shouldSuppressKeyDownEvents": shouldSuppressKeyDownEvents,
+                    "shortcutLayerEnabled": shouldUseAssistantShortcutLayer,
+                    "shortcutLayerArmed": isShortcutLayerArmed,
+                    "assistantIsRecording": assistantService.isRecording,
+                ]
+            )
             return
         }
 
-        shortcutLayerKeySuppressor.start { [weak self] event in
+        AppLogger.debug(
+            "Shortcut layer key suppressor enabled",
+            category: .assistant,
+            extra: [
+                "shouldSuppressKeyDownEvents": shouldSuppressKeyDownEvents,
+                "shortcutLayerEnabled": shouldUseAssistantShortcutLayer,
+                "shortcutLayerArmed": isShortcutLayerArmed,
+                "assistantIsRecording": assistantService.isRecording,
+            ]
+        )
+
+        let didStartSuppressor = shortcutLayerKeySuppressor.start { [weak self] event in
             guard let self else { return false }
             if handleShortcutLayerKeyDown(event) {
                 return true
             }
             return handleSingleEnterStop(event)
+        }
+
+        if !didStartSuppressor {
+            AppLogger.warning(
+                "Shortcut layer key suppressor unavailable; using monitor-only fallback",
+                category: .assistant,
+                extra: [
+                    "shortcutLayerEnabled": shouldUseAssistantShortcutLayer,
+                    "shortcutLayerArmed": isShortcutLayerArmed,
+                    "accessibilityTrusted": AccessibilityPermissionService.isTrusted(),
+                ]
+            )
         }
     }
 
@@ -108,6 +141,15 @@ extension AssistantShortcutController {
         }
 
         if event.keyCode == PresetShortcutKey.escapeKeyCode {
+            AppLogger.debug(
+                "ESC received while shortcut layer is armed",
+                category: .assistant,
+                extra: [
+                    "scope": "assistant",
+                    "propagateForDoublePress": shouldPropagateEscapeForDoublePressCancel,
+                    "assistantIsRecording": assistantService.isRecording,
+                ]
+            )
             // Always allow Escape to propagate when double-press cancel is enabled
             // for either Assistant or Dictation mode.
             if shouldPropagateEscapeForDoublePressCancel {
@@ -120,10 +162,20 @@ extension AssistantShortcutController {
                 }
                 // Always allow the event to propagate so GlobalShortcutController
                 // (for Dictation) or AssistantShortcuts (for Assistant) can handle it
+                AppLogger.debug(
+                    "ESC propagated from shortcut layer to double-press handlers",
+                    category: .assistant,
+                    extra: ["scope": "assistant"]
+                )
                 return false
             }
             // Escape double-press cancel is disabled for both modes; just disarm the layer
             disarmShortcutLayer(showFeedback: true)
+            AppLogger.debug(
+                "ESC consumed by shortcut layer because escape cancel is disabled",
+                category: .assistant,
+                extra: ["scope": "assistant"]
+            )
             return true
         }
 
