@@ -9,6 +9,7 @@ final class AssistantShortcutController {
     var cancellables = Set<AnyCancellable>()
 
     let inputBackend: ShortcutInputBackend
+    let hotkeyBackend: GlobalHotkeyBackend
     let shortcutRouter = ShortcutEventRoutingOrchestrator()
     var integrationShortcutHandlers: [UUID: SmartShortcutHandler] = [:]
     var integrationPresetStates: [UUID: ShortcutActivationState] = [:]
@@ -22,12 +23,9 @@ final class AssistantShortcutController {
     let returnKeyCode: UInt16 = 0x24
     let keypadEnterKeyCode: UInt16 = 0x4c
 
-    // MARK: - Integration Leader Mode (P2.2)
-    /// State machine for integration leader mode
+    // MARK: - Integration Leader Mode (legacy state retained, currently disabled in global path)
     var integrationLeaderModeStateMachine = IntegrationLeaderModeStateMachine()
-    /// Task for integration leader mode timeout
     var integrationLeaderModeTask: Task<Void, Never>?
-    /// Timeout for integration leader mode action waiting (2 seconds as per P2.2)
     let integrationLeaderModeTimeoutSeconds: TimeInterval = 2.0
 
     var isShortcutLayerArmed: Bool {
@@ -48,10 +46,6 @@ final class AssistantShortcutController {
     let presetState = ShortcutActivationState()
     let escapeDoublePressInterval: TimeInterval = 1.0
     var lastEscapePressTime: Date?
-    var hasRequestedAccessibilityPermissionForGlobalCapture = false
-    var hasRequestedInputMonitoringPermissionForGlobalCapture = false
-    var hasOpenedAccessibilitySettingsForGlobalCapture = false
-    var hasOpenedInputMonitoringSettingsForGlobalCapture = false
     let healthCheckIntervalSeconds: TimeInterval = 15
     var healthCheckTimer: Timer?
     var shortcutCaptureHealthSnapshot: ShortcutCaptureHealthSnapshot?
@@ -59,16 +53,22 @@ final class AssistantShortcutController {
     init(
         assistantService: AssistantVoiceCommandService,
         settings: AppSettingsStore,
-        inputBackend: ShortcutInputBackend? = nil
+        inputBackend: ShortcutInputBackend? = nil,
+        hotkeyBackend: GlobalHotkeyBackend? = nil
     ) {
         self.assistantService = assistantService
         self.settings = settings
         self.inputBackend = inputBackend ?? Self.makeDefaultInputBackend()
+        self.hotkeyBackend = hotkeyBackend ?? Self.makeDefaultHotkeyBackend()
         configureInputBackendHandlers()
     }
 
     private static func makeDefaultInputBackend() -> ShortcutInputBackend {
         SystemShortcutInputBackend()
+    }
+
+    private static func makeDefaultHotkeyBackend() -> GlobalHotkeyBackend {
+        CarbonGlobalHotkeyBackend()
     }
 
     func emitShortcutDetected(
@@ -133,23 +133,6 @@ final class AssistantShortcutController {
         )
     }
 
-    func emitPermissionBlocked(
-        permission: String,
-        accessibilityTrusted: Bool,
-        inputMonitoringTrusted: Bool
-    ) {
-        ShortcutTelemetry.emit(
-            .permissionBlocked(
-                pipeline: "assistant_shortcuts",
-                scope: "assistant",
-                permission: permission,
-                accessibilityTrusted: accessibilityTrusted,
-                inputMonitoringTrusted: inputMonitoringTrusted
-            ),
-            category: .assistant
-        )
-    }
-
     func emitLayerArmed(source: String, trigger: String) {
         ShortcutTelemetry.emit(
             .layerArmed(
@@ -175,23 +158,6 @@ final class AssistantShortcutController {
         )
     }
 
-    func emitEventTapFallback(
-        fallbackMode: String,
-        reason: String,
-        inputMonitoringTrusted: Bool?
-    ) {
-        ShortcutTelemetry.emit(
-            .eventTapFallback(
-                pipeline: "assistant_shortcuts",
-                scope: "assistant",
-                fallbackMode: fallbackMode,
-                reason: reason,
-                inputMonitoringTrusted: inputMonitoringTrusted
-            ),
-            category: .assistant
-        )
-    }
-
     var layerTimeoutMilliseconds: Int {
         Int(layerTimeoutNanoseconds / 1_000_000)
     }
@@ -204,7 +170,8 @@ final class AssistantShortcutController {
         self.init(
             assistantService: assistantService,
             settings: .shared,
-            inputBackend: nil
+            inputBackend: nil,
+            hotkeyBackend: nil
         )
     }
 
