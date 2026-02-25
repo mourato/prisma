@@ -339,6 +339,16 @@ extension AssistantShortcutController {
         )
 
         shortcutCaptureHealthSnapshot = snapshot
+        ShortcutCaptureHealthStore.updateHealth(
+            scope: .assistant,
+            result: snapshot.result.rawValue,
+            reasonToken: snapshot.result == .degraded ? snapshot.reasonToken : "",
+            requiresGlobalCapture: snapshot.requiresGlobalCapture,
+            accessibilityTrusted: snapshot.accessibilityTrusted,
+            inputMonitoringTrusted: snapshot.inputMonitoringTrusted,
+            eventTapExpected: snapshot.eventTapExpected,
+            eventTapActive: snapshot.eventTapActive
+        )
         emitShortcutCaptureHealthTransitionIfNeeded(previous: previousSnapshot, current: snapshot)
     }
 

@@ -26,6 +26,7 @@ public class ShortcutSettingsViewModel: ObservableObject {
     @Published public var dictationModifierConflictMessage: String?
     @Published public var meetingShortcutDefinition: ShortcutDefinition?
     @Published public var meetingModifierConflictMessage: String?
+    @Published public private(set) var shortcutCaptureHealthPresentation: ShortcutCaptureHealthPresentation?
     @Published public var testKeysInput: String = ""
 
     /// Whether the user is recording a custom shortcut
@@ -43,6 +44,7 @@ public class ShortcutSettingsViewModel: ObservableObject {
         dictationModifierConflictMessage = nil
         meetingShortcutDefinition = settings.meetingShortcutDefinition
         meetingModifierConflictMessage = nil
+        shortcutCaptureHealthPresentation = Self.makeShortcutCaptureHealthPresentation()
 
         setupBindings()
     }
@@ -96,6 +98,13 @@ public class ShortcutSettingsViewModel: ObservableObject {
                 self?.handleMeetingShortcutDefinitionChange(newValue)
             }
             .store(in: &cancellables)
+
+        NotificationCenter.default.publisher(for: .meetingAssistantShortcutCaptureHealthDidChange)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.refreshShortcutCaptureHealthPresentation()
+            }
+            .store(in: &cancellables)
     }
 
     // MARK: - Public Methods
@@ -114,6 +123,31 @@ public class ShortcutSettingsViewModel: ObservableObject {
         meetingShortcutDefinition = nil
         meetingModifierConflictMessage = nil
         isRecordingCustomShortcut = false
+    }
+
+    public func openShortcutCaptureHealthAction() {
+        guard let presentation = shortcutCaptureHealthPresentation else {
+            return
+        }
+
+        switch presentation.action {
+        case .none:
+            return
+        case .openInputMonitoringSettings:
+            InputMonitoringPermissionService.openSystemSettings()
+        case .openAccessibilitySettings:
+            AccessibilityPermissionService.openSystemSettings()
+        }
+    }
+
+    private func refreshShortcutCaptureHealthPresentation() {
+        shortcutCaptureHealthPresentation = Self.makeShortcutCaptureHealthPresentation()
+    }
+
+    private static func makeShortcutCaptureHealthPresentation() -> ShortcutCaptureHealthPresentation? {
+        ShortcutCaptureHealthPresentation.from(
+            status: ShortcutCaptureHealthStore.status(for: .global)
+        )
     }
 
     private func handleDictationShortcutDefinitionChange(_ newValue: ShortcutDefinition?) {

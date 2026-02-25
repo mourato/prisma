@@ -29,6 +29,12 @@ public struct DictationSettingsTab: View {
                 descriptionText: "settings.shortcuts.dictation_desc".localized,
                 settingsContent: {
                     VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                        if let healthPresentation = shortcutsViewModel.shortcutCaptureHealthPresentation {
+                            ShortcutCaptureHealthStatusView(presentation: healthPresentation) {
+                                shortcutsViewModel.openShortcutCaptureHealthAction()
+                            }
+                        }
+
                         MAModifierShortcutEditor(
                             shortcut: $shortcutsViewModel.dictationShortcutDefinition,
                             conflictMessage: shortcutsViewModel.dictationModifierConflictMessage

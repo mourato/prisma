@@ -8,9 +8,11 @@ final class ShortcutSettingsViewModelTests: XCTestCase {
     override func setUp() async throws {
         settings = .shared
         settings.resetToDefaults()
+        ShortcutCaptureHealthStore.reset()
     }
 
     override func tearDown() async throws {
+        ShortcutCaptureHealthStore.reset()
         settings.resetToDefaults()
         settings = nil
     }
@@ -55,5 +57,28 @@ final class ShortcutSettingsViewModelTests: XCTestCase {
         XCTAssertNil(settings.meetingModifierShortcutGesture)
         XCTAssertEqual(settings.meetingSelectedPresetKey, .notSpecified)
         XCTAssertEqual(viewModel.meetingSelectedPresetKey, .notSpecified)
+    }
+
+    func testShortcutCaptureHealthPresentationUpdatesWhenGlobalHealthBecomesDegraded() async {
+        let viewModel = ShortcutSettingsViewModel()
+        XCTAssertNil(viewModel.shortcutCaptureHealthPresentation)
+
+        ShortcutCaptureHealthStore.updateHealth(
+            scope: .global,
+            result: "degraded",
+            reasonToken: "input_monitoring_denied",
+            requiresGlobalCapture: true,
+            accessibilityTrusted: true,
+            inputMonitoringTrusted: false,
+            eventTapExpected: false,
+            eventTapActive: false
+        )
+        await Task.yield()
+
+        XCTAssertEqual(
+            viewModel.shortcutCaptureHealthPresentation?.messageKey,
+            "settings.shortcuts.health.degraded.message.permissions_input_monitoring"
+        )
+        XCTAssertEqual(viewModel.shortcutCaptureHealthPresentation?.isFallback, false)
     }
 }

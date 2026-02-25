@@ -563,6 +563,22 @@
 "settings.shortcuts.try_keys_hint" = "Clique na caixa de texto abaixo primeiro.";
 "settings.shortcuts.key.not_specified" = "Não especificado";
 "settings.shortcuts.key.custom" = "Gravar atalho...";
+"settings.shortcuts.health.title" = "Saúde dos Atalhos";
+"settings.shortcuts.health.scope.global" = "Atalhos globais";
+"settings.shortcuts.health.scope.assistant" = "Atalhos do Assistant";
+"settings.shortcuts.health.badge.degraded" = "Degradado";
+"settings.shortcuts.health.badge.fallback" = "Fallback";
+"settings.shortcuts.health.degraded.title" = "Captura de atalho degradada";
+"settings.shortcuts.health.degraded.message.permissions_accessibility" = "O acesso de Acessibilidade está ausente. Ative a permissão para restabelecer a captura global de atalhos.";
+"settings.shortcuts.health.degraded.message.permissions_input_monitoring" = "O acesso de Monitoramento de Entrada está ausente. Ative a permissão para restabelecer a captura global de atalhos.";
+"settings.shortcuts.health.degraded.message.monitors" = "A captura global de atalhos está instável. Reinicie o app e confirme as permissões do sistema.";
+"settings.shortcuts.health.fallback.title" = "Fallback operacional ativo";
+"settings.shortcuts.health.fallback.message.input_monitoring" = "O event tap não pôde ser ativado por falta de Monitoramento de Entrada. O sistema está em modo monitor-only e pode não suprimir teclas conforme esperado.";
+"settings.shortcuts.health.fallback.message.generic" = "O event tap está indisponível. O sistema está operando em modo monitor-only para manter os atalhos ativos com funcionalidade reduzida.";
+"settings.shortcuts.health.action.open_input_monitoring" = "Abrir Monitoramento de Entrada";
+"settings.shortcuts.health.action.open_accessibility" = "Abrir Acessibilidade";
+"settings.shortcuts.health.accessibility.hint.read_only" = "Mostra o estado atual da captura de atalhos.";
+"settings.shortcuts.health.accessibility.hint.actionable" = "Mostra o estado atual da captura de atalhos e permite abrir a configuração recomendada.";
 
 /* Permissions Settings */
 "settings.permissions.title" = "Permissões";

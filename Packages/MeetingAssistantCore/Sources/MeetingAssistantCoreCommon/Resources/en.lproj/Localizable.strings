@@ -563,6 +563,22 @@
 "settings.shortcuts.try_keys_hint" = "Click in the text box below first.";
 "settings.shortcuts.key.not_specified" = "Not specified";
 "settings.shortcuts.key.custom" = "Record shortcut...";
+"settings.shortcuts.health.title" = "Shortcut Health";
+"settings.shortcuts.health.scope.global" = "Global shortcuts";
+"settings.shortcuts.health.scope.assistant" = "Assistant shortcuts";
+"settings.shortcuts.health.badge.degraded" = "Degraded";
+"settings.shortcuts.health.badge.fallback" = "Fallback";
+"settings.shortcuts.health.degraded.title" = "Shortcut capture degraded";
+"settings.shortcuts.health.degraded.message.permissions_accessibility" = "Accessibility permission is missing. Enable it to restore global shortcut capture.";
+"settings.shortcuts.health.degraded.message.permissions_input_monitoring" = "Input Monitoring permission is missing. Enable it to restore global shortcut capture.";
+"settings.shortcuts.health.degraded.message.monitors" = "Global shortcut capture is unstable. Restart the app and verify system permissions.";
+"settings.shortcuts.health.fallback.title" = "Operational fallback active";
+"settings.shortcuts.health.fallback.message.input_monitoring" = "Event tap could not start due to missing Input Monitoring. The system is running in monitor-only mode and may not suppress keys as expected.";
+"settings.shortcuts.health.fallback.message.generic" = "Event tap is unavailable. The system is running in monitor-only mode to keep shortcuts active with reduced behavior.";
+"settings.shortcuts.health.action.open_input_monitoring" = "Open Input Monitoring";
+"settings.shortcuts.health.action.open_accessibility" = "Open Accessibility";
+"settings.shortcuts.health.accessibility.hint.read_only" = "Shows the current shortcut capture status.";
+"settings.shortcuts.health.accessibility.hint.actionable" = "Shows the current shortcut capture status and allows opening the recommended setting.";
 
 /* Permissions Settings */
 "settings.permissions.title" = "Permissions";

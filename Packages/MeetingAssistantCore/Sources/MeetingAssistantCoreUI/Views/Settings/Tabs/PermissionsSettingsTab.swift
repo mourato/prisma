@@ -11,6 +11,8 @@ import SwiftUI
 /// Tab for managing app permissions (microphone, screen recording).
 public struct PermissionsSettingsTab: View {
     @State private var viewModel: PermissionViewModel
+    @StateObject private var shortcutSettingsViewModel = ShortcutSettingsViewModel()
+    @StateObject private var assistantShortcutSettingsViewModel = AssistantShortcutSettingsViewModel()
 
     public init() {
         let recordingManager = RecordingManager.shared
@@ -35,6 +37,26 @@ public struct PermissionsSettingsTab: View {
             MAGroup("settings.permissions.status".localized, icon: "checkmark.shield") {
                 PermissionStatusView(viewModel: viewModel, requiredSource: .all)
                     .padding(.top, MeetingAssistantDesignSystem.Layout.spacing4)
+            }
+
+            if shortcutSettingsViewModel.shortcutCaptureHealthPresentation != nil ||
+                assistantShortcutSettingsViewModel.shortcutCaptureHealthPresentation != nil
+            {
+                MAGroup("settings.shortcuts.health.title".localized, icon: "keyboard") {
+                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                        if let globalPresentation = shortcutSettingsViewModel.shortcutCaptureHealthPresentation {
+                            ShortcutCaptureHealthStatusView(presentation: globalPresentation) {
+                                shortcutSettingsViewModel.openShortcutCaptureHealthAction()
+                            }
+                        }
+
+                        if let assistantPresentation = assistantShortcutSettingsViewModel.shortcutCaptureHealthPresentation {
+                            ShortcutCaptureHealthStatusView(presentation: assistantPresentation) {
+                                assistantShortcutSettingsViewModel.openShortcutCaptureHealthAction()
+                            }
+                        }
+                    }
+                }
             }
 
             if viewModel.allPermissionsGranted {
