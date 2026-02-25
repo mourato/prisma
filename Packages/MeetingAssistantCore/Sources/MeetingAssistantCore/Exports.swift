@@ -7,3 +7,9 @@
 @_exported import MeetingAssistantCoreDomain
 @_exported import MeetingAssistantCoreInfrastructure
 @_exported import MeetingAssistantCoreUI
+
+public typealias ShortcutTelemetry = MeetingAssistantCoreCommon.ShortcutTelemetry
+public typealias ShortcutTelemetryEvent = MeetingAssistantCoreCommon.ShortcutTelemetryEvent
+public typealias ShortcutTelemetryEventName = MeetingAssistantCoreCommon.ShortcutTelemetryEventName
+public typealias ShortcutTelemetryLevel = MeetingAssistantCoreCommon.ShortcutTelemetryLevel
+public typealias ShortcutTelemetryRecord = MeetingAssistantCoreCommon.ShortcutTelemetryRecord

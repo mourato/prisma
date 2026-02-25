@@ -24,6 +24,11 @@ extension AssistantShortcutController {
             let activationMode = gesture.triggerMode.asShortcutActivationMode
 
             if isActive, !wasPressed {
+                emitShortcutDetected(
+                    shortcutTarget: "assistant",
+                    source: "modifier_gesture",
+                    trigger: activationMode
+                )
                 Task { @MainActor [weak self] in await self?.handleShortcutDown(activationModeOverride: activationMode) }
             } else if !isActive, wasPressed {
                 Task { @MainActor [weak self] in await self?.handleShortcutUp(activationModeOverride: activationMode) }
@@ -34,6 +39,11 @@ extension AssistantShortcutController {
             shortcutHandler.handleModifierChange(isActive: isActive)
 
             if isActive, !wasPressed {
+                emitShortcutDetected(
+                    shortcutTarget: "assistant",
+                    source: "preset",
+                    trigger: settings.assistantShortcutActivationMode
+                )
                 Task { @MainActor [weak self] in await self?.handleShortcutDown() }
             } else if !isActive, wasPressed {
                 Task { @MainActor [weak self] in await self?.handleShortcutUp() }
@@ -167,28 +177,69 @@ extension AssistantShortcutController {
 
     func handleCustomShortcutDown() async {
         guard settings.assistantShortcutDefinition == nil else {
+            emitShortcutRejected(
+                shortcutTarget: "assistant",
+                source: "keyboardshortcuts_custom",
+                trigger: settings.assistantShortcutActivationMode,
+                reason: "custom_overridden_by_in_house_definition"
+            )
             return
         }
         guard settings.assistantModifierShortcutGesture == nil else {
+            emitShortcutRejected(
+                shortcutTarget: "assistant",
+                source: "keyboardshortcuts_custom",
+                trigger: settings.assistantShortcutActivationMode,
+                reason: "custom_overridden_by_modifier_gesture"
+            )
             return
         }
 
         guard settings.assistantSelectedPresetKey == .custom else {
+            emitShortcutRejected(
+                shortcutTarget: "assistant",
+                source: "keyboardshortcuts_custom",
+                trigger: settings.assistantShortcutActivationMode,
+                reason: "preset_not_custom"
+            )
             return
         }
 
+        emitShortcutDetected(
+            shortcutTarget: "assistant",
+            source: "keyboardshortcuts_custom",
+            trigger: settings.assistantShortcutActivationMode
+        )
         await handleShortcutDown()
     }
 
     func handleCustomShortcutUp() async {
         guard settings.assistantShortcutDefinition == nil else {
+            emitShortcutRejected(
+                shortcutTarget: "assistant",
+                source: "keyboardshortcuts_custom",
+                trigger: settings.assistantShortcutActivationMode,
+                reason: "custom_overridden_by_in_house_definition"
+            )
             return
         }
         guard settings.assistantModifierShortcutGesture == nil else {
+            emitShortcutRejected(
+                shortcutTarget: "assistant",
+                source: "keyboardshortcuts_custom",
+                trigger: settings.assistantShortcutActivationMode,
+                reason: "custom_overridden_by_modifier_gesture"
+            )
             return
         }
 
         guard settings.assistantSelectedPresetKey == .custom else {
+            emitShortcutRejected(
+                shortcutTarget: "assistant",
+                source: "keyboardshortcuts_custom",
+                trigger: settings.assistantShortcutActivationMode,
+                reason: "preset_not_custom"
+            )
             return
         }
 
@@ -199,9 +250,23 @@ extension AssistantShortcutController {
         if shouldUseAssistantShortcutLayer {
             let activationMode = activationModeOverride ?? settings.assistantShortcutActivationMode
             if activationMode == .doubleTap {
+                emitShortcutRejected(
+                    shortcutTarget: "assistant",
+                    source: "shortcut_layer",
+                    trigger: activationMode,
+                    reason: "double_tap_requires_key_up"
+                )
                 return
             }
-            armShortcutLayer()
+            emitShortcutDetected(
+                shortcutTarget: "assistant",
+                source: "shortcut_layer",
+                trigger: activationMode
+            )
+            armShortcutLayer(
+                source: "assistant_shortcut",
+                trigger: activationMode.rawValue
+            )
             return
         }
 
@@ -225,6 +290,8 @@ extension AssistantShortcutController {
         event: NSEvent,
         state: ShortcutActivationState,
         handler: SmartShortcutHandler,
+        shortcutTarget: String = "assistant",
+        detectionSource: String = "in_house_definition",
         onDown: @escaping (ShortcutActivationMode) -> Void,
         onUp: @escaping (ShortcutActivationMode) -> Void
     ) {
@@ -234,6 +301,11 @@ extension AssistantShortcutController {
         let activationMode = definition.trigger.asShortcutActivationMode
 
         if isActive, !wasPressed {
+            emitShortcutDetected(
+                shortcutTarget: shortcutTarget,
+                source: detectionSource,
+                trigger: activationMode
+            )
             onDown(activationMode)
         } else if !isActive, wasPressed {
             onUp(activationMode)

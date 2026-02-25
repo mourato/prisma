@@ -5,6 +5,7 @@ import MeetingAssistantCore
 extension AssistantShortcutController {
     func handleIntegrationFlagsChanged(_ event: NSEvent) {
         for integration in settings.assistantIntegrations where integration.isEnabled {
+            let shortcutTarget = "integration"
             let presetState = integrationState(for: integration.id)
             let shortcutHandler = integrationShortcutHandlers[integration.id] ?? makeIntegrationShortcutHandler(for: integration.id)
             integrationShortcutHandlers[integration.id] = shortcutHandler
@@ -14,6 +15,8 @@ extension AssistantShortcutController {
                     event: event,
                     state: presetState,
                     handler: shortcutHandler,
+                    shortcutTarget: shortcutTarget,
+                    detectionSource: "integration_in_house_definition",
                     onDown: { [weak self] activationMode in
                         Task { @MainActor [weak self] in
                             await self?.handleIntegrationShortcutDown(
@@ -38,6 +41,11 @@ extension AssistantShortcutController {
                 let activationMode = gesture.triggerMode.asShortcutActivationMode
 
                 if isActive, !wasPressed {
+                    emitShortcutDetected(
+                        shortcutTarget: shortcutTarget,
+                        source: "integration_modifier_gesture",
+                        trigger: activationMode
+                    )
                     Task { @MainActor [weak self] in
                         await self?.handleIntegrationShortcutDown(
                             integrationID: integration.id,
@@ -58,6 +66,11 @@ extension AssistantShortcutController {
                 shortcutHandler.handleModifierChange(isActive: isActive)
 
                 if isActive, !wasPressed {
+                    emitShortcutDetected(
+                        shortcutTarget: shortcutTarget,
+                        source: "integration_preset",
+                        trigger: integration.shortcutActivationMode
+                    )
                     Task { @MainActor [weak self] in
                         await self?.handleIntegrationShortcutDown(integrationID: integration.id)
                     }
@@ -76,6 +89,7 @@ extension AssistantShortcutController {
         }
 
         for integration in settings.assistantIntegrations where integration.isEnabled {
+            let shortcutTarget = "integration"
             guard let definition = integration.shortcutDefinition else {
                 continue
             }
@@ -88,6 +102,8 @@ extension AssistantShortcutController {
                 event: event,
                 state: state,
                 handler: handler,
+                shortcutTarget: shortcutTarget,
+                detectionSource: "integration_in_house_definition",
                 onDown: { [weak self] activationMode in
                     Task { @MainActor [weak self] in
                         await self?.handleIntegrationShortcutDown(
@@ -109,15 +125,61 @@ extension AssistantShortcutController {
     }
 
     func handleIntegrationCustomShortcutDown(integrationID: UUID) async {
-        guard let integration = integration(for: integrationID),
-              integration.isEnabled,
-              integration.shortcutDefinition == nil,
-              integration.modifierShortcutGesture == nil,
-              integration.shortcutPresetKey == .custom
-        else {
+        guard let integration = integration(for: integrationID) else {
+            emitShortcutRejected(
+                shortcutTarget: "integration",
+                source: "integration_keyboardshortcuts_custom",
+                triggerToken: "unknown",
+                reason: "integration_missing"
+            )
             return
         }
 
+        guard integration.isEnabled else {
+            emitShortcutRejected(
+                shortcutTarget: "integration",
+                source: "integration_keyboardshortcuts_custom",
+                trigger: integration.shortcutActivationMode,
+                reason: "integration_disabled"
+            )
+            return
+        }
+
+        guard integration.shortcutDefinition == nil else {
+            emitShortcutRejected(
+                shortcutTarget: "integration",
+                source: "integration_keyboardshortcuts_custom",
+                trigger: integration.shortcutActivationMode,
+                reason: "custom_overridden_by_in_house_definition"
+            )
+            return
+        }
+
+        guard integration.modifierShortcutGesture == nil else {
+            emitShortcutRejected(
+                shortcutTarget: "integration",
+                source: "integration_keyboardshortcuts_custom",
+                trigger: integration.shortcutActivationMode,
+                reason: "custom_overridden_by_modifier_gesture"
+            )
+            return
+        }
+
+        guard integration.shortcutPresetKey == .custom else {
+            emitShortcutRejected(
+                shortcutTarget: "integration",
+                source: "integration_keyboardshortcuts_custom",
+                trigger: integration.shortcutActivationMode,
+                reason: "preset_not_custom"
+            )
+            return
+        }
+
+        emitShortcutDetected(
+            shortcutTarget: "integration",
+            source: "integration_keyboardshortcuts_custom",
+            trigger: integration.shortcutActivationMode
+        )
         await handleIntegrationShortcutDown(integrationID: integrationID)
     }
 
@@ -139,6 +201,12 @@ extension AssistantShortcutController {
         activationModeOverride: ShortcutActivationMode? = nil
     ) async {
         guard let integration = integration(for: integrationID), integration.isEnabled else {
+            emitShortcutRejected(
+                shortcutTarget: "integration",
+                source: "integration_shortcut_down",
+                trigger: activationModeOverride,
+                reason: "integration_unavailable"
+            )
             return
         }
 

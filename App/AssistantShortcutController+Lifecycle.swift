@@ -1,3 +1,4 @@
+import AppKit
 import Combine
 import Foundation
 import KeyboardShortcuts
@@ -9,10 +10,12 @@ extension AssistantShortcutController {
         setupKeyboardShortcutHandlers()
         observeSettings()
         observeAssistantRecordingState()
+        observeLifecycleEvents()
         applyGlobalDoubleTapInterval()
         refreshCustomShortcutRegistration()
         refreshIntegrationCustomShortcutRegistrations()
         refreshEventMonitors()
+        startShortcutCaptureHealthChecks()
     }
 
     private func setupKeyboardShortcutHandlers() {
@@ -101,6 +104,15 @@ extension AssistantShortcutController {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.refreshEventMonitors()
+            }
+            .store(in: &cancellables)
+    }
+
+    private func observeLifecycleEvents() {
+        NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.runShortcutCaptureHealthCheck(source: "app_became_active")
             }
             .store(in: &cancellables)
     }

@@ -56,6 +56,16 @@ extension AssistantShortcutController {
         let inputMonitoringTrusted = InputMonitoringPermissionService.isTrusted()
         guard inputMonitoringTrusted else {
             shortcutLayerKeySuppressor.stop()
+            emitPermissionBlocked(
+                permission: "input_monitoring",
+                accessibilityTrusted: accessibilityTrusted,
+                inputMonitoringTrusted: inputMonitoringTrusted
+            )
+            emitEventTapFallback(
+                fallbackMode: "monitor_only",
+                reason: "input_monitoring_denied",
+                inputMonitoringTrusted: inputMonitoringTrusted
+            )
             AppLogger.warning(
                 "Shortcut layer key suppressor unavailable due to Input Monitoring permission",
                 category: .assistant,
@@ -89,6 +99,12 @@ extension AssistantShortcutController {
         }
 
         if !didStartSuppressor {
+            let reason = shortcutLayerKeySuppressor.lastStartFailureReason?.rawValue ?? "event_tap_unavailable"
+            emitEventTapFallback(
+                fallbackMode: "monitor_only",
+                reason: reason,
+                inputMonitoringTrusted: inputMonitoringTrusted
+            )
             AppLogger.warning(
                 "Shortcut layer key suppressor unavailable; using monitor-only fallback",
                 category: .assistant,
@@ -102,15 +118,21 @@ extension AssistantShortcutController {
         }
     }
 
-    func armShortcutLayer() {
+    func armShortcutLayer(source: String = "unknown", trigger: String = "unknown") {
         isShortcutLayerArmed = true
+        emitLayerArmed(source: source, trigger: trigger)
         refreshShortcutLayerKeySuppression()
         shortcutLayerFeedbackController.showArmed()
 
         let timeoutNanoseconds = layerTimeoutNanoseconds
         shortcutLayerTask?.cancel()
         shortcutLayerTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(nanoseconds: timeoutNanoseconds)
+            do {
+                try await Task.sleep(nanoseconds: timeoutNanoseconds)
+            } catch {
+                return
+            }
+            self?.emitLayerTimeout(source: source)
             self?.disarmShortcutLayer(showFeedback: false)
         }
     }
@@ -142,7 +164,7 @@ extension AssistantShortcutController {
         }
 
         lastLayerLeaderTapTime = nil
-        armShortcutLayer()
+        armShortcutLayer(source: "leader_double_tap", trigger: "doubleTap")
     }
 
     func handleShortcutLayerKeyDown(_ event: NSEvent) -> Bool {
@@ -205,8 +227,29 @@ extension AssistantShortcutController {
         }
 
         guard let matched = matchedLayerAction(for: event) else {
+            emitShortcutRejected(
+                shortcutTarget: "assistant",
+                source: "shortcut_layer_key",
+                triggerToken: "singleTap",
+                reason: "no_layer_match"
+            )
             disarmShortcutLayer(showFeedback: false)
             return true
+        }
+
+        switch matched {
+        case .assistant:
+            emitShortcutDetected(
+                shortcutTarget: "assistant",
+                source: "shortcut_layer_key",
+                triggerToken: "singleTap"
+            )
+        case .integration:
+            emitShortcutDetected(
+                shortcutTarget: "integration",
+                source: "shortcut_layer_key",
+                triggerToken: "singleTap"
+            )
         }
 
         disarmShortcutLayer(showFeedback: false)
