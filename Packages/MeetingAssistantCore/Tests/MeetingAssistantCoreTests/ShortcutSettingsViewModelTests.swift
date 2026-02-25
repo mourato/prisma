@@ -20,9 +20,9 @@ final class ShortcutSettingsViewModelTests: XCTestCase {
     func testClearingDictationShortcutSetsPresetToNotSpecified() async {
         let viewModel = ShortcutSettingsViewModel()
         let shortcut = ShortcutDefinition(
-            modifiers: [.rightCommand],
-            primaryKey: nil,
-            trigger: .doubleTap
+            modifiers: [.command],
+            primaryKey: .letter("K", keyCode: 0x28),
+            trigger: .singleTap
         )
 
         viewModel.dictationShortcutDefinition = shortcut
@@ -41,9 +41,9 @@ final class ShortcutSettingsViewModelTests: XCTestCase {
     func testClearingMeetingShortcutSetsPresetToNotSpecified() async {
         let viewModel = ShortcutSettingsViewModel()
         let shortcut = ShortcutDefinition(
-            modifiers: [.rightControl],
-            primaryKey: nil,
-            trigger: .doubleTap
+            modifiers: [.control],
+            primaryKey: .letter("J", keyCode: 0x26),
+            trigger: .singleTap
         )
 
         viewModel.meetingShortcutDefinition = shortcut
@@ -66,10 +66,9 @@ final class ShortcutSettingsViewModelTests: XCTestCase {
         ShortcutCaptureHealthStore.updateHealth(
             scope: .global,
             result: "degraded",
-            reasonToken: "input_monitoring_denied",
+            reasonToken: "accessibility_denied",
             requiresGlobalCapture: true,
-            accessibilityTrusted: true,
-            inputMonitoringTrusted: false,
+            accessibilityTrusted: false,
             eventTapExpected: false,
             eventTapActive: false
         )
@@ -77,7 +76,7 @@ final class ShortcutSettingsViewModelTests: XCTestCase {
 
         XCTAssertEqual(
             viewModel.shortcutCaptureHealthPresentation?.messageKey,
-            "settings.shortcuts.health.degraded.message.permissions_input_monitoring"
+            "settings.shortcuts.health.degraded.message.permissions_accessibility"
         )
         XCTAssertEqual(viewModel.shortcutCaptureHealthPresentation?.isFallback, false)
     }

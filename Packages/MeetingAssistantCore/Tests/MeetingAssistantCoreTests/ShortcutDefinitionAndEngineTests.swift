@@ -210,7 +210,7 @@ final class ShortcutDefinitionAndEngineTests: XCTestCase {
         XCTAssertNotEqual(first.normalizedToken, second.normalizedToken)
     }
 
-    func testAssistantIntegrationDecodeNormalizesModifierOnlySingleTapShortcut() throws {
+    func testAssistantIntegrationDecodeRejectsModifierOnlySingleTapShortcut() throws {
         let data = try JSONSerialization.data(withJSONObject: [
             "id": UUID().uuidString,
             "name": "Legacy Integration",
@@ -226,8 +226,7 @@ final class ShortcutDefinitionAndEngineTests: XCTestCase {
 
         let decoded = try JSONDecoder().decode(AssistantIntegrationConfig.self, from: data)
 
-        XCTAssertEqual(decoded.shortcutDefinition?.trigger, .doubleTap)
-        XCTAssertTrue(decoded.shortcutDefinition?.isValid ?? false)
+        XCTAssertNil(decoded.shortcutDefinition)
     }
 
     @MainActor
@@ -483,24 +482,6 @@ final class ShortcutDefinitionAndEngineTests: XCTestCase {
         XCTAssertEqual(record.payload["trigger"], "double_tap")
     }
 
-    func testShortcutTelemetryPermissionBlockedRecordStoresBooleanFlagsAsStrings() {
-        let record = ShortcutTelemetryEvent
-            .permissionBlocked(
-                pipeline: "global_shortcuts",
-                scope: "global",
-                permission: "input monitoring",
-                accessibilityTrusted: false,
-                inputMonitoringTrusted: true
-            )
-            .record
-
-        XCTAssertEqual(record.name, .permissionBlocked)
-        XCTAssertEqual(record.level, .warning)
-        XCTAssertEqual(record.payload["permission"], "input_monitoring")
-        XCTAssertEqual(record.payload["accessibility_trusted"], "false")
-        XCTAssertEqual(record.payload["input_monitoring_trusted"], "true")
-    }
-
     func testShortcutTelemetryLayerTimeoutRecordNormalizesNegativeTimeout() {
         let record = ShortcutTelemetryEvent
             .layerTimeout(
@@ -516,24 +497,6 @@ final class ShortcutDefinitionAndEngineTests: XCTestCase {
         XCTAssertEqual(record.payload["reason"], "timeout")
     }
 
-    func testShortcutTelemetryEventTapFallbackRecordOmitsInputMonitoringWhenUnknown() {
-        let record = ShortcutTelemetryEvent
-            .eventTapFallback(
-                pipeline: "assistant_shortcuts",
-                scope: "assistant",
-                fallbackMode: "monitor only",
-                reason: "event tap unavailable",
-                inputMonitoringTrusted: nil
-            )
-            .record
-
-        XCTAssertEqual(record.name, .eventTapFallback)
-        XCTAssertEqual(record.level, .warning)
-        XCTAssertEqual(record.payload["fallback_mode"], "monitor_only")
-        XCTAssertEqual(record.payload["reason"], "event_tap_unavailable")
-        XCTAssertNil(record.payload["input_monitoring_trusted"])
-    }
-
     func testShortcutTelemetryCaptureHealthChangedRecordStoresStatusAndBackendFields() {
         let record = ShortcutTelemetryEvent
             .captureHealthChanged(
@@ -542,10 +505,9 @@ final class ShortcutDefinitionAndEngineTests: XCTestCase {
                 source: "refresh/event/monitors",
                 result: "degraded",
                 previousResult: "healthy",
-                reason: "input monitoring denied",
+                reason: "key_down_monitor_inactive",
                 requiresGlobalCapture: true,
                 accessibilityTrusted: true,
-                inputMonitoringTrusted: false,
                 flagsMonitorExpected: true,
                 flagsMonitorActive: true,
                 keyDownMonitorExpected: true,
@@ -564,9 +526,8 @@ final class ShortcutDefinitionAndEngineTests: XCTestCase {
         XCTAssertEqual(record.payload["source"], "refresh_event_monitors")
         XCTAssertEqual(record.payload["result"], "degraded")
         XCTAssertEqual(record.payload["previous_result"], "healthy")
-        XCTAssertEqual(record.payload["reason"], "input_monitoring_denied")
+        XCTAssertEqual(record.payload["reason"], "key_down_monitor_inactive")
         XCTAssertEqual(record.payload["requires_global_capture"], "true")
-        XCTAssertEqual(record.payload["input_monitoring_trusted"], "false")
         XCTAssertEqual(record.payload["key_down_monitor_active"], "false")
         XCTAssertEqual(record.payload["checked_at_epoch_ms"], "0")
     }
@@ -582,7 +543,6 @@ final class ShortcutDefinitionAndEngineTests: XCTestCase {
                 reason: nil,
                 requiresGlobalCapture: true,
                 accessibilityTrusted: true,
-                inputMonitoringTrusted: true,
                 flagsMonitorExpected: true,
                 flagsMonitorActive: true,
                 keyDownMonitorExpected: true,
