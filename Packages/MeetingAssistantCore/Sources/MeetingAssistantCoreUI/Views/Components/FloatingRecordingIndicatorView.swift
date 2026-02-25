@@ -113,9 +113,6 @@ public struct FloatingRecordingIndicatorView: View {
             }
             .padding(.top, 2)
         }
-        // Use drawingGroup to render the entire view hierarchy into a single bitmap
-        // This ensures shadows are rendered correctly without being clipped by NSPanel bounds
-        .drawingGroup()
         .shadow(
             color: .black.opacity(0.15),
             radius: MeetingAssistantDesignSystem.Layout.recordingIndicatorMainShadowRadius,
@@ -156,7 +153,6 @@ public struct FloatingRecordingIndicatorView: View {
                 Capsule()
                     .strokeBorder(MeetingAssistantDesignSystem.Colors.recordingIndicatorStroke, lineWidth: 1)
             )
-            .drawingGroup()
             .shadow(
                 color: .black.opacity(0.2),
                 radius: MeetingAssistantDesignSystem.Layout.shadowRadiusSmall,
@@ -217,7 +213,6 @@ public struct FloatingRecordingIndicatorView: View {
             Capsule()
                 .strokeBorder(MeetingAssistantDesignSystem.Colors.recordingIndicatorStroke, lineWidth: 1)
         )
-        .drawingGroup()
         .shadow(
             color: .black.opacity(0.2),
             radius: MeetingAssistantDesignSystem.Layout.shadowRadiusSmall,
@@ -319,7 +314,6 @@ public struct FloatingRecordingIndicatorView: View {
         .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
         .background(MeetingAssistantDesignSystem.Colors.error.opacity(0.95))
         .clipShape(Capsule())
-        .drawingGroup()
         .shadow(
             color: .black.opacity(0.2),
             radius: MeetingAssistantDesignSystem.Layout.shadowRadiusSmall,
