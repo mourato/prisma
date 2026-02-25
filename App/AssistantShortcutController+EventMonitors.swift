@@ -5,71 +5,25 @@ import MeetingAssistantCore
 @MainActor
 extension AssistantShortcutController {
     func refreshEventMonitors() {
-        let expectation = expectedShortcutCaptureBackends()
+        // Global runtime now uses direct hotkeys + KeyboardShortcuts custom handlers.
+        // Keep monitor backend disabled for global capture to avoid Input Monitoring dependency.
+        inputBackend.stopAllMonitoring()
+        refreshDirectHotkeys()
 
-        if shouldUseAssistantShortcutLayer {
-            installFlagsChangedMonitors()
-            installKeyDownMonitors()
-            removeKeyUpMonitors()
-            ensureGlobalCapturePermissionsIfNeeded(needsGlobalCapture: expectation.needsGlobalCapture)
-            refreshShortcutLayerKeySuppression()
-            runShortcutCaptureHealthCheck(source: "refresh_event_monitors", expectation: expectation)
-            AppLogger.debug(
-                "Assistant monitor refresh",
-                category: .assistant,
-                extra: [
-                    "shortcutLayer": true,
-                    "isShortcutLayerArmed": isShortcutLayerArmed,
-                    "shouldSuppressKeyDownEvents": shouldSuppressKeyDownEvents,
-                    "assistantUseEscapeToCancelRecording": settings.assistantUseEscapeToCancelRecording,
-                    "assistantUseEnterToStopRecording": settings.assistantUseEnterToStopRecording,
-                ]
-            )
-            return
-        }
-
-        let needsModifierMonitoring = expectation.needsFlagsMonitor
-        let needsShortcutKeyMonitoring = expectation.needsKeyUpMonitor
-        let needsEscapeMonitoring = settings.assistantUseEscapeToCancelRecording
-        let needsEnterStopMonitoring = settings.assistantUseEnterToStopRecording
-
-        if needsModifierMonitoring {
-            installFlagsChangedMonitors()
-        } else {
-            removeFlagsChangedMonitors()
-        }
-
-        if needsEscapeMonitoring || needsShortcutKeyMonitoring || needsEnterStopMonitoring {
-            installKeyDownMonitors()
-        } else {
-            removeKeyDownMonitors()
-        }
-
-        if needsShortcutKeyMonitoring {
-            installKeyUpMonitors()
-        } else {
-            removeKeyUpMonitors()
-        }
-
-        refreshShortcutLayerKeySuppression()
-
-        AppLogger.debug(
-            "Assistant monitor refresh",
-            category: .assistant,
-            extra: [
-                "shortcutLayer": false,
-                "needsModifierMonitoring": needsModifierMonitoring,
-                "needsShortcutKeyMonitoring": needsShortcutKeyMonitoring,
-                "needsEscapeMonitoring": needsEscapeMonitoring,
-                "needsEnterStopMonitoring": needsEnterStopMonitoring,
-                "assistantUseEscapeToCancelRecording": settings.assistantUseEscapeToCancelRecording,
-                "assistantUseEnterToStopRecording": settings.assistantUseEnterToStopRecording,
-                "shouldSuppressKeyDownEvents": shouldSuppressKeyDownEvents,
-            ]
+        runShortcutCaptureHealthCheck(
+            source: "refresh_event_monitors",
+            expectation: expectedShortcutCaptureBackends()
         )
 
-        ensureGlobalCapturePermissionsIfNeeded(needsGlobalCapture: expectation.needsGlobalCapture)
-        runShortcutCaptureHealthCheck(source: "refresh_event_monitors", expectation: expectation)
+        AppLogger.debug(
+            "Assistant shortcut hotkey refresh",
+            category: .assistant,
+            extra: [
+                "assistantInHouseHotkeys": hotkeyBackend.registeredHotkeyCount,
+                "assistantCustomEnabled": isAssistantCustomShortcutEnabled,
+                "integrationCustomEnabledCount": integrationCustomEnabledCount,
+            ]
+        )
     }
 
     func refreshCustomShortcutRegistration() {
@@ -106,12 +60,10 @@ extension AssistantShortcutController {
                 }
             }
 
-            if shouldUseAssistantShortcutLayer {
-                KeyboardShortcuts.disable(shortcutName)
-            } else if integration.isEnabled,
-                      integration.shortcutDefinition == nil,
-                      integration.modifierShortcutGesture == nil,
-                      integration.shortcutPresetKey == .custom
+            if integration.isEnabled,
+               integration.shortcutDefinition == nil,
+               integration.modifierShortcutGesture == nil,
+               integration.shortcutPresetKey == .custom
             {
                 KeyboardShortcuts.enable(shortcutName)
             } else {
@@ -122,117 +74,9 @@ extension AssistantShortcutController {
         registeredIntegrationShortcutIDs = currentIDs
     }
 
-    private func installFlagsChangedMonitors() {
-        inputBackend.startFlagsChangedMonitoring()
-    }
-
-    private func ensureGlobalCapturePermissionsIfNeeded(needsGlobalCapture: Bool) {
-        guard needsGlobalCapture else { return }
-
-        let accessibilityTrusted = AccessibilityPermissionService.isTrusted()
-        let inputMonitoringTrusted = InputMonitoringPermissionService.isTrusted()
-
-        if !accessibilityTrusted,
-           !hasRequestedAccessibilityPermissionForGlobalCapture
-        {
-            hasRequestedAccessibilityPermissionForGlobalCapture = true
-            AccessibilityPermissionService.requestPermission()
-            if !hasOpenedAccessibilitySettingsForGlobalCapture {
-                hasOpenedAccessibilitySettingsForGlobalCapture = true
-                AccessibilityPermissionService.openSystemSettings()
-            }
-        }
-
-        if !inputMonitoringTrusted,
-           !hasRequestedInputMonitoringPermissionForGlobalCapture
-        {
-            hasRequestedInputMonitoringPermissionForGlobalCapture = true
-            let didRequest = InputMonitoringPermissionService.requestPermission()
-            if !didRequest,
-               !hasOpenedInputMonitoringSettingsForGlobalCapture
-            {
-                hasOpenedInputMonitoringSettingsForGlobalCapture = true
-                InputMonitoringPermissionService.openSystemSettings()
-            }
-        }
-
-        if !accessibilityTrusted || !inputMonitoringTrusted {
-            emitPermissionBlocked(
-                permission: "global_capture",
-                accessibilityTrusted: accessibilityTrusted,
-                inputMonitoringTrusted: inputMonitoringTrusted
-            )
-        }
-
-        guard !accessibilityTrusted || !inputMonitoringTrusted else { return }
-
-        AppLogger.warning(
-            "Assistant shortcut capture missing required permissions",
-            category: .assistant,
-            extra: [
-                "scope": "assistant",
-                "needsGlobalCapture": needsGlobalCapture,
-                "accessibilityTrusted": accessibilityTrusted,
-                "inputMonitoringTrusted": inputMonitoringTrusted,
-            ]
-        )
-    }
-
-    private func removeFlagsChangedMonitors() {
-        inputBackend.stopFlagsChangedMonitoring()
-    }
-
-    private func installKeyDownMonitors() {
-        inputBackend.startKeyDownMonitoring { [weak self] event in
-            guard let self else { return true }
-            // Always allow Escape to propagate so GlobalShortcutController
-            // can handle double-press cancel for Dictation mode
-            if event.keyCode == PresetShortcutKey.escapeKeyCode {
-                AppLogger.debug(
-                    "ESC local propagation allowed (assistant keyDown monitor)",
-                    category: .assistant,
-                    extra: [
-                        "scope": "assistant",
-                        "shouldSuppressKeyDownEvents": self.shouldSuppressKeyDownEvents,
-                        "shortcutLayerArmed": self.isShortcutLayerArmed,
-                    ]
-                )
-                return true
-            }
-
-            let shouldReturn = !self.shouldSuppressKeyDownEvents
-            if !shouldReturn {
-                AppLogger.debug(
-                    "Local keyDown suppressed by assistant policy",
-                    category: .assistant,
-                    extra: [
-                        "scope": "assistant",
-                        "keyCode": event.keyCode,
-                        "shortcutLayerArmed": self.isShortcutLayerArmed,
-                        "shouldSuppressEnterStopWhileRecording": self.shouldSuppressEnterStopWhileRecording,
-                    ]
-                )
-            }
-            return shouldReturn
-        }
-    }
-
-    private func installKeyUpMonitors() {
-        inputBackend.startKeyUpMonitoring()
-    }
-
-    private func removeKeyDownMonitors() {
-        inputBackend.stopKeyDownMonitoring()
-    }
-
-    private func removeKeyUpMonitors() {
-        inputBackend.stopKeyUpMonitoring()
-    }
-
     func removeEventMonitors() {
-        removeFlagsChangedMonitors()
-        removeKeyDownMonitors()
-        removeKeyUpMonitors()
+        inputBackend.stopAllMonitoring()
+        hotkeyBackend.unregisterAll()
         shortcutLayerKeySuppressor.stop()
         runShortcutCaptureHealthCheck(
             source: "event_monitors_removed",
@@ -240,36 +84,113 @@ extension AssistantShortcutController {
         )
     }
 
-    func expectedShortcutCaptureBackends() -> ShortcutCaptureBackendExpectation {
-        let hasInHouseDefinitions = settings.assistantShortcutDefinition != nil
-            || settings.assistantIntegrations.contains { integration in
-                integration.isEnabled && integration.shortcutDefinition != nil
-            }
-        let needsModifierMonitoring = hasInHouseDefinitions
-            || settings.assistantModifierShortcutGesture != nil
-            || settings.assistantSelectedPresetKey.requiresModifierMonitoring
-            || settings.assistantIntegrations.contains { integration in
-                integration.isEnabled && (integration.modifierShortcutGesture != nil || integration.shortcutPresetKey.requiresModifierMonitoring)
-            }
-        let needsShortcutKeyMonitoring = hasInHouseDefinitions
-        let needsEscapeMonitoring = settings.assistantUseEscapeToCancelRecording
-        let needsEnterStopMonitoring = settings.assistantUseEnterToStopRecording
+    private func refreshDirectHotkeys() {
+        var registrations: [HotkeyRegistration] = []
 
-        if shouldUseAssistantShortcutLayer {
-            return ShortcutCaptureBackendExpectation(
-                needsGlobalCapture: true,
-                needsFlagsMonitor: true,
-                needsKeyDownMonitor: true,
-                needsKeyUpMonitor: false,
-                needsEventTap: shouldSuppressKeyDownEvents
-            )
+        if let assistantRegistration = assistantInHouseRegistration() {
+            registrations.append(assistantRegistration)
         }
 
+        registrations.append(contentsOf: integrationInHouseRegistrations())
+        hotkeyBackend.registerAll(registrations)
+    }
+
+    private func assistantInHouseRegistration() -> HotkeyRegistration? {
+        guard let definition = settings.assistantShortcutDefinition,
+              let descriptor = GlobalHotkeyMapper.descriptor(for: definition)
+        else {
+            return nil
+        }
+
+        let activationMode = definition.trigger.asShortcutActivationMode
+        return HotkeyRegistration(
+            id: "assistant.main",
+            keyCode: descriptor.keyCode,
+            modifiers: descriptor.modifiers,
+            onKeyDown: { [weak self] in
+                guard let self else { return }
+                self.emitShortcutDetected(
+                    shortcutTarget: "assistant",
+                    source: "in_house_hotkey",
+                    trigger: activationMode
+                )
+                Task { @MainActor [weak self] in
+                    await self?.handleShortcutDown(activationModeOverride: activationMode)
+                }
+            },
+            onKeyUp: { [weak self] in
+                Task { @MainActor [weak self] in
+                    await self?.handleShortcutUp(activationModeOverride: activationMode)
+                }
+            }
+        )
+    }
+
+    private func integrationInHouseRegistrations() -> [HotkeyRegistration] {
+        settings.assistantIntegrations.compactMap { integration in
+            guard integration.isEnabled,
+                  let definition = integration.shortcutDefinition,
+                  let descriptor = GlobalHotkeyMapper.descriptor(for: definition)
+            else {
+                return nil
+            }
+
+            let activationMode = definition.trigger.asShortcutActivationMode
+            return HotkeyRegistration(
+                id: "assistant.integration.\(integration.id.uuidString)",
+                keyCode: descriptor.keyCode,
+                modifiers: descriptor.modifiers,
+                onKeyDown: { [weak self] in
+                    guard let self else { return }
+                    self.emitShortcutDetected(
+                        shortcutTarget: "integration",
+                        source: "integration_in_house_hotkey",
+                        trigger: activationMode
+                    )
+                    Task { @MainActor [weak self] in
+                        await self?.handleIntegrationShortcutDown(
+                            integrationID: integration.id,
+                            activationModeOverride: activationMode
+                        )
+                    }
+                },
+                onKeyUp: { [weak self] in
+                    Task { @MainActor [weak self] in
+                        await self?.handleIntegrationShortcutUp(
+                            integrationID: integration.id,
+                            activationModeOverride: activationMode
+                        )
+                    }
+                }
+            )
+        }
+    }
+
+    var isAssistantCustomShortcutEnabled: Bool {
+        settings.assistantSelectedPresetKey == .custom
+            && settings.assistantModifierShortcutGesture == nil
+            && settings.assistantShortcutDefinition == nil
+    }
+
+    var integrationCustomEnabledCount: Int {
+        settings.assistantIntegrations.filter { integration in
+            integration.isEnabled
+                && integration.shortcutDefinition == nil
+                && integration.modifierShortcutGesture == nil
+                && integration.shortcutPresetKey == .custom
+        }.count
+    }
+
+    func expectedShortcutCaptureBackends() -> ShortcutCaptureBackendExpectation {
+        let hasAnyGlobalShortcut = hotkeyBackend.registeredHotkeyCount > 0
+            || isAssistantCustomShortcutEnabled
+            || integrationCustomEnabledCount > 0
+
         return ShortcutCaptureBackendExpectation(
-            needsGlobalCapture: needsModifierMonitoring || needsShortcutKeyMonitoring || needsEscapeMonitoring || needsEnterStopMonitoring,
-            needsFlagsMonitor: needsModifierMonitoring,
-            needsKeyDownMonitor: needsEscapeMonitoring || needsShortcutKeyMonitoring || needsEnterStopMonitoring,
-            needsKeyUpMonitor: needsShortcutKeyMonitoring,
+            needsGlobalCapture: hasAnyGlobalShortcut,
+            needsFlagsMonitor: false,
+            needsKeyDownMonitor: false,
+            needsKeyUpMonitor: false,
             needsEventTap: false
         )
     }
@@ -303,12 +224,11 @@ extension AssistantShortcutController {
             scope: "assistant",
             source: source,
             expectation: expectedBackends,
-            accessibilityTrusted: AccessibilityPermissionService.isTrusted(),
-            inputMonitoringTrusted: InputMonitoringPermissionService.isTrusted(),
-            flagsMonitorActive: inputBackend.isFlagsChangedMonitoringActive,
-            keyDownMonitorActive: inputBackend.isKeyDownMonitoringActive,
-            keyUpMonitorActive: inputBackend.isKeyUpMonitoringActive,
-            eventTapActive: shortcutLayerKeySuppressor.isActive
+            accessibilityTrusted: true,
+            flagsMonitorActive: false,
+            keyDownMonitorActive: false,
+            keyUpMonitorActive: false,
+            eventTapActive: false
         )
 
         shortcutCaptureHealthSnapshot = snapshot
@@ -318,7 +238,6 @@ extension AssistantShortcutController {
             reasonToken: snapshot.result == .degraded ? snapshot.reasonToken : "",
             requiresGlobalCapture: snapshot.requiresGlobalCapture,
             accessibilityTrusted: snapshot.accessibilityTrusted,
-            inputMonitoringTrusted: snapshot.inputMonitoringTrusted,
             eventTapExpected: snapshot.eventTapExpected,
             eventTapActive: snapshot.eventTapActive
         )
@@ -343,7 +262,6 @@ extension AssistantShortcutController {
                 reason: current.result == .degraded ? current.reasonToken : nil,
                 requiresGlobalCapture: current.requiresGlobalCapture,
                 accessibilityTrusted: current.accessibilityTrusted,
-                inputMonitoringTrusted: current.inputMonitoringTrusted,
                 flagsMonitorExpected: current.flagsMonitorExpected,
                 flagsMonitorActive: current.flagsMonitorActive,
                 keyDownMonitorExpected: current.keyDownMonitorExpected,
@@ -356,23 +274,5 @@ extension AssistantShortcutController {
             ),
             category: .assistant
         )
-
-        let message = current.result == .degraded
-            ? "Assistant shortcut capture health degraded"
-            : "Assistant shortcut capture health updated"
-        let extra: [String: Any] = [
-            "scope": current.scope,
-            "source": current.source,
-            "result": current.result.rawValue,
-            "previousResult": previous?.result.rawValue ?? "unknown",
-            "reason": current.result == .degraded ? current.reasonToken : "none",
-            "requiresGlobalCapture": current.requiresGlobalCapture,
-        ]
-
-        if current.result == .degraded {
-            AppLogger.warning(message, category: .assistant, extra: extra)
-        } else {
-            AppLogger.info(message, category: .assistant, extra: extra)
-        }
     }
 }
