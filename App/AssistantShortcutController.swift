@@ -22,6 +22,14 @@ final class AssistantShortcutController {
     let returnKeyCode: UInt16 = 0x24
     let keypadEnterKeyCode: UInt16 = 0x4c
 
+    // MARK: - Integration Leader Mode (P2.2)
+    /// State machine for integration leader mode
+    var integrationLeaderModeStateMachine = IntegrationLeaderModeStateMachine()
+    /// Task for integration leader mode timeout
+    var integrationLeaderModeTask: Task<Void, Never>?
+    /// Timeout for integration leader mode action waiting (2 seconds as per P2.2)
+    let integrationLeaderModeTimeoutSeconds: TimeInterval = 2.0
+
     var isShortcutLayerArmed: Bool {
         shortcutLayerStateMachine.state == .armed
     }

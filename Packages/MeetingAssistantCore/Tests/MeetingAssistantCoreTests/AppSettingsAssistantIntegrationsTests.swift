@@ -78,4 +78,71 @@ final class AppSettingsAssistantIntegrationsTests: XCTestCase {
         XCTAssertEqual(settings.assistantIntegrations.first?.id, AssistantIntegrationConfig.raycastDefaultID)
         XCTAssertEqual(settings.assistantSelectedIntegrationId, AssistantIntegrationConfig.raycastDefaultID)
     }
+
+    func testIntegrationLeaderModeEnabled_DefaultsToFalse() {
+        let integration = AssistantIntegrationConfig(
+            name: "Test Integration",
+            kind: .deeplink,
+            isEnabled: true,
+            deepLink: "raycast://test"
+        )
+
+        XCTAssertFalse(integration.leaderModeEnabled)
+    }
+
+    func testIntegrationLeaderModeEnabled_CanBeSetToTrue() {
+        let integration = AssistantIntegrationConfig(
+            name: "Test Integration",
+            kind: .deeplink,
+            isEnabled: true,
+            deepLink: "raycast://test",
+            leaderModeEnabled: true
+        )
+
+        XCTAssertTrue(integration.leaderModeEnabled)
+    }
+
+    func testIntegrationLeaderModeEnabled_CodableRoundTrip() throws {
+        let original = AssistantIntegrationConfig(
+            name: "Test Integration",
+            kind: .deeplink,
+            isEnabled: true,
+            deepLink: "raycast://test",
+            layerShortcutKey: "T",
+            leaderModeEnabled: true
+        )
+
+        let encoder = JSONEncoder()
+        let data = try encoder.encode(original)
+
+        let decoder = JSONDecoder()
+        let decoded = try decoder.decode(AssistantIntegrationConfig.self, from: data)
+
+        XCTAssertEqual(decoded.name, original.name)
+        XCTAssertEqual(decoded.leaderModeEnabled, true)
+        XCTAssertEqual(decoded.layerShortcutKey, "T")
+    }
+
+    func testIntegrationLeaderModeEnabled_DefaultRaycastHasLeaderModeDisabled() {
+        let raycast = AssistantIntegrationConfig.defaultRaycast
+
+        XCTAssertFalse(raycast.leaderModeEnabled)
+    }
+
+    func testUpsertIntegrationWithLeaderModeEnabled() {
+        let integration = AssistantIntegrationConfig(
+            name: "Test Integration",
+            kind: .deeplink,
+            isEnabled: true,
+            deepLink: "raycast://test",
+            layerShortcutKey: "T",
+            leaderModeEnabled: true
+        )
+
+        settings.upsertAssistantIntegration(integration)
+
+        let saved = settings.assistantIntegrations.first { $0.id == integration.id }
+        XCTAssertNotNil(saved)
+        XCTAssertTrue(saved?.leaderModeEnabled ?? false)
+    }
 }

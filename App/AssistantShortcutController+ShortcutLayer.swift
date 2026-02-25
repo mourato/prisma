@@ -213,6 +213,11 @@ extension AssistantShortcutController {
     }
 
     func handleShortcutLayerKeyDown(_ event: NSEvent) -> Bool {
+        // First check if integration leader mode is active
+        if isIntegrationLeaderModeActive {
+            return handleIntegrationLeaderModeKeyDown(event)
+        }
+
         guard shouldUseAssistantShortcutLayer, isShortcutLayerArmed else {
             return false
         }
@@ -226,54 +231,7 @@ extension AssistantShortcutController {
         }
 
         if event.keyCode == PresetShortcutKey.escapeKeyCode {
-            AppLogger.debug(
-                "ESC received while shortcut layer is armed",
-                category: .assistant,
-                extra: [
-                    "scope": "assistant",
-                    "propagateForDoublePress": shouldPropagateEscapeForDoublePressCancel,
-                    "assistantIsRecording": assistantService.isRecording,
-                ]
-            )
-            // Always allow Escape to propagate when double-press cancel is enabled
-            // for either Assistant or Dictation mode.
-            if shouldPropagateEscapeForDoublePressCancel {
-                // If recording, disarm the layer silently
-                if assistantService.isRecording {
-                    disarmShortcutLayer(
-                        showFeedback: false,
-                        event: .cancelledByEscapeOrBlur,
-                        transitionSource: "escape_propagated_recording"
-                    )
-                } else {
-                    // If not recording, just disarm with feedback
-                    disarmShortcutLayer(
-                        showFeedback: true,
-                        event: .cancelledByEscapeOrBlur,
-                        transitionSource: "escape_propagated_idle"
-                    )
-                }
-                // Always allow the event to propagate so GlobalShortcutController
-                // (for Dictation) or AssistantShortcuts (for Assistant) can handle it
-                AppLogger.debug(
-                    "ESC propagated from shortcut layer to double-press handlers",
-                    category: .assistant,
-                    extra: ["scope": "assistant"]
-                )
-                return false
-            }
-            // Escape double-press cancel is disabled for both modes; just disarm the layer
-            disarmShortcutLayer(
-                showFeedback: true,
-                event: .cancelledByEscapeOrBlur,
-                transitionSource: "escape_consumed"
-            )
-            AppLogger.debug(
-                "ESC consumed by shortcut layer because escape cancel is disabled",
-                category: .assistant,
-                extra: ["scope": "assistant"]
-            )
-            return true
+            return handleShortcutLayerEscapeKey(event)
         }
 
         let relevantFlags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
@@ -283,6 +241,56 @@ extension AssistantShortcutController {
             return true
         }
 
+        return handleShortcutLayerMatchedKey(event)
+    }
+
+    private func handleShortcutLayerEscapeKey(_ event: NSEvent) -> Bool {
+        AppLogger.debug(
+            "ESC received while shortcut layer is armed",
+            category: .assistant,
+            extra: [
+                "scope": "assistant",
+                "propagateForDoublePress": shouldPropagateEscapeForDoublePressCancel,
+                "assistantIsRecording": assistantService.isRecording,
+            ]
+        )
+
+        if shouldPropagateEscapeForDoublePressCancel {
+            if assistantService.isRecording {
+                disarmShortcutLayer(
+                    showFeedback: false,
+                    event: .cancelledByEscapeOrBlur,
+                    transitionSource: "escape_propagated_recording"
+                )
+            } else {
+                disarmShortcutLayer(
+                    showFeedback: true,
+                    event: .cancelledByEscapeOrBlur,
+                    transitionSource: "escape_propagated_idle"
+                )
+            }
+            AppLogger.debug(
+                "ESC propagated from shortcut layer to double-press handlers",
+                category: .assistant,
+                extra: ["scope": "assistant"]
+            )
+            return false
+        }
+
+        disarmShortcutLayer(
+            showFeedback: true,
+            event: .cancelledByEscapeOrBlur,
+            transitionSource: "escape_consumed"
+        )
+        AppLogger.debug(
+            "ESC consumed by shortcut layer because escape cancel is disabled",
+            category: .assistant,
+            extra: ["scope": "assistant"]
+        )
+        return true
+    }
+
+    private func handleShortcutLayerMatchedKey(_ event: NSEvent) -> Bool {
         guard let matched = matchedLayerAction(for: event) else {
             emitShortcutRejected(
                 shortcutTarget: "assistant",
@@ -311,17 +319,30 @@ extension AssistantShortcutController {
                 source: "shortcut_layer_key",
                 triggerToken: "singleTap"
             )
+        case .integrationLeaderMode:
+            break
         }
 
         _ = transitionShortcutLayer(on: .layerKeyMatched, source: "layer_key_match")
-        disarmShortcutLayer(
-            showFeedback: false,
-            event: .disarmedExplicitly,
-            transitionSource: "layer_key_match_finalize"
-        )
-        shortcutLayerFeedbackController.showTriggered()
-        Task { @MainActor [weak self] in
-            await self?.executeLayerAction(matched)
+
+        switch matched {
+        case .assistant, .integration:
+            disarmShortcutLayer(
+                showFeedback: false,
+                event: .disarmedExplicitly,
+                transitionSource: "layer_key_match_finalize"
+            )
+            shortcutLayerFeedbackController.showTriggered()
+            Task { @MainActor [weak self] in
+                await self?.executeLayerAction(matched)
+            }
+        case .integrationLeaderMode(let integrationID):
+            disarmShortcutLayer(
+                showFeedback: false,
+                event: .disarmedExplicitly,
+                transitionSource: "layer_key_match_leader_mode"
+            )
+            armIntegrationLeaderMode(for: integrationID, source: "layer_key_match")
         }
         return true
     }
@@ -346,6 +367,8 @@ extension AssistantShortcutController {
     private enum LayerAction {
         case assistant
         case integration(UUID)
+        /// Integration that should wait for leader mode action
+        case integrationLeaderMode(UUID)
     }
 
     private func matchedLayerAction(for event: NSEvent) -> LayerAction? {
@@ -362,6 +385,10 @@ extension AssistantShortcutController {
         if let integration = settings.assistantIntegrations.first(where: { integration in
             integration.isEnabled && integration.layerShortcutKey == inputKey
         }) {
+            // Check if this integration has leader mode enabled
+            if integration.leaderModeEnabled {
+                return .integrationLeaderMode(integration.id)
+            }
             return .integration(integration.id)
         }
 
@@ -376,7 +403,7 @@ extension AssistantShortcutController {
             } else {
                 await assistantService.startRecording(flow: .assistantMode)
             }
-        case let .integration(integrationID):
+        case .integration(let integrationID):
             guard integration(for: integrationID)?.isEnabled == true else {
                 return
             }
@@ -386,6 +413,246 @@ extension AssistantShortcutController {
             } else {
                 await assistantService.startRecording(flow: .integrationDispatch)
             }
+        case .integrationLeaderMode:
+            // Leader mode actions are handled separately in handleIntegrationLeaderModeActionKey
+            break
         }
+    }
+
+    // MARK: - Integration Leader Mode (P2.2)
+
+    /// Check if any integration has leader mode enabled
+    var anyIntegrationLeaderModeEnabled: Bool {
+        settings.assistantIntegrations.contains { integration in
+            integration.isEnabled && integration.leaderModeEnabled
+        }
+    }
+
+    /// Check if the shortcut layer should also handle integration leader mode
+    var shouldUseIntegrationLeaderMode: Bool {
+        shouldUseAssistantShortcutLayer && anyIntegrationLeaderModeEnabled
+    }
+
+    /// Get integrations that have leader mode enabled
+    var leaderModeEnabledIntegrations: [AssistantIntegrationConfig] {
+        settings.assistantIntegrations.filter { integration in
+            integration.isEnabled && integration.leaderModeEnabled
+        }
+    }
+
+    /// Arm integration leader mode for a specific integration
+    func armIntegrationLeaderMode(for integrationID: UUID, source: String = "unknown") {
+        // Configure FSM with timeout
+        integrationLeaderModeStateMachine.actionTimeoutSeconds = integrationLeaderModeTimeoutSeconds
+
+        let transition = integrationLeaderModeStateMachine.leaderPressed(for: integrationID)
+
+        guard transition.isValid else {
+            AppLogger.debug(
+                "Integration leader mode FSM ignored invalid transition",
+                category: .assistant,
+                extra: [
+                    "source": source,
+                    "integrationID": integrationID.uuidString,
+                    "event": transition.event.rawValue,
+                    "state": transition.from.rawValue,
+                ]
+            )
+            return
+        }
+
+        emitIntegrationLeaderArmed(integrationID: integrationID, source: source)
+
+        // Start timeout task
+        integrationLeaderModeTask?.cancel()
+        integrationLeaderModeTask = Task { @MainActor [weak self] in
+            do {
+                let timeoutNS = self?.integrationLeaderModeStateMachine.actionTimeoutNanoseconds ?? 2_000_000_000
+                try await Task.sleep(nanoseconds: timeoutNS)
+            } catch {
+                return
+            }
+            self?.handleIntegrationLeaderModeTimeout(integrationID: integrationID)
+        }
+
+        // Show visual feedback that we're waiting for action
+        shortcutLayerFeedbackController.showArmed()
+    }
+
+    /// Handle key down event while integration leader mode is active
+    func handleIntegrationLeaderModeKeyDown(_ event: NSEvent) -> Bool {
+        guard integrationLeaderModeStateMachine.isWaitingForAction else {
+            return false
+        }
+
+        guard !event.isARepeat else {
+            return true
+        }
+
+        // Handle ESC key - cancel leader mode
+        if event.keyCode == PresetShortcutKey.escapeKeyCode {
+            cancelIntegrationLeaderMode(cancelledByEscape: true)
+            return true
+        }
+
+        // Ignore modifier keys
+        if isModifierKeyCode(event.keyCode) {
+            return true
+        }
+
+        // Check for relevant modifiers (should be none for action key)
+        let relevantFlags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            .subtracting(.capsLock)
+            .subtracting(.shift)
+        guard relevantFlags.isEmpty else {
+            // Modifier pressed while waiting - treat as action key
+            return handleIntegrationLeaderModeActionKey(integrationID: nil, event: event)
+        }
+
+        // Any non-modifier key can be the action key
+        return handleIntegrationLeaderModeActionKey(integrationID: nil, event: event)
+    }
+
+    /// Handle action key pressed during integration leader mode
+    private func handleIntegrationLeaderModeActionKey(integrationID: UUID?, event: NSEvent) -> Bool {
+        let transition = integrationLeaderModeStateMachine.actionKeyPressed()
+
+        guard transition.isValid else {
+            AppLogger.debug(
+                "Integration leader mode action key ignored",
+                category: .assistant,
+                extra: [
+                    "keyCode": event.keyCode,
+                    "state": integrationLeaderModeStateMachine.state.rawValue,
+                ]
+            )
+            return false
+        }
+
+        // Get the active integration ID from FSM
+        guard let triggeredIntegrationID = integrationLeaderModeStateMachine.activeIntegrationID else {
+            AppLogger.warning(
+                "Integration leader mode triggered but no integration ID",
+                category: .assistant
+            )
+            cancelIntegrationLeaderMode(cancelledByEscape: false)
+            return true
+        }
+
+        // Cancel timeout task
+        integrationLeaderModeTask?.cancel()
+        integrationLeaderModeTask = nil
+
+        // Emit telemetry
+        emitIntegrationLeaderActionTriggered(integrationID: triggeredIntegrationID)
+
+        // Execute the integration action
+        Task { @MainActor [weak self] in
+            await self?.executeIntegrationLeaderAction(integrationID: triggeredIntegrationID)
+        }
+
+        // Reset FSM
+        integrationLeaderModeStateMachine.reset()
+
+        return true
+    }
+
+    /// Handle timeout during integration leader mode
+    private func handleIntegrationLeaderModeTimeout(integrationID: UUID) {
+        let transition = integrationLeaderModeStateMachine.timeoutElapsed()
+
+        guard transition.isValid else {
+            return
+        }
+
+        emitIntegrationLeaderTimeout(integrationID: integrationID)
+        cancelIntegrationLeaderMode(cancelledByEscape: false)
+    }
+
+    /// Cancel integration leader mode
+    func cancelIntegrationLeaderMode(cancelledByEscape: Bool) {
+        integrationLeaderModeTask?.cancel()
+        integrationLeaderModeTask = nil
+
+        let event: IntegrationLeaderModeStateMachine.IntegrationEvent = cancelledByEscape
+            ? .cancelledByEscapeOrBlur
+            : .disarmedExplicitly
+
+        _ = integrationLeaderModeStateMachine.transition(on: event)
+
+        shortcutLayerFeedbackController.showCancelled()
+    }
+
+    /// Check if integration leader mode is currently active
+    var isIntegrationLeaderModeActive: Bool {
+        integrationLeaderModeStateMachine.isWaitingForAction
+    }
+
+    /// Execute the integration action after leader mode triggers
+    private func executeIntegrationLeaderAction(integrationID: UUID) async {
+        guard let integration = integration(for: integrationID),
+              integration.isEnabled else {
+            emitShortcutRejected(
+                shortcutTarget: "integration",
+                source: "integration_leader_mode",
+                triggerToken: "leaderAction",
+                reason: "integration_unavailable"
+            )
+            return
+        }
+
+        settings.assistantSelectedIntegrationId = integrationID
+
+        emitShortcutDetected(
+            shortcutTarget: "integration",
+            source: "integration_leader_mode",
+            triggerToken: "leaderAction"
+        )
+
+        if assistantService.isRecording {
+            await assistantService.stopAndProcess()
+        } else {
+            await assistantService.startRecording(flow: .integrationDispatch)
+        }
+    }
+
+    // MARK: - Integration Leader Mode Telemetry
+
+    private func emitIntegrationLeaderArmed(integrationID: UUID, source: String) {
+        ShortcutTelemetry.emit(
+            .layerArmed(
+                pipeline: "assistant_shortcuts",
+                scope: "integration_leader_mode",
+                source: source,
+                trigger: "leaderPress",
+                timeoutMs: Int(integrationLeaderModeTimeoutSeconds * 1000)
+            ),
+            category: .assistant
+        )
+    }
+
+    private func emitIntegrationLeaderActionTriggered(integrationID: UUID) {
+        ShortcutTelemetry.emit(
+            .shortcutDetected(
+                pipeline: "assistant_shortcuts",
+                scope: "integration_leader_mode",
+                shortcutTarget: integrationID.uuidString,
+                source: "leaderAction",
+                trigger: "actionKey"
+            ),
+            category: .assistant
+        )
+    }
+
+    private func emitIntegrationLeaderTimeout(integrationID: UUID) {
+        ShortcutTelemetry.emit(
+            .layerTimeout(
+                pipeline: "assistant_shortcuts",
+                scope: "integration_leader_mode",
+                source: "leaderMode",
+                timeoutMs: Int(integrationLeaderModeTimeoutSeconds * 1000)
+            ),
+            category: .assistant
+        )
     }
 }
