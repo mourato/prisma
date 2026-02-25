@@ -117,9 +117,14 @@ extension AssistantShortcutController {
         if keyDownMonitor == nil {
             keyDownMonitor = KeyboardEventMonitor(
                 mask: .keyDown,
-                shouldReturnLocalEvent: { [weak self] _ in
+                shouldReturnLocalEvent: { [weak self] event in
                     guard let self else { return true }
-                    return !shouldSuppressKeyDownEvents
+                    // Always allow Escape to propagate so GlobalShortcutController
+                    // can handle double-press cancel for Dictation mode
+                    if event.keyCode == PresetShortcutKey.escapeKeyCode {
+                        return true
+                    }
+                    return !self.shouldSuppressKeyDownEvents
                 }
             ) { [weak self] event in
                 Task { @MainActor in
