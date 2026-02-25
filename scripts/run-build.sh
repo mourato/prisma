@@ -45,6 +45,9 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Enable progress bar for agent mode (after argument parsing)
+ma_agent_progress_enable
+
 case "${CONFIGURATION}" in
     Debug|Release)
         ;;
@@ -91,6 +94,12 @@ if [ ! -x "${SAFE_XCODEBUILD_SCRIPT}" ]; then
 fi
 
 START_TIME=$(date +%s)
+
+# Start progress indicator
+if [ "${AGENT_MODE}" -eq 1 ]; then
+    ma_agent_progress_start "Building ${APP_NAME} (${CONFIGURATION})"
+fi
+
 "${SAFE_XCODEBUILD_SCRIPT}" \
     --project "${XCODEPROJ}" \
     --scheme "${APP_NAME}" \
@@ -100,6 +109,15 @@ START_TIME=$(date +%s)
     --action build >"${LOG_PATH}" 2>&1
 EXIT_CODE=$?
 END_TIME=$(date +%s)
+
+# Stop progress indicator
+if [ "${AGENT_MODE}" -eq 1 ]; then
+    if [ "${EXIT_CODE}" -eq 0 ]; then
+        ma_agent_progress_stop "success"
+    else
+        ma_agent_progress_stop "fail"
+    fi
+fi
 DURATION=$((END_TIME - START_TIME))
 
 ERROR_COUNT="$(ma_agent_error_count "${LOG_PATH}")"

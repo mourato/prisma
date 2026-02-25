@@ -56,6 +56,9 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Enable progress bar for agent mode (after argument parsing)
+ma_agent_progress_enable
+
 export MA_SKIP_OVERLAY_LIFECYCLE_TESTS=1
 
 LOG_PATH="/tmp/test-output.log"
@@ -91,6 +94,12 @@ run_swift_fallback_tests() {
 }
 
 START_TIME=$(date +%s)
+
+# Start progress indicator
+if [ "${AGENT_MODE}" -eq 1 ]; then
+    ma_agent_progress_start "Running tests (xcodebuild)"
+fi
+
 if [ "${VERBOSE}" -eq 1 ] && [ "${AGENT_MODE}" -eq 0 ] && [ "${QUIET}" -eq 0 ]; then
     (run_xcode_tests) 2>&1 | tee "${LOG_PATH}"
     EXIT_CODE=${PIPESTATUS[0]}
@@ -98,6 +107,12 @@ else
     (run_xcode_tests) >"${LOG_PATH}" 2>&1
     EXIT_CODE=$?
 fi
+
+# Update progress for fallback if needed
+if [ "${AGENT_MODE}" -eq 1 ] && [ "${EXIT_CODE}" -ne 0 ] && grep -q "${BUNDLE_ERROR_PATTERN}" "${LOG_PATH}"; then
+    ma_agent_progress_update "Running tests (swift test fallback)"
+fi
+
 END_TIME=$(date +%s)
 DURATION=$((END_TIME - START_TIME))
 
@@ -154,6 +169,14 @@ if [ "${AGENT_MODE}" -eq 1 ]; then
 
     ma_agent_write_result_json "${RESULT_PATH}" "test" "${STATUS}" "${DURATION}" "${RESULT_LOG_PATH}" "${ERROR_COUNT}" "${RESULT_LINE}"
     ma_agent_emit_result "test" "${STATUS}" "${DURATION}" "${LOG_PATH}" "${ERROR_COUNT}" "${RESULT_LINE}" "${RESULT_PATH}"
+    
+    # Stop progress indicator
+    if [ "${STATUS}" = "PASS" ]; then
+        ma_agent_progress_stop "success"
+    else
+        ma_agent_progress_stop "fail"
+    fi
+    
     exit "${EXIT_CODE}"
 fi
 

@@ -1,6 +1,20 @@
 #!/bin/bash
 # Shared helpers for low-noise script output used by AI agents.
 
+# Progress bar state variables
+_MA_PROGRESS_PID=""
+_MA_PROGRESS_START_TIME=""
+_MA_PROGRESS_MESSAGE=""
+_MA_PROGRESS_ENABLED=0
+
+# Check if output is to a terminal
+ma_is_tty() {
+    if [ -t 1 ]; then
+        return 0
+    fi
+    return 1
+}
+
 ma_agent_mode_enabled() {
     case "${MA_AGENT_MODE:-0}" in
         1|true|TRUE|yes|YES)
@@ -10,6 +24,88 @@ ma_agent_mode_enabled() {
             return 1
             ;;
     esac
+}
+
+# Enable progress bar for agent mode
+ma_agent_progress_enable() {
+    if ma_agent_mode_enabled && ma_is_tty; then
+        _MA_PROGRESS_ENABLED=1
+    else
+        _MA_PROGRESS_ENABLED=0
+    fi
+}
+
+# Start progress spinner
+# Usage: ma_agent_progress_start "message"
+ma_agent_progress_start() {
+    _MA_PROGRESS_MESSAGE="${1:-Processing}"
+    _MA_PROGRESS_START_TIME=$(date +%s)
+    
+    if [ "${_MA_PROGRESS_ENABLED}" -eq 0 ]; then
+        return
+    fi
+
+    # Print initial message
+    printf "\r[%s] %s... " "▓▓▓▓▓▓▓▓▓▓" "${_MA_PROGRESS_MESSAGE}" >&2
+    
+    # Start background spinner
+    (
+        local spin_chars="▓▓░░░░░░░ ▓▓▓░░░░░░ ▓▓▓▓░░░░░ ▓▓▓▓▓░░░░ ▓▓▓▓▓▓░░░ ▓▓▓▓▓▓▓░░ ▓▓▓▓▓▓▓▓░ ▓▓▓▓▓▓▓▓▓"
+        local i=0
+        while true; do
+            if [ "${_MA_PROGRESS_ENABLED}" -eq 0 ]; then
+                break
+            fi
+            local elapsed=$(($(date +%s) - _MA_PROGRESS_START_TIME))
+            local idx=$((i % 8))
+            local bar="${spin_chars:idx*10:10}"
+            printf "\r[%s] %s (%ds)" "${bar}" "${_MA_PROGRESS_MESSAGE}" "${elapsed}" >&2
+            sleep 1
+            i=$((i + 1))
+        done
+    ) &
+    _MA_PROGRESS_PID=$!
+}
+
+# Update progress message
+# Usage: ma_agent_progress_update "new message"
+ma_agent_progress_update() {
+    if [ "${_MA_PROGRESS_ENABLED}" -eq 0 ]; then
+        return
+    fi
+    _MA_PROGRESS_MESSAGE="${1}"
+}
+
+# Stop progress spinner
+# Usage: ma_agent_progress_stop [success|fail]
+ma_agent_progress_stop() {
+    local status="${1:-done}"
+    
+    if [ -n "${_MA_PROGRESS_PID}" ]; then
+        kill "${_MA_PROGRESS_PID}" 2>/dev/null || true
+        wait "${_MA_PROGRESS_PID}" 2>/dev/null || true
+        _MA_PROGRESS_PID=""
+    fi
+    
+    if [ "${_MA_PROGRESS_ENABLED}" -eq 0 ]; then
+        return
+    fi
+    
+    local elapsed=$(($(date +%s) - _MA_PROGRESS_START_TIME))
+    
+    case "${status}" in
+        success)
+            printf "\r[██████████] %s (completed in %ds)\n" "${_MA_PROGRESS_MESSAGE}" "${elapsed}" >&2
+            ;;
+        fail)
+            printf "\r[XXXXXXXXXX] %s (failed after %ds)\n" "${_MA_PROGRESS_MESSAGE}" "${elapsed}" >&2
+            ;;
+        *)
+            printf "\r[..........] %s (done in %ds)\n" "${_MA_PROGRESS_MESSAGE}" "${elapsed}" >&2
+            ;;
+    esac
+    
+    _MA_PROGRESS_ENABLED=0
 }
 
 ma_agent_log_dir() {
