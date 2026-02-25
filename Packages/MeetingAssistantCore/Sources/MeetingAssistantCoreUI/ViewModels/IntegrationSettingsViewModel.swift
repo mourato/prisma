@@ -340,7 +340,15 @@ public final class IntegrationSettingsViewModel: ObservableObject {
             return nil
         }
 
-        return "settings.shortcuts.modifier.conflict".localized(with: conflict.conflicting.actionDisplayName)
+        switch conflict.reason {
+        case .layerLeaderKeyCollision:
+            return "settings.assistant.layer.duplicate_key".localized
+        case .identicalSignature,
+             .effectiveModifierOverlap,
+             .sideSpecificVsAgnosticOverlap,
+             .assistantIntegrationConcurrentActivation:
+            return "settings.shortcuts.modifier.conflict".localized(with: conflict.conflicting.actionDisplayName)
+        }
     }
 
     private func layerShortcutConflictMessage(for integration: AssistantIntegrationConfig) -> String? {

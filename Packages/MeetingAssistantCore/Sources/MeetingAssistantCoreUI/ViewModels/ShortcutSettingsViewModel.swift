@@ -173,7 +173,7 @@ public class ShortcutSettingsViewModel: ObservableObject {
         if let conflict = settings.shortcutConflict(for: candidate) {
             isApplyingShortcutChange = true
             dictationShortcutDefinition = settings.dictationShortcutDefinition
-            dictationModifierConflictMessage = "settings.shortcuts.modifier.conflict".localized(with: conflict.conflicting.actionDisplayName)
+            dictationModifierConflictMessage = conflictMessage(for: conflict)
             isApplyingShortcutChange = false
             return
         }
@@ -208,7 +208,7 @@ public class ShortcutSettingsViewModel: ObservableObject {
         if let conflict = settings.shortcutConflict(for: candidate) {
             isApplyingShortcutChange = true
             meetingShortcutDefinition = settings.meetingShortcutDefinition
-            meetingModifierConflictMessage = "settings.shortcuts.modifier.conflict".localized(with: conflict.conflicting.actionDisplayName)
+            meetingModifierConflictMessage = conflictMessage(for: conflict)
             isApplyingShortcutChange = false
             return
         }
@@ -218,5 +218,17 @@ public class ShortcutSettingsViewModel: ObservableObject {
         settings.meetingSelectedPresetKey = .custom
         meetingSelectedPresetKey = .custom
         meetingModifierConflictMessage = nil
+    }
+
+    private func conflictMessage(for conflict: ShortcutConflict) -> String {
+        switch conflict.reason {
+        case .layerLeaderKeyCollision:
+            return "settings.assistant.layer.duplicate_key".localized
+        case .identicalSignature,
+             .effectiveModifierOverlap,
+             .sideSpecificVsAgnosticOverlap,
+             .assistantIntegrationConcurrentActivation:
+            return "settings.shortcuts.modifier.conflict".localized(with: conflict.conflicting.actionDisplayName)
+        }
     }
 }

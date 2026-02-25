@@ -88,6 +88,119 @@ final class ShortcutDefinitionAndEngineTests: XCTestCase {
         let conflict = ModifierShortcutConflictService.conflict(for: candidate, in: [existing])
         XCTAssertEqual(conflict?.conflicting.actionID, .assistant)
         XCTAssertEqual(conflict?.candidate.actionID, .meeting)
+        XCTAssertEqual(conflict?.reason, .identicalSignature)
+    }
+
+    func testConflictServiceDetectsSideSpecificVsAgnosticOverlap() {
+        let existing = ShortcutBinding(
+            actionID: .assistant,
+            actionDisplayName: "Assistant",
+            shortcut: ShortcutDefinition(
+                modifiers: [.command],
+                primaryKey: .letter("G", keyCode: 0x05),
+                trigger: .singleTap
+            )
+        )
+
+        let candidate = ShortcutBinding(
+            actionID: .meeting,
+            actionDisplayName: "Meeting",
+            shortcut: ShortcutDefinition(
+                modifiers: [.leftCommand],
+                primaryKey: .letter("G", keyCode: 0x05),
+                trigger: .singleTap
+            )
+        )
+
+        let conflict = ModifierShortcutConflictService.conflict(for: candidate, in: [existing])
+
+        XCTAssertEqual(conflict?.reason, .sideSpecificVsAgnosticOverlap)
+        XCTAssertEqual(conflict?.conflicting.actionID, .assistant)
+    }
+
+    func testConflictServiceDetectsAssistantIntegrationConcurrentActivation() {
+        let existing = ShortcutBinding(
+            actionID: .assistant,
+            actionDisplayName: "Assistant",
+            shortcut: ShortcutDefinition(
+                modifiers: [.command],
+                primaryKey: .letter("K", keyCode: 0x28),
+                trigger: .singleTap
+            )
+        )
+
+        let candidate = ShortcutBinding(
+            actionID: .assistantIntegration(UUID()),
+            actionDisplayName: "Raycast",
+            shortcut: ShortcutDefinition(
+                modifiers: [.leftCommand],
+                primaryKey: .letter("K", keyCode: 0x28),
+                trigger: .singleTap
+            )
+        )
+
+        let conflict = ModifierShortcutConflictService.conflict(for: candidate, in: [existing])
+
+        XCTAssertEqual(conflict?.reason, .assistantIntegrationConcurrentActivation)
+        XCTAssertEqual(conflict?.conflicting.actionID, .assistant)
+    }
+
+    func testConflictServiceDetectsLayerLeaderKeyCollision() {
+        let integrationID = UUID()
+        let candidate = ShortcutBinding(
+            actionID: .assistant,
+            actionDisplayName: "Assistant",
+            shortcut: ShortcutDefinition(
+                modifiers: [.command],
+                primaryKey: .letter("R", keyCode: 0x0f),
+                trigger: .singleTap
+            )
+        )
+
+        let context = ShortcutConflictContext(
+            layerBindings: [
+                ShortcutLayerBinding(
+                    actionID: .assistantIntegration(integrationID),
+                    actionDisplayName: "Raycast",
+                    layerKey: "R"
+                ),
+            ]
+        )
+
+        let conflict = ModifierShortcutConflictService.conflict(
+            for: candidate,
+            in: [],
+            context: context
+        )
+
+        XCTAssertEqual(conflict?.reason, .layerLeaderKeyCollision(layerKey: "R"))
+        XCTAssertEqual(conflict?.conflicting.actionID, .assistantIntegration(integrationID))
+    }
+
+    func testConflictServiceDoesNotReportConflictForOppositeSidesWithoutAgnostic() {
+        let existing = ShortcutBinding(
+            actionID: .assistant,
+            actionDisplayName: "Assistant",
+            shortcut: ShortcutDefinition(
+                modifiers: [.leftCommand],
+                primaryKey: .letter("U", keyCode: 0x20),
+                trigger: .singleTap
+            )
+        )
+
+        let candidate = ShortcutBinding(
+            actionID: .meeting,
+            actionDisplayName: "Meeting",
+            shortcut: ShortcutDefinition(
+                modifiers: [.rightCommand],
+                primaryKey: .letter("U", keyCode: 0x20),
+                trigger: .singleTap
+            )
+        )
+
+        let conflict = ModifierShortcutConflictService.conflict(for: candidate, in: [existing])
+
+        XCTAssertNil(conflict)
     }
 
     func testPrimaryKeyNormalizedTokenIncludesKeyCode() {

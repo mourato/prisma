@@ -81,12 +81,46 @@ public extension AppSettingsStore {
     func shortcutConflict(for candidate: ShortcutBinding) -> ShortcutConflict? {
         ModifierShortcutConflictService.conflict(
             for: candidate,
-            in: configuredShortcutBindings
+            in: configuredShortcutBindings,
+            context: ShortcutConflictContext(layerBindings: configuredShortcutLayerBindings)
         )
     }
 
     var shortcutConflicts: [ShortcutConflict] {
-        ModifierShortcutConflictService.allConflicts(in: configuredShortcutBindings)
+        ModifierShortcutConflictService.allConflicts(
+            in: configuredShortcutBindings,
+            context: ShortcutConflictContext(layerBindings: configuredShortcutLayerBindings)
+        )
+    }
+
+    var configuredShortcutLayerBindings: [ShortcutLayerBinding] {
+        var bindings: [ShortcutLayerBinding] = []
+
+        if let assistantLayerKey = Self.normalizedLayerShortcutKey(assistantLayerShortcutKey) {
+            bindings.append(
+                ShortcutLayerBinding(
+                    actionID: .assistant,
+                    actionDisplayName: "settings.assistant.toggle_command".localized,
+                    layerKey: assistantLayerKey
+                )
+            )
+        }
+
+        for integration in assistantIntegrations where integration.isEnabled {
+            guard let integrationLayerKey = Self.normalizedLayerShortcutKey(integration.layerShortcutKey) else {
+                continue
+            }
+
+            bindings.append(
+                ShortcutLayerBinding(
+                    actionID: .assistantIntegration(integration.id),
+                    actionDisplayName: integration.name,
+                    layerKey: integrationLayerKey
+                )
+            )
+        }
+
+        return bindings
     }
 
     func upsertAssistantIntegration(_ integration: AssistantIntegrationConfig) {
