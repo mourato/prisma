@@ -123,14 +123,7 @@ extension AssistantShortcutController {
     }
 
     private func installFlagsChangedMonitors() {
-        if flagsMonitor == nil {
-            flagsMonitor = KeyboardEventMonitor(mask: .flagsChanged) { [weak self] event in
-                Task { @MainActor in
-                    self?.handleFlagsChanged(event)
-                }
-            }
-            flagsMonitor?.start()
-        }
+        inputBackend.startFlagsChangedMonitoring()
     }
 
     private func ensureGlobalCapturePermissionsIfNeeded(needsGlobalCapture: Bool) {
@@ -186,74 +179,54 @@ extension AssistantShortcutController {
     }
 
     private func removeFlagsChangedMonitors() {
-        flagsMonitor?.stop()
-        flagsMonitor = nil
+        inputBackend.stopFlagsChangedMonitoring()
     }
 
     private func installKeyDownMonitors() {
-        if keyDownMonitor == nil {
-            keyDownMonitor = KeyboardEventMonitor(
-                mask: .keyDown,
-                shouldReturnLocalEvent: { [weak self] event in
-                    guard let self else { return true }
-                    // Always allow Escape to propagate so GlobalShortcutController
-                    // can handle double-press cancel for Dictation mode
-                    if event.keyCode == PresetShortcutKey.escapeKeyCode {
-                        AppLogger.debug(
-                            "ESC local propagation allowed (assistant keyDown monitor)",
-                            category: .assistant,
-                            extra: [
-                                "scope": "assistant",
-                                "shouldSuppressKeyDownEvents": self.shouldSuppressKeyDownEvents,
-                                "shortcutLayerArmed": self.isShortcutLayerArmed,
-                            ]
-                        )
-                        return true
-                    }
-
-                    let shouldReturn = !self.shouldSuppressKeyDownEvents
-                    if !shouldReturn {
-                        AppLogger.debug(
-                            "Local keyDown suppressed by assistant policy",
-                            category: .assistant,
-                            extra: [
-                                "scope": "assistant",
-                                "keyCode": event.keyCode,
-                                "shortcutLayerArmed": self.isShortcutLayerArmed,
-                                "shouldSuppressEnterStopWhileRecording": self.shouldSuppressEnterStopWhileRecording,
-                            ]
-                        )
-                    }
-                    return shouldReturn
-                }
-            ) { [weak self] event in
-                Task { @MainActor in
-                    self?.handleKeyDown(event)
-                }
+        inputBackend.startKeyDownMonitoring { [weak self] event in
+            guard let self else { return true }
+            // Always allow Escape to propagate so GlobalShortcutController
+            // can handle double-press cancel for Dictation mode
+            if event.keyCode == PresetShortcutKey.escapeKeyCode {
+                AppLogger.debug(
+                    "ESC local propagation allowed (assistant keyDown monitor)",
+                    category: .assistant,
+                    extra: [
+                        "scope": "assistant",
+                        "shouldSuppressKeyDownEvents": self.shouldSuppressKeyDownEvents,
+                        "shortcutLayerArmed": self.isShortcutLayerArmed,
+                    ]
+                )
+                return true
             }
-            keyDownMonitor?.start()
+
+            let shouldReturn = !self.shouldSuppressKeyDownEvents
+            if !shouldReturn {
+                AppLogger.debug(
+                    "Local keyDown suppressed by assistant policy",
+                    category: .assistant,
+                    extra: [
+                        "scope": "assistant",
+                        "keyCode": event.keyCode,
+                        "shortcutLayerArmed": self.isShortcutLayerArmed,
+                        "shouldSuppressEnterStopWhileRecording": self.shouldSuppressEnterStopWhileRecording,
+                    ]
+                )
+            }
+            return shouldReturn
         }
     }
 
     private func installKeyUpMonitors() {
-        if keyUpMonitor == nil {
-            keyUpMonitor = KeyboardEventMonitor(mask: .keyUp) { [weak self] event in
-                Task { @MainActor in
-                    self?.handleKeyUp(event)
-                }
-            }
-            keyUpMonitor?.start()
-        }
+        inputBackend.startKeyUpMonitoring()
     }
 
     private func removeKeyDownMonitors() {
-        keyDownMonitor?.stop()
-        keyDownMonitor = nil
+        inputBackend.stopKeyDownMonitoring()
     }
 
     private func removeKeyUpMonitors() {
-        keyUpMonitor?.stop()
-        keyUpMonitor = nil
+        inputBackend.stopKeyUpMonitoring()
     }
 
     func removeEventMonitors() {
@@ -332,9 +305,9 @@ extension AssistantShortcutController {
             expectation: expectedBackends,
             accessibilityTrusted: AccessibilityPermissionService.isTrusted(),
             inputMonitoringTrusted: InputMonitoringPermissionService.isTrusted(),
-            flagsMonitorActive: flagsMonitor != nil,
-            keyDownMonitorActive: keyDownMonitor != nil,
-            keyUpMonitorActive: keyUpMonitor != nil,
+            flagsMonitorActive: inputBackend.isFlagsChangedMonitoringActive,
+            keyDownMonitorActive: inputBackend.isKeyDownMonitoringActive,
+            keyUpMonitorActive: inputBackend.isKeyUpMonitoringActive,
             eventTapActive: shortcutLayerKeySuppressor.isActive
         )
 

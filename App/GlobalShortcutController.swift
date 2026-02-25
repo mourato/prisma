@@ -8,9 +8,7 @@ final class GlobalShortcutController {
     private let recordingManager: RecordingManager
     private let settings: AppSettingsStore
     private var cancellables = Set<AnyCancellable>()
-    private var flagsMonitor: KeyboardEventMonitor?
-    private var keyDownMonitor: KeyboardEventMonitor?
-    private var keyUpMonitor: KeyboardEventMonitor?
+    private let inputBackend: ShortcutInputBackend
     private let shortcutRouter = ShortcutEventRoutingOrchestrator()
 
     private lazy var dictationHandler = SmartShortcutHandler(
@@ -46,14 +44,21 @@ final class GlobalShortcutController {
 
     init(
         recordingManager: RecordingManager,
-        settings: AppSettingsStore
+        settings: AppSettingsStore,
+        inputBackend: ShortcutInputBackend? = nil
     ) {
         self.recordingManager = recordingManager
         self.settings = settings
+        self.inputBackend = inputBackend ?? Self.makeDefaultInputBackend()
+        configureInputBackendHandlers()
+    }
+
+    private static func makeDefaultInputBackend() -> ShortcutInputBackend {
+        SystemShortcutInputBackend()
     }
 
     convenience init(recordingManager: RecordingManager) {
-        self.init(recordingManager: recordingManager, settings: .shared)
+        self.init(recordingManager: recordingManager, settings: .shared, inputBackend: nil)
     }
 
     func start() {
@@ -98,6 +103,20 @@ final class GlobalShortcutController {
             Task { @MainActor in
                 await self?.handleCustomShortcutUp(for: .meeting)
             }
+        }
+    }
+
+    private func configureInputBackendHandlers() {
+        inputBackend.setFlagsChangedHandler { [weak self] event in
+            self?.handleFlagsChanged(event)
+        }
+
+        inputBackend.setKeyDownHandler { [weak self] event in
+            self?.handleKeyDown(event)
+        }
+
+        inputBackend.setKeyUpHandler { [weak self] event in
+            self?.handleKeyUp(event)
         }
     }
 
@@ -256,51 +275,27 @@ final class GlobalShortcutController {
     }
 
     private func installFlagsChangedMonitors() {
-        if flagsMonitor == nil {
-            flagsMonitor = KeyboardEventMonitor(mask: .flagsChanged) { [weak self] event in
-                Task { @MainActor [weak self] in
-                    self?.handleFlagsChanged(event)
-                }
-            }
-            flagsMonitor?.start()
-        }
+        inputBackend.startFlagsChangedMonitoring()
     }
 
     private func removeFlagsChangedMonitors() {
-        flagsMonitor?.stop()
-        flagsMonitor = nil
+        inputBackend.stopFlagsChangedMonitoring()
     }
 
     private func installKeyDownMonitors() {
-        if keyDownMonitor == nil {
-            keyDownMonitor = KeyboardEventMonitor(mask: .keyDown) { [weak self] event in
-                Task { @MainActor [weak self] in
-                    self?.handleKeyDown(event)
-                }
-            }
-            keyDownMonitor?.start()
-        }
+        inputBackend.startKeyDownMonitoring(shouldReturnLocalEvent: nil)
     }
 
     private func installKeyUpMonitors() {
-        if keyUpMonitor == nil {
-            keyUpMonitor = KeyboardEventMonitor(mask: .keyUp) { [weak self] event in
-                Task { @MainActor [weak self] in
-                    self?.handleKeyUp(event)
-                }
-            }
-            keyUpMonitor?.start()
-        }
+        inputBackend.startKeyUpMonitoring()
     }
 
     private func removeKeyDownMonitors() {
-        keyDownMonitor?.stop()
-        keyDownMonitor = nil
+        inputBackend.stopKeyDownMonitoring()
     }
 
     private func removeKeyUpMonitors() {
-        keyUpMonitor?.stop()
-        keyUpMonitor = nil
+        inputBackend.stopKeyUpMonitoring()
     }
 
     private func removeEventMonitors() {
@@ -367,7 +362,7 @@ final class GlobalShortcutController {
 
     // To match the original logic:
 
-    private func handleFlagsChanged(_ event: NSEvent) {
+    private func handleFlagsChanged(_ event: ShortcutInputEvent) {
         routeShortcutMonitorEvent(
             for: .dictation,
             event: event,
@@ -382,14 +377,14 @@ final class GlobalShortcutController {
         )
     }
 
-    private func handleKeyDown(_ event: NSEvent) {
+    private func handleKeyDown(_ event: ShortcutInputEvent) {
         if event.keyCode == PresetShortcutKey.escapeKeyCode {
             AppLogger.debug(
                 "ESC keyDown observed (global)",
                 category: .uiController,
                 extra: [
                     "scope": "global",
-                    "isRepeat": event.isARepeat,
+                    "isRepeat": event.isRepeat,
                     "useEscapeToCancelRecording": settings.useEscapeToCancelRecording,
                     "isRecording": recordingManager.isRecording,
                     "isStarting": recordingManager.isStartingRecording,
@@ -420,7 +415,7 @@ final class GlobalShortcutController {
             }
             return
         }
-        guard !event.isARepeat else {
+        guard !event.isRepeat else {
             if event.keyCode == PresetShortcutKey.escapeKeyCode {
                 AppLogger.debug(
                     "ESC ignored because key event is repeat (global)",
@@ -525,7 +520,7 @@ final class GlobalShortcutController {
         return true
     }
 
-    private func handleKeyUp(_ event: NSEvent) {
+    private func handleKeyUp(_ event: ShortcutInputEvent) {
         routeShortcutMonitorEvent(
             for: .dictation,
             event: event,
@@ -593,9 +588,9 @@ private extension GlobalShortcutController {
             expectation: expectedBackends,
             accessibilityTrusted: AccessibilityPermissionService.isTrusted(),
             inputMonitoringTrusted: InputMonitoringPermissionService.isTrusted(),
-            flagsMonitorActive: flagsMonitor != nil,
-            keyDownMonitorActive: keyDownMonitor != nil,
-            keyUpMonitorActive: keyUpMonitor != nil,
+            flagsMonitorActive: inputBackend.isFlagsChangedMonitoringActive,
+            keyDownMonitorActive: inputBackend.isKeyDownMonitoringActive,
+            keyUpMonitorActive: inputBackend.isKeyUpMonitoringActive,
             eventTapActive: false
         )
 
@@ -740,12 +735,24 @@ private extension GlobalShortcutController {
         presetState.isPresetActive(preset, event: event)
     }
 
+    func isPresetActive(_ preset: PresetShortcutKey, inputEvent: ShortcutInputEvent) -> Bool {
+        presetState.isPresetActive(preset, inputEvent: inputEvent)
+    }
+
     func isModifierGestureActive(_ gesture: ModifierShortcutGesture, event: NSEvent) -> Bool {
         presetState.isModifierGestureActive(gesture, event: event)
     }
 
+    func isModifierGestureActive(_ gesture: ModifierShortcutGesture, inputEvent: ShortcutInputEvent) -> Bool {
+        presetState.isModifierGestureActive(gesture, inputEvent: inputEvent)
+    }
+
     func isShortcutActive(_ definition: ShortcutDefinition, event: NSEvent) -> Bool {
         presetState.isShortcutActive(definition, event: event)
+    }
+
+    func isShortcutActive(_ definition: ShortcutDefinition, inputEvent: ShortcutInputEvent) -> Bool {
+        presetState.isShortcutActive(definition, inputEvent: inputEvent)
     }
 
     func routingConfiguration(for type: ShortcutType) -> ShortcutEventRoutingConfiguration {
@@ -781,7 +788,7 @@ private extension GlobalShortcutController {
 
     func routeShortcutMonitorEvent(
         for type: ShortcutType,
-        event: NSEvent,
+        event: ShortcutInputEvent,
         mode: ShortcutEventRoutingMode,
         handler: SmartShortcutHandler
     ) {
@@ -791,15 +798,15 @@ private extension GlobalShortcutController {
             wasPressed: handler.isPressed,
             isDefinitionActive: { [weak self] definition in
                 guard let self else { return false }
-                return self.isShortcutActive(definition, event: event)
+                return self.isShortcutActive(definition, inputEvent: event)
             },
             isModifierGestureActive: { [weak self] gesture in
                 guard let self else { return false }
-                return self.isModifierGestureActive(gesture, event: event)
+                return self.isModifierGestureActive(gesture, inputEvent: event)
             },
             isPresetActive: { [weak self] presetKey in
                 guard let self else { return false }
-                return self.isPresetActive(presetKey, event: event)
+                return self.isPresetActive(presetKey, inputEvent: event)
             }
         )
 

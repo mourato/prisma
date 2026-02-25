@@ -28,8 +28,12 @@ final class ShortcutActivationState {
     }
 
     func isPresetActive(_ preset: PresetShortcutKey, event: NSEvent) -> Bool {
-        let flags = normalizedFlags(event.modifierFlags)
-        updateTrackedModifierState(event: event, flags: flags)
+        isPresetActive(preset, inputEvent: ShortcutInputEvent(systemEvent: event))
+    }
+
+    func isPresetActive(_ preset: PresetShortcutKey, inputEvent: ShortcutInputEvent) -> Bool {
+        let flags = normalizedFlags(rawValue: inputEvent.modifierFlagsRawValue)
+        updateTrackedModifierState(inputEvent: inputEvent, flags: flags)
 
         switch preset {
         case .rightCommand:
@@ -60,14 +64,22 @@ final class ShortcutActivationState {
     }
 
     func isModifierGestureActive(_ gesture: ModifierShortcutGesture, event: NSEvent) -> Bool {
-        let flags = normalizedFlags(event.modifierFlags)
-        updateTrackedModifierState(event: event, flags: flags)
+        isModifierGestureActive(gesture, inputEvent: ShortcutInputEvent(systemEvent: event))
+    }
+
+    func isModifierGestureActive(_ gesture: ModifierShortcutGesture, inputEvent: ShortcutInputEvent) -> Bool {
+        let flags = normalizedFlags(rawValue: inputEvent.modifierFlagsRawValue)
+        updateTrackedModifierState(inputEvent: inputEvent, flags: flags)
         return matchesGesture(gesture, flags: flags)
     }
 
     func isShortcutActive(_ definition: ShortcutDefinition, event: NSEvent) -> Bool {
-        let flags = normalizedFlags(event.modifierFlags)
-        updateTrackedModifierState(event: event, flags: flags)
+        isShortcutActive(definition, inputEvent: ShortcutInputEvent(systemEvent: event))
+    }
+
+    func isShortcutActive(_ definition: ShortcutDefinition, inputEvent: ShortcutInputEvent) -> Bool {
+        let flags = normalizedFlags(rawValue: inputEvent.modifierFlagsRawValue)
+        updateTrackedModifierState(inputEvent: inputEvent, flags: flags)
 
         guard matchesModifierSet(Set(definition.modifiers), flags: flags) else {
             return false
@@ -84,13 +96,23 @@ final class ShortcutActivationState {
         event: NSEvent,
         flags: NSEvent.ModifierFlags
     ) {
-        if event.type == .keyDown {
-            pressedKeyCodes.insert(event.keyCode)
-        } else if event.type == .keyUp {
-            pressedKeyCodes.remove(event.keyCode)
+        updateTrackedModifierState(
+            inputEvent: ShortcutInputEvent(systemEvent: event),
+            flags: flags
+        )
+    }
+
+    private func updateTrackedModifierState(
+        inputEvent: ShortcutInputEvent,
+        flags: NSEvent.ModifierFlags
+    ) {
+        if inputEvent.kind == .keyDown {
+            pressedKeyCodes.insert(inputEvent.keyCode)
+        } else if inputEvent.kind == .keyUp {
+            pressedKeyCodes.remove(inputEvent.keyCode)
         }
 
-        switch event.keyCode {
+        switch inputEvent.keyCode {
         case PresetShortcutKey.leftCommandKeyCode:
             leftCommandIsDown.toggle()
         case PresetShortcutKey.rightCommandKeyCode:
@@ -257,6 +279,10 @@ final class ShortcutActivationState {
         flags
             .intersection(.deviceIndependentFlagsMask)
             .subtracting([.capsLock, .numericPad])
+    }
+
+    private func normalizedFlags(rawValue: UInt) -> NSEvent.ModifierFlags {
+        normalizedFlags(NSEvent.ModifierFlags(rawValue: rawValue))
     }
 }
 

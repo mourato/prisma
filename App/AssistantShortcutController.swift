@@ -8,9 +8,7 @@ final class AssistantShortcutController {
     let settings: AppSettingsStore
     var cancellables = Set<AnyCancellable>()
 
-    var flagsMonitor: KeyboardEventMonitor?
-    var keyDownMonitor: KeyboardEventMonitor?
-    var keyUpMonitor: KeyboardEventMonitor?
+    let inputBackend: ShortcutInputBackend
     let shortcutRouter = ShortcutEventRoutingOrchestrator()
     var integrationShortcutHandlers: [UUID: SmartShortcutHandler] = [:]
     var integrationPresetStates: [UUID: ShortcutActivationState] = [:]
@@ -52,10 +50,17 @@ final class AssistantShortcutController {
 
     init(
         assistantService: AssistantVoiceCommandService,
-        settings: AppSettingsStore
+        settings: AppSettingsStore,
+        inputBackend: ShortcutInputBackend? = nil
     ) {
         self.assistantService = assistantService
         self.settings = settings
+        self.inputBackend = inputBackend ?? Self.makeDefaultInputBackend()
+        configureInputBackendHandlers()
+    }
+
+    private static func makeDefaultInputBackend() -> ShortcutInputBackend {
+        SystemShortcutInputBackend()
     }
 
     func emitShortcutDetected(
@@ -188,7 +193,25 @@ final class AssistantShortcutController {
     }
 
     convenience init(assistantService: AssistantVoiceCommandService) {
-        self.init(assistantService: assistantService, settings: .shared)
+        self.init(
+            assistantService: assistantService,
+            settings: .shared,
+            inputBackend: nil
+        )
+    }
+
+    private func configureInputBackendHandlers() {
+        inputBackend.setFlagsChangedHandler { [weak self] event in
+            self?.handleFlagsChanged(event)
+        }
+
+        inputBackend.setKeyDownHandler { [weak self] event in
+            self?.handleKeyDown(event)
+        }
+
+        inputBackend.setKeyUpHandler { [weak self] event in
+            self?.handleKeyUp(event)
+        }
     }
 
     deinit {
