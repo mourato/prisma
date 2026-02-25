@@ -25,9 +25,9 @@ final class IntegrationSettingsViewModelTests: XCTestCase {
         }
 
         let shortcut = ShortcutDefinition(
-            modifiers: [.rightOption],
-            primaryKey: nil,
-            trigger: .doubleTap
+            modifiers: [.option, .command],
+            primaryKey: .letter("T", keyCode: 0x11),
+            trigger: .singleTap
         )
 
         XCTAssertNil(viewModel.setIntegrationShortcutDefinition(shortcut, for: integrationID))
@@ -72,9 +72,7 @@ final class IntegrationSettingsViewModelTests: XCTestCase {
         XCTAssertNil(viewModel.integration(for: integrationID)?.shortcutDefinition)
     }
 
-    func testIntegrationShortcutConflictWithAssistantLayerLeaderReturnsLayerMessage() {
-        settings.assistantLayerShortcutKey = "R"
-
+    func testIntegrationShortcutDefinitionWithoutPrimaryKeyReturnsValidationMessage() {
         let viewModel = IntegrationSettingsViewModel()
         viewModel.addIntegration()
 
@@ -87,14 +85,14 @@ final class IntegrationSettingsViewModelTests: XCTestCase {
 
         let message = viewModel.setIntegrationShortcutDefinition(
             ShortcutDefinition(
-                modifiers: [.command],
-                primaryKey: .letter("R", keyCode: 0x0f),
-                trigger: .singleTap
+                modifiers: [.rightControl],
+                primaryKey: nil,
+                trigger: .doubleTap
             ),
             for: integrationID
         )
 
-        XCTAssertEqual(message, "settings.assistant.layer.duplicate_key".localized)
+        XCTAssertEqual(message, "settings.shortcuts.modifier.primary_key_required".localized)
         XCTAssertNil(viewModel.integration(for: integrationID)?.shortcutDefinition)
     }
 }

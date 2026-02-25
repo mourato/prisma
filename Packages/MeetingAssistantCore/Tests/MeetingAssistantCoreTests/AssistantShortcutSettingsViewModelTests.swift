@@ -32,7 +32,7 @@ final class AssistantShortcutSettingsViewModelTests: XCTestCase {
         viewModel.assistantShortcutDefinition = nil
         await Task.yield()
 
-        XCTAssertEqual(settings.assistantShortcutDefinition, AppSettingsStore.defaultAssistantShortcutDefinition)
+        XCTAssertNil(settings.assistantShortcutDefinition)
         XCTAssertNil(settings.assistantModifierShortcutGesture)
         XCTAssertEqual(settings.assistantSelectedPresetKey, .notSpecified)
         XCTAssertEqual(viewModel.selectedPresetKey, .notSpecified)
@@ -91,7 +91,7 @@ final class AssistantShortcutSettingsViewModelTests: XCTestCase {
         )
         await Task.yield()
 
-        XCTAssertNil(settings.assistantShortcutDefinition)
+        XCTAssertEqual(settings.assistantShortcutDefinition, AppSettingsStore.defaultAssistantShortcutDefinition)
         XCTAssertEqual(
             viewModel.assistantModifierConflictMessage,
             "settings.shortcuts.modifier.conflict".localized(with: integration.name)

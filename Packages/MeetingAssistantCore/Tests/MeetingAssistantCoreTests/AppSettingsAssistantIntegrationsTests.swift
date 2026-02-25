@@ -23,6 +23,7 @@ final class AppSettingsAssistantIntegrationsTests: XCTestCase {
         XCTAssertEqual(raycast?.deepLink, AssistantIntegrationConfig.defaultRaycastDeepLink)
         XCTAssertEqual(settings.assistantSelectedIntegrationId, raycast?.id)
         XCTAssertEqual(settings.assistantSelectedIntegration?.id, raycast?.id)
+        XCTAssertEqual(raycast?.shortcutDefinition, AssistantIntegrationConfig.defaultRaycast.shortcutDefinition)
     }
 
     func testUpsertAssistantIntegration_UpdatesExistingIntegration() {
@@ -79,37 +80,19 @@ final class AppSettingsAssistantIntegrationsTests: XCTestCase {
         XCTAssertEqual(settings.assistantSelectedIntegrationId, AssistantIntegrationConfig.raycastDefaultID)
     }
 
-    func testIntegrationLeaderModeEnabled_DefaultsToFalse() {
-        let integration = AssistantIntegrationConfig(
-            name: "Test Integration",
-            kind: .deeplink,
-            isEnabled: true,
-            deepLink: "raycast://test"
-        )
-
-        XCTAssertFalse(integration.leaderModeEnabled)
-    }
-
-    func testIntegrationLeaderModeEnabled_CanBeSetToTrue() {
-        let integration = AssistantIntegrationConfig(
-            name: "Test Integration",
-            kind: .deeplink,
-            isEnabled: true,
-            deepLink: "raycast://test",
-            leaderModeEnabled: true
-        )
-
-        XCTAssertTrue(integration.leaderModeEnabled)
-    }
-
-    func testIntegrationLeaderModeEnabled_CodableRoundTrip() throws {
+    func testAssistantIntegrationConfigCodableRoundTripPreservesShortcutDefinition() throws {
         let original = AssistantIntegrationConfig(
             name: "Test Integration",
             kind: .deeplink,
             isEnabled: true,
             deepLink: "raycast://test",
-            layerShortcutKey: "T",
-            leaderModeEnabled: true
+            shortcutDefinition: ShortcutDefinition(
+                modifiers: [.command, .option],
+                primaryKey: .letter("T", keyCode: 0x11),
+                trigger: .singleTap
+            ),
+            shortcutPresetKey: .custom,
+            shortcutActivationMode: .toggle
         )
 
         let encoder = JSONEncoder()
@@ -119,30 +102,26 @@ final class AppSettingsAssistantIntegrationsTests: XCTestCase {
         let decoded = try decoder.decode(AssistantIntegrationConfig.self, from: data)
 
         XCTAssertEqual(decoded.name, original.name)
-        XCTAssertEqual(decoded.leaderModeEnabled, true)
-        XCTAssertEqual(decoded.layerShortcutKey, "T")
+        XCTAssertEqual(decoded.shortcutDefinition, original.shortcutDefinition)
     }
 
-    func testIntegrationLeaderModeEnabled_DefaultRaycastHasLeaderModeDisabled() {
-        let raycast = AssistantIntegrationConfig.defaultRaycast
+    func testAssistantIntegrationConfigDecodesLegacyLayerKeysWithoutPersistingThem() throws {
+        let payload = """
+        {
+          "id": "00000000-0000-0000-0000-000000000111",
+          "name": "Legacy",
+          "kind": "deeplink",
+          "isEnabled": true,
+          "deepLink": "raycast://legacy",
+          "layerShortcutKey": "R",
+          "leaderModeEnabled": true
+        }
+        """.data(using: .utf8)!
 
-        XCTAssertFalse(raycast.leaderModeEnabled)
-    }
+        let decoded = try JSONDecoder().decode(AssistantIntegrationConfig.self, from: payload)
 
-    func testUpsertIntegrationWithLeaderModeEnabled() {
-        let integration = AssistantIntegrationConfig(
-            name: "Test Integration",
-            kind: .deeplink,
-            isEnabled: true,
-            deepLink: "raycast://test",
-            layerShortcutKey: "T",
-            leaderModeEnabled: true
-        )
-
-        settings.upsertAssistantIntegration(integration)
-
-        let saved = settings.assistantIntegrations.first { $0.id == integration.id }
-        XCTAssertNotNil(saved)
-        XCTAssertTrue(saved?.leaderModeEnabled ?? false)
+        XCTAssertEqual(decoded.name, "Legacy")
+        XCTAssertEqual(decoded.deepLink, "raycast://legacy")
+        XCTAssertNil(decoded.shortcutDefinition)
     }
 }
