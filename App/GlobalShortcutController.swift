@@ -7,8 +7,8 @@ import MeetingAssistantCore
 final class GlobalShortcutController {
     private let recordingManager: RecordingManager
     private let settings: AppSettingsStore
+    private let hotkeyBackend: GlobalHotkeyBackend
     private var cancellables = Set<AnyCancellable>()
-    private let inputBackend: ShortcutInputBackend
     private let shortcutRouter = ShortcutEventRoutingOrchestrator()
 
     private lazy var dictationHandler = SmartShortcutHandler(
@@ -31,13 +31,6 @@ final class GlobalShortcutController {
         }
     )
 
-    private let presetState = ShortcutActivationState()
-    private let escapeDoublePressInterval: TimeInterval = 1.0
-    private var lastEscapePressTime: Date?
-    private var hasRequestedAccessibilityPermissionForGlobalCapture = false
-    private var hasRequestedInputMonitoringPermissionForGlobalCapture = false
-    private var hasOpenedAccessibilitySettingsForGlobalCapture = false
-    private var hasOpenedInputMonitoringSettingsForGlobalCapture = false
     private let healthCheckIntervalSeconds: TimeInterval = 15
     private var healthCheckTimer: Timer?
     private(set) var shortcutCaptureHealthSnapshot: ShortcutCaptureHealthSnapshot?
@@ -45,20 +38,19 @@ final class GlobalShortcutController {
     init(
         recordingManager: RecordingManager,
         settings: AppSettingsStore,
-        inputBackend: ShortcutInputBackend? = nil
+        hotkeyBackend: GlobalHotkeyBackend? = nil
     ) {
         self.recordingManager = recordingManager
         self.settings = settings
-        self.inputBackend = inputBackend ?? Self.makeDefaultInputBackend()
-        configureInputBackendHandlers()
+        self.hotkeyBackend = hotkeyBackend ?? Self.makeDefaultHotkeyBackend()
     }
 
-    private static func makeDefaultInputBackend() -> ShortcutInputBackend {
-        SystemShortcutInputBackend()
+    private static func makeDefaultHotkeyBackend() -> GlobalHotkeyBackend {
+        CarbonGlobalHotkeyBackend()
     }
 
     convenience init(recordingManager: RecordingManager) {
-        self.init(recordingManager: recordingManager, settings: .shared, inputBackend: nil)
+        self.init(recordingManager: recordingManager, settings: .shared, hotkeyBackend: nil)
     }
 
     func start() {
@@ -74,12 +66,15 @@ final class GlobalShortcutController {
     deinit {
         Task { @MainActor [weak self] in
             self?.stopShortcutCaptureHealthChecks()
-            self?.removeEventMonitors()
+            self?.hotkeyBackend.unregisterAll()
+            self?.runShortcutCaptureHealthCheck(
+                source: "controller_deinit",
+                expectation: ShortcutCaptureBackendExpectation.none
+            )
         }
     }
 
     private func setupKeyboardShortcutHandlers() {
-        // Dictation
         KeyboardShortcuts.onKeyDown(for: .dictationToggle) { [weak self] in
             Task { @MainActor in
                 await self?.handleCustomShortcutDown(for: .dictation)
@@ -92,7 +87,6 @@ final class GlobalShortcutController {
             }
         }
 
-        // Meeting
         KeyboardShortcuts.onKeyDown(for: .meetingToggle) { [weak self] in
             Task { @MainActor in
                 await self?.handleCustomShortcutDown(for: .meeting)
@@ -103,20 +97,6 @@ final class GlobalShortcutController {
             Task { @MainActor in
                 await self?.handleCustomShortcutUp(for: .meeting)
             }
-        }
-    }
-
-    private func configureInputBackendHandlers() {
-        inputBackend.setFlagsChangedHandler { [weak self] event in
-            self?.handleFlagsChanged(event)
-        }
-
-        inputBackend.setKeyDownHandler { [weak self] event in
-            self?.handleKeyDown(event)
-        }
-
-        inputBackend.setKeyUpHandler { [weak self] event in
-            self?.handleKeyUp(event)
         }
     }
 
@@ -139,15 +119,6 @@ final class GlobalShortcutController {
             }
             .store(in: &cancellables)
 
-        settings.$dictationModifierShortcutGesture
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.resetShortcutState()
-                self?.refreshCustomShortcutRegistration()
-                self?.refreshEventMonitors()
-            }
-            .store(in: &cancellables)
-
         settings.$dictationShortcutDefinition
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
@@ -157,7 +128,7 @@ final class GlobalShortcutController {
             }
             .store(in: &cancellables)
 
-        settings.$meetingModifierShortcutGesture
+        settings.$meetingShortcutDefinition
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.resetShortcutState()
@@ -166,7 +137,16 @@ final class GlobalShortcutController {
             }
             .store(in: &cancellables)
 
-        settings.$meetingShortcutDefinition
+        settings.$dictationModifierShortcutGesture
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.resetShortcutState()
+                self?.refreshCustomShortcutRegistration()
+                self?.refreshEventMonitors()
+            }
+            .store(in: &cancellables)
+
+        settings.$meetingModifierShortcutGesture
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.resetShortcutState()
@@ -196,13 +176,6 @@ final class GlobalShortcutController {
                 self?.resetShortcutState()
             }
             .store(in: &cancellables)
-
-        settings.$useEscapeToCancelRecording
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.refreshEventMonitors()
-            }
-            .store(in: &cancellables)
     }
 
     private func observeLifecycleEvents() {
@@ -215,41 +188,16 @@ final class GlobalShortcutController {
     }
 
     private func refreshEventMonitors() {
-        let expectation = expectedShortcutCaptureBackends()
-        let needsModifierMonitoring = expectation.needsFlagsMonitor
-        let needsShortcutKeyMonitoring = expectation.needsKeyUpMonitor
-        let needsEscapeMonitoring = settings.useEscapeToCancelRecording
-
-        if needsModifierMonitoring {
-            installFlagsChangedMonitors()
-        } else {
-            removeFlagsChangedMonitors()
-        }
-
-        if needsEscapeMonitoring || needsShortcutKeyMonitoring {
-            installKeyDownMonitors()
-        } else {
-            removeKeyDownMonitors()
-        }
-
-        if needsShortcutKeyMonitoring {
-            installKeyUpMonitors()
-        } else {
-            removeKeyUpMonitors()
-        }
-
-        let needsGlobalCapture = expectation.needsGlobalCapture
-        ensureGlobalCapturePermissionsIfNeeded(needsGlobalCapture: needsGlobalCapture)
-        runShortcutCaptureHealthCheck(source: "refresh_event_monitors", expectation: expectation)
+        refreshDirectHotkeys()
+        runShortcutCaptureHealthCheck(source: "refresh_event_monitors", expectation: expectedShortcutCaptureBackends())
 
         AppLogger.debug(
-            "Global shortcut monitor refresh",
+            "Global shortcut hotkey refresh",
             category: .uiController,
             extra: [
-                "needsModifierMonitoring": needsModifierMonitoring,
-                "needsShortcutKeyMonitoring": needsShortcutKeyMonitoring,
-                "needsEscapeMonitoring": needsEscapeMonitoring,
-                "useEscapeToCancelRecording": settings.useEscapeToCancelRecording,
+                "inHouseHotkeys": hotkeyBackend.registeredHotkeyCount,
+                "customDictationEnabled": isCustomShortcutEnabled(for: .dictation),
+                "customMeetingEnabled": isCustomShortcutEnabled(for: .meeting),
             ]
         )
     }
@@ -274,287 +222,86 @@ final class GlobalShortcutController {
         }
     }
 
-    private func installFlagsChangedMonitors() {
-        inputBackend.startFlagsChangedMonitoring()
-    }
+    private func refreshDirectHotkeys() {
+        var registrations: [HotkeyRegistration] = []
 
-    private func removeFlagsChangedMonitors() {
-        inputBackend.stopFlagsChangedMonitoring()
-    }
-
-    private func installKeyDownMonitors() {
-        inputBackend.startKeyDownMonitoring(shouldReturnLocalEvent: nil)
-    }
-
-    private func installKeyUpMonitors() {
-        inputBackend.startKeyUpMonitoring()
-    }
-
-    private func removeKeyDownMonitors() {
-        inputBackend.stopKeyDownMonitoring()
-    }
-
-    private func removeKeyUpMonitors() {
-        inputBackend.stopKeyUpMonitoring()
-    }
-
-    private func removeEventMonitors() {
-        removeFlagsChangedMonitors()
-        removeKeyDownMonitors()
-        removeKeyUpMonitors()
-        runShortcutCaptureHealthCheck(
-            source: "event_monitors_removed",
-            expectation: ShortcutCaptureBackendExpectation.none
-        )
-    }
-
-    private func ensureGlobalCapturePermissionsIfNeeded(needsGlobalCapture: Bool) {
-        guard needsGlobalCapture else { return }
-
-        let accessibilityTrusted = AccessibilityPermissionService.isTrusted()
-        let inputMonitoringTrusted = InputMonitoringPermissionService.isTrusted()
-
-        if !accessibilityTrusted,
-           !hasRequestedAccessibilityPermissionForGlobalCapture
-        {
-            hasRequestedAccessibilityPermissionForGlobalCapture = true
-            AccessibilityPermissionService.requestPermission()
-            if !hasOpenedAccessibilitySettingsForGlobalCapture {
-                hasOpenedAccessibilitySettingsForGlobalCapture = true
-                AccessibilityPermissionService.openSystemSettings()
-            }
+        if let dictationRegistration = inHouseRegistration(for: .dictation) {
+            registrations.append(dictationRegistration)
         }
 
-        if !inputMonitoringTrusted,
-           !hasRequestedInputMonitoringPermissionForGlobalCapture
-        {
-            hasRequestedInputMonitoringPermissionForGlobalCapture = true
-            let didRequest = InputMonitoringPermissionService.requestPermission()
-            if !didRequest,
-               !hasOpenedInputMonitoringSettingsForGlobalCapture
-            {
-                hasOpenedInputMonitoringSettingsForGlobalCapture = true
-                InputMonitoringPermissionService.openSystemSettings()
-            }
+        if let meetingRegistration = inHouseRegistration(for: .meeting) {
+            registrations.append(meetingRegistration)
         }
 
-        if !accessibilityTrusted || !inputMonitoringTrusted {
-            emitPermissionBlocked(
-                permission: "global_capture",
-                accessibilityTrusted: accessibilityTrusted,
-                inputMonitoringTrusted: inputMonitoringTrusted
-            )
-        }
-
-        guard !accessibilityTrusted || !inputMonitoringTrusted else { return }
-
-        AppLogger.warning(
-            "Global shortcut capture missing required permissions",
-            category: .uiController,
-            extra: [
-                "scope": "global",
-                "needsGlobalCapture": needsGlobalCapture,
-                "accessibilityTrusted": accessibilityTrusted,
-                "inputMonitoringTrusted": inputMonitoringTrusted,
-            ]
-        )
+        hotkeyBackend.registerAll(registrations)
     }
 
-    // To match the original logic:
-
-    private func handleFlagsChanged(_ event: ShortcutInputEvent) {
-        routeShortcutMonitorEvent(
-            for: .dictation,
-            event: event,
-            mode: .allSources,
-            handler: dictationHandler
-        )
-        routeShortcutMonitorEvent(
-            for: .meeting,
-            event: event,
-            mode: .allSources,
-            handler: meetingHandler
-        )
-    }
-
-    private func handleKeyDown(_ event: ShortcutInputEvent) {
-        if event.keyCode == PresetShortcutKey.escapeKeyCode {
-            AppLogger.debug(
-                "ESC keyDown observed (global)",
-                category: .uiController,
-                extra: [
-                    "scope": "global",
-                    "isRepeat": event.isRepeat,
-                    "useEscapeToCancelRecording": settings.useEscapeToCancelRecording,
-                    "isRecording": recordingManager.isRecording,
-                    "isStarting": recordingManager.isStartingRecording,
-                ]
-            )
+    private func inHouseRegistration(for type: ShortcutType) -> HotkeyRegistration? {
+        let definition: ShortcutDefinition?
+        switch type {
+        case .dictation:
+            definition = settings.dictationShortcutDefinition
+        case .meeting:
+            definition = settings.meetingShortcutDefinition
         }
 
-        routeShortcutMonitorEvent(
-            for: .dictation,
-            event: event,
-            mode: .inHouseDefinitionOnly,
-            handler: dictationHandler
-        )
-        routeShortcutMonitorEvent(
-            for: .meeting,
-            event: event,
-            mode: .inHouseDefinitionOnly,
-            handler: meetingHandler
-        )
+        guard let definition,
+              let descriptor = GlobalHotkeyMapper.descriptor(for: definition)
+        else {
+            return nil
+        }
 
-        guard settings.useEscapeToCancelRecording else {
-            if event.keyCode == PresetShortcutKey.escapeKeyCode {
-                AppLogger.debug(
-                    "ESC ignored because global escape cancel is disabled",
-                    category: .uiController,
-                    extra: ["scope": "global"]
+        let activationMode = definition.trigger.asShortcutActivationMode
+        let target = shortcutTarget(for: type)
+        return HotkeyRegistration(
+            id: "global.\(target)",
+            keyCode: descriptor.keyCode,
+            modifiers: descriptor.modifiers,
+            onKeyDown: { [weak self] in
+                guard let self else { return }
+                self.emitShortcutDetected(
+                    for: type,
+                    source: "in_house_hotkey",
+                    trigger: activationMode
                 )
+                Task { @MainActor [weak self] in
+                    await self?.handleShortcutDown(for: type, activationModeOverride: activationMode)
+                }
+            },
+            onKeyUp: { [weak self] in
+                guard let self else { return }
+                Task { @MainActor [weak self] in
+                    await self?.handleShortcutUp(for: type, activationModeOverride: activationMode)
+                }
             }
-            return
-        }
-        guard !event.isRepeat else {
-            if event.keyCode == PresetShortcutKey.escapeKeyCode {
-                AppLogger.debug(
-                    "ESC ignored because key event is repeat (global)",
-                    category: .uiController,
-                    extra: ["scope": "global"]
-                )
-            }
-            return
-        }
-        guard event.keyCode == PresetShortcutKey.escapeKeyCode else {
-            return
-        }
-
-        guard didConfirmDoubleEscapePress() else {
-            AppLogger.debug(
-                "ESC waiting for second press (global)",
-                category: .uiController,
-                extra: ["scope": "global"]
-            )
-            return
-        }
-
-        Task { @MainActor in
-            let wasRecording = self.recordingManager.isRecording
-            let wasStarting = self.recordingManager.isStartingRecording
-
-            guard wasRecording || wasStarting else {
-                AppLogger.debug(
-                    "ESC cancel ignored",
-                    category: .uiController,
-                    extra: [
-                        "scope": "global",
-                        "reason": "not_recording",
-                    ]
-                )
-                return
-            }
-
-            AppLogger.info(
-                "ESC cancel requested",
-                category: .uiController,
-                extra: [
-                    "scope": "global",
-                    "wasRecording": wasRecording,
-                    "wasStarting": wasStarting,
-                ]
-            )
-
-            await self.recordingManager.cancelRecording()
-
-            AppLogger.info(
-                "ESC cancel completed",
-                category: .uiController,
-                extra: [
-                    "scope": "global",
-                    "isRecording": self.recordingManager.isRecording,
-                    "isStarting": self.recordingManager.isStartingRecording,
-                ]
-            )
-        }
-    }
-
-    private func didConfirmDoubleEscapePress() -> Bool {
-        let now = Date()
-        guard let lastEscapePressTime else {
-            self.lastEscapePressTime = now
-            AppLogger.debug(
-                "ESC first press detected",
-                category: .uiController,
-                extra: [
-                    "scope": "global",
-                    "windowSec": escapeDoublePressInterval,
-                ]
-            )
-            return false
-        }
-
-        let elapsed = now.timeIntervalSince(lastEscapePressTime)
-        guard elapsed <= escapeDoublePressInterval else {
-            self.lastEscapePressTime = now
-            AppLogger.debug(
-                "ESC double-press timeout",
-                category: .uiController,
-                extra: [
-                    "scope": "global",
-                    "elapsedSec": elapsed,
-                    "windowSec": escapeDoublePressInterval,
-                ]
-            )
-            return false
-        }
-
-        self.lastEscapePressTime = nil
-        AppLogger.info(
-            "ESC double-press confirmed",
-            category: .uiController,
-            extra: [
-                "scope": "global",
-                "elapsedSec": elapsed,
-            ]
-        )
-        return true
-    }
-
-    private func handleKeyUp(_ event: ShortcutInputEvent) {
-        routeShortcutMonitorEvent(
-            for: .dictation,
-            event: event,
-            mode: .inHouseDefinitionOnly,
-            handler: dictationHandler
-        )
-        routeShortcutMonitorEvent(
-            for: .meeting,
-            event: event,
-            mode: .inHouseDefinitionOnly,
-            handler: meetingHandler
         )
     }
-}
 
-private extension GlobalShortcutController {
     func expectedShortcutCaptureBackends() -> ShortcutCaptureBackendExpectation {
-        let hasInHouseShortcutDefinitions = settings.dictationShortcutDefinition != nil ||
-            settings.meetingShortcutDefinition != nil
-        let needsModifierMonitoring = hasInHouseShortcutDefinitions ||
-            settings.dictationModifierShortcutGesture != nil ||
-            settings.meetingModifierShortcutGesture != nil ||
-            settings.dictationSelectedPresetKey.requiresModifierMonitoring ||
-            settings.meetingSelectedPresetKey.requiresModifierMonitoring
-        let needsShortcutKeyMonitoring = hasInHouseShortcutDefinitions
-        let needsEscapeMonitoring = settings.useEscapeToCancelRecording
+        let hasAnyGlobalShortcut = hotkeyBackend.registeredHotkeyCount > 0
+            || isCustomShortcutEnabled(for: .dictation)
+            || isCustomShortcutEnabled(for: .meeting)
 
         return ShortcutCaptureBackendExpectation(
-            needsGlobalCapture: needsModifierMonitoring || needsShortcutKeyMonitoring || needsEscapeMonitoring,
-            needsFlagsMonitor: needsModifierMonitoring,
-            needsKeyDownMonitor: needsEscapeMonitoring || needsShortcutKeyMonitoring,
-            needsKeyUpMonitor: needsShortcutKeyMonitoring,
+            needsGlobalCapture: hasAnyGlobalShortcut,
+            needsFlagsMonitor: false,
+            needsKeyDownMonitor: false,
+            needsKeyUpMonitor: false,
             needsEventTap: false
         )
+    }
+
+    private func isCustomShortcutEnabled(for type: ShortcutType) -> Bool {
+        switch type {
+        case .dictation:
+            return settings.dictationShortcutDefinition == nil
+                && settings.dictationModifierShortcutGesture == nil
+                && settings.dictationSelectedPresetKey == .custom
+        case .meeting:
+            return settings.meetingShortcutDefinition == nil
+                && settings.meetingModifierShortcutGesture == nil
+                && settings.meetingSelectedPresetKey == .custom
+        }
     }
 
     func startShortcutCaptureHealthChecks() {
@@ -586,11 +333,10 @@ private extension GlobalShortcutController {
             scope: "global",
             source: source,
             expectation: expectedBackends,
-            accessibilityTrusted: AccessibilityPermissionService.isTrusted(),
-            inputMonitoringTrusted: InputMonitoringPermissionService.isTrusted(),
-            flagsMonitorActive: inputBackend.isFlagsChangedMonitoringActive,
-            keyDownMonitorActive: inputBackend.isKeyDownMonitoringActive,
-            keyUpMonitorActive: inputBackend.isKeyUpMonitoringActive,
+            accessibilityTrusted: true,
+            flagsMonitorActive: false,
+            keyDownMonitorActive: false,
+            keyUpMonitorActive: false,
             eventTapActive: false
         )
 
@@ -601,7 +347,6 @@ private extension GlobalShortcutController {
             reasonToken: snapshot.result == .degraded ? snapshot.reasonToken : "",
             requiresGlobalCapture: snapshot.requiresGlobalCapture,
             accessibilityTrusted: snapshot.accessibilityTrusted,
-            inputMonitoringTrusted: snapshot.inputMonitoringTrusted,
             eventTapExpected: snapshot.eventTapExpected,
             eventTapActive: snapshot.eventTapActive
         )
@@ -626,7 +371,6 @@ private extension GlobalShortcutController {
                 reason: current.result == .degraded ? current.reasonToken : nil,
                 requiresGlobalCapture: current.requiresGlobalCapture,
                 accessibilityTrusted: current.accessibilityTrusted,
-                inputMonitoringTrusted: current.inputMonitoringTrusted,
                 flagsMonitorExpected: current.flagsMonitorExpected,
                 flagsMonitorActive: current.flagsMonitorActive,
                 keyDownMonitorExpected: current.keyDownMonitorExpected,
@@ -638,25 +382,6 @@ private extension GlobalShortcutController {
                 checkedAtEpochMs: Int64(current.checkedAt.timeIntervalSince1970 * 1_000)
             ),
             category: .uiController
-        )
-
-        let message = current.result == .degraded
-            ? "Global shortcut capture health degraded"
-            : "Global shortcut capture health updated"
-        let log: (_ message: String, _ category: LogCategory, _ extra: [String: Any]) -> Void = current.result == .degraded
-            ? AppLogger.warning
-            : AppLogger.info
-        log(
-            message,
-            .uiController,
-            [
-                "scope": current.scope,
-                "source": current.source,
-                "result": current.result.rawValue,
-                "previousResult": previous?.result.rawValue ?? "unknown",
-                "reason": current.result == .degraded ? current.reasonToken : "none",
-                "requiresGlobalCapture": current.requiresGlobalCapture,
-            ]
         )
     }
 
@@ -708,8 +433,6 @@ private extension GlobalShortcutController {
     func resetShortcutState() {
         dictationHandler.reset()
         meetingHandler.reset()
-        lastEscapePressTime = nil
-        presetState.reset()
     }
 
     var currentDoubleTapInterval: TimeInterval {
@@ -729,30 +452,6 @@ private extension GlobalShortcutController {
         case .meeting:
             settings.shortcutActivationMode
         }
-    }
-
-    func isPresetActive(_ preset: PresetShortcutKey, event: NSEvent) -> Bool {
-        presetState.isPresetActive(preset, event: event)
-    }
-
-    func isPresetActive(_ preset: PresetShortcutKey, inputEvent: ShortcutInputEvent) -> Bool {
-        presetState.isPresetActive(preset, inputEvent: inputEvent)
-    }
-
-    func isModifierGestureActive(_ gesture: ModifierShortcutGesture, event: NSEvent) -> Bool {
-        presetState.isModifierGestureActive(gesture, event: event)
-    }
-
-    func isModifierGestureActive(_ gesture: ModifierShortcutGesture, inputEvent: ShortcutInputEvent) -> Bool {
-        presetState.isModifierGestureActive(gesture, inputEvent: inputEvent)
-    }
-
-    func isShortcutActive(_ definition: ShortcutDefinition, event: NSEvent) -> Bool {
-        presetState.isShortcutActive(definition, event: event)
-    }
-
-    func isShortcutActive(_ definition: ShortcutDefinition, inputEvent: ShortcutInputEvent) -> Bool {
-        presetState.isShortcutActive(definition, inputEvent: inputEvent)
     }
 
     func routingConfiguration(for type: ShortcutType) -> ShortcutEventRoutingConfiguration {
@@ -784,37 +483,6 @@ private extension GlobalShortcutController {
                 customKeyboardShortcut: "keyboardshortcuts_custom"
             )
         )
-    }
-
-    func routeShortcutMonitorEvent(
-        for type: ShortcutType,
-        event: ShortcutInputEvent,
-        mode: ShortcutEventRoutingMode,
-        handler: SmartShortcutHandler
-    ) {
-        let result = shortcutRouter.routeMonitorEvent(
-            configuration: routingConfiguration(for: type),
-            mode: mode,
-            wasPressed: handler.isPressed,
-            isDefinitionActive: { [weak self] definition in
-                guard let self else { return false }
-                return self.isShortcutActive(definition, inputEvent: event)
-            },
-            isModifierGestureActive: { [weak self] gesture in
-                guard let self else { return false }
-                return self.isModifierGestureActive(gesture, inputEvent: event)
-            },
-            isPresetActive: { [weak self] presetKey in
-                guard let self else { return false }
-                return self.isPresetActive(presetKey, inputEvent: event)
-            }
-        )
-
-        if let nextPressedState = result.nextPressedState {
-            handler.handleModifierChange(isActive: nextPressedState)
-        }
-
-        applyRoutingOutcomes(result.outcomes, for: type)
     }
 
     func applyRoutingOutcomes(
@@ -876,23 +544,6 @@ private extension GlobalShortcutController {
                 source: source,
                 trigger: trigger.rawValue,
                 reason: reason
-            ),
-            category: .uiController
-        )
-    }
-
-    func emitPermissionBlocked(
-        permission: String,
-        accessibilityTrusted: Bool,
-        inputMonitoringTrusted: Bool
-    ) {
-        ShortcutTelemetry.emit(
-            .permissionBlocked(
-                pipeline: "global_shortcuts",
-                scope: "global",
-                permission: permission,
-                accessibilityTrusted: accessibilityTrusted,
-                inputMonitoringTrusted: inputMonitoringTrusted
             ),
             category: .uiController
         )
