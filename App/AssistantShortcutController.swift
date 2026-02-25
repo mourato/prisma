@@ -37,6 +37,7 @@ final class AssistantShortcutController {
     let presetState = ShortcutActivationState()
     let escapeDoublePressInterval: TimeInterval = 1.0
     var lastEscapePressTime: Date?
+    var hasRequestedAccessibilityPermissionForGlobalCapture = false
 
     init(
         assistantService: AssistantVoiceCommandService,
