@@ -8,7 +8,7 @@ extension AssistantShortcutController {
             installFlagsChangedMonitors()
             installKeyDownMonitors()
             removeKeyUpMonitors()
-            ensureAccessibilityPermissionForGlobalCaptureIfNeeded(needsGlobalCapture: true)
+            ensureGlobalCapturePermissionsIfNeeded(needsGlobalCapture: true)
             refreshShortcutLayerKeySuppression()
             AppLogger.debug(
                 "Assistant monitor refresh",
@@ -74,7 +74,7 @@ extension AssistantShortcutController {
         )
 
         let needsGlobalCapture = needsModifierMonitoring || needsShortcutKeyMonitoring || needsEscapeMonitoring || needsEnterStopMonitoring
-        ensureAccessibilityPermissionForGlobalCaptureIfNeeded(needsGlobalCapture: needsGlobalCapture)
+        ensureGlobalCapturePermissionsIfNeeded(needsGlobalCapture: needsGlobalCapture)
     }
 
     func refreshCustomShortcutRegistration() {
@@ -138,21 +138,46 @@ extension AssistantShortcutController {
         }
     }
 
-    private func ensureAccessibilityPermissionForGlobalCaptureIfNeeded(needsGlobalCapture: Bool) {
+    private func ensureGlobalCapturePermissionsIfNeeded(needsGlobalCapture: Bool) {
         guard needsGlobalCapture else { return }
-        guard !AccessibilityPermissionService.isTrusted() else { return }
 
-        if !hasRequestedAccessibilityPermissionForGlobalCapture {
+        let accessibilityTrusted = AccessibilityPermissionService.isTrusted()
+        let inputMonitoringTrusted = InputMonitoringPermissionService.isTrusted()
+
+        if !accessibilityTrusted,
+           !hasRequestedAccessibilityPermissionForGlobalCapture
+        {
             hasRequestedAccessibilityPermissionForGlobalCapture = true
             AccessibilityPermissionService.requestPermission()
+            if !hasOpenedAccessibilitySettingsForGlobalCapture {
+                hasOpenedAccessibilitySettingsForGlobalCapture = true
+                AccessibilityPermissionService.openSystemSettings()
+            }
         }
 
+        if !inputMonitoringTrusted,
+           !hasRequestedInputMonitoringPermissionForGlobalCapture
+        {
+            hasRequestedInputMonitoringPermissionForGlobalCapture = true
+            let didRequest = InputMonitoringPermissionService.requestPermission()
+            if !didRequest,
+               !hasOpenedInputMonitoringSettingsForGlobalCapture
+            {
+                hasOpenedInputMonitoringSettingsForGlobalCapture = true
+                InputMonitoringPermissionService.openSystemSettings()
+            }
+        }
+
+        guard !accessibilityTrusted || !inputMonitoringTrusted else { return }
+
         AppLogger.warning(
-            "Assistant shortcut capture requires Accessibility permission",
+            "Assistant shortcut capture missing required permissions",
             category: .assistant,
             extra: [
                 "scope": "assistant",
                 "needsGlobalCapture": needsGlobalCapture,
+                "accessibilityTrusted": accessibilityTrusted,
+                "inputMonitoringTrusted": inputMonitoringTrusted,
             ]
         )
     }

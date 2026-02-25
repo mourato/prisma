@@ -38,13 +38,20 @@ final class AssistantShortcutController {
     let escapeDoublePressInterval: TimeInterval = 1.0
     var lastEscapePressTime: Date?
     var hasRequestedAccessibilityPermissionForGlobalCapture = false
+    var hasRequestedInputMonitoringPermissionForGlobalCapture = false
+    var hasOpenedAccessibilitySettingsForGlobalCapture = false
+    var hasOpenedInputMonitoringSettingsForGlobalCapture = false
 
     init(
         assistantService: AssistantVoiceCommandService,
-        settings: AppSettingsStore = .shared
+        settings: AppSettingsStore
     ) {
         self.assistantService = assistantService
         self.settings = settings
+    }
+
+    convenience init(assistantService: AssistantVoiceCommandService) {
+        self.init(assistantService: assistantService, settings: .shared)
     }
 
     deinit {
