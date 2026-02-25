@@ -111,8 +111,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
     }
 
     public func stopAndProcess() async {
-        guard isRecording else { return }
-        guard !isProcessing else { return }
+        guard isRecording, !isProcessing else { return }
 
         recordingManager.refreshPostProcessingReadinessWarning(for: .assistant, settings: settings)
         isProcessing = true
@@ -132,202 +131,28 @@ public final class AssistantVoiceCommandService: ObservableObject {
         }
 
         do {
-            guard let recordingURL else {
-                throw AssistantVoiceCommandError.failedToStopRecording
-            }
-
-            let transcription = try await transcriptionClient.transcribe(audioURL: recordingURL)
-            let command = transcription.text.trimmingCharacters(in: .whitespacesAndNewlines)
-
-            if AssistantPayloadLogging.shouldLogPayloadDetails {
-                AppLogger.debug(
-                    "Assistant transcription payload",
-                    category: .assistant,
-                    extra: [
-                        "rawLength": transcription.text.count,
-                        "trimmedLength": command.count,
-                        "preview": AssistantPayloadLogging.payloadPreview(command),
-                    ]
-                )
-            }
-
-            guard !command.isEmpty else {
-                throw AssistantVoiceCommandError.emptyCommand
-            }
-
-            let executionFlow = currentExecutionFlow
-            let selectedIntegration: AssistantIntegrationConfig?
-
-            if executionFlow == .integrationDispatch {
-                guard let integration = settings.assistantSelectedIntegration,
-                      integration.isEnabled
-                else {
-                    throw AssistantVoiceCommandError.integrationDisabled
-                }
-                selectedIntegration = integration
-            } else {
-                selectedIntegration = nil
-            }
-
-            AppLogger.info(
-                "Assistant command processed",
-                category: .assistant,
-                extra: [
-                    "integration": selectedIntegration?.name ?? "assistantMode",
-                    "executionFlow": executionFlow == .integrationDispatch ? "integrationDispatch" : "assistantMode",
-                    "commandLength": command.count,
-                ]
+            let (command, executionFlow, selectedIntegration) = try await performTranscriptionPhase(recordingURL: recordingURL)
+            let (sourceText, selectedTextResult) = try await captureSourceText(executionFlow: executionFlow, command: command)
+            let processedCommand = try await processWithAI(
+                sourceText: sourceText,
+                command: command,
+                executionFlow: executionFlow,
+                selectedIntegration: selectedIntegration
             )
-
-            let selectedTextResult: (text: String, snapshot: AssistantTextSelectionService.PasteboardSnapshot)?
-            let sourceText: String
-
-            if executionFlow == .integrationDispatch {
-                selectedTextResult = nil
-                sourceText = command
-
-                if AssistantPayloadLogging.shouldLogPayloadDetails {
-                    AppLogger.debug(
-                        "Assistant integration source payload",
-                        category: .assistant,
-                        extra: [
-                            "length": sourceText.count,
-                            "preview": AssistantPayloadLogging.payloadPreview(sourceText),
-                        ]
-                    )
-                }
-            } else {
-                let selectedTextCapture = try await textSelectionService.captureSelectedText()
-                selectedTextResult = selectedTextCapture
-                sourceText = selectedTextCapture.text
-
-                if AssistantPayloadLogging.shouldLogPayloadDetails {
-                    AppLogger.debug(
-                        "Assistant selected text payload",
-                        category: .assistant,
-                        extra: [
-                            "length": sourceText.count,
-                            "preview": AssistantPayloadLogging.payloadPreview(sourceText),
-                        ]
-                    )
-                }
-            }
-
-            guard let beforeAICommand = try await applyScriptIfNeeded(
-                stage: .beforeAI,
-                input: command,
-                integration: selectedIntegration
-            ) else {
-                indicator.hide()
-                return
-            }
-
-            let integrationPrompt = PostProcessingPrompt(
-                title: "assistant.raycast.prompt_title".localized,
-                promptText: assistantPromptInstructions(
-                    baseInstructions: normalizedPromptInstructions(from: selectedIntegration),
-                    voiceCommand: beforeAICommand,
-                    executionFlow: executionFlow
-                )
+            let finalCommand = applyNormalization(
+                processedCommand: processedCommand,
+                command: command,
+                executionFlow: executionFlow,
+                sourceText: sourceText
             )
-
-            let processedCommand = try await postProcessingService.processTranscription(
-                sourceText,
-                with: integrationPrompt,
-                mode: .assistant,
-                systemPromptOverride: executionFlow == .integrationDispatch
-                    ? AIPromptTemplates.assistantSystemPrompt
-                    : nil
+            try await executeDispatch(
+                executionFlow: executionFlow,
+                finalCommand: finalCommand,
+                command: command,
+                processedCommand: processedCommand,
+                selectedIntegration: selectedIntegration,
+                selectedTextResult: selectedTextResult
             )
-
-            if AssistantPayloadLogging.shouldLogPayloadDetails {
-                AppLogger.debug(
-                    "Assistant post-processing payload",
-                    category: .assistant,
-                    extra: [
-                        "length": processedCommand.count,
-                        "preview": AssistantPayloadLogging.payloadPreview(processedCommand),
-                    ]
-                )
-            }
-
-            guard let commandForDispatch = try await applyScriptIfNeeded(
-                stage: .afterAI,
-                input: processedCommand,
-                integration: selectedIntegration
-            ) else {
-                indicator.hide()
-                return
-            }
-
-            let processedCommandForDispatch: String = if executionFlow == .integrationDispatch {
-                try requireNonEmptyCommand(
-                    processedCommand,
-                    fallback: nil
-                )
-            } else {
-                normalizedCommand(processedCommand, fallback: beforeAICommand)
-            }
-
-            let commandToDispatch = normalizedCommand(
-                commandForDispatch,
-                fallback: processedCommandForDispatch
-            )
-            let finalCommand = executionFlow == .integrationDispatch
-                ? commandToDispatch
-                : normalizedCommand(commandToDispatch, fallback: sourceText)
-
-            if AssistantPayloadLogging.shouldLogPayloadDetails {
-                AppLogger.debug(
-                    "Assistant dispatch payload",
-                    category: .assistant,
-                    extra: [
-                        "length": finalCommand.count,
-                        "preview": AssistantPayloadLogging.payloadPreview(finalCommand),
-                        "integrationId": selectedIntegration?.id.uuidString ?? "assistantMode",
-                    ]
-                )
-            }
-
-            if executionFlow == .integrationDispatch {
-                guard let selectedIntegration else {
-                    throw AssistantVoiceCommandError.integrationDisabled
-                }
-
-                let dispatchResult = try dispatchToRaycast(
-                    with: finalCommand,
-                    rawText: command,
-                    selectedIntegration: selectedIntegration
-                )
-                AppLogger.info(
-                    "Assistant integration dispatch completed",
-                    category: .assistant,
-                    extra: [
-                        "integrationId": selectedIntegration.id.uuidString,
-                        "integrationName": selectedIntegration.name,
-                        "result": dispatchResult == .openedWithClipboardFallback ? "clipboardFallback" : "deepLink",
-                        "processedLength": processedCommand.count,
-                        "dispatchedLength": finalCommand.count,
-                    ]
-                )
-            } else {
-                guard let selectedTextResult else {
-                    throw AssistantVoiceCommandError.noSelectionFound
-                }
-                try await textSelectionService.replaceSelectedText(
-                    with: finalCommand,
-                    restoring: selectedTextResult.snapshot
-                )
-                AppLogger.info(
-                    "Assistant mode command applied to active app",
-                    category: .assistant,
-                    extra: [
-                        "processedLength": processedCommand.count,
-                        "appliedLength": finalCommand.count,
-                    ]
-                )
-            }
-
             indicator.hide()
         } catch let error as AssistantVoiceCommandError {
             AppLogger.error("Assistant processing failed with known error", category: .assistant, error: error)
@@ -339,6 +164,206 @@ public final class AssistantVoiceCommandService: ObservableObject {
             AppLogger.error("Assistant processing failed with unexpected error", category: .assistant, error: error)
             showError(.processingFailed)
         }
+    }
+
+    // MARK: - Phase Helpers
+
+    private func performTranscriptionPhase(recordingURL: URL?) async throws -> (
+        command: String,
+        executionFlow: AssistantExecutionFlow,
+        selectedIntegration: AssistantIntegrationConfig?
+    ) {
+        guard let recordingURL else {
+            throw AssistantVoiceCommandError.failedToStopRecording
+        }
+
+        let transcription = try await transcriptionClient.transcribe(audioURL: recordingURL)
+        let command = transcription.text.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        logPayloadIfNeeded("Assistant transcription payload", [
+            "rawLength": transcription.text.count,
+            "trimmedLength": command.count,
+            "preview": AssistantPayloadLogging.payloadPreview(command),
+        ])
+
+        guard !command.isEmpty else {
+            throw AssistantVoiceCommandError.emptyCommand
+        }
+
+        let executionFlow = currentExecutionFlow
+        let selectedIntegration = resolveSelectedIntegration(for: executionFlow)
+
+        AppLogger.info(
+            "Assistant command processed",
+            category: .assistant,
+            extra: [
+                "integration": selectedIntegration?.name ?? "assistantMode",
+                "executionFlow": executionFlow == .integrationDispatch ? "integrationDispatch" : "assistantMode",
+                "commandLength": command.count,
+            ]
+        )
+
+        return (command, executionFlow, selectedIntegration)
+    }
+
+    private func resolveSelectedIntegration(for executionFlow: AssistantExecutionFlow) -> AssistantIntegrationConfig? {
+        guard executionFlow == .integrationDispatch,
+              let integration = settings.assistantSelectedIntegration,
+              integration.isEnabled
+        else {
+            return nil
+        }
+        return integration
+    }
+
+    private func captureSourceText(
+        executionFlow: AssistantExecutionFlow,
+        command: String
+    ) async throws -> (
+        sourceText: String,
+        selectedTextResult: (text: String, snapshot: AssistantTextSelectionService.PasteboardSnapshot)?
+    ) {
+        if executionFlow == .integrationDispatch {
+            logPayloadIfNeeded("Assistant integration source payload", [
+                "length": command.count,
+                "preview": AssistantPayloadLogging.payloadPreview(command),
+            ])
+            return (command, nil)
+        }
+
+        let selectedTextCapture = try await textSelectionService.captureSelectedText()
+        logPayloadIfNeeded("Assistant selected text payload", [
+            "length": selectedTextCapture.text.count,
+            "preview": AssistantPayloadLogging.payloadPreview(selectedTextCapture.text),
+        ])
+        return (selectedTextCapture.text, selectedTextCapture)
+    }
+
+    private func processWithAI(
+        sourceText: String,
+        command: String,
+        executionFlow: AssistantExecutionFlow,
+        selectedIntegration: AssistantIntegrationConfig?
+    ) async throws -> String {
+        guard let beforeAICommand = try await applyScriptIfNeeded(
+            stage: .beforeAI,
+            input: command,
+            integration: selectedIntegration
+        ) else {
+            indicator.hide()
+            throw AssistantVoiceCommandError.processingFailed
+        }
+
+        let integrationPrompt = PostProcessingPrompt(
+            title: "assistant.raycast.prompt_title".localized,
+            promptText: assistantPromptInstructions(
+                baseInstructions: normalizedPromptInstructions(from: selectedIntegration),
+                voiceCommand: beforeAICommand,
+                executionFlow: executionFlow
+            )
+        )
+
+        let processedCommand = try await postProcessingService.processTranscription(
+            sourceText,
+            with: integrationPrompt,
+            mode: .assistant,
+            systemPromptOverride: executionFlow == .integrationDispatch
+                ? AIPromptTemplates.assistantSystemPrompt
+                : nil
+        )
+
+        logPayloadIfNeeded("Assistant post-processing payload", [
+            "length": processedCommand.count,
+            "preview": AssistantPayloadLogging.payloadPreview(processedCommand),
+        ])
+
+        guard let commandForDispatch = try await applyScriptIfNeeded(
+            stage: .afterAI,
+            input: processedCommand,
+            integration: selectedIntegration
+        ) else {
+            indicator.hide()
+            throw AssistantVoiceCommandError.processingFailed
+        }
+
+        return commandForDispatch
+    }
+
+    private func applyNormalization(
+        processedCommand: String,
+        command: String,
+        executionFlow: AssistantExecutionFlow,
+        sourceText: String
+    ) -> String {
+        let processedCommandForDispatch: String = if executionFlow == .integrationDispatch {
+            (try? requireNonEmptyCommand(processedCommand, fallback: nil)) ?? processedCommand
+        } else {
+            normalizedCommand(processedCommand, fallback: command)
+        }
+
+        let commandToDispatch = normalizedCommand(processedCommand, fallback: processedCommandForDispatch)
+        return executionFlow == .integrationDispatch
+            ? commandToDispatch
+            : normalizedCommand(commandToDispatch, fallback: sourceText)
+    }
+
+    private func executeDispatch(
+        executionFlow: AssistantExecutionFlow,
+        finalCommand: String,
+        command: String,
+        processedCommand: String,
+        selectedIntegration: AssistantIntegrationConfig?,
+        selectedTextResult: (text: String, snapshot: AssistantTextSelectionService.PasteboardSnapshot)?
+    ) async throws {
+        logPayloadIfNeeded("Assistant dispatch payload", [
+            "length": finalCommand.count,
+            "preview": AssistantPayloadLogging.payloadPreview(finalCommand),
+            "integrationId": selectedIntegration?.id.uuidString ?? "assistantMode",
+        ])
+
+        if executionFlow == .integrationDispatch {
+            guard let selectedIntegration else {
+                throw AssistantVoiceCommandError.integrationDisabled
+            }
+
+            let dispatchResult = try dispatchToRaycast(
+                with: finalCommand,
+                rawText: command,
+                selectedIntegration: selectedIntegration
+            )
+            AppLogger.info(
+                "Assistant integration dispatch completed",
+                category: .assistant,
+                extra: [
+                    "integrationId": selectedIntegration.id.uuidString,
+                    "integrationName": selectedIntegration.name,
+                    "result": dispatchResult == .openedWithClipboardFallback ? "clipboardFallback" : "deepLink",
+                    "processedLength": processedCommand.count,
+                    "dispatchedLength": finalCommand.count,
+                ]
+            )
+        } else {
+            guard let selectedTextResult else {
+                throw AssistantVoiceCommandError.noSelectionFound
+            }
+            try await textSelectionService.replaceSelectedText(
+                with: finalCommand,
+                restoring: selectedTextResult.snapshot
+            )
+            AppLogger.info(
+                "Assistant mode command applied to active app",
+                category: .assistant,
+                extra: [
+                    "processedLength": processedCommand.count,
+                    "appliedLength": finalCommand.count,
+                ]
+            )
+        }
+    }
+
+    private func logPayloadIfNeeded(_ message: String, _ extras: [String: Any]) {
+        guard AssistantPayloadLogging.shouldLogPayloadDetails else { return }
+        AppLogger.debug(message, category: .assistant, extra: extras)
     }
 
     public func cancelRecording() async {
