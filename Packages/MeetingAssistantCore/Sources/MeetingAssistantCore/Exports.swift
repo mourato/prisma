@@ -13,3 +13,9 @@ public typealias ShortcutTelemetryEvent = MeetingAssistantCoreCommon.ShortcutTel
 public typealias ShortcutTelemetryEventName = MeetingAssistantCoreCommon.ShortcutTelemetryEventName
 public typealias ShortcutTelemetryLevel = MeetingAssistantCoreCommon.ShortcutTelemetryLevel
 public typealias ShortcutTelemetryRecord = MeetingAssistantCoreCommon.ShortcutTelemetryRecord
+
+// Re-export shortcut input types for convenience
+public typealias ShortcutInputEvent = MeetingAssistantCoreInfrastructure.ShortcutInputEvent
+public typealias ShortcutInputEventKind = MeetingAssistantCoreInfrastructure.ShortcutInputEventKind
+public typealias ShortcutInputBackend = MeetingAssistantCoreInfrastructure.ShortcutInputBackend
+public typealias MockShortcutInputBackend = MeetingAssistantCoreInfrastructure.MockShortcutInputBackend

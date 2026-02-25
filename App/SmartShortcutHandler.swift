@@ -83,6 +83,21 @@ final class SmartShortcutHandler {
         }
     }
 
+    // MARK: - ShortcutInputEvent handlers (for pluggable backend)
+
+    func handleFlagsChanged(inputEvent: ShortcutInputEvent) {
+        // No-op for flags changed in SmartShortcutHandler
+        // This is handled at a higher level in the routing orchestrator
+    }
+
+    func handleKeyDown(inputEvent: ShortcutInputEvent) {
+        // No-op for key down - handled via handleShortcutDown with activation mode
+    }
+
+    func handleKeyUp(inputEvent: ShortcutInputEvent) {
+        // No-op for key up - handled via handleShortcutUp with activation mode
+    }
+
     private func handleHoldOrToggleDown() {
         holdOrTogglePressStartTime = Date()
         holdOrToggleWasRecordingAtPress = isRecordingProvider()
