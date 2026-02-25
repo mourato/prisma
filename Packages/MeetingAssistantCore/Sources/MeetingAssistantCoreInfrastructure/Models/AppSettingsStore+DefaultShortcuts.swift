@@ -1,0 +1,27 @@
+import Foundation
+
+extension AppSettingsStore {
+    static var defaultDictationShortcutDefinition: ShortcutDefinition {
+        ShortcutDefinition(
+            modifiers: [.option, .command],
+            primaryKey: .letter("D", keyCode: 0x02),
+            trigger: .singleTap
+        )
+    }
+
+    static var defaultAssistantShortcutDefinition: ShortcutDefinition {
+        ShortcutDefinition(
+            modifiers: [.option, .command],
+            primaryKey: .letter("A", keyCode: 0x00),
+            trigger: .singleTap
+        )
+    }
+
+    static var defaultMeetingShortcutDefinition: ShortcutDefinition {
+        ShortcutDefinition(
+            modifiers: [.option, .command],
+            primaryKey: .letter("M", keyCode: 0x2e),
+            trigger: .singleTap
+        )
+    }
+}

@@ -1,18 +1,6 @@
 import Foundation
 
 extension AppSettingsStore {
-    static func normalizedLayerShortcutKey(_ value: String?) -> String? {
-        guard let rawValue = value?.trimmingCharacters(in: .whitespacesAndNewlines), !rawValue.isEmpty else {
-            return nil
-        }
-
-        guard let firstCharacter = rawValue.first else {
-            return nil
-        }
-
-        return String(firstCharacter).uppercased()
-    }
-
     static func isValidHTTPURLString(_ value: String) -> Bool {
         guard let url = URL(string: value),
               let scheme = url.scheme?.lowercased(),
