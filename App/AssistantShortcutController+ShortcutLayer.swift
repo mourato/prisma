@@ -3,6 +3,8 @@ import MeetingAssistantCore
 
 @MainActor
 extension AssistantShortcutController {
+    private typealias ShortcutLayerEvent = AssistantShortcutLayerStateMachine.Event
+
     var shouldUseAssistantShortcutLayer: Bool {
         guard settings.assistantShortcutDefinition != nil else {
             return false
@@ -34,6 +36,28 @@ extension AssistantShortcutController {
 
     private var shouldPropagateEscapeForDoublePressCancel: Bool {
         settings.assistantUseEscapeToCancelRecording || settings.useEscapeToCancelRecording
+    }
+
+    @discardableResult
+    private func transitionShortcutLayer(
+        on event: ShortcutLayerEvent,
+        source: String
+    ) -> AssistantShortcutLayerStateMachine.Transition {
+        let transition = shortcutLayerStateMachine.transition(on: event)
+        guard !transition.isValid else {
+            return transition
+        }
+
+        AppLogger.debug(
+            "Shortcut layer FSM ignored invalid transition",
+            category: .assistant,
+            extra: [
+                "source": source,
+                "event": event.rawValue,
+                "state": transition.from.rawValue,
+            ]
+        )
+        return transition
     }
 
     func refreshShortcutLayerKeySuppression() {
@@ -119,7 +143,7 @@ extension AssistantShortcutController {
     }
 
     func armShortcutLayer(source: String = "unknown", trigger: String = "unknown") {
-        isShortcutLayerArmed = true
+        _ = transitionShortcutLayer(on: .leaderTapped, source: source)
         emitLayerArmed(source: source, trigger: trigger)
         refreshShortcutLayerKeySuppression()
         shortcutLayerFeedbackController.showArmed()
@@ -132,13 +156,20 @@ extension AssistantShortcutController {
             } catch {
                 return
             }
-            self?.emitLayerTimeout(source: source)
-            self?.disarmShortcutLayer(showFeedback: false)
+            self?.handleShortcutLayerTimeout(source: source)
         }
     }
 
-    func disarmShortcutLayer(showFeedback: Bool) {
-        isShortcutLayerArmed = false
+    func disarmShortcutLayer(
+        showFeedback: Bool,
+        event: AssistantShortcutLayerStateMachine.Event = .disarmedExplicitly,
+        transitionSource: String = "unknown"
+    ) {
+        _ = transitionShortcutLayer(on: event, source: transitionSource)
+        if shortcutLayerStateMachine.state != .idle {
+            _ = transitionShortcutLayer(on: .disarmedExplicitly, source: "\(transitionSource)_to_idle")
+        }
+
         refreshShortcutLayerKeySuppression()
         shortcutLayerTask?.cancel()
         shortcutLayerTask = nil
@@ -148,6 +179,20 @@ extension AssistantShortcutController {
         } else {
             shortcutLayerFeedbackController.hide()
         }
+    }
+
+    private func handleShortcutLayerTimeout(source: String) {
+        let transition = transitionShortcutLayer(on: .timeoutElapsed, source: source)
+        guard transition.isValid else {
+            return
+        }
+
+        emitLayerTimeout(source: source)
+        disarmShortcutLayer(
+            showFeedback: false,
+            event: .disarmedExplicitly,
+            transitionSource: "timeout_finalize"
+        )
     }
 
     func registerLayerLeaderTap() {
@@ -195,10 +240,18 @@ extension AssistantShortcutController {
             if shouldPropagateEscapeForDoublePressCancel {
                 // If recording, disarm the layer silently
                 if assistantService.isRecording {
-                    disarmShortcutLayer(showFeedback: false)
+                    disarmShortcutLayer(
+                        showFeedback: false,
+                        event: .cancelledByEscapeOrBlur,
+                        transitionSource: "escape_propagated_recording"
+                    )
                 } else {
                     // If not recording, just disarm with feedback
-                    disarmShortcutLayer(showFeedback: true)
+                    disarmShortcutLayer(
+                        showFeedback: true,
+                        event: .cancelledByEscapeOrBlur,
+                        transitionSource: "escape_propagated_idle"
+                    )
                 }
                 // Always allow the event to propagate so GlobalShortcutController
                 // (for Dictation) or AssistantShortcuts (for Assistant) can handle it
@@ -210,7 +263,11 @@ extension AssistantShortcutController {
                 return false
             }
             // Escape double-press cancel is disabled for both modes; just disarm the layer
-            disarmShortcutLayer(showFeedback: true)
+            disarmShortcutLayer(
+                showFeedback: true,
+                event: .cancelledByEscapeOrBlur,
+                transitionSource: "escape_consumed"
+            )
             AppLogger.debug(
                 "ESC consumed by shortcut layer because escape cancel is disabled",
                 category: .assistant,
@@ -233,7 +290,11 @@ extension AssistantShortcutController {
                 triggerToken: "singleTap",
                 reason: "no_layer_match"
             )
-            disarmShortcutLayer(showFeedback: false)
+            disarmShortcutLayer(
+                showFeedback: false,
+                event: .disarmedExplicitly,
+                transitionSource: "layer_key_unmatched"
+            )
             return true
         }
 
@@ -252,7 +313,12 @@ extension AssistantShortcutController {
             )
         }
 
-        disarmShortcutLayer(showFeedback: false)
+        _ = transitionShortcutLayer(on: .layerKeyMatched, source: "layer_key_match")
+        disarmShortcutLayer(
+            showFeedback: false,
+            event: .disarmedExplicitly,
+            transitionSource: "layer_key_match_finalize"
+        )
         shortcutLayerFeedbackController.showTriggered()
         Task { @MainActor [weak self] in
             await self?.executeLayerAction(matched)

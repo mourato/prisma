@@ -115,5 +115,20 @@ extension AssistantShortcutController {
                 self?.runShortcutCaptureHealthCheck(source: "app_became_active")
             }
             .store(in: &cancellables)
+
+        NotificationCenter.default.publisher(for: NSApplication.willResignActiveNotification)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self, self.isShortcutLayerArmed else {
+                    return
+                }
+
+                self.disarmShortcutLayer(
+                    showFeedback: false,
+                    event: .cancelledByEscapeOrBlur,
+                    transitionSource: "app_will_resign_active"
+                )
+            }
+            .store(in: &cancellables)
     }
 }

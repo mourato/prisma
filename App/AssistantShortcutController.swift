@@ -16,13 +16,17 @@ final class AssistantShortcutController {
     var integrationPresetStates: [UUID: ShortcutActivationState] = [:]
     var registeredIntegrationShortcutIDs = Set<UUID>()
     let layerTimeoutNanoseconds: UInt64 = 1_000_000_000
-    var isShortcutLayerArmed = false
+    var shortcutLayerStateMachine = AssistantShortcutLayerStateMachine()
     var shortcutLayerTask: Task<Void, Never>?
     var lastLayerLeaderTapTime: Date?
     let shortcutLayerFeedbackController = ShortcutLayerFeedbackController()
     let shortcutLayerKeySuppressor = ShortcutLayerKeySuppressor()
     let returnKeyCode: UInt16 = 0x24
     let keypadEnterKeyCode: UInt16 = 0x4c
+
+    var isShortcutLayerArmed: Bool {
+        shortcutLayerStateMachine.state == .armed
+    }
 
     lazy var shortcutHandler = SmartShortcutHandler(
         doubleTapInterval: currentDoubleTapInterval,

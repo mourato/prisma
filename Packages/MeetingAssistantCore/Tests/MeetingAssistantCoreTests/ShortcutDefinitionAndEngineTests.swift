@@ -278,6 +278,78 @@ final class ShortcutDefinitionAndEngineTests: XCTestCase {
         )
     }
 
+    func testAssistantShortcutLayerStateMachineAllowsLeaderTapToArmFromIdle() {
+        var machine = AssistantShortcutLayerStateMachine()
+
+        let transition = machine.transition(on: .leaderTapped)
+
+        XCTAssertTrue(transition.isValid)
+        XCTAssertEqual(transition.from, .idle)
+        XCTAssertEqual(transition.to, .armed)
+        XCTAssertEqual(machine.state, .armed)
+    }
+
+    func testAssistantShortcutLayerStateMachineRejectsInvalidTransitionFromIdle() {
+        var machine = AssistantShortcutLayerStateMachine()
+
+        let transition = machine.transition(on: .layerKeyMatched)
+
+        XCTAssertFalse(transition.isValid)
+        XCTAssertEqual(transition.from, .idle)
+        XCTAssertEqual(transition.to, .idle)
+        XCTAssertEqual(machine.state, .idle)
+    }
+
+    func testAssistantShortcutLayerStateMachineConsumesLayerAfterMatch() {
+        var machine = AssistantShortcutLayerStateMachine()
+        _ = machine.transition(on: .leaderTapped)
+
+        let transition = machine.transition(on: .layerKeyMatched)
+
+        XCTAssertTrue(transition.isValid)
+        XCTAssertEqual(transition.from, .armed)
+        XCTAssertEqual(transition.to, .consumed)
+        XCTAssertEqual(machine.state, .consumed)
+    }
+
+    func testAssistantShortcutLayerStateMachineTransitionsToTimedOut() {
+        var machine = AssistantShortcutLayerStateMachine()
+        _ = machine.transition(on: .leaderTapped)
+
+        let transition = machine.transition(on: .timeoutElapsed)
+
+        XCTAssertTrue(transition.isValid)
+        XCTAssertEqual(transition.from, .armed)
+        XCTAssertEqual(transition.to, .timedOut)
+        XCTAssertEqual(machine.state, .timedOut)
+    }
+
+    func testAssistantShortcutLayerStateMachineTransitionsToCancelled() {
+        var machine = AssistantShortcutLayerStateMachine()
+        _ = machine.transition(on: .leaderTapped)
+
+        let transition = machine.transition(on: .cancelledByEscapeOrBlur)
+
+        XCTAssertTrue(transition.isValid)
+        XCTAssertEqual(transition.from, .armed)
+        XCTAssertEqual(transition.to, .cancelled)
+        XCTAssertEqual(machine.state, .cancelled)
+    }
+
+    func testAssistantShortcutLayerStateMachineDisarmsExplicitlyFromTerminalStates() {
+        var timedOutMachine = AssistantShortcutLayerStateMachine(initialState: .timedOut)
+        let timedOutTransition = timedOutMachine.transition(on: .disarmedExplicitly)
+        XCTAssertTrue(timedOutTransition.isValid)
+        XCTAssertEqual(timedOutTransition.to, .idle)
+        XCTAssertEqual(timedOutMachine.state, .idle)
+
+        var consumedMachine = AssistantShortcutLayerStateMachine(initialState: .consumed)
+        let consumedTransition = consumedMachine.transition(on: .disarmedExplicitly)
+        XCTAssertTrue(consumedTransition.isValid)
+        XCTAssertEqual(consumedTransition.to, .idle)
+        XCTAssertEqual(consumedMachine.state, .idle)
+    }
+
     func testShortcutTelemetryShortcutDetectedRecordUsesCanonicalPayload() {
         let record = ShortcutTelemetryEvent
             .shortcutDetected(
