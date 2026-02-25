@@ -155,10 +155,10 @@ private struct AssistantScreenBorderView: View {
     var body: some View {
         #if DEBUG
         if shouldPrintChanges {
-            _ = Self._printChanges()
+            Self._printChanges()
         }
         #endif
-        GeometryReader { geometry in
+        return GeometryReader { geometry in
             switch style {
             case .stroke:
                 strokeBorder(size: geometry.size)

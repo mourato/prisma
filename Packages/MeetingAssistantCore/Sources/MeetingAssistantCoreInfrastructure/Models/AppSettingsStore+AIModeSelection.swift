@@ -222,11 +222,10 @@ private extension AppSettingsStore {
     }
 
     static func normalizedGoogleEnhancementsModelID(_ model: String) -> String {
-        let withoutPrefix: String
-        if model.hasPrefix("models/") {
-            withoutPrefix = String(model.dropFirst("models/".count))
+        let withoutPrefix: String = if model.hasPrefix("models/") {
+            String(model.dropFirst("models/".count))
         } else {
-            withoutPrefix = model
+            model
         }
 
         switch withoutPrefix.lowercased() {
@@ -256,7 +255,7 @@ private extension AppSettingsStore {
         if let providerModel = providerSelectedModels[providerKey].map({
             normalizedEnhancementsModelID($0, for: selection.provider)
         }),
-           !providerModel.isEmpty
+            !providerModel.isEmpty
         {
             providerSelectedModels[providerKey] = providerModel
             return EnhancementsAISelection(provider: selection.provider, selectedModel: providerModel)

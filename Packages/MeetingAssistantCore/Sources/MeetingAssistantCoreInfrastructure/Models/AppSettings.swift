@@ -23,159 +23,6 @@ public class AppSettingsStore: ObservableObject {
 
     var isSynchronizingAssistantIntegrations = false
 
-    /// Default list of apps that should force Markdown formatting for dictation.
-    public static let defaultMarkdownTargetBundleIdentifiers: [String] = [
-        "abnerworks.Typora",
-        "com.microsoft.VSCode",
-        "com.uranusjr.macdown",
-        "md.obsidian",
-        "net.shinyfrog.bear",
-    ]
-
-    /// Default per-app dictation rules.
-    public static let defaultDictationAppRules: [DictationAppRule] = defaultMarkdownTargetBundleIdentifiers.map {
-        DictationAppRule(bundleIdentifier: $0, forceMarkdownOutput: true, outputLanguage: .original)
-    }
-
-    /// Default list of websites that should force Markdown formatting for dictation.
-    public static let defaultMarkdownWebTargets: [WebContextTarget] = []
-
-    /// Default list of browsers used for web target matching.
-    public static let defaultWebTargetBrowserBundleIdentifiers: [String] = [
-        "com.apple.Safari",
-        "com.google.Chrome",
-        "com.microsoft.edgemac",
-    ]
-
-    /// Default list of apps monitored to start/stop meeting recordings.
-    public static let defaultMonitoredMeetingBundleIdentifiers: [String] = [
-        "com.apple.Safari",
-        "com.google.Chrome",
-        "com.microsoft.edgemac",
-        "com.microsoft.teams",
-        "com.microsoft.teams2",
-        "com.hnc.Discord",
-        "com.tinyspeck.slackmacgap",
-        "net.whatsapp.WhatsApp",
-        "us.zoom.xos",
-    ]
-
-    /// Default list of web meeting targets detected via browser URL matching.
-    public static let defaultWebMeetingTargets: [WebMeetingTarget] = [
-        WebMeetingTarget(
-            app: .googleMeet,
-            displayName: "Google Meet",
-            urlPatterns: ["meet.google.com"],
-            browserBundleIdentifiers: ["com.apple.Safari", "com.google.Chrome", "com.microsoft.edgemac"]
-        ),
-        WebMeetingTarget(
-            app: .microsoftTeams,
-            displayName: "Microsoft Teams",
-            urlPatterns: ["teams.microsoft.com"],
-            browserBundleIdentifiers: ["com.apple.Safari", "com.google.Chrome", "com.microsoft.edgemac"]
-        ),
-        WebMeetingTarget(
-            app: .zoom,
-            displayName: "Zoom",
-            urlPatterns: ["zoom.us/j", "zoom.us/wc"],
-            browserBundleIdentifiers: ["com.apple.Safari", "com.google.Chrome", "com.microsoft.edgemac"]
-        ),
-    ]
-
-    public static let defaultShortcutDoubleTapIntervalMilliseconds: Double = 350
-    public static let shortcutDoubleTapIntervalRangeMilliseconds: ClosedRange<Double> = 150...1_000
-
-    // MARK: - Keys
-
-    enum Keys {
-        static let aiConfiguration = "aiConfiguration"
-        static let enhancementsAISelection = "enhancementsAISelection"
-        static let enhancementsDictationAISelection = "enhancementsDictationAISelection"
-        static let enhancementsProviderSelectedModels = "enhancementsProviderSelectedModels"
-        static let systemPrompt = "postProcessingSystemPrompt"
-        static let userPrompts = "postProcessingUserPrompts"
-        static let selectedPromptId = "postProcessingSelectedPromptId"
-        static let dictationPrompts = "dictationPrompts"
-        static let dictationSelectedPromptId = "dictationSelectedPromptId"
-        static let postProcessingEnabled = "postProcessingEnabled"
-        static let dictationStructuredPostProcessingEnabled = "dictationStructuredPostProcessingEnabled"
-        static let isDiarizationEnabled = "isDiarizationEnabled"
-        static let minSpeakers = "minSpeakers"
-        static let maxSpeakers = "maxSpeakers"
-        static let numSpeakers = "numSpeakers"
-        static let selectedLanguage = "selectedLanguage"
-        static let audioDevicePriority = "audioDevicePriority"
-        static let useSystemDefaultInput = "useSystemDefaultInput"
-        static let muteOutputDuringRecording = "muteOutputDuringRecording"
-        static let autoIncreaseMicrophoneVolume = "autoIncreaseMicrophoneVolume"
-        static let deletedPromptIds = "postProcessingDeletedPromptIds"
-        static let shortcutActivationMode = "shortcutActivationMode"
-        static let dictationShortcutActivationMode = "dictationShortcutActivationMode"
-        static let shortcutDoubleTapIntervalMilliseconds = "shortcutDoubleTapIntervalMilliseconds"
-        static let useEscapeToCancelRecording = "useEscapeToCancelRecording"
-        static let selectedPresetKey = "selectedPresetKey"
-        static let dictationSelectedPresetKey = "dictationSelectedPresetKey"
-        static let meetingSelectedPresetKey = "meetingSelectedPresetKey"
-        static let dictationShortcutDefinition = "dictationShortcutDefinition"
-        static let assistantShortcutDefinition = "assistantShortcutDefinition"
-        static let meetingShortcutDefinition = "meetingShortcutDefinition"
-        static let dictationModifierShortcutGesture = "dictationModifierShortcutGesture"
-        static let assistantModifierShortcutGesture = "assistantModifierShortcutGesture"
-        static let meetingModifierShortcutGesture = "meetingModifierShortcutGesture"
-        static let assistantShortcutActivationMode = "assistantShortcutActivationMode"
-        static let assistantUseEscapeToCancelRecording = "assistantUseEscapeToCancelRecording"
-        static let assistantUseEnterToStopRecording = "assistantUseEnterToStopRecording"
-        static let assistantSelectedPresetKey = "assistantSelectedPresetKey"
-        static let assistantLayerShortcutKey = "assistantLayerShortcutKey"
-        static let assistantBorderColor = "assistantBorderColor"
-        static let assistantBorderStyle = "assistantBorderStyle"
-        static let assistantBorderWidth = "assistantBorderWidth"
-        static let assistantGlowSize = "assistantGlowSize"
-        static let assistantIntegrations = "assistantIntegrations"
-        static let assistantSelectedIntegrationId = "assistantSelectedIntegrationId"
-        static let assistantRaycastEnabled = "assistantRaycastEnabled"
-        static let assistantRaycastDeepLink = "assistantRaycastDeepLink"
-        static let recordingIndicatorEnabled = "recordingIndicatorEnabled"
-        static let recordingIndicatorStyle = "recordingIndicatorStyle"
-        static let recordingIndicatorPosition = "recordingIndicatorPosition"
-        static let recordingIndicatorAnimationSpeed = "recordingIndicatorAnimationSpeed"
-        static let autoDeleteTranscriptions = "autoDeleteTranscriptions"
-        static let autoDeletePeriodDays = "autoDeletePeriodDays"
-        static let appAccentColor = "appAccentColor"
-        // Sound Feedback
-        static let soundFeedbackEnabled = "soundFeedbackEnabled"
-        static let recordingStartSound = "recordingStartSound"
-        static let recordingStopSound = "recordingStopSound"
-        /// App Visibility
-        static let showInDock = "showInDock"
-
-        // MARK: - Meeting Summary Configuration
-
-        static let meetingTypeAutoDetectEnabled = "meetingTypeAutoDetectEnabled"
-        static let meetingPrompts = "meetingPrompts"
-        static let summaryExportFolder = "summaryExportFolder"
-        static let summaryTemplate = "summaryTemplate"
-        static let summaryTemplateEnabled = "summaryTemplateEnabled"
-        static let autoExportSummaries = "autoExportSummaries"
-        static let summaryExportSafetyPolicyLevel = "summaryExportSafetyPolicyLevel"
-        static let meetingQnAEnabled = "meetingQnAEnabled"
-        static let contextAwarenessEnabled = "contextAwarenessEnabled"
-        static let contextAwarenessExplicitActionOnly = "contextAwarenessExplicitActionOnly"
-        static let contextAwarenessIncludeClipboard = "contextAwarenessIncludeClipboard"
-        static let contextAwarenessIncludeWindowOCR = "contextAwarenessIncludeWindowOCR"
-        static let contextAwarenessIncludeAccessibilityText = "contextAwarenessIncludeAccessibilityText"
-        static let contextAwarenessProtectSensitiveApps = "contextAwarenessProtectSensitiveApps"
-        static let contextAwarenessRedactSensitiveData = "contextAwarenessRedactSensitiveData"
-        static let contextAwarenessExcludedBundleIDs = "contextAwarenessExcludedBundleIDs"
-        static let markdownTargetBundleIdentifiers = "markdownTargetBundleIdentifiers"
-        static let dictationAppRules = "dictationAppRules"
-        static let vocabularyReplacementRules = "vocabularyReplacementRules"
-        static let markdownWebTargets = "markdownWebTargets"
-        static let webTargetBrowserBundleIdentifiers = "webTargetBrowserBundleIdentifiers"
-        static let monitoredMeetingBundleIdentifiers = "monitoredMeetingBundleIdentifiers"
-        static let webMeetingTargets = "webMeetingTargets"
-    }
-
     // MARK: - Published Properties
 
     @Published public var aiConfiguration: AIConfiguration {
@@ -263,25 +110,6 @@ public class AppSettingsStore: ObservableObject {
                 dictationStructuredPostProcessingEnabled,
                 forKey: Keys.dictationStructuredPostProcessingEnabled
             )
-        }
-    }
-
-    /// Whether the shared intelligence kernel is globally enabled.
-    public var intelligenceKernelEnabled: Bool {
-        FeatureFlags.enableIntelligenceKernel
-    }
-
-    /// Returns whether a specific intelligence-kernel mode is enabled.
-    public func isIntelligenceKernelModeEnabled(_ mode: IntelligenceKernelMode) -> Bool {
-        guard intelligenceKernelEnabled else { return false }
-
-        switch mode {
-        case .meeting:
-            return FeatureFlags.enableMeetingIntelligenceMode
-        case .dictation:
-            return FeatureFlags.enableDictationIntelligenceMode
-        case .assistant:
-            return FeatureFlags.enableAssistantIntelligenceMode
         }
     }
 
@@ -397,17 +225,17 @@ public class AppSettingsStore: ObservableObject {
     }
 
     /// Canonical in-house shortcut definition for Dictation.
-    @Published public var dictationShortcutDefinition: ShortcutDefinition? = nil {
+    @Published public var dictationShortcutDefinition: ShortcutDefinition? {
         didSet { save(dictationShortcutDefinition, forKey: Keys.dictationShortcutDefinition) }
     }
 
     /// Canonical in-house shortcut definition for Assistant.
-    @Published public var assistantShortcutDefinition: ShortcutDefinition? = nil {
+    @Published public var assistantShortcutDefinition: ShortcutDefinition? {
         didSet { save(assistantShortcutDefinition, forKey: Keys.assistantShortcutDefinition) }
     }
 
     /// Canonical in-house shortcut definition for Meetings.
-    @Published public var meetingShortcutDefinition: ShortcutDefinition? = nil {
+    @Published public var meetingShortcutDefinition: ShortcutDefinition? {
         didSet { save(meetingShortcutDefinition, forKey: Keys.meetingShortcutDefinition) }
     }
 
@@ -506,68 +334,6 @@ public class AppSettingsStore: ObservableObject {
         didSet { UserDefaults.standard.set(assistantRaycastDeepLink, forKey: Keys.assistantRaycastDeepLink) }
     }
 
-    // MARK: - Recording Indicator Properties
-
-    /// Whether the floating recording indicator is enabled.
-    @Published public var recordingIndicatorEnabled: Bool {
-        didSet { UserDefaults.standard.set(recordingIndicatorEnabled, forKey: Keys.recordingIndicatorEnabled) }
-    }
-
-    /// Style of the floating recording indicator.
-    @Published public var recordingIndicatorStyle: RecordingIndicatorStyle {
-        didSet { UserDefaults.standard.set(recordingIndicatorStyle.rawValue, forKey: Keys.recordingIndicatorStyle) }
-    }
-
-    /// Position of the floating recording indicator on screen.
-    @Published public var recordingIndicatorPosition: RecordingIndicatorPosition {
-        didSet { UserDefaults.standard.set(recordingIndicatorPosition.rawValue, forKey: Keys.recordingIndicatorPosition) }
-    }
-
-    /// Animation speed profile used by the floating recording indicator waveform bars.
-    @Published public var recordingIndicatorAnimationSpeed: RecordingIndicatorAnimationSpeed {
-        didSet {
-            UserDefaults.standard.set(
-                recordingIndicatorAnimationSpeed.rawValue,
-                forKey: Keys.recordingIndicatorAnimationSpeed
-            )
-        }
-    }
-
-    /// Whether retention limit for old recordings and transcriptions is enabled.
-    @Published public var autoDeleteTranscriptions: Bool {
-        didSet { UserDefaults.standard.set(autoDeleteTranscriptions, forKey: Keys.autoDeleteTranscriptions) }
-    }
-
-    /// Number of days to keep recordings and transcriptions before cleanup.
-    @Published public var autoDeletePeriodDays: Int {
-        didSet { UserDefaults.standard.set(autoDeletePeriodDays, forKey: Keys.autoDeletePeriodDays) }
-    }
-
-    /// Primary accent color for the application.
-    @Published public var appAccentColor: AppThemeColor {
-        didSet { UserDefaults.standard.set(appAccentColor.rawValue, forKey: Keys.appAccentColor) }
-    }
-
-    /// Whether sound feedback for recording events is enabled.
-    @Published public var soundFeedbackEnabled: Bool {
-        didSet { UserDefaults.standard.set(soundFeedbackEnabled, forKey: Keys.soundFeedbackEnabled) }
-    }
-
-    /// Sound to play when recording starts.
-    @Published public var recordingStartSound: SoundFeedbackSound {
-        didSet { UserDefaults.standard.set(recordingStartSound.rawValue, forKey: Keys.recordingStartSound) }
-    }
-
-    /// Sound to play when recording stops.
-    @Published public var recordingStopSound: SoundFeedbackSound {
-        didSet { UserDefaults.standard.set(recordingStopSound.rawValue, forKey: Keys.recordingStopSound) }
-    }
-
-    /// Whether to show the app icon in the Dock (allows Cmd+Tab switching).
-    @Published public var showInDock: Bool {
-        didSet { UserDefaults.standard.set(showInDock, forKey: Keys.showInDock) }
-    }
-
     /// When enabled, the app will auto-detect the meeting type for new meetings.
     /// When disabled, it will use the selected meeting prompt as the baseline.
     @Published public var meetingTypeAutoDetectEnabled: Bool {
@@ -614,7 +380,6 @@ public class AppSettingsStore: ObservableObject {
     @Published public var meetingQnAEnabled: Bool {
         didSet { UserDefaults.standard.set(meetingQnAEnabled, forKey: Keys.meetingQnAEnabled) }
     }
-
 
     /// Enables Context Awareness to enrich AI post-processing with active app context.
     @Published public var contextAwarenessEnabled: Bool {
@@ -719,14 +484,6 @@ public class AppSettingsStore: ObservableObject {
         didSet { save(webTargetBrowserBundleIdentifiers, forKey: Keys.webTargetBrowserBundleIdentifiers) }
     }
 
-    /// Browser bundle identifiers currently in effect for web target matching.
-    public var effectiveWebTargetBrowserBundleIdentifiers: [String] {
-        synchronizedWebTargetBrowsers(
-            from: dictationAppRules,
-            legacyBrowsers: webTargetBrowserBundleIdentifiers
-        )
-    }
-
     /// Bundle identifiers monitored to auto-start/stop meetings.
     @Published public var monitoredMeetingBundleIdentifiers: [String] {
         didSet { save(monitoredMeetingBundleIdentifiers, forKey: Keys.monitoredMeetingBundleIdentifiers) }
@@ -737,391 +494,170 @@ public class AppSettingsStore: ObservableObject {
         didSet { save(webMeetingTargets, forKey: Keys.webMeetingTargets) }
     }
 
-    /// Indicates whether the Markdown targets list has been explicitly configured.
-    public var hasConfiguredMarkdownTargets: Bool {
-        UserDefaults.standard.object(forKey: Keys.markdownTargetBundleIdentifiers) != nil
+    /// Whether the floating recording indicator is enabled.
+    @Published public var recordingIndicatorEnabled: Bool {
+        didSet { UserDefaults.standard.set(recordingIndicatorEnabled, forKey: Keys.recordingIndicatorEnabled) }
     }
 
-    /// Indicates whether the per-app dictation rules list has been explicitly configured.
-    public var hasConfiguredDictationAppRules: Bool {
-        UserDefaults.standard.object(forKey: Keys.dictationAppRules) != nil
+    /// Style of the floating recording indicator.
+    @Published public var recordingIndicatorStyle: RecordingIndicatorStyle {
+        didSet { UserDefaults.standard.set(recordingIndicatorStyle.rawValue, forKey: Keys.recordingIndicatorStyle) }
     }
 
-    /// Indicates whether Markdown web targets have been explicitly configured.
-    public var hasConfiguredMarkdownWebTargets: Bool {
-        UserDefaults.standard.object(forKey: Keys.markdownWebTargets) != nil
+    /// Position of the floating recording indicator on screen.
+    @Published public var recordingIndicatorPosition: RecordingIndicatorPosition {
+        didSet { UserDefaults.standard.set(recordingIndicatorPosition.rawValue, forKey: Keys.recordingIndicatorPosition) }
     }
 
-    /// Indicates whether the global web target browsers list has been explicitly configured.
-    public var hasConfiguredWebTargetBrowsers: Bool {
-        UserDefaults.standard.object(forKey: Keys.webTargetBrowserBundleIdentifiers) != nil
+    /// Animation speed profile used by the floating recording indicator waveform bars.
+    @Published public var recordingIndicatorAnimationSpeed: RecordingIndicatorAnimationSpeed {
+        didSet {
+            UserDefaults.standard.set(
+                recordingIndicatorAnimationSpeed.rawValue,
+                forKey: Keys.recordingIndicatorAnimationSpeed
+            )
+        }
     }
 
-    /// Indicates whether the monitored meetings list has been explicitly configured.
-    public var hasConfiguredMonitoredMeetingApps: Bool {
-        UserDefaults.standard.object(forKey: Keys.monitoredMeetingBundleIdentifiers) != nil
+    /// Whether retention limit for old recordings and transcriptions is enabled.
+    @Published public var autoDeleteTranscriptions: Bool {
+        didSet { UserDefaults.standard.set(autoDeleteTranscriptions, forKey: Keys.autoDeleteTranscriptions) }
     }
 
-    /// Indicates whether web meeting targets have been explicitly configured.
-    public var hasConfiguredWebMeetingTargets: Bool {
-        UserDefaults.standard.object(forKey: Keys.webMeetingTargets) != nil
+    /// Number of days to keep recordings and transcriptions before cleanup.
+    @Published public var autoDeletePeriodDays: Int {
+        didSet { UserDefaults.standard.set(autoDeletePeriodDays, forKey: Keys.autoDeletePeriodDays) }
     }
 
-    /// All available prompts (predefined + user-created), filtered by deleted and overrides.
-    public var allPrompts: [PostProcessingPrompt] {
-        deduplicatedPrompts(dictationAvailablePrompts + meetingAvailablePrompts)
+    /// Primary accent color for the application.
+    @Published public var appAccentColor: AppThemeColor {
+        didSet { UserDefaults.standard.set(appAccentColor.rawValue, forKey: Keys.appAccentColor) }
     }
 
-    /// Dictation prompts (predefined + user-created).
-    public var dictationAvailablePrompts: [PostProcessingPrompt] {
-        let predefined: [PostProcessingPrompt] = [
-            .cleanTranscription,
-            .flex,
-        ]
-        let predefinedIds = Set(predefined.map(\.id))
-        let custom = dictationPrompts + userPrompts.filter { predefinedIds.contains($0.id) }
-        return mergedPrompts(predefined: predefined, custom: custom)
+    /// Whether sound feedback for recording events is enabled.
+    @Published public var soundFeedbackEnabled: Bool {
+        didSet { UserDefaults.standard.set(soundFeedbackEnabled, forKey: Keys.soundFeedbackEnabled) }
     }
 
-    /// Meeting prompts (predefined + user-created).
-    public var meetingAvailablePrompts: [PostProcessingPrompt] {
-        let predefined: [PostProcessingPrompt] = [
-            .standup,
-            .presentation,
-            .designReview,
-            .oneOnOne,
-            .planning,
-        ]
-
-        // Backward-compat: prompts created in older versions lived under `userPrompts`.
-        // Clean Transcription is dictation-only, so keep it out of meeting prompts.
-        let custom = (meetingPrompts + userPrompts)
-            .filter { $0.id != PostProcessingPrompt.cleanTranscription.id }
-        return mergedPrompts(predefined: predefined, custom: custom)
+    /// Sound to play when recording starts.
+    @Published public var recordingStartSound: SoundFeedbackSound {
+        didSet { UserDefaults.standard.set(recordingStartSound.rawValue, forKey: Keys.recordingStartSound) }
     }
 
-    /// Currently selected prompt.
-    public var selectedPrompt: PostProcessingPrompt? {
-        guard let id = selectedPromptId, id != Self.noPostProcessingPromptId else { return nil }
-        return meetingAvailablePrompts.first { $0.id == id }
+    /// Sound to play when recording stops.
+    @Published public var recordingStopSound: SoundFeedbackSound {
+        didSet { UserDefaults.standard.set(recordingStopSound.rawValue, forKey: Keys.recordingStopSound) }
     }
 
-    /// Currently selected dictation prompt.
-    public var selectedDictationPrompt: PostProcessingPrompt? {
-        guard let id = dictationSelectedPromptId, id != Self.noPostProcessingPromptId else { return nil }
-        return dictationAvailablePrompts.first { $0.id == id }
-    }
-
-    public var isMeetingPostProcessingDisabled: Bool {
-        selectedPromptId == Self.noPostProcessingPromptId
-    }
-
-    public var isDictationPostProcessingDisabled: Bool {
-        dictationSelectedPromptId == Self.noPostProcessingPromptId
+    /// Whether to show the app icon in the Dock (allows Cmd+Tab switching).
+    @Published public var showInDock: Bool {
+        didSet { UserDefaults.standard.set(showInDock, forKey: Keys.showInDock) }
     }
 
     // MARK: - Initialization
 
     private init() {
-        let loadedAIConfiguration = Self.loadAIConfiguration()
-        let loadedEnhancementsSelection = Self.loadEnhancementsAISelection(defaultingTo: loadedAIConfiguration)
-        let loadedDictationSelection = Self.loadEnhancementsDictationAISelection(defaultingTo: loadedEnhancementsSelection)
-        aiConfiguration = loadedAIConfiguration
-        enhancementsAISelection = loadedEnhancementsSelection
-        enhancementsDictationAISelection = loadedDictationSelection
-        enhancementsProviderSelectedModels = Self.loadEnhancementsProviderSelectedModels(
-            defaultMeetingSelection: loadedEnhancementsSelection,
-            defaultDictationSelection: loadedDictationSelection
-        )
+        let context = Self.createInitializationContext()
+        let ai = Self.loadAIConfigurationValues(from: context)
+        aiConfiguration = ai.aiConfiguration
+        enhancementsAISelection = ai.enhancementsAISelection
+        enhancementsDictationAISelection = ai.enhancementsDictationAISelection
+        enhancementsProviderSelectedModels = ai.enhancementsProviderSelectedModels
 
-        systemPrompt = UserDefaults.standard.string(forKey: Keys.systemPrompt) ?? AIPromptTemplates.defaultSystemPrompt
+        let postProcessing = Self.loadPostProcessingSettings()
+        systemPrompt = postProcessing.systemPrompt
+        userPrompts = postProcessing.userPrompts
+        dictationPrompts = postProcessing.dictationPrompts
+        deletedPromptIds = postProcessing.deletedPromptIds
+        postProcessingEnabled = postProcessing.postProcessingEnabled
+        dictationStructuredPostProcessingEnabled = postProcessing.dictationStructuredPostProcessingEnabled
+        isDiarizationEnabled = postProcessing.isDiarizationEnabled
+        minSpeakers = postProcessing.minSpeakers
+        maxSpeakers = postProcessing.maxSpeakers
+        numSpeakers = postProcessing.numSpeakers
+        audioFormat = postProcessing.audioFormat
+        selectedPromptId = postProcessing.selectedPromptId
+        dictationSelectedPromptId = postProcessing.dictationSelectedPromptId
+        shouldMergeAudioFiles = postProcessing.shouldMergeAudioFiles
 
-        userPrompts = Self.loadDecoded([PostProcessingPrompt].self, forKey: Keys.userPrompts) ?? []
+        let audioSettings = Self.loadAudioAndLanguageSettings()
+        selectedLanguage = audioSettings.selectedLanguage
+        audioDevicePriority = audioSettings.audioDevicePriority
+        useSystemDefaultInput = audioSettings.useSystemDefaultInput
+        muteOutputDuringRecording = audioSettings.muteOutputDuringRecording
+        autoIncreaseMicrophoneVolume = audioSettings.autoIncreaseMicrophoneVolume
 
-        dictationPrompts = Self.loadDecoded([PostProcessingPrompt].self, forKey: Keys.dictationPrompts) ?? []
+        let shortcuts = Self.loadShortcutActivationSettings()
+        shortcutActivationMode = shortcuts.shortcutActivationMode
+        dictationShortcutActivationMode = shortcuts.dictationShortcutActivationMode
+        shortcutDoubleTapIntervalMilliseconds = shortcuts.shortcutDoubleTapIntervalMilliseconds
+        useEscapeToCancelRecording = shortcuts.useEscapeToCancelRecording
+        selectedPresetKey = shortcuts.selectedPresetKey
+        dictationSelectedPresetKey = shortcuts.dictationSelectedPresetKey
+        meetingSelectedPresetKey = shortcuts.meetingSelectedPresetKey
 
-        deletedPromptIds = Self.loadDecoded(Set<UUID>.self, forKey: Keys.deletedPromptIds) ?? []
+        let gestures = Self.loadModifierShortcutGestures()
+        dictationModifierShortcutGesture = gestures.dictation
+        assistantModifierShortcutGesture = gestures.assistant
+        meetingModifierShortcutGesture = gestures.meeting
 
-        postProcessingEnabled = UserDefaults.standard.bool(forKey: Keys.postProcessingEnabled)
-        dictationStructuredPostProcessingEnabled = Self.loadBoolDefaultIfUnset(
-            forKey: Keys.dictationStructuredPostProcessingEnabled,
-            defaultValue: false
-        )
-        isDiarizationEnabled = UserDefaults.standard.bool(forKey: Keys.isDiarizationEnabled)
+        let assistant = Self.loadAssistantSettings(from: context)
+        assistantShortcutActivationMode = assistant.assistantShortcutActivationMode
+        assistantUseEscapeToCancelRecording = assistant.assistantUseEscapeToCancelRecording
+        assistantUseEnterToStopRecording = assistant.assistantUseEnterToStopRecording
+        assistantSelectedPresetKey = assistant.assistantSelectedPresetKey
+        assistantLayerShortcutKey = assistant.assistantLayerShortcutKey
+        assistantIntegrations = assistant.assistantIntegrations
+        assistantSelectedIntegrationId = assistant.assistantSelectedIntegrationId
+        assistantRaycastEnabled = assistant.assistantRaycastEnabled
+        assistantRaycastDeepLink = assistant.assistantRaycastDeepLink
 
-        minSpeakers = Self.loadOptionalInt(forKey: Keys.minSpeakers)
-        maxSpeakers = Self.loadOptionalInt(forKey: Keys.maxSpeakers)
-        numSpeakers = Self.loadOptionalInt(forKey: Keys.numSpeakers)
+        let meeting = Self.loadMeetingSummarySettings()
+        meetingTypeAutoDetectEnabled = meeting.meetingTypeAutoDetectEnabled
+        meetingPrompts = meeting.meetingPrompts
+        summaryExportFolder = meeting.summaryExportFolder
+        summaryTemplate = meeting.summaryTemplate
+        summaryTemplateEnabled = meeting.summaryTemplateEnabled
+        autoExportSummaries = meeting.autoExportSummaries
+        summaryExportSafetyPolicyLevel = meeting.summaryExportSafetyPolicyLevel
+        meetingQnAEnabled = meeting.meetingQnAEnabled
 
-        audioFormat = Self.loadEnum(forKey: PostProcessingKeys.audioFormat, defaultValue: .m4a)
+        let ctx = Self.loadContextAwarenessSettings(from: context)
+        contextAwarenessEnabled = ctx.contextAwarenessEnabled
+        contextAwarenessExplicitActionOnly = ctx.contextAwarenessExplicitActionOnly
+        contextAwarenessIncludeClipboard = ctx.contextAwarenessIncludeClipboard
+        contextAwarenessIncludeWindowOCR = ctx.contextAwarenessIncludeWindowOCR
+        contextAwarenessIncludeAccessibilityText = ctx.contextAwarenessIncludeAccessibilityText
+        contextAwarenessProtectSensitiveApps = ctx.contextAwarenessProtectSensitiveApps
+        contextAwarenessRedactSensitiveData = ctx.contextAwarenessRedactSensitiveData
+        contextAwarenessExcludedBundleIDs = ctx.contextAwarenessExcludedBundleIDs
 
-        selectedPromptId = Self.loadUUID(forKey: Keys.selectedPromptId)
-        dictationSelectedPromptId = Self.loadUUID(forKey: Keys.dictationSelectedPromptId)
+        let dict = Self.loadDictationRulesAndWebTargets()
+        markdownTargetBundleIdentifiers = dict.markdownTargetBundleIdentifiers
+        dictationAppRules = dict.dictationAppRules
+        vocabularyReplacementRules = dict.vocabularyReplacementRules
+        markdownWebTargets = dict.markdownWebTargets
+        webTargetBrowserBundleIdentifiers = dict.webTargetBrowserBundleIdentifiers
+        monitoredMeetingBundleIdentifiers = dict.monitoredMeetingBundleIdentifiers
+        webMeetingTargets = dict.webMeetingTargets
 
-        shouldMergeAudioFiles = Self.loadBoolDefaultIfUnset(
-            forKey: PostProcessingKeys.shouldMergeAudioFiles,
-            defaultValue: true
-        )
+        let uiSettings = Self.loadUIAndIndicatorSettings()
+        assistantBorderColor = uiSettings.assistantBorderColor
+        assistantBorderStyle = uiSettings.assistantBorderStyle
+        assistantBorderWidth = uiSettings.assistantBorderWidth
+        assistantGlowSize = uiSettings.assistantGlowSize
+        recordingIndicatorEnabled = uiSettings.recordingIndicatorEnabled
+        recordingIndicatorStyle = uiSettings.recordingIndicatorStyle
+        recordingIndicatorPosition = uiSettings.recordingIndicatorPosition
+        recordingIndicatorAnimationSpeed = uiSettings.recordingIndicatorAnimationSpeed
+        autoDeleteTranscriptions = uiSettings.autoDeleteTranscriptions
+        autoDeletePeriodDays = uiSettings.autoDeletePeriodDays
+        appAccentColor = uiSettings.appAccentColor
+        soundFeedbackEnabled = uiSettings.soundFeedbackEnabled
+        recordingStartSound = uiSettings.recordingStartSound
+        recordingStopSound = uiSettings.recordingStopSound
+        showInDock = uiSettings.showInDock
 
-        selectedLanguage = Self.loadEnum(forKey: Keys.selectedLanguage, defaultValue: .system)
-
-        audioDevicePriority = UserDefaults.standard.stringArray(forKey: Keys.audioDevicePriority) ?? []
-        useSystemDefaultInput = Self.loadBoolDefaultIfUnset(forKey: Keys.useSystemDefaultInput, defaultValue: true)
-        muteOutputDuringRecording = UserDefaults.standard.bool(forKey: Keys.muteOutputDuringRecording)
-        autoIncreaseMicrophoneVolume = UserDefaults.standard.bool(forKey: Keys.autoIncreaseMicrophoneVolume)
-
-        let rawActivationMode = UserDefaults.standard.string(forKey: Keys.shortcutActivationMode)
-        let resolvedActivationMode = rawActivationMode.flatMap { ShortcutActivationMode(rawValue: $0) } ?? .holdOrToggle
-        shortcutActivationMode = resolvedActivationMode
-        let rawDictationActivationMode = UserDefaults.standard.string(forKey: Keys.dictationShortcutActivationMode)
-        dictationShortcutActivationMode = rawDictationActivationMode
-            .flatMap { ShortcutActivationMode(rawValue: $0) }
-            ?? resolvedActivationMode
-        shortcutDoubleTapIntervalMilliseconds = Self.loadDouble(
-            forKey: Keys.shortcutDoubleTapIntervalMilliseconds,
-            defaultValue: Self.defaultShortcutDoubleTapIntervalMilliseconds
-        )
-        useEscapeToCancelRecording = UserDefaults.standard.bool(forKey: Keys.useEscapeToCancelRecording)
-
-        let rawPresetKey = UserDefaults.standard.string(forKey: Keys.selectedPresetKey)
-        selectedPresetKey = rawPresetKey.flatMap { PresetShortcutKey(rawValue: $0) } ?? .fn
-
-        let rawDictationKey = UserDefaults.standard.string(forKey: Keys.dictationSelectedPresetKey)
-        dictationSelectedPresetKey = rawDictationKey.flatMap { PresetShortcutKey(rawValue: $0) } ?? (rawPresetKey.flatMap { PresetShortcutKey(rawValue: $0) } ?? .fn)
-
-        let rawMeetingKey = UserDefaults.standard.string(forKey: Keys.meetingSelectedPresetKey)
-        meetingSelectedPresetKey = rawMeetingKey.flatMap { PresetShortcutKey(rawValue: $0) } ?? .notSpecified
-
-        dictationModifierShortcutGesture = Self.loadDecoded(
-            ModifierShortcutGesture.self,
-            forKey: Keys.dictationModifierShortcutGesture
-        )
-        assistantModifierShortcutGesture = Self.loadDecoded(
-            ModifierShortcutGesture.self,
-            forKey: Keys.assistantModifierShortcutGesture
-        )
-        meetingModifierShortcutGesture = Self.loadDecoded(
-            ModifierShortcutGesture.self,
-            forKey: Keys.meetingModifierShortcutGesture
-        )
-
-        let loadedAssistantShortcutDefinition = Self.loadDecoded(
-            ShortcutDefinition.self,
-            forKey: Keys.assistantShortcutDefinition
-        )
-
-        let loadedDictationShortcutDefinition = Self.loadDecoded(
-            ShortcutDefinition.self,
-            forKey: Keys.dictationShortcutDefinition
-        )
-
-        let loadedMeetingShortcutDefinition = Self.loadDecoded(
-            ShortcutDefinition.self,
-            forKey: Keys.meetingShortcutDefinition
-        )
-
-        let rawAssistantActivation = UserDefaults.standard.string(forKey: Keys.assistantShortcutActivationMode)
-        assistantShortcutActivationMode = rawAssistantActivation
-            .flatMap { ShortcutActivationMode(rawValue: $0) } ?? .holdOrToggle
-        assistantUseEscapeToCancelRecording = UserDefaults.standard.bool(forKey: Keys.assistantUseEscapeToCancelRecording)
-        assistantUseEnterToStopRecording = UserDefaults.standard.bool(forKey: Keys.assistantUseEnterToStopRecording)
-
-        let rawAssistantPresetKey = UserDefaults.standard.string(forKey: Keys.assistantSelectedPresetKey)
-        assistantSelectedPresetKey = rawAssistantPresetKey.flatMap { PresetShortcutKey(rawValue: $0) } ?? .rightOption
-        assistantLayerShortcutKey = Self.normalizedLayerShortcutKey(
-            UserDefaults.standard.string(forKey: Keys.assistantLayerShortcutKey)
-        ) ?? "A"
-
-        let loadedIntegrations = Self.loadDecoded([AssistantIntegrationConfig].self, forKey: Keys.assistantIntegrations)
-        assistantIntegrations = loadedIntegrations ?? [AssistantIntegrationConfig.defaultRaycast]
-        let shouldMigrateLegacyAssistantIntegration = loadedIntegrations == nil
-
-        let rawSelectedIntegrationId = UserDefaults.standard.string(forKey: Keys.assistantSelectedIntegrationId)
-        assistantSelectedIntegrationId = rawSelectedIntegrationId.flatMap(UUID.init(uuidString:))
-
-        assistantRaycastEnabled = UserDefaults.standard.bool(forKey: Keys.assistantRaycastEnabled)
-        assistantRaycastDeepLink = UserDefaults.standard.string(forKey: Keys.assistantRaycastDeepLink) ?? AssistantIntegrationConfig.defaultRaycastDeepLink
-
-        meetingTypeAutoDetectEnabled = UserDefaults.standard.bool(forKey: Keys.meetingTypeAutoDetectEnabled)
-
-        if let data = UserDefaults.standard.data(forKey: Keys.meetingPrompts),
-           let prompts = try? JSONDecoder().decode([PostProcessingPrompt].self, from: data)
-        {
-            meetingPrompts = prompts
-        } else {
-            meetingPrompts = []
-        }
-
-        if let data = UserDefaults.standard.data(forKey: Keys.summaryExportFolder) {
-            var isStale = false
-            if let url = try? URL(resolvingBookmarkData: data, options: .withSecurityScope, relativeTo: nil, bookmarkDataIsStale: &isStale) {
-                summaryExportFolder = url
-            } else {
-                summaryExportFolder = nil
-            }
-        } else {
-            summaryExportFolder = nil
-        }
-
-        summaryTemplate = UserDefaults.standard.string(forKey: Keys.summaryTemplate) ?? Self.defaultSummaryTemplate
-
-        summaryTemplateEnabled = Self.loadBoolDefaultIfUnset(
-            forKey: Keys.summaryTemplateEnabled,
-            defaultValue: true
-        )
-        autoExportSummaries = UserDefaults.standard.bool(forKey: Keys.autoExportSummaries)
-        summaryExportSafetyPolicyLevel = SummaryExportSafetyPolicyLevel(
-            rawValue: UserDefaults.standard.string(forKey: Keys.summaryExportSafetyPolicyLevel) ?? ""
-        ) ?? .standard
-        meetingQnAEnabled = Self.loadBoolDefaultIfUnset(
-            forKey: Keys.meetingQnAEnabled,
-            defaultValue: true
-        )
-        let loadedContextAwarenessEnabled = UserDefaults.standard.bool(forKey: Keys.contextAwarenessEnabled)
-        contextAwarenessEnabled = loadedContextAwarenessEnabled
-        contextAwarenessExplicitActionOnly = Self.loadBoolDefaultIfUnset(
-            forKey: Keys.contextAwarenessExplicitActionOnly,
-            defaultValue: true
-        )
-        contextAwarenessIncludeClipboard = UserDefaults.standard.bool(forKey: Keys.contextAwarenessIncludeClipboard)
-        contextAwarenessIncludeWindowOCR = UserDefaults.standard.bool(forKey: Keys.contextAwarenessIncludeWindowOCR)
-        contextAwarenessIncludeAccessibilityText = Self.loadBoolDefaultIfUnset(
-            forKey: Keys.contextAwarenessIncludeAccessibilityText,
-            defaultValue: true
-        )
-        contextAwarenessProtectSensitiveApps = Self.loadBoolDefaultIfUnset(
-            forKey: Keys.contextAwarenessProtectSensitiveApps,
-            defaultValue: true
-        )
-        contextAwarenessRedactSensitiveData = Self.loadBoolDefaultIfUnset(
-            forKey: Keys.contextAwarenessRedactSensitiveData,
-            defaultValue: true
-        )
-        contextAwarenessExcludedBundleIDs = Self.loadDecoded([String].self, forKey: Keys.contextAwarenessExcludedBundleIDs) ?? []
-        markdownTargetBundleIdentifiers = Self.loadDecoded([String].self, forKey: Keys.markdownTargetBundleIdentifiers)
-            ?? Self.defaultMarkdownTargetBundleIdentifiers
-        dictationAppRules = Self.normalizedDictationAppRules(
-            Self.loadDecoded([DictationAppRule].self, forKey: Keys.dictationAppRules)
-                ?? Self.defaultDictationAppRules
-        )
-        vocabularyReplacementRules = Self.normalizedVocabularyReplacementRules(
-            Self.loadDecoded([VocabularyReplacementRule].self, forKey: Keys.vocabularyReplacementRules) ?? []
-        )
-        markdownWebTargets = Self.loadDecoded([WebContextTarget].self, forKey: Keys.markdownWebTargets)
-            ?? Self.defaultMarkdownWebTargets
-        webTargetBrowserBundleIdentifiers = Self.loadDecoded([String].self, forKey: Keys.webTargetBrowserBundleIdentifiers)
-            ?? Self.defaultWebTargetBrowserBundleIdentifiers
-        monitoredMeetingBundleIdentifiers = Self.loadDecoded([String].self, forKey: Keys.monitoredMeetingBundleIdentifiers)
-            ?? Self.defaultMonitoredMeetingBundleIdentifiers
-        webMeetingTargets = Self.loadDecoded([WebMeetingTarget].self, forKey: Keys.webMeetingTargets)
-            ?? Self.defaultWebMeetingTargets
-
-        let hasPersistedMarkdownWebTargets = UserDefaults.standard.object(forKey: Keys.markdownWebTargets) != nil
-        let hasPersistedWebMeetingTargets = UserDefaults.standard.object(forKey: Keys.webMeetingTargets) != nil
-        let hasPersistedLegacyPerTargetBrowsers = hasPersistedMarkdownWebTargets || hasPersistedWebMeetingTargets
-        let hasGlobalBrowserSetting = UserDefaults.standard.object(forKey: Keys.webTargetBrowserBundleIdentifiers) != nil
-
-        if loadedContextAwarenessEnabled {
-            contextAwarenessIncludeAccessibilityText = true
-        }
-
-        let rawBorderColor = UserDefaults.standard.string(forKey: Keys.assistantBorderColor)
-        assistantBorderColor = rawBorderColor.flatMap { AssistantBorderColor(rawValue: $0) } ?? .green
-        let rawBorderStyle = UserDefaults.standard.string(forKey: Keys.assistantBorderStyle)
-        assistantBorderStyle = rawBorderStyle.flatMap { AssistantBorderStyle(rawValue: $0) } ?? .stroke
-        let storedBorderWidth = UserDefaults.standard.object(forKey: Keys.assistantBorderWidth) as? NSNumber
-        assistantBorderWidth = max(1, storedBorderWidth?.doubleValue ?? 8)
-        let storedGlowSize = UserDefaults.standard.object(forKey: Keys.assistantGlowSize) as? NSNumber
-        assistantGlowSize = max(0, storedGlowSize?.doubleValue ?? 20)
-
-        recordingIndicatorEnabled = Self.loadBoolDefaultIfUnset(
-            forKey: Keys.recordingIndicatorEnabled,
-            defaultValue: true
-        )
-        let rawIndicatorStyle = UserDefaults.standard.string(forKey: Keys.recordingIndicatorStyle)
-        recordingIndicatorStyle = rawIndicatorStyle.flatMap { RecordingIndicatorStyle(rawValue: $0) } ?? .mini
-        let rawIndicatorPosition = UserDefaults.standard.string(forKey: Keys.recordingIndicatorPosition)
-        recordingIndicatorPosition = rawIndicatorPosition.flatMap { RecordingIndicatorPosition(rawValue: $0) } ?? .bottom
-        let rawIndicatorAnimationSpeed = UserDefaults.standard.string(forKey: Keys.recordingIndicatorAnimationSpeed)
-        recordingIndicatorAnimationSpeed = rawIndicatorAnimationSpeed
-            .flatMap { RecordingIndicatorAnimationSpeed(rawValue: $0) } ?? .normal
-
-        autoDeleteTranscriptions = UserDefaults.standard.bool(forKey: Keys.autoDeleteTranscriptions)
-        let rawDays = UserDefaults.standard.object(forKey: Keys.autoDeletePeriodDays) as? Int
-        autoDeletePeriodDays = rawDays ?? 30
-
-        let rawAccentColor = UserDefaults.standard.string(forKey: Keys.appAccentColor)
-        appAccentColor = rawAccentColor.flatMap { AppThemeColor(rawValue: $0) } ?? .system
-
-        soundFeedbackEnabled = UserDefaults.standard.bool(forKey: Keys.soundFeedbackEnabled)
-        let rawStartSound = UserDefaults.standard.string(forKey: Keys.recordingStartSound)
-        recordingStartSound = rawStartSound.flatMap { SoundFeedbackSound(rawValue: $0) } ?? .pop
-        let rawStopSound = UserDefaults.standard.string(forKey: Keys.recordingStopSound)
-        recordingStopSound = rawStopSound.flatMap { SoundFeedbackSound(rawValue: $0) } ?? .glass
-
-        showInDock = UserDefaults.standard.bool(forKey: Keys.showInDock)
-
-        dictationShortcutDefinition = loadedDictationShortcutDefinition ??
-            Self.resolveShortcutDefinition(
-                explicitGesture: dictationModifierShortcutGesture,
-                legacyPresetKey: dictationSelectedPresetKey,
-                activationMode: dictationShortcutActivationMode
-            )
-        assistantShortcutDefinition = loadedAssistantShortcutDefinition ??
-            Self.resolveShortcutDefinition(
-                explicitGesture: assistantModifierShortcutGesture,
-                legacyPresetKey: assistantSelectedPresetKey,
-                activationMode: assistantShortcutActivationMode
-            )
-        meetingShortcutDefinition = loadedMeetingShortcutDefinition ??
-            Self.resolveShortcutDefinition(
-                explicitGesture: meetingModifierShortcutGesture,
-                legacyPresetKey: meetingSelectedPresetKey,
-                activationMode: shortcutActivationMode
-            )
-
-        if shouldMigrateLegacyAssistantIntegration {
-            var migratedRaycast = AssistantIntegrationConfig.defaultRaycast
-            migratedRaycast.isEnabled = assistantRaycastEnabled
-            migratedRaycast.deepLink = AssistantIntegrationConfig.defaultRaycastDeepLink
-            assistantIntegrations = [migratedRaycast]
-            assistantSelectedIntegrationId = migratedRaycast.id
-        }
-
-        if assistantSelectedIntegrationId == nil {
-            assistantSelectedIntegrationId = assistantIntegrations.first?.id
-        }
-
-        synchronizeAssistantIntegrationsState()
-        save(assistantIntegrations, forKey: Keys.assistantIntegrations)
-
-        if loadedDictationShortcutDefinition == nil {
-            save(dictationShortcutDefinition, forKey: Keys.dictationShortcutDefinition)
-        }
-        if loadedAssistantShortcutDefinition == nil {
-            save(assistantShortcutDefinition, forKey: Keys.assistantShortcutDefinition)
-        }
-        if loadedMeetingShortcutDefinition == nil {
-            save(meetingShortcutDefinition, forKey: Keys.meetingShortcutDefinition)
-        }
-
-        if let selectedID = assistantSelectedIntegrationId {
-            UserDefaults.standard.set(selectedID.uuidString, forKey: Keys.assistantSelectedIntegrationId)
-        } else {
-            UserDefaults.standard.removeObject(forKey: Keys.assistantSelectedIntegrationId)
-        }
-
-        UserDefaults.standard.set(assistantRaycastEnabled, forKey: Keys.assistantRaycastEnabled)
-        UserDefaults.standard.set(assistantRaycastDeepLink, forKey: Keys.assistantRaycastDeepLink)
-
-        if hasPersistedLegacyPerTargetBrowsers, !hasGlobalBrowserSetting {
-            migrateWebTargetBrowsersToGlobalSettingIfNeeded()
-        }
-
-        migrateLegacyMarkdownTargetsToDictationAppRulesIfNeeded()
-        migrateLegacyWebTargetBrowsersToDictationAppRulesIfNeeded()
-        backfillEnhancementsSelectionModelsIfNeeded()
-        applyLanguage(selectedLanguage)
+        finalizeInitialization(context: context)
     }
-
 }

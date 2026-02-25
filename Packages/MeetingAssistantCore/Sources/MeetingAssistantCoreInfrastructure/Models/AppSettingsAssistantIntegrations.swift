@@ -221,8 +221,8 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
                 normalizedInHouseShortcutDefinition($0.asShortcutDefinition, activationMode: shortcutActivationMode)
             }
         shortcutDefinition = normalizedDecodedShortcut ?? normalizedGestureShortcut ?? normalizedLegacyShortcut
-        layerShortcutKey = Self.normalizedLayerShortcutKey(
-            try container.decodeIfPresent(String.self, forKey: .layerShortcutKey)
+        layerShortcutKey = try Self.normalizedLayerShortcutKey(
+            container.decodeIfPresent(String.self, forKey: .layerShortcutKey)
         )
 
         if modifierShortcutGesture == nil {
