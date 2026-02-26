@@ -115,6 +115,7 @@ extension AppDelegate {
             return // Defer rest of setup until onboarding completes
         }
 
+        setupMenuBar()
         setupContextMenu()
         globalShortcutController.start()
         assistantShortcutController.start()
