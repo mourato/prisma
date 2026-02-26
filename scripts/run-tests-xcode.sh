@@ -76,10 +76,17 @@ fi
 
 run_xcode_tests() {
     cd "${PACKAGE_DIR}"
+    local host_arch
+    host_arch="$(uname -m)"
+    local destination="platform=macOS"
+    if [ "${host_arch}" = "arm64" ] || [ "${host_arch}" = "x86_64" ]; then
+        destination="platform=macOS,arch=${host_arch}"
+    fi
+
     local xcode_args=(
         -scheme MeetingAssistantCore
         -derivedDataPath "${DERIVED_DATA}"
-        -destination 'platform=macOS'
+        -destination "${destination}"
         test
     )
 
@@ -126,7 +133,29 @@ END_TIME=$(date +%s)
 DURATION=$((END_TIME - START_TIME))
 
 FALLBACK_USED=0
+RETRY_USED=0
 FALLBACK_LOG_PATH="${LOG_PATH%.log}-swift-fallback.log"
+if [ "${EXIT_CODE}" -ne 0 ] && grep -q "${BUNDLE_ERROR_PATTERN}" "${LOG_PATH}"; then
+    RETRY_USED=1
+    if [ "${AGENT_MODE}" -eq 1 ]; then
+        ma_agent_progress_update "Retrying tests (xcodebuild)"
+    elif [ "${QUIET}" -eq 0 ]; then
+        echo -e "${YELLOW}xcodebuild runner failed to instantiate .xctest bundle; retrying xcodebuild once...${NC}"
+    fi
+
+    RETRY_START_TIME=$(date +%s)
+    if [ "${VERBOSE}" -eq 1 ] && [ "${AGENT_MODE}" -eq 0 ] && [ "${QUIET}" -eq 0 ]; then
+        (run_xcode_tests) 2>&1 | tee "${LOG_PATH}"
+        EXIT_CODE=${PIPESTATUS[0]}
+    else
+        (run_xcode_tests) >"${LOG_PATH}" 2>&1
+        EXIT_CODE=$?
+    fi
+    RETRY_END_TIME=$(date +%s)
+    RETRY_DURATION=$((RETRY_END_TIME - RETRY_START_TIME))
+    DURATION=$((DURATION + RETRY_DURATION))
+fi
+
 if [ "${EXIT_CODE}" -ne 0 ] && grep -q "${BUNDLE_ERROR_PATTERN}" "${LOG_PATH}"; then
     FALLBACK_USED=1
     if [ "${AGENT_MODE}" -eq 0 ] && [ "${QUIET}" -eq 0 ]; then
@@ -153,9 +182,13 @@ if [ "${AGENT_MODE}" -eq 1 ]; then
         RESULT_LINE="All tests passed"
         if [ "${FALLBACK_USED}" -eq 1 ]; then
             RESULT_LINE="xcodebuild runner failed; swift test fallback passed"
+        elif [ "${RETRY_USED}" -eq 1 ]; then
+            RESULT_LINE="xcodebuild runner failed once; retry passed"
         fi
     elif [ "${FALLBACK_USED}" -eq 1 ]; then
         RESULT_LINE="xcodebuild runner failed; swift test fallback also failed"
+    elif [ "${RETRY_USED}" -eq 1 ]; then
+        RESULT_LINE="xcodebuild runner failed twice"
     fi
 
     if [ "${EXIT_CODE}" -ne 0 ]; then
@@ -203,9 +236,13 @@ if [ "${EXIT_CODE}" -eq 0 ]; then
     RESULT_LINE="All tests passed"
     if [ "${FALLBACK_USED}" -eq 1 ]; then
         RESULT_LINE="xcodebuild runner failed; swift test fallback passed"
+    elif [ "${RETRY_USED}" -eq 1 ]; then
+        RESULT_LINE="xcodebuild runner failed once; retry passed"
     fi
 elif [ "${FALLBACK_USED}" -eq 1 ]; then
     RESULT_LINE="xcodebuild runner failed; swift test fallback also failed"
+elif [ "${RETRY_USED}" -eq 1 ]; then
+    RESULT_LINE="xcodebuild runner failed twice"
 fi
 
 if [ "${EXIT_CODE}" -eq 0 ]; then

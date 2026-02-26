@@ -1,3 +1,4 @@
+import Foundation
 import MeetingAssistantCoreCommon
 import SwiftUI
 
@@ -17,6 +18,11 @@ enum WebTargetBrowserNamesFormatter {
             .map { WebTargetEditorSupport.browserDisplayName(for: $0) }
             .sorted()
 
-        return localizedListKey.localized(with: names.joined(separator: ", "))
+        let namesList = names.joined(separator: ", ")
+        let localizedTemplate = localizedListKey.localized
+        guard localizedTemplate != localizedListKey else {
+            return namesList
+        }
+        return String(format: localizedTemplate, locale: .current, namesList)
     }
 }
