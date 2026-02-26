@@ -109,6 +109,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             await self?.assistantVoiceCommandService.cancelRecording()
         }
     )
+    private lazy var onboardingController = OnboardingWindowController()
     private var cancellables = Set<AnyCancellable>()
     private var dockObserver: AnyCancellable?
     private var lastRecordingUIRenderState: RecordingUIRenderState?
@@ -125,8 +126,12 @@ extension AppDelegate {
         Task {
             await FileSystemStorageService.shared.migrateLegacyJSONTranscriptionsToCoreDataIfNeeded()
         }
+        // Show onboarding if first launch
+        if !settingsStore.hasCompletedOnboarding {
+            showOnboarding()
+            return // Defer rest of setup until onboarding completes
+        }
 
-        setupMenuBar()
         setupContextMenu()
         globalShortcutController.start()
         assistantShortcutController.start()
@@ -163,6 +168,85 @@ extension AppDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         escapeCancelCoordinator.stop()
+    }
+
+    // MARK: - Onboarding
+
+    private func showOnboarding() {
+        let permissionViewModel = PermissionViewModel(
+            manager: PermissionStatusManager(),
+            requestMicrophone: { [weak self] in
+                await self?.recordingManager.requestPermission(for: .microphone)
+            },
+            requestScreen: { [weak self] in
+                await self?.recordingManager.requestPermission(for: .all)
+            },
+            openMicrophoneSettings: { [weak self] in
+                self?.recordingManager.openMicrophoneSettings()
+            },
+            openScreenSettings: { [weak self] in
+                self?.recordingManager.openPermissionSettings()
+            },
+            requestAccessibility: { [weak self] in
+                self?.recordingManager.requestAccessibilityPermission()
+            },
+            openAccessibilitySettings: { [weak self] in
+                self?.recordingManager.openAccessibilitySettings()
+            }
+        )
+
+        let shortcutViewModel = ShortcutSettingsViewModel()
+        let onboardingViewModel = OnboardingViewModel()
+
+        onboardingController.showOnboarding(
+            viewModel: onboardingViewModel,
+            permissionViewModel: permissionViewModel,
+            shortcutViewModel: shortcutViewModel,
+            completion: { [weak self] in
+                self?.completeOnboarding()
+            }
+        )
+    }
+
+    private func completeOnboarding() {
+        settingsStore.hasCompletedOnboarding = true
+        continueAppSetup()
+    }
+
+    private func continueAppSetup() {
+        setupMenuBar()
+        setupContextMenu()
+        globalShortcutController.start()
+        assistantShortcutController.start()
+        escapeCancelCoordinator.start()
+        setupRecordingObservation()
+        floatingIndicatorController.prewarm()
+        updateMenuTitles()
+
+        // Warmup transcription model
+        Task { @MainActor in
+            do {
+                try await TranscriptionClient.shared.warmupModel()
+            } catch {
+                self.logger.error("Failed to warmup model: \(error.localizedDescription)")
+            }
+        }
+
+        // Run auto-cleanup logic
+        Task {
+            await performCleanup()
+        }
+
+        // Set initial activation policy based on user settings
+        applyDockVisibility(settingsStore.showInDock)
+
+        // Observe changes to dock visibility setting
+        dockObserver = settingsStore.$showInDock
+            .dropFirst()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] showInDock in
+                self?.applyDockVisibility(showInDock)
+            }
     }
 
     // MARK: - Document Handling (Disabled for Menu Bar App)

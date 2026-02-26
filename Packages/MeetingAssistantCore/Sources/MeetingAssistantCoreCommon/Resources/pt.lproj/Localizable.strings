@@ -930,3 +930,37 @@
 "export.section.ai_summary" = "Resumo IA";
 "export.section.transcription" = "Transcrição";
 "export.filename.prefix" = "Reuniao";
+
+/* Onboarding */
+"onboarding.welcome.title" = "Bem-vindo ao Meeting Assistant";
+"onboarding.welcome.subtitle" = "Transcreva suas reuniões localmente com inteligência powered by AI.";
+"onboarding.welcome.button" = "Começar";
+
+"onboarding.permissions.title" = "Permissões";
+"onboarding.permissions.subtitle" = "O Meeting Assistant precisa de algumas permissões para funcionar corretamente.";
+"onboarding.permissions.accessibility.title" = "Acessibilidade";
+"onboarding.permissions.accessibility.desc" = "Necessário para atalhos globais e substituição de texto.";
+"onboarding.permissions.microphone.title" = "Microfone";
+"onboarding.permissions.microphone.desc" = "Necessário para capturar sua voz durante as reuniões.";
+"onboarding.permissions.screen_recording.title" = "Gravação de Tela";
+"onboarding.permissions.screen_recording.desc" = "Necessário para capturar áudio do sistema das reuniões.";
+"onboarding.permissions.grant" = "Conceder";
+"onboarding.permissions.granted" = "Concedida";
+"onboarding.permissions.open_settings" = "Abrir Configurações";
+
+"onboarding.shortcuts.title" = "Atalhos de Teclado";
+"onboarding.shortcuts.subtitle" = "Configure seus atalhos de teclado preferidos para acesso rápido.";
+"onboarding.shortcuts.dictation" = "Atalho de Ditado";
+"onboarding.shortcuts.meeting" = "Atalho de Reunião";
+"onboarding.shortcuts.assistant" = "Atalho do Assistant";
+"onboarding.shortcuts.use_default" = "Usar Padrão";
+"onboarding.shortcuts.customize" = "Personalizar";
+
+"onboarding.completion.title" = "Tudo Pronto!";
+"onboarding.completion.subtitle" = "O Meeting Assistant está pronto para ajudá-lo a capturar e transcrever suas reuniões.";
+"onboarding.completion.button" = "Começar a Usar o Meeting Assistant";
+
+"onboarding.back" = "Voltar";
+"onboarding.continue" = "Continuar";
+"onboarding.skip" = "Pular";
+"onboarding.step" = "Etapa %d de %d";
