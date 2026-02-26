@@ -11,29 +11,15 @@ import SwiftUI
 struct MeetingAssistantApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
-    @Environment(\.openWindow) private var openWindow
-
     var body: some Scene {
-        WindowGroup("settings.title".localized, id: "settings") {
+        Settings {
             SettingsView()
-                .onAppear {
-                    NavigationService.shared.register(openWindow: openWindow)
-                    if AppSettingsStore.shared.showSettingsOnLaunch {
-                        openWindow(id: "settings")
-                    }
-                }
         }
         .windowResizability(.contentSize)
         .commands {
             CommandGroup(replacing: .appSettings) {
                 Button("settings.title".localized + "...") {
-                    if let existingWindow = NSApp.windows.first(where: { $0.identifier?.rawValue == "settings" }) {
-                        existingWindow.makeKeyAndOrderFront(nil)
-                        NSApp.activate(ignoringOtherApps: true)
-                    } else {
-                        openWindow(id: "settings")
-                        NSApp.activate(ignoringOtherApps: true)
-                    }
+                    NavigationService.shared.openSettings()
                 }
                 .keyboardShortcut(",", modifiers: .command)
             }
@@ -161,6 +147,8 @@ extension AppDelegate {
             .sink { [weak self] showInDock in
                 self?.applyDockVisibility(showInDock)
             }
+
+        openSettingsOnLaunchIfEnabled()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -253,6 +241,13 @@ extension AppDelegate {
             .sink { [weak self] showInDock in
                 self?.applyDockVisibility(showInDock)
             }
+
+        openSettingsOnLaunchIfEnabled()
+    }
+
+    private func openSettingsOnLaunchIfEnabled() {
+        guard settingsStore.showSettingsOnLaunch else { return }
+        NavigationService.shared.openSettings()
     }
 
     // MARK: - Document Handling (Disabled for Menu Bar App)
