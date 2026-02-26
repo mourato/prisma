@@ -942,3 +942,37 @@
 "export.section.ai_summary" = "AI Summary";
 "export.section.transcription" = "Transcription";
 "export.filename.prefix" = "Meeting";
+
+/* Onboarding */
+"onboarding.welcome.title" = "Welcome to Meeting Assistant";
+"onboarding.welcome.subtitle" = "Transcribe your meetings locally with AI-powered intelligence.";
+"onboarding.welcome.button" = "Get Started";
+
+"onboarding.permissions.title" = "Permissions";
+"onboarding.permissions.subtitle" = "Meeting Assistant needs a few permissions to work properly.";
+"onboarding.permissions.accessibility.title" = "Accessibility";
+"onboarding.permissions.accessibility.desc" = "Required for global shortcuts and text replacement.";
+"onboarding.permissions.microphone.title" = "Microphone";
+"onboarding.permissions.microphone.desc" = "Required to capture your voice during meetings.";
+"onboarding.permissions.screen_recording.title" = "Screen Recording";
+"onboarding.permissions.screen_recording.desc" = "Required to capture system audio from meetings.";
+"onboarding.permissions.grant" = "Grant";
+"onboarding.permissions.granted" = "Granted";
+"onboarding.permissions.open_settings" = "Open Settings";
+
+"onboarding.shortcuts.title" = "Keyboard Shortcuts";
+"onboarding.shortcuts.subtitle" = "Set up your preferred keyboard shortcuts for quick access.";
+"onboarding.shortcuts.dictation" = "Dictation Shortcut";
+"onboarding.shortcuts.meeting" = "Meeting Shortcut";
+"onboarding.shortcuts.assistant" = "Assistant Shortcut";
+"onboarding.shortcuts.use_default" = "Use Default";
+"onboarding.shortcuts.customize" = "Customize";
+
+"onboarding.completion.title" = "You're All Set!";
+"onboarding.completion.subtitle" = "Meeting Assistant is ready to help you capture and transcribe your meetings.";
+"onboarding.completion.button" = "Start Using Meeting Assistant";
+
+"onboarding.back" = "Back";
+"onboarding.continue" = "Continue";
+"onboarding.skip" = "Skip";
+"onboarding.step" = "Step %d of %d";

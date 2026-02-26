@@ -396,25 +396,25 @@ extension AppSettingsStore {
             context.loadedDictationShortcutDefinition
                 .flatMap { normalizedInHouseShortcutDefinition($0, activationMode: config.dictationActivationMode) } ??
                 resolveShortcutDefinition(
-                explicitGesture: config.dictationModifierGesture,
-                legacyPresetKey: config.dictationPresetKey,
-                activationMode: config.dictationActivationMode
+                    explicitGesture: config.dictationModifierGesture,
+                    legacyPresetKey: config.dictationPresetKey,
+                    activationMode: config.dictationActivationMode
                 ) ??
                 defaultDictationShortcutDefinition,
             context.loadedAssistantShortcutDefinition
                 .flatMap { normalizedInHouseShortcutDefinition($0, activationMode: config.assistantActivationMode) } ??
                 resolveShortcutDefinition(
-                explicitGesture: config.assistantModifierGesture,
-                legacyPresetKey: config.assistantPresetKey,
-                activationMode: config.assistantActivationMode
+                    explicitGesture: config.assistantModifierGesture,
+                    legacyPresetKey: config.assistantPresetKey,
+                    activationMode: config.assistantActivationMode
                 ) ??
                 defaultAssistantShortcutDefinition,
             context.loadedMeetingShortcutDefinition
                 .flatMap { normalizedInHouseShortcutDefinition($0, activationMode: config.shortcutActivationMode) } ??
                 resolveShortcutDefinition(
-                explicitGesture: config.meetingModifierGesture,
-                legacyPresetKey: config.meetingPresetKey,
-                activationMode: config.shortcutActivationMode
+                    explicitGesture: config.meetingModifierGesture,
+                    legacyPresetKey: config.meetingPresetKey,
+                    activationMode: config.shortcutActivationMode
                 ) ??
                 defaultMeetingShortcutDefinition
         )

@@ -549,6 +549,13 @@ public class AppSettingsStore: ObservableObject {
         didSet { UserDefaults.standard.set(showInDock, forKey: Keys.showInDock) }
     }
 
+    /// Whether the user has completed the onboarding flow.
+    @Published public var hasCompletedOnboarding: Bool {
+        didSet { UserDefaults.standard.set(hasCompletedOnboarding, forKey: Keys.hasCompletedOnboarding) }
+    }
+
+    // MARK: - Initialization
+
     // MARK: - Initialization
 
     private init() {
@@ -651,6 +658,7 @@ public class AppSettingsStore: ObservableObject {
         recordingStartSound = uiSettings.recordingStartSound
         recordingStopSound = uiSettings.recordingStopSound
         showInDock = uiSettings.showInDock
+        hasCompletedOnboarding = UserDefaults.standard.bool(forKey: Keys.hasCompletedOnboarding)
 
         finalizeInitialization(context: context)
     }

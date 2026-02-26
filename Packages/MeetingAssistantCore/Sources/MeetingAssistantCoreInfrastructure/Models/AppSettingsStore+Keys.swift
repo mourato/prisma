@@ -89,5 +89,6 @@ extension AppSettingsStore {
         static let webTargetBrowserBundleIdentifiers = "webTargetBrowserBundleIdentifiers"
         static let monitoredMeetingBundleIdentifiers = "monitoredMeetingBundleIdentifiers"
         static let webMeetingTargets = "webMeetingTargets"
+        static let hasCompletedOnboarding = "hasCompletedOnboarding"
     }
 }
