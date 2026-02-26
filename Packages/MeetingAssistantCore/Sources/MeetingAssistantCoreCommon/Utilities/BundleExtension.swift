@@ -53,11 +53,18 @@ public extension Bundle {
 
     private static func applyLanguageOverride(to bundle: Bundle) -> Bundle {
         if let languages = UserDefaults.standard.array(forKey: "AppleLanguages") as? [String],
-           let preferredLang = languages.first,
-           let path = bundle.path(forResource: preferredLang, ofType: "lproj"),
-           let localizedBundle = Bundle(path: path)
+           let preferredLang = languages.first
         {
-            return localizedBundle
+            let candidates = [preferredLang, preferredLang.components(separatedBy: "-").first]
+                .compactMap { $0 }
+
+            for language in candidates {
+                if let path = bundle.path(forResource: language, ofType: "lproj"),
+                   let localizedBundle = Bundle(path: path)
+                {
+                    return localizedBundle
+                }
+            }
         }
         return bundle
     }

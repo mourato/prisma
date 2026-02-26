@@ -197,11 +197,16 @@ extension AppDelegate {
 
         let shortcutViewModel = ShortcutSettingsViewModel()
         let onboardingViewModel = OnboardingViewModel()
+        let modelManager = FluidAIModelManager.shared
 
         onboardingController.showOnboarding(
             viewModel: onboardingViewModel,
             permissionViewModel: permissionViewModel,
             shortcutViewModel: shortcutViewModel,
+            modelManager: modelManager,
+            refreshPermissions: { [weak self] in
+                await self?.recordingManager.checkPermission()
+            },
             completion: { [weak self] in
                 self?.completeOnboarding()
             }

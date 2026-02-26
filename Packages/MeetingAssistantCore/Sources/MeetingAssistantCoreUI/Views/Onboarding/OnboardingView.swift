@@ -1,5 +1,6 @@
 import AppKit
 import Combine
+import MeetingAssistantCoreAI
 import SwiftUI
 
 // MARK: - Onboarding View
@@ -9,18 +10,24 @@ public struct OnboardingView: View {
     @ObservedObject var viewModel: OnboardingViewModel
     @ObservedObject var permissionViewModel: PermissionViewModel
     @ObservedObject var shortcutViewModel: ShortcutSettingsViewModel
+    @ObservedObject var modelManager: FluidAIModelManager
 
     let onComplete: () -> Void
+    let refreshPermissions: @MainActor () async -> Void
 
     public init(
         viewModel: OnboardingViewModel,
         permissionViewModel: PermissionViewModel,
         shortcutViewModel: ShortcutSettingsViewModel,
+        modelManager: FluidAIModelManager,
+        refreshPermissions: @escaping @MainActor () async -> Void,
         onComplete: @escaping () -> Void
     ) {
         self.viewModel = viewModel
         self.permissionViewModel = permissionViewModel
         self.shortcutViewModel = shortcutViewModel
+        self.modelManager = modelManager
+        self.refreshPermissions = refreshPermissions
         self.onComplete = onComplete
     }
 
@@ -54,12 +61,20 @@ public struct OnboardingView: View {
             OnboardingPermissionsView(
                 viewModel: permissionViewModel,
                 onContinue: viewModel.goToNextStep,
-                onSkip: viewModel.currentStep.isSkippable ? { viewModel.skipCurrentStep() } : nil
+                onSkip: viewModel.currentStep.isSkippable ? { viewModel.skipCurrentStep() } : nil,
+                refreshAction: refreshPermissions
             )
 
         case .shortcuts:
             OnboardingShortcutsView(
                 viewModel: shortcutViewModel,
+                onContinue: viewModel.goToNextStep,
+                onSkip: viewModel.currentStep.isSkippable ? { viewModel.skipCurrentStep() } : nil
+            )
+
+        case .downloadModels:
+            OnboardingDownloadModelsView(
+                modelManager: modelManager,
                 onContinue: viewModel.goToNextStep,
                 onSkip: viewModel.currentStep.isSkippable ? { viewModel.skipCurrentStep() } : nil
             )

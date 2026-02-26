@@ -1,4 +1,5 @@
 import AppKit
+import MeetingAssistantCoreAI
 import SwiftUI
 
 // MARK: - Onboarding Window Controller
@@ -15,6 +16,8 @@ public class OnboardingWindowController {
         viewModel: OnboardingViewModel,
         permissionViewModel: PermissionViewModel,
         shortcutViewModel: ShortcutSettingsViewModel,
+        modelManager: FluidAIModelManager,
+        refreshPermissions: @escaping @MainActor () async -> Void,
         completion: @escaping () -> Void
     ) {
         // Create the onboarding view with all dependencies
@@ -22,6 +25,8 @@ public class OnboardingWindowController {
             viewModel: viewModel,
             permissionViewModel: permissionViewModel,
             shortcutViewModel: shortcutViewModel,
+            modelManager: modelManager,
+            refreshPermissions: refreshPermissions,
             onComplete: { [weak self] in
                 self?.closeOnboarding()
                 completion()
