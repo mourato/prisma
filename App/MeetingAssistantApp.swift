@@ -83,6 +83,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var recordMeetingMenuItem: NSMenuItem?
     private var assistantMenuItem: NSMenuItem?
     private lazy var recordingManager: RecordingManager = .shared
+    private let settingsStore = AppSettingsStore.shared
     private lazy var floatingIndicatorController = FloatingRecordingIndicatorController()
     private lazy var globalShortcutController = GlobalShortcutController(recordingManager: RecordingManager.shared)
     private lazy var assistantVoiceCommandService = AssistantVoiceCommandService(
@@ -90,6 +91,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     )
     private lazy var assistantShortcutController = AssistantShortcutController(
         assistantService: assistantVoiceCommandService
+    )
+    private lazy var escapeCancelCoordinator = EscapeCancelCoordinator(
+        inputBackend: SystemShortcutInputBackend(),
+        stateProvider: { [weak self] in
+            self?.escapeCancelStateSnapshot() ?? EscapeCancelState(
+                isDictationRecordingActive: false,
+                isAssistantRecordingActive: false,
+                isDictationEscapeEnabled: false,
+                isAssistantEscapeEnabled: false
+            )
+        },
+        cancelDictation: { [weak self] in
+            await self?.recordingManager.cancelRecording()
+        },
+        cancelAssistant: { [weak self] in
+            await self?.assistantVoiceCommandService.cancelRecording()
+        }
     )
     private var cancellables = Set<AnyCancellable>()
     private var dockObserver: AnyCancellable?
@@ -112,6 +130,7 @@ extension AppDelegate {
         setupContextMenu()
         globalShortcutController.start()
         assistantShortcutController.start()
+        escapeCancelCoordinator.start()
         setupRecordingObservation()
         floatingIndicatorController.prewarm()
         updateMenuTitles() // Initial update
@@ -131,10 +150,10 @@ extension AppDelegate {
         }
 
         // Set initial activation policy based on user settings
-        applyDockVisibility(AppSettingsStore.shared.showInDock)
+        applyDockVisibility(settingsStore.showInDock)
 
         // Observe changes to dock visibility setting
-        dockObserver = AppSettingsStore.shared.$showInDock
+        dockObserver = settingsStore.$showInDock
             .dropFirst() // Skip initial value (already applied above)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] showInDock in
@@ -142,7 +161,9 @@ extension AppDelegate {
             }
     }
 
-    func applicationWillTerminate(_ notification: Notification) {}
+    func applicationWillTerminate(_ notification: Notification) {
+        escapeCancelCoordinator.stop()
+    }
 
     // MARK: - Document Handling (Disabled for Menu Bar App)
 
@@ -172,7 +193,9 @@ extension AppDelegate {
             recordingManager.isTranscribingPublisher.map { _ in () }.eraseToAnyPublisher(),
             assistantVoiceCommandService.$isRecording.map { _ in () }.eraseToAnyPublisher(),
             assistantVoiceCommandService.$isProcessing.map { _ in () }.eraseToAnyPublisher(),
-            recordingManager.currentMeetingPublisher.map { _ in () }.eraseToAnyPublisher()
+            recordingManager.currentMeetingPublisher.map { _ in () }.eraseToAnyPublisher(),
+            settingsStore.$useEscapeToCancelRecording.map { _ in () }.eraseToAnyPublisher(),
+            settingsStore.$assistantUseEscapeToCancelRecording.map { _ in () }.eraseToAnyPublisher()
         )
         // @Published emits in willSet; schedule refresh so re-reads observe committed values.
         .receive(on: DispatchQueue.main)
@@ -202,6 +225,7 @@ extension AppDelegate {
         )
 
         guard renderState != lastRecordingUIRenderState else {
+            escapeCancelCoordinator.refresh()
             return
         }
         lastRecordingUIRenderState = renderState
@@ -216,13 +240,24 @@ extension AppDelegate {
         )
 
         if isRecording || isStarting,
-           AppSettingsStore.shared.recordingIndicatorEnabled,
-           AppSettingsStore.shared.recordingIndicatorStyle != .none
+           settingsStore.recordingIndicatorEnabled,
+           settingsStore.recordingIndicatorStyle != .none
         {
             recordingManager.noteIndicatorShownForStartIfNeeded()
         }
 
         updateMenuTitles()
+        escapeCancelCoordinator.refresh()
+    }
+
+    private func escapeCancelStateSnapshot() -> EscapeCancelState {
+        EscapeCancelState(
+            isDictationRecordingActive: recordingManager.isRecording
+                && recordingManager.recordingSource == .microphone,
+            isAssistantRecordingActive: assistantVoiceCommandService.isRecording,
+            isDictationEscapeEnabled: settingsStore.useEscapeToCancelRecording,
+            isAssistantEscapeEnabled: settingsStore.assistantUseEscapeToCancelRecording
+        )
     }
 
     /// Toggle recording state when global shortcut is activated.
