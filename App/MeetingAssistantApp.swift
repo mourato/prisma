@@ -362,10 +362,12 @@ extension AppDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
         if let button = statusItem?.button {
-            button.image = NSImage(
+            let image = NSImage(
                 systemSymbolName: "waveform",
                 accessibilityDescription: "about.title".localized
             )
+            image?.isTemplate = true
+            button.image = image
             button.action = #selector(handleStatusItemClick)
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
             button.target = self
@@ -769,11 +771,10 @@ extension AppDelegate {
         let accessibilityKey = isRecording ? "menubar.accessibility.recording" : "menubar.accessibility.idle"
         let accessibilityDesc = accessibilityKey.localized
 
-        let config = NSImage.SymbolConfiguration(paletteColors: isRecording ? [.systemRed] : [.headerTextColor])
-        let image = NSImage(systemSymbolName: iconName, accessibilityDescription: accessibilityDesc)?
-            .withSymbolConfiguration(config)
-
+        let image = NSImage(systemSymbolName: iconName, accessibilityDescription: accessibilityDesc)
+        image?.isTemplate = true
         statusItem?.button?.image = image
+        statusItem?.button?.contentTintColor = isRecording ? .systemRed : nil
     }
 
     private func updateFloatingIndicator(
