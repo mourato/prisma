@@ -52,7 +52,20 @@ public struct OnboardingShortcutsView: View {
             Spacer()
 
             // Navigation Buttons
-            VStack(spacing: 12) {
+            HStack(spacing: 16) {
+                // Skip button (left)
+                if onSkip != nil {
+                    Button(action: { onSkip?() }) {
+                        Text("onboarding.skip".localized)
+                            .font(.system(size: 14))
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                // Continue button (right)
                 Button(action: onContinue) {
                     Text("onboarding.continue".localized)
                         .font(.system(size: 16, weight: .semibold))
@@ -63,17 +76,8 @@ public struct OnboardingShortcutsView: View {
                         .cornerRadius(12)
                 }
                 .buttonStyle(.plain)
-                .frame(maxWidth: 300)
-
-                if onSkip != nil {
-                    Button(action: { onSkip?() }) {
-                        Text("onboarding.skip".localized)
-                            .font(.system(size: 14))
-                            .foregroundColor(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                }
             }
+            .frame(maxWidth: 400)
             .padding(.bottom, 24)
         }
         .frame(maxWidth: 550)

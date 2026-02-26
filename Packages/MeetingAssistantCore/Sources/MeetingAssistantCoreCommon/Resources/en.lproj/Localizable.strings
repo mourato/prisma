@@ -968,6 +968,16 @@
 "onboarding.shortcuts.use_default" = "Use Default";
 "onboarding.shortcuts.customize" = "Customize";
 
+"onboarding.download.title" = "Download Models";
+"onboarding.download.subtitle" = "Download the transcription and diarization models for offline use.";
+"onboarding.download.start" = "Start Download";
+"onboarding.download.downloading" = "Downloading...";
+"onboarding.download.status.idle" = "Click the button below to download the required models.";
+"onboarding.download.status.in_progress" = "Downloading and loading models. This may take a few minutes.";
+"onboarding.download.status.complete" = "All models downloaded and ready!";
+"onboarding.download.status.failed" = "Download failed. Please try again or skip for now.";
+"onboarding.download.model.transcription" = "Transcription Model";
+"onboarding.download.model.diarization" = "Speaker Identification Model";
 "onboarding.completion.title" = "You're All Set!";
 "onboarding.completion.subtitle" = "Meeting Assistant is ready to help you capture and transcribe your meetings.";
 "onboarding.completion.button" = "Start Using Meeting Assistant";

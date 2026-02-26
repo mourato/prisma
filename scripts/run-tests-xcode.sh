@@ -76,11 +76,20 @@ fi
 
 run_xcode_tests() {
     cd "${PACKAGE_DIR}"
-    xcodebuild \
-        -scheme MeetingAssistantCore \
-        -derivedDataPath "${DERIVED_DATA}" \
-        -destination 'platform=macOS' \
+    local xcode_args=(
+        -scheme MeetingAssistantCore
+        -derivedDataPath "${DERIVED_DATA}"
+        -destination 'platform=macOS'
         test
+    )
+
+    # Agent runs are more stable with a single build/test worker in constrained environments.
+    if [ "${AGENT_MODE}" -eq 1 ]; then
+        xcode_args=(-parallel-testing-enabled NO -jobs 1 "${xcode_args[@]}")
+    fi
+
+    xcodebuild \
+        "${xcode_args[@]}"
 }
 
 run_swift_fallback_tests() {

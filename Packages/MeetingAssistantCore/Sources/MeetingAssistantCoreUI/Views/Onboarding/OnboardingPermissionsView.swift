@@ -8,15 +8,18 @@ public struct OnboardingPermissionsView: View {
     @ObservedObject var viewModel: PermissionViewModel
     let onContinue: () -> Void
     let onSkip: (() -> Void)?
+    let refreshAction: (@MainActor () async -> Void)?
 
     public init(
         viewModel: PermissionViewModel,
         onContinue: @escaping () -> Void,
-        onSkip: (() -> Void)? = nil
+        onSkip: (() -> Void)? = nil,
+        refreshAction: (@MainActor () async -> Void)? = nil
     ) {
         self.viewModel = viewModel
         self.onContinue = onContinue
         self.onSkip = onSkip
+        self.refreshAction = refreshAction
     }
 
     public var body: some View {
@@ -54,7 +57,20 @@ public struct OnboardingPermissionsView: View {
             Spacer()
 
             // Navigation Buttons
-            VStack(spacing: 12) {
+            HStack(spacing: 16) {
+                // Skip button (left)
+                if onSkip != nil {
+                    Button(action: { onSkip?() }) {
+                        Text("onboarding.skip".localized)
+                            .font(.system(size: 14))
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                // Continue button (right)
                 Button(action: onContinue) {
                     Text("onboarding.continue".localized)
                         .font(.system(size: 16, weight: .semibold))
@@ -65,21 +81,20 @@ public struct OnboardingPermissionsView: View {
                         .cornerRadius(12)
                 }
                 .buttonStyle(.plain)
-                .frame(maxWidth: 300)
                 .disabled(!viewModel.allPermissionsGranted)
-
-                if onSkip != nil {
-                    Button(action: { onSkip?() }) {
-                        Text("onboarding.skip".localized)
-                            .font(.system(size: 14))
-                            .foregroundColor(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                }
             }
+            .frame(maxWidth: 400)
             .padding(.bottom, 24)
         }
         .frame(maxWidth: 550)
+        .onAppear {
+            if let refreshAction {
+                viewModel.startPeriodicRefresh(refreshAction: refreshAction)
+            }
+        }
+        .onDisappear {
+            viewModel.stopPeriodicRefresh()
+        }
     }
 
     // MARK: - Private Helpers

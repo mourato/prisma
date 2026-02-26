@@ -956,10 +956,20 @@
 "onboarding.shortcuts.use_default" = "Usar Padrão";
 "onboarding.shortcuts.customize" = "Personalizar";
 
+"onboarding.download.title" = "Baixar Modelos";
+"onboarding.download.subtitle" = "Baixe os modelos de transcrição e identificação de locutor para uso offline.";
+"onboarding.download.start" = "Iniciar Download";
+"onboarding.download.downloading" = "Baixando...";
+"onboarding.download.status.idle" = "Clique no botão abaixo para baixar os modelos necessários.";
+"onboarding.download.status.in_progress" = "Baixando e carregando modelos. Isso pode levar alguns minutos.";
+"onboarding.download.status.complete" = "Todos os modelos baixados e prontos!";
+"onboarding.download.status.failed" = "Falha no download. Por favor, tente novamente ou pule por enquanto.";
+"onboarding.download.model.transcription" = "Modelo de Transcrição";
+"onboarding.download.model.diarization" = "Modelo de Identificação de Locutor";
+
 "onboarding.completion.title" = "Tudo Pronto!";
 "onboarding.completion.subtitle" = "O Meeting Assistant está pronto para ajudá-lo a capturar e transcrever suas reuniões.";
 "onboarding.completion.button" = "Começar a Usar o Meeting Assistant";
-
 "onboarding.back" = "Voltar";
 "onboarding.continue" = "Continuar";
 "onboarding.skip" = "Pular";

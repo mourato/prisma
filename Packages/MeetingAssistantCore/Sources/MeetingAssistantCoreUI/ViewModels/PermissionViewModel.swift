@@ -24,6 +24,8 @@ public class PermissionViewModel: ObservableObject {
     private let openAccessibilitySettingsAction: () -> Void
 
     private var cancellables = Set<AnyCancellable>()
+    private var refreshTimer: Timer?
+    private var refreshAction: (@MainActor () async -> Void)?
 
     // MARK: - Published Properties
 
@@ -53,6 +55,21 @@ public class PermissionViewModel: ObservableObject {
         setupBindings()
     }
 
+    /// Configure periodic refresh with a custom refresh action.
+    public func startPeriodicRefresh(refreshAction: @escaping @MainActor () async -> Void) {
+        self.refreshAction = refreshAction
+        refreshTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                await self?.refreshAction?()
+            }
+        }
+    }
+
+    /// Stop the periodic refresh timer.
+    public func stopPeriodicRefresh() {
+        refreshTimer?.invalidate()
+        refreshTimer = nil
+    }
     // MARK: - Actions
 
     public func requestMicrophonePermission() async {

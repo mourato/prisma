@@ -6,6 +6,7 @@ public enum OnboardingStep: Int, CaseIterable, Identifiable, Hashable, Sendable 
     case welcome
     case permissions
     case shortcuts
+    case downloadModels
     case completion
 
     public var id: Int { rawValue }
@@ -16,7 +17,7 @@ public enum OnboardingStep: Int, CaseIterable, Identifiable, Hashable, Sendable 
     /// Whether this step can be skipped.
     public var isSkippable: Bool {
         switch self {
-        case .permissions, .shortcuts: true
+        case .permissions, .shortcuts, .downloadModels: true
         case .welcome, .completion: false
         }
     }
