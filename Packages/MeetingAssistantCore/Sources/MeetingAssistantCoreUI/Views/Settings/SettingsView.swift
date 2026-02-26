@@ -81,15 +81,29 @@ public struct SettingsView: View {
     }
 
     private func sidebarLabel(for section: SettingsSection) -> some View {
-        Label(section.title, systemImage: section.icon)
-            .font(
-                .system(
-                    size: MeetingAssistantDesignSystem.Layout.sidebarLabelFontSize,
-                    weight: .regular
+        HStack(spacing: 8) {
+            Image(systemName: section.icon)
+                .symbolRenderingMode(.monochrome)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 24, height: 24)
+                .background(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(section.sidebarIconBackgroundColor)
                 )
-            )
-            .lineLimit(1)
-            .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing2)
+                .shadow(
+                    color: Color.black.opacity(0.2), radius: 3, x: 0, y: 1
+                )
+            Text(section.title)
+                .font(
+                    .system(
+                        size: MeetingAssistantDesignSystem.Layout.sidebarLabelFontSize,
+                        weight: .regular
+                    )
+                )
+                .lineLimit(1)
+        }
+        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing2)
     }
 
     // MARK: - Detail View
@@ -124,6 +138,7 @@ public struct SettingsView: View {
             PermissionsSettingsTab()
         }
     }
+
 }
 
 #Preview {
