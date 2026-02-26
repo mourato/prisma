@@ -196,3 +196,158 @@ final class AssistantShortcutController {
         }
     }
 }
+
+struct EscapeCancelState: Equatable {
+    var isDictationRecordingActive: Bool
+    var isAssistantRecordingActive: Bool
+    var isDictationEscapeEnabled: Bool
+    var isAssistantEscapeEnabled: Bool
+}
+
+@MainActor
+final class EscapeCancelCoordinator {
+    struct Targets: OptionSet, Equatable {
+        let rawValue: Int
+
+        static let dictation = Targets(rawValue: 1 << 0)
+        static let assistant = Targets(rawValue: 1 << 1)
+    }
+
+    private let inputBackend: ShortcutInputBackend
+    private let stateProvider: @MainActor () -> EscapeCancelState
+    private let cancelDictation: @MainActor () async -> Void
+    private let cancelAssistant: @MainActor () async -> Void
+    private let escapeKeyCode: UInt16 = 0x35
+
+    private var isStarted = false
+    private var isKeyDownMonitoringActive = false
+    private var doubleEscapeDetector: AppDoubleEscapePressDetector
+
+    init(
+        inputBackend: ShortcutInputBackend,
+        doublePressInterval: TimeInterval = 1.0,
+        stateProvider: @escaping @MainActor () -> EscapeCancelState,
+        cancelDictation: @escaping @MainActor () async -> Void,
+        cancelAssistant: @escaping @MainActor () async -> Void
+    ) {
+        self.inputBackend = inputBackend
+        doubleEscapeDetector = AppDoubleEscapePressDetector(interval: doublePressInterval)
+        self.stateProvider = stateProvider
+        self.cancelDictation = cancelDictation
+        self.cancelAssistant = cancelAssistant
+        configureInputHandlers()
+    }
+
+    func start() {
+        guard !isStarted else { return }
+        isStarted = true
+        refresh()
+    }
+
+    func stop() {
+        guard isStarted else { return }
+        isStarted = false
+        doubleEscapeDetector.reset()
+        if isKeyDownMonitoringActive {
+            inputBackend.stopKeyDownMonitoring()
+            isKeyDownMonitoringActive = false
+        }
+    }
+
+    func refresh() {
+        guard isStarted else { return }
+
+        let targets = activeTargets(for: stateProvider())
+        let shouldMonitor = !targets.isEmpty
+
+        if shouldMonitor {
+            if !isKeyDownMonitoringActive {
+                inputBackend.startKeyDownMonitoring(shouldReturnLocalEvent: nil)
+                isKeyDownMonitoringActive = true
+            }
+        } else if isKeyDownMonitoringActive {
+            inputBackend.stopKeyDownMonitoring()
+            isKeyDownMonitoringActive = false
+            doubleEscapeDetector.reset()
+        }
+    }
+
+    private func configureInputHandlers() {
+        inputBackend.setKeyDownHandler { [weak self] event in
+            self?.handleKeyDown(event)
+        }
+    }
+
+    private func handleKeyDown(_ event: ShortcutInputEvent) {
+        guard event.keyCode == escapeKeyCode else { return }
+        guard !event.isRepeat else { return }
+
+        let targets = activeTargets(for: stateProvider())
+        guard !targets.isEmpty else {
+            doubleEscapeDetector.reset()
+            return
+        }
+
+        let targetToken = String(targets.rawValue)
+        guard doubleEscapeDetector.registerPress(token: targetToken) else {
+            return
+        }
+
+        Task { @MainActor [cancelDictation, cancelAssistant] in
+            if targets.contains(.assistant) {
+                await cancelAssistant()
+            }
+
+            if targets.contains(.dictation) {
+                await cancelDictation()
+            }
+        }
+    }
+
+    private func activeTargets(for state: EscapeCancelState) -> Targets {
+        var targets: Targets = []
+
+        if state.isAssistantEscapeEnabled, state.isAssistantRecordingActive {
+            targets.insert(.assistant)
+        }
+
+        if state.isDictationEscapeEnabled, state.isDictationRecordingActive {
+            targets.insert(.dictation)
+        }
+
+        return targets
+    }
+}
+
+private struct AppDoubleEscapePressDetector {
+    private let interval: TimeInterval
+    private var pendingPressAt: Date?
+    private var pendingToken: String?
+
+    init(interval: TimeInterval) {
+        self.interval = interval
+    }
+
+    mutating func registerPress(at now: Date = Date(), token: String) -> Bool {
+        guard let pendingPressAt, let pendingToken else {
+            self.pendingPressAt = now
+            self.pendingToken = token
+            return false
+        }
+
+        let elapsed = now.timeIntervalSince(pendingPressAt)
+        guard elapsed <= interval, pendingToken == token else {
+            self.pendingPressAt = now
+            self.pendingToken = token
+            return false
+        }
+
+        reset()
+        return true
+    }
+
+    mutating func reset() {
+        pendingPressAt = nil
+        pendingToken = nil
+    }
+}
