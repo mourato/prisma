@@ -27,35 +27,35 @@ public struct PermissionStatusView: View {
     }
 
     public var body: some View {
-        MACard {
-            VStack(spacing: 12) {
-                headerSection
 
-                VStack(spacing: 8) {
-                    PermissionRowView(
-                        permission: PermissionInfo(type: .microphone, state: viewModel.microphoneState),
-                        onRequest: { Task { await viewModel.requestMicrophonePermission() } },
-                        onOpenSettings: { viewModel.openMicrophoneSystemSettings() }
-                    )
+        VStack(spacing: 12) {
+            headerSection
 
-                    PermissionRowView(
-                        permission: PermissionInfo(type: .screenRecording, state: viewModel.screenState),
-                        onRequest: { Task { await viewModel.requestScreenPermission() } },
-                        onOpenSettings: { viewModel.openScreenSystemSettings() }
-                    )
+            VStack(spacing: 8) {
+                PermissionRowView(
+                    permission: PermissionInfo(type: .microphone, state: viewModel.microphoneState),
+                    onRequest: { Task { await viewModel.requestMicrophonePermission() } },
+                    onOpenSettings: { viewModel.openMicrophoneSystemSettings() }
+                )
 
-                    PermissionRowView(
-                        permission: PermissionInfo(type: .accessibility, state: viewModel.accessibilityState),
-                        onRequest: { viewModel.requestAccessibilityPermission() },
-                        onOpenSettings: { viewModel.openAccessibilitySystemSettings() }
-                    )
-                }
+                PermissionRowView(
+                    permission: PermissionInfo(type: .screenRecording, state: viewModel.screenState),
+                    onRequest: { Task { await viewModel.requestScreenPermission() } },
+                    onOpenSettings: { viewModel.openScreenSystemSettings() }
+                )
 
-                if !requiredPermissionsGranted {
-                    permissionWarning
-                }
+                PermissionRowView(
+                    permission: PermissionInfo(type: .accessibility, state: viewModel.accessibilityState),
+                    onRequest: { viewModel.requestAccessibilityPermission() },
+                    onOpenSettings: { viewModel.openAccessibilitySystemSettings() }
+                )
+            }
+
+            if !requiredPermissionsGranted {
+                permissionWarning
             }
         }
+
     } // body
 
     private var requiredPermissions: [PermissionType] {
@@ -98,33 +98,16 @@ public struct PermissionStatusView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-
             Spacer()
-
-            statusBadge
         }
     }
 
     @ViewBuilder
-    private var statusBadge: some View {
-        if requiredPermissionsGranted {
-            Button(
-                action: { onDismiss?() },
-                label: {
-                    MABadge("common.ok".localized, kind: .success)
-                }
-            )
-            .buttonStyle(.plain)
-        } else {
-            MABadge("permissions.action_required".localized, kind: .warning)
-        }
-    }
-
     private var permissionWarning: some View {
         HStack(spacing: 6) {
             Image(systemName: PermissionConstants.Icons.exclamationMarkTriangle)
                 .foregroundStyle(MeetingAssistantDesignSystem.Colors.warning)
-                .font(.caption)
+                .font(.title3)
 
             Text("permissions.warning".localized)
                 .font(.caption)
@@ -187,7 +170,6 @@ struct PermissionRowView: View {
             // Status indicator and action button
             statusIndicator
         }
-        .padding(.horizontal, 12)
         .padding(.vertical, 10)
         .background(
             RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
