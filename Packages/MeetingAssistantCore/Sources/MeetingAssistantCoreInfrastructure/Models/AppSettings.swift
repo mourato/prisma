@@ -239,6 +239,11 @@ public class AppSettingsStore: ObservableObject {
         didSet { save(meetingShortcutDefinition, forKey: Keys.meetingShortcutDefinition) }
     }
 
+    /// Global shortcut definition used to cancel active recordings/captures.
+    @Published public var cancelRecordingShortcutDefinition: ShortcutDefinition? {
+        didSet { save(cancelRecordingShortcutDefinition, forKey: Keys.cancelRecordingShortcutDefinition) }
+    }
+
     /// Modifier-only shortcut gesture for Dictation.
     @Published public var dictationModifierShortcutGesture: ModifierShortcutGesture? {
         didSet { save(dictationModifierShortcutGesture, forKey: Keys.dictationModifierShortcutGesture) }
@@ -597,6 +602,7 @@ public class AppSettingsStore: ObservableObject {
         selectedPresetKey = shortcuts.selectedPresetKey
         dictationSelectedPresetKey = shortcuts.dictationSelectedPresetKey
         meetingSelectedPresetKey = shortcuts.meetingSelectedPresetKey
+        cancelRecordingShortcutDefinition = shortcuts.cancelRecordingShortcutDefinition
 
         let gestures = Self.loadModifierShortcutGestures()
         dictationModifierShortcutGesture = gestures.dictation

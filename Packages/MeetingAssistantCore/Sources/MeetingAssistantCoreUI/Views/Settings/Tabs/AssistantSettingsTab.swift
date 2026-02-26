@@ -107,18 +107,7 @@ public struct AssistantSettingsTab: View {
                         conflictMessage: viewModel.assistantModifierConflictMessage
                     )
 
-                    MACallout(
-                        kind: .info,
-                        title: "settings.shortcuts.external_remap.title".localized,
-                        message: "settings.shortcuts.external_remap.message".localized
-                    )
-
                     Divider()
-
-                    MAToggleRow(
-                        "settings.assistant.use_escape".localized,
-                        isOn: $viewModel.useEscapeToCancelRecording
-                    )
 
                     MAToggleRow(
                         "settings.assistant.use_enter_stop".localized,

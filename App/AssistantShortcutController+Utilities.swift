@@ -4,7 +4,6 @@ import MeetingAssistantCore
 @MainActor
 extension AssistantShortcutController {
     func resetShortcutState() {
-        lastEscapePressTime = nil
         lastLayerLeaderTapTime = nil
         disarmShortcutLayer(showFeedback: false)
         presetState.reset()

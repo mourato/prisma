@@ -92,20 +92,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var assistantShortcutController = AssistantShortcutController(
         assistantService: assistantVoiceCommandService
     )
-    private lazy var escapeCancelCoordinator = EscapeCancelCoordinator(
-        inputBackend: SystemShortcutInputBackend(),
+    private lazy var recordingCancelShortcutController = RecordingCancelShortcutController(
         stateProvider: { [weak self] in
-            self?.escapeCancelStateSnapshot() ?? EscapeCancelState(
-                isDictationRecordingActive: false,
-                isAssistantRecordingActive: false,
-                isDictationEscapeEnabled: false,
-                isAssistantEscapeEnabled: false
+            self?.recordingCancelShortcutStateSnapshot() ?? RecordingCancelShortcutState(
+                isRecordingManagerCaptureActive: false,
+                isAssistantCaptureActive: false
             )
         },
-        cancelDictation: { [weak self] in
+        cancelRecordingManagerCapture: { [weak self] in
             await self?.recordingManager.cancelRecording()
         },
-        cancelAssistant: { [weak self] in
+        cancelAssistantCapture: { [weak self] in
             await self?.assistantVoiceCommandService.cancelRecording()
         }
     )
@@ -128,14 +125,14 @@ extension AppDelegate {
         }
         // Show onboarding if first launch
         if !settingsStore.hasCompletedOnboarding {
-            showOnboarding()
+            showFirstLaunchOnboarding()
             return // Defer rest of setup until onboarding completes
         }
 
         setupContextMenu()
         globalShortcutController.start()
         assistantShortcutController.start()
-        escapeCancelCoordinator.start()
+        recordingCancelShortcutController.start()
         setupRecordingObservation()
         floatingIndicatorController.prewarm()
         updateMenuTitles() // Initial update
@@ -167,12 +164,18 @@ extension AppDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        escapeCancelCoordinator.stop()
+        recordingCancelShortcutController.stop()
     }
 
     // MARK: - Onboarding
 
-    private func showOnboarding() {
+    private func showFirstLaunchOnboarding() {
+        presentOnboarding { [weak self] in
+            self?.completeOnboarding()
+        }
+    }
+
+    private func presentOnboarding(completion: @escaping () -> Void) {
         let permissionViewModel = PermissionViewModel(
             manager: PermissionStatusManager(),
             requestMicrophone: { [weak self] in
@@ -207,9 +210,7 @@ extension AppDelegate {
             refreshPermissions: { [weak self] in
                 await self?.recordingManager.checkPermission()
             },
-            completion: { [weak self] in
-                self?.completeOnboarding()
-            }
+            completion: completion
         )
     }
 
@@ -223,7 +224,7 @@ extension AppDelegate {
         setupContextMenu()
         globalShortcutController.start()
         assistantShortcutController.start()
-        escapeCancelCoordinator.start()
+        recordingCancelShortcutController.start()
         setupRecordingObservation()
         floatingIndicatorController.prewarm()
         updateMenuTitles()
@@ -283,8 +284,7 @@ extension AppDelegate {
             assistantVoiceCommandService.$isRecording.map { _ in () }.eraseToAnyPublisher(),
             assistantVoiceCommandService.$isProcessing.map { _ in () }.eraseToAnyPublisher(),
             recordingManager.currentMeetingPublisher.map { _ in () }.eraseToAnyPublisher(),
-            settingsStore.$useEscapeToCancelRecording.map { _ in () }.eraseToAnyPublisher(),
-            settingsStore.$assistantUseEscapeToCancelRecording.map { _ in () }.eraseToAnyPublisher()
+            settingsStore.$cancelRecordingShortcutDefinition.map { _ in () }.eraseToAnyPublisher()
         )
         // @Published emits in willSet; schedule refresh so re-reads observe committed values.
         .receive(on: DispatchQueue.main)
@@ -314,7 +314,7 @@ extension AppDelegate {
         )
 
         guard renderState != lastRecordingUIRenderState else {
-            escapeCancelCoordinator.refresh()
+            recordingCancelShortcutController.refresh()
             return
         }
         lastRecordingUIRenderState = renderState
@@ -336,16 +336,13 @@ extension AppDelegate {
         }
 
         updateMenuTitles()
-        escapeCancelCoordinator.refresh()
+        recordingCancelShortcutController.refresh()
     }
 
-    private func escapeCancelStateSnapshot() -> EscapeCancelState {
-        EscapeCancelState(
-            isDictationRecordingActive: recordingManager.isRecording
-                && recordingManager.recordingSource == .microphone,
-            isAssistantRecordingActive: assistantVoiceCommandService.isRecording,
-            isDictationEscapeEnabled: settingsStore.useEscapeToCancelRecording,
-            isAssistantEscapeEnabled: settingsStore.assistantUseEscapeToCancelRecording
+    private func recordingCancelShortcutStateSnapshot() -> RecordingCancelShortcutState {
+        RecordingCancelShortcutState(
+            isRecordingManagerCaptureActive: recordingManager.isRecording || recordingManager.isStartingRecording,
+            isAssistantCaptureActive: assistantVoiceCommandService.isRecording
         )
     }
 
@@ -423,6 +420,10 @@ extension AppDelegate {
             key: "menubar.settings",
             action: #selector(openSettings),
             keyEquivalent: ","
+        ))
+        contextMenu?.addItem(createMenuItem(
+            key: "menubar.onboarding",
+            action: #selector(openOnboarding)
         ))
         contextMenu?.addItem(createMenuItem(
             key: "menubar.check_updates",
@@ -691,6 +692,10 @@ extension AppDelegate {
 
     @objc private func openSettings() {
         NavigationService.shared.openSettings()
+    }
+
+    @objc private func openOnboarding() {
+        presentOnboarding {}
     }
 
     @objc private func openHistory() {

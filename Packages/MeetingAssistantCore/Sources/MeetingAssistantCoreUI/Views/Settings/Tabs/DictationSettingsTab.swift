@@ -39,14 +39,6 @@ public struct DictationSettingsTab: View {
                             shortcut: $shortcutsViewModel.dictationShortcutDefinition,
                             conflictMessage: shortcutsViewModel.dictationModifierConflictMessage
                         )
-
-                        Divider()
-
-                        MAToggleRow(
-                            "settings.shortcuts.use_escape".localized,
-                            description: "settings.shortcuts.use_escape_desc".localized,
-                            isOn: $shortcutsViewModel.useEscapeToCancelRecording
-                        )
                     }
                 }
             )
