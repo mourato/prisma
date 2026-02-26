@@ -1,40 +1,20 @@
+import AppKit
+import Combine
 import MeetingAssistantCoreCommon
-import SwiftUI
 
 /// Service to handle navigation and window management across the app.
 @MainActor
 public class NavigationService: ObservableObject {
     public static let shared = NavigationService()
 
-    /// Reference to the SwiftUI openWindow action.
-    public private(set) var openWindow: OpenWindowAction?
-
     @Published public var requestedSettingsSection: String?
 
     private init() {}
 
-    /// Registers the openWindow action from the SwiftUI environment.
-    public func register(openWindow: OpenWindowAction) {
-        self.openWindow = openWindow
-    }
-
     /// Opens the settings/dashboard window.
     public func openSettings() {
-        // First check if the window is already open
-        if let existingWindow = NSApp.windows.first(where: { $0.identifier?.rawValue == "settings" }) {
-            existingWindow.makeKeyAndOrderFront(nil)
-            NSApp.activate(ignoringOtherApps: true)
-            return
-        }
-
-        if let openWindow {
-            openWindow(id: "settings")
-            NSApp.activate(ignoringOtherApps: true)
-        } else {
-            // Fallback for app startup or when environment isn't bridged yet
-            NSApp.activate(ignoringOtherApps: true)
-            NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-        }
+        NSApp.activate(ignoringOtherApps: true)
+        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
     }
 
     /// Opens the settings window and requests a specific section.
