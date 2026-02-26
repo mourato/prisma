@@ -67,13 +67,30 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
         case .dictation: "microphone"
         case .meetings: "bubble.left.and.text.bubble.right"
         case .audio: "speaker.wave.2"
-        case .assistant: "sparkles"
+        case .assistant: "sparkle"
         case .integrations: "puzzlepiece.extension"
         case .transcriptions: "clock"
         case .rulesPerApp: "slider.horizontal.3"
         case .vocabulary: "character.book.closed"
         case .enhancements: "sparkles"
         case .permissions: "checkmark.shield"
+        }
+    }
+
+    public var sidebarIconBackgroundColor: Color {
+        switch self {
+        case .metrics: .orange
+        case .dictation: .red
+        case .assistant: .purple
+        case .integrations: .blue
+        case .meetings: .green
+        case .transcriptions: .indigo
+        case .general: .gray
+        case .rulesPerApp: .mint
+        case .vocabulary: .teal
+        case .enhancements: .pink
+        case .audio: .cyan
+        case .permissions: .blue
         }
     }
 }
