@@ -21,6 +21,7 @@ public final class RecordingCancelShortcutSettingsViewModel: ObservableObject {
     private func setupBindings() {
         $cancelRecordingShortcutDefinition
             .dropFirst()
+            .receive(on: DispatchQueue.main)
             .sink { [weak self] newValue in
                 self?.handleCancelRecordingShortcutDefinitionChange(newValue)
             }
