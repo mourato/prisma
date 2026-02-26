@@ -5,7 +5,7 @@
 # with CI/CD pipelines and headless environments.
 # =============================================================================
 
-.PHONY: help build build-debug build-release build-agent xcodebuild-safe test test-agent test-swift test-verbose test-strict benchmark-summary benchmark-summary-agent lint lint-agent lint-fix arch-check preview-check preflight preflight-fast preflight-agent preflight-agent-fast clean run run-release dmg setup docs docs-preview docs-clean profile profile-report profile-cpu profile-memory profile-animation profile-animation-report
+.PHONY: help build build-debug build-release build-agent build-test xcodebuild-safe test test-agent test-swift test-verbose test-strict benchmark-summary benchmark-summary-agent lint lint-agent lint-fix arch-check preview-check preflight preflight-fast preflight-agent preflight-agent-fast clean run run-release dmg setup docs docs-preview docs-clean profile profile-report profile-cpu profile-memory profile-animation profile-animation-report
 
 # Default target
 help:
@@ -17,6 +17,7 @@ help:
 	@echo "  make build-debug    - Build debug version explicitly"
 	@echo "  make build-release  - Build release version"
 	@echo "  make build-agent    - Build debug with compact machine-readable output"
+	@echo "  make build-test     - Run build + tests in sequence with concise progress"
 	@echo "  make xcodebuild-safe - Build via canonical direct xcodebuild wrapper"
 	@echo ""
 	@echo "Test Commands:"
@@ -29,7 +30,7 @@ help:
 	@echo "  make benchmark-summary-agent - Run summary benchmark in compact mode"
 	@echo ""
 	@echo "Code Quality:"
-	@echo "  make lint           - Run linting checks"
+	@echo "  make lint           - Run linting checks (use FIX=1 to auto-fix first)"
 	@echo "  make lint-agent     - Run lint with compact machine-readable output"
 	@echo "  make lint-fix       - Auto-fix linting issues"
 	@echo "  make arch-check     - Run architecture boundary checks"
@@ -95,6 +96,9 @@ build-release:
 build-agent:
 	@MA_AGENT_MODE=1 MA_AGENT_LOG_DIR="$(AGENT_LOG_DIR)" ./scripts/run-build.sh --configuration Debug --agent
 
+build-test:
+	@MA_AGENT_MODE=1 MA_AGENT_LOG_DIR="$(AGENT_LOG_DIR)" ./scripts/run-build-and-test.sh
+
 xcodebuild-safe:
 	@./scripts/xcodebuild-safe.sh
 
@@ -127,7 +131,12 @@ benchmark-summary-agent:
 # Code Quality
 lint:
 	@echo -e "$(BLUE)Running SwiftLint...$(NC)"
-	@./scripts/lint.sh
+	@if [ "$(FIX)" = "1" ] || [ "$(FIX)" = "true" ] || [ "$(FIX)" = "yes" ]; then \
+		echo -e "$(YELLOW)Autofix enabled (SwiftFormat + SwiftLint --fix)$(NC)"; \
+		./scripts/lint-fix.sh && ./scripts/lint.sh; \
+	else \
+		./scripts/lint.sh; \
+	fi
 
 lint-agent:
 	@MA_AGENT_MODE=1 MA_AGENT_LOG_DIR="$(AGENT_LOG_DIR)" ./scripts/lint.sh --agent
