@@ -44,8 +44,6 @@ final class AssistantShortcutController {
     )
 
     let presetState = ShortcutActivationState()
-    let escapeDoublePressInterval: TimeInterval = 1.0
-    var lastEscapePressTime: Date?
     let healthCheckIntervalSeconds: TimeInterval = 15
     var healthCheckTimer: Timer?
     var shortcutCaptureHealthSnapshot: ShortcutCaptureHealthSnapshot?
@@ -197,45 +195,40 @@ final class AssistantShortcutController {
     }
 }
 
-struct EscapeCancelState: Equatable {
-    var isDictationRecordingActive: Bool
-    var isAssistantRecordingActive: Bool
-    var isDictationEscapeEnabled: Bool
-    var isAssistantEscapeEnabled: Bool
+struct RecordingCancelShortcutState: Equatable {
+    var isRecordingManagerCaptureActive: Bool
+    var isAssistantCaptureActive: Bool
+
+    var hasAnyActiveCapture: Bool {
+        isRecordingManagerCaptureActive || isAssistantCaptureActive
+    }
 }
 
 @MainActor
-final class EscapeCancelCoordinator {
-    struct Targets: OptionSet, Equatable {
-        let rawValue: Int
+final class RecordingCancelShortcutController {
+    private let settings: AppSettingsStore
+    private let hotkeyBackend: GlobalHotkeyBackend
+    private let stateProvider: @MainActor () -> RecordingCancelShortcutState
+    private let cancelRecordingManagerCapture: @MainActor () async -> Void
+    private let cancelAssistantCapture: @MainActor () async -> Void
 
-        static let dictation = Targets(rawValue: 1 << 0)
-        static let assistant = Targets(rawValue: 1 << 1)
-    }
-
-    private let inputBackend: ShortcutInputBackend
-    private let stateProvider: @MainActor () -> EscapeCancelState
-    private let cancelDictation: @MainActor () async -> Void
-    private let cancelAssistant: @MainActor () async -> Void
-    private let escapeKeyCode: UInt16 = 0x35
-
+    private let hotkeyID = "global.cancel_active_recording"
     private var isStarted = false
-    private var isKeyDownMonitoringActive = false
-    private var doubleEscapeDetector: AppDoubleEscapePressDetector
+    private var isRegistered = false
+    private var registeredDefinition: ShortcutDefinition?
 
     init(
-        inputBackend: ShortcutInputBackend,
-        doublePressInterval: TimeInterval = 1.0,
-        stateProvider: @escaping @MainActor () -> EscapeCancelState,
-        cancelDictation: @escaping @MainActor () async -> Void,
-        cancelAssistant: @escaping @MainActor () async -> Void
+        settings: AppSettingsStore = .shared,
+        hotkeyBackend: GlobalHotkeyBackend? = nil,
+        stateProvider: @escaping @MainActor () -> RecordingCancelShortcutState,
+        cancelRecordingManagerCapture: @escaping @MainActor () async -> Void,
+        cancelAssistantCapture: @escaping @MainActor () async -> Void
     ) {
-        self.inputBackend = inputBackend
-        doubleEscapeDetector = AppDoubleEscapePressDetector(interval: doublePressInterval)
+        self.settings = settings
+        self.hotkeyBackend = hotkeyBackend ?? CarbonGlobalHotkeyBackend()
         self.stateProvider = stateProvider
-        self.cancelDictation = cancelDictation
-        self.cancelAssistant = cancelAssistant
-        configureInputHandlers()
+        self.cancelRecordingManagerCapture = cancelRecordingManagerCapture
+        self.cancelAssistantCapture = cancelAssistantCapture
     }
 
     func start() {
@@ -247,107 +240,63 @@ final class EscapeCancelCoordinator {
     func stop() {
         guard isStarted else { return }
         isStarted = false
-        doubleEscapeDetector.reset()
-        if isKeyDownMonitoringActive {
-            inputBackend.stopKeyDownMonitoring()
-            isKeyDownMonitoringActive = false
-        }
+        unregister()
     }
 
     func refresh() {
         guard isStarted else { return }
 
-        let targets = activeTargets(for: stateProvider())
-        let shouldMonitor = !targets.isEmpty
-
-        if shouldMonitor {
-            if !isKeyDownMonitoringActive {
-                inputBackend.startKeyDownMonitoring(shouldReturnLocalEvent: nil)
-                isKeyDownMonitoringActive = true
-            }
-        } else if isKeyDownMonitoringActive {
-            inputBackend.stopKeyDownMonitoring()
-            isKeyDownMonitoringActive = false
-            doubleEscapeDetector.reset()
-        }
-    }
-
-    private func configureInputHandlers() {
-        inputBackend.setKeyDownHandler { [weak self] event in
-            self?.handleKeyDown(event)
-        }
-    }
-
-    private func handleKeyDown(_ event: ShortcutInputEvent) {
-        guard event.keyCode == escapeKeyCode else { return }
-        guard !event.isRepeat else { return }
-
-        let targets = activeTargets(for: stateProvider())
-        guard !targets.isEmpty else {
-            doubleEscapeDetector.reset()
+        let state = stateProvider()
+        guard state.hasAnyActiveCapture,
+              let definition = settings.cancelRecordingShortcutDefinition,
+              let descriptor = GlobalHotkeyMapper.descriptor(for: definition)
+        else {
+            unregister()
             return
         }
 
-        let targetToken = String(targets.rawValue)
-        guard doubleEscapeDetector.registerPress(token: targetToken) else {
+        guard !isRegistered || registeredDefinition != definition else {
             return
         }
 
-        Task { @MainActor [cancelDictation, cancelAssistant] in
-            if targets.contains(.assistant) {
-                await cancelAssistant()
-            }
+        let registration = HotkeyRegistration(
+            id: hotkeyID,
+            keyCode: descriptor.keyCode,
+            modifiers: descriptor.modifiers,
+            onKeyDown: { [weak self] in
+                Task { @MainActor [weak self] in
+                    guard let self else { return }
+                    await self.handleCancelHotkeyPressed()
+                }
+            },
+            onKeyUp: {}
+        )
 
-            if targets.contains(.dictation) {
-                await cancelDictation()
-            }
-        }
+        hotkeyBackend.registerAll([registration])
+        isRegistered = hotkeyBackend.registeredHotkeyCount > 0
+        registeredDefinition = isRegistered ? definition : nil
     }
 
-    private func activeTargets(for state: EscapeCancelState) -> Targets {
-        var targets: Targets = []
-
-        if state.isAssistantEscapeEnabled, state.isAssistantRecordingActive {
-            targets.insert(.assistant)
+    private func unregister() {
+        guard isRegistered || hotkeyBackend.registeredHotkeyCount > 0 else {
+            registeredDefinition = nil
+            return
         }
 
-        if state.isDictationEscapeEnabled, state.isDictationRecordingActive {
-            targets.insert(.dictation)
-        }
-
-        return targets
-    }
-}
-
-private struct AppDoubleEscapePressDetector {
-    private let interval: TimeInterval
-    private var pendingPressAt: Date?
-    private var pendingToken: String?
-
-    init(interval: TimeInterval) {
-        self.interval = interval
+        hotkeyBackend.unregisterAll()
+        isRegistered = false
+        registeredDefinition = nil
     }
 
-    mutating func registerPress(at now: Date = Date(), token: String) -> Bool {
-        guard let pendingPressAt, let pendingToken else {
-            self.pendingPressAt = now
-            self.pendingToken = token
-            return false
+    private func handleCancelHotkeyPressed() async {
+        let state = stateProvider()
+
+        if state.isAssistantCaptureActive {
+            await cancelAssistantCapture()
         }
 
-        let elapsed = now.timeIntervalSince(pendingPressAt)
-        guard elapsed <= interval, pendingToken == token else {
-            self.pendingPressAt = now
-            self.pendingToken = token
-            return false
+        if state.isRecordingManagerCaptureActive {
+            await cancelRecordingManagerCapture()
         }
-
-        reset()
-        return true
-    }
-
-    mutating func reset() {
-        pendingPressAt = nil
-        pendingToken = nil
     }
 }

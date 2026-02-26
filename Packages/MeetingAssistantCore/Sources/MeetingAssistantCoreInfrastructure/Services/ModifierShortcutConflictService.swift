@@ -5,6 +5,7 @@ public enum ModifierShortcutActionID: Hashable, Sendable {
     case dictation
     case assistant
     case meeting
+    case cancelActiveRecording
     case assistantIntegration(UUID)
 
     var rawIdentifier: String {
@@ -15,6 +16,8 @@ public enum ModifierShortcutActionID: Hashable, Sendable {
             "assistant"
         case .meeting:
             "meeting"
+        case .cancelActiveRecording:
+            "cancelActiveRecording"
         case let .assistantIntegration(id):
             "assistantIntegration.\(id.uuidString)"
         }
@@ -246,7 +249,7 @@ public enum ModifierShortcutConflictService {
         switch actionID {
         case .assistant, .assistantIntegration:
             true
-        case .dictation, .meeting:
+        case .dictation, .meeting, .cancelActiveRecording:
             false
         }
     }

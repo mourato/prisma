@@ -6,14 +6,29 @@ import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
-public struct MAGroup<Content: View>: View {
+public struct MAGroup<Content: View, HeaderAccessory: View>: View {
     private let title: String
     private let icon: String?
+    private let headerAccessory: HeaderAccessory
     private let content: Content
 
-    public init(_ title: String, icon: String? = nil, @ViewBuilder content: () -> Content) {
+    public init(_ title: String, icon: String? = nil, @ViewBuilder content: () -> Content)
+    where HeaderAccessory == EmptyView {
         self.title = title
         self.icon = icon
+        headerAccessory = EmptyView()
+        self.content = content()
+    }
+
+    public init(
+        _ title: String,
+        icon: String? = nil,
+        @ViewBuilder headerAccessory: () -> HeaderAccessory,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.title = title
+        self.icon = icon
+        self.headerAccessory = headerAccessory()
         self.content = content()
     }
 
@@ -28,6 +43,8 @@ public struct MAGroup<Content: View>: View {
                 Text(title)
                     .font(.headline)
                     .foregroundStyle(.primary)
+
+                headerAccessory
             }
             .padding(.leading, MeetingAssistantDesignSystem.Layout.spacing4)
 

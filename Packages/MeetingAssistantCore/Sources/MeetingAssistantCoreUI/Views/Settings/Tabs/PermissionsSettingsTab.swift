@@ -10,13 +10,13 @@ import SwiftUI
 
 /// Tab for managing app permissions (microphone, screen recording).
 public struct PermissionsSettingsTab: View {
-    @State private var viewModel: PermissionViewModel
+    @StateObject private var viewModel: PermissionViewModel
     @StateObject private var shortcutSettingsViewModel = ShortcutSettingsViewModel()
     @StateObject private var assistantShortcutSettingsViewModel = AssistantShortcutSettingsViewModel()
 
     public init() {
         let recordingManager = RecordingManager.shared
-        _viewModel = State(initialValue: PermissionViewModel(
+        _viewModel = StateObject(wrappedValue: PermissionViewModel(
             manager: recordingManager.permissionStatus,
             requestMicrophone: { await recordingManager.requestPermission(for: .microphone) },
             requestScreen: { await recordingManager.requestPermission(for: .system) },

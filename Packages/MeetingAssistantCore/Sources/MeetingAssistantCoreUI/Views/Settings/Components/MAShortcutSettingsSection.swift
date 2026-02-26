@@ -25,7 +25,16 @@ public struct MAShortcutSettingsSection<SettingsContent: View>: View {
     }
 
     public var body: some View {
-        MAGroup(groupTitle, icon: groupIcon) {
+        MAGroup(
+            groupTitle,
+            icon: groupIcon,
+            headerAccessory: {
+                MAInfoPopoverButton(
+                    title: "settings.shortcuts.external_remap.title".localized,
+                    message: "settings.shortcuts.external_remap.message".localized
+                )
+            }
+        ) {
             VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
                 Text(descriptionText)
                     .font(.caption)

@@ -47,6 +47,19 @@ public extension AppSettingsStore {
             activationMode: shortcutActivationMode
         )
 
+        if let cancelRecordingShortcutDefinition,
+           !cancelRecordingShortcutDefinition.isEmpty,
+           GlobalHotkeyMapper.descriptor(for: cancelRecordingShortcutDefinition) != nil
+        {
+            bindings.append(
+                ShortcutBinding(
+                    actionID: .cancelActiveRecording,
+                    actionDisplayName: "settings.general.cancel_recording_shortcut".localized,
+                    shortcut: cancelRecordingShortcutDefinition
+                )
+            )
+        }
+
         for integration in assistantIntegrations where integration.isEnabled {
             let resolvedShortcut = integration.shortcutDefinition
                 .flatMap {

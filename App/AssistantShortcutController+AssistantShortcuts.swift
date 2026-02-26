@@ -14,22 +14,6 @@ extension AssistantShortcutController {
     }
 
     func handleKeyDown(_ event: ShortcutInputEvent) {
-        if event.keyCode == PresetShortcutKey.escapeKeyCode {
-            AppLogger.debug(
-                "ESC keyDown observed (assistant)",
-                category: .assistant,
-                extra: [
-                    "scope": "assistant",
-                    "isRepeat": event.isRepeat,
-                    "assistantUseEscapeToCancelRecording": settings.assistantUseEscapeToCancelRecording,
-                    "assistantIsRecording": assistantService.isRecording,
-                    "shortcutLayerEnabled": shouldUseAssistantShortcutLayer,
-                    "shortcutLayerArmed": isShortcutLayerArmed,
-                    "shouldSuppressKeyDownEvents": shouldSuppressKeyDownEvents,
-                ]
-            )
-        }
-
         if handleSingleEnterStop(event: event) {
             return
         }
@@ -40,66 +24,6 @@ extension AssistantShortcutController {
 
         routeAssistantMonitorEvent(event: event, mode: .inHouseDefinitionOnly)
         handleIntegrationKeyEvent(event: event)
-
-        guard settings.assistantUseEscapeToCancelRecording else {
-            if event.keyCode == PresetShortcutKey.escapeKeyCode {
-                AppLogger.debug(
-                    "ESC ignored because assistant escape cancel is disabled",
-                    category: .assistant,
-                    extra: ["scope": "assistant"]
-                )
-            }
-            return
-        }
-
-        guard !event.isRepeat else {
-            if event.keyCode == PresetShortcutKey.escapeKeyCode {
-                AppLogger.debug(
-                    "ESC ignored because key event is repeat (assistant)",
-                    category: .assistant,
-                    extra: ["scope": "assistant"]
-                )
-            }
-            return
-        }
-
-        guard event.keyCode == PresetShortcutKey.escapeKeyCode else {
-            return
-        }
-
-        guard didConfirmDoubleEscapePress() else {
-            AppLogger.debug(
-                "ESC waiting for second press (assistant)",
-                category: .assistant,
-                extra: ["scope": "assistant"]
-            )
-            return
-        }
-
-        Task { @MainActor [weak self] in
-            guard let self else { return }
-            let wasRecording = assistantService.isRecording
-
-            AppLogger.info(
-                "ESC cancel requested",
-                category: .assistant,
-                extra: [
-                    "scope": "assistant",
-                    "wasRecording": wasRecording,
-                ]
-            )
-
-            await assistantService.cancelRecording()
-
-            AppLogger.info(
-                "ESC cancel completed",
-                category: .assistant,
-                extra: [
-                    "scope": "assistant",
-                    "isRecording": assistantService.isRecording,
-                ]
-            )
-        }
     }
 
     func handleKeyUp(_ event: ShortcutInputEvent) {
@@ -289,45 +213,4 @@ extension AssistantShortcutController {
         }
     }
 
-    private func didConfirmDoubleEscapePress() -> Bool {
-        let now = Date()
-        guard let lastEscapePressTime else {
-            self.lastEscapePressTime = now
-            AppLogger.debug(
-                "ESC first press detected",
-                category: .assistant,
-                extra: [
-                    "scope": "assistant",
-                    "windowSec": escapeDoublePressInterval,
-                ]
-            )
-            return false
-        }
-
-        let elapsed = now.timeIntervalSince(lastEscapePressTime)
-        guard elapsed <= escapeDoublePressInterval else {
-            self.lastEscapePressTime = now
-            AppLogger.debug(
-                "ESC double-press timeout",
-                category: .assistant,
-                extra: [
-                    "scope": "assistant",
-                    "elapsedSec": elapsed,
-                    "windowSec": escapeDoublePressInterval,
-                ]
-            )
-            return false
-        }
-
-        self.lastEscapePressTime = nil
-        AppLogger.info(
-            "ESC double-press confirmed",
-            category: .assistant,
-            extra: [
-                "scope": "assistant",
-                "elapsedSec": elapsed,
-            ]
-        )
-        return true
-    }
 }

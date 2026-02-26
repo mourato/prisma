@@ -171,10 +171,6 @@ struct PermissionRowView: View {
             statusIndicator
         }
         .padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
-                .fill(.background)
-        )
     }
 
     // MARK: - Status Indicator

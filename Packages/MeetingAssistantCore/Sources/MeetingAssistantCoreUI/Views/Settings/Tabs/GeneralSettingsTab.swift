@@ -11,6 +11,7 @@ import SwiftUI
 /// Main tab for core application settings like language, appearance, and storage.
 public struct GeneralSettingsTab: View {
     @StateObject private var viewModel = GeneralSettingsViewModel()
+    @StateObject private var recordingCancelShortcutViewModel = RecordingCancelShortcutSettingsViewModel()
     @State private var shortcutDoubleTapIntervalInput = ""
     @State private var autoDeletePeriodDaysInput = ""
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -78,6 +79,23 @@ public struct GeneralSettingsTab: View {
                                 .font(.body)
                                 .foregroundStyle(.secondary)
                         }
+                    }
+
+                    Divider()
+
+                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                        Text("settings.general.cancel_recording_shortcut".localized)
+                            .font(.body)
+                            .foregroundStyle(.primary)
+
+                        Text("settings.general.cancel_recording_shortcut_desc".localized)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        MAModifierShortcutEditor(
+                            shortcut: $recordingCancelShortcutViewModel.cancelRecordingShortcutDefinition,
+                            conflictMessage: recordingCancelShortcutViewModel.cancelRecordingShortcutConflictMessage
+                        )
                     }
                 }
             }

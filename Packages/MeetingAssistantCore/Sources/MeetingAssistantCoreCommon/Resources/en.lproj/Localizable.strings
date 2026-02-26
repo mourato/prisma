@@ -60,6 +60,9 @@
 "settings.general.show_settings_on_launch" = "Show settings window on app launch";
 "settings.general.shortcut_double_tap_interval" = "Shortcut double-tap interval";
 "settings.general.shortcut_double_tap_interval_desc" = "Defines the maximum time between taps for double-tap shortcuts across the app.";
+"settings.general.cancel_recording_shortcut" = "Cancel active recording shortcut";
+"settings.general.cancel_recording_shortcut_desc" = "Cancels an active Dictation, Meeting, Assistant, or Integration recording.";
+"settings.general.cancel_recording_shortcut_unsupported" = "This shortcut must be a single-tap global hotkey with modifiers plus a primary key, and cannot use Fn.";
 "settings.general.recordings_path" = "Recordings folder:";
 "settings.general.audio_format" = "Audio Format";
 "settings.general.merge_audio" = "Merge audio files after recording";
@@ -610,6 +613,7 @@
 "menubar.start_recording" = "Start Recording";
 "menubar.stop_recording" = "Stop Recording";
 "menubar.settings" = "Settings...";
+"menubar.onboarding" = "Open Onboarding...";
 "menubar.check_updates" = "Check for Updates...";
 "menubar.quit" = "Quit";
 "menubar.accessibility.recording" = "Recording in progress";

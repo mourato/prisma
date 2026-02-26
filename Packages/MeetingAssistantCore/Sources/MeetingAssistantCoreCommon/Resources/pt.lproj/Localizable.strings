@@ -60,6 +60,9 @@
 "settings.general.show_settings_on_launch" = "Exibir janela de configurações ao iniciar o app";
 "settings.general.shortcut_double_tap_interval" = "Intervalo de toque duplo dos atalhos";
 "settings.general.shortcut_double_tap_interval_desc" = "Define o tempo máximo entre toques para atalhos de toque duplo em todo o app.";
+"settings.general.cancel_recording_shortcut" = "Atalho para cancelar gravação ativa";
+"settings.general.cancel_recording_shortcut_desc" = "Cancela uma gravação ativa de Ditado, Reunião, Assistente ou Integração.";
+"settings.general.cancel_recording_shortcut_unsupported" = "Este atalho precisa ser um hotkey global de toque único com modificadores e uma tecla principal, e não pode usar Fn.";
 "settings.general.recordings_path" = "Pasta de gravações:";
 "settings.general.audio_format" = "Formato de Áudio";
 "settings.general.merge_audio" = "Mesclar arquivos de áudio ao finalizar";
@@ -610,6 +613,7 @@
 "menubar.start_recording" = "Iniciar Gravação";
 "menubar.stop_recording" = "Parar Gravação";
 "menubar.settings" = "Configurações...";
+"menubar.onboarding" = "Abrir Onboarding...";
 "menubar.check_updates" = "Verificar Atualizações...";
 "menubar.quit" = "Sair";
 "menubar.accessibility.recording" = "Gravação em andamento";

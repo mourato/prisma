@@ -148,6 +148,7 @@ Use the project's Design System tokens/components to keep UI consistent and DRY:
 - Tokens: `MeetingAssistantDesignSystem`
 - Components: `MACard`, `MAGroup`, `MAToggleRow`, `MACallout`, `MABadge`, `MAActionButton`, `MAThemePicker`
 - Always evaluate reusing/extending these components before introducing custom wrappers in feature views.
+- Keyboard shortcut registration sections should use `MAShortcutSettingsSection` (instead of duplicating section layout). This component is the standard place for the trailing info icon + popover that explains the optional external remap flow; do not inline repeated `MACallout` warnings in each settings tab.
 
 ```swift
 // Use MAGroup for labeled sections

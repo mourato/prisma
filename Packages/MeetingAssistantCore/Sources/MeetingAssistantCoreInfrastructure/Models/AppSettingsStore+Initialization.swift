@@ -151,6 +151,7 @@ extension AppSettingsStore {
         let selectedPresetKey: PresetShortcutKey
         let dictationSelectedPresetKey: PresetShortcutKey
         let meetingSelectedPresetKey: PresetShortcutKey
+        let cancelRecordingShortcutDefinition: ShortcutDefinition?
     }
 
     /// Loads shortcut activation settings.
@@ -180,7 +181,11 @@ extension AppSettingsStore {
             useEscapeToCancelRecording: UserDefaults.standard.bool(forKey: Keys.useEscapeToCancelRecording),
             selectedPresetKey: presetKey,
             dictationSelectedPresetKey: dictationPresetKey,
-            meetingSelectedPresetKey: meetingPresetKey
+            meetingSelectedPresetKey: meetingPresetKey,
+            cancelRecordingShortcutDefinition: loadDecoded(
+                ShortcutDefinition.self,
+                forKey: Keys.cancelRecordingShortcutDefinition
+            )
         )
     }
 
