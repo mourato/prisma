@@ -25,6 +25,9 @@ AGENT_MODE=0
 QUIET=0
 VERBOSE=0
 BUNDLE_ERROR_PATTERN="Failed to create a bundle instance representing"
+PACKAGE_CONTEXT_ERROR_PATTERN="does not contain an Xcode project, workspace or package"
+OVERLAY_TEST_SUITE_IDENTIFIER="MeetingAssistantCoreTests/AssistantOverlayLifecycleTests"
+HEARTBEAT_INTERVAL_SEC="${MA_XCODEBUILD_HEARTBEAT_INTERVAL_SEC:-15}"
 
 if ma_agent_mode_enabled; then
     AGENT_MODE=1
@@ -61,7 +64,7 @@ ma_agent_progress_enable
 
 export MA_SKIP_OVERLAY_LIFECYCLE_TESTS=1
 
-LOG_PATH="/tmp/test-output.log"
+LOG_PATH="/tmp/ma-test-xcode-$$.log"
 RESULT_PATH=""
 if [ "${AGENT_MODE}" -eq 1 ]; then
     LOG_DIR="$(ma_agent_prepare_log_dir)"
@@ -87,6 +90,7 @@ run_xcode_tests() {
         -scheme MeetingAssistantCore
         -derivedDataPath "${DERIVED_DATA}"
         -destination "${destination}"
+        "-skip-testing:${OVERLAY_TEST_SUITE_IDENTIFIER}"
         test
     )
 
@@ -97,6 +101,54 @@ run_xcode_tests() {
 
     xcodebuild \
         "${xcode_args[@]}"
+}
+
+is_recoverable_runner_failure() {
+    local log_path="$1"
+    if [ ! -f "${log_path}" ]; then
+        return 1
+    fi
+
+    if grep -q "${BUNDLE_ERROR_PATTERN}" "${log_path}"; then
+        return 0
+    fi
+
+    if grep -q "${PACKAGE_CONTEXT_ERROR_PATTERN}" "${log_path}"; then
+        return 0
+    fi
+
+    return 1
+}
+
+run_xcode_tests_with_heartbeat() {
+    (run_xcode_tests) >"${LOG_PATH}" 2>&1 &
+    local xcode_pid=$!
+    local start_time
+    local now
+    local next_heartbeat
+    local elapsed
+    local last_line
+
+    start_time=$(date +%s)
+    next_heartbeat=$((start_time + HEARTBEAT_INTERVAL_SEC))
+
+    while kill -0 "${xcode_pid}" 2>/dev/null; do
+        sleep 1
+        now=$(date +%s)
+        if [ "${AGENT_MODE}" -eq 0 ] && [ "${QUIET}" -eq 0 ] && [ "${now}" -ge "${next_heartbeat}" ]; then
+            elapsed=$((now - start_time))
+            last_line="$(tail -n 1 "${LOG_PATH}" 2>/dev/null | tr -d '\r')"
+            if [ -n "${last_line}" ]; then
+                echo -e "${BLUE}... still running (${elapsed}s) | ${last_line}${NC}"
+            else
+                echo -e "${BLUE}... still running (${elapsed}s)${NC}"
+            fi
+            next_heartbeat=$((now + HEARTBEAT_INTERVAL_SEC))
+        fi
+    done
+
+    wait "${xcode_pid}"
+    EXIT_CODE=$?
 }
 
 run_swift_fallback_tests() {
@@ -120,12 +172,11 @@ if [ "${VERBOSE}" -eq 1 ] && [ "${AGENT_MODE}" -eq 0 ] && [ "${QUIET}" -eq 0 ]; 
     (run_xcode_tests) 2>&1 | tee "${LOG_PATH}"
     EXIT_CODE=${PIPESTATUS[0]}
 else
-    (run_xcode_tests) >"${LOG_PATH}" 2>&1
-    EXIT_CODE=$?
+    run_xcode_tests_with_heartbeat
 fi
 
 # Update progress for fallback if needed
-if [ "${AGENT_MODE}" -eq 1 ] && [ "${EXIT_CODE}" -ne 0 ] && grep -q "${BUNDLE_ERROR_PATTERN}" "${LOG_PATH}"; then
+if [ "${AGENT_MODE}" -eq 1 ] && [ "${EXIT_CODE}" -ne 0 ] && is_recoverable_runner_failure "${LOG_PATH}"; then
     ma_agent_progress_update "Running tests (swift test fallback)"
 fi
 
@@ -135,12 +186,12 @@ DURATION=$((END_TIME - START_TIME))
 FALLBACK_USED=0
 RETRY_USED=0
 FALLBACK_LOG_PATH="${LOG_PATH%.log}-swift-fallback.log"
-if [ "${EXIT_CODE}" -ne 0 ] && grep -q "${BUNDLE_ERROR_PATTERN}" "${LOG_PATH}"; then
+if [ "${EXIT_CODE}" -ne 0 ] && is_recoverable_runner_failure "${LOG_PATH}"; then
     RETRY_USED=1
     if [ "${AGENT_MODE}" -eq 1 ]; then
         ma_agent_progress_update "Retrying tests (xcodebuild)"
     elif [ "${QUIET}" -eq 0 ]; then
-        echo -e "${YELLOW}xcodebuild runner failed to instantiate .xctest bundle; retrying xcodebuild once...${NC}"
+        echo -e "${YELLOW}xcodebuild runner reported recoverable setup error; retrying xcodebuild once...${NC}"
     fi
 
     RETRY_START_TIME=$(date +%s)
@@ -148,18 +199,17 @@ if [ "${EXIT_CODE}" -ne 0 ] && grep -q "${BUNDLE_ERROR_PATTERN}" "${LOG_PATH}"; 
         (run_xcode_tests) 2>&1 | tee "${LOG_PATH}"
         EXIT_CODE=${PIPESTATUS[0]}
     else
-        (run_xcode_tests) >"${LOG_PATH}" 2>&1
-        EXIT_CODE=$?
+        run_xcode_tests_with_heartbeat
     fi
     RETRY_END_TIME=$(date +%s)
     RETRY_DURATION=$((RETRY_END_TIME - RETRY_START_TIME))
     DURATION=$((DURATION + RETRY_DURATION))
 fi
 
-if [ "${EXIT_CODE}" -ne 0 ] && grep -q "${BUNDLE_ERROR_PATTERN}" "${LOG_PATH}"; then
+if [ "${EXIT_CODE}" -ne 0 ] && is_recoverable_runner_failure "${LOG_PATH}"; then
     FALLBACK_USED=1
     if [ "${AGENT_MODE}" -eq 0 ] && [ "${QUIET}" -eq 0 ]; then
-        echo -e "${YELLOW}xcodebuild runner failed to instantiate .xctest bundle; retrying via swift test fallback...${NC}"
+        echo -e "${YELLOW}xcodebuild runner reported recoverable setup error; retrying via swift test fallback...${NC}"
     fi
 
     FALLBACK_START_TIME=$(date +%s)
