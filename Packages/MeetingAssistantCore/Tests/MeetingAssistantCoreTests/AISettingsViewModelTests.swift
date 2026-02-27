@@ -24,6 +24,26 @@ final class AISettingsViewModelTests: XCTestCase {
         settings = nil
     }
 
+    func testInitWithDeferredBootstrap_DoesNotReadKeychainOrFetchModels() async throws {
+        let keychain = MockKeychainProvider()
+        let llmService = MockLLMService()
+        try keychain.store("sk-saved", for: KeychainManager.apiKeyKey(for: .openai))
+
+        _ = AISettingsViewModel(
+            settings: settings,
+            keychain: keychain,
+            llmService: llmService,
+            credentialBootstrapPolicy: .deferredUserAction
+        )
+
+        await Task.yield()
+
+        XCTAssertEqual(llmService.fetchCallCount, 0)
+        XCTAssertEqual(keychain.existsAPIKeyCallCount, 0)
+        XCTAssertEqual(keychain.retrieveAPIKeyCallCount, 0)
+        XCTAssertEqual(keychain.retrieveAPIKeysCallCount, 0)
+    }
+
     func testRefreshModelsManually_TriggersFetchAndStoresLastRefreshStatus() async throws {
         let keychain = MockKeychainProvider()
         let llmService = MockLLMService()
@@ -200,11 +220,18 @@ final class AISettingsViewModelTests: XCTestCase {
             .google: [try XCTUnwrap(LLMModel.fixture(id: "gemini-2.0-flash"))],
         ]
 
-        let viewModel = AISettingsViewModel(settings: settings, keychain: keychain, llmService: llmService)
+        let viewModel = AISettingsViewModel(
+            settings: settings,
+            keychain: keychain,
+            llmService: llmService,
+            credentialBootstrapPolicy: .deferredUserAction
+        )
 
         let task = viewModel.refreshEnhancementsProviderModelsManually()
         await task.value
 
+        XCTAssertEqual(keychain.retrieveAPIKeysCallCount, 1)
+        XCTAssertEqual(keychain.retrieveAPIKeyCallCount, 1) // One migration probe for active provider.
         XCTAssertTrue(
             viewModel.enhancementsProviderModels.contains(
                 where: { $0.provider == .openai && $0.modelID == "gpt-4o-mini" }
@@ -221,10 +248,42 @@ final class AISettingsViewModelTests: XCTestCase {
             )
         )
     }
+
+    func testRefreshEnhancementsProviderModels_MigratesLegacyKeyBeforeBatch() async throws {
+        let keychain = MockKeychainProvider()
+        let llmService = MockLLMService()
+        try keychain.store("sk-legacy-openai", for: .aiAPIKey)
+        llmService.fetchModelsResultsByProvider = [
+            .openai: [try XCTUnwrap(LLMModel.fixture(id: "gpt-4.1-mini"))],
+        ]
+
+        let viewModel = AISettingsViewModel(
+            settings: settings,
+            keychain: keychain,
+            llmService: llmService,
+            credentialBootstrapPolicy: .deferredUserAction
+        )
+
+        let task = viewModel.refreshEnhancementsProviderModelsManually()
+        await task.value
+
+        XCTAssertNil(try keychain.retrieve(for: .aiAPIKey))
+        XCTAssertEqual(try keychain.retrieve(for: .aiAPIKeyOpenAI), "sk-legacy-openai")
+        XCTAssertEqual(keychain.retrieveAPIKeyCallCount, 1)
+        XCTAssertEqual(keychain.retrieveAPIKeysCallCount, 1)
+        XCTAssertTrue(
+            viewModel.enhancementsProviderModels.contains(
+                where: { $0.provider == .openai && $0.modelID == "gpt-4.1-mini" }
+            )
+        )
+    }
 }
 
 private final class MockKeychainProvider: KeychainProvider, @unchecked Sendable {
     private var values: [KeychainManager.Key: String] = [:]
+    private(set) var retrieveAPIKeyCallCount = 0
+    private(set) var retrieveAPIKeysCallCount = 0
+    private(set) var existsAPIKeyCallCount = 0
 
     func store(_ value: String, for key: KeychainManager.Key) throws {
         values[key] = value
@@ -243,11 +302,38 @@ private final class MockKeychainProvider: KeychainProvider, @unchecked Sendable 
     }
 
     func retrieveAPIKey(for provider: AIProvider) throws -> String? {
-        values[KeychainManager.apiKeyKey(for: provider)]
+        retrieveAPIKeyCallCount += 1
+        let providerKey = KeychainManager.apiKeyKey(for: provider)
+        if let value = values[providerKey], !value.isEmpty {
+            return value
+        }
+
+        if let legacyValue = values[.aiAPIKey], !legacyValue.isEmpty {
+            values[providerKey] = legacyValue
+            values.removeValue(forKey: .aiAPIKey)
+            return legacyValue
+        }
+
+        return nil
+    }
+
+    func retrieveAPIKeys(for providers: [AIProvider]) throws -> [AIProvider: String] {
+        retrieveAPIKeysCallCount += 1
+        return providers.reduce(into: [AIProvider: String]()) { result, provider in
+            let key = KeychainManager.apiKeyKey(for: provider)
+            guard let value = values[key]?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !value.isEmpty
+            else {
+                return
+            }
+            result[provider] = value
+        }
     }
 
     func existsAPIKey(for provider: AIProvider) -> Bool {
-        values[KeychainManager.apiKeyKey(for: provider)] != nil
+        existsAPIKeyCallCount += 1
+        let providerKey = KeychainManager.apiKeyKey(for: provider)
+        return values[providerKey] != nil || values[.aiAPIKey] != nil
     }
 }
 

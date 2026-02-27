@@ -9,7 +9,25 @@ public protocol KeychainProvider: Sendable {
     func delete(for key: KeychainManager.Key) throws
     func exists(for key: KeychainManager.Key) -> Bool
     func retrieveAPIKey(for provider: AIProvider) throws -> String?
+    func retrieveAPIKeys(for providers: [AIProvider]) throws -> [AIProvider: String]
     func existsAPIKey(for provider: AIProvider) -> Bool
+}
+
+public extension KeychainProvider {
+    func retrieveAPIKeys(for providers: [AIProvider]) throws -> [AIProvider: String] {
+        var valuesByProvider: [AIProvider: String] = [:]
+
+        for provider in providers {
+            guard let apiKey = try retrieveAPIKey(for: provider)?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !apiKey.isEmpty
+            else {
+                continue
+            }
+            valuesByProvider[provider] = apiKey
+        }
+
+        return valuesByProvider
+    }
 }
 
 public struct DefaultKeychainProvider: KeychainProvider {
@@ -32,6 +50,10 @@ public struct DefaultKeychainProvider: KeychainProvider {
 
     public func retrieveAPIKey(for provider: AIProvider) throws -> String? {
         try KeychainManager.retrieveAPIKey(for: provider)
+    }
+
+    public func retrieveAPIKeys(for providers: [AIProvider]) throws -> [AIProvider: String] {
+        try KeychainManager.retrieveAPIKeys(for: providers)
     }
 
     public func existsAPIKey(for provider: AIProvider) -> Bool {
@@ -212,11 +234,72 @@ public enum KeychainManager {
         return nil
     }
 
+    public static func retrieveAPIKeys(for providers: [AIProvider]) throws -> [AIProvider: String] {
+        guard !providers.isEmpty else { return [:] }
+
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: serviceIdentifier,
+            kSecReturnAttributes as String: true,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitAll,
+        ]
+
+        var result: AnyObject?
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+
+        switch status {
+        case errSecSuccess:
+            let items: [[String: Any]]
+            if let array = result as? [[String: Any]] {
+                items = array
+            } else if let item = result as? [String: Any] {
+                items = [item]
+            } else {
+                throw KeychainError.unableToConvertFromData
+            }
+
+            return mapAPIKeyItems(items, allowedProviders: providers)
+
+        case errSecItemNotFound:
+            return [:]
+
+        default:
+            throw KeychainError.unexpectedStatus(status)
+        }
+    }
+
     public static func existsAPIKey(for provider: AIProvider) -> Bool {
         let providerKey = apiKeyKey(for: provider)
         if exists(for: providerKey) {
             return true
         }
         return exists(for: .aiAPIKey)
+    }
+
+    public static func mapAPIKeyItems(
+        _ items: [[String: Any]],
+        allowedProviders: [AIProvider]
+    ) -> [AIProvider: String] {
+        let accountToProvider = Dictionary(uniqueKeysWithValues: allowedProviders.map {
+            (apiKeyKey(for: $0).rawValue, $0)
+        })
+        var valuesByProvider: [AIProvider: String] = [:]
+
+        for item in items {
+            guard let account = item[kSecAttrAccount as String] as? String,
+                  let provider = accountToProvider[account],
+                  let rawData = item[kSecValueData as String] as? Data,
+                  let rawValue = String(data: rawData, encoding: .utf8)
+            else {
+                continue
+            }
+
+            let apiKey = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !apiKey.isEmpty else { continue }
+            valuesByProvider[provider] = apiKey
+        }
+
+        return valuesByProvider
     }
 }
