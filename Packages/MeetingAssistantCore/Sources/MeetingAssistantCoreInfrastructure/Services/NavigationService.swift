@@ -8,13 +8,43 @@ public class NavigationService: ObservableObject {
     public static let shared = NavigationService()
 
     @Published public var requestedSettingsSection: String?
+    private var openSettingsHandler: (@MainActor () -> Void)?
 
     private init() {}
 
+    /// Registers an explicit settings opener provided by the app target.
+    public func registerOpenSettingsHandler(_ handler: @escaping @MainActor () -> Void) {
+        openSettingsHandler = handler
+    }
+
     /// Opens the settings/dashboard window.
     public func openSettings() {
+        if let openSettingsHandler {
+            openSettingsHandler()
+            return
+        }
+
+        let previousPolicy = NSApp.activationPolicy()
+        if previousPolicy == .accessory {
+            NSApp.setActivationPolicy(.regular)
+        }
+
         NSApp.activate(ignoringOtherApps: true)
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+
+        let openSettingsSelector = Selector(("openSettings:"))
+        let legacySettingsSelector = Selector(("show" + "SettingsWindow:"))
+        let legacyPreferencesSelector = Selector(("show" + "PreferencesWindow:"))
+
+        let opened = NSApp.sendAction(openSettingsSelector, to: nil, from: nil)
+            || NSApp.sendAction(legacySettingsSelector, to: nil, from: nil)
+            || NSApp.sendAction(legacyPreferencesSelector, to: nil, from: nil)
+
+        if previousPolicy == .accessory {
+            let restoreDelay: TimeInterval = opened ? 0.5 : 0.1
+            DispatchQueue.main.asyncAfter(deadline: .now() + restoreDelay) {
+                NSApp.setActivationPolicy(.accessory)
+            }
+        }
     }
 
     /// Opens the settings window and requests a specific section.

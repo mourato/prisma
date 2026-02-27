@@ -44,6 +44,14 @@ public struct SettingsView: View {
         .navigationTitle(selectedSection.title)
         .frame(minWidth: LayoutConstants.windowWidth, minHeight: LayoutConstants.windowHeight)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onAppear {
+            if let sectionId = navigationService.requestedSettingsSection,
+               let section = SettingsSection(rawValue: sectionId)
+            {
+                selectedSection = section
+                navigationService.requestedSettingsSection = nil
+            }
+        }
         .onReceive(navigationService.$requestedSettingsSection.compactMap(\.self)) { sectionId in
             if let section = SettingsSection(rawValue: sectionId) {
                 selectedSection = section

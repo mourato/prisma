@@ -18,8 +18,8 @@ struct MeetingAssistantApp: App {
         .windowResizability(.contentSize)
         .commands {
             CommandGroup(replacing: .appSettings) {
-                Button("settings.title".localized + "...") {
-                    NavigationService.shared.openSettings()
+                SettingsLink {
+                    Text("settings.title".localized + "...")
                 }
                 .keyboardShortcut(",", modifiers: .command)
             }
@@ -93,6 +93,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     )
     private lazy var onboardingController = OnboardingWindowController()
+    private lazy var settingsWindowController = SettingsWindowController()
     private var cancellables = Set<AnyCancellable>()
     private var dockObserver: AnyCancellable?
     private var lastRecordingUIRenderState: RecordingUIRenderState?
@@ -104,6 +105,7 @@ extension AppDelegate {
         // Initialize Monitoring Services
         CrashReporter.shared.setup()
         PerformanceMonitor.shared.startMonitoring()
+        configureNavigationService()
 
         // One-time migration: legacy JSON → Core Data
         Task {
@@ -209,6 +211,7 @@ extension AppDelegate {
     }
 
     private func continueAppSetup() {
+        configureNavigationService()
         setupMenuBar()
         setupContextMenu()
         globalShortcutController.start()
@@ -249,6 +252,12 @@ extension AppDelegate {
     private func openSettingsOnLaunchIfEnabled() {
         guard settingsStore.showSettingsOnLaunch else { return }
         NavigationService.shared.openSettings()
+    }
+
+    private func configureNavigationService() {
+        NavigationService.shared.registerOpenSettingsHandler { [weak self] in
+            self?.settingsWindowController.showSettingsWindow()
+        }
     }
 
     // MARK: - Document Handling (Disabled for Menu Bar App)
@@ -825,5 +834,44 @@ extension AppDelegate {
         let policy: NSApplication.ActivationPolicy = showInDock ? .regular : .accessory
         NSApp.setActivationPolicy(policy)
         logger.info("Activation policy set to: \(showInDock ? "regular (dock)" : "accessory (menu bar only)")")
+    }
+}
+
+@MainActor
+private final class SettingsWindowController {
+    private var window: NSWindow?
+
+    func showSettingsWindow() {
+        if let window {
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+
+        let settingsWindow = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 900, height: 640),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        settingsWindow.styleMask.insert(.fullSizeContentView)
+        settingsWindow.title = "settings.title".localized
+        settingsWindow.titleVisibility = .hidden
+        settingsWindow.titlebarAppearsTransparent = true
+        settingsWindow.toolbarStyle = .unified
+        settingsWindow.toolbar = NSToolbar(identifier: "MeetingAssistantSettingsToolbar")
+        settingsWindow.isMovableByWindowBackground = true
+        settingsWindow.tabbingMode = .disallowed
+        if #available(macOS 11.0, *) {
+            settingsWindow.titlebarSeparatorStyle = .none
+        }
+        settingsWindow.setFrameAutosaveName("MeetingAssistantSettingsWindow")
+        settingsWindow.isReleasedWhenClosed = false
+        settingsWindow.contentView = NSHostingView(rootView: SettingsView())
+        settingsWindow.center()
+        settingsWindow.makeKeyAndOrderFront(nil)
+
+        window = settingsWindow
+        NSApp.activate(ignoringOtherApps: true)
     }
 }
