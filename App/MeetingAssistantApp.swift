@@ -776,14 +776,33 @@ extension AppDelegate {
 
     /// Update menu bar icon and menu item based on recording state.
     func updateStatusIcon(isRecording: Bool) {
-        let iconName = isRecording ? "record.circle.fill" : "waveform"
         let accessibilityKey = isRecording ? "menubar.accessibility.recording" : "menubar.accessibility.idle"
         let accessibilityDesc = accessibilityKey.localized
+        statusItem?.button?.image = makeStatusBarImage(
+            isRecording: isRecording,
+            accessibilityDescription: accessibilityDesc
+        )
+        statusItem?.button?.contentTintColor = nil
+    }
 
-        let image = NSImage(systemSymbolName: iconName, accessibilityDescription: accessibilityDesc)
-        image?.isTemplate = true
-        statusItem?.button?.image = image
-        statusItem?.button?.contentTintColor = isRecording ? .systemRed : nil
+    private func makeStatusBarImage(isRecording: Bool, accessibilityDescription: String) -> NSImage? {
+        let iconName = isRecording ? "record.circle.fill" : "waveform"
+        guard let baseImage = NSImage(
+            systemSymbolName: iconName,
+            accessibilityDescription: accessibilityDescription
+        ) else {
+            return nil
+        }
+
+        guard isRecording else {
+            baseImage.isTemplate = true
+            return baseImage
+        }
+
+        let redConfig = NSImage.SymbolConfiguration(hierarchicalColor: .systemRed)
+        let configuredImage = baseImage.withSymbolConfiguration(redConfig) ?? baseImage
+        configuredImage.isTemplate = false
+        return configuredImage
     }
 
     private func updateFloatingIndicator(
