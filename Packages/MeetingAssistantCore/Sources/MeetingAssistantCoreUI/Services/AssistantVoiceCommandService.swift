@@ -177,7 +177,11 @@ public final class AssistantVoiceCommandService: ObservableObject {
             throw AssistantVoiceCommandError.failedToStopRecording
         }
 
-        let transcription = try await transcriptionClient.transcribe(audioURL: recordingURL)
+        let transcription = try await transcriptionClient.transcribe(
+            audioURL: recordingURL,
+            onProgress: nil,
+            diarizationEnabledOverride: false
+        )
         let command = transcription.text.trimmingCharacters(in: .whitespacesAndNewlines)
 
         logPayloadIfNeeded("Assistant transcription payload", [
