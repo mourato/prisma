@@ -4,8 +4,14 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+DAILY_BUMP_SCRIPT="${PROJECT_ROOT}/scripts/hooks/first-commit-version-bump.sh"
 
 cd "${PROJECT_ROOT}"
+
+# Auto-bump version on the first commit of the day.
+if [ -x "${DAILY_BUMP_SCRIPT}" ]; then
+    "${DAILY_BUMP_SCRIPT}"
+fi
 
 echo "🔍 Running pre-commit checks (staged files only)..."
 echo ""
