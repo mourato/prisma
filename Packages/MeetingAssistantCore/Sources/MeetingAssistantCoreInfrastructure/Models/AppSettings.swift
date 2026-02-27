@@ -519,12 +519,12 @@ public class AppSettingsStore: ObservableObject {
         }
     }
 
-    /// Whether retention limit for old recordings and transcriptions is enabled.
+    /// Whether retention limit for old recordings on disk is enabled.
     @Published public var autoDeleteTranscriptions: Bool {
         didSet { UserDefaults.standard.set(autoDeleteTranscriptions, forKey: Keys.autoDeleteTranscriptions) }
     }
 
-    /// Number of days to keep recordings and transcriptions before cleanup.
+    /// Number of days to keep recordings on disk before cleanup.
     @Published public var autoDeletePeriodDays: Int {
         didSet { UserDefaults.standard.set(autoDeletePeriodDays, forKey: Keys.autoDeletePeriodDays) }
     }

@@ -70,8 +70,8 @@
 
 /* Storage Settings */
 "settings.general.storage" = "Storage";
-"settings.general.auto_delete" = "Enable retention limit (recordings + transcriptions)";
-"settings.general.auto_delete_desc" = "Limits how long recordings and transcriptions are kept. Use the button below to delete items older than the specified period.";
+"settings.general.auto_delete" = "Enable recording retention limit";
+"settings.general.auto_delete_desc" = "Limits how long recordings are kept on disk. Dashboard and history data remain available even after audio cleanup.";
 "settings.general.days_format" = "%d days";
 
 "settings.general.transcript_delivery" = "Transcript Delivery";
@@ -140,10 +140,10 @@
 "settings.general.theme_color" = "Theme Color";
 "settings.general.appearance" = "Appearance";
 "settings.general.app_behavior" = "App Behavior";
-"settings.storage.cleanup_now" = "Clean up items older than %d days";
+"settings.storage.cleanup_now" = "Clean up audio older than %d days";
 "settings.storage.cleanup_success" = "Cleanup completed successfully.";
 "settings.storage.cleanup_confirm_title" = "Clean up storage";
-"settings.storage.cleanup_confirm_message" = "This will delete:\n\nAudio files: %d (%@)\nTranscriptions: %d (%@)\n\nThis cannot be undone.";
+"settings.storage.cleanup_confirm_message" = "This will delete audio files from disk:\n\nAudio files: %d (%@)\n\nDashboard and history data will be preserved.";
 "settings.storage.cleanup_confirm_delete" = "Delete";
 "settings.storage.cleanup_confirm_cancel" = "Cancel";
 "meeting.app.imported" = "Imported File";
