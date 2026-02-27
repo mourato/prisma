@@ -175,19 +175,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             throw AudioRecorderError.permissionDenied
         }
 
-        if source == .microphone {
-            do {
-                try startFallbackRecorder(to: outputURL)
-                currentRecordingURL = outputURL
-                scheduleOutputMuteIfNeeded()
-                return
-            } catch {
-                restoreOutputMuteIfNeeded()
-                throw error
-            }
-        }
-
-        // 2. Prepare engine (system/all only)
+        // 2. Prepare engine
         let engine = injectedEngine ?? AVAudioEngine()
         audioEngine = engine // Retain generic reference
 
@@ -266,7 +254,10 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
         mixerNode = mixer
 
-        // Note: Input Device already selected in startRecording
+        if source.requiresMicrophonePermission {
+            AppLogger.debug("Selecting preferred input device...", category: .recordingManager)
+            await selectPreferredInputDevice(engine: engine)
+        }
 
         AppLogger.debug("Configuring inputs...", category: .recordingManager)
         try configureInputs(engine: engine, mixer: mixer, source: source, sampleRate: sampleRate)
@@ -599,8 +590,8 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         return (error as NSError).code
     }
 
-    private func shouldRetryStartup(after error: Error, source: RecordingSource, retryCount: Int) -> Bool {
-        guard source != .microphone, retryCount < Constants.maxRetries else { return false }
+    private func shouldRetryStartup(after error: Error, source _: RecordingSource, retryCount: Int) -> Bool {
+        guard retryCount < Constants.maxRetries else { return false }
         guard let code = startupErrorCode(from: error) else { return false }
         return Constants.retriableEngineStartErrorCodes.contains(code)
     }
@@ -677,8 +668,13 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     // MARK: - Private Helpers (Issue #35)
 
     private func selectPreferredInputDevice(engine: AVAudioEngine) async {
+        let inputNode = engine.inputNode
+        guard let inputUnit = inputNode.audioUnit else {
+            AppLogger.warning("Failed to resolve input audio unit for device selection", category: .recordingManager)
+            return
+        }
+
         if AppSettingsStore.shared.useSystemDefaultInput {
-            let inputNode = engine.inputNode
             guard let defaultDeviceID = deviceManager.getDefaultInputDeviceID() else {
                 AppLogger.warning(
                     "Failed to resolve system default input device ID",
@@ -690,7 +686,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             var deviceIDToSet = defaultDeviceID
             let size = UInt32(MemoryLayout<AudioObjectID>.size)
             let status = AudioUnitSetProperty(
-                inputNode.audioUnit!,
+                inputUnit,
                 kAudioOutputUnitProperty_CurrentDevice,
                 kAudioUnitScope_Global,
                 0,
@@ -732,12 +728,11 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         }
 
         // Apply device to the input node
-        let inputNode = engine.inputNode
         var deviceIDToSet = id
         let size = UInt32(MemoryLayout<AudioObjectID>.size)
 
         let status = AudioUnitSetProperty(
-            inputNode.audioUnit!,
+            inputUnit,
             kAudioOutputUnitProperty_CurrentDevice,
             kAudioUnitScope_Global,
             0,
