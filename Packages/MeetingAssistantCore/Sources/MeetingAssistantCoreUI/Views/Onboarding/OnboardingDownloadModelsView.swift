@@ -141,7 +141,6 @@ public struct OnboardingDownloadModelsView: View {
         }
     }
 
-    @ViewBuilder
     private var downloadProgressSection: some View {
         VStack(spacing: 16) {
             // Status text

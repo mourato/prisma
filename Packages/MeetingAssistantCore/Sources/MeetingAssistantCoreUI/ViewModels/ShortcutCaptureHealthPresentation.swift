@@ -20,7 +20,7 @@ public struct ShortcutCaptureHealthPresentation: Equatable {
             return nil
         }
 
-        let scopeLabelKey: String = switch status.scope {
+        let scopeLabelKey = switch status.scope {
         case .global:
             "settings.shortcuts.health.scope.global"
         case .assistant:

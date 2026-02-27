@@ -70,6 +70,7 @@ public class PermissionViewModel: ObservableObject {
         refreshTimer?.invalidate()
         refreshTimer = nil
     }
+
     // MARK: - Actions
 
     public func requestMicrophonePermission() async {

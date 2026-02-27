@@ -70,7 +70,7 @@ public class OnboardingWindowController {
 
     /// Closes the onboarding window.
     public func closeOnboarding() {
-        guard let window = window else { return }
+        guard let window else { return }
 
         if let mainWindow = NSApplication.shared.mainWindow {
             if mainWindow.sheets.contains(window) {

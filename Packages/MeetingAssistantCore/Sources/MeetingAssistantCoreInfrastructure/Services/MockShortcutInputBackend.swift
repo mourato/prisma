@@ -1,5 +1,5 @@
-import Foundation
 import AppKit
+import Foundation
 
 /// A test-only implementation of ShortcutInputBackend that allows deterministic replay of event sequences.
 /// This backend does NOT monitor real system events - instead, events are injected programmatically
@@ -12,16 +12,16 @@ public final class MockShortcutInputBackend: ShortcutInputBackend {
     private var keyDownHandler: EventHandler?
     private var keyUpHandler: EventHandler?
 
-    private(set) public var isFlagsChangedMonitoringActive: Bool = false
-    private(set) public var isKeyDownMonitoringActive: Bool = false
-    private(set) public var isKeyUpMonitoringActive: Bool = false
+    public private(set) var isFlagsChangedMonitoringActive: Bool = false
+    public private(set) var isKeyDownMonitoringActive: Bool = false
+    public private(set) var isKeyUpMonitoringActive: Bool = false
 
     /// Queue of events to replay in order
     private var eventQueue: [ShortcutInputEvent] = []
-    
+
     /// Whether the backend should automatically replay events (synchronously)
     public var autoReplay: Bool = true
-    
+
     /// If set, events are delayed by this amount (for simulating real timing)
     public var replayDelay: TimeInterval = 0
 
@@ -32,15 +32,15 @@ public final class MockShortcutInputBackend: ShortcutInputBackend {
     // MARK: - ShortcutInputBackend
 
     public func setFlagsChangedHandler(_ handler: EventHandler?) {
-        self.flagsChangedHandler = handler
+        flagsChangedHandler = handler
     }
 
     public func setKeyDownHandler(_ handler: EventHandler?) {
-        self.keyDownHandler = handler
+        keyDownHandler = handler
     }
 
     public func setKeyUpHandler(_ handler: EventHandler?) {
-        self.keyUpHandler = handler
+        keyUpHandler = handler
     }
 
     public func startFlagsChangedMonitoring() {
@@ -90,7 +90,7 @@ public final class MockShortcutInputBackend: ShortcutInputBackend {
     @discardableResult
     public func injectNextEvent() -> ShortcutInputEvent? {
         guard !eventQueue.isEmpty else { return nil }
-        
+
         let event = eventQueue.removeFirst()
         dispatchEvent(event)
         return event
@@ -200,7 +200,7 @@ public struct ShortcutTestSequence {
             .flagsChanged(modifiers: flags),
             .keyDown(keyCode: keyCode, modifiers: flags),
             .keyUp(keyCode: keyCode, modifiers: []),
-            .flagsChanged(modifiers: [])
+            .flagsChanged(modifiers: []),
         ]
     }
 
@@ -208,7 +208,7 @@ public struct ShortcutTestSequence {
     public static func keyPress(keyCode: UInt16, modifiers: NSEvent.ModifierFlags = []) -> [ShortcutInputEvent] {
         [
             .keyDown(keyCode: keyCode, modifiers: modifiers),
-            .keyUp(keyCode: keyCode, modifiers: modifiers)
+            .keyUp(keyCode: keyCode, modifiers: modifiers),
         ]
     }
 
@@ -218,7 +218,7 @@ public struct ShortcutTestSequence {
             .flagsChanged(modifiers: modifiers),
             .keyDown(keyCode: keyCode, modifiers: modifiers),
             .keyUp(keyCode: keyCode, modifiers: modifiers),
-            .flagsChanged(modifiers: [])
+            .flagsChanged(modifiers: []),
         ]
     }
 }

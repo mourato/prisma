@@ -9,10 +9,14 @@ public enum OnboardingStep: Int, CaseIterable, Identifiable, Hashable, Sendable 
     case downloadModels
     case completion
 
-    public var id: Int { rawValue }
+    public var id: Int {
+        rawValue
+    }
 
     /// 1-based index for display purposes.
-    public var index: Int { rawValue + 1 }
+    public var index: Int {
+        rawValue + 1
+    }
 
     /// Whether this step can be skipped.
     public var isSkippable: Bool {

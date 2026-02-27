@@ -78,7 +78,7 @@ public final class RecordingCancelShortcutSettingsViewModel: ObservableObject {
              .effectiveModifierOverlap,
              .sideSpecificVsAgnosticOverlap,
              .assistantIntegrationConcurrentActivation:
-            return "settings.shortcuts.modifier.conflict".localized(with: conflict.conflicting.actionDisplayName)
+            "settings.shortcuts.modifier.conflict".localized(with: conflict.conflicting.actionDisplayName)
         }
     }
 }

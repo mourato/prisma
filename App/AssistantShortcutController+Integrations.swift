@@ -32,7 +32,7 @@ extension AssistantShortcutController {
                 event: event,
                 mode: .inHouseDefinitionOnly,
                 state: state,
-                handler: handler,
+                handler: handler
             )
         }
     }
