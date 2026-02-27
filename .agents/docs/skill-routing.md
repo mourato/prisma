@@ -138,6 +138,19 @@ make test-strict
 
 ---
 
+### Intelligence Kernel and Summary Quality
+
+**Primary:** `intelligence-kernel`
+- Kernel mode routing and feature-flag gating
+- Canonical summary schema/trust-flags validation
+- Summary benchmark thresholds, baseline, and enforce/report modes
+
+**Complementary:** `data-persistence` (schema/migration impact), `quality-assurance` (regression gates)
+
+**Example:** "Adjust canonical summary confidence rules" → `intelligence-kernel`
+
+---
+
 ### Security and Secret Management
 
 **General security posture:**
@@ -260,6 +273,7 @@ make test-strict
 | `data-persistence` | `.agents/skills/data-persistence/SKILL.md` | Storage design, migrations |
 | `debugging-strategies` | `.agents/skills/debugging-strategies/SKILL.md` | Crash/flaky investigation |
 | `documentation` | `.agents/skills/documentation/SKILL.md` | DocC, API docs |
+| `intelligence-kernel` | `.agents/skills/intelligence-kernel/SKILL.md` | Kernel modes, canonical summary, summary benchmark gates |
 | `macos-development` | `.agents/skills/macos-development/SKILL.md` | Canonical macOS/Swift guidance |
 | `native-app-designer` | `.agents/skills/native-app-designer/SKILL.md` | UI/UX direction & design |
 | `networking` | `.agents/skills/networking/SKILL.md` | API clients, URLSession |

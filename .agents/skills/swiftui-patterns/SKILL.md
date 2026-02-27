@@ -141,6 +141,15 @@ struct ContentView: View {
 
 ## Settings UI Patterns
 
+### Settings UX Consistency Checklist
+
+- Use drill-down rows consistently for secondary settings pages.
+- Keep row anatomy stable: title, optional short subtitle, disclosure indicator.
+- Ensure keyboard navigation works (Tab/Arrow/Enter/Escape) across rows and detail pages.
+- Surface explicit loading/empty/success/warning states in dynamic settings blocks.
+- Keep destructive actions visually separated from neutral actions.
+- Pair row title/description semantics for VoiceOver and include clear accessibility hints.
+
 ### Design System
 
 Use the project's Design System tokens/components to keep UI consistent and DRY:
@@ -276,4 +285,4 @@ HStack(spacing: 0) {
 
 - [SettingsView.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Views/Settings/SettingsView.swift)
 - [TranscriptionListView.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Views/TranscriptionListView.swift)
-- [PREVIEW_GUIDELINES.md](docs/PREVIEW_GUIDELINES.md)
+- `.agents/skills/preview-coverage/SKILL.md`

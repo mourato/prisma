@@ -1,8 +1,9 @@
 # AGENTS.md - Meeting Assistant Development Guide
 
-**Document Status:** v2.3 | Updated: Feb 24, 2026 | Maintained by: Team
+**Document Status:** v2.4 | Updated: Feb 27, 2026 | Maintained by: Team
 
 **Recent Changes:**
+- v2.4: Removed root `docs/` as a knowledge source; added mandatory information routing policy (skill vs issue vs deletion)
 - v2.3: Added SwiftLint policy source-of-truth routing to skills
 - v2.2: Progressive Disclosure refactor—moved task-specific guidance to `.agents/docs/`; hard constraints now explicit; HumanLayer best practices applied
 - v2.1: Clarified edge cases in concurrency tasks
@@ -186,12 +187,30 @@ See [Task Lifecycle Skill](./.agents/skills/task-lifecycle/SKILL.md) for full pr
 
 ---
 
+## Information Routing Policy (No Root `docs/`)
+
+The repository no longer uses a root `docs/` folder for persistent guidance.
+
+When new information appears, route it using this decision order:
+
+1. **Absorb into skill guidance** (`.agents/skills/...`) when the content is reusable operational knowledge.
+2. **Create a GitHub issue** when the content represents pending work, debt, or a decision that needs implementation.
+3. **Delete** when the content is stale, duplicated, or historical with no operational value.
+
+Rules:
+
+- Do not create new markdown guidance files under root `docs/`.
+- Keep policy/process knowledge in `AGENTS.md` or skills.
+- Keep backlog/limitations in GitHub issues (use labels like `known-limitation` and `needs-review`).
+- If a script needs an output file, prefer `/tmp` or `.agents/` paths.
+
+---
+
 ## Project Structure
 
 - `App/` — main app target
 - `Packages/MeetingAssistantCore/` — Swift package root
 - `Packages/MeetingAssistantCore/Sources/MeetingAssistantCore{Common,Domain,Infrastructure,Data,Audio,AI,UI}/`
-- `docs/` — technical documentation
 - `.agents/` — agent guidance (rules, skills, docs, this file)
 
 ---

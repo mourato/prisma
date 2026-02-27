@@ -18,6 +18,7 @@ Comprehensive index of all available agent skills for Meeting Assistant. For rou
 | `git-advanced-workflows` | `.agents/skills/git-advanced-workflows/` | Rebase, cherry-pick, run git bisect, use reflog, recover complex git history |
 | `git-workflow` | `.agents/skills/git-workflow/` | Standard Git flow: create branch, commit changes, prepare PR, merge safely |
 | `git-worktree` | `.agents/skills/git-worktree/` | Use git worktree, migrate away from worktrees, handle legacy worktree setup |
+| `intelligence-kernel` | `.agents/skills/intelligence-kernel/` | Canonical summary schema, intelligence kernel modes, trust flags, summary benchmark gates |
 | `keychain-security` | `.agents/skills/keychain-security/` | Store secret in Keychain, retrieve API keys securely, delete credential, harden KeychainManager usage |
 | `localization` | `.agents/skills/localization/` | Localize UI text, update Localizable.strings, improve VoiceOver labels, add accessibility localization |
 | `macos-development` | `.agents/skills/macos-development/` | Implement macOS features, integrate SwiftUI with AppKit, fix macOS lifecycle issues, platform-specific patterns |
@@ -70,6 +71,9 @@ Comprehensive index of all available agent skills for Meeting Assistant. For rou
 **Data and Storage**
 - Persistence design: `data-persistence`
 - Migrations: `data-persistence`
+
+**Intelligence and Post-Processing**
+- Kernel mode routing, canonical summary, benchmark gates: `intelligence-kernel`
 
 **Debugging**
 - Crashes/flaky tests: `debugging-strategies`

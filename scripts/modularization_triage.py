@@ -9,7 +9,7 @@ Markdown report listing:
 - Non-English comment candidates (heuristic; optional)
 
 Usage:
-  python3 scripts/modularization_triage.py     --worktree /path/to/worktree     --log /tmp/test-output.log     --out docs/modularization_triage_report.md
+  python3 scripts/modularization_triage.py     --worktree /path/to/worktree     --log /tmp/test-output.log     --out .agents/reports/modularization_triage_report.md
 """
 
 from __future__ import annotations
@@ -232,7 +232,7 @@ def main() -> int:
 
     out_path: Path
     if args.out is None:
-        out_path = worktree / "docs" / "modularization_triage_report.md"
+        out_path = worktree / ".agents" / "reports" / "modularization_triage_report.md"
     else:
         out_path = args.out if args.out.is_absolute() else (worktree / args.out)
 

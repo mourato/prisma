@@ -16,15 +16,30 @@ Project architectural standards ensuring testability, maintainability, and clear
 - **Protocol-Oriented Programming (POP)**: Use protocols to define abstractions. Favor composition over class-based inheritance.
 - **Reusable Blocks First**: For both logic and UI-supporting abstractions, apply `reuse -> extend -> create` before introducing new types.
 
-## 2. Project Layers
+## 2. Canonical Module Layout
 
-- **Presentation Layer**: SwiftUI or AppKit Views reacting to ViewModel state. ViewModels depend on protocols, not concrete implementations.
-- **Domain/Core Layer**: Encapsulated within frameworks (e.g., `MeetingAssistantCore`). Contains business logic for recording, transcription, and data management.
-- **Infrastructure Layer**: Storage services, networking clients, and external integrations. All infrastructure components should be protocol-based.
+- `MeetingAssistantCoreCommon` — shared logging, config, utilities, resources
+- `MeetingAssistantCoreDomain` — entities, contracts, use cases
+- `MeetingAssistantCoreInfrastructure` — OS/external adapters (Keychain, networking, providers)
+- `MeetingAssistantCoreData` — persistence repositories and storage adapters
+- `MeetingAssistantCoreAudio` — capture, buffering, rendering, file-writing pipeline
+- `MeetingAssistantCoreAI` — transcription, post-processing, rendering
+- `MeetingAssistantCoreUI` — view models, coordinators, SwiftUI/AppKit presentation
+- `MeetingAssistantCore` — compatibility export layer for app/tests
 
-## 3. Best Practices
+Boundary rule: depend inward through protocols, not across feature layers through concrete types.
+
+## 3. Audio Hot-Path Constraints
+
+- Keep real-time callbacks allocation-minimal and free from MainActor hops.
+- Prefer `OSAllocatedUnfairLock` in hot paths; avoid `NSLock` in render callbacks.
+- Use pre-allocation and fixed-size buffers for producer/consumer bridges.
+- Route non-real-time work (file IO, diagnostics, formatting) out of render callbacks.
+
+## 4. Best Practices
 
 - **Lean ViewModels**: Delegate heavy logic (networking, filtering, processing) to dedicated services.
-- **Async Flow**: Adopt `Async/Await` or `Combine` for managing asynchronous data streams instead of nested completion closures.
+- **Async Flow**: Adopt `async/await` or `Combine` for asynchronous streams instead of nested completion closures.
 - **State Management**: Use `@Published` and `@ObservedObject` carefully to ensure predictable UI updates.
-- **Extraction over Duplication**: When behavior starts repeating, extract it into a reusable use case/service/helper in the appropriate module.
+- **Extraction over Duplication**: When behavior repeats, extract to a reusable use case/service/helper in the owning module.
+- **Architecture Checks**: For cross-module refactors, run `make arch-check` before merge.

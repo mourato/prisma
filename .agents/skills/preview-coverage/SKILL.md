@@ -25,6 +25,7 @@ Activate this skill when:
 4. If a view triggers startup work, gate it for previews using `PreviewRuntime.isRunning`.
 5. If bindings are needed, use local preview state wrappers (for example `PreviewStateContainer`).
 6. For AppKit controllers, preview the underlying SwiftUI rendering surface.
+7. Verify keyboard/focus behavior for settings and drill-down surfaces when previews include interactive controls.
 
 ## Project Utilities
 
@@ -45,5 +46,5 @@ The check fails if any SwiftUI view under `MeetingAssistantCoreUI` is missing pr
 
 ## References
 
-- `docs/PREVIEW_GUIDELINES.md`
 - `scripts/preview-check.sh`
+- `.agents/skills/swiftui-patterns/SKILL.md`
