@@ -19,9 +19,7 @@ public struct TranscriptionsSettingsTab: View {
     }
 
     @StateObject private var viewModel = TranscriptionSettingsViewModel()
-    @StateObject private var aiSettingsViewModel = AISettingsViewModel(settings: .shared)
     @StateObject private var dictationService = MeetingQuestionDictationService()
-    @ObservedObject private var settings = AppSettingsStore.shared
     @State private var searchReloadTask: Task<Void, Never>?
     @State private var navigationHistory = TranscriptionsNavigationHistory()
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -368,58 +366,14 @@ public struct TranscriptionsSettingsTab: View {
     private func conversationPage(transcriptionID: UUID) -> some View {
         let activeTranscription = viewModel.selectedTranscription?.id == transcriptionID ? viewModel.selectedTranscription : nil
 
-        return VStack(spacing: 0) {
-            SettingsSectionHeader(
-                title: "settings.section.history".localized,
-                description: activeTranscription?.meeting.appName
-            )
-            .padding(MeetingAssistantDesignSystem.Layout.spacing16)
-
-            Divider()
-
-            MeetingConversationView(
-                transcription: activeTranscription,
-                isLoadingTranscription: activeTranscription == nil,
-                turns: viewModel.qaHistory(for: transcriptionID),
-                questionText: viewModel.qaQuestion,
-                onQuestionChange: { newValue in
-                    dictationService.clearError()
-                    viewModel.qaQuestion = newValue
-                },
-                onAsk: {
-                    guard let transcription = viewModel.selectedTranscription, transcription.id == transcriptionID else { return }
-                    Task {
-                        await viewModel.submitQuestion(for: transcription)
-                    }
-                },
-                onRetry: { question in
-                    guard let transcription = viewModel.selectedTranscription, transcription.id == transcriptionID else { return }
-                    Task {
-                        await viewModel.retryQuestion(question, for: transcription)
-                    }
-                },
-                isAnswering: viewModel.isAnsweringQuestion,
-                currentErrorMessage: viewModel.qaErrorMessage,
-                selectedProvider: settings.enhancementsAISelection.provider,
-                selectedModel: settings.enhancementsAISelection.selectedModel,
-                availableModels: aiSettingsViewModel.enhancementsAvailableModels,
-                isLoadingModels: aiSettingsViewModel.isLoadingEnhancementsModels,
-                onModelChange: { model in
-                    settings.updateEnhancementsSelectedModel(model)
-                },
-                onRefreshModels: {
-                    aiSettingsViewModel.refreshEnhancementsModelsManually()
-                },
-                dictationState: dictationService.state,
-                dictationErrorMessage: dictationService.errorMessage,
-                onToggleDictation: {
-                    handleDictationToggle()
-                },
-                onBack: {
-                    navigateBack()
-                }
-            )
-        }
+        return TranscriptionConversationPage(
+            transcriptionID: transcriptionID,
+            activeTranscription: activeTranscription,
+            viewModel: viewModel,
+            dictationService: dictationService,
+            onToggleDictation: handleDictationToggle,
+            onBack: navigateBack
+        )
     }
 
     // MARK: - Navigation
@@ -535,6 +489,93 @@ public struct TranscriptionsSettingsTab: View {
         formatter.timeStyle = .short
         formatter.locale = Locale.current
         return formatter.string(from: date)
+    }
+}
+
+private struct TranscriptionConversationPage: View {
+    let transcriptionID: UUID
+    let activeTranscription: Transcription?
+    @ObservedObject var viewModel: TranscriptionSettingsViewModel
+    @ObservedObject var dictationService: MeetingQuestionDictationService
+    let onToggleDictation: () -> Void
+    let onBack: () -> Void
+
+    @ObservedObject private var settings: AppSettingsStore
+    @StateObject private var aiSettingsViewModel: AISettingsViewModel
+
+    init(
+        transcriptionID: UUID,
+        activeTranscription: Transcription?,
+        viewModel: TranscriptionSettingsViewModel,
+        dictationService: MeetingQuestionDictationService,
+        settings: AppSettingsStore = .shared,
+        onToggleDictation: @escaping () -> Void,
+        onBack: @escaping () -> Void
+    ) {
+        self.transcriptionID = transcriptionID
+        self.activeTranscription = activeTranscription
+        self.viewModel = viewModel
+        self.dictationService = dictationService
+        self.onToggleDictation = onToggleDictation
+        self.onBack = onBack
+        _settings = ObservedObject(wrappedValue: settings)
+        _aiSettingsViewModel = StateObject(
+            wrappedValue: AISettingsViewModel(
+                settings: settings,
+                credentialBootstrapPolicy: .deferredUserAction
+            )
+        )
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            SettingsSectionHeader(
+                title: "settings.section.history".localized,
+                description: activeTranscription?.meeting.appName
+            )
+            .padding(MeetingAssistantDesignSystem.Layout.spacing16)
+
+            Divider()
+
+            MeetingConversationView(
+                transcription: activeTranscription,
+                isLoadingTranscription: activeTranscription == nil,
+                turns: viewModel.qaHistory(for: transcriptionID),
+                questionText: viewModel.qaQuestion,
+                onQuestionChange: { newValue in
+                    dictationService.clearError()
+                    viewModel.qaQuestion = newValue
+                },
+                onAsk: {
+                    guard let transcription = viewModel.selectedTranscription, transcription.id == transcriptionID else { return }
+                    Task {
+                        await viewModel.submitQuestion(for: transcription)
+                    }
+                },
+                onRetry: { question in
+                    guard let transcription = viewModel.selectedTranscription, transcription.id == transcriptionID else { return }
+                    Task {
+                        await viewModel.retryQuestion(question, for: transcription)
+                    }
+                },
+                isAnswering: viewModel.isAnsweringQuestion,
+                currentErrorMessage: viewModel.qaErrorMessage,
+                selectedProvider: settings.enhancementsAISelection.provider,
+                selectedModel: settings.enhancementsAISelection.selectedModel,
+                availableModels: aiSettingsViewModel.enhancementsAvailableModels,
+                isLoadingModels: aiSettingsViewModel.isLoadingEnhancementsModels,
+                onModelChange: { model in
+                    settings.updateEnhancementsSelectedModel(model)
+                },
+                onRefreshModels: {
+                    aiSettingsViewModel.refreshEnhancementsModelsManually()
+                },
+                dictationState: dictationService.state,
+                dictationErrorMessage: dictationService.errorMessage,
+                onToggleDictation: onToggleDictation,
+                onBack: onBack
+            )
+        }
     }
 }
 

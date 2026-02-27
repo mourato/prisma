@@ -18,6 +18,11 @@ public struct EnhancementsProviderModelOption: Identifiable, Hashable, Sendable 
     }
 }
 
+public enum CredentialBootstrapPolicy: Sendable {
+    case eager
+    case deferredUserAction
+}
+
 @MainActor
 public class AISettingsViewModel: ObservableObject {
     @Published var settings: AppSettingsStore
@@ -52,6 +57,7 @@ public class AISettingsViewModel: ObservableObject {
     private let logger = Logger(subsystem: "MeetingAssistant", category: "AISettingsViewModel")
     private let keychain: KeychainProvider
     private let llmService: LLMService
+    private let credentialBootstrapPolicy: CredentialBootstrapPolicy
     private var cancellables = Set<AnyCancellable>()
     private var lastAutomaticModelsFetchAt: Date?
     private var lastAutomaticEnhancementsModelsFetchAt: Date?
@@ -92,11 +98,13 @@ public class AISettingsViewModel: ObservableObject {
     public init(
         settings: AppSettingsStore,
         keychain: KeychainProvider = DefaultKeychainProvider(),
-        llmService: LLMService = DefaultLLMService()
+        llmService: LLMService = DefaultLLMService(),
+        credentialBootstrapPolicy: CredentialBootstrapPolicy = .eager
     ) {
         self.settings = settings
         self.keychain = keychain
         self.llmService = llmService
+        self.credentialBootstrapPolicy = credentialBootstrapPolicy
         activeEnhancementsProvider = settings.enhancementsAISelection.provider
 
         settings.$aiConfiguration
@@ -107,8 +115,11 @@ public class AISettingsViewModel: ObservableObject {
                 guard let self else { return }
                 settings.updateSelectedModel("") // Clear previous selection (properly triggers didSet)
                 clearTransientAPIKey()
-
-                refreshProviderCredentialState()
+                if credentialBootstrapPolicy == .eager {
+                    refreshProviderCredentialState()
+                } else {
+                    resetPrimaryProviderStateForDeferredBootstrap()
+                }
             }
             .store(in: &cancellables)
 
@@ -119,14 +130,23 @@ public class AISettingsViewModel: ObservableObject {
             .sink { [weak self] provider in
                 guard let self else { return }
                 if activeEnhancementsProvider == provider {
-                    refreshEnhancementsProviderCredentialState(provider: provider)
+                    if credentialBootstrapPolicy == .eager {
+                        refreshEnhancementsProviderCredentialState(provider: provider)
+                    } else {
+                        resetEnhancementsProviderStateForDeferredBootstrap(provider: provider)
+                    }
                 }
             }
             .store(in: &cancellables)
 
         // Initial load for current provider
-        refreshProviderCredentialState()
-        refreshEnhancementsProviderCredentialState()
+        if credentialBootstrapPolicy == .eager {
+            refreshProviderCredentialState()
+            refreshEnhancementsProviderCredentialState()
+        } else {
+            resetPrimaryProviderStateForDeferredBootstrap()
+            resetEnhancementsProviderStateForDeferredBootstrap(provider: activeEnhancementsProvider)
+        }
     }
 
     private func updateUIStates() {
@@ -140,8 +160,13 @@ public class AISettingsViewModel: ObservableObject {
 
         if isKeySaved {
             connectionStatus = .success
-            Task {
-                await fetchAvailableModels()
+            if credentialBootstrapPolicy == .eager {
+                Task {
+                    await fetchAvailableModels()
+                }
+            } else {
+                availableModels = []
+                modelsFetchError = nil
             }
         } else {
             connectionStatus = .unknown
@@ -309,8 +334,10 @@ public class AISettingsViewModel: ObservableObject {
 
         if isEnhancementsProviderKeySaved {
             enhancementsConnectionStatus = .success
-            Task {
-                await fetchEnhancementsAvailableModels(provider: activeProvider)
+            if credentialBootstrapPolicy == .eager {
+                Task {
+                    await fetchEnhancementsAvailableModels(provider: activeProvider)
+                }
             }
         } else {
             enhancementsConnectionStatus = .unknown
@@ -511,13 +538,21 @@ public class AISettingsViewModel: ObservableObject {
         var options = Set<EnhancementsProviderModelOption>()
         var hadFailure = false
 
+        // Force one-time legacy migration (.aiAPIKey -> provider slot) when applicable.
+        _ = try? keychain.retrieveAPIKey(for: settings.aiConfiguration.provider)
+
+        let apiKeysByProvider: [AIProvider: String]
+        do {
+            apiKeysByProvider = try keychain.retrieveAPIKeys(for: AIProvider.allCases)
+        } catch {
+            enhancementsProviderModels = []
+            enhancementsProviderModelsFetchError = "settings.ai.models.fetch_failed".localized
+            logger.error("Failed to read API keys in batch: \(error.localizedDescription)")
+            return
+        }
+
         for provider in AIProvider.allCases {
-            guard keychain.existsAPIKey(for: provider) else { continue }
-            guard let apiKey = (try? keychain.retrieveAPIKey(for: provider))?.trimmingCharacters(in: .whitespacesAndNewlines),
-                  !apiKey.isEmpty
-            else {
-                continue
-            }
+            guard let apiKey = apiKeysByProvider[provider] else { continue }
 
             let config = enhancementsConfiguration(for: provider)
             guard let baseURL = llmService.validateURL(config.baseURL) else {
@@ -581,6 +616,25 @@ public class AISettingsViewModel: ObservableObject {
     private func refreshEnhancementsCredentialStateIfNeeded() {
         guard activeEnhancementsProvider == settings.aiConfiguration.provider else { return }
         refreshEnhancementsProviderCredentialState()
+    }
+
+    private func resetPrimaryProviderStateForDeferredBootstrap() {
+        isKeySaved = false
+        connectionStatus = .unknown
+        availableModels = []
+        modelsFetchError = nil
+        clearTransientAPIKey()
+        updateUIStates()
+    }
+
+    private func resetEnhancementsProviderStateForDeferredBootstrap(provider: AIProvider) {
+        activeEnhancementsProvider = provider
+        isEnhancementsProviderKeySaved = false
+        enhancementsConnectionStatus = .unknown
+        enhancementsAvailableModels = enhancementsModelsByProvider[provider] ?? []
+        enhancementsModelsFetchError = nil
+        enhancementsActionError = nil
+        clearTransientEnhancementsAPIKey()
     }
 
     private var normalizedAPIKeyText: String {

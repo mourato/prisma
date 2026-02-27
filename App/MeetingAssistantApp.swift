@@ -879,7 +879,7 @@ private final class SettingsWindowController {
         settingsWindow.titlebarAppearsTransparent = true
         settingsWindow.toolbarStyle = .unified
         settingsWindow.toolbar = NSToolbar(identifier: "MeetingAssistantSettingsToolbar")
-        settingsWindow.isMovableByWindowBackground = true
+        settingsWindow.isMovableByWindowBackground = false
         settingsWindow.tabbingMode = .disallowed
         if #available(macOS 11.0, *) {
             settingsWindow.titlebarSeparatorStyle = .none

@@ -305,28 +305,46 @@ public struct MeetingConversationView: View {
             .frame(maxWidth: MeetingAssistantDesignSystem.Layout.maxCompactTextFieldWidth)
             .accessibilityLabel("settings.ai.model".localized)
         } else {
-            Picker(
-                "",
-                selection: Binding(
-                    get: { selectedModel },
-                    set: { onModelChange($0) }
-                )
-            ) {
-                if isLoadingModels {
-                    Text("settings.ai.loading".localized).tag("")
-                } else if availableModels.isEmpty {
-                    Text("settings.ai.no_models".localized).tag("")
-                } else {
-                    Text("settings.ai.model_select".localized).tag("")
-                    ForEach(availableModels) { model in
-                        Text(model.id).tag(model.id)
+            HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                Button {
+                    onRefreshModels()
+                } label: {
+                    if isLoadingModels {
+                        ProgressView()
+                            .controlSize(.small)
+                            .scaleEffect(0.6)
+                    } else {
+                        Image(systemName: "arrow.clockwise")
+                            .fontWeight(.medium)
                     }
                 }
+                .buttonStyle(.borderless)
+                .disabled(isLoadingModels)
+                .accessibilityLabel("settings.ai.model_refresh".localized)
+
+                Picker(
+                    "",
+                    selection: Binding(
+                        get: { selectedModel },
+                        set: { onModelChange($0) }
+                    )
+                ) {
+                    if isLoadingModels {
+                        Text("settings.ai.loading".localized).tag("")
+                    } else if availableModels.isEmpty {
+                        Text("settings.ai.no_models".localized).tag("")
+                    } else {
+                        Text("settings.ai.model_select".localized).tag("")
+                        ForEach(availableModels) { model in
+                            Text(model.id).tag(model.id)
+                        }
+                    }
+                }
+                .pickerStyle(.menu)
+                .labelsHidden()
+                .disabled(isLoadingModels || availableModels.isEmpty)
+                .accessibilityLabel("settings.ai.model".localized)
             }
-            .pickerStyle(.menu)
-            .labelsHidden()
-            .disabled(isLoadingModels || availableModels.isEmpty)
-            .accessibilityLabel("settings.ai.model".localized)
         }
     }
 
