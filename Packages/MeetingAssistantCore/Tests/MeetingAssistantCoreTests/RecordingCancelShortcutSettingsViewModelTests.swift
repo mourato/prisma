@@ -68,6 +68,21 @@ final class RecordingCancelShortcutSettingsViewModelTests: XCTestCase {
         )
     }
 
+    func testModifierlessFunctionShortcutIsAcceptedForGlobalCancelHotkey() async {
+        let viewModel = RecordingCancelShortcutSettingsViewModel()
+        let shortcut = ShortcutDefinition(
+            modifiers: [],
+            primaryKey: .function(index: 18, keyCode: 0x4f),
+            trigger: .singleTap
+        )
+
+        viewModel.cancelRecordingShortcutDefinition = shortcut
+        await Task.yield()
+
+        XCTAssertEqual(settings.cancelRecordingShortcutDefinition, shortcut)
+        XCTAssertNil(viewModel.cancelRecordingShortcutConflictMessage)
+    }
+
     func testConflictingShortcutIsRejected() async {
         let viewModel = RecordingCancelShortcutSettingsViewModel()
         let conflictingShortcut = ShortcutDefinition(

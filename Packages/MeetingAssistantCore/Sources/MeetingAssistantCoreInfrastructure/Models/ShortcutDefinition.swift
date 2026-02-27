@@ -147,10 +147,6 @@ public struct ShortcutDefinition: Codable, Equatable, Hashable, Sendable {
     }
 
     public func validate() -> ShortcutDefinitionValidationError? {
-        guard !modifiers.isEmpty else {
-            return .missingModifiers
-        }
-
         if let primaryKey {
             guard primaryKey.isValid else {
                 return .invalidPrimaryKey
@@ -159,13 +155,19 @@ public struct ShortcutDefinition: Codable, Equatable, Hashable, Sendable {
 
         switch patternType {
         case .simple, .intermediate:
-            guard primaryKey != nil else {
+            guard let primaryKey else {
                 return .missingPrimaryKey
             }
             guard trigger == .singleTap else {
                 return .unsupportedTriggerForSimpleOrIntermediate
             }
+            if modifiers.isEmpty, primaryKey.kind != .function {
+                return .missingModifiers
+            }
         case .advanced:
+            guard !modifiers.isEmpty else {
+                return .missingModifiers
+            }
             guard primaryKey == nil else {
                 return .missingPrimaryKey
             }

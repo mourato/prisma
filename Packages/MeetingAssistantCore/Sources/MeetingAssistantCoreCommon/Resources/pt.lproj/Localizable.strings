@@ -62,7 +62,7 @@
 "settings.general.shortcut_double_tap_interval_desc" = "Define o tempo máximo entre toques para atalhos de toque duplo em todo o app.";
 "settings.general.cancel_recording_shortcut" = "Atalho para cancelar gravação ativa";
 "settings.general.cancel_recording_shortcut_desc" = "Cancela uma gravação ativa de Ditado, Reunião, Assistente ou Integração.";
-"settings.general.cancel_recording_shortcut_unsupported" = "Este atalho precisa ser um hotkey global de toque único com modificadores e uma tecla principal, e não pode usar Fn.";
+"settings.general.cancel_recording_shortcut_unsupported" = "Este atalho precisa ser um hotkey global de toque único com tecla principal (modificadoras opcionais), e não pode usar Fn.";
 "settings.general.recordings_path" = "Pasta de gravações:";
 "settings.general.audio_format" = "Formato de Áudio";
 "settings.general.merge_audio" = "Mesclar arquivos de áudio ao finalizar";
@@ -554,7 +554,7 @@
 "settings.shortcuts.modifier.title" = "Atalho de Modificadoras";
 "settings.shortcuts.modifier.none" = "Nenhuma tecla gravada.";
 "settings.shortcuts.modifier.conflict" = "Este atalho já está vinculado a \"%@\".";
-"settings.shortcuts.modifier.primary_key_required" = "Este atalho precisa de modificadoras mais uma tecla principal (por exemplo, ⌥⌘A). Para duplo modificador, use remapeamento externo para F18/F19/F20.";
+"settings.shortcuts.modifier.primary_key_required" = "Este atalho precisa de uma tecla principal. A maioria das teclas também exige modificadoras (por exemplo, ⌥⌘A), mas teclas de função (F1-F20) podem ser usadas sozinhas. Para duplo modificador, use remapeamento externo para F18/F19/F20.";
 "settings.shortcuts.modifier.input_placeholder" = "Clique para gravar atalho";
 "settings.shortcuts.modifier.clear" = "Limpar atalho";
 "settings.shortcuts.modifier.popover.recording" = "Gravando";

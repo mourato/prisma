@@ -95,4 +95,28 @@ final class IntegrationSettingsViewModelTests: XCTestCase {
         XCTAssertEqual(message, "settings.shortcuts.modifier.primary_key_required".localized)
         XCTAssertNil(viewModel.integration(for: integrationID)?.shortcutDefinition)
     }
+
+    func testIntegrationModifierlessFunctionShortcutIsAccepted() {
+        let viewModel = IntegrationSettingsViewModel()
+        viewModel.addIntegration()
+
+        guard let integrationID = viewModel.customIntegrations.last?.id else {
+            XCTFail("Expected a custom integration after addIntegration")
+            return
+        }
+
+        viewModel.setIntegrationEnabled(true, for: integrationID)
+
+        let shortcut = ShortcutDefinition(
+            modifiers: [],
+            primaryKey: .function(index: 5, keyCode: 0x60),
+            trigger: .singleTap
+        )
+
+        let message = viewModel.setIntegrationShortcutDefinition(shortcut, for: integrationID)
+
+        XCTAssertNil(message)
+        XCTAssertEqual(viewModel.integration(for: integrationID)?.shortcutDefinition, shortcut)
+        XCTAssertEqual(viewModel.integration(for: integrationID)?.shortcutPresetKey, .custom)
+    }
 }

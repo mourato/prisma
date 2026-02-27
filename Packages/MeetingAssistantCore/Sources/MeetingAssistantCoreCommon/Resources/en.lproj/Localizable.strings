@@ -62,7 +62,7 @@
 "settings.general.shortcut_double_tap_interval_desc" = "Defines the maximum time between taps for double-tap shortcuts across the app.";
 "settings.general.cancel_recording_shortcut" = "Cancel active recording shortcut";
 "settings.general.cancel_recording_shortcut_desc" = "Cancels an active Dictation, Meeting, Assistant, or Integration recording.";
-"settings.general.cancel_recording_shortcut_unsupported" = "This shortcut must be a single-tap global hotkey with modifiers plus a primary key, and cannot use Fn.";
+"settings.general.cancel_recording_shortcut_unsupported" = "This shortcut must be a single-tap global hotkey with a primary key (modifiers optional), and cannot use Fn.";
 "settings.general.recordings_path" = "Recordings folder:";
 "settings.general.audio_format" = "Audio Format";
 "settings.general.merge_audio" = "Merge audio files after recording";
@@ -554,7 +554,7 @@
 "settings.shortcuts.modifier.title" = "Modifier Shortcut";
 "settings.shortcuts.modifier.none" = "No keys recorded.";
 "settings.shortcuts.modifier.conflict" = "This shortcut is already assigned to \"%@\".";
-"settings.shortcuts.modifier.primary_key_required" = "This shortcut needs modifiers plus a primary key (for example, ⌥⌘A). For double-modifier behavior, use external remapping to F18/F19/F20.";
+"settings.shortcuts.modifier.primary_key_required" = "This shortcut needs a primary key. Most keys also require modifiers (for example, ⌥⌘A), but function keys (F1-F20) can be used alone. For double-modifier behavior, use external remapping to F18/F19/F20.";
 "settings.shortcuts.modifier.input_placeholder" = "Click to record shortcut";
 "settings.shortcuts.modifier.clear" = "Clear shortcut";
 "settings.shortcuts.modifier.popover.recording" = "Recording";
