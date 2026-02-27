@@ -15,7 +15,18 @@ When uncertain which skill to use, apply this priority order:
 
 **Note:** `build-macos-apps` acts as an orchestrator to select the right lane quickly, not as canonical technical reference. Prefer direct skill calls for implementation work.
 
+## External Project Code Lookup Priority
+
+When you need to inspect code from projects outside this repository, use this source order:
+
+1. **`MCP grep`** - default source for code-centric GitHub lookup
+2. **`gh` CLI** - issues/PRs/history and direct repository inspection
+3. **`deepwiki`** - broad repository context
+4. **Web search** - last resort only
+
 ---
+
+
 
 ## Problem-Specific Routing
 
