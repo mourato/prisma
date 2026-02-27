@@ -208,20 +208,16 @@ public class GeneralSettingsViewModel: ObservableObject {
         let preview = cleanupPreview
 
         let audioCount = preview?.audioCount ?? 0
-        let transcriptionCount = preview?.transcriptionCount ?? 0
 
         let formatter = ByteCountFormatter()
         formatter.countStyle = .file
 
         let audioSize = formatter.string(fromByteCount: preview?.totalAudioBytes ?? 0)
-        let transcriptionSize = formatter.string(fromByteCount: preview?.totalTranscriptionBytes ?? 0)
 
         return String(
             format: "settings.storage.cleanup_confirm_message".localized,
             audioCount,
-            audioSize,
-            transcriptionCount,
-            transcriptionSize
+            audioSize
         )
     }
 

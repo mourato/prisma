@@ -10,7 +10,7 @@ public extension FileSystemStorageService {
         let cutoffDate: Date
         let recordingsDir: URL
         let audioPathsToKeep: Set<String>
-        let audioPathsFromDeletedTranscriptions: Set<String>
+        let audioPathsEligibleForDeletion: Set<String>
         let transcriptionCandidates: [RetentionCleanupTranscriptionCandidate]
     }
 
@@ -126,18 +126,8 @@ public extension FileSystemStorageService {
     }
 
     func cleanupOldTranscriptions(olderThanDays days: Int) async throws {
-        let allMetadata = try await loadAllMetadata()
-        let cutoffDate = Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? Date()
-        let toDelete = allMetadata.filter { $0.createdAt < cutoffDate }
-
-        for item in toDelete {
-            try await deleteTranscription(by: item.id)
-        }
-
-        if !toDelete.isEmpty {
-            AppLogger.info("Cleanup completed", category: .databaseManager, extra: ["deletedCount": toDelete.count])
-        }
-
+        let preview = try await computeRetentionCleanupPreview(olderThanDays: days)
+        _ = try await performRetentionCleanup(preview: preview)
         try? await cleanupOrphanedRecordings()
     }
 
@@ -146,18 +136,16 @@ public extension FileSystemStorageService {
         let cutoffDate = Calendar.current.date(byAdding: .day, value: -retentionDays, to: Date()) ?? Date()
 
         let allMetadata = try await loadAllMetadata()
-        let transcriptionsToDelete = allMetadata.filter { $0.createdAt < cutoffDate }
-        let transcriptionsToKeep = allMetadata.filter { $0.createdAt >= cutoffDate }
+        let metadataWithAudioToDelete = allMetadata.filter { $0.createdAt < cutoffDate }
+        let metadataWithAudioToKeep = allMetadata.filter { $0.createdAt >= cutoffDate }
 
         let context = RetentionPreviewContext(
             retentionDays: retentionDays,
             cutoffDate: cutoffDate,
             recordingsDir: recordingsDirectory.standardizedFileURL,
-            audioPathsToKeep: Self.standardizedAudioPaths(from: transcriptionsToKeep),
-            audioPathsFromDeletedTranscriptions: Self.standardizedAudioPaths(from: transcriptionsToDelete),
-            transcriptionCandidates: transcriptionsToDelete.map { meta in
-                RetentionCleanupTranscriptionCandidate(id: meta.id, byteSize: 0)
-            }
+            audioPathsToKeep: Self.standardizedAudioPaths(from: metadataWithAudioToKeep),
+            audioPathsEligibleForDeletion: Self.standardizedAudioPaths(from: metadataWithAudioToDelete),
+            transcriptionCandidates: []
         )
 
         return await Task.detached(priority: .userInitiated) {
@@ -174,8 +162,8 @@ public extension FileSystemStorageService {
 
     internal static func computeRetentionCleanupPreviewSync(context: RetentionPreviewContext) -> RetentionCleanupPreview {
         let fileManager = FileManager.default
-        var audioURLsToDelete = collectAudioURLsFromDeletedTranscriptions(
-            paths: context.audioPathsFromDeletedTranscriptions,
+        var audioURLsToDelete = collectAudioURLsFromRetentionMetadata(
+            paths: context.audioPathsEligibleForDeletion,
             recordingsDirectoryPath: context.recordingsDir.path
         )
 
@@ -225,22 +213,7 @@ public extension FileSystemStorageService {
     func performRetentionCleanup(preview: RetentionCleanupPreview) async throws -> RetentionCleanupResult {
         let audioToDelete = preview.audioFiles.map(\.url)
         let recordingsDirPath = recordingsDirectory.standardizedFileURL.path
-        let transcriptionIdsToDelete = preview.transcriptions.map(\.id)
-
-        let deletedTranscriptions = try await coreDataStack.performBackgroundTask { context in
-            var deleted = 0
-            for id in transcriptionIdsToDelete {
-                let request = TranscriptionMO.fetchRequest(forTranscriptionId: id)
-                if let transcriptionMO = try context.fetch(request).first {
-                    context.delete(transcriptionMO)
-                    deleted += 1
-                }
-            }
-            if context.hasChanges {
-                try context.save()
-            }
-            return deleted
-        }
+        let deletedTranscriptions = 0
 
         let deletedAudio = try await Task.detached(priority: .userInitiated) {
             let fileManager = FileManager.default
@@ -378,7 +351,7 @@ public extension FileSystemStorageService {
         return NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
     }
 
-    private static func collectAudioURLsFromDeletedTranscriptions(
+    private static func collectAudioURLsFromRetentionMetadata(
         paths: Set<String>,
         recordingsDirectoryPath: String
     ) -> Set<URL> {

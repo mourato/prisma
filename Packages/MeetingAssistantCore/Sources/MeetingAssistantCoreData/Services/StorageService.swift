@@ -104,10 +104,10 @@ public protocol StorageService: Sendable {
     /// Delete a transcription by its ID.
     func deleteTranscription(by id: UUID) async throws
 
-    /// Delete transcriptions older than the specified number of days.
+    /// Runs retention cleanup for old recordings on disk while preserving transcription records.
     func cleanupOldTranscriptions(olderThanDays days: Int) async throws
 
-    /// Computes what would be deleted by retention cleanup (audio files + transcription records).
+    /// Computes what would be deleted by retention cleanup (audio files only).
     func computeRetentionCleanupPreview(olderThanDays days: Int) async throws -> RetentionCleanupPreview
 
     /// Performs retention cleanup using a previously computed preview.

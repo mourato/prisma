@@ -70,8 +70,8 @@
 
 /* Storage Settings */
 "settings.general.storage" = "Armazenamento";
-"settings.general.auto_delete" = "Ativar limite de retenção (áudios + transcrições)";
-"settings.general.auto_delete_desc" = "Limita por quanto tempo gravações e transcrições são mantidas. Use o botão abaixo para excluir itens mais antigos que o período informado.";
+"settings.general.auto_delete" = "Ativar limite de retenção de gravações";
+"settings.general.auto_delete_desc" = "Limita por quanto tempo as gravações são mantidas em disco. Os dados da dashboard e do histórico permanecem disponíveis após a limpeza de áudio.";
 "settings.general.days_format" = "%d dias";
 
 "settings.general.transcript_delivery" = "Entrega da Transcrição";
@@ -140,10 +140,10 @@
 "settings.general.theme_color" = "Cor do Tema";
 "settings.general.appearance" = "Aparência";
 "settings.general.app_behavior" = "Comportamento do App";
-"settings.storage.cleanup_now" = "Limpar itens com mais de %d dias";
+"settings.storage.cleanup_now" = "Limpar áudios com mais de %d dias";
 "settings.storage.cleanup_success" = "Limpeza concluída com sucesso.";
 "settings.storage.cleanup_confirm_title" = "Limpar armazenamento";
-"settings.storage.cleanup_confirm_message" = "Isso irá excluir:\n\nArquivos de áudio: %d (%@)\nTranscrições: %d (%@)\n\nEssa ação não pode ser desfeita.";
+"settings.storage.cleanup_confirm_message" = "Isso irá excluir arquivos de áudio do disco:\n\nArquivos de áudio: %d (%@)\n\nOs dados da dashboard e do histórico serão preservados.";
 "settings.storage.cleanup_confirm_delete" = "Excluir";
 "settings.storage.cleanup_confirm_cancel" = "Cancelar";
 "meeting.app.imported" = "Arquivo Importado";
