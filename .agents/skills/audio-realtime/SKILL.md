@@ -367,4 +367,4 @@ destBuffer.baseAddress?.update(from: sourceBuffer.baseAddress!, count: copiesToW
 
 - [AudioBufferQueue.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Services/AudioBufferQueue.swift)
 - [SystemAudioRecorder.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Services/SystemAudioRecorder.swift)
-- [docs/ARCHITECTURE.md](../../../../docs/ARCHITECTURE.md)
+- `.agents/skills/architecture/SKILL.md`

@@ -245,12 +245,12 @@ ci-test: test
 docs:
 	@echo -e "$(BLUE)Building DocC documentation...$(NC)"
 	@cd Packages/MeetingAssistantCore && \
-		swift package --allow-writing-to-directory "$(PROJECT_DIR)/docs/api" \
+		swift package --allow-writing-to-directory "$(PROJECT_DIR)/.agents/docs/api" \
 		generate-documentation \
 		--target MeetingAssistantCore \
 		--transform-for-static-hosting \
-		--output-path "$(PROJECT_DIR)/docs/api"
-	@echo -e "$(GREEN)✓ Documentation built at docs/api$(NC)"
+		--output-path "$(PROJECT_DIR)/.agents/docs/api"
+	@echo -e "$(GREEN)✓ Documentation built at .agents/docs/api$(NC)"
 
 docs-preview:
 	@echo -e "$(BLUE)Previewing documentation...$(NC)"
@@ -258,5 +258,5 @@ docs-preview:
 
 docs-clean:
 	@echo -e "$(YELLOW)Cleaning documentation...$(NC)"
-	@rm -rf "$(PROJECT_DIR)/docs/api"
+	@rm -rf "$(PROJECT_DIR)/.agents/docs/api"
 	@echo -e "$(GREEN)✓ Documentation cleaned$(NC)"

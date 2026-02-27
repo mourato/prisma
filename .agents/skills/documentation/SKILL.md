@@ -33,7 +33,7 @@ Detailed guidance on documenting Swift code and using external tools to research
 
 - **Clear Intent**: Documentation should explain the "Why" (intent, trade-offs) rather than just the "What".
 - **Living Docs**: Keep `README.md` and `AGENTS.md` updated as the architecture evolves.
-- **Known Limitations**: Document technical debt and constraints in dedicated files.
+- **Known Limitations**: Document technical debt and constraints in GitHub issues (label `known-limitation`), not in root `docs/` files.
 
 ## Key Concepts
 

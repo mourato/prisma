@@ -20,9 +20,9 @@ A native macOS app that detects video-call meetings, captures system audio, and 
 
 ## Documentation
 
-- Architecture: `docs/ARCHITECTURE.md`
+- Architecture and operational standards: `AGENTS.md` + `.agents/skills/architecture/SKILL.md`
 - Known limitations backlog: GitHub issues labeled `known-limitation`
-- Installation: `docs/INSTALLATION.md`
+- Installation, permissions, and troubleshooting: this README
 
 ## Development
 
