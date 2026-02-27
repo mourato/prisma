@@ -29,6 +29,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private var currentRenderState = RecordingIndicatorRenderState(mode: .recording, kind: .dictation)
     private var visibilityTransitionID: UInt64 = 0
+    private var deferredGeometryTask: Task<Void, Never>?
     private var onStopAction: @Sendable () -> Void = {
         Task { @MainActor in
             await RecordingManager.shared.stopRecording()
@@ -81,6 +82,10 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         self.audioMonitor = audioMonitor
         self.settingsStore = settingsStore
         setupBindings()
+    }
+
+    deinit {
+        deferredGeometryTask?.cancel()
     }
 
     // MARK: - Public API
@@ -143,9 +148,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
 
         updateMode(renderState.mode)
         updateContent()
-
-        // Position the panel
-        positionPanel(panel, at: settingsStore.recordingIndicatorPosition)
+        applyPanelGeometry(panel, deferIfPanelVisible: wasVisible)
 
         if isRunningTests || prefersReducedMotion {
             panel.alphaValue = 1
@@ -171,6 +174,8 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         guard let panelToHide = panel else { return }
         visibilityTransitionID &+= 1
         let transitionID = visibilityTransitionID
+        deferredGeometryTask?.cancel()
+        deferredGeometryTask = nil
 
         isVisible = false
         updateContent()
@@ -198,7 +203,9 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
 
         if let hostingView {
             hostingView.rootView = AnyView(EmptyView())
-            panelToHide.contentView = hostingView
+            if panelToHide.contentView !== hostingView {
+                panelToHide.contentView = hostingView
+            }
         }
     }
 
@@ -209,7 +216,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         let panel = ensurePanel(for: RecordingIndicatorRenderState(mode: .starting, kind: .dictation))
         updateMode(.starting)
         updateContent()
-        positionPanel(panel, at: settingsStore.recordingIndicatorPosition)
+        applyPanelGeometry(panel, deferIfPanelVisible: false)
         panel.orderOut(nil)
         panel.alphaValue = 1
     }
@@ -227,10 +234,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         updateContent()
 
         if let panel {
-            let style = settingsStore.recordingIndicatorStyle
-            let contentSize = panelContentSize(for: style, renderState: renderState)
-            panel.setContentSize(contentSize)
-            positionPanel(panel, at: settingsStore.recordingIndicatorPosition)
+            applyPanelGeometry(panel, deferIfPanelVisible: true)
         }
     }
 
@@ -245,7 +249,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
     /// Update indicator position without recreating the panel.
     public func updatePosition() {
         guard let panel else { return }
-        positionPanel(panel, at: settingsStore.recordingIndicatorPosition)
+        applyPanelGeometry(panel, deferIfPanelVisible: panel.isVisible)
     }
 
     // MARK: - Private Helpers
@@ -255,7 +259,6 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         let contentSize = panelContentSize(for: style, renderState: renderState)
 
         if let panel {
-            panel.setContentSize(contentSize)
             return panel
         }
 
@@ -289,16 +292,17 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
             }
             .store(in: &cancellables)
 
-        // Observe style changes (need to recreate panel)
+        // Observe style changes and apply them without forcing hide/show cycles.
         settingsStore.$recordingIndicatorStyle
             .dropFirst()
             .sink { [weak self] newStyle in
-                guard let self, isVisible else { return }
-                // Recreate panel with new style
-                hide()
-                if newStyle != .none {
-                    show(renderState: currentRenderState)
+                guard let self else { return }
+                if newStyle == .none {
+                    hide()
+                    return
                 }
+                guard isVisible else { return }
+                update(renderState: currentRenderState)
             }
             .store(in: &cancellables)
     }
@@ -320,7 +324,9 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         )
         if let hostingView {
             hostingView.rootView = rootView
-            panel.contentView = hostingView
+            if panel.contentView !== hostingView {
+                panel.contentView = hostingView
+            }
         } else {
             let newHostingView = NSHostingView(rootView: rootView)
             hostingView = newHostingView
@@ -398,6 +404,27 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         let contentHeight = panelHeight(for: style, mode: renderState.mode)
         let inset = Constants.panelShadowInset * 2
         return NSSize(width: contentWidth + inset, height: contentHeight + inset)
+    }
+
+    private func applyPanelGeometry(_ panel: NSPanel, deferIfPanelVisible: Bool) {
+        deferredGeometryTask?.cancel()
+        deferredGeometryTask = nil
+
+        if !deferIfPanelVisible {
+            let style = settingsStore.recordingIndicatorStyle
+            panel.setContentSize(panelContentSize(for: style, renderState: currentRenderState))
+            positionPanel(panel, at: settingsStore.recordingIndicatorPosition)
+            return
+        }
+
+        deferredGeometryTask = Task { @MainActor [weak self, weak panel] in
+            await Task.yield()
+            guard let self, let panel else { return }
+            let style = settingsStore.recordingIndicatorStyle
+            panel.setContentSize(panelContentSize(for: style, renderState: currentRenderState))
+            positionPanel(panel, at: settingsStore.recordingIndicatorPosition)
+            deferredGeometryTask = nil
+        }
     }
 
     private func positionPanel(_ panel: NSPanel, at position: RecordingIndicatorPosition) {
