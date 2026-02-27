@@ -4,7 +4,8 @@ import MeetingAssistantCoreCommon
 
 @MainActor
 public final class CarbonGlobalHotkeyBackend: GlobalHotkeyBackend {
-    private static let hotkeySignature: OSType = fourCharCode("MAHK")
+    private static let signatureSeed: OSType = fourCharCode("MAH0")
+    private static var signatureCounter: OSType = 0
     private let signature: OSType
 
     private var nextHotkeyID: UInt32 = 1
@@ -14,7 +15,7 @@ public final class CarbonGlobalHotkeyBackend: GlobalHotkeyBackend {
     private var logicalToInternalID: [String: UInt32] = [:]
 
     public init() {
-        signature = Self.hotkeySignature
+        signature = Self.nextSignature()
     }
 
     public var registeredHotkeyCount: Int {
@@ -34,7 +35,7 @@ public final class CarbonGlobalHotkeyBackend: GlobalHotkeyBackend {
 
         let internalID = nextInternalID()
         var hotKeyRef: EventHotKeyRef?
-        var hotKeyID = EventHotKeyID(signature: signature, id: internalID)
+        let hotKeyID = EventHotKeyID(signature: signature, id: internalID)
         let status = RegisterEventHotKey(
             registration.keyCode,
             registration.modifiers,
@@ -158,6 +159,7 @@ public final class CarbonGlobalHotkeyBackend: GlobalHotkeyBackend {
         )
 
         guard status == noErr,
+              hotKeyID.signature == signature,
               let registration = registrationsByID[hotKeyID.id]
         else {
             return
@@ -187,6 +189,11 @@ public final class CarbonGlobalHotkeyBackend: GlobalHotkeyBackend {
             .takeUnretainedValue()
         backend.handleEvent(event)
         return noErr
+    }
+
+    private static func nextSignature() -> OSType {
+        defer { signatureCounter &+= 1 }
+        return signatureSeed &+ signatureCounter
     }
 
     private static func fourCharCode(_ string: String) -> OSType {
