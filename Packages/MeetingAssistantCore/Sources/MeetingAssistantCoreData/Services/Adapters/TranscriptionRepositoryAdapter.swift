@@ -6,7 +6,7 @@ import MeetingAssistantCoreInfrastructure
 
 /// Adapter que implementa TranscriptionRepository usando TranscriptionClient existente
 @MainActor
-public final class TranscriptionRepositoryAdapter: TranscriptionRepository {
+public final class TranscriptionRepositoryAdapter: TranscriptionRepository, TranscriptionRepositoryDiarizationOverride {
     private let transcriptionService: any TranscriptionService
 
     public init(transcriptionService: any TranscriptionService) {
@@ -30,10 +30,36 @@ public final class TranscriptionRepositoryAdapter: TranscriptionRepository {
         audioURL: URL,
         onProgress: (@Sendable (Double) -> Void)?
     ) async throws -> DomainTranscriptionResponse {
-        let response = try await transcriptionService.transcribe(
+        try await transcribe(
             audioURL: audioURL,
-            onProgress: onProgress
+            onProgress: onProgress,
+            diarizationEnabledOverride: nil
         )
+    }
+
+    public func transcribe(
+        audioURL: URL,
+        onProgress: (@Sendable (Double) -> Void)?,
+        diarizationEnabledOverride: Bool?
+    ) async throws -> DomainTranscriptionResponse {
+        let response: TranscriptionResponse
+        if let diarizationAwareService = transcriptionService as? any TranscriptionServiceDiarizationOverride {
+            response = try await diarizationAwareService.transcribe(
+                audioURL: audioURL,
+                onProgress: onProgress,
+                diarizationEnabledOverride: diarizationEnabledOverride
+            )
+        } else {
+            response = try await transcriptionService.transcribe(
+                audioURL: audioURL,
+                onProgress: onProgress
+            )
+        }
+
+        return mapToDomainResponse(response)
+    }
+
+    private func mapToDomainResponse(_ response: TranscriptionResponse) -> DomainTranscriptionResponse {
         return DomainTranscriptionResponse(
             text: response.text,
             segments: response.segments.map { segment in

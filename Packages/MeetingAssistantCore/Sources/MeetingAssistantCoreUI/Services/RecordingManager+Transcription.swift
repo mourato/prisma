@@ -22,6 +22,10 @@ extension RecordingManager {
             let transcriptionStart = Date()
             let meetingEntity = makeMeetingEntity(meeting: meeting, audioDuration: audioDuration)
             let config = makeUseCaseConfig(meeting: meeting, settings: settings)
+            let diarizationEnabledOverride = shouldEnableDiarization(
+                for: meeting,
+                preferCurrentRecordingSource: true
+            )
 
             meetingState = .processing(.transcribing)
 
@@ -31,6 +35,7 @@ extension RecordingManager {
                 inputSource: resolveInputSourceLabel(for: meeting),
                 contextItems: config.postProcessingContextItems,
                 vocabularyReplacementRules: settings.vocabularyReplacementRules,
+                diarizationEnabledOverride: diarizationEnabledOverride,
                 applyPostProcessing: config.applyPostProcessing,
                 postProcessingPrompt: config.postProcessingPrompt,
                 defaultPostProcessingPrompt: config.defaultPostProcessingPrompt,
@@ -147,16 +152,44 @@ extension RecordingManager {
         }
     }
 
-    func performTranscription(audioURL: URL) async throws -> TranscriptionResponse {
+    func performTranscription(
+        audioURL: URL,
+        diarizationEnabledOverride: Bool? = nil
+    ) async throws -> TranscriptionResponse {
         transcriptionStatus.updateProgress(phase: .processing, percentage: Constants.processingProgress)
+        let onProgress: @Sendable (Double) -> Void = { [weak self] percentage in
+            Task { @MainActor in
+                self?.transcriptionStatus.updateProgress(phase: .processing, percentage: percentage)
+            }
+        }
+
+        if let diarizationAwareClient = transcriptionClient as? any TranscriptionServiceDiarizationOverride {
+            return try await diarizationAwareClient.transcribe(
+                audioURL: audioURL,
+                onProgress: onProgress,
+                diarizationEnabledOverride: diarizationEnabledOverride
+            )
+        }
+
         return try await transcriptionClient.transcribe(
             audioURL: audioURL,
-            onProgress: { [weak self] percentage in
-                Task { @MainActor in
-                    self?.transcriptionStatus.updateProgress(phase: .processing, percentage: percentage)
-                }
-            }
+            onProgress: onProgress
         )
+    }
+
+    func shouldEnableDiarization(
+        for meeting: Meeting,
+        preferCurrentRecordingSource: Bool = false
+    ) -> Bool {
+        if meeting.app == .importedFile {
+            return false
+        }
+
+        if preferCurrentRecordingSource {
+            return recordingSource != .microphone
+        }
+
+        return meeting.app.supportsMeetingConversation
     }
 
     // MARK: - Notifications

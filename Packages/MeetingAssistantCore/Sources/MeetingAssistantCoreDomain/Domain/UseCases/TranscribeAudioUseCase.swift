@@ -37,6 +37,7 @@ public final class TranscribeAudioUseCase: Sendable {
         inputSource: String? = nil,
         contextItems: [TranscriptionContextItem] = [],
         vocabularyReplacementRules: [VocabularyReplacementRule] = [],
+        diarizationEnabledOverride: Bool? = nil,
         applyPostProcessing: Bool = false,
         postProcessingPrompt: DomainPostProcessingPrompt? = nil,
         defaultPostProcessingPrompt: DomainPostProcessingPrompt? = nil,
@@ -56,10 +57,18 @@ public final class TranscribeAudioUseCase: Sendable {
         let transcriptionStartTime = Date()
         let response: DomainTranscriptionResponse
         do {
-            response = try await transcriptionRepository.transcribe(
-                audioURL: audioURL,
-                onProgress: nil
-            )
+            if let diarizationAwareRepository = transcriptionRepository as? any TranscriptionRepositoryDiarizationOverride {
+                response = try await diarizationAwareRepository.transcribe(
+                    audioURL: audioURL,
+                    onProgress: nil,
+                    diarizationEnabledOverride: diarizationEnabledOverride
+                )
+            } else {
+                response = try await transcriptionRepository.transcribe(
+                    audioURL: audioURL,
+                    onProgress: nil
+                )
+            }
         } catch {
             throw DomainTranscriptionError.transcriptionFailed(error.localizedDescription)
         }

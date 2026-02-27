@@ -81,7 +81,10 @@ public class MeetingAssistantAIClient {
     }
 
     /// Transcribes an audio file using the XPC Service.
-    public func transcribe(audioURL: URL) async throws -> TranscriptionResponse {
+    public func transcribe(
+        audioURL: URL,
+        diarizationEnabledOverride: Bool? = nil
+    ) async throws -> TranscriptionResponse {
         guard FeatureFlags.useXPCService else {
             throw TranscriptionError.serviceUnavailable
         }
@@ -94,13 +97,16 @@ public class MeetingAssistantAIClient {
                 throw TranscriptionError.serviceUnavailable
             }
 
-            return try await transcribe(audioURL: audioURL)
+            return try await transcribe(
+                audioURL: audioURL,
+                diarizationEnabledOverride: diarizationEnabledOverride
+            )
         }
 
         // Prepare settings from AppSettingsStore using shared model
         let store = AppSettingsStore.shared
         let settings = MeetingAssistantXPCModels.AppSettings(
-            diarization: store.isDiarizationEnabled,
+            diarization: diarizationEnabledOverride ?? store.isDiarizationEnabled,
             minSpeakers: store.minSpeakers ?? 1,
             maxSpeakers: store.maxSpeakers ?? 10,
             numSpeakers: store.numSpeakers ?? 0

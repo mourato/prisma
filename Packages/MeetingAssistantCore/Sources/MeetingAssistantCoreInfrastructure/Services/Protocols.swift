@@ -56,6 +56,15 @@ public protocol TranscriptionService: ObservableObject {
     ) async throws -> TranscriptionResponse
 }
 
+@MainActor
+public protocol TranscriptionServiceDiarizationOverride: ObservableObject {
+    func transcribe(
+        audioURL: URL,
+        onProgress: (@Sendable (Double) -> Void)?,
+        diarizationEnabledOverride: Bool?
+    ) async throws -> TranscriptionResponse
+}
+
 // MARK: - Post-Processing Protocol
 
 /// Abstract interface for AI post-processing services.

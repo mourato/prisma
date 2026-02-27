@@ -73,6 +73,14 @@ public protocol TranscriptionRepository: Sendable {
     ) async throws -> DomainTranscriptionResponse
 }
 
+public protocol TranscriptionRepositoryDiarizationOverride: Sendable {
+    func transcribe(
+        audioURL: URL,
+        onProgress: (@Sendable (Double) -> Void)?,
+        diarizationEnabledOverride: Bool?
+    ) async throws -> DomainTranscriptionResponse
+}
+
 // Protocolo para operações de pós-processamento
 #if DEBUG
 @GenerateMock

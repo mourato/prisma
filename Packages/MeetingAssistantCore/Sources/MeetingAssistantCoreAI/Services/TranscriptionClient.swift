@@ -10,7 +10,7 @@ import os.log
 /// Client for communicating with the local FluidAudio transcription service.
 /// Adapts the local model manager to the existing client interface.
 @MainActor
-public class TranscriptionClient: ObservableObject, TranscriptionService {
+public class TranscriptionClient: ObservableObject, TranscriptionService, TranscriptionServiceDiarizationOverride {
     public static let shared = TranscriptionClient()
 
     private let logger = Logger(subsystem: "MeetingAssistant", category: "TranscriptionClient")
@@ -92,6 +92,18 @@ public class TranscriptionClient: ObservableObject, TranscriptionService {
         audioURL: URL,
         onProgress: (@Sendable (Double) -> Void)? = nil
     ) async throws -> TranscriptionResponse {
+        try await transcribe(
+            audioURL: audioURL,
+            onProgress: onProgress,
+            diarizationEnabledOverride: nil
+        )
+    }
+
+    public func transcribe(
+        audioURL: URL,
+        onProgress: (@Sendable (Double) -> Void)?,
+        diarizationEnabledOverride: Bool?
+    ) async throws -> TranscriptionResponse {
         AppLogger.info(
             "Transcribing file",
             category: .transcriptionEngine,
@@ -100,15 +112,30 @@ public class TranscriptionClient: ObservableObject, TranscriptionService {
 
         switch transcriptionImplementation {
         case .xpc:
-            return try await transcribeViaXPC(audioURL: audioURL, onProgress: onProgress)
+            return try await transcribeViaXPC(
+                audioURL: audioURL,
+                onProgress: onProgress,
+                diarizationEnabledOverride: diarizationEnabledOverride
+            )
         case .local:
-            return try await transcribeLocally(audioURL: audioURL, onProgress: onProgress)
+            return try await transcribeLocally(
+                audioURL: audioURL,
+                onProgress: onProgress,
+                diarizationEnabledOverride: diarizationEnabledOverride
+            )
         }
     }
 
-    private func transcribeViaXPC(audioURL: URL, onProgress: (@Sendable (Double) -> Void)?) async throws -> TranscriptionResponse {
+    private func transcribeViaXPC(
+        audioURL: URL,
+        onProgress: (@Sendable (Double) -> Void)?,
+        diarizationEnabledOverride: Bool?
+    ) async throws -> TranscriptionResponse {
         do {
-            let response = try await MeetingAssistantAIClient.shared.transcribe(audioURL: audioURL)
+            let response = try await MeetingAssistantAIClient.shared.transcribe(
+                audioURL: audioURL,
+                diarizationEnabledOverride: diarizationEnabledOverride
+            )
             AppLogger.info(
                 "Transcription completed via XPC",
                 category: .transcriptionEngine,
@@ -126,10 +153,15 @@ public class TranscriptionClient: ObservableObject, TranscriptionService {
         }
     }
 
-    private func transcribeLocally(audioURL: URL, onProgress: (@Sendable (Double) -> Void)?) async throws -> TranscriptionResponse {
+    private func transcribeLocally(
+        audioURL: URL,
+        onProgress: (@Sendable (Double) -> Void)?,
+        diarizationEnabledOverride: Bool?
+    ) async throws -> TranscriptionResponse {
         do {
             let response = try await LocalTranscriptionClient.shared.transcribe(
                 audioURL: audioURL,
+                isDiarizationEnabled: diarizationEnabledOverride,
                 onProgress: onProgress
             )
             AppLogger.info(

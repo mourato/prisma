@@ -66,7 +66,11 @@ extension RecordingManager {
         try await performHealthCheck()
 
         let transcriptionStart = Date()
-        let response = try await performTranscription(audioURL: audioURL)
+        let diarizationEnabledOverride = shouldEnableDiarization(for: transcription.meeting)
+        let response = try await performTranscription(
+            audioURL: audioURL,
+            diarizationEnabledOverride: diarizationEnabledOverride
+        )
         let transcriptionProcessingDuration = Date().timeIntervalSince(transcriptionStart)
         let settings = AppSettingsStore.shared
         let replacedText = applyVocabularyReplacements(
