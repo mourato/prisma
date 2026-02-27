@@ -397,17 +397,17 @@ struct ShortcutCaptureHealthSnapshot: Equatable {
         self.scope = scope
         self.source = source
         self.checkedAt = checkedAt
-        self.requiresGlobalCapture = expectation.needsGlobalCapture
+        requiresGlobalCapture = expectation.needsGlobalCapture
         self.accessibilityTrusted = accessibilityTrusted
-        self.flagsMonitorExpected = expectation.needsFlagsMonitor
+        flagsMonitorExpected = expectation.needsFlagsMonitor
         self.flagsMonitorActive = flagsMonitorActive
-        self.keyDownMonitorExpected = expectation.needsKeyDownMonitor
+        keyDownMonitorExpected = expectation.needsKeyDownMonitor
         self.keyDownMonitorActive = keyDownMonitorActive
-        self.keyUpMonitorExpected = expectation.needsKeyUpMonitor
+        keyUpMonitorExpected = expectation.needsKeyUpMonitor
         self.keyUpMonitorActive = keyUpMonitorActive
-        self.eventTapExpected = expectation.needsEventTap
+        eventTapExpected = expectation.needsEventTap
         self.eventTapActive = eventTapActive
-        self.degradationReasons = reasons
+        degradationReasons = reasons
 
         if !expectation.needsGlobalCapture {
             result = .idle

@@ -57,15 +57,15 @@ extension AssistantShortcutController {
             wasPressed: shortcutHandler.isPressed,
             isDefinitionActive: { [weak self] definition in
                 guard let self else { return false }
-                return self.presetState.isShortcutActive(definition, inputEvent: event)
+                return presetState.isShortcutActive(definition, inputEvent: event)
             },
             isModifierGestureActive: { [weak self] gesture in
                 guard let self else { return false }
-                return self.presetState.isModifierGestureActive(gesture, inputEvent: event)
+                return presetState.isModifierGestureActive(gesture, inputEvent: event)
             },
             isPresetActive: { [weak self] presetKey in
                 guard let self else { return false }
-                return self.presetState.isPresetActive(presetKey, inputEvent: event)
+                return presetState.isPresetActive(presetKey, inputEvent: event)
             }
         )
 

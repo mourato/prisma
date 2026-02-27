@@ -285,11 +285,11 @@ public enum ModifierShortcutConflictService {
     ) -> Bool {
         switch (lhs, rhs) {
         case (nil, nil):
-            return true
+            true
         case let (lhs?, rhs?):
-            return lhs.keyCode == rhs.keyCode
+            lhs.keyCode == rhs.keyCode
         default:
-            return false
+            false
         }
     }
 

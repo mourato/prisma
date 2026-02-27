@@ -3,16 +3,15 @@ import Foundation
 
 public extension ShortcutInputEvent {
     init(systemEvent: NSEvent) {
-        let kind: ShortcutInputEventKind
-        switch systemEvent.type {
+        let kind: ShortcutInputEventKind = switch systemEvent.type {
         case .flagsChanged:
-            kind = .flagsChanged
+            .flagsChanged
         case .keyDown:
-            kind = .keyDown
+            .keyDown
         case .keyUp:
-            kind = .keyUp
+            .keyUp
         default:
-            kind = .keyDown
+            .keyDown
         }
 
         self.init(

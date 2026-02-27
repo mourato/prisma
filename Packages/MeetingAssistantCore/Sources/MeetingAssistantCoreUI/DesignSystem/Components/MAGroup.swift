@@ -13,7 +13,8 @@ public struct MAGroup<Content: View, HeaderAccessory: View>: View {
     private let content: Content
 
     public init(_ title: String, icon: String? = nil, @ViewBuilder content: () -> Content)
-    where HeaderAccessory == EmptyView {
+        where HeaderAccessory == EmptyView
+    {
         self.title = title
         self.icon = icon
         headerAccessory = EmptyView()

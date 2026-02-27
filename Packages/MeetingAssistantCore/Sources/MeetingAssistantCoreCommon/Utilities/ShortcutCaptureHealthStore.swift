@@ -41,11 +41,9 @@ public struct ShortcutCaptureHealthStatus: Equatable {
 
 @MainActor
 public enum ShortcutCaptureHealthStore {
-    private static var statuses: [ShortcutCaptureHealthScope: ShortcutCaptureHealthStatus] = {
-        Dictionary(uniqueKeysWithValues: ShortcutCaptureHealthScope.allCases.map { scope in
-            (scope, defaultStatus(for: scope))
-        })
-    }()
+    private static var statuses: [ShortcutCaptureHealthScope: ShortcutCaptureHealthStatus] = Dictionary(uniqueKeysWithValues: ShortcutCaptureHealthScope.allCases.map { scope in
+        (scope, defaultStatus(for: scope))
+    })
 
     public static func status(for scope: ShortcutCaptureHealthScope) -> ShortcutCaptureHealthStatus {
         statuses[scope] ?? defaultStatus(for: scope)

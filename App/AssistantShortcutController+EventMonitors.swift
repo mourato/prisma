@@ -109,7 +109,7 @@ extension AssistantShortcutController {
             modifiers: descriptor.modifiers,
             onKeyDown: { [weak self] in
                 guard let self else { return }
-                self.emitShortcutDetected(
+                emitShortcutDetected(
                     shortcutTarget: "assistant",
                     source: "in_house_hotkey",
                     trigger: activationMode
@@ -142,7 +142,7 @@ extension AssistantShortcutController {
                 modifiers: descriptor.modifiers,
                 onKeyDown: { [weak self] in
                     guard let self else { return }
-                    self.emitShortcutDetected(
+                    emitShortcutDetected(
                         shortcutTarget: "integration",
                         source: "integration_in_house_hotkey",
                         trigger: activationMode
@@ -173,12 +173,12 @@ extension AssistantShortcutController {
     }
 
     var integrationCustomEnabledCount: Int {
-        settings.assistantIntegrations.filter { integration in
+        settings.assistantIntegrations.count(where: { integration in
             integration.isEnabled
                 && integration.shortcutDefinition == nil
                 && integration.modifierShortcutGesture == nil
                 && integration.shortcutPresetKey == .custom
-        }.count
+        })
     }
 
     func expectedShortcutCaptureBackends() -> ShortcutCaptureBackendExpectation {

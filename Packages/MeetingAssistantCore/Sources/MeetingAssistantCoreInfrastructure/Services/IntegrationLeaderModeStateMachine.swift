@@ -60,7 +60,7 @@ public struct IntegrationLeaderModeStateMachine: Sendable {
     public private(set) var activeIntegrationID: UUID?
 
     public init(initialState: IntegrationState = .idle, actionTimeoutSeconds: TimeInterval = 2.0) {
-        self.state = initialState
+        state = initialState
         self.actionTimeoutSeconds = actionTimeoutSeconds
     }
 
@@ -148,9 +148,9 @@ public struct IntegrationLeaderModeStateMachine: Sendable {
     public var isTerminalState: Bool {
         switch state {
         case .idle, .waitingForAction:
-            return false
+            false
         case .actionTriggered, .timedOut, .cancelled:
-            return true
+            true
         }
     }
 
@@ -163,29 +163,29 @@ public struct IntegrationLeaderModeStateMachine: Sendable {
 
 // MARK: - Convenience Extensions
 
-extension IntegrationLeaderModeStateMachine {
+public extension IntegrationLeaderModeStateMachine {
     /// Creates a transition for leader pressed with the given integration ID
-    public mutating func leaderPressed(for integrationID: UUID) -> Transition {
+    mutating func leaderPressed(for integrationID: UUID) -> Transition {
         transition(on: .leaderPressed, integrationID: integrationID)
     }
 
     /// Creates a transition for action key pressed
-    public mutating func actionKeyPressed() -> Transition {
+    mutating func actionKeyPressed() -> Transition {
         transition(on: .actionKeyPressed)
     }
 
     /// Creates a transition for timeout
-    public mutating func timeoutElapsed() -> Transition {
+    mutating func timeoutElapsed() -> Transition {
         transition(on: .timeoutElapsed)
     }
 
     /// Creates a transition for cancellation by ESC or blur
-    public mutating func cancelledByEscapeOrBlur() -> Transition {
+    mutating func cancelledByEscapeOrBlur() -> Transition {
         transition(on: .cancelledByEscapeOrBlur)
     }
 
     /// Creates a transition for explicit disarm
-    public mutating func disarmedExplicitly() -> Transition {
+    mutating func disarmedExplicitly() -> Transition {
         transition(on: .disarmedExplicitly)
     }
 }

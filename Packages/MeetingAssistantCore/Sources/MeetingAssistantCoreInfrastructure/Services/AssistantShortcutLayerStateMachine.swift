@@ -40,34 +40,32 @@ public struct AssistantShortcutLayerStateMachine: Sendable {
     @discardableResult
     public mutating func transition(on event: Event) -> Transition {
         let currentState = state
-        let nextState: State?
-
-        switch (currentState, event) {
+        let nextState: State? = switch (currentState, event) {
         case (.idle, .leaderTapped),
              (.consumed, .leaderTapped),
              (.timedOut, .leaderTapped),
              (.cancelled, .leaderTapped),
              (.armed, .leaderTapped):
-            nextState = .armed
+            .armed
 
         case (.armed, .layerKeyMatched):
-            nextState = .consumed
+            .consumed
 
         case (.armed, .timeoutElapsed):
-            nextState = .timedOut
+            .timedOut
 
         case (.armed, .cancelledByEscapeOrBlur):
-            nextState = .cancelled
+            .cancelled
 
         case (.idle, .disarmedExplicitly),
              (.armed, .disarmedExplicitly),
              (.consumed, .disarmedExplicitly),
              (.timedOut, .disarmedExplicitly),
              (.cancelled, .disarmedExplicitly):
-            nextState = .idle
+            .idle
 
         default:
-            nextState = nil
+            nil
         }
 
         guard let nextState else {

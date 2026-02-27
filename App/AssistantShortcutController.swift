@@ -24,6 +24,7 @@ final class AssistantShortcutController {
     let keypadEnterKeyCode: UInt16 = 0x4c
 
     // MARK: - Integration Leader Mode (legacy state retained, currently disabled in global path)
+
     var integrationLeaderModeStateMachine = IntegrationLeaderModeStateMachine()
     var integrationLeaderModeTask: Task<Void, Never>?
     let integrationLeaderModeTimeoutSeconds: TimeInterval = 2.0
@@ -266,7 +267,7 @@ final class RecordingCancelShortcutController {
             onKeyDown: { [weak self] in
                 Task { @MainActor [weak self] in
                     guard let self else { return }
-                    await self.handleCancelHotkeyPressed()
+                    await handleCancelHotkeyPressed()
                 }
             },
             onKeyUp: {}

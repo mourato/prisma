@@ -237,12 +237,11 @@ final class GlobalShortcutController {
     }
 
     private func inHouseRegistration(for type: ShortcutType) -> HotkeyRegistration? {
-        let definition: ShortcutDefinition?
-        switch type {
+        let definition: ShortcutDefinition? = switch type {
         case .dictation:
-            definition = settings.dictationShortcutDefinition
+            settings.dictationShortcutDefinition
         case .meeting:
-            definition = settings.meetingShortcutDefinition
+            settings.meetingShortcutDefinition
         }
 
         guard let definition,
@@ -259,7 +258,7 @@ final class GlobalShortcutController {
             modifiers: descriptor.modifiers,
             onKeyDown: { [weak self] in
                 guard let self else { return }
-                self.emitShortcutDetected(
+                emitShortcutDetected(
                     for: type,
                     source: "in_house_hotkey",
                     trigger: activationMode
@@ -294,11 +293,11 @@ final class GlobalShortcutController {
     private func isCustomShortcutEnabled(for type: ShortcutType) -> Bool {
         switch type {
         case .dictation:
-            return settings.dictationShortcutDefinition == nil
+            settings.dictationShortcutDefinition == nil
                 && settings.dictationModifierShortcutGesture == nil
                 && settings.dictationSelectedPresetKey == .custom
         case .meeting:
-            return settings.meetingShortcutDefinition == nil
+            settings.meetingShortcutDefinition == nil
                 && settings.meetingModifierShortcutGesture == nil
                 && settings.meetingSelectedPresetKey == .custom
         }
@@ -552,9 +551,9 @@ final class GlobalShortcutController {
     func shortcutTarget(for type: ShortcutType) -> String {
         switch type {
         case .dictation:
-            return "dictation"
+            "dictation"
         case .meeting:
-            return "meeting"
+            "meeting"
         }
     }
 }

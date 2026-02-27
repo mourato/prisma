@@ -56,7 +56,7 @@ public extension Bundle {
            let preferredLang = languages.first
         {
             let candidates = [preferredLang, preferredLang.components(separatedBy: "-").first]
-                .compactMap { $0 }
+                .compactMap(\.self)
 
             for language in candidates {
                 if let path = bundle.path(forResource: language, ofType: "lproj"),

@@ -112,11 +112,11 @@ extension AssistantShortcutController {
         NotificationCenter.default.publisher(for: NSApplication.willResignActiveNotification)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                guard let self, self.isShortcutLayerArmed else {
+                guard let self, isShortcutLayerArmed else {
                     return
                 }
 
-                self.disarmShortcutLayer(
+                disarmShortcutLayer(
                     showFeedback: false,
                     event: .cancelledByEscapeOrBlur,
                     transitionSource: "app_will_resign_active"

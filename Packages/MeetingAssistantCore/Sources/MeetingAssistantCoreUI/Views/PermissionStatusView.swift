@@ -102,7 +102,6 @@ public struct PermissionStatusView: View {
         }
     }
 
-    @ViewBuilder
     private var permissionWarning: some View {
         HStack(spacing: 6) {
             Image(systemName: PermissionConstants.Icons.exclamationMarkTriangle)

@@ -52,4 +52,3 @@ public protocol ShortcutInputBackend: AnyObject {
 
     func stopAllMonitoring()
 }
-
