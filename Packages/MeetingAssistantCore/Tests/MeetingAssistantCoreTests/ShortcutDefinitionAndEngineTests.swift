@@ -64,6 +64,27 @@ final class ShortcutDefinitionAndEngineTests: XCTestCase {
         XCTAssertFalse(invalid.isValid)
     }
 
+    func testModifierlessFunctionShortcutIsValid() {
+        let shortcut = ShortcutDefinition(
+            modifiers: [],
+            primaryKey: .function(index: 5, keyCode: 0x60),
+            trigger: .singleTap
+        )
+
+        XCTAssertEqual(shortcut.patternType, .simple)
+        XCTAssertTrue(shortcut.isValid)
+    }
+
+    func testModifierlessLetterShortcutIsRejected() {
+        let shortcut = ShortcutDefinition(
+            modifiers: [],
+            primaryKey: .letter("G", keyCode: 0x05),
+            trigger: .singleTap
+        )
+
+        XCTAssertEqual(shortcut.validate(), .missingModifiers)
+    }
+
     func testGenericConflictServiceDetectsSameSignature() {
         let existing = ShortcutBinding(
             actionID: .assistant,

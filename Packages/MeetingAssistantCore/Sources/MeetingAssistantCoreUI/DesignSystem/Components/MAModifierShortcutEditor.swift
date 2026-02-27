@@ -530,11 +530,11 @@ private final class ShortcutRecorderController: ObservableObject {
             return
         }
 
-        guard !pressedModifiers.isEmpty else {
+        guard let primaryKey = Self.primaryKey(for: event) else {
             return
         }
 
-        guard let primaryKey = Self.primaryKey(for: event) else {
+        if pressedModifiers.isEmpty, primaryKey.kind != .function {
             return
         }
 
