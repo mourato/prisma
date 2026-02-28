@@ -21,6 +21,8 @@ extension AppSettingsStore {
 
     /// Creates the initialization context by loading all required values from UserDefaults.
     static func createInitializationContext() -> InitializationContext {
+        migrateLegacyUserDefaultsDomainIfNeeded()
+
         let loadedAIConfiguration = loadAIConfiguration()
         let loadedEnhancementsSelection = loadEnhancementsAISelection(defaultingTo: loadedAIConfiguration)
         let loadedDictationSelection = loadEnhancementsDictationAISelection(defaultingTo: loadedEnhancementsSelection)
@@ -58,6 +60,29 @@ extension AppSettingsStore {
             hasPersistedLegacyPerTargetBrowsers: hasPersistedLegacyPerTargetBrowsers,
             hasGlobalBrowserSetting: hasGlobalBrowserSetting
         )
+    }
+
+    private static func migrateLegacyUserDefaultsDomainIfNeeded() {
+        let defaults = UserDefaults.standard
+        guard !defaults.bool(forKey: AppIdentity.userDefaultsDomainMigrationFlag) else {
+            return
+        }
+
+        let currentDomainName = Bundle.main.bundleIdentifier ?? AppIdentity.bundleIdentifier
+        guard let legacyDomain = defaults.persistentDomain(forName: AppIdentity.legacyUserDefaultsDomain),
+              !legacyDomain.isEmpty
+        else {
+            defaults.set(true, forKey: AppIdentity.userDefaultsDomainMigrationFlag)
+            return
+        }
+
+        var currentDomain = defaults.persistentDomain(forName: currentDomainName) ?? [:]
+        for (key, value) in legacyDomain where currentDomain[key] == nil {
+            currentDomain[key] = value
+        }
+
+        defaults.setPersistentDomain(currentDomain, forName: currentDomainName)
+        defaults.set(true, forKey: AppIdentity.userDefaultsDomainMigrationFlag)
     }
 
     // MARK: - Static Initialization Helpers

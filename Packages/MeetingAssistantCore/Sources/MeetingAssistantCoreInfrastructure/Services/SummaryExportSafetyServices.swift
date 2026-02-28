@@ -1,4 +1,5 @@
 import Foundation
+import MeetingAssistantCoreCommon
 import MeetingAssistantCoreDomain
 
 public struct SummaryExportSafetyEvaluator: Sendable {
@@ -188,9 +189,8 @@ public struct SummaryExportAuditTrailWriter {
         if let rootDirectoryURL {
             rootURL = rootDirectoryURL
         } else {
-            let libraryURL = fileManager.urls(for: .libraryDirectory, in: .userDomainMask).first
-                ?? fileManager.temporaryDirectory
-            rootURL = libraryURL.appendingPathComponent("Logs/MeetingAssistant/ExportAudit")
+            let logsURL = AppIdentity.logsBaseDirectory(fileManager: fileManager)
+            rootURL = logsURL.appendingPathComponent("ExportAudit", isDirectory: true)
         }
 
         try fileManager.createDirectory(at: rootURL, withIntermediateDirectories: true)

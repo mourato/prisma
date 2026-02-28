@@ -9,11 +9,9 @@ public final class CrashReporter: Sendable {
     private let logDirectory: URL
 
     private init() {
-        // Setup logs directory: ~/Library/Logs/MeetingAssistant/CrashReports
         let fileManager = FileManager.default
-        // Safe unwrap with fallback to temporary directory if library is unavailable (unlikely)
-        let libraryURL = fileManager.urls(for: .libraryDirectory, in: .userDomainMask).first ?? fileManager.temporaryDirectory
-        let logsURL = libraryURL.appendingPathComponent("Logs/MeetingAssistant/CrashReports")
+        let logsURL = AppIdentity.logsBaseDirectory(fileManager: fileManager)
+            .appendingPathComponent("CrashReports", isDirectory: true)
         logDirectory = logsURL
 
         // Create directory if it doesn't exist

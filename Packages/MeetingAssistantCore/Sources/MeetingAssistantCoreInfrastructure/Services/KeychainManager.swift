@@ -1,4 +1,5 @@
 import Foundation
+import MeetingAssistantCoreCommon
 import Security
 
 /// Secure storage for sensitive data using macOS Keychain.
@@ -64,7 +65,8 @@ public struct DefaultKeychainProvider: KeychainProvider {
 public enum KeychainManager {
     // MARK: - Constants
 
-    private static let serviceIdentifier = "com.meeting-assistant"
+    private static let serviceIdentifier = AppIdentity.keychainServiceIdentifier
+    private static let legacyServiceIdentifiers = AppIdentity.legacyKeychainServiceIdentifiers
 
     // MARK: - Keys
 
@@ -113,15 +115,14 @@ public enum KeychainManager {
             throw KeychainError.unableToConvertToData
         }
 
-        // Build query for existing item
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: serviceIdentifier,
-            kSecAttrAccount as String: key.rawValue,
-        ]
+        let query = baseQuery(for: key, serviceIdentifier: serviceIdentifier)
 
-        // Delete existing item if present
+        // Delete existing item if present (including legacy services).
         SecItemDelete(query as CFDictionary)
+        for legacyServiceIdentifier in legacyServiceIdentifiers {
+            let legacyQuery = baseQuery(for: key, serviceIdentifier: legacyServiceIdentifier)
+            SecItemDelete(legacyQuery as CFDictionary)
+        }
 
         // Add new item
         var addQuery = query
@@ -140,49 +141,30 @@ public enum KeychainManager {
     /// - Returns: The stored string value, or `nil` if not found.
     /// - Throws: `KeychainError` if retrieval fails for reasons other than item not found.
     static func retrieve(for key: Key) throws -> String? {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: serviceIdentifier,
-            kSecAttrAccount as String: key.rawValue,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne,
-        ]
-
-        var result: AnyObject?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
-
-        switch status {
-        case errSecSuccess:
-            guard let data = result as? Data,
-                  let string = String(data: data, encoding: .utf8)
-            else {
-                throw KeychainError.unableToConvertFromData
-            }
-            return string
-
-        case errSecItemNotFound:
-            return nil
-
-        default:
-            throw KeychainError.unexpectedStatus(status)
+        if let value = try retrieve(for: key, serviceIdentifier: serviceIdentifier) {
+            return value
         }
+
+        for legacyServiceIdentifier in legacyServiceIdentifiers {
+            guard let legacyValue = try retrieve(for: key, serviceIdentifier: legacyServiceIdentifier) else {
+                continue
+            }
+
+            try store(legacyValue, for: key)
+            try delete(for: key, serviceIdentifier: legacyServiceIdentifier)
+            return legacyValue
+        }
+
+        return nil
     }
 
     /// Delete a value from the Keychain.
     /// - Parameter key: The key to delete.
     /// - Throws: `KeychainError` if deletion fails.
     static func delete(for key: Key) throws {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: serviceIdentifier,
-            kSecAttrAccount as String: key.rawValue,
-        ]
-
-        let status = SecItemDelete(query as CFDictionary)
-
-        // Treat "not found" as success (nothing to delete)
-        guard status == errSecSuccess || status == errSecItemNotFound else {
-            throw KeychainError.unexpectedStatus(status)
+        try delete(for: key, serviceIdentifier: serviceIdentifier)
+        for legacyServiceIdentifier in legacyServiceIdentifiers {
+            try delete(for: key, serviceIdentifier: legacyServiceIdentifier)
         }
     }
 
@@ -190,15 +172,10 @@ public enum KeychainManager {
     /// - Parameter key: The key to check.
     /// - Returns: `true` if the key exists, `false` otherwise.
     static func exists(for key: Key) -> Bool {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: serviceIdentifier,
-            kSecAttrAccount as String: key.rawValue,
-            kSecReturnData as String: false,
-        ]
-
-        let status = SecItemCopyMatching(query as CFDictionary, nil)
-        return status == errSecSuccess
+        if exists(for: key, serviceIdentifier: serviceIdentifier) {
+            return true
+        }
+        return legacyServiceIdentifiers.contains { exists(for: key, serviceIdentifier: $0) }
     }
 
     // MARK: - Provider-specific helpers
@@ -235,38 +212,21 @@ public enum KeychainManager {
     }
 
     public static func retrieveAPIKeys(for providers: [AIProvider]) throws -> [AIProvider: String] {
-        guard !providers.isEmpty else { return [:] }
+        var valuesByProvider: [AIProvider: String] = [:]
 
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: serviceIdentifier,
-            kSecReturnAttributes as String: true,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitAll,
-        ]
-
-        var result: AnyObject?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
-
-        switch status {
-        case errSecSuccess:
-            let items: [[String: Any]]
-            if let array = result as? [[String: Any]] {
-                items = array
-            } else if let item = result as? [String: Any] {
-                items = [item]
-            } else {
-                throw KeychainError.unableToConvertFromData
+        for provider in providers {
+            let normalizedAPIKey = try retrieveAPIKey(for: provider)?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            guard
+                let apiKey = normalizedAPIKey,
+                !apiKey.isEmpty
+            else {
+                continue
             }
-
-            return mapAPIKeyItems(items, allowedProviders: providers)
-
-        case errSecItemNotFound:
-            return [:]
-
-        default:
-            throw KeychainError.unexpectedStatus(status)
+            valuesByProvider[provider] = apiKey
         }
+
+        return valuesByProvider
     }
 
     public static func existsAPIKey(for provider: AIProvider) -> Bool {
@@ -275,6 +235,54 @@ public enum KeychainManager {
             return true
         }
         return exists(for: .aiAPIKey)
+    }
+
+    private static func retrieve(for key: Key, serviceIdentifier: String) throws -> String? {
+        var query = baseQuery(for: key, serviceIdentifier: serviceIdentifier)
+        query[kSecReturnData as String] = true
+        query[kSecMatchLimit as String] = kSecMatchLimitOne
+
+        var result: AnyObject?
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+
+        switch status {
+        case errSecSuccess:
+            guard let data = result as? Data,
+                  let string = String(data: data, encoding: .utf8)
+            else {
+                throw KeychainError.unableToConvertFromData
+            }
+            return string
+        case errSecItemNotFound:
+            return nil
+        default:
+            throw KeychainError.unexpectedStatus(status)
+        }
+    }
+
+    private static func delete(for key: Key, serviceIdentifier: String) throws {
+        let query = baseQuery(for: key, serviceIdentifier: serviceIdentifier)
+        let status = SecItemDelete(query as CFDictionary)
+
+        // Treat "not found" as success (nothing to delete)
+        guard status == errSecSuccess || status == errSecItemNotFound else {
+            throw KeychainError.unexpectedStatus(status)
+        }
+    }
+
+    private static func exists(for key: Key, serviceIdentifier: String) -> Bool {
+        var query = baseQuery(for: key, serviceIdentifier: serviceIdentifier)
+        query[kSecReturnData as String] = false
+        let status = SecItemCopyMatching(query as CFDictionary, nil)
+        return status == errSecSuccess
+    }
+
+    private static func baseQuery(for key: Key, serviceIdentifier: String) -> [String: Any] {
+        [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: serviceIdentifier,
+            kSecAttrAccount as String: key.rawValue,
+        ]
     }
 
     public static func mapAPIKeyItems(

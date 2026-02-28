@@ -33,13 +33,14 @@ extension FileSystemStorageService {
         let url = URL(fileURLWithPath: path)
         let resolvedPath = url.resolvingSymlinksInPath().path
 
-        let appSupportURLs = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)
-        guard let appSupport = appSupportURLs.first else {
-            throw PathValidationError.invalidPath(path)
-        }
-
-        let containerPath = appSupport.appendingPathComponent("MeetingAssistant").path
-        guard resolvedPath.hasPrefix(containerPath) else {
+        let containerPath = AppIdentity.appSupportBaseDirectory(fileManager: .default).path
+        let appSupportRootURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? FileManager.default.temporaryDirectory
+        let legacyContainerPath = appSupportRootURL
+            .appendingPathComponent(AppIdentity.legacyAppSupportDirectoryName, isDirectory: true)
+            .path
+        let isInsideKnownContainer = resolvedPath.hasPrefix(containerPath) || resolvedPath.hasPrefix(legacyContainerPath)
+        guard isInsideKnownContainer else {
             AppLogger.warning("Path outside container blocked", category: .databaseManager, extra: [
                 "path": path,
                 "resolved": resolvedPath,
