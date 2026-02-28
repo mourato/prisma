@@ -162,12 +162,14 @@ public final class AudioLevelMonitor: ObservableObject {
     private func updateSilenceWarning(with averageDB: Float) {
         if averageDB <= Constants.silenceThresholdDb {
             silenceElapsed += samplingInterval
-            if silenceElapsed >= Constants.silenceDurationSeconds {
+            if silenceElapsed >= Constants.silenceDurationSeconds, !isSilenceWarningVisible {
                 isSilenceWarningVisible = true
             }
         } else {
             silenceElapsed = 0
-            isSilenceWarningVisible = false
+            if isSilenceWarningVisible {
+                isSilenceWarningVisible = false
+            }
         }
     }
 

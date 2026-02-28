@@ -80,26 +80,27 @@ public struct FloatingRecordingIndicatorView: View {
     }
 
     private func indicatorPill(size: IndicatorSize) -> some View {
-        ZStack(alignment: .top) {
-            HStack(spacing: MeetingAssistantDesignSystem.Layout.recordingIndicatorPromptGap) {
-                mainPill(size: size)
+        HStack(spacing: MeetingAssistantDesignSystem.Layout.recordingIndicatorPromptGap) {
+            mainPill(size: size)
 
-                if isRecordingMode {
-                    promptSelectionPill(size: size)
+            if isRecordingMode {
+                promptSelectionPill(size: size)
 
-                    if isDictationRecording {
-                        languageSelectionPill(size: size)
-                    }
+                if isDictationRecording {
+                    languageSelectionPill(size: size)
                 }
             }
-            .onDisappear {
-                hoverCollapseTask?.cancel()
-                hoverCollapseTask = nil
-                isMainRegionHovered = false
-                isPromptRegionHovered = false
-                isPromptSessionArmed = false
-            }
-
+        }
+        .onDisappear {
+            hoverCollapseTask?.cancel()
+            hoverCollapseTask = nil
+            isMainRegionHovered = false
+            isPromptRegionHovered = false
+            isPromptSessionArmed = false
+        }
+        // Keep warning overlays out of layout sizing to prevent NSPanel constraint loops
+        // when warnings appear/disappear while the panel uses a fixed content size.
+        .overlay(alignment: .top) {
             VStack(spacing: MeetingAssistantDesignSystem.Layout.spacing4) {
                 if let warningDescriptor = postProcessingWarningDescriptor {
                     postProcessingReadinessWarningOverlay(warningDescriptor)

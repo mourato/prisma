@@ -266,8 +266,25 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         if let inputUnit = engine.inputNode.audioUnit {
             var deviceID: AudioObjectID = 0
             var size = UInt32(MemoryLayout<AudioObjectID>.size)
-            AudioUnitGetProperty(inputUnit, kAudioOutputUnitProperty_CurrentDevice, kAudioUnitScope_Global, 0, &deviceID, &size)
-            AppLogger.info("Using Audio Input Device ID: \(deviceID)", category: .recordingManager)
+            let status = AudioUnitGetProperty(
+                inputUnit,
+                kAudioOutputUnitProperty_CurrentDevice,
+                kAudioUnitScope_Global,
+                0,
+                &deviceID,
+                &size
+            )
+
+            if status == noErr, deviceManager.isUsableInputDeviceID(deviceID) {
+                AppLogger.info("Using Audio Input Device ID: \(deviceID)", category: .recordingManager)
+            } else {
+                AppLogger.warning(
+                    "Unable to resolve a usable current input device from audio unit",
+                    category: .recordingManager,
+                    extra: ["status": status, "deviceID": deviceID]
+                )
+                applySystemDefaultInputDevice(to: inputUnit, reason: "current_device_invalid_after_setup")
+            }
         }
 
         AppLogger.debug("Configuring worker...", category: .recordingManager)
@@ -682,6 +699,14 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
                 )
                 return
             }
+            guard deviceManager.isUsableInputDeviceID(defaultDeviceID) else {
+                AppLogger.warning(
+                    "System default input device is not usable for capture",
+                    category: .recordingManager,
+                    extra: ["deviceID": defaultDeviceID]
+                )
+                return
+            }
 
             var deviceIDToSet = defaultDeviceID
             let size = UInt32(MemoryLayout<AudioObjectID>.size)
@@ -716,7 +741,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         // Find the first available device from the priority list
         var deviceID: AudioObjectID?
         for uid in priorityList {
-            if let id = deviceManager.getAudioDeviceID(for: uid) {
+            if let id = deviceManager.getAudioDeviceID(for: uid), deviceManager.isUsableInputDeviceID(id) {
                 deviceID = id
                 break
             }
@@ -742,10 +767,48 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
         if status != noErr {
             AppLogger.warning("Failed to set preferred input device", category: .recordingManager, extra: ["status": status, "deviceID": id])
+            applySystemDefaultInputDevice(to: inputUnit, reason: "priority_device_set_failed")
         } else {
             AppLogger.info("Set preferred input device", category: .recordingManager, extra: ["deviceID": id])
         }
         logDeviceDiagnostics(for: id, label: "priority")
+    }
+
+    private func applySystemDefaultInputDevice(to inputUnit: AudioUnit, reason: String) {
+        guard let defaultDeviceID = deviceManager.getDefaultInputDeviceID() else {
+            AppLogger.warning(
+                "Fallback to system default input device failed: no valid default device",
+                category: .recordingManager,
+                extra: ["reason": reason]
+            )
+            return
+        }
+
+        var deviceIDToSet = defaultDeviceID
+        let size = UInt32(MemoryLayout<AudioObjectID>.size)
+        let status = AudioUnitSetProperty(
+            inputUnit,
+            kAudioOutputUnitProperty_CurrentDevice,
+            kAudioUnitScope_Global,
+            0,
+            &deviceIDToSet,
+            size
+        )
+
+        if status == noErr {
+            AppLogger.info(
+                "Applied fallback to system default input device",
+                category: .recordingManager,
+                extra: ["reason": reason, "deviceID": defaultDeviceID]
+            )
+            logDeviceDiagnostics(for: defaultDeviceID, label: "fallbackSystemDefault")
+        } else {
+            AppLogger.warning(
+                "Failed to apply fallback system default input device",
+                category: .recordingManager,
+                extra: ["reason": reason, "status": status, "deviceID": defaultDeviceID]
+            )
+        }
     }
 
     private func configureInputIO(for inputNode: AVAudioInputNode) {
