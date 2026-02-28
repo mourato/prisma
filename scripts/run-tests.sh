@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================================
-# run-tests.sh - Runs tests for MeetingAssistant with formatted output
+# run-tests.sh - Runs tests with formatted output
 # =============================================================================
 
 set -u
@@ -8,7 +8,10 @@ set -o pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-XCODEPROJ="${PROJECT_DIR}/MeetingAssistant.xcodeproj"
+# shellcheck source=scripts/config/app_identity.sh
+source "${SCRIPT_DIR}/config/app_identity.sh"
+
+XCODEPROJ="${PROJECT_DIR}/${XCODEPROJ_NAME}"
 
 # shellcheck source=scripts/lib/agent-output.sh
 source "${SCRIPT_DIR}/lib/agent-output.sh"
@@ -99,7 +102,7 @@ if [ ! -d "${XCODEPROJ}" ]; then
         ma_agent_emit_result "test" "FAIL" 0 "${LOG_PATH}" 1 "${MESSAGE}" "${RESULT_PATH}"
     else
         echo -e "${RED}Error: ${MESSAGE}${NC}"
-        echo -e "${YELLOW}Ensure you are in the repo root and that MeetingAssistant.xcodeproj exists.${NC}"
+        echo -e "${YELLOW}Ensure you are in the repo root and that ${XCODEPROJ_NAME} exists.${NC}"
     fi
     exit 1
 fi

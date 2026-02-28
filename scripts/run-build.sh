@@ -9,11 +9,13 @@ set -o pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
+# shellcheck source=scripts/config/app_identity.sh
+source "${SCRIPT_DIR}/config/app_identity.sh"
+
 # shellcheck source=scripts/lib/agent-output.sh
 source "${SCRIPT_DIR}/lib/agent-output.sh"
 
-APP_NAME="MeetingAssistant"
-XCODEPROJ="${PROJECT_ROOT}/MeetingAssistant.xcodeproj"
+XCODEPROJ="${PROJECT_ROOT}/${XCODEPROJ_NAME}"
 DERIVED_DATA="${PROJECT_ROOT}/.xcode-build"
 
 CONFIGURATION="Debug"
@@ -97,12 +99,12 @@ START_TIME=$(date +%s)
 
 # Start progress indicator
 if [ "${AGENT_MODE}" -eq 1 ]; then
-    ma_agent_progress_start "Building ${APP_NAME} (${CONFIGURATION})"
+    ma_agent_progress_start "Building ${APP_PRODUCT_NAME} (${CONFIGURATION})"
 fi
 
 "${SAFE_XCODEBUILD_SCRIPT}" \
     --project "${XCODEPROJ}" \
-    --scheme "${APP_NAME}" \
+    --scheme "${APP_SCHEME}" \
     --configuration "${CONFIGURATION}" \
     --derived-data "${DERIVED_DATA}" \
     --destination 'platform=macOS' \
@@ -143,7 +145,7 @@ if [ "${AGENT_MODE}" -eq 1 ]; then
     exit "${EXIT_CODE}"
 fi
 
-echo "Building ${APP_NAME} (${CONFIGURATION})..."
+echo "Building ${APP_PRODUCT_NAME} (${CONFIGURATION})..."
 grep -E "(Compiling|Linking|Signing|BUILD|error:|warning:)" "${LOG_PATH}" | head -30 || true
 if [ "${EXIT_CODE}" -eq 0 ]; then
     echo "✓ ${CONFIGURATION} build completed"
