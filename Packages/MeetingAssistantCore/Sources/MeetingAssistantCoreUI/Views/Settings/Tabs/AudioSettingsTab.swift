@@ -26,23 +26,23 @@ public struct AudioSettingsTab: View {
             )
 
             // Audio Devices
-            MAGroup("settings.general.audio_devices".localized, icon: "mic.fill") {
-                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
-                    MAToggleRow(
+            DSGroup("settings.general.audio_devices".localized, icon: "mic.fill") {
+                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
+                    DSToggleRow(
                         "settings.general.use_system_default_input".localized,
                         description: "settings.general.use_system_default_input_desc".localized,
                         isOn: $viewModel.useSystemDefaultInput.animated()
                     )
 
                     if !viewModel.useSystemDefaultInput {
-                        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
                             Text("settings.general.audio_devices_desc".localized)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
 
-                            VStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                            VStack(spacing: AppDesignSystem.Layout.spacing8) {
                                 ForEach(viewModel.availableDevices) { device in
-                                    HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                                    HStack(spacing: AppDesignSystem.Layout.spacing12) {
                                         Image(systemName: device.isAvailable ? "mic" : "mic.slash")
                                             .foregroundStyle(device.isAvailable ? .primary : .secondary)
                                             .frame(width: 20)
@@ -54,7 +54,7 @@ public struct AudioSettingsTab: View {
                                             if device.isDefault {
                                                 Text("settings.general.device_default".localized)
                                                     .font(.caption2)
-                                                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.accent)
+                                                    .foregroundStyle(AppDesignSystem.Colors.accent)
                                             }
                                         }
 
@@ -63,16 +63,16 @@ public struct AudioSettingsTab: View {
                                         if !device.isAvailable {
                                             Text("settings.general.device_unavailable".localized)
                                                 .font(.caption2)
-                                                .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
+                                                .foregroundStyle(AppDesignSystem.Colors.error)
                                         }
 
                                         Image(systemName: "line.3.horizontal")
                                             .font(.caption)
                                             .foregroundStyle(.secondary)
                                     }
-                                    .padding(MeetingAssistantDesignSystem.Layout.spacing8)
-                                    .background(MeetingAssistantDesignSystem.Colors.subtleFill2)
-                                    .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+                                    .padding(AppDesignSystem.Layout.spacing8)
+                                    .background(AppDesignSystem.Colors.subtleFill2)
+                                    .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
                                     .onDrag {
                                         draggingDevice = device
                                         return NSItemProvider(object: device.id as NSString)
@@ -91,7 +91,7 @@ public struct AudioSettingsTab: View {
 
                     Divider()
 
-                    MAToggleRow(
+                    DSToggleRow(
                         "settings.general.mute_output_during_recording".localized,
                         description: "settings.general.mute_output_desc".localized,
                         isOn: $viewModel.muteOutputDuringRecording
@@ -99,7 +99,7 @@ public struct AudioSettingsTab: View {
 
                     Divider()
 
-                    MAToggleRow(
+                    DSToggleRow(
                         "settings.general.auto_increase_microphone_volume".localized,
                         tooltip: "settings.general.auto_increase_microphone_volume_tooltip".localized,
                         isOn: $viewModel.autoIncreaseMicrophoneVolume
@@ -108,16 +108,16 @@ public struct AudioSettingsTab: View {
             }
 
             // Sound Feedback
-            MAGroup("settings.general.sound_feedback".localized, icon: "speaker.wave.2.fill") {
-                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
-                    MAToggleRow(
+            DSGroup("settings.general.sound_feedback".localized, icon: "speaker.wave.2.fill") {
+                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
+                    DSToggleRow(
                         "settings.general.sound_feedback.enabled".localized,
                         description: "settings.general.sound_feedback.enabled_desc".localized,
                         isOn: $viewModel.soundFeedbackEnabled.animated()
                     )
 
                     if viewModel.soundFeedbackEnabled {
-                        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
+                        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
                             Divider()
 
                             soundPickerRow(
@@ -154,7 +154,7 @@ public struct AudioSettingsTab: View {
             }
             .labelsHidden()
             .pickerStyle(.menu)
-            .frame(width: MeetingAssistantDesignSystem.Layout.smallPickerWidth)
+            .frame(width: AppDesignSystem.Layout.smallPickerWidth)
 
             Button {
                 previewSound(selection.wrappedValue)

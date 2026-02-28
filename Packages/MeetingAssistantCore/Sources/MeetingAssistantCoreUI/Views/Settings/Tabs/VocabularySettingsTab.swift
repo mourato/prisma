@@ -18,8 +18,8 @@ public struct VocabularySettingsTab: View {
                 title: "settings.section.vocabulary".localized,
                 description: "settings.vocabulary.description".localized
             )
-            MAGroup("settings.vocabulary.title".localized, icon: "character.book.closed") {
-                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+            DSGroup("settings.vocabulary.title".localized, icon: "character.book.closed") {
+                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
                     Text("settings.vocabulary.description".localized)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -70,8 +70,8 @@ public struct VocabularySettingsTab: View {
     }
 
     private func row(for rule: VocabularyReplacementRule) -> some View {
-        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing4) {
+        HStack(spacing: AppDesignSystem.Layout.spacing12) {
+            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing4) {
                 Text(rule.find)
                     .font(.subheadline)
                     .fontWeight(.medium)
@@ -102,15 +102,15 @@ public struct VocabularySettingsTab: View {
                 }
             }
         }
-        .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)
-        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
+        .padding(.horizontal, AppDesignSystem.Layout.spacing12)
+        .padding(.vertical, AppDesignSystem.Layout.spacing8)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(vocabularyRowAccessibilityLabel(for: rule))
         .accessibilityHint("settings.vocabulary.actions".localized)
     }
 
     private var editorSheet: some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
             Text(editorTitle)
                 .font(.title3)
                 .fontWeight(.semibold)
@@ -119,7 +119,7 @@ public struct VocabularySettingsTab: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
                 Text("settings.vocabulary.find_label".localized)
                     .font(.subheadline)
                     .fontWeight(.medium)
@@ -127,7 +127,7 @@ public struct VocabularySettingsTab: View {
                     .textFieldStyle(.roundedBorder)
             }
 
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
                 Text("settings.vocabulary.replace_label".localized)
                     .font(.subheadline)
                     .fontWeight(.medium)
@@ -138,7 +138,7 @@ public struct VocabularySettingsTab: View {
             if let errorKey = editorErrorKey {
                 Text(errorKey.localized)
                     .font(.caption)
-                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
+                    .foregroundStyle(AppDesignSystem.Colors.error)
             }
 
             HStack {

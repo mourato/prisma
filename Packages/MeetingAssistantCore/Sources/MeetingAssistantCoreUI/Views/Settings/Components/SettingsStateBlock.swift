@@ -29,11 +29,11 @@ public struct SettingsStateBlock: View {
     }
 
     public var body: some View {
-        MACard {
-            HStack(alignment: .top, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+        DSCard {
+            HStack(alignment: .top, spacing: AppDesignSystem.Layout.spacing12) {
                 icon
 
-                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing4) {
+                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing4) {
                     Text(title)
                         .font(.headline)
 
@@ -50,7 +50,7 @@ public struct SettingsStateBlock: View {
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
-                        .padding(.top, MeetingAssistantDesignSystem.Layout.spacing4)
+                        .padding(.top, AppDesignSystem.Layout.spacing4)
                     }
                 }
 
@@ -73,11 +73,11 @@ public struct SettingsStateBlock: View {
                 .frame(width: 24, height: 24)
         case .warning:
             Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(MeetingAssistantDesignSystem.Colors.warning)
+                .foregroundStyle(AppDesignSystem.Colors.warning)
                 .frame(width: 24, height: 24)
         case .success:
             Image(systemName: "checkmark.circle.fill")
-                .foregroundStyle(MeetingAssistantDesignSystem.Colors.success)
+                .foregroundStyle(AppDesignSystem.Colors.success)
                 .frame(width: 24, height: 24)
         }
     }

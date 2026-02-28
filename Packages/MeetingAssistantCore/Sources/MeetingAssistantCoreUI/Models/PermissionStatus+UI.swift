@@ -30,13 +30,13 @@ public extension PermissionInfo {
     var statusColor: Color {
         switch state {
         case .granted:
-            MeetingAssistantDesignSystem.Colors.success
+            AppDesignSystem.Colors.success
         case .denied:
-            MeetingAssistantDesignSystem.Colors.error
+            AppDesignSystem.Colors.error
         case .notDetermined:
-            MeetingAssistantDesignSystem.Colors.warning
+            AppDesignSystem.Colors.warning
         case .restricted:
-            MeetingAssistantDesignSystem.Colors.neutral
+            AppDesignSystem.Colors.neutral
         }
     }
 
@@ -47,7 +47,7 @@ public extension PermissionInfo {
     var iconForegroundColor: Color {
         switch state {
         case .notDetermined:
-            MeetingAssistantDesignSystem.Colors.accent
+            AppDesignSystem.Colors.accent
         default:
             statusColor
         }

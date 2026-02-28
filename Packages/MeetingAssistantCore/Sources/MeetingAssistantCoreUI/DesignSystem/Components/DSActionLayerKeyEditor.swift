@@ -6,7 +6,7 @@ import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
-public struct MAActionLayerKeyEditor: View {
+public struct DSActionLayerKeyEditor: View {
     @Binding private var key: String
     private let title: String
     private let placeholder: String
@@ -28,8 +28,8 @@ public struct MAActionLayerKeyEditor: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
-            HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing6) {
+            HStack(spacing: AppDesignSystem.Layout.spacing8) {
                 Text(title)
                     .font(.subheadline)
                     .fontWeight(.medium)
@@ -50,7 +50,7 @@ public struct MAActionLayerKeyEditor: View {
             if let conflictMessage {
                 Text(conflictMessage)
                     .font(.caption)
-                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
+                    .foregroundStyle(AppDesignSystem.Colors.error)
             }
         }
     }
@@ -65,7 +65,7 @@ public struct MAActionLayerKeyEditor: View {
 }
 
 #Preview {
-    MAActionLayerKeyEditor(
+    DSActionLayerKeyEditor(
         title: "Action",
         key: .constant("A"),
         conflictMessage: nil

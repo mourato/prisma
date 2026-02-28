@@ -64,9 +64,9 @@ public struct TranscriptionCardView: View {
     }
 
     public var body: some View {
-        MACard(
-            cornerRadius: MeetingAssistantDesignSystem.Layout.largeCornerRadius,
-            padding: isExpanded ? MeetingAssistantDesignSystem.Layout.spacing16 : MeetingAssistantDesignSystem.Layout.spacing12
+        DSCard(
+            cornerRadius: AppDesignSystem.Layout.largeCornerRadius,
+            padding: isExpanded ? AppDesignSystem.Layout.spacing16 : AppDesignSystem.Layout.spacing12
         ) {
             if isExpanded {
                 expandedContent

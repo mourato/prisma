@@ -51,8 +51,8 @@ public struct SettingsInlineList<Item: Identifiable, RowContent: View>: View {
                     }
                 }
             }
-            .background(MeetingAssistantDesignSystem.Colors.subtleFill2)
-            .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+            .background(AppDesignSystem.Colors.subtleFill2)
+            .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
         }
     }
 }

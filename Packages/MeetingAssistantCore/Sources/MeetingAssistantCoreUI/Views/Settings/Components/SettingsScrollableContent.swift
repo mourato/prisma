@@ -5,7 +5,7 @@ public struct SettingsScrollableContent<Content: View>: View {
     private let content: Content
 
     public init(
-        spacing: CGFloat = MeetingAssistantDesignSystem.Layout.sectionSpacing,
+        spacing: CGFloat = AppDesignSystem.Layout.sectionSpacing,
         @ViewBuilder content: () -> Content
     ) {
         self.spacing = spacing

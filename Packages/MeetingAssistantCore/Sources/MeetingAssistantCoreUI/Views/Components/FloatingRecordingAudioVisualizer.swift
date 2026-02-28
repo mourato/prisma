@@ -35,9 +35,9 @@ struct AudioVisualizer: View {
         animationSpeed: RecordingIndicatorAnimationSpeed = .normal,
         barCount: Int,
         maxHeight: CGFloat,
-        barWidth: CGFloat = MeetingAssistantDesignSystem.Layout.spacing4,
-        barSpacing: CGFloat = MeetingAssistantDesignSystem.Layout.spacing2,
-        minHeight: CGFloat = MeetingAssistantDesignSystem.Layout.spacing8
+        barWidth: CGFloat = AppDesignSystem.Layout.spacing4,
+        barSpacing: CGFloat = AppDesignSystem.Layout.spacing2,
+        minHeight: CGFloat = AppDesignSystem.Layout.spacing8
     ) {
         self.audioMeter = audioMeter
         self.mode = mode
@@ -184,8 +184,8 @@ struct AudioVisualizer: View {
         audioMeter: AudioMeter(averagePower: 0.5, peakPower: 0.8),
         mode: .processing,
         barCount: 6,
-        maxHeight: MeetingAssistantDesignSystem.Layout.recordingIndicatorClassicWaveHeight
+        maxHeight: AppDesignSystem.Layout.recordingIndicatorClassicWaveHeight
     )
     .padding()
-    .background(MeetingAssistantDesignSystem.Colors.neutral.opacity(0.8))
+    .background(AppDesignSystem.Colors.neutral.opacity(0.8))
 }

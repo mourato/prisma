@@ -37,13 +37,13 @@ public struct AssistantIntegrationEditorSheet: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
             Text("settings.assistant.integrations.editor.title.integration".localized)
                 .font(.title3)
                 .fontWeight(.semibold)
 
             if !isBuiltInIntegration {
-                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
                     Text("settings.assistant.integrations.integration_name".localized)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -53,7 +53,7 @@ public struct AssistantIntegrationEditorSheet: View {
                 }
             }
 
-            MAModifierShortcutEditor(
+            DSModifierShortcutEditor(
                 shortcut: Binding(
                     get: { draft.integration.shortcutDefinition },
                     set: { draft.integration.shortcutDefinition = $0 }
@@ -62,7 +62,7 @@ public struct AssistantIntegrationEditorSheet: View {
             )
 
             if !isBuiltInIntegration {
-                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
                     Text("settings.assistant.integrations.integration_deeplink".localized)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -72,7 +72,7 @@ public struct AssistantIntegrationEditorSheet: View {
                 }
             }
 
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
                 Text("settings.assistant.integrations.editor.instructions".localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -82,9 +82,9 @@ public struct AssistantIntegrationEditorSheet: View {
                     set: { draft.integration.promptInstructions = $0.isEmpty ? nil : $0 }
                 ))
                 .frame(minHeight: 90)
-                .padding(MeetingAssistantDesignSystem.Layout.textAreaPadding)
+                .padding(AppDesignSystem.Layout.textAreaPadding)
                 .overlay(
-                    RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
+                    RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
                         .strokeBorder(.separator, lineWidth: 1)
                 )
             }
@@ -96,7 +96,7 @@ public struct AssistantIntegrationEditorSheet: View {
                     Label("settings.assistant.integrations.editor.advanced".localized, systemImage: "gearshape")
                 }
                 .buttonStyle(.plain)
-                .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing12)
+                .padding(.vertical, AppDesignSystem.Layout.spacing12)
             }
 
             HStack {
@@ -106,7 +106,7 @@ public struct AssistantIntegrationEditorSheet: View {
                     } label: {
                         Text("settings.assistant.integrations.editor.delete".localized)
                     }
-                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
+                    .foregroundStyle(AppDesignSystem.Colors.error)
                 }
 
                 Spacer()
@@ -117,7 +117,7 @@ public struct AssistantIntegrationEditorSheet: View {
                 .keyboardShortcut(.defaultAction)
             }
         }
-        .padding(MeetingAssistantDesignSystem.Layout.spacing20)
+        .padding(AppDesignSystem.Layout.spacing20)
         .frame(minWidth: 560, minHeight: 480)
         .onChange(of: draft.integration.shortcutDefinition) { _, _ in
             shortcutConflictMessage = nil
@@ -132,7 +132,7 @@ public struct AssistantIntegrationEditorSheet: View {
     }
 
     private var placeholderSection: some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
             Text("settings.assistant.integrations.editor.placeholders.title".localized)
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -142,9 +142,9 @@ public struct AssistantIntegrationEditorSheet: View {
                 .foregroundStyle(.secondary)
 
             LazyVGrid(
-                columns: [GridItem(.adaptive(minimum: 220), spacing: MeetingAssistantDesignSystem.Layout.spacing8)],
+                columns: [GridItem(.adaptive(minimum: 220), spacing: AppDesignSystem.Layout.spacing8)],
                 alignment: .leading,
-                spacing: MeetingAssistantDesignSystem.Layout.spacing8
+                spacing: AppDesignSystem.Layout.spacing8
             ) {
                 placeholderButton(token: AssistantIntegrationDeepLinkShortcode.finalText)
                 placeholderButton(token: AssistantIntegrationDeepLinkShortcode.finalTextURLEncoded)
@@ -160,7 +160,7 @@ public struct AssistantIntegrationEditorSheet: View {
                     )
                 )
                 .font(.caption)
-                .foregroundStyle(MeetingAssistantDesignSystem.Colors.success)
+                .foregroundStyle(AppDesignSystem.Colors.success)
             }
         }
     }
@@ -169,11 +169,11 @@ public struct AssistantIntegrationEditorSheet: View {
         let isUsedInDeepLink = draft.integration.deepLink.contains(token)
         let isJustCopied = copiedPlaceholderToken == token
 
-        return HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
+        return HStack(spacing: AppDesignSystem.Layout.spacing6) {
             Button {
                 copyPlaceholder(token)
             } label: {
-                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
+                HStack(spacing: AppDesignSystem.Layout.spacing6) {
                     Text(token)
                         .font(.system(.caption, design: .monospaced))
                         .lineLimit(1)
@@ -186,14 +186,14 @@ public struct AssistantIntegrationEditorSheet: View {
                         .font(.caption)
                         .foregroundStyle(isUsedInDeepLink ? Color.accentColor : Color.secondary)
                 }
-                .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing10)
-                .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
+                .padding(.horizontal, AppDesignSystem.Layout.spacing10)
+                .padding(.vertical, AppDesignSystem.Layout.spacing8)
                 .background(
-                    RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
+                    RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
                         .fill(isUsedInDeepLink ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.08))
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
+                    RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
                         .strokeBorder(isUsedInDeepLink ? Color.accentColor.opacity(0.55) : Color.secondary.opacity(0.2), lineWidth: 1)
                 )
                 .opacity(isJustCopied ? 0.9 : 1)
@@ -222,7 +222,7 @@ public struct AssistantIntegrationEditorSheet: View {
                 ),
                 arrowEdge: .bottom
             ) {
-                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
                     Text(token)
                         .font(.system(.caption, design: .monospaced))
                         .foregroundStyle(.secondary)
@@ -230,7 +230,7 @@ public struct AssistantIntegrationEditorSheet: View {
                     Text(placeholderMeaning(for: token))
                         .font(.callout)
 
-                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing4) {
+                    VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing4) {
                         Text("settings.assistant.integrations.editor.placeholders.example_title".localized)
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -240,7 +240,7 @@ public struct AssistantIntegrationEditorSheet: View {
                             .textSelection(.enabled)
                     }
                 }
-                .padding(MeetingAssistantDesignSystem.Layout.spacing12)
+                .padding(AppDesignSystem.Layout.spacing12)
                 .frame(width: 300, alignment: .leading)
             }
         }

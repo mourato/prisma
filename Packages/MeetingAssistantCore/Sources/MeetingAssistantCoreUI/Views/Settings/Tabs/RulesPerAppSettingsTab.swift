@@ -62,8 +62,8 @@ public struct RulesPerAppSettingsTab: View {
     }
 
     private var appRulesSection: some View {
-        MAGroup("settings.rules_per_app.title".localized, icon: "slider.horizontal.3") {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+        DSGroup("settings.rules_per_app.title".localized, icon: "slider.horizontal.3") {
+            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
                 Text("settings.rules_per_app.description".localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -85,8 +85,8 @@ public struct RulesPerAppSettingsTab: View {
     }
 
     private var websitesSection: some View {
-        MAGroup("settings.markdown_targets.websites.title".localized, icon: "globe") {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+        DSGroup("settings.markdown_targets.websites.title".localized, icon: "globe") {
+            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
                 Text("settings.markdown_targets.websites.desc".localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -128,20 +128,20 @@ public struct RulesPerAppSettingsTab: View {
                     }
                 }
             }
-            .background(MeetingAssistantDesignSystem.Colors.subtleFill2)
-            .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+            .background(AppDesignSystem.Colors.subtleFill2)
+            .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
 
             Spacer()
         }
     }
 
     private func appRow(for resolvedRule: ResolvedDictationAppRule) -> some View {
-        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+        HStack(spacing: AppDesignSystem.Layout.spacing12) {
             AppIconView(
                 bundleIdentifier: resolvedRule.rule.bundleIdentifier,
                 fallbackSystemName: "app.fill",
                 size: 32,
-                cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius
+                cornerRadius: AppDesignSystem.Layout.smallCornerRadius
             )
             .padding(.leading, 8)
 
@@ -172,15 +172,15 @@ public struct RulesPerAppSettingsTab: View {
                 }
             }
         }
-        .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)
-        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
+        .padding(.horizontal, AppDesignSystem.Layout.spacing12)
+        .padding(.vertical, AppDesignSystem.Layout.spacing8)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(appRowAccessibilityLabel(for: resolvedRule))
         .accessibilityHint("settings.rules_per_app.actions".localized)
     }
 
     private var addAppSheet: some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
             Text("settings.rules_per_app.add_app".localized)
                 .font(.title3)
                 .fontWeight(.semibold)
@@ -206,12 +206,12 @@ public struct RulesPerAppSettingsTab: View {
                 .frame(maxWidth: .infinity)
             } else {
                 List(viewModel.filteredAppCatalog) { app in
-                    HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                    HStack(spacing: AppDesignSystem.Layout.spacing12) {
                         AppIconView(
                             bundleIdentifier: app.bundleIdentifier,
                             fallbackSystemName: "app.fill",
                             size: 32,
-                            cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius
+                            cornerRadius: AppDesignSystem.Layout.smallCornerRadius
                         )
 
                         VStack(alignment: .leading, spacing: 2) {
@@ -253,10 +253,10 @@ public struct RulesPerAppSettingsTab: View {
     }
 
     private func websiteRow(_ target: WebContextTarget) -> some View {
-        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+        HStack(spacing: AppDesignSystem.Layout.spacing12) {
             Image(systemName: "globe")
                 .font(.title3)
-                .foregroundStyle(MeetingAssistantDesignSystem.Colors.iconHighlight)
+                .foregroundStyle(AppDesignSystem.Colors.iconHighlight)
                 .frame(width: 24)
 
             VStack(alignment: .leading, spacing: 2) {
@@ -289,8 +289,8 @@ public struct RulesPerAppSettingsTab: View {
                 }
             }
         }
-        .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)
-        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
+        .padding(.horizontal, AppDesignSystem.Layout.spacing12)
+        .padding(.vertical, AppDesignSystem.Layout.spacing8)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(websiteRowAccessibilityLabel(for: target))
         .accessibilityHint("settings.rules_per_app.actions".localized)
@@ -310,7 +310,7 @@ public struct RulesPerAppSettingsTab: View {
     }
 
     private func websiteRuleSummary(for target: WebContextTarget) -> some View {
-        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+        HStack(spacing: AppDesignSystem.Layout.spacing8) {
             Text(
                 target.forceMarkdownOutput
                     ? "settings.markdown_targets.websites.summary.markdown_on".localized
@@ -322,7 +322,7 @@ public struct RulesPerAppSettingsTab: View {
             .padding(.vertical, 2)
             .background(
                 Capsule()
-                    .fill(MeetingAssistantDesignSystem.Colors.subtleFill2)
+                    .fill(AppDesignSystem.Colors.subtleFill2)
             )
             .foregroundStyle(.secondary)
             .accessibilityLabel("settings.rules_per_app.markdown.title".localized)
@@ -350,7 +350,7 @@ public struct RulesPerAppSettingsTab: View {
                     .padding(.vertical, 2)
                     .background(
                         Capsule()
-                            .fill(MeetingAssistantDesignSystem.Colors.subtleFill2)
+                            .fill(AppDesignSystem.Colors.subtleFill2)
                     )
                     .foregroundStyle(.secondary)
                     .accessibilityLabel("settings.markdown_targets.websites.auto_record.title".localized)
@@ -359,7 +359,7 @@ public struct RulesPerAppSettingsTab: View {
     }
 
     private func appRuleSummary(for rule: DictationAppRule) -> some View {
-        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+        HStack(spacing: AppDesignSystem.Layout.spacing8) {
             if rule.forceMarkdownOutput {
                 Text("MD")
                     .font(.caption2)
@@ -368,7 +368,7 @@ public struct RulesPerAppSettingsTab: View {
                     .padding(.vertical, 2)
                     .background(
                         Capsule()
-                            .fill(MeetingAssistantDesignSystem.Colors.subtleFill2)
+                            .fill(AppDesignSystem.Colors.subtleFill2)
                     )
                     .foregroundStyle(.secondary)
                     .accessibilityLabel("settings.rules_per_app.markdown.title".localized)

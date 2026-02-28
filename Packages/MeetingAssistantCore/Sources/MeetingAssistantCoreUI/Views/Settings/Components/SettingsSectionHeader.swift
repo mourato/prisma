@@ -3,14 +3,14 @@ import SwiftUI
 public struct SettingsSectionHeader: View {
     private let title: String
     private let description: String?
-    private let calloutKind: MACallout.Kind?
+    private let calloutKind: DSCallout.Kind?
     private let calloutTitle: String?
     private let calloutMessage: String?
 
     public init(
         title: String,
         description: String? = nil,
-        calloutKind: MACallout.Kind? = nil,
+        calloutKind: DSCallout.Kind? = nil,
         calloutTitle: String? = nil,
         calloutMessage: String? = nil
     ) {
@@ -22,7 +22,7 @@ public struct SettingsSectionHeader: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
             Text(title)
                 .font(.headline)
 
@@ -39,7 +39,7 @@ public struct SettingsSectionHeader: View {
                !calloutTitle.isEmpty,
                !calloutMessage.isEmpty
             {
-                MACallout(kind: calloutKind, title: calloutTitle, message: calloutMessage)
+                DSCallout(kind: calloutKind, title: calloutTitle, message: calloutMessage)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

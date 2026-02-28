@@ -79,18 +79,18 @@ public struct MeetingSettingsTab: View {
                 description: "settings.shortcuts.meeting_desc".localized
             )
 
-            MAShortcutSettingsSection(
+            ShortcutSettingsSection(
                 groupTitle: "settings.shortcuts.meeting".localized,
                 descriptionText: "settings.shortcuts.meeting_desc".localized,
                 settingsContent: {
-                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                    VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
                         if let healthPresentation = shortcutsViewModel.shortcutCaptureHealthPresentation {
                             ShortcutCaptureHealthStatusView(presentation: healthPresentation) {
                                 shortcutsViewModel.openShortcutCaptureHealthAction()
                             }
                         }
 
-                        MAModifierShortcutEditor(
+                        DSModifierShortcutEditor(
                             shortcut: $shortcutsViewModel.meetingShortcutDefinition,
                             conflictMessage: shortcutsViewModel.meetingModifierConflictMessage
                         )
@@ -98,7 +98,7 @@ public struct MeetingSettingsTab: View {
                 }
             )
 
-            MAGroup("settings.meetings.monitoring_access.title".localized, icon: "app.badge") {
+            DSGroup("settings.meetings.monitoring_access.title".localized, icon: "app.badge") {
                 SettingsDrillDownListRow(
                     destination: MeetingPageRoute.monitoringTargets,
                     title: "settings.meetings.monitoring_access.button".localized,
@@ -107,29 +107,29 @@ public struct MeetingSettingsTab: View {
                 )
             }
 
-            MAGroup("settings.meetings.workflow".localized, icon: "bolt.fill") {
-                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
-                    MAToggleRow(
+            DSGroup("settings.meetings.workflow".localized, icon: "bolt.fill") {
+                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
+                    DSToggleRow(
                         "settings.general.auto_start".localized,
                         isOn: $meetingViewModel.settings.autoStartRecording
                     )
 
                     Divider()
 
-                    MAToggleRow(
+                    DSToggleRow(
                         "settings.general.merge_audio".localized,
                         isOn: $meetingViewModel.settings.shouldMergeAudioFiles
                     )
                 }
             }
 
-            MAGroup("settings.meetings.speaker_identification".localized, icon: "person.wave.2.fill") {
+            DSGroup("settings.meetings.speaker_identification".localized, icon: "person.wave.2.fill") {
                 SpeakerIdentificationSettingsSection(settings: meetingViewModel.settings)
             }
 
-            MAGroup("settings.meetings.export".localized, icon: "folder.fill") {
-                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
-                    MAToggleRow(
+            DSGroup("settings.meetings.export".localized, icon: "folder.fill") {
+                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
+                    DSToggleRow(
                         "settings.meetings.auto_export".localized,
                         description: "settings.meetings.auto_export_desc".localized,
                         isOn: $meetingViewModel.settings.autoExportSummaries
@@ -160,7 +160,7 @@ public struct MeetingSettingsTab: View {
 
                         Divider()
 
-                        MAToggleRow(
+                        DSToggleRow(
                             "settings.meetings.template_enabled".localized,
                             description: "settings.meetings.template_enabled_desc".localized,
                             isOn: $meetingViewModel.settings.summaryTemplateEnabled
@@ -187,15 +187,15 @@ public struct MeetingSettingsTab: View {
                         if meetingViewModel.settings.summaryExportFolder == nil {
                             Text("settings.meetings.export_location_required".localized)
                                 .font(.caption)
-                                .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
+                                .foregroundStyle(AppDesignSystem.Colors.error)
                         }
 
                         if meetingViewModel.settings.summaryTemplateEnabled {
                             Divider()
 
-                            HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                            HStack(spacing: AppDesignSystem.Layout.spacing8) {
                                 Image(systemName: "doc.text")
-                                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.iconHighlight)
+                                    .foregroundStyle(AppDesignSystem.Colors.iconHighlight)
                                 Text("settings.meetings.template".localized)
                                     .font(.subheadline)
                                     .fontWeight(.semibold)
@@ -220,9 +220,9 @@ public struct MeetingSettingsTab: View {
                 }
             }
 
-            MAGroup("settings.meetings.prompts".localized, icon: "sparkles") {
-                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.cardPadding) {
-                    MAToggleRow(
+            DSGroup("settings.meetings.prompts".localized, icon: "sparkles") {
+                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.cardPadding) {
+                    DSToggleRow(
                         "settings.meetings.autodetect_type".localized,
                         description: "settings.meetings.autodetect_type_desc".localized,
                         isOn: $meetingViewModel.settings.meetingTypeAutoDetectEnabled
@@ -248,7 +248,7 @@ public struct MeetingSettingsTab: View {
                         .controlSize(.regular)
                     }
 
-                    VStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                    VStack(spacing: AppDesignSystem.Layout.spacing8) {
                         noPostProcessingRow()
                         ForEach(meetingViewModel.availablePrompts) { prompt in
                             promptRow(prompt: prompt)
@@ -261,7 +261,7 @@ public struct MeetingSettingsTab: View {
 
     private var monitoringTargetsPage: some View {
         SettingsScrollableContent {
-            MACallout(
+            DSCallout(
                 kind: .info,
                 title: "settings.meetings.monitoring_access.context_title".localized,
                 message: "settings.meetings.monitoring_access.context_desc".localized
@@ -299,8 +299,8 @@ public struct MeetingSettingsTab: View {
     }
 
     private var webTargetsSection: some View {
-        MAGroup("settings.meetings.web_targets.title".localized, icon: "globe") {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+        DSGroup("settings.meetings.web_targets.title".localized, icon: "globe") {
+            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
                 Text("settings.meetings.web_targets.desc".localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -327,7 +327,7 @@ public struct MeetingSettingsTab: View {
     }
 
     private func webTargetRow(_ target: WebMeetingTarget) -> some View {
-        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+        HStack(spacing: AppDesignSystem.Layout.spacing12) {
             Image(systemName: target.app.icon)
                 .font(.title3)
                 .foregroundStyle(target.app.color)
@@ -361,8 +361,8 @@ public struct MeetingSettingsTab: View {
                 }
             }
         }
-        .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)
-        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
+        .padding(.horizontal, AppDesignSystem.Layout.spacing12)
+        .padding(.vertical, AppDesignSystem.Layout.spacing8)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(webTargetAccessibilityLabel(for: target))
         .accessibilityHint("settings.rules_per_app.actions".localized)
@@ -401,7 +401,7 @@ public struct MeetingSettingsTab: View {
             onSelect: isAutoDetectEnabled ? nil : {
                 meetingViewModel.selectPrompt(prompt.id)
             },
-            unselectedStrokeColor: MeetingAssistantDesignSystem.Colors.separator.opacity(0.4),
+            unselectedStrokeColor: AppDesignSystem.Colors.separator.opacity(0.4),
             menuAccessibilityLabel: "transcription.ai_actions".localized
         ) {
             promptMenuContent(prompt: prompt, isSelected: isSelected, isAutoDetectEnabled: isAutoDetectEnabled)

@@ -6,7 +6,7 @@ import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
-public struct MAToggleRow: View {
+public struct DSToggleRow: View {
     private let title: String
     private let description: String?
     private let tooltip: String?
@@ -21,7 +21,7 @@ public struct MAToggleRow: View {
 
     public var body: some View {
         HStack {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing4) {
+            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing4) {
                 if let tooltip {
                     Text(title)
                         .font(.body)
@@ -56,7 +56,7 @@ public struct MAToggleRow: View {
 
 #Preview("Toggle Row") {
     PreviewStateContainer(true) { isOn in
-        MAToggleRow(
+        DSToggleRow(
             "Enable smart post-processing",
             description: "Automatically format transcript output after each recording.",
             tooltip: "This can increase processing time for larger meetings.",

@@ -7,7 +7,7 @@ import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
-public struct MAModifierShortcutEditor: View {
+public struct DSModifierShortcutEditor: View {
     @Binding private var shortcut: ShortcutDefinition?
     private let conflictMessage: String?
     private let showsTitle: Bool
@@ -41,14 +41,14 @@ public struct MAModifierShortcutEditor: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
             if showsTitle {
                 Text("settings.shortcuts.modifier.title".localized)
                     .font(.subheadline)
                     .fontWeight(.medium)
             }
 
-            HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+            HStack(spacing: AppDesignSystem.Layout.spacing8) {
                 Button {
                     openRecordingPopover()
                 } label: {
@@ -59,7 +59,7 @@ public struct MAModifierShortcutEditor: View {
                 .popover(isPresented: $isPopoverPresented, arrowEdge: .top) {
                     recordingPopover
                         .frame(width: 360)
-                        .padding(MeetingAssistantDesignSystem.Layout.spacing12)
+                        .padding(AppDesignSystem.Layout.spacing12)
                 }
 
                 if shortcut != nil {
@@ -79,7 +79,7 @@ public struct MAModifierShortcutEditor: View {
             if let conflict = conflictMessage, !isPopoverPresented {
                 Text(conflict)
                     .font(.caption)
-                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
+                    .foregroundStyle(AppDesignSystem.Colors.error)
             }
         }
         .onChange(of: conflictMessage) { _, newValue in
@@ -116,7 +116,7 @@ public struct MAModifierShortcutEditor: View {
     }
 
     private var shortcutInputField: some View {
-        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+        HStack(spacing: AppDesignSystem.Layout.spacing8) {
             if displayLabels.isEmpty {
                 Text("settings.shortcuts.modifier.input_placeholder".localized)
                     .foregroundStyle(.secondary)
@@ -127,23 +127,23 @@ public struct MAModifierShortcutEditor: View {
 
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing10)
-        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
+        .padding(.horizontal, AppDesignSystem.Layout.spacing10)
+        .padding(.vertical, AppDesignSystem.Layout.spacing8)
         .frame(minHeight: 38)
         .background(
-            RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
-                .fill(MeetingAssistantDesignSystem.Colors.controlBackground)
+            RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
+                .fill(AppDesignSystem.Colors.controlBackground)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
-                .strokeBorder(MeetingAssistantDesignSystem.Colors.separator, lineWidth: 1)
+            RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
+                .strokeBorder(AppDesignSystem.Colors.separator, lineWidth: 1)
         )
         .contentShape(Rectangle())
     }
 
     private var recordingPopover: some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing10) {
-            HStack(alignment: .center, spacing: MeetingAssistantDesignSystem.Layout.spacing10) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing10) {
+            HStack(alignment: .center, spacing: AppDesignSystem.Layout.spacing10) {
                 Text("settings.shortcuts.modifier.popover.recording".localized)
                     .font(.subheadline)
                     .fontWeight(.semibold)
@@ -160,10 +160,10 @@ public struct MAModifierShortcutEditor: View {
                     Image(systemName: "xmark")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .padding(MeetingAssistantDesignSystem.Layout.compactInset)
+                        .padding(AppDesignSystem.Layout.compactInset)
                         .background(
                             Circle()
-                                .fill(MeetingAssistantDesignSystem.Colors.secondaryFill)
+                                .fill(AppDesignSystem.Colors.secondaryFill)
                         )
                 }
                 .buttonStyle(.plain)
@@ -176,11 +176,11 @@ public struct MAModifierShortcutEditor: View {
             if let localConflictMessage {
                 Text(localConflictMessage)
                     .font(.caption)
-                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
+                    .foregroundStyle(AppDesignSystem.Colors.error)
             } else if localStatus == .success {
                 Text("settings.shortcuts.modifier.popover.success".localized)
                     .font(.caption)
-                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.success)
+                    .foregroundStyle(AppDesignSystem.Colors.success)
             } else {
                 Text("settings.shortcuts.modifier.popover.hint".localized)
                     .font(.caption)
@@ -361,13 +361,13 @@ private struct ShortcutChipRow: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         } else {
-            HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
+            HStack(spacing: AppDesignSystem.Layout.spacing6) {
                 ForEach(Array(labels.enumerated()), id: \.offset) { _, label in
                     Text(label)
                         .font(.caption)
                         .fontWeight(.semibold)
-                        .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing8)
-                        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing4)
+                        .padding(.horizontal, AppDesignSystem.Layout.spacing8)
+                        .padding(.vertical, AppDesignSystem.Layout.spacing4)
                         .background(chipBackground)
                         .foregroundStyle(chipForeground)
                         .clipShape(Capsule())
@@ -379,11 +379,11 @@ private struct ShortcutChipRow: View {
     private var chipBackground: Color {
         switch colorStyle {
         case .neutral:
-            MeetingAssistantDesignSystem.Colors.secondaryFill
+            AppDesignSystem.Colors.secondaryFill
         case .success:
-            MeetingAssistantDesignSystem.Colors.success.opacity(0.2)
+            AppDesignSystem.Colors.success.opacity(0.2)
         case .error:
-            MeetingAssistantDesignSystem.Colors.error.opacity(0.2)
+            AppDesignSystem.Colors.error.opacity(0.2)
         }
     }
 
@@ -392,9 +392,9 @@ private struct ShortcutChipRow: View {
         case .neutral:
             Color.primary
         case .success:
-            MeetingAssistantDesignSystem.Colors.success
+            AppDesignSystem.Colors.success
         case .error:
-            MeetingAssistantDesignSystem.Colors.error
+            AppDesignSystem.Colors.error
         }
     }
 }
@@ -643,7 +643,7 @@ private final class ShortcutRecorderController: ObservableObject {
 
 #Preview("Empty") {
     PreviewStateContainer(ShortcutDefinition?.none) { shortcut in
-        MAModifierShortcutEditor(
+        DSModifierShortcutEditor(
             shortcut: shortcut,
             conflictMessage: nil
         )
@@ -662,7 +662,7 @@ private final class ShortcutRecorderController: ObservableObject {
             )
         )
     ) { shortcut in
-        MAModifierShortcutEditor(
+        DSModifierShortcutEditor(
             shortcut: shortcut,
             conflictMessage: "settings.shortcuts.modifier.conflict".localized(with: "Meeting Shortcut")
         )

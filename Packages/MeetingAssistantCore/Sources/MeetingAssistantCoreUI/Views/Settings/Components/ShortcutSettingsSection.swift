@@ -6,7 +6,7 @@ import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
-public struct MAShortcutSettingsSection<SettingsContent: View>: View {
+public struct ShortcutSettingsSection<SettingsContent: View>: View {
     private let groupTitle: String
     private let groupIcon: String
     private let descriptionText: String
@@ -25,17 +25,17 @@ public struct MAShortcutSettingsSection<SettingsContent: View>: View {
     }
 
     public var body: some View {
-        MAGroup(
+        DSGroup(
             groupTitle,
             icon: groupIcon,
             headerAccessory: {
-                MAInfoPopoverButton(
+                DSInfoPopoverButton(
                     title: "settings.shortcuts.external_remap.title".localized,
                     message: "settings.shortcuts.external_remap.message".localized
                 )
             }
         ) {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
                 Text(descriptionText)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -47,7 +47,7 @@ public struct MAShortcutSettingsSection<SettingsContent: View>: View {
 }
 
 #Preview {
-    MAShortcutSettingsSection(
+    ShortcutSettingsSection(
         groupTitle: "Shortcuts",
         descriptionText: "Configure the shortcut behavior."
     ) {

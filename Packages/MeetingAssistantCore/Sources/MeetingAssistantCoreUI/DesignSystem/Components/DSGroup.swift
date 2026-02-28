@@ -6,7 +6,7 @@ import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
-public struct MAGroup<Content: View, HeaderAccessory: View>: View {
+public struct DSGroup<Content: View, HeaderAccessory: View>: View {
     private let title: String
     private let icon: String?
     private let headerAccessory: HeaderAccessory
@@ -34,11 +34,11 @@ public struct MAGroup<Content: View, HeaderAccessory: View>: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing10) {
-            HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing10) {
+            HStack(spacing: AppDesignSystem.Layout.spacing8) {
                 if let icon {
                     Image(systemName: icon)
-                        .foregroundStyle(MeetingAssistantDesignSystem.Colors.accent)
+                        .foregroundStyle(AppDesignSystem.Colors.accent)
                 }
 
                 Text(title)
@@ -47,9 +47,9 @@ public struct MAGroup<Content: View, HeaderAccessory: View>: View {
 
                 headerAccessory
             }
-            .padding(.leading, MeetingAssistantDesignSystem.Layout.spacing4)
+            .padding(.leading, AppDesignSystem.Layout.spacing4)
 
-            MACard {
+            DSCard {
                 content
             }
             .frame(maxWidth: .infinity, alignment: .leading)

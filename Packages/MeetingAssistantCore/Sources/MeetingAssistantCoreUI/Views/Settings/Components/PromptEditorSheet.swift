@@ -54,7 +54,7 @@ public struct PromptEditorSheet: View {
 
             // Content
             ScrollView {
-                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.sectionSpacing) {
+                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.sectionSpacing) {
                     titleSection
                     iconSection
                     descriptionSection
@@ -81,13 +81,13 @@ public struct PromptEditorSheet: View {
             Spacer()
         }
         .padding()
-        .background(MeetingAssistantDesignSystem.Colors.windowBackground)
+        .background(AppDesignSystem.Colors.windowBackground)
     }
 
     // MARK: - Title Section
 
     private var titleSection: some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing6) {
             Text("prompt.title_label".localized)
                 .font(.subheadline)
                 .fontWeight(.medium)
@@ -100,18 +100,18 @@ public struct PromptEditorSheet: View {
     // MARK: - Icon Section
 
     private var iconSection: some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing6) {
             Text("prompt.icon_label".localized)
                 .font(.subheadline)
                 .fontWeight(.medium)
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                HStack(spacing: AppDesignSystem.Layout.spacing8) {
                     ForEach(PostProcessingPrompt.availableIcons, id: \.self) { icon in
                         iconButton(icon)
                     }
                 }
-                .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing4)
+                .padding(.vertical, AppDesignSystem.Layout.spacing4)
             }
         }
     }
@@ -124,13 +124,13 @@ public struct PromptEditorSheet: View {
         } label: {
             Image(systemName: icon)
                 .font(.title3)
-                .foregroundStyle(isSelected ? MeetingAssistantDesignSystem.Colors.onAccent : .primary)
+                .foregroundStyle(isSelected ? AppDesignSystem.Colors.onAccent : .primary)
                 .frame(width: Constants.iconButtonSize, height: Constants.iconButtonSize)
-                .background(isSelected ? MeetingAssistantDesignSystem.Colors.accent : MeetingAssistantDesignSystem.Colors.controlBackground)
-                .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+                .background(isSelected ? AppDesignSystem.Colors.accent : AppDesignSystem.Colors.controlBackground)
+                .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
                 .overlay(
-                    RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
-                        .stroke(isSelected ? MeetingAssistantDesignSystem.Colors.accent : MeetingAssistantDesignSystem.Colors.separator, lineWidth: 1)
+                    RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
+                        .stroke(isSelected ? AppDesignSystem.Colors.accent : AppDesignSystem.Colors.separator, lineWidth: 1)
                 )
         }
         .buttonStyle(.plain)
@@ -141,7 +141,7 @@ public struct PromptEditorSheet: View {
     // MARK: - Description Section
 
     private var descriptionSection: some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing6) {
             HStack {
                 Text("prompt.description_label".localized)
                     .font(.subheadline)
@@ -160,7 +160,7 @@ public struct PromptEditorSheet: View {
     // MARK: - Prompt Section
 
     private var promptSection: some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing6) {
             Text("prompt.instructions_label".localized)
                 .font(.subheadline)
                 .fontWeight(.medium)
@@ -172,12 +172,12 @@ public struct PromptEditorSheet: View {
             TextEditor(text: $promptText)
                 .font(.body)
                 .frame(minHeight: Constants.promptEditorMinHeight)
-                .padding(MeetingAssistantDesignSystem.Layout.textAreaPadding)
-                .background(MeetingAssistantDesignSystem.Colors.textBackground)
-                .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+                .padding(AppDesignSystem.Layout.textAreaPadding)
+                .background(AppDesignSystem.Colors.textBackground)
+                .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
                 .overlay(
-                    RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
-                        .stroke(MeetingAssistantDesignSystem.Colors.separator, lineWidth: 1)
+                    RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
+                        .stroke(AppDesignSystem.Colors.separator, lineWidth: 1)
                 )
         }
     }
@@ -198,11 +198,11 @@ public struct PromptEditorSheet: View {
             }
             .keyboardShortcut(.return)
             .buttonStyle(.borderedProminent)
-            .tint(MeetingAssistantDesignSystem.Colors.accent)
+            .tint(AppDesignSystem.Colors.accent)
             .disabled(!isValid)
         }
-        .padding(MeetingAssistantDesignSystem.Layout.spacing16)
-        .background(MeetingAssistantDesignSystem.Colors.windowBackground)
+        .padding(AppDesignSystem.Layout.spacing16)
+        .background(AppDesignSystem.Colors.windowBackground)
     }
 
     // MARK: - Validation

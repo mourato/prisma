@@ -86,7 +86,7 @@ public class TranscriptionSettingsViewModel: ObservableObject {
     private let meetingRepository: MeetingRepository
     private let meetingQAService: any MeetingQAServiceProtocol
     private let settings: AppSettingsStore
-    private let logger = Logger(subsystem: "MeetingAssistant", category: "TranscriptionSettingsViewModel")
+    private let logger = Logger(subsystem: AppIdentity.logSubsystem, category: "TranscriptionSettingsViewModel")
     private var lastAskedQuestion: String?
     private var lastQuestionTranscriptionId: UUID?
 

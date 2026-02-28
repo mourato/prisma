@@ -24,8 +24,8 @@ public struct TranscriptionStatusView: View {
                 expandedDetails
             }
         }
-        .padding(MeetingAssistantDesignSystem.Layout.spacing12)
-        .background(statusBackground, in: RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.cardCornerRadius))
+        .padding(AppDesignSystem.Layout.spacing12)
+        .background(statusBackground, in: RoundedRectangle(cornerRadius: AppDesignSystem.Layout.cardCornerRadius))
     }
 
     // MARK: - Main Status Row
@@ -110,7 +110,7 @@ public struct TranscriptionStatusView: View {
                 ZStack(alignment: .leading) {
                     // Background track
                     Capsule()
-                        .fill(MeetingAssistantDesignSystem.Colors.neutral.opacity(0.2))
+                        .fill(AppDesignSystem.Colors.neutral.opacity(0.2))
                         .frame(height: 4)
 
                     // Progress fill
@@ -186,18 +186,18 @@ public struct TranscriptionStatusView: View {
     private func errorRow(error: TranscriptionStatusError) -> some View {
         HStack(spacing: 6) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
+                .foregroundStyle(AppDesignSystem.Colors.error)
 
             VStack(alignment: .leading) {
                 Text(error.localizedDescription)
-                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
+                    .foregroundStyle(AppDesignSystem.Colors.error)
                 Text("transcription.error.click_retry".localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         }
-        .padding(MeetingAssistantDesignSystem.Layout.compactInset)
-        .background(MeetingAssistantDesignSystem.Colors.error.opacity(0.1), in: RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+        .padding(AppDesignSystem.Layout.compactInset)
+        .background(AppDesignSystem.Colors.error.opacity(0.1), in: RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
     }
 
     private var chevronButton: some View {
@@ -214,11 +214,11 @@ public struct TranscriptionStatusView: View {
     private var statusBackground: some ShapeStyle {
         switch (viewModel.serviceState, viewModel.hasBlockingError) {
         case (_, true):
-            AnyShapeStyle(MeetingAssistantDesignSystem.Colors.error.opacity(0.1))
+            AnyShapeStyle(AppDesignSystem.Colors.error.opacity(0.1))
         case (.connected, _) where viewModel.isProcessing:
-            AnyShapeStyle(MeetingAssistantDesignSystem.Colors.accent.opacity(0.1))
+            AnyShapeStyle(AppDesignSystem.Colors.accent.opacity(0.1))
         case (.connected, _) where viewModel.phase == .completed:
-            AnyShapeStyle(MeetingAssistantDesignSystem.Colors.success.opacity(0.1))
+            AnyShapeStyle(AppDesignSystem.Colors.success.opacity(0.1))
         default:
             AnyShapeStyle(.ultraThinMaterial)
         }
@@ -226,42 +226,42 @@ public struct TranscriptionStatusView: View {
 
     private var statusTextColor: Color {
         if viewModel.hasBlockingError {
-            return MeetingAssistantDesignSystem.Colors.error
+            return AppDesignSystem.Colors.error
         } else if viewModel.isProcessing {
-            return MeetingAssistantDesignSystem.Colors.accent
+            return AppDesignSystem.Colors.accent
         } else if viewModel.phase == .completed {
-            return MeetingAssistantDesignSystem.Colors.success
+            return AppDesignSystem.Colors.success
         }
         return .primary
     }
 
     private var statusIconBackground: Color {
         if viewModel.hasBlockingError {
-            return MeetingAssistantDesignSystem.Colors.error.opacity(0.15)
+            return AppDesignSystem.Colors.error.opacity(0.15)
         } else if viewModel.isProcessing {
-            return MeetingAssistantDesignSystem.Colors.accent.opacity(0.15)
+            return AppDesignSystem.Colors.accent.opacity(0.15)
         } else if viewModel.phase == .completed {
-            return MeetingAssistantDesignSystem.Colors.success.opacity(0.15)
+            return AppDesignSystem.Colors.success.opacity(0.15)
         } else if viewModel.isReady {
-            return MeetingAssistantDesignSystem.Colors.success.opacity(0.15)
+            return AppDesignSystem.Colors.success.opacity(0.15)
         }
-        return MeetingAssistantDesignSystem.Colors.neutral.opacity(0.15)
+        return AppDesignSystem.Colors.neutral.opacity(0.15)
     }
 
     private var statusIconColor: Color {
         if viewModel.hasBlockingError {
-            return MeetingAssistantDesignSystem.Colors.error
+            return AppDesignSystem.Colors.error
         } else if viewModel.isProcessing {
-            return MeetingAssistantDesignSystem.Colors.accent
+            return AppDesignSystem.Colors.accent
         } else if viewModel.phase == .completed || viewModel.isReady {
-            return MeetingAssistantDesignSystem.Colors.success
+            return AppDesignSystem.Colors.success
         }
-        return MeetingAssistantDesignSystem.Colors.neutral
+        return AppDesignSystem.Colors.neutral
     }
 
     private var progressGradient: LinearGradient {
         LinearGradient(
-            colors: [MeetingAssistantDesignSystem.Colors.accent, MeetingAssistantDesignSystem.Colors.secondaryAccent],
+            colors: [AppDesignSystem.Colors.accent, AppDesignSystem.Colors.secondaryAccent],
             startPoint: .leading,
             endPoint: .trailing
         )
@@ -312,7 +312,7 @@ public struct CompactTranscriptionStatusView: View {
         if viewModel.hasBlockingError {
             return .red
         } else if viewModel.isProcessing {
-            return MeetingAssistantDesignSystem.Colors.accent
+            return AppDesignSystem.Colors.accent
         } else if viewModel.isReady {
             return .green
         }

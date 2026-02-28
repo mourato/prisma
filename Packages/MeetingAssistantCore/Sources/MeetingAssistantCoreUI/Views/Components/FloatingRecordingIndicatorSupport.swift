@@ -48,11 +48,11 @@ struct ActionIconButton: View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(MeetingAssistantDesignSystem.Colors.overlayForeground)
+                .foregroundStyle(AppDesignSystem.Colors.overlayForeground)
                 .frame(width: 20, height: 20)
                 .padding(4)
                 .background(controlBackground)
-                .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius, style: .continuous))
         }
         .buttonStyle(.plain)
         .focusable(true)
@@ -66,7 +66,7 @@ struct ActionIconButton: View {
 
     private var controlBackground: some ShapeStyle {
         if isFocused {
-            return AnyShapeStyle(MeetingAssistantDesignSystem.Colors.accent.opacity(0.35))
+            return AnyShapeStyle(AppDesignSystem.Colors.accent.opacity(0.35))
         }
         if isHovered {
             return AnyShapeStyle(Color.white.opacity(0.14))
@@ -130,18 +130,18 @@ enum FloatingRecordingIndicatorViewUtilities {
     static func controlHeight(for size: FloatingRecordingIndicatorView.IndicatorSize) -> CGFloat {
         switch size {
         case .classic:
-            MeetingAssistantDesignSystem.Layout.recordingIndicatorClassicHeight
+            AppDesignSystem.Layout.recordingIndicatorClassicHeight
         case .mini:
-            MeetingAssistantDesignSystem.Layout.recordingIndicatorMiniHeight
+            AppDesignSystem.Layout.recordingIndicatorMiniHeight
         }
     }
 
     static func contentSpacing(for size: FloatingRecordingIndicatorView.IndicatorSize) -> CGFloat {
         switch size {
         case .classic:
-            MeetingAssistantDesignSystem.Layout.recordingIndicatorClassicInnerSpacing
+            AppDesignSystem.Layout.recordingIndicatorClassicInnerSpacing
         case .mini:
-            MeetingAssistantDesignSystem.Layout.recordingIndicatorMiniInnerSpacing
+            AppDesignSystem.Layout.recordingIndicatorMiniInnerSpacing
         }
     }
 
@@ -152,27 +152,27 @@ enum FloatingRecordingIndicatorViewUtilities {
     static func promptSize(for size: FloatingRecordingIndicatorView.IndicatorSize) -> CGFloat {
         switch size {
         case .classic:
-            MeetingAssistantDesignSystem.Layout.recordingIndicatorClassicPromptSize
+            AppDesignSystem.Layout.recordingIndicatorClassicPromptSize
         case .mini:
-            MeetingAssistantDesignSystem.Layout.recordingIndicatorMiniPromptSize
+            AppDesignSystem.Layout.recordingIndicatorMiniPromptSize
         }
     }
 
     static func waveformHeight(for size: FloatingRecordingIndicatorView.IndicatorSize) -> CGFloat {
         switch size {
         case .classic:
-            MeetingAssistantDesignSystem.Layout.recordingIndicatorClassicWaveHeight
+            AppDesignSystem.Layout.recordingIndicatorClassicWaveHeight
         case .mini:
-            MeetingAssistantDesignSystem.Layout.recordingIndicatorMiniWaveHeight
+            AppDesignSystem.Layout.recordingIndicatorMiniWaveHeight
         }
     }
 
     static func waveCount(for size: FloatingRecordingIndicatorView.IndicatorSize) -> Int {
         switch size {
         case .classic:
-            MeetingAssistantDesignSystem.Layout.recordingIndicatorClassicWaveCount
+            AppDesignSystem.Layout.recordingIndicatorClassicWaveCount
         case .mini:
-            MeetingAssistantDesignSystem.Layout.recordingIndicatorMiniWaveCount
+            AppDesignSystem.Layout.recordingIndicatorMiniWaveCount
         }
     }
 
@@ -267,5 +267,5 @@ enum FloatingRecordingIndicatorViewUtilities {
         // Preview only
     }
     .padding()
-    .background(MeetingAssistantDesignSystem.Colors.neutral.opacity(0.8))
+    .background(AppDesignSystem.Colors.neutral.opacity(0.8))
 }

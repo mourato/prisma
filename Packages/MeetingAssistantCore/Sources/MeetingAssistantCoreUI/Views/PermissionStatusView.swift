@@ -105,7 +105,7 @@ public struct PermissionStatusView: View {
     private var permissionWarning: some View {
         HStack(spacing: 6) {
             Image(systemName: PermissionConstants.Icons.exclamationMarkTriangle)
-                .foregroundStyle(MeetingAssistantDesignSystem.Colors.warning)
+                .foregroundStyle(AppDesignSystem.Colors.warning)
                 .font(.title3)
 
             Text("permissions.warning".localized)
@@ -116,7 +116,7 @@ public struct PermissionStatusView: View {
     }
 
     private var headerIconColor: Color {
-        requiredPermissionsGranted ? MeetingAssistantDesignSystem.Colors.success : MeetingAssistantDesignSystem.Colors.warning
+        requiredPermissionsGranted ? AppDesignSystem.Colors.success : AppDesignSystem.Colors.warning
     }
 
     private func permissionState(for type: PermissionType) -> PermissionState {
@@ -200,7 +200,7 @@ struct PermissionRowView: View {
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.regular)
-            .tint(MeetingAssistantDesignSystem.Colors.accent)
+            .tint(AppDesignSystem.Colors.accent)
 
         case .openSettings:
             Button("permissions.configure".localized) {

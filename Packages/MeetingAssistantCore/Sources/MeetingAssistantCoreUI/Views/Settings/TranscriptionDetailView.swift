@@ -238,12 +238,12 @@ public struct TranscriptionDetailView: View {
     private func contentBox(title: String, text: String, isOriginal: Bool, showSparkles: Bool = false) -> some View {
         let displayText = transcriptionDisplayText(text)
 
-        return VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+        return VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
             HStack {
-                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
+                HStack(spacing: AppDesignSystem.Layout.spacing6) {
                     if showSparkles {
                         Image(systemName: "sparkles")
-                            .foregroundStyle(MeetingAssistantDesignSystem.Colors.aiGradient)
+                            .foregroundStyle(AppDesignSystem.Colors.aiGradient)
                     }
                     Text(title)
                         .font(.headline)
@@ -263,11 +263,11 @@ public struct TranscriptionDetailView: View {
             Text(displayText)
                 .font(.body)
                 .textSelection(.enabled)
-                .padding(MeetingAssistantDesignSystem.Layout.spacing16)
+                .padding(AppDesignSystem.Layout.spacing16)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(
-                    isOriginal ? MeetingAssistantDesignSystem.Colors.subtleFill2 : MeetingAssistantDesignSystem.Colors.cardBackground,
-                    in: RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
+                    isOriginal ? AppDesignSystem.Colors.subtleFill2 : AppDesignSystem.Colors.cardBackground,
+                    in: RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
                 )
         }
     }
@@ -281,11 +281,11 @@ public struct TranscriptionDetailView: View {
     }
 
     private var groundedQnASection: some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
             Text("transcription.qa.title".localized)
                 .font(.headline)
 
-            HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+            HStack(spacing: AppDesignSystem.Layout.spacing8) {
                 TextField(
                     "transcription.qa.placeholder".localized,
                     text: Binding(
@@ -303,7 +303,7 @@ public struct TranscriptionDetailView: View {
             }
 
             if isAnsweringQuestion {
-                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                HStack(spacing: AppDesignSystem.Layout.spacing8) {
                     ProgressView()
                     Text("transcription.qa.loading".localized)
                         .font(.caption)
@@ -312,10 +312,10 @@ public struct TranscriptionDetailView: View {
             }
 
             if let qaErrorMessage, !qaErrorMessage.isEmpty {
-                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
                     Text(qaErrorMessage)
                         .font(.caption)
-                        .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
+                        .foregroundStyle(AppDesignSystem.Colors.error)
 
                     Button("transcription.qa.retry".localized) {
                         onRetryQuestion()
@@ -331,13 +331,13 @@ public struct TranscriptionDetailView: View {
                         .font(.body)
                         .foregroundStyle(.secondary)
                 } else {
-                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                    VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
                         Text(qaResponse.answer)
                             .font(.body)
                             .textSelection(.enabled)
 
                         if !qaResponse.evidence.isEmpty {
-                            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
                                 Text("transcription.qa.evidence_title".localized)
                                     .font(.subheadline)
                                     .fontWeight(.semibold)
@@ -350,11 +350,11 @@ public struct TranscriptionDetailView: View {
                                         Text(item.excerpt)
                                             .font(.caption)
                                     }
-                                    .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing10)
-                                    .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
+                                    .padding(.horizontal, AppDesignSystem.Layout.spacing10)
+                                    .padding(.vertical, AppDesignSystem.Layout.spacing8)
                                     .background(
-                                        MeetingAssistantDesignSystem.Colors.subtleFill,
-                                        in: RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
+                                        AppDesignSystem.Colors.subtleFill,
+                                        in: RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
                                     )
                                 }
                             }

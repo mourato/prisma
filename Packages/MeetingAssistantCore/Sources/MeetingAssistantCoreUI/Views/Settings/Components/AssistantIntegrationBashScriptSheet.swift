@@ -32,7 +32,7 @@ public struct AssistantIntegrationBashScriptSheet: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
             Text("settings.assistant.integrations.script.title".localized)
                 .font(.title3)
                 .fontWeight(.semibold)
@@ -44,12 +44,12 @@ public struct AssistantIntegrationBashScriptSheet: View {
             testSection
             actionsSection
         }
-        .padding(MeetingAssistantDesignSystem.Layout.spacing20)
+        .padding(AppDesignSystem.Layout.spacing20)
         .frame(minWidth: 680, minHeight: 620)
     }
 
     private var requirementsSection: some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing4) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing4) {
             Text("settings.assistant.integrations.script.requirements".localized)
                 .font(.headline)
 
@@ -69,7 +69,7 @@ public struct AssistantIntegrationBashScriptSheet: View {
     }
 
     private var stageSection: some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
             Text("settings.assistant.integrations.script.stage.title".localized)
                 .font(.headline)
 
@@ -83,14 +83,14 @@ public struct AssistantIntegrationBashScriptSheet: View {
     }
 
     private var examplesSection: some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
             Text("settings.assistant.integrations.script.examples.title".localized)
                 .font(.headline)
 
-            HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+            HStack(spacing: AppDesignSystem.Layout.spacing8) {
                 exampleButton(
                     title: "settings.assistant.integrations.script.examples.word_replace".localized,
-                    scriptValue: "sed 's/Meeting Assistant/Capta/g'"
+                    scriptValue: "sed 's/Prisma/Capta/g'"
                 )
                 exampleButton(
                     title: "settings.assistant.integrations.script.examples.google_search".localized,
@@ -109,23 +109,23 @@ public struct AssistantIntegrationBashScriptSheet: View {
     }
 
     private var scriptEditorSection: some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
             Text("settings.assistant.integrations.script.editor".localized)
                 .font(.headline)
 
             TextEditor(text: $script)
                 .font(.system(.body, design: .monospaced))
                 .frame(minHeight: 220)
-                .padding(MeetingAssistantDesignSystem.Layout.textAreaPadding)
+                .padding(AppDesignSystem.Layout.textAreaPadding)
                 .overlay(
-                    RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
+                    RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
                         .strokeBorder(.separator, lineWidth: 1)
                 )
         }
     }
 
     private var testSection: some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
             Text("settings.assistant.integrations.script.test_input".localized)
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -136,13 +136,13 @@ public struct AssistantIntegrationBashScriptSheet: View {
             if let scriptTestOutput {
                 Text("\("settings.assistant.integrations.script.test_output".localized): \(scriptTestOutput)")
                     .font(.caption)
-                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.success)
+                    .foregroundStyle(AppDesignSystem.Colors.success)
             }
 
             if let scriptTestErrorMessage {
                 Text(scriptTestErrorMessage)
                     .font(.caption)
-                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
+                    .foregroundStyle(AppDesignSystem.Colors.error)
             }
         }
     }
@@ -152,7 +152,7 @@ public struct AssistantIntegrationBashScriptSheet: View {
             Button("settings.assistant.integrations.script.clear".localized, role: .destructive) {
                 script = ""
             }
-            .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
+            .foregroundStyle(AppDesignSystem.Colors.error)
 
             Spacer()
 

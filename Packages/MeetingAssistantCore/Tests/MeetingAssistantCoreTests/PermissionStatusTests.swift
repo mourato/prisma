@@ -27,12 +27,12 @@ final class PermissionStatusTests: XCTestCase {
 
     func testPermissionColors() {
         let granted = PermissionInfo(type: .microphone, state: .granted)
-        XCTAssertEqual(granted.statusColor, MeetingAssistantDesignSystem.Colors.success)
+        XCTAssertEqual(granted.statusColor, AppDesignSystem.Colors.success)
 
         let denied = PermissionInfo(type: .microphone, state: .denied)
-        XCTAssertEqual(denied.statusColor, MeetingAssistantDesignSystem.Colors.error)
+        XCTAssertEqual(denied.statusColor, AppDesignSystem.Colors.error)
 
         let notDetermined = PermissionInfo(type: .microphone, state: .notDetermined)
-        XCTAssertEqual(notDetermined.statusColor, MeetingAssistantDesignSystem.Colors.warning)
+        XCTAssertEqual(notDetermined.statusColor, AppDesignSystem.Colors.warning)
     }
 }

@@ -6,7 +6,7 @@ import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
-public struct MACallout: View {
+public struct DSCallout: View {
     public enum Kind {
         case info
         case warning
@@ -22,9 +22,9 @@ public struct MACallout: View {
 
         var tintColor: Color {
             switch self {
-            case .info: MeetingAssistantDesignSystem.Colors.accent
-            case .warning: MeetingAssistantDesignSystem.Colors.warning
-            case .error: MeetingAssistantDesignSystem.Colors.error
+            case .info: AppDesignSystem.Colors.accent
+            case .warning: AppDesignSystem.Colors.warning
+            case .error: AppDesignSystem.Colors.error
             }
         }
 
@@ -48,12 +48,12 @@ public struct MACallout: View {
     }
 
     public var body: some View {
-        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+        HStack(spacing: AppDesignSystem.Layout.spacing12) {
             Image(systemName: kind.symbolName)
                 .font(.title2)
                 .foregroundStyle(kind.tintColor)
 
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing4) {
+            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing4) {
                 Text(title)
                     .font(.headline)
                 Text(message)
@@ -63,11 +63,11 @@ public struct MACallout: View {
 
             Spacer()
         }
-        .padding(MeetingAssistantDesignSystem.Layout.spacing16)
+        .padding(AppDesignSystem.Layout.spacing16)
         .background(kind.backgroundColor)
-        .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.cardCornerRadius))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.cardCornerRadius))
         .overlay(
-            RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.cardCornerRadius)
+            RoundedRectangle(cornerRadius: AppDesignSystem.Layout.cardCornerRadius)
                 .stroke(kind.strokeColor, lineWidth: 1)
         )
         .accessibilityElement(children: .combine)
@@ -75,18 +75,18 @@ public struct MACallout: View {
 }
 
 #Preview("Callout Kinds") {
-    VStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
-        MACallout(
+    VStack(spacing: AppDesignSystem.Layout.spacing12) {
+        DSCallout(
             kind: .info,
             title: "Information",
             message: "This action is available and ready to use."
         )
-        MACallout(
+        DSCallout(
             kind: .warning,
             title: "Warning",
             message: "Your model is not installed yet."
         )
-        MACallout(
+        DSCallout(
             kind: .error,
             title: "Error",
             message: "We could not validate this configuration."

@@ -26,16 +26,16 @@ public struct GeneralSettingsTab: View {
             )
 
             // Application Behavior
-            MAGroup("settings.general.app_behavior".localized, icon: "app.badge") {
-                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
-                    MAToggleRow(
+            DSGroup("settings.general.app_behavior".localized, icon: "app.badge") {
+                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
+                    DSToggleRow(
                         "settings.general.launch_at_login".localized,
                         isOn: $viewModel.launchAtLogin
                     )
 
                     Divider()
 
-                    MAToggleRow(
+                    DSToggleRow(
                         "settings.general.show_in_dock".localized,
                         description: "settings.general.show_in_dock_desc".localized,
                         isOn: $viewModel.showInDock
@@ -43,15 +43,15 @@ public struct GeneralSettingsTab: View {
 
                     Divider()
 
-                    MAToggleRow(
+                    DSToggleRow(
                         "settings.general.show_settings_on_launch".localized,
                         isOn: $viewModel.showSettingsOnLaunch
                     )
 
                     Divider()
 
-                    HStack(alignment: .center, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
-                        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing4) {
+                    HStack(alignment: .center, spacing: AppDesignSystem.Layout.spacing12) {
+                        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing4) {
                             Text("settings.general.shortcut_double_tap_interval".localized)
                                 .font(.body)
                                 .foregroundStyle(.primary)
@@ -63,7 +63,7 @@ public struct GeneralSettingsTab: View {
 
                         Spacer()
 
-                        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                        HStack(spacing: AppDesignSystem.Layout.spacing8) {
                             TextField("", text: $shortcutDoubleTapIntervalInput)
                                 .textFieldStyle(.roundedBorder)
                                 .multilineTextAlignment(.trailing)
@@ -83,7 +83,7 @@ public struct GeneralSettingsTab: View {
 
                     Divider()
 
-                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                    VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
                         Text("settings.general.cancel_recording_shortcut".localized)
                             .font(.body)
                             .foregroundStyle(.primary)
@@ -92,7 +92,7 @@ public struct GeneralSettingsTab: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
 
-                        MAModifierShortcutEditor(
+                        DSModifierShortcutEditor(
                             shortcut: $recordingCancelShortcutViewModel.cancelRecordingShortcutDefinition,
                             conflictMessage: recordingCancelShortcutViewModel.cancelRecordingShortcutConflictMessage
                         )
@@ -101,8 +101,8 @@ public struct GeneralSettingsTab: View {
             }
 
             // Appearance
-            MAGroup("settings.general.appearance".localized, icon: "paintbrush.fill") {
-                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
+            DSGroup("settings.general.appearance".localized, icon: "paintbrush.fill") {
+                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
                     HStack {
                         Text("settings.general.language".localized)
                             .font(.body)
@@ -122,16 +122,16 @@ public struct GeneralSettingsTab: View {
             }
 
             // Recording Indicator
-            MAGroup("settings.general.recording_indicator".localized, icon: "record.circle") {
-                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
-                    MAToggleRow(
+            DSGroup("settings.general.recording_indicator".localized, icon: "record.circle") {
+                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
+                    DSToggleRow(
                         "settings.general.recording_indicator.enabled".localized,
                         description: "settings.general.recording_indicator.enabled_desc".localized,
                         isOn: $viewModel.recordingIndicatorEnabled.animated()
                     )
 
                     if viewModel.recordingIndicatorEnabled {
-                        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
+                        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
                             Divider()
 
                             HStack {
@@ -170,7 +170,7 @@ public struct GeneralSettingsTab: View {
 
                             VStack(
                                 alignment: .leading,
-                                spacing: MeetingAssistantDesignSystem.Layout.spacing8
+                                spacing: AppDesignSystem.Layout.spacing8
                             ) {
                                 Text("settings.general.recording_indicator.animation_speed".localized)
                                     .font(.body)
@@ -195,8 +195,8 @@ public struct GeneralSettingsTab: View {
             }
 
             // Audio Format
-            MAGroup("settings.general.audio_format".localized, icon: "waveform.path") {
-                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+            DSGroup("settings.general.audio_format".localized, icon: "waveform.path") {
+                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
                     HStack {
                         Text("settings.general.audio_format".localized)
                             .font(.body)
@@ -216,24 +216,24 @@ public struct GeneralSettingsTab: View {
             }
 
             // Storage
-            MAGroup("settings.general.storage".localized, icon: "folder.fill") {
-                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
-                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
-                        MAToggleRow(
+            DSGroup("settings.general.storage".localized, icon: "folder.fill") {
+                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
+                    VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
+                        DSToggleRow(
                             "settings.general.auto_delete".localized,
                             description: "settings.general.auto_delete_desc".localized,
                             isOn: $viewModel.autoDeleteTranscriptions.animated()
                         )
 
                         if viewModel.autoDeleteTranscriptions {
-                            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
                                 HStack {
                                     Text("settings.general.keep_for".localized)
                                         .font(.body)
 
                                     Spacer()
 
-                                    HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                                    HStack(spacing: AppDesignSystem.Layout.spacing8) {
                                         TextField("", text: $autoDeletePeriodDaysInput)
                                             .textFieldStyle(.roundedBorder)
                                             .multilineTextAlignment(.trailing)
@@ -250,7 +250,7 @@ public struct GeneralSettingsTab: View {
                                             .foregroundStyle(.secondary)
                                     }
                                 }
-                                .padding(.leading, MeetingAssistantDesignSystem.Layout.indentation)
+                                .padding(.leading, AppDesignSystem.Layout.indentation)
 
                                 Button {
                                     viewModel.performCleanup()
@@ -262,8 +262,8 @@ public struct GeneralSettingsTab: View {
                                 }
                                 .buttonStyle(.bordered)
                                 .disabled(viewModel.cleanupInProgress)
-                                .padding(.leading, MeetingAssistantDesignSystem.Layout.indentation)
-                                .padding(.top, MeetingAssistantDesignSystem.Layout.smallPadding)
+                                .padding(.leading, AppDesignSystem.Layout.indentation)
+                                .padding(.top, AppDesignSystem.Layout.smallPadding)
                             }
                             .transition(SettingsMotion.sectionTransition(reduceMotion: reduceMotion))
                         }

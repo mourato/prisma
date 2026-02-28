@@ -54,7 +54,7 @@ public class AISettingsViewModel: ObservableObject {
     @Published public var enhancementsActionError: String?
     @Published public var actionError: String?
 
-    private let logger = Logger(subsystem: "MeetingAssistant", category: "AISettingsViewModel")
+    private let logger = Logger(subsystem: AppIdentity.logSubsystem, category: "AISettingsViewModel")
     private let keychain: KeychainProvider
     private let llmService: LLMService
     private let credentialBootstrapPolicy: CredentialBootstrapPolicy

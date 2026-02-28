@@ -33,12 +33,12 @@ public struct SettingsView: View {
             sidebar
         } detail: {
             ZStack {
-                MeetingAssistantDesignSystem.Colors.windowBackground
+                AppDesignSystem.Colors.windowBackground
                     .ignoresSafeArea()
 
                 detailView
             }
-            .tint(MeetingAssistantDesignSystem.Colors.accent)
+            .tint(AppDesignSystem.Colors.accent)
         }
         .navigationSplitViewStyle(.balanced)
         .navigationTitle(selectedSection.title)
@@ -105,13 +105,13 @@ public struct SettingsView: View {
             Text(section.title)
                 .font(
                     .system(
-                        size: MeetingAssistantDesignSystem.Layout.sidebarLabelFontSize,
+                        size: AppDesignSystem.Layout.sidebarLabelFontSize,
                         weight: .regular
                     )
                 )
                 .lineLimit(1)
         }
-        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing2)
+        .padding(.vertical, AppDesignSystem.Layout.spacing2)
     }
 
     // MARK: - Detail View

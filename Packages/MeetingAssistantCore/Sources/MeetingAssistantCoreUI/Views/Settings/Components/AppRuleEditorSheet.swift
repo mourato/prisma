@@ -26,7 +26,7 @@ public struct AppRuleEditorSheet: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
             Text("settings.rules_per_app.editor_title".localized(with: resolvedRule.displayName))
                 .font(.headline)
 
@@ -34,12 +34,12 @@ public struct AppRuleEditorSheet: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            MAToggleRow(
+            DSToggleRow(
                 "settings.rules_per_app.markdown.title".localized,
                 isOn: $forceMarkdownOutput
             )
 
-            HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+            HStack(spacing: AppDesignSystem.Layout.spacing12) {
                 Text("settings.rules_per_app.language.title".localized)
                     .font(.body)
                     .fontWeight(.regular)
@@ -58,7 +58,7 @@ public struct AppRuleEditorSheet: View {
                 .labelsHidden()
             }
 
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
                 Text("settings.rules_per_app.custom_prompt.title".localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -70,9 +70,9 @@ public struct AppRuleEditorSheet: View {
                 TextEditor(text: $customPromptInstructions)
                     .font(.body)
                     .frame(minHeight: 120)
-                    .padding(MeetingAssistantDesignSystem.Layout.textAreaPadding)
-                    .background(MeetingAssistantDesignSystem.Colors.subtleFill2)
-                    .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+                    .padding(AppDesignSystem.Layout.textAreaPadding)
+                    .background(AppDesignSystem.Colors.subtleFill2)
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
             }
 
             HStack {

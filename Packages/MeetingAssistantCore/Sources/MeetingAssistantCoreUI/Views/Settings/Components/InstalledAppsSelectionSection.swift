@@ -27,7 +27,7 @@ public struct InstalledAppsSelectionSection: View {
     }
 
     public var body: some View {
-        MAGroup(titleKey.localized, icon: icon) {
+        DSGroup(titleKey.localized, icon: icon) {
             InstalledAppsSelectionList(
                 descriptionKey: descriptionKey,
                 emptyKey: emptyKey,
@@ -57,7 +57,7 @@ public struct InstalledAppsSelectionList: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
             Text(descriptionKey.localized)
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -76,8 +76,8 @@ public struct InstalledAppsSelectionList: View {
                         }
                     }
                 }
-                .background(MeetingAssistantDesignSystem.Colors.subtleFill2)
-                .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+                .background(AppDesignSystem.Colors.subtleFill2)
+                .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
             }
 
             HStack {
@@ -97,14 +97,14 @@ public struct InstalledAppsSelectionList: View {
     }
 
     private func appRow(_ app: InstalledAppItem) -> some View {
-        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+        HStack(spacing: AppDesignSystem.Layout.spacing12) {
             Image(nsImage: app.icon)
                 .resizable()
                 .scaledToFit()
                 .frame(width: 20, height: 20)
-                .padding(MeetingAssistantDesignSystem.Layout.compactInset)
-                .background(MeetingAssistantDesignSystem.Colors.subtleFill)
-                .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+                .padding(AppDesignSystem.Layout.compactInset)
+                .background(AppDesignSystem.Colors.subtleFill)
+                .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(app.displayName)
@@ -124,11 +124,11 @@ public struct InstalledAppsSelectionList: View {
                     .accessibilityLabel("settings.markdown_targets.remove".localized)
             }
             .buttonStyle(.borderless)
-            .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
+            .foregroundStyle(AppDesignSystem.Colors.error)
             .controlSize(.regular)
         }
-        .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)
-        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
+        .padding(.horizontal, AppDesignSystem.Layout.spacing12)
+        .padding(.vertical, AppDesignSystem.Layout.spacing8)
     }
 }
 
