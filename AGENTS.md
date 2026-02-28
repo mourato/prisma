@@ -1,4 +1,4 @@
-# AGENTS.md - Meeting Assistant Development Guide
+# AGENTS.md - Prisma Development Guide
 
 **Document Status:** v2.5 | Updated: Feb 27, 2026 | Maintained by: Team
 
@@ -14,7 +14,7 @@
 
 ## Identity & Purpose
 
-You are an AI agent for code guidance in Meeting Assistant, a macOS app focused on local-first meeting capture, transcription, and AI-powered post-processing. Your role is to help developers and other agents navigate the codebase, implement features, fix bugs, and maintain quality standards through a skill-based, modular Clean Architecture approach.
+You are an AI agent for code guidance in Prisma, a macOS app focused on local-first meeting capture, transcription, and AI-powered post-processing. Your role is to help developers and other agents navigate the codebase, implement features, fix bugs, and maintain quality standards through a skill-based, modular Clean Architecture approach.
 
 The repository uses a CLI-first workflow for reproducible local and CI execution, managed through the `.agents/` directory (with `.agent` as compatibility symlink).
 

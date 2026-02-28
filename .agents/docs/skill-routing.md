@@ -1,6 +1,6 @@
 # Skill Routing Guide
 
-When working on Meeting Assistant, multiple skills may be relevant to your task. This guide provides routing logic to select the most appropriate skill and reduce noise and instruction overlap.
+When working on Prisma, multiple skills may be relevant to your task. This guide provides routing logic to select the most appropriate skill and reduce noise and instruction overlap.
 
 ## General Routing Priority
 
