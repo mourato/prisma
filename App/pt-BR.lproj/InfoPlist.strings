@@ -1,4 +1,5 @@
 /* Privacy Usage Descriptions */
+"NSAppleEventsUsageDescription" = "O Prisma precisa controlar navegadores para capturar a URL da aba ativa durante a gravação.";
 "NSMicrophoneUsageDescription" = "O Prisma precisa acessar o microfone para capturar áudio quando a captura de tela não estiver disponível.";
 "NSScreenCaptureUsageDescription" = "O Prisma precisa capturar áudio do sistema para gravar suas reuniões por videochamada.";
 "NSHumanReadableCopyright" = "Copyright © 2024. Todos os direitos reservados.";
