@@ -1,4 +1,5 @@
 import Foundation
+import MeetingAssistantCoreCommon
 import os.log
 
 public protocol BrowserActiveTabURLProviding {
@@ -6,7 +7,7 @@ public protocol BrowserActiveTabURLProviding {
 }
 
 public final class BrowserActiveTabURLProvider: BrowserActiveTabURLProviding {
-    private let logger = Logger(subsystem: "MeetingAssistant", category: "BrowserActiveTabURLProvider")
+    private let logger = Logger(subsystem: AppIdentity.logSubsystem, category: "BrowserActiveTabURLProvider")
     private let script: NSAppleScript
     private static let automationPermissionDeniedErrorCode = -1_743
 

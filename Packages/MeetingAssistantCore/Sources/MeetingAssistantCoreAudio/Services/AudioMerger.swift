@@ -1,5 +1,6 @@
 import AVFoundation
 import Foundation
+import MeetingAssistantCoreCommon
 import MeetingAssistantCoreInfrastructure
 import os.log
 
@@ -7,7 +8,7 @@ import os.log
 /// Used after recording to combine microphone and system audio tracks.
 @MainActor
 public final class AudioMerger {
-    private let logger = Logger(subsystem: "MeetingAssistant", category: "AudioMerger")
+    private let logger = Logger(subsystem: AppIdentity.logSubsystem, category: "AudioMerger")
 
     public init() {}
 

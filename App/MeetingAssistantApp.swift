@@ -5,7 +5,7 @@ import MeetingAssistantCore
 import os
 import SwiftUI
 
-/// Main entry point for the Meeting Assistant app.
+/// Main entry point for the Prisma app.
 /// Runs as a menu bar application without a dock icon.
 @main
 struct MeetingAssistantApp: App {
@@ -62,7 +62,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let meetingTypeRawValue: String?
     }
 
-    private let logger = Logger(subsystem: "MeetingAssistant", category: "AppDelegate")
+    private let logger = Logger(subsystem: AppIdentity.logSubsystem, category: "AppDelegate")
     private var statusItem: NSStatusItem?
     private var contextMenu: NSMenu?
     private var dictateMenuItem: NSMenuItem?
@@ -878,13 +878,13 @@ private final class SettingsWindowController {
         settingsWindow.titleVisibility = .hidden
         settingsWindow.titlebarAppearsTransparent = true
         settingsWindow.toolbarStyle = .unified
-        settingsWindow.toolbar = NSToolbar(identifier: "MeetingAssistantSettingsToolbar")
+        settingsWindow.toolbar = NSToolbar(identifier: NSToolbar.Identifier(AppIdentity.settingsToolbarIdentifier))
         settingsWindow.isMovableByWindowBackground = false
         settingsWindow.tabbingMode = .disallowed
         if #available(macOS 11.0, *) {
             settingsWindow.titlebarSeparatorStyle = .none
         }
-        settingsWindow.setFrameAutosaveName("MeetingAssistantSettingsWindow")
+        settingsWindow.setFrameAutosaveName(AppIdentity.settingsWindowAutosaveName)
         settingsWindow.isReleasedWhenClosed = false
         settingsWindow.contentView = NSHostingView(rootView: SettingsView())
         settingsWindow.center()

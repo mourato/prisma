@@ -2,7 +2,7 @@ import Foundation
 import MeetingAssistantCore
 import os.log
 
-private let logger = Logger(subsystem: "com.mourato.my-meeting-assistant.ai-service", category: "Main")
+private let logger = Logger(subsystem: AppIdentity.xpcServiceName, category: "Main")
 
 /// Delegate for the XPC Service to handle incoming connections.
 class AIServiceDelegate: NSObject, NSXPCListenerDelegate {

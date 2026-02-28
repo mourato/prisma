@@ -1,0 +1,13 @@
+// Centralized product identity values for rebranding.
+APP_DISPLAY_NAME = Prisma
+APP_PRODUCT_NAME = Prisma
+APP_BUNDLE_ID = com.mourato.prisma
+
+XPC_SERVICE_BUNDLE_ID = com.mourato.prisma.ai-service
+XPC_PRODUCT_NAME = PrismaAI
+
+APP_SUPPORT_DIR_NAME = Prisma
+APP_LOG_DIR_NAME = Prisma
+KEYCHAIN_SERVICE_ID = com.mourato.prisma
+APP_LOG_SUBSYSTEM = com.mourato.prisma
+HOTKEY_SIGNATURE_SEED = PRH0

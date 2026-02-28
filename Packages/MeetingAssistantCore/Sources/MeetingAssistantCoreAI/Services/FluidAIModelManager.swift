@@ -2,6 +2,7 @@
 import Combine
 @preconcurrency import FluidAudio
 import Foundation
+import MeetingAssistantCoreCommon
 import MeetingAssistantCoreInfrastructure
 import os.log
 
@@ -22,7 +23,7 @@ public protocol AIModelService: ObservableObject {
 public class FluidAIModelManager: ObservableObject, AIModelService {
     public static let shared = FluidAIModelManager()
 
-    private let logger = Logger(subsystem: "MeetingAssistant", category: "FluidAIModelManager")
+    private let logger = Logger(subsystem: AppIdentity.logSubsystem, category: "FluidAIModelManager")
 
     @Published public var modelState: ModelState = .unloaded
     public var modelStatePublisher: AnyPublisher<ModelState, Never> {

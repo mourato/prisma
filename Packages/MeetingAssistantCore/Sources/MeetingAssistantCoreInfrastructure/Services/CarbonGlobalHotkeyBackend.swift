@@ -4,7 +4,7 @@ import MeetingAssistantCoreCommon
 
 @MainActor
 public final class CarbonGlobalHotkeyBackend: GlobalHotkeyBackend {
-    private static let signatureSeed: OSType = fourCharCode("MAH0")
+    private static let signatureSeed: OSType = fourCharCode(AppIdentity.hotkeySignatureSeed)
     private static var signatureCounter: OSType = 0
     private let signature: OSType
 

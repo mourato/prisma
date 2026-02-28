@@ -1,4 +1,5 @@
 import Foundation
+import MeetingAssistantCoreCommon
 
 /// Protocol for the MeetingAssistant XPC Service.
 /// This service handles heavy AI processing (Diarization, Transcription).
@@ -27,5 +28,5 @@ public protocol MeetingAssistantXPCProtocol {
 
 /// Constants for XPC Service
 public enum MeetingAssistantXPCConstants {
-    public static let serviceName = "com.mourato.my-meeting-assistant.ai-service"
+    public static let serviceName = AppIdentity.xpcServiceName
 }

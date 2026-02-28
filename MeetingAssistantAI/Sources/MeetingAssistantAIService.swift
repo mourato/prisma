@@ -5,7 +5,7 @@ import os.log
 /// Implementation of the MeetingAssistant XPC Service.
 final class MeetingAssistantAIService: NSObject, MeetingAssistantXPCProtocol {
 
-    private static let logger = Logger(subsystem: "com.mourato.my-meeting-assistant.ai-service", category: "AIService")
+    private static let logger = Logger(subsystem: AppIdentity.xpcServiceName, category: "AIService")
 
     func transcribe(
         audioURL: URL,

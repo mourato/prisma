@@ -13,7 +13,7 @@ import os.log
 public class TranscriptionClient: ObservableObject, TranscriptionService, TranscriptionServiceDiarizationOverride {
     public static let shared = TranscriptionClient()
 
-    private let logger = Logger(subsystem: "MeetingAssistant", category: "TranscriptionClient")
+    private let logger = Logger(subsystem: AppIdentity.logSubsystem, category: "TranscriptionClient")
 
     /// The underlying transcription implementation based on feature flags.
     private enum TranscriptionImplementation {
