@@ -81,7 +81,10 @@ Compact-mode notes:
 
 ## Hooks and automation
 
-- Install Git hooks with `./scripts/setup-hooks.sh`.
+- Install Git hooks with:
+  - `git config core.hooksPath scripts/hooks`
+  - `chmod +x scripts/hooks/pre-commit scripts/hooks/pre-push scripts/hooks/first-commit-version-bump.sh`
+  - `find scripts/hooks -maxdepth 1 -type f ! -perm -u+x -print` (must print nothing).
 - `pre-commit` is optimized for speed and can run lightweight staged checks.
 - `pre-push` enforces `make test` unless explicitly bypassed.
 
