@@ -4,8 +4,8 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug MeetingAssistant (CLI Build)",
-            "program": "${workspaceFolder}/.xcode-build/Build/Products/Debug/MeetingAssistant.app/Contents/MacOS/MeetingAssistant",
+            "name": "Debug Prisma (CLI Build)",
+            "program": "${workspaceFolder}/.xcode-build/Build/Products/Debug/Prisma.app/Contents/MacOS/Prisma",
             "args": [],
             "cwd": "${workspaceFolder}",
             "env": {
@@ -19,8 +19,8 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug MeetingAssistant (No Build)",
-            "program": "${workspaceFolder}/.xcode-build/Build/Products/Debug/MeetingAssistant.app/Contents/MacOS/MeetingAssistant",
+            "name": "Debug Prisma (No Build)",
+            "program": "${workspaceFolder}/.xcode-build/Build/Products/Debug/Prisma.app/Contents/MacOS/Prisma",
             "args": [],
             "cwd": "${workspaceFolder}",
             "env": {
@@ -35,7 +35,7 @@
             "request": "launch",
             "args": [],
             "cwd": "${workspaceFolder:my-meeting-assistant}/MeetingAssistant",
-            "name": "Debug MeetingAssistant (MeetingAssistant)",
+            "name": "Debug Prisma (MeetingAssistant target)",
             "preLaunchTask": "swift: Build Debug MeetingAssistant (MeetingAssistant)",
             "target": "MeetingAssistant",
             "configuration": "debug"
@@ -45,7 +45,7 @@
             "request": "launch",
             "args": [],
             "cwd": "${workspaceFolder:my-meeting-assistant}/MeetingAssistant",
-            "name": "Release MeetingAssistant (MeetingAssistant)",
+            "name": "Release Prisma (MeetingAssistant target)",
             "preLaunchTask": "swift: Build Release MeetingAssistant (MeetingAssistant)",
             "target": "MeetingAssistant",
             "configuration": "release"

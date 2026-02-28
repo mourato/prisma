@@ -1,6 +1,6 @@
-# Makefile for MeetingAssistant - CLI-first development workflow
+# Makefile for Prisma - CLI-first development workflow
 # =============================================================================
-# This Makefile provides common development commands for the MeetingAssistant
+# This Makefile provides common development commands for the Prisma
 # project. All commands use xcodebuild CLI tools for maximum compatibility
 # with CI/CD pipelines and headless environments.
 # =============================================================================
@@ -9,7 +9,7 @@
 
 # Default target
 help:
-	@echo "MeetingAssistant Development Commands"
+	@echo "$(APP_PRODUCT_NAME) Development Commands"
 	@echo "===================================="
 	@echo ""
 	@echo "Build Commands:"
@@ -70,9 +70,12 @@ help:
 	@echo "  make docs-clean     - Clean documentation artifacts"
 
 # Configuration
-APP_NAME = MeetingAssistant
 PROJECT_DIR = $(shell pwd)
-XCODEPROJ = $(PROJECT_DIR)/MeetingAssistant.xcodeproj
+IDENTITY_SCRIPT = $(PROJECT_DIR)/scripts/config/app_identity.sh
+APP_SCHEME = $(shell . "$(IDENTITY_SCRIPT)"; printf "%s" "$$APP_SCHEME")
+APP_PRODUCT_NAME = $(shell . "$(IDENTITY_SCRIPT)"; printf "%s" "$$APP_PRODUCT_NAME")
+XCODEPROJ_NAME = $(shell . "$(IDENTITY_SCRIPT)"; printf "%s" "$$XCODEPROJ_NAME")
+XCODEPROJ = $(PROJECT_DIR)/$(XCODEPROJ_NAME)
 DERIVED_DATA = $(PROJECT_DIR)/.xcode-build
 DIST_DIR = $(PROJECT_DIR)/dist
 AGENT_LOG_DIR ?= /tmp/ma-agent
@@ -182,12 +185,12 @@ health:
 
 # Run Commands
 run: build-debug
-	@echo -e "$(YELLOW)Launching $(APP_NAME) (Debug)...$(NC)"
-	@open "$(DERIVED_DATA)/Build/Products/Debug/$(APP_NAME).app"
+	@echo -e "$(YELLOW)Launching $(APP_PRODUCT_NAME) (Debug)...$(NC)"
+	@open "$(DERIVED_DATA)/Build/Products/Debug/$(APP_PRODUCT_NAME).app"
 
 run-release: build-release
-	@echo -e "$(YELLOW)Launching $(APP_NAME) (Release)...$(NC)"
-	@open "$(DERIVED_DATA)/Build/Products/Release/$(APP_NAME).app"
+	@echo -e "$(YELLOW)Launching $(APP_PRODUCT_NAME) (Release)...$(NC)"
+	@open "$(DERIVED_DATA)/Build/Products/Release/$(APP_PRODUCT_NAME).app"
 
 # Distribution
 dmg:

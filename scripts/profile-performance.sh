@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================================
-# profile-performance.sh - Performance profiling workflow for MeetingAssistant
+# profile-performance.sh - Performance profiling workflow for Prisma
 # =============================================================================
 # Uses xctrace to profile CPU, Memory, and Animation performance
 # CLI-first approach for CI/CD integration
@@ -9,11 +9,13 @@
 set -e
 
 # Configuration
-APP_NAME="MeetingAssistant"
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-XCODEPROJ="${PROJECT_DIR}/MeetingAssistant.xcodeproj"
+# shellcheck source=scripts/config/app_identity.sh
+source "${PROJECT_DIR}/scripts/config/app_identity.sh"
+
+XCODEPROJ="${PROJECT_DIR}/${XCODEPROJ_NAME}"
 DERIVED_DATA="${PROJECT_DIR}/.xcode-build"
-APP_PATH="${DERIVED_DATA}/Build/Products/Debug/${APP_NAME}.app"
+APP_PATH="${DERIVED_DATA}/Build/Products/Debug/${APP_PRODUCT_NAME}.app"
 OUTPUT_DIR="${PROJECT_DIR}/performance-reports"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 
@@ -68,7 +70,7 @@ while [[ $# -gt 0 ]]; do
         --help|-h)
             echo "Usage: $0 [options]"
             echo ""
-            echo "Performance profiling for ${APP_NAME}"
+            echo "Performance profiling for ${APP_PRODUCT_NAME}"
             echo ""
             echo "Profile Types:"
             echo "  --cpu       Profile CPU usage (default)"
@@ -97,7 +99,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${BLUE}  Performance Profiling - ${APP_NAME}${NC}"
+echo -e "${BLUE}  Performance Profiling - ${APP_PRODUCT_NAME}${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 

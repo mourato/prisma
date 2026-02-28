@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================================
-# debug-app.sh - Builds and runs MeetingAssistant in debug mode via CLI
+# debug-app.sh - Builds and runs Prisma in debug mode via CLI
 # =============================================================================
 # Uses xcodebuild for a Debug build. Faster than Release for development.
 # CLI-first workflow with optional test execution.
@@ -9,9 +9,11 @@
 set -e
 
 # Configuration
-APP_NAME="MeetingAssistant"
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-XCODEPROJ="${PROJECT_DIR}/MeetingAssistant.xcodeproj"
+# shellcheck source=scripts/config/app_identity.sh
+source "${PROJECT_DIR}/scripts/config/app_identity.sh"
+
+XCODEPROJ="${PROJECT_DIR}/${XCODEPROJ_NAME}"
 DERIVED_DATA="${PROJECT_DIR}/.xcode-build"
 
 # Colors for output
@@ -22,14 +24,14 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${BLUE}  Building ${APP_NAME} (Debug Mode)${NC}"
+echo -e "${BLUE}  Building ${APP_PRODUCT_NAME} (Debug Mode)${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
 # Check if xcodeproj exists
 if [ ! -d "${XCODEPROJ}" ]; then
     echo -e "${RED}Error: Xcode project not found at ${XCODEPROJ}${NC}"
-    echo -e "${YELLOW}Ensure you are in the repo root and that MeetingAssistant.xcodeproj exists.${NC}"
+    echo -e "${YELLOW}Ensure you are in the repo root and that ${XCODEPROJ_NAME} exists.${NC}"
     exit 1
 fi
 
@@ -38,7 +40,7 @@ echo -e "${YELLOW}[1/2]${NC} Building with canonical build entrypoint (Debug)...
 "${PROJECT_DIR}/scripts/run-build.sh" --configuration Debug
 
 BUILD_DIR="${DERIVED_DATA}/Build/Products/Debug"
-APP_PATH="${BUILD_DIR}/${APP_NAME}.app"
+APP_PATH="${BUILD_DIR}/${APP_PRODUCT_NAME}.app"
 
 if [ ! -d "${APP_PATH}" ]; then
     echo -e "${RED}Error: Build failed. App not found at ${APP_PATH}${NC}"
@@ -53,7 +55,7 @@ if [[ "$1" == "--test" || "$1" == "-t" ]]; then
     "${PROJECT_DIR}/scripts/run-tests-xcode.sh"
     echo -e "${GREEN}✓ Tests completed${NC}"
 elif [[ "$1" == "--run" || "$1" == "-r" ]]; then
-    echo -e "${YELLOW}[2/2]${NC} Running ${APP_NAME}..."
+    echo -e "${YELLOW}[2/2]${NC} Running ${APP_PRODUCT_NAME}..."
     echo ""
     open "${APP_PATH}"
 else

@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================================
-# build-release.sh - Builds MeetingAssistant.app using xcodebuild CLI in Release mode
+# build-release.sh - Builds Prisma.app using xcodebuild CLI in Release mode
 # =============================================================================
 # Uses xcodebuild CLI to create a Release build and exports it to dist/
 # CLI-first workflow for consistent builds across environments.
@@ -10,9 +10,11 @@ set -e
 set -o pipefail
 
 # Configuration
-APP_NAME="MeetingAssistant"
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-XCODEPROJ="${PROJECT_DIR}/MeetingAssistant.xcodeproj"
+# shellcheck source=scripts/config/app_identity.sh
+source "${PROJECT_DIR}/scripts/config/app_identity.sh"
+
+XCODEPROJ="${PROJECT_DIR}/${XCODEPROJ_NAME}"
 DIST_DIR="${PROJECT_DIR}/dist"
 DERIVED_DATA="${PROJECT_DIR}/.xcode-build"
 
@@ -24,14 +26,14 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${BLUE}  Building ${APP_NAME}.app (Release)${NC}"
+echo -e "${BLUE}  Building ${APP_PRODUCT_NAME}.app (Release)${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
 # Check if xcodeproj exists
 if [ ! -d "${XCODEPROJ}" ]; then
     echo -e "${RED}Error: Xcode project not found at ${XCODEPROJ}${NC}"
-    echo -e "${YELLOW}Ensure you are in the repo root and that MeetingAssistant.xcodeproj exists.${NC}"
+    echo -e "${YELLOW}Ensure you are in the repo root and that ${XCODEPROJ_NAME} exists.${NC}"
     exit 1
 fi
 
@@ -44,21 +46,21 @@ echo -e "${YELLOW}[1/3]${NC} Building with canonical build entrypoint (Release).
 
 # Check build result
 BUILD_DIR="${DERIVED_DATA}/Build/Products/Release"
-if [ ! -d "${BUILD_DIR}/${APP_NAME}.app" ]; then
-    echo -e "${RED}Error: Build failed. App not found at ${BUILD_DIR}/${APP_NAME}.app${NC}"
+if [ ! -d "${BUILD_DIR}/${APP_PRODUCT_NAME}.app" ]; then
+    echo -e "${RED}Error: Build failed. App not found at ${BUILD_DIR}/${APP_PRODUCT_NAME}.app${NC}"
     exit 1
 fi
 echo -e "${GREEN}✓ Build completed${NC}"
 
 # Copy to dist
 echo -e "${YELLOW}[2/3]${NC} Copying to dist/..."
-rm -rf "${DIST_DIR}/${APP_NAME}.app"
-cp -R "${BUILD_DIR}/${APP_NAME}.app" "${DIST_DIR}/"
+rm -rf "${DIST_DIR}/${APP_PRODUCT_NAME}.app"
+cp -R "${BUILD_DIR}/${APP_PRODUCT_NAME}.app" "${DIST_DIR}/"
 echo -e "${GREEN}✓ App copied to dist/${NC}"
 
 # Code sign (ad-hoc)
 echo -e "${YELLOW}[3/3]${NC} Code signing..."
-codesign --force --deep --sign - "${DIST_DIR}/${APP_NAME}.app"
+codesign --force --deep --sign - "${DIST_DIR}/${APP_PRODUCT_NAME}.app"
 echo -e "${GREEN}✓ Code signing completed${NC}"
 
 echo ""
@@ -67,10 +69,10 @@ echo -e "${GREEN}✓ Build completed successfully!${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 echo -e "App bundle location:"
-echo -e "  ${YELLOW}${DIST_DIR}/${APP_NAME}.app${NC}"
+echo -e "  ${YELLOW}${DIST_DIR}/${APP_PRODUCT_NAME}.app${NC}"
 echo ""
 echo -e "To run the app:"
-echo -e "  ${YELLOW}open \"${DIST_DIR}/${APP_NAME}.app\"${NC}"
+echo -e "  ${YELLOW}open \"${DIST_DIR}/${APP_PRODUCT_NAME}.app\"${NC}"
 echo ""
 echo -e "To create a DMG:"
 echo -e "  ${YELLOW}./scripts/create-dmg.sh${NC}"
@@ -81,6 +83,6 @@ if [[ "$1" != "--ci" && "$1" != "--no-interactive" ]]; then
     read -p "Run the app now? (y/n) " -n 1 -r
     echo ""
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        open "${DIST_DIR}/${APP_NAME}.app"
+        open "${DIST_DIR}/${APP_PRODUCT_NAME}.app"
     fi
 fi

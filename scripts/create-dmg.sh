@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================================
-# create-dmg.sh - Packages MeetingAssistant.app into a .dmg file
+# create-dmg.sh - Packages Prisma.app into a .dmg file
 # =============================================================================
 # Works with the new Xcode project structure. Will build Release if needed.
 # =============================================================================
@@ -8,14 +8,16 @@
 set -e
 
 # Configuration
-APP_NAME="MeetingAssistant"
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+# shellcheck source=scripts/config/app_identity.sh
+source "${PROJECT_DIR}/scripts/config/app_identity.sh"
+
 DIST_DIR="${PROJECT_DIR}/dist"
-APP_BUNDLE="${DIST_DIR}/${APP_NAME}.app"
-DMG_NAME="${APP_NAME}.dmg"
+APP_BUNDLE="${DIST_DIR}/${APP_PRODUCT_NAME}.app"
+DMG_NAME="${APP_PRODUCT_NAME}.dmg"
 DMG_PATH="${DIST_DIR}/${DMG_NAME}"
 STAGING_DIR="${DIST_DIR}/dmg_staging"
-RW_DMG_PATH="${DIST_DIR}/${APP_NAME}-rw.dmg"
+RW_DMG_PATH="${DIST_DIR}/${APP_PRODUCT_NAME}-rw.dmg"
 MOUNT_POINT="${DIST_DIR}/dmg_mount"
 DMG_ICON_SIZE="${DMG_ICON_SIZE:-160}"
 
@@ -97,7 +99,7 @@ rm -rf "${STAGING_DIR}"
 mkdir -p "${STAGING_DIR}"
 
 # Copy App Bundle
-echo -e "      Copying ${APP_NAME}.app..."
+echo -e "      Copying ${APP_PRODUCT_NAME}.app..."
 cp -R "${APP_BUNDLE}" "${STAGING_DIR}/"
 
 # Create Applications symlink
@@ -107,7 +109,7 @@ ln -s /Applications "${STAGING_DIR}/Applications"
 # Create writable DMG
 echo -e "${YELLOW}[2/5]${NC} Creating writable DMG..."
 rm -f "${DMG_PATH}" "${RW_DMG_PATH}"
-hdiutil create -volname "${APP_NAME}" \
+hdiutil create -volname "${APP_PRODUCT_NAME}" \
     -srcfolder "${STAGING_DIR}" \
     -ov -format UDRW \
     "${RW_DMG_PATH}"
