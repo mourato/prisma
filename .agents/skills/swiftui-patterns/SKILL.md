@@ -7,7 +7,7 @@ description: This skill should be used when the user asks to "build SwiftUI view
 
 ## Overview
 
-Recommended patterns for SwiftUI development in the Meeting Assistant project.
+Recommended patterns for SwiftUI development in the Prisma project.
 
 ## Mandatory Pairing
 

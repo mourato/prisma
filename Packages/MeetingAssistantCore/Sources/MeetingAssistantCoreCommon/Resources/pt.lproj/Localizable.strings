@@ -1,4 +1,5 @@
 /* Sidebar Sections */
+"app.name" = "Prisma";
 "settings.section.metrics" = "Dashboard";
 "settings.section.general" = "Geral";
 "settings.section.dictation" = "Ditado";
@@ -30,7 +31,7 @@
 "metrics.empty.title" = "Sem dados ainda";
 "metrics.empty.subtitle" = "Faça sua primeira gravação para liberar insights.";
 "metrics.error.load" = "Não foi possível carregar os dados do dashboard.";
-"metrics.hero.title" = "Você economizou %@ com o Meeting Assistant";
+"metrics.hero.title" = "Você economizou %@ com o Prisma";
 "metrics.hero.subtitle" = "Ditou %1$@ palavras em %2$d sessões.";
 "metrics.summary.sessions_recorded" = "Sessões Gravadas";
 "metrics.summary.sessions_recorded_detail" = "sessões completadas";
@@ -122,7 +123,7 @@
 "settings.meetings.monitoring_access.context_title" = "Escopo de monitoramento";
 "settings.meetings.monitoring_access.context_desc" = "Escolha apps desktop e alvos web que devem acionar a detecção automática de reuniões.";
 "settings.meetings.web_targets.title" = "Alvos Web de Reunião";
-"settings.meetings.web_targets.desc" = "Identifica reuniões pela URL da aba ativa em navegadores compatíveis. O macOS pode pedir permissão de automação para o Meeting Assistant ler essa URL.";
+"settings.meetings.web_targets.desc" = "Identifica reuniões pela URL da aba ativa em navegadores compatíveis. O macOS pode pedir permissão de automação para o Prisma ler essa URL.";
 "settings.meetings.web_targets.empty" = "Nenhum alvo web configurado ainda.";
 "settings.meetings.web_targets.add" = "Adicionar alvo web";
 "settings.meetings.web_targets.edit" = "Editar alvo web";
@@ -451,7 +452,7 @@
 "settings.assistant.integrations.valid_deeplink" = "Deeplink do Raycast válido.";
 "settings.assistant.integrations.invalid_deeplink" = "Deeplink inválido. Ele deve começar com raycast://";
 "settings.assistant.integrations.test_button" = "Testar integração com Raycast";
-"settings.assistant.integrations.test_message" = "Olá Raycast. Este é um teste de integração do Meeting Assistant.";
+"settings.assistant.integrations.test_message" = "Olá Raycast. Este é um teste de integração do Prisma.";
 "settings.assistant.integrations.test_success" = "Deeplink do Raycast aberto com sucesso.";
 "settings.assistant.integrations.test_success_clipboard_fallback" = "Raycast aberto. Comando copiado para a área de transferência por limite de URL.";
 "settings.assistant.integrations.test_invalid_deeplink" = "Deeplink inválido. Verifique a URL do comando no Raycast.";
@@ -584,7 +585,7 @@
 /* Permissions Settings */
 "settings.permissions.title" = "Permissões";
 "settings.permissions.about" = "Sobre Permissões";
-"settings.permissions.description" = "O Meeting Assistant precisa de acesso ao microfone para gravar ditados. A gravação de tela é necessária apenas para capturar áudio do sistema. Para regras por site e detecção de reuniões web, o macOS pode pedir permissão de automação para ler a URL da aba ativa em navegadores compatíveis.";
+"settings.permissions.description" = "O Prisma precisa de acesso ao microfone para gravar ditados. A gravação de tela é necessária apenas para capturar áudio do sistema. Para regras por site e detecção de reuniões web, o macOS pode pedir permissão de automação para ler a URL da aba ativa em navegadores compatíveis.";
 "settings.permissions.status" = "Status das Permissões";
 "permissions.warning" = "Algumas permissões são necessárias dependendo do que você grava.";
 
@@ -617,7 +618,7 @@
 "menubar.check_updates" = "Verificar Atualizações...";
 "menubar.quit" = "Sair";
 "menubar.accessibility.recording" = "Gravação em andamento";
-"menubar.accessibility.idle" = "Meeting Assistant";
+"menubar.accessibility.idle" = "Prisma";
 "status.recording" = "Gravando...";
 "status.transcribing" = "Transcrevendo...";
 "status.waiting" = "Aguardando reunião";
@@ -792,14 +793,14 @@
 "transcribe.import_audio.panel.prompt" = "Transcrever";
 
 /* About */
-"about.title" = "Meeting Assistant";
+"about.title" = "Prisma";
 "about.version" = "Versão %@";
 "about.description" = "Transcreva suas reuniões de vídeo automaticamente usando IA.";
 "about.copyright" = "© %d Todos os direitos reservados.";
 
 /* Updates */
 "updates.check_title" = "Verificar Atualizações";
-"updates.latest_version" = "Você está usando a versão mais recente do Meeting Assistant.";
+"updates.latest_version" = "Você está usando a versão mais recente do Prisma.";
 
 /* Menu Bar */
 "menubar.record_section" = "Gravar...";
@@ -936,12 +937,12 @@
 "export.filename.prefix" = "Reuniao";
 
 /* Onboarding */
-"onboarding.welcome.title" = "Bem-vindo ao Meeting Assistant";
+"onboarding.welcome.title" = "Bem-vindo ao Prisma";
 "onboarding.welcome.subtitle" = "Transcreva suas reuniões localmente com inteligência powered by AI.";
 "onboarding.welcome.button" = "Começar";
 
 "onboarding.permissions.title" = "Permissões";
-"onboarding.permissions.subtitle" = "O Meeting Assistant precisa de algumas permissões para funcionar corretamente.";
+"onboarding.permissions.subtitle" = "O Prisma precisa de algumas permissões para funcionar corretamente.";
 "onboarding.permissions.accessibility.title" = "Acessibilidade";
 "onboarding.permissions.accessibility.desc" = "Necessário para atalhos globais e substituição de texto.";
 "onboarding.permissions.microphone.title" = "Microfone";
@@ -972,8 +973,8 @@
 "onboarding.download.model.diarization" = "Modelo de Identificação de Locutor";
 
 "onboarding.completion.title" = "Tudo Pronto!";
-"onboarding.completion.subtitle" = "O Meeting Assistant está pronto para ajudá-lo a capturar e transcrever suas reuniões.";
-"onboarding.completion.button" = "Começar a Usar o Meeting Assistant";
+"onboarding.completion.subtitle" = "O Prisma está pronto para ajudá-lo a capturar e transcrever suas reuniões.";
+"onboarding.completion.button" = "Começar a Usar o Prisma";
 "onboarding.back" = "Voltar";
 "onboarding.continue" = "Continuar";
 "onboarding.skip" = "Pular";

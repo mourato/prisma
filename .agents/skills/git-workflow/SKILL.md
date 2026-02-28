@@ -7,7 +7,7 @@ description: This skill should be used when the user asks for standard Git flow 
 
 ## Overview
 
-Comprehensive Git patterns for branch management, commit standards, and pull requests in the Meeting Assistant project.
+Comprehensive Git patterns for branch management, commit standards, and pull requests in the Prisma project.
 
 ## When to Use
 
