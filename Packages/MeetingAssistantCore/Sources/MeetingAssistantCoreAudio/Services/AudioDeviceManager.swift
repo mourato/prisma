@@ -111,6 +111,8 @@ public final class AudioDeviceManager: ObservableObject {
         AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &propsize, &deviceIDs)
 
         for deviceID in deviceIDs {
+            guard deviceID != AudioObjectID(kAudioObjectUnknown) else { continue }
+
             var nameAddress = AudioObjectPropertyAddress(
                 mSelector: kAudioDevicePropertyDeviceUID,
                 mScope: kAudioObjectPropertyScopeGlobal,
@@ -121,7 +123,11 @@ public final class AudioDeviceManager: ObservableObject {
             var uidSize = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
             let status = AudioObjectGetPropertyData(deviceID, &nameAddress, 0, nil, &uidSize, &uidString)
 
-            if status == noErr, let deviceUID = uidString?.takeRetainedValue(), (deviceUID as String) == uid {
+            if status == noErr,
+                let deviceUID = uidString?.takeRetainedValue(),
+                (deviceUID as String) == uid,
+                isUsableInputDeviceID(deviceID)
+            {
                 return deviceID
             }
         }
@@ -142,7 +148,22 @@ public final class AudioDeviceManager: ObservableObject {
         let status = AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &size, &deviceID)
 
         guard status == noErr else { return nil }
+        guard isUsableInputDeviceID(deviceID) else {
+            AppLogger.warning(
+                "System default input device is unavailable or invalid",
+                category: .recordingManager,
+                extra: ["deviceID": deviceID]
+            )
+            return nil
+        }
         return deviceID
+    }
+
+    /// Returns whether this Core Audio device can be used as an input source.
+    public nonisolated func isUsableInputDeviceID(_ id: AudioObjectID) -> Bool {
+        guard id != AudioObjectID(kAudioObjectUnknown) else { return false }
+        guard let channelCount = getInputChannelCount(for: id), channelCount > 0 else { return false }
+        return true
     }
 
     public nonisolated func getDeviceName(for id: AudioObjectID) -> String? {
