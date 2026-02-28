@@ -1,4 +1,4 @@
 /* Privacy Usage Descriptions */
-"NSMicrophoneUsageDescription" = "O Meeting Assistant precisa acessar o microfone para capturar áudio quando a captura de tela não estiver disponível.";
-"NSScreenCaptureUsageDescription" = "O Meeting Assistant precisa capturar áudio do sistema para gravar suas reuniões por videochamada.";
+"NSMicrophoneUsageDescription" = "O Prisma precisa acessar o microfone para capturar áudio quando a captura de tela não estiver disponível.";
+"NSScreenCaptureUsageDescription" = "O Prisma precisa capturar áudio do sistema para gravar suas reuniões por videochamada.";
 "NSHumanReadableCopyright" = "Copyright © 2024. Todos os direitos reservados.";

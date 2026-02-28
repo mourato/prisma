@@ -7,7 +7,7 @@ description: This skill should be used when the user asks to "localize UI text",
 
 ## Overview
 
-Complete guide for internationalization (i18n) and accessibility (a11y) for the Meeting Assistant.
+Complete guide for internationalization (i18n) and accessibility (a11y) for the Prisma.
 
 ## When to Use
 

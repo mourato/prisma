@@ -1,4 +1,4 @@
-# Meeting Assistant for macOS
+# Prisma for macOS
 
 A native macOS app that detects video-call meetings, captures system audio, and transcribes locally using on-device AI models via the [FluidAudio SDK](https://github.com/FluidInference/FluidAudio).
 
@@ -102,7 +102,7 @@ On first use, FluidAudio may download and prepare the model(s). This can take a 
 
 ### Audio capture does not work
 
-- Check **Privacy & Security → Screen Recording** and ensure Meeting Assistant is enabled.
+- Check **Privacy & Security → Screen Recording** and ensure Prisma is enabled.
 - If you rebuilt/reinstalled the app, macOS may require re-granting permission.
 
 ## License
