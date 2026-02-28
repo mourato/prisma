@@ -1,6 +1,6 @@
 # Skills Index
 
-Comprehensive index of all available agent skills for Meeting Assistant. For routing logic and guidance on selecting the right skill, see [Skill Routing Guide](./.agents/docs/skill-routing.md).
+Comprehensive index of all available agent skills for Prisma. For routing logic and guidance on selecting the right skill, see [Skill Routing Guide](./.agents/docs/skill-routing.md).
 
 ## Complete Skills Table
 

@@ -1,6 +1,6 @@
 # Build and Test Reference
 
-This document provides comprehensive CLI and workflow reference for building, testing, and validating changes in Meeting Assistant.
+This document provides comprehensive CLI and workflow reference for building, testing, and validating changes in Prisma.
 
 ## Primary Build/Test Commands
 

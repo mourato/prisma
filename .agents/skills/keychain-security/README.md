@@ -1,6 +1,6 @@
 # keychain-security
 
-Guide for secure credential storage using macOS Keychain in the Meeting Assistant project.
+Guide for secure credential storage using macOS Keychain in the Prisma project.
 
 ## Overview
 
