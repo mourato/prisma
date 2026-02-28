@@ -2,6 +2,11 @@
 import XCTest
 
 final class StorageServiceSecurityTests: XCTestCase {
+    private var appSupportRoot: String {
+        (FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? FileManager.default.temporaryDirectory).path
+    }
+
     override func setUp() {
         super.setUp()
         // Reset UserDefaults before each test
@@ -24,7 +29,7 @@ final class StorageServiceSecurityTests: XCTestCase {
 
         // Then: Should fallback to default, not malicious path
         XCTAssertFalse(directory.path.contains("etc/passwd"))
-        XCTAssertTrue(directory.path.contains("MeetingAssistant"))
+        XCTAssertTrue(directory.path.hasPrefix(appSupportRoot))
     }
 
     func testSymlinkResolution() {
@@ -37,7 +42,7 @@ final class StorageServiceSecurityTests: XCTestCase {
         // Then: Should be resolved (no symlinks in path should lead outside container)
         // Note: In sandboxed environment, this is hard to mock perfectly without actual symlinks,
         // but we can verify the property still returns a valid container path.
-        XCTAssertTrue(directory.path.contains("MeetingAssistant"))
+        XCTAssertTrue(directory.path.hasPrefix(appSupportRoot))
     }
 
     func testOutsideContainerBlocked() {
@@ -51,6 +56,6 @@ final class StorageServiceSecurityTests: XCTestCase {
 
         // Then: Should fallback to default
         XCTAssertFalse(directory.path.hasPrefix("/tmp"))
-        XCTAssertTrue(directory.path.contains("MeetingAssistant"))
+        XCTAssertTrue(directory.path.hasPrefix(appSupportRoot))
     }
 }

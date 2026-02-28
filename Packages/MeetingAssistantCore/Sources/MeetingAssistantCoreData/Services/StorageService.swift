@@ -149,12 +149,7 @@ public final class FileSystemStorageService: StorageService {
     let coreDataTranscriptionRepository: CoreDataTranscriptionStorageRepository
 
     public init() {
-        let appSupportURLs = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)
-        guard let appSupport = appSupportURLs.first else {
-            fatalError("Critical: Could not access Application Support directory.")
-        }
-
-        let baseDir = appSupport.appendingPathComponent("MeetingAssistant", isDirectory: true)
+        let baseDir = AppIdentity.appSupportBaseDirectory(fileManager: .default)
         defaultRecordingsDirectory = baseDir.appendingPathComponent("recordings", isDirectory: true)
         legacyTranscriptsDirectory = baseDir.appendingPathComponent("transcripts", isDirectory: true)
         coreDataStack = .shared

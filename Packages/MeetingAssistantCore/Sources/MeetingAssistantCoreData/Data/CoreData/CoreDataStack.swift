@@ -1,3 +1,4 @@
+import MeetingAssistantCoreCommon
 import MeetingAssistantCoreDomain
 
 // CoreDataStack - Stack thread-safe para gerenciamento de CoreData
@@ -10,7 +11,7 @@ import os.log
 /// Stack CoreData thread-safe com suporte a operações em background
 public final class CoreDataStack: Sendable {
     private let persistentContainer: NSPersistentContainer
-    private let logger = Logger(subsystem: "com.meetingassistant", category: "CoreData")
+    private let logger = Logger(subsystem: AppIdentity.logSubsystem, category: "CoreData")
 
     public static let shared = CoreDataStack()
 
@@ -30,7 +31,7 @@ public final class CoreDataStack: Sendable {
     /// Inicializa o stack CoreData
     /// - Parameter name: Nome do modelo CoreData
     /// - Parameter inMemory: Se true, usa banco em memória (para testes)
-    public init(name: String = "MeetingAssistant", inMemory: Bool = false) {
+    public init(name: String = AppIdentity.appSupportDirectoryName, inMemory: Bool = false) {
         let model = CoreDataModel.createManagedObjectModel()
         persistentContainer = NSPersistentContainer(name: name, managedObjectModel: model)
 
@@ -76,9 +77,7 @@ public final class CoreDataStack: Sendable {
     }
 
     private static func persistentStoreURL(for storeName: String) -> URL {
-        let appSupportURLs = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)
-        let appSupport = appSupportURLs.first ?? FileManager.default.temporaryDirectory
-        let baseDirectory = appSupport.appendingPathComponent("MeetingAssistant", isDirectory: true)
+        let baseDirectory = AppIdentity.appSupportBaseDirectory(fileManager: .default)
         return baseDirectory.appendingPathComponent("\(storeName).sqlite", isDirectory: false)
     }
 
