@@ -90,26 +90,26 @@ public struct AssistantSettingsTab: View {
     }
 
     private var assistantControlsSection: some View {
-        MAShortcutSettingsSection(
+        ShortcutSettingsSection(
             groupTitle: "settings.assistant.controls".localized,
             groupIcon: "sparkles",
             descriptionText: "settings.assistant.toggle_command_desc".localized,
             settingsContent: {
-                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
                     if let healthPresentation = viewModel.shortcutCaptureHealthPresentation {
                         ShortcutCaptureHealthStatusView(presentation: healthPresentation) {
                             viewModel.openShortcutCaptureHealthAction()
                         }
                     }
 
-                    MAModifierShortcutEditor(
+                    DSModifierShortcutEditor(
                         shortcut: $viewModel.assistantShortcutDefinition,
                         conflictMessage: viewModel.assistantModifierConflictMessage
                     )
 
                     Divider()
 
-                    MAToggleRow(
+                    DSToggleRow(
                         "settings.assistant.use_enter_stop".localized,
                         isOn: $viewModel.useEnterToStopRecording
                     )
@@ -119,12 +119,12 @@ public struct AssistantSettingsTab: View {
     }
 
     private var visualFeedbackSection: some View {
-        MAGroup(
+        DSGroup(
             "settings.assistant.visual_feedback".localized,
             icon: "rectangle.inset.filled"
         ) {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
-                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
+                HStack(spacing: AppDesignSystem.Layout.spacing8) {
                     previewButton
 
                     if isPreviewRunning {
@@ -165,16 +165,16 @@ public struct AssistantSettingsTab: View {
                     .pickerStyle(.segmented)
                 }
 
-                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                HStack(spacing: AppDesignSystem.Layout.spacing12) {
                     Text("settings.assistant.border_color".localized)
                         .font(.body)
                         .fontWeight(.medium)
 
                     Spacer()
 
-                    MAThemePicker(
+                    DSThemePicker(
                         selection: $viewModel.borderColor,
-                        circleSpacing: MeetingAssistantDesignSystem.Layout.spacing4,
+                        circleSpacing: AppDesignSystem.Layout.spacing4,
                         itemFrameSize: 34
                     )
                 }
@@ -182,7 +182,7 @@ public struct AssistantSettingsTab: View {
                 Divider()
 
                 if viewModel.borderStyle == .stroke {
-                    HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                    HStack(spacing: AppDesignSystem.Layout.spacing8) {
                         Text("settings.assistant.border_width".localized)
                             .font(.body)
                             .fontWeight(.medium)
@@ -199,14 +199,14 @@ public struct AssistantSettingsTab: View {
 
                     }
                 } else {
-                    HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                    HStack(spacing: AppDesignSystem.Layout.spacing8) {
                         Text("settings.assistant.glow_size".localized)
                             .font(.body)
                             .fontWeight(.medium)
 
                         Spacer()
 
-                        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                        HStack(spacing: AppDesignSystem.Layout.spacing8) {
                             TextField("", text: glowSizeInputBinding)
                                 .textFieldStyle(.roundedBorder)
                                 .multilineTextAlignment(.trailing)

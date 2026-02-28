@@ -56,11 +56,11 @@ public struct PromptSelectionRow<MenuContent: View>: View {
                 rowContent
             }
         }
-        .background(isSelected ? MeetingAssistantDesignSystem.Colors.selectionFill : Color.clear)
-        .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.cardCornerRadius))
+        .background(isSelected ? AppDesignSystem.Colors.selectionFill : Color.clear)
+        .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.cardCornerRadius))
         .overlay(
-            RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.cardCornerRadius)
-                .stroke(isSelected ? MeetingAssistantDesignSystem.Colors.selectionStroke : unselectedStrokeColor, lineWidth: 1)
+            RoundedRectangle(cornerRadius: AppDesignSystem.Layout.cardCornerRadius)
+                .stroke(isSelected ? AppDesignSystem.Colors.selectionStroke : unselectedStrokeColor, lineWidth: 1)
         )
         .contextMenu {
             menuContent()
@@ -68,7 +68,7 @@ public struct PromptSelectionRow<MenuContent: View>: View {
     }
 
     private var rowContent: some View {
-        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+        HStack(spacing: AppDesignSystem.Layout.spacing12) {
             promptIcon
             promptInfo
 
@@ -76,24 +76,24 @@ public struct PromptSelectionRow<MenuContent: View>: View {
 
             if isSelected {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.success)
+                    .foregroundStyle(AppDesignSystem.Colors.success)
             }
 
             trailingMenu
         }
-        .padding(MeetingAssistantDesignSystem.Layout.spacing10)
+        .padding(AppDesignSystem.Layout.spacing10)
         .contentShape(Rectangle())
     }
 
     private var promptIcon: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
-                .fill(isSelected ? MeetingAssistantDesignSystem.Colors.accent : MeetingAssistantDesignSystem.Colors.subtleFill)
+            RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
+                .fill(isSelected ? AppDesignSystem.Colors.accent : AppDesignSystem.Colors.subtleFill)
                 .frame(width: 36, height: 36)
 
             Image(systemName: iconSystemName)
                 .font(.subheadline)
-                .foregroundStyle(isSelected ? MeetingAssistantDesignSystem.Colors.onAccent : .primary)
+                .foregroundStyle(isSelected ? AppDesignSystem.Colors.onAccent : .primary)
         }
     }
 

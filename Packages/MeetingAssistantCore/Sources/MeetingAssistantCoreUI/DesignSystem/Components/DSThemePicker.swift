@@ -6,14 +6,14 @@ import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
-public struct MAThemePicker: View {
+public struct DSThemePicker: View {
     @Binding private var selection: AppThemeColor
     private let circleSpacing: CGFloat
     private let itemFrameSize: CGFloat
 
     public init(
         selection: Binding<AppThemeColor>,
-        circleSpacing: CGFloat = MeetingAssistantDesignSystem.Layout.spacing12,
+        circleSpacing: CGFloat = AppDesignSystem.Layout.spacing12,
         itemFrameSize: CGFloat = 40
     ) {
         _selection = selection
@@ -75,7 +75,7 @@ public struct MAThemePicker: View {
 
 #Preview("Theme Picker") {
     PreviewStateContainer(AppThemeColor.system) { selection in
-        MAThemePicker(selection: selection)
+        DSThemePicker(selection: selection)
             .padding()
     }
 }

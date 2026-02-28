@@ -57,9 +57,9 @@ public struct EnhancementsSettingsTab: View {
     // MARK: - Sections
 
     private var mainSection: some View {
-        MAGroup("settings.post_processing.title".localized, icon: "brain") {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.itemSpacing) {
-                MAToggleRow(
+        DSGroup("settings.post_processing.title".localized, icon: "brain") {
+            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.itemSpacing) {
+                DSToggleRow(
                     "settings.post_processing.enabled".localized,
                     description: "settings.post_processing.description".localized,
                     isOn: $postProcessingViewModel.settings.postProcessingEnabled
@@ -92,22 +92,22 @@ public struct EnhancementsSettingsTab: View {
     }
 
     private var contextAwarenessSection: some View {
-        MAGroup("settings.context_awareness.title".localized, icon: "text.viewfinder") {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.itemSpacing) {
-                MAToggleRow(
+        DSGroup("settings.context_awareness.title".localized, icon: "text.viewfinder") {
+            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.itemSpacing) {
+                DSToggleRow(
                     "settings.context_awareness.enabled".localized,
                     description: "settings.context_awareness.enabled_desc".localized,
                     isOn: $postProcessingViewModel.settings.contextAwarenessEnabled
                 )
 
                 if postProcessingViewModel.settings.contextAwarenessEnabled {
-                    MAToggleRow(
+                    DSToggleRow(
                         "settings.context_awareness.explicit_action_only".localized,
                         description: "settings.context_awareness.explicit_action_only_desc".localized,
                         isOn: $postProcessingViewModel.settings.contextAwarenessExplicitActionOnly
                     )
 
-                    MAToggleRow(
+                    DSToggleRow(
                         "settings.context_awareness.accessibility_text".localized,
                         description: "settings.context_awareness.accessibility_text_desc".localized,
                         isOn: $postProcessingViewModel.settings.contextAwarenessIncludeAccessibilityText
@@ -119,13 +119,13 @@ public struct EnhancementsSettingsTab: View {
 
                     Divider()
 
-                    MAToggleRow(
+                    DSToggleRow(
                         "settings.context_awareness.clipboard".localized,
                         description: "settings.context_awareness.clipboard_desc".localized,
                         isOn: $postProcessingViewModel.settings.contextAwarenessIncludeClipboard
                     )
 
-                    MAToggleRow(
+                    DSToggleRow(
                         "settings.context_awareness.window_ocr".localized,
                         description: "settings.context_awareness.window_ocr_desc".localized,
                         isOn: $postProcessingViewModel.settings.contextAwarenessIncludeWindowOCR
@@ -135,7 +135,7 @@ public struct EnhancementsSettingsTab: View {
                         screenRecordingSupportStatus
                     }
 
-                    MAToggleRow(
+                    DSToggleRow(
                         "settings.context_awareness.redact_sensitive_data".localized,
                         description: "settings.context_awareness.redact_sensitive_data_desc".localized,
                         isOn: $postProcessingViewModel.settings.contextAwarenessRedactSensitiveData
@@ -143,14 +143,14 @@ public struct EnhancementsSettingsTab: View {
 
                     Divider()
 
-                    MAToggleRow(
+                    DSToggleRow(
                         "settings.context_awareness.protect_sensitive_apps".localized,
                         description: "settings.context_awareness.protect_sensitive_apps_desc".localized,
                         isOn: $postProcessingViewModel.settings.contextAwarenessProtectSensitiveApps
                     )
 
                     if postProcessingViewModel.settings.contextAwarenessProtectSensitiveApps {
-                        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
                             Text("settings.context_awareness.excluded_apps".localized)
                                 .font(.subheadline)
                                 .fontWeight(.medium)
@@ -162,9 +162,9 @@ public struct EnhancementsSettingsTab: View {
                             TextEditor(text: excludedBundleIDsBinding)
                                 .font(.caption.monospaced())
                                 .frame(minHeight: 72)
-                                .padding(MeetingAssistantDesignSystem.Layout.textAreaPadding)
-                                .background(MeetingAssistantDesignSystem.Colors.subtleFill2)
-                                .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+                                .padding(AppDesignSystem.Layout.textAreaPadding)
+                                .background(AppDesignSystem.Colors.subtleFill2)
+                                .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
 
                             Text("settings.context_awareness.base_exclusions".localized)
                                 .font(.caption)
@@ -178,7 +178,7 @@ public struct EnhancementsSettingsTab: View {
                                 .font(.caption.monospaced())
                                 .foregroundStyle(.secondary)
                         }
-                        .padding(.top, MeetingAssistantDesignSystem.Layout.spacing4)
+                        .padding(.top, AppDesignSystem.Layout.spacing4)
                     }
                 }
             }
@@ -186,16 +186,16 @@ public struct EnhancementsSettingsTab: View {
     }
 
     private var contextAwarenessSupportStatus: some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
             switch supportStatus {
             case .permissionDenied:
-                MACallout(
+                DSCallout(
                     kind: .warning,
                     title: "settings.context_awareness.permission_title".localized,
                     message: "settings.context_awareness.permission_desc".localized
                 )
 
-                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                HStack(spacing: AppDesignSystem.Layout.spacing8) {
                     Button("permissions.request".localized) {
                         AccessibilityPermissionService.requestPermission()
                         Task { await refreshSupportStatus() }
@@ -218,15 +218,15 @@ public struct EnhancementsSettingsTab: View {
     }
 
     private var screenRecordingSupportStatus: some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
             if !hasScreenRecordingPermission {
-                MACallout(
+                DSCallout(
                     kind: .warning,
                     title: "settings.context_awareness.screen_permission_title".localized,
                     message: "settings.context_awareness.screen_permission_desc".localized
                 )
 
-                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                HStack(spacing: AppDesignSystem.Layout.spacing8) {
                     Button("permissions.request".localized) {
                         CGRequestScreenCaptureAccess()
                         refreshScreenRecordingPermission()
@@ -246,9 +246,9 @@ public struct EnhancementsSettingsTab: View {
     }
 
     private var meetingIntelligenceSection: some View {
-        MAGroup("settings.enhancements.meeting_intelligence_model".localized, icon: "bubble.left.and.bubble.right.fill") {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.itemSpacing) {
-                MAToggleRow(
+        DSGroup("settings.enhancements.meeting_intelligence_model".localized, icon: "bubble.left.and.bubble.right.fill") {
+            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.itemSpacing) {
+                DSToggleRow(
                     "transcription.qa.title".localized,
                     description: "settings.enhancements.qa_enabled_desc".localized,
                     isOn: $postProcessingViewModel.settings.meetingQnAEnabled
@@ -256,7 +256,7 @@ public struct EnhancementsSettingsTab: View {
 
                 if !postProcessingViewModel.settings.isEnhancementsInferenceReady {
                     Divider()
-                    MACallout(
+                    DSCallout(
                         kind: .info,
                         title: "settings.enhancements.selector.moved_title".localized,
                         message: "settings.enhancements.selector.moved_message".localized
@@ -275,8 +275,8 @@ public struct EnhancementsSettingsTab: View {
 
     private var systemGuidelinesPage: some View {
         SettingsScrollableContent {
-            MAGroup("settings.post_processing.system_prompt".localized, icon: "terminal.fill") {
-                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+            DSGroup("settings.post_processing.system_prompt".localized, icon: "terminal.fill") {
+                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
                     HStack {
                         Text("settings.post_processing.base_instructions".localized)
                             .font(.subheadline)
@@ -296,12 +296,12 @@ public struct EnhancementsSettingsTab: View {
                     TextEditor(text: $systemGuidelinesDraft)
                         .font(.body)
                         .frame(minHeight: 250)
-                        .padding(MeetingAssistantDesignSystem.Layout.textAreaPadding)
-                        .background(MeetingAssistantDesignSystem.Colors.textBackground)
-                        .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+                        .padding(AppDesignSystem.Layout.textAreaPadding)
+                        .background(AppDesignSystem.Colors.textBackground)
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
                         .overlay(
-                            RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
-                                .stroke(MeetingAssistantDesignSystem.Colors.separator, lineWidth: 1)
+                            RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
+                                .stroke(AppDesignSystem.Colors.separator, lineWidth: 1)
                         )
 
                     HStack {
@@ -310,7 +310,7 @@ public struct EnhancementsSettingsTab: View {
                             saveSystemGuidelines()
                         }
                         .buttonStyle(.borderedProminent)
-                        .tint(MeetingAssistantDesignSystem.Colors.accent)
+                        .tint(AppDesignSystem.Colors.accent)
                         .disabled(systemGuidelinesDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     }
                 }
@@ -334,7 +334,7 @@ public struct EnhancementsSettingsTab: View {
     }
 
     private var providerModelsQuickSummary: some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing6) {
             modelSummaryRow(
                 title: "settings.enhancements.selector.meeting.title".localized,
                 summary: selectionSummary(for: postProcessingViewModel.settings.enhancementsAISelection)
@@ -347,11 +347,11 @@ public struct EnhancementsSettingsTab: View {
     }
 
     private func modelSummaryRow(title: String, summary: String) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+        HStack(alignment: .firstTextBaseline, spacing: AppDesignSystem.Layout.spacing8) {
             Text(title)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Spacer(minLength: MeetingAssistantDesignSystem.Layout.spacing8)
+            Spacer(minLength: AppDesignSystem.Layout.spacing8)
             Text(summary)
                 .font(.caption)
                 .lineLimit(1)

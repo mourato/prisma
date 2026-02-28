@@ -20,11 +20,11 @@ public struct AssistantIntegrationsSection: View {
     }
 
     public var body: some View {
-        MAGroup(
+        DSGroup(
             "settings.assistant.integrations.title".localized,
             icon: "puzzlepiece.extension"
         ) {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
                 Text("settings.assistant.integrations.description".localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -66,8 +66,8 @@ public struct AssistantIntegrationsSection: View {
 
                 if let statusMessage = viewModel.raycastTestStatusMessage {
                     let statusColor = viewModel.raycastTestStatusIsError
-                        ? MeetingAssistantDesignSystem.Colors.error
-                        : MeetingAssistantDesignSystem.Colors.success
+                        ? AppDesignSystem.Colors.error
+                        : AppDesignSystem.Colors.success
 
                     Text(statusMessage)
                         .font(.caption)
@@ -78,9 +78,9 @@ public struct AssistantIntegrationsSection: View {
     }
 
     private func integrationRow(integration: AssistantIntegrationConfig, isCardStyle: Bool) -> some View {
-        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+        HStack(spacing: AppDesignSystem.Layout.spacing12) {
             if isCardStyle {
-                RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
+                RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
                     .fill(Color.secondary.opacity(0.12))
                     .frame(width: 36, height: 36)
                     .overlay(
@@ -93,7 +93,7 @@ public struct AssistantIntegrationsSection: View {
                 .font(.body)
                 .fontWeight(.medium)
 
-            VStack(alignment: .trailing, spacing: MeetingAssistantDesignSystem.Layout.spacing2) {
+            VStack(alignment: .trailing, spacing: AppDesignSystem.Layout.spacing2) {
                 Text("settings.assistant.integrations.shortcut.direct".localized)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
@@ -109,7 +109,7 @@ public struct AssistantIntegrationsSection: View {
                 editingIntegration = integration
             } label: {
                 Image(systemName: "pencil")
-                    .padding(MeetingAssistantDesignSystem.Layout.compactInset)
+                    .padding(AppDesignSystem.Layout.compactInset)
                     .background(
                         Circle().fill(Color.secondary.opacity(0.12))
                     )
@@ -125,9 +125,9 @@ public struct AssistantIntegrationsSection: View {
             .labelsHidden()
             .toggleStyle(.switch)
         }
-        .padding(isCardStyle ? MeetingAssistantDesignSystem.Layout.spacing12 : 0)
+        .padding(isCardStyle ? AppDesignSystem.Layout.spacing12 : 0)
         .background(
-            RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.cardCornerRadius)
+            RoundedRectangle(cornerRadius: AppDesignSystem.Layout.cardCornerRadius)
                 .strokeBorder(isCardStyle ? Color.secondary.opacity(0.2) : Color.clear, lineWidth: 1)
         )
     }

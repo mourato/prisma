@@ -28,7 +28,7 @@ public struct SummaryTemplateEditorSheet: View {
             Divider()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
+                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
                     Text("settings.meetings.template_desc".localized)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -40,12 +40,12 @@ public struct SummaryTemplateEditorSheet: View {
                     TextEditor(text: $summaryTemplate)
                         .font(.body.monospaced())
                         .frame(minHeight: Constants.editorMinHeight)
-                        .padding(MeetingAssistantDesignSystem.Layout.textAreaPadding)
-                        .background(MeetingAssistantDesignSystem.Colors.textBackground)
-                        .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+                        .padding(AppDesignSystem.Layout.textAreaPadding)
+                        .background(AppDesignSystem.Colors.textBackground)
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
                         .overlay(
-                            RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
-                                .stroke(MeetingAssistantDesignSystem.Colors.separator, lineWidth: 1)
+                            RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
+                                .stroke(AppDesignSystem.Colors.separator, lineWidth: 1)
                         )
                 }
                 .padding()
@@ -64,7 +64,7 @@ public struct SummaryTemplateEditorSheet: View {
             Spacer()
         }
         .padding()
-        .background(MeetingAssistantDesignSystem.Colors.windowBackground)
+        .background(AppDesignSystem.Colors.windowBackground)
     }
 
     private var footer: some View {
@@ -81,11 +81,11 @@ public struct SummaryTemplateEditorSheet: View {
             }
             .keyboardShortcut(.return)
             .buttonStyle(.borderedProminent)
-            .tint(MeetingAssistantDesignSystem.Colors.accent)
+            .tint(AppDesignSystem.Colors.accent)
             .disabled(summaryTemplate.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
         .padding()
-        .background(MeetingAssistantDesignSystem.Colors.windowBackground)
+        .background(AppDesignSystem.Colors.windowBackground)
     }
 }
 

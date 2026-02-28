@@ -34,16 +34,16 @@ public struct PermissionsSettingsTab: View {
                 description: "settings.permissions.description".localized
             )
 
-            MAGroup("settings.permissions.status".localized, icon: "checkmark.shield") {
+            DSGroup("settings.permissions.status".localized, icon: "checkmark.shield") {
                 PermissionStatusView(viewModel: viewModel, requiredSource: .all)
-                    .padding(.top, MeetingAssistantDesignSystem.Layout.spacing4)
+                    .padding(.top, AppDesignSystem.Layout.spacing4)
             }
 
             if shortcutSettingsViewModel.shortcutCaptureHealthPresentation != nil ||
                 assistantShortcutSettingsViewModel.shortcutCaptureHealthPresentation != nil
             {
-                MAGroup("settings.shortcuts.health.title".localized, icon: "keyboard") {
-                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                DSGroup("settings.shortcuts.health.title".localized, icon: "keyboard") {
+                    VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
                         if let globalPresentation = shortcutSettingsViewModel.shortcutCaptureHealthPresentation {
                             ShortcutCaptureHealthStatusView(presentation: globalPresentation) {
                                 shortcutSettingsViewModel.openShortcutCaptureHealthAction()

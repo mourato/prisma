@@ -24,7 +24,7 @@ public final class MetricsDashboardViewModel: ObservableObject {
     @Published public private(set) var errorMessage: String?
 
     private let storage: StorageService
-    private let logger = Logger(subsystem: "MeetingAssistant", category: "MetricsDashboardViewModel")
+    private let logger = Logger(subsystem: AppIdentity.logSubsystem, category: "MetricsDashboardViewModel")
     private var allMetadata: [TranscriptionMetadata] = []
     private var isRefreshing = false
     private var hasLoaded = false

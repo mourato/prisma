@@ -24,18 +24,18 @@ public struct DictationSettingsTab: View {
             )
 
             // Keyboard Shortcut
-            MAShortcutSettingsSection(
+            ShortcutSettingsSection(
                 groupTitle: "settings.shortcuts.dictation".localized,
                 descriptionText: "settings.shortcuts.dictation_desc".localized,
                 settingsContent: {
-                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                    VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
                         if let healthPresentation = shortcutsViewModel.shortcutCaptureHealthPresentation {
                             ShortcutCaptureHealthStatusView(presentation: healthPresentation) {
                                 shortcutsViewModel.openShortcutCaptureHealthAction()
                             }
                         }
 
-                        MAModifierShortcutEditor(
+                        DSModifierShortcutEditor(
                             shortcut: $shortcutsViewModel.dictationShortcutDefinition,
                             conflictMessage: shortcutsViewModel.dictationModifierConflictMessage
                         )
@@ -44,9 +44,9 @@ public struct DictationSettingsTab: View {
             )
 
             // Workflow
-            MAGroup("settings.dictation.workflow".localized, icon: "cpu") {
-                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
-                    MAToggleRow(
+            DSGroup("settings.dictation.workflow".localized, icon: "cpu") {
+                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
+                    DSToggleRow(
                         "settings.general.auto_copy_transcription".localized,
                         description: "settings.general.auto_copy_transcription_desc".localized,
                         isOn: $viewModel.autoCopyTranscriptionToClipboard
@@ -54,7 +54,7 @@ public struct DictationSettingsTab: View {
 
                     Divider()
 
-                    MAToggleRow(
+                    DSToggleRow(
                         "settings.general.auto_paste_transcription".localized,
                         isOn: $viewModel.autoPasteTranscriptionToActiveApp
                     )
@@ -62,8 +62,8 @@ public struct DictationSettingsTab: View {
             }
 
             // Dictation Prompts Section
-            MAGroup("settings.dictation.prompts".localized, icon: "sparkles") {
-                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.cardPadding) {
+            DSGroup("settings.dictation.prompts".localized, icon: "sparkles") {
+                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.cardPadding) {
                     HStack {
                         Text("settings.post_processing.choose_active".localized)
                             .font(.caption)
@@ -84,7 +84,7 @@ public struct DictationSettingsTab: View {
                         .controlSize(.regular)
                     }
 
-                    VStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                    VStack(spacing: AppDesignSystem.Layout.spacing8) {
                         noPostProcessingRow()
                         ForEach(promptViewModel.availablePrompts) { prompt in
                             promptRow(prompt: prompt)

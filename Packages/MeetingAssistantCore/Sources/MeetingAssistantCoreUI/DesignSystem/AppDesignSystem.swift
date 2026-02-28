@@ -12,7 +12,7 @@ import SwiftUI
 /// - Prefer macOS-native semantics (materials + semantic colors)
 /// - Centralize spacing/typography/radius/shadows (DRY)
 /// - Keep styling consistent across Settings, Menu Bar, and in-app views
-public enum MeetingAssistantDesignSystem {
+public enum AppDesignSystem {
     // MARK: - Colors
 
     public enum Colors {

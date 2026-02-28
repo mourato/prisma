@@ -14,27 +14,27 @@ public struct ShortcutCaptureHealthStatusView: View {
     }
 
     public var body: some View {
-        MACard {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing10) {
-                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+        DSCard {
+            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing10) {
+                HStack(spacing: AppDesignSystem.Layout.spacing8) {
                     Text(presentation.scopeLabelKey.localized)
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
                     Spacer(minLength: 0)
 
-                    MABadge(
+                    DSBadge(
                         presentation.badgeKey.localized,
                         kind: presentation.isFallback ? .error : .warning
                     )
                 }
 
-                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                HStack(spacing: AppDesignSystem.Layout.spacing8) {
                     Image(systemName: presentation.isFallback ? "arrow.trianglehead.branch" : "exclamationmark.triangle.fill")
                         .foregroundStyle(
                             presentation.isFallback
-                                ? MeetingAssistantDesignSystem.Colors.error
-                                : MeetingAssistantDesignSystem.Colors.warning
+                                ? AppDesignSystem.Colors.error
+                                : AppDesignSystem.Colors.warning
                         )
                     Text(presentation.titleKey.localized)
                         .font(.subheadline)

@@ -56,7 +56,7 @@ public struct MetricsDashboardSettingsTab: View {
     }
 
     private var filtersSection: some View {
-        MAGroup("metrics.filters.title".localized, icon: "calendar") {
+        DSGroup("metrics.filters.title".localized, icon: "calendar") {
             HStack {
                 Text("metrics.filters.period".localized)
                     .font(.body)
@@ -75,15 +75,15 @@ public struct MetricsDashboardSettingsTab: View {
     }
 
     private var activityHeatmapSection: some View {
-        MAGroup("metrics.activity.title".localized, icon: "calendar.badge.clock") {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+        DSGroup("metrics.activity.title".localized, icon: "calendar.badge.clock") {
+            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
                 Text("metrics.activity.subtitle".localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
                 if viewModel.isLoading {
                     ProgressView()
-                        .tint(MeetingAssistantDesignSystem.Colors.accent)
+                        .tint(AppDesignSystem.Colors.accent)
                         .frame(maxWidth: .infinity, minHeight: ActivityHeatmap.scrollHeight)
                         .padding(.vertical, ActivityHeatmap.verticalPadding)
                 } else if viewModel.dailyBuckets.isEmpty {
@@ -180,7 +180,7 @@ public struct MetricsDashboardSettingsTab: View {
             title: "metrics.summary.words_dictated".localized,
             value: Formatters.formattedNumber(viewModel.summary.wordsDictated),
             detail: "metrics.summary.words_dictated_detail".localized,
-            tint: MeetingAssistantDesignSystem.Colors.accent
+            tint: AppDesignSystem.Colors.accent
         )
     }
 
@@ -205,36 +205,36 @@ public struct MetricsDashboardSettingsTab: View {
     }
 
     private var weekdayPeaksSection: some View {
-        MAGroup("metrics.peaks.weekday.title".localized, icon: "chart.bar.xaxis") {
+        DSGroup("metrics.peaks.weekday.title".localized, icon: "chart.bar.xaxis") {
             Chart(viewModel.weekdayBuckets) { bucket in
                 BarMark(
                     x: .value("weekday", weekdayLabel(for: bucket.weekday)),
                     y: .value("words", bucket.words)
                 )
-                .foregroundStyle(MeetingAssistantDesignSystem.Colors.accent.gradient)
-                .cornerRadius(MeetingAssistantDesignSystem.Layout.tinyCornerRadius)
+                .foregroundStyle(AppDesignSystem.Colors.accent.gradient)
+                .cornerRadius(AppDesignSystem.Layout.tinyCornerRadius)
             }
             .chartYAxis {
                 AxisMarks(position: .leading)
             }
-            .frame(height: MeetingAssistantDesignSystem.Layout.chartHeight)
+            .frame(height: AppDesignSystem.Layout.chartHeight)
         }
     }
 
     private var hourlyPeaksSection: some View {
-        MAGroup("metrics.peaks.hourly.title".localized, icon: "clock.arrow.circlepath") {
+        DSGroup("metrics.peaks.hourly.title".localized, icon: "clock.arrow.circlepath") {
             Chart(viewModel.hourlyBuckets) { bucket in
                 BarMark(
                     x: .value("hour", bucket.hour),
                     y: .value("count", bucket.count)
                 )
-                .foregroundStyle(MeetingAssistantDesignSystem.Colors.accent.gradient)
+                .foregroundStyle(AppDesignSystem.Colors.accent.gradient)
             }
             .chartXScale(domain: 0...23)
             .chartYAxis {
                 AxisMarks(position: .leading)
             }
-            .frame(height: MeetingAssistantDesignSystem.Layout.chartHeight)
+            .frame(height: AppDesignSystem.Layout.chartHeight)
         }
     }
 
@@ -433,7 +433,7 @@ public struct MetricsDashboardSettingsTab: View {
             RoundedRectangle(cornerRadius: 2, style: .continuous)
                 .stroke(
                     bucket.words > 0 && bucket.words == maxDailyWords
-                        ? MeetingAssistantDesignSystem.Colors.accent
+                        ? AppDesignSystem.Colors.accent
                         : Color.secondary.opacity(0.2),
                     lineWidth: bucket.words > 0 && bucket.words == maxDailyWords ? 1 : 0.5
                 )
@@ -446,11 +446,11 @@ public struct MetricsDashboardSettingsTab: View {
     private var heatmapLegend: some View {
         HStack(spacing: ActivityHeatmap.legendSpacing) {
             legendItem(
-                color: MeetingAssistantDesignSystem.Colors.accent.opacity(0),
+                color: AppDesignSystem.Colors.accent.opacity(0),
                 label: "metrics.activity.legend.none".localized
             )
             legendItem(
-                color: MeetingAssistantDesignSystem.Colors.accent,
+                color: AppDesignSystem.Colors.accent,
                 label: "metrics.activity.legend.most".localized
             )
         }
@@ -459,7 +459,7 @@ public struct MetricsDashboardSettingsTab: View {
     }
 
     private func legendItem(color: Color, label: String) -> some View {
-        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing4) {
+        HStack(spacing: AppDesignSystem.Layout.spacing4) {
             RoundedRectangle(cornerRadius: ActivityHeatmap.legendSwatchCornerRadius, style: .continuous)
                 .fill(color)
                 .frame(width: ActivityHeatmap.legendSwatchSize, height: ActivityHeatmap.legendSwatchSize)
@@ -473,11 +473,11 @@ public struct MetricsDashboardSettingsTab: View {
 
     private func heatmapColor(for words: Int) -> Color {
         guard maxDailyWords > 0 else {
-            return MeetingAssistantDesignSystem.Colors.accent.opacity(0)
+            return AppDesignSystem.Colors.accent.opacity(0)
         }
 
         let normalized = max(0, min(1, Double(words) / Double(maxDailyWords)))
-        return MeetingAssistantDesignSystem.Colors.accent.opacity(normalized)
+        return AppDesignSystem.Colors.accent.opacity(normalized)
     }
 
     private func heatmapTooltip(for bucket: MetricsDailyBucket) -> String {
@@ -499,7 +499,7 @@ public struct MetricsDashboardSettingsTab: View {
     }
 
     private var heatmapPlaceholder: some View {
-        RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.tinyCornerRadius, style: .continuous)
+        RoundedRectangle(cornerRadius: AppDesignSystem.Layout.tinyCornerRadius, style: .continuous)
             .fill(Color.clear)
             .frame(width: ActivityHeatmap.squareSize, height: ActivityHeatmap.squareSize)
             .opacity(0)
@@ -539,18 +539,18 @@ private struct MetricStatCard: View {
     let tint: Color
 
     var body: some View {
-        MACard {
-            HStack(alignment: .top, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+        DSCard {
+            HStack(alignment: .top, spacing: AppDesignSystem.Layout.spacing12) {
                 Image(systemName: icon)
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(tint)
                     .frame(width: 28, height: 28)
                     .background(
-                        RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius, style: .continuous)
                             .fill(tint.opacity(0.12))
                     )
 
-                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing4) {
+                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing4) {
                     Text(title)
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(.secondary)
@@ -605,7 +605,7 @@ private enum ActivityHeatmap {
     static let squareSize: CGFloat = 10
     static let spacing: CGFloat = 2
     static let verticalPadding: CGFloat = 8
-    static let baseColor = MeetingAssistantDesignSystem.Colors.subtleFill
+    static let baseColor = AppDesignSystem.Colors.subtleFill
     static let monthHeaderHeight: CGFloat = 14
     static let monthToGridSpacing: CGFloat = 6
     static let weekdayLabelWidth: CGFloat = 24

@@ -30,7 +30,7 @@ public struct FloatingRecordingIndicatorView: View {
     @State private var isPromptSessionArmed = false
     @State private var isSilenceWarningDialogPresented = false
 
-    // Removed IndicatorMetrics in favor of MeetingAssistantDesignSystem.Layout
+    // Removed IndicatorMetrics in favor of AppDesignSystem.Layout
 
     public init(
         audioMonitor: AudioLevelMonitor,
@@ -80,7 +80,7 @@ public struct FloatingRecordingIndicatorView: View {
     }
 
     private func indicatorPill(size: IndicatorSize) -> some View {
-        HStack(spacing: MeetingAssistantDesignSystem.Layout.recordingIndicatorPromptGap) {
+        HStack(spacing: AppDesignSystem.Layout.recordingIndicatorPromptGap) {
             mainPill(size: size)
 
             if isRecordingMode {
@@ -101,7 +101,7 @@ public struct FloatingRecordingIndicatorView: View {
         // Keep warning overlays out of layout sizing to prevent NSPanel constraint loops
         // when warnings appear/disappear while the panel uses a fixed content size.
         .overlay(alignment: .top) {
-            VStack(spacing: MeetingAssistantDesignSystem.Layout.spacing4) {
+            VStack(spacing: AppDesignSystem.Layout.spacing4) {
                 if let warningDescriptor = postProcessingWarningDescriptor {
                     postProcessingReadinessWarningOverlay(warningDescriptor)
                         .transition(.move(edge: .top).combined(with: .opacity))
@@ -116,9 +116,9 @@ public struct FloatingRecordingIndicatorView: View {
         }
         .shadow(
             color: .black.opacity(0.15),
-            radius: MeetingAssistantDesignSystem.Layout.recordingIndicatorMainShadowRadius,
-            x: MeetingAssistantDesignSystem.Layout.shadowX,
-            y: MeetingAssistantDesignSystem.Layout.recordingIndicatorMainShadowY
+            radius: AppDesignSystem.Layout.recordingIndicatorMainShadowRadius,
+            x: AppDesignSystem.Layout.shadowX,
+            y: AppDesignSystem.Layout.recordingIndicatorMainShadowY
         )
     }
 
@@ -146,19 +146,19 @@ public struct FloatingRecordingIndicatorView: View {
             .multilineTextAlignment(.center)
             .lineLimit(nil)
             .fixedSize(horizontal: true, vertical: true)
-            .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing10)
-            .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing4)
-            .background(MeetingAssistantDesignSystem.Colors.recordingOverlayBackground)
+            .padding(.horizontal, AppDesignSystem.Layout.spacing10)
+            .padding(.vertical, AppDesignSystem.Layout.spacing4)
+            .background(AppDesignSystem.Colors.recordingOverlayBackground)
             .clipShape(Capsule())
             .overlay(
                 Capsule()
-                    .strokeBorder(MeetingAssistantDesignSystem.Colors.recordingIndicatorStroke, lineWidth: 1)
+                    .strokeBorder(AppDesignSystem.Colors.recordingIndicatorStroke, lineWidth: 1)
             )
             .shadow(
                 color: .black.opacity(0.2),
-                radius: MeetingAssistantDesignSystem.Layout.shadowRadiusSmall,
-                x: MeetingAssistantDesignSystem.Layout.shadowX,
-                y: MeetingAssistantDesignSystem.Layout.shadowYSmall
+                radius: AppDesignSystem.Layout.shadowRadiusSmall,
+                x: AppDesignSystem.Layout.shadowX,
+                y: AppDesignSystem.Layout.shadowYSmall
             )
             .contentShape(Capsule())
             .onTapGesture {
@@ -185,7 +185,7 @@ public struct FloatingRecordingIndicatorView: View {
     private func postProcessingReadinessWarningOverlay(
         _ descriptor: RecordingIndicatorPostProcessingWarningDescriptor
     ) -> some View {
-        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+        HStack(spacing: AppDesignSystem.Layout.spacing8) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.caption.weight(.bold))
                 .foregroundStyle(.white)
@@ -206,19 +206,19 @@ public struct FloatingRecordingIndicatorView: View {
             .foregroundStyle(.white)
             .underline()
         }
-        .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing10)
-        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing6)
-        .background(MeetingAssistantDesignSystem.Colors.warning.opacity(0.95))
+        .padding(.horizontal, AppDesignSystem.Layout.spacing10)
+        .padding(.vertical, AppDesignSystem.Layout.spacing6)
+        .background(AppDesignSystem.Colors.warning.opacity(0.95))
         .clipShape(Capsule())
         .overlay(
             Capsule()
-                .strokeBorder(MeetingAssistantDesignSystem.Colors.recordingIndicatorStroke, lineWidth: 1)
+                .strokeBorder(AppDesignSystem.Colors.recordingIndicatorStroke, lineWidth: 1)
         )
         .shadow(
             color: .black.opacity(0.2),
-            radius: MeetingAssistantDesignSystem.Layout.shadowRadiusSmall,
-            x: MeetingAssistantDesignSystem.Layout.shadowX,
-            y: MeetingAssistantDesignSystem.Layout.shadowYSmall
+            radius: AppDesignSystem.Layout.shadowRadiusSmall,
+            x: AppDesignSystem.Layout.shadowX,
+            y: AppDesignSystem.Layout.shadowYSmall
         )
         .accessibilityElement(children: .combine)
         .accessibilityHint("recording_indicator.post_processing_warning.open_settings".localized)
@@ -226,7 +226,7 @@ public struct FloatingRecordingIndicatorView: View {
 
     private var divider: some View {
         Rectangle()
-            .fill(MeetingAssistantDesignSystem.Colors.overlayDivider)
+            .fill(AppDesignSystem.Colors.overlayDivider)
             .frame(width: 1, height: 20)
     }
 
@@ -247,8 +247,8 @@ public struct FloatingRecordingIndicatorView: View {
     /// Dot indicating recording or processing (Figma uses 12x12).
     private func statusDot(for size: IndicatorSize) -> some View {
         Circle()
-            .fill(isRecordingMode ? MeetingAssistantDesignSystem.Colors.recording : MeetingAssistantDesignSystem.Colors.accent)
-            .frame(width: MeetingAssistantDesignSystem.Layout.recordingIndicatorDotSize, height: MeetingAssistantDesignSystem.Layout.recordingIndicatorDotSize)
+            .fill(isRecordingMode ? AppDesignSystem.Colors.recording : AppDesignSystem.Colors.accent)
+            .frame(width: AppDesignSystem.Layout.recordingIndicatorDotSize, height: AppDesignSystem.Layout.recordingIndicatorDotSize)
             .modifier(
                 PulsingModifier(
                     isActive: isAnimationActive && (isRecordingMode || isStartingMode),
@@ -300,7 +300,7 @@ public struct FloatingRecordingIndicatorView: View {
     private var errorView: some View {
         let message = errorMessage ?? "Error"
 
-        return HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+        return HStack(spacing: AppDesignSystem.Layout.spacing8) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundStyle(.white)
                 .font(.caption.weight(.bold))
@@ -311,15 +311,15 @@ public struct FloatingRecordingIndicatorView: View {
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
         }
-        .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing16)
-        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
-        .background(MeetingAssistantDesignSystem.Colors.error.opacity(0.95))
+        .padding(.horizontal, AppDesignSystem.Layout.spacing16)
+        .padding(.vertical, AppDesignSystem.Layout.spacing8)
+        .background(AppDesignSystem.Colors.error.opacity(0.95))
         .clipShape(Capsule())
         .shadow(
             color: .black.opacity(0.2),
-            radius: MeetingAssistantDesignSystem.Layout.shadowRadiusSmall,
-            x: MeetingAssistantDesignSystem.Layout.shadowX,
-            y: MeetingAssistantDesignSystem.Layout.shadowYSmall
+            radius: AppDesignSystem.Layout.shadowRadiusSmall,
+            x: AppDesignSystem.Layout.shadowX,
+            y: AppDesignSystem.Layout.shadowYSmall
         )
     }
 
@@ -354,9 +354,9 @@ public struct FloatingRecordingIndicatorView: View {
                 animationSpeed: settingsStore.recordingIndicatorAnimationSpeed,
                 barCount: FloatingRecordingIndicatorViewUtilities.waveCount(for: size),
                 maxHeight: FloatingRecordingIndicatorViewUtilities.waveformHeight(for: size),
-                barWidth: MeetingAssistantDesignSystem.Layout.recordingIndicatorWaveformBarWidth,
-                barSpacing: MeetingAssistantDesignSystem.Layout.recordingIndicatorWaveformBarSpacing,
-                minHeight: MeetingAssistantDesignSystem.Layout.recordingIndicatorWaveformMinHeight
+                barWidth: AppDesignSystem.Layout.recordingIndicatorWaveformBarWidth,
+                barSpacing: AppDesignSystem.Layout.recordingIndicatorWaveformBarSpacing,
+                minHeight: AppDesignSystem.Layout.recordingIndicatorWaveformMinHeight
             )
 
             if isRecordingMode, isMeetingRecording {
@@ -374,7 +374,7 @@ public struct FloatingRecordingIndicatorView: View {
                                 .lineLimit(1)
                                 .fixedSize(horizontal: true, vertical: false)
                                 .layoutPriority(1)
-                                .foregroundStyle(MeetingAssistantDesignSystem.Colors.overlayForegroundMuted)
+                                .foregroundStyle(AppDesignSystem.Colors.overlayForegroundMuted)
                         }
                     } else {
                         let durationText = FloatingRecordingIndicatorViewUtilities.formatRecordingDuration(
@@ -388,7 +388,7 @@ public struct FloatingRecordingIndicatorView: View {
                             .lineLimit(1)
                             .fixedSize(horizontal: true, vertical: false)
                             .layoutPriority(1)
-                            .foregroundStyle(MeetingAssistantDesignSystem.Colors.overlayForegroundMuted)
+                            .foregroundStyle(AppDesignSystem.Colors.overlayForegroundMuted)
                     }
                 }
                 .accessibilityLabel("recording_indicator.duration".localized)
@@ -520,13 +520,13 @@ public struct FloatingRecordingIndicatorView: View {
                 trailingControl
             }
         }
-        .padding(.horizontal, MeetingAssistantDesignSystem.Layout.recordingIndicatorSidePadding)
+        .padding(.horizontal, AppDesignSystem.Layout.recordingIndicatorSidePadding)
         .frame(height: FloatingRecordingIndicatorViewUtilities.controlHeight(for: size))
         .background(.ultraThinMaterial)
-        .background(MeetingAssistantDesignSystem.Colors.recordingIndicatorMaterialTint)
+        .background(AppDesignSystem.Colors.recordingIndicatorMaterialTint)
         .overlay(
             Capsule()
-                .strokeBorder(MeetingAssistantDesignSystem.Colors.recordingIndicatorStroke, lineWidth: 1.2)
+                .strokeBorder(AppDesignSystem.Colors.recordingIndicatorStroke, lineWidth: 1.2)
         )
         .clipShape(Capsule())
         .contentShape(Capsule())
@@ -542,10 +542,10 @@ public struct FloatingRecordingIndicatorView: View {
                 height: FloatingRecordingIndicatorViewUtilities.controlHeight(for: size)
             )
             .background(.ultraThinMaterial)
-            .background(MeetingAssistantDesignSystem.Colors.recordingIndicatorAuxiliaryBackground)
+            .background(AppDesignSystem.Colors.recordingIndicatorAuxiliaryBackground)
             .overlay(
                 Capsule()
-                    .strokeBorder(MeetingAssistantDesignSystem.Colors.recordingIndicatorStroke, lineWidth: 1)
+                    .strokeBorder(AppDesignSystem.Colors.recordingIndicatorStroke, lineWidth: 1)
             )
             .clipShape(Capsule())
             .onHover { hovering in
@@ -560,10 +560,10 @@ public struct FloatingRecordingIndicatorView: View {
                 height: FloatingRecordingIndicatorViewUtilities.controlHeight(for: size)
             )
             .background(.ultraThinMaterial)
-            .background(MeetingAssistantDesignSystem.Colors.recordingIndicatorAuxiliaryBackground)
+            .background(AppDesignSystem.Colors.recordingIndicatorAuxiliaryBackground)
             .overlay(
                 Capsule()
-                    .strokeBorder(MeetingAssistantDesignSystem.Colors.recordingIndicatorStroke, lineWidth: 1)
+                    .strokeBorder(AppDesignSystem.Colors.recordingIndicatorStroke, lineWidth: 1)
             )
             .clipShape(Capsule())
             .onHover { hovering in
@@ -583,8 +583,8 @@ public struct FloatingRecordingIndicatorView: View {
             } else {
                 withAnimation(
                     .spring(
-                        response: MeetingAssistantDesignSystem.Layout.recordingIndicatorHoverEnterResponse,
-                        dampingFraction: MeetingAssistantDesignSystem.Layout.recordingIndicatorHoverEnterDamping
+                        response: AppDesignSystem.Layout.recordingIndicatorHoverEnterResponse,
+                        dampingFraction: AppDesignSystem.Layout.recordingIndicatorHoverEnterDamping
                     )
                 ) {
                     isHovering = true
@@ -626,8 +626,8 @@ public struct FloatingRecordingIndicatorView: View {
             } else {
                 withAnimation(
                     .spring(
-                        response: MeetingAssistantDesignSystem.Layout.recordingIndicatorHoverExitResponse,
-                        dampingFraction: MeetingAssistantDesignSystem.Layout.recordingIndicatorHoverExitDamping
+                        response: AppDesignSystem.Layout.recordingIndicatorHoverExitResponse,
+                        dampingFraction: AppDesignSystem.Layout.recordingIndicatorHoverExitDamping
                     )
                 ) {
                     isHovering = false
@@ -665,5 +665,5 @@ public struct FloatingRecordingIndicatorView: View {
     )
     .padding()
     .frame(width: 520, height: 120)
-    .background(MeetingAssistantDesignSystem.Colors.neutral.opacity(0.8))
+    .background(AppDesignSystem.Colors.neutral.opacity(0.8))
 }

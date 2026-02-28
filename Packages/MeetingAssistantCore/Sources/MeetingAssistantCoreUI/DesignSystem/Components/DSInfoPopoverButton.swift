@@ -6,7 +6,7 @@ import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
-public struct MAInfoPopoverButton: View {
+public struct DSInfoPopoverButton: View {
     private let title: String
     private let message: String
     private let iconSystemName: String
@@ -35,7 +35,7 @@ public struct MAInfoPopoverButton: View {
         .buttonStyle(.plain)
         .accessibilityLabel(accessibilityLabel)
         .popover(isPresented: $isPopoverPresented, arrowEdge: .top) {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
                 Text(title)
                     .font(.headline)
 
@@ -44,14 +44,14 @@ public struct MAInfoPopoverButton: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(MeetingAssistantDesignSystem.Layout.cardPadding)
+            .padding(AppDesignSystem.Layout.cardPadding)
             .frame(width: 340, alignment: .leading)
         }
     }
 }
 
 #Preview {
-    MAInfoPopoverButton(
+    DSInfoPopoverButton(
         title: "External remap (optional)",
         message: "Map double-modifier gestures externally and assign F18/F19/F20 in the app."
     )

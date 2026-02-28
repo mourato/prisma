@@ -6,7 +6,7 @@ import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
-public struct MAShortcutControlsRow: View {
+public struct DSShortcutControlsRow: View {
     private let title: String
     private let activationMode: Binding<ShortcutActivationMode>?
     private let selectedPresetKey: Binding<PresetShortcutKey>
@@ -16,12 +16,12 @@ public struct MAShortcutControlsRow: View {
     public init(
         title: String,
         selectedPresetKey: Binding<PresetShortcutKey>,
-        presetPickerWidth: CGFloat = MeetingAssistantDesignSystem.Layout.smallPickerWidth
+        presetPickerWidth: CGFloat = AppDesignSystem.Layout.smallPickerWidth
     ) {
         self.title = title
         activationMode = nil
         self.selectedPresetKey = selectedPresetKey
-        activationPickerWidth = MeetingAssistantDesignSystem.Layout.narrowPickerWidth
+        activationPickerWidth = AppDesignSystem.Layout.narrowPickerWidth
         self.presetPickerWidth = presetPickerWidth
     }
 
@@ -29,8 +29,8 @@ public struct MAShortcutControlsRow: View {
         title: String,
         activationMode: Binding<ShortcutActivationMode>,
         selectedPresetKey: Binding<PresetShortcutKey>,
-        activationPickerWidth: CGFloat = MeetingAssistantDesignSystem.Layout.narrowPickerWidth,
-        presetPickerWidth: CGFloat = MeetingAssistantDesignSystem.Layout.smallPickerWidth
+        activationPickerWidth: CGFloat = AppDesignSystem.Layout.narrowPickerWidth,
+        presetPickerWidth: CGFloat = AppDesignSystem.Layout.smallPickerWidth
     ) {
         self.title = title
         self.activationMode = activationMode
@@ -41,7 +41,7 @@ public struct MAShortcutControlsRow: View {
 
     public var body: some View {
         HStack {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing4) {
+            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing4) {
                 Text(title)
                     .font(.body)
                     .fontWeight(.medium)
@@ -76,7 +76,7 @@ public struct MAShortcutControlsRow: View {
     }
 }
 
-public struct MAShortcutRecorderRow<RecorderContent: View>: View {
+public struct DSShortcutRecorderRow<RecorderContent: View>: View {
     private let label: String
     private let recorderContent: RecorderContent
 
@@ -95,16 +95,16 @@ public struct MAShortcutRecorderRow<RecorderContent: View>: View {
 
             recorderContent
         }
-        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
-        .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)
-        .background(MeetingAssistantDesignSystem.Colors.secondaryFill)
-        .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+        .padding(.vertical, AppDesignSystem.Layout.spacing8)
+        .padding(.horizontal, AppDesignSystem.Layout.spacing12)
+        .background(AppDesignSystem.Colors.secondaryFill)
+        .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
     }
 }
 
 #Preview("Preset Shortcut") {
     PreviewStateContainer(PresetShortcutKey.optionCommand) { key in
-        MAShortcutControlsRow(
+        DSShortcutControlsRow(
             title: "Quick Recording Shortcut",
             selectedPresetKey: key
         )
@@ -116,8 +116,8 @@ public struct MAShortcutRecorderRow<RecorderContent: View>: View {
 #Preview("Activation + Preset") {
     PreviewStateContainer(ShortcutActivationMode.holdOrToggle) { mode in
         PreviewStateContainer(PresetShortcutKey.rightCommand) { key in
-            MAShortcutControlsRow(
-                title: "Meeting Assistant Shortcut",
+            DSShortcutControlsRow(
+                title: "Prisma Shortcut",
                 activationMode: mode,
                 selectedPresetKey: key
             )

@@ -43,7 +43,7 @@ public struct EnhancementsProviderModelsPage: View {
 
     public var body: some View {
         SettingsScrollableContent {
-            MACallout(
+            DSCallout(
                 kind: .info,
                 title: "settings.enhancements.provider_models.context_title".localized,
                 message: "settings.enhancements.provider_models.context_desc".localized
@@ -51,7 +51,7 @@ public struct EnhancementsProviderModelsPage: View {
 
             executionModelSelectorsSection
 
-            VStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+            VStack(spacing: AppDesignSystem.Layout.spacing12) {
                 ForEach(AIProvider.allCases, id: \.self) { provider in
                     providerCard(for: provider)
                 }
@@ -79,8 +79,8 @@ public struct EnhancementsProviderModelsPage: View {
         let readinessIssue = viewModel.enhancementsReadinessIssue(for: provider)
         let isReady = readinessIssue == nil
 
-        return MACard {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing10) {
+        return DSCard {
+            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing10) {
                 providerHeader(
                     for: provider,
                     isExpanded: isExpanded,
@@ -109,16 +109,16 @@ public struct EnhancementsProviderModelsPage: View {
         isReady: Bool,
         readinessIssue: EnhancementsInferenceReadinessIssue?
     ) -> some View {
-        HStack(alignment: .top, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+        HStack(alignment: .top, spacing: AppDesignSystem.Layout.spacing12) {
             providerAvatar(for: provider)
 
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
-                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing6) {
+                HStack(spacing: AppDesignSystem.Layout.spacing8) {
                     Text(provider.displayName)
                         .font(.headline)
 
                     if isRecommended(provider) {
-                        MABadge("settings.enhancements.badge.recommended".localized, kind: .success)
+                        DSBadge("settings.enhancements.badge.recommended".localized, kind: .success)
                     }
                 }
 
@@ -126,13 +126,13 @@ public struct EnhancementsProviderModelsPage: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                HStack(spacing: AppDesignSystem.Layout.spacing8) {
                     providerMetaTag("settings.enhancements.badge.requires_api_key".localized)
                 }
 
-                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
+                HStack(spacing: AppDesignSystem.Layout.spacing6) {
                     Circle()
-                        .fill(isReady ? MeetingAssistantDesignSystem.Colors.success : MeetingAssistantDesignSystem.Colors.warning)
+                        .fill(isReady ? AppDesignSystem.Colors.success : AppDesignSystem.Colors.warning)
                         .frame(width: 7, height: 7)
                     Text(providerStatusText(isReady: isReady, issue: readinessIssue))
                         .font(.caption2)
@@ -145,18 +145,18 @@ public struct EnhancementsProviderModelsPage: View {
             Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
-                .padding(.top, MeetingAssistantDesignSystem.Layout.spacing4)
+                .padding(.top, AppDesignSystem.Layout.spacing4)
         }
     }
 
     private func expandedProviderContent(for provider: AIProvider) -> some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing10) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing10) {
             apiKeySection(for: provider)
 
             if let actionError = viewModel.enhancementsActionError,
                !actionError.isEmpty
             {
-                MACallout(
+                DSCallout(
                     kind: .warning,
                     title: "settings.enhancements.provider_models.error.title".localized,
                     message: actionError
@@ -168,7 +168,7 @@ public struct EnhancementsProviderModelsPage: View {
     }
 
     private func apiKeySection(for provider: AIProvider) -> some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing6) {
             Text("settings.ai.api_key".localized)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -191,10 +191,10 @@ public struct EnhancementsProviderModelsPage: View {
                     }
                 }
             } else if viewModel.isEnhancementsProviderKeySaved {
-                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                HStack(spacing: AppDesignSystem.Layout.spacing8) {
                     Image(systemName: "lock.fill")
                         .font(.caption)
-                        .foregroundStyle(MeetingAssistantDesignSystem.Colors.success)
+                        .foregroundStyle(AppDesignSystem.Colors.success)
                     Text("settings.ai.keychain_secure".localized)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -217,7 +217,7 @@ public struct EnhancementsProviderModelsPage: View {
     }
 
     private func footerActions(for provider: AIProvider) -> some View {
-        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+        HStack(spacing: AppDesignSystem.Layout.spacing8) {
             if let url = provider.apiKeyURL {
                 Button("settings.ai.get_api_key".localized) {
                     NSWorkspace.shared.open(url)
@@ -228,7 +228,7 @@ public struct EnhancementsProviderModelsPage: View {
 
             Spacer()
 
-            HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
+            HStack(spacing: AppDesignSystem.Layout.spacing6) {
                 Circle()
                     .fill(viewModel.enhancementsConnectionStatus.color)
                     .frame(width: 7, height: 7)
@@ -291,8 +291,8 @@ public struct EnhancementsProviderModelsPage: View {
     }
 
     private var executionModelSelectorsSection: some View {
-        MACard {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing10) {
+        DSCard {
+            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing10) {
                 selectorRow(
                     title: "settings.enhancements.selector.meeting.title".localized,
                     subtitle: "settings.enhancements.selector.meeting.subtitle".localized,
@@ -318,7 +318,7 @@ public struct EnhancementsProviderModelsPage: View {
         summary: String,
         target: ModelSelectionTarget
     ) -> some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing6) {
             Text(title)
                 .font(.subheadline)
                 .fontWeight(.medium)
@@ -327,7 +327,7 @@ public struct EnhancementsProviderModelsPage: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+            HStack(spacing: AppDesignSystem.Layout.spacing8) {
                 Button(summary) {
                     modelSelectionTarget = target
                 }
@@ -378,18 +378,18 @@ public struct EnhancementsProviderModelsPage: View {
     private func modelSelectionSheet(for target: ModelSelectionTarget) -> some View {
         NavigationStack {
             VStack(spacing: 0) {
-                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+                HStack(spacing: AppDesignSystem.Layout.spacing12) {
                     Text("settings.enhancements.model_selector.title".localized)
                         .font(.headline)
 
-                    Spacer(minLength: MeetingAssistantDesignSystem.Layout.spacing8)
+                    Spacer(minLength: AppDesignSystem.Layout.spacing8)
 
                     modelSelectorSearchField
                         .frame(width: 320)
                 }
-                .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing16)
-                .padding(.top, MeetingAssistantDesignSystem.Layout.spacing12)
-                .padding(.bottom, MeetingAssistantDesignSystem.Layout.spacing8)
+                .padding(.horizontal, AppDesignSystem.Layout.spacing16)
+                .padding(.top, AppDesignSystem.Layout.spacing12)
+                .padding(.bottom, AppDesignSystem.Layout.spacing8)
 
                 List(filteredModelOptions, id: \.id) { option in
                     Button {
@@ -400,8 +400,8 @@ public struct EnhancementsProviderModelsPage: View {
                         )
                         modelSelectionTarget = nil
                     } label: {
-                        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-                            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing4) {
+                        HStack(spacing: AppDesignSystem.Layout.spacing8) {
+                            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing4) {
                                 Text(option.modelID)
                                     .font(.body)
                                     .foregroundStyle(.primary)
@@ -412,7 +412,7 @@ public struct EnhancementsProviderModelsPage: View {
                             Spacer()
                             if isSelectedOption(option, for: target) {
                                 Image(systemName: "checkmark.circle.fill")
-                                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.success)
+                                    .foregroundStyle(AppDesignSystem.Colors.success)
                             }
                         }
                     }
@@ -431,7 +431,7 @@ public struct EnhancementsProviderModelsPage: View {
     }
 
     private var modelSelectorSearchField: some View {
-        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+        HStack(spacing: AppDesignSystem.Layout.spacing8) {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.secondary)
             TextField(
@@ -440,11 +440,11 @@ public struct EnhancementsProviderModelsPage: View {
             )
             .textFieldStyle(.plain)
         }
-        .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing10)
-        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
-        .frame(height: MeetingAssistantDesignSystem.Layout.compactButtonHeight)
-        .background(MeetingAssistantDesignSystem.Colors.subtleFill)
-        .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+        .padding(.horizontal, AppDesignSystem.Layout.spacing10)
+        .padding(.vertical, AppDesignSystem.Layout.spacing8)
+        .frame(height: AppDesignSystem.Layout.compactButtonHeight)
+        .background(AppDesignSystem.Colors.subtleFill)
+        .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
     }
 
     private func isSelectedOption(_ option: EnhancementsProviderModelOption, for target: ModelSelectionTarget) -> Bool {
@@ -481,21 +481,21 @@ public struct EnhancementsProviderModelsPage: View {
         Text(text)
             .font(.caption2)
             .foregroundStyle(.secondary)
-            .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing8)
-            .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing4)
-            .background(MeetingAssistantDesignSystem.Colors.subtleFill2)
+            .padding(.horizontal, AppDesignSystem.Layout.spacing8)
+            .padding(.vertical, AppDesignSystem.Layout.spacing4)
+            .background(AppDesignSystem.Colors.subtleFill2)
             .clipShape(Capsule())
     }
 
     private func providerAvatar(for provider: AIProvider) -> some View {
         ZStack {
-            RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
-                .fill(MeetingAssistantDesignSystem.Colors.subtleFill2)
+            RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
+                .fill(AppDesignSystem.Colors.subtleFill2)
                 .frame(width: 40, height: 40)
 
             Image(systemName: provider.icon)
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(MeetingAssistantDesignSystem.Colors.accent)
+                .foregroundStyle(AppDesignSystem.Colors.accent)
         }
     }
 }

@@ -6,14 +6,14 @@ import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
-public struct MACard<Content: View>: View {
+public struct DSCard<Content: View>: View {
     private let cornerRadius: CGFloat
     private let padding: CGFloat
     private let content: Content
 
     public init(
-        cornerRadius: CGFloat = MeetingAssistantDesignSystem.Layout.cardCornerRadius,
-        padding: CGFloat = MeetingAssistantDesignSystem.Layout.cardPadding,
+        cornerRadius: CGFloat = AppDesignSystem.Layout.cardCornerRadius,
+        padding: CGFloat = AppDesignSystem.Layout.cardPadding,
         @ViewBuilder content: () -> Content
     ) {
         self.cornerRadius = cornerRadius
@@ -22,16 +22,16 @@ public struct MACard<Content: View>: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.itemSpacing) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.itemSpacing) {
             content
         }
         .padding(padding)
         .background(
             RoundedRectangle(cornerRadius: cornerRadius)
-                .fill(MeetingAssistantDesignSystem.Colors.cardBackground)
+                .fill(AppDesignSystem.Colors.cardBackground)
                 .overlay(
                     RoundedRectangle(cornerRadius: cornerRadius)
-                        .stroke(MeetingAssistantDesignSystem.Colors.cardStroke, lineWidth: 0.5)
+                        .stroke(AppDesignSystem.Colors.cardStroke, lineWidth: 0.5)
                 )
         )
         .background(.ultraThinMaterial)

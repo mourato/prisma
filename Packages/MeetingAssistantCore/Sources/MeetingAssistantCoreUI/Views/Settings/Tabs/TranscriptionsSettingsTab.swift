@@ -12,7 +12,7 @@ import SwiftUI
 /// Main tab for managing transcriptions in Settings.
 public struct TranscriptionsSettingsTab: View {
     private enum Layout {
-        static let controlHeight: CGFloat = MeetingAssistantDesignSystem.Layout.compactButtonHeight
+        static let controlHeight: CGFloat = AppDesignSystem.Layout.compactButtonHeight
         static let searchWidthRatio: CGFloat = 0.6
         static let minSearchWidth: CGFloat = 240
         static let maxSearchWidth: CGFloat = 520
@@ -109,7 +109,7 @@ public struct TranscriptionsSettingsTab: View {
 
     private var listPage: some View {
         VStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
+            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
                 SettingsSectionHeader(
                     title: "settings.section.history".localized,
                     description: "settings.transcriptions.items_found".localized(with: viewModel.filteredTranscriptions.count)
@@ -117,7 +117,7 @@ public struct TranscriptionsSettingsTab: View {
 
                 searchAndFolderRow
 
-                HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
+                HStack(spacing: AppDesignSystem.Layout.spacing16) {
                     sourceFilterPicker
                         .frame(maxWidth: .infinity)
 
@@ -125,7 +125,7 @@ public struct TranscriptionsSettingsTab: View {
                         .frame(width: 170)
 
                     dateFilterMenu
-                        .frame(width: MeetingAssistantDesignSystem.Layout.narrowPickerWidth)
+                        .frame(width: AppDesignSystem.Layout.narrowPickerWidth)
                 }
 
                 if let errorMessage = viewModel.errorMessage {
@@ -141,7 +141,7 @@ public struct TranscriptionsSettingsTab: View {
                     }
                 }
             }
-            .padding(MeetingAssistantDesignSystem.Layout.spacing24)
+            .padding(AppDesignSystem.Layout.spacing24)
 
             Divider()
 
@@ -151,14 +151,14 @@ public struct TranscriptionsSettingsTab: View {
                     title: "settings.transcriptions.loading".localized
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                .padding(MeetingAssistantDesignSystem.Layout.spacing24)
+                .padding(AppDesignSystem.Layout.spacing24)
             } else if viewModel.filteredTranscriptions.isEmpty {
                 emptyState
             } else {
                 transcriptionsList
             }
         }
-        .background(MeetingAssistantDesignSystem.Colors.windowBackground)
+        .background(AppDesignSystem.Colors.windowBackground)
     }
 
     private var searchAndFolderRow: some View {
@@ -168,7 +168,7 @@ public struct TranscriptionsSettingsTab: View {
                 max(Layout.minSearchWidth, geometry.size.width * Layout.searchWidthRatio)
             )
 
-            HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
+            HStack(spacing: AppDesignSystem.Layout.spacing16) {
                 searchField
                     .frame(width: searchWidth)
 
@@ -184,7 +184,7 @@ public struct TranscriptionsSettingsTab: View {
         Button(action: { viewModel.openRecordingsDirectory() }) {
             Label("settings.transcriptions.open_folder".localized, systemImage: "folder")
                 .font(.body)
-                .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+                .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
         }
         .buttonStyle(.bordered)
         .controlSize(.large)
@@ -205,7 +205,7 @@ public struct TranscriptionsSettingsTab: View {
     }
 
     private var searchField: some View {
-        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+        HStack(spacing: AppDesignSystem.Layout.spacing8) {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.secondary)
             TextField(
@@ -214,11 +214,11 @@ public struct TranscriptionsSettingsTab: View {
             )
             .textFieldStyle(.plain)
         }
-        .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing10)
-        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
+        .padding(.horizontal, AppDesignSystem.Layout.spacing10)
+        .padding(.vertical, AppDesignSystem.Layout.spacing8)
         .frame(height: Layout.controlHeight)
-        .background(MeetingAssistantDesignSystem.Colors.subtleFill)
-        .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+        .background(AppDesignSystem.Colors.subtleFill)
+        .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
     }
 
     private var appFilterMenu: some View {
@@ -238,7 +238,7 @@ public struct TranscriptionsSettingsTab: View {
         } label: {
             HStack {
                 Image(systemName: "desktopcomputer")
-                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.accent)
+                    .foregroundStyle(AppDesignSystem.Colors.accent)
                 Text(selectedAppFilterLabel)
                     .font(.body)
                     .lineLimit(1)
@@ -248,10 +248,10 @@ public struct TranscriptionsSettingsTab: View {
                     .foregroundStyle(.secondary)
             }
             .controlSize(.regular)
-            .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing10)
-            .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
-            .background(MeetingAssistantDesignSystem.Colors.subtleFill)
-            .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+            .padding(.horizontal, AppDesignSystem.Layout.spacing10)
+            .padding(.vertical, AppDesignSystem.Layout.spacing8)
+            .background(AppDesignSystem.Colors.subtleFill)
+            .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
         }
         .menuStyle(.borderlessButton)
     }
@@ -273,7 +273,7 @@ public struct TranscriptionsSettingsTab: View {
         } label: {
             HStack {
                 Image(systemName: "calendar")
-                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.accent)
+                    .foregroundStyle(AppDesignSystem.Colors.accent)
                 Text(viewModel.dateFilter.displayName)
                     .font(.body)
                 Spacer()
@@ -281,10 +281,10 @@ public struct TranscriptionsSettingsTab: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
-            .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing10)
-            .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
-            .background(MeetingAssistantDesignSystem.Colors.subtleFill)
-            .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+            .padding(.horizontal, AppDesignSystem.Layout.spacing10)
+            .padding(.vertical, AppDesignSystem.Layout.spacing8)
+            .background(AppDesignSystem.Colors.subtleFill)
+            .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
         }
         .menuStyle(.borderlessButton)
     }
@@ -312,11 +312,11 @@ public struct TranscriptionsSettingsTab: View {
                         .font(.caption)
                         .fontWeight(.bold)
                         .foregroundStyle(.secondary)
-                        .padding(.top, MeetingAssistantDesignSystem.Layout.spacing16)
-                        .padding(.bottom, MeetingAssistantDesignSystem.Layout.spacing8)
+                        .padding(.top, AppDesignSystem.Layout.spacing16)
+                        .padding(.bottom, AppDesignSystem.Layout.spacing8)
                 ) {
                     ForEach(viewModel.groupedTranscriptions[date] ?? []) { transcription in
-                        HStack(alignment: .top, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
+                        HStack(alignment: .top, spacing: AppDesignSystem.Layout.spacing16) {
                             Text(formatTime(transcription.createdAt))
                                 .font(.body)
                                 .fontWeight(.semibold)
@@ -533,7 +533,7 @@ private struct TranscriptionConversationPage: View {
                 title: "settings.section.history".localized,
                 description: activeTranscription?.meeting.appName
             )
-            .padding(MeetingAssistantDesignSystem.Layout.spacing16)
+            .padding(AppDesignSystem.Layout.spacing16)
 
             Divider()
 
@@ -655,11 +655,11 @@ struct TranscriptionRowView: View {
                 if metadata.isPostProcessed {
                     Image(systemName: "sparkles")
                         .font(.caption)
-                        .foregroundStyle(MeetingAssistantDesignSystem.Colors.iconHighlight)
+                        .foregroundStyle(AppDesignSystem.Colors.iconHighlight)
                 }
             }
         }
-        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
+        .padding(.vertical, AppDesignSystem.Layout.spacing8)
     }
 }
 

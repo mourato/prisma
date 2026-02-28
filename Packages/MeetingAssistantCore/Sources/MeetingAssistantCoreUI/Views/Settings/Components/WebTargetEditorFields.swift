@@ -36,8 +36,8 @@ struct WebTargetEditorFields<AdditionalContent: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
+            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
                 Text(nameLabelKey.localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -46,7 +46,7 @@ struct WebTargetEditorFields<AdditionalContent: View>: View {
                     .textFieldStyle(.roundedBorder)
             }
 
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
                 Text(urlLabelKey.localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -58,9 +58,9 @@ struct WebTargetEditorFields<AdditionalContent: View>: View {
                 TextEditor(text: $urlPatternsText)
                     .font(.caption.monospaced())
                     .frame(minHeight: 80)
-                    .padding(MeetingAssistantDesignSystem.Layout.textAreaPadding)
-                    .background(MeetingAssistantDesignSystem.Colors.subtleFill2)
-                    .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+                    .padding(AppDesignSystem.Layout.textAreaPadding)
+                    .background(AppDesignSystem.Colors.subtleFill2)
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
             }
 
             additionalContent

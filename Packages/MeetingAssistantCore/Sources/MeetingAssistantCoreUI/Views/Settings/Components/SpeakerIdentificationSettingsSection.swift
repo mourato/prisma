@@ -20,7 +20,7 @@ public struct SpeakerIdentificationSettingsSection: View {
     }
 
     public var body: some View {
-        MAToggleRow(
+        DSToggleRow(
             "settings.ai.diarization".localized,
             description: "settings.ai.diarization_desc".localized,
             isOn: $settings.isDiarizationEnabled
@@ -49,7 +49,7 @@ public struct SpeakerIdentificationSettingsSection: View {
 
         // Only show when there's activity or an error
         if phase.isInProgress || phase == .ready || modelManager.lastError != nil {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.itemSpacing) {
+            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.itemSpacing) {
                 HStack(spacing: 12) {
                     phaseIcon(for: phase)
                         .frame(width: 24, height: 24)
@@ -83,12 +83,12 @@ public struct SpeakerIdentificationSettingsSection: View {
                         .controlSize(.small)
                     } else if phase == .ready {
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(MeetingAssistantDesignSystem.Colors.success)
+                            .foregroundStyle(AppDesignSystem.Colors.success)
                             .accessibilityLabel("settings.ai.ready".localized)
                     }
                 }
             }
-            .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing4)
+            .padding(.vertical, AppDesignSystem.Layout.spacing4)
         }
     }
 
@@ -101,21 +101,21 @@ public struct SpeakerIdentificationSettingsSection: View {
                 .accessibilityLabel("settings.ai.phase_idle".localized)
         case .downloadingASR, .downloadingDiarization:
             Image(systemName: "arrow.down.circle.fill")
-                .foregroundStyle(MeetingAssistantDesignSystem.Colors.accent)
+                .foregroundStyle(AppDesignSystem.Colors.accent)
                 .settingsPulseSymbolEffect(isActive: true, reduceMotion: reduceMotion)
                 .accessibilityLabel("settings.ai.downloading".localized)
         case .loadingASR, .loadingDiarization:
             Image(systemName: "gearshape.circle.fill")
-                .foregroundStyle(MeetingAssistantDesignSystem.Colors.warning)
+                .foregroundStyle(AppDesignSystem.Colors.warning)
                 .settingsPulseSymbolEffect(isActive: true, reduceMotion: reduceMotion)
                 .accessibilityLabel("settings.ai.loading".localized)
         case .ready:
             Image(systemName: "checkmark.circle.fill")
-                .foregroundStyle(MeetingAssistantDesignSystem.Colors.success)
+                .foregroundStyle(AppDesignSystem.Colors.success)
                 .accessibilityLabel("settings.ai.ready".localized)
         case .failed:
             Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
+                .foregroundStyle(AppDesignSystem.Colors.error)
                 .accessibilityLabel("settings.ai.failed".localized)
         }
     }
@@ -134,7 +134,7 @@ private struct SpeakerIdentificationSettingsSectionPreview: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
             SpeakerIdentificationSettingsSection(settings: settings, modelManager: .shared)
         }
         .padding()

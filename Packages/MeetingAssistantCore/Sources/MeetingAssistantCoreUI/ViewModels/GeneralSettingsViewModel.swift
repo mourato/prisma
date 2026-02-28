@@ -169,7 +169,7 @@ public class GeneralSettingsViewModel: ObservableObject {
 
     private let deviceManager = AudioDeviceManager()
     private var cancellables = Set<AnyCancellable>()
-    private nonisolated static let logger = Logger(subsystem: "MeetingAssistant", category: "GeneralSettingsViewModel")
+    private nonisolated static let logger = Logger(subsystem: AppIdentity.logSubsystem, category: "GeneralSettingsViewModel")
 
     public init(
         settingsStore: AppSettingsStore = .shared,

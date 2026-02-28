@@ -6,7 +6,7 @@ import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
-public struct MABadge: View {
+public struct DSBadge: View {
     public enum Kind {
         case success
         case warning
@@ -15,10 +15,10 @@ public struct MABadge: View {
 
         var background: Color {
             switch self {
-            case .success: MeetingAssistantDesignSystem.Colors.success
-            case .warning: MeetingAssistantDesignSystem.Colors.warning
-            case .error: MeetingAssistantDesignSystem.Colors.error
-            case .neutral: MeetingAssistantDesignSystem.Colors.neutral
+            case .success: AppDesignSystem.Colors.success
+            case .warning: AppDesignSystem.Colors.warning
+            case .error: AppDesignSystem.Colors.error
+            case .neutral: AppDesignSystem.Colors.neutral
             }
         }
     }
@@ -44,11 +44,11 @@ public struct MABadge: View {
 }
 
 #Preview("Badge Kinds") {
-    HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-        MABadge("Success", kind: .success)
-        MABadge("Warning", kind: .warning)
-        MABadge("Error", kind: .error)
-        MABadge("Neutral", kind: .neutral)
+    HStack(spacing: AppDesignSystem.Layout.spacing8) {
+        DSBadge("Success", kind: .success)
+        DSBadge("Warning", kind: .warning)
+        DSBadge("Error", kind: .error)
+        DSBadge("Neutral", kind: .neutral)
     }
     .padding()
 }

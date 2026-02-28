@@ -39,7 +39,7 @@ struct SystemPromptEditorSheet: View {
             Divider()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
+                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
                     instructionSection
                     editorSection
                 }
@@ -64,21 +64,21 @@ struct SystemPromptEditorSheet: View {
                 onRestoreDefault()
             }
             .buttonStyle(.plain)
-            .foregroundStyle(MeetingAssistantDesignSystem.Colors.accent)
+            .foregroundStyle(AppDesignSystem.Colors.accent)
             .font(.system(size: 11, weight: .medium))
-            .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing8)
-            .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing4)
-            .background(MeetingAssistantDesignSystem.Colors.selectionFill)
-            .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.chipCornerRadius))
+            .padding(.horizontal, AppDesignSystem.Layout.spacing8)
+            .padding(.vertical, AppDesignSystem.Layout.spacing4)
+            .background(AppDesignSystem.Colors.selectionFill)
+            .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.chipCornerRadius))
         }
         .padding()
-        .background(MeetingAssistantDesignSystem.Colors.windowBackground)
+        .background(AppDesignSystem.Colors.windowBackground)
     }
 
     // MARK: - Sections
 
     private var instructionSection: some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing6) {
             Text("settings.post_processing.base_instructions".localized)
                 .font(.subheadline)
                 .fontWeight(.medium)
@@ -93,12 +93,12 @@ struct SystemPromptEditorSheet: View {
         TextEditor(text: $systemPrompt)
             .font(.body)
             .frame(minHeight: Constants.editorMinHeight)
-            .padding(MeetingAssistantDesignSystem.Layout.textAreaPadding)
-            .background(MeetingAssistantDesignSystem.Colors.textBackground)
-            .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius))
+            .padding(AppDesignSystem.Layout.textAreaPadding)
+            .background(AppDesignSystem.Colors.textBackground)
+            .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
             .overlay(
-                RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
-                    .stroke(MeetingAssistantDesignSystem.Colors.separator, lineWidth: 1)
+                RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
+                    .stroke(AppDesignSystem.Colors.separator, lineWidth: 1)
             )
     }
 
@@ -118,11 +118,11 @@ struct SystemPromptEditorSheet: View {
             }
             .keyboardShortcut(.return)
             .buttonStyle(.borderedProminent)
-            .tint(MeetingAssistantDesignSystem.Colors.accent)
+            .tint(AppDesignSystem.Colors.accent)
             .disabled(systemPrompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
         .padding()
-        .background(MeetingAssistantDesignSystem.Colors.windowBackground)
+        .background(AppDesignSystem.Colors.windowBackground)
     }
 }
 

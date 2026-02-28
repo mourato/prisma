@@ -2,13 +2,13 @@ import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
 /// Backwards-compatible alias for legacy Settings-only naming.
-public typealias SettingsDesignSystem = MeetingAssistantDesignSystem
+public typealias SettingsDesignSystem = AppDesignSystem
 
-public typealias SettingsCard = MACard
+public typealias SettingsCard = DSCard
 
-public typealias SettingsGroup = MAGroup
+public typealias SettingsGroup = DSGroup
 
-public typealias SettingsToggle = MAToggleRow
+public typealias SettingsToggle = DSToggleRow
 
 /// A theme-aware color picker for settings.
 public struct SettingsThemePicker: View {

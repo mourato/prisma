@@ -48,16 +48,16 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
     // MARK: - Configuration
 
     private enum Constants {
-        static let panelHeightClassic: CGFloat = MeetingAssistantDesignSystem.Layout.recordingIndicatorClassicHeight
-        static let panelHeightMini: CGFloat = MeetingAssistantDesignSystem.Layout.recordingIndicatorMiniHeight
+        static let panelHeightClassic: CGFloat = AppDesignSystem.Layout.recordingIndicatorClassicHeight
+        static let panelHeightMini: CGFloat = AppDesignSystem.Layout.recordingIndicatorMiniHeight
         static let panelWidthClassicMeeting: CGFloat = 305
         static let panelWidthClassicDictation: CGFloat = 254
         static let panelWidthMiniMeeting: CGFloat = 235
         static let panelWidthMiniDictation: CGFloat = 188
-        static let panelWidthError: CGFloat = MeetingAssistantDesignSystem.Layout.recordingIndicatorPanelWidth
+        static let panelWidthError: CGFloat = AppDesignSystem.Layout.recordingIndicatorPanelWidth
         static let screenPadding: CGFloat = 40
-        static let panelShadowInset: CGFloat = MeetingAssistantDesignSystem.Layout.recordingIndicatorMainShadowRadius
-            + abs(MeetingAssistantDesignSystem.Layout.recordingIndicatorMainShadowY)
+        static let panelShadowInset: CGFloat = AppDesignSystem.Layout.recordingIndicatorMainShadowRadius
+            + abs(AppDesignSystem.Layout.recordingIndicatorMainShadowY)
             + 4
     }
 

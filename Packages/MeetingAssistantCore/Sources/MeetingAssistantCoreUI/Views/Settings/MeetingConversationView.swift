@@ -77,11 +77,11 @@ public struct MeetingConversationView: View {
             Divider()
             composer
         }
-        .background(MeetingAssistantDesignSystem.Colors.windowBackground)
+        .background(AppDesignSystem.Colors.windowBackground)
     }
 
     private var header: some View {
-        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+        HStack(spacing: AppDesignSystem.Layout.spacing8) {
             Button {
                 onBack()
             } label: {
@@ -96,13 +96,13 @@ public struct MeetingConversationView: View {
 
             Spacer()
         }
-        .padding(MeetingAssistantDesignSystem.Layout.spacing16)
+        .padding(AppDesignSystem.Layout.spacing16)
     }
 
     @ViewBuilder
     private var content: some View {
         if isLoadingTranscription {
-            VStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+            VStack(spacing: AppDesignSystem.Layout.spacing8) {
                 Spacer()
                 ProgressView()
                 Text("settings.transcriptions.loading".localized)
@@ -111,7 +111,7 @@ public struct MeetingConversationView: View {
                 Spacer()
             }
         } else if transcription == nil {
-            VStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+            VStack(spacing: AppDesignSystem.Layout.spacing8) {
                 Spacer()
                 Image(systemName: "doc.text.magnifyingglass")
                     .font(.system(size: 40))
@@ -120,12 +120,12 @@ public struct MeetingConversationView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing16)
+                    .padding(.horizontal, AppDesignSystem.Layout.spacing16)
                 Spacer()
             }
         } else {
             ScrollView {
-                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
+                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
                     summaryCard
 
                     if turns.isEmpty {
@@ -139,7 +139,7 @@ public struct MeetingConversationView: View {
                     }
 
                     if isAnswering {
-                        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                        HStack(spacing: AppDesignSystem.Layout.spacing8) {
                             ProgressView()
                                 .controlSize(.small)
                             Text("transcription.qa.loading".localized)
@@ -148,13 +148,13 @@ public struct MeetingConversationView: View {
                         }
                     }
                 }
-                .padding(MeetingAssistantDesignSystem.Layout.spacing16)
+                .padding(AppDesignSystem.Layout.spacing16)
             }
         }
     }
 
     private var summaryCard: some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
             Text("transcription.qa.summary_title".localized)
                 .font(.subheadline)
                 .fontWeight(.semibold)
@@ -164,10 +164,10 @@ public struct MeetingConversationView: View {
                 .foregroundStyle(.secondary)
                 .textSelection(.enabled)
         }
-        .padding(MeetingAssistantDesignSystem.Layout.spacing12)
+        .padding(AppDesignSystem.Layout.spacing12)
         .background(
-            MeetingAssistantDesignSystem.Colors.cardBackground,
-            in: RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
+            AppDesignSystem.Colors.cardBackground,
+            in: RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
         )
     }
 
@@ -193,10 +193,10 @@ public struct MeetingConversationView: View {
     }
 
     private func turnView(_ turn: TranscriptionSettingsViewModel.QATurn) -> some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-            HStack(alignment: .top, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
+            HStack(alignment: .top, spacing: AppDesignSystem.Layout.spacing8) {
                 Image(systemName: "person.fill")
-                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.accent)
+                    .foregroundStyle(AppDesignSystem.Colors.accent)
                 Text(turn.question)
                     .font(.body)
             }
@@ -207,17 +207,17 @@ public struct MeetingConversationView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 } else {
-                    VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
-                        HStack(alignment: .top, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                    VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
+                        HStack(alignment: .top, spacing: AppDesignSystem.Layout.spacing8) {
                             Image(systemName: "sparkles")
-                                .foregroundStyle(MeetingAssistantDesignSystem.Colors.iconHighlight)
+                                .foregroundStyle(AppDesignSystem.Colors.iconHighlight)
                             Text(response.answer)
                                 .font(.body)
                                 .textSelection(.enabled)
                         }
 
                         if !response.evidence.isEmpty {
-                            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing6) {
+                            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing6) {
                                 Text("transcription.qa.evidence_title".localized)
                                     .font(.caption)
                                     .fontWeight(.semibold)
@@ -232,10 +232,10 @@ public struct MeetingConversationView: View {
                     }
                 }
             } else if let errorMessage = turn.errorMessage {
-                VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
                     Text(errorMessage)
                         .font(.caption)
-                        .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
+                        .foregroundStyle(AppDesignSystem.Colors.error)
 
                     Button("transcription.qa.retry".localized) {
                         onRetry(turn.question)
@@ -246,28 +246,28 @@ public struct MeetingConversationView: View {
                 }
             }
         }
-        .padding(MeetingAssistantDesignSystem.Layout.spacing12)
+        .padding(AppDesignSystem.Layout.spacing12)
         .background(
-            MeetingAssistantDesignSystem.Colors.subtleFill,
-            in: RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.smallCornerRadius)
+            AppDesignSystem.Colors.subtleFill,
+            in: RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
         )
     }
 
     private var composer: some View {
-        VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
             if let currentErrorMessage, !currentErrorMessage.isEmpty {
                 Text(currentErrorMessage)
                     .font(.caption)
-                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
+                    .foregroundStyle(AppDesignSystem.Colors.error)
             }
 
             if let dictationErrorMessage, !dictationErrorMessage.isEmpty {
                 Text(dictationErrorMessage)
                     .font(.caption)
-                    .foregroundStyle(MeetingAssistantDesignSystem.Colors.error)
+                    .foregroundStyle(AppDesignSystem.Colors.error)
             }
 
-            HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+            HStack(spacing: AppDesignSystem.Layout.spacing8) {
                 TextField(
                     "transcription.qa.placeholder".localized,
                     text: Binding(
@@ -288,7 +288,7 @@ public struct MeetingConversationView: View {
                 .disabled(isAskDisabled)
             }
         }
-        .padding(MeetingAssistantDesignSystem.Layout.spacing16)
+        .padding(AppDesignSystem.Layout.spacing16)
     }
 
     @ViewBuilder
@@ -302,10 +302,10 @@ public struct MeetingConversationView: View {
                 )
             )
             .textFieldStyle(.roundedBorder)
-            .frame(maxWidth: MeetingAssistantDesignSystem.Layout.maxCompactTextFieldWidth)
+            .frame(maxWidth: AppDesignSystem.Layout.maxCompactTextFieldWidth)
             .accessibilityLabel("settings.ai.model".localized)
         } else {
-            HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+            HStack(spacing: AppDesignSystem.Layout.spacing8) {
                 Button {
                     onRefreshModels()
                 } label: {
@@ -362,7 +362,7 @@ public struct MeetingConversationView: View {
             }
         }
         .buttonStyle(.bordered)
-        .tint(dictationState == .recording ? MeetingAssistantDesignSystem.Colors.error : nil)
+        .tint(dictationState == .recording ? AppDesignSystem.Colors.error : nil)
         .disabled(isLoadingTranscription || dictationState == .processing)
         .help(dictationHelpText)
         .accessibilityLabel(dictationHelpText)

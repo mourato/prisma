@@ -60,8 +60,8 @@ public struct PostProcessingSettingsTab: View {
     // MARK: - Sections
 
     private var enableToggleSection: some View {
-        MACard {
-            MAToggleRow(
+        DSCard {
+            DSToggleRow(
                 "settings.post_processing.enabled".localized,
                 description: "settings.post_processing.description".localized,
                 isOn: $viewModel.settings.postProcessingEnabled.animated()
@@ -70,7 +70,7 @@ public struct PostProcessingSettingsTab: View {
     }
 
     private var connectionWarningSection: some View {
-        MACallout(
+        DSCallout(
             kind: .warning,
             title: "settings.post_processing.warning_title".localized,
             message: "settings.post_processing.warning_desc".localized
@@ -78,8 +78,8 @@ public struct PostProcessingSettingsTab: View {
     }
 
     private var systemPromptSection: some View {
-        MAGroup("settings.post_processing.system_prompt".localized, icon: "terminal.fill") {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+        DSGroup("settings.post_processing.system_prompt".localized, icon: "terminal.fill") {
+            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("settings.post_processing.base_instructions".localized)
@@ -110,8 +110,8 @@ public struct PostProcessingSettingsTab: View {
     }
 
     private var userPromptsSection: some View {
-        MAGroup("settings.post_processing.prompts".localized, icon: "sparkles") {
-            VStack(alignment: .leading, spacing: MeetingAssistantDesignSystem.Layout.spacing16) {
+        DSGroup("settings.post_processing.prompts".localized, icon: "sparkles") {
+            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
                 HStack {
                     Text("settings.post_processing.choose_active".localized)
                         .font(.caption)
@@ -132,7 +132,7 @@ public struct PostProcessingSettingsTab: View {
                     .controlSize(.regular)
                 }
 
-                VStack(spacing: MeetingAssistantDesignSystem.Layout.spacing8) {
+                VStack(spacing: AppDesignSystem.Layout.spacing8) {
                     ForEach(viewModel.settings.allPrompts) { prompt in
                         promptRow(prompt: prompt)
                     }

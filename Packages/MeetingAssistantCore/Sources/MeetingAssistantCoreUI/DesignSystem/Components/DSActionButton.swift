@@ -6,7 +6,7 @@ import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
-public struct MAActionButton<Label: View>: View {
+public struct DSActionButton<Label: View>: View {
     public enum Kind {
         case primary
         case destructive
@@ -14,7 +14,7 @@ public struct MAActionButton<Label: View>: View {
 
         var foreground: Color {
             switch self {
-            case .primary: MeetingAssistantDesignSystem.Colors.onAccent
+            case .primary: AppDesignSystem.Colors.onAccent
             case .destructive: Color.white
             case .secondary: Color.primary
             }
@@ -23,9 +23,9 @@ public struct MAActionButton<Label: View>: View {
         func background(isEnabled: Bool) -> AnyShapeStyle {
             switch self {
             case .primary:
-                AnyShapeStyle(isEnabled ? MeetingAssistantDesignSystem.Colors.accent : Color.gray)
+                AnyShapeStyle(isEnabled ? AppDesignSystem.Colors.accent : Color.gray)
             case .destructive:
-                AnyShapeStyle(isEnabled ? MeetingAssistantDesignSystem.Colors.error : Color.gray)
+                AnyShapeStyle(isEnabled ? AppDesignSystem.Colors.error : Color.gray)
             case .secondary:
                 AnyShapeStyle(.ultraThinMaterial)
             }
@@ -47,7 +47,7 @@ public struct MAActionButton<Label: View>: View {
     public var body: some View {
         Button(action: action) {
             label
-                .frame(maxWidth: .infinity, minHeight: MeetingAssistantDesignSystem.Layout.controlHeight)
+                .frame(maxWidth: .infinity, minHeight: AppDesignSystem.Layout.controlHeight)
         }
         .buttonStyle(.plain)
         .foregroundStyle(kind.foreground.opacity(isEnabled ? 1 : 0.7))

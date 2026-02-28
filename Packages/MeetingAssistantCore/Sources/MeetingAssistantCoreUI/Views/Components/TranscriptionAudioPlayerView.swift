@@ -16,7 +16,7 @@ public struct TranscriptionAudioPlayerView: View {
     }
 
     public var body: some View {
-        HStack(spacing: MeetingAssistantDesignSystem.Layout.spacing12) {
+        HStack(spacing: AppDesignSystem.Layout.spacing12) {
             // Play/Pause Button
             Button {
                 viewModel.togglePlayback()
@@ -48,7 +48,7 @@ public struct TranscriptionAudioPlayerView: View {
                     )
                 }
             }
-            .frame(height: MeetingAssistantDesignSystem.Layout.compactButtonHeight)
+            .frame(height: AppDesignSystem.Layout.compactButtonHeight)
 
             // Duration
             Text(formatTime(viewModel.duration - viewModel.currentTime))
@@ -56,10 +56,10 @@ public struct TranscriptionAudioPlayerView: View {
                 .foregroundStyle(.secondary)
                 .frame(width: 40, alignment: .trailing)
         }
-        .padding(.horizontal, MeetingAssistantDesignSystem.Layout.spacing12)
-        .padding(.vertical, MeetingAssistantDesignSystem.Layout.spacing8)
+        .padding(.horizontal, AppDesignSystem.Layout.spacing12)
+        .padding(.vertical, AppDesignSystem.Layout.spacing8)
         .background(Color.primary.opacity(0.05))
-        .clipShape(RoundedRectangle(cornerRadius: MeetingAssistantDesignSystem.Layout.cardCornerRadius))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.cardCornerRadius))
         .onAppear {
             if let url = audioURL {
                 viewModel.loadAudio(url: url)
