@@ -1,4 +1,5 @@
 import Foundation
+import MeetingAssistantCoreCommon
 import os.log
 import UserNotifications
 
@@ -8,7 +9,7 @@ import UserNotifications
 public final class NotificationService {
     public static let shared = NotificationService()
 
-    private let logger = Logger(subsystem: "MeetingAssistant", category: "NotificationService")
+    private let logger = Logger(subsystem: AppIdentity.logSubsystem, category: "NotificationService")
 
     private init() {}
 

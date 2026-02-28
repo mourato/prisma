@@ -9,7 +9,7 @@ import os.log
 public class LocalTranscriptionClient {
     public static let shared = LocalTranscriptionClient()
 
-    private let logger = Logger(subsystem: "MeetingAssistant", category: "LocalTranscriptionClient")
+    private let logger = Logger(subsystem: AppIdentity.logSubsystem, category: "LocalTranscriptionClient")
     private let manager = FluidAIModelManager.shared
 
     private init() {}

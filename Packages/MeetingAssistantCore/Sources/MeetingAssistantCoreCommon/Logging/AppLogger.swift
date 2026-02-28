@@ -5,7 +5,7 @@ import os.log
 // swiftlint:disable:next orphaned_doc_comment
 // swiftlint:disable discouraged_optional_collection
 public enum AppLogger {
-    private static let subsystem = "com.meetingassistant.app"
+    private static let subsystem = AppIdentity.logSubsystem
 
     // MARK: - Public API
 

@@ -1,6 +1,7 @@
 import AppKit
 import Combine
 import Foundation
+import MeetingAssistantCoreCommon
 import MeetingAssistantCoreDomain
 import os.log
 
@@ -10,7 +11,7 @@ import os.log
 public class MeetingDetector: ObservableObject {
     public static let shared = MeetingDetector()
 
-    private let logger = Logger(subsystem: "MeetingAssistant", category: "MeetingDetector")
+    private let logger = Logger(subsystem: AppIdentity.logSubsystem, category: "MeetingDetector")
     private let settings: AppSettingsStore
     private var browserProviders: [String: BrowserActiveTabURLProviding]
 

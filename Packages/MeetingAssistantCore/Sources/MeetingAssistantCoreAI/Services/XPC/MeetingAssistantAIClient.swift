@@ -4,7 +4,7 @@ import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
 import OSLog
 
-private let meetingAssistantAIClientLogger = Logger(subsystem: "MeetingAssistant", category: "AIClient")
+private let meetingAssistantAIClientLogger = Logger(subsystem: AppIdentity.logSubsystem, category: "AIClient")
 
 private final class ContinuationGate<T: Sendable>: @unchecked Sendable {
     private let lock = NSLock()

@@ -1,4 +1,5 @@
 import Foundation
+import MeetingAssistantCoreCommon
 import os.log
 
 #if arch(arm64)
@@ -22,7 +23,7 @@ final class FluidAudioProvider: @unchecked Sendable {
         true
     }
 
-    private let logger = Logger(subsystem: "MeetingAssistant", category: "FluidAudioProvider")
+    private let logger = Logger(subsystem: AppIdentity.logSubsystem, category: "FluidAudioProvider")
     private var asrManager: AsrManager?
     private(set) var isReady: Bool = false
 
