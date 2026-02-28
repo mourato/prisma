@@ -952,13 +952,17 @@
 "onboarding.permissions.grant" = "Conceder";
 "onboarding.permissions.granted" = "Concedida";
 "onboarding.permissions.open_settings" = "Abrir Configurações";
+"onboarding.permissions.denied.help" = "Permissão negada. Abra os Ajustes do Sistema para habilitar.";
 
 "onboarding.shortcuts.title" = "Atalhos de Teclado";
 "onboarding.shortcuts.subtitle" = "Configure seus atalhos de teclado preferidos para acesso rápido.";
 "onboarding.shortcuts.dictation" = "Atalho de Ditado";
 "onboarding.shortcuts.meeting" = "Atalho de Reunião";
 "onboarding.shortcuts.assistant" = "Atalho do Assistant";
+"onboarding.shortcuts.current" = "Atual: %@";
+"onboarding.shortcuts.not_configured" = "Não configurado";
 "onboarding.shortcuts.use_default" = "Usar Padrão";
+"onboarding.shortcuts.default_set" = "Padrão Definido";
 "onboarding.shortcuts.customize" = "Personalizar";
 
 "onboarding.download.title" = "Baixar Modelos";

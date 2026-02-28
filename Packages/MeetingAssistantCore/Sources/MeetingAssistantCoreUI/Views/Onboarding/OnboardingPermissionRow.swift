@@ -99,7 +99,7 @@ public struct OnboardingPermissionRow: View {
                 .cornerRadius(8)
             }
             .buttonStyle(.plain)
-            .help("Permission denied. Open System Settings to enable.")
+            .help("onboarding.permissions.denied.help".localized)
 
         case .restricted:
             Text("permission.state.restricted".localized)

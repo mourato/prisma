@@ -6,15 +6,18 @@ import SwiftUI
 /// Third step of onboarding - configuring keyboard shortcuts.
 public struct OnboardingShortcutsView: View {
     @ObservedObject var viewModel: ShortcutSettingsViewModel
+    @ObservedObject var assistantViewModel: AssistantShortcutSettingsViewModel
     let onContinue: () -> Void
     let onSkip: (() -> Void)?
 
     public init(
         viewModel: ShortcutSettingsViewModel,
+        assistantViewModel: AssistantShortcutSettingsViewModel,
         onContinue: @escaping () -> Void,
         onSkip: (() -> Void)? = nil
     ) {
         self.viewModel = viewModel
+        self.assistantViewModel = assistantViewModel
         self.onContinue = onContinue
         self.onSkip = onSkip
     }
@@ -43,7 +46,8 @@ public struct OnboardingShortcutsView: View {
                 ForEach(OnboardingShortcutItem.allShortcuts, id: \.type) { item in
                     OnboardingShortcutRow(
                         item: item,
-                        viewModel: viewModel
+                        viewModel: viewModel,
+                        assistantViewModel: assistantViewModel
                     )
                 }
             }
@@ -89,6 +93,7 @@ public struct OnboardingShortcutsView: View {
 private struct OnboardingShortcutRow: View {
     let item: OnboardingShortcutItem
     @ObservedObject var viewModel: ShortcutSettingsViewModel
+    @ObservedObject var assistantViewModel: AssistantShortcutSettingsViewModel
 
     var body: some View {
         HStack(spacing: 16) {
@@ -108,24 +113,29 @@ private struct OnboardingShortcutRow: View {
                     .font(.headline)
                     .foregroundColor(.primary)
 
-                Text("onboarding.shortcuts.use_default".localized)
+                Text("onboarding.shortcuts.current".localized(with: currentShortcutSummary))
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(isConfigured ? .secondary : .orange)
             }
 
             Spacer()
 
             // Use Default Button
             Button(action: useDefaultShortcut) {
-                Text("onboarding.shortcuts.use_default".localized)
+                Text(
+                    isUsingDefault
+                        ? "onboarding.shortcuts.default_set".localized
+                        : "onboarding.shortcuts.use_default".localized
+                )
                     .font(.system(size: 13, weight: .medium))
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
-                    .background(Color.accentColor.opacity(0.1))
-                    .foregroundColor(.accentColor)
+                    .background((isUsingDefault ? Color.secondary : Color.accentColor).opacity(0.12))
+                    .foregroundColor(isUsingDefault ? .secondary : .accentColor)
                     .cornerRadius(8)
             }
             .buttonStyle(.plain)
+            .disabled(isUsingDefault)
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 16)
@@ -146,13 +156,98 @@ private struct OnboardingShortcutRow: View {
     private func useDefaultShortcut() {
         switch item.type {
         case .dictation:
-            viewModel.dictationShortcutDefinition = AppSettingsStore.defaultDictationShortcutDefinition
+            viewModel.dictationShortcutDefinition = OnboardingShortcutFeedbackFormatter.defaultDefinition(for: .dictation)
         case .meeting:
-            viewModel.meetingShortcutDefinition = AppSettingsStore.defaultMeetingShortcutDefinition
+            viewModel.meetingShortcutDefinition = OnboardingShortcutFeedbackFormatter.defaultDefinition(for: .meeting)
         case .assistant:
-            // Assistant shortcut is handled separately in AssistantShortcutSettingsViewModel
-            break
+            assistantViewModel.assistantShortcutDefinition = OnboardingShortcutFeedbackFormatter.defaultDefinition(for: .assistant)
         }
+    }
+
+    private var currentShortcutDefinition: ShortcutDefinition? {
+        OnboardingShortcutFeedbackFormatter.currentDefinition(
+            for: item.type,
+            shortcutViewModel: viewModel,
+            assistantViewModel: assistantViewModel
+        )
+    }
+
+    private var isConfigured: Bool {
+        currentShortcutDefinition != nil
+    }
+
+    private var isUsingDefault: Bool {
+        OnboardingShortcutFeedbackFormatter.isUsingDefault(
+            current: currentShortcutDefinition,
+            type: item.type
+        )
+    }
+
+    private var currentShortcutSummary: String {
+        OnboardingShortcutFeedbackFormatter.summary(for: currentShortcutDefinition)
+    }
+}
+
+enum OnboardingShortcutFeedbackFormatter {
+    static func currentDefinition(
+        for type: OnboardingShortcutType,
+        shortcutViewModel: ShortcutSettingsViewModel,
+        assistantViewModel: AssistantShortcutSettingsViewModel
+    ) -> ShortcutDefinition? {
+        switch type {
+        case .dictation:
+            shortcutViewModel.dictationShortcutDefinition
+        case .meeting:
+            shortcutViewModel.meetingShortcutDefinition
+        case .assistant:
+            assistantViewModel.assistantShortcutDefinition
+        }
+    }
+
+    static func defaultDefinition(for type: OnboardingShortcutType) -> ShortcutDefinition {
+        switch type {
+        case .dictation:
+            AppSettingsStore.defaultDictationShortcutDefinition
+        case .meeting:
+            AppSettingsStore.defaultMeetingShortcutDefinition
+        case .assistant:
+            AppSettingsStore.defaultAssistantShortcutDefinition
+        }
+    }
+
+    static func isUsingDefault(current: ShortcutDefinition?, type: OnboardingShortcutType) -> Bool {
+        current == defaultDefinition(for: type)
+    }
+
+    static func summary(for definition: ShortcutDefinition?) -> String {
+        guard let definition else {
+            return "onboarding.shortcuts.not_configured".localized
+        }
+
+        let modifierTokens = definition.modifiers.map { modifier in
+            switch modifier {
+            case .leftCommand, .rightCommand, .command:
+                "⌘"
+            case .leftShift, .rightShift, .shift:
+                "⇧"
+            case .leftOption, .rightOption, .option:
+                "⌥"
+            case .leftControl, .rightControl, .control:
+                "⌃"
+            case .fn:
+                "Fn"
+            }
+        }
+
+        if let primaryKey = definition.primaryKey {
+            return (modifierTokens + [primaryKey.display]).joined(separator: " ")
+        }
+
+        if definition.trigger == .doubleTap, modifierTokens.count == 1 {
+            return (modifierTokens + [modifierTokens[0]]).joined(separator: " ")
+        }
+
+        return modifierTokens.joined(separator: " ")
     }
 }
 
@@ -161,6 +256,7 @@ private struct OnboardingShortcutRow: View {
 #Preview {
     OnboardingShortcutsView(
         viewModel: ShortcutSettingsViewModel(),
+        assistantViewModel: AssistantShortcutSettingsViewModel(),
         onContinue: {},
         onSkip: {}
     )

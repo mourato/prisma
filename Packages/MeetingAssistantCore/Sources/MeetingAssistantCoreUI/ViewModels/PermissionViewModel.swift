@@ -58,6 +58,9 @@ public class PermissionViewModel: ObservableObject {
     /// Configure periodic refresh with a custom refresh action.
     public func startPeriodicRefresh(refreshAction: @escaping @MainActor () async -> Void) {
         self.refreshAction = refreshAction
+        Task { @MainActor [weak self] in
+            await self?.refreshAction?()
+        }
         refreshTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
                 await self?.refreshAction?()

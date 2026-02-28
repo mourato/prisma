@@ -16,6 +16,7 @@ public class OnboardingWindowController {
         viewModel: OnboardingViewModel,
         permissionViewModel: PermissionViewModel,
         shortcutViewModel: ShortcutSettingsViewModel,
+        assistantShortcutViewModel: AssistantShortcutSettingsViewModel,
         modelManager: FluidAIModelManager,
         refreshPermissions: @escaping @MainActor () async -> Void,
         completion: @escaping () -> Void
@@ -25,6 +26,7 @@ public class OnboardingWindowController {
             viewModel: viewModel,
             permissionViewModel: permissionViewModel,
             shortcutViewModel: shortcutViewModel,
+            assistantShortcutViewModel: assistantShortcutViewModel,
             modelManager: modelManager,
             refreshPermissions: refreshPermissions,
             onComplete: { [weak self] in

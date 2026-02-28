@@ -10,6 +10,7 @@ public struct OnboardingView: View {
     @ObservedObject var viewModel: OnboardingViewModel
     @ObservedObject var permissionViewModel: PermissionViewModel
     @ObservedObject var shortcutViewModel: ShortcutSettingsViewModel
+    @ObservedObject var assistantShortcutViewModel: AssistantShortcutSettingsViewModel
     @ObservedObject var modelManager: FluidAIModelManager
 
     let onComplete: () -> Void
@@ -19,6 +20,7 @@ public struct OnboardingView: View {
         viewModel: OnboardingViewModel,
         permissionViewModel: PermissionViewModel,
         shortcutViewModel: ShortcutSettingsViewModel,
+        assistantShortcutViewModel: AssistantShortcutSettingsViewModel,
         modelManager: FluidAIModelManager,
         refreshPermissions: @escaping @MainActor () async -> Void,
         onComplete: @escaping () -> Void
@@ -26,6 +28,7 @@ public struct OnboardingView: View {
         self.viewModel = viewModel
         self.permissionViewModel = permissionViewModel
         self.shortcutViewModel = shortcutViewModel
+        self.assistantShortcutViewModel = assistantShortcutViewModel
         self.modelManager = modelManager
         self.refreshPermissions = refreshPermissions
         self.onComplete = onComplete
@@ -68,6 +71,7 @@ public struct OnboardingView: View {
         case .shortcuts:
             OnboardingShortcutsView(
                 viewModel: shortcutViewModel,
+                assistantViewModel: assistantShortcutViewModel,
                 onContinue: viewModel.goToNextStep,
                 onSkip: viewModel.currentStep.isSkippable ? { viewModel.skipCurrentStep() } : nil
             )
