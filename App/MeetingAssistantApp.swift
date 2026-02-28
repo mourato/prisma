@@ -182,7 +182,7 @@ extension AppDelegate {
 
     private func presentOnboarding(completion: @escaping () -> Void) {
         let permissionViewModel = PermissionViewModel(
-            manager: PermissionStatusManager(),
+            manager: recordingManager.permissionStatus,
             requestMicrophone: { [weak self] in
                 await self?.recordingManager.requestPermission(for: .microphone)
             },
@@ -204,6 +204,7 @@ extension AppDelegate {
         )
 
         let shortcutViewModel = ShortcutSettingsViewModel()
+        let assistantShortcutViewModel = AssistantShortcutSettingsViewModel()
         let onboardingViewModel = OnboardingViewModel()
         let modelManager = FluidAIModelManager.shared
 
@@ -211,6 +212,7 @@ extension AppDelegate {
             viewModel: onboardingViewModel,
             permissionViewModel: permissionViewModel,
             shortcutViewModel: shortcutViewModel,
+            assistantShortcutViewModel: assistantShortcutViewModel,
             modelManager: modelManager,
             refreshPermissions: { [weak self] in
                 await self?.recordingManager.checkPermission()

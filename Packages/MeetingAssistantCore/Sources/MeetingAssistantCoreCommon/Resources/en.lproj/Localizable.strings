@@ -964,13 +964,17 @@
 "onboarding.permissions.grant" = "Grant";
 "onboarding.permissions.granted" = "Granted";
 "onboarding.permissions.open_settings" = "Open Settings";
+"onboarding.permissions.denied.help" = "Permission denied. Open System Settings to enable.";
 
 "onboarding.shortcuts.title" = "Keyboard Shortcuts";
 "onboarding.shortcuts.subtitle" = "Set up your preferred keyboard shortcuts for quick access.";
 "onboarding.shortcuts.dictation" = "Dictation Shortcut";
 "onboarding.shortcuts.meeting" = "Meeting Shortcut";
 "onboarding.shortcuts.assistant" = "Assistant Shortcut";
+"onboarding.shortcuts.current" = "Current: %@";
+"onboarding.shortcuts.not_configured" = "Not configured";
 "onboarding.shortcuts.use_default" = "Use Default";
+"onboarding.shortcuts.default_set" = "Default Set";
 "onboarding.shortcuts.customize" = "Customize";
 
 "onboarding.download.title" = "Download Models";
