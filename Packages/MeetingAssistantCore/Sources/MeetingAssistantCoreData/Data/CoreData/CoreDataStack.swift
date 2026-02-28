@@ -45,6 +45,7 @@ public final class CoreDataStack: Sendable {
         } else {
             let storeURL = Self.persistentStoreURL(for: name)
             ensurePersistentStoreDirectoryExists(for: storeURL)
+            Self.migrateLegacyPersistentStoreIfNeeded(currentStoreURL: storeURL, currentStoreName: name, logger: logger)
 
             let description = NSPersistentStoreDescription(url: storeURL)
             description.type = NSSQLiteStoreType
@@ -79,6 +80,127 @@ public final class CoreDataStack: Sendable {
     private static func persistentStoreURL(for storeName: String) -> URL {
         let baseDirectory = AppIdentity.appSupportBaseDirectory(fileManager: .default)
         return baseDirectory.appendingPathComponent("\(storeName).sqlite", isDirectory: false)
+    }
+
+    private static func migrateLegacyPersistentStoreIfNeeded(
+        currentStoreURL: URL,
+        currentStoreName: String,
+        logger: Logger
+    ) {
+        let fileManager = FileManager.default
+        let appSupportDirectory = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? fileManager.temporaryDirectory
+        let currentDirectory = currentStoreURL.deletingLastPathComponent()
+
+        let sameDirectoryLegacyStoreURL = currentDirectory
+            .appendingPathComponent("\(AppIdentity.legacyAppSupportDirectoryName).sqlite", isDirectory: false)
+        let legacyDirectoryStoreURL = appSupportDirectory
+            .appendingPathComponent(AppIdentity.legacyAppSupportDirectoryName, isDirectory: true)
+            .appendingPathComponent("\(AppIdentity.legacyAppSupportDirectoryName).sqlite", isDirectory: false)
+
+        var legacyCandidates = [legacyDirectoryStoreURL]
+        if currentStoreName != AppIdentity.legacyAppSupportDirectoryName {
+            legacyCandidates.insert(sameDirectoryLegacyStoreURL, at: 0)
+        }
+
+        var seenPaths = Set<String>()
+        let legacyStoreURL = legacyCandidates.first { candidate in
+            guard seenPaths.insert(candidate.path).inserted else { return false }
+            return fileManager.fileExists(atPath: candidate.path)
+        }
+
+        guard let legacyStoreURL else {
+            return
+        }
+
+        guard shouldMigrateLegacyStore(
+            currentStoreURL: currentStoreURL,
+            legacyStoreURL: legacyStoreURL,
+            fileManager: fileManager
+        ) else {
+            return
+        }
+
+        do {
+            try backupStoreCluster(at: currentStoreURL, fileManager: fileManager)
+            try replaceStoreCluster(sourceStoreURL: legacyStoreURL, destinationStoreURL: currentStoreURL, fileManager: fileManager)
+            logger.notice("Migrated legacy CoreData store from \(legacyStoreURL.path, privacy: .public) to \(currentStoreURL.path, privacy: .public)")
+        } catch {
+            logger.error("Failed to migrate legacy CoreData store: \(error.localizedDescription)")
+        }
+    }
+
+    private static func shouldMigrateLegacyStore(
+        currentStoreURL: URL,
+        legacyStoreURL: URL,
+        fileManager: FileManager
+    ) -> Bool {
+        guard fileManager.fileExists(atPath: legacyStoreURL.path) else {
+            return false
+        }
+
+        guard fileManager.fileExists(atPath: currentStoreURL.path) else {
+            return true
+        }
+
+        let currentMetrics = storeClusterMetrics(for: currentStoreURL, fileManager: fileManager)
+        let legacyMetrics = storeClusterMetrics(for: legacyStoreURL, fileManager: fileManager)
+
+        let currentLooksFresh = currentMetrics.sqliteBytes <= 65_536 && currentMetrics.walBytes == 0
+        let legacyLooksRicher = legacyMetrics.sqliteBytes > currentMetrics.sqliteBytes || legacyMetrics.walBytes > 0
+        return currentLooksFresh && legacyLooksRicher
+    }
+
+    private static func backupStoreCluster(at storeURL: URL, fileManager: FileManager) throws {
+        guard fileManager.fileExists(atPath: storeURL.path) else {
+            return
+        }
+
+        let timestamp = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
+        for fileURL in storeClusterURLs(for: storeURL) where fileManager.fileExists(atPath: fileURL.path) {
+            let backupURL = URL(fileURLWithPath: fileURL.path + ".pre-migration-\(timestamp)")
+            try fileManager.copyItem(at: fileURL, to: backupURL)
+        }
+    }
+
+    private static func replaceStoreCluster(
+        sourceStoreURL: URL,
+        destinationStoreURL: URL,
+        fileManager: FileManager
+    ) throws {
+        for destinationFileURL in storeClusterURLs(for: destinationStoreURL) where fileManager.fileExists(atPath: destinationFileURL.path) {
+            try fileManager.removeItem(at: destinationFileURL)
+        }
+
+        for sourceFileURL in storeClusterURLs(for: sourceStoreURL) where fileManager.fileExists(atPath: sourceFileURL.path) {
+            let suffix = sourceFileURL.path.replacingOccurrences(of: sourceStoreURL.path, with: "")
+            let destinationFileURL = URL(fileURLWithPath: destinationStoreURL.path + suffix)
+            try fileManager.copyItem(at: sourceFileURL, to: destinationFileURL)
+        }
+    }
+
+    private static func storeClusterURLs(for storeURL: URL) -> [URL] {
+        [
+            storeURL,
+            URL(fileURLWithPath: storeURL.path + "-shm"),
+            URL(fileURLWithPath: storeURL.path + "-wal"),
+        ]
+    }
+
+    private static func storeClusterMetrics(for storeURL: URL, fileManager: FileManager) -> (sqliteBytes: UInt64, walBytes: UInt64) {
+        (
+            fileSize(of: storeURL, fileManager: fileManager),
+            fileSize(of: URL(fileURLWithPath: storeURL.path + "-wal"), fileManager: fileManager)
+        )
+    }
+
+    private static func fileSize(of fileURL: URL, fileManager: FileManager) -> UInt64 {
+        guard let attributes = try? fileManager.attributesOfItem(atPath: fileURL.path),
+              let size = attributes[.size] as? NSNumber
+        else {
+            return 0
+        }
+        return size.uint64Value
     }
 
     private func ensurePersistentStoreDirectoryExists(for storeURL: URL) {
