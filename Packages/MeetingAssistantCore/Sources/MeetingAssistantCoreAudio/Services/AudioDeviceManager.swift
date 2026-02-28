@@ -159,11 +159,45 @@ public final class AudioDeviceManager: ObservableObject {
         return deviceID
     }
 
+    /// Returns the system default input device ID without usability validation.
+    /// Used as an absolute last-resort fallback when `getDefaultInputDeviceID()` rejects the device.
+    public nonisolated func getDefaultInputDeviceIDRaw() -> AudioObjectID? {
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDefaultInputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+
+        var deviceID: AudioObjectID = 0
+        var size = UInt32(MemoryLayout<AudioObjectID>.size)
+        let status = AudioObjectGetPropertyData(
+            AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &size, &deviceID
+        )
+
+        guard status == noErr, deviceID != AudioObjectID(kAudioObjectUnknown) else { return nil }
+        return deviceID
+    }
+
     /// Returns whether this Core Audio device can be used as an input source.
     public nonisolated func isUsableInputDeviceID(_ id: AudioObjectID) -> Bool {
         guard id != AudioObjectID(kAudioObjectUnknown) else { return false }
         guard let channelCount = getInputChannelCount(for: id), channelCount > 0 else { return false }
         return true
+    }
+
+    /// Returns the nominal sample rate configured on a Core Audio device.
+    public nonisolated func getDeviceNominalSampleRate(for id: AudioObjectID) -> Double? {
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyNominalSampleRate,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+
+        var sampleRate: Float64 = 0
+        var size = UInt32(MemoryLayout<Float64>.size)
+        let status = AudioObjectGetPropertyData(id, &address, 0, nil, &size, &sampleRate)
+        guard status == noErr, sampleRate > 0 else { return nil }
+        return sampleRate
     }
 
     public nonisolated func getDeviceName(for id: AudioObjectID) -> String? {

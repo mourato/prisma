@@ -180,11 +180,15 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         audioEngine = engine // Retain generic reference
 
         // 3. Determine Hardware Sample Rate
-        // Query the actual output node format.
-        let hardwareSampleRate = engine.outputNode.outputFormat(forBus: 0).sampleRate
-        let targetSampleRate = (hardwareSampleRate > 0) ? hardwareSampleRate : Constants.outputSampleRate
+        // Use the input device's nominal sample rate when recording microphone audio.
+        // Falling back to the output node rate can cause USB devices to enter a perpetual
+        // "reconfig pending" loop when in/out rates differ, producing silence.
+        let targetSampleRate = resolveTargetSampleRate(
+            engine: engine,
+            source: source
+        )
 
-        AppLogger.info("Detected Hardware Sample Rate: \(targetSampleRate)", category: .recordingManager)
+        AppLogger.info("Resolved target sample rate: \(targetSampleRate)", category: .recordingManager)
 
         do {
             try await setupGraphAndStart(
@@ -238,7 +242,66 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         )
     }
 
-    // MARK: - Engine Setup Helpers
+    /// Resolves the target sample rate for the recording session.
+    ///
+    /// When recording microphone audio, the input device's native (nominal) sample rate
+    /// is preferred. Using the output node rate instead can cause USB audio devices to
+    /// enter a perpetual "reconfig pending" loop when in/out rates differ, producing silence.
+    private func resolveTargetSampleRate(
+        engine: AVAudioEngine,
+        source: RecordingSource
+    ) -> Double {
+        // Try the input device's nominal sample rate first (most reliable for USB mics)
+        if source.requiresMicrophonePermission,
+           let inputUnit = engine.inputNode.audioUnit
+        {
+            var deviceID: AudioObjectID = 0
+            var size = UInt32(MemoryLayout<AudioObjectID>.size)
+            let status = AudioUnitGetProperty(
+                inputUnit,
+                kAudioOutputUnitProperty_CurrentDevice,
+                kAudioUnitScope_Global,
+                0,
+                &deviceID,
+                &size
+            )
+
+            if status == noErr, deviceID != AudioObjectID(kAudioObjectUnknown),
+               let nominalRate = deviceManager.getDeviceNominalSampleRate(for: deviceID),
+               nominalRate > 0
+            {
+                AppLogger.info(
+                    "Using input device nominal sample rate",
+                    category: .recordingManager,
+                    extra: [
+                        "deviceID": deviceID,
+                        "deviceName": deviceManager.getDeviceName(for: deviceID) ?? "Unknown",
+                        "nominalRate": nominalRate,
+                    ]
+                )
+                return nominalRate
+            }
+        }
+
+        // Fallback: engine output node (hardware output rate)
+        let outputRate = engine.outputNode.outputFormat(forBus: 0).sampleRate
+        if outputRate > 0 {
+            AppLogger.info(
+                "Falling back to output node sample rate",
+                category: .recordingManager,
+                extra: ["outputRate": outputRate]
+            )
+            return outputRate
+        }
+
+        // Last resort: default constant
+        AppLogger.warning(
+            "Using default sample rate constant as last resort",
+            category: .recordingManager,
+            extra: ["defaultRate": Constants.outputSampleRate]
+        )
+        return Constants.outputSampleRate
+    }
 
     private func setupGraphAndStart(
         engine: AVAudioEngine,
@@ -311,6 +374,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         AppLogger.debug("Starting engine...", category: .recordingManager)
         try await startAudioEngine(engine, outputURL: outputURL, source: source, retryCount: retryCount)
         currentRecordingURL = outputURL
+        dumpAudioDiagnostics(engine: engine, source: source)
         AppLogger.debug("Audio Engine setup complete.", category: .recordingManager)
     }
 
@@ -416,7 +480,6 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             bufferSize: Constants.tapBufferSize,
             format: tapFormat // Request exact same format to avoid conversion overhead
         ) { @Sendable buffer, _ in
-            print("Received buffer: \(buffer.frameLength) frames")
             worker.process(buffer)
         }
     }
@@ -692,23 +755,27 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         }
 
         if AppSettingsStore.shared.useSystemDefaultInput {
-            guard let defaultDeviceID = deviceManager.getDefaultInputDeviceID() else {
+            let resolvedDeviceID: AudioObjectID
+            if let defaultDeviceID = deviceManager.getDefaultInputDeviceID() {
+                resolvedDeviceID = defaultDeviceID
+            } else if let rawDeviceID = deviceManager.getDefaultInputDeviceIDRaw() {
+                // Fallback: use raw device ID without usability validation.
+                // This prevents silent failures when isUsableInputDeviceID is too strict.
                 AppLogger.warning(
-                    "Failed to resolve system default input device ID",
+                    "Validated default input device unavailable; falling back to raw system default",
+                    category: .recordingManager,
+                    extra: ["rawDeviceID": rawDeviceID]
+                )
+                resolvedDeviceID = rawDeviceID
+            } else {
+                AppLogger.fault(
+                    "No system default input device found at all — microphone capture will produce silence",
                     category: .recordingManager
                 )
                 return
             }
-            guard deviceManager.isUsableInputDeviceID(defaultDeviceID) else {
-                AppLogger.warning(
-                    "System default input device is not usable for capture",
-                    category: .recordingManager,
-                    extra: ["deviceID": defaultDeviceID]
-                )
-                return
-            }
 
-            var deviceIDToSet = defaultDeviceID
+            var deviceIDToSet = resolvedDeviceID
             let size = UInt32(MemoryLayout<AudioObjectID>.size)
             let status = AudioUnitSetProperty(
                 inputUnit,
@@ -723,16 +790,16 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
                 AppLogger.warning(
                     "Failed to set system default input device",
                     category: .recordingManager,
-                    extra: ["status": status, "deviceID": defaultDeviceID]
+                    extra: ["status": status, "deviceID": resolvedDeviceID]
                 )
             } else {
                 AppLogger.info(
                     "Using system default input device",
                     category: .recordingManager,
-                    extra: ["deviceID": defaultDeviceID]
+                    extra: ["deviceID": resolvedDeviceID]
                 )
             }
-            logDeviceDiagnostics(for: defaultDeviceID, label: "systemDefault")
+            logDeviceDiagnostics(for: resolvedDeviceID, label: "systemDefault")
             return
         }
         let priorityList = AppSettingsStore.shared.audioDevicePriority
@@ -811,44 +878,58 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         }
     }
 
-    private func configureInputIO(for inputNode: AVAudioInputNode) {
-        guard let audioUnit = inputNode.audioUnit else { return }
+    // MARK: - Audio Diagnostics
 
-        var enable: UInt32 = 1
-        let size = UInt32(MemoryLayout<UInt32>.size)
+    private func dumpAudioDiagnostics(engine: AVAudioEngine, source: RecordingSource) {
+        let inputNode = engine.inputNode
+        let inputFormat = inputNode.inputFormat(forBus: Constants.tapBusNumber)
 
-        let inputStatus = AudioUnitSetProperty(
-            audioUnit,
-            kAudioOutputUnitProperty_EnableIO,
-            kAudioUnitScope_Input,
-            1,
-            &enable,
-            size
-        )
+        var diagnostics: [String: Any] = [
+            "engineRunning": engine.isRunning,
+            "source": source.rawValue,
+            "inputSampleRate": inputFormat.sampleRate,
+            "inputChannels": inputFormat.channelCount,
+            "inputCommonFormat": inputFormat.commonFormat.rawValue,
+        ]
 
-        if inputStatus != noErr {
-            AppLogger.warning(
-                "Failed to enable input on audio unit",
-                category: .recordingManager,
-                extra: ["status": inputStatus]
+        // Resolve input device identity from audio unit
+        if let inputUnit = inputNode.audioUnit {
+            var deviceID: AudioObjectID = 0
+            var size = UInt32(MemoryLayout<AudioObjectID>.size)
+            let status = AudioUnitGetProperty(
+                inputUnit,
+                kAudioOutputUnitProperty_CurrentDevice,
+                kAudioUnitScope_Global,
+                0,
+                &deviceID,
+                &size
             )
+
+            if status == noErr {
+                diagnostics["inputDeviceID"] = deviceID
+                diagnostics["inputDeviceName"] = deviceManager.getDeviceName(for: deviceID) ?? "Unknown"
+                diagnostics["inputDeviceUID"] = deviceManager.getDeviceUID(for: deviceID) ?? "Unknown"
+                diagnostics["inputDeviceVolume"] = deviceManager.getInputVolume(for: deviceID) as Any
+                diagnostics["inputDeviceMuted"] = deviceManager.getInputMute(for: deviceID) as Any
+                diagnostics["inputDeviceChannels"] = deviceManager.getInputChannelCount(for: deviceID) as Any
+                diagnostics["inputDeviceUsable"] = deviceManager.isUsableInputDeviceID(deviceID)
+            } else {
+                diagnostics["inputDeviceError"] = "Failed to query (status: \(status))"
+            }
+        } else {
+            diagnostics["inputUnit"] = "nil"
         }
 
-        let outputStatus = AudioUnitSetProperty(
-            audioUnit,
-            kAudioOutputUnitProperty_EnableIO,
-            kAudioUnitScope_Output,
-            0,
-            &enable,
-            size
-        )
-
-        if outputStatus != noErr {
-            AppLogger.warning(
-                "Failed to enable output on audio unit",
-                category: .recordingManager,
-                extra: ["status": outputStatus]
-            )
+        // System default device for comparison
+        if let defaultID = deviceManager.getDefaultInputDeviceIDRaw() {
+            diagnostics["systemDefaultDeviceID"] = defaultID
+            diagnostics["systemDefaultDeviceName"] = deviceManager.getDeviceName(for: defaultID) ?? "Unknown"
         }
+
+        AppLogger.info(
+            "Recording audio diagnostic dump",
+            category: .recordingManager,
+            extra: diagnostics
+        )
     }
 }
