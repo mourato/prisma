@@ -78,7 +78,7 @@ These are inviolable rules that apply to every task:
 - ⛔ **Always localize UI text:** User-facing strings must use `"key".localized`. Never hardcode. Remove orphaned keys from `Localizable.strings` when text is deleted.
 - ⛔ **Never hardcode secrets:** API keys, tokens, credentials always use Keychain. Never store in source/tests/scripts.
 - ⛔ **Never exceed 600 lines per file:** If longer, split logically into 2+ files (≥200 chars each).
-- ⛔ **Always run hard gates before merge:** `make test-agent` + `make build-agent` (mandatory). `make lint` for broad refactors.
+- ⛔ **Always run hard gates before merge:** Fast lane: `make test-agent`; Full lane: `make build-test` (mandatory). `make lint` for broad refactors.
 
 ---
 
@@ -114,8 +114,7 @@ Before implementation, classify your task:
 - Scan reusable blocks upfront
 - Small slices, frequent verification
 - **Before push/merge (hard gates, no exceptions):**
-  - `make build-agent`
-  - `make test-agent`
+  - `make build-test`
   - `make lint` (mandatory for broad refactors)
 - **Code review:** Full semáforo review (🔴/🟡/🟢). Fix all Critical + Medium findings before merge.
 
@@ -156,7 +155,7 @@ Before responding or committing code, verify:
 - **Assumptions checked:** Did I ask clarification or assume silently?
 - **Hard constraints:** Am I violating any of the 8 hard constraints above?
 - **Code review:** Did I plan for appropriate review depth (lightweight vs. full semáforo)?
-- **Merge gates:** Did I verify `make test-agent` + `make build-agent` will pass?
+- **Merge gates:** Did I verify lane gates (`make test-agent` for Fast, `make build-test` for Full)?
 
 **Signals of deviation:**
 - "I assumed this was okay..." → Violates clarification hard constraint
@@ -185,7 +184,7 @@ See [Task Lifecycle Skill](./.agents/skills/task-lifecycle/SKILL.md) for full pr
 
 **Low risk:** Feature branch, lightweight review optional, merge gate: `make test-agent`
 
-**Medium/High risk:** Feature branch, semáforo review mandatory, merge gates: `make build-agent` + `make test-agent`
+**Medium/High risk:** Feature branch, semáforo review mandatory, merge gates: `make build-test`
 
 ---
 

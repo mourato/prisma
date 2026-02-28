@@ -62,16 +62,14 @@ Ask the user what they need:
 Use repository commands:
 
 ```bash
-make build-agent
-make test-agent
+make build-test
 make preflight-agent
 ```
 
 For Medium/High risk merge gates, keep canonical checks:
 
 ```bash
-make build
-make test
+make build-test
 ```
 
 ## Related Skills

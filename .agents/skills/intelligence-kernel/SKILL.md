@@ -79,7 +79,7 @@ Artifacts:
 2. If schema changes, update `CanonicalSummary.currentSchemaVersion` and persistence compatibility.
 3. Keep fallback/repair flows deterministic; avoid introducing non-deterministic parser behavior.
 4. Add/adjust tests in kernel contracts, persistence validation, and benchmark regression suites.
-5. Run `make test-agent` and `make build-agent`; for rubric changes, run benchmark commands.
+5. Run `make build-test`; for rubric changes, run benchmark commands.
 
 ## Routing
 

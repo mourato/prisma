@@ -35,8 +35,7 @@ Minimum expectation:
 
 - During development, run relevant targeted checks continuously.
 - Before push/merge (hard gate):
-  - `make build`
-  - `make test`
+  - `make build-test`
   - `make lint` (recommended; mandatory for broad refactors)
 
 ## Scope-driven additional checks
@@ -51,20 +50,26 @@ Run these only when relevant to the changed scope:
 
 ```bash
 # Core
-make build
-make test
+make build-test
 make lint
 make preflight
+
+# Isolated diagnostics
+make build
+make test
 
 # Optional, scope-based
 make arch-check
 make preview-check
 
 # Compact AI-agent mode (machine-readable summary + log artifacts)
-make build-agent
-make test-agent
+make build-test
 make lint-agent
 make preflight-agent
+
+# Isolated diagnostics
+make build-agent
+make test-agent
 
 # Targeted test workflows
 ./scripts/run-tests.sh --file <TestFile>
@@ -77,7 +82,7 @@ Compact-mode notes:
 
 - Full logs are written under `${MA_AGENT_LOG_DIR:-/tmp/ma-agent}`.
 - Scripts emit deterministic `AGENT_*` summary lines for pass/fail parsing.
-- Use compact mode for iteration; keep `make build` + `make test` as merge gates for Medium/High tasks.
+- Use compact mode for iteration; keep `make build-test` as merge gate for Medium/High tasks.
 
 ## Hooks and automation
 

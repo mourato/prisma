@@ -43,7 +43,7 @@ git worktree prune
 Each worktree is a fresh directory.
 
 - SwiftPM/Xcode may resolve dependencies per-worktree.
-- Prefer project targets (`make build`, `make test`) to match CI behavior.
+- Prefer project targets (`make build-test`) to match CI behavior when running build + test in sequence.
 
 ## Common pitfalls
 

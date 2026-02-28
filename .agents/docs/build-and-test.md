@@ -12,8 +12,9 @@ make build
 
 ### Core workflow commands
 ```bash
-make build              # Debug build
-make test               # Run all tests
+make build-test         # Run build + test in sequence (unified gate)
+make build              # Debug build only
+make test               # Run tests only
 make preflight          # Build + Test + Lint + Benchmark (full validation)
 make preflight-fast     # Lint + Build + Test (skips benchmark, faster feedback)
 make run                # Run app in debug mode
@@ -29,8 +30,9 @@ make dmg                # Create DMG installer
 
 ### Agent-optimized commands (compact output, better for CI/agents)
 ```bash
-make build-agent        # Debug build with agent-friendly diagnostics
-make test-agent         # Tests with machine-readable output
+make build-test         # Build + test with concise progress
+make build-agent        # Debug build only (agent-friendly diagnostics)
+make test-agent         # Tests only (machine-readable output)
 make lint-agent         # Lint with compact reporting
 make preflight-agent    # Full validation (agent-optimized)
 make preflight-agent-fast # Fast validation (agent-optimized)
@@ -151,8 +153,8 @@ On failure, scripts print compact excerpts to terminal while keeping full logs o
 ## Minimum Verification Gates
 
 **Before push/merge (mandatory):**
-- ✓ `make test` — all tests pass
-- ✓ `make build` — debug build succeeds
+- ✓ Fast lane: `make test` — all tests pass
+- ✓ Full lane: `make build-test` — build + test gate passes
 
 **Recommended before merge:**
 - ✓ `make preflight` — full validation
@@ -168,11 +170,11 @@ On failure, scripts print compact excerpts to terminal while keeping full logs o
 | Goal | Command |
 |------|---------|
 | Local development loop | `make build && make run` |
-| Before committing | `make test && make lint` |
+| Before committing | `make build-test && make lint` |
 | Pre-merge validation | `make preflight` |
 | Fast local feedback | `make preflight-fast` |
 | Agent-based pre-merge | `make preflight-agent` |
-| Release preparation | `make lint && make test && make build-release && make dmg` |
+| Release preparation | `make lint && make build-test && make build-release && make dmg` |
 | CI-style check | `make ci-build` |
 | Profile performance | `make profile-report` |
 

@@ -23,7 +23,7 @@ Activate this skill whenever you are:
 Follow `AGENTS.md` lane selection:
 1. **Low risk (Fast lane)**: use a feature branch in the current checkout.
 2. **Medium/High risk (Full lane)**: use an isolated feature branch in the current checkout.
-3. **Before merge**: apply lane hard gates (`make test` for Fast; `make build && make test` for Full).
+3. **Before merge**: apply lane hard gates (`make test` for Fast; `make build-test` for Full).
 
 ### 2. Atomic Commits
 Break your work into small, self-contained units.
@@ -48,7 +48,7 @@ Before the final push/merge, perform a local review using **[code-review](../cod
 
 ### 5. Hard Gates by Lane
 - **Fast lane (Low risk)**: `make test` before push/merge.
-- **Full lane (Medium/High risk)**: `make build` + `make test` before push/merge.
+- **Full lane (Medium/High risk)**: `make build-test` before push/merge.
 - `make lint` is recommended and mandatory for broad refactors.
 
 ## Key Concepts
@@ -113,7 +113,7 @@ git checkout -b feature/my-new-feature
 If the repository has a PR template, use it.
 
 Before opening a PR (or before merging locally), ensure:
-- [ ] Lane hard gate passed (`make test` for Fast; `make build && make test` for Full)
+- [ ] Lane hard gate passed (`make test` for Fast; `make build-test` for Full)
 - [ ] Review findings fixed (all 🔴/🟡)
 - [ ] Lint completed when required by scope
 - [ ] Documentation updated when behavior/contracts changed
