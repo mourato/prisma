@@ -11,6 +11,10 @@ import SwiftUI
 struct MeetingAssistantApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
+    init() {
+        clearLegacyLanguageOverrideIfNeeded()
+    }
+
     var body: some Scene {
         Settings {
             SettingsView()
@@ -24,6 +28,16 @@ struct MeetingAssistantApp: App {
                 .keyboardShortcut(",", modifiers: .command)
             }
         }
+    }
+}
+
+private func clearLegacyLanguageOverrideIfNeeded() {
+    let defaults = UserDefaults.standard
+    let selectedLanguage = defaults.string(forKey: "selectedLanguage")
+
+    // Keep system language behavior stable across launches, even if a stale override exists.
+    if selectedLanguage == nil || selectedLanguage == "system" {
+        defaults.removeObject(forKey: "AppleLanguages")
     }
 }
 
