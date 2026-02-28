@@ -27,6 +27,24 @@ extension AudioRecorder {
         AppLogger.error("Recording validation failed - no valid buffers received", category: .recordingManager)
         _ = await stopRecording()
 
+        if source == .microphone {
+            do {
+                try startFallbackRecorder(to: url)
+                AppLogger.warning(
+                    "Switched to fallback microphone recorder after validation failure",
+                    category: .recordingManager,
+                    extra: ["path": url.path]
+                )
+                return
+            } catch {
+                AppLogger.error(
+                    "Failed to start fallback microphone recorder",
+                    category: .recordingManager,
+                    error: error
+                )
+            }
+        }
+
         if retryCount < Constants.maxRetries {
             await retryRecording(to: url, source: source, retryCount: retryCount)
         } else {

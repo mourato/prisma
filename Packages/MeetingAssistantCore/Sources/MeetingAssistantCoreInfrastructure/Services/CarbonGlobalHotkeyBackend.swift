@@ -142,9 +142,10 @@ public final class CarbonGlobalHotkeyBackend: GlobalHotkeyBackend {
         }
     }
 
-    private func handleEvent(_ event: EventRef?) {
+    @discardableResult
+    private func handleEvent(_ event: EventRef?) -> Bool {
         guard let event else {
-            return
+            return false
         }
 
         var hotKeyID = EventHotKeyID()
@@ -162,7 +163,7 @@ public final class CarbonGlobalHotkeyBackend: GlobalHotkeyBackend {
               hotKeyID.signature == signature,
               let registration = registrationsByID[hotKeyID.id]
         else {
-            return
+            return false
         }
 
         switch GetEventKind(event) {
@@ -170,25 +171,26 @@ public final class CarbonGlobalHotkeyBackend: GlobalHotkeyBackend {
             Task { @MainActor in
                 registration.onKeyDown()
             }
+            return true
         case UInt32(kEventHotKeyReleased):
             Task { @MainActor in
                 registration.onKeyUp()
             }
+            return true
         default:
-            break
+            return false
         }
     }
 
     private static let hotkeyEventHandler: EventHandlerUPP = { _, event, userData in
         guard let userData else {
-            return noErr
+            return OSStatus(eventNotHandledErr)
         }
 
         let backend = Unmanaged<CarbonGlobalHotkeyBackend>
             .fromOpaque(userData)
             .takeUnretainedValue()
-        backend.handleEvent(event)
-        return noErr
+        return backend.handleEvent(event) ? noErr : OSStatus(eventNotHandledErr)
     }
 
     private static func nextSignature() -> OSType {

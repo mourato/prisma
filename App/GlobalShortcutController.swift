@@ -54,6 +54,7 @@ final class GlobalShortcutController {
     }
 
     func start() {
+        migrateLegacyToggleRecordingShortcutIfNeeded()
         setupKeyboardShortcutHandlers()
         observeSettings()
         observeLifecycleEvents()
@@ -61,6 +62,22 @@ final class GlobalShortcutController {
         refreshCustomShortcutRegistration()
         refreshEventMonitors()
         startShortcutCaptureHealthChecks()
+    }
+
+    private func migrateLegacyToggleRecordingShortcutIfNeeded() {
+        guard KeyboardShortcuts.getShortcut(for: .dictationToggle) == nil,
+              let legacyShortcut = KeyboardShortcuts.getShortcut(for: .toggleRecording)
+        else {
+            return
+        }
+
+        KeyboardShortcuts.setShortcut(legacyShortcut, for: .dictationToggle)
+
+        AppLogger.info(
+            "Migrated legacy toggleRecording shortcut to dictationToggle",
+            category: .uiController,
+            extra: ["legacyShortcut": legacyShortcut.description]
+        )
     }
 
     deinit {
