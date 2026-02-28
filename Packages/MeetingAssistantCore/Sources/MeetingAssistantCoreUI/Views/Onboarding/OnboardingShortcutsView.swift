@@ -188,6 +188,7 @@ private struct OnboardingShortcutRow: View {
     }
 }
 
+@MainActor
 enum OnboardingShortcutFeedbackFormatter {
     static func currentDefinition(
         for type: OnboardingShortcutType,

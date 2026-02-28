@@ -1,5 +1,6 @@
 import XCTest
 @testable import MeetingAssistantCore
+@testable import MeetingAssistantCoreUI
 
 @MainActor
 final class OnboardingShortcutFeedbackFormatterTests: XCTestCase {
