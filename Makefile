@@ -5,7 +5,7 @@
 # with CI/CD pipelines and headless environments.
 # =============================================================================
 
-.PHONY: help build build-debug build-release build-agent build-test xcodebuild-safe test test-agent test-swift test-verbose test-strict benchmark-summary benchmark-summary-agent lint lint-agent lint-fix arch-check preview-check preflight preflight-fast preflight-agent preflight-agent-fast clean run run-release dmg setup docs docs-preview docs-clean profile profile-report profile-cpu profile-memory profile-animation profile-animation-report
+.PHONY: help build build-debug build-release build-agent build-test xcodebuild-safe test test-agent test-swift test-verbose test-strict benchmark-summary benchmark-summary-agent lint lint-agent lint-fix arch-check preview-check preflight preflight-fast preflight-agent preflight-agent-fast clean run run-release dmg setup format health ci-build ci-test docs docs-preview docs-clean profile profile-report profile-cpu profile-memory profile-animation profile-animation-report
 
 # Default target
 help:
@@ -22,7 +22,7 @@ help:
 	@echo ""
 	@echo "Test Commands:"
 	@echo "  make test           - Run all tests (xcodebuild - IDE compatible)"
-	@echo "  make test-agent     - Run compact swift test output for AI agents"
+	@echo "  make test-agent     - Run compact xcodebuild test output for AI agents"
 	@echo "  make test-swift     - Run tests with swift test (faster, no IDE parity)"
 	@echo "  make test-verbose   - Run tests with verbose output"
 	@echo "  make test-strict    - Run tests with strict concurrency checking"

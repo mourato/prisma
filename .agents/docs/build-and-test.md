@@ -93,6 +93,22 @@ make ci-test             # XCTest output compatible with CI systems
 make ci-build            # Includes arch-check
 ```
 
+## Git Hooks Setup
+
+Configure local Git hooks to use the tracked repository hooks:
+
+```bash
+git config core.hooksPath scripts/hooks
+chmod +x scripts/hooks/pre-commit scripts/hooks/pre-push scripts/hooks/first-commit-version-bump.sh
+find scripts/hooks -maxdepth 1 -type f ! -perm -u+x -print
+```
+
+The `find` command must print nothing. If it prints paths, those hook files are not executable yet.
+
+## Script Support Surface
+
+Only scripts explicitly referenced by `Makefile`, `README.md`, `AGENTS.md`, or `.agents` skills/docs are treated as supported developer surface. Other scripts are ad hoc and may be removed during cleanup cycles.
+
 ## Linting and Formatting
 
 ### Check without fixing
