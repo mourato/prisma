@@ -93,7 +93,6 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             Task { @MainActor [weak self] in
                 self?.currentAveragePower = avg
                 self?.currentPeakPower = peak
-                print("Power update: \(avg) dB")
             }
         }
 
