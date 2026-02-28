@@ -238,10 +238,31 @@ extension AudioRecorder {
                 extra: ["path": url.path]
             )
 
+            // Sample meters periodically so we can detect if AVAudioRecorder
+            // captures real audio (bypasses AVAudioEngine entirely)
             micRecorderProbeStopTask = Task {
-                try? await Task.sleep(nanoseconds: 4_000_000_000)
-                await MainActor.run {
-                    self.stopAvAudioRecorderProbe()
+                for sampleIndex in 1...4 {
+                    try? await Task.sleep(nanoseconds: 1_000_000_000)
+                    guard !Task.isCancelled else { return }
+                    await MainActor.run { [weak self] in
+                        guard let recorder = self?.micRecorderProbe else { return }
+                        recorder.updateMeters()
+                        let avg = recorder.averagePower(forChannel: 0)
+                        let peak = recorder.peakPower(forChannel: 0)
+                        AppLogger.info(
+                            "Mic recorder probe metering",
+                            category: .recordingManager,
+                            extra: [
+                                "sample": sampleIndex,
+                                "averagePower": avg,
+                                "peakPower": peak,
+                                "isSilent": peak < -100,
+                            ]
+                        )
+                    }
+                }
+                await MainActor.run { [weak self] in
+                    self?.stopAvAudioRecorderProbe()
                 }
             }
         } catch {
