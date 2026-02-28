@@ -178,6 +178,24 @@ public final class AudioDeviceManager: ObservableObject {
         return deviceID
     }
 
+    /// Retrieve the Core Audio device ID for the system default output device.
+    public nonisolated func getDefaultOutputDeviceID() -> AudioObjectID? {
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+
+        var deviceID: AudioObjectID = 0
+        var size = UInt32(MemoryLayout<AudioObjectID>.size)
+        let status = AudioObjectGetPropertyData(
+            AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &size, &deviceID
+        )
+
+        guard status == noErr, deviceID != AudioObjectID(kAudioObjectUnknown) else { return nil }
+        return deviceID
+    }
+
     /// Returns whether this Core Audio device can be used as an input source.
     public nonisolated func isUsableInputDeviceID(_ id: AudioObjectID) -> Bool {
         guard id != AudioObjectID(kAudioObjectUnknown) else { return false }
