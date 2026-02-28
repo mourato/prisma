@@ -596,7 +596,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         return Constants.retriableEngineStartErrorCodes.contains(code)
     }
 
-    private func startFallbackRecorder(to outputURL: URL) throws {
+    func startFallbackRecorder(to outputURL: URL) throws {
         let settings: [String: Any] = [
             AVFormatIDKey: kAudioFormatMPEG4AAC,
             AVSampleRateKey: Constants.fallbackSampleRate,

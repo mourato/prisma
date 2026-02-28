@@ -199,6 +199,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         )
 
         setupBindings()
+        setupRecorderErrorForwarding()
         if isRunningAsAppBundle {
             meetingDetector.startMonitoring()
         }
@@ -720,6 +721,42 @@ public extension RecordingManager {
 // MARK: - Private Helpers
 
 extension RecordingManager {
+    private func setupRecorderErrorForwarding() {
+        guard let recorder = micRecorder as? AudioRecorder else { return }
+
+        recorder.onRecordingError = { [weak self] error in
+            Task { @MainActor [weak self] in
+                await self?.handleUnexpectedRecorderFailure(error)
+            }
+        }
+    }
+
+    private func handleUnexpectedRecorderFailure(_ error: Error) async {
+        guard isRecording || isStartingRecording else { return }
+
+        AppLogger.error(
+            "Recorder reported an unexpected runtime failure",
+            category: .recordingManager,
+            error: error
+        )
+
+        postStartContextCaptureTask?.cancel()
+        postStartContextCaptureTask = nil
+        isRecording = false
+        isStartingRecording = false
+        isTranscribing = false
+        meetingState = .failed(error.localizedDescription)
+        currentMeeting?.state = .failed(error.localizedDescription)
+        currentMeeting = nil
+        postProcessingContext = nil
+        postProcessingContextItems = []
+        dictationSessionOutputLanguageOverride = nil
+        activeStartTelemetry = nil
+        clearPostProcessingReadinessWarning()
+        lastError = error
+        await RecordingExclusivityCoordinator.shared.endRecording()
+    }
+
     private func setupBindings() {
         // Sync with audio recorder state
         micRecorder.isRecordingPublisher
