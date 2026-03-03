@@ -119,3 +119,24 @@ brew install swiftlint swiftformat
 - `Makefile`
 - `scripts/lint.sh`
 - `scripts/run-tests.sh`
+
+## 2026-03 Policy Alignment Update
+
+### Canonical Merge Gates (AGENTS.md)
+
+Use AGENTS.md as source of truth for lane gates:
+
+- Fast lane (Low risk): `make test-agent`
+- Full lane (Medium/High risk): `make build-test`
+- `make lint`: mandatory for broad refactors
+
+When legacy hooks or scripts still run `make test`, treat it as an additional local guard, not a replacement for the canonical lane gate above.
+
+### Regression Matrix Priority
+
+For recurring bug classes in this repository, require targeted checks in addition to lane gates:
+
+1. Audio device matrix (internal, shared I/O, USB mic).
+2. Global shortcut registration/capture across lifecycle transitions.
+3. Onboarding/settings transitions with localization-aware UI states.
+4. Migration/retention behavior for persisted data continuity.
