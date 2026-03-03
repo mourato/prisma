@@ -44,7 +44,6 @@ The repository uses a CLI-first workflow for reproducible local and CI execution
 - `MeetingAssistantCore` — compatibility export surface (app/test imports)
 
 ### HOW: Workflow & Tools
-- **Reasoning**: Always use Sequential Thinking for planning tasks
 - **GitHub**: Drive interactions through `gh` CLI (issues, PRs, comments); use `--body-file` for multiline content
 - **Broad context**: Use deepwiki for repository-wide perspective (optional if local context suffices)
 - **External code research priority**: When inspecting code from other projects, use this order: `MCP grep` (default) → `gh` CLI → deepwiki → web search (last resort)
