@@ -154,7 +154,7 @@ public class ShortcutSettingsViewModel: ObservableObject {
         }
 
         if let newValue,
-           ShortcutDefinitionNormalizer.normalized(newValue) == nil
+           ShortcutDefinitionNormalizer.normalized(newValue, allowReturnOrEnter: false) == nil
         {
             isApplyingShortcutChange = true
             dictationShortcutDefinition = settings.dictationShortcutDefinition
@@ -163,7 +163,10 @@ public class ShortcutSettingsViewModel: ObservableObject {
             return
         }
 
-        guard let normalizedValue = ShortcutDefinitionNormalizer.normalized(newValue) else {
+        guard let normalizedValue = ShortcutDefinitionNormalizer.normalized(
+            newValue,
+            allowReturnOrEnter: false
+        ) else {
             settings.dictationModifierShortcutGesture = nil
             settings.dictationShortcutDefinition = nil
             settings.dictationSelectedPresetKey = .notSpecified

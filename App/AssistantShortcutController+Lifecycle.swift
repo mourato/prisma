@@ -75,13 +75,6 @@ extension AssistantShortcutController {
             }
             .store(in: &cancellables)
 
-        settings.$assistantUseEnterToStopRecording
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.refreshEventMonitors()
-            }
-            .store(in: &cancellables)
-
         settings.$assistantIntegrations
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in

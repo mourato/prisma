@@ -121,10 +121,6 @@ extension AppDelegate {
         PerformanceMonitor.shared.startMonitoring()
         configureNavigationService()
 
-        // One-time migration: legacy JSON → Core Data
-        Task {
-            await FileSystemStorageService.shared.migrateLegacyJSONTranscriptionsToCoreDataIfNeeded()
-        }
         // Show onboarding if first launch
         if !settingsStore.hasCompletedOnboarding {
             showFirstLaunchOnboarding()

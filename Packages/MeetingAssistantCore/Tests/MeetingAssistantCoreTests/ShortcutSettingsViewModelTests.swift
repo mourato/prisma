@@ -80,4 +80,22 @@ final class ShortcutSettingsViewModelTests: XCTestCase {
         )
         XCTAssertEqual(viewModel.shortcutCaptureHealthPresentation?.isFallback, false)
     }
+
+    func testDictationShortcutRejectsEnterKey() async {
+        let viewModel = ShortcutSettingsViewModel()
+        let enterShortcut = ShortcutDefinition(
+            modifiers: [.command],
+            primaryKey: .symbol("↩", keyCode: 0x24),
+            trigger: .singleTap
+        )
+
+        viewModel.dictationShortcutDefinition = enterShortcut
+        await Task.yield()
+
+        XCTAssertEqual(settings.dictationShortcutDefinition, AppSettingsStore.defaultDictationShortcutDefinition)
+        XCTAssertEqual(
+            viewModel.dictationModifierConflictMessage,
+            "settings.shortcuts.modifier.primary_key_required".localized
+        )
+    }
 }

@@ -100,10 +100,16 @@ public enum ShortcutActivationMode: String, CaseIterable, Codable, Sendable {
 
 func normalizedInHouseShortcutDefinition(
     _ definition: ShortcutDefinition,
-    activationMode: ShortcutActivationMode
+    activationMode: ShortcutActivationMode,
+    allowReturnOrEnter: Bool = true
 ) -> ShortcutDefinition? {
     _ = activationMode
     guard let primaryKey = definition.primaryKey else {
+        return nil
+    }
+
+    let isReturnOrEnterKey = primaryKey.keyCode == 0x24 || primaryKey.keyCode == 0x4c
+    guard allowReturnOrEnter || !isReturnOrEnterKey else {
         return nil
     }
 

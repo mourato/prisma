@@ -20,8 +20,6 @@ final class AssistantShortcutController {
     var lastLayerLeaderTapTime: Date?
     let shortcutLayerFeedbackController = ShortcutLayerFeedbackController()
     let shortcutLayerKeySuppressor = ShortcutLayerKeySuppressor()
-    let returnKeyCode: UInt16 = 0x24
-    let keypadEnterKeyCode: UInt16 = 0x4c
 
     // MARK: - Integration Leader Mode (legacy state retained, currently disabled in global path)
 
