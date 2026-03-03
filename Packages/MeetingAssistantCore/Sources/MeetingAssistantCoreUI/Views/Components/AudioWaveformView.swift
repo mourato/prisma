@@ -1,10 +1,15 @@
-import MeetingAssistantCoreAI
-import MeetingAssistantCoreAudio
-import MeetingAssistantCoreCommon
-import MeetingAssistantCoreData
-import MeetingAssistantCoreDomain
-import MeetingAssistantCoreInfrastructure
 import SwiftUI
+
+// MARK: - Model
+
+/// Represents a single bar in the waveform visualization.
+private struct WaveformBar: Identifiable {
+    let id: Int
+    let normalizedAmplitude: Float
+    let relativePosition: Double
+}
+
+// MARK: - View
 
 /// A simple bar-based waveform visualization.
 public struct AudioWaveformView: View {
@@ -18,16 +23,26 @@ public struct AudioWaveformView: View {
         self.color = color
     }
 
+    private var bars: [WaveformBar] {
+        let count = samples.count
+        guard count > 0 else { return [] }
+        return samples.enumerated().map { index, amplitude in
+            WaveformBar(
+                id: index,
+                normalizedAmplitude: amplitude,
+                relativePosition: Double(index) / Double(count)
+            )
+        }
+    }
+
     public var body: some View {
         GeometryReader { geometry in
             HStack(spacing: 1) {
-                ForEach(0..<samples.count, id: \.self) { index in
-                    let sampleProgress = Double(index) / Double(samples.count)
-                    let isActive = sampleProgress <= progress
-
+                ForEach(bars) { bar in
                     RoundedRectangle(cornerRadius: 1)
-                        .fill(isActive ? color : color.opacity(0.3))
-                        .frame(minWidth: 1, height: geometry.size.height * CGFloat(samples[index]))
+                        .fill(bar.relativePosition <= progress ? color : color.opacity(0.3))
+                        .frame(minWidth: 1)
+                        .frame(height: geometry.size.height * CGFloat(bar.normalizedAmplitude))
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
