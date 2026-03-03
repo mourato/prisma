@@ -49,6 +49,18 @@ public final class MeetingQAService: ObservableObject, MeetingQAServiceProtocol 
     }
 
     public func ask(question: String, transcription: Transcription) async throws -> MeetingQAResponse {
+        try await ask(
+            question: question,
+            transcription: transcription,
+            modelSelectionOverride: nil
+        )
+    }
+
+    private func ask(
+        question: String,
+        transcription: Transcription,
+        modelSelectionOverride: MeetingQAModelSelection?
+    ) async throws -> MeetingQAResponse {
         guard settings.isIntelligenceKernelModeEnabled(.meeting) else {
             throw MeetingQAError.disabled
         }
@@ -66,7 +78,8 @@ public final class MeetingQAService: ObservableObject, MeetingQAServiceProtocol 
             throw MeetingQAError.disabled
         }
 
-        if let readinessIssue = settings.enhancementsInferenceReadinessIssue(for: .meeting, apiKeyExists: enhancementsAPIKeyExists) {
+        let requestConfig = resolvedConfiguration(for: modelSelectionOverride)
+        if let readinessIssue = readinessIssue(for: requestConfig) {
             AppLogger.info(
                 "Meeting Q&A blocked: enhancements configuration not ready",
                 category: .transcriptionEngine,
@@ -80,7 +93,11 @@ public final class MeetingQAService: ObservableObject, MeetingQAServiceProtocol 
         defer { isAnswering = false }
 
         do {
-            return try await askWithRetry(question: trimmedQuestion, transcription: transcription)
+            return try await askWithRetry(
+                question: trimmedQuestion,
+                transcription: transcription,
+                configuration: requestConfig
+            )
         } catch let error as MeetingQAError {
             lastError = error
             throw error
@@ -109,18 +126,30 @@ public final class MeetingQAService: ObservableObject, MeetingQAServiceProtocol 
 
         switch request.mode {
         case .meeting:
-            return try await ask(question: request.question, transcription: request.transcription)
+            return try await ask(
+                question: request.question,
+                transcription: request.transcription,
+                modelSelectionOverride: request.modelSelectionOverride
+            )
         case .dictation, .assistant:
             throw MeetingQAError.disabled
         }
     }
 
-    private func askWithRetry(question: String, transcription: Transcription) async throws -> MeetingQAResponse {
+    private func askWithRetry(
+        question: String,
+        transcription: Transcription,
+        configuration: AIConfiguration
+    ) async throws -> MeetingQAResponse {
         var lastThrownError: Error?
 
         for attempt in 0..<Constants.maxRetryAttempts {
             do {
-                let rawOutput = try await performRequest(question: question, transcription: transcription)
+                let rawOutput = try await performRequest(
+                    question: question,
+                    transcription: transcription,
+                    configuration: configuration
+                )
                 return try parseModelOutput(rawOutput)
             } catch {
                 lastThrownError = error
@@ -143,8 +172,11 @@ public final class MeetingQAService: ObservableObject, MeetingQAServiceProtocol 
         throw lastThrownError ?? MeetingQAError.invalidResponse
     }
 
-    private func performRequest(question: String, transcription: Transcription) async throws -> String {
-        let config = settings.resolvedEnhancementsAIConfiguration(for: .meeting)
+    private func performRequest(
+        question: String,
+        transcription: Transcription,
+        configuration config: AIConfiguration
+    ) async throws -> String {
         let apiKey = try getAPIKey(for: config.provider)
         let url = try buildURL(for: config, apiKey: apiKey)
         let (systemPrompt, userPrompt) = buildPrompts(question: question, transcription: transcription)
@@ -341,7 +373,7 @@ public final class MeetingQAService: ObservableObject, MeetingQAServiceProtocol 
         return key
     }
 
-    private func enhancementsAPIKeyExists(for provider: AIProvider) -> Bool {
+    private func apiKeyExists(for provider: AIProvider) -> Bool {
         guard let key = try? apiKeyProvider(provider) else {
             return false
         }
@@ -355,6 +387,50 @@ public final class MeetingQAService: ObservableObject, MeetingQAServiceProtocol 
         case .missingAPIKey, .missingModel:
             .noAPIConfigured
         }
+    }
+
+    private func resolvedConfiguration(for overrideSelection: MeetingQAModelSelection?) -> AIConfiguration {
+        let base = settings.resolvedEnhancementsAIConfiguration(for: .meeting)
+        guard let overrideSelection,
+              let provider = AIProvider(rawValue: overrideSelection.providerRawValue)
+        else {
+            return base
+        }
+
+        let normalizedModel = settings.normalizedEnhancementsModelID(
+            overrideSelection.modelID,
+            for: provider
+        )
+        guard !normalizedModel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return base
+        }
+
+        let baseURL = provider == .custom ? settings.aiConfiguration.baseURL : provider.defaultBaseURL
+        return AIConfiguration(provider: provider, baseURL: baseURL, selectedModel: normalizedModel)
+    }
+
+    private func readinessIssue(for config: AIConfiguration) -> EnhancementsInferenceReadinessIssue? {
+        guard isValidHTTPURLString(config.baseURL) else {
+            return .invalidBaseURL
+        }
+
+        guard apiKeyExists(for: config.provider) else {
+            return .missingAPIKey
+        }
+
+        let model = config.selectedModel.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !model.isEmpty else {
+            return .missingModel
+        }
+
+        return nil
+    }
+
+    private func isValidHTTPURLString(_ value: String) -> Bool {
+        guard let url = URL(string: value) else { return false }
+        guard let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https" else { return false }
+        guard let host = url.host, !host.isEmpty else { return false }
+        return true
     }
 
     private func buildURL(for config: AIConfiguration, apiKey: String) throws -> URL {

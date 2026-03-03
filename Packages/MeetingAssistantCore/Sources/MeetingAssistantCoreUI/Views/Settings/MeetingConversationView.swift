@@ -16,16 +16,17 @@ public struct MeetingConversationView: View {
     let onRetry: (String) -> Void
     let isAnswering: Bool
     let currentErrorMessage: String?
-    let selectedProvider: AIProvider
-    let selectedModel: String
-    let availableModels: [LLMModel]
-    let isLoadingModels: Bool
-    let onModelChange: (String) -> Void
-    let onRefreshModels: () -> Void
+    let effectiveModelSelection: MeetingQAModelSelection
+    let modelOptions: [EnhancementsProviderModelOption]
+    let isLoadingModelOptions: Bool
+    let onModelChange: (EnhancementsProviderModelOption) -> Void
+    let onRefreshModelOptions: () -> Void
     let dictationState: MeetingQuestionDictationService.State
     let dictationErrorMessage: String?
     let onToggleDictation: () -> Void
     let onBack: () -> Void
+
+    @State private var isShowingModelSelector = false
 
     public init(
         transcription: Transcription?,
@@ -37,12 +38,11 @@ public struct MeetingConversationView: View {
         onRetry: @escaping (String) -> Void,
         isAnswering: Bool,
         currentErrorMessage: String?,
-        selectedProvider: AIProvider,
-        selectedModel: String,
-        availableModels: [LLMModel],
-        isLoadingModels: Bool,
-        onModelChange: @escaping (String) -> Void,
-        onRefreshModels: @escaping () -> Void,
+        effectiveModelSelection: MeetingQAModelSelection,
+        modelOptions: [EnhancementsProviderModelOption],
+        isLoadingModelOptions: Bool,
+        onModelChange: @escaping (EnhancementsProviderModelOption) -> Void,
+        onRefreshModelOptions: @escaping () -> Void,
         dictationState: MeetingQuestionDictationService.State,
         dictationErrorMessage: String?,
         onToggleDictation: @escaping () -> Void,
@@ -57,12 +57,11 @@ public struct MeetingConversationView: View {
         self.onRetry = onRetry
         self.isAnswering = isAnswering
         self.currentErrorMessage = currentErrorMessage
-        self.selectedProvider = selectedProvider
-        self.selectedModel = selectedModel
-        self.availableModels = availableModels
-        self.isLoadingModels = isLoadingModels
+        self.effectiveModelSelection = effectiveModelSelection
+        self.modelOptions = modelOptions
+        self.isLoadingModelOptions = isLoadingModelOptions
         self.onModelChange = onModelChange
-        self.onRefreshModels = onRefreshModels
+        self.onRefreshModelOptions = onRefreshModelOptions
         self.dictationState = dictationState
         self.dictationErrorMessage = dictationErrorMessage
         self.onToggleDictation = onToggleDictation
@@ -78,6 +77,25 @@ public struct MeetingConversationView: View {
             composer
         }
         .background(AppDesignSystem.Colors.windowBackground)
+        .sheet(isPresented: $isShowingModelSelector) {
+            EnhancementsModelSelectionSheet(
+                options: modelOptions,
+                isSelected: { option in
+                    option.provider.rawValue == effectiveModelSelection.providerRawValue
+                        && option.modelID == effectiveModelSelection.modelID
+                },
+                onSelect: { option in
+                    onModelChange(option)
+                    isShowingModelSelector = false
+                },
+                onCancel: {
+                    isShowingModelSelector = false
+                }
+            )
+            .onAppear {
+                onRefreshModelOptions()
+            }
+        }
     }
 
     private var header: some View {
@@ -267,19 +285,21 @@ public struct MeetingConversationView: View {
                     .foregroundStyle(AppDesignSystem.Colors.error)
             }
 
-            HStack(spacing: AppDesignSystem.Layout.spacing8) {
-                TextField(
-                    "transcription.qa.placeholder".localized,
-                    text: Binding(
-                        get: { questionText },
-                        set: { onQuestionChange($0) }
-                    )
-                )
-                .textFieldStyle(.roundedBorder)
+            MeetingQuestionComposerTextView(
+                text: Binding(
+                    get: { questionText },
+                    set: { onQuestionChange($0) }
+                ),
+                placeholder: "transcription.qa.placeholder".localized,
+                onCommandReturn: onAsk
+            )
 
-                inlineModelControl
+            HStack(spacing: AppDesignSystem.Layout.spacing8) {
+                modelSelectorButton
 
                 dictationButton
+
+                Spacer(minLength: 0)
 
                 Button("transcription.qa.ask".localized) {
                     onAsk()
@@ -291,61 +311,33 @@ public struct MeetingConversationView: View {
         .padding(AppDesignSystem.Layout.spacing16)
     }
 
-    @ViewBuilder
-    private var inlineModelControl: some View {
-        if selectedProvider == .custom {
-            TextField(
-                "settings.ai.model_placeholder".localized,
-                text: Binding(
-                    get: { selectedModel },
-                    set: { onModelChange($0) }
-                )
-            )
-            .textFieldStyle(.roundedBorder)
-            .frame(maxWidth: AppDesignSystem.Layout.maxCompactTextFieldWidth)
-            .accessibilityLabel("settings.ai.model".localized)
-        } else {
-            HStack(spacing: AppDesignSystem.Layout.spacing8) {
-                Button {
-                    onRefreshModels()
-                } label: {
-                    if isLoadingModels {
-                        ProgressView()
-                            .controlSize(.small)
-                            .scaleEffect(0.6)
-                    } else {
-                        Image(systemName: "arrow.clockwise")
-                            .fontWeight(.medium)
-                    }
-                }
-                .buttonStyle(.borderless)
-                .disabled(isLoadingModels)
-                .accessibilityLabel("settings.ai.model_refresh".localized)
-
-                Picker(
-                    "",
-                    selection: Binding(
-                        get: { selectedModel },
-                        set: { onModelChange($0) }
-                    )
-                ) {
-                    if isLoadingModels {
-                        Text("settings.ai.loading".localized).tag("")
-                    } else if availableModels.isEmpty {
-                        Text("settings.ai.no_models".localized).tag("")
-                    } else {
-                        Text("settings.ai.model_select".localized).tag("")
-                        ForEach(availableModels) { model in
-                            Text(model.id).tag(model.id)
-                        }
-                    }
-                }
-                .pickerStyle(.menu)
-                .labelsHidden()
-                .disabled(isLoadingModels || availableModels.isEmpty)
-                .accessibilityLabel("settings.ai.model".localized)
+    private var modelSelectorButton: some View {
+        Button {
+            isShowingModelSelector = true
+        } label: {
+            if isLoadingModelOptions {
+                ProgressView()
+                    .controlSize(.small)
+                    .frame(width: 18, height: 18)
+            } else {
+                Image(systemName: "brain.head.profile")
+                    .font(.body)
             }
         }
+        .buttonStyle(.bordered)
+        .disabled(isLoadingTranscription)
+        .help(modelSelectorHelpText)
+        .accessibilityLabel(modelSelectorHelpText)
+    }
+
+    private var modelSelectorHelpText: String {
+        let providerName = AIProvider(rawValue: effectiveModelSelection.providerRawValue)?.displayName
+            ?? effectiveModelSelection.providerRawValue
+        let modelName = effectiveModelSelection.modelID.trimmingCharacters(in: .whitespacesAndNewlines)
+        if modelName.isEmpty {
+            return "settings.enhancements.provider_models.summary.no_model".localized(with: providerName)
+        }
+        return "settings.enhancements.provider_models.summary".localized(with: providerName, modelName)
     }
 
     private var dictationButton: some View {
@@ -402,170 +394,5 @@ public struct MeetingConversationView: View {
         let minutes = totalSeconds / 60
         let seconds = totalSeconds % 60
         return String(format: "%02d:%02d", minutes, seconds)
-    }
-}
-
-#Preview("Conversation") {
-    MeetingConversationView(
-        transcription: .previewConversation,
-        isLoadingTranscription: false,
-        turns: [
-            .init(
-                question: "What did we decide about previews?",
-                response: MeetingQAResponse(
-                    status: .answered,
-                    answer: "The team decided to prioritize screens with startup side effects.",
-                    evidence: [
-                        .init(
-                            speaker: "Speaker 2",
-                            startTime: 10,
-                            endTime: 21,
-                            excerpt: "Vou priorizar as telas com side effects na fase seguinte."
-                        ),
-                    ]
-                ),
-                errorMessage: nil
-            ),
-        ],
-        questionText: "",
-        onQuestionChange: { _ in },
-        onAsk: {},
-        onRetry: { _ in },
-        isAnswering: false,
-        currentErrorMessage: nil,
-        selectedProvider: .openai,
-        selectedModel: "gpt-4o",
-        availableModels: [.init(id: "gpt-4o"), .init(id: "gpt-4.1-mini")],
-        isLoadingModels: false,
-        onModelChange: { _ in },
-        onRefreshModels: {},
-        dictationState: .idle,
-        dictationErrorMessage: nil,
-        onToggleDictation: {},
-        onBack: {}
-    )
-    .frame(width: 700, height: 700)
-}
-
-#Preview("Dictation Recording") {
-    MeetingConversationView(
-        transcription: .previewConversation,
-        isLoadingTranscription: false,
-        turns: [],
-        questionText: "",
-        onQuestionChange: { _ in },
-        onAsk: {},
-        onRetry: { _ in },
-        isAnswering: false,
-        currentErrorMessage: nil,
-        selectedProvider: .openai,
-        selectedModel: "gpt-4o",
-        availableModels: [.init(id: "gpt-4o")],
-        isLoadingModels: false,
-        onModelChange: { _ in },
-        onRefreshModels: {},
-        dictationState: .recording,
-        dictationErrorMessage: nil,
-        onToggleDictation: {},
-        onBack: {}
-    )
-    .frame(width: 700, height: 700)
-}
-
-#Preview("Dictation Error") {
-    MeetingConversationView(
-        transcription: .previewConversation,
-        isLoadingTranscription: false,
-        turns: [],
-        questionText: "",
-        onQuestionChange: { _ in },
-        onAsk: {},
-        onRetry: { _ in },
-        isAnswering: false,
-        currentErrorMessage: nil,
-        selectedProvider: .openai,
-        selectedModel: "gpt-4o",
-        availableModels: [.init(id: "gpt-4o")],
-        isLoadingModels: false,
-        onModelChange: { _ in },
-        onRefreshModels: {},
-        dictationState: .idle,
-        dictationErrorMessage: "transcription.qa.dictation.error.transcription".localized,
-        onToggleDictation: {},
-        onBack: {}
-    )
-    .frame(width: 700, height: 700)
-}
-
-#Preview("Custom Provider Inline Model") {
-    MeetingConversationView(
-        transcription: .previewConversation,
-        isLoadingTranscription: false,
-        turns: [],
-        questionText: "Summarize action items",
-        onQuestionChange: { _ in },
-        onAsk: {},
-        onRetry: { _ in },
-        isAnswering: false,
-        currentErrorMessage: nil,
-        selectedProvider: .custom,
-        selectedModel: "my-local-model",
-        availableModels: [],
-        isLoadingModels: false,
-        onModelChange: { _ in },
-        onRefreshModels: {},
-        dictationState: .idle,
-        dictationErrorMessage: nil,
-        onToggleDictation: {},
-        onBack: {}
-    )
-    .frame(width: 700, height: 700)
-}
-
-#Preview("No Models Inline Picker") {
-    MeetingConversationView(
-        transcription: .previewConversation,
-        isLoadingTranscription: false,
-        turns: [],
-        questionText: "What decisions were made?",
-        onQuestionChange: { _ in },
-        onAsk: {},
-        onRetry: { _ in },
-        isAnswering: false,
-        currentErrorMessage: nil,
-        selectedProvider: .openai,
-        selectedModel: "",
-        availableModels: [],
-        isLoadingModels: false,
-        onModelChange: { _ in },
-        onRefreshModels: {},
-        dictationState: .idle,
-        dictationErrorMessage: nil,
-        onToggleDictation: {},
-        onBack: {}
-    )
-    .frame(width: 700, height: 700)
-}
-
-private extension Transcription {
-    static var previewConversation: Transcription {
-        Transcription(
-            meeting: Meeting(
-                app: .slack,
-                state: .completed,
-                startTime: Date().addingTimeInterval(-1_800),
-                endTime: Date().addingTimeInterval(-600),
-                audioFilePath: nil
-            ),
-            segments: [
-                .init(speaker: "Speaker 1", text: "Precisamos consolidar os previews da interface.", startTime: 0, endTime: 9),
-                .init(speaker: "Speaker 2", text: "Vou priorizar as telas com side effects na fase seguinte.", startTime: 10, endTime: 21),
-            ],
-            text: "Precisamos consolidar os previews da interface. Vou priorizar as telas com side effects na fase seguinte.",
-            rawText: "precisamos consolidar previews interface vou priorizar telas com side effects na fase seguinte",
-            processedContent: "Precisamos consolidar os previews da interface e priorizar, na sequencia, as telas com side effects.",
-            postProcessingPromptTitle: "Planning summary",
-            language: "pt"
-        )
     }
 }

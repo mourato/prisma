@@ -45,6 +45,7 @@ extension FileSystemStorageService {
         config.postProcessingDuration = transcription.postProcessingDuration
         config.postProcessingModel = transcription.postProcessingModel
         config.meetingType = transcription.meetingType
+        config.meetingConversationState = transcription.meetingConversationState
 
         return TranscriptionEntity(meeting: meetingEntity, config: config)
     }
@@ -120,7 +121,8 @@ extension FileSystemStorageService {
             transcriptionDuration: entity.transcriptionDuration,
             postProcessingDuration: entity.postProcessingDuration,
             postProcessingModel: entity.postProcessingModel,
-            meetingType: entity.meetingType
+            meetingType: entity.meetingType,
+            meetingConversationState: entity.meetingConversationState
         )
     }
 }

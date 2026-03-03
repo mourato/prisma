@@ -72,7 +72,8 @@ public class TranscriptionSettingsViewModel: ObservableObject {
     @Published public private(set) var qaResponse: MeetingQAResponse?
     @Published public private(set) var isAnsweringQuestion = false
     @Published public private(set) var qaErrorMessage: String?
-    @Published public private(set) var qaHistoryByTranscription: [UUID: [QATurn]] = [:]
+    @Published public var qaHistoryByTranscription: [UUID: [QATurn]] = [:]
+    @Published public var qaModelSelectionByTranscription: [UUID: MeetingQAModelSelection] = [:]
 
     @Published public var isLoading = true
     @Published public var sourceFilter: RecordingSourceFilter = .all
@@ -81,12 +82,12 @@ public class TranscriptionSettingsViewModel: ObservableObject {
     @Published public var appFilterId = FilterConstants.allAppsId
     @Published public var errorMessage: String?
 
-    private let storage: StorageService
+    let storage: StorageService
     private let recordingManager: RecordingManager
     private let meetingRepository: MeetingRepository
-    private let meetingQAService: any MeetingQAServiceProtocol
-    private let settings: AppSettingsStore
-    private let logger = Logger(subsystem: AppIdentity.logSubsystem, category: "TranscriptionSettingsViewModel")
+    let meetingQAService: any MeetingQAServiceProtocol
+    let settings: AppSettingsStore
+    let logger = Logger(subsystem: AppIdentity.logSubsystem, category: "TranscriptionSettingsViewModel")
     private var lastAskedQuestion: String?
     private var lastQuestionTranscriptionId: UUID?
 
@@ -114,6 +115,21 @@ public class TranscriptionSettingsViewModel: ObservableObject {
 
     public func qaHistory(for transcriptionID: UUID) -> [QATurn] {
         qaHistoryByTranscription[transcriptionID] ?? []
+    }
+
+    public func effectiveMeetingQAModelSelection(for transcriptionID: UUID) -> MeetingQAModelSelection {
+        if let override = qaModelSelectionByTranscription[transcriptionID],
+           AIProvider(rawValue: override.providerRawValue) != nil,
+           !override.modelID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        {
+            return override
+        }
+
+        let defaults = settings.enhancementsAISelection
+        return MeetingQAModelSelection(
+            providerRawValue: defaults.provider.rawValue,
+            modelID: defaults.selectedModel
+        )
     }
 
     public var filteredTranscriptions: [TranscriptionMetadata] {
@@ -305,6 +321,9 @@ public class TranscriptionSettingsViewModel: ObservableObject {
                 resetQuestionState()
             }
             selectedTranscription = try await storage.loadTranscription(by: id)
+            if let selectedTranscription {
+                restoreMeetingConversationState(from: selectedTranscription)
+            }
         } catch {
             logger.error("Failed to load full transcription: \(error.localizedDescription)")
         }
@@ -358,7 +377,13 @@ public class TranscriptionSettingsViewModel: ObservableObject {
         defer { isAnsweringQuestion = false }
 
         do {
-            let response = try await meetingQAService.ask(question: question, transcription: transcription)
+            let request = IntelligenceKernelQuestionRequest(
+                mode: .meeting,
+                question: question,
+                transcription: transcription,
+                modelSelectionOverride: qaModelSelectionByTranscription[transcription.id]
+            )
+            let response = try await meetingQAService.ask(request)
             qaResponse = response
             appendQATurn(
                 QATurn(
@@ -368,6 +393,7 @@ public class TranscriptionSettingsViewModel: ObservableObject {
                 ),
                 transcriptionID: transcription.id
             )
+            await persistMeetingConversationState(for: transcription.id)
         } catch let error as MeetingQAError {
             qaErrorMessage = localizedQuestionError(for: error)
             appendQATurn(
@@ -378,6 +404,7 @@ public class TranscriptionSettingsViewModel: ObservableObject {
                 ),
                 transcriptionID: transcription.id
             )
+            await persistMeetingConversationState(for: transcription.id)
         } catch {
             qaErrorMessage = "transcription.qa.error.generic".localized
             appendQATurn(
@@ -388,6 +415,7 @@ public class TranscriptionSettingsViewModel: ObservableObject {
                 ),
                 transcriptionID: transcription.id
             )
+            await persistMeetingConversationState(for: transcription.id)
         }
     }
 
@@ -479,7 +507,8 @@ public class TranscriptionSettingsViewModel: ObservableObject {
                 inputSource: transcription.inputSource,
                 transcriptionDuration: transcription.transcriptionDuration,
                 postProcessingDuration: duration,
-                postProcessingModel: modelUsed
+                postProcessingModel: modelUsed,
+                meetingConversationState: transcription.meetingConversationState
             )
 
             try await storage.saveTranscription(updatedTranscription)

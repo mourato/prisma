@@ -262,6 +262,102 @@ final class MeetingQAServiceTests: XCTestCase {
         XCTAssertEqual(response.answer, "Launch is Friday.")
     }
 
+    func testAskKernelRequestUsesModelSelectionOverride() async throws {
+        let session = makeMockedSession()
+        MockMeetingQANetworkURLProtocol.requestHandler = { request in
+            let bodyData = try XCTUnwrap(self.requestBodyData(from: request))
+            let jsonObject = try XCTUnwrap(try JSONSerialization.jsonObject(with: bodyData) as? [String: Any])
+            XCTAssertEqual(jsonObject["model"] as? String, "gpt-4.1-mini")
+
+            let body = """
+            {
+              "choices": [
+                {
+                  "message": {
+                    "content": "{\\\"status\\\":\\\"answered\\\",\\\"answer\\\":\\\"Override model used.\\\",\\\"evidence\\\":[{\\\"speaker\\\":\\\"Ana\\\",\\\"startTime\\\":12,\\\"endTime\\\":16,\\\"excerpt\\\":\\\"Vamos lançar sexta.\\\"}]}"
+                  }
+                }
+              ]
+            }
+            """
+
+            return (
+                HTTPURLResponse(url: URL(string: "https://example.com")!, statusCode: 200, httpVersion: nil, headerFields: nil)!,
+                Data(body.utf8)
+            )
+        }
+
+        let service = MeetingQAService(
+            settings: .shared,
+            session: session,
+            apiKeyProvider: { _ in "test-key" },
+            sleepFunction: { _ in }
+        )
+
+        let response = try await service.ask(
+            IntelligenceKernelQuestionRequest(
+                mode: .meeting,
+                question: "When are we launching?",
+                transcription: makeTranscription(),
+                modelSelectionOverride: MeetingQAModelSelection(
+                    providerRawValue: AIProvider.openai.rawValue,
+                    modelID: "gpt-4.1-mini"
+                )
+            )
+        )
+
+        XCTAssertEqual(response.status, .answered)
+        XCTAssertEqual(response.answer, "Override model used.")
+    }
+
+    func testAskKernelRequestFallsBackToDefaultWhenOverrideIsInvalid() async throws {
+        let session = makeMockedSession()
+        MockMeetingQANetworkURLProtocol.requestHandler = { request in
+            let bodyData = try XCTUnwrap(self.requestBodyData(from: request))
+            let jsonObject = try XCTUnwrap(try JSONSerialization.jsonObject(with: bodyData) as? [String: Any])
+            XCTAssertEqual(jsonObject["model"] as? String, "gpt-4o-mini")
+
+            let body = """
+            {
+              "choices": [
+                {
+                  "message": {
+                    "content": "{\\\"status\\\":\\\"answered\\\",\\\"answer\\\":\\\"Default model used.\\\",\\\"evidence\\\":[{\\\"speaker\\\":\\\"Ana\\\",\\\"startTime\\\":12,\\\"endTime\\\":16,\\\"excerpt\\\":\\\"Vamos lançar sexta.\\\"}]}"
+                  }
+                }
+              ]
+            }
+            """
+
+            return (
+                HTTPURLResponse(url: URL(string: "https://example.com")!, statusCode: 200, httpVersion: nil, headerFields: nil)!,
+                Data(body.utf8)
+            )
+        }
+
+        let service = MeetingQAService(
+            settings: .shared,
+            session: session,
+            apiKeyProvider: { _ in "test-key" },
+            sleepFunction: { _ in }
+        )
+
+        let response = try await service.ask(
+            IntelligenceKernelQuestionRequest(
+                mode: .meeting,
+                question: "When are we launching?",
+                transcription: makeTranscription(),
+                modelSelectionOverride: MeetingQAModelSelection(
+                    providerRawValue: "invalid-provider",
+                    modelID: "ignored-model"
+                )
+            )
+        )
+
+        XCTAssertEqual(response.status, .answered)
+        XCTAssertEqual(response.answer, "Default model used.")
+    }
+
     private func makeMockedSession() -> URLSession {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [MockMeetingQANetworkURLProtocol.self]
@@ -278,6 +374,37 @@ final class MeetingQAServiceTests: XCTestCase {
             text: "Vamos lançar sexta. Fechamos o orçamento hoje.",
             rawText: "vamos lancar sexta fechamos o orçamento hoje"
         )
+    }
+
+    private func requestBodyData(from request: URLRequest) -> Data? {
+        if let body = request.httpBody {
+            return body
+        }
+
+        guard let stream = request.httpBodyStream else {
+            return nil
+        }
+
+        stream.open()
+        defer { stream.close() }
+
+        var data = Data()
+        let bufferSize = 1_024
+        let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: bufferSize)
+        defer { buffer.deallocate() }
+
+        while stream.hasBytesAvailable {
+            let bytesRead = stream.read(buffer, maxLength: bufferSize)
+            if bytesRead < 0 {
+                return nil
+            }
+            if bytesRead == 0 {
+                break
+            }
+            data.append(buffer, count: bytesRead)
+        }
+
+        return data.isEmpty ? nil : data
     }
 }
 

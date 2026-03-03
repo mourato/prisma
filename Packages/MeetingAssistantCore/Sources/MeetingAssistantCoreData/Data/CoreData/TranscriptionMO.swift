@@ -27,6 +27,7 @@ public final class TranscriptionMO: NSManagedObject {
     @NSManaged public var postProcessingDuration: Double
     @NSManaged public var postProcessingModel: String?
     @NSManaged public var meetingType: String?
+    @NSManaged public var meetingConversationStateData: Data?
     @NSManaged public var contextItemsData: Data?
     @NSManaged public var canonicalSummaryData: Data?
     @NSManaged public var transcriptionQualityData: Data?
@@ -79,6 +80,8 @@ extension TranscriptionMO {
     private static let contextItemsEncoder = JSONEncoder()
     private static let canonicalSummaryDecoder = JSONDecoder()
     private static let canonicalSummaryEncoder = JSONEncoder()
+    private static let meetingConversationStateDecoder = JSONDecoder()
+    private static let meetingConversationStateEncoder = JSONEncoder()
     private static let transcriptionQualityDecoder = JSONDecoder()
     private static let transcriptionQualityEncoder = JSONEncoder()
 
@@ -102,6 +105,7 @@ extension TranscriptionMO {
         config.postProcessingDuration = postProcessingDuration
         config.postProcessingModel = postProcessingModel
         config.meetingType = meetingType
+        config.meetingConversationState = decodeMeetingConversationState()
         config.canonicalSummary = decodeCanonicalSummary()
         config.qualityProfile = decodeTranscriptionQuality()
 
@@ -124,6 +128,7 @@ extension TranscriptionMO {
         postProcessingDuration = entity.postProcessingDuration
         postProcessingModel = entity.postProcessingModel
         meetingType = entity.meetingType
+        meetingConversationStateData = encodeMeetingConversationState(entity.meetingConversationState)
         contextItemsData = encodeContextItems(entity.contextItems)
         applyCanonicalSummary(entity.canonicalSummary)
         applyTranscriptionQuality(entity.qualityProfile)
@@ -155,6 +160,7 @@ extension TranscriptionMO {
         transcriptionMO.postProcessingDuration = entity.postProcessingDuration
         transcriptionMO.postProcessingModel = entity.postProcessingModel
         transcriptionMO.meetingType = entity.meetingType
+        transcriptionMO.meetingConversationStateData = transcriptionMO.encodeMeetingConversationState(entity.meetingConversationState)
         transcriptionMO.contextItemsData = transcriptionMO.encodeContextItems(entity.contextItems)
         transcriptionMO.applyCanonicalSummary(entity.canonicalSummary)
         transcriptionMO.applyTranscriptionQuality(entity.qualityProfile)
@@ -177,6 +183,16 @@ extension TranscriptionMO {
     private func encodeContextItems(_ items: [TranscriptionContextItem]) -> Data? {
         guard !items.isEmpty else { return nil }
         return try? Self.contextItemsEncoder.encode(items)
+    }
+
+    private func decodeMeetingConversationState() -> MeetingConversationState? {
+        guard let data = meetingConversationStateData else { return nil }
+        return try? Self.meetingConversationStateDecoder.decode(MeetingConversationState.self, from: data)
+    }
+
+    private func encodeMeetingConversationState(_ state: MeetingConversationState?) -> Data? {
+        guard let state else { return nil }
+        return try? Self.meetingConversationStateEncoder.encode(state)
     }
 
     private func decodeCanonicalSummary() -> CanonicalSummary? {
