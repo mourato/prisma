@@ -56,3 +56,21 @@ Common fixes:
 - See `references/swift-6-2-concurrency.md` for Swift 6.2 changes, patterns, and examples.
 - See `references/approachable-concurrency.md` when the project is opted into approachable concurrency mode.
 - See `references/swiftui-concurrency-tour-wwdc.md` for SwiftUI-specific concurrency guidance.
+
+## 2026-03 Operational Update
+
+### Repository Concurrency Hotspots
+
+Start triage in these areas first:
+
+- Onboarding shortcut formatting and view model updates (UI-bound logic).
+- Global shortcut backend callbacks and bridge points to UI services.
+- Recording lifecycle transitions that mix background work and UI state.
+
+### Fast Triage Checklist
+
+1. Identify the exact failing symbol and actor context.
+2. Keep UI entry points `@MainActor`; avoid broad actor annotations on non-UI services.
+3. Convert callback aliases to `@Sendable` where cross-thread execution is expected.
+4. Prefer isolating mutable shared state in a dedicated actor over lock scattering.
+5. Validate with `make test-strict` (or targeted strict run) plus `make test-agent`.
