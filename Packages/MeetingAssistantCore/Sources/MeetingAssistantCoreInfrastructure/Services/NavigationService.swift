@@ -72,15 +72,8 @@ public class NavigationService: ObservableObject {
         alert.runModal()
     }
 
-    /// Checks for updates (static placeholder for now).
+    /// Triggers a user-initiated update check via Sparkle.
     public func checkForUpdates() {
-        let alert = NSAlert()
-        alert.messageText = "updates.check_title".localized
-        alert.informativeText = "updates.latest_version".localized
-        alert.alertStyle = .informational
-        alert.addButton(withTitle: "common.ok".localized)
-
-        NSApp.activate(ignoringOtherApps: true)
-        alert.runModal()
+        UpdateService.shared.checkForUpdates()
     }
 }
