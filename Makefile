@@ -47,6 +47,7 @@ help:
 	@echo ""
 	@echo "Distribution:"
 	@echo "  make dmg            - Create DMG installer"
+	@echo "  make new-release    - Create a new GitHub release interactively"
 	@echo ""
 	@echo "Performance Profiling:"
 	@echo "  make profile        - Run all performance profiling (CPU, Memory, Animation)"
@@ -193,6 +194,19 @@ run-release: build-release
 	@open "$(DERIVED_DATA)/Build/Products/Release/$(APP_PRODUCT_NAME).app"
 
 # Distribution
+new-release:
+	@latest=$$(git describe --tags --abbrev=0 2>/dev/null || echo "None"); \
+	echo -e "$(BLUE)Last release was: $$latest$(NC)"; \
+	read -p "Enter new release version (e.g., v1.0.1): " version; \
+	if [ -z "$$version" ]; then \
+		echo -e "$(RED)Error: Version cannot be empty.$(NC)"; \
+		exit 1; \
+	fi; \
+	echo ""; \
+	echo -e "$(YELLOW)Creating release $$version with auto-generated notes...$(NC)"; \
+	gh release create "$$version" --generate-notes; \
+	echo -e "$(GREEN)✓ Successfully created release $$version!$(NC)"
+
 dmg:
 	@echo -e "$(BLUE)Creating DMG installer...$(NC)"
 	@./scripts/create-dmg.sh --ci
