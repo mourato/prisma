@@ -84,13 +84,26 @@ extension TranscriptionMO {
     private static let meetingConversationStateEncoder = JSONEncoder()
     private static let transcriptionQualityDecoder = JSONDecoder()
     private static let transcriptionQualityEncoder = JSONEncoder()
+    private static func segmentSortComparator(_ lhs: TranscriptionEntity.Segment, _ rhs: TranscriptionEntity.Segment) -> Bool {
+        if lhs.startTime != rhs.startTime {
+            return lhs.startTime < rhs.startTime
+        }
+        if lhs.endTime != rhs.endTime {
+            return lhs.endTime < rhs.endTime
+        }
+        return lhs.id.uuidString < rhs.id.uuidString
+    }
 
     /// Converte Managed Object para Domain Entity
     func toDomain() -> TranscriptionEntity {
+        let sortedSegments = segments
+            .map { $0.toDomain() }
+            .sorted(by: Self.segmentSortComparator)
+
         var config = TranscriptionEntity.Configuration(
             text: text,
             rawText: rawText,
-            segments: segments.map { $0.toDomain() },
+            segments: sortedSegments,
             language: language
         )
         config.id = id

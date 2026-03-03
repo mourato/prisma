@@ -43,8 +43,18 @@ public struct MarkdownRenderer: Sendable {
         let transcriptionHeader = "export.section.transcription".localized
         markdown += "## \(transcriptionHeader)\n\n"
 
-        if !transcription.segments.isEmpty {
-            for segment in transcription.segments {
+        let sortedSegments = transcription.segments.sorted { lhs, rhs in
+            if lhs.startTime != rhs.startTime {
+                return lhs.startTime < rhs.startTime
+            }
+            if lhs.endTime != rhs.endTime {
+                return lhs.endTime < rhs.endTime
+            }
+            return lhs.id.uuidString < rhs.id.uuidString
+        }
+
+        if !sortedSegments.isEmpty {
+            for segment in sortedSegments {
                 let time = formatTime(segment.startTime)
                 markdown += "**\(segment.speaker)** (\(time)):\n"
                 markdown += "\(segment.text)\n\n"
@@ -83,8 +93,17 @@ public struct MarkdownRenderer: Sendable {
 
         if output.contains("{{transcription}}") {
             var transcriptionText = ""
-            if !transcription.segments.isEmpty {
-                for segment in transcription.segments {
+            let sortedSegments = transcription.segments.sorted { lhs, rhs in
+                if lhs.startTime != rhs.startTime {
+                    return lhs.startTime < rhs.startTime
+                }
+                if lhs.endTime != rhs.endTime {
+                    return lhs.endTime < rhs.endTime
+                }
+                return lhs.id.uuidString < rhs.id.uuidString
+            }
+            if !sortedSegments.isEmpty {
+                for segment in sortedSegments {
                     let time = formatTime(segment.startTime)
                     transcriptionText += "**\(segment.speaker)** (\(time)):\n\(segment.text)\n\n"
                 }

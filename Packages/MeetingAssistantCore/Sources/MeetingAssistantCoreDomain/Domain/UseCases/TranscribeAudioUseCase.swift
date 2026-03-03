@@ -223,10 +223,20 @@ public final class TranscribeAudioUseCase: Sendable {
     }
 
     private func buildConfiguration(_ input: ConfigurationBuildInput) -> TranscriptionEntity.Configuration {
+        let sortedSegments = input.replacedSegments.sorted { lhs, rhs in
+            if lhs.startTime != rhs.startTime {
+                return lhs.startTime < rhs.startTime
+            }
+            if lhs.endTime != rhs.endTime {
+                return lhs.endTime < rhs.endTime
+            }
+            return lhs.id.uuidString < rhs.id.uuidString
+        }
+
         var config = TranscriptionEntity.Configuration(
             text: input.processedContent ?? input.replacedText,
             rawText: input.response.text,
-            segments: input.replacedSegments.map { segment in
+            segments: sortedSegments.map { segment in
                 TranscriptionEntity.Segment(
                     speaker: segment.speaker,
                     text: segment.text,

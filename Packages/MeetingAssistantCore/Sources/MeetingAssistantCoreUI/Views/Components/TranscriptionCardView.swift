@@ -8,11 +8,17 @@ import SwiftUI
 
 /// An expandable card for a transcription item.
 public struct TranscriptionCardView: View {
+    private enum Layout {
+        static let contentLineLimit = 8
+    }
+
     let transcription: TranscriptionMetadata
     let transcriptionDetail: Transcription?
     let isExpanded: Bool
     let audioURL: URL?
     let availablePrompts: [PostProcessingPrompt]
+    let isPostProcessing: Bool
+    let postProcessingErrorMessage: String?
     let onToggleExpand: () -> Void
     let onAction: (TranscriptionAction) -> Void
 
@@ -22,6 +28,8 @@ public struct TranscriptionCardView: View {
         isExpanded: Bool,
         audioURL: URL?,
         availablePrompts: [PostProcessingPrompt] = [],
+        isPostProcessing: Bool = false,
+        postProcessingErrorMessage: String? = nil,
         onToggleExpand: @escaping () -> Void,
         onAction: @escaping (TranscriptionAction) -> Void
     ) {
@@ -30,12 +38,16 @@ public struct TranscriptionCardView: View {
         self.isExpanded = isExpanded
         self.audioURL = audioURL
         self.availablePrompts = availablePrompts
+        self.isPostProcessing = isPostProcessing
+        self.postProcessingErrorMessage = postProcessingErrorMessage
         self.onToggleExpand = onToggleExpand
         self.onAction = onAction
     }
 
     @State private var selectedTab: TranscriptionTab = .aiProcessed
     @State private var showInfoPopover = false
+    @State private var expandedTabs: Set<TranscriptionTab> = []
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public enum TranscriptionAction {
         case askAboutMeeting
@@ -124,6 +136,16 @@ public struct TranscriptionCardView: View {
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
+            if let error = inlinePostProcessingErrorMessage {
+                HStack(spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(AppDesignSystem.Colors.error)
+                    Text(error)
+                        .font(.caption)
+                        .foregroundStyle(AppDesignSystem.Colors.error)
+                }
+            }
+
             HStack {
                 Spacer()
 
@@ -155,14 +177,20 @@ public struct TranscriptionCardView: View {
                             }
                         }
                     } label: {
-                        Image(systemName: "arrow.clockwise")
-                            .font(.body)
-                            .foregroundStyle(.secondary)
+                        if isPostProcessing {
+                            ProgressView()
+                                .controlSize(.small)
+                                .frame(width: 16, height: 16)
+                        } else {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.body)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                     .menuStyle(.borderlessButton)
                     .help("transcription.actions.redo_post_processing".localized)
                     .fixedSize()
-                    .disabled(filteredPrompts.isEmpty)
+                    .disabled(filteredPrompts.isEmpty || isPostProcessing)
 
                     Button {
                         onAction(.retryTranscription)
@@ -239,33 +267,29 @@ public struct TranscriptionCardView: View {
         case .original:
             transcriptionDetail?.rawText ?? transcription.previewText
         case .segmented:
-            transcriptionDetail?.segments.map { "\($0.speaker): \($0.text)" }.joined(separator: "\n\n") ?? ""
+            sortedSegments(transcriptionDetail?.segments ?? [])
+                .map { "\($0.speaker): \($0.text)" }
+                .joined(separator: "\n\n")
         }
     }
 
-    @ViewBuilder
     private var contentView: some View {
-        switch selectedTab {
-        case .aiProcessed:
-            Text(displayText(transcriptionDetail?.processedContent ?? transcriptionDetail?.text ?? transcription.previewText))
-        case .original:
-            Text(displayText(transcriptionDetail?.rawText ?? transcription.previewText))
-        case .segmented:
-            if let segments = transcriptionDetail?.segments, !segments.isEmpty {
-                VStack(alignment: .leading, spacing: 12) {
-                    ForEach(segments) { segment in
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(segment.speaker)
-                                .font(.caption)
-                                .fontWeight(.bold)
-                                .foregroundStyle(.secondary)
-                            Text(segment.text)
-                        }
-                    }
+        let text = displayText(currentText)
+
+        return VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
+            Text(text)
+                .lineLimit(isTabExpanded(selectedTab) ? nil : Layout.contentLineLimit)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .opacity(textOpacity)
+                .animation(pulseAnimation, value: isPostProcessing)
+
+            if shouldShowContentExpansionToggle(text: text) {
+                Button(isTabExpanded(selectedTab) ? "transcription.content.show_less".localized : "transcription.content.show_all".localized) {
+                    toggleTabExpansion(selectedTab)
                 }
-            } else {
-                Text("transcription.no_segments".localized)
-                    .foregroundStyle(.secondary)
+                .buttonStyle(.plain)
+                .font(.caption)
+                .foregroundStyle(AppDesignSystem.Colors.accent)
             }
         }
     }
@@ -276,6 +300,61 @@ public struct TranscriptionCardView: View {
             return "transcription.empty_fallback".localized
         }
         return text
+    }
+
+    private var textOpacity: Double {
+        if isPostProcessing, !reduceMotion {
+            return 0.45
+        }
+        return 1
+    }
+
+    private var pulseAnimation: Animation? {
+        if isPostProcessing, !reduceMotion {
+            return .easeInOut(duration: 0.8).repeatForever(autoreverses: true)
+        }
+        return nil
+    }
+
+    private var inlinePostProcessingErrorMessage: String? {
+        guard let postProcessingErrorMessage else { return nil }
+        let trimmed = postProcessingErrorMessage.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        return trimmed
+    }
+
+    private func sortedSegments(_ segments: [Transcription.Segment]) -> [Transcription.Segment] {
+        segments.sorted { lhs, rhs in
+            if lhs.startTime != rhs.startTime {
+                return lhs.startTime < rhs.startTime
+            }
+            if lhs.endTime != rhs.endTime {
+                return lhs.endTime < rhs.endTime
+            }
+            return lhs.id.uuidString < rhs.id.uuidString
+        }
+    }
+
+    private func isTabExpanded(_ tab: TranscriptionTab) -> Bool {
+        expandedTabs.contains(tab)
+    }
+
+    private func toggleTabExpansion(_ tab: TranscriptionTab) {
+        if expandedTabs.contains(tab) {
+            expandedTabs.remove(tab)
+        } else {
+            expandedTabs.insert(tab)
+        }
+    }
+
+    private func shouldShowContentExpansionToggle(text: String) -> Bool {
+        let lineBreakCount = text.reduce(into: 0) { partialResult, character in
+            if character == "\n" {
+                partialResult += 1
+            }
+        }
+        let estimatedLines = lineBreakCount + max(1, text.count / 110)
+        return estimatedLines > Layout.contentLineLimit
     }
 
     private func actionButton(icon: String, action: TranscriptionAction, isDestructive: Bool = false) -> some View {

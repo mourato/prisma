@@ -902,6 +902,16 @@
 "transcription.qa.dictation.error.transcription" = "Falha ao transcrever a pergunta ditada.";
 "transcription.qa.dictation.error.empty_result" = "Nenhuma fala foi detectada no ditado.";
 
+/* Melhorias History + QA */
+"transcription.content.show_all" = "Ver tudo";
+"transcription.content.show_less" = "Ver menos";
+"transcription.post_processing.error" = "Falha no pós-processamento. Tente novamente.";
+"transcription.speaker.rename.error" = "Falha ao renomear speaker.";
+"transcription.qa.tab.chat" = "Chat";
+"transcription.qa.tab.segmented" = "Segmentado";
+"transcription.speaker.rename.save" = "Salvar";
+"transcription.speaker.rename.field_placeholder" = "Novo nome";
+
 /* Notificações */
 "notification.transcription_completed" = "Transcrição Concluída";
 "notification.transcription_failed" = "Falha na Transcrição";

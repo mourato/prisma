@@ -93,28 +93,67 @@ public final class AudioPlayerViewModel: ObservableObject {
     }
 
     private func generateSamples(for url: URL) {
-        // TODO: Implement actual audio sample extraction
-        // For Phase 1, we use a deterministic seed based on the filename to keep it consistent
-        let seed = url.lastPathComponent.hashValue
-        var generator = SeededRandomGenerator(seed: seed)
-
-        let count = 40
-        samples = (0..<count).map { _ in
-            Float.random(in: 0.1...0.9, using: &generator)
+        let sampleCount = 40
+        let extractedURL = url
+        Task { @MainActor [weak self] in
+            let extracted = await Task.detached(priority: .utility) {
+                Self.extractWaveformSamples(from: extractedURL, count: sampleCount)
+            }.value
+            self?.samples = extracted
         }
     }
-}
 
-/// Simple seeded LCRG for consistent waveforms across app restarts for same files.
-struct SeededRandomGenerator: RandomNumberGenerator {
-    private var state: UInt64
+    private nonisolated static func extractWaveformSamples(from url: URL, count: Int) -> [Float] {
+        let fallback = [Float](repeating: 0.3, count: count)
+        guard count > 0 else { return fallback }
 
-    init(seed: Int) {
-        state = UInt64(abs(seed))
-    }
+        do {
+            let audioFile = try AVAudioFile(forReading: url)
+            let totalFrames = AVAudioFrameCount(audioFile.length)
+            guard totalFrames > 0 else { return fallback }
 
-    mutating func next() -> UInt64 {
-        state = 2_862_933_555_777_941_757 &* state &+ 3_037_000_493
-        return state
+            guard let format = AVAudioFormat(
+                commonFormat: .pcmFormatFloat32,
+                sampleRate: audioFile.processingFormat.sampleRate,
+                channels: 1,
+                interleaved: false
+            ) else { return fallback }
+
+            guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: totalFrames) else {
+                return fallback
+            }
+
+            try audioFile.read(into: buffer)
+            guard let channelData = buffer.floatChannelData?.pointee else { return fallback }
+
+            let framesPerSample = max(1, Int(totalFrames) / count)
+            var rmsValues = [Float]()
+            rmsValues.reserveCapacity(count)
+
+            for sampleIndex in 0..<count {
+                let start = sampleIndex * framesPerSample
+                let end = min(start + framesPerSample, Int(totalFrames))
+                guard start < end else {
+                    rmsValues.append(0)
+                    continue
+                }
+
+                var sumOfSquares: Float = 0
+                for frame in start..<end {
+                    let value = channelData[frame]
+                    sumOfSquares += value * value
+                }
+                let rms = sqrtf(sumOfSquares / Float(end - start))
+                rmsValues.append(rms)
+            }
+
+            let maxRMS = rmsValues.max() ?? 1
+            guard maxRMS > 0 else { return fallback }
+
+            return rmsValues.map { min(max($0 / maxRMS, 0.05), 1.0) }
+
+        } catch {
+            return fallback
+        }
     }
 }

@@ -913,6 +913,16 @@
 "transcription.qa.dictation.error.transcription" = "Failed to transcribe dictated question.";
 "transcription.qa.dictation.error.empty_result" = "No speech was detected in dictation.";
 
+/* History + QA Improvements */
+"transcription.content.show_all" = "Show all";
+"transcription.content.show_less" = "Show less";
+"transcription.post_processing.error" = "Post-processing failed. Please try again.";
+"transcription.speaker.rename.error" = "Failed to rename speaker.";
+"transcription.qa.tab.chat" = "Chat";
+"transcription.qa.tab.segmented" = "Segmented";
+"transcription.speaker.rename.save" = "Save";
+"transcription.speaker.rename.field_placeholder" = "New name";
+
 /* Notifications */
 "notification.transcription_completed" = "Transcription Completed";
 "notification.transcription_failed" = "Transcription Failed";
