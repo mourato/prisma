@@ -233,7 +233,7 @@ public final class CoreDataStack: Sendable {
     /// Executa operação em background context de forma thread-safe
     /// - Parameter operation: Bloco assíncrono a executar
     /// - Returns: Resultado da operação
-    public func performBackgroundTask<T>(
+    public func performBackgroundTask<T: Sendable>(
         _ operation: @Sendable @escaping (NSManagedObjectContext) throws -> T
     ) async throws -> T {
         let context = backgroundContext

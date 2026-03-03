@@ -60,6 +60,7 @@ jobs:
         run: make build-test
 
       - name: Archive app
+        id: archive
         run: |
           set -euo pipefail
           xcodebuild archive \
@@ -76,7 +77,7 @@ jobs:
           # CODE_SIGNING_REQUIRED=YES
 
       - name: Upload archive log on failure
-        if: failure()
+        if: failure() && steps.archive.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
           name: sparkle-archive-log
