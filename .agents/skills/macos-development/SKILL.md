@@ -76,3 +76,21 @@ make build-test
 ## Reference Index
 
 Use detailed references under `references/` for architecture, system APIs, testing, design system, and packaging topics.
+
+## 2026-03 Operational Update
+
+### Lifecycle Contract: Menubar + Hotkeys + Settings
+
+When changes touch app lifecycle, enforce this contract:
+
+1. Status item and hotkeys are registered exactly once at startup.
+2. Settings window open/close paths do not duplicate observers or callbacks.
+3. NSApp activation rules are explicit per flow (show panel vs background action).
+4. Teardown always unregisters transient handlers (notifications, taps, monitors).
+5. Shortcut capture flows recover cleanly after permissions or focus changes.
+
+### Verification Focus
+
+- Validate startup -> settings open -> close -> reopen cycle.
+- Validate global shortcut after onboarding and after app relaunch.
+- Validate menubar interactions without forcing unexpected app activation.

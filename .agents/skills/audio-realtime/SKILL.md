@@ -368,3 +368,30 @@ destBuffer.baseAddress?.update(from: sourceBuffer.baseAddress!, count: copiesToW
 - [AudioBufferQueue.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Services/AudioBufferQueue.swift)
 - [SystemAudioRecorder.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Services/SystemAudioRecorder.swift)
 - `.agents/skills/architecture/SKILL.md`
+
+
+## 2026-03 Operational Update
+
+### Repository Hotspots (Current)
+
+Prioritize these files first when triaging regressions:
+
+- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreAudio/Services/AudioRecorder.swift`
+- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreAudio/Services/AudioDeviceManager.swift`
+- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreAudio/Services/AudioRecorder+Diagnostics.swift`
+
+Common recurring failures:
+
+- Mic-only capture fails when input/output devices are shared.
+- Sample-rate mismatches with external USB microphones.
+- Diagnostic probes accidentally changing runtime behavior.
+
+### Mic Reliability Playbook
+
+Use this order when addressing capture reliability bugs:
+
+1. Validate device selection and fallback order in `AudioDeviceManager`.
+2. Resolve sample rate from device capability before engine start.
+3. Keep start/stop paths idempotent; diagnostics must be observational only.
+4. Use mic-only fallback strategy when engine graph setup fails.
+5. Re-run shared-device and USB-mic scenarios before merge.
