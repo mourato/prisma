@@ -127,12 +127,12 @@ private struct OnboardingShortcutRow: View {
                         ? "onboarding.shortcuts.default_set".localized
                         : "onboarding.shortcuts.use_default".localized
                 )
-                    .font(.system(size: 13, weight: .medium))
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background((isUsingDefault ? Color.secondary : Color.accentColor).opacity(0.12))
-                    .foregroundColor(isUsingDefault ? .secondary : .accentColor)
-                    .cornerRadius(8)
+                .font(.system(size: 13, weight: .medium))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background((isUsingDefault ? Color.secondary : Color.accentColor).opacity(0.12))
+                .foregroundColor(isUsingDefault ? .secondary : .accentColor)
+                .cornerRadius(8)
             }
             .buttonStyle(.plain)
             .disabled(isUsingDefault)

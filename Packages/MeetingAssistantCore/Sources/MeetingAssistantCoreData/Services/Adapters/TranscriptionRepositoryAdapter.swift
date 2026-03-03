@@ -42,15 +42,14 @@ public final class TranscriptionRepositoryAdapter: TranscriptionRepository, Tran
         onProgress: (@Sendable (Double) -> Void)?,
         diarizationEnabledOverride: Bool?
     ) async throws -> DomainTranscriptionResponse {
-        let response: TranscriptionResponse
-        if let diarizationAwareService = transcriptionService as? any TranscriptionServiceDiarizationOverride {
-            response = try await diarizationAwareService.transcribe(
+        let response: TranscriptionResponse = if let diarizationAwareService = transcriptionService as? any TranscriptionServiceDiarizationOverride {
+            try await diarizationAwareService.transcribe(
                 audioURL: audioURL,
                 onProgress: onProgress,
                 diarizationEnabledOverride: diarizationEnabledOverride
             )
         } else {
-            response = try await transcriptionService.transcribe(
+            try await transcriptionService.transcribe(
                 audioURL: audioURL,
                 onProgress: onProgress
             )
@@ -60,7 +59,7 @@ public final class TranscriptionRepositoryAdapter: TranscriptionRepository, Tran
     }
 
     private func mapToDomainResponse(_ response: TranscriptionResponse) -> DomainTranscriptionResponse {
-        return DomainTranscriptionResponse(
+        DomainTranscriptionResponse(
             text: response.text,
             segments: response.segments.map { segment in
                 DomainTranscriptionSegment(

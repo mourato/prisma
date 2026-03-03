@@ -124,9 +124,9 @@ public final class AudioDeviceManager: ObservableObject {
             let status = AudioObjectGetPropertyData(deviceID, &nameAddress, 0, nil, &uidSize, &uidString)
 
             if status == noErr,
-                let deviceUID = uidString?.takeRetainedValue(),
-                (deviceUID as String) == uid,
-                isUsableInputDeviceID(deviceID)
+               let deviceUID = uidString?.takeRetainedValue(),
+               (deviceUID as String) == uid,
+               isUsableInputDeviceID(deviceID)
             {
                 return deviceID
             }

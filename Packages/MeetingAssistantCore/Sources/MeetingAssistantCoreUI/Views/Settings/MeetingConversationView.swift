@@ -11,7 +11,9 @@ public struct MeetingConversationView: View {
         case chat
         case segmented
 
-        var id: String { rawValue }
+        var id: String {
+            rawValue
+        }
 
         var label: String {
             switch self {
