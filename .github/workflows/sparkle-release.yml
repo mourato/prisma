@@ -1,0 +1,137 @@
+# Sparkle Release Workflow
+#
+# Triggered when a GitHub Release is published. Builds the app, generates the
+# Sparkle appcast, uploads the archive as a release asset, and pushes the
+# updated appcast.xml to the gh-pages branch for GitHub Pages hosting.
+#
+# Required GitHub Secrets:
+#   SPARKLE_PRIVATE_KEY  – EdDSA private key from `generate_keys --export-private-key`
+#
+# TODO: Add Apple Developer ID signing and notarization steps for production.
+
+name: Sparkle Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+  pages: write
+
+env:
+  APP_NAME: Prisma
+  SCHEME: MeetingAssistant
+  XCODE_PROJECT: MeetingAssistant.xcodeproj
+  ARCHIVE_PATH: build/Prisma.xcarchive
+  EXPORT_PATH: build/export
+
+jobs:
+  build-and-publish:
+    name: Build, Sign & Publish Update
+    runs-on: macos-15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+
+      - name: Resolve SPM dependencies
+        run: xcodebuild -resolvePackageDependencies -project "$XCODE_PROJECT" -scheme "$SCHEME"
+
+      - name: Archive app
+        run: |
+          xcodebuild archive \
+            -project "$XCODE_PROJECT" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -archivePath "$ARCHIVE_PATH" \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+          # TODO: Replace the above with proper Developer ID signing:
+          # CODE_SIGN_IDENTITY="Developer ID Application: Your Name (TEAM_ID)"
+          # CODE_SIGNING_REQUIRED=YES
+
+      # TODO: Add notarization step
+      # - name: Notarize app
+      #   run: |
+      #     xcrun notarytool submit ... --wait
+      #     xcrun stapler staple ...
+
+      - name: Create distribution zip
+        run: |
+          mkdir -p build/dist
+          cp -R "$ARCHIVE_PATH/Products/Applications/$APP_NAME.app" build/dist/
+          cd build/dist
+          zip -r -y "../$APP_NAME.zip" "$APP_NAME.app"
+
+      - name: Upload zip to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${{ github.event.release.tag_name }}" \
+            "build/$APP_NAME.zip" \
+            --clobber
+
+      # --- Sparkle Appcast Generation ---
+
+      - name: Locate Sparkle tools
+        id: sparkle-tools
+        run: |
+          # Find the Sparkle checkout in SPM's derived data
+          SPARKLE_BIN=$(find ~/Library/Developer/Xcode/DerivedData -path "*/Sparkle/bin" -type d 2>/dev/null | head -1)
+          if [ -z "$SPARKLE_BIN" ]; then
+            # Fallback: check SPM build artifacts in the project
+            SPARKLE_BIN=$(find .build -path "*/Sparkle/bin" -type d 2>/dev/null | head -1)
+          fi
+          if [ -z "$SPARKLE_BIN" ]; then
+            echo "::error::Could not find Sparkle CLI tools. Ensure Sparkle SPM dependency is resolved."
+            exit 1
+          fi
+          echo "SPARKLE_BIN=$SPARKLE_BIN" >> "$GITHUB_OUTPUT"
+          echo "Found Sparkle tools at: $SPARKLE_BIN"
+
+      - name: Prepare appcast directory
+        run: |
+          mkdir -p build/appcast
+          cp "build/$APP_NAME.zip" build/appcast/
+
+      - name: Generate appcast
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          SPARKLE_BIN="${{ steps.sparkle-tools.outputs.SPARKLE_BIN }}"
+          DOWNLOAD_URL_PREFIX="https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}"
+
+          "$SPARKLE_BIN/generate_appcast" \
+            --ed-key-file <(echo "$SPARKLE_PRIVATE_KEY") \
+            --download-url-prefix "$DOWNLOAD_URL_PREFIX/" \
+            build/appcast
+
+      - name: Deploy appcast to gh-pages
+        run: |
+          # Configure git for the deploy
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Create or switch to gh-pages branch
+          git fetch origin gh-pages:gh-pages 2>/dev/null || git checkout --orphan gh-pages
+
+          # Use a temporary worktree for gh-pages
+          git worktree add /tmp/gh-pages gh-pages 2>/dev/null || true
+
+          # Copy appcast to gh-pages
+          cp build/appcast/appcast.xml /tmp/gh-pages/
+
+          # Commit and push
+          cd /tmp/gh-pages
+          git add appcast.xml
+          git diff --cached --quiet && echo "No appcast changes to commit" && exit 0
+          git commit -m "chore: update appcast for ${{ github.event.release.tag_name }}"
+          git push origin gh-pages
+
+          # Cleanup worktree
+          cd -
+          git worktree remove /tmp/gh-pages 2>/dev/null || true
