@@ -68,6 +68,8 @@ public class TranscriptionSettingsViewModel: ObservableObject {
     }
 
     @Published public var isProcessingAI = false
+    @Published public private(set) var postProcessingByTranscriptionID: Set<UUID> = []
+    @Published public private(set) var postProcessingErrorByTranscriptionID: [UUID: String] = [:]
     @Published public var qaQuestion = ""
     @Published public private(set) var qaResponse: MeetingQAResponse?
     @Published public private(set) var isAnsweringQuestion = false
@@ -90,6 +92,16 @@ public class TranscriptionSettingsViewModel: ObservableObject {
     let logger = Logger(subsystem: AppIdentity.logSubsystem, category: "TranscriptionSettingsViewModel")
     private var lastAskedQuestion: String?
     private var lastQuestionTranscriptionId: UUID?
+
+    private static let segmentSortComparator: (Transcription.Segment, Transcription.Segment) -> Bool = { lhs, rhs in
+        if lhs.startTime != rhs.startTime {
+            return lhs.startTime < rhs.startTime
+        }
+        if lhs.endTime != rhs.endTime {
+            return lhs.endTime < rhs.endTime
+        }
+        return lhs.id.uuidString < rhs.id.uuidString
+    }
 
     public init(
         storage: StorageService = FileSystemStorageService.shared,
@@ -463,6 +475,14 @@ public class TranscriptionSettingsViewModel: ObservableObject {
         NSWorkspace.shared.open(storage.recordingsDirectory)
     }
 
+    public func isPostProcessing(transcriptionID: UUID) -> Bool {
+        postProcessingByTranscriptionID.contains(transcriptionID)
+    }
+
+    public func postProcessingError(for transcriptionID: UUID) -> String? {
+        postProcessingErrorByTranscriptionID[transcriptionID]
+    }
+
     public var availablePrompts: [PostProcessingPrompt] {
         AppSettingsStore.shared.allPrompts
     }
@@ -477,13 +497,15 @@ public class TranscriptionSettingsViewModel: ObservableObject {
     public func applyPostProcessing(prompt: PostProcessingPrompt, to transcription: Transcription) async {
         guard !isProcessingAI else { return }
 
-        isProcessingAI = true
+        let transcriptionID = transcription.id
+        markPostProcessingStarted(for: transcriptionID)
         let startTime = Date()
-        defer { isProcessingAI = false }
+        defer { markPostProcessingFinished(for: transcriptionID) }
 
         do {
+            let postProcessingInput = postProcessingInput(for: transcription)
             let processedText = try await PostProcessingService.shared.processTranscription(
-                transcription.rawText,
+                postProcessingInput,
                 with: prompt
             )
 
@@ -491,14 +513,17 @@ public class TranscriptionSettingsViewModel: ObservableObject {
             let config = AppSettingsStore.shared.resolvedEnhancementsAIConfiguration
             let modelUsed = config.selectedModel
 
+            let sortedSegments = sortedSegments(transcription.segments)
             let updatedTranscription = Transcription(
                 id: transcription.id,
                 meeting: transcription.meeting,
                 contextItems: transcription.contextItems,
-                segments: transcription.segments,
+                segments: sortedSegments,
                 text: transcription.text,
                 rawText: transcription.rawText,
                 processedContent: processedText,
+                canonicalSummary: transcription.canonicalSummary,
+                qualityProfile: transcription.qualityProfile,
                 postProcessingPromptId: prompt.id,
                 postProcessingPromptTitle: prompt.title,
                 language: transcription.language,
@@ -508,6 +533,7 @@ public class TranscriptionSettingsViewModel: ObservableObject {
                 transcriptionDuration: transcription.transcriptionDuration,
                 postProcessingDuration: duration,
                 postProcessingModel: modelUsed,
+                meetingType: transcription.meetingType,
                 meetingConversationState: transcription.meetingConversationState
             )
 
@@ -515,13 +541,39 @@ public class TranscriptionSettingsViewModel: ObservableObject {
 
             // Update local state
             selectedTranscription = updatedTranscription
+            clearPostProcessingError(for: transcriptionID)
 
             // Refresh metadata to show the "sparkles" icon in the list if needed
             await loadTranscriptions()
 
         } catch {
             logger.error("Failed to apply post-processing: \(error.localizedDescription)")
-            errorMessage = error.localizedDescription
+            let message = "transcription.post_processing.error".localized
+            postProcessingErrorByTranscriptionID[transcriptionID] = message
+            errorMessage = message
+        }
+    }
+
+    public func renameSpeaker(
+        from originalSpeaker: String,
+        to updatedSpeaker: String,
+        in transcriptionID: UUID
+    ) async {
+        let oldValue = originalSpeaker.trimmingCharacters(in: .whitespacesAndNewlines)
+        let newValue = updatedSpeaker.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !oldValue.isEmpty, !newValue.isEmpty, oldValue != newValue else { return }
+
+        do {
+            guard var transcription = selectedTranscription, transcription.id == transcriptionID else {
+                guard var loaded = try await storage.loadTranscription(by: transcriptionID) else { return }
+                try await renameSpeaker(in: &loaded, from: oldValue, to: newValue, selectedID: transcriptionID)
+                return
+            }
+
+            try await renameSpeaker(in: &transcription, from: oldValue, to: newValue, selectedID: transcriptionID)
+        } catch {
+            logger.error("Failed to rename speaker: \(error.localizedDescription)")
+            errorMessage = "transcription.speaker.rename.error".localized
         }
     }
 
@@ -602,5 +654,84 @@ public class TranscriptionSettingsViewModel: ObservableObject {
             logger.error("Failed to update recording source: \(error.localizedDescription)")
             errorMessage = error.localizedDescription
         }
+    }
+
+    private func renameSpeaker(
+        in transcription: inout Transcription,
+        from oldValue: String,
+        to newValue: String,
+        selectedID: UUID
+    ) async throws {
+        let renamedSegments = transcription.segments.map { segment in
+            guard segment.speaker == oldValue else { return segment }
+            return Transcription.Segment(
+                id: segment.id,
+                speaker: newValue,
+                text: segment.text,
+                startTime: segment.startTime,
+                endTime: segment.endTime
+            )
+        }
+
+        guard renamedSegments != transcription.segments else { return }
+        let sortedRenamedSegments = sortedSegments(renamedSegments)
+        let updatedTranscription = Transcription(
+            id: transcription.id,
+            meeting: transcription.meeting,
+            contextItems: transcription.contextItems,
+            segments: sortedRenamedSegments,
+            text: transcription.text,
+            rawText: transcription.rawText,
+            processedContent: transcription.processedContent,
+            canonicalSummary: transcription.canonicalSummary,
+            qualityProfile: transcription.qualityProfile,
+            postProcessingPromptId: transcription.postProcessingPromptId,
+            postProcessingPromptTitle: transcription.postProcessingPromptTitle,
+            language: transcription.language,
+            createdAt: transcription.createdAt,
+            modelName: transcription.modelName,
+            inputSource: transcription.inputSource,
+            transcriptionDuration: transcription.transcriptionDuration,
+            postProcessingDuration: transcription.postProcessingDuration,
+            postProcessingModel: transcription.postProcessingModel,
+            meetingType: transcription.meetingType,
+            meetingConversationState: transcription.meetingConversationState
+        )
+
+        try await storage.saveTranscription(updatedTranscription)
+        if selectedId == selectedID || selectedTranscription?.id == selectedID {
+            selectedTranscription = updatedTranscription
+        }
+    }
+
+    private func sortedSegments(_ segments: [Transcription.Segment]) -> [Transcription.Segment] {
+        segments.sorted(by: Self.segmentSortComparator)
+    }
+
+    private func postProcessingInput(for transcription: Transcription) -> String {
+        let segments = sortedSegments(transcription.segments)
+        guard !segments.isEmpty else {
+            return transcription.rawText
+        }
+
+        return segments
+            .map { segment in
+                "[\(segment.startTime)-\(segment.endTime)] \(segment.speaker): \(segment.text)"
+            }
+            .joined(separator: "\n")
+    }
+
+    private func markPostProcessingStarted(for transcriptionID: UUID) {
+        postProcessingByTranscriptionID.insert(transcriptionID)
+        isProcessingAI = !postProcessingByTranscriptionID.isEmpty
+    }
+
+    private func markPostProcessingFinished(for transcriptionID: UUID) {
+        postProcessingByTranscriptionID.remove(transcriptionID)
+        isProcessingAI = !postProcessingByTranscriptionID.isEmpty
+    }
+
+    private func clearPostProcessingError(for transcriptionID: UUID) {
+        postProcessingErrorByTranscriptionID.removeValue(forKey: transcriptionID)
     }
 }

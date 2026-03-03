@@ -228,7 +228,19 @@ public final class MeetingQAService: ObservableObject, MeetingQAServiceProtocol 
         let summaryText = transcription.canonicalSummary?.summary.trimmingCharacters(in: .whitespacesAndNewlines)
         let summaryBlock = (summaryText?.isEmpty == false) ? summaryText! : "(none)"
 
-        let evidenceSegments = Array(transcription.segments.prefix(Constants.maxSegmentsInPrompt))
+        let evidenceSegments = Array(
+            transcription.segments
+                .sorted { lhs, rhs in
+                    if lhs.startTime != rhs.startTime {
+                        return lhs.startTime < rhs.startTime
+                    }
+                    if lhs.endTime != rhs.endTime {
+                        return lhs.endTime < rhs.endTime
+                    }
+                    return lhs.id.uuidString < rhs.id.uuidString
+                }
+                .prefix(Constants.maxSegmentsInPrompt)
+        )
         let transcriptBlock: String = if evidenceSegments.isEmpty {
             transcription.rawText.trimmingCharacters(in: .whitespacesAndNewlines)
         } else {

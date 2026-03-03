@@ -330,6 +330,8 @@ public struct TranscriptionsSettingsTab: View {
                                 isExpanded: viewModel.selectedId == transcription.id,
                                 audioURL: transcription.audioFilePath != nil ? URL(fileURLWithPath: transcription.audioFilePath!) : nil,
                                 availablePrompts: viewModel.availablePrompts(for: transcription),
+                                isPostProcessing: viewModel.isPostProcessing(transcriptionID: transcription.id),
+                                postProcessingErrorMessage: viewModel.postProcessingError(for: transcription.id),
                                 onToggleExpand: {
                                     let toggleSelection = {
                                         if viewModel.selectedId == transcription.id {

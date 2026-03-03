@@ -92,6 +92,11 @@ struct TranscriptionConversationPage: View {
                 dictationState: dictationService.state,
                 dictationErrorMessage: dictationService.errorMessage,
                 onToggleDictation: onToggleDictation,
+                onRenameSpeaker: { original, updated, id in
+                    Task {
+                        await viewModel.renameSpeaker(from: original, to: updated, in: id)
+                    }
+                },
                 onBack: onBack
             )
         }

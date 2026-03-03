@@ -7,6 +7,22 @@ import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
 public struct MeetingConversationView: View {
+    private enum InternalTab: String, CaseIterable, Identifiable {
+        case chat
+        case segmented
+
+        var id: String { rawValue }
+
+        var label: String {
+            switch self {
+            case .chat:
+                "transcription.qa.tab.chat".localized
+            case .segmented:
+                "transcription.qa.tab.segmented".localized
+            }
+        }
+    }
+
     let transcription: Transcription?
     let isLoadingTranscription: Bool
     let turns: [TranscriptionSettingsViewModel.QATurn]
@@ -24,9 +40,12 @@ public struct MeetingConversationView: View {
     let dictationState: MeetingQuestionDictationService.State
     let dictationErrorMessage: String?
     let onToggleDictation: () -> Void
+    let onRenameSpeaker: (_ original: String, _ updated: String, _ transcriptionID: UUID) -> Void
     let onBack: () -> Void
 
     @State private var isShowingModelSelector = false
+    @State private var selectedInternalTab: InternalTab = .chat
+    @State private var speakerRenames: [String: String] = [:]
 
     public init(
         transcription: Transcription?,
@@ -46,6 +65,7 @@ public struct MeetingConversationView: View {
         dictationState: MeetingQuestionDictationService.State,
         dictationErrorMessage: String?,
         onToggleDictation: @escaping () -> Void,
+        onRenameSpeaker: @escaping (_ original: String, _ updated: String, _ transcriptionID: UUID) -> Void = { _, _, _ in },
         onBack: @escaping () -> Void
     ) {
         self.transcription = transcription
@@ -65,6 +85,7 @@ public struct MeetingConversationView: View {
         self.dictationState = dictationState
         self.dictationErrorMessage = dictationErrorMessage
         self.onToggleDictation = onToggleDictation
+        self.onRenameSpeaker = onRenameSpeaker
         self.onBack = onBack
     }
 
@@ -142,31 +163,25 @@ public struct MeetingConversationView: View {
                 Spacer()
             }
         } else {
-            ScrollView {
-                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
-                    summaryCard
-
-                    if turns.isEmpty {
-                        Text("transcription.qa.placeholder".localized)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    } else {
-                        ForEach(turns) { turn in
-                            turnView(turn)
+            VStack(spacing: 0) {
+                if hasSegments {
+                    Picker("", selection: $selectedInternalTab) {
+                        ForEach(InternalTab.allCases) { tab in
+                            Text(tab.label).tag(tab)
                         }
                     }
-
-                    if isAnswering {
-                        HStack(spacing: AppDesignSystem.Layout.spacing8) {
-                            ProgressView()
-                                .controlSize(.small)
-                            Text("transcription.qa.loading".localized)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .padding(.horizontal, AppDesignSystem.Layout.spacing16)
+                    .padding(.vertical, AppDesignSystem.Layout.spacing8)
                 }
-                .padding(AppDesignSystem.Layout.spacing16)
+
+                switch selectedInternalTab {
+                case .chat:
+                    chatContent
+                case .segmented:
+                    segmentedContent
+                }
             }
         }
     }
@@ -387,6 +402,146 @@ public struct MeetingConversationView: View {
             || isAnswering
             || isLoadingTranscription
             || dictationState == .processing
+    }
+
+    // MARK: - Chat Tab
+
+    private var chatContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
+                summaryCard
+
+                if turns.isEmpty {
+                    Text("transcription.qa.placeholder".localized)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(turns) { turn in
+                        turnView(turn)
+                    }
+                }
+
+                if isAnswering {
+                    HStack(spacing: AppDesignSystem.Layout.spacing8) {
+                        ProgressView()
+                            .controlSize(.small)
+                        Text("transcription.qa.loading".localized)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .padding(AppDesignSystem.Layout.spacing16)
+        }
+    }
+
+    // MARK: - Segmented Tab
+
+    private var hasSegments: Bool {
+        guard let transcription else { return false }
+        return !transcription.segments.isEmpty
+    }
+
+    private var sortedSegmentsForDisplay: [Transcription.Segment] {
+        guard let transcription else { return [] }
+        return transcription.segments.sorted { lhs, rhs in
+            if lhs.startTime != rhs.startTime {
+                return lhs.startTime < rhs.startTime
+            }
+            if lhs.endTime != rhs.endTime {
+                return lhs.endTime < rhs.endTime
+            }
+            return lhs.id.uuidString < rhs.id.uuidString
+        }
+    }
+
+    private var uniqueSpeakers: [String] {
+        var seen = Set<String>()
+        var result = [String]()
+        for segment in sortedSegmentsForDisplay {
+            if seen.insert(segment.speaker).inserted {
+                result.append(segment.speaker)
+            }
+        }
+        return result
+    }
+
+    private var segmentedContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
+                speakerRenameSection
+
+                Divider()
+
+                segmentListSection
+            }
+            .padding(AppDesignSystem.Layout.spacing16)
+        }
+    }
+
+    private var speakerRenameSection: some View {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
+            ForEach(uniqueSpeakers, id: \.self) { speaker in
+                HStack(spacing: AppDesignSystem.Layout.spacing8) {
+                    Text(speaker)
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.secondary)
+                        .frame(minWidth: 80, alignment: .leading)
+
+                    TextField(
+                        "transcription.speaker.rename.field_placeholder".localized,
+                        text: speakerRenameBinding(for: speaker)
+                    )
+                    .textFieldStyle(.roundedBorder)
+                    .frame(maxWidth: 180)
+
+                    Button("transcription.speaker.rename.save".localized) {
+                        guard let transcription else { return }
+                        let newName = speakerRenames[speaker]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                        guard !newName.isEmpty, newName != speaker else { return }
+                        onRenameSpeaker(speaker, newName, transcription.id)
+                        speakerRenames.removeValue(forKey: speaker)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .disabled(isSaveDisabled(for: speaker))
+                }
+            }
+        }
+    }
+
+    private func speakerRenameBinding(for speaker: String) -> Binding<String> {
+        Binding(
+            get: { speakerRenames[speaker] ?? "" },
+            set: { speakerRenames[speaker] = $0 }
+        )
+    }
+
+    private func isSaveDisabled(for speaker: String) -> Bool {
+        let value = speakerRenames[speaker]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return value.isEmpty || value == speaker
+    }
+
+    private var segmentListSection: some View {
+        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
+            ForEach(sortedSegmentsForDisplay) { segment in
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 6) {
+                        Text(segment.speaker)
+                            .font(.caption)
+                            .fontWeight(.bold)
+                            .foregroundStyle(.secondary)
+                        Text("[\(formatTimestamp(segment.startTime))–\(formatTimestamp(segment.endTime))]")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
+                    Text(segment.text)
+                        .font(.body)
+                        .textSelection(.enabled)
+                }
+            }
+        }
     }
 
     private func formatTimestamp(_ value: Double) -> String {
