@@ -26,6 +26,7 @@ public final class PerformanceMonitor: NSObject, MXMetricManagerSubscriber, Send
 
     // MARK: - MXMetricManagerSubscriber
 
+#if !os(macOS)
     public func didReceive(_ payloads: [MXMetricPayload]) {
         for payload in payloads {
             // Log aggregated metrics
@@ -41,6 +42,7 @@ public final class PerformanceMonitor: NSObject, MXMetricManagerSubscriber, Send
             }
         }
     }
+#endif
 
     public func didReceive(_ payloads: [MXDiagnosticPayload]) {
         for payload in payloads {
