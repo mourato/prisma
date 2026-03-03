@@ -68,7 +68,11 @@ final class IntelligenceKernelContractsTests: XCTestCase {
             IntelligenceKernelQuestionRequest(
                 mode: .meeting,
                 question: "What did we decide?",
-                transcription: makeTranscription()
+                transcription: makeTranscription(),
+                modelSelectionOverride: MeetingQAModelSelection(
+                    providerRawValue: AIProvider.openai.rawValue,
+                    modelID: "gpt-4o-mini"
+                )
             )
         )
 

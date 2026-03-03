@@ -401,15 +401,117 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.qaQuestion, "")
     }
 
-    func testEnhancementsModelSelectionUpdatesGlobalSettings() {
+    func testLoadFullTranscriptionRestoresPersistedConversationState() async {
+        let id = UUID()
+        let transcription = Transcription(
+            id: id,
+            meeting: Meeting(id: id, app: .zoom, startTime: Date(), endTime: Date().addingTimeInterval(60)),
+            text: "Meeting summary",
+            rawText: "Meeting summary",
+            meetingConversationState: MeetingConversationState(
+                turns: [
+                    MeetingConversationTurn(
+                        id: UUID(),
+                        question: "What was decided?",
+                        response: MeetingQAResponse(
+                            status: .answered,
+                            answer: "Ship on Friday.",
+                            evidence: [.init(speaker: "Ana", startTime: 1, endTime: 3, excerpt: "Ship Friday.")]
+                        ),
+                        errorMessage: nil,
+                        createdAt: Date()
+                    ),
+                ],
+                modelSelection: MeetingQAModelSelection(
+                    providerRawValue: AIProvider.anthropic.rawValue,
+                    modelID: "claude-3-7-sonnet"
+                )
+            )
+        )
+        storage.mockTranscriptions = [transcription]
+
+        await viewModel.loadTranscriptions()
+        viewModel.selectedId = id
+        try? await Task.sleep(nanoseconds: 100_000_000)
+
+        XCTAssertEqual(viewModel.qaHistory(for: id).count, 1)
+        XCTAssertEqual(viewModel.qaHistory(for: id).first?.question, "What was decided?")
+        XCTAssertEqual(viewModel.qaModelSelectionByTranscription[id]?.providerRawValue, AIProvider.anthropic.rawValue)
+        XCTAssertEqual(viewModel.qaModelSelectionByTranscription[id]?.modelID, "claude-3-7-sonnet")
+    }
+
+    func testSubmitQuestionPersistsConversationState() async {
+        let id = UUID()
+        let transcription = Transcription(
+            id: id,
+            meeting: Meeting(id: id, app: .zoom, startTime: Date(), endTime: Date().addingTimeInterval(60)),
+            text: "Summary",
+            rawText: "Summary"
+        )
+        storage.mockTranscriptions = [transcription]
+        viewModel.selectedTranscription = transcription
+        meetingQAService.nextResponse = MeetingQAResponse(
+            status: .answered,
+            answer: "Captured.",
+            evidence: [.init(speaker: "A", startTime: 0, endTime: 1, excerpt: "Captured.")]
+        )
+        viewModel.qaQuestion = "Question 1"
+
+        await viewModel.submitQuestion(for: transcription)
+
+        XCTAssertEqual(storage.savedTranscriptions.last?.id, id)
+        XCTAssertEqual(storage.savedTranscriptions.last?.meetingConversationState?.turns.count, 1)
+        XCTAssertEqual(storage.savedTranscriptions.last?.meetingConversationState?.turns.first?.question, "Question 1")
+    }
+
+    func testSubmitQuestionUsesConversationModelOverride() async {
+        let id = UUID()
+        let transcription = Transcription(
+            id: id,
+            meeting: Meeting(id: id, app: .zoom, startTime: Date(), endTime: Date().addingTimeInterval(60)),
+            text: "Summary",
+            rawText: "Summary"
+        )
+        storage.mockTranscriptions = [transcription]
+        viewModel.selectedTranscription = transcription
+        await viewModel.updateMeetingQAModelSelection(
+            provider: .anthropic,
+            model: "claude-3-7-sonnet",
+            for: id
+        )
+        viewModel.qaQuestion = "Question 1"
+
+        await viewModel.submitQuestion(for: transcription)
+
+        XCTAssertEqual(meetingQAService.lastRequest?.modelSelectionOverride?.providerRawValue, AIProvider.anthropic.rawValue)
+        XCTAssertEqual(meetingQAService.lastRequest?.modelSelectionOverride?.modelID, "claude-3-7-sonnet")
+    }
+
+    func testUpdatingChatModelSelectionDoesNotMutateEnhancementsDefaults() async {
         let settings = AppSettingsStore.shared
-        let originalModel = settings.enhancementsAISelection.selectedModel
+        let originalSelection = settings.enhancementsAISelection
         defer {
-            settings.updateEnhancementsSelectedModel(originalModel)
+            settings.enhancementsAISelection = originalSelection
         }
 
-        settings.updateEnhancementsSelectedModel("gpt-4o-mini")
+        let id = UUID()
+        let transcription = Transcription(
+            id: id,
+            meeting: Meeting(id: id, app: .zoom, startTime: Date(), endTime: Date().addingTimeInterval(60)),
+            text: "Summary",
+            rawText: "Summary"
+        )
+        storage.mockTranscriptions = [transcription]
+        viewModel.selectedTranscription = transcription
 
-        XCTAssertEqual(settings.enhancementsAISelection.selectedModel, "gpt-4o-mini")
+        await viewModel.updateMeetingQAModelSelection(
+            provider: .anthropic,
+            model: "claude-3-7-sonnet",
+            for: id
+        )
+
+        XCTAssertEqual(settings.enhancementsAISelection, originalSelection)
+        XCTAssertEqual(viewModel.qaModelSelectionByTranscription[id]?.providerRawValue, AIProvider.anthropic.rawValue)
+        XCTAssertEqual(viewModel.qaModelSelectionByTranscription[id]?.modelID, "claude-3-7-sonnet")
     }
 }

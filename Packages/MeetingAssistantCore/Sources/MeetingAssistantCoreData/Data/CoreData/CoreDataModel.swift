@@ -185,6 +185,12 @@ public enum CoreDataModel {
         meetingTypeAttribute.attributeType = .stringAttributeType
         meetingTypeAttribute.isOptional = true
 
+        let meetingConversationStateDataAttribute = NSAttributeDescription()
+        meetingConversationStateDataAttribute.name = "meetingConversationStateData"
+        meetingConversationStateDataAttribute.attributeType = .binaryDataAttributeType
+        meetingConversationStateDataAttribute.isOptional = true
+        meetingConversationStateDataAttribute.allowsExternalBinaryDataStorage = true
+
         let transcriptionContextItemsAttribute = NSAttributeDescription()
         transcriptionContextItemsAttribute.name = "contextItemsData"
         transcriptionContextItemsAttribute.attributeType = .binaryDataAttributeType
@@ -260,6 +266,7 @@ public enum CoreDataModel {
             postProcessingDurationAttribute,
             postProcessingModelAttribute,
             meetingTypeAttribute,
+            meetingConversationStateDataAttribute,
             transcriptionContextItemsAttribute,
             canonicalSummaryDataAttribute,
             transcriptionQualityDataAttribute,

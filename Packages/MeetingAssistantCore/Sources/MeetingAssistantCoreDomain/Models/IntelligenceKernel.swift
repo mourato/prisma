@@ -40,15 +40,18 @@ public struct IntelligenceKernelQuestionRequest: Sendable {
     public let mode: IntelligenceKernelMode
     public let question: String
     public let transcription: Transcription
+    public let modelSelectionOverride: MeetingQAModelSelection?
 
     public init(
         mode: IntelligenceKernelMode,
         question: String,
-        transcription: Transcription
+        transcription: Transcription,
+        modelSelectionOverride: MeetingQAModelSelection? = nil
     ) {
         self.mode = mode
         self.question = question
         self.transcription = transcription
+        self.modelSelectionOverride = modelSelectionOverride
     }
 }
 

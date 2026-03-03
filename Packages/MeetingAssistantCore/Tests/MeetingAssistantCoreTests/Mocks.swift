@@ -239,6 +239,7 @@ class MockMeetingQAService: MeetingQAServiceProtocol {
 
     var askCallCount = 0
     var lastQuestion: String?
+    var lastRequest: IntelligenceKernelQuestionRequest?
     var nextResponse = MeetingQAResponse(
         status: .answered,
         answer: "Mock answer",
@@ -254,7 +255,8 @@ class MockMeetingQAService: MeetingQAServiceProtocol {
     var nextError: MeetingQAError?
 
     func ask(_ request: IntelligenceKernelQuestionRequest) async throws -> MeetingQAResponse {
-        try await ask(question: request.question, transcription: request.transcription)
+        lastRequest = request
+        return try await ask(question: request.question, transcription: request.transcription)
     }
 
     func ask(question: String, transcription _: Transcription) async throws -> MeetingQAResponse {
@@ -300,6 +302,11 @@ class MockStorageService: StorageService, @unchecked Sendable {
     func saveTranscription(_ transcription: Transcription) async throws {
         saveTranscriptionCalled = true
         savedTranscriptions.append(transcription)
+        if let existingIndex = mockTranscriptions.firstIndex(where: { $0.id == transcription.id }) {
+            mockTranscriptions[existingIndex] = transcription
+        } else {
+            mockTranscriptions.append(transcription)
+        }
     }
 
     func loadTranscriptions() async throws -> [Transcription] {

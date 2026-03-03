@@ -29,7 +29,6 @@ public struct EnhancementsProviderModelsPage: View {
     @State private var expandedProvider: AIProvider?
     @State private var editingAPIKeyProvider: AIProvider?
     @State private var modelSelectionTarget: ModelSelectionTarget?
-    @State private var modelSearchText = ""
 
     public init(
         viewModel: AISettingsViewModel,
@@ -65,12 +64,23 @@ public struct EnhancementsProviderModelsPage: View {
             viewModel.refreshEnhancementsProviderModelsManually()
         }
         .sheet(item: $modelSelectionTarget) { target in
-            modelSelectionSheet(for: target)
-        }
-        .onChange(of: modelSelectionTarget) { _, target in
-            if target == nil {
-                modelSearchText = ""
-            }
+            EnhancementsModelSelectionSheet(
+                options: viewModel.enhancementsProviderModels,
+                isSelected: { option in
+                    isSelectedOption(option, for: target)
+                },
+                onSelect: { option in
+                    postProcessingViewModel.settings.updateEnhancementsSelection(
+                        provider: option.provider,
+                        model: option.modelID,
+                        for: target.mode
+                    )
+                    modelSelectionTarget = nil
+                },
+                onCancel: {
+                    modelSelectionTarget = nil
+                }
+            )
         }
     }
 
@@ -364,87 +374,6 @@ public struct EnhancementsProviderModelsPage: View {
             return "settings.enhancements.provider_models.summary.no_model".localized(with: selection.provider.displayName)
         }
         return "settings.enhancements.provider_models.summary".localized(with: selection.provider.displayName, model)
-    }
-
-    private var filteredModelOptions: [EnhancementsProviderModelOption] {
-        let query = modelSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !query.isEmpty else { return viewModel.enhancementsProviderModels }
-        return viewModel.enhancementsProviderModels.filter { option in
-            option.modelID.localizedCaseInsensitiveContains(query)
-                || option.provider.displayName.localizedCaseInsensitiveContains(query)
-        }
-    }
-
-    private func modelSelectionSheet(for target: ModelSelectionTarget) -> some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                HStack(spacing: AppDesignSystem.Layout.spacing12) {
-                    Text("settings.enhancements.model_selector.title".localized)
-                        .font(.headline)
-
-                    Spacer(minLength: AppDesignSystem.Layout.spacing8)
-
-                    modelSelectorSearchField
-                        .frame(width: 320)
-                }
-                .padding(.horizontal, AppDesignSystem.Layout.spacing16)
-                .padding(.top, AppDesignSystem.Layout.spacing12)
-                .padding(.bottom, AppDesignSystem.Layout.spacing8)
-
-                List(filteredModelOptions, id: \.id) { option in
-                    Button {
-                        postProcessingViewModel.settings.updateEnhancementsSelection(
-                            provider: option.provider,
-                            model: option.modelID,
-                            for: target.mode
-                        )
-                        modelSelectionTarget = nil
-                    } label: {
-                        HStack(spacing: AppDesignSystem.Layout.spacing8) {
-                            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing4) {
-                                Text(option.modelID)
-                                    .font(.body)
-                                    .foregroundStyle(.primary)
-                                Text(option.provider.displayName)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            if isSelectedOption(option, for: target) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundStyle(AppDesignSystem.Colors.success)
-                            }
-                        }
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("common.cancel".localized) {
-                        modelSelectionTarget = nil
-                    }
-                }
-            }
-        }
-        .frame(minWidth: 520, minHeight: 420)
-    }
-
-    private var modelSelectorSearchField: some View {
-        HStack(spacing: AppDesignSystem.Layout.spacing8) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
-            TextField(
-                "settings.enhancements.model_selector.search_placeholder".localized,
-                text: $modelSearchText
-            )
-            .textFieldStyle(.plain)
-        }
-        .padding(.horizontal, AppDesignSystem.Layout.spacing10)
-        .padding(.vertical, AppDesignSystem.Layout.spacing8)
-        .frame(height: AppDesignSystem.Layout.compactButtonHeight)
-        .background(AppDesignSystem.Colors.subtleFill)
-        .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
     }
 
     private func isSelectedOption(_ option: EnhancementsProviderModelOption, for target: ModelSelectionTarget) -> Bool {

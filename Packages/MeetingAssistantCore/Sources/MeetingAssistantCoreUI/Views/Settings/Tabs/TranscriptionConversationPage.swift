@@ -1,0 +1,102 @@
+import MeetingAssistantCoreAI
+import MeetingAssistantCoreAudio
+import MeetingAssistantCoreCommon
+import MeetingAssistantCoreData
+import MeetingAssistantCoreDomain
+import MeetingAssistantCoreInfrastructure
+import SwiftUI
+
+struct TranscriptionConversationPage: View {
+    let transcriptionID: UUID
+    let activeTranscription: Transcription?
+    @ObservedObject var viewModel: TranscriptionSettingsViewModel
+    @ObservedObject var dictationService: MeetingQuestionDictationService
+    let onToggleDictation: () -> Void
+    let onBack: () -> Void
+
+    @StateObject private var aiSettingsViewModel: AISettingsViewModel
+
+    init(
+        transcriptionID: UUID,
+        activeTranscription: Transcription?,
+        viewModel: TranscriptionSettingsViewModel,
+        dictationService: MeetingQuestionDictationService,
+        settings: AppSettingsStore = .shared,
+        onToggleDictation: @escaping () -> Void,
+        onBack: @escaping () -> Void
+    ) {
+        self.transcriptionID = transcriptionID
+        self.activeTranscription = activeTranscription
+        self.viewModel = viewModel
+        self.dictationService = dictationService
+        self.onToggleDictation = onToggleDictation
+        self.onBack = onBack
+        _aiSettingsViewModel = StateObject(
+            wrappedValue: AISettingsViewModel(
+                settings: settings,
+                credentialBootstrapPolicy: .deferredUserAction
+            )
+        )
+    }
+
+    var body: some View {
+        let effectiveSelection = viewModel.effectiveMeetingQAModelSelection(for: transcriptionID)
+
+        VStack(spacing: 0) {
+            SettingsSectionHeader(
+                title: "settings.section.history".localized,
+                description: activeTranscription?.meeting.appName
+            )
+            .padding(AppDesignSystem.Layout.spacing16)
+
+            Divider()
+
+            MeetingConversationView(
+                transcription: activeTranscription,
+                isLoadingTranscription: activeTranscription == nil,
+                turns: viewModel.qaHistory(for: transcriptionID),
+                questionText: viewModel.qaQuestion,
+                onQuestionChange: { newValue in
+                    dictationService.clearError()
+                    viewModel.qaQuestion = newValue
+                },
+                onAsk: {
+                    guard let transcription = viewModel.selectedTranscription, transcription.id == transcriptionID else { return }
+                    Task {
+                        await viewModel.submitQuestion(for: transcription)
+                    }
+                },
+                onRetry: { question in
+                    guard let transcription = viewModel.selectedTranscription, transcription.id == transcriptionID else { return }
+                    Task {
+                        await viewModel.retryQuestion(question, for: transcription)
+                    }
+                },
+                isAnswering: viewModel.isAnsweringQuestion,
+                currentErrorMessage: viewModel.qaErrorMessage,
+                effectiveModelSelection: effectiveSelection,
+                modelOptions: aiSettingsViewModel.enhancementsProviderModels,
+                isLoadingModelOptions: aiSettingsViewModel.isLoadingEnhancementsProviderModels,
+                onModelChange: { option in
+                    Task {
+                        await viewModel.updateMeetingQAModelSelection(
+                            provider: option.provider,
+                            model: option.modelID,
+                            for: transcriptionID
+                        )
+                    }
+                },
+                onRefreshModelOptions: {
+                    aiSettingsViewModel.refreshEnhancementsProviderModelsManually()
+                },
+                dictationState: dictationService.state,
+                dictationErrorMessage: dictationService.errorMessage,
+                onToggleDictation: onToggleDictation,
+                onBack: onBack
+            )
+        }
+        .task {
+            aiSettingsViewModel.refreshEnhancementsProviderModelsManually()
+        }
+    }
+}

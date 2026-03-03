@@ -42,6 +42,7 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
     public let postProcessingDuration: Double
     public let postProcessingModel: String?
     public let meetingType: String?
+    public var meetingConversationState: MeetingConversationState?
 
     /// Full initializer with post-processing support.
     public init(
@@ -63,7 +64,8 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
         transcriptionDuration: Double = 0,
         postProcessingDuration: Double = 0,
         postProcessingModel: String? = nil,
-        meetingType: String? = nil
+        meetingType: String? = nil,
+        meetingConversationState: MeetingConversationState? = nil
     ) {
         self.id = id
         self.meeting = meeting
@@ -84,6 +86,7 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
         self.postProcessingDuration = postProcessingDuration
         self.postProcessingModel = postProcessingModel
         self.meetingType = meetingType
+        self.meetingConversationState = meetingConversationState
     }
 
     /// Convenience initializer for backward compatibility (no post-processing).
