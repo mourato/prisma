@@ -30,6 +30,7 @@ STRICT=0
 AGENT_MODE=0
 SPECIFIC_TEST=""
 TEST_FILE=""
+HEARTBEAT_INTERVAL_SEC="${MA_SWIFT_TEST_HEARTBEAT_INTERVAL_SEC:-15}"
 
 if ma_agent_mode_enabled; then
     AGENT_MODE=1
@@ -174,21 +175,69 @@ run_swift_tests() {
     fi
 }
 
+run_swift_tests_with_heartbeat() {
+    (run_swift_tests) >"${LOG_PATH}" 2>&1 &
+    local test_pid=$!
+    local start_time
+    local now
+    local next_heartbeat
+    local elapsed
+    local last_line
+    local progress_counts
+    local executed
+    local passed
+    local failed
+
+    start_time=$(date +%s)
+    next_heartbeat=$((start_time + HEARTBEAT_INTERVAL_SEC))
+
+    while kill -0 "${test_pid}" 2>/dev/null; do
+        sleep 1
+        now=$(date +%s)
+        if [ "${AGENT_MODE}" -eq 0 ] && [ "${QUIET}" -eq 0 ] && [ "${now}" -ge "${next_heartbeat}" ]; then
+            elapsed=$((now - start_time))
+            if progress_counts="$(ma_agent_extract_running_test_counts "${LOG_PATH}")"; then
+                read -r executed passed failed <<< "${progress_counts}"
+                echo -e "${BLUE}... progress (${elapsed}s) | Executed: ${executed} | Passed: ${passed} | Failed: ${failed}${NC}"
+            else
+                last_line="$(tail -n 1 "${LOG_PATH}" 2>/dev/null | tr -d '\r')"
+                if [ -n "${last_line}" ]; then
+                    echo -e "${BLUE}... progress (${elapsed}s) | ${last_line}${NC}"
+                else
+                    echo -e "${BLUE}... progress (${elapsed}s)${NC}"
+                fi
+            fi
+            next_heartbeat=$((now + HEARTBEAT_INTERVAL_SEC))
+        fi
+    done
+
+    wait "${test_pid}"
+    EXIT_CODE=$?
+}
+
 START_TIME=$(date +%s)
 if [ "${VERBOSE}" -eq 1 ] && [ "${AGENT_MODE}" -eq 0 ] && [ "${QUIET}" -eq 0 ]; then
     (run_swift_tests) 2>&1 | tee "${LOG_PATH}"
     EXIT_CODE=${PIPESTATUS[0]}
 else
-    (run_swift_tests) >"${LOG_PATH}" 2>&1
-    EXIT_CODE=$?
+    run_swift_tests_with_heartbeat
 fi
 END_TIME=$(date +%s)
 DURATION=$((END_TIME - START_TIME))
 
-RESULT_LINE="$(grep -E "Executed [0-9]+ tests?, with [0-9]+ failures?" "${LOG_PATH}" | tail -n 1 || true)"
-if [ -z "${RESULT_LINE}" ] && [ "${EXIT_CODE}" -eq 0 ]; then
+RESULT_LINE=""
+TEST_TOTAL=""
+TEST_PASSED=""
+TEST_FAILED=""
+if TEST_COUNTS="$(ma_agent_extract_test_counts "${LOG_PATH}")"; then
+    read -r TEST_TOTAL TEST_PASSED TEST_FAILED <<< "${TEST_COUNTS}"
+fi
+
+if [ -n "${TEST_TOTAL}" ]; then
+    RESULT_LINE="Total: ${TEST_TOTAL} | Passed: ${TEST_PASSED} | Failed: ${TEST_FAILED}"
+elif [ "${EXIT_CODE}" -eq 0 ]; then
     RESULT_LINE="All tests passed"
-elif [ -z "${RESULT_LINE}" ]; then
+else
     RESULT_LINE="Tests failed"
 fi
 

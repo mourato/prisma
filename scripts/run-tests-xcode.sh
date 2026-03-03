@@ -128,6 +128,10 @@ run_xcode_tests_with_heartbeat() {
     local next_heartbeat
     local elapsed
     local last_line
+    local progress_counts
+    local executed
+    local passed
+    local failed
 
     start_time=$(date +%s)
     next_heartbeat=$((start_time + HEARTBEAT_INTERVAL_SEC))
@@ -137,11 +141,16 @@ run_xcode_tests_with_heartbeat() {
         now=$(date +%s)
         if [ "${AGENT_MODE}" -eq 0 ] && [ "${QUIET}" -eq 0 ] && [ "${now}" -ge "${next_heartbeat}" ]; then
             elapsed=$((now - start_time))
-            last_line="$(tail -n 1 "${LOG_PATH}" 2>/dev/null | tr -d '\r')"
-            if [ -n "${last_line}" ]; then
-                echo -e "${BLUE}... still running (${elapsed}s) | ${last_line}${NC}"
+            if progress_counts="$(ma_agent_extract_running_test_counts "${LOG_PATH}")"; then
+                read -r executed passed failed <<< "${progress_counts}"
+                echo -e "${BLUE}... still running (${elapsed}s) | Executed: ${executed} | Passed: ${passed} | Failed: ${failed}${NC}"
             else
-                echo -e "${BLUE}... still running (${elapsed}s)${NC}"
+                last_line="$(tail -n 1 "${LOG_PATH}" 2>/dev/null | tr -d '\r')"
+                if [ -n "${last_line}" ]; then
+                    echo -e "${BLUE}... still running (${elapsed}s) | ${last_line}${NC}"
+                else
+                    echo -e "${BLUE}... still running (${elapsed}s)${NC}"
+                fi
             fi
             next_heartbeat=$((now + HEARTBEAT_INTERVAL_SEC))
         fi
@@ -224,21 +233,42 @@ if [ "${EXIT_CODE}" -ne 0 ] && is_recoverable_runner_failure "${LOG_PATH}"; then
     fi
 fi
 
+METRICS_LOG_PATH="${LOG_PATH}"
+if [ "${FALLBACK_USED}" -eq 1 ] && [ -f "${FALLBACK_LOG_PATH}" ]; then
+    METRICS_LOG_PATH="${FALLBACK_LOG_PATH}"
+fi
+
+TEST_TOTAL=""
+TEST_PASSED=""
+TEST_FAILED=""
+if TEST_COUNTS="$(ma_agent_extract_test_counts "${METRICS_LOG_PATH}")"; then
+    read -r TEST_TOTAL TEST_PASSED TEST_FAILED <<< "${TEST_COUNTS}"
+fi
+
+RESULT_PREFIX="Tests failed"
+if [ "${EXIT_CODE}" -eq 0 ]; then
+    RESULT_PREFIX="All tests passed"
+    if [ "${FALLBACK_USED}" -eq 1 ]; then
+        RESULT_PREFIX="xcodebuild runner failed; swift test fallback passed"
+    elif [ "${RETRY_USED}" -eq 1 ]; then
+        RESULT_PREFIX="xcodebuild runner failed once; retry passed"
+    fi
+elif [ "${FALLBACK_USED}" -eq 1 ]; then
+    RESULT_PREFIX="xcodebuild runner failed; swift test fallback also failed"
+elif [ "${RETRY_USED}" -eq 1 ]; then
+    RESULT_PREFIX="xcodebuild runner failed twice"
+fi
+
+if [ -n "${TEST_TOTAL}" ]; then
+    RESULT_LINE="${RESULT_PREFIX} | Total: ${TEST_TOTAL} | Passed: ${TEST_PASSED} | Failed: ${TEST_FAILED}"
+else
+    RESULT_LINE="${RESULT_PREFIX}"
+fi
+
 if [ "${AGENT_MODE}" -eq 1 ]; then
     STATUS="FAIL"
-    RESULT_LINE="Tests failed"
     if [ "${EXIT_CODE}" -eq 0 ]; then
         STATUS="PASS"
-        RESULT_LINE="All tests passed"
-        if [ "${FALLBACK_USED}" -eq 1 ]; then
-            RESULT_LINE="xcodebuild runner failed; swift test fallback passed"
-        elif [ "${RETRY_USED}" -eq 1 ]; then
-            RESULT_LINE="xcodebuild runner failed once; retry passed"
-        fi
-    elif [ "${FALLBACK_USED}" -eq 1 ]; then
-        RESULT_LINE="xcodebuild runner failed; swift test fallback also failed"
-    elif [ "${RETRY_USED}" -eq 1 ]; then
-        RESULT_LINE="xcodebuild runner failed twice"
     fi
 
     if [ "${EXIT_CODE}" -ne 0 ]; then
@@ -279,20 +309,6 @@ if [ "${EXIT_CODE}" -ne 0 ] && [ "${VERBOSE}" -eq 0 ]; then
         echo ""
         cat "${FALLBACK_LOG_PATH}"
     fi
-fi
-
-RESULT_LINE="Tests failed"
-if [ "${EXIT_CODE}" -eq 0 ]; then
-    RESULT_LINE="All tests passed"
-    if [ "${FALLBACK_USED}" -eq 1 ]; then
-        RESULT_LINE="xcodebuild runner failed; swift test fallback passed"
-    elif [ "${RETRY_USED}" -eq 1 ]; then
-        RESULT_LINE="xcodebuild runner failed once; retry passed"
-    fi
-elif [ "${FALLBACK_USED}" -eq 1 ]; then
-    RESULT_LINE="xcodebuild runner failed; swift test fallback also failed"
-elif [ "${RETRY_USED}" -eq 1 ]; then
-    RESULT_LINE="xcodebuild runner failed twice"
 fi
 
 if [ "${EXIT_CODE}" -eq 0 ]; then

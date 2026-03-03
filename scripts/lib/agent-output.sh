@@ -161,6 +161,77 @@ ma_agent_error_count() {
     printf '%s\n' "${count}"
 }
 
+# Extract test totals from XCTest summary lines in logs.
+# Output format: "<total> <passed> <failed>"
+ma_agent_extract_test_counts() {
+    local log_path="$1"
+    local result_line
+    local total
+    local failed
+    local passed
+
+    if [ ! -f "${log_path}" ]; then
+        return 1
+    fi
+
+    result_line="$(grep -E "Executed [0-9]+ tests?, with [0-9]+ failures?" "${log_path}" | tail -n 1 || true)"
+    if [ -z "${result_line}" ]; then
+        return 1
+    fi
+
+    total="$(echo "${result_line}" | sed -E 's/.*Executed ([0-9]+) tests?.*/\1/')"
+    failed="$(echo "${result_line}" | sed -E 's/.*with ([0-9]+) failures?.*/\1/')"
+
+    if ! [[ "${total}" =~ ^[0-9]+$ ]] || ! [[ "${failed}" =~ ^[0-9]+$ ]]; then
+        return 1
+    fi
+
+    passed=$((total - failed))
+    if [ "${passed}" -lt 0 ]; then
+        passed=0
+    fi
+
+    printf '%s %s %s\n' "${total}" "${passed}" "${failed}"
+}
+
+# Extract running test progress from per-test result lines.
+# Output format: "<executed> <passed> <failed>"
+ma_agent_extract_running_test_counts() {
+    local log_path="$1"
+    local executed
+    local failed
+    local passed
+
+    if [ ! -f "${log_path}" ]; then
+        return 1
+    fi
+
+    executed="$(grep -Eic "Test Case .* (passed|failed)" "${log_path}" || true)"
+    failed="$(grep -Eic "Test Case .* failed" "${log_path}" || true)"
+
+    if [ -z "${executed}" ]; then
+        executed=0
+    fi
+    if [ -z "${failed}" ]; then
+        failed=0
+    fi
+
+    if ! [[ "${executed}" =~ ^[0-9]+$ ]] || ! [[ "${failed}" =~ ^[0-9]+$ ]]; then
+        return 1
+    fi
+
+    if [ "${executed}" -eq 0 ]; then
+        return 1
+    fi
+
+    passed=$((executed - failed))
+    if [ "${passed}" -lt 0 ]; then
+        passed=0
+    fi
+
+    printf '%s %s %s\n' "${executed}" "${passed}" "${failed}"
+}
+
 ma_agent_failure_excerpt() {
     local log_path="$1"
     local pattern="${2:-error:|fatal error:|failed}"
