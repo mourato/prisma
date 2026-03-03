@@ -20,14 +20,14 @@ public struct AudioWaveformView: View {
 
     public var body: some View {
         GeometryReader { geometry in
-            HStack(spacing: 2) {
+            HStack(spacing: 1) {
                 ForEach(0..<samples.count, id: \.self) { index in
                     let sampleProgress = Double(index) / Double(samples.count)
                     let isActive = sampleProgress <= progress
 
                     RoundedRectangle(cornerRadius: 1)
                         .fill(isActive ? color : color.opacity(0.3))
-                        .frame(height: geometry.size.height * CGFloat(samples[index]))
+                        .frame(minWidth: 1, height: geometry.size.height * CGFloat(samples[index]))
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
