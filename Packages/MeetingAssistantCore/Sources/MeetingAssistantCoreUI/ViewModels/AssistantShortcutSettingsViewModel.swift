@@ -16,7 +16,6 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
 
     @Published public var useEscapeToCancelRecording: Bool
-    @Published public var useEnterToStopRecording: Bool
     @Published public var selectedPresetKey: PresetShortcutKey
     @Published public var assistantShortcutDefinition: ShortcutDefinition?
     @Published public var assistantModifierConflictMessage: String?
@@ -30,7 +29,6 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
 
     public init() {
         useEscapeToCancelRecording = settings.assistantUseEscapeToCancelRecording
-        useEnterToStopRecording = settings.assistantUseEnterToStopRecording
         selectedPresetKey = settings.assistantSelectedPresetKey
         assistantShortcutDefinition = settings.assistantShortcutDefinition
         assistantModifierConflictMessage = nil
@@ -54,13 +52,6 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
             .dropFirst()
             .sink { [weak self] newValue in
                 self?.settings.assistantUseEscapeToCancelRecording = newValue
-            }
-            .store(in: &cancellables)
-
-        $useEnterToStopRecording
-            .dropFirst()
-            .sink { [weak self] newValue in
-                self?.settings.assistantUseEnterToStopRecording = newValue
             }
             .store(in: &cancellables)
 
@@ -130,7 +121,7 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
         }
 
         if let newValue,
-           ShortcutDefinitionNormalizer.normalized(newValue) == nil
+           ShortcutDefinitionNormalizer.normalized(newValue, allowReturnOrEnter: false) == nil
         {
             isApplyingModifierShortcutChange = true
             assistantShortcutDefinition = settings.assistantShortcutDefinition
@@ -139,7 +130,10 @@ public final class AssistantShortcutSettingsViewModel: ObservableObject {
             return
         }
 
-        guard let normalizedValue = ShortcutDefinitionNormalizer.normalized(newValue) else {
+        guard let normalizedValue = ShortcutDefinitionNormalizer.normalized(
+            newValue,
+            allowReturnOrEnter: false
+        ) else {
             settings.assistantModifierShortcutGesture = nil
             settings.assistantShortcutDefinition = nil
             settings.assistantSelectedPresetKey = .notSpecified

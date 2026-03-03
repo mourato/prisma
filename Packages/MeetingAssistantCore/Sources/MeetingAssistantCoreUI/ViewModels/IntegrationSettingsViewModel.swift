@@ -122,7 +122,7 @@ public final class IntegrationSettingsViewModel: ObservableObject {
     @discardableResult
     public func saveIntegrationWithModifierValidation(_ integration: AssistantIntegrationConfig) -> String? {
         if let shortcut = integration.shortcutDefinition,
-           ShortcutDefinitionNormalizer.normalized(shortcut) == nil
+           ShortcutDefinitionNormalizer.normalized(shortcut, allowReturnOrEnter: false) == nil
         {
             return "settings.shortcuts.modifier.primary_key_required".localized
         }
@@ -284,12 +284,19 @@ public final class IntegrationSettingsViewModel: ObservableObject {
 
     private func normalizedIntegration(_ integration: AssistantIntegrationConfig) -> AssistantIntegrationConfig {
         var normalized = integration
-        let resolvedShortcut = ShortcutDefinitionNormalizer.normalized(integration.shortcutDefinition) ??
-            ShortcutDefinitionNormalizer.normalized(integration.modifierShortcutGesture?.asShortcutDefinition) ??
+        let resolvedShortcut = ShortcutDefinitionNormalizer.normalized(
+            integration.shortcutDefinition,
+            allowReturnOrEnter: false
+        ) ??
+            ShortcutDefinitionNormalizer.normalized(
+                integration.modifierShortcutGesture?.asShortcutDefinition,
+                allowReturnOrEnter: false
+            ) ??
             ShortcutDefinitionNormalizer.normalized(
                 integration.shortcutPresetKey
                     .asLegacyModifierGesture(activationMode: integration.shortcutActivationMode)?
-                    .asShortcutDefinition
+                    .asShortcutDefinition,
+                allowReturnOrEnter: false
             )
 
         normalized.shortcutDefinition = resolvedShortcut
@@ -302,12 +309,19 @@ public final class IntegrationSettingsViewModel: ObservableObject {
             return nil
         }
 
-        let resolvedShortcut = ShortcutDefinitionNormalizer.normalized(integration.shortcutDefinition) ??
-            ShortcutDefinitionNormalizer.normalized(integration.modifierShortcutGesture?.asShortcutDefinition) ??
+        let resolvedShortcut = ShortcutDefinitionNormalizer.normalized(
+            integration.shortcutDefinition,
+            allowReturnOrEnter: false
+        ) ??
+            ShortcutDefinitionNormalizer.normalized(
+                integration.modifierShortcutGesture?.asShortcutDefinition,
+                allowReturnOrEnter: false
+            ) ??
             ShortcutDefinitionNormalizer.normalized(
                 integration.shortcutPresetKey
                     .asLegacyModifierGesture(activationMode: integration.shortcutActivationMode)?
-                    .asShortcutDefinition
+                    .asShortcutDefinition,
+                allowReturnOrEnter: false
             )
         guard let resolvedShortcut else {
             return nil

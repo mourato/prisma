@@ -24,7 +24,8 @@ public extension AppSettingsStore {
             shortcut: dictationShortcutDefinition,
             explicitGesture: dictationModifierShortcutGesture,
             legacyPresetKey: dictationSelectedPresetKey,
-            activationMode: dictationShortcutActivationMode
+            activationMode: dictationShortcutActivationMode,
+            allowReturnOrEnter: false
         )
 
         appendResolvedShortcutBinding(
@@ -34,7 +35,8 @@ public extension AppSettingsStore {
             shortcut: assistantShortcutDefinition,
             explicitGesture: assistantModifierShortcutGesture,
             legacyPresetKey: assistantSelectedPresetKey,
-            activationMode: assistantShortcutActivationMode
+            activationMode: assistantShortcutActivationMode,
+            allowReturnOrEnter: false
         )
 
         appendResolvedShortcutBinding(
@@ -63,16 +65,28 @@ public extension AppSettingsStore {
         for integration in assistantIntegrations where integration.isEnabled {
             let resolvedShortcut = integration.shortcutDefinition
                 .flatMap {
-                    normalizedInHouseShortcutDefinition($0, activationMode: integration.shortcutActivationMode)
+                    normalizedInHouseShortcutDefinition(
+                        $0,
+                        activationMode: integration.shortcutActivationMode,
+                        allowReturnOrEnter: false
+                    )
                 } ??
                 integration.modifierShortcutGesture
                 .flatMap {
-                    normalizedInHouseShortcutDefinition($0.asShortcutDefinition, activationMode: integration.shortcutActivationMode)
+                    normalizedInHouseShortcutDefinition(
+                        $0.asShortcutDefinition,
+                        activationMode: integration.shortcutActivationMode,
+                        allowReturnOrEnter: false
+                    )
                 } ??
                 integration.shortcutPresetKey
                 .asLegacyModifierGesture(activationMode: integration.shortcutActivationMode)
                 .flatMap {
-                    normalizedInHouseShortcutDefinition($0.asShortcutDefinition, activationMode: integration.shortcutActivationMode)
+                    normalizedInHouseShortcutDefinition(
+                        $0.asShortcutDefinition,
+                        activationMode: integration.shortcutActivationMode,
+                        allowReturnOrEnter: false
+                    )
                 }
 
             guard let resolvedShortcut, !resolvedShortcut.isEmpty else {
@@ -133,12 +147,14 @@ extension AppSettingsStore {
     static func resolveShortcutDefinition(
         explicitGesture: ModifierShortcutGesture?,
         legacyPresetKey: PresetShortcutKey,
-        activationMode: ShortcutActivationMode
+        activationMode: ShortcutActivationMode,
+        allowReturnOrEnter: Bool = true
     ) -> ShortcutDefinition? {
         if let explicitGesture {
             return normalizedInHouseShortcutDefinition(
                 explicitGesture.asShortcutDefinition,
-                activationMode: activationMode
+                activationMode: activationMode,
+                allowReturnOrEnter: allowReturnOrEnter
             )
         }
 
@@ -148,7 +164,8 @@ extension AppSettingsStore {
 
         return normalizedInHouseShortcutDefinition(
             legacyGesture.asShortcutDefinition,
-            activationMode: activationMode
+            activationMode: activationMode,
+            allowReturnOrEnter: allowReturnOrEnter
         )
     }
 
@@ -159,13 +176,15 @@ extension AppSettingsStore {
         shortcut: ShortcutDefinition?,
         explicitGesture: ModifierShortcutGesture?,
         legacyPresetKey: PresetShortcutKey,
-        activationMode: ShortcutActivationMode
+        activationMode: ShortcutActivationMode,
+        allowReturnOrEnter: Bool = true
     ) {
         let resolvedShortcut = shortcut ??
             Self.resolveShortcutDefinition(
                 explicitGesture: explicitGesture,
                 legacyPresetKey: legacyPresetKey,
-                activationMode: activationMode
+                activationMode: activationMode,
+                allowReturnOrEnter: allowReturnOrEnter
             )
         guard let resolvedShortcut, !resolvedShortcut.isEmpty else {
             return
@@ -192,16 +211,28 @@ extension AppSettingsStore {
 
             let normalizedShortcut = normalized.shortcutDefinition
                 .flatMap {
-                    normalizedInHouseShortcutDefinition($0, activationMode: normalized.shortcutActivationMode)
+                    normalizedInHouseShortcutDefinition(
+                        $0,
+                        activationMode: normalized.shortcutActivationMode,
+                        allowReturnOrEnter: false
+                    )
                 } ??
                 normalized.modifierShortcutGesture
                 .flatMap {
-                    normalizedInHouseShortcutDefinition($0.asShortcutDefinition, activationMode: normalized.shortcutActivationMode)
+                    normalizedInHouseShortcutDefinition(
+                        $0.asShortcutDefinition,
+                        activationMode: normalized.shortcutActivationMode,
+                        allowReturnOrEnter: false
+                    )
                 } ??
                 normalized.shortcutPresetKey
                 .asLegacyModifierGesture(activationMode: normalized.shortcutActivationMode)
                 .flatMap {
-                    normalizedInHouseShortcutDefinition($0.asShortcutDefinition, activationMode: normalized.shortcutActivationMode)
+                    normalizedInHouseShortcutDefinition(
+                        $0.asShortcutDefinition,
+                        activationMode: normalized.shortcutActivationMode,
+                        allowReturnOrEnter: false
+                    )
                 }
             normalized.shortcutDefinition = normalizedShortcut
 

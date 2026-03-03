@@ -1,4 +1,4 @@
-import AppKit
+import Foundation
 import MeetingAssistantCore
 
 @MainActor
@@ -20,37 +20,5 @@ extension AssistantShortcutController {
         let interval = currentDoubleTapInterval
         shortcutHandler.setDoubleTapInterval(interval)
         integrationShortcutHandlers.values.forEach { $0.setDoubleTapInterval(interval) }
-    }
-
-    func handleSingleEnterStop(_ event: NSEvent) -> Bool {
-        guard settings.assistantUseEnterToStopRecording else {
-            return false
-        }
-
-        guard assistantService.isRecording else {
-            return false
-        }
-
-        guard !event.isARepeat else {
-            return false
-        }
-
-        guard event.keyCode == returnKeyCode || event.keyCode == keypadEnterKeyCode else {
-            return false
-        }
-
-        let relevantFlags = event.modifierFlags
-            .intersection(.deviceIndependentFlagsMask)
-            .subtracting([.capsLock, .numericPad])
-
-        guard relevantFlags.isEmpty else {
-            return false
-        }
-
-        Task { @MainActor [weak self] in
-            await self?.assistantService.stopAndProcess()
-        }
-
-        return true
     }
 }

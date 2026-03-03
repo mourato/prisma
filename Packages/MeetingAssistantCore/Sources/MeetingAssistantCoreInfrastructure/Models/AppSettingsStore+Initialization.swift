@@ -253,7 +253,7 @@ extension AppSettingsStore {
         return AssistantSettingsValues(
             assistantShortcutActivationMode: activationMode,
             assistantUseEscapeToCancelRecording: UserDefaults.standard.bool(forKey: Keys.assistantUseEscapeToCancelRecording),
-            assistantUseEnterToStopRecording: UserDefaults.standard.bool(forKey: Keys.assistantUseEnterToStopRecording),
+            assistantUseEnterToStopRecording: false,
             assistantSelectedPresetKey: presetKey,
             assistantIntegrations: context.loadedIntegrations ?? [AssistantIntegrationConfig.defaultRaycast],
             assistantSelectedIntegrationId: rawSelectedIntegrationId.flatMap(UUID.init(uuidString:)),
@@ -424,19 +424,33 @@ extension AppSettingsStore {
     ) {
         (
             context.loadedDictationShortcutDefinition
-                .flatMap { normalizedInHouseShortcutDefinition($0, activationMode: config.dictationActivationMode) } ??
+                .flatMap {
+                    normalizedInHouseShortcutDefinition(
+                        $0,
+                        activationMode: config.dictationActivationMode,
+                        allowReturnOrEnter: false
+                    )
+                } ??
                 resolveShortcutDefinition(
                     explicitGesture: config.dictationModifierGesture,
                     legacyPresetKey: config.dictationPresetKey,
-                    activationMode: config.dictationActivationMode
+                    activationMode: config.dictationActivationMode,
+                    allowReturnOrEnter: false
                 ) ??
                 defaultDictationShortcutDefinition,
             context.loadedAssistantShortcutDefinition
-                .flatMap { normalizedInHouseShortcutDefinition($0, activationMode: config.assistantActivationMode) } ??
+                .flatMap {
+                    normalizedInHouseShortcutDefinition(
+                        $0,
+                        activationMode: config.assistantActivationMode,
+                        allowReturnOrEnter: false
+                    )
+                } ??
                 resolveShortcutDefinition(
                     explicitGesture: config.assistantModifierGesture,
                     legacyPresetKey: config.assistantPresetKey,
-                    activationMode: config.assistantActivationMode
+                    activationMode: config.assistantActivationMode,
+                    allowReturnOrEnter: false
                 ) ??
                 defaultAssistantShortcutDefinition,
             context.loadedMeetingShortcutDefinition
@@ -524,6 +538,7 @@ extension AppSettingsStore {
 
         UserDefaults.standard.set(assistantRaycastEnabled, forKey: Keys.assistantRaycastEnabled)
         UserDefaults.standard.set(assistantRaycastDeepLink, forKey: Keys.assistantRaycastDeepLink)
+        UserDefaults.standard.removeObject(forKey: Keys.assistantUseEnterToStopRecording)
 
         if context.hasPersistedLegacyPerTargetBrowsers, !context.hasGlobalBrowserSetting {
             migrateWebTargetBrowsersToGlobalSettingIfNeeded()

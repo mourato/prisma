@@ -106,13 +106,6 @@ public struct AssistantSettingsTab: View {
                         shortcut: $viewModel.assistantShortcutDefinition,
                         conflictMessage: viewModel.assistantModifierConflictMessage
                     )
-
-                    Divider()
-
-                    DSToggleRow(
-                        "settings.assistant.use_enter_stop".localized,
-                        isOn: $viewModel.useEnterToStopRecording
-                    )
                 }
             }
         )

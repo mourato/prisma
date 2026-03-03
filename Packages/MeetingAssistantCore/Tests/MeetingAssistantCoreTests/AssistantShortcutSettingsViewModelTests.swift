@@ -38,13 +38,22 @@ final class AssistantShortcutSettingsViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.selectedPresetKey, .notSpecified)
     }
 
-    func testUseEnterToStopRecordingPersistsInSettings() async {
+    func testAssistantShortcutRejectsEnterKey() async {
         let viewModel = AssistantShortcutSettingsViewModel()
+        let enterShortcut = ShortcutDefinition(
+            modifiers: [.command],
+            primaryKey: .symbol("↩", keyCode: 0x24),
+            trigger: .singleTap
+        )
 
-        viewModel.useEnterToStopRecording = true
+        viewModel.assistantShortcutDefinition = enterShortcut
         await Task.yield()
 
-        XCTAssertTrue(settings.assistantUseEnterToStopRecording)
+        XCTAssertEqual(settings.assistantShortcutDefinition, AppSettingsStore.defaultAssistantShortcutDefinition)
+        XCTAssertEqual(
+            viewModel.assistantModifierConflictMessage,
+            "settings.shortcuts.modifier.primary_key_required".localized
+        )
     }
 
     func testShortcutCaptureHealthPresentationUpdatesWhenAssistantFallbackIsActive() async {

@@ -106,7 +106,11 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
         self.promptInstructions = promptInstructions
         self.selectedPreset = selectedPreset
         self.shortcutDefinition = shortcutDefinition.flatMap {
-            normalizedInHouseShortcutDefinition($0, activationMode: shortcutActivationMode)
+            normalizedInHouseShortcutDefinition(
+                $0,
+                activationMode: shortcutActivationMode,
+                allowReturnOrEnter: false
+            )
         }
         self.shortcutPresetKey = shortcutPresetKey
         self.shortcutActivationMode = shortcutActivationMode
@@ -150,15 +154,27 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
 
         let decodedShortcutDefinition = try container.decodeIfPresent(ShortcutDefinition.self, forKey: .shortcutDefinition)
         let normalizedDecodedShortcut = decodedShortcutDefinition.flatMap {
-            normalizedInHouseShortcutDefinition($0, activationMode: shortcutActivationMode)
+            normalizedInHouseShortcutDefinition(
+                $0,
+                activationMode: shortcutActivationMode,
+                allowReturnOrEnter: false
+            )
         }
         let normalizedGestureShortcut = modifierShortcutGesture.flatMap {
-            normalizedInHouseShortcutDefinition($0.asShortcutDefinition, activationMode: shortcutActivationMode)
+            normalizedInHouseShortcutDefinition(
+                $0.asShortcutDefinition,
+                activationMode: shortcutActivationMode,
+                allowReturnOrEnter: false
+            )
         }
         let normalizedLegacyShortcut = shortcutPresetKey
             .asLegacyModifierGesture(activationMode: shortcutActivationMode)
             .flatMap {
-                normalizedInHouseShortcutDefinition($0.asShortcutDefinition, activationMode: shortcutActivationMode)
+                normalizedInHouseShortcutDefinition(
+                    $0.asShortcutDefinition,
+                    activationMode: shortcutActivationMode,
+                    allowReturnOrEnter: false
+                )
             }
         shortcutDefinition = normalizedDecodedShortcut ?? normalizedGestureShortcut ?? normalizedLegacyShortcut
 

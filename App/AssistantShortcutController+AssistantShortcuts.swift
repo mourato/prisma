@@ -14,10 +14,6 @@ extension AssistantShortcutController {
     }
 
     func handleKeyDown(_ event: ShortcutInputEvent) {
-        if handleSingleEnterStop(event: event) {
-            return
-        }
-
         if handleShortcutLayerKeyDown(event: event) {
             return
         }
@@ -97,13 +93,6 @@ extension AssistantShortcutController {
     func handleShortcutLayerKeyDown(event: ShortcutInputEvent) -> Bool {
         guard isShortcutLayerArmed else { return false }
         // Implementation delegated to existing logic
-        return false
-    }
-
-    func handleSingleEnterStop(event: ShortcutInputEvent) -> Bool {
-        guard event.keyCode == returnKeyCode || event.keyCode == keypadEnterKeyCode else {
-            return false
-        }
         return false
     }
 
