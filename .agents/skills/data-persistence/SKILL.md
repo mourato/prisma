@@ -26,3 +26,30 @@ Guidelines for choosing the right storage mechanism and ensuring data integrity 
 - **Abstraction**: Use protocol-based repositories to decouple business logic from the specific persistence implementation.
 - **Error Handling**: Gracefully handle missing data or corruption; provide default states where necessary.
 - **Cleanup**: Implement data pruning or expiration policies for cached or temporary data.
+
+## 2026-03 Operational Update
+
+### Repository Persistence Hotspots
+
+Prioritize these files when storage behavior changes:
+
+- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreData/Data/CoreData/CoreDataStack.swift`
+- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreData/Services/StorageService.swift`
+- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreInfrastructure/Services/KeychainManager.swift`
+
+### Migration Invariants (Must Hold)
+
+For rename/migration work, verify all invariants:
+
+1. Existing user defaults remain readable after migration.
+2. Keychain identifiers continue resolving previous credentials.
+3. Persistent store path migration is deterministic and idempotent.
+4. Retention cleanup never deletes dashboard history unexpectedly.
+5. Failure path preserves recoverability (no partial destructive migration).
+
+### Persistence Change Workflow
+
+1. Define target invariant set before implementation.
+2. Reuse existing repository/storage abstractions (`reuse -> extend -> create`).
+3. Add tests for forward migration and no-op re-run migration.
+4. Validate cleanup logic with realistic historical data fixtures.
