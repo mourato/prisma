@@ -56,26 +56,28 @@ public struct OnboardingPermissionItem: Hashable, Sendable {
     }
 
     /// All permissions required for onboarding.
-    public static let allPermissions: [OnboardingPermissionItem] = [
-        OnboardingPermissionItem(
-            type: .microphone,
-            titleKey: "onboarding.permissions.microphone.title",
-            descriptionKey: "onboarding.permissions.microphone.desc",
-            iconName: "mic.fill"
-        ),
-        OnboardingPermissionItem(
-            type: .screenRecording,
-            titleKey: "onboarding.permissions.screen_recording.title",
-            descriptionKey: "onboarding.permissions.screen_recording.desc",
-            iconName: "rectangle.on.rectangle"
-        ),
-        OnboardingPermissionItem(
-            type: .accessibility,
-            titleKey: "onboarding.permissions.accessibility.title",
-            descriptionKey: "onboarding.permissions.accessibility.desc",
-            iconName: "figure.wave"
-        ),
-    ]
+    public static var allPermissions: [OnboardingPermissionItem] {
+        [
+            OnboardingPermissionItem(
+                type: .microphone,
+                titleKey: "onboarding.permissions.microphone.title",
+                descriptionKey: "onboarding.permissions.microphone.desc",
+                iconName: "mic.fill"
+            ),
+            OnboardingPermissionItem(
+                type: .screenRecording,
+                titleKey: "onboarding.permissions.screen_recording.title",
+                descriptionKey: "onboarding.permissions.screen_recording.desc",
+                iconName: "rectangle.on.rectangle"
+            ),
+            OnboardingPermissionItem(
+                type: .accessibility,
+                titleKey: "onboarding.permissions.accessibility.title",
+                descriptionKey: "onboarding.permissions.accessibility.desc",
+                iconName: "figure.wave"
+            ),
+        ]
+    }
 }
 
 // MARK: - Onboarding Shortcut Type
@@ -108,5 +110,7 @@ public struct OnboardingShortcutItem: Hashable, Sendable {
     }
 
     /// All shortcuts configurable during onboarding.
-    public static let allShortcuts: [OnboardingShortcutItem] = OnboardingShortcutType.allCases.map { OnboardingShortcutItem(type: $0) }
+    public static var allShortcuts: [OnboardingShortcutItem] {
+        OnboardingShortcutType.allCases.map { OnboardingShortcutItem(type: $0) }
+    }
 }
