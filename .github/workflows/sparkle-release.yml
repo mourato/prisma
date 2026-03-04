@@ -1,77 +1,210 @@
 # Sparkle Release Workflow
 #
-# Triggered when a GitHub Release is published. Builds the app, generates the
-# Sparkle appcast, uploads the archive as a release asset, and pushes the
-# updated appcast.xml to the gh-pages branch for GitHub Pages hosting.
+# Triggers:
+# - release.published: production publish path
+# - workflow_dispatch: manual validation path (supports dry-run)
 #
-# Required GitHub Secrets:
-#   SPARKLE_PRIVATE_KEY  – EdDSA private key from `generate_keys --export-private-key`
+# Required GitHub Secrets (Phase 1):
+#   SPARKLE_PRIVATE_KEY_B64  – base64 of EdDSA private key from Sparkle
 #
-# TODO: Add Apple Developer ID signing and notarization steps for production.
+# TODO (Phase 2): Add Developer ID signing + notarization.
 
 name: Sparkle Release
 
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Git tag to validate/build (e.g., v0.3.3)"
+        required: true
+        type: string
+      dry_run:
+        description: "Run full pipeline but skip release upload and gh-pages push"
+        required: false
+        default: true
+        type: boolean
 
-permissions:
-  contents: write
-  pages: write
+concurrency:
+  group: sparkle-release-${{ github.event.release.tag_name || github.event.inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+permissions: {}
 
 env:
   APP_NAME: Prisma
   SCHEME: MeetingAssistant
   XCODE_PROJECT: MeetingAssistant.xcodeproj
   ARCHIVE_PATH: build/Prisma.xcarchive
-  EXPORT_PATH: build/export
+  XCODE_APP: /Applications/Xcode_16.4.app
+  XCODE_VERSION: "16.4"
+  DERIVED_DATA_PATH: ${{ runner.temp }}/DerivedData
 
 jobs:
-  build-and-publish:
-    name: Build, Sign & Publish Update
+  build:
+    name: Build Release Inputs
     runs-on: macos-15
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    outputs:
+      release_tag: ${{ steps.release_meta.outputs.release_tag }}
+      dry_run: ${{ steps.release_meta.outputs.dry_run }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      - name: Resolve release metadata
+        id: release_meta
+        run: |
+          set -euo pipefail
+
+          if [ "${{ github.event_name }}" = "release" ]; then
+            RELEASE_TAG="${{ github.event.release.tag_name }}"
+            DRY_RUN="false"
+          else
+            RELEASE_TAG="${{ github.event.inputs.tag }}"
+            DRY_RUN="${{ github.event.inputs.dry_run }}"
+          fi
+
+          if [ -z "${RELEASE_TAG}" ]; then
+            echo "::error::Release tag is required."
+            exit 1
+          fi
+
+          if [ -z "${DRY_RUN}" ]; then
+            DRY_RUN="true"
+          fi
+
+          echo "release_tag=${RELEASE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "dry_run=${DRY_RUN}" >> "$GITHUB_OUTPUT"
+          echo "Resolved release tag: ${RELEASE_TAG}"
+          echo "Dry-run mode: ${DRY_RUN}"
+
       - name: Validate release tag is main HEAD
         run: |
           set -euo pipefail
+          RELEASE_TAG="${{ steps.release_meta.outputs.release_tag }}"
+
           git fetch --no-tags origin main
+          git fetch --force --tags origin "refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}"
 
-          CURRENT_SHA="$(git rev-parse HEAD)"
-          MAIN_SHA="$(git rev-parse FETCH_HEAD)"
+          TAG_SHA="$(git rev-list -n 1 "refs/tags/${RELEASE_TAG}")"
+          MAIN_SHA="$(git rev-parse origin/main)"
 
-          if [ "$CURRENT_SHA" != "$MAIN_SHA" ]; then
-            echo "::error::Release tag commit ($CURRENT_SHA) is not HEAD of origin/main ($MAIN_SHA)."
+          if [ "$TAG_SHA" != "$MAIN_SHA" ]; then
+            echo "::error::Release tag ${RELEASE_TAG} points to ${TAG_SHA}, but origin/main HEAD is ${MAIN_SHA}."
             echo "::error::Create release tags only from the latest main commit."
             exit 1
           fi
 
-      - name: Select Xcode
+      - name: Checkout release tag commit
         run: |
           set -euo pipefail
-          sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+          RELEASE_TAG="${{ steps.release_meta.outputs.release_tag }}"
+          git checkout --detach "refs/tags/${RELEASE_TAG}"
+
+      - name: Select pinned Xcode
+        run: |
+          set -euo pipefail
+
+          if [ ! -d "${XCODE_APP}" ]; then
+            echo "::error::Pinned Xcode app not found at ${XCODE_APP}."
+            exit 1
+          fi
+
+          sudo xcode-select -s "${XCODE_APP}/Contents/Developer"
+
+          CURRENT_XCODE_VERSION="$(xcodebuild -version | awk 'NR==1 { print $2 }')"
+          if [ "${CURRENT_XCODE_VERSION}" != "${XCODE_VERSION}" ]; then
+            echo "::error::Expected Xcode ${XCODE_VERSION}, got ${CURRENT_XCODE_VERSION}."
+            exit 1
+          fi
+
           xcodebuild -version
 
+      - name: Cache SwiftPM dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/org.swift.swiftpm
+            ${{ env.DERIVED_DATA_PATH }}/SourcePackages
+          key: ${{ runner.os }}-xcode-${{ env.XCODE_VERSION }}-spm-${{ hashFiles('Packages/MeetingAssistantCore/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-xcode-${{ env.XCODE_VERSION }}-spm-
+
       - name: Resolve SPM dependencies
-        run: xcodebuild -resolvePackageDependencies -project "$XCODE_PROJECT" -scheme "$SCHEME"
+        run: |
+          set -euo pipefail
+          xcodebuild -resolvePackageDependencies \
+            -project "${XCODE_PROJECT}" \
+            -scheme "${SCHEME}" \
+            -derivedDataPath "${DERIVED_DATA_PATH}"
+
+      - name: Locate Sparkle tools deterministically
+        run: |
+          set -euo pipefail
+
+          SPARKLE_TOOL="$(find "${DERIVED_DATA_PATH}/SourcePackages" -type f -name generate_appcast | head -n 1)"
+          if [ -z "${SPARKLE_TOOL}" ]; then
+            echo "::error::Could not locate Sparkle generate_appcast under ${DERIVED_DATA_PATH}/SourcePackages."
+            exit 1
+          fi
+
+          SPARKLE_BIN_DIR="$(dirname "${SPARKLE_TOOL}")"
+          mkdir -p build/tools/sparkle
+          cp -R "${SPARKLE_BIN_DIR}/." build/tools/sparkle/
+          chmod +x build/tools/sparkle/generate_appcast
 
       - name: Build release gate
         id: build_release_gate
         run: |
           set -euo pipefail
           xcodebuild build \
-            -project "$XCODE_PROJECT" \
-            -scheme "$SCHEME" \
+            -project "${XCODE_PROJECT}" \
+            -scheme "${SCHEME}" \
             -configuration Release \
             -destination "generic/platform=macOS" \
+            -derivedDataPath "${DERIVED_DATA_PATH}" \
+            ARCHS=arm64 \
+            ONLY_ACTIVE_ARCH=YES \
+            EXCLUDED_ARCHS=x86_64 \
             CODE_SIGN_IDENTITY="-" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             2>&1 | tee /tmp/build-release.log
+
+      - name: Archive app
+        id: archive
+        run: |
+          set -euo pipefail
+          xcodebuild archive \
+            -project "${XCODE_PROJECT}" \
+            -scheme "${SCHEME}" \
+            -configuration Release \
+            -archivePath "${ARCHIVE_PATH}" \
+            -derivedDataPath "${DERIVED_DATA_PATH}" \
+            ARCHS=arm64 \
+            ONLY_ACTIVE_ARCH=YES \
+            EXCLUDED_ARCHS=x86_64 \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee /tmp/archive.log
+
+      - name: Upload build outputs
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sparkle-build-outputs
+          path: |
+            ${{ env.ARCHIVE_PATH }}
+            build/tools/sparkle
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Upload build gate log on failure
         if: failure() && steps.build_release_gate.outcome == 'failure'
@@ -80,23 +213,7 @@ jobs:
           name: sparkle-build-gate-log
           path: /tmp/build-release.log
           if-no-files-found: warn
-
-      - name: Archive app
-        id: archive
-        run: |
-          set -euo pipefail
-          xcodebuild archive \
-            -project "$XCODE_PROJECT" \
-            -scheme "$SCHEME" \
-            -configuration Release \
-            -archivePath "$ARCHIVE_PATH" \
-            CODE_SIGN_IDENTITY="-" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            2>&1 | tee /tmp/archive.log
-          # TODO: Replace the above with proper Developer ID signing:
-          # CODE_SIGN_IDENTITY="Developer ID Application: Your Name (TEAM_ID)"
-          # CODE_SIGNING_REQUIRED=YES
+          retention-days: 14
 
       - name: Upload archive log on failure
         if: failure() && steps.archive.outcome == 'failure'
@@ -105,85 +222,185 @@ jobs:
           name: sparkle-archive-log
           path: /tmp/archive.log
           if-no-files-found: warn
+          retention-days: 14
 
-      # TODO: Add notarization step
-      # - name: Notarize app
-      #   run: |
-      #     xcrun notarytool submit ... --wait
-      #     xcrun stapler staple ...
+  publish:
+    name: Publish Sparkle Assets
+    needs: build
+    if: ${{ needs.build.result == 'success' }}
+    runs-on: macos-15
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      pages: write
+    env:
+      RELEASE_TAG: ${{ needs.build.outputs.release_tag }}
+      DRY_RUN: ${{ needs.build.outputs.dry_run }}
+    steps:
+      - name: Download build outputs
+        uses: actions/download-artifact@v4
+        with:
+          name: sparkle-build-outputs
+          path: /tmp/sparkle-build-outputs
 
-      - name: Create distribution zip
-        run: |
-          mkdir -p build/dist
-          cp -R "$ARCHIVE_PATH/Products/Applications/$APP_NAME.app" build/dist/
-          cd build/dist
-          zip -r -y "../$APP_NAME.zip" "$APP_NAME.app"
-
-      - name: Upload zip to GitHub Release
+      - name: Verify gh authentication
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release upload "${{ github.event.release.tag_name }}" \
-            "build/$APP_NAME.zip" \
-            --clobber
+          set -euo pipefail
+          gh auth status -h github.com
 
-      # --- Sparkle Appcast Generation ---
-
-      - name: Locate Sparkle tools
-        id: sparkle-tools
+      - name: Create distribution zip
         run: |
-          # Find the Sparkle checkout in SPM's derived data
-          SPARKLE_BIN=$(find ~/Library/Developer/Xcode/DerivedData -path "*/Sparkle/bin" -type d 2>/dev/null | head -1)
-          if [ -z "$SPARKLE_BIN" ]; then
-            # Fallback: check SPM build artifacts in the project
-            SPARKLE_BIN=$(find .build -path "*/Sparkle/bin" -type d 2>/dev/null | head -1)
-          fi
-          if [ -z "$SPARKLE_BIN" ]; then
-            echo "::error::Could not find Sparkle CLI tools. Ensure Sparkle SPM dependency is resolved."
+          set -euo pipefail
+
+          APP_BUNDLE="/tmp/sparkle-build-outputs/${ARCHIVE_PATH}/Products/Applications/${APP_NAME}.app"
+          if [ ! -d "${APP_BUNDLE}" ]; then
+            echo "::error::App bundle not found at ${APP_BUNDLE}."
             exit 1
           fi
-          echo "SPARKLE_BIN=$SPARKLE_BIN" >> "$GITHUB_OUTPUT"
-          echo "Found Sparkle tools at: $SPARKLE_BIN"
 
-      - name: Prepare appcast directory
-        run: |
+          mkdir -p build
+          ditto -c -k --sequesterRsrc --keepParent "${APP_BUNDLE}" "build/${APP_NAME}.zip"
+
           mkdir -p build/appcast
-          cp "build/$APP_NAME.zip" build/appcast/
+          cp "build/${APP_NAME}.zip" build/appcast/
 
       - name: Generate appcast
         env:
-          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+          SPARKLE_PRIVATE_KEY_B64: ${{ secrets.SPARKLE_PRIVATE_KEY_B64 }}
         run: |
-          SPARKLE_BIN="${{ steps.sparkle-tools.outputs.SPARKLE_BIN }}"
-          DOWNLOAD_URL_PREFIX="https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}"
+          set -euo pipefail
 
-          "$SPARKLE_BIN/generate_appcast" \
-            --ed-key-file <(echo "$SPARKLE_PRIVATE_KEY") \
-            --download-url-prefix "$DOWNLOAD_URL_PREFIX/" \
+          if [ -z "${SPARKLE_PRIVATE_KEY_B64:-}" ]; then
+            echo "::error::Missing required secret SPARKLE_PRIVATE_KEY_B64."
+            exit 1
+          fi
+
+          SPARKLE_BIN="/tmp/sparkle-build-outputs/build/tools/sparkle"
+          if [ ! -x "${SPARKLE_BIN}/generate_appcast" ]; then
+            echo "::error::Sparkle generate_appcast not found at ${SPARKLE_BIN}/generate_appcast."
+            exit 1
+          fi
+
+          decode_base64() {
+            if base64 --help 2>&1 | grep -q -- '--decode'; then
+              base64 --decode
+            else
+              base64 -D
+            fi
+          }
+
+          KEY_PATH="/tmp/sparkle_ed25519.pem"
+          cleanup() {
+            rm -f "${KEY_PATH}"
+          }
+          trap cleanup EXIT
+
+          printf '%s' "${SPARKLE_PRIVATE_KEY_B64}" | decode_base64 > "${KEY_PATH}"
+          chmod 600 "${KEY_PATH}"
+
+          DOWNLOAD_URL_PREFIX="https://github.com/${{ github.repository }}/releases/download/${RELEASE_TAG}"
+          "${SPARKLE_BIN}/generate_appcast" \
+            --ed-key-file "${KEY_PATH}" \
+            --download-url-prefix "${DOWNLOAD_URL_PREFIX}/" \
             build/appcast
 
-      - name: Deploy appcast to gh-pages
+      - name: Upload zip to GitHub Release
+        if: ${{ env.DRY_RUN != 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          # Configure git for the deploy
+          set -euo pipefail
+
+          retry() {
+            local max_attempts="$1"
+            local base_sleep_seconds="$2"
+            shift 2
+
+            local attempt=1
+            until "$@"; do
+              if [ "${attempt}" -ge "${max_attempts}" ]; then
+                echo "::error::Command failed after ${attempt} attempts: $*"
+                return 1
+              fi
+
+              local wait_seconds=$((base_sleep_seconds * attempt))
+              echo "Attempt ${attempt} failed. Retrying in ${wait_seconds}s..."
+              sleep "${wait_seconds}"
+              attempt=$((attempt + 1))
+            done
+          }
+
+          retry 3 10 gh release upload "${RELEASE_TAG}" "build/${APP_NAME}.zip" --clobber
+
+      - name: Deploy appcast to gh-pages
+        if: ${{ env.DRY_RUN != 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          retry() {
+            local max_attempts="$1"
+            local base_sleep_seconds="$2"
+            shift 2
+
+            local attempt=1
+            until "$@"; do
+              if [ "${attempt}" -ge "${max_attempts}" ]; then
+                echo "::error::Command failed after ${attempt} attempts: $*"
+                return 1
+              fi
+
+              local wait_seconds=$((base_sleep_seconds * attempt))
+              echo "Attempt ${attempt} failed. Retrying in ${wait_seconds}s..."
+              sleep "${wait_seconds}"
+              attempt=$((attempt + 1))
+            done
+          }
+
+          REPO_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          GH_PAGES_DIR="/tmp/gh-pages"
+          rm -rf "${GH_PAGES_DIR}"
+
+          if git ls-remote --exit-code --heads "${REPO_URL}" gh-pages >/dev/null 2>&1; then
+            retry 3 10 git clone --depth 1 --branch gh-pages "${REPO_URL}" "${GH_PAGES_DIR}"
+          else
+            retry 3 10 git clone --depth 1 "${REPO_URL}" "${GH_PAGES_DIR}"
+            cd "${GH_PAGES_DIR}"
+            git checkout --orphan gh-pages
+            git rm -rf . || true
+          fi
+
+          cp "${GITHUB_WORKSPACE}/build/appcast/appcast.xml" "${GH_PAGES_DIR}/appcast.xml"
+
+          cd "${GH_PAGES_DIR}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          # Create or switch to gh-pages branch
-          git fetch origin gh-pages:gh-pages 2>/dev/null || git checkout --orphan gh-pages
-
-          # Use a temporary worktree for gh-pages
-          git worktree add /tmp/gh-pages gh-pages 2>/dev/null || true
-
-          # Copy appcast to gh-pages
-          cp build/appcast/appcast.xml /tmp/gh-pages/
-
-          # Commit and push
-          cd /tmp/gh-pages
           git add appcast.xml
-          git diff --cached --quiet && echo "No appcast changes to commit" && exit 0
-          git commit -m "chore: update appcast for ${{ github.event.release.tag_name }}"
-          git push origin gh-pages
 
-          # Cleanup worktree
-          cd -
-          git worktree remove /tmp/gh-pages 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No appcast changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chore: update appcast for ${RELEASE_TAG}"
+          retry 3 10 git push origin gh-pages
+
+      - name: Dry-run summary
+        if: ${{ env.DRY_RUN == 'true' }}
+        run: |
+          echo "Dry-run completed for tag ${RELEASE_TAG}."
+          echo "Skipped release asset upload and gh-pages deployment."
+
+      - name: Upload publish diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sparkle-publish-diagnostics
+          path: |
+            build/${{ env.APP_NAME }}.zip
+            build/appcast
+          if-no-files-found: warn
+          retention-days: 14
