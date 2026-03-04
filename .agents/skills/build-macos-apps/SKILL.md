@@ -72,6 +72,23 @@ For Medium/High risk merge gates, keep canonical checks:
 make build-test
 ```
 
+## 2026-03 Progression Update
+
+### Evidence-Driven Priority
+
+Recent release automation churn (commits `51c53eb`, `37bcb34`, `d82fb9d`, `09bb449`, `c120858`) indicates the release path is still fragile.
+
+### Release Triage Drill (apply on each release-task request)
+
+1. Verify workflow gate logic in `.github/workflows/sparkle-release.yml`.
+2. Reproduce gate locally with explicit `xcodebuild` command parity to CI.
+3. Ensure failure artifacts are exported when gate fails.
+4. Record one short "failure signature -> fix action" note in PR description.
+
+### Routing Note
+
+When a task is specifically about failing GitHub Actions checks, route to `gh-fix-ci` first, then return to this skill for macOS release workflow wiring.
+
 ## Related Skills
 
 - `../macos-development/SKILL.md`
@@ -80,3 +97,4 @@ make build-test
 - `../swift-concurrency-expert/SKILL.md`
 - `../swiftui-performance-audit/SKILL.md`
 - `../swiftui-animation/SKILL.md`
+
