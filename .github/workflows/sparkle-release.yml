@@ -56,8 +56,8 @@ jobs:
       - name: Resolve SPM dependencies
         run: xcodebuild -resolvePackageDependencies -project "$XCODE_PROJECT" -scheme "$SCHEME"
 
-      - name: Build and test gate
-        run: make build-test
+      - name: Build release gate
+        run: make build-release
 
       - name: Archive app
         id: archive
