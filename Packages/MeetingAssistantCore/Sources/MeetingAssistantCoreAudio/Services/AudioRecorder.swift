@@ -28,7 +28,6 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         static let retryDelay: UInt64 = 500_000_000 // 500ms
         static let maxRetries = 2
         static let micDiagnosticsEnabled = true
-        static let engineStartTimeout: UInt64 = 10_000_000_000 // 10 seconds
         static let fallbackSampleRate: Double = 48_000.0
         static let fallbackChannels: Int = 1
         static let fallbackBitRate: Int = 128_000
@@ -557,24 +556,8 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     ) async throws {
         AppLogger.debug("Preparing engine...", category: .recordingManager)
 
-        try await withThrowingTaskGroup(of: Void.self) { group in
-            group.addTask {
-                engine.prepare()
-                try engine.start()
-            }
-
-            group.addTask {
-                try await Task.sleep(nanoseconds: Constants.engineStartTimeout)
-                throw AudioRecorderError.failedToStartEngine(NSError(
-                    domain: "AudioRecorder",
-                    code: -1,
-                    userInfo: [NSLocalizedDescriptionKey: "Audio engine start timeout"]
-                ))
-            }
-
-            try await group.next()
-            group.cancelAll()
-        }
+        engine.prepare()
+        try engine.start()
 
         AppLogger.debug("Engine started. IsRunning: \(engine.isRunning)", category: .recordingManager)
         isRecording = true
