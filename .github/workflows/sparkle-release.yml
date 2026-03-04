@@ -331,10 +331,20 @@ jobs:
           chmod 600 "${KEY_PATH}"
 
           DOWNLOAD_URL_PREFIX="https://github.com/${{ github.repository }}/releases/download/${RELEASE_TAG}"
-          "${APPCAST_TOOL}" \
+          APPCAST_LOG="/tmp/generate-appcast.log"
+          if ! "${APPCAST_TOOL}" \
             --ed-key-file "${KEY_PATH}" \
             --download-url-prefix "${DOWNLOAD_URL_PREFIX}/" \
-            build/appcast
+            build/appcast 2>&1 | tee "${APPCAST_LOG}"; then
+            if [ "${DRY_RUN}" = "true" ] && grep -Eq "failed Apple Code Signing checks|No usable archives found" "${APPCAST_LOG}"; then
+              echo "::warning::Skipping appcast generation in dry-run because archived app is not Apple-signed yet."
+              echo "APPCAST_SKIPPED_REASON=unsigned_app" >> "$GITHUB_ENV"
+              exit 0
+            fi
+
+            echo "::error::generate_appcast failed. Release builds require a valid Apple-signed app bundle."
+            exit 1
+          fi
 
       - name: Upload zip to GitHub Release
         if: ${{ env.DRY_RUN != 'true' }}
@@ -422,6 +432,9 @@ jobs:
         if: ${{ env.DRY_RUN == 'true' }}
         run: |
           echo "Dry-run completed for tag ${RELEASE_TAG}."
+          if [ "${APPCAST_SKIPPED_REASON:-}" = "unsigned_app" ]; then
+            echo "Appcast generation was skipped because the archive is not Apple-signed yet."
+          fi
           echo "Skipped release asset upload and gh-pages deployment."
 
       - name: Upload publish diagnostics on failure
