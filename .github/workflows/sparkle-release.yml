@@ -57,7 +57,26 @@ jobs:
         run: xcodebuild -resolvePackageDependencies -project "$XCODE_PROJECT" -scheme "$SCHEME"
 
       - name: Build release gate
-        run: make build-release
+        id: build_release_gate
+        run: |
+          set -euo pipefail
+          xcodebuild build \
+            -project "$XCODE_PROJECT" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -destination "generic/platform=macOS" \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee /tmp/build-release.log
+
+      - name: Upload build gate log on failure
+        if: failure() && steps.build_release_gate.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: sparkle-build-gate-log
+          path: /tmp/build-release.log
+          if-no-files-found: warn
 
       - name: Archive app
         id: archive
