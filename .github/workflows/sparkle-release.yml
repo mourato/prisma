@@ -8,12 +8,9 @@
 #   SPARKLE_PRIVATE_KEY_B64  – base64 of EdDSA private key from Sparkle (preferred)
 #   SPARKLE_PRIVATE_KEY      – raw EdDSA private key PEM (legacy fallback)
 #
-# Required GitHub Secrets for production release (dry_run=false):
-#   APPLE_CERT_P12_B64       – base64 of Developer ID Application .p12 certificate
-#   APPLE_CERT_PASSWORD      – password for the .p12 certificate
-#   APPLE_TEAM_ID            – optional guard to validate imported signing identity team
-#
-# TODO (Phase 2): Add notarization after signing.
+# Note:
+#   This workflow currently publishes unsigned macOS app bundles (no Developer ID / notarization).
+#   Sparkle EdDSA signatures are still generated for update archives.
 
 name: Sparkle Release
 
@@ -282,64 +279,22 @@ jobs:
           echo "ARCHIVE_ROOT=${ARCHIVE_ROOT}" >> "$GITHUB_ENV"
           echo "APP_BUNDLE=${APP_BUNDLE}" >> "$GITHUB_ENV"
 
-      - name: Sign app bundle (Developer ID)
-        if: ${{ env.DRY_RUN != 'true' }}
-        env:
-          APPLE_CERT_P12_B64: ${{ secrets.APPLE_CERT_P12_B64 }}
-          APPLE_CERT_PASSWORD: ${{ secrets.APPLE_CERT_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      - name: Normalize unsigned app bundle
         run: |
           set -euo pipefail
 
-          if [ -z "${APPLE_CERT_P12_B64:-}" ] || [ -z "${APPLE_CERT_PASSWORD:-}" ]; then
-            echo "::error::Missing signing secrets. Configure APPLE_CERT_P12_B64 and APPLE_CERT_PASSWORD."
-            exit 1
+          # Sparkle generate_appcast rejects bundles with invalid Apple signatures.
+          # In unsigned distribution mode, strip signatures so Sparkle skips Apple signature validation.
+          if /usr/bin/codesign --display --verbose=0 "${APP_BUNDLE}" >/dev/null 2>&1; then
+            echo "Removing existing app code signature for unsigned distribution mode."
+            /usr/bin/codesign --remove-signature "${APP_BUNDLE}" || true
+          else
+            echo "App bundle is already unsigned."
           fi
 
-          decode_base64() {
-            if base64 --help 2>&1 | grep -q -- '--decode'; then
-              base64 --decode
-            else
-              base64 -D
-            fi
-          }
-
-          KEYCHAIN_PATH="/tmp/sparkle-signing.keychain-db"
-          CERT_PATH="/tmp/developer_id_certificate.p12"
-          KEYCHAIN_PASSWORD="$(openssl rand -hex 18)"
-          cleanup() {
-            security delete-keychain "${KEYCHAIN_PATH}" >/dev/null 2>&1 || true
-            rm -f "${CERT_PATH}"
-          }
-          trap cleanup EXIT
-
-          printf '%s' "${APPLE_CERT_P12_B64}" | decode_base64 > "${CERT_PATH}"
-
-          security create-keychain -p "${KEYCHAIN_PASSWORD}" "${KEYCHAIN_PATH}"
-          security set-keychain-settings -lut 21600 "${KEYCHAIN_PATH}"
-          security unlock-keychain -p "${KEYCHAIN_PASSWORD}" "${KEYCHAIN_PATH}"
-          security list-keychains -d user -s "${KEYCHAIN_PATH}"
-
-          security import "${CERT_PATH}" \
-            -k "${KEYCHAIN_PATH}" \
-            -P "${APPLE_CERT_PASSWORD}" \
-            -T /usr/bin/codesign \
-            -T /usr/bin/security
-          security set-key-partition-list -S apple-tool:,apple: -s -k "${KEYCHAIN_PASSWORD}" "${KEYCHAIN_PATH}"
-
-          SIGNING_IDENTITY="$(security find-identity -v -p codesigning "${KEYCHAIN_PATH}" | awk -F '"' '/Developer ID Application/ {print $2; exit}')"
-          if [ -z "${SIGNING_IDENTITY:-}" ]; then
-            echo "::error::No Developer ID Application identity found in imported certificate."
-            security find-identity -v -p codesigning "${KEYCHAIN_PATH}" || true
-            exit 1
+          if /usr/bin/codesign --display --verbose=0 "${APP_BUNDLE}" >/dev/null 2>&1; then
+            echo "::warning::App bundle still appears signed after signature removal attempt."
           fi
-
-          if [ -n "${APPLE_TEAM_ID:-}" ] && ! printf '%s' "${SIGNING_IDENTITY}" | grep -q "(${APPLE_TEAM_ID})"; then
-            echo "::warning::Imported identity does not match APPLE_TEAM_ID=${APPLE_TEAM_ID}: ${SIGNING_IDENTITY}"
-          fi
-
-          codesign --force --deep --options runtime --timestamp --sign "${SIGNING_IDENTITY}" "${APP_BUNDLE}"
-          codesign --verify --deep --strict --verbose=2 "${APP_BUNDLE}"
 
       - name: Create distribution zip
         run: |
@@ -413,7 +368,7 @@ jobs:
               exit 0
             fi
 
-            echo "::error::generate_appcast failed. Release builds require a valid Apple-signed app bundle."
+            echo "::error::generate_appcast failed. Ensure update archive is compatible (validly signed or explicitly unsigned) and Sparkle key is correct."
             exit 1
           fi
 
