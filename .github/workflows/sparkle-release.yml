@@ -5,7 +5,8 @@
 # - workflow_dispatch: manual validation path (supports dry-run)
 #
 # Required GitHub Secrets (Phase 1):
-#   SPARKLE_PRIVATE_KEY_B64  – base64 of EdDSA private key from Sparkle
+#   SPARKLE_PRIVATE_KEY_B64  – base64 of EdDSA private key from Sparkle (preferred)
+#   SPARKLE_PRIVATE_KEY      – raw EdDSA private key PEM (legacy fallback)
 #
 # TODO (Phase 2): Add Developer ID signing + notarization.
 
@@ -282,11 +283,12 @@ jobs:
       - name: Generate appcast
         env:
           SPARKLE_PRIVATE_KEY_B64: ${{ secrets.SPARKLE_PRIVATE_KEY_B64 }}
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
         run: |
           set -euo pipefail
 
-          if [ -z "${SPARKLE_PRIVATE_KEY_B64:-}" ]; then
-            echo "::error::Missing required secret SPARKLE_PRIVATE_KEY_B64."
+          if [ -z "${SPARKLE_PRIVATE_KEY_B64:-}" ] && [ -z "${SPARKLE_PRIVATE_KEY:-}" ]; then
+            echo "::error::Missing Sparkle private key secret. Configure SPARKLE_PRIVATE_KEY_B64 (preferred) or SPARKLE_PRIVATE_KEY (legacy)."
             exit 1
           fi
 
@@ -310,7 +312,11 @@ jobs:
           }
           trap cleanup EXIT
 
-          printf '%s' "${SPARKLE_PRIVATE_KEY_B64}" | decode_base64 > "${KEY_PATH}"
+          if [ -n "${SPARKLE_PRIVATE_KEY_B64:-}" ]; then
+            printf '%s' "${SPARKLE_PRIVATE_KEY_B64}" | decode_base64 > "${KEY_PATH}"
+          else
+            printf '%s' "${SPARKLE_PRIVATE_KEY}" > "${KEY_PATH}"
+          fi
           chmod 600 "${KEY_PATH}"
 
           DOWNLOAD_URL_PREFIX="https://github.com/${{ github.repository }}/releases/download/${RELEASE_TAG}"
