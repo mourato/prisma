@@ -15,14 +15,7 @@ enum SettingsMotion {
 
 extension Binding {
     func animated(using animation: Animation = SettingsMotion.sectionAnimation) -> Binding<Value> {
-        Binding(
-            get: { wrappedValue },
-            set: { newValue in
-                withAnimation(animation) {
-                    wrappedValue = newValue
-                }
-            }
-        )
+        transaction(Transaction(animation: animation))
     }
 }
 

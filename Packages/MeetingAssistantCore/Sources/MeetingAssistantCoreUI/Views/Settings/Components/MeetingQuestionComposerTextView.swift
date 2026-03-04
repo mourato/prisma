@@ -111,6 +111,7 @@ private struct MeetingQuestionTextViewRepresentable: NSViewRepresentable {
         )
     }
 
+    @MainActor
     final class Coordinator: NSObject, NSTextViewDelegate {
         @Binding private var text: String
         @Binding private var dynamicHeight: CGFloat
