@@ -39,7 +39,7 @@ env:
   ARCHIVE_PATH: build/Prisma.xcarchive
   XCODE_APP: /Applications/Xcode_16.4.app
   XCODE_VERSION: "16.4"
-  DERIVED_DATA_PATH: ${{ runner.temp }}/DerivedData
+  DERIVED_DATA_PATH: /tmp/DerivedData
 
 jobs:
   build:
