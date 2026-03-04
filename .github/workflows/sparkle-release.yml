@@ -398,7 +398,7 @@ jobs:
             done
           }
 
-          retry 3 10 gh release upload "${RELEASE_TAG}" "build/${APP_NAME}.zip" --clobber
+          retry 3 10 gh release upload "${RELEASE_TAG}" "build/${APP_NAME}.zip" --clobber --repo "${GITHUB_REPOSITORY}"
 
       - name: Deploy appcast to gh-pages
         if: ${{ env.DRY_RUN != 'true' }}
