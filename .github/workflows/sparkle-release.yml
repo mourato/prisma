@@ -293,10 +293,21 @@ jobs:
           fi
 
           SPARKLE_BIN="/tmp/sparkle-build-outputs/build/tools/sparkle"
-          if [ ! -x "${SPARKLE_BIN}/generate_appcast" ]; then
-            echo "::error::Sparkle generate_appcast not found at ${SPARKLE_BIN}/generate_appcast."
+          if [ ! -d "${SPARKLE_BIN}" ]; then
+            SPARKLE_BIN="$(find /tmp/sparkle-build-outputs -type d -path '*/tools/sparkle' | head -n 1)"
+          fi
+
+          APPCAST_TOOL="${SPARKLE_BIN}/generate_appcast"
+          if [ ! -f "${APPCAST_TOOL}" ]; then
+            APPCAST_TOOL="$(find /tmp/sparkle-build-outputs -type f -name generate_appcast | head -n 1)"
+          fi
+
+          if [ -z "${APPCAST_TOOL:-}" ] || [ ! -f "${APPCAST_TOOL}" ]; then
+            echo "::error::Sparkle generate_appcast binary not found in downloaded artifacts."
+            find /tmp/sparkle-build-outputs -maxdepth 6 -type d | sort
             exit 1
           fi
+          chmod +x "${APPCAST_TOOL}"
 
           decode_base64() {
             if base64 --help 2>&1 | grep -q -- '--decode'; then
@@ -320,7 +331,7 @@ jobs:
           chmod 600 "${KEY_PATH}"
 
           DOWNLOAD_URL_PREFIX="https://github.com/${{ github.repository }}/releases/download/${RELEASE_TAG}"
-          "${SPARKLE_BIN}/generate_appcast" \
+          "${APPCAST_TOOL}" \
             --ed-key-file "${KEY_PATH}" \
             --download-url-prefix "${DOWNLOAD_URL_PREFIX}/" \
             build/appcast
