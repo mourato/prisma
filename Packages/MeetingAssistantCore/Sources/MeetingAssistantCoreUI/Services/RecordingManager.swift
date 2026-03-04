@@ -117,24 +117,20 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         static let startContextCaptureTimeout: UInt64 = 1_500_000_000
     }
 
-    private static func defaultTextContextExclusionPolicy() -> TextContextExclusionPolicy {
-        let settings = AppSettingsStore.shared
-        return settings.contextAwarenessProtectSensitiveApps
-            ? TextContextExclusionPolicy()
-            : TextContextExclusionPolicy(baseExcludedBundleIDs: [])
-    }
-
-    private static func defaultCustomExcludedBundleIDs() -> [String] {
-        let settings = AppSettingsStore.shared
-        return settings.contextAwarenessProtectSensitiveApps
-            ? settings.contextAwarenessExcludedBundleIDs
-            : []
-    }
-
     private static func defaultTextContextProvider() -> any TextContextProvider {
         AXTextContextProvider(
-            exclusionPolicyProvider: defaultTextContextExclusionPolicy,
-            customExcludedBundleIDsProvider: defaultCustomExcludedBundleIDs
+            exclusionPolicyProvider: {
+                let settings = AppSettingsStore.shared
+                return settings.contextAwarenessProtectSensitiveApps
+                    ? TextContextExclusionPolicy()
+                    : TextContextExclusionPolicy(baseExcludedBundleIDs: [])
+            },
+            customExcludedBundleIDsProvider: {
+                let settings = AppSettingsStore.shared
+                return settings.contextAwarenessProtectSensitiveApps
+                    ? settings.contextAwarenessExcludedBundleIDs
+                    : []
+            }
         )
     }
 
