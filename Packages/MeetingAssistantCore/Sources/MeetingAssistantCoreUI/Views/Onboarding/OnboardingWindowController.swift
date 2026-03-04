@@ -92,7 +92,17 @@ public class OnboardingWindowController {
 
 @MainActor
 private class WindowDelegate: NSObject, NSWindowDelegate, @unchecked Sendable {
-    static let shared = WindowDelegate()
+    private static var sharedInstance: WindowDelegate?
+
+    static var shared: WindowDelegate {
+        if let sharedInstance {
+            return sharedInstance
+        }
+
+        let instance = WindowDelegate()
+        sharedInstance = instance
+        return instance
+    }
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         // Prevent closing via the red button during onboarding

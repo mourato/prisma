@@ -15,14 +15,16 @@ extension RecordingManager {
         let duration: Double
         let model: String?
 
-        static let empty = PostProcessingResult(
-            processedContent: nil,
-            canonicalSummary: nil,
-            promptId: nil,
-            promptTitle: nil,
-            duration: 0,
-            model: nil
-        )
+        static var empty: PostProcessingResult {
+            PostProcessingResult(
+                processedContent: nil,
+                canonicalSummary: nil,
+                promptId: nil,
+                promptTitle: nil,
+                duration: 0,
+                model: nil
+            )
+        }
     }
 
     func applyPostProcessing(

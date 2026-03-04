@@ -14,7 +14,7 @@ import UserNotifications
 /// Orchestrates microphone and system audio recording with post-processing merge.
 @MainActor
 public class RecordingManager: ObservableObject, RecordingServiceProtocol {
-    public static let shared = RecordingManager()
+    public static let shared = makeSharedManager()
 
     // MARK: - Recording Actor
 
@@ -130,6 +130,27 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
                 return settings.contextAwarenessProtectSensitiveApps
                     ? settings.contextAwarenessExcludedBundleIDs
                     : []
+            }
+        )
+    }
+
+    private static func makeSharedManager() -> RecordingManager {
+        RecordingManager(
+            micRecorder: AudioRecorder.shared,
+            systemRecorder: SystemAudioRecorder.shared,
+            transcriptionClient: TranscriptionClient.shared,
+            postProcessingService: PostProcessingService.shared,
+            audioMerger: AudioMerger(),
+            meetingDetector: MeetingDetector.shared,
+            storage: FileSystemStorageService.shared,
+            notificationService: .shared,
+            contextAwarenessService: ContextAwarenessService.shared,
+            textContextProvider: defaultTextContextProvider(),
+            textContextGuardrails: TextContextGuardrails(),
+            textContextPolicy: .default,
+            activeAppContextProvider: NSWorkspaceActiveAppContextProvider(),
+            apiKeyExists: { provider in
+                KeychainManager.existsAPIKey(for: provider)
             }
         )
     }

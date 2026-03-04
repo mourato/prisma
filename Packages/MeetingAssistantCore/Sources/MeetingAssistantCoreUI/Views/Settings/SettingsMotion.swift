@@ -2,7 +2,9 @@ import SwiftUI
 
 enum SettingsMotion {
     static let sectionDuration: Double = 0.18
-    static let sectionAnimation: Animation = .easeInOut(duration: sectionDuration)
+    static var sectionAnimation: Animation {
+        .easeInOut(duration: sectionDuration)
+    }
 
     static func sectionTransition(reduceMotion: Bool = false) -> AnyTransition {
         reduceMotion ? .opacity : .move(edge: .top).combined(with: .opacity)
