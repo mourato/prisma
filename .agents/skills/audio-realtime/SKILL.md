@@ -395,3 +395,17 @@ Use this order when addressing capture reliability bugs:
 3. Keep start/stop paths idempotent; diagnostics must be observational only.
 4. Use mic-only fallback strategy when engine graph setup fails.
 5. Re-run shared-device and USB-mic scenarios before merge.
+
+## 2026-03-04 Progression Drill
+
+### New Evidence
+
+- `13acce3` and `9415604` re-opened concurrency/sendability risk in the audio path.
+- Recent fixes concentrated in `AudioRecorder.swift`, `AudioMerger.swift`, and `AudioRecorder+Diagnostics.swift`.
+
+### Skill Deepening Focus
+
+1. Add a mandatory callback audit step: every cross-thread audio callback typealias must be `@Sendable`.
+2. Document a "hot path isolation map" (render callback, diagnostics, merger, writer) before changing code.
+3. Add a pre-merge checklist for mixed isolation paths (`nonisolated` utility + actor-owned mutable state).
+4. Pair real-time constraints review with concurrency diagnostics to avoid regressions from "quick" fixes.

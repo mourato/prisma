@@ -94,3 +94,17 @@ When changes touch app lifecycle, enforce this contract:
 - Validate startup -> settings open -> close -> reopen cycle.
 - Validate global shortcut after onboarding and after app relaunch.
 - Validate menubar interactions without forcing unexpected app activation.
+
+## 2026-03-04 Progression Drill
+
+### New Evidence
+
+- `3d04791` changed shortcut behavior (Enter/Return blocked), touching lifecycle/controller/settings paths.
+- Recurrent edits across `AssistantShortcutController` and shortcut settings view models indicate lifecycle fragility.
+
+### Skill Deepening Focus
+
+1. Maintain a single source of truth for shortcut key filtering rules across controller + settings UI.
+2. Add lifecycle checkpoints for startup, settings open/close, and post-onboarding hotkey readiness.
+3. Require explicit activation-policy assertions for shortcut-triggered UI flows.
+4. Track teardown symmetry for every observer/monitor added in lifecycle code.
