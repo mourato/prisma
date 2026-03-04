@@ -53,3 +53,17 @@ For rename/migration work, verify all invariants:
 2. Reuse existing repository/storage abstractions (`reuse -> extend -> create`).
 3. Add tests for forward migration and no-op re-run migration.
 4. Validate cleanup logic with realistic historical data fixtures.
+
+## 2026-03-04 Progression Drill
+
+### New Evidence
+
+- `0d986f8` added new persisted meeting-conversation data paths.
+- `TranscriptionMO` and CoreData mapping were updated with domain/UI coupling points.
+
+### Skill Deepening Focus
+
+1. Add migration checks for newly persisted conversation/model fields (including no-op re-run).
+2. Validate round-trip mapping integrity: CoreData -> Domain -> UI -> persistence.
+3. Document recovery behavior for partially populated legacy records.
+4. Enforce idempotent write semantics for conversation state updates.

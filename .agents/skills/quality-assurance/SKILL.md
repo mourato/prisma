@@ -25,7 +25,7 @@ Minimum expectation:
 
 - Run staged lint/format checks (or equivalent lightweight checks).
 - Run targeted tests when the change could affect behavior.
-- Before push/merge, run `make test`.
+- Before push/merge, run `make test-agent`.
 
 ### Full lane (Medium/High risk)
 
@@ -55,6 +55,10 @@ make lint
 make preflight
 
 # Isolated diagnostics
+make build-agent
+make test-agent
+
+# Optional local parity diagnostics
 make build
 make test
 
@@ -140,3 +144,20 @@ For recurring bug classes in this repository, require targeted checks in additio
 2. Global shortcut registration/capture across lifecycle transitions.
 3. Onboarding/settings transitions with localization-aware UI states.
 4. Migration/retention behavior for persisted data continuity.
+
+## 2026-03-04 Progression Drill
+
+### New Evidence
+
+- Release workflow changed multiple times on 2026-03-03 (`sparkle-release.yml` touched repeatedly).
+- Audio sendability fixes and shortcut behavior updates happened in the same window.
+
+### Skill Deepening Focus
+
+1. Keep Fast lane gate as `make test-agent` (not `make test`) for low-risk changes.
+2. Add a targeted release-workflow smoke checklist for CI-only paths (gate command parity + artifacts).
+3. Expand regression matrix templates to include:
+   - Audio sendability-sensitive paths
+   - Shortcut Enter/Return behavior across focus states
+   - Meeting-QA persistence round trips
+4. Record failed-check signatures in PR notes to improve repeated triage speed.

@@ -74,3 +74,18 @@ Start triage in these areas first:
 3. Convert callback aliases to `@Sendable` where cross-thread execution is expected.
 4. Prefer isolating mutable shared state in a dedicated actor over lock scattering.
 5. Validate with `make test-strict` (or targeted strict run) plus `make test-agent`.
+
+## 2026-03-04 Progression Drill
+
+### New Evidence
+
+- `13acce3`: sendability fixes in `AudioMerger` and `AudioRecorder+Diagnostics`.
+- `9415604`: sendable closure fixes in `AudioRecorder`.
+- `0040ca8`: `nonisolated` adjustment in performance metric path.
+
+### Skill Deepening Focus
+
+1. Build a repeatable triage template for `@Sendable` closure capture violations in audio callbacks.
+2. Require actor-context mapping in every fix note: symbol, current isolation, target isolation, reason.
+3. Add a short decision rule for `@MainActor` vs `nonisolated` in cross-module utility methods.
+4. Validate each remediation with strict checks plus targeted audio-related tests when available.

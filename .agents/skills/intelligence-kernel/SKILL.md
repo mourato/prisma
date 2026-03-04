@@ -86,3 +86,17 @@ Artifacts:
 - Cross-module API boundary decisions -> `../architecture/SKILL.md`
 - Persistence and migration impact -> `../data-persistence/SKILL.md`
 - Validation gates and test strategy -> `../quality-assurance/SKILL.md`
+
+## 2026-03-04 Progression Drill
+
+### New Evidence
+
+- `0d986f8` introduced per-transcription model selection and conversation-state persistence.
+- Changes spanned AI/Data/Domain/UI and tests (`MeetingQAServiceTests`, `IntelligenceKernelContractsTests`).
+
+### Skill Deepening Focus
+
+1. Add explicit invariants for model-selection persistence lifecycle (create, reload, edit, delete).
+2. Define schema-safe fallback behavior when conversation state is missing/partial.
+3. Require contract-test updates whenever kernel-facing persistence fields change.
+4. Keep post-processing prompts mode-aware while preserving canonical contract output.
