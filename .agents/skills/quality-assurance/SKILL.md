@@ -161,3 +161,18 @@ For recurring bug classes in this repository, require targeted checks in additio
    - Shortcut Enter/Return behavior across focus states
    - Meeting-QA persistence round trips
 4. Record failed-check signatures in PR notes to improve repeated triage speed.
+
+## 2026-03-05 Progression Drill
+
+### New Evidence
+
+- `efe08a7` added local release parity gate + strict Xcode test hardening.
+- `ffb3bd5` switched strict Xcode test mode to default.
+- `be3e56f`, `44db00e`, and `f3d928f` show repeated release regressions caught only after CI/publish flow execution.
+
+### Skill Deepening Focus
+
+1. Add a CI-release smoke template that always runs `scripts/ci-release-parity.sh` for release-workflow edits.
+2. Require explicit reporting of strict-test mode used (`scripts/run-tests-xcode.sh` default strict) in validation notes.
+3. For `.github/workflows/sparkle-release.yml` changes, treat validation as Full-lane even if code delta is small.
+4. Standardize failure reporting format: failing command, failing stage, and first actionable mismatch.

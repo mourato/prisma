@@ -108,3 +108,18 @@ When changes touch app lifecycle, enforce this contract:
 2. Add lifecycle checkpoints for startup, settings open/close, and post-onboarding hotkey readiness.
 3. Require explicit activation-policy assertions for shortcut-triggered UI flows.
 4. Track teardown symmetry for every observer/monitor added in lifecycle code.
+
+## 2026-03-05 Progression Drill
+
+### New Evidence
+
+- `1134cd6` reduced static initializer pressure across onboarding/settings lifecycle code.
+- `3cc603f` and `05b114a` iterated rapidly on floating recording indicator behavior.
+- `0c32f13` removed sendable overlay callback patterns to satisfy actor-isolation constraints.
+
+### Skill Deepening Focus
+
+1. Add an overlay-lifecycle checklist: initialization cost, actor ownership, teardown symmetry, and callback isolation.
+2. For floating indicator changes, require one verification pass that covers open/close/reopen and background foreground transitions.
+3. Treat static-initializer changes in UI support types as lifecycle-sensitive and verify no startup regressions.
+4. Explicitly route actor-isolation diagnostics in UI components to `swift-concurrency-expert` when compiler errors appear.

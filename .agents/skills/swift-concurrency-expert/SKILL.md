@@ -89,3 +89,18 @@ Start triage in these areas first:
 2. Require actor-context mapping in every fix note: symbol, current isolation, target isolation, reason.
 3. Add a short decision rule for `@MainActor` vs `nonisolated` in cross-module utility methods.
 4. Validate each remediation with strict checks plus targeted audio-related tests when available.
+
+## 2026-03-05 Progression Drill
+
+### New Evidence
+
+- `04bbb55`, `d0cdff6`, and `0c32f13` fixed actor-isolation errors in settings and overlay/UI support paths.
+- `b032ae6` addressed a compiler-crash-prone concurrency pattern in `RecordingManager` defaults.
+- Isolation fixes continued outside audio-only scope, especially in UI service factories.
+
+### Skill Deepening Focus
+
+1. Add a required "factory isolation review" step for default-provider builders and closure factories.
+2. Prefer isolation-safe API reshaping (remove cross-actor callback surfaces) before adding broad annotations.
+3. Track and document compiler-instability signatures separately from semantic actor errors to avoid repeating crash-inducing rewrites.
+4. Validate UI isolation fixes with strict checks plus focused settings/onboarding tests whenever touched.

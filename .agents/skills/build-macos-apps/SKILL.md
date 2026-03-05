@@ -98,3 +98,18 @@ When a task is specifically about failing GitHub Actions checks, route to `gh-fi
 - `../swiftui-performance-audit/SKILL.md`
 - `../swiftui-animation/SKILL.md`
 
+
+## 2026-03-05 Progression Drill
+
+### New Evidence
+
+- `2da490b` introduced build/publish split; `3c1477a` later needed explicit tag checkout before parity.
+- `d19fbab`, `6e8d327`, and `be3e56f` fixed artifact path and permission drift after download.
+- `44db00e` and `f3d928f` fixed appcast key path and version metadata parity errors.
+
+### Skill Deepening Focus
+
+1. Add a mandatory release handoff checklist: checkout ref, artifact paths, executable permissions, appcast key path, version parity.
+2. On every release workflow task, require one local parity run via `scripts/ci-release-parity.sh` before proposing merge.
+3. Capture "first failing step + root mismatch" in PR notes to reduce repeated CI-only debugging loops.
+4. Route CI-check triage to `gh-fix-ci` first when failure originates in GitHub Actions logs, then return here for workflow wiring changes.
