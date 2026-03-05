@@ -24,10 +24,12 @@ NC='\033[0m'
 AGENT_MODE=0
 QUIET=0
 VERBOSE=0
+STRICT_XCODE=0
 BUNDLE_ERROR_PATTERN="Failed to create a bundle instance representing"
 PACKAGE_CONTEXT_ERROR_PATTERN="does not contain an Xcode project, workspace or package"
 OVERLAY_TEST_SUITE_IDENTIFIER="MeetingAssistantCoreTests/AssistantOverlayLifecycleTests"
 HEARTBEAT_INTERVAL_SEC="${MA_XCODEBUILD_HEARTBEAT_INTERVAL_SEC:-15}"
+STRICT_DERIVED_DATA_PATH="${MA_XCODE_STRICT_DERIVED_DATA:-}"
 
 if ma_agent_mode_enabled; then
     AGENT_MODE=1
@@ -48,8 +50,12 @@ while [[ $# -gt 0 ]]; do
             VERBOSE=1
             shift
             ;;
+        --strict-xcode)
+            STRICT_XCODE=1
+            shift
+            ;;
         --help|-h)
-            echo "Usage: $0 [--agent] [--quiet] [--verbose]"
+            echo "Usage: $0 [--agent] [--quiet] [--verbose] [--strict-xcode]"
             exit 0
             ;;
         *)
@@ -64,6 +70,13 @@ ma_agent_progress_enable
 
 export MA_SKIP_OVERLAY_LIFECYCLE_TESTS=1
 
+if [ "${STRICT_XCODE}" -eq 1 ]; then
+    if [ -z "${STRICT_DERIVED_DATA_PATH}" ]; then
+        STRICT_DERIVED_DATA_PATH="$(mktemp -d /tmp/ma-xcode-strict-derived-data.XXXXXX)"
+    fi
+    DERIVED_DATA="${STRICT_DERIVED_DATA_PATH}"
+fi
+
 LOG_PATH="/tmp/ma-test-xcode-$$.log"
 RESULT_PATH=""
 if [ "${AGENT_MODE}" -eq 1 ]; then
@@ -75,6 +88,10 @@ fi
 if [ "${AGENT_MODE}" -eq 0 ]; then
     echo -e "${BLUE}Running tests (xcodebuild)...${NC}"
     echo -e "${YELLOW}Uses same build system as Xcode IDE for guaranteed parity${NC}"
+    if [ "${STRICT_XCODE}" -eq 1 ]; then
+        echo -e "${YELLOW}Strict mode enabled: no recoverable retry or swift test fallback${NC}"
+        echo -e "${YELLOW}Strict mode derived data path: ${DERIVED_DATA}${NC}"
+    fi
 fi
 
 run_xcode_tests() {
@@ -94,8 +111,8 @@ run_xcode_tests() {
         test
     )
 
-    # Agent runs are more stable with a single build/test worker in constrained environments.
-    if [ "${AGENT_MODE}" -eq 1 ]; then
+    # Single-worker execution is more stable for constrained or strict runs.
+    if [ "${AGENT_MODE}" -eq 1 ] || [ "${STRICT_XCODE}" -eq 1 ]; then
         xcode_args=(-parallel-testing-enabled NO -jobs 1 "${xcode_args[@]}")
     fi
 
@@ -185,7 +202,7 @@ else
 fi
 
 # Update progress for fallback if needed
-if [ "${AGENT_MODE}" -eq 1 ] && [ "${EXIT_CODE}" -ne 0 ] && is_recoverable_runner_failure "${LOG_PATH}"; then
+if [ "${STRICT_XCODE}" -ne 1 ] && [ "${AGENT_MODE}" -eq 1 ] && [ "${EXIT_CODE}" -ne 0 ] && is_recoverable_runner_failure "${LOG_PATH}"; then
     ma_agent_progress_update "Running tests (swift test fallback)"
 fi
 
@@ -195,7 +212,7 @@ DURATION=$((END_TIME - START_TIME))
 FALLBACK_USED=0
 RETRY_USED=0
 FALLBACK_LOG_PATH="${LOG_PATH%.log}-swift-fallback.log"
-if [ "${EXIT_CODE}" -ne 0 ] && is_recoverable_runner_failure "${LOG_PATH}"; then
+if [ "${STRICT_XCODE}" -ne 1 ] && [ "${EXIT_CODE}" -ne 0 ] && is_recoverable_runner_failure "${LOG_PATH}"; then
     RETRY_USED=1
     if [ "${AGENT_MODE}" -eq 1 ]; then
         ma_agent_progress_update "Retrying tests (xcodebuild)"
@@ -215,7 +232,7 @@ if [ "${EXIT_CODE}" -ne 0 ] && is_recoverable_runner_failure "${LOG_PATH}"; then
     DURATION=$((DURATION + RETRY_DURATION))
 fi
 
-if [ "${EXIT_CODE}" -ne 0 ] && is_recoverable_runner_failure "${LOG_PATH}"; then
+if [ "${STRICT_XCODE}" -ne 1 ] && [ "${EXIT_CODE}" -ne 0 ] && is_recoverable_runner_failure "${LOG_PATH}"; then
     FALLBACK_USED=1
     if [ "${AGENT_MODE}" -eq 0 ] && [ "${QUIET}" -eq 0 ]; then
         echo -e "${YELLOW}xcodebuild runner reported recoverable setup error; retrying via swift test fallback...${NC}"

@@ -5,7 +5,7 @@
 # with CI/CD pipelines and headless environments.
 # =============================================================================
 
-.PHONY: help build build-debug build-release build-agent build-test xcodebuild-safe test test-agent test-swift test-verbose test-strict benchmark-summary benchmark-summary-agent lint lint-agent lint-fix arch-check preview-check preflight preflight-fast preflight-agent preflight-agent-fast clean run run-release dmg setup format health ci-build ci-test docs docs-preview docs-clean profile profile-report profile-cpu profile-memory profile-animation profile-animation-report
+.PHONY: help build build-debug build-release build-agent build-test xcodebuild-safe test test-agent test-swift test-verbose test-strict test-ci-strict benchmark-summary benchmark-summary-agent lint lint-agent lint-fix arch-check preview-check preflight preflight-fast preflight-agent preflight-agent-fast clean run run-release dmg setup format health ci-build ci-test ci-release-parity deliverable-gate docs docs-preview docs-clean profile profile-report profile-cpu profile-memory profile-animation profile-animation-report
 
 # Default target
 help:
@@ -26,6 +26,7 @@ help:
 	@echo "  make test-swift     - Run tests with swift test (faster, no IDE parity)"
 	@echo "  make test-verbose   - Run tests with verbose output"
 	@echo "  make test-strict    - Run tests with strict concurrency checking"
+	@echo "  make test-ci-strict - Run tests in strict xcodebuild mode (no fallback/retry)"
 	@echo "  make benchmark-summary - Run summary benchmark gate in report-only mode"
 	@echo "  make benchmark-summary-agent - Run summary benchmark in compact mode"
 	@echo ""
@@ -64,6 +65,8 @@ help:
 	@echo "CI/CD Commands:"
 	@echo "  make ci-build       - Full CI build (lint + test + build-release)"
 	@echo "  make ci-test        - CI test run (no user interaction)"
+	@echo "  make ci-release-parity - Run local parity gate for Sparkle release build/archive"
+	@echo "  make deliverable-gate - Run build-test + lint + ci-release-parity"
 	@echo ""
 	@echo "Documentation:"
 	@echo "  make docs           - Build DocC documentation"
@@ -125,6 +128,9 @@ test-verbose:
 test-strict:
 	@echo -e "$(BLUE)Running tests (Strict Concurrency)...$(NC)"
 	@./scripts/run-tests.sh --strict
+
+test-ci-strict:
+	@./scripts/run-tests-xcode.sh --strict-xcode
 
 benchmark-summary:
 	@./scripts/run-summary-benchmark.sh --report-only
@@ -258,6 +264,14 @@ ci-build: arch-check lint test build-release
 
 ci-test: test
 	@echo -e "$(GREEN)✓ CI tests completed$(NC)"
+
+ci-release-parity:
+	@./scripts/ci-release-parity.sh --mode local --phase build-archive --dry-run 1
+
+deliverable-gate:
+	@$(MAKE) build-test
+	@$(MAKE) lint
+	@$(MAKE) ci-release-parity
 # Documentation
 docs:
 	@echo -e "$(BLUE)Building DocC documentation...$(NC)"

@@ -15,8 +15,11 @@ make build
 make build-test         # Run build + test in sequence (unified gate)
 make build              # Debug build only
 make test               # Run tests only
+make test-ci-strict     # Xcode test run without retry/fallback
 make preflight          # Build + Test + Lint + Benchmark (full validation)
 make preflight-fast     # Lint + Build + Test (skips benchmark, faster feedback)
+make ci-release-parity  # Sparkle release build/archive parity gate (local)
+make deliverable-gate   # build-test + lint + ci-release-parity
 make run                # Run app in debug mode
 make format             # Auto-format with SwiftFormat
 make lint               # Run SwiftLint checks
@@ -33,6 +36,7 @@ make dmg                # Create DMG installer
 make build-test         # Build + test with concise progress
 make build-agent        # Debug build only (agent-friendly diagnostics)
 make test-agent         # Tests only (machine-readable output)
+make test-ci-strict     # Strict xcodebuild run (no fallback/retry)
 make lint-agent         # Lint with compact reporting
 make preflight-agent    # Full validation (agent-optimized)
 make preflight-agent-fast # Fast validation (agent-optimized)
@@ -79,6 +83,7 @@ Use `xcodebuild-safe.sh` to avoid SwiftPM transitive-module resolution instabili
 make test
 make test-agent          # Agent-focused, compact output
 make test-verbose        # Detailed output
+make test-ci-strict      # Strict xcodebuild parity mode
 ```
 
 ### Run specific tests
@@ -93,7 +98,14 @@ make test-verbose        # Detailed output
 ```bash
 make ci-test             # XCTest output compatible with CI systems
 make ci-build            # Includes arch-check
+make ci-release-parity   # Mirrors sparkle-release build/archive gate locally
 ```
+
+### Deliverable gate (recommended before push/release)
+```bash
+make deliverable-gate
+```
+This command keeps fast local iteration while adding the release parity guard (`build-test + lint + ci-release-parity`).
 
 ## Git Hooks Setup
 
@@ -159,6 +171,7 @@ On failure, scripts print compact excerpts to terminal while keeping full logs o
 **Recommended before merge:**
 - ✓ `make preflight` — full validation
 - ✓ `make lint` — code quality checks (mandatory for broad refactors)
+- ✓ `make ci-release-parity` — Sparkle release build/archive parity
 
 **Pre-release:**
 - ✓ `make preflight` + full validation
@@ -171,6 +184,7 @@ On failure, scripts print compact excerpts to terminal while keeping full logs o
 |------|---------|
 | Local development loop | `make build && make run` |
 | Before committing | `make build-test && make lint` |
+| Before push/release (recommended) | `make deliverable-gate` |
 | Pre-merge validation | `make preflight` |
 | Fast local feedback | `make preflight-fast` |
 | Agent-based pre-merge | `make preflight-agent` |
