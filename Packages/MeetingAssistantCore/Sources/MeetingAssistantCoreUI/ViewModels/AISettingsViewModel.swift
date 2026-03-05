@@ -44,26 +44,26 @@ public class AISettingsViewModel: ObservableObject {
     @Published public var enhancementsProviderModels: [EnhancementsProviderModelOption] = []
     @Published public var isLoadingEnhancementsProviderModels = false
     @Published public var enhancementsProviderModelsFetchError: String?
-    @Published public private(set) var enhancementsLastModelsRefreshAt: Date?
-    @Published public private(set) var enhancementsLastModelsRefreshSucceeded = false
-    @Published public private(set) var enhancementsLastModelsRefreshResultText: String?
-    @Published public private(set) var activeEnhancementsProvider: AIProvider = .openai
-    @Published public private(set) var isEnhancementsProviderKeySaved = false
+    @Published public var enhancementsLastModelsRefreshAt: Date?
+    @Published public var enhancementsLastModelsRefreshSucceeded = false
+    @Published public var enhancementsLastModelsRefreshResultText: String?
+    @Published public var activeEnhancementsProvider: AIProvider = .openai
+    @Published public var isEnhancementsProviderKeySaved = false
     @Published public var enhancementsConnectionStatus: ConnectionStatus = .unknown
     @Published public var enhancementsAPIKeyText = ""
     @Published public var enhancementsActionError: String?
     @Published public var actionError: String?
 
-    private let logger = Logger(subsystem: AppIdentity.logSubsystem, category: "AISettingsViewModel")
-    private let keychain: KeychainProvider
-    private let llmService: LLMService
-    private let credentialBootstrapPolicy: CredentialBootstrapPolicy
-    private var cancellables = Set<AnyCancellable>()
-    private var lastAutomaticModelsFetchAt: Date?
-    private var lastAutomaticEnhancementsModelsFetchAt: Date?
-    private var lastAutomaticEnhancementsProviderModelsFetchAt: Date?
-    private var enhancementsModelsByProvider: [AIProvider: [LLMModel]] = [:]
-    private let automaticModelsFetchThrottleInterval: TimeInterval = 15
+    let logger = Logger(subsystem: AppIdentity.logSubsystem, category: "AISettingsViewModel")
+    let keychain: KeychainProvider
+    let llmService: LLMService
+    let credentialBootstrapPolicy: CredentialBootstrapPolicy
+    var cancellables = Set<AnyCancellable>()
+    var lastAutomaticModelsFetchAt: Date?
+    var lastAutomaticEnhancementsModelsFetchAt: Date?
+    var lastAutomaticEnhancementsProviderModelsFetchAt: Date?
+    var enhancementsModelsByProvider: [AIProvider: [LLMModel]] = [:]
+    let automaticModelsFetchThrottleInterval: TimeInterval = 15
 
     public var canRefreshModels: Bool {
         isKeySaved || !normalizedAPIKeyText.isEmpty
@@ -92,7 +92,7 @@ public class AISettingsViewModel: ObservableObject {
     }
 
     public var hasPendingEnhancementsAPIKeyInput: Bool {
-        !normalizedEnhancementsAPIKeyText.isEmpty
+        !enhancementsAPIKeyText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     public init(
@@ -315,284 +315,6 @@ public class AISettingsViewModel: ObservableObject {
         }
     }
 
-    public func refreshEnhancementsProviderCredentialState(provider: AIProvider? = nil) {
-        if let provider {
-            activeEnhancementsProvider = provider
-        }
-
-        let activeProvider = activeEnhancementsProvider
-        isEnhancementsProviderKeySaved = keychain.existsAPIKey(for: activeProvider)
-        enhancementsModelsFetchError = nil
-        enhancementsActionError = nil
-        clearTransientEnhancementsAPIKey()
-
-        if let cachedModels = enhancementsModelsByProvider[activeProvider] {
-            enhancementsAvailableModels = cachedModels
-        } else {
-            enhancementsAvailableModels = []
-        }
-
-        if isEnhancementsProviderKeySaved {
-            enhancementsConnectionStatus = .success
-            if credentialBootstrapPolicy == .eager {
-                Task {
-                    await fetchEnhancementsAvailableModels(provider: activeProvider)
-                }
-            }
-        } else {
-            enhancementsConnectionStatus = .unknown
-            enhancementsAvailableModels = []
-            enhancementsLastModelsRefreshResultText = nil
-            enhancementsLastModelsRefreshAt = nil
-            enhancementsLastModelsRefreshSucceeded = false
-        }
-
-    }
-
-    public func prepareEnhancementsProvider(_ provider: AIProvider) {
-        enhancementsActionError = nil
-        refreshEnhancementsProviderCredentialState(provider: provider)
-    }
-
-    public func hasSavedAPIKey(for provider: AIProvider) -> Bool {
-        keychain.existsAPIKey(for: provider)
-    }
-
-    public func enhancementsReadinessIssue(for provider: AIProvider) -> EnhancementsInferenceReadinessIssue? {
-        let config = enhancementsConfiguration(for: provider)
-        guard llmService.validateURL(config.baseURL) != nil else {
-            return .invalidBaseURL
-        }
-
-        guard hasSavedAPIKey(for: provider) else {
-            return .missingAPIKey
-        }
-
-        return nil
-    }
-
-    @discardableResult
-    public func testEnhancementsAPIConnection() -> Task<Void, Never> {
-        enhancementsConnectionStatus = .testing
-        enhancementsActionError = nil
-        enhancementsModelsFetchError = nil
-
-        let provider = activeEnhancementsProvider
-        let config = enhancementsConfiguration(for: provider)
-        guard let baseURL = llmService.validateURL(config.baseURL) else {
-            enhancementsConnectionStatus = .failure("settings.ai.connection.invalid_url".localized)
-            return Task {}
-        }
-
-        let pendingInput = normalizedEnhancementsAPIKeyText
-        let persistedKey = (try? keychain.retrieveAPIKey(for: provider))?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let credential = pendingInput.isEmpty ? persistedKey : pendingInput
-
-        guard !credential.isEmpty else {
-            enhancementsConnectionStatus = .failure("transcription.qa.error.no_api".localized)
-            return Task {}
-        }
-
-        return Task {
-            do {
-                let success = try await llmService.testConnection(
-                    baseURL: baseURL,
-                    apiKey: credential,
-                    provider: provider
-                )
-
-                if success {
-                    if !pendingInput.isEmpty {
-                        try self.persistEnhancementsAPIKey(pendingInput, for: provider)
-                    }
-                    self.isEnhancementsProviderKeySaved = true
-                    self.enhancementsConnectionStatus = .success
-                    self.clearTransientEnhancementsAPIKey()
-                    await self.fetchEnhancementsAvailableModels(trigger: .manual, provider: provider)
-
-                    if self.settings.aiConfiguration.provider == provider {
-                        self.refreshProviderCredentialState()
-                    }
-                } else {
-                    self.enhancementsConnectionStatus = .failure("settings.ai.connection.invalid_response".localized)
-                }
-            } catch {
-                self.enhancementsConnectionStatus = .failure(self.connectionErrorMessage(from: error))
-                self.logger.error("Enhancements connection test failed: \(error.localizedDescription)")
-            }
-        }
-    }
-
-    public func removeEnhancementsAPIKey() {
-        enhancementsActionError = nil
-        let provider = activeEnhancementsProvider
-        let providerKey = KeychainManager.apiKeyKey(for: provider)
-
-        do {
-            try keychain.delete(for: providerKey)
-            clearTransientEnhancementsAPIKey()
-            isEnhancementsProviderKeySaved = false
-            enhancementsConnectionStatus = .unknown
-            enhancementsAvailableModels = []
-            enhancementsModelsFetchError = nil
-
-            if settings.aiConfiguration.provider == provider {
-                refreshProviderCredentialState()
-            }
-        } catch {
-            enhancementsActionError = "settings.ai.remove_failed".localized
-            logger.error("Failed to remove enhancements API key: \(error.localizedDescription)")
-        }
-    }
-
-    public func fetchEnhancementsAvailableModels(
-        trigger: ModelFetchTrigger = .automatic,
-        provider: AIProvider? = nil
-    ) async {
-        let targetProvider = provider ?? activeEnhancementsProvider
-        if trigger == .automatic,
-           let lastFetch = lastAutomaticEnhancementsModelsFetchAt,
-           Date().timeIntervalSince(lastFetch) < automaticModelsFetchThrottleInterval
-        {
-            return
-        }
-
-        let config = enhancementsConfiguration(for: targetProvider)
-        guard let baseURL = llmService.validateURL(config.baseURL) else {
-            if activeEnhancementsProvider == targetProvider {
-                enhancementsModelsFetchError = "settings.ai.connection.invalid_url".localized
-                registerEnhancementsModelsRefreshResult(
-                    success: false,
-                    message: "settings.ai.connection.invalid_url".localized
-                )
-            }
-            return
-        }
-
-        guard keychain.existsAPIKey(for: targetProvider) else {
-            enhancementsModelsByProvider.removeValue(forKey: targetProvider)
-            if activeEnhancementsProvider == targetProvider {
-                enhancementsAvailableModels = []
-                enhancementsModelsFetchError = nil
-            }
-            return
-        }
-
-        if trigger == .automatic {
-            lastAutomaticEnhancementsModelsFetchAt = Date()
-        }
-
-        if activeEnhancementsProvider == targetProvider {
-            isLoadingEnhancementsModels = true
-            enhancementsModelsFetchError = nil
-        }
-        defer {
-            if activeEnhancementsProvider == targetProvider {
-                isLoadingEnhancementsModels = false
-            }
-        }
-
-        do {
-            let apiKey = try keychain.retrieveAPIKey(for: targetProvider) ?? ""
-            let models = try await llmService.fetchAvailableModels(
-                baseURL: baseURL,
-                apiKey: apiKey,
-                provider: targetProvider
-            )
-            enhancementsModelsByProvider[targetProvider] = models
-
-            if activeEnhancementsProvider == targetProvider {
-                enhancementsAvailableModels = models
-                registerEnhancementsModelsRefreshResult(
-                    success: true,
-                    message: String(format: "settings.ai.models_loaded".localized, models.count)
-                )
-            }
-        } catch {
-            if activeEnhancementsProvider == targetProvider {
-                enhancementsModelsFetchError = error.localizedDescription
-                registerEnhancementsModelsRefreshResult(
-                    success: false,
-                    message: "settings.ai.models.fetch_failed".localized
-                )
-            }
-        }
-    }
-
-    public func fetchEnhancementsProviderModels(trigger: ModelFetchTrigger = .automatic) async {
-        if trigger == .automatic,
-           let lastFetch = lastAutomaticEnhancementsProviderModelsFetchAt,
-           Date().timeIntervalSince(lastFetch) < automaticModelsFetchThrottleInterval
-        {
-            return
-        }
-
-        if trigger == .automatic {
-            lastAutomaticEnhancementsProviderModelsFetchAt = Date()
-        }
-
-        isLoadingEnhancementsProviderModels = true
-        enhancementsProviderModelsFetchError = nil
-        defer { isLoadingEnhancementsProviderModels = false }
-
-        var options = Set<EnhancementsProviderModelOption>()
-        var hadFailure = false
-
-        // Force one-time legacy migration (.aiAPIKey -> provider slot) when applicable.
-        _ = try? keychain.retrieveAPIKey(for: settings.aiConfiguration.provider)
-
-        let apiKeysByProvider: [AIProvider: String]
-        do {
-            apiKeysByProvider = try keychain.retrieveAPIKeys(for: AIProvider.allCases)
-        } catch {
-            enhancementsProviderModels = []
-            enhancementsProviderModelsFetchError = "settings.ai.models.fetch_failed".localized
-            logger.error("Failed to read API keys in batch: \(error.localizedDescription)")
-            return
-        }
-
-        for provider in AIProvider.allCases {
-            guard let apiKey = apiKeysByProvider[provider] else { continue }
-
-            let config = enhancementsConfiguration(for: provider)
-            guard let baseURL = llmService.validateURL(config.baseURL) else {
-                hadFailure = true
-                continue
-            }
-
-            do {
-                let models = try await llmService.fetchAvailableModels(
-                    baseURL: baseURL,
-                    apiKey: apiKey,
-                    provider: provider
-                )
-
-                for model in models {
-                    options.insert(
-                        EnhancementsProviderModelOption(
-                            provider: provider,
-                            modelID: model.id
-                        )
-                    )
-                }
-            } catch {
-                hadFailure = true
-                logger.error("Failed to fetch enhancements provider models for \(provider.displayName): \(error.localizedDescription)")
-            }
-        }
-
-        enhancementsProviderModels = options.sorted { lhs, rhs in
-            if lhs.provider == rhs.provider {
-                return lhs.modelID.localizedCaseInsensitiveCompare(rhs.modelID) == .orderedAscending
-            }
-            return lhs.provider.displayName.localizedCaseInsensitiveCompare(rhs.provider.displayName) == .orderedAscending
-        }
-
-        if hadFailure {
-            enhancementsProviderModelsFetchError = "settings.ai.models.fetch_failed".localized
-        }
-    }
-
     /// Removes the API key for the current provider from the Keychain.
     public func removeAPIKey() {
         actionError = nil
@@ -627,16 +349,6 @@ public class AISettingsViewModel: ObservableObject {
         updateUIStates()
     }
 
-    private func resetEnhancementsProviderStateForDeferredBootstrap(provider: AIProvider) {
-        activeEnhancementsProvider = provider
-        isEnhancementsProviderKeySaved = false
-        enhancementsConnectionStatus = .unknown
-        enhancementsAvailableModels = enhancementsModelsByProvider[provider] ?? []
-        enhancementsModelsFetchError = nil
-        enhancementsActionError = nil
-        clearTransientEnhancementsAPIKey()
-    }
-
     private var normalizedAPIKeyText: String {
         apiKeyText.trimmingCharacters(in: .whitespacesAndNewlines)
     }
@@ -646,31 +358,11 @@ public class AISettingsViewModel: ObservableObject {
         apiKeyText = ""
     }
 
-    private var normalizedEnhancementsAPIKeyText: String {
-        enhancementsAPIKeyText.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private func clearTransientEnhancementsAPIKey() {
-        guard !enhancementsAPIKeyText.isEmpty else { return }
-        enhancementsAPIKeyText = ""
-    }
-
     private func resolvedCredentialForModelsFetch() -> String {
         if isKeySaved {
             return loadAPIKeyForCurrentProvider() ?? ""
         }
         return normalizedAPIKeyText
-    }
-
-    private func enhancementsConfiguration(for provider: AIProvider) -> AIConfiguration {
-        let baseURL = provider == .custom ? settings.aiConfiguration.baseURL : provider.defaultBaseURL
-        let selectedModel = settings.enhancementsSelectedModel(for: provider)
-
-        return AIConfiguration(
-            provider: provider,
-            baseURL: baseURL,
-            selectedModel: selectedModel
-        )
     }
 
     private func registerModelsRefreshResult(success: Bool, message: String) {
@@ -679,25 +371,7 @@ public class AISettingsViewModel: ObservableObject {
         lastModelsRefreshAt = Date()
     }
 
-    private func registerEnhancementsModelsRefreshResult(success: Bool, message: String) {
-        enhancementsLastModelsRefreshSucceeded = success
-        enhancementsLastModelsRefreshResultText = message
-        enhancementsLastModelsRefreshAt = Date()
-    }
-
-    private func persistEnhancementsAPIKey(_ value: String, for provider: AIProvider) throws {
-        let providerKey = KeychainManager.apiKeyKey(for: provider)
-        do {
-            try keychain.store(value, for: providerKey)
-            // swiftformat:disable:next redundantSelf
-            logger.info("Enhancements API key persisted for \(provider.displayName)")
-        } catch {
-            logger.error("Failed to persist enhancements API key: \(error.localizedDescription)")
-            throw error
-        }
-    }
-
-    private func connectionErrorMessage(from error: Error) -> String {
+    func connectionErrorMessage(from error: Error) -> String {
         if let urlError = error as? URLError {
             switch urlError.code {
             case .notConnectedToInternet:

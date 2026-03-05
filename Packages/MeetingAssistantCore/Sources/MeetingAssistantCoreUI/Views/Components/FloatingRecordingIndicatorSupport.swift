@@ -48,7 +48,6 @@ struct ActionIconButton: View {
     let action: @Sendable () -> Void
 
     @State private var isHovered = false
-    @FocusState private var isFocused: Bool
 
     init(
         symbol: String,
@@ -72,18 +71,8 @@ struct ActionIconButton: View {
                 .frame(width: 28, height: 28)
                 .background(controlBackground)
                 .clipShape(Circle())
-                .overlay(
-                    Circle()
-                        .strokeBorder(
-                            isFocused ? AppDesignSystem.Colors.accent.opacity(0.95) : .clear,
-                            lineWidth: 1.5
-                        )
-                )
         }
         .buttonStyle(.plain)
-        .focusable(true)
-        .focused($isFocused)
-        .focusEffectDisabled()
         .help(helpKey.localized)
         .onHover { hovering in
             isHovered = hovering
@@ -94,17 +83,11 @@ struct ActionIconButton: View {
     private var controlBackground: some ShapeStyle {
         switch style {
         case .neutral:
-            if isFocused {
-                return AnyShapeStyle(AppDesignSystem.Colors.accent.opacity(0.35))
-            }
             if isHovered {
                 return AnyShapeStyle(Color.white.opacity(0.14))
             }
             return AnyShapeStyle(Color.clear)
         case .success:
-            if isFocused {
-                return AnyShapeStyle(AppDesignSystem.Colors.success.opacity(0.95))
-            }
             if isHovered {
                 return AnyShapeStyle(AppDesignSystem.Colors.success.opacity(0.85))
             }

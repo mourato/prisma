@@ -21,33 +21,22 @@ public struct TranscriptionsSettingsTab: View {
     @StateObject private var viewModel = TranscriptionSettingsViewModel()
     @StateObject private var dictationService = MeetingQuestionDictationService()
     @State private var searchReloadTask: Task<Void, Never>?
-    @State private var navigationHistory = TranscriptionsNavigationHistory()
+    @Binding private var navigationHistory: TranscriptionsNavigationHistory
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var currentRoute: TranscriptionsPageRoute {
         navigationHistory.currentRoute
     }
 
+    public init(
+        navigationHistory: Binding<TranscriptionsNavigationHistory> = .constant(TranscriptionsNavigationHistory())
+    ) {
+        _navigationHistory = navigationHistory
+    }
+
     public var body: some View {
         VStack(spacing: 0) {
             contentSection
-        }
-        .toolbar {
-            ToolbarItemGroup(placement: .navigation) {
-                Button(action: navigateBack) {
-                    Image(systemName: "chevron.left")
-                }
-                .help("transcription.qa.navigation.back".localized)
-                .accessibilityLabel("transcription.qa.navigation.back".localized)
-                .disabled(!navigationHistory.canGoBack)
-
-                Button(action: navigateForward) {
-                    Image(systemName: "chevron.right")
-                }
-                .help("transcription.qa.navigation.forward".localized)
-                .accessibilityLabel("transcription.qa.navigation.forward".localized)
-                .disabled(!navigationHistory.canGoForward)
-            }
         }
         .task {
             await viewModel.loadTranscriptions()

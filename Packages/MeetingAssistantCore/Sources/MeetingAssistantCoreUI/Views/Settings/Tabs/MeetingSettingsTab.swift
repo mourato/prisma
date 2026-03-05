@@ -14,13 +14,18 @@ public struct MeetingSettingsTab: View {
         case monitoringTargets
     }
 
+    @Binding private var navigationState: MeetingSettingsNavigationState
     @StateObject private var meetingViewModel: MeetingSettingsViewModel
     @StateObject private var shortcutsViewModel = ShortcutSettingsViewModel()
     @StateObject private var monitoredAppsViewModel: InstalledAppsSelectionViewModel
     @StateObject private var webTargetsViewModel: WebMeetingTargetsViewModel
     @State private var showSummaryTemplateEditor = false
 
-    public init(settings: AppSettingsStore = .shared) {
+    public init(
+        settings: AppSettingsStore = .shared,
+        navigationState: Binding<MeetingSettingsNavigationState> = .constant(MeetingSettingsNavigationState())
+    ) {
+        _navigationState = navigationState
         _meetingViewModel = StateObject(wrappedValue: MeetingSettingsViewModel(settings: settings))
         _monitoredAppsViewModel = StateObject(
             wrappedValue: InstalledAppsSelectionViewModel(
@@ -34,7 +39,7 @@ public struct MeetingSettingsTab: View {
     }
 
     public var body: some View {
-        NavigationStack {
+        NavigationStack(path: meetingPathBinding) {
             mainPage
                 .navigationDestination(for: MeetingPageRoute.self) { route in
                     switch route {
@@ -70,6 +75,41 @@ public struct MeetingSettingsTab: View {
                 Text("settings.post_processing.delete_confirm_message".localized(with: prompt.title))
             }
         }
+    }
+
+    private var meetingPathBinding: Binding<[MeetingPageRoute]> {
+        Binding(
+            get: {
+                switch navigationState.currentRoute {
+                case .root:
+                    []
+                case .monitoringTargets:
+                    [.monitoringTargets]
+                }
+            },
+            set: { newPath in
+                let nextRoute: MeetingSettingsNavigationRoute = newPath.last == .monitoringTargets
+                    ? .monitoringTargets
+                    : .root
+                updateNavigationState(to: nextRoute)
+            }
+        )
+    }
+
+    private func updateNavigationState(to route: MeetingSettingsNavigationRoute) {
+        let previousRoute = navigationState.currentRoute
+        guard previousRoute != route else { return }
+
+        switch (previousRoute, route) {
+        case (.monitoringTargets, .root):
+            navigationState.forwardRoute = .monitoringTargets
+        case (.root, .monitoringTargets):
+            navigationState.forwardRoute = nil
+        default:
+            navigationState.forwardRoute = nil
+        }
+
+        navigationState.currentRoute = route
     }
 
     private var mainPage: some View {
