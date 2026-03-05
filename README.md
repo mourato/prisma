@@ -118,8 +118,8 @@ If you cannot use Apple Developer ID, use a stable self-signed identity so local
 # 1) Create/import local signing certificate (one-time)
 make setup-self-signed-cert
 
-# 2) Build signed DMG for manual installs
-make dmg-self-signed
+# 2) Build DMG for manual installs (auto self-signs if identity exists)
+make dmg
 
 # 3) Build signed Sparkle archive + appcast (requires Sparkle private key env)
 SPARKLE_PRIVATE_KEY_B64="<base64-pem>" \
@@ -131,6 +131,8 @@ make ci-release-parity-self-signed \
 Notes:
 - Keep `CFBundleIdentifier` unchanged between versions.
 - Keep `MA_RELEASE_CODE_SIGN_IDENTITY` stable if you customize the certificate name.
+- `make dmg` auto-selects self-signed mode only when the exact configured identity is found in keychain.
+- Use `MA_RELEASE_SIGNING_MODE=adhoc make dmg` or `MA_RELEASE_SIGNING_MODE=self-signed make dmg` to force mode.
 - Install by replacing the existing app in `/Applications` to maximize permission persistence.
 - Sparkle signing key can come from `SPARKLE_PRIVATE_KEY_B64` / `SPARKLE_PRIVATE_KEY` env, or from Sparkle's default Keychain account (`ed25519`).
 

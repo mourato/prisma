@@ -32,6 +32,14 @@ ma_release_effective_identity() {
   fi
 }
 
+ma_autodetect_release_signing_mode() {
+  if ma_codesign_identity_exists "${MA_RELEASE_CODE_SIGN_IDENTITY}"; then
+    printf '%s' "self-signed"
+  else
+    printf '%s' "adhoc"
+  fi
+}
+
 ma_codesign_identity_exists() {
   local identity="$1"
   local login_keychain="${HOME}/Library/Keychains/login.keychain-db"

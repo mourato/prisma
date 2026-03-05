@@ -26,6 +26,7 @@ Guidelines for maintaining consistent project documentation and visibility into 
 - **Redundancy Audit**: Periodically audit repeated UI/logic guidance and consolidate duplicate instructions into reusable skill sections.
 - **B2 Module Awareness**: Keep docs aligned with the current module split (`Common`, `Domain`, `Infrastructure`, `Data`, `Audio`, `AI`, `UI`, compatibility `Core`).
 - **Path Validity**: After file moves between modules, update all documentation links and examples to the new canonical paths.
+- **Command Surface Sync**: When Makefile/script targets are renamed or removed, update `AGENTS.md`, README, and affected skills/docs in the same PR to avoid stale guidance.
 
 ## 3. Information Routing (No Root `docs/`)
 

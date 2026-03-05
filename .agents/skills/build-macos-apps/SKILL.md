@@ -72,6 +72,15 @@ For Medium/High risk merge gates, keep canonical checks:
 make build-test
 ```
 
+## Release Command Surface (Current)
+
+- Use `make dmg` as the single DMG entrypoint.
+- `make dmg` auto-detects self-signed mode only when `MA_RELEASE_CODE_SIGN_IDENTITY` exists in keychain.
+- Force mode when needed:
+  - `MA_RELEASE_SIGNING_MODE=adhoc make dmg`
+  - `MA_RELEASE_SIGNING_MODE=self-signed make dmg`
+- Bootstrap local identity with `make setup-self-signed-cert`.
+
 ## 2026-03 Progression Update
 
 ### Evidence-Driven Priority

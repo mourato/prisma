@@ -5,12 +5,14 @@
 # Works with the new Xcode project structure. Will build Release if needed.
 # =============================================================================
 
-set -e
+set -euo pipefail
 
 # Configuration
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 # shellcheck source=scripts/config/app_identity.sh
 source "${PROJECT_DIR}/scripts/config/app_identity.sh"
+# shellcheck source=scripts/config/release_signing.sh
+source "${PROJECT_DIR}/scripts/config/release_signing.sh"
 
 DIST_DIR="${PROJECT_DIR}/dist"
 APP_BUNDLE="${DIST_DIR}/${APP_PRODUCT_NAME}.app"
@@ -20,6 +22,14 @@ STAGING_DIR="${DIST_DIR}/dmg_staging"
 RW_DMG_PATH="${DIST_DIR}/${APP_PRODUCT_NAME}-rw.dmg"
 MOUNT_POINT="${DIST_DIR}/dmg_mount"
 DMG_ICON_SIZE="${DMG_ICON_SIZE:-160}"
+CI_MODE=0
+NO_INTERACTIVE=0
+AUTO_SIGNING=0
+MA_RELEASE_SIGNING_MODE_WAS_SET=0
+
+if [ -n "${MA_RELEASE_SIGNING_MODE:-}" ]; then
+    MA_RELEASE_SIGNING_MODE_WAS_SET=1
+fi
 
 # Colors
 GREEN='\033[0;32m'
@@ -72,17 +82,73 @@ EOF
 
 trap cleanup EXIT
 
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --ci)
+            CI_MODE=1
+            shift
+            ;;
+        --no-interactive)
+            NO_INTERACTIVE=1
+            shift
+            ;;
+        --auto-signing)
+            AUTO_SIGNING=1
+            shift
+            ;;
+        --help|-h)
+            cat <<'EOF'
+Usage: scripts/create-dmg.sh [options]
+
+Options:
+  --ci              Run in CI mode (no prompts)
+  --no-interactive  Run without prompts
+  --auto-signing    Auto-detect self-signed mode from keychain identity
+  --help            Show help
+EOF
+            exit 0
+            ;;
+        *)
+            echo -e "${RED}Unknown option: $1${NC}" >&2
+            exit 1
+            ;;
+    esac
+done
+
+if [ "${MA_RELEASE_SIGNING_MODE_WAS_SET}" -eq 0 ] && [ "${AUTO_SIGNING}" -eq 1 ]; then
+    MA_RELEASE_SIGNING_MODE="$(ma_autodetect_release_signing_mode)"
+fi
+
+if ! ma_validate_release_signing_mode; then
+    exit 1
+fi
+
+if ! ma_require_self_signed_identity; then
+    exit 1
+fi
+
+if [ "${CI_MODE}" -eq 1 ] || [ "${NO_INTERACTIVE}" -eq 1 ]; then
+    INTERACTIVE=0
+else
+    INTERACTIVE=1
+fi
+
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${BLUE}  Creating ${DMG_NAME}${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
+echo -e "${YELLOW}Release signing mode:${NC} $(ma_release_signing_description)"
 
 # Always build Release version
 echo -e "${YELLOW}Building Release version...${NC}"
 echo ""
-if [[ "$1" == "--ci" || "$1" == "--no-interactive" ]]; then
+if [ "${INTERACTIVE}" -eq 0 ]; then
+    MA_RELEASE_SIGNING_MODE="${MA_RELEASE_SIGNING_MODE}" \
+    MA_RELEASE_CODE_SIGN_IDENTITY="${MA_RELEASE_CODE_SIGN_IDENTITY}" \
     "${PROJECT_DIR}/scripts/build-release.sh" --ci
 else
+    MA_RELEASE_SIGNING_MODE="${MA_RELEASE_SIGNING_MODE}" \
+    MA_RELEASE_CODE_SIGN_IDENTITY="${MA_RELEASE_CODE_SIGN_IDENTITY}" \
     "${PROJECT_DIR}/scripts/build-release.sh" <<< "n"
 fi
 echo ""
@@ -133,8 +199,16 @@ hdiutil convert "${RW_DMG_PATH}" \
     -ov -format UDZO \
     -o "${DMG_PATH%.dmg}"
 
+echo -e "${YELLOW}[5/6]${NC} Code signing DMG..."
+if [ "${MA_RELEASE_SIGNING_MODE}" = "self-signed" ]; then
+    /usr/bin/codesign --force --keychain "${HOME}/Library/Keychains/login.keychain-db" --timestamp=none --sign "${MA_RELEASE_CODE_SIGN_IDENTITY}" "${DMG_PATH}"
+else
+    /usr/bin/codesign --force --sign - "${DMG_PATH}"
+fi
+/usr/bin/codesign --verify --verbose=2 "${DMG_PATH}"
+
 # Cleanup temporary files
-echo -e "${YELLOW}[5/5]${NC} Cleaning up temporary files..."
+echo -e "${YELLOW}[6/6]${NC} Cleaning up temporary files..."
 rm -rf "${STAGING_DIR}" "${MOUNT_POINT}"
 rm -f "${RW_DMG_PATH}"
 
@@ -150,7 +224,7 @@ echo -e "  ${YELLOW}open -R \"${DMG_PATH}\"${NC}"
 echo ""
 
 # Ask if user wants to open the DMG (skip in CI mode)
-if [[ "$1" != "--ci" && "$1" != "--no-interactive" ]]; then
+if [ "${INTERACTIVE}" -eq 1 ]; then
     read -p "Do you want to open the new DMG file? (y/n) " -n 1 -r
     echo ""
     if [[ $REPLY =~ ^[Yy]$ ]]; then

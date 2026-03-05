@@ -5,7 +5,7 @@
 # with CI/CD pipelines and headless environments.
 # =============================================================================
 
-.PHONY: help build build-debug build-release build-agent build-test xcodebuild-safe test test-agent test-swift test-verbose test-strict test-ci-strict benchmark-summary benchmark-summary-agent lint lint-agent lint-fix arch-check preview-check preflight preflight-fast preflight-agent preflight-agent-fast clean run run-release dmg dmg-self-signed setup-self-signed-cert setup format health ci-build ci-test ci-release-parity ci-release-parity-self-signed deliverable-gate docs docs-preview docs-clean profile profile-report profile-cpu profile-memory profile-animation profile-animation-report
+.PHONY: help build build-debug build-release build-agent build-test xcodebuild-safe test test-agent test-swift test-verbose test-strict test-ci-strict benchmark-summary benchmark-summary-agent lint lint-agent lint-fix arch-check preview-check preflight preflight-fast preflight-agent preflight-agent-fast clean run run-release dmg setup-self-signed-cert setup format health ci-build ci-test ci-release-parity ci-release-parity-self-signed deliverable-gate docs docs-preview docs-clean profile profile-report profile-cpu profile-memory profile-animation profile-animation-report
 
 # Default target
 help:
@@ -47,8 +47,7 @@ help:
 	@echo "  make run-release    - Build and run release version"
 	@echo ""
 	@echo "Distribution:"
-	@echo "  make dmg            - Create DMG installer"
-	@echo "  make dmg-self-signed - Create DMG signed with local self-signed identity"
+	@echo "  make dmg            - Create DMG installer (auto-detect self-signed identity)"
 	@echo "  make setup-self-signed-cert - Create/import local code-signing cert"
 	@echo "  make new-release    - Create a new GitHub release interactively"
 	@echo ""
@@ -218,11 +217,7 @@ new-release:
 
 dmg:
 	@echo -e "$(BLUE)Creating DMG installer...$(NC)"
-	@./scripts/create-dmg.sh --ci
-
-dmg-self-signed:
-	@echo -e "$(BLUE)Creating self-signed DMG installer...$(NC)"
-	@MA_RELEASE_SIGNING_MODE=self-signed ./scripts/create-dmg.sh --ci
+	@./scripts/create-dmg.sh --ci --auto-signing
 
 setup-self-signed-cert:
 	@./scripts/setup-self-signed-cert.sh
