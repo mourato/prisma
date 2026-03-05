@@ -291,6 +291,46 @@ resolve_download_url_prefix() {
   return 1
 }
 
+normalize_release_tag_version() {
+  local raw_tag="$1"
+  printf '%s' "${raw_tag#v}"
+}
+
+validate_release_tag_matches_bundle_version() {
+  local app_bundle="$1"
+  local info_plist="${app_bundle}/Contents/Info.plist"
+
+  if [ -z "${RELEASE_TAG}" ]; then
+    return 0
+  fi
+
+  if [ ! -f "${info_plist}" ]; then
+    log_error "Bundle Info.plist not found at ${info_plist}."
+    return 1
+  fi
+
+  local expected_short_version
+  expected_short_version="$(normalize_release_tag_version "${RELEASE_TAG}")"
+  if [ -z "${expected_short_version}" ]; then
+    log_error "Could not derive expected short version from release tag '${RELEASE_TAG}'."
+    return 1
+  fi
+
+  local actual_short_version
+  actual_short_version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "${info_plist}" 2>/dev/null || true)"
+  if [ -z "${actual_short_version}" ]; then
+    log_error "Missing CFBundleShortVersionString in ${info_plist}."
+    return 1
+  fi
+
+  if [ "${actual_short_version}" != "${expected_short_version}" ]; then
+    log_error "Release tag ${RELEASE_TAG} expects CFBundleShortVersionString=${expected_short_version}, got ${actual_short_version}."
+    return 1
+  fi
+
+  log_info "Validated bundle short version (${actual_short_version}) matches release tag ${RELEASE_TAG}."
+}
+
 generate_appcast() {
   local appcast_tool="$1"
   local appcast_dir="$2"
@@ -376,6 +416,11 @@ run_package_appcast_phase() {
 
   log_info "Using archive: ${archive_root}"
   log_info "Using app bundle: ${app_bundle}"
+
+  if ! validate_release_tag_matches_bundle_version "${app_bundle}"; then
+    emit_result "FAIL" "Package/appcast failed"
+    return 1
+  fi
 
   normalize_unsigned_bundle "${app_bundle}"
 
