@@ -28,10 +28,22 @@ make lint               # Run SwiftLint checks
 ### Release and distribution
 ```bash
 make build-release      # Optimized release build
-make dmg                # Create DMG installer
+make dmg                # Create DMG installer (auto-detect self-signed identity by exact name)
 make setup-self-signed-cert # Bootstrap local self-signed code-signing cert
-make dmg-self-signed    # Create DMG signed with local self-signed identity
 make ci-release-parity-self-signed DOWNLOAD_URL_PREFIX=... RELEASE_TAG=... # Signed Sparkle parity (archive + appcast)
+```
+
+DMG signing mode selection:
+
+```bash
+# Auto mode (default via Makefile target): self-signed only if MA_RELEASE_CODE_SIGN_IDENTITY exists
+make dmg
+
+# Force ad-hoc mode
+MA_RELEASE_SIGNING_MODE=adhoc make dmg
+
+# Force self-signed mode (fails fast if identity is missing)
+MA_RELEASE_SIGNING_MODE=self-signed make dmg
 ```
 
 ### Agent-optimized commands (compact output, better for CI/agents)

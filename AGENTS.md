@@ -1,8 +1,9 @@
 # AGENTS.md - Prisma Development Guide
 
-**Document Status:** v2.5 | Updated: Feb 27, 2026 | Maintained by: Team
+**Document Status:** v2.6 | Updated: Mar 5, 2026 | Maintained by: Team
 
 **Recent Changes:**
+- v2.6: Unified DMG creation under `make dmg` with keychain-aware self-signed auto-detection; removed `make dmg-self-signed`
 - v2.5: Added default external code research priority (MCP grep → gh CLI → deepwiki → web)
 - v2.4: Removed root `docs/` as a knowledge source; added mandatory information routing policy (skill vs issue vs deletion)
 - v2.3: Added SwiftLint policy source-of-truth routing to skills
@@ -48,6 +49,7 @@ The repository uses a CLI-first workflow for reproducible local and CI execution
 - **Broad context**: Use deepwiki for repository-wide perspective (optional if local context suffices)
 - **External code research priority**: When inspecting code from other projects, use this order: `MCP grep` (default) → `gh` CLI → deepwiki → web search (last resort)
 - **Build & test**: See [Build and Test Reference](./.agents/docs/build-and-test.md)
+- **Distribution**: Use `make dmg` as the single DMG entrypoint; it auto-detects the configured local self-signed identity in keychain
 - **Skill routing**: See [Skill Routing Guide](./.agents/docs/skill-routing.md)
 - **Code style source of truth**: `.swiftlint.yml` defines enforceable style budgets/rules. Keep lint-mapped writing guidance in `.agents/skills/swift-conventions/SKILL.md` and update that skill in the same PR whenever `.swiftlint.yml` changes.
 
