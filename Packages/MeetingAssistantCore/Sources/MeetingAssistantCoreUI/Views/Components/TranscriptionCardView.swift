@@ -116,18 +116,19 @@ public struct TranscriptionCardView: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .center, spacing: 12) {
                 TranscriptionAudioPlayerView(audioURL: audioURL)
-                    .frame(maxWidth: 250)
 
                 Spacer(minLength: 12)
 
-                Picker("", selection: $selectedTab) {
-                    ForEach(availableTabs, id: \.self) { tab in
-                        Text(tab.localized).tag(tab)
+                if shouldShowTabPicker {
+                    Picker("", selection: $selectedTab) {
+                        ForEach(availableTabs, id: \.self) { tab in
+                            Text(tab.localized).tag(tab)
+                        }
                     }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .frame(width: isSegmentedTabEnabled ? 300 : 220)
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(width: isSegmentedTabEnabled ? 300 : 220)
             }
 
             contentView
@@ -182,7 +183,7 @@ public struct TranscriptionCardView: View {
                                 .controlSize(.small)
                                 .frame(width: 16, height: 16)
                         } else {
-                            Image(systemName: "arrow.clockwise")
+                            Image(systemName: "wand.and.sparkles")
                                 .font(.body)
                                 .foregroundStyle(.secondary)
                         }
@@ -230,17 +231,37 @@ public struct TranscriptionCardView: View {
         .onChange(of: isSegmentedTabEnabled) { _, _ in
             ensureValidSelectedTab()
         }
+        .onChange(of: hasPostProcessingContent) { _, _ in
+            ensureValidSelectedTab()
+        }
     }
 
     private var availableTabs: [TranscriptionTab] {
+        guard hasPostProcessingContent else {
+            return [.original]
+        }
+
         if isSegmentedTabEnabled {
             return TranscriptionTab.allCases
         }
         return [.aiProcessed, .original]
     }
 
+    private var shouldShowTabPicker: Bool {
+        availableTabs.count > 1
+    }
+
+    private var hasPostProcessingContent: Bool {
+        if let processedContent = transcriptionDetail?.processedContent {
+            return !processedContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+        return transcription.isPostProcessed
+    }
+
     private var isSegmentedTabEnabled: Bool {
-        transcription.supportsMeetingConversation && AppSettingsStore.shared.isDiarizationEnabled
+        hasPostProcessingContent
+            && transcription.supportsMeetingConversation
+            && AppSettingsStore.shared.isDiarizationEnabled
     }
 
     private var filteredPrompts: [PostProcessingPrompt] {
@@ -257,7 +278,7 @@ public struct TranscriptionCardView: View {
 
     private func ensureValidSelectedTab() {
         guard !availableTabs.contains(selectedTab) else { return }
-        selectedTab = .aiProcessed
+        selectedTab = availableTabs.first ?? .original
     }
 
     private var currentText: String {
