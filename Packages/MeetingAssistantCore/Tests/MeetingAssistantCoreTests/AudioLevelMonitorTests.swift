@@ -28,7 +28,21 @@ final class AudioLevelMonitorTests: XCTestCase {
         XCTAssertTrue(monitor.isSilenceWarningVisible)
     }
 
-    func testDismissSilenceWarning_ResetsTimerUntilSilenceDurationIsReachedAgain() {
+    func testIngestLevels_DoesNotShowSilenceWarningOutsideStartupWindow() {
+        let monitor = AudioLevelMonitor(samplingInterval: 1.0)
+
+        for _ in 0..<10 {
+            monitor.ingestLevels(averageDB: -6, peakDB: -6)
+        }
+
+        for _ in 0..<8 {
+            monitor.ingestLevels(averageDB: -80, peakDB: -80)
+        }
+
+        XCTAssertFalse(monitor.isSilenceWarningVisible)
+    }
+
+    func testDismissSilenceWarning_DoesNotRetriggerInSameSession() {
         let monitor = AudioLevelMonitor(samplingInterval: 1.0)
 
         for _ in 0..<4 {
@@ -39,7 +53,31 @@ final class AudioLevelMonitorTests: XCTestCase {
         monitor.dismissSilenceWarning()
         XCTAssertFalse(monitor.isSilenceWarningVisible)
 
-        monitor.ingestLevels(averageDB: -80, peakDB: -80)
+        for _ in 0..<8 {
+            monitor.ingestLevels(averageDB: -80, peakDB: -80)
+        }
         XCTAssertFalse(monitor.isSilenceWarningVisible)
+    }
+
+    func testStopMonitoring_ResetsSilenceWarningSessionState() {
+        let monitor = AudioLevelMonitor(samplingInterval: 1.0)
+
+        for _ in 0..<4 {
+            monitor.ingestLevels(averageDB: -80, peakDB: -80)
+        }
+        XCTAssertTrue(monitor.isSilenceWarningVisible)
+
+        monitor.dismissSilenceWarning()
+        for _ in 0..<6 {
+            monitor.ingestLevels(averageDB: -80, peakDB: -80)
+        }
+        XCTAssertFalse(monitor.isSilenceWarningVisible)
+
+        monitor.stopMonitoring()
+
+        for _ in 0..<4 {
+            monitor.ingestLevels(averageDB: -80, peakDB: -80)
+        }
+        XCTAssertTrue(monitor.isSilenceWarningVisible)
     }
 }

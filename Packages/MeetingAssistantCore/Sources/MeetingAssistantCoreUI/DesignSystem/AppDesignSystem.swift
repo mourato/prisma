@@ -138,7 +138,7 @@ public enum AppDesignSystem {
         public static let recordingIndicatorDotSize: CGFloat = 8
         public static let recordingIndicatorMiniDotSize: CGFloat = 8
         public static let recordingIndicatorPromptGap: CGFloat = 2
-        public static let recordingIndicatorSidePadding: CGFloat = 16
+        public static let recordingIndicatorSidePadding: CGFloat = 8
 
         public static let shadowRadius: CGFloat = 10
         public static let shadowX: CGFloat = 0
