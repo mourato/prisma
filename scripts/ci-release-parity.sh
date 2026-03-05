@@ -336,11 +336,6 @@ generate_appcast() {
     fi
   }
 
-  cleanup_key() {
-    rm -f "${key_path}"
-  }
-  trap cleanup_key RETURN
-
   if [ -n "${SPARKLE_PRIVATE_KEY_B64:-}" ]; then
     printf '%s' "${SPARKLE_PRIVATE_KEY_B64}" | decode_base64 > "${key_path}"
   else
@@ -352,6 +347,8 @@ generate_appcast() {
     --ed-key-file "${key_path}" \
     --download-url-prefix "${url_prefix}/" \
     "${appcast_dir}" 2>&1 | tee "${appcast_log}"; then
+    rm -f "${key_path}"
+
     if [ "${DRY_RUN}" = "1" ] && grep -Eq "failed Apple Code Signing checks|No usable archives found" "${appcast_log}"; then
       skip_reason="unsigned_app"
       append_warning "Skipping appcast generation in dry-run because archived app is not Apple-signed yet."
@@ -363,6 +360,7 @@ generate_appcast() {
     return 1
   fi
 
+  rm -f "${key_path}"
   return 0
 }
 
