@@ -3,9 +3,9 @@ import SwiftUI
 
 struct RecordingSilenceWarningOverlay: View {
     @Binding var isDialogPresented: Bool
-    let onContinue: @Sendable () -> Void
-    let onStop: @Sendable () -> Void
-    let onDiscard: @Sendable () -> Void
+    let onContinue: () -> Void
+    let onStop: () -> Void
+    let onDiscard: () -> Void
 
     var body: some View {
         Text("recording_indicator.silence_warning".localized)
@@ -51,7 +51,7 @@ struct RecordingSilenceWarningOverlay: View {
 
 struct RecordingPostProcessingWarningOverlay: View {
     let descriptor: RecordingIndicatorPostProcessingWarningDescriptor
-    let onOpenSettings: @Sendable (String) -> Void
+    let onOpenSettings: (String) -> Void
 
     var body: some View {
         HStack(spacing: AppDesignSystem.Layout.spacing8) {
