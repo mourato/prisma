@@ -8,6 +8,10 @@ import SwiftUI
 
 /// Audio player component for transcriptions with waveform and playback controls.
 public struct TranscriptionAudioPlayerView: View {
+    private enum Layout {
+        static let fixedWidth: CGFloat = 256
+    }
+
     @StateObject private var viewModel = AudioPlayerViewModel()
     let audioURL: URL?
 
@@ -60,6 +64,7 @@ public struct TranscriptionAudioPlayerView: View {
         .padding(.vertical, AppDesignSystem.Layout.spacing8)
         .background(Color.primary.opacity(0.05))
         .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.cardCornerRadius))
+        .frame(width: Layout.fixedWidth)
         .onAppear {
             if let url = audioURL {
                 viewModel.loadAudio(url: url)

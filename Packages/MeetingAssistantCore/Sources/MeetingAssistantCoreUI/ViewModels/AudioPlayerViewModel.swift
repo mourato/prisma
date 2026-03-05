@@ -14,6 +14,7 @@ public final class AudioPlayerViewModel: ObservableObject {
     private enum Constants {
         static let playbackUpdateInterval: TimeInterval = 0.1
         static let timerToleranceRatio: Double = 0.25
+        static let waveformSampleCount = 40
     }
 
     private var audioPlayer: AVAudioPlayer?
@@ -36,7 +37,6 @@ public final class AudioPlayerViewModel: ObservableObject {
             currentTime = 0
             isPlaying = false
 
-            // For now, generate random-ish but static samples for this file
             generateSamples(for: url)
         } catch {
             print("Failed to load audio for playback: \(error)")
@@ -93,11 +93,10 @@ public final class AudioPlayerViewModel: ObservableObject {
     }
 
     private func generateSamples(for url: URL) {
-        let sampleCount = 40
         let extractedURL = url
         Task { @MainActor [weak self] in
             let extracted = await Task.detached(priority: .utility) {
-                Self.extractWaveformSamples(from: extractedURL, count: sampleCount)
+                Self.extractWaveformSamples(from: extractedURL, count: Constants.waveformSampleCount)
             }.value
             self?.samples = extracted
         }
@@ -126,13 +125,14 @@ public final class AudioPlayerViewModel: ObservableObject {
             try audioFile.read(into: buffer)
             guard let channelData = buffer.floatChannelData?.pointee else { return fallback }
 
-            let framesPerSample = max(1, Int(totalFrames) / count)
+            let totalFrameCount = Int(totalFrames)
             var rmsValues = [Float]()
             rmsValues.reserveCapacity(count)
 
             for sampleIndex in 0..<count {
-                let start = sampleIndex * framesPerSample
-                let end = min(start + framesPerSample, Int(totalFrames))
+                let start = Int((Double(sampleIndex) / Double(count)) * Double(totalFrameCount))
+                let nominalEnd = Int((Double(sampleIndex + 1) / Double(count)) * Double(totalFrameCount))
+                let end = min(totalFrameCount, max(start + 1, nominalEnd))
                 guard start < end else {
                     rmsValues.append(0)
                     continue

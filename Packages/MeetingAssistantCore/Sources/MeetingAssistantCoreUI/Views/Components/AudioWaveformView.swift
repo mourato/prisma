@@ -13,6 +13,11 @@ private struct WaveformBar: Identifiable {
 
 /// A simple bar-based waveform visualization.
 public struct AudioWaveformView: View {
+    private enum Layout {
+        static let barWidth: CGFloat = 2
+        static let minimumBarHeight: CGFloat = 1
+    }
+
     let samples: [Float]
     let progress: Double
     let color: Color
@@ -26,27 +31,44 @@ public struct AudioWaveformView: View {
     private var bars: [WaveformBar] {
         let count = samples.count
         guard count > 0 else { return [] }
+        let denominator = max(Double(count - 1), 1)
         return samples.enumerated().map { index, amplitude in
             WaveformBar(
                 id: index,
                 normalizedAmplitude: amplitude,
-                relativePosition: Double(index) / Double(count)
+                relativePosition: Double(index) / denominator
             )
         }
     }
 
     public var body: some View {
         GeometryReader { geometry in
-            HStack(spacing: 1) {
+            let spacing = barSpacing(for: geometry.size.width)
+
+            HStack(alignment: .bottom, spacing: spacing) {
                 ForEach(bars) { bar in
                     RoundedRectangle(cornerRadius: 1)
                         .fill(bar.relativePosition <= progress ? color : color.opacity(0.3))
-                        .frame(minWidth: 1)
-                        .frame(height: geometry.size.height * CGFloat(bar.normalizedAmplitude))
+                        .frame(width: Layout.barWidth)
+                        .frame(
+                            height: max(
+                                Layout.minimumBarHeight,
+                                geometry.size.height * CGFloat(bar.normalizedAmplitude)
+                            )
+                        )
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .clipped()
         }
+    }
+
+    private func barSpacing(for totalWidth: CGFloat) -> CGFloat {
+        let count = bars.count
+        guard count > 1 else { return 0 }
+
+        let occupiedWidth = CGFloat(count) * Layout.barWidth
+        return max(0, (totalWidth - occupiedWidth) / CGFloat(count - 1))
     }
 }
 
