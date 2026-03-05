@@ -35,6 +35,22 @@ make test
 make run
 ```
 
+### Before push/release
+
+Run the deliverable gate to reduce CI surprises:
+
+```bash
+make deliverable-gate
+```
+
+This includes `make build-test`, `make lint`, and `make ci-release-parity`.
+
+To enforce strict Xcode pin matching in automated runs:
+
+```bash
+MA_CI_PARITY_STRICT_XCODE_VERSION=1 make ci-release-parity
+```
+
 ### Canonical xcodebuild usage
 
 Use the project wrapper (or pass equivalent flags) when invoking `xcodebuild` directly:

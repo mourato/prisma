@@ -110,25 +110,6 @@ jobs:
           RELEASE_TAG="${{ steps.release_meta.outputs.release_tag }}"
           git checkout --detach "refs/tags/${RELEASE_TAG}"
 
-      - name: Select pinned Xcode
-        run: |
-          set -euo pipefail
-
-          if [ ! -d "${XCODE_APP}" ]; then
-            echo "::error::Pinned Xcode app not found at ${XCODE_APP}."
-            exit 1
-          fi
-
-          sudo xcode-select -s "${XCODE_APP}/Contents/Developer"
-
-          CURRENT_XCODE_VERSION="$(xcodebuild -version | awk 'NR==1 { print $2 }')"
-          if [ "${CURRENT_XCODE_VERSION}" != "${XCODE_VERSION}" ]; then
-            echo "::error::Expected Xcode ${XCODE_VERSION}, got ${CURRENT_XCODE_VERSION}."
-            exit 1
-          fi
-
-          xcodebuild -version
-
       - name: Cache SwiftPM dependencies
         uses: actions/cache@v4
         with:
@@ -139,64 +120,19 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-xcode-${{ env.XCODE_VERSION }}-spm-
 
-      - name: Resolve SPM dependencies
+      - name: Run release parity gate (build + archive)
+        id: release_parity
         run: |
           set -euo pipefail
-          xcodebuild -resolvePackageDependencies \
-            -project "${XCODE_PROJECT}" \
-            -scheme "${SCHEME}" \
-            -derivedDataPath "${DERIVED_DATA_PATH}"
-
-      - name: Locate Sparkle tools deterministically
-        run: |
-          set -euo pipefail
-
-          SPARKLE_TOOL="$(find "${DERIVED_DATA_PATH}/SourcePackages" -type f -name generate_appcast | head -n 1)"
-          if [ -z "${SPARKLE_TOOL}" ]; then
-            echo "::error::Could not locate Sparkle generate_appcast under ${DERIVED_DATA_PATH}/SourcePackages."
-            exit 1
-          fi
-
-          SPARKLE_BIN_DIR="$(dirname "${SPARKLE_TOOL}")"
-          mkdir -p build/tools/sparkle
-          cp -R "${SPARKLE_BIN_DIR}/." build/tools/sparkle/
-          chmod +x build/tools/sparkle/generate_appcast
-
-      - name: Build release gate
-        id: build_release_gate
-        run: |
-          set -euo pipefail
-          xcodebuild build \
-            -project "${XCODE_PROJECT}" \
-            -scheme "${SCHEME}" \
-            -configuration Release \
-            -destination "generic/platform=macOS" \
-            -derivedDataPath "${DERIVED_DATA_PATH}" \
-            ARCHS=arm64 \
-            ONLY_ACTIVE_ARCH=YES \
-            EXCLUDED_ARCHS=x86_64 \
-            CODE_SIGN_IDENTITY="-" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            2>&1 | tee /tmp/build-release.log
-
-      - name: Archive app
-        id: archive
-        run: |
-          set -euo pipefail
-          xcodebuild archive \
-            -project "${XCODE_PROJECT}" \
-            -scheme "${SCHEME}" \
-            -configuration Release \
-            -archivePath "${ARCHIVE_PATH}" \
-            -derivedDataPath "${DERIVED_DATA_PATH}" \
-            ARCHS=arm64 \
-            ONLY_ACTIVE_ARCH=YES \
-            EXCLUDED_ARCHS=x86_64 \
-            CODE_SIGN_IDENTITY="-" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            2>&1 | tee /tmp/archive.log
+          ./scripts/ci-release-parity.sh \
+            --mode ci \
+            --phase build-archive \
+            --derived-data "${DERIVED_DATA_PATH}" \
+            --archive-path "${ARCHIVE_PATH}" \
+            --xcode-version "${XCODE_VERSION}" \
+            --xcode-app "${XCODE_APP}" \
+            --strict-xcode-version "${MA_CI_PARITY_STRICT_XCODE_VERSION:-0}" \
+            --dry-run 0
 
       - name: Upload build outputs
         if: success()
@@ -209,21 +145,15 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Upload build gate log on failure
-        if: failure() && steps.build_release_gate.outcome == 'failure'
+      - name: Upload parity logs on failure
+        if: failure() && steps.release_parity.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
-          name: sparkle-build-gate-log
-          path: /tmp/build-release.log
-          if-no-files-found: warn
-          retention-days: 14
-
-      - name: Upload archive log on failure
-        if: failure() && steps.archive.outcome == 'failure'
-        uses: actions/upload-artifact@v4
-        with:
-          name: sparkle-archive-log
-          path: /tmp/archive.log
+          name: sparkle-parity-logs
+          path: |
+            build/ci-release-resolve-packages.log
+            build/ci-release-build.log
+            build/ci-release-archive.log
           if-no-files-found: warn
           retention-days: 14
 
@@ -253,124 +183,26 @@ jobs:
           set -euo pipefail
           gh auth status -h github.com
 
-      - name: Resolve archive and app bundle paths
-        run: |
-          set -euo pipefail
-
-          ARCHIVE_ROOT="/tmp/sparkle-build-outputs/${ARCHIVE_PATH}"
-          if [ ! -d "${ARCHIVE_ROOT}" ]; then
-            ARCHIVE_BASENAME="$(basename "${ARCHIVE_PATH}")"
-            ARCHIVE_ROOT="$(find /tmp/sparkle-build-outputs -type d -name "${ARCHIVE_BASENAME}" | head -n 1)"
-          fi
-
-          if [ -z "${ARCHIVE_ROOT:-}" ] || [ ! -d "${ARCHIVE_ROOT}" ]; then
-            echo "::error::Archive not found under /tmp/sparkle-build-outputs (expected ${ARCHIVE_PATH})."
-            find /tmp/sparkle-build-outputs -maxdepth 4 -type d | sort
-            exit 1
-          fi
-
-          APP_BUNDLE="$(find "${ARCHIVE_ROOT}" -type d -path '*/Products/Applications/*.app' | head -n 1)"
-          if [ ! -d "${APP_BUNDLE}" ]; then
-            echo "::error::App bundle not found inside archive ${ARCHIVE_ROOT}."
-            find "${ARCHIVE_ROOT}" -maxdepth 5 -type d | sort
-            exit 1
-          fi
-
-          echo "ARCHIVE_ROOT=${ARCHIVE_ROOT}" >> "$GITHUB_ENV"
-          echo "APP_BUNDLE=${APP_BUNDLE}" >> "$GITHUB_ENV"
-
-      - name: Normalize unsigned app bundle
-        run: |
-          set -euo pipefail
-
-          # Sparkle generate_appcast rejects bundles with invalid Apple signatures.
-          # In unsigned distribution mode, strip signatures so Sparkle skips Apple signature validation.
-          if /usr/bin/codesign --display --verbose=0 "${APP_BUNDLE}" >/dev/null 2>&1; then
-            echo "Removing existing app code signature for unsigned distribution mode."
-            /usr/bin/codesign --remove-signature "${APP_BUNDLE}" || true
-          else
-            echo "App bundle is already unsigned."
-          fi
-
-          if /usr/bin/codesign --display --verbose=0 "${APP_BUNDLE}" >/dev/null 2>&1; then
-            echo "::warning::App bundle still appears signed after signature removal attempt."
-          fi
-
-      - name: Create distribution zip
-        run: |
-          set -euo pipefail
-
-          mkdir -p build
-          ditto -c -k --sequesterRsrc --keepParent "${APP_BUNDLE}" "build/${APP_NAME}.zip"
-
-          mkdir -p build/appcast
-          cp "build/${APP_NAME}.zip" build/appcast/
-
-      - name: Generate appcast
+      - name: Run release parity package/appcast phase
         env:
           SPARKLE_PRIVATE_KEY_B64: ${{ secrets.SPARKLE_PRIVATE_KEY_B64 }}
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
         run: |
           set -euo pipefail
-
-          if [ -z "${SPARKLE_PRIVATE_KEY_B64:-}" ] && [ -z "${SPARKLE_PRIVATE_KEY:-}" ]; then
-            echo "::error::Missing Sparkle private key secret. Configure SPARKLE_PRIVATE_KEY_B64 (preferred) or SPARKLE_PRIVATE_KEY (legacy)."
-            exit 1
+          DRY_RUN_FLAG=0
+          if [ "${DRY_RUN}" = "true" ]; then
+            DRY_RUN_FLAG=1
           fi
 
-          SPARKLE_BIN="/tmp/sparkle-build-outputs/build/tools/sparkle"
-          if [ ! -d "${SPARKLE_BIN}" ]; then
-            SPARKLE_BIN="$(find /tmp/sparkle-build-outputs -type d -path '*/tools/sparkle' | head -n 1)"
-          fi
-
-          APPCAST_TOOL="${SPARKLE_BIN}/generate_appcast"
-          if [ ! -f "${APPCAST_TOOL}" ]; then
-            APPCAST_TOOL="$(find /tmp/sparkle-build-outputs -type f -name generate_appcast | head -n 1)"
-          fi
-
-          if [ -z "${APPCAST_TOOL:-}" ] || [ ! -f "${APPCAST_TOOL}" ]; then
-            echo "::error::Sparkle generate_appcast binary not found in downloaded artifacts."
-            find /tmp/sparkle-build-outputs -maxdepth 6 -type d | sort
-            exit 1
-          fi
-          chmod +x "${APPCAST_TOOL}"
-
-          decode_base64() {
-            if base64 --help 2>&1 | grep -q -- '--decode'; then
-              base64 --decode
-            else
-              base64 -D
-            fi
-          }
-
-          KEY_PATH="/tmp/sparkle_ed25519.pem"
-          cleanup() {
-            rm -f "${KEY_PATH}"
-          }
-          trap cleanup EXIT
-
-          if [ -n "${SPARKLE_PRIVATE_KEY_B64:-}" ]; then
-            printf '%s' "${SPARKLE_PRIVATE_KEY_B64}" | decode_base64 > "${KEY_PATH}"
-          else
-            printf '%s' "${SPARKLE_PRIVATE_KEY}" > "${KEY_PATH}"
-          fi
-          chmod 600 "${KEY_PATH}"
-
-          DOWNLOAD_URL_PREFIX="https://github.com/${{ github.repository }}/releases/download/${RELEASE_TAG}"
-          APPCAST_LOG="/tmp/generate-appcast.log"
-          if ! "${APPCAST_TOOL}" \
-            --ed-key-file "${KEY_PATH}" \
-            --download-url-prefix "${DOWNLOAD_URL_PREFIX}/" \
-            build/appcast 2>&1 | tee "${APPCAST_LOG}"; then
-            if [ "${DRY_RUN}" = "true" ] && grep -Eq "failed Apple Code Signing checks|No usable archives found" "${APPCAST_LOG}"; then
-              echo "::warning::Skipping appcast generation in dry-run because archived app is not Apple-signed yet."
-              echo "APPCAST_SKIPPED_REASON=unsigned_app" >> "$GITHUB_ENV"
-              exit 0
-            fi
-
-            echo "::error::generate_appcast failed. Ensure update archive is compatible (validly signed or explicitly unsigned) and Sparkle key is correct."
-            exit 1
-          fi
+          ./scripts/ci-release-parity.sh \
+            --mode ci \
+            --phase package-appcast \
+            --derived-data "${DERIVED_DATA_PATH}" \
+            --archive-path "/tmp/sparkle-build-outputs/${ARCHIVE_PATH}" \
+            --sparkle-tools-dir "/tmp/sparkle-build-outputs/build/tools/sparkle" \
+            --release-tag "${RELEASE_TAG}" \
+            --download-url-prefix "https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}" \
+            --dry-run "${DRY_RUN_FLAG}"
 
       - name: Upload zip to GitHub Release
         if: ${{ env.DRY_RUN != 'true' }}
@@ -460,6 +292,8 @@ jobs:
           echo "Dry-run completed for tag ${RELEASE_TAG}."
           if [ "${APPCAST_SKIPPED_REASON:-}" = "unsigned_app" ]; then
             echo "Appcast generation was skipped because the archive is not Apple-signed yet."
+          elif [ -n "${APPCAST_SKIPPED_REASON:-}" ]; then
+            echo "Appcast generation was skipped (reason: ${APPCAST_SKIPPED_REASON})."
           fi
           echo "Skipped release asset upload and gh-pages deployment."
 
