@@ -21,12 +21,12 @@ help:
 	@echo "  make xcodebuild-safe - Build via canonical direct xcodebuild wrapper"
 	@echo ""
 	@echo "Test Commands:"
-	@echo "  make test           - Run all tests (xcodebuild - IDE compatible)"
-	@echo "  make test-agent     - Run compact xcodebuild test output for AI agents"
+	@echo "  make test           - Run all tests (strict xcodebuild, no fallback/retry)"
+	@echo "  make test-agent     - Run compact strict xcodebuild test output for AI agents"
 	@echo "  make test-swift     - Run tests with swift test (faster, no IDE parity)"
 	@echo "  make test-verbose   - Run tests with verbose output"
 	@echo "  make test-strict    - Run tests with strict concurrency checking"
-	@echo "  make test-ci-strict - Run tests in strict xcodebuild mode (no fallback/retry)"
+	@echo "  make test-ci-strict - Alias of make test (strict xcodebuild)"
 	@echo "  make benchmark-summary - Run summary benchmark gate in report-only mode"
 	@echo "  make benchmark-summary-agent - Run summary benchmark in compact mode"
 	@echo ""
@@ -111,10 +111,10 @@ xcodebuild-safe:
 
 # Test Commands
 test:
-	@./scripts/run-tests-xcode.sh
+	@./scripts/run-tests-xcode.sh --strict-xcode
 
 test-agent:
-	@MA_AGENT_MODE=1 MA_AGENT_LOG_DIR="$(AGENT_LOG_DIR)" ./scripts/run-tests-xcode.sh --agent
+	@MA_AGENT_MODE=1 MA_AGENT_LOG_DIR="$(AGENT_LOG_DIR)" ./scripts/run-tests-xcode.sh --strict-xcode --agent
 
 test-swift:
 	@echo -e "$(BLUE)Running tests (swift test)...$(NC)"
@@ -130,7 +130,7 @@ test-strict:
 	@./scripts/run-tests.sh --strict
 
 test-ci-strict:
-	@./scripts/run-tests-xcode.sh --strict-xcode
+	@$(MAKE) test
 
 benchmark-summary:
 	@./scripts/run-summary-benchmark.sh --report-only
