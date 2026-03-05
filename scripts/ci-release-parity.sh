@@ -10,6 +10,8 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 # shellcheck source=scripts/config/app_identity.sh
 source "${SCRIPT_DIR}/config/app_identity.sh"
+# shellcheck source=scripts/config/release_signing.sh
+source "${SCRIPT_DIR}/config/release_signing.sh"
 
 MODE="local"
 PHASE="build-archive"
@@ -22,6 +24,8 @@ DRY_RUN=""
 RELEASE_TAG="${RELEASE_TAG:-}"
 DOWNLOAD_URL_PREFIX=""
 SPARKLE_TOOLS_DIR=""
+SIGNING_MODE_OVERRIDE=""
+CODE_SIGN_IDENTITY_OVERRIDE=""
 
 PARITY_WARNINGS=()
 
@@ -42,6 +46,8 @@ Options:
   --release-tag <tag>                    Release tag used to generate appcast URL prefix
   --download-url-prefix <url>            Explicit appcast download URL prefix
   --sparkle-tools-dir <path>             Directory containing Sparkle tools (generate_appcast)
+  --signing-mode <adhoc|self-signed>     Override MA_RELEASE_SIGNING_MODE
+  --code-sign-identity <name>            Override MA_RELEASE_CODE_SIGN_IDENTITY
   --help                                 Show this help
 
 Examples:
@@ -60,6 +66,13 @@ log_error() { printf '[ci-release-parity][error] %s\n' "$*" >&2; }
 append_warning() {
   PARITY_WARNINGS+=("$1")
   log_warn "$1"
+}
+
+xcode_signing_args() {
+  printf '%s\n' \
+    "CODE_SIGN_IDENTITY=-" \
+    "CODE_SIGNING_REQUIRED=NO" \
+    "CODE_SIGNING_ALLOWED=NO"
 }
 
 write_github_env() {
@@ -164,6 +177,10 @@ locate_and_copy_sparkle_tools() {
 run_build_archive_phase() {
   local build_log="${PROJECT_ROOT}/build/ci-release-build.log"
   local archive_log="${PROJECT_ROOT}/build/ci-release-archive.log"
+  local -a signing_args=()
+  while IFS= read -r signing_arg; do
+    signing_args+=("${signing_arg}")
+  done < <(xcode_signing_args)
 
   mkdir -p "${PROJECT_ROOT}/build"
 
@@ -172,6 +189,7 @@ run_build_archive_phase() {
   locate_and_copy_sparkle_tools
 
   log_info "Running release build gate"
+  log_info "Release signing mode: $(ma_release_signing_description)"
   if ! xcodebuild build \
     -project "${PROJECT_ROOT}/${XCODEPROJ_NAME}" \
     -scheme "${APP_SCHEME}" \
@@ -181,9 +199,7 @@ run_build_archive_phase() {
     ARCHS=arm64 \
     ONLY_ACTIVE_ARCH=YES \
     EXCLUDED_ARCHS=x86_64 \
-    CODE_SIGN_IDENTITY="-" \
-    CODE_SIGNING_REQUIRED=NO \
-    CODE_SIGNING_ALLOWED=NO \
+    "${signing_args[@]}" \
     2>&1 | tee "${build_log}"; then
     emit_result "FAIL" "Release build gate failed"
     return 1
@@ -199,9 +215,7 @@ run_build_archive_phase() {
     ARCHS=arm64 \
     ONLY_ACTIVE_ARCH=YES \
     EXCLUDED_ARCHS=x86_64 \
-    CODE_SIGN_IDENTITY="-" \
-    CODE_SIGNING_REQUIRED=NO \
-    CODE_SIGNING_ALLOWED=NO \
+    "${signing_args[@]}" \
     2>&1 | tee "${archive_log}"; then
     emit_result "FAIL" "Archive gate failed"
     return 1
@@ -234,8 +248,27 @@ resolve_archive_and_bundle() {
   echo "${resolved_archive}|${app_bundle}"
 }
 
-normalize_unsigned_bundle() {
+prepare_bundle_for_packaging() {
   local app_bundle="$1"
+
+  if [ "${MA_RELEASE_SIGNING_MODE}" = "self-signed" ]; then
+    log_info "Applying self-signed code signature to app bundle"
+    if ! /usr/bin/codesign --force --deep --keychain "${HOME}/Library/Keychains/login.keychain-db" --timestamp=none --sign "${MA_RELEASE_CODE_SIGN_IDENTITY}" "${app_bundle}"; then
+      log_error "Self-signed bundle signing failed."
+      return 1
+    fi
+
+    log_info "Validating self-signed app bundle"
+    if ! /usr/bin/codesign --verify --deep --strict --verbose=2 "${app_bundle}"; then
+      log_error "Self-signed bundle verification failed."
+      return 1
+    fi
+    if /usr/bin/codesign --display --verbose=4 "${app_bundle}" 2>&1 | grep -q "Signature=adhoc"; then
+      log_error "Bundle is ad-hoc signed but self-signed mode was requested."
+      return 1
+    fi
+    return 0
+  fi
 
   if /usr/bin/codesign --display --verbose=0 "${app_bundle}" >/dev/null 2>&1; then
     log_info "Removing existing app code signature for unsigned distribution mode"
@@ -337,22 +370,29 @@ generate_appcast() {
   local appcast_log="$3"
 
   local key_path="/tmp/sparkle_ed25519.pem"
-  local key_available=1
+  local key_source="env"
+  local key_provided=1
+  local keychain_account="${SPARKLE_KEYCHAIN_ACCOUNT:-ed25519}"
+  local -a appcast_key_args=()
   local skip_reason=""
 
   if [ -z "${SPARKLE_PRIVATE_KEY_B64:-}" ] && [ -z "${SPARKLE_PRIVATE_KEY:-}" ]; then
-    key_available=0
+    key_provided=0
+    key_source="keychain"
   fi
 
-  if [ "${key_available}" -eq 0 ]; then
-    if [ "${DRY_RUN}" = "1" ]; then
-      skip_reason="missing_sparkle_key"
-      append_warning "Skipping appcast generation in dry-run because Sparkle private key is missing."
-      write_github_env "APPCAST_SKIPPED_REASON" "${skip_reason}"
-      return 0
-    fi
-    log_error "Missing Sparkle private key secret (SPARKLE_PRIVATE_KEY_B64 or SPARKLE_PRIVATE_KEY)."
-    return 1
+  if [ "${key_provided}" -eq 0 ] && [ "${DRY_RUN}" = "1" ]; then
+    skip_reason="missing_sparkle_key"
+    append_warning "Skipping appcast generation in dry-run because Sparkle private key is missing."
+    write_github_env "APPCAST_SKIPPED_REASON" "${skip_reason}"
+    return 0
+  fi
+
+  if [ "${key_provided}" -eq 0 ]; then
+    append_warning "Sparkle private key env not provided; trying Keychain account '${keychain_account}'."
+    appcast_key_args=(--account "${keychain_account}")
+  else
+    appcast_key_args=(--ed-key-file "${key_path}")
   fi
 
   local url_prefix
@@ -376,18 +416,22 @@ generate_appcast() {
     fi
   }
 
-  if [ -n "${SPARKLE_PRIVATE_KEY_B64:-}" ]; then
-    printf '%s' "${SPARKLE_PRIVATE_KEY_B64}" | decode_base64 > "${key_path}"
-  else
-    printf '%s' "${SPARKLE_PRIVATE_KEY}" > "${key_path}"
+  if [ "${key_source}" = "env" ]; then
+    if [ -n "${SPARKLE_PRIVATE_KEY_B64:-}" ]; then
+      printf '%s' "${SPARKLE_PRIVATE_KEY_B64}" | decode_base64 > "${key_path}"
+    else
+      printf '%s' "${SPARKLE_PRIVATE_KEY}" > "${key_path}"
+    fi
+    chmod 600 "${key_path}"
   fi
-  chmod 600 "${key_path}"
 
   if ! "${appcast_tool}" \
-    --ed-key-file "${key_path}" \
+    "${appcast_key_args[@]}" \
     --download-url-prefix "${url_prefix}/" \
     "${appcast_dir}" 2>&1 | tee "${appcast_log}"; then
-    rm -f "${key_path}"
+    if [ "${key_source}" = "env" ]; then
+      rm -f "${key_path}"
+    fi
 
     if [ "${DRY_RUN}" = "1" ] && grep -Eq "failed Apple Code Signing checks|No usable archives found" "${appcast_log}"; then
       skip_reason="unsigned_app"
@@ -400,7 +444,9 @@ generate_appcast() {
     return 1
   fi
 
-  rm -f "${key_path}"
+  if [ "${key_source}" = "env" ]; then
+    rm -f "${key_path}"
+  fi
   return 0
 }
 
@@ -422,7 +468,10 @@ run_package_appcast_phase() {
     return 1
   fi
 
-  normalize_unsigned_bundle "${app_bundle}"
+  if ! prepare_bundle_for_packaging "${app_bundle}"; then
+    emit_result "FAIL" "Package/appcast failed"
+    return 1
+  fi
 
   mkdir -p "${PROJECT_ROOT}/build" "${PROJECT_ROOT}/build/appcast"
   ditto -c -k --sequesterRsrc --keepParent "${app_bundle}" "${PROJECT_ROOT}/build/${APP_PRODUCT_NAME}.zip"
@@ -500,6 +549,14 @@ while [[ $# -gt 0 ]]; do
       SPARKLE_TOOLS_DIR="$2"
       shift 2
       ;;
+    --signing-mode)
+      SIGNING_MODE_OVERRIDE="$2"
+      shift 2
+      ;;
+    --code-sign-identity)
+      CODE_SIGN_IDENTITY_OVERRIDE="$2"
+      shift 2
+      ;;
     --help|-h)
       usage
       exit 0
@@ -511,6 +568,20 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+if [ -n "${SIGNING_MODE_OVERRIDE}" ]; then
+  MA_RELEASE_SIGNING_MODE="${SIGNING_MODE_OVERRIDE}"
+fi
+if [ -n "${CODE_SIGN_IDENTITY_OVERRIDE}" ]; then
+  MA_RELEASE_CODE_SIGN_IDENTITY="${CODE_SIGN_IDENTITY_OVERRIDE}"
+fi
+
+if ! ma_validate_release_signing_mode; then
+  exit 1
+fi
+if ! ma_require_self_signed_identity; then
+  exit 1
+fi
 
 case "${MODE}" in
   local|ci)
@@ -572,6 +643,7 @@ fi
 log_info "mode=${MODE} phase=${PHASE} dry_run=${DRY_RUN}"
 log_info "derived_data=${DERIVED_DATA}"
 log_info "archive_path=${ARCHIVE_PATH}"
+log_info "release_signing=$(ma_release_signing_description)"
 
 if [ "${PHASE}" = "build-archive" ]; then
   run_build_archive_phase

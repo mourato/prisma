@@ -5,7 +5,7 @@
 # with CI/CD pipelines and headless environments.
 # =============================================================================
 
-.PHONY: help build build-debug build-release build-agent build-test xcodebuild-safe test test-agent test-swift test-verbose test-strict test-ci-strict benchmark-summary benchmark-summary-agent lint lint-agent lint-fix arch-check preview-check preflight preflight-fast preflight-agent preflight-agent-fast clean run run-release dmg setup format health ci-build ci-test ci-release-parity deliverable-gate docs docs-preview docs-clean profile profile-report profile-cpu profile-memory profile-animation profile-animation-report
+.PHONY: help build build-debug build-release build-agent build-test xcodebuild-safe test test-agent test-swift test-verbose test-strict test-ci-strict benchmark-summary benchmark-summary-agent lint lint-agent lint-fix arch-check preview-check preflight preflight-fast preflight-agent preflight-agent-fast clean run run-release dmg dmg-self-signed setup-self-signed-cert setup format health ci-build ci-test ci-release-parity ci-release-parity-self-signed deliverable-gate docs docs-preview docs-clean profile profile-report profile-cpu profile-memory profile-animation profile-animation-report
 
 # Default target
 help:
@@ -48,6 +48,8 @@ help:
 	@echo ""
 	@echo "Distribution:"
 	@echo "  make dmg            - Create DMG installer"
+	@echo "  make dmg-self-signed - Create DMG signed with local self-signed identity"
+	@echo "  make setup-self-signed-cert - Create/import local code-signing cert"
 	@echo "  make new-release    - Create a new GitHub release interactively"
 	@echo ""
 	@echo "Performance Profiling:"
@@ -66,6 +68,7 @@ help:
 	@echo "  make ci-build       - Full CI build (lint + test + build-release)"
 	@echo "  make ci-test        - CI test run (no user interaction)"
 	@echo "  make ci-release-parity - Run local parity gate for Sparkle release build/archive"
+	@echo "  make ci-release-parity-self-signed - Run local signed Sparkle parity (build+appcast)"
 	@echo "  make deliverable-gate - Run build-test + lint + ci-release-parity"
 	@echo ""
 	@echo "Documentation:"
@@ -217,6 +220,13 @@ dmg:
 	@echo -e "$(BLUE)Creating DMG installer...$(NC)"
 	@./scripts/create-dmg.sh --ci
 
+dmg-self-signed:
+	@echo -e "$(BLUE)Creating self-signed DMG installer...$(NC)"
+	@MA_RELEASE_SIGNING_MODE=self-signed ./scripts/create-dmg.sh --ci
+
+setup-self-signed-cert:
+	@./scripts/setup-self-signed-cert.sh
+
 # Maintenance
 clean:
 	@echo -e "$(YELLOW)Cleaning build artifacts...$(NC)"
@@ -267,6 +277,15 @@ ci-test: test
 
 ci-release-parity:
 	@./scripts/ci-release-parity.sh --mode local --phase build-archive --dry-run 1
+
+ci-release-parity-self-signed:
+	@if [ -z "$(DOWNLOAD_URL_PREFIX)" ]; then \
+		echo -e "$(RED)Error: set DOWNLOAD_URL_PREFIX for appcast generation.$(NC)"; \
+		echo -e "Example: make ci-release-parity-self-signed DOWNLOAD_URL_PREFIX=https://example.com/releases RELEASE_TAG=v0.3.4"; \
+		exit 1; \
+	fi
+	@MA_RELEASE_SIGNING_MODE=self-signed ./scripts/ci-release-parity.sh --mode local --phase build-archive --dry-run 0 $(if $(RELEASE_TAG),--release-tag $(RELEASE_TAG),)
+	@MA_RELEASE_SIGNING_MODE=self-signed ./scripts/ci-release-parity.sh --mode local --phase package-appcast --dry-run 0 --archive-path build/$(APP_PRODUCT_NAME).xcarchive --download-url-prefix "$(DOWNLOAD_URL_PREFIX)" $(if $(RELEASE_TAG),--release-tag $(RELEASE_TAG),)
 
 deliverable-gate:
 	@$(MAKE) build-test

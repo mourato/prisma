@@ -29,6 +29,9 @@ make lint               # Run SwiftLint checks
 ```bash
 make build-release      # Optimized release build
 make dmg                # Create DMG installer
+make setup-self-signed-cert # Bootstrap local self-signed code-signing cert
+make dmg-self-signed    # Create DMG signed with local self-signed identity
+make ci-release-parity-self-signed DOWNLOAD_URL_PREFIX=... RELEASE_TAG=... # Signed Sparkle parity (archive + appcast)
 ```
 
 ### Agent-optimized commands (compact output, better for CI/agents)
