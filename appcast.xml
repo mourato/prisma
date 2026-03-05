@@ -4,12 +4,12 @@
         <title>Prisma</title>
         <item>
             <title>0.3.3</title>
-            <pubDate>Wed, 04 Mar 2026 21:29:03 +0000</pubDate>
+            <pubDate>Thu, 05 Mar 2026 12:44:54 +0000</pubDate>
             <sparkle:version>25</sparkle:version>
             <sparkle:shortVersionString>0.3.3</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
-            <enclosure url="https://github.com/mourato/prisma/releases/download/v0.3.3/Prisma.zip" length="14538356" type="application/octet-stream"/>
+            <enclosure url="https://github.com/mourato/prisma/releases/download/v0.3.4/Prisma.zip" length="14541442" type="application/octet-stream"/>
         </item>
     </channel>
 </rss>
