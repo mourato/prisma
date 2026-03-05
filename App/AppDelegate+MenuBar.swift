@@ -1,0 +1,415 @@
+import AppKit
+import Combine
+import KeyboardShortcuts
+import MeetingAssistantCore
+import os
+import SwiftUI
+
+extension AppDelegate {
+    // MARK: - Menu Bar Setup
+
+    func setupMenuBar() {
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+
+        if let button = statusItem?.button {
+            let image = NSImage(
+                systemSymbolName: "waveform",
+                accessibilityDescription: "about.title".localized
+            )
+            image?.isTemplate = true
+            button.image = image
+            button.action = #selector(handleStatusItemClick)
+            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
+            button.target = self
+        }
+    }
+
+    func setupContextMenu() {
+        contextMenu = NSMenu()
+
+        // Dictate (Mic Only)
+        let dictateItem = createMenuItem(
+            key: "menubar.dictate",
+            action: #selector(toggleRecordingFromMenu),
+            shortcutName: .dictationToggle
+        )
+        dictateMenuItem = dictateItem
+        contextMenu?.addItem(dictateItem)
+
+        // Record Meeting (Recorder)
+        let meetingItem = createMenuItem(
+            key: "menubar.record_meeting",
+            action: #selector(startMeetingFromMenu),
+            shortcutName: .meetingToggle
+        )
+        recordMeetingMenuItem = meetingItem
+        contextMenu?.addItem(meetingItem)
+
+        // Assistant
+        let assistantItem = createMenuItem(
+            key: "menubar.assistant",
+            action: #selector(startAssistantFromMenu),
+            shortcutName: .assistantCommand
+        )
+        assistantMenuItem = assistantItem
+        contextMenu?.addItem(assistantItem)
+
+        contextMenu?.addItem(NSMenuItem.separator())
+
+        contextMenu?.addItem(createMenuItem(
+            key: "menubar.history",
+            action: #selector(openHistory),
+            systemImage: SettingsSection.transcriptions.icon
+        ))
+
+        contextMenu?.addItem(NSMenuItem.separator())
+
+        contextMenu?.addItem(createMenuItem(
+            key: "menubar.settings",
+            action: #selector(openSettings),
+            keyEquivalent: ","
+        ))
+        contextMenu?.addItem(createMenuItem(
+            key: "menubar.onboarding",
+            action: #selector(openOnboarding)
+        ))
+        contextMenu?.addItem(createMenuItem(
+            key: "menubar.check_updates",
+            action: #selector(checkForUpdates)
+        ))
+        contextMenu?.addItem(createMenuItem(
+            key: "menubar.quit",
+            action: #selector(quitApp),
+            keyEquivalent: "q"
+        ))
+    }
+
+    /// Creates a localized menu item with the given key and action.
+    private func createMenuItem(
+        key: String,
+        action: Selector,
+        keyEquivalent: String = "",
+        shortcutName: KeyboardShortcuts.Name? = nil,
+        systemImage: String? = nil
+    ) -> NSMenuItem {
+        let title = key.localized
+        let item = NSMenuItem(title: title, action: action, keyEquivalent: keyEquivalent)
+        item.target = self
+        if let systemImage {
+            item.image = NSImage(
+                systemSymbolName: systemImage,
+                accessibilityDescription: title
+            )
+            item.image?.isTemplate = true
+        }
+
+        if let shortcutName {
+            applyShortcut(to: item, title: title, shortcutName: shortcutName)
+        }
+
+        return item
+    }
+
+    func updateMenuTitles() {
+        // Update Dictate
+        let dictateKey = recordingManager.dictationMenuKey
+        updateMenuItem(dictateMenuItem, key: dictateKey, shortcutName: .dictationToggle)
+
+        // Update Meeting
+        let meetingKey = recordingManager.meetingMenuKey
+        updateMenuItem(recordMeetingMenuItem, key: meetingKey, shortcutName: .meetingToggle)
+
+        // Update Assistant
+        let isAssistantRecording = assistantVoiceCommandService.isRecording
+        let assistantKey = isAssistantRecording ? "menubar.stop_assistant" : "menubar.assistant"
+        updateMenuItem(assistantMenuItem, key: assistantKey, shortcutName: .assistantCommand)
+    }
+
+    private func updateMenuItem(_ item: NSMenuItem?, key: String, shortcutName: KeyboardShortcuts.Name) {
+        let title = key.localized
+        if let item {
+            applyShortcut(to: item, title: title, shortcutName: shortcutName)
+        }
+    }
+
+    private enum ShortcutDisplaySource {
+        case inHouse(ShortcutDefinition)
+        case preset(String)
+        case custom
+        case none
+    }
+
+    private func applyShortcut(to item: NSMenuItem, title: String, shortcutName: KeyboardShortcuts.Name) {
+        let settings = AppSettingsStore.shared
+        switch resolveShortcutDisplaySource(for: shortcutName, settings: settings) {
+        case let .inHouse(shortcut):
+            if applyShortcutDefinition(shortcut, to: item, title: title) {
+                return
+            }
+            item.title = "\(title) [\(shortcut.menuDisplayString)]"
+            clearShortcut(from: item)
+        case let .preset(presetString):
+            item.title = "\(title) [\(presetString)]"
+            clearShortcut(from: item)
+        case .custom:
+            guard let shortcut = KeyboardShortcuts.Shortcut(name: shortcutName) else {
+                item.title = title
+                clearShortcut(from: item)
+                return
+            }
+            applyCustomShortcut(shortcut, to: item, title: title)
+        case .none:
+            item.title = title
+            clearShortcut(from: item)
+        }
+    }
+
+    private func resolveShortcutDisplaySource(
+        for shortcutName: KeyboardShortcuts.Name,
+        settings: AppSettingsStore
+    ) -> ShortcutDisplaySource {
+        switch shortcutName {
+        case .dictationToggle:
+            resolveShortcutDisplaySource(
+                definition: settings.dictationShortcutDefinition,
+                hasModifierShortcut: settings.dictationModifierShortcutGesture != nil,
+                selectedPresetKey: settings.dictationSelectedPresetKey
+            )
+        case .assistantCommand:
+            resolveShortcutDisplaySource(
+                definition: settings.assistantShortcutDefinition,
+                hasModifierShortcut: settings.assistantModifierShortcutGesture != nil,
+                selectedPresetKey: settings.assistantSelectedPresetKey
+            )
+        case .meetingToggle:
+            resolveShortcutDisplaySource(
+                definition: settings.meetingShortcutDefinition,
+                hasModifierShortcut: settings.meetingModifierShortcutGesture != nil,
+                selectedPresetKey: settings.meetingSelectedPresetKey
+            )
+        default:
+            .custom
+        }
+    }
+
+    private func resolveShortcutDisplaySource(
+        definition: ShortcutDefinition?,
+        hasModifierShortcut: Bool,
+        selectedPresetKey: PresetShortcutKey
+    ) -> ShortcutDisplaySource {
+        if let definition {
+            return .inHouse(definition)
+        }
+        if hasModifierShortcut {
+            return .none
+        }
+        if selectedPresetKey != .custom, selectedPresetKey != .notSpecified {
+            return .preset(selectedPresetKey.displayName)
+        }
+        return .custom
+    }
+
+    private func applyCustomShortcut(
+        _ shortcut: KeyboardShortcuts.Shortcut,
+        to item: NSMenuItem,
+        title: String
+    ) {
+        item.title = title
+        let normalizedKey = normalizedShortcutKey(from: shortcut.description)
+        item.keyEquivalent = menuKeyEquivalent(from: normalizedKey) ?? String(normalizedKey.prefix(1))
+        item.keyEquivalentModifierMask = shortcut.modifiers
+    }
+
+    private func normalizedShortcutKey(from description: String) -> String {
+        let modifierSymbols = ["⌘", "⌥", "⌃", "⇧"]
+        var cleanKey = description
+        for symbol in modifierSymbols {
+            cleanKey = cleanKey.replacingOccurrences(of: symbol, with: "")
+        }
+        return cleanKey.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    private func menuKeyEquivalent(from normalizedKey: String) -> String? {
+        switch normalizedKey {
+        case "space":
+            return " "
+        case "return", "enter":
+            return "\r"
+        case "tab":
+            return "\t"
+        case "backspace", "delete":
+            guard let scalar = UnicodeScalar(NSBackspaceCharacter) else { return nil }
+            return String(scalar)
+        case "escape", "esc":
+            return "\u{1b}"
+        case "left":
+            guard let scalar = UnicodeScalar(NSLeftArrowFunctionKey) else { return nil }
+            return String(scalar)
+        case "right":
+            guard let scalar = UnicodeScalar(NSRightArrowFunctionKey) else { return nil }
+            return String(scalar)
+        case "up":
+            guard let scalar = UnicodeScalar(NSUpArrowFunctionKey) else { return nil }
+            return String(scalar)
+        case "down":
+            guard let scalar = UnicodeScalar(NSDownArrowFunctionKey) else { return nil }
+            return String(scalar)
+        default:
+            return normalizedKey.first.map(String.init)
+        }
+    }
+
+    private func applyShortcutDefinition(
+        _ shortcut: ShortcutDefinition,
+        to item: NSMenuItem,
+        title: String
+    ) -> Bool {
+        guard shortcut.trigger == .singleTap,
+              let primaryKey = shortcut.primaryKey,
+              let keyEquivalent = keyEquivalent(for: primaryKey)
+        else {
+            return false
+        }
+
+        item.title = title
+        item.keyEquivalent = keyEquivalent
+        item.keyEquivalentModifierMask = modifierMask(from: shortcut.modifiers)
+        return true
+    }
+
+    private func keyEquivalent(for primaryKey: ShortcutPrimaryKey) -> String? {
+        switch primaryKey.kind {
+        case .space:
+            return " "
+        case .function:
+            guard let functionIndex = primaryKey.functionIndex else {
+                return nil
+            }
+            let scalarValue = Int(NSF1FunctionKey) + functionIndex - 1
+            guard let scalar = UnicodeScalar(scalarValue) else {
+                return nil
+            }
+            return String(scalar)
+        default:
+            let normalized = primaryKey.display
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .lowercased()
+            return menuKeyEquivalent(from: normalized)
+        }
+    }
+
+    private func modifierMask(from modifiers: [ModifierShortcutKey]) -> NSEvent.ModifierFlags {
+        modifiers.reduce(into: NSEvent.ModifierFlags()) { partialResult, modifier in
+            switch modifier {
+            case .leftCommand, .rightCommand, .command:
+                partialResult.insert(.command)
+            case .leftShift, .rightShift, .shift:
+                partialResult.insert(.shift)
+            case .leftOption, .rightOption, .option:
+                partialResult.insert(.option)
+            case .leftControl, .rightControl, .control:
+                partialResult.insert(.control)
+            case .fn:
+                partialResult.insert(.function)
+            }
+        }
+    }
+
+    private func clearShortcut(from item: NSMenuItem) {
+        item.keyEquivalent = ""
+        item.keyEquivalentModifierMask = []
+    }
+
+    @objc private func handleStatusItemClick() {
+        showContextMenu()
+    }
+
+    private func showContextMenu() {
+        guard let menu = contextMenu, let button = statusItem?.button else { return }
+
+        // Update shortcuts/titles before showing
+        updateMenuTitles()
+
+        // Show context menu
+        statusItem?.menu = menu
+        button.performClick(nil)
+        statusItem?.menu = nil // Reset so left-click works again
+    }
+
+    // MARK: - Menu Actions
+
+    @objc private func openSettings() {
+        NavigationService.shared.openSettings()
+    }
+
+    @objc private func openOnboarding() {
+        presentOnboarding {}
+    }
+
+    @objc private func openHistory() {
+        NavigationService.shared.openSettings(section: SettingsSection.transcriptions.rawValue)
+    }
+
+    @objc private func toggleRecordingFromMenu() {
+        Task { @MainActor in
+            // Default "Dictation" mode (Mic Only)
+            await self.startRecording(source: .microphone)
+        }
+    }
+
+    @objc private func startMeetingFromMenu() {
+        Task { @MainActor in
+            // Meeting mode (System + Mic) permissions will be checked by manager
+            await self.startRecording(source: .all)
+        }
+    }
+
+    @objc private func startAssistantFromMenu() {
+        Task {
+            if assistantVoiceCommandService.isRecording {
+                await assistantVoiceCommandService.stopAndProcess()
+            } else {
+                await assistantVoiceCommandService.startRecording()
+            }
+        }
+    }
+
+    @objc private func checkForUpdates() {
+        NavigationService.shared.checkForUpdates()
+    }
+
+    @objc private func quitApp() {
+        Task { @MainActor in
+            await self.performGracefulShutdown()
+        }
+    }
+
+    private func performGracefulShutdown() async {
+        AppLogger.info("Starting graceful shutdown...", category: .recordingManager)
+
+        // 1. Stop any active recording without triggering transcription
+        if recordingManager.isRecording {
+            await recordingManager.stopRecording(transcribe: false)
+            // Brief delay to ensure file finalization completes
+            try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
+        }
+
+        // 2. Stop monitoring services
+        PerformanceMonitor.shared.stopMonitoring()
+        CrashReporter.shared.cleanup()
+
+        // 3. Terminate application
+        NSApp.terminate(nil)
+    }
+
+    func performCleanup() async {
+        if AppSettingsStore.shared.autoDeleteTranscriptions {
+            let days = AppSettingsStore.shared.autoDeletePeriodDays
+            do {
+                try await FileSystemStorageService.shared.cleanupOldTranscriptions(olderThanDays: days)
+            } catch {
+                logger.error("Failed to perform auto-cleanup: \(error.localizedDescription)")
+            }
+        }
+    }
+}
