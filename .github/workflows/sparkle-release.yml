@@ -170,6 +170,12 @@ jobs:
       RELEASE_TAG: ${{ needs.build.outputs.release_tag }}
       DRY_RUN: ${{ needs.build.outputs.dry_run }}
     steps:
+      - name: Checkout release tag commit
+        uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ env.RELEASE_TAG }}
+          fetch-depth: 0
+
       - name: Download build outputs
         uses: actions/download-artifact@v4
         with:
