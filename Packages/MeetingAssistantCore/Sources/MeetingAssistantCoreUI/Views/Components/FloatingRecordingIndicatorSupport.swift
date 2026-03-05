@@ -36,23 +36,42 @@ struct PulsingModifier: ViewModifier {
 }
 
 struct ActionIconButton: View {
+    enum Style {
+        case neutral
+        case success
+    }
+
     let symbol: String
     let helpKey: String
     let keyboardShortcut: KeyEquivalent?
+    let style: Style
     let action: @Sendable () -> Void
 
     @State private var isHovered = false
     @FocusState private var isFocused: Bool
+
+    init(
+        symbol: String,
+        helpKey: String,
+        keyboardShortcut: KeyEquivalent? = nil,
+        style: Style = .neutral,
+        action: @escaping @Sendable () -> Void
+    ) {
+        self.symbol = symbol
+        self.helpKey = helpKey
+        self.keyboardShortcut = keyboardShortcut
+        self.style = style
+        self.action = action
+    }
 
     var body: some View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(AppDesignSystem.Colors.overlayForeground)
-                .frame(width: 20, height: 20)
-                .padding(4)
+                .frame(width: 28, height: 28)
                 .background(controlBackground)
-                .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius, style: .continuous))
+                .clipShape(Circle())
         }
         .buttonStyle(.plain)
         .focusable(true)
@@ -65,13 +84,24 @@ struct ActionIconButton: View {
     }
 
     private var controlBackground: some ShapeStyle {
-        if isFocused {
-            return AnyShapeStyle(AppDesignSystem.Colors.accent.opacity(0.35))
+        switch style {
+        case .neutral:
+            if isFocused {
+                return AnyShapeStyle(AppDesignSystem.Colors.accent.opacity(0.35))
+            }
+            if isHovered {
+                return AnyShapeStyle(Color.white.opacity(0.14))
+            }
+            return AnyShapeStyle(Color.clear)
+        case .success:
+            if isFocused {
+                return AnyShapeStyle(AppDesignSystem.Colors.success.opacity(0.95))
+            }
+            if isHovered {
+                return AnyShapeStyle(AppDesignSystem.Colors.success.opacity(0.85))
+            }
+            return AnyShapeStyle(AppDesignSystem.Colors.success.opacity(0.76))
         }
-        if isHovered {
-            return AnyShapeStyle(Color.white.opacity(0.14))
-        }
-        return AnyShapeStyle(Color.clear)
     }
 }
 
@@ -260,9 +290,10 @@ enum FloatingRecordingIndicatorViewUtilities {
 
 #Preview("Action Icon Button", traits: .sizeThatFitsLayout) {
     ActionIconButton(
-        symbol: "checkmark",
+        symbol: "arrow.up",
         helpKey: "recording_indicator.stop.help",
-        keyboardShortcut: nil
+        keyboardShortcut: nil,
+        style: .neutral
     ) {
         // Preview only
     }

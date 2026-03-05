@@ -30,10 +30,15 @@ public final class AudioLevelMonitor: ObservableObject {
     private let samplingInterval: TimeInterval
     /// Accumulated time spent below the silence threshold.
     private var silenceElapsed: TimeInterval = 0
+    /// Elapsed monitoring time for the current recording session.
+    private var monitoringElapsed: TimeInterval = 0
+    /// Tracks whether the warning has already been presented in the current session.
+    private var didPresentSilenceWarningThisSession = false
 
     private enum Constants {
         static let silenceThresholdDb: Float = -50
         static let silenceDurationSeconds: TimeInterval = 4
+        static let silenceWarningStartupWindowSeconds: TimeInterval = 10
         static let timerToleranceRatio: Double = 0.05
         static let levelAttackSmoothingFactor: Double = 0.80
         static let levelReleaseSmoothingFactor: Double = 0.90
@@ -70,6 +75,8 @@ public final class AudioLevelMonitor: ObservableObject {
         audioMeter = .zero
         isSilenceWarningVisible = false
         silenceElapsed = 0
+        monitoringElapsed = 0
+        didPresentSilenceWarningThisSession = false
         smoothedAveragePower = 0
         smoothedPeakPower = 0
 
@@ -93,6 +100,8 @@ public final class AudioLevelMonitor: ObservableObject {
         audioMeter = .zero
         isSilenceWarningVisible = false
         silenceElapsed = 0
+        monitoringElapsed = 0
+        didPresentSilenceWarningThisSession = false
         smoothedAveragePower = 0
         smoothedPeakPower = 0
     }
@@ -101,6 +110,7 @@ public final class AudioLevelMonitor: ObservableObject {
     public func dismissSilenceWarning() {
         isSilenceWarningVisible = false
         silenceElapsed = 0
+        didPresentSilenceWarningThisSession = true
     }
 
     // MARK: - Private Helpers
@@ -160,10 +170,29 @@ public final class AudioLevelMonitor: ObservableObject {
     }
 
     private func updateSilenceWarning(with averageDB: Float) {
+        monitoringElapsed += samplingInterval
+
+        if didPresentSilenceWarningThisSession {
+            if averageDB > Constants.silenceThresholdDb, isSilenceWarningVisible {
+                isSilenceWarningVisible = false
+            }
+            silenceElapsed = 0
+            return
+        }
+
+        guard monitoringElapsed <= Constants.silenceWarningStartupWindowSeconds else {
+            silenceElapsed = 0
+            if isSilenceWarningVisible {
+                isSilenceWarningVisible = false
+            }
+            return
+        }
+
         if averageDB <= Constants.silenceThresholdDb {
             silenceElapsed += samplingInterval
             if silenceElapsed >= Constants.silenceDurationSeconds, !isSilenceWarningVisible {
                 isSilenceWarningVisible = true
+                didPresentSilenceWarningThisSession = true
             }
         } else {
             silenceElapsed = 0

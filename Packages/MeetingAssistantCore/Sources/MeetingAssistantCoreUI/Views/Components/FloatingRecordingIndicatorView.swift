@@ -127,11 +127,11 @@ public struct FloatingRecordingIndicatorView: View {
     private var leadingControls: some View {
         HStack(spacing: controlSpacing(for: currentIndicatorSize)) {
             ActionIconButton(
-                symbol: "checkmark",
-                helpKey: "recording_indicator.stop.help",
-                keyboardShortcut: nil
+                symbol: "trash",
+                helpKey: "recording_indicator.cancel.help",
+                keyboardShortcut: .escape
             ) {
-                onStop()
+                onCancel()
             }
 
             divider
@@ -140,88 +140,26 @@ public struct FloatingRecordingIndicatorView: View {
 
     /// Warning overlay shown when microphone input appears silent.
     private var silenceWarningOverlay: some View {
-        Text("recording_indicator.silence_warning".localized)
-            .font(.caption.bold())
-            .foregroundStyle(.white)
-            .multilineTextAlignment(.center)
-            .lineLimit(nil)
-            .fixedSize(horizontal: true, vertical: true)
-            .padding(.horizontal, AppDesignSystem.Layout.spacing10)
-            .padding(.vertical, AppDesignSystem.Layout.spacing4)
-            .background(AppDesignSystem.Colors.recordingOverlayBackground)
-            .clipShape(Capsule())
-            .overlay(
-                Capsule()
-                    .strokeBorder(AppDesignSystem.Colors.recordingIndicatorStroke, lineWidth: 1)
-            )
-            .shadow(
-                color: .black.opacity(0.2),
-                radius: AppDesignSystem.Layout.shadowRadiusSmall,
-                x: AppDesignSystem.Layout.shadowX,
-                y: AppDesignSystem.Layout.shadowYSmall
-            )
-            .contentShape(Capsule())
-            .onTapGesture {
-                isSilenceWarningDialogPresented = true
+        RecordingSilenceWarningOverlay(
+            isDialogPresented: $isSilenceWarningDialogPresented,
+            onContinue: { audioMonitor.dismissSilenceWarning() },
+            onStop: {
+                onStop()
+                audioMonitor.dismissSilenceWarning()
+            },
+            onDiscard: {
+                onCancel()
+                audioMonitor.dismissSilenceWarning()
             }
-            .confirmationDialog(
-                "recording_indicator.silence_warning.confirmation.title".localized,
-                isPresented: $isSilenceWarningDialogPresented
-            ) {
-                Button("recording_indicator.silence_warning.action.continue".localized) {
-                    audioMonitor.dismissSilenceWarning()
-                }
-                Button("recording_indicator.silence_warning.action.stop".localized) {
-                    onStop()
-                    audioMonitor.dismissSilenceWarning()
-                }
-                Button("recording_indicator.silence_warning.action.discard".localized, role: .destructive) {
-                    onCancel()
-                    audioMonitor.dismissSilenceWarning()
-                }
-            }
+        )
     }
 
     private func postProcessingReadinessWarningOverlay(
         _ descriptor: RecordingIndicatorPostProcessingWarningDescriptor
     ) -> some View {
-        HStack(spacing: AppDesignSystem.Layout.spacing8) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.caption.weight(.bold))
-                .foregroundStyle(.white)
-
-            Text(descriptor.localizedMessage)
-                .font(.caption.bold())
-                .foregroundStyle(.white)
-                .lineLimit(2)
-                .multilineTextAlignment(.leading)
-
-            Button("recording_indicator.post_processing_warning.open_settings".localized) {
-                descriptor.openSettings { section in
-                    navigationService.openSettings(section: section)
-                }
-            }
-            .buttonStyle(.plain)
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(.white)
-            .underline()
+        RecordingPostProcessingWarningOverlay(descriptor: descriptor) { section in
+            navigationService.openSettings(section: section)
         }
-        .padding(.horizontal, AppDesignSystem.Layout.spacing10)
-        .padding(.vertical, AppDesignSystem.Layout.spacing6)
-        .background(AppDesignSystem.Colors.warning.opacity(0.95))
-        .clipShape(Capsule())
-        .overlay(
-            Capsule()
-                .strokeBorder(AppDesignSystem.Colors.recordingIndicatorStroke, lineWidth: 1)
-        )
-        .shadow(
-            color: .black.opacity(0.2),
-            radius: AppDesignSystem.Layout.shadowRadiusSmall,
-            x: AppDesignSystem.Layout.shadowX,
-            y: AppDesignSystem.Layout.shadowYSmall
-        )
-        .accessibilityElement(children: .combine)
-        .accessibilityHint("recording_indicator.post_processing_warning.open_settings".localized)
     }
 
     private var divider: some View {
@@ -235,11 +173,12 @@ public struct FloatingRecordingIndicatorView: View {
             divider
 
             ActionIconButton(
-                symbol: "trash",
-                helpKey: "recording_indicator.cancel.help",
-                keyboardShortcut: .escape
+                symbol: "arrow.up",
+                helpKey: "recording_indicator.stop.help",
+                keyboardShortcut: nil,
+                style: .success
             ) {
-                onCancel()
+                onStop()
             }
         }
     }
@@ -508,6 +447,13 @@ public struct FloatingRecordingIndicatorView: View {
         }
     }
 
+    private var mainPillHorizontalPadding: CGFloat {
+        if isRecordingMode, isHovering {
+            return AppDesignSystem.Layout.recordingIndicatorSidePadding
+        }
+        return max(AppDesignSystem.Layout.recordingIndicatorSidePadding, 16)
+    }
+
     private func mainPill(size: IndicatorSize) -> some View {
         HStack(spacing: FloatingRecordingIndicatorViewUtilities.contentSpacing(for: size)) {
             if isRecordingMode, isHovering {
@@ -520,7 +466,7 @@ public struct FloatingRecordingIndicatorView: View {
                 trailingControl
             }
         }
-        .padding(.horizontal, AppDesignSystem.Layout.recordingIndicatorSidePadding)
+        .padding(.horizontal, mainPillHorizontalPadding)
         .frame(height: FloatingRecordingIndicatorViewUtilities.controlHeight(for: size))
         .background(.ultraThinMaterial)
         .background(AppDesignSystem.Colors.recordingIndicatorMaterialTint)
@@ -648,22 +594,4 @@ public struct FloatingRecordingIndicatorView: View {
         return recordingManager.effectiveDictationOutputLanguageForCurrentRecording
     }
 
-}
-
-// MARK: - Preview
-
-#Preview("Classic", traits: .sizeThatFitsLayout) {
-    let monitor = AudioLevelMonitor()
-    FloatingRecordingIndicatorView(
-        audioMonitor: monitor,
-        style: .classic,
-        mode: .recording,
-        previewForceDictationRecording: true,
-        previewLanguageOverride: .portuguese,
-        onStop: {},
-        onCancel: {}
-    )
-    .padding()
-    .frame(width: 520, height: 120)
-    .background(AppDesignSystem.Colors.neutral.opacity(0.8))
 }
