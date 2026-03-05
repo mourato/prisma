@@ -72,10 +72,18 @@ struct ActionIconButton: View {
                 .frame(width: 28, height: 28)
                 .background(controlBackground)
                 .clipShape(Circle())
+                .overlay(
+                    Circle()
+                        .strokeBorder(
+                            isFocused ? AppDesignSystem.Colors.accent.opacity(0.95) : .clear,
+                            lineWidth: 1.5
+                        )
+                )
         }
         .buttonStyle(.plain)
         .focusable(true)
         .focused($isFocused)
+        .focusEffectDisabled()
         .help(helpKey.localized)
         .onHover { hovering in
             isHovered = hovering
