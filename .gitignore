@@ -86,6 +86,7 @@ default.profraw
 # Build artifacts
 dist/
 .xcode-build/
+.xcode-build-ci-parity/
 .xcode-build-tests/
 
 #Ignore vscode AI rules
