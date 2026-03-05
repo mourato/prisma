@@ -13,6 +13,8 @@ set -o pipefail
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 # shellcheck source=scripts/config/app_identity.sh
 source "${PROJECT_DIR}/scripts/config/app_identity.sh"
+# shellcheck source=scripts/config/release_signing.sh
+source "${PROJECT_DIR}/scripts/config/release_signing.sh"
 
 XCODEPROJ="${PROJECT_DIR}/${XCODEPROJ_NAME}"
 DIST_DIR="${PROJECT_DIR}/dist"
@@ -29,6 +31,14 @@ echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━�
 echo -e "${BLUE}  Building ${APP_PRODUCT_NAME}.app (Release)${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
+
+if ! ma_validate_release_signing_mode; then
+    exit 1
+fi
+if ! ma_require_self_signed_identity; then
+    exit 1
+fi
+echo -e "${YELLOW}Release signing mode:${NC} $(ma_release_signing_description)"
 
 # Check if xcodeproj exists
 if [ ! -d "${XCODEPROJ}" ]; then
@@ -58,9 +68,14 @@ rm -rf "${DIST_DIR}/${APP_PRODUCT_NAME}.app"
 cp -R "${BUILD_DIR}/${APP_PRODUCT_NAME}.app" "${DIST_DIR}/"
 echo -e "${GREEN}✓ App copied to dist/${NC}"
 
-# Code sign (ad-hoc)
+# Code sign
 echo -e "${YELLOW}[3/3]${NC} Code signing..."
-codesign --force --deep --sign - "${DIST_DIR}/${APP_PRODUCT_NAME}.app"
+if [ "${MA_RELEASE_SIGNING_MODE}" = "self-signed" ]; then
+    codesign --force --deep --keychain "${HOME}/Library/Keychains/login.keychain-db" --timestamp=none --sign "${MA_RELEASE_CODE_SIGN_IDENTITY}" "${DIST_DIR}/${APP_PRODUCT_NAME}.app"
+else
+    codesign --force --deep --sign - "${DIST_DIR}/${APP_PRODUCT_NAME}.app"
+fi
+codesign --verify --deep --strict --verbose=2 "${DIST_DIR}/${APP_PRODUCT_NAME}.app"
 echo -e "${GREEN}✓ Code signing completed${NC}"
 
 echo ""
