@@ -381,6 +381,11 @@ generate_appcast() {
     key_source="keychain"
   fi
 
+  if [ "${key_provided}" -eq 0 ] && [ "${MODE}" = "ci" ]; then
+    log_error "Missing Sparkle private key secret (SPARKLE_PRIVATE_KEY_B64 or SPARKLE_PRIVATE_KEY) in CI mode."
+    return 1
+  fi
+
   if [ "${key_provided}" -eq 0 ] && [ "${DRY_RUN}" = "1" ]; then
     skip_reason="missing_sparkle_key"
     append_warning "Skipping appcast generation in dry-run because Sparkle private key is missing."
@@ -447,6 +452,17 @@ generate_appcast() {
   if [ "${key_source}" = "env" ]; then
     rm -f "${key_path}"
   fi
+
+  local appcast_file="${appcast_dir}/appcast.xml"
+  if [ ! -f "${appcast_file}" ]; then
+    log_error "generate_appcast succeeded but appcast.xml was not found at ${appcast_file}."
+    return 1
+  fi
+  if ! rg -q 'sparkle:edSignature=' "${appcast_file}"; then
+    log_error "Generated appcast.xml is missing sparkle:edSignature enclosure attributes."
+    return 1
+  fi
+
   return 0
 }
 
