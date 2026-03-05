@@ -200,12 +200,48 @@ jobs:
             DRY_RUN_FLAG=1
           fi
 
+          ARTIFACT_ROOT="/tmp/sparkle-build-outputs"
+          ARCHIVE_PATH_CANDIDATES=(
+            "${ARTIFACT_ROOT}/${APP_NAME}.xcarchive"
+            "${ARTIFACT_ROOT}/${ARCHIVE_PATH}"
+          )
+          SPARKLE_TOOLS_CANDIDATES=(
+            "${ARTIFACT_ROOT}/tools/sparkle"
+            "${ARTIFACT_ROOT}/build/tools/sparkle"
+          )
+
+          RESOLVED_ARCHIVE_PATH=""
+          for candidate in "${ARCHIVE_PATH_CANDIDATES[@]}"; do
+            if [ -d "${candidate}" ]; then
+              RESOLVED_ARCHIVE_PATH="${candidate}"
+              break
+            fi
+          done
+
+          RESOLVED_SPARKLE_TOOLS_DIR=""
+          for candidate in "${SPARKLE_TOOLS_CANDIDATES[@]}"; do
+            if [ -x "${candidate}/generate_appcast" ] && [ -x "${candidate}/sign_update" ]; then
+              RESOLVED_SPARKLE_TOOLS_DIR="${candidate}"
+              break
+            fi
+          done
+
+          if [ -z "${RESOLVED_ARCHIVE_PATH}" ] || [ -z "${RESOLVED_SPARKLE_TOOLS_DIR}" ]; then
+            echo "::error::Unable to resolve downloaded artifact paths."
+            echo "::error::Archive path: ${RESOLVED_ARCHIVE_PATH:-missing}"
+            echo "::error::Sparkle tools dir: ${RESOLVED_SPARKLE_TOOLS_DIR:-missing}"
+            echo "::group::Downloaded artifact tree"
+            find "${ARTIFACT_ROOT}" -maxdepth 4 -print || true
+            echo "::endgroup::"
+            exit 1
+          fi
+
           ./scripts/ci-release-parity.sh \
             --mode ci \
             --phase package-appcast \
             --derived-data "${DERIVED_DATA_PATH}" \
-            --archive-path "/tmp/sparkle-build-outputs/${ARCHIVE_PATH}" \
-            --sparkle-tools-dir "/tmp/sparkle-build-outputs/build/tools/sparkle" \
+            --archive-path "${RESOLVED_ARCHIVE_PATH}" \
+            --sparkle-tools-dir "${RESOLVED_SPARKLE_TOOLS_DIR}" \
             --release-tag "${RELEASE_TAG}" \
             --download-url-prefix "https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}" \
             --dry-run "${DRY_RUN_FLAG}"
