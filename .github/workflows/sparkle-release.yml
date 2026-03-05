@@ -220,7 +220,7 @@ jobs:
 
           RESOLVED_SPARKLE_TOOLS_DIR=""
           for candidate in "${SPARKLE_TOOLS_CANDIDATES[@]}"; do
-            if [ -x "${candidate}/generate_appcast" ] && [ -x "${candidate}/sign_update" ]; then
+            if [ -f "${candidate}/generate_appcast" ] && [ -f "${candidate}/sign_update" ]; then
               RESOLVED_SPARKLE_TOOLS_DIR="${candidate}"
               break
             fi
@@ -235,6 +235,9 @@ jobs:
             echo "::endgroup::"
             exit 1
           fi
+
+          chmod +x "${RESOLVED_SPARKLE_TOOLS_DIR}/generate_appcast" || true
+          chmod +x "${RESOLVED_SPARKLE_TOOLS_DIR}/sign_update" || true
 
           ./scripts/ci-release-parity.sh \
             --mode ci \

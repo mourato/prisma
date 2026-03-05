@@ -252,10 +252,12 @@ normalize_unsigned_bundle() {
 locate_generate_appcast_tool() {
   local tool_path=""
 
-  if [ -n "${SPARKLE_TOOLS_DIR}" ] && [ -x "${SPARKLE_TOOLS_DIR}/generate_appcast" ]; then
+  if [ -n "${SPARKLE_TOOLS_DIR}" ] && [ -f "${SPARKLE_TOOLS_DIR}/generate_appcast" ]; then
     tool_path="${SPARKLE_TOOLS_DIR}/generate_appcast"
   elif [ -x "${PROJECT_ROOT}/build/tools/sparkle/generate_appcast" ]; then
     tool_path="${PROJECT_ROOT}/build/tools/sparkle/generate_appcast"
+  elif [ -f "/tmp/sparkle-build-outputs/tools/sparkle/generate_appcast" ]; then
+    tool_path="/tmp/sparkle-build-outputs/tools/sparkle/generate_appcast"
   elif [ -x "/tmp/sparkle-build-outputs/build/tools/sparkle/generate_appcast" ]; then
     tool_path="/tmp/sparkle-build-outputs/build/tools/sparkle/generate_appcast"
   else
