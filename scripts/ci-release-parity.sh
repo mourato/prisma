@@ -453,12 +453,19 @@ generate_appcast() {
     rm -f "${key_path}"
   fi
 
+  if grep -Eq "SUPublicEDKey in the app .* does not match key EdDSA" "${appcast_log}"; then
+    log_error "Sparkle key mismatch: SUPublicEDKey in app Info.plist does not match the provided Sparkle private key."
+    log_error "Regenerate Sparkle keys or update SUPublicEDKey to match the private key used in CI secrets."
+    return 1
+  fi
+
   local appcast_file="${appcast_dir}/appcast.xml"
   if [ ! -f "${appcast_file}" ]; then
     log_error "generate_appcast succeeded but appcast.xml was not found at ${appcast_file}."
     return 1
   fi
-  if ! rg -q 'sparkle:edSignature=' "${appcast_file}"; then
+
+  if ! grep -q 'sparkle:edSignature=' "${appcast_file}"; then
     log_error "Generated appcast.xml is missing sparkle:edSignature enclosure attributes."
     return 1
   fi
