@@ -52,7 +52,7 @@ echo -e "${GREEN}✓ Build completed${NC}"
 if [[ "$1" == "--test" || "$1" == "-t" ]]; then
     echo -e "${YELLOW}[2/2]${NC} Running tests..."
     echo ""
-    "${PROJECT_DIR}/scripts/run-tests-xcode.sh"
+    "${PROJECT_DIR}/scripts/run-tests-xcode.sh" --strict-xcode
     echo -e "${GREEN}✓ Tests completed${NC}"
 elif [[ "$1" == "--run" || "$1" == "-r" ]]; then
     echo -e "${YELLOW}[2/2]${NC} Running ${APP_PRODUCT_NAME}..."

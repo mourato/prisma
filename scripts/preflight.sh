@@ -96,11 +96,8 @@ if [ "${AGENT_MODE}" -eq 0 ]; then
     fi
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-    run_tests_with_fallback() {
-        if ! make test; then
-            echo "make test failed; falling back to ./scripts/run-tests.sh"
-            ./scripts/run-tests.sh
-        fi
+    run_tests() {
+        make test
     }
 
     if [ "${FAST_MODE}" -eq 1 ]; then
@@ -111,7 +108,7 @@ if [ "${AGENT_MODE}" -eq 0 ]; then
         make build
 
         echo "[3/3] make test"
-        run_tests_with_fallback
+        run_tests
 
         if [ "${STRICT_CONCURRENCY}" -eq 1 ]; then
             echo "[4/4] make test-strict"
@@ -126,10 +123,10 @@ if [ "${AGENT_MODE}" -eq 0 ]; then
             make lint
 
             echo "[3/4] make test"
-            run_tests_with_fallback
+            run_tests
         else
             echo "[2/4] make test"
-            run_tests_with_fallback
+            run_tests
 
             echo "[3/4] make lint"
             make lint
@@ -156,11 +153,8 @@ START_TIME=$(date +%s)
 
 SUMMARY="Preflight completed successfully"
 
-run_test_agent_with_fallback() {
-    if ! make test-agent; then
-        echo "AGENT_NOTE=make test-agent failed; falling back to ./scripts/run-tests.sh --agent"
-        MA_AGENT_MODE=1 ./scripts/run-tests.sh --agent
-    fi
+run_test_agent() {
+    make test-agent
 }
 
 if [ "${FAST_MODE}" -eq 1 ]; then
@@ -182,7 +176,7 @@ if [ "${FAST_MODE}" -eq 1 ]; then
         exit 1
     fi
 
-    if ! run_test_agent_with_fallback; then
+    if ! run_test_agent; then
         SUMMARY="Preflight failed during test"
         END_TIME=$(date +%s)
         DURATION=$((END_TIME - START_TIME))
@@ -211,7 +205,7 @@ if [ "${STRICT_LINT_MODE}" -eq 1 ]; then
     fi
 fi
 
-if ! run_test_agent_with_fallback; then
+if ! run_test_agent; then
     SUMMARY="Preflight failed during test"
     END_TIME=$(date +%s)
     DURATION=$((END_TIME - START_TIME))
