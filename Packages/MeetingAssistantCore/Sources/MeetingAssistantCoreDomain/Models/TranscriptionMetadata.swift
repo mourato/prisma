@@ -4,6 +4,7 @@ import Foundation
 public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
     public let id: UUID
     public let meetingId: UUID
+    public let meetingTitle: String?
     public let appName: String
     public let appRawValue: String
     public let appBundleIdentifier: String?
@@ -36,6 +37,7 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
     private enum CodingKeys: String, CodingKey {
         case id
         case meetingId
+        case meetingTitle
         case appName
         case appRawValue
         case appBundleIdentifier
@@ -60,6 +62,7 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
     public init(
         id: UUID,
         meetingId: UUID,
+        meetingTitle: String? = nil,
         appName: String,
         appRawValue: String,
         appBundleIdentifier: String?,
@@ -82,6 +85,7 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
     ) {
         self.id = id
         self.meetingId = meetingId
+        self.meetingTitle = meetingTitle
         self.appName = appName
         self.appRawValue = appRawValue
         self.appBundleIdentifier = appBundleIdentifier
@@ -108,6 +112,7 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
 
         let id = try container.decode(UUID.self, forKey: .id)
         let meetingId = try container.decode(UUID.self, forKey: .meetingId)
+        let meetingTitle = try container.decodeIfPresent(String.self, forKey: .meetingTitle)
         let appName = try container.decode(String.self, forKey: .appName)
         let appRawValue = try container.decode(String.self, forKey: .appRawValue)
         let appBundleIdentifier = try container.decodeIfPresent(String.self, forKey: .appBundleIdentifier)
@@ -131,6 +136,7 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
         self.init(
             id: id,
             meetingId: meetingId,
+            meetingTitle: meetingTitle,
             appName: appName,
             appRawValue: appRawValue,
             appBundleIdentifier: appBundleIdentifier,

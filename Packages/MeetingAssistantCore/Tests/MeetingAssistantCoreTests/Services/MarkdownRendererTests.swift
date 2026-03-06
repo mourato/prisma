@@ -58,13 +58,12 @@ final class ExportServiceTests: XCTestCase {
 
     func testSuggestedFilename() {
         let date = Date(timeIntervalSince1970: 1_698_372_000) // 2023-10-27
-        let meeting = Meeting(app: .zoom, type: .designReview, startTime: date)
+        let meeting = Meeting(app: .zoom, title: "Weekly Design Review", type: .designReview, startTime: date)
 
         let service = ExportService()
         let filename = service.suggestedFilename(for: meeting)
 
-        let expectedTypeComponent = meeting.type.displayName.replacingOccurrences(of: " ", with: "")
-        XCTAssertTrue(filename.contains("\(expectedTypeComponent).md"))
+        XCTAssertTrue(filename.contains("Weekly Design Review.md"))
         XCTAssertTrue(filename.hasSuffix(".md"))
     }
 }

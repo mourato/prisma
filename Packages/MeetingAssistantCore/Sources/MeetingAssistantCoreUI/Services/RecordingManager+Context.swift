@@ -58,6 +58,19 @@ extension RecordingManager {
             }
         }
 
+        if let calendarEvent = meeting.linkedCalendarEvent {
+            let calendarContext = calendarContextBlock(for: calendarEvent)
+            items.append(TranscriptionContextItem(source: .calendarEvent, text: calendarContext))
+
+            if let existingContext = context,
+               !existingContext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            {
+                context = "\(existingContext)\n\(calendarContext)"
+            } else {
+                context = calendarContext
+            }
+        }
+
         if isDictationMode(for: meeting),
            settings.contextAwarenessIncludeAccessibilityText,
            snapshot.activeAccessibilityText == nil,

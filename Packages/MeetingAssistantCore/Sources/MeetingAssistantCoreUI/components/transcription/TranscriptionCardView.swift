@@ -101,6 +101,12 @@ public struct TranscriptionCardView: View {
 
     private var collapsedContent: some View {
         VStack(alignment: .leading, spacing: 8) {
+            Text(displayTitle)
+                .font(.headline)
+                .lineLimit(1)
+                .foregroundStyle(.primary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
             Text(displayText(transcription.previewText))
                 .font(.body)
                 .lineLimit(3)
@@ -114,6 +120,14 @@ public struct TranscriptionCardView: View {
 
     private var expandedContent: some View {
         VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(displayTitle)
+                    .font(.title3.weight(.semibold))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                sourceLabel(text: sourceDisplayName)
+            }
+
             HStack(alignment: .center, spacing: 12) {
                 TranscriptionAudioPlayerView(audioURL: audioURL)
 
@@ -398,6 +412,11 @@ public struct TranscriptionCardView: View {
         return trimmed.isEmpty ? appSource.displayName : trimmed
     }
 
+    private var displayTitle: String {
+        let trimmed = transcription.meetingTitle?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty ? sourceDisplayName : trimmed
+    }
+
     private func sourceLabel(text: String) -> some View {
         HStack(spacing: 6) {
             AppIconView(
@@ -438,6 +457,7 @@ private extension TranscriptionMetadata {
         .init(
             id: UUID(),
             meetingId: UUID(),
+            meetingTitle: "Sprint Planning",
             appName: "Google Meet",
             appRawValue: "google-meet",
             appBundleIdentifier: "com.google.Chrome",
@@ -459,6 +479,7 @@ private extension Transcription {
         .init(
             meeting: Meeting(
                 app: .googleMeet,
+                title: "Sprint Planning",
                 state: .completed,
                 startTime: Date().addingTimeInterval(-1_200),
                 endTime: Date().addingTimeInterval(-600),

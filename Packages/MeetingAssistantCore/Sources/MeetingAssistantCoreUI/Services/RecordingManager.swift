@@ -74,6 +74,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     let meetingDetector: MeetingDetector
     let transcriptionClient: any TranscriptionService
     let postProcessingService: any PostProcessingServiceProtocol
+    let calendarEventService: any CalendarEventServiceProtocol
     let storage: any StorageService
     let notificationService: NotificationService
     let contextAwarenessService: any ContextAwarenessServiceProtocol
@@ -140,6 +141,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             systemRecorder: SystemAudioRecorder.shared,
             transcriptionClient: TranscriptionClient.shared,
             postProcessingService: PostProcessingService.shared,
+            calendarEventService: CalendarEventService.shared,
             audioMerger: AudioMerger(),
             meetingDetector: MeetingDetector.shared,
             storage: FileSystemStorageService.shared,
@@ -188,6 +190,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         systemRecorder: any AudioRecordingService = SystemAudioRecorder.shared,
         transcriptionClient: any TranscriptionService = TranscriptionClient.shared,
         postProcessingService: any PostProcessingServiceProtocol = PostProcessingService.shared,
+        calendarEventService: any CalendarEventServiceProtocol = CalendarEventService.shared,
         audioMerger: AudioMerger = AudioMerger(),
         meetingDetector: MeetingDetector = MeetingDetector.shared,
         storage: any StorageService = FileSystemStorageService.shared,
@@ -205,6 +208,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         self.systemRecorder = systemRecorder
         self.transcriptionClient = transcriptionClient
         self.postProcessingService = postProcessingService
+        self.calendarEventService = calendarEventService
         self.audioMerger = audioMerger
         self.meetingDetector = meetingDetector
         self.storage = storage

@@ -97,6 +97,8 @@ extension RecordingManager {
             app: DomainMeetingApp(rawValue: meeting.app.rawValue) ?? .unknown,
             appBundleIdentifier: meeting.appBundleIdentifier,
             appDisplayName: meeting.appDisplayName,
+            title: meeting.title,
+            linkedCalendarEvent: meeting.linkedCalendarEvent,
             startTime: meeting.startTime,
             endTime: meeting.endTime,
             audioFilePath: meeting.audioFilePath
@@ -117,6 +119,8 @@ extension RecordingManager {
                 app: MeetingApp(rawValue: entity.meeting.app.rawValue) ?? .unknown,
                 appBundleIdentifier: entity.meeting.appBundleIdentifier,
                 appDisplayName: entity.meeting.appDisplayName,
+                title: entity.meeting.title,
+                linkedCalendarEvent: entity.meeting.linkedCalendarEvent,
                 type: MeetingType(rawValue: entity.meetingType ?? "") ?? .general,
                 startTime: entity.meeting.startTime,
                 endTime: entity.meeting.endTime,

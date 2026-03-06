@@ -107,10 +107,11 @@ public final class TranscribeAudioUseCase: Sendable {
             qualityProfile: qualityProfile
         )
         let postProcessingDuration = Date().timeIntervalSince(postProcessingStartTime)
+        let resolvedMeeting = meetingWithResolvedTitle(meeting, postProcessingResult: postProcessingResult)
 
         // Construir entidade de transcrição
         let transcription = TranscriptionEntity(
-            meeting: meeting,
+            meeting: resolvedMeeting,
             config: buildConfiguration(
                 .init(
                     response: response,
@@ -306,6 +307,29 @@ public final class TranscribeAudioUseCase: Sendable {
         \(markerLines.joined(separator: "\n"))
         </TRANSCRIPT_QUALITY>
         """
+    }
+
+    private func meetingWithResolvedTitle(
+        _ meeting: MeetingEntity,
+        postProcessingResult: PostProcessingResult
+    ) -> MeetingEntity {
+        guard let summaryTitle = postProcessingResult.canonicalSummary?.title.trimmingCharacters(in: .whitespacesAndNewlines),
+              !summaryTitle.isEmpty
+        else {
+            return meeting
+        }
+
+        if let persistedTitle = meeting.title?.trimmingCharacters(in: .whitespacesAndNewlines), !persistedTitle.isEmpty {
+            return meeting
+        }
+
+        if let calendarTitle = meeting.linkedCalendarEvent?.trimmedTitle, !calendarTitle.isEmpty {
+            return meeting
+        }
+
+        var updatedMeeting = meeting
+        updatedMeeting.title = summaryTitle
+        return updatedMeeting
     }
 }
 

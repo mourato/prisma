@@ -114,7 +114,7 @@ final class TranscriptIntelligenceAlignmentRegressionTests: XCTestCase {
             capturedInput = input
             return DomainPostProcessingResult(
                 processedText: "ok",
-                canonicalSummary: CanonicalSummary(summary: "ok"),
+                canonicalSummary: CanonicalSummary(title: "ok", summary: "ok"),
                 outputState: .structured
             )
         }
@@ -167,6 +167,7 @@ final class TranscriptIntelligenceAlignmentRegressionTests: XCTestCase {
             DomainPostProcessingResult(
                 processedText: "summary",
                 canonicalSummary: CanonicalSummary(
+                    title: "summary",
                     summary: "summary",
                     trustFlags: .init(
                         isGroundedInTranscript: true,

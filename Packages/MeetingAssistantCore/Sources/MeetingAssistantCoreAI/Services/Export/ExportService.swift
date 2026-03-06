@@ -26,9 +26,12 @@ public struct ExportService: Sendable {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         let date = formatter.string(from: meeting.startTime)
-        let type = meeting.type.displayName.replacingOccurrences(of: " ", with: "")
+        let title = meeting.resolvedTitle
+            .components(separatedBy: CharacterSet(charactersIn: "/\\\\?%*|\"<>:"))
+            .joined(separator: " ")
+            .split(whereSeparator: \.isWhitespace)
+            .joined(separator: " ")
 
-        let prefix = "export.filename.prefix".localized
-        return "\(prefix)_\(date)_\(type).md"
+        return "\(date) \(title).md"
     }
 }

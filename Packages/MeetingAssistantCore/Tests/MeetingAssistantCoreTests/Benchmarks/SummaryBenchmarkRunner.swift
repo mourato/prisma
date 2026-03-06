@@ -35,7 +35,7 @@ struct SummaryBenchmarkRunner {
         let data = try Data(contentsOf: url)
         let fixtureSet = try decoder.decode(SummaryBenchmarkFixtureSet.self, from: data)
 
-        guard fixtureSet.schemaVersion == 1 else {
+        guard fixtureSet.schemaVersion == CanonicalSummary.currentSchemaVersion else {
             throw SummaryBenchmarkRunnerError.unsupportedFixtureSchemaVersion(fixtureSet.schemaVersion)
         }
         guard !fixtureSet.fixtures.isEmpty else {
@@ -134,7 +134,7 @@ struct SummaryBenchmarkRunner {
         }
 
         return SummaryBenchmarkResult(
-            schemaVersion: 1,
+            schemaVersion: CanonicalSummary.currentSchemaVersion,
             generatedAt: nowProvider(),
             mode: mode,
             fixtureCount: fixtureSet.fixtures.count,
@@ -148,7 +148,7 @@ struct SummaryBenchmarkRunner {
 
     func makeBaseline(metrics: SummaryBenchmarkMetricSet, source: String) -> SummaryBenchmarkBaseline {
         SummaryBenchmarkBaseline(
-            schemaVersion: 1,
+            schemaVersion: CanonicalSummary.currentSchemaVersion,
             generatedAt: nowProvider(),
             source: source,
             metrics: metrics

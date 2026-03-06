@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "rubric": {
     "version": 1,
     "thresholds": {
@@ -18,10 +18,11 @@
       "id": "standup-release",
       "description": "Release standup with clear decisions and action items.",
       "transcript": "Team agreed to ship version 1.2 on Friday. Maria will prepare release notes by Thursday. Open question: should we enable dark launch?",
-      "providerOutput": "{\n  \"schemaVersion\": 1,\n  \"generatedAt\": \"2026-02-21T00:00:00Z\",\n  \"summary\": \"Team agreed to ship version 1.2 on Friday.\",\n  \"keyPoints\": [\"Maria will prepare release notes by Thursday\"],\n  \"decisions\": [\"Ship version 1.2 on Friday\"],\n  \"actionItems\": [\n    {\"title\": \"Prepare release notes\", \"owner\": \"Maria\", \"dueDate\": \"2026-02-26T00:00:00Z\"}\n  ],\n  \"openQuestions\": [\"Should we enable dark launch?\"],\n  \"trustFlags\": {\n    \"isGroundedInTranscript\": true,\n    \"containsSpeculation\": false,\n    \"isHumanReviewed\": false,\n    \"confidenceScore\": 0.95\n  }\n}",
+      "providerOutput": "{\n  \"schemaVersion\": 2,\n  \"generatedAt\": \"2026-02-21T00:00:00Z\",\n  \"title\": \"Release standup\",\n  \"summary\": \"Team agreed to ship version 1.2 on Friday.\",\n  \"keyPoints\": [\"Maria will prepare release notes by Thursday\"],\n  \"decisions\": [\"Ship version 1.2 on Friday\"],\n  \"actionItems\": [\n    {\"title\": \"Prepare release notes\", \"owner\": \"Maria\", \"dueDate\": \"2026-02-26T00:00:00Z\"}\n  ],\n  \"openQuestions\": [\"Should we enable dark launch?\"],\n  \"trustFlags\": {\n    \"isGroundedInTranscript\": true,\n    \"containsSpeculation\": false,\n    \"isHumanReviewed\": false,\n    \"confidenceScore\": 0.95\n  }\n}",
       "expected": {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "generatedAt": "2026-02-21T00:00:00Z",
+        "title": "Release standup",
         "summary": "Team agreed to ship version 1.2 on Friday.",
         "keyPoints": ["Maria will prepare release notes by Thursday"],
         "decisions": ["Ship version 1.2 on Friday"],
@@ -45,10 +46,11 @@
       "id": "design-review-uncertainty",
       "description": "Design review with explicit uncertainty markers.",
       "transcript": "Design review raised uncertainty about API latency. The team suspects caching may help but needs measurement. Action item: Lucas to run benchmark tomorrow.",
-      "providerOutput": "{\n  \"schemaVersion\": 1,\n  \"generatedAt\": \"2026-02-21T01:00:00Z\",\n  \"summary\": \"Design review raised uncertainty about API latency.\",\n  \"keyPoints\": [\"The team suspects caching may help\", \"The team needs measurement\"],\n  \"decisions\": [],\n  \"actionItems\": [\n    {\"title\": \"Run benchmark tomorrow\", \"owner\": \"Lucas\", \"dueDate\": \"2026-02-22T00:00:00Z\"}\n  ],\n  \"openQuestions\": [\"Caching may help?\"],\n  \"trustFlags\": {\n    \"isGroundedInTranscript\": true,\n    \"containsSpeculation\": true,\n    \"isHumanReviewed\": false,\n    \"confidenceScore\": 0.72\n  }\n}",
+      "providerOutput": "{\n  \"schemaVersion\": 2,\n  \"generatedAt\": \"2026-02-21T01:00:00Z\",\n  \"title\": \"Design review latency discussion\",\n  \"summary\": \"Design review raised uncertainty about API latency.\",\n  \"keyPoints\": [\"The team suspects caching may help\", \"The team needs measurement\"],\n  \"decisions\": [],\n  \"actionItems\": [\n    {\"title\": \"Run benchmark tomorrow\", \"owner\": \"Lucas\", \"dueDate\": \"2026-02-22T00:00:00Z\"}\n  ],\n  \"openQuestions\": [\"Caching may help?\"],\n  \"trustFlags\": {\n    \"isGroundedInTranscript\": true,\n    \"containsSpeculation\": true,\n    \"isHumanReviewed\": false,\n    \"confidenceScore\": 0.72\n  }\n}",
       "expected": {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "generatedAt": "2026-02-21T01:00:00Z",
+        "title": "Design review latency discussion",
         "summary": "Design review raised uncertainty about API latency.",
         "keyPoints": ["The team suspects caching may help", "The team needs measurement"],
         "decisions": [],
@@ -72,10 +74,11 @@
       "id": "sales-pilot-fenced-json",
       "description": "Provider output wrapped in markdown code fence must still parse.",
       "transcript": "Sales sync confirmed enterprise pilot starts March 3. Decision: prioritize onboarding checklist. Action item: Nina to draft checklist by February 28.",
-      "providerOutput": "```json\n{\n  \"schemaVersion\": 1,\n  \"generatedAt\": \"2026-02-21T02:00:00Z\",\n  \"summary\": \"Sales sync confirmed enterprise pilot starts March 3.\",\n  \"keyPoints\": [\"Prioritize onboarding checklist\"],\n  \"decisions\": [\"Prioritize onboarding checklist\"],\n  \"actionItems\": [\n    {\"title\": \"Draft checklist by February 28\", \"owner\": \"Nina\", \"dueDate\": \"2026-02-28T00:00:00Z\"}\n  ],\n  \"openQuestions\": [],\n  \"trustFlags\": {\n    \"isGroundedInTranscript\": true,\n    \"containsSpeculation\": false,\n    \"isHumanReviewed\": false,\n    \"confidenceScore\": 0.9\n  }\n}\n```",
+      "providerOutput": "```json\n{\n  \"schemaVersion\": 2,\n  \"generatedAt\": \"2026-02-21T02:00:00Z\",\n  \"title\": \"Enterprise pilot kickoff\",\n  \"summary\": \"Sales sync confirmed enterprise pilot starts March 3.\",\n  \"keyPoints\": [\"Prioritize onboarding checklist\"],\n  \"decisions\": [\"Prioritize onboarding checklist\"],\n  \"actionItems\": [\n    {\"title\": \"Draft checklist by February 28\", \"owner\": \"Nina\", \"dueDate\": \"2026-02-28T00:00:00Z\"}\n  ],\n  \"openQuestions\": [],\n  \"trustFlags\": {\n    \"isGroundedInTranscript\": true,\n    \"containsSpeculation\": false,\n    \"isHumanReviewed\": false,\n    \"confidenceScore\": 0.9\n  }\n}\n```",
       "expected": {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "generatedAt": "2026-02-21T02:00:00Z",
+        "title": "Enterprise pilot kickoff",
         "summary": "Sales sync confirmed enterprise pilot starts March 3.",
         "keyPoints": ["Prioritize onboarding checklist"],
         "decisions": ["Prioritize onboarding checklist"],
@@ -99,10 +102,11 @@
       "id": "retrospective-quality",
       "description": "Retrospective summary preserving transcript wording.",
       "transcript": "Retrospective identified flaky tests in export module. Decision: stabilize snapshot tests this sprint. Open question: should we split integration tests by provider?",
-      "providerOutput": "{\n  \"schemaVersion\": 1,\n  \"generatedAt\": \"2026-02-21T03:00:00Z\",\n  \"summary\": \"Retrospective identified flaky tests in export module.\",\n  \"keyPoints\": [\"Stabilize snapshot tests this sprint\"],\n  \"decisions\": [\"Stabilize snapshot tests this sprint\"],\n  \"actionItems\": [\n    {\"title\": \"Stabilize snapshot tests this sprint\", \"owner\": null, \"dueDate\": null}\n  ],\n  \"openQuestions\": [\"Should we split integration tests by provider?\"],\n  \"trustFlags\": {\n    \"isGroundedInTranscript\": true,\n    \"containsSpeculation\": false,\n    \"isHumanReviewed\": false,\n    \"confidenceScore\": 0.88\n  }\n}",
+      "providerOutput": "{\n  \"schemaVersion\": 2,\n  \"generatedAt\": \"2026-02-21T03:00:00Z\",\n  \"title\": \"Export stability retrospective\",\n  \"summary\": \"Retrospective identified flaky tests in export module.\",\n  \"keyPoints\": [\"Stabilize snapshot tests this sprint\"],\n  \"decisions\": [\"Stabilize snapshot tests this sprint\"],\n  \"actionItems\": [\n    {\"title\": \"Stabilize snapshot tests this sprint\", \"owner\": null, \"dueDate\": null}\n  ],\n  \"openQuestions\": [\"Should we split integration tests by provider?\"],\n  \"trustFlags\": {\n    \"isGroundedInTranscript\": true,\n    \"containsSpeculation\": false,\n    \"isHumanReviewed\": false,\n    \"confidenceScore\": 0.88\n  }\n}",
       "expected": {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "generatedAt": "2026-02-21T03:00:00Z",
+        "title": "Export stability retrospective",
         "summary": "Retrospective identified flaky tests in export module.",
         "keyPoints": ["Stabilize snapshot tests this sprint"],
         "decisions": ["Stabilize snapshot tests this sprint"],

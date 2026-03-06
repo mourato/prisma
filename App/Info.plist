@@ -33,6 +33,10 @@
 	<true/>
 	<key>NSAppleEventsUsageDescription</key>
 	<string>Prisma needs to control browsers to capture the active tab URL during recording.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Prisma needs calendar access to show upcoming events and use them as meeting context.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Prisma needs calendar access to show upcoming events and use them as meeting context.</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>

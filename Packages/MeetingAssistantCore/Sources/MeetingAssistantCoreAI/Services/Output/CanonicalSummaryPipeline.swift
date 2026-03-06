@@ -23,6 +23,7 @@ struct CanonicalSummaryPromptComposer: Sendable {
         {
           "schemaVersion": 1,
           "generatedAt": "ISO-8601 datetime",
+          "title": "string",
           "summary": "string",
           "keyPoints": ["string"],
           "decisions": ["string"],
@@ -191,8 +192,10 @@ struct DeterministicSummaryFallbackBuilder: Sendable {
     func build(providerOutput: String, transcription: String) -> DomainPostProcessingResult {
         let sourceText = normalize(providerOutput).isEmpty ? normalize(transcription) : normalize(providerOutput)
         let summaryText = clampSummary(sourceText.isEmpty ? "Summary unavailable due to malformed model output." : sourceText)
+        let fallbackTitle = clampTitle(summaryText)
 
         let fallbackSummary = CanonicalSummary(
+            title: fallbackTitle,
             summary: summaryText,
             trustFlags: .init(
                 isGroundedInTranscript: false,
@@ -206,6 +209,7 @@ struct DeterministicSummaryFallbackBuilder: Sendable {
             fallbackSummary
         } else {
             CanonicalSummary(
+                title: fallbackTitle,
                 summary: "Summary unavailable due to malformed model output.",
                 trustFlags: .init(
                     isGroundedInTranscript: false,
@@ -232,6 +236,22 @@ struct DeterministicSummaryFallbackBuilder: Sendable {
     private func clampSummary(_ text: String) -> String {
         guard text.count > Constants.maxSummaryCharacters else { return text }
         return String(text.prefix(Constants.maxSummaryCharacters))
+    }
+
+    private func clampTitle(_ text: String) -> String {
+        let collapsed = text
+            .components(separatedBy: .newlines)
+            .joined(separator: " ")
+            .split(whereSeparator: \.isWhitespace)
+            .joined(separator: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !collapsed.isEmpty else {
+            return "Untitled Meeting"
+        }
+
+        let maxTitleCharacters = 120
+        return collapsed.count > maxTitleCharacters ? String(collapsed.prefix(maxTitleCharacters)) : collapsed
     }
 }
 
@@ -273,6 +293,7 @@ struct CanonicalSummaryRenderer: Sendable {
 private struct CanonicalSummaryPayload: Decodable {
     let schemaVersion: Int?
     let generatedAt: Date?
+    let title: String?
     let summary: String?
     let keyPoints: [String]?
     let decisions: [String]?
@@ -284,6 +305,7 @@ private struct CanonicalSummaryPayload: Decodable {
         CanonicalSummary(
             schemaVersion: schemaVersion ?? CanonicalSummary.currentSchemaVersion,
             generatedAt: generatedAt ?? Date(),
+            title: title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
             summary: summary?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
             keyPoints: cleanedEntries(keyPoints),
             decisions: cleanedEntries(decisions),

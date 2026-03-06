@@ -37,6 +37,7 @@ public struct MetricsDashboardSettingsTab: View {
             }
 
             activityHeatmapSection
+            upcomingEventsSection
             filtersSection
 
             if viewModel.summary.sessionsRecorded == 0, !viewModel.isLoading {
@@ -70,6 +71,55 @@ public struct MetricsDashboardSettingsTab: View {
                 }
                 .labelsHidden()
                 .pickerStyle(.menu)
+            }
+        }
+    }
+
+    private var upcomingEventsSection: some View {
+        DSGroup("metrics.calendar.upcoming.title".localized, icon: "calendar.badge.clock") {
+            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
+                Text("metrics.calendar.upcoming.subtitle".localized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                if viewModel.isLoadingCalendar {
+                    SettingsStateBlock(
+                        kind: .loading,
+                        title: "metrics.calendar.loading.title".localized,
+                        message: "metrics.calendar.loading.message".localized
+                    )
+                } else if !viewModel.calendarPermissionState.isAuthorized {
+                    SettingsStateBlock(
+                        kind: .warning,
+                        title: "metrics.calendar.permission.title".localized,
+                        message: calendarPermissionMessage,
+                        actionTitle: calendarPermissionActionTitle
+                    ) {
+                        if viewModel.calendarPermissionState == .notDetermined {
+                            Task { await viewModel.requestCalendarAccess() }
+                        } else {
+                            viewModel.openCalendarSettings()
+                        }
+                    }
+                } else if viewModel.upcomingEvents.isEmpty {
+                    SettingsStateBlock(
+                        kind: .empty,
+                        title: "metrics.calendar.empty.title".localized,
+                        message: "metrics.calendar.empty.message".localized
+                    )
+                } else {
+                    ForEach(viewModel.upcomingEvents, id: \.eventIdentifier) { event in
+                        UpcomingCalendarEventRow(
+                            event: event,
+                            isRecording: viewModel.isRecording,
+                            isLinked: viewModel.isLinkedEvent(event)
+                        ) {
+                            viewModel.linkCalendarEvent(event)
+                        } onClear: {
+                            viewModel.clearLinkedCalendarEvent()
+                        }
+                    }
+                }
             }
         }
     }
@@ -486,6 +536,23 @@ public struct MetricsDashboardSettingsTab: View {
         return "metrics.activity.tooltip.words_on_date".localized(with: wordsText, dayText)
     }
 
+    private var calendarPermissionMessage: String {
+        switch viewModel.calendarPermissionState {
+        case .notDetermined:
+            "metrics.calendar.permission.request".localized
+        case .denied, .restricted:
+            "metrics.calendar.permission.denied".localized
+        case .granted:
+            ""
+        }
+    }
+
+    private var calendarPermissionActionTitle: String {
+        viewModel.calendarPermissionState == .notDetermined
+            ? "metrics.calendar.permission.action_request".localized
+            : "metrics.calendar.permission.action_open_settings".localized
+    }
+
     private func scrollToLatest(in proxy: ScrollViewProxy, animated: Bool) {
         DispatchQueue.main.async {
             if animated, !reduceMotion {
@@ -517,6 +584,67 @@ public struct MetricsDashboardSettingsTab: View {
         formatter.setLocalizedDateFormatFromTemplate("MMMM")
         return formatter
     }()
+}
+
+private struct UpcomingCalendarEventRow: View {
+    let event: MeetingCalendarEventSnapshot
+    let isRecording: Bool
+    let isLinked: Bool
+    let onLink: () -> Void
+    let onClear: () -> Void
+
+    var body: some View {
+        DSCard {
+            HStack(alignment: .top, spacing: AppDesignSystem.Layout.spacing12) {
+                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing4) {
+                    Text(event.trimmedTitle.isEmpty ? "metrics.calendar.event.untitled".localized : event.trimmedTitle)
+                        .font(.subheadline.weight(.semibold))
+
+                    Text(timeLabel)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    if let location = event.location?.trimmingCharacters(in: .whitespacesAndNewlines), !location.isEmpty {
+                        Label(location, systemImage: "mappin.and.ellipse")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Spacer(minLength: 0)
+
+                if isLinked {
+                    VStack(alignment: .trailing, spacing: AppDesignSystem.Layout.spacing8) {
+                        Label("metrics.calendar.event.linked".localized, systemImage: "checkmark.circle.fill")
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(AppDesignSystem.Colors.success)
+
+                        if isRecording {
+                            Button("metrics.calendar.event.clear".localized) {
+                                onClear()
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                        }
+                    }
+                } else if isRecording {
+                    Button("metrics.calendar.event.use_for_recording".localized) {
+                        onLink()
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var timeLabel: String {
+        let formatter = DateIntervalFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter.string(from: event.startDate, to: event.endDate)
+    }
 }
 
 private struct ActivityHeatmapWeekColumn: Identifiable {

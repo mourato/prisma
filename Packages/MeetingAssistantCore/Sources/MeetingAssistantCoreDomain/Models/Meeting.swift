@@ -93,6 +93,8 @@ public struct Meeting: Identifiable, Codable, Hashable, Sendable {
     public let app: MeetingApp
     public let appBundleIdentifier: String?
     public let appDisplayName: String?
+    public var title: String?
+    public var linkedCalendarEvent: MeetingCalendarEventSnapshot?
     public var type: MeetingType = .general
     public var state: MeetingState = .idle
     public let startTime: Date
@@ -104,6 +106,8 @@ public struct Meeting: Identifiable, Codable, Hashable, Sendable {
         app: MeetingApp,
         appBundleIdentifier: String? = nil,
         appDisplayName: String? = nil,
+        title: String? = nil,
+        linkedCalendarEvent: MeetingCalendarEventSnapshot? = nil,
         type: MeetingType = .general,
         state: MeetingState = .idle,
         startTime: Date = Date(),
@@ -114,6 +118,8 @@ public struct Meeting: Identifiable, Codable, Hashable, Sendable {
         self.app = app
         self.appBundleIdentifier = appBundleIdentifier
         self.appDisplayName = appDisplayName
+        self.title = title
+        self.linkedCalendarEvent = linkedCalendarEvent
         self.type = type
         self.state = state
         self.startTime = startTime
@@ -147,6 +153,25 @@ public struct Meeting: Identifiable, Codable, Hashable, Sendable {
 
     public var appIcon: String {
         app.icon
+    }
+
+    public var resolvedTitle: String {
+        if let title = title?.trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty {
+            return title
+        }
+
+        if let calendarTitle = linkedCalendarEvent?.trimmedTitle, !calendarTitle.isEmpty {
+            return calendarTitle
+        }
+
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+
+        return "export.header.meeting_title".localized(
+            with: app.displayName,
+            formatter.string(from: startTime)
+        )
     }
 
     /// Indicates if the meeting represents a dictation (unknown app source).

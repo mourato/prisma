@@ -10,6 +10,8 @@ extension FileSystemStorageService {
             app: DomainMeetingApp(rawValue: transcription.meeting.app.rawValue) ?? .unknown,
             appBundleIdentifier: transcription.meeting.appBundleIdentifier,
             appDisplayName: transcription.meeting.appDisplayName,
+            title: transcription.meeting.title,
+            linkedCalendarEvent: transcription.meeting.linkedCalendarEvent,
             startTime: transcription.meeting.startTime,
             endTime: transcription.meeting.endTime,
             audioFilePath: transcription.meeting.audioFilePath
@@ -59,6 +61,7 @@ extension FileSystemStorageService {
         return TranscriptionMetadata(
             id: mo.id,
             meetingId: mo.meeting.id,
+            meetingTitle: mo.meeting.title,
             appName: resolvedName,
             appRawValue: mo.meeting.appRawValue,
             appBundleIdentifier: mo.meeting.appBundleIdentifier,
@@ -87,6 +90,8 @@ extension FileSystemStorageService {
             app: MeetingApp(rawValue: entity.meeting.app.rawValue) ?? .unknown,
             appBundleIdentifier: entity.meeting.appBundleIdentifier,
             appDisplayName: entity.meeting.appDisplayName,
+            title: entity.meeting.title,
+            linkedCalendarEvent: entity.meeting.linkedCalendarEvent,
             startTime: entity.meeting.startTime,
             endTime: entity.meeting.endTime,
             audioFilePath: entity.meeting.audioFilePath

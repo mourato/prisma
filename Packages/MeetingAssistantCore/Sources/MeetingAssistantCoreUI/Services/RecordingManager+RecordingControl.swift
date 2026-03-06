@@ -62,7 +62,7 @@ public extension RecordingManager {
         await Task.yield()
 
         do {
-            let meeting = createMeeting(type: resolveMeetingType())
+            let meeting = await applyAutomaticCalendarEventIfAvailable(to: createMeeting(type: resolveMeetingType()))
             dictationStartBundleIdentifier = nil
             dictationStartURL = nil
             currentMeeting = meeting
@@ -160,6 +160,8 @@ public extension RecordingManager {
             app: resolvedApp,
             appBundleIdentifier: appBundleIdentifier,
             appDisplayName: appDisplayName,
+            title: meeting.title,
+            linkedCalendarEvent: meeting.linkedCalendarEvent,
             type: meeting.type,
             state: meeting.state,
             startTime: meeting.startTime,
@@ -333,6 +335,7 @@ public extension RecordingManager {
         // Create meeting record for imported file
         let meeting = Meeting(
             app: .importedFile,
+            title: audioURL.deletingPathExtension().lastPathComponent,
             audioFilePath: audioURL.path
         )
         currentMeeting = meeting

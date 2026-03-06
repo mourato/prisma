@@ -182,6 +182,7 @@ class MockPostProcessingService: PostProcessingServiceProtocol {
     func processTranscriptionStructured(_ transcription: String) async throws -> DomainPostProcessingResult {
         let processedText = try await processTranscription(transcription)
         let summary = CanonicalSummary(
+            title: processedText,
             summary: processedText,
             trustFlags: .init(
                 isGroundedInTranscript: true,
@@ -203,6 +204,7 @@ class MockPostProcessingService: PostProcessingServiceProtocol {
     ) async throws -> DomainPostProcessingResult {
         let processedText = try await processTranscription(transcription, with: prompt)
         let summary = CanonicalSummary(
+            title: processedText,
             summary: processedText,
             trustFlags: .init(
                 isGroundedInTranscript: true,

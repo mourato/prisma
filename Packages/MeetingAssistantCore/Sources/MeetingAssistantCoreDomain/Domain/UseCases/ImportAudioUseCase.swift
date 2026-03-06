@@ -34,6 +34,7 @@ public final class ImportAudioUseCase {
         // Criar reunião para arquivo importado
         let meeting = MeetingEntity(
             app: .importedFile,
+            title: meetingTitle ?? sourceURL.deletingPathExtension().lastPathComponent,
             startTime: Date() // Usar data atual como start time para arquivos importados
         )
 
