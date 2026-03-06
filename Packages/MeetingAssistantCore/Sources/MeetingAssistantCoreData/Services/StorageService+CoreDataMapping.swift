@@ -61,7 +61,7 @@ extension FileSystemStorageService {
         return TranscriptionMetadata(
             id: mo.id,
             meetingId: mo.meeting.id,
-            meetingTitle: mo.meeting.title,
+            meetingTitle: mo.meeting.preferredTitle,
             appName: resolvedName,
             appRawValue: mo.meeting.appRawValue,
             appBundleIdentifier: mo.meeting.appBundleIdentifier,

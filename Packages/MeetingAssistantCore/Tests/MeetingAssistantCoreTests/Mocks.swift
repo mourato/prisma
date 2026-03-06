@@ -347,7 +347,11 @@ class MockStorageService: StorageService, @unchecked Sendable {
                 let queryText = trimmed.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
                 let preview = metadata.previewText.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
                 let appName = metadata.appName.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
-                return preview.contains(queryText) || appName.contains(queryText)
+                let meetingTitle = metadata.supportsMeetingConversation
+                    ? (metadata.meetingTitle?
+                        .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current) ?? "")
+                    : ""
+                return preview.contains(queryText) || appName.contains(queryText) || meetingTitle.contains(queryText)
             }
             .sorted { $0.createdAt > $1.createdAt }
     }
@@ -357,6 +361,7 @@ class MockStorageService: StorageService, @unchecked Sendable {
             TranscriptionMetadata(
                 id: transcription.id,
                 meetingId: transcription.meeting.id,
+                meetingTitle: transcription.meeting.preferredTitle,
                 appName: transcription.meeting.appName,
                 appRawValue: transcription.meeting.app.rawValue,
                 appBundleIdentifier: transcription.meeting.appBundleIdentifier,
@@ -398,6 +403,39 @@ class MockStorageService: StorageService, @unchecked Sendable {
             deletedAudioCount: preview.audioCount,
             deletedTranscriptionCount: preview.transcriptionCount
         )
+    }
+}
+
+@MainActor
+final class MockMeetingRepository: MeetingRepository {
+    var meetingsByID: [UUID: MeetingEntity] = [:]
+    var updatedMeetings: [MeetingEntity] = []
+    var deletedMeetingIDs: [UUID] = []
+    var onUpdateMeeting: ((MeetingEntity) -> Void)?
+    var onSaveMeeting: ((MeetingEntity) -> Void)?
+
+    func saveMeeting(_ meeting: MeetingEntity) async throws {
+        meetingsByID[meeting.id] = meeting
+        onSaveMeeting?(meeting)
+    }
+
+    func fetchMeeting(by id: UUID) async throws -> MeetingEntity? {
+        meetingsByID[id]
+    }
+
+    func fetchAllMeetings() async throws -> [MeetingEntity] {
+        Array(meetingsByID.values)
+    }
+
+    func deleteMeeting(by id: UUID) async throws {
+        meetingsByID[id] = nil
+        deletedMeetingIDs.append(id)
+    }
+
+    func updateMeeting(_ meeting: MeetingEntity) async throws {
+        meetingsByID[meeting.id] = meeting
+        updatedMeetings.append(meeting)
+        onUpdateMeeting?(meeting)
     }
 }
 

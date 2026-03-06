@@ -47,11 +47,15 @@ public struct TranscriptionCardView: View {
     @State private var selectedTab: TranscriptionTab = .aiProcessed
     @State private var showInfoPopover = false
     @State private var expandedTabs: Set<TranscriptionTab> = []
+    @State private var draftMeetingTitle = ""
+    @State private var isEditingMeetingTitle = false
+    @FocusState private var isMeetingTitleFieldFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public enum TranscriptionAction {
         case askAboutMeeting
         case copy(text: String)
+        case updateMeetingTitle(String?)
         case reprocess(prompt: PostProcessingPrompt)
         case retryTranscription
         case info
@@ -97,11 +101,17 @@ public struct TranscriptionCardView: View {
                 NSCursor.arrow.set()
             }
         }
+        .onAppear {
+            syncDraftMeetingTitleIfNeeded()
+        }
+        .onChange(of: currentPersistedMeetingTitle) { _, _ in
+            syncDraftMeetingTitleIfNeeded()
+        }
     }
 
     private var collapsedContent: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(displayTitle)
+            Text(collapsedTitle)
                 .font(.headline)
                 .lineLimit(1)
                 .foregroundStyle(.primary)
@@ -120,14 +130,6 @@ public struct TranscriptionCardView: View {
 
     private var expandedContent: some View {
         VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(displayTitle)
-                    .font(.title3.weight(.semibold))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                sourceLabel(text: sourceDisplayName)
-            }
-
             HStack(alignment: .center, spacing: 12) {
                 TranscriptionAudioPlayerView(audioURL: audioURL)
 
@@ -145,6 +147,8 @@ public struct TranscriptionCardView: View {
                 }
             }
 
+            inlineHeadingView
+
             contentView
                 .font(.body)
                 .foregroundStyle(.primary)
@@ -161,7 +165,9 @@ public struct TranscriptionCardView: View {
                 }
             }
 
-            HStack {
+            HStack(alignment: .center, spacing: 12) {
+                sourceLabel(text: sourceDisplayName)
+
                 Spacer()
 
                 HStack(spacing: 12) {
@@ -412,9 +418,105 @@ public struct TranscriptionCardView: View {
         return trimmed.isEmpty ? appSource.displayName : trimmed
     }
 
-    private var displayTitle: String {
-        let trimmed = transcription.meetingTitle?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        return trimmed.isEmpty ? sourceDisplayName : trimmed
+    private var currentPersistedMeetingTitle: String? {
+        let detailTitle = transcriptionDetail?.meeting.preferredTitle?.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let detailTitle, !detailTitle.isEmpty {
+            return detailTitle
+        }
+
+        let metadataTitle = transcription.meetingTitle?.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let metadataTitle, !metadataTitle.isEmpty {
+            return metadataTitle
+        }
+
+        return nil
+    }
+
+    private var collapsedTitle: String {
+        if transcription.supportsMeetingConversation, let currentPersistedMeetingTitle {
+            return currentPersistedMeetingTitle
+        }
+        return sourceDisplayName
+    }
+
+    @ViewBuilder
+    private var inlineHeadingView: some View {
+        if transcription.supportsMeetingConversation {
+            meetingTitleEditor
+        } else {
+            Text(sourceDisplayName)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(.primary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var meetingTitleEditor: some View {
+        Group {
+            if isEditingMeetingTitle {
+                TextField(
+                    "",
+                    text: $draftMeetingTitle,
+                    prompt: Text(sourceDisplayName)
+                )
+                .textFieldStyle(.roundedBorder)
+                .font(.title3.weight(.semibold))
+                .focused($isMeetingTitleFieldFocused)
+                .onSubmit {
+                    commitMeetingTitleEdit()
+                }
+                .onChange(of: isMeetingTitleFieldFocused) { _, isFocused in
+                    if !isFocused {
+                        commitMeetingTitleEdit()
+                    }
+                }
+                .onExitCommand {
+                    cancelMeetingTitleEdit()
+                }
+            } else {
+                Button {
+                    beginMeetingTitleEdit()
+                } label: {
+                    Text(currentPersistedMeetingTitle ?? sourceDisplayName)
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(.primary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func beginMeetingTitleEdit() {
+        guard transcription.supportsMeetingConversation else { return }
+        draftMeetingTitle = currentPersistedMeetingTitle ?? ""
+        isEditingMeetingTitle = true
+        isMeetingTitleFieldFocused = true
+    }
+
+    private func commitMeetingTitleEdit() {
+        guard isEditingMeetingTitle else { return }
+
+        let trimmedTitle = draftMeetingTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        isEditingMeetingTitle = false
+        isMeetingTitleFieldFocused = false
+        draftMeetingTitle = trimmedTitle
+        onAction(.updateMeetingTitle(trimmedTitle.isEmpty ? nil : trimmedTitle))
+    }
+
+    private func cancelMeetingTitleEdit() {
+        guard isEditingMeetingTitle else { return }
+
+        isEditingMeetingTitle = false
+        isMeetingTitleFieldFocused = false
+        draftMeetingTitle = currentPersistedMeetingTitle ?? ""
+    }
+
+    private func syncDraftMeetingTitleIfNeeded() {
+        guard !isEditingMeetingTitle else { return }
+        draftMeetingTitle = currentPersistedMeetingTitle ?? ""
     }
 
     private func sourceLabel(text: String) -> some View {

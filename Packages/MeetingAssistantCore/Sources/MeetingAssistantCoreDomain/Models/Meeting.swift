@@ -155,13 +155,21 @@ public struct Meeting: Identifiable, Codable, Hashable, Sendable {
         app.icon
     }
 
-    public var resolvedTitle: String {
+    public var preferredTitle: String? {
         if let title = title?.trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty {
             return title
         }
 
         if let calendarTitle = linkedCalendarEvent?.trimmedTitle, !calendarTitle.isEmpty {
             return calendarTitle
+        }
+
+        return nil
+    }
+
+    public var resolvedTitle: String {
+        if let preferredTitle {
+            return preferredTitle
         }
 
         let formatter = DateFormatter()
