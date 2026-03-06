@@ -2,10 +2,11 @@ import Foundation
 
 /// Canonical and versioned summary payload persisted with a transcription.
 public struct CanonicalSummary: Codable, Hashable, Sendable {
-    public static let currentSchemaVersion = 1
+    public static let currentSchemaVersion = 2
 
     public let schemaVersion: Int
     public let generatedAt: Date
+    public let title: String
     public let summary: String
     public let keyPoints: [String]
     public let decisions: [String]
@@ -16,6 +17,7 @@ public struct CanonicalSummary: Codable, Hashable, Sendable {
     public init(
         schemaVersion: Int = CanonicalSummary.currentSchemaVersion,
         generatedAt: Date = Date(),
+        title: String,
         summary: String,
         keyPoints: [String] = [],
         decisions: [String] = [],
@@ -25,6 +27,7 @@ public struct CanonicalSummary: Codable, Hashable, Sendable {
     ) {
         self.schemaVersion = schemaVersion
         self.generatedAt = generatedAt
+        self.title = title
         self.summary = summary
         self.keyPoints = keyPoints
         self.decisions = decisions
@@ -40,6 +43,10 @@ public struct CanonicalSummary: Codable, Hashable, Sendable {
 
         guard !summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw CanonicalSummaryValidationError.emptySummary
+        }
+
+        guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw CanonicalSummaryValidationError.emptyTitle
         }
 
         try validateListEntries(keyPoints, fieldName: "keyPoints")
@@ -97,6 +104,7 @@ public extension CanonicalSummary {
 
 public enum CanonicalSummaryValidationError: Error, Equatable, LocalizedError, Sendable {
     case unsupportedSchemaVersion(Int)
+    case emptyTitle
     case emptySummary
     case emptyListEntry(String)
     case emptyActionItemTitle
@@ -106,6 +114,8 @@ public enum CanonicalSummaryValidationError: Error, Equatable, LocalizedError, S
         switch self {
         case let .unsupportedSchemaVersion(version):
             "Unsupported canonical summary schema version: \(version)"
+        case .emptyTitle:
+            "Canonical summary title must not be empty."
         case .emptySummary:
             "Canonical summary must not be empty."
         case let .emptyListEntry(field):

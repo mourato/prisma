@@ -108,10 +108,11 @@ extension RecordingManager {
             meeting: meeting,
             qualityProfile: qualityProfile
         )
+        let resolvedMeeting = meetingWithResolvedTitle(meeting, canonicalSummary: postProcessing.canonicalSummary)
 
         return Transcription(
             id: transcription.id,
-            meeting: meeting,
+            meeting: resolvedMeeting,
             contextItems: transcription.contextItems,
             segments: replacedSegments,
             text: postProcessing.processedContent ?? replacedText,
@@ -242,6 +243,7 @@ extension RecordingManager {
         return CanonicalSummary(
             schemaVersion: summary.schemaVersion,
             generatedAt: summary.generatedAt,
+            title: summary.title,
             summary: summary.summary,
             keyPoints: summary.keyPoints,
             decisions: summary.decisions,
@@ -249,6 +251,27 @@ extension RecordingManager {
             openQuestions: summary.openQuestions,
             trustFlags: trustFlags
         )
+    }
+
+    func meetingWithResolvedTitle(
+        _ meeting: Meeting,
+        canonicalSummary: CanonicalSummary?
+    ) -> Meeting {
+        guard let title = canonicalSummary?.title.trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty else {
+            return meeting
+        }
+
+        if let persistedTitle = meeting.title?.trimmingCharacters(in: .whitespacesAndNewlines), !persistedTitle.isEmpty {
+            return meeting
+        }
+
+        if let calendarTitle = meeting.linkedCalendarEvent?.trimmedTitle, !calendarTitle.isEmpty {
+            return meeting
+        }
+
+        var updatedMeeting = meeting
+        updatedMeeting.title = title
+        return updatedMeeting
     }
 
     func updatedMeeting(for meeting: Meeting, audioDuration: Double?) -> Meeting {

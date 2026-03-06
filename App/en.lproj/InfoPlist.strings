@@ -1,5 +1,7 @@
 /* Privacy Usage Descriptions */
 "NSAppleEventsUsageDescription" = "Prisma needs to control browsers to capture the active tab URL during recording.";
+"NSCalendarsFullAccessUsageDescription" = "Prisma needs calendar access to show upcoming events and use them as meeting context.";
+"NSCalendarsUsageDescription" = "Prisma needs calendar access to show upcoming events and use them as meeting context.";
 "NSMicrophoneUsageDescription" = "Prisma needs microphone access to capture audio when screen recording is not available.";
 "NSScreenCaptureUsageDescription" = "Prisma needs to capture system audio to record your video call meetings.";
 "NSHumanReadableCopyright" = "Copyright © 2024. All rights reserved.";

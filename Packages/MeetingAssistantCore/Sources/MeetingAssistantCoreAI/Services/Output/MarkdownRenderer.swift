@@ -118,14 +118,7 @@ public struct MarkdownRenderer: Sendable {
     // MARK: - Helpers
 
     private func meetingTitle(for meeting: Meeting) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-
-        return "export.header.meeting_title".localized(
-            with: meeting.app.displayName,
-            formatter.string(from: meeting.startTime)
-        )
+        meeting.resolvedTitle
     }
 
     private func formatDate(_ date: Date) -> String {

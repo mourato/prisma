@@ -108,6 +108,7 @@ final class CoreDataRepositoryTests: XCTestCase {
         try await meetingRepo.saveMeeting(meeting)
 
         let summary = CanonicalSummary(
+            title: "Project Status",
             summary: "Project status is on track.",
             keyPoints: ["Milestone A completed"],
             decisions: ["Ship beta next week"],
@@ -162,6 +163,7 @@ final class CoreDataRepositoryTests: XCTestCase {
 
         let invalidSummary = CanonicalSummary(
             schemaVersion: 0,
+            title: "",
             summary: "",
             trustFlags: .init(confidenceScore: 1.2)
         )

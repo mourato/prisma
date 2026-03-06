@@ -356,6 +356,7 @@ private extension TranscribeAudioUseCase {
         return CanonicalSummary(
             schemaVersion: summary.schemaVersion,
             generatedAt: summary.generatedAt,
+            title: summary.title,
             summary: summary.summary,
             keyPoints: summary.keyPoints,
             decisions: summary.decisions,

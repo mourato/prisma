@@ -9,7 +9,7 @@ import Foundation
 /// Configuração programática do modelo CoreData
 public enum CoreDataModel {
     /// Versão atual do modelo
-    public static let currentVersion = "1.2"
+    public static let currentVersion = "1.3"
 
     /// Cria o modelo CoreData programaticamente
     // swiftlint:disable function_body_length
@@ -42,6 +42,17 @@ public enum CoreDataModel {
         meetingAppDisplayNameAttribute.attributeType = .stringAttributeType
         meetingAppDisplayNameAttribute.isOptional = true
 
+        let meetingTitleAttribute = NSAttributeDescription()
+        meetingTitleAttribute.name = "title"
+        meetingTitleAttribute.attributeType = .stringAttributeType
+        meetingTitleAttribute.isOptional = true
+
+        let meetingLinkedCalendarEventAttribute = NSAttributeDescription()
+        meetingLinkedCalendarEventAttribute.name = "linkedCalendarEventData"
+        meetingLinkedCalendarEventAttribute.attributeType = .binaryDataAttributeType
+        meetingLinkedCalendarEventAttribute.isOptional = true
+        meetingLinkedCalendarEventAttribute.allowsExternalBinaryDataStorage = true
+
         let meetingStartTimeAttribute = NSAttributeDescription()
         meetingStartTimeAttribute.name = "startTime"
         meetingStartTimeAttribute.attributeType = .dateAttributeType
@@ -62,6 +73,8 @@ public enum CoreDataModel {
             meetingAppAttribute,
             meetingAppBundleIdentifierAttribute,
             meetingAppDisplayNameAttribute,
+            meetingTitleAttribute,
+            meetingLinkedCalendarEventAttribute,
             meetingStartTimeAttribute,
             meetingEndTimeAttribute,
             meetingAudioFilePathAttribute,

@@ -350,6 +350,7 @@ public struct DomainTranscriptionSegment: Identifiable, Codable, Hashable, Senda
 public struct DomainTranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
     public let id: UUID
     public let meetingId: UUID
+    public let meetingTitle: String?
     public let appName: String
     public let appRawValue: String
     public let appBundleIdentifier: String?
@@ -371,6 +372,7 @@ public struct DomainTranscriptionMetadata: Identifiable, Codable, Hashable, Send
     public init(
         id: UUID,
         meetingId: UUID,
+        meetingTitle: String? = nil,
         appName: String,
         appRawValue: String,
         appBundleIdentifier: String?,
@@ -391,6 +393,7 @@ public struct DomainTranscriptionMetadata: Identifiable, Codable, Hashable, Send
     ) {
         self.id = id
         self.meetingId = meetingId
+        self.meetingTitle = meetingTitle
         self.appName = appName
         self.appRawValue = appRawValue
         self.appBundleIdentifier = appBundleIdentifier

@@ -48,6 +48,21 @@
 "metrics.activity.legend.none" = "Nenhuma palavra";
 "metrics.activity.legend.most" = "Dia mais ativo";
 "metrics.activity.tooltip.words_on_date" = "%1$@ palavras em %2$@";
+"metrics.calendar.upcoming.title" = "Próximos eventos";
+"metrics.calendar.upcoming.subtitle" = "Próximas 24 horas do seu calendário no macOS.";
+"metrics.calendar.loading.title" = "Carregando próximos eventos";
+"metrics.calendar.loading.message" = "Consultando seu calendário pelos eventos das próximas 24 horas.";
+"metrics.calendar.permission.title" = "É preciso liberar o acesso ao calendário";
+"metrics.calendar.permission.request" = "Permita o acesso ao calendário para mostrar os próximos eventos aqui e usá-los como contexto da reunião.";
+"metrics.calendar.permission.denied" = "O acesso ao calendário não está disponível no momento. Abra os Ajustes do Sistema para liberar o acesso e atualizar esta seção.";
+"metrics.calendar.permission.action_request" = "Permitir acesso";
+"metrics.calendar.permission.action_open_settings" = "Abrir ajustes";
+"metrics.calendar.empty.title" = "Nenhum evento próximo";
+"metrics.calendar.empty.message" = "Não há eventos agendados nas próximas 24 horas.";
+"metrics.calendar.event.untitled" = "Evento sem título";
+"metrics.calendar.event.linked" = "Vinculado";
+"metrics.calendar.event.clear" = "Limpar";
+"metrics.calendar.event.use_for_recording" = "Usar na gravação";
 
 
 "settings.general.theme" = "Tema do Aplicativo";
@@ -664,6 +679,7 @@
 "transcription.info.transcription" = "Transcrição";
 "transcription.info.post_processing" = "Pós-processamento";
 "transcription.info.no_post_processing" = "Sem pós-processamento aplicado";
+"transcription.info.calendar_event" = "Evento de calendário vinculado";
 "transcription.info.url_not_captured" = "URL não capturada";
 "transcription.info.unknown_input" = "Entrada desconhecida";
 "transcription.info.loading" = "Carregando detalhes...";
@@ -676,6 +692,7 @@
 "transcription.context.source.clipboard" = "Área de transferência";
 "transcription.context.source.window_ocr" = "OCR da janela";
 "transcription.context.source.focused_text" = "Texto focado";
+"transcription.context.source.calendar_event" = "Evento do calendário";
 "transcription.tab.ai_processed" = "Processado por IA";
 "transcription.tab.original" = "Original";
 "transcription.tab.segmented" = "Segmentado";

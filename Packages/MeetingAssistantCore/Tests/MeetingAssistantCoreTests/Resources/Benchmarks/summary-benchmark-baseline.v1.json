@@ -10,6 +10,6 @@
     "summaryTokenF1" : 1,
     "trustFlagsAccuracy" : 1
   },
-  "schemaVersion" : 1,
+  "schemaVersion" : 2,
   "source" : "commit:f23ba39"
 }

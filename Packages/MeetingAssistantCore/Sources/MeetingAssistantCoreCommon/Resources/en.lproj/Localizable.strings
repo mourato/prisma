@@ -48,6 +48,21 @@
 "metrics.activity.legend.none" = "No words";
 "metrics.activity.legend.most" = "Busiest day";
 "metrics.activity.tooltip.words_on_date" = "%1$@ words on %2$@";
+"metrics.calendar.upcoming.title" = "Upcoming Events";
+"metrics.calendar.upcoming.subtitle" = "Next 24 hours from your macOS calendar.";
+"metrics.calendar.loading.title" = "Loading upcoming events";
+"metrics.calendar.loading.message" = "Checking your calendar for events in the next 24 hours.";
+"metrics.calendar.permission.title" = "Calendar access is required";
+"metrics.calendar.permission.request" = "Allow calendar access to show upcoming events here and use them as meeting context.";
+"metrics.calendar.permission.denied" = "Calendar access is currently unavailable. Open System Settings to allow access and refresh this section.";
+"metrics.calendar.permission.action_request" = "Allow Access";
+"metrics.calendar.permission.action_open_settings" = "Open Settings";
+"metrics.calendar.empty.title" = "No upcoming events";
+"metrics.calendar.empty.message" = "There are no events scheduled in the next 24 hours.";
+"metrics.calendar.event.untitled" = "Untitled event";
+"metrics.calendar.event.linked" = "Linked";
+"metrics.calendar.event.clear" = "Clear";
+"metrics.calendar.event.use_for_recording" = "Use for Recording";
 
 
 "settings.general.theme" = "App Theme";
@@ -664,6 +679,7 @@
 "transcription.info.transcription" = "Transcription";
 "transcription.info.post_processing" = "Post-Processing";
 "transcription.info.no_post_processing" = "No post-processing applied";
+"transcription.info.calendar_event" = "Linked calendar event";
 "transcription.info.url_not_captured" = "URL not captured";
 "transcription.info.unknown_input" = "Unknown Input";
 "transcription.info.loading" = "Loading details...";
@@ -676,6 +692,7 @@
 "transcription.context.source.clipboard" = "Clipboard";
 "transcription.context.source.window_ocr" = "Window OCR";
 "transcription.context.source.focused_text" = "Focused text";
+"transcription.context.source.calendar_event" = "Calendar event";
 "transcription.tab.ai_processed" = "AI Processed";
 "transcription.tab.original" = "Original";
 "transcription.tab.segmented" = "Segmented";

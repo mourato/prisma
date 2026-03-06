@@ -49,7 +49,7 @@ final class SummaryBenchmarkRegressionTests: XCTestCase {
         let tempURL = temporaryURL(named: "summary-benchmark-fixtures-invalid-version.json")
         let payload = """
         {
-          "schemaVersion": 2,
+          "schemaVersion": 3,
           "fixtures": [
             {
               "id": "invalid-version",
@@ -57,8 +57,9 @@ final class SummaryBenchmarkRegressionTests: XCTestCase {
               "transcript": "A transcript",
               "providerOutput": "{}",
               "expected": {
-                "schemaVersion": 1,
+                "schemaVersion": 2,
                 "generatedAt": "2026-02-21T00:00:00Z",
+                "title": "A transcript",
                 "summary": "A transcript",
                 "keyPoints": [],
                 "decisions": [],
@@ -82,7 +83,7 @@ final class SummaryBenchmarkRegressionTests: XCTestCase {
         XCTAssertThrowsError(try runner.loadFixtureSet(from: tempURL)) { error in
             XCTAssertEqual(
                 error as? SummaryBenchmarkRunnerError,
-                .unsupportedFixtureSchemaVersion(2)
+                .unsupportedFixtureSchemaVersion(3)
             )
         }
     }
@@ -101,7 +102,7 @@ final class SummaryBenchmarkRegressionTests: XCTestCase {
 
     func testThresholdFailuresAreReportedForWeakOutputs() {
         let fixtureSet = SummaryBenchmarkFixtureSet(
-            schemaVersion: 1,
+            schemaVersion: 2,
             fixtures: [
                 SummaryBenchmarkFixture(
                     id: "weak-output",
@@ -110,6 +111,7 @@ final class SummaryBenchmarkRegressionTests: XCTestCase {
                     providerOutput: "This is not JSON",
                     expected: CanonicalSummary(
                         generatedAt: Date(timeIntervalSince1970: 1_700_000_000),
+                        title: "Team agreed to ship Friday",
                         summary: "Team agreed to ship Friday.",
                         keyPoints: ["Ship on Friday"],
                         decisions: ["Release approved"],

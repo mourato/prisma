@@ -13,6 +13,8 @@ public final class MeetingMO: NSManagedObject {
     @NSManaged public var appRawValue: String
     @NSManaged public var appBundleIdentifier: String?
     @NSManaged public var appDisplayName: String?
+    @NSManaged public var title: String?
+    @NSManaged public var linkedCalendarEventData: Data?
     @NSManaged public var startTime: Date
     @NSManaged public var endTime: Date?
     @NSManaged public var audioFilePath: String?
@@ -43,6 +45,9 @@ public extension MeetingMO {
 // MARK: - Conversion Methods
 
 extension MeetingMO {
+    private static let calendarEventEncoder = JSONEncoder()
+    private static let calendarEventDecoder = JSONDecoder()
+
     /// Converte Managed Object para Domain Entity
     func toDomain() -> MeetingEntity {
         MeetingEntity(
@@ -50,6 +55,8 @@ extension MeetingMO {
             app: DomainMeetingApp(rawValue: appRawValue) ?? .unknown,
             appBundleIdentifier: appBundleIdentifier,
             appDisplayName: appDisplayName,
+            title: title,
+            linkedCalendarEvent: decodeLinkedCalendarEvent(),
             startTime: startTime,
             endTime: endTime,
             audioFilePath: audioFilePath
@@ -62,6 +69,8 @@ extension MeetingMO {
         appRawValue = entity.app.rawValue
         appBundleIdentifier = entity.appBundleIdentifier
         appDisplayName = entity.appDisplayName
+        title = entity.title
+        linkedCalendarEventData = encodeLinkedCalendarEvent(entity.linkedCalendarEvent)
         startTime = entity.startTime
         endTime = entity.endTime
         audioFilePath = entity.audioFilePath
@@ -72,5 +81,15 @@ extension MeetingMO {
         let meetingMO = MeetingMO(context: context)
         meetingMO.update(from: entity)
         return meetingMO
+    }
+
+    private func decodeLinkedCalendarEvent() -> MeetingCalendarEventSnapshot? {
+        guard let linkedCalendarEventData else { return nil }
+        return try? Self.calendarEventDecoder.decode(MeetingCalendarEventSnapshot.self, from: linkedCalendarEventData)
+    }
+
+    private func encodeLinkedCalendarEvent(_ event: MeetingCalendarEventSnapshot?) -> Data? {
+        guard let event else { return nil }
+        return try? Self.calendarEventEncoder.encode(event)
     }
 }

@@ -188,8 +188,7 @@ extension RecordingManager {
         dateFormatter.dateFormat = "yyyy-MM-dd"
         let dateStr = dateFormatter.string(from: transcription.meeting.startTime)
 
-        let meetingTitle = extractMeetingTitle(from: transcription)
-        let titleComponent = meetingTitle.isEmpty ? transcription.meeting.appName : meetingTitle
+        let titleComponent = extractMeetingTitle(from: transcription)
         let baseName = "\(dateStr) \(titleComponent)"
 
         var destinationURL = folder.appendingPathComponent("\(baseName).md")
@@ -203,10 +202,7 @@ extension RecordingManager {
     }
 
     private func extractMeetingTitle(from transcription: Transcription) -> String {
-        let raw = transcription.meeting.type.displayName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let range = raw.range(of: " (") else { return raw }
-        let title = String(raw[..<range.lowerBound])
-        return title.components(separatedBy: CharacterSet(charactersIn: "/\\?%*|\"<>:"))
+        transcription.meeting.resolvedTitle.components(separatedBy: CharacterSet(charactersIn: "/\\?%*|\"<>:"))
             .joined(separator: " ")
             .split(whereSeparator: \.isWhitespace)
             .joined(separator: " ")

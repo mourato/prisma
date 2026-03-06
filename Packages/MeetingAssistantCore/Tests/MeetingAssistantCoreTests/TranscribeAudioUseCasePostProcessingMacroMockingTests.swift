@@ -27,6 +27,7 @@ final class TranscribeAudioPostProcessingTests: XCTestCase {
             return DomainPostProcessingResult(
                 processedText: "Processed transcript",
                 canonicalSummary: CanonicalSummary(
+                    title: "Processed transcript",
                     summary: "Processed transcript",
                     trustFlags: .init(
                         isGroundedInTranscript: true,
@@ -88,6 +89,7 @@ final class TranscribeAudioPostProcessingTests: XCTestCase {
             return DomainPostProcessingResult(
                 processedText: "Processed transcript",
                 canonicalSummary: CanonicalSummary(
+                    title: "Processed transcript",
                     summary: "Processed transcript",
                     trustFlags: .init(
                         isGroundedInTranscript: true,
@@ -192,7 +194,7 @@ final class TranscribeAudioPostProcessingTests: XCTestCase {
             XCTAssertEqual(mode, .dictation)
             return DomainPostProcessingResult(
                 processedText: "Structured dictation",
-                canonicalSummary: CanonicalSummary(summary: "Structured dictation"),
+                canonicalSummary: CanonicalSummary(title: "Structured dictation", summary: "Structured dictation"),
                 outputState: .structured
             )
         }
@@ -282,6 +284,7 @@ final class TranscribeAudioPostProcessingTests: XCTestCase {
             DomainPostProcessingResult(
                 processedText: "Fallback summary",
                 canonicalSummary: CanonicalSummary(
+                    title: "Fallback summary",
                     summary: "Fallback summary",
                     trustFlags: .init(
                         isGroundedInTranscript: false,
@@ -338,6 +341,7 @@ final class TranscribeAudioPostProcessingTests: XCTestCase {
             return DomainPostProcessingResult(
                 processedText: "Processed transcript",
                 canonicalSummary: CanonicalSummary(
+                    title: "Processed transcript",
                     summary: "Processed transcript",
                     trustFlags: .init(
                         isGroundedInTranscript: true,

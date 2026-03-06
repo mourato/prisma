@@ -21,6 +21,7 @@ final class SummaryExportSafetyServicesTests: XCTestCase {
     func testEvaluateBlocksWhenNotGroundedOrConfidenceTooLow() {
         let evaluator = SummaryExportSafetyEvaluator()
         let summary = CanonicalSummary(
+            title: "Summary",
             summary: "Summary",
             trustFlags: .init(
                 isGroundedInTranscript: false,
@@ -39,13 +40,14 @@ final class SummaryExportSafetyServicesTests: XCTestCase {
         )
 
         XCTAssertFalse(decision.isCompliant)
-        XCTAssertTrue(decision.blockReasons.contains(where: { $0.code == .notGroundedInTranscript }))
-        XCTAssertTrue(decision.blockReasons.contains(where: { $0.code == .confidenceBelowThreshold }))
+        XCTAssertTrue(decision.blockReasons.contains(where: { $0.code == SummaryExportBlockReason.Code.notGroundedInTranscript }))
+        XCTAssertTrue(decision.blockReasons.contains(where: { $0.code == SummaryExportBlockReason.Code.confidenceBelowThreshold }))
     }
 
     func testEvaluateIsCompliantWhenPolicyRequirementsAreMet() {
         let evaluator = SummaryExportSafetyEvaluator()
         let summary = CanonicalSummary(
+            title: "Summary",
             summary: "Summary",
             trustFlags: .init(
                 isGroundedInTranscript: true,

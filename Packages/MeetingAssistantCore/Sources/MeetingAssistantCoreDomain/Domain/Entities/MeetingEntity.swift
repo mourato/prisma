@@ -90,6 +90,8 @@ public struct MeetingEntity: Identifiable, Codable, Hashable, Sendable {
     public let app: DomainMeetingApp
     public let appBundleIdentifier: String?
     public let appDisplayName: String?
+    public var title: String?
+    public var linkedCalendarEvent: MeetingCalendarEventSnapshot?
     public let startTime: Date
     public var endTime: Date?
     public var audioFilePath: String?
@@ -99,6 +101,8 @@ public struct MeetingEntity: Identifiable, Codable, Hashable, Sendable {
         app: DomainMeetingApp,
         appBundleIdentifier: String? = nil,
         appDisplayName: String? = nil,
+        title: String? = nil,
+        linkedCalendarEvent: MeetingCalendarEventSnapshot? = nil,
         startTime: Date = Date(),
         endTime: Date? = nil,
         audioFilePath: String? = nil
@@ -107,6 +111,8 @@ public struct MeetingEntity: Identifiable, Codable, Hashable, Sendable {
         self.app = app
         self.appBundleIdentifier = appBundleIdentifier
         self.appDisplayName = appDisplayName
+        self.title = title
+        self.linkedCalendarEvent = linkedCalendarEvent
         self.startTime = startTime
         self.endTime = endTime
         self.audioFilePath = audioFilePath
@@ -138,5 +144,24 @@ public struct MeetingEntity: Identifiable, Codable, Hashable, Sendable {
 
     public var appIconName: String {
         app.iconName
+    }
+
+    public var resolvedTitle: String {
+        if let title = title?.trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty {
+            return title
+        }
+
+        if let calendarTitle = linkedCalendarEvent?.trimmedTitle, !calendarTitle.isEmpty {
+            return calendarTitle
+        }
+
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+
+        return "export.header.meeting_title".localized(
+            with: app.displayName,
+            formatter.string(from: startTime)
+        )
     }
 }

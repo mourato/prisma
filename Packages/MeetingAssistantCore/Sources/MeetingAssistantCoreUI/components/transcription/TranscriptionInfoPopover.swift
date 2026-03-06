@@ -19,6 +19,30 @@ struct TranscriptionInfoPopover: View {
 
             sourceSection
 
+            if let linkedEvent = transcription.meeting.linkedCalendarEvent {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("transcription.info.calendar_event".localized)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    InfoRow(
+                        icon: "calendar",
+                        label: linkedEvent.trimmedTitle.isEmpty ? "metrics.calendar.event.untitled".localized : linkedEvent.trimmedTitle,
+                        value: calendarIntervalLabel(for: linkedEvent)
+                    )
+
+                    if let location = linkedEvent.location?.trimmingCharacters(in: .whitespacesAndNewlines), !location.isEmpty {
+                        InfoRow(
+                            icon: "mappin.and.ellipse",
+                            label: location,
+                            value: "\(linkedEvent.attendees.count)"
+                        )
+                    }
+                }
+
+                Divider()
+            }
+
             // Recording Section
             VStack(alignment: .leading, spacing: 8) {
                 Text("transcription.info.recording".localized)
@@ -254,6 +278,8 @@ struct TranscriptionInfoPopover: View {
             "transcription.context.source.window_ocr".localized
         case .focusedText:
             "transcription.context.source.focused_text".localized
+        case .calendarEvent:
+            "transcription.context.source.calendar_event".localized
         }
     }
 
@@ -274,6 +300,13 @@ struct TranscriptionInfoPopover: View {
         formatter.zeroFormattingBehavior = .pad
 
         return formatter.string(from: duration) ?? String(format: "%.0fs", duration)
+    }
+
+    private func calendarIntervalLabel(for event: MeetingCalendarEventSnapshot) -> String {
+        let formatter = DateIntervalFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter.string(from: event.startDate, to: event.endDate)
     }
 
 }

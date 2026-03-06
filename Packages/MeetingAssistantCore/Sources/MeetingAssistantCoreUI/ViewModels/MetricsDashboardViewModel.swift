@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
@@ -13,6 +14,11 @@ public final class MetricsDashboardViewModel: ObservableObject {
     @Published public private(set) var weekdayBuckets: [MetricsWeekdayBucket] = []
     @Published public private(set) var hourlyBuckets: [MetricsHourlyBucket] = []
     @Published public private(set) var dailyBuckets: [MetricsDailyBucket] = []
+    @Published public private(set) var upcomingEvents: [MeetingCalendarEventSnapshot] = []
+    @Published public private(set) var calendarPermissionState: PermissionState
+    @Published public private(set) var activeLinkedCalendarEventID: String?
+    @Published public private(set) var isRecording = false
+    @Published public private(set) var isLoadingCalendar = false
 
     @Published public var dateFilter: DateFilter = .allEntries {
         didSet {
@@ -24,20 +30,34 @@ public final class MetricsDashboardViewModel: ObservableObject {
     @Published public private(set) var errorMessage: String?
 
     private let storage: StorageService
+    private let calendarEventService: any CalendarEventServiceProtocol
+    private let recordingManager: RecordingManager
     private let logger = Logger(subsystem: AppIdentity.logSubsystem, category: "MetricsDashboardViewModel")
     private var allMetadata: [TranscriptionMetadata] = []
     private var isRefreshing = false
     private var hasLoaded = false
+    private var cancellables = Set<AnyCancellable>()
 
     private static let DEFAULT_BASELINE_WPM: Double = 35
     private static var cachedMetadata: [TranscriptionMetadata]?
 
-    public init(storage: StorageService = FileSystemStorageService.shared) {
+    public init(
+        storage: StorageService = FileSystemStorageService.shared,
+        calendarEventService: any CalendarEventServiceProtocol = CalendarEventService.shared,
+        recordingManager: RecordingManager = .shared
+    ) {
         self.storage = storage
+        self.calendarEventService = calendarEventService
+        self.recordingManager = recordingManager
+        calendarPermissionState = calendarEventService.authorizationState()
+        activeLinkedCalendarEventID = recordingManager.currentMeeting?.linkedCalendarEvent?.eventIdentifier
+        isRecording = recordingManager.isRecording
         summary = MetricsAggregator.computeSummary(
             metadata: [],
             baselineTypingWordsPerMinute: Self.DEFAULT_BASELINE_WPM
         )
+
+        bindRecordingState()
 
         if let cachedMetadata = Self.cachedMetadata {
             allMetadata = cachedMetadata
@@ -49,10 +69,12 @@ public final class MetricsDashboardViewModel: ObservableObject {
 
     public func load() async {
         await refresh(showLoadingIndicator: !hasLoaded)
+        await refreshUpcomingEvents(showLoadingIndicator: !hasLoaded)
     }
 
     public func refresh() async {
         await refresh(showLoadingIndicator: false)
+        await refreshUpcomingEvents(showLoadingIndicator: false)
     }
 
     public func handleTranscriptionSaved(_ notification: Notification) async {
@@ -106,6 +128,71 @@ public final class MetricsDashboardViewModel: ObservableObject {
         }
     }
 
+    public func requestCalendarAccess() async {
+        calendarPermissionState = await calendarEventService.requestAccess()
+        await refreshUpcomingEvents(showLoadingIndicator: false)
+    }
+
+    public func openCalendarSettings() {
+        calendarEventService.openSystemSettings()
+    }
+
+    public func linkCalendarEvent(_ event: MeetingCalendarEventSnapshot) {
+        recordingManager.linkCurrentMeeting(to: event)
+    }
+
+    public func clearLinkedCalendarEvent() {
+        recordingManager.linkCurrentMeeting(to: nil)
+    }
+
+    public func isLinkedEvent(_ event: MeetingCalendarEventSnapshot) -> Bool {
+        activeLinkedCalendarEventID == event.eventIdentifier
+    }
+
+    private func refreshUpcomingEvents(showLoadingIndicator: Bool) async {
+        calendarPermissionState = calendarEventService.authorizationState()
+
+        guard calendarPermissionState.isAuthorized else {
+            upcomingEvents = []
+            isLoadingCalendar = false
+            return
+        }
+
+        if showLoadingIndicator {
+            isLoadingCalendar = true
+        }
+
+        do {
+            upcomingEvents = try calendarEventService.fetchUpcomingEvents(limit: 10, now: Date(), window: 24 * 60 * 60)
+        } catch {
+            logger.error("Failed to load upcoming calendar events: \(error.localizedDescription)")
+            upcomingEvents = []
+        }
+
+        if showLoadingIndicator {
+            isLoadingCalendar = false
+        }
+    }
+
+    private func bindRecordingState() {
+        recordingManager.currentMeetingPublisher
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] meeting in
+                self?.activeLinkedCalendarEventID = meeting?.linkedCalendarEvent?.eventIdentifier
+                Task { @MainActor [weak self] in
+                    await self?.refreshUpcomingEvents(showLoadingIndicator: false)
+                }
+            }
+            .store(in: &cancellables)
+
+        recordingManager.isRecordingPublisher
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] isRecording in
+                self?.isRecording = isRecording
+            }
+            .store(in: &cancellables)
+    }
+
     private func recompute() {
         let filtered = allMetadata.filter { dateFilter.contains($0.startTime) }
         summary = MetricsAggregator.computeSummary(
@@ -121,6 +208,7 @@ public final class MetricsDashboardViewModel: ObservableObject {
         let metadata = TranscriptionMetadata(
             id: transcription.id,
             meetingId: transcription.meeting.id,
+            meetingTitle: transcription.meeting.title,
             appName: transcription.meeting.appName,
             appRawValue: transcription.meeting.app.rawValue,
             appBundleIdentifier: transcription.meeting.appBundleIdentifier,
