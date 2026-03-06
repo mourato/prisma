@@ -14,3 +14,12 @@ struct PreviewStateContainer<Value, Content: View>: View {
         content($value)
     }
 }
+
+#Preview("Stateful String") {
+    PreviewStateContainer("Preview text") { text in
+        TextField("Type here", text: text)
+            .textFieldStyle(.roundedBorder)
+            .frame(width: 320)
+    }
+    .padding()
+}

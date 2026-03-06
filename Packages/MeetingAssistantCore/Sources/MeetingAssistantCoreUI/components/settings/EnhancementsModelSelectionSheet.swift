@@ -1,4 +1,5 @@
 import MeetingAssistantCoreCommon
+import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
 public struct EnhancementsModelSelectionSheet: View {
@@ -96,4 +97,23 @@ public struct EnhancementsModelSelectionSheet: View {
         .background(AppDesignSystem.Colors.subtleFill)
         .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
     }
+}
+
+#Preview("Enhancements model selector") {
+    let options: [EnhancementsProviderModelOption] = [
+        .init(provider: .openai, modelID: "gpt-4o-mini"),
+        .init(provider: .openai, modelID: "gpt-4o"),
+        .init(provider: .anthropic, modelID: "claude-3-5-sonnet"),
+        .init(provider: .google, modelID: "gemini-1.5-flash")
+    ]
+
+    EnhancementsModelSelectionSheet(
+        options: options,
+        isSelected: { option in
+            option.modelID == "gpt-4o"
+        },
+        onSelect: { _ in },
+        onCancel: {}
+    )
+    .frame(width: 560, height: 440)
 }

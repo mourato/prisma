@@ -595,3 +595,34 @@ public struct FloatingRecordingIndicatorView: View {
     }
 
 }
+
+#Preview("Classic recording") {
+    let monitor = AudioLevelMonitor()
+    FloatingRecordingIndicatorView(
+        audioMonitor: monitor,
+        style: .classic,
+        mode: .recording,
+        previewForceDictationRecording: true,
+        previewLanguageOverride: .portuguese,
+        onStop: {},
+        onCancel: {}
+    )
+    .padding()
+    .frame(width: 520, height: 120)
+    .background(AppDesignSystem.Colors.neutral.opacity(0.8))
+}
+
+#Preview("Mini error") {
+    let monitor = AudioLevelMonitor()
+    FloatingRecordingIndicatorView(
+        audioMonitor: monitor,
+        style: .mini,
+        mode: .error(message: "recording_indicator.error_message".localized),
+        previewForceDictationRecording: true,
+        onStop: {},
+        onCancel: {}
+    )
+    .padding()
+    .frame(width: 320, height: 120)
+    .background(AppDesignSystem.Colors.neutral.opacity(0.8))
+}

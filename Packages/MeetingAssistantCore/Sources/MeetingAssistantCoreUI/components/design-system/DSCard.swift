@@ -39,3 +39,17 @@ public struct DSCard<Content: View>: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
+
+#Preview("DSCard") {
+    DSCard {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Design System Card")
+                .font(.headline)
+            Text("A reusable card with a subtle material background and corner treatment.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+    }
+    .padding()
+    .frame(width: 280)
+}

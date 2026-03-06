@@ -76,3 +76,24 @@ public struct ShortcutCaptureHealthStatusView: View {
         )
     }
 }
+
+#Preview("Shortcut health warning") {
+    let status = ShortcutCaptureHealthStatus(
+        scope: .global,
+        result: .degraded,
+        reasonToken: "preview",
+        requiresGlobalCapture: true,
+        accessibilityTrusted: false,
+        eventTapExpected: false,
+        eventTapActive: false
+    )
+
+    if let presentation = ShortcutCaptureHealthPresentation.from(status: status) {
+        ShortcutCaptureHealthStatusView(
+            presentation: presentation,
+            onAction: {}
+        )
+        .frame(width: 360)
+        .padding()
+    }
+}

@@ -91,3 +91,24 @@ struct RecordingPostProcessingWarningOverlay: View {
         .accessibilityHint("recording_indicator.post_processing_warning.open_settings".localized)
     }
 }
+
+#Preview("Warning overlays") {
+    VStack(spacing: 16) {
+        RecordingSilenceWarningOverlay(
+            isDialogPresented: .constant(false),
+            onContinue: {},
+            onStop: {},
+            onDiscard: {}
+        )
+
+        RecordingPostProcessingWarningOverlay(
+            descriptor: RecordingIndicatorPostProcessingWarningDescriptor(
+                issue: .missingAPIKey,
+                mode: .meeting
+            ),
+            onOpenSettings: { _ in }
+        )
+    }
+    .padding()
+    .frame(width: 360)
+}

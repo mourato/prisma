@@ -56,6 +56,18 @@ public struct MeetingQuestionComposerTextView: View {
     }
 }
 
+#Preview("Question composer") {
+    PreviewStateContainer("How can I improve the onboarding flow?") { text in
+        MeetingQuestionComposerTextView(
+            text: text,
+            placeholder: "transcription.qa.placeholder".localized,
+            onCommandReturn: {}
+        )
+        .frame(width: 420)
+        .padding()
+    }
+}
+
 private struct MeetingQuestionTextViewRepresentable: NSViewRepresentable {
     @Binding var text: String
     @Binding var dynamicHeight: CGFloat
