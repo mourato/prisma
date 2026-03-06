@@ -41,7 +41,7 @@ private func clearLegacyLanguageOverrideIfNeeded() {
     }
 }
 
-private extension ShortcutDefinition {
+extension ShortcutDefinition {
     var menuDisplayString: String {
         let modifierSymbols = modifiers.map { modifier in
             switch modifier {
