@@ -242,8 +242,12 @@ public class TranscriptionSettingsViewModel: ObservableObject {
         let normalizedQuery = query.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
         let previewText = transcription.previewText.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
         let appName = transcription.appName.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
-        let meetingTitle = transcription.meetingTitle?
-            .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current) ?? ""
+        let meetingTitle = if transcription.supportsMeetingConversation {
+            transcription.meetingTitle?
+                .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current) ?? ""
+        } else {
+            ""
+        }
 
         return previewText.contains(normalizedQuery)
             || appName.contains(normalizedQuery)

@@ -208,7 +208,7 @@ public final class MetricsDashboardViewModel: ObservableObject {
         let metadata = TranscriptionMetadata(
             id: transcription.id,
             meetingId: transcription.meeting.id,
-            meetingTitle: transcription.meeting.title,
+            meetingTitle: transcription.meeting.preferredTitle,
             appName: transcription.meeting.appName,
             appRawValue: transcription.meeting.app.rawValue,
             appBundleIdentifier: transcription.meeting.appBundleIdentifier,

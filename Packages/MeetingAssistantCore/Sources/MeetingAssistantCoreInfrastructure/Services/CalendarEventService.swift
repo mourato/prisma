@@ -98,6 +98,7 @@ public final class CalendarEventService: CalendarEventServiceProtocol {
         let predicate = eventStore.predicateForEvents(withStart: now, end: endDate, calendars: nil)
 
         return eventStore.events(matching: predicate)
+            .filter { !$0.isAllDay }
             .sorted { lhs, rhs in
                 if lhs.startDate != rhs.startDate {
                     return lhs.startDate < rhs.startDate

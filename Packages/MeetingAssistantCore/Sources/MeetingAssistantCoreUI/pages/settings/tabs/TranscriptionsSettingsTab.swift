@@ -414,6 +414,10 @@ public struct TranscriptionsSettingsTab: View {
         case let .copy(text):
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(text, forType: .string)
+        case let .updateMeetingTitle(title):
+            Task {
+                await viewModel.updateMeetingTitle(for: metadata, to: title)
+            }
         case let .reprocess(prompt):
             if let transcription = viewModel.selectedTranscription, transcription.id == metadata.id {
                 Task {

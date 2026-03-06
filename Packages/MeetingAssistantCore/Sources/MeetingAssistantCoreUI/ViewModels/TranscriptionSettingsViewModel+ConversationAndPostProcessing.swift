@@ -291,6 +291,32 @@ public extension TranscriptionSettingsViewModel {
         }
     }
 
+    func updateMeetingTitle(for metadata: TranscriptionMetadata, to title: String?) async {
+        guard metadata.supportsMeetingConversation else { return }
+
+        let trimmedTitle = title?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalizedTitle = (trimmedTitle?.isEmpty == false) ? trimmedTitle : nil
+
+        do {
+            let existing = try await meetingRepository.fetchMeeting(by: metadata.meetingId)
+            let updatedMeeting = makeUpdatedMeetingEntity(
+                existing: existing,
+                metadata: metadata,
+                app: existing?.app ?? (DomainMeetingApp(rawValue: metadata.appRawValue) ?? .unknown),
+                title: normalizedTitle
+            )
+
+            try await meetingRepository.updateMeeting(updatedMeeting)
+            await loadTranscriptions()
+            if selectedId == metadata.id {
+                await loadFullTranscription(id: metadata.id)
+            }
+        } catch {
+            logger.error("Failed to update meeting title: \(error.localizedDescription)")
+            errorMessage = error.localizedDescription
+        }
+    }
+
     func updateSource(for metadata: TranscriptionMetadata, isMeeting: Bool) async {
         let app = MeetingApp(rawValue: metadata.appRawValue) ?? .unknown
         guard app != .importedFile else { return }
@@ -304,14 +330,12 @@ public extension TranscriptionSettingsViewModel {
                 ? metadata.startTime.addingTimeInterval(metadata.duration)
                 : nil
 
-            let updatedMeeting = MeetingEntity(
-                id: metadata.meetingId,
+            let updatedMeeting = makeUpdatedMeetingEntity(
+                existing: existing,
+                metadata: metadata,
                 app: targetApp,
-                appBundleIdentifier: existing?.appBundleIdentifier ?? metadata.appBundleIdentifier,
-                appDisplayName: existing?.appDisplayName ?? metadata.appName,
-                startTime: existing?.startTime ?? metadata.startTime,
-                endTime: existing?.endTime ?? endTime,
-                audioFilePath: existing?.audioFilePath ?? metadata.audioFilePath
+                title: existing?.title,
+                fallbackEndTime: endTime
             )
 
             try await meetingRepository.updateMeeting(updatedMeeting)
@@ -323,6 +347,26 @@ public extension TranscriptionSettingsViewModel {
             logger.error("Failed to update recording source: \(error.localizedDescription)")
             errorMessage = error.localizedDescription
         }
+    }
+
+    private func makeUpdatedMeetingEntity(
+        existing: MeetingEntity?,
+        metadata: TranscriptionMetadata,
+        app: DomainMeetingApp,
+        title: String?,
+        fallbackEndTime: Date? = nil
+    ) -> MeetingEntity {
+        MeetingEntity(
+            id: metadata.meetingId,
+            app: app,
+            appBundleIdentifier: existing?.appBundleIdentifier ?? metadata.appBundleIdentifier,
+            appDisplayName: existing?.appDisplayName ?? metadata.appName,
+            title: title,
+            linkedCalendarEvent: existing?.linkedCalendarEvent,
+            startTime: existing?.startTime ?? metadata.startTime,
+            endTime: existing?.endTime ?? fallbackEndTime,
+            audioFilePath: existing?.audioFilePath ?? metadata.audioFilePath
+        )
     }
 
     private func renameSpeaker(

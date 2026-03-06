@@ -6,18 +6,25 @@ import XCTest
 final class TranscriptionSettingsViewModelTests: XCTestCase {
     var viewModel: TranscriptionSettingsViewModel!
     var storage: MockStorageService!
+    var meetingRepository: MockMeetingRepository!
     var meetingQAService: MockMeetingQAService!
     var cancellables: Set<AnyCancellable>!
 
     override func setUp() async throws {
         storage = MockStorageService()
+        meetingRepository = MockMeetingRepository()
         meetingQAService = MockMeetingQAService()
-        viewModel = TranscriptionSettingsViewModel(storage: storage, meetingQAService: meetingQAService)
+        viewModel = TranscriptionSettingsViewModel(
+            storage: storage,
+            meetingRepository: meetingRepository,
+            meetingQAService: meetingQAService
+        )
         cancellables = []
     }
 
     override func tearDown() async throws {
         storage = nil
+        meetingRepository = nil
         meetingQAService = nil
         viewModel = nil
         cancellables = nil
@@ -191,6 +198,182 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.filteredTranscriptions.first?.id, teamsMetadata.id)
     }
 
+    func testFilteredTranscriptions_SearchMatchesMeetingTitleOnlyForMeetings() {
+        let meetingMetadata = makeMetadata(
+            appName: "Zoom",
+            appRawValue: MeetingApp.zoom.rawValue,
+            previewText: "General discussion",
+            meetingTitle: "Quarterly Planning"
+        )
+        let dictationMetadata = makeMetadata(
+            appName: "Codex",
+            appRawValue: MeetingApp.unknown.rawValue,
+            previewText: "General discussion",
+            meetingTitle: "Should not match"
+        )
+        viewModel.transcriptions = [meetingMetadata, dictationMetadata]
+
+        viewModel.searchText = "quarterly"
+
+        XCTAssertEqual(viewModel.filteredTranscriptions.count, 1)
+        XCTAssertEqual(viewModel.filteredTranscriptions.first?.id, meetingMetadata.id)
+    }
+
+    func testUpdateMeetingTitle_PersistsTrimmedTitleAndRefreshesSelection() async throws {
+        let id = UUID()
+        let originalMeeting = Meeting(
+            id: id,
+            app: .zoom,
+            title: "Initial",
+            linkedCalendarEvent: MeetingCalendarEventSnapshot(
+                eventIdentifier: "event-1",
+                title: "Calendar Title",
+                startDate: Date(),
+                endDate: Date().addingTimeInterval(60)
+            ),
+            startTime: Date(),
+            endTime: Date().addingTimeInterval(60)
+        )
+        let transcription = Transcription(
+            id: id,
+            meeting: originalMeeting,
+            text: "Summary",
+            rawText: "Summary"
+        )
+        storage.mockTranscriptions = [transcription]
+        meetingRepository.meetingsByID[id] = MeetingEntity(
+            id: id,
+            app: .zoom,
+            appDisplayName: "Zoom",
+            title: "Initial",
+            linkedCalendarEvent: originalMeeting.linkedCalendarEvent,
+            startTime: originalMeeting.startTime,
+            endTime: originalMeeting.endTime,
+            audioFilePath: originalMeeting.audioFilePath
+        )
+        meetingRepository.onUpdateMeeting = { [storage] meeting in
+            storage?.mockTranscriptions = storage?.mockTranscriptions.map { transcription in
+                guard transcription.meeting.id == meeting.id else { return transcription }
+
+                let updatedMeeting = Meeting(
+                    id: transcription.meeting.id,
+                    app: transcription.meeting.app,
+                    appBundleIdentifier: transcription.meeting.appBundleIdentifier,
+                    appDisplayName: transcription.meeting.appDisplayName,
+                    title: meeting.title,
+                    linkedCalendarEvent: meeting.linkedCalendarEvent,
+                    type: transcription.meeting.type,
+                    state: transcription.meeting.state,
+                    startTime: transcription.meeting.startTime,
+                    endTime: transcription.meeting.endTime,
+                    audioFilePath: transcription.meeting.audioFilePath
+                )
+
+                return Transcription(
+                    id: transcription.id,
+                    meeting: updatedMeeting,
+                    contextItems: transcription.contextItems,
+                    segments: transcription.segments,
+                    text: transcription.text,
+                    rawText: transcription.rawText,
+                    processedContent: transcription.processedContent,
+                    canonicalSummary: transcription.canonicalSummary,
+                    qualityProfile: transcription.qualityProfile,
+                    postProcessingPromptId: transcription.postProcessingPromptId,
+                    postProcessingPromptTitle: transcription.postProcessingPromptTitle,
+                    language: transcription.language,
+                    createdAt: transcription.createdAt,
+                    modelName: transcription.modelName,
+                    inputSource: transcription.inputSource,
+                    transcriptionDuration: transcription.transcriptionDuration,
+                    postProcessingDuration: transcription.postProcessingDuration,
+                    postProcessingModel: transcription.postProcessingModel,
+                    meetingType: transcription.meetingType,
+                    meetingConversationState: transcription.meetingConversationState
+                )
+            } ?? []
+        }
+
+        await viewModel.loadTranscriptions()
+        viewModel.selectedId = id
+        try? await Task.sleep(nanoseconds: 100_000_000)
+
+        let metadata = try XCTUnwrap(viewModel.transcriptions.first)
+        await viewModel.updateMeetingTitle(for: metadata, to: "  Executive Sync  ")
+
+        XCTAssertEqual(meetingRepository.updatedMeetings.last?.title, "Executive Sync")
+        XCTAssertEqual(meetingRepository.updatedMeetings.last?.linkedCalendarEvent?.eventIdentifier, "event-1")
+        XCTAssertEqual(viewModel.transcriptions.first?.meetingTitle, "Executive Sync")
+        XCTAssertEqual(viewModel.selectedTranscription?.meeting.title, "Executive Sync")
+    }
+
+    func testUpdateMeetingTitle_EmptyValueClearsCustomTitle() async throws {
+        let id = UUID()
+        let transcription = Transcription(
+            id: id,
+            meeting: Meeting(id: id, app: .zoom, title: "Existing", startTime: Date(), endTime: Date().addingTimeInterval(60)),
+            text: "Summary",
+            rawText: "Summary"
+        )
+        storage.mockTranscriptions = [transcription]
+        meetingRepository.meetingsByID[id] = MeetingEntity(
+            id: id,
+            app: .zoom,
+            appDisplayName: "Zoom",
+            title: "Existing",
+            startTime: transcription.meeting.startTime,
+            endTime: transcription.meeting.endTime,
+            audioFilePath: transcription.meeting.audioFilePath
+        )
+        meetingRepository.onUpdateMeeting = { [storage] meeting in
+            storage?.mockTranscriptions = storage?.mockTranscriptions.map { transcription in
+                guard transcription.meeting.id == meeting.id else { return transcription }
+                return Transcription(
+                    id: transcription.id,
+                    meeting: Meeting(
+                        id: transcription.meeting.id,
+                        app: transcription.meeting.app,
+                        appBundleIdentifier: transcription.meeting.appBundleIdentifier,
+                        appDisplayName: transcription.meeting.appDisplayName,
+                        title: meeting.title,
+                        linkedCalendarEvent: transcription.meeting.linkedCalendarEvent,
+                        type: transcription.meeting.type,
+                        state: transcription.meeting.state,
+                        startTime: transcription.meeting.startTime,
+                        endTime: transcription.meeting.endTime,
+                        audioFilePath: transcription.meeting.audioFilePath
+                    ),
+                    contextItems: transcription.contextItems,
+                    segments: transcription.segments,
+                    text: transcription.text,
+                    rawText: transcription.rawText,
+                    processedContent: transcription.processedContent,
+                    canonicalSummary: transcription.canonicalSummary,
+                    qualityProfile: transcription.qualityProfile,
+                    postProcessingPromptId: transcription.postProcessingPromptId,
+                    postProcessingPromptTitle: transcription.postProcessingPromptTitle,
+                    language: transcription.language,
+                    createdAt: transcription.createdAt,
+                    modelName: transcription.modelName,
+                    inputSource: transcription.inputSource,
+                    transcriptionDuration: transcription.transcriptionDuration,
+                    postProcessingDuration: transcription.postProcessingDuration,
+                    postProcessingModel: transcription.postProcessingModel,
+                    meetingType: transcription.meetingType,
+                    meetingConversationState: transcription.meetingConversationState
+                )
+            } ?? []
+        }
+
+        await viewModel.loadTranscriptions()
+
+        let metadata = try XCTUnwrap(viewModel.transcriptions.first)
+        await viewModel.updateMeetingTitle(for: metadata, to: "   ")
+
+        XCTAssertNil(meetingRepository.updatedMeetings.last?.title)
+        XCTAssertNil(viewModel.transcriptions.first?.meetingTitle)
+    }
+
     func testAppFilterOptionsIncludeUnknownAppsByDisplayName() {
         // Given
         let codexMetadata = makeMetadata(
@@ -240,12 +423,14 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
     private func makeMetadata(
         appName: String,
         appRawValue: String,
-        previewText: String
+        previewText: String,
+        meetingTitle: String? = nil
     ) -> TranscriptionMetadata {
         let id = UUID()
         return TranscriptionMetadata(
             id: id,
             meetingId: id,
+            meetingTitle: meetingTitle,
             appName: appName,
             appRawValue: appRawValue,
             appBundleIdentifier: nil,

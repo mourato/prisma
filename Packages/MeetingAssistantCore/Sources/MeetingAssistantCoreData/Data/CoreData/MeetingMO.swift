@@ -92,4 +92,18 @@ extension MeetingMO {
         guard let event else { return nil }
         return try? Self.calendarEventEncoder.encode(event)
     }
+
+    var preferredTitle: String? {
+        let trimmedTitle = title?.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let trimmedTitle, !trimmedTitle.isEmpty {
+            return trimmedTitle
+        }
+
+        let calendarTitle = decodeLinkedCalendarEvent()?.trimmedTitle
+        if let calendarTitle, !calendarTitle.isEmpty {
+            return calendarTitle
+        }
+
+        return nil
+    }
 }
