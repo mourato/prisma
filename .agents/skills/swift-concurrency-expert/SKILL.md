@@ -104,3 +104,18 @@ Start triage in these areas first:
 2. Prefer isolation-safe API reshaping (remove cross-actor callback surfaces) before adding broad annotations.
 3. Track and document compiler-instability signatures separately from semantic actor errors to avoid repeating crash-inducing rewrites.
 4. Validate UI isolation fixes with strict checks plus focused settings/onboarding tests whenever touched.
+
+## 2026-03-06 Progression Drill
+
+### New Evidence
+
+- `e2c36b6` moved mic diagnostics logging to the main actor, indicating cross-actor observability pressure in audio paths.
+- `918243b` delayed floating-indicator prewarming, showing lifecycle work continues to intersect actor ownership decisions.
+- `094d280` implemented launch visibility recovery in app lifecycle code where actor context drift can regress startup behavior.
+
+### Skill Deepening Focus
+
+1. Add a mandatory "diagnostics isolation map" in fixes: logging callsite actor, state owner actor, and hop direction.
+2. Default to isolating observability/writeback paths first (logging/metrics/UI status) before widening isolation on hot-path logic.
+3. For lifecycle startup changes, require one explicit check that actor hops do not reorder visibility/state recovery events.
+4. Pair strict-concurrency validation with one targeted runtime path (`launch -> status item visible -> indicator transition`) when isolation touches lifecycle/UI boundaries.

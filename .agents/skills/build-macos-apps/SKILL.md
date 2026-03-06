@@ -122,3 +122,18 @@ When a task is specifically about failing GitHub Actions checks, route to `gh-fi
 2. On every release workflow task, require one local parity run via `scripts/ci-release-parity.sh` before proposing merge.
 3. Capture "first failing step + root mismatch" in PR notes to reduce repeated CI-only debugging loops.
 4. Route CI-check triage to `gh-fix-ci` first when failure originates in GitHub Actions logs, then return here for workflow wiring changes.
+
+## 2026-03-06 Progression Drill
+
+### New Evidence
+
+- `0bf9269` consolidated DMG entrypoints under `make dmg` and introduced self-signed auto-detection.
+- `773ceb7` adjusted signing identity detection stability in `scripts/config/release_signing.sh` and setup flow.
+- `0302327` and `6cbde40` show parity-script hardening was still required for appcast signature enforcement.
+
+### Skill Deepening Focus
+
+1. For every signing/release task, run a two-mode preflight: default auto-detect path and forced override path (`MA_RELEASE_SIGNING_MODE=adhoc|self-signed`).
+2. Require a deterministic checklist item in task notes: keychain identity discovery result, selected signing mode, and final `make dmg` path taken.
+3. Treat any parity-script diff (`scripts/ci-release-parity.sh`) as release-surface change and require explicit mapping to expected Sparkle/appcast behavior.
+4. If signing failures are runner- or env-sensitive, route first triage to `gh-fix-ci`, then return here only for workflow/command-surface corrections.

@@ -176,3 +176,18 @@ For recurring bug classes in this repository, require targeted checks in additio
 2. Require explicit reporting of strict-test mode used (`scripts/run-tests-xcode.sh` default strict) in validation notes.
 3. For `.github/workflows/sparkle-release.yml` changes, treat validation as Full-lane even if code delta is small.
 4. Standardize failure reporting format: failing command, failing stage, and first actionable mismatch.
+
+## 2026-03-06 Progression Drill
+
+### New Evidence
+
+- `0302327` and `6cbde40` continued to harden `scripts/ci-release-parity.sh` around appcast signature correctness.
+- `f7243e0`, `918243b`, and `094d280` show repeated lifecycle/status-indicator stabilization fixes in a narrow time window.
+- Since last run, `scripts/ci-release-parity.sh` and `App/AppDelegate+Lifecycle.swift` are the most frequently re-touched critical paths.
+
+### Skill Deepening Focus
+
+1. For release/signing changes, require parity-script execution evidence plus failing-stage capture before merge approval.
+2. For AppDelegate lifecycle/menu bar changes, add a focused manual smoke: launch visibility, status-item responsiveness, indicator show/hide, relaunch recovery.
+3. Standardize verification notes with two blocks only: `Release Parity` and `Lifecycle UI Smoke` when either surface is touched.
+4. Escalate repeated hot-path churn (>=3 touches/week in same file) to explicit regression-test backlog item.
