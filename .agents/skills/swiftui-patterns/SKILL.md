@@ -144,6 +144,7 @@ struct ContentView: View {
 ### Settings UX Consistency Checklist
 
 - Use drill-down rows consistently for secondary settings pages.
+- For any settings row that pushes a secondary page, reuse `SettingsDrillDownListRow` inside a `NavigationStack`, following the pattern in `EnhancementsSettingsTab` before creating a custom row wrapper.
 - Keep row anatomy stable: title, optional short subtitle, disclosure indicator.
 - Ensure keyboard navigation works (Tab/Arrow/Enter/Escape) across rows and detail pages.
 - Surface explicit loading/empty/success/warning states in dynamic settings blocks.
