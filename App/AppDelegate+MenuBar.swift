@@ -10,14 +10,16 @@ extension AppDelegate {
 
     func setupMenuBar() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        statusItem?.isVisible = true
 
         if let button = statusItem?.button {
-            let image = NSImage(
-                systemSymbolName: "waveform",
+            let image = makeStatusBarImage(
+                isRecording: false,
                 accessibilityDescription: "about.title".localized
             )
-            image?.isTemplate = true
             button.image = image
+            button.title = image == nil ? String(AppIdentity.displayName.prefix(1)) : ""
+            button.imagePosition = image == nil ? .noImage : .imageOnly
             button.action = #selector(handleStatusItemClick)
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
             button.target = self

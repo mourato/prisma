@@ -20,6 +20,7 @@ extension AppDelegate {
         }
 
         setupMenuBar()
+        verifyPrimaryInterfaceAfterLaunch()
         setupContextMenu()
         globalShortcutController.start()
         assistantShortcutController.start()
@@ -63,6 +64,7 @@ extension AppDelegate {
     // MARK: - Onboarding
 
     func showFirstLaunchOnboarding() {
+        promoteAppForWindowPresentation()
         presentOnboarding { [weak self] in
             self?.completeOnboarding()
         }
@@ -117,6 +119,7 @@ extension AppDelegate {
     private func continueAppSetup() {
         configureNavigationService()
         setupMenuBar()
+        verifyPrimaryInterfaceAfterLaunch()
         setupContextMenu()
         globalShortcutController.start()
         assistantShortcutController.start()
@@ -156,6 +159,26 @@ extension AppDelegate {
     private func openSettingsOnLaunchIfEnabled() {
         guard settingsStore.showSettingsOnLaunch else { return }
         NavigationService.shared.openSettings()
+    }
+
+    private func promoteAppForWindowPresentation() {
+        guard NSApp.activationPolicy() != .regular else { return }
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    private func verifyPrimaryInterfaceAfterLaunch() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            let hasStatusButton = statusItem?.button != nil
+            let isStatusItemVisible = statusItem?.isVisible ?? false
+            guard hasStatusButton && isStatusItemVisible else {
+                logger.fault("Primary UI did not initialize correctly. Presenting settings recovery window.")
+                promoteAppForWindowPresentation()
+                settingsWindowController.showSettingsWindow()
+                return
+            }
+        }
     }
 
     private func configureNavigationService() {

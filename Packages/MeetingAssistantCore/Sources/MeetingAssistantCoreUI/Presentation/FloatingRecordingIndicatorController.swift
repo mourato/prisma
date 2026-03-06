@@ -309,6 +309,11 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
 
     private func updateContent() {
         guard let panel else { return }
+        let panelSize = panelContentSize(for: settingsStore.recordingIndicatorStyle, renderState: currentRenderState)
+        let shadowInset = Constants.panelShadowInset
+        let contentWidth = max(1, panelSize.width - (shadowInset * 2))
+        let contentHeight = max(1, panelSize.height - (shadowInset * 2))
+
         let indicatorView = FloatingRecordingIndicatorView(
             audioMonitor: audioMonitor,
             style: settingsStore.recordingIndicatorStyle,
@@ -319,8 +324,11 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         )
         let rootView = AnyView(
             indicatorView
-                .padding(Constants.panelShadowInset)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                // Keep a fixed hosting size so NSHostingView doesn't try to animate the NSPanel
+                // dimensions in response to transient overlay/layout updates.
+                .frame(width: contentWidth, height: contentHeight, alignment: .center)
+                .padding(shadowInset)
+                .frame(width: panelSize.width, height: panelSize.height, alignment: .center)
         )
         if let hostingView {
             hostingView.rootView = rootView
