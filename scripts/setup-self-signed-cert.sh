@@ -70,12 +70,22 @@ if [ ! -x "${OPENSSL_BIN}" ]; then
   exit 1
 fi
 
-if security find-identity -v -p codesigning 2>/dev/null \
-  | awk -F'"' '/"/ { print $2 }' \
-  | grep -Fx "${CERT_NAME}" >/dev/null 2>&1; then
+existing_identity_state=1
+if ma_codesign_identity_is_stable "${CERT_NAME}" 3 0.20; then
   echo "A code-signing identity named '${CERT_NAME}' already exists."
   echo "Nothing to do."
   exit 0
+else
+  existing_identity_state=$?
+fi
+
+if [ "${existing_identity_state}" -eq 2 ]; then
+  cat >&2 <<EOF
+Identity '${CERT_NAME}' was detected intermittently.
+Refusing to continue because keychain visibility is unstable for this shell session.
+EOF
+  ma_print_codesign_identity_diagnostics "${CERT_NAME}"
+  exit 1
 fi
 
 TMP_DIR="$(mktemp -d /tmp/prisma-self-signed.XXXXXX)"
@@ -139,13 +149,39 @@ else
     -out "${P12_PATH}" >/dev/null 2>&1
 fi
 
-security import "${P12_PATH}" \
-  -k "${KEYCHAIN_PATH}" \
-  -P "${P12_PASSWORD}" \
-  -T /usr/bin/codesign \
-  -T /usr/bin/security >/dev/null
+import_output=""
+if ! import_output="$(
+  security import "${P12_PATH}" \
+    -k "${KEYCHAIN_PATH}" \
+    -P "${P12_PASSWORD}" \
+    -T /usr/bin/codesign \
+    -T /usr/bin/security 2>&1
+)"; then
+  cat >&2 <<EOF
+Failed to import generated certificate into keychain '${KEYCHAIN_PATH}'.
+security import output:
+${import_output}
+EOF
+  ma_print_codesign_identity_diagnostics "${CERT_NAME}"
+  exit 1
+fi
 
-if ! ma_codesign_identity_exists "${CERT_NAME}"; then
+post_import_state=1
+if ma_codesign_identity_is_stable "${CERT_NAME}" 3 0.20; then
+  post_import_state=0
+else
+  post_import_state=$?
+fi
+
+if [ "${post_import_state}" -eq 2 ]; then
+  cat >&2 <<EOF
+Certificate import succeeded, but identity visibility is unstable for '${CERT_NAME}'.
+EOF
+  ma_print_codesign_identity_diagnostics "${CERT_NAME}"
+  exit 1
+fi
+
+if [ "${post_import_state}" -ne 0 ]; then
   cat >&2 <<EOF
 Certificate import completed but no usable code-signing identity was found for '${CERT_NAME}'.
 This usually means the private key was not registered in Keychain.
@@ -160,6 +196,7 @@ Try:
   3) Verify:
      security find-identity -v -p codesigning
 EOF
+  ma_print_codesign_identity_diagnostics "${CERT_NAME}"
   exit 1
 fi
 

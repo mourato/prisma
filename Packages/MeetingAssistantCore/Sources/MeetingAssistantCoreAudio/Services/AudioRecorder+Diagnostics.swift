@@ -88,7 +88,6 @@ extension AudioRecorder {
 
         isMicDiagnosticsTapInstalled = true
         micDiagnosticsTimer?.invalidate()
-        let diagnosticsInputUnit = audioEngine?.inputNode.audioUnit
         micDiagnosticsTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             guard let self else { return }
             let peakBits = micDiagnosticsPeakBits.exchange(0, ordering: .relaxed)
@@ -101,7 +100,7 @@ extension AudioRecorder {
             ]
 
             // Include device identity for diagnosing wrong-device scenarios
-            if let inputUnit = diagnosticsInputUnit {
+            if let inputUnit = audioEngine?.inputNode.audioUnit {
                 var deviceID: AudioObjectID = 0
                 var size = UInt32(MemoryLayout<AudioObjectID>.size)
                 let status = AudioUnitGetProperty(
