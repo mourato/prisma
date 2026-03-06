@@ -149,7 +149,7 @@ final class SettingsWindowController {
         }
         settingsWindow.setFrameAutosaveName(AppIdentity.settingsWindowAutosaveName)
         settingsWindow.isReleasedWhenClosed = false
-        settingsWindow.contentView = NSHostingView(rootView: SettingsView())
+        settingsWindow.contentViewController = NSHostingController(rootView: SettingsView())
         settingsWindow.center()
         settingsWindow.makeKeyAndOrderFront(nil)
 
