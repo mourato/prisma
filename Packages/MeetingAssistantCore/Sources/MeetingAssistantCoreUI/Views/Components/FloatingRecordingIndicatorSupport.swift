@@ -261,10 +261,6 @@ enum FloatingRecordingIndicatorViewUtilities {
         ]
 
         let attributed = NSAttributedString(string: emoji, attributes: attributes)
-        let measuredRect = attributed.boundingRect(
-            with: NSSize(width: imageSize.width, height: .greatestFiniteMagnitude),
-            options: [.usesLineFragmentOrigin, .usesFontLeading]
-        )
         let drawRect = NSRect(
             x: 0,
             y: (imageSize.height - pointSize) / 2,

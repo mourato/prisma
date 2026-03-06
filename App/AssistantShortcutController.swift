@@ -217,13 +217,13 @@ final class RecordingCancelShortcutController {
     private var registeredDefinition: ShortcutDefinition?
 
     init(
-        settings: AppSettingsStore = .shared,
+        settings: AppSettingsStore? = nil,
         hotkeyBackend: GlobalHotkeyBackend? = nil,
         stateProvider: @escaping @MainActor () -> RecordingCancelShortcutState,
         cancelRecordingManagerCapture: @escaping @MainActor () async -> Void,
         cancelAssistantCapture: @escaping @MainActor () async -> Void
     ) {
-        self.settings = settings
+        self.settings = settings ?? .shared
         self.hotkeyBackend = hotkeyBackend ?? CarbonGlobalHotkeyBackend()
         self.stateProvider = stateProvider
         self.cancelRecordingManagerCapture = cancelRecordingManagerCapture
