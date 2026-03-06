@@ -35,6 +35,91 @@ make test
 make run
 ```
 
+Use `make help` to print the current target list from the `Makefile`.
+
+### Make targets
+
+#### Build
+
+| Target | Description |
+|--------|-------------|
+| `make build` | Alias for `make build-debug`. |
+| `make build-debug` | Build the app in Debug configuration. |
+| `make build-release` | Build the app in Release configuration. |
+| `make build-agent` | Build Debug with compact agent-oriented output. |
+| `make build-test` | Run the standard build and test sequence. |
+| `make xcodebuild-safe` | Run the canonical wrapped `xcodebuild` command for this repo. |
+
+#### Test and benchmarks
+
+| Target | Description |
+|--------|-------------|
+| `make test` | Run the full test suite with strict `xcodebuild`. |
+| `make test-agent` | Run tests with compact agent-oriented output. |
+| `make test-swift` | Run tests with `swift test` for a faster non-Xcode path. |
+| `make test-verbose` | Run tests with verbose output. |
+| `make test-strict` | Run tests with strict concurrency checking enabled. |
+| `make test-ci-strict` | Alias for `make test`. |
+| `make benchmark-summary` | Run the summary benchmark gate in report-only mode. |
+| `make benchmark-summary-agent` | Run the summary benchmark in compact agent mode. |
+
+#### Quality and verification
+
+| Target | Description |
+|--------|-------------|
+| `make lint` | Run lint checks. Use `FIX=1 make lint` to auto-fix first. |
+| `make lint-agent` | Run lint with compact agent-oriented output. |
+| `make lint-fix` | Apply SwiftFormat and SwiftLint autofixes. |
+| `make arch-check` | Validate architecture boundary rules. |
+| `make preview-check` | Verify SwiftUI preview coverage. |
+| `make preflight` | Run the full preflight script (build, test, lint, benchmark). |
+| `make preflight-fast` | Run the faster preflight variant. |
+| `make preflight-agent` | Run preflight with compact agent-oriented output. |
+| `make preflight-agent-fast` | Run the fast preflight variant in agent mode. |
+| `make format` | Format source with SwiftFormat. |
+| `make health` | Run the repository code health check. |
+
+#### Run and distribution
+
+| Target | Description |
+|--------|-------------|
+| `make run` | Build Debug and open the app. |
+| `make run-release` | Build Release and open the app. |
+| `make dmg` | Create a DMG installer with auto-detected signing mode; force self-signed with `MA_RELEASE_SIGNING_MODE=self-signed make dmg`. |
+| `make setup-self-signed-cert` | Create or import the local self-signed signing certificate. |
+| `make new-release` | Create a GitHub release interactively with generated notes. |
+
+#### Profiling
+
+| Target | Description |
+|--------|-------------|
+| `make profile` | Run the full profiling suite. |
+| `make profile-report` | Run profiling and export summary metrics. |
+| `make profile-cpu` | Run CPU profiling with Time Profiler. |
+| `make profile-memory` | Run memory profiling with Allocations. |
+| `make profile-animation` | Run Core Animation profiling. |
+| `make profile-animation-report` | Run animation profiling and export metrics. |
+
+#### Maintenance and CI
+
+| Target | Description |
+|--------|-------------|
+| `make clean` | Remove build and distribution artifacts. |
+| `make setup` | Install local development dependencies such as SwiftLint and SwiftFormat. |
+| `make ci-build` | Run the CI build sequence: architecture checks, lint, tests, and release build. |
+| `make ci-test` | Run the CI test path. |
+| `make ci-release-parity` | Run the local Sparkle release parity gate in dry-run mode. |
+| `make ci-release-parity-self-signed` | Run the signed local Sparkle parity flow and generate the appcast. |
+| `make deliverable-gate` | Run `build-test`, `lint`, and `ci-release-parity` together. |
+
+#### Documentation
+
+| Target | Description |
+|--------|-------------|
+| `make docs` | Build the DocC static documentation output into `.agents/docs/api`. |
+| `make docs-preview` | Preview DocC documentation locally. |
+| `make docs-clean` | Remove generated documentation artifacts. |
+
 ### Before push/release
 
 Run the deliverable gate to reduce CI surprises:
@@ -118,8 +203,12 @@ If you cannot use Apple Developer ID, use a stable self-signed identity so local
 # 1) Create/import local signing certificate (one-time)
 make setup-self-signed-cert
 
-# 2) Build DMG for manual installs (auto self-signs if identity exists)
+# 2) Build DMG for manual installs
+# Auto mode: self-signs only if the configured identity exists in keychain
 make dmg
+
+# Forced mode: require self-signed signing and fail fast if the identity is missing
+MA_RELEASE_SIGNING_MODE=self-signed make dmg
 
 # 3) Build signed Sparkle archive + appcast (requires Sparkle private key env)
 SPARKLE_PRIVATE_KEY_B64="<base64-pem>" \
