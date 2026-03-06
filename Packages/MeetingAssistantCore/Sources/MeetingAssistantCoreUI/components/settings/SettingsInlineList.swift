@@ -1,5 +1,10 @@
 import SwiftUI
 
+private struct SettingsInlineListPreviewItem: Identifiable {
+    let id = UUID()
+    let title: String
+}
+
 public struct SettingsInlineList<Item: Identifiable, RowContent: View>: View {
     public enum State {
         case ready
@@ -55,4 +60,21 @@ public struct SettingsInlineList<Item: Identifiable, RowContent: View>: View {
             .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
         }
     }
+}
+
+#Preview("Settings inline list") {
+    SettingsInlineList(
+        items: [
+            SettingsInlineListPreviewItem(title: "Slack"),
+            SettingsInlineListPreviewItem(title: "Teams"),
+            SettingsInlineListPreviewItem(title: "Zoom"),
+        ],
+        emptyText: "No items found"
+    ) { item in
+        Text(item.title)
+            .padding(.horizontal, AppDesignSystem.Layout.spacing12)
+            .padding(.vertical, AppDesignSystem.Layout.spacing8)
+    }
+    .frame(width: 320)
+    .padding()
 }

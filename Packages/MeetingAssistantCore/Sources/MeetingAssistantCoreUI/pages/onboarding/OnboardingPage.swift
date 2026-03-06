@@ -91,3 +91,62 @@ public struct OnboardingView: View {
         }
     }
 }
+
+@MainActor
+private func makeOnboardingViewModel(step: OnboardingStep) -> OnboardingViewModel {
+    let viewModel = OnboardingViewModel()
+    viewModel.currentStep = step
+    return viewModel
+}
+
+@MainActor
+private func makePermissionViewModel() -> PermissionViewModel {
+    PermissionViewModel(
+        manager: PermissionStatusManager(),
+        requestMicrophone: {},
+        requestScreen: {},
+        openMicrophoneSettings: {},
+        openScreenSettings: {},
+        requestAccessibility: {},
+        openAccessibilitySettings: {}
+    )
+}
+
+#Preview("Onboarding - Welcome") {
+    OnboardingView(
+        viewModel: makeOnboardingViewModel(step: .welcome),
+        permissionViewModel: makePermissionViewModel(),
+        shortcutViewModel: ShortcutSettingsViewModel(),
+        assistantShortcutViewModel: AssistantShortcutSettingsViewModel(),
+        modelManager: FluidAIModelManager.shared,
+        refreshPermissions: {},
+        onComplete: {}
+    )
+    .frame(width: 650, height: 550)
+}
+
+#Preview("Onboarding - Permissions") {
+    OnboardingView(
+        viewModel: makeOnboardingViewModel(step: .permissions),
+        permissionViewModel: makePermissionViewModel(),
+        shortcutViewModel: ShortcutSettingsViewModel(),
+        assistantShortcutViewModel: AssistantShortcutSettingsViewModel(),
+        modelManager: FluidAIModelManager.shared,
+        refreshPermissions: {},
+        onComplete: {}
+    )
+    .frame(width: 650, height: 550)
+}
+
+#Preview("Onboarding - Shortcuts") {
+    OnboardingView(
+        viewModel: makeOnboardingViewModel(step: .shortcuts),
+        permissionViewModel: makePermissionViewModel(),
+        shortcutViewModel: ShortcutSettingsViewModel(),
+        assistantShortcutViewModel: AssistantShortcutSettingsViewModel(),
+        modelManager: FluidAIModelManager.shared,
+        refreshPermissions: {},
+        onComplete: {}
+    )
+    .frame(width: 650, height: 550)
+}

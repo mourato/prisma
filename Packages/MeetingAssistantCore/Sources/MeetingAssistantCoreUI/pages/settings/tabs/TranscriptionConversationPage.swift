@@ -105,3 +105,35 @@ struct TranscriptionConversationPage: View {
         }
     }
 }
+
+#Preview("Transcription conversation page") {
+    let transcriptionID = UUID()
+    let activeTranscription = Transcription(
+        id: transcriptionID,
+        meeting: Meeting(
+            app: .slack,
+            state: .completed,
+            startTime: Date().addingTimeInterval(-1_800),
+            endTime: Date().addingTimeInterval(-600),
+            audioFilePath: nil
+        ),
+        segments: [
+            .init(speaker: "Speaker 1", text: "Precisamos priorizar as mudanças de UI.", startTime: 0, endTime: 6),
+            .init(speaker: "Speaker 2", text: "Conforme discutido, vou ajustar a navegação da tela de transcrição.", startTime: 8, endTime: 16),
+        ],
+        text: "Precisamos priorizar as mudanças de UI. Conforme discutido, vou ajustar a navegação da tela de transcrição.",
+        rawText: "Precisamos priorizar as mudanças de UI conforme discutido ajustar a navegacao da tela de transcricao",
+        processedContent: "Precisamos priorizar as mudanças de UI e ajustar a navegação da tela de transcrição.",
+        language: "pt"
+    )
+
+    TranscriptionConversationPage(
+        transcriptionID: transcriptionID,
+        activeTranscription: activeTranscription,
+        viewModel: TranscriptionSettingsViewModel(),
+        dictationService: MeetingQuestionDictationService(),
+        onToggleDictation: {},
+        onBack: {}
+    )
+    .frame(width: 780, height: 780)
+}

@@ -57,3 +57,18 @@ public struct DSGroup<Content: View, HeaderAccessory: View>: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
+
+#Preview("DSGroup") {
+    DSGroup("Design Group", icon: "cube.fill", headerAccessory: {
+        DSBadge("Preview", kind: .neutral)
+    }) {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Reusable layout container.")
+                .foregroundStyle(.secondary)
+            Text("Contains a title, optional icon, and accessory.")
+                .foregroundStyle(.secondary)
+        }
+        .padding()
+    }
+    .padding()
+}

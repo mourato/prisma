@@ -56,3 +56,23 @@ public struct DSActionButton<Label: View>: View {
         .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
     }
 }
+
+#Preview("DSActionButton") {
+    VStack(spacing: 12) {
+        DSActionButton(kind: .primary, action: {}) {
+            Text("Primary Action")
+                .fontWeight(.semibold)
+        }
+        DSActionButton(kind: .secondary, action: {}) {
+            Text("Secondary Action")
+                .fontWeight(.semibold)
+        }
+        DSActionButton(kind: .destructive, action: {}) {
+            Text("Destructive")
+                .fontWeight(.semibold)
+        }
+        .disabled(true)
+    }
+    .padding()
+    .frame(width: 240)
+}
