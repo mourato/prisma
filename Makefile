@@ -47,7 +47,7 @@ help:
 	@echo "  make run-release    - Build and run release version"
 	@echo ""
 	@echo "Distribution:"
-	@echo "  make dmg            - Create DMG installer (prompts for auto/self-signed/adhoc mode)"
+	@echo "  make dmg            - Create DMG installer (prompts for auto/self-signed/adhoc at start)"
 	@echo "  make setup-self-signed-cert - Create/import local code-signing cert"
 	@echo "  make new-release    - Create a new GitHub release interactively"
 	@echo ""
