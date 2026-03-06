@@ -123,3 +123,18 @@ When changes touch app lifecycle, enforce this contract:
 2. For floating indicator changes, require one verification pass that covers open/close/reopen and background foreground transitions.
 3. Treat static-initializer changes in UI support types as lifecycle-sensitive and verify no startup regressions.
 4. Explicitly route actor-isolation diagnostics in UI components to `swift-concurrency-expert` when compiler errors appear.
+
+## 2026-03-06 Progression Drill
+
+### New Evidence
+
+- `094d280` and `918243b` both modified `App/AppDelegate+Lifecycle.swift` for launch recovery and prewarm sequencing.
+- `f7243e0` and `166643c` repeatedly touched AppDelegate menu bar/recording UI surfaces to stabilize status and floating-indicator behavior.
+- File-frequency since last run shows `App/AppDelegate+Lifecycle.swift` as the top hotspot (4 commits).
+
+### Skill Deepening Focus
+
+1. Require a lifecycle sequencing checklist for AppDelegate edits: startup registration, initial visibility, deferred prewarm, and teardown symmetry.
+2. For floating-indicator lifecycle changes, verify deterministic behavior across first launch, restart, and settings-open transitions.
+3. Treat any AppDelegate visibility recovery change as Medium risk minimum and route verification through Full-lane checks.
+4. Document one regression guard per lifecycle patch in the task notes (what state failed before, what invariant is now enforced).
