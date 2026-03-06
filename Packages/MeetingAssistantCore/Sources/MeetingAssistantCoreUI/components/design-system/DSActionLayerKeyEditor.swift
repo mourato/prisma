@@ -28,8 +28,8 @@ public struct DSActionLayerKeyEditor: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing6) {
-            HStack(spacing: AppDesignSystem.Layout.spacing8) {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
                 Text(title)
                     .font(.subheadline)
                     .fontWeight(.medium)

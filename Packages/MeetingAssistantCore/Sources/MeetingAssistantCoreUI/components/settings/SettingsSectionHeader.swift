@@ -22,7 +22,7 @@ public struct SettingsSectionHeader: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
+        VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.headline)
 

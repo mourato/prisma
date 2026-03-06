@@ -26,7 +26,7 @@ public struct AppRuleEditorSheet: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
+        VStack(alignment: .leading, spacing: 12) {
             Text("settings.rules_per_app.editor_title".localized(with: resolvedRule.displayName))
                 .font(.headline)
 
@@ -39,7 +39,7 @@ public struct AppRuleEditorSheet: View {
                 isOn: $forceMarkdownOutput
             )
 
-            HStack(spacing: AppDesignSystem.Layout.spacing12) {
+            HStack(spacing: 12) {
                 Text("settings.rules_per_app.language.title".localized)
                     .font(.body)
                     .fontWeight(.regular)
@@ -58,7 +58,7 @@ public struct AppRuleEditorSheet: View {
                 .labelsHidden()
             }
 
-            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text("settings.rules_per_app.custom_prompt.title".localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)

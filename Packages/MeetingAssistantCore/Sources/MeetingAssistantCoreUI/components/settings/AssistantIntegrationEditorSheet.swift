@@ -37,13 +37,13 @@ public struct AssistantIntegrationEditorSheet: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
+        VStack(alignment: .leading, spacing: 16) {
             Text("settings.assistant.integrations.editor.title.integration".localized)
                 .font(.title3)
                 .fontWeight(.semibold)
 
             if !isBuiltInIntegration {
-                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
+                VStack(alignment: .leading, spacing: 8) {
                     Text("settings.assistant.integrations.integration_name".localized)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -62,7 +62,7 @@ public struct AssistantIntegrationEditorSheet: View {
             )
 
             if !isBuiltInIntegration {
-                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
+                VStack(alignment: .leading, spacing: 8) {
                     Text("settings.assistant.integrations.integration_deeplink".localized)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -72,7 +72,7 @@ public struct AssistantIntegrationEditorSheet: View {
                 }
             }
 
-            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text("settings.assistant.integrations.editor.instructions".localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -96,7 +96,7 @@ public struct AssistantIntegrationEditorSheet: View {
                     Label("settings.assistant.integrations.editor.advanced".localized, systemImage: "gearshape")
                 }
                 .buttonStyle(.plain)
-                .padding(.vertical, AppDesignSystem.Layout.spacing12)
+                .padding(.vertical, 12)
             }
 
             HStack {
@@ -117,7 +117,7 @@ public struct AssistantIntegrationEditorSheet: View {
                 .keyboardShortcut(.defaultAction)
             }
         }
-        .padding(AppDesignSystem.Layout.spacing20)
+        .padding(20)
         .frame(minWidth: 560, minHeight: 480)
         .onChange(of: draft.integration.shortcutDefinition) { _, _ in
             shortcutConflictMessage = nil
@@ -132,7 +132,7 @@ public struct AssistantIntegrationEditorSheet: View {
     }
 
     private var placeholderSection: some View {
-        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
+        VStack(alignment: .leading, spacing: 8) {
             Text("settings.assistant.integrations.editor.placeholders.title".localized)
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -142,9 +142,9 @@ public struct AssistantIntegrationEditorSheet: View {
                 .foregroundStyle(.secondary)
 
             LazyVGrid(
-                columns: [GridItem(.adaptive(minimum: 220), spacing: AppDesignSystem.Layout.spacing8)],
+                columns: [GridItem(.adaptive(minimum: 220), spacing: 8)],
                 alignment: .leading,
-                spacing: AppDesignSystem.Layout.spacing8
+                spacing: 8
             ) {
                 placeholderButton(token: AssistantIntegrationDeepLinkShortcode.finalText)
                 placeholderButton(token: AssistantIntegrationDeepLinkShortcode.finalTextURLEncoded)
@@ -169,11 +169,11 @@ public struct AssistantIntegrationEditorSheet: View {
         let isUsedInDeepLink = draft.integration.deepLink.contains(token)
         let isJustCopied = copiedPlaceholderToken == token
 
-        return HStack(spacing: AppDesignSystem.Layout.spacing6) {
+        return HStack(spacing: 6) {
             Button {
                 copyPlaceholder(token)
             } label: {
-                HStack(spacing: AppDesignSystem.Layout.spacing6) {
+                HStack(spacing: 6) {
                     Text(token)
                         .font(.system(.caption, design: .monospaced))
                         .lineLimit(1)
@@ -186,8 +186,8 @@ public struct AssistantIntegrationEditorSheet: View {
                         .font(.caption)
                         .foregroundStyle(isUsedInDeepLink ? Color.accentColor : Color.secondary)
                 }
-                .padding(.horizontal, AppDesignSystem.Layout.spacing10)
-                .padding(.vertical, AppDesignSystem.Layout.spacing8)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
                 .background(
                     RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
                         .fill(isUsedInDeepLink ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.08))
@@ -222,7 +222,7 @@ public struct AssistantIntegrationEditorSheet: View {
                 ),
                 arrowEdge: .bottom
             ) {
-                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
+                VStack(alignment: .leading, spacing: 8) {
                     Text(token)
                         .font(.system(.caption, design: .monospaced))
                         .foregroundStyle(.secondary)
@@ -230,7 +230,7 @@ public struct AssistantIntegrationEditorSheet: View {
                     Text(placeholderMeaning(for: token))
                         .font(.callout)
 
-                    VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing4) {
+                    VStack(alignment: .leading, spacing: 4) {
                         Text("settings.assistant.integrations.editor.placeholders.example_title".localized)
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -240,7 +240,7 @@ public struct AssistantIntegrationEditorSheet: View {
                             .textSelection(.enabled)
                     }
                 }
-                .padding(AppDesignSystem.Layout.spacing12)
+                .padding(12)
                 .frame(width: 300, alignment: .leading)
             }
         }

@@ -63,7 +63,7 @@ public struct RulesPerAppSettingsTab: View {
 
     private var appRulesSection: some View {
         DSGroup("settings.rules_per_app.title".localized, icon: "slider.horizontal.3") {
-            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
+            VStack(alignment: .leading, spacing: 12) {
                 Text("settings.rules_per_app.description".localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -86,7 +86,7 @@ public struct RulesPerAppSettingsTab: View {
 
     private var websitesSection: some View {
         DSGroup("settings.markdown_targets.websites.title".localized, icon: "globe") {
-            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text("settings.markdown_targets.websites.desc".localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -136,7 +136,7 @@ public struct RulesPerAppSettingsTab: View {
     }
 
     private func appRow(for resolvedRule: ResolvedDictationAppRule) -> some View {
-        HStack(spacing: AppDesignSystem.Layout.spacing12) {
+        HStack(spacing: 12) {
             AppIconView(
                 bundleIdentifier: resolvedRule.rule.bundleIdentifier,
                 fallbackSystemName: "app.fill",
@@ -172,15 +172,15 @@ public struct RulesPerAppSettingsTab: View {
                 }
             }
         }
-        .padding(.horizontal, AppDesignSystem.Layout.spacing12)
-        .padding(.vertical, AppDesignSystem.Layout.spacing8)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(appRowAccessibilityLabel(for: resolvedRule))
         .accessibilityHint("settings.rules_per_app.actions".localized)
     }
 
     private var addAppSheet: some View {
-        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
+        VStack(alignment: .leading, spacing: 12) {
             Text("settings.rules_per_app.add_app".localized)
                 .font(.title3)
                 .fontWeight(.semibold)
@@ -206,7 +206,7 @@ public struct RulesPerAppSettingsTab: View {
                 .frame(maxWidth: .infinity)
             } else {
                 List(viewModel.filteredAppCatalog) { app in
-                    HStack(spacing: AppDesignSystem.Layout.spacing12) {
+                    HStack(spacing: 12) {
                         AppIconView(
                             bundleIdentifier: app.bundleIdentifier,
                             fallbackSystemName: "app.fill",
@@ -253,7 +253,7 @@ public struct RulesPerAppSettingsTab: View {
     }
 
     private func websiteRow(_ target: WebContextTarget) -> some View {
-        HStack(spacing: AppDesignSystem.Layout.spacing12) {
+        HStack(spacing: 12) {
             Image(systemName: "globe")
                 .font(.title3)
                 .foregroundStyle(AppDesignSystem.Colors.iconHighlight)
@@ -289,8 +289,8 @@ public struct RulesPerAppSettingsTab: View {
                 }
             }
         }
-        .padding(.horizontal, AppDesignSystem.Layout.spacing12)
-        .padding(.vertical, AppDesignSystem.Layout.spacing8)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(websiteRowAccessibilityLabel(for: target))
         .accessibilityHint("settings.rules_per_app.actions".localized)
@@ -310,7 +310,7 @@ public struct RulesPerAppSettingsTab: View {
     }
 
     private func websiteRuleSummary(for target: WebContextTarget) -> some View {
-        HStack(spacing: AppDesignSystem.Layout.spacing8) {
+        HStack(spacing: 8) {
             Text(
                 target.forceMarkdownOutput
                     ? "settings.markdown_targets.websites.summary.markdown_on".localized
@@ -359,7 +359,7 @@ public struct RulesPerAppSettingsTab: View {
     }
 
     private func appRuleSummary(for rule: DictationAppRule) -> some View {
-        HStack(spacing: AppDesignSystem.Layout.spacing8) {
+        HStack(spacing: 8) {
             if rule.forceMarkdownOutput {
                 Text("MD")
                     .font(.caption2)

@@ -57,7 +57,7 @@ public struct InstalledAppsSelectionList: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
+        VStack(alignment: .leading, spacing: 8) {
             Text(descriptionKey.localized)
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -97,7 +97,7 @@ public struct InstalledAppsSelectionList: View {
     }
 
     private func appRow(_ app: InstalledAppItem) -> some View {
-        HStack(spacing: AppDesignSystem.Layout.spacing12) {
+        HStack(spacing: 12) {
             Image(nsImage: app.icon)
                 .resizable()
                 .scaledToFit()
@@ -127,8 +127,8 @@ public struct InstalledAppsSelectionList: View {
             .foregroundStyle(AppDesignSystem.Colors.error)
             .controlSize(.regular)
         }
-        .padding(.horizontal, AppDesignSystem.Layout.spacing12)
-        .padding(.vertical, AppDesignSystem.Layout.spacing8)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
     }
 }
 

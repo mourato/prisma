@@ -35,7 +35,7 @@ public struct ShortcutSettingsSection<SettingsContent: View>: View {
                 )
             }
         ) {
-            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
+            VStack(alignment: .leading, spacing: 12) {
                 Text(descriptionText)
                     .font(.caption)
                     .foregroundStyle(.secondary)

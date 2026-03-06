@@ -82,7 +82,7 @@ public struct TranscriptionCardView: View {
     public var body: some View {
         DSCard(
             cornerRadius: AppDesignSystem.Layout.largeCornerRadius,
-            padding: isExpanded ? AppDesignSystem.Layout.spacing16 : AppDesignSystem.Layout.spacing12
+            padding: isExpanded ? 16 : 12
         ) {
             if isExpanded {
                 expandedContent
@@ -317,7 +317,7 @@ public struct TranscriptionCardView: View {
     private var contentView: some View {
         let text = displayText(currentText)
 
-        return VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
+        return VStack(alignment: .leading, spacing: 8) {
             Text(text)
                 .lineLimit(isTabExpanded(selectedTab) ? nil : Layout.contentLineLimit)
                 .frame(maxWidth: .infinity, alignment: .leading)

@@ -79,7 +79,7 @@ public struct PostProcessingSettingsTab: View {
 
     private var systemPromptSection: some View {
         DSGroup("settings.post_processing.system_prompt".localized, icon: "terminal.fill") {
-            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
+            VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("settings.post_processing.base_instructions".localized)
@@ -111,7 +111,7 @@ public struct PostProcessingSettingsTab: View {
 
     private var userPromptsSection: some View {
         DSGroup("settings.post_processing.prompts".localized, icon: "sparkles") {
-            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
+            VStack(alignment: .leading, spacing: 16) {
                 HStack {
                     Text("settings.post_processing.choose_active".localized)
                         .font(.caption)
@@ -132,7 +132,7 @@ public struct PostProcessingSettingsTab: View {
                     .controlSize(.regular)
                 }
 
-                VStack(spacing: AppDesignSystem.Layout.spacing8) {
+                VStack(spacing: 8) {
                     ForEach(viewModel.settings.allPrompts) { prompt in
                         promptRow(prompt: prompt)
                     }

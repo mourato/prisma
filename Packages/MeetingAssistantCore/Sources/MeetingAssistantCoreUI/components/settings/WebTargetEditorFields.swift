@@ -36,8 +36,8 @@ struct WebTargetEditorFields<AdditionalContent: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
-            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text(nameLabelKey.localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -46,7 +46,7 @@ struct WebTargetEditorFields<AdditionalContent: View>: View {
                     .textFieldStyle(.roundedBorder)
             }
 
-            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text(urlLabelKey.localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)

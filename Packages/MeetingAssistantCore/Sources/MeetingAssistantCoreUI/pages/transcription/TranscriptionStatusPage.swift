@@ -24,7 +24,7 @@ public struct TranscriptionStatusView: View {
                 expandedDetails
             }
         }
-        .padding(AppDesignSystem.Layout.spacing12)
+        .padding(12)
         .background(statusBackground, in: RoundedRectangle(cornerRadius: AppDesignSystem.Layout.cardCornerRadius))
     }
 

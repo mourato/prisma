@@ -98,7 +98,7 @@ public struct TranscriptionsSettingsTab: View {
 
     private var listPage: some View {
         VStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
+            VStack(alignment: .leading, spacing: 16) {
                 SettingsSectionHeader(
                     title: "settings.section.history".localized,
                     description: "settings.transcriptions.items_found".localized(with: viewModel.filteredTranscriptions.count)
@@ -106,7 +106,7 @@ public struct TranscriptionsSettingsTab: View {
 
                 searchAndFolderRow
 
-                HStack(spacing: AppDesignSystem.Layout.spacing16) {
+                HStack(spacing: 16) {
                     sourceFilterPicker
                         .frame(maxWidth: .infinity)
 
@@ -130,7 +130,7 @@ public struct TranscriptionsSettingsTab: View {
                     }
                 }
             }
-            .padding(AppDesignSystem.Layout.spacing24)
+            .padding(24)
 
             Divider()
 
@@ -140,7 +140,7 @@ public struct TranscriptionsSettingsTab: View {
                     title: "settings.transcriptions.loading".localized
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                .padding(AppDesignSystem.Layout.spacing24)
+                .padding(24)
             } else if viewModel.filteredTranscriptions.isEmpty {
                 emptyState
             } else {
@@ -157,7 +157,7 @@ public struct TranscriptionsSettingsTab: View {
                 max(Layout.minSearchWidth, geometry.size.width * Layout.searchWidthRatio)
             )
 
-            HStack(spacing: AppDesignSystem.Layout.spacing16) {
+            HStack(spacing: 16) {
                 searchField
                     .frame(width: searchWidth)
 
@@ -194,7 +194,7 @@ public struct TranscriptionsSettingsTab: View {
     }
 
     private var searchField: some View {
-        HStack(spacing: AppDesignSystem.Layout.spacing8) {
+        HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.secondary)
             TextField(
@@ -203,8 +203,8 @@ public struct TranscriptionsSettingsTab: View {
             )
             .textFieldStyle(.plain)
         }
-        .padding(.horizontal, AppDesignSystem.Layout.spacing10)
-        .padding(.vertical, AppDesignSystem.Layout.spacing8)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
         .frame(height: Layout.controlHeight)
         .background(AppDesignSystem.Colors.subtleFill)
         .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
@@ -237,8 +237,8 @@ public struct TranscriptionsSettingsTab: View {
                     .foregroundStyle(.secondary)
             }
             .controlSize(.regular)
-            .padding(.horizontal, AppDesignSystem.Layout.spacing10)
-            .padding(.vertical, AppDesignSystem.Layout.spacing8)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
             .background(AppDesignSystem.Colors.subtleFill)
             .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
         }
@@ -270,8 +270,8 @@ public struct TranscriptionsSettingsTab: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
-            .padding(.horizontal, AppDesignSystem.Layout.spacing10)
-            .padding(.vertical, AppDesignSystem.Layout.spacing8)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
             .background(AppDesignSystem.Colors.subtleFill)
             .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
         }
@@ -301,11 +301,11 @@ public struct TranscriptionsSettingsTab: View {
                         .font(.caption)
                         .fontWeight(.bold)
                         .foregroundStyle(.secondary)
-                        .padding(.top, AppDesignSystem.Layout.spacing16)
-                        .padding(.bottom, AppDesignSystem.Layout.spacing8)
+                        .padding(.top, 16)
+                        .padding(.bottom, 8)
                 ) {
                     ForEach(viewModel.groupedTranscriptions[date] ?? []) { transcription in
-                        HStack(alignment: .top, spacing: AppDesignSystem.Layout.spacing16) {
+                        HStack(alignment: .top, spacing: 16) {
                             Text(formatTime(transcription.createdAt))
                                 .font(.body)
                                 .fontWeight(.semibold)
@@ -567,7 +567,7 @@ struct TranscriptionRowView: View {
                 }
             }
         }
-        .padding(.vertical, AppDesignSystem.Layout.spacing8)
+        .padding(.vertical, 8)
     }
 }
 

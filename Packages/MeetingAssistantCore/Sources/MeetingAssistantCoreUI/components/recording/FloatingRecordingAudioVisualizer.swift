@@ -35,9 +35,9 @@ struct AudioVisualizer: View {
         animationSpeed: RecordingIndicatorAnimationSpeed = .normal,
         barCount: Int,
         maxHeight: CGFloat,
-        barWidth: CGFloat = AppDesignSystem.Layout.spacing4,
-        barSpacing: CGFloat = AppDesignSystem.Layout.spacing2,
-        minHeight: CGFloat = AppDesignSystem.Layout.spacing8
+        barWidth: CGFloat = 4,
+        barSpacing: CGFloat = 2,
+        minHeight: CGFloat = 8
     ) {
         self.audioMeter = audioMeter
         self.mode = mode

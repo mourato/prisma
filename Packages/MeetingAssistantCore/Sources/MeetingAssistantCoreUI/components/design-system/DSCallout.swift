@@ -48,12 +48,12 @@ public struct DSCallout: View {
     }
 
     public var body: some View {
-        HStack(spacing: AppDesignSystem.Layout.spacing12) {
+        HStack(spacing: 12) {
             Image(systemName: kind.symbolName)
                 .font(.title2)
                 .foregroundStyle(kind.tintColor)
 
-            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing4) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.headline)
                 Text(message)
@@ -63,7 +63,7 @@ public struct DSCallout: View {
 
             Spacer()
         }
-        .padding(AppDesignSystem.Layout.spacing16)
+        .padding(16)
         .background(kind.backgroundColor)
         .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.cardCornerRadius))
         .overlay(
@@ -75,7 +75,7 @@ public struct DSCallout: View {
 }
 
 #Preview("Callout Kinds") {
-    VStack(spacing: AppDesignSystem.Layout.spacing12) {
+    VStack(spacing: 12) {
         DSCallout(
             kind: .info,
             title: "Information",

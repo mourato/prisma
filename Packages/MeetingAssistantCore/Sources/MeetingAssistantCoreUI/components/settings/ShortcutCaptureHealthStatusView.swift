@@ -15,8 +15,8 @@ public struct ShortcutCaptureHealthStatusView: View {
 
     public var body: some View {
         DSCard {
-            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing10) {
-                HStack(spacing: AppDesignSystem.Layout.spacing8) {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 8) {
                     Text(presentation.scopeLabelKey.localized)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -29,7 +29,7 @@ public struct ShortcutCaptureHealthStatusView: View {
                     )
                 }
 
-                HStack(spacing: AppDesignSystem.Layout.spacing8) {
+                HStack(spacing: 8) {
                     Image(systemName: presentation.isFallback ? "arrow.trianglehead.branch" : "exclamationmark.triangle.fill")
                         .foregroundStyle(
                             presentation.isFallback

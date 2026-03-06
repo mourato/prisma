@@ -133,7 +133,7 @@ public struct SettingsView: View {
                 )
                 .lineLimit(1)
         }
-        .padding(.vertical, AppDesignSystem.Layout.spacing2)
+        .padding(.vertical, 2)
     }
 
     private var sidebarSelectionBinding: Binding<SettingsSection> {
@@ -206,7 +206,7 @@ public struct SettingsView: View {
 
     @available(macOS 26.0, *)
     private var toolbarChromeContent: some View {
-        HStack(spacing: AppDesignSystem.Layout.spacing8) {
+        HStack(spacing: 8) {
             glassNavigationPill
             toolbarSectionTitle
         }
@@ -214,19 +214,19 @@ public struct SettingsView: View {
 
     @available(macOS 26.0, *)
     private var tahoeDetailNavigationBar: some View {
-        HStack(spacing: AppDesignSystem.Layout.spacing8) {
+        HStack(spacing: 8) {
             glassNavigationPill
             toolbarSectionTitle
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, AppDesignSystem.Layout.spacing10)
-        .padding(.top, AppDesignSystem.Layout.spacing6)
-        .padding(.bottom, AppDesignSystem.Layout.spacing6)
+        .padding(.horizontal, 10)
+        .padding(.top, 6)
+        .padding(.bottom, 6)
     }
 
     @available(macOS 26.0, *)
     private var toolbarSectionTitle: some View {
-        HStack(spacing: AppDesignSystem.Layout.spacing6) {
+        HStack(spacing: 6) {
             Image(systemName: selectedSection.icon)
                 .symbolRenderingMode(.monochrome)
                 .font(.system(size: 13, weight: .semibold))
@@ -237,14 +237,14 @@ public struct SettingsView: View {
                 .lineLimit(1)
                 .fixedSize(horizontal: true, vertical: false)
         }
-            .padding(.horizontal, AppDesignSystem.Layout.spacing10)
-            .padding(.vertical, AppDesignSystem.Layout.spacing10)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 10)
             .glassEffect(in: Capsule())
     }
-    
+
     private var legacyDetailNavigationBar: some View {
-        HStack(spacing: AppDesignSystem.Layout.spacing12) {
-            HStack(spacing: AppDesignSystem.Layout.spacing6) {
+        HStack(spacing: 12) {
+            HStack(spacing: 6) {
                 legacyNavigationHistoryButton(
                     systemImage: "chevron.left",
                     helpKey: "transcription.qa.navigation.back",
@@ -266,8 +266,8 @@ public struct SettingsView: View {
 
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, AppDesignSystem.Layout.spacing16)
-        .padding(.vertical, AppDesignSystem.Layout.spacing10)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
         .background(.ultraThinMaterial)
         .overlay(alignment: .bottom) {
             Divider()
@@ -283,10 +283,10 @@ public struct SettingsView: View {
                 isEnabled: canNavigateBack,
                 action: navigateBack
             )
-            
+
             Divider()
                 .frame(height: 20)
-                .padding(.vertical, AppDesignSystem.Layout.spacing6)
+                .padding(.vertical, 6)
 
             toolbarNavigationButton(
                 systemImage: "chevron.right",
@@ -446,18 +446,18 @@ private struct SettingsDetailChromeModifier<LegacyHeader: View>: ViewModifier {
 
 private struct SettingsToolbarChromePreview: View {
     var body: some View {
-        HStack(spacing: AppDesignSystem.Layout.spacing8) {
+        HStack(spacing: 8) {
             previewNavigationControls
             previewSectionTitle
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, AppDesignSystem.Layout.spacing10)
-        .padding(.vertical, AppDesignSystem.Layout.spacing6)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
         .frame(width: 900, alignment: .leading)
     }
 
     private var previewNavigationControls: some View {
-        HStack(spacing: AppDesignSystem.Layout.spacing2) {
+        HStack(spacing: 2) {
             previewNavButton("chevron.left")
             previewNavButton("chevron.right")
         }

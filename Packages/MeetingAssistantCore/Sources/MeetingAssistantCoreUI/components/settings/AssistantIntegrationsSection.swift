@@ -24,7 +24,7 @@ public struct AssistantIntegrationsSection: View {
             "settings.assistant.integrations.title".localized,
             icon: "puzzlepiece.extension"
         ) {
-            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
+            VStack(alignment: .leading, spacing: 12) {
                 Text("settings.assistant.integrations.description".localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -78,7 +78,7 @@ public struct AssistantIntegrationsSection: View {
     }
 
     private func integrationRow(integration: AssistantIntegrationConfig, isCardStyle: Bool) -> some View {
-        HStack(spacing: AppDesignSystem.Layout.spacing12) {
+        HStack(spacing: 12) {
             if isCardStyle {
                 RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
                     .fill(Color.secondary.opacity(0.12))
@@ -93,7 +93,7 @@ public struct AssistantIntegrationsSection: View {
                 .font(.body)
                 .fontWeight(.medium)
 
-            VStack(alignment: .trailing, spacing: AppDesignSystem.Layout.spacing2) {
+            VStack(alignment: .trailing, spacing: 2) {
                 Text("settings.assistant.integrations.shortcut.direct".localized)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
@@ -125,7 +125,7 @@ public struct AssistantIntegrationsSection: View {
             .labelsHidden()
             .toggleStyle(.switch)
         }
-        .padding(isCardStyle ? AppDesignSystem.Layout.spacing12 : 0)
+        .padding(isCardStyle ? 12 : 0)
         .background(
             RoundedRectangle(cornerRadius: AppDesignSystem.Layout.cardCornerRadius)
                 .strokeBorder(isCardStyle ? Color.secondary.opacity(0.2) : Color.clear, lineWidth: 1)

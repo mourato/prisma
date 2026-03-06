@@ -122,7 +122,7 @@ public struct MeetingConversationView: View {
     }
 
     private var header: some View {
-        HStack(spacing: AppDesignSystem.Layout.spacing8) {
+        HStack(spacing: 8) {
             Button {
                 onBack()
             } label: {
@@ -137,13 +137,13 @@ public struct MeetingConversationView: View {
 
             Spacer()
         }
-        .padding(AppDesignSystem.Layout.spacing16)
+        .padding(16)
     }
 
     @ViewBuilder
     private var content: some View {
         if isLoadingTranscription {
-            VStack(spacing: AppDesignSystem.Layout.spacing8) {
+            VStack(spacing: 8) {
                 Spacer()
                 ProgressView()
                 Text("settings.transcriptions.loading".localized)
@@ -152,7 +152,7 @@ public struct MeetingConversationView: View {
                 Spacer()
             }
         } else if transcription == nil {
-            VStack(spacing: AppDesignSystem.Layout.spacing8) {
+            VStack(spacing: 8) {
                 Spacer()
                 Image(systemName: "doc.text.magnifyingglass")
                     .font(.system(size: 40))
@@ -161,7 +161,7 @@ public struct MeetingConversationView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, AppDesignSystem.Layout.spacing16)
+                    .padding(.horizontal, 16)
                 Spacer()
             }
         } else {
@@ -174,8 +174,8 @@ public struct MeetingConversationView: View {
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
-                    .padding(.horizontal, AppDesignSystem.Layout.spacing16)
-                    .padding(.vertical, AppDesignSystem.Layout.spacing8)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
                 }
 
                 switch selectedInternalTab {
@@ -189,7 +189,7 @@ public struct MeetingConversationView: View {
     }
 
     private var summaryCard: some View {
-        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
+        VStack(alignment: .leading, spacing: 8) {
             Text("transcription.qa.summary_title".localized)
                 .font(.subheadline)
                 .fontWeight(.semibold)
@@ -199,7 +199,7 @@ public struct MeetingConversationView: View {
                 .foregroundStyle(.secondary)
                 .textSelection(.enabled)
         }
-        .padding(AppDesignSystem.Layout.spacing12)
+        .padding(12)
         .background(
             AppDesignSystem.Colors.cardBackground,
             in: RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
@@ -228,8 +228,8 @@ public struct MeetingConversationView: View {
     }
 
     private func turnView(_ turn: TranscriptionSettingsViewModel.QATurn) -> some View {
-        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
-            HStack(alignment: .top, spacing: AppDesignSystem.Layout.spacing8) {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 8) {
                 Image(systemName: "person.fill")
                     .foregroundStyle(AppDesignSystem.Colors.accent)
                 Text(turn.question)
@@ -242,8 +242,8 @@ public struct MeetingConversationView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 } else {
-                    VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
-                        HStack(alignment: .top, spacing: AppDesignSystem.Layout.spacing8) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(alignment: .top, spacing: 8) {
                             Image(systemName: "sparkles")
                                 .foregroundStyle(AppDesignSystem.Colors.iconHighlight)
                             Text(response.answer)
@@ -252,7 +252,7 @@ public struct MeetingConversationView: View {
                         }
 
                         if !response.evidence.isEmpty {
-                            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing6) {
+                            VStack(alignment: .leading, spacing: 6) {
                                 Text("transcription.qa.evidence_title".localized)
                                     .font(.caption)
                                     .fontWeight(.semibold)
@@ -267,7 +267,7 @@ public struct MeetingConversationView: View {
                     }
                 }
             } else if let errorMessage = turn.errorMessage {
-                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
+                VStack(alignment: .leading, spacing: 8) {
                     Text(errorMessage)
                         .font(.caption)
                         .foregroundStyle(AppDesignSystem.Colors.error)
@@ -281,7 +281,7 @@ public struct MeetingConversationView: View {
                 }
             }
         }
-        .padding(AppDesignSystem.Layout.spacing12)
+        .padding(12)
         .background(
             AppDesignSystem.Colors.subtleFill,
             in: RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
@@ -289,7 +289,7 @@ public struct MeetingConversationView: View {
     }
 
     private var composer: some View {
-        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
+        VStack(alignment: .leading, spacing: 8) {
             if let currentErrorMessage, !currentErrorMessage.isEmpty {
                 Text(currentErrorMessage)
                     .font(.caption)
@@ -311,7 +311,7 @@ public struct MeetingConversationView: View {
                 onCommandReturn: onAsk
             )
 
-            HStack(spacing: AppDesignSystem.Layout.spacing8) {
+            HStack(spacing: 8) {
                 modelSelectorButton
 
                 dictationButton
@@ -325,7 +325,7 @@ public struct MeetingConversationView: View {
                 .disabled(isAskDisabled)
             }
         }
-        .padding(AppDesignSystem.Layout.spacing16)
+        .padding(16)
     }
 
     private var modelSelectorButton: some View {
@@ -410,7 +410,7 @@ public struct MeetingConversationView: View {
 
     private var chatContent: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
+            VStack(alignment: .leading, spacing: 16) {
                 summaryCard
 
                 if turns.isEmpty {
@@ -424,7 +424,7 @@ public struct MeetingConversationView: View {
                 }
 
                 if isAnswering {
-                    HStack(spacing: AppDesignSystem.Layout.spacing8) {
+                    HStack(spacing: 8) {
                         ProgressView()
                             .controlSize(.small)
                         Text("transcription.qa.loading".localized)
@@ -433,7 +433,7 @@ public struct MeetingConversationView: View {
                     }
                 }
             }
-            .padding(AppDesignSystem.Layout.spacing16)
+            .padding(16)
         }
     }
 
@@ -470,21 +470,21 @@ public struct MeetingConversationView: View {
 
     private var segmentedContent: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
+            VStack(alignment: .leading, spacing: 16) {
                 speakerRenameSection
 
                 Divider()
 
                 segmentListSection
             }
-            .padding(AppDesignSystem.Layout.spacing16)
+            .padding(16)
         }
     }
 
     private var speakerRenameSection: some View {
-        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
+        VStack(alignment: .leading, spacing: 8) {
             ForEach(uniqueSpeakers, id: \.self) { speaker in
-                HStack(spacing: AppDesignSystem.Layout.spacing8) {
+                HStack(spacing: 8) {
                     Text(speaker)
                         .font(.caption)
                         .fontWeight(.bold)
@@ -526,7 +526,7 @@ public struct MeetingConversationView: View {
     }
 
     private var segmentListSection: some View {
-        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
+        VStack(alignment: .leading, spacing: 12) {
             ForEach(sortedSegmentsForDisplay) { segment in
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 6) {

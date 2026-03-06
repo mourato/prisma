@@ -13,7 +13,7 @@ public struct DSThemePicker: View {
 
     public init(
         selection: Binding<AppThemeColor>,
-        circleSpacing: CGFloat = AppDesignSystem.Layout.spacing12,
+        circleSpacing: CGFloat = 12,
         itemFrameSize: CGFloat = 40
     ) {
         _selection = selection

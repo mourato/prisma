@@ -41,7 +41,7 @@ public struct DSShortcutControlsRow: View {
 
     public var body: some View {
         HStack {
-            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing4) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.body)
                     .fontWeight(.medium)
@@ -95,8 +95,8 @@ public struct DSShortcutRecorderRow<RecorderContent: View>: View {
 
             recorderContent
         }
-        .padding(.vertical, AppDesignSystem.Layout.spacing8)
-        .padding(.horizontal, AppDesignSystem.Layout.spacing12)
+        .padding(.vertical, 8)
+        .padding(.horizontal, 12)
         .background(AppDesignSystem.Colors.secondaryFill)
         .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
     }

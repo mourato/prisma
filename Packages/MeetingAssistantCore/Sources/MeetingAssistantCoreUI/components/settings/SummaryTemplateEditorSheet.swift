@@ -28,7 +28,7 @@ public struct SummaryTemplateEditorSheet: View {
             Divider()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
+                VStack(alignment: .leading, spacing: 16) {
                     Text("settings.meetings.template_desc".localized)
                         .font(.caption)
                         .foregroundStyle(.secondary)

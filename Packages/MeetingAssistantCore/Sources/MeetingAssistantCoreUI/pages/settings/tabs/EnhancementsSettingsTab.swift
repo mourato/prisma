@@ -150,7 +150,7 @@ public struct EnhancementsSettingsTab: View {
                     )
 
                     if postProcessingViewModel.settings.contextAwarenessProtectSensitiveApps {
-                        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
+                        VStack(alignment: .leading, spacing: 8) {
                             Text("settings.context_awareness.excluded_apps".localized)
                                 .font(.subheadline)
                                 .fontWeight(.medium)
@@ -178,7 +178,7 @@ public struct EnhancementsSettingsTab: View {
                                 .font(.caption.monospaced())
                                 .foregroundStyle(.secondary)
                         }
-                        .padding(.top, AppDesignSystem.Layout.spacing4)
+                        .padding(.top, 4)
                     }
                 }
             }
@@ -186,7 +186,7 @@ public struct EnhancementsSettingsTab: View {
     }
 
     private var contextAwarenessSupportStatus: some View {
-        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
+        VStack(alignment: .leading, spacing: 8) {
             switch supportStatus {
             case .permissionDenied:
                 DSCallout(
@@ -195,7 +195,7 @@ public struct EnhancementsSettingsTab: View {
                     message: "settings.context_awareness.permission_desc".localized
                 )
 
-                HStack(spacing: AppDesignSystem.Layout.spacing8) {
+                HStack(spacing: 8) {
                     Button("permissions.request".localized) {
                         AccessibilityPermissionService.requestPermission()
                         Task { await refreshSupportStatus() }
@@ -218,7 +218,7 @@ public struct EnhancementsSettingsTab: View {
     }
 
     private var screenRecordingSupportStatus: some View {
-        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
+        VStack(alignment: .leading, spacing: 8) {
             if !hasScreenRecordingPermission {
                 DSCallout(
                     kind: .warning,
@@ -226,7 +226,7 @@ public struct EnhancementsSettingsTab: View {
                     message: "settings.context_awareness.screen_permission_desc".localized
                 )
 
-                HStack(spacing: AppDesignSystem.Layout.spacing8) {
+                HStack(spacing: 8) {
                     Button("permissions.request".localized) {
                         CGRequestScreenCaptureAccess()
                         refreshScreenRecordingPermission()
@@ -276,7 +276,7 @@ public struct EnhancementsSettingsTab: View {
     private var systemGuidelinesPage: some View {
         SettingsScrollableContent {
             DSGroup("settings.post_processing.system_prompt".localized, icon: "terminal.fill") {
-                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
+                VStack(alignment: .leading, spacing: 12) {
                     HStack {
                         Text("settings.post_processing.base_instructions".localized)
                             .font(.subheadline)
@@ -334,7 +334,7 @@ public struct EnhancementsSettingsTab: View {
     }
 
     private var providerModelsQuickSummary: some View {
-        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing6) {
+        VStack(alignment: .leading, spacing: 6) {
             modelSummaryRow(
                 title: "settings.enhancements.selector.meeting.title".localized,
                 summary: selectionSummary(for: postProcessingViewModel.settings.enhancementsAISelection)
@@ -347,11 +347,11 @@ public struct EnhancementsSettingsTab: View {
     }
 
     private func modelSummaryRow(title: String, summary: String) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: AppDesignSystem.Layout.spacing8) {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
             Text(title)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Spacer(minLength: AppDesignSystem.Layout.spacing8)
+            Spacer(minLength: 8)
             Text(summary)
                 .font(.caption)
                 .lineLimit(1)

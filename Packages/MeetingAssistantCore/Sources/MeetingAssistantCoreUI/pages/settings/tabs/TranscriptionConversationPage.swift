@@ -47,7 +47,7 @@ struct TranscriptionConversationPage: View {
                 title: "settings.section.history".localized,
                 description: activeTranscription?.meeting.appName
             )
-            .padding(AppDesignSystem.Layout.spacing16)
+            .padding(16)
 
             Divider()
 

@@ -36,7 +36,7 @@ public struct AIProviderIntegrationCard: View {
             Text("settings.ai.api_config".localized)
                 .font(.system(.headline, design: .rounded))
                 .foregroundStyle(.primary)
-                .padding(.leading, AppDesignSystem.Layout.spacing4)
+                .padding(.leading, 4)
 
             DSCard {
                 VStack(spacing: 0) {
@@ -75,9 +75,9 @@ public struct AIProviderIntegrationCard: View {
             Text("settings.ai.provider".localized)
                 .foregroundStyle(.secondary)
             Spacer()
-            HStack(spacing: AppDesignSystem.Layout.spacing8) {
+            HStack(spacing: 8) {
                 if viewModel.connectionStatus == .success {
-                    HStack(spacing: AppDesignSystem.Layout.spacing4) {
+                    HStack(spacing: 4) {
                         Circle()
                             .fill(AppDesignSystem.Colors.success)
                             .frame(width: 8, height: 8)
@@ -102,11 +102,11 @@ public struct AIProviderIntegrationCard: View {
                 }
             }
         }
-        .padding(.vertical, AppDesignSystem.Layout.spacing8)
+        .padding(.vertical, 8)
     }
 
     private var modelRow: some View {
-        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing4) {
+        VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Text("settings.ai.model".localized)
                     .foregroundStyle(.secondary)
@@ -158,7 +158,7 @@ public struct AIProviderIntegrationCard: View {
             }
 
             if let refreshSummary = viewModel.modelsRefreshSummary {
-                HStack(spacing: AppDesignSystem.Layout.spacing6) {
+                HStack(spacing: 6) {
                     Image(systemName: viewModel.lastModelsRefreshSucceeded ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
                         .foregroundStyle(
                             viewModel.lastModelsRefreshSucceeded
@@ -175,7 +175,7 @@ public struct AIProviderIntegrationCard: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .padding(.vertical, AppDesignSystem.Layout.spacing8)
+        .padding(.vertical, 8)
     }
 
     private var baseURLRow: some View {
@@ -190,7 +190,7 @@ public struct AIProviderIntegrationCard: View {
             .textFieldStyle(.plain)
             .multilineTextAlignment(.trailing)
         }
-        .padding(.vertical, AppDesignSystem.Layout.spacing8)
+        .padding(.vertical, 8)
     }
 
     private var apiKeyRow: some View {
@@ -225,11 +225,11 @@ public struct AIProviderIntegrationCard: View {
                     .frame(maxWidth: AppDesignSystem.Layout.maxCompactTextFieldWidth)
             }
         }
-        .padding(.vertical, AppDesignSystem.Layout.spacing8)
+        .padding(.vertical, 8)
     }
 
     private func connectionDetailRow(_ detail: String) -> some View {
-        HStack(spacing: AppDesignSystem.Layout.spacing6) {
+        HStack(spacing: 6) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundStyle(AppDesignSystem.Colors.warning)
             Text(detail)
@@ -237,11 +237,11 @@ public struct AIProviderIntegrationCard: View {
                 .foregroundStyle(.secondary)
             Spacer()
         }
-        .padding(.top, AppDesignSystem.Layout.spacing4)
+        .padding(.top, 4)
     }
 
     private func actionErrorRow(_ error: String) -> some View {
-        HStack(spacing: AppDesignSystem.Layout.spacing6) {
+        HStack(spacing: 6) {
             Image(systemName: "exclamationmark.octagon.fill")
                 .foregroundStyle(AppDesignSystem.Colors.error)
             Text(error)
@@ -249,7 +249,7 @@ public struct AIProviderIntegrationCard: View {
                 .foregroundStyle(AppDesignSystem.Colors.error)
             Spacer()
         }
-        .padding(.top, AppDesignSystem.Layout.spacing4)
+        .padding(.top, 4)
     }
 
     private var footerActions: some View {
@@ -258,13 +258,13 @@ public struct AIProviderIntegrationCard: View {
                 Button {
                     NSWorkspace.shared.open(url)
                 } label: {
-                    HStack(spacing: AppDesignSystem.Layout.spacing4) {
+                    HStack(spacing: 4) {
                         Image(systemName: "key.fill")
                         Text("settings.ai.get_api_key".localized)
                             .font(.system(size: 11, weight: .medium))
                     }
-                    .padding(.horizontal, AppDesignSystem.Layout.spacing8)
-                    .padding(.vertical, AppDesignSystem.Layout.spacing4)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
                     .background(AppDesignSystem.Colors.selectionFill)
                     .foregroundStyle(AppDesignSystem.Colors.accent)
                     .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.chipCornerRadius))
@@ -291,7 +291,7 @@ public struct AIProviderIntegrationCard: View {
                 .disabled(!viewModel.hasPendingAPIKeyInput || viewModel.connectionStatus == .testing)
             }
         }
-        .padding(.top, AppDesignSystem.Layout.spacing8)
+        .padding(.top, 8)
     }
 }
 

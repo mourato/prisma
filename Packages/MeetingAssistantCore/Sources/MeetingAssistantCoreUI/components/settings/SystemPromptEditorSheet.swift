@@ -39,7 +39,7 @@ struct SystemPromptEditorSheet: View {
             Divider()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
+                VStack(alignment: .leading, spacing: 16) {
                     instructionSection
                     editorSection
                 }
@@ -66,8 +66,8 @@ struct SystemPromptEditorSheet: View {
             .buttonStyle(.plain)
             .foregroundStyle(AppDesignSystem.Colors.accent)
             .font(.system(size: 11, weight: .medium))
-            .padding(.horizontal, AppDesignSystem.Layout.spacing8)
-            .padding(.vertical, AppDesignSystem.Layout.spacing4)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
             .background(AppDesignSystem.Colors.selectionFill)
             .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.chipCornerRadius))
         }
@@ -78,7 +78,7 @@ struct SystemPromptEditorSheet: View {
     // MARK: - Sections
 
     private var instructionSection: some View {
-        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing6) {
+        VStack(alignment: .leading, spacing: 6) {
             Text("settings.post_processing.base_instructions".localized)
                 .font(.subheadline)
                 .fontWeight(.medium)

@@ -27,7 +27,7 @@ public struct GeneralSettingsTab: View {
 
             // Application Behavior
             DSGroup("settings.general.app_behavior".localized, icon: "app.badge") {
-                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
+                VStack(alignment: .leading, spacing: 16) {
                     DSToggleRow(
                         "settings.general.launch_at_login".localized,
                         isOn: $viewModel.launchAtLogin
@@ -50,8 +50,8 @@ public struct GeneralSettingsTab: View {
 
                     Divider()
 
-                    HStack(alignment: .center, spacing: AppDesignSystem.Layout.spacing12) {
-                        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing4) {
+                    HStack(alignment: .center, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 4) {
                             Text("settings.general.shortcut_double_tap_interval".localized)
                                 .font(.body)
                                 .foregroundStyle(.primary)
@@ -63,7 +63,7 @@ public struct GeneralSettingsTab: View {
 
                         Spacer()
 
-                        HStack(spacing: AppDesignSystem.Layout.spacing8) {
+                        HStack(spacing: 8) {
                             TextField("", text: $shortcutDoubleTapIntervalInput)
                                 .textFieldStyle(.roundedBorder)
                                 .multilineTextAlignment(.trailing)
@@ -83,7 +83,7 @@ public struct GeneralSettingsTab: View {
 
                     Divider()
 
-                    VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
+                    VStack(alignment: .leading, spacing: 8) {
                         Text("settings.general.cancel_recording_shortcut".localized)
                             .font(.body)
                             .foregroundStyle(.primary)
@@ -102,7 +102,7 @@ public struct GeneralSettingsTab: View {
 
             // Appearance
             DSGroup("settings.general.appearance".localized, icon: "paintbrush.fill") {
-                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
+                VStack(alignment: .leading, spacing: 16) {
                     HStack {
                         Text("settings.general.language".localized)
                             .font(.body)
@@ -123,7 +123,7 @@ public struct GeneralSettingsTab: View {
 
             // Recording Indicator
             DSGroup("settings.general.recording_indicator".localized, icon: "record.circle") {
-                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
+                VStack(alignment: .leading, spacing: 16) {
                     DSToggleRow(
                         "settings.general.recording_indicator.enabled".localized,
                         description: "settings.general.recording_indicator.enabled_desc".localized,
@@ -131,7 +131,7 @@ public struct GeneralSettingsTab: View {
                     )
 
                     if viewModel.recordingIndicatorEnabled {
-                        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
+                        VStack(alignment: .leading, spacing: 16) {
                             Divider()
 
                             HStack {
@@ -170,7 +170,7 @@ public struct GeneralSettingsTab: View {
 
                             VStack(
                                 alignment: .leading,
-                                spacing: AppDesignSystem.Layout.spacing8
+                                spacing: 8
                             ) {
                                 Text("settings.general.recording_indicator.animation_speed".localized)
                                     .font(.body)
@@ -196,7 +196,7 @@ public struct GeneralSettingsTab: View {
 
             // Audio Format
             DSGroup("settings.general.audio_format".localized, icon: "waveform.path") {
-                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
+                VStack(alignment: .leading, spacing: 12) {
                     HStack {
                         Text("settings.general.audio_format".localized)
                             .font(.body)
@@ -217,8 +217,8 @@ public struct GeneralSettingsTab: View {
 
             // Storage
             DSGroup("settings.general.storage".localized, icon: "folder.fill") {
-                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
-                    VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
+                VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 12) {
                         DSToggleRow(
                             "settings.general.auto_delete".localized,
                             description: "settings.general.auto_delete_desc".localized,
@@ -226,14 +226,14 @@ public struct GeneralSettingsTab: View {
                         )
 
                         if viewModel.autoDeleteTranscriptions {
-                            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
+                            VStack(alignment: .leading, spacing: 12) {
                                 HStack {
                                     Text("settings.general.keep_for".localized)
                                         .font(.body)
 
                                     Spacer()
 
-                                    HStack(spacing: AppDesignSystem.Layout.spacing8) {
+                                    HStack(spacing: 8) {
                                         TextField("", text: $autoDeletePeriodDaysInput)
                                             .textFieldStyle(.roundedBorder)
                                             .multilineTextAlignment(.trailing)

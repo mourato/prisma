@@ -30,10 +30,10 @@ public struct SettingsStateBlock: View {
 
     public var body: some View {
         DSCard {
-            HStack(alignment: .top, spacing: AppDesignSystem.Layout.spacing12) {
+            HStack(alignment: .top, spacing: 12) {
                 icon
 
-                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing4) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(title)
                         .font(.headline)
 
@@ -50,7 +50,7 @@ public struct SettingsStateBlock: View {
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
-                        .padding(.top, AppDesignSystem.Layout.spacing4)
+                        .padding(.top, 4)
                     }
                 }
 
