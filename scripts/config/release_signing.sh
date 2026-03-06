@@ -4,6 +4,16 @@
 MA_RELEASE_SIGNING_MODE="${MA_RELEASE_SIGNING_MODE:-adhoc}"
 MA_RELEASE_CODE_SIGN_IDENTITY="${MA_RELEASE_CODE_SIGN_IDENTITY:-Prisma Local Code Signing}"
 
+ma_list_user_keychains() {
+  local login_keychain="${HOME}/Library/Keychains/login.keychain-db"
+  printf '%s\n' "${login_keychain}"
+
+  security list-keychains -d user 2>/dev/null \
+    | tr -d '"' \
+    | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' \
+    | awk 'NF > 0'
+}
+
 ma_validate_release_signing_mode() {
   case "${MA_RELEASE_SIGNING_MODE}" in
     adhoc|self-signed)
@@ -33,7 +43,7 @@ ma_release_effective_identity() {
 }
 
 ma_autodetect_release_signing_mode() {
-  if ma_codesign_identity_exists "${MA_RELEASE_CODE_SIGN_IDENTITY}"; then
+  if ma_codesign_identity_is_stable "${MA_RELEASE_CODE_SIGN_IDENTITY}" 2 0.10; then
     printf '%s' "self-signed"
   else
     printf '%s' "adhoc"
@@ -42,28 +52,73 @@ ma_autodetect_release_signing_mode() {
 
 ma_codesign_identity_exists() {
   local identity="$1"
-  local login_keychain="${HOME}/Library/Keychains/login.keychain-db"
-  local keychains=("${login_keychain}")
-  local keychain_entry=""
-
-  while IFS= read -r keychain_entry; do
-    keychain_entry="${keychain_entry//\"/}"
-    keychain_entry="$(printf '%s' "${keychain_entry}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
-    if [ -n "${keychain_entry}" ]; then
-      keychains+=("${keychain_entry}")
-    fi
-  done < <(security list-keychains -d user 2>/dev/null || true)
-
   local kc=""
-  for kc in "${keychains[@]}"; do
+
+  while IFS= read -r kc; do
     if security find-identity -v -p codesigning "${kc}" 2>/dev/null \
       | awk -F'"' '/"/ { print $2 }' \
       | grep -Fx "${identity}" >/dev/null 2>&1; then
       return 0
     fi
-  done
+  done < <(ma_list_user_keychains | awk '!seen[$0]++')
 
   return 1
+}
+
+# Returns:
+#   0 -> identity visible in every attempt
+#   1 -> identity missing in every attempt
+#   2 -> identity visibility is unstable/flaky across attempts
+ma_codesign_identity_is_stable() {
+  local identity="$1"
+  local attempts="${2:-3}"
+  local interval_seconds="${3:-0.20}"
+  local observed_present=0
+  local observed_missing=0
+  local i=1
+
+  while [ "${i}" -le "${attempts}" ]; do
+    if ma_codesign_identity_exists "${identity}"; then
+      observed_present=$((observed_present + 1))
+    else
+      observed_missing=$((observed_missing + 1))
+    fi
+
+    if [ "${i}" -lt "${attempts}" ]; then
+      sleep "${interval_seconds}"
+    fi
+    i=$((i + 1))
+  done
+
+  if [ "${observed_present}" -eq "${attempts}" ]; then
+    return 0
+  fi
+
+  if [ "${observed_present}" -eq 0 ]; then
+    return 1
+  fi
+
+  return 2
+}
+
+ma_print_codesign_identity_diagnostics() {
+  local identity="$1"
+  local login_keychain="${HOME}/Library/Keychains/login.keychain-db"
+
+  cat >&2 <<EOF
+Keychain diagnostics for '${identity}':
+  default-keychain: $(security default-keychain -d user 2>/dev/null | tr -d '"' || printf 'unavailable')
+  search-list:
+$(security list-keychains -d user 2>/dev/null | sed 's/^/    /' || printf '    unavailable\n')
+  valid identities:
+$(security find-identity -v -p codesigning 2>/dev/null | sed 's/^/    /' || printf '    unavailable\n')
+EOF
+
+  if security find-certificate -a -c "${identity}" "${login_keychain}" >/dev/null 2>&1; then
+    printf '%s\n' "  certificate entry found in login keychain, but no stable usable identity was detected." >&2
+  else
+    printf '%s\n' "  certificate entry not found in login keychain." >&2
+  fi
 }
 
 ma_require_self_signed_identity() {
@@ -71,8 +126,23 @@ ma_require_self_signed_identity() {
     return 0
   fi
 
-  if ma_codesign_identity_exists "${MA_RELEASE_CODE_SIGN_IDENTITY}"; then
+  local identity_state=1
+  if ma_codesign_identity_is_stable "${MA_RELEASE_CODE_SIGN_IDENTITY}" 3 0.20; then
     return 0
+  else
+    identity_state=$?
+  fi
+
+  if [ "${identity_state}" -eq 2 ]; then
+    cat >&2 <<EOF
+Code signing identity '${MA_RELEASE_CODE_SIGN_IDENTITY}' was detected intermittently.
+The keychain visibility is unstable for this shell session.
+
+This can happen when login keychain state changes across sessions (GUI vs non-interactive shell).
+Retry the command from the same terminal session where 'security find-identity -v -p codesigning' is stable.
+EOF
+    ma_print_codesign_identity_diagnostics "${MA_RELEASE_CODE_SIGN_IDENTITY}"
+    return 1
   fi
 
   cat >&2 <<EOF
@@ -84,5 +154,6 @@ Create it with:
 Or list available identities:
   security find-identity -v -p codesigning
 EOF
+  ma_print_codesign_identity_diagnostics "${MA_RELEASE_CODE_SIGN_IDENTITY}"
   return 1
 }
