@@ -260,3 +260,18 @@ init() {
 - [MenuBarView.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Views/MenuBarView.swift)
 - [FloatingRecordingIndicatorView.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Views/Components/FloatingRecordingIndicatorView.swift)
 - [Apple Status Bar Guide](https://developer.apple.com/documentation/appkit/nsstatusitem)
+
+## 2026-03-06 Progression Drill
+
+### New Evidence
+
+- `f7243e0` improved status bar reliability and floating indicator layout via AppDelegate menu bar wiring.
+- `166643c` refactored shared recording UI state used by menu bar + lifecycle flows.
+- `094d280` launch visibility recovery indicates menu bar presence/activation is still a fragile startup concern.
+
+### Skill Deepening Focus
+
+1. Add a startup visibility checklist for `NSStatusItem`: creation timing, icon/title fallback, and post-launch verification path.
+2. Require one explicit state-flow diagram in task notes when menu bar and floating panel share recording state.
+3. Validate left-click/right-click parity after lifecycle refactors to avoid regressions in popover/menu behavior.
+4. Enforce localized tooltip/title verification whenever status-item fallback text or state labels change.
