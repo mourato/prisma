@@ -26,7 +26,7 @@ extension AppDelegate {
         assistantShortcutController.start()
         recordingCancelShortcutController.start()
         setupRecordingObservation()
-        floatingIndicatorController.prewarm()
+        prewarmFloatingIndicatorIfEligible()
         updateMenuTitles() // Initial update
 
         // Warmup transcription model
@@ -125,7 +125,7 @@ extension AppDelegate {
         assistantShortcutController.start()
         recordingCancelShortcutController.start()
         setupRecordingObservation()
-        floatingIndicatorController.prewarm()
+        prewarmFloatingIndicatorIfEligible()
         updateMenuTitles()
 
         // Warmup transcription model
@@ -159,6 +159,17 @@ extension AppDelegate {
     private func openSettingsOnLaunchIfEnabled() {
         guard settingsStore.showSettingsOnLaunch else { return }
         NavigationService.shared.openSettings()
+    }
+
+    /// Keeps indicator prewarming out of the launch critical path.
+    /// Classic style has a known NSPanel constraint-loop instability on some systems.
+    private func prewarmFloatingIndicatorIfEligible() {
+        guard settingsStore.recordingIndicatorEnabled else { return }
+        guard settingsStore.recordingIndicatorStyle == .mini else { return }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
+            self?.floatingIndicatorController.prewarm()
+        }
     }
 
     private func promoteAppForWindowPresentation() {
