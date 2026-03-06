@@ -7,6 +7,11 @@
 
 set -euo pipefail
 
+MA_RELEASE_SIGNING_MODE_WAS_SET=0
+if [ "${MA_RELEASE_SIGNING_MODE+x}" = "x" ]; then
+    MA_RELEASE_SIGNING_MODE_WAS_SET=1
+fi
+
 # Configuration
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 # shellcheck source=scripts/config/app_identity.sh
@@ -25,11 +30,6 @@ DMG_ICON_SIZE="${DMG_ICON_SIZE:-160}"
 CI_MODE=0
 NO_INTERACTIVE=0
 AUTO_SIGNING=0
-MA_RELEASE_SIGNING_MODE_WAS_SET=0
-
-if [ -n "${MA_RELEASE_SIGNING_MODE:-}" ]; then
-    MA_RELEASE_SIGNING_MODE_WAS_SET=1
-fi
 
 # Colors
 GREEN='\033[0;32m'
@@ -56,12 +56,12 @@ prompt_release_signing_mode() {
 
     echo -e "${YELLOW}Select DMG signing mode:${NC}"
     if [ "${detected_mode}" = "self-signed" ]; then
-        echo "  1) Automatic (default): use self-signed because '${MA_RELEASE_CODE_SIGN_IDENTITY}' is available"
+        echo "  1) Auto (default): use self-signed because '${MA_RELEASE_CODE_SIGN_IDENTITY}' is available"
     else
-        echo "  1) Automatic (default): use unsigned/ad-hoc because '${MA_RELEASE_CODE_SIGN_IDENTITY}' is not available"
+        echo "  1) Auto (default): use adhoc because '${MA_RELEASE_CODE_SIGN_IDENTITY}' is not available"
     fi
-    echo "  2) Force self-signed"
-    echo "  3) Force unsigned/ad-hoc"
+    echo "  2) Self-signed"
+    echo "  3) Adhoc"
     printf "Choose [1/2/3] (default: %s): " "${default_choice}"
     read -r reply
     echo ""
