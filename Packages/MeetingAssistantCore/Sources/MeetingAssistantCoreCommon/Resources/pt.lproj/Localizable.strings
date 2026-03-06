@@ -63,6 +63,8 @@
 "metrics.calendar.event.linked" = "Vinculado";
 "metrics.calendar.event.clear" = "Limpar";
 "metrics.calendar.event.use_for_recording" = "Usar na gravação";
+"metrics.more_insights.title" = "Mais insights";
+"metrics.more_insights.accessibility_hint" = "Abre uma página com filtros e gráficos adicionais do dashboard.";
 
 
 "settings.general.theme" = "Tema do Aplicativo";
