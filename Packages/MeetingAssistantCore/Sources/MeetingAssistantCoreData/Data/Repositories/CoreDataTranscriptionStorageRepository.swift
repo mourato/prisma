@@ -15,48 +15,54 @@ public final class CoreDataTranscriptionStorageRepository: TranscriptionStorageR
     }
 
     public func saveTranscription(_ transcription: TranscriptionEntity) async throws {
+        await stack.sanitizeMeetingOnlyPresentationDataIfNeeded()
         try validateCanonicalSummary(for: transcription)
+        let sanitizedTranscription = Self.sanitizedTranscriptionEntity(from: transcription)
         try await stack.performBackgroundTask { context in
-            let meetingRequest = MeetingMO.fetchRequest(for: transcription.meeting.id)
-            let meetingMO = try context.fetch(meetingRequest).first ?? MeetingMO.create(from: transcription.meeting, in: context)
-            meetingMO.update(from: transcription.meeting)
+            let meetingRequest = MeetingMO.fetchRequest(for: sanitizedTranscription.meeting.id)
+            let meetingMO = try context.fetch(meetingRequest).first ?? MeetingMO.create(from: sanitizedTranscription.meeting, in: context)
+            meetingMO.update(from: sanitizedTranscription.meeting)
 
-            let transcriptionRequest = TranscriptionMO.fetchRequest(forTranscriptionId: transcription.id)
+            let transcriptionRequest = TranscriptionMO.fetchRequest(forTranscriptionId: sanitizedTranscription.id)
             if let existing = try context.fetch(transcriptionRequest).first {
-                existing.update(from: transcription, meeting: meetingMO)
+                existing.update(from: sanitizedTranscription, meeting: meetingMO)
             } else {
-                _ = TranscriptionMO.create(from: transcription, meeting: meetingMO, in: context)
+                _ = TranscriptionMO.create(from: sanitizedTranscription, meeting: meetingMO, in: context)
             }
             try context.save()
         }
     }
 
     public func fetchTranscription(by id: UUID) async throws -> TranscriptionEntity? {
-        try await stack.performBackgroundTask { context in
+        await stack.sanitizeMeetingOnlyPresentationDataIfNeeded()
+        return try await stack.performBackgroundTask { context in
             let request = TranscriptionMO.fetchRequest(forTranscriptionId: id)
             let result = try context.fetch(request)
-            return result.first?.toDomain()
+            return result.first.map { Self.sanitizedTranscriptionEntity(from: $0.toDomain()) }
         }
     }
 
     public func fetchTranscriptions(for meetingId: UUID) async throws -> [TranscriptionEntity] {
-        try await stack.performBackgroundTask { context in
+        await stack.sanitizeMeetingOnlyPresentationDataIfNeeded()
+        return try await stack.performBackgroundTask { context in
             let request = TranscriptionMO.fetchRequest(forMeetingId: meetingId)
             let results = try context.fetch(request)
-            return results.map { $0.toDomain() }
+            return results.map { Self.sanitizedTranscriptionEntity(from: $0.toDomain()) }
         }
     }
 
     public func fetchAllTranscriptions() async throws -> [TranscriptionEntity] {
-        try await stack.performBackgroundTask { context in
+        await stack.sanitizeMeetingOnlyPresentationDataIfNeeded()
+        return try await stack.performBackgroundTask { context in
             let request = TranscriptionMO.fetchRequest()
             let results = try context.fetch(request)
-            return results.map { $0.toDomain() }
+            return results.map { Self.sanitizedTranscriptionEntity(from: $0.toDomain()) }
         }
     }
 
     public func fetchAllMetadata() async throws -> [DomainTranscriptionMetadata] {
-        try await stack.performBackgroundTask { context in
+        await stack.sanitizeMeetingOnlyPresentationDataIfNeeded()
+        return try await stack.performBackgroundTask { context in
             let request = TranscriptionMO.fetchRequest()
             let results = try context.fetch(request)
             return results.map { mo in
@@ -100,15 +106,17 @@ public final class CoreDataTranscriptionStorageRepository: TranscriptionStorageR
     }
 
     public func updateTranscription(_ transcription: TranscriptionEntity) async throws {
+        await stack.sanitizeMeetingOnlyPresentationDataIfNeeded()
         try validateCanonicalSummary(for: transcription)
+        let sanitizedTranscription = Self.sanitizedTranscriptionEntity(from: transcription)
         try await stack.performBackgroundTask { context in
-            let meetingRequest = MeetingMO.fetchRequest(for: transcription.meeting.id)
-            let meetingMO = try context.fetch(meetingRequest).first ?? MeetingMO.create(from: transcription.meeting, in: context)
-            meetingMO.update(from: transcription.meeting)
+            let meetingRequest = MeetingMO.fetchRequest(for: sanitizedTranscription.meeting.id)
+            let meetingMO = try context.fetch(meetingRequest).first ?? MeetingMO.create(from: sanitizedTranscription.meeting, in: context)
+            meetingMO.update(from: sanitizedTranscription.meeting)
 
-            let request = TranscriptionMO.fetchRequest(forTranscriptionId: transcription.id)
+            let request = TranscriptionMO.fetchRequest(forTranscriptionId: sanitizedTranscription.id)
             if let transcriptionMO = try context.fetch(request).first {
-                transcriptionMO.update(from: transcription, meeting: meetingMO)
+                transcriptionMO.update(from: sanitizedTranscription, meeting: meetingMO)
                 try context.save()
             }
         }
@@ -117,5 +125,31 @@ public final class CoreDataTranscriptionStorageRepository: TranscriptionStorageR
     private func validateCanonicalSummary(for transcription: TranscriptionEntity) throws {
         guard let summary = transcription.canonicalSummary else { return }
         try summary.validate()
+    }
+
+    private static func sanitizedTranscriptionEntity(from transcription: TranscriptionEntity) -> TranscriptionEntity {
+        let sanitizedMeeting = transcription.meeting.sanitizedForPersistence()
+        var config = TranscriptionEntity.Configuration(
+            text: transcription.text,
+            rawText: transcription.rawText,
+            segments: transcription.segments,
+            language: transcription.language
+        )
+        config.id = transcription.id
+        config.contextItems = transcription.contextItems
+        config.processedContent = transcription.processedContent
+        config.canonicalSummary = transcription.canonicalSummary
+        config.qualityProfile = transcription.qualityProfile
+        config.postProcessingPromptId = transcription.postProcessingPromptId
+        config.postProcessingPromptTitle = transcription.postProcessingPromptTitle
+        config.createdAt = transcription.createdAt
+        config.modelName = transcription.modelName
+        config.inputSource = transcription.inputSource
+        config.transcriptionDuration = transcription.transcriptionDuration
+        config.postProcessingDuration = transcription.postProcessingDuration
+        config.postProcessingModel = transcription.postProcessingModel
+        config.meetingType = transcription.meetingType
+        config.meetingConversationState = transcription.meetingConversationState
+        return TranscriptionEntity(meeting: sanitizedMeeting, config: config)
     }
 }

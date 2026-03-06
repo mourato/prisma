@@ -69,6 +69,10 @@ public extension FileSystemStorageService {
     }
 
     func saveTranscription(_ transcription: Transcription) async throws {
+        await coreDataStack.sanitizeMeetingOnlyPresentationDataIfNeeded(
+            checkpointKey: Keys.didSanitizeNonMeetingPresentationDataV1
+        )
+
         guard transcription.meeting.app != .unknown else {
             AppLogger.info(
                 "Skipped transcription persistence for dictation",
@@ -84,6 +88,10 @@ public extension FileSystemStorageService {
     }
 
     func loadTranscriptions() async throws -> [Transcription] {
+        await coreDataStack.sanitizeMeetingOnlyPresentationDataIfNeeded(
+            checkpointKey: Keys.didSanitizeNonMeetingPresentationDataV1
+        )
+
         let entities = try await coreDataTranscriptionRepository.fetchAllTranscriptions()
         let models = entities.map(Self.convertToModel)
         AppLogger.info("Loaded transcriptions (Core Data)", category: .databaseManager, extra: ["count": models.count])
@@ -102,7 +110,11 @@ public extension FileSystemStorageService {
     }
 
     func loadMetadata(matching query: TranscriptionMetadataQuery) async throws -> [TranscriptionMetadata] {
-        try await coreDataStack.performBackgroundTask { context in
+        await coreDataStack.sanitizeMeetingOnlyPresentationDataIfNeeded(
+            checkpointKey: Keys.didSanitizeNonMeetingPresentationDataV1
+        )
+
+        return try await coreDataStack.performBackgroundTask { context in
             let request = TranscriptionMO.fetchRequest()
             request.fetchBatchSize = 100
             request.relationshipKeyPathsForPrefetching = ["meeting"]
@@ -114,6 +126,10 @@ public extension FileSystemStorageService {
     }
 
     func loadTranscription(by id: UUID) async throws -> Transcription? {
+        await coreDataStack.sanitizeMeetingOnlyPresentationDataIfNeeded(
+            checkpointKey: Keys.didSanitizeNonMeetingPresentationDataV1
+        )
+
         guard let entity = try await coreDataTranscriptionRepository.fetchTranscription(by: id) else {
             return nil
         }

@@ -122,6 +122,7 @@ public final class FileSystemStorageService: StorageService {
     enum Keys {
         static let recordingsDirectory = "recordingsDirectory"
         static let didMigrateLegacyJSONTranscriptionsToCoreDataV1 = "storage.migrations.legacy_json_transcriptions_to_coredata.v1"
+        static let didSanitizeNonMeetingPresentationDataV1 = "storage.migrations.non_meeting_presentation_data_sanitized.v1"
     }
 
     static func wordCount(for text: String) -> Int {

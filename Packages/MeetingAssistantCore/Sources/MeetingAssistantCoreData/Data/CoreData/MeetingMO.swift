@@ -48,6 +48,10 @@ extension MeetingMO {
     private static let calendarEventEncoder = JSONEncoder()
     private static let calendarEventDecoder = JSONDecoder()
 
+    var supportsMeetingConversation: Bool {
+        DomainMeetingApp(rawValue: appRawValue)?.supportsMeetingConversation ?? false
+    }
+
     /// Converte Managed Object para Domain Entity
     func toDomain() -> MeetingEntity {
         MeetingEntity(
@@ -94,6 +98,8 @@ extension MeetingMO {
     }
 
     var preferredTitle: String? {
+        guard supportsMeetingConversation else { return nil }
+
         let trimmedTitle = title?.trimmingCharacters(in: .whitespacesAndNewlines)
         if let trimmedTitle, !trimmedTitle.isEmpty {
             return trimmedTitle
@@ -105,5 +111,40 @@ extension MeetingMO {
         }
 
         return nil
+    }
+
+    @discardableResult
+    func clearMeetingOnlyPresentationData() -> Bool {
+        guard !supportsMeetingConversation else { return false }
+
+        let hadTitle = title?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        let hadLinkedCalendarEvent = linkedCalendarEventData != nil
+
+        guard hadTitle || hadLinkedCalendarEvent else { return false }
+
+        title = nil
+        linkedCalendarEventData = nil
+        return true
+    }
+
+    static func sanitizeMeetingOnlyPresentationData(in context: NSManagedObjectContext) throws -> Int {
+        let request = MeetingMO.fetchRequest()
+        request.predicate = NSCompoundPredicate(orPredicateWithSubpredicates: [
+            NSPredicate(format: "title != nil"),
+            NSPredicate(format: "linkedCalendarEventData != nil"),
+        ])
+
+        let meetings = try context.fetch(request)
+        let updatedCount = meetings.reduce(into: 0) { partialResult, meeting in
+            if meeting.clearMeetingOnlyPresentationData() {
+                partialResult += 1
+            }
+        }
+
+        if context.hasChanges {
+            try context.save()
+        }
+
+        return updatedCount
     }
 }

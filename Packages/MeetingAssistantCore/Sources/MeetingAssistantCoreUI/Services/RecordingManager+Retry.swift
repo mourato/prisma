@@ -257,6 +257,10 @@ extension RecordingManager {
         _ meeting: Meeting,
         canonicalSummary: CanonicalSummary?
     ) -> Meeting {
+        guard meeting.supportsMeetingConversation else {
+            return meeting.sanitizedForPersistence()
+        }
+
         guard let title = canonicalSummary?.title.trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty else {
             return meeting
         }
