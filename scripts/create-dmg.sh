@@ -47,6 +47,44 @@ cleanup() {
     rm -f "${RW_DMG_PATH}"
 }
 
+prompt_release_signing_mode() {
+    local detected_mode=""
+    local default_choice="1"
+    local reply=""
+
+    detected_mode="$(ma_autodetect_release_signing_mode)"
+
+    echo -e "${YELLOW}Select DMG signing mode:${NC}"
+    if [ "${detected_mode}" = "self-signed" ]; then
+        echo "  1) Automatic (default): use self-signed because '${MA_RELEASE_CODE_SIGN_IDENTITY}' is available"
+    else
+        echo "  1) Automatic (default): use unsigned/ad-hoc because '${MA_RELEASE_CODE_SIGN_IDENTITY}' is not available"
+    fi
+    echo "  2) Force self-signed"
+    echo "  3) Force unsigned/ad-hoc"
+    printf "Choose [1/2/3] (default: %s): " "${default_choice}"
+    read -r reply
+    echo ""
+
+    case "${reply:-${default_choice}}" in
+        1)
+            MA_RELEASE_SIGNING_MODE="${detected_mode}"
+            ;;
+        2)
+            MA_RELEASE_SIGNING_MODE="self-signed"
+            ;;
+        3)
+            MA_RELEASE_SIGNING_MODE="adhoc"
+            ;;
+        *)
+            echo -e "${RED}Invalid selection: ${reply}${NC}" >&2
+            return 1
+            ;;
+    esac
+
+    return 0
+}
+
 apply_finder_layout() {
     local mount_point="$1"
     local icon_size="$2"
@@ -115,8 +153,20 @@ EOF
     esac
 done
 
-if [ "${MA_RELEASE_SIGNING_MODE_WAS_SET}" -eq 0 ] && [ "${AUTO_SIGNING}" -eq 1 ]; then
-    MA_RELEASE_SIGNING_MODE="$(ma_autodetect_release_signing_mode)"
+if [ "${CI_MODE}" -eq 1 ] || [ "${NO_INTERACTIVE}" -eq 1 ]; then
+    INTERACTIVE=0
+else
+    INTERACTIVE=1
+fi
+
+if [ "${MA_RELEASE_SIGNING_MODE_WAS_SET}" -eq 0 ]; then
+    if [ "${INTERACTIVE}" -eq 1 ]; then
+        if ! prompt_release_signing_mode; then
+            exit 1
+        fi
+    elif [ "${AUTO_SIGNING}" -eq 1 ]; then
+        MA_RELEASE_SIGNING_MODE="$(ma_autodetect_release_signing_mode)"
+    fi
 fi
 
 if ! ma_validate_release_signing_mode; then
@@ -125,12 +175,6 @@ fi
 
 if ! ma_require_self_signed_identity; then
     exit 1
-fi
-
-if [ "${CI_MODE}" -eq 1 ] || [ "${NO_INTERACTIVE}" -eq 1 ]; then
-    INTERACTIVE=0
-else
-    INTERACTIVE=1
 fi
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"

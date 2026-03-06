@@ -47,7 +47,7 @@ help:
 	@echo "  make run-release    - Build and run release version"
 	@echo ""
 	@echo "Distribution:"
-	@echo "  make dmg            - Create DMG installer (auto-detect self-signed identity)"
+	@echo "  make dmg            - Create DMG installer (prompts for auto/self-signed/adhoc mode)"
 	@echo "  make setup-self-signed-cert - Create/import local code-signing cert"
 	@echo "  make new-release    - Create a new GitHub release interactively"
 	@echo ""
@@ -217,7 +217,7 @@ new-release:
 
 dmg:
 	@echo -e "$(BLUE)Creating DMG installer...$(NC)"
-	@./scripts/create-dmg.sh --ci --auto-signing
+	@./scripts/create-dmg.sh --auto-signing
 
 setup-self-signed-cert:
 	@./scripts/setup-self-signed-cert.sh

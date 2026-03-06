@@ -85,7 +85,7 @@ Use `make help` to print the current target list from the `Makefile`.
 |--------|-------------|
 | `make run` | Build Debug and open the app. |
 | `make run-release` | Build Release and open the app. |
-| `make dmg` | Create a DMG installer with auto-detected signing mode; force self-signed with `MA_RELEASE_SIGNING_MODE=self-signed make dmg`. |
+| `make dmg` | Create a DMG installer and prompt for automatic, forced self-signed, or forced unsigned/ad-hoc signing. |
 | `make setup-self-signed-cert` | Create or import the local self-signed signing certificate. |
 | `make new-release` | Create a GitHub release interactively with generated notes. |
 
@@ -204,11 +204,14 @@ If you cannot use Apple Developer ID, use a stable self-signed identity so local
 make setup-self-signed-cert
 
 # 2) Build DMG for manual installs
-# Auto mode: self-signs only if the configured identity exists in keychain
+# Interactive mode: prompts for automatic, forced self-signed, or forced unsigned/ad-hoc signing
 make dmg
 
-# Forced mode: require self-signed signing and fail fast if the identity is missing
+# Force self-signed mode without prompting; fails fast if the identity is missing
 MA_RELEASE_SIGNING_MODE=self-signed make dmg
+
+# Force unsigned/ad-hoc mode without prompting
+MA_RELEASE_SIGNING_MODE=adhoc make dmg
 
 # 3) Build signed Sparkle archive + appcast (requires Sparkle private key env)
 SPARKLE_PRIVATE_KEY_B64="<base64-pem>" \
@@ -220,8 +223,8 @@ make ci-release-parity-self-signed \
 Notes:
 - Keep `CFBundleIdentifier` unchanged between versions.
 - Keep `MA_RELEASE_CODE_SIGN_IDENTITY` stable if you customize the certificate name.
-- `make dmg` auto-selects self-signed mode only when the exact configured identity is found in keychain.
-- Use `MA_RELEASE_SIGNING_MODE=adhoc make dmg` or `MA_RELEASE_SIGNING_MODE=self-signed make dmg` to force mode.
+- `make dmg` now prompts for signing mode. The default choice is automatic detection: if the exact configured identity is found in keychain, the DMG is self-signed; otherwise it falls back to unsigned/ad-hoc.
+- Use `MA_RELEASE_SIGNING_MODE=adhoc make dmg` or `MA_RELEASE_SIGNING_MODE=self-signed make dmg` to skip the prompt and force a specific mode.
 - Install by replacing the existing app in `/Applications` to maximize permission persistence.
 - Sparkle signing key can come from `SPARKLE_PRIVATE_KEY_B64` / `SPARKLE_PRIVATE_KEY` env, or from Sparkle's default Keychain account (`ed25519`).
 
