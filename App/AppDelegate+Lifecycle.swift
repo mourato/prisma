@@ -55,6 +55,7 @@ extension AppDelegate {
             }
 
         openSettingsOnLaunchIfEnabled()
+        scheduleLaunchVisibilityRecovery()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -154,11 +155,13 @@ extension AppDelegate {
             }
 
         openSettingsOnLaunchIfEnabled()
+        scheduleLaunchVisibilityRecovery()
     }
 
     private func openSettingsOnLaunchIfEnabled() {
         guard settingsStore.showSettingsOnLaunch else { return }
-        NavigationService.shared.openSettings()
+        promoteAppForWindowPresentation()
+        settingsWindowController.showSettingsWindow()
     }
 
     /// Keeps indicator prewarming out of the launch critical path.
@@ -195,6 +198,25 @@ extension AppDelegate {
     private func configureNavigationService() {
         NavigationService.shared.registerOpenSettingsHandler { [weak self] in
             self?.settingsWindowController.showSettingsWindow()
+        }
+    }
+
+    /// Ensures the app is recoverable when launch completes without any visible affordance.
+    /// This protects against silent launch states where neither status item nor windows are visible.
+    private func scheduleLaunchVisibilityRecovery() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
+            guard let self else { return }
+
+            let hasStatusButton = statusItem?.button != nil
+            let isStatusItemVisible = statusItem?.isVisible ?? false
+            let hasVisibleWindow = NSApp.windows.contains(where: { $0.isVisible })
+
+            guard !hasVisibleWindow else { return }
+            guard !(hasStatusButton && isStatusItemVisible) else { return }
+
+            logger.fault("Launch recovery triggered: no visible status item and no visible window.")
+            promoteAppForWindowPresentation()
+            settingsWindowController.showSettingsWindow()
         }
     }
 
