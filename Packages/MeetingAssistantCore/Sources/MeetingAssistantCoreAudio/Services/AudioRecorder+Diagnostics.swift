@@ -89,41 +89,43 @@ extension AudioRecorder {
         isMicDiagnosticsTapInstalled = true
         micDiagnosticsTimer?.invalidate()
         micDiagnosticsTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            guard let self else { return }
-            let peakBits = micDiagnosticsPeakBits.exchange(0, ordering: .relaxed)
-            let peak = Float(bitPattern: peakBits)
-            let db = 20.0 * log10(max(peak, 1e-6))
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                let peakBits = micDiagnosticsPeakBits.exchange(0, ordering: .relaxed)
+                let peak = Float(bitPattern: peakBits)
+                let db = 20.0 * log10(max(peak, 1e-6))
 
-            var extra: [String: Any] = [
-                "peakAmplitude": peak,
-                "peakDb": db,
-            ]
+                var extra: [String: Any] = [
+                    "peakAmplitude": peak,
+                    "peakDb": db,
+                ]
 
-            // Include device identity for diagnosing wrong-device scenarios
-            if let inputUnit = audioEngine?.inputNode.audioUnit {
-                var deviceID: AudioObjectID = 0
-                var size = UInt32(MemoryLayout<AudioObjectID>.size)
-                let status = AudioUnitGetProperty(
-                    inputUnit,
-                    kAudioOutputUnitProperty_CurrentDevice,
-                    kAudioUnitScope_Global,
-                    0,
-                    &deviceID,
-                    &size
-                )
-                if status == noErr {
-                    extra["deviceID"] = deviceID
-                    extra["deviceName"] = deviceManager.getDeviceName(for: deviceID) ?? "Unknown"
-                    if let vol = deviceManager.getInputVolume(for: deviceID) { extra["volume"] = vol }
-                    if let muted = deviceManager.getInputMute(for: deviceID) { extra["muted"] = muted }
+                // Include device identity for diagnosing wrong-device scenarios
+                if let inputUnit = audioEngine?.inputNode.audioUnit {
+                    var deviceID: AudioObjectID = 0
+                    var size = UInt32(MemoryLayout<AudioObjectID>.size)
+                    let status = AudioUnitGetProperty(
+                        inputUnit,
+                        kAudioOutputUnitProperty_CurrentDevice,
+                        kAudioUnitScope_Global,
+                        0,
+                        &deviceID,
+                        &size
+                    )
+                    if status == noErr {
+                        extra["deviceID"] = deviceID
+                        extra["deviceName"] = deviceManager.getDeviceName(for: deviceID) ?? "Unknown"
+                        if let vol = deviceManager.getInputVolume(for: deviceID) { extra["volume"] = vol }
+                        if let muted = deviceManager.getInputMute(for: deviceID) { extra["muted"] = muted }
+                    }
                 }
-            }
 
-            AppLogger.debug(
-                "Mic input diagnostic",
-                category: .recordingManager,
-                extra: extra
-            )
+                AppLogger.debug(
+                    "Mic input diagnostic",
+                    category: .recordingManager,
+                    extra: extra
+                )
+            }
         }
     }
 
