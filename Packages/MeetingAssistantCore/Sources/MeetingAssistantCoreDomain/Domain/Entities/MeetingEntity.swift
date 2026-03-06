@@ -82,6 +82,10 @@ public enum DomainMeetingApp: String, CaseIterable, Codable, Sendable {
         case .unknown: "questionmark.circle"
         }
     }
+
+    public var supportsMeetingConversation: Bool {
+        self != .unknown && self != .importedFile
+    }
 }
 
 /// Representa uma reunião ativa ou completada.
@@ -146,7 +150,13 @@ public struct MeetingEntity: Identifiable, Codable, Hashable, Sendable {
         app.iconName
     }
 
+    public var supportsMeetingConversation: Bool {
+        app.supportsMeetingConversation
+    }
+
     public var preferredTitle: String? {
+        guard supportsMeetingConversation else { return nil }
+
         if let title = title?.trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty {
             return title
         }
@@ -156,6 +166,15 @@ public struct MeetingEntity: Identifiable, Codable, Hashable, Sendable {
         }
 
         return nil
+    }
+
+    public func sanitizedForPersistence() -> MeetingEntity {
+        guard !supportsMeetingConversation else { return self }
+
+        var sanitized = self
+        sanitized.title = nil
+        sanitized.linkedCalendarEvent = nil
+        return sanitized
     }
 
     public var resolvedTitle: String {

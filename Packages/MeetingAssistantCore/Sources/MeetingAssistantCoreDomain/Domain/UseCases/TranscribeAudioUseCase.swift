@@ -313,6 +313,10 @@ public final class TranscribeAudioUseCase: Sendable {
         _ meeting: MeetingEntity,
         postProcessingResult: PostProcessingResult
     ) -> MeetingEntity {
+        guard meeting.supportsMeetingConversation else {
+            return meeting.sanitizedForPersistence()
+        }
+
         guard let summaryTitle = postProcessingResult.canonicalSummary?.title.trimmingCharacters(in: .whitespacesAndNewlines),
               !summaryTitle.isEmpty
         else {

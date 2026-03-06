@@ -155,7 +155,13 @@ public struct Meeting: Identifiable, Codable, Hashable, Sendable {
         app.icon
     }
 
+    public var supportsMeetingConversation: Bool {
+        app.supportsMeetingConversation
+    }
+
     public var preferredTitle: String? {
+        guard supportsMeetingConversation else { return nil }
+
         if let title = title?.trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty {
             return title
         }
@@ -165,6 +171,15 @@ public struct Meeting: Identifiable, Codable, Hashable, Sendable {
         }
 
         return nil
+    }
+
+    public func sanitizedForPersistence() -> Meeting {
+        guard !supportsMeetingConversation else { return self }
+
+        var sanitized = self
+        sanitized.title = nil
+        sanitized.linkedCalendarEvent = nil
+        return sanitized
     }
 
     public var resolvedTitle: String {

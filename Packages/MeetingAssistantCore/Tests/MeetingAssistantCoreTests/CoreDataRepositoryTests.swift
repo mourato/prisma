@@ -74,6 +74,64 @@ final class CoreDataRepositoryTests: XCTestCase {
         XCTAssertNil(fetched)
     }
 
+    func testSaveMeeting_ClearsTitleAndCalendarLinkForNonMeetingApps() async throws {
+        let meeting = MeetingEntity(
+            id: UUID(),
+            app: .importedFile,
+            title: "Imported title",
+            linkedCalendarEvent: MeetingCalendarEventSnapshot(
+                eventIdentifier: "calendar-1",
+                title: "Calendar title",
+                startDate: Date(),
+                endDate: Date().addingTimeInterval(3_600),
+                location: "Room",
+                notes: "Notes",
+                attendees: ["Alice"]
+            ),
+            startTime: Date()
+        )
+
+        try await meetingRepo.saveMeeting(meeting)
+        let fetched = try await meetingRepo.fetchMeeting(by: meeting.id)
+
+        XCTAssertNotNil(fetched)
+        XCTAssertNil(fetched?.title)
+        XCTAssertNil(fetched?.linkedCalendarEvent)
+        XCTAssertNil(fetched?.preferredTitle)
+    }
+
+    func testSanitizeMeetingOnlyPresentationDataIfNeeded_CleansLegacyNonMeetingRows() async throws {
+        let checkpointKey = "coredata.tests.non_meeting_sanitizer.\(UUID().uuidString)"
+        UserDefaults.standard.removeObject(forKey: checkpointKey)
+
+        let meetingID = UUID()
+        try await stack.performBackgroundTask { context in
+            let meeting = MeetingMO(context: context)
+            meeting.id = meetingID
+            meeting.appRawValue = DomainMeetingApp.importedFile.rawValue
+            meeting.title = "Legacy imported title"
+            meeting.linkedCalendarEventData = try JSONEncoder().encode(
+                MeetingCalendarEventSnapshot(
+                    eventIdentifier: "calendar-legacy",
+                    title: "Legacy calendar title",
+                    startDate: Date(),
+                    endDate: Date().addingTimeInterval(3_600),
+                    attendees: []
+                )
+            )
+            meeting.startTime = Date()
+            try context.save()
+        }
+
+        await stack.sanitizeMeetingOnlyPresentationDataIfNeeded(checkpointKey: checkpointKey)
+        let fetched = try await meetingRepo.fetchMeeting(by: meetingID)
+
+        XCTAssertNotNil(fetched)
+        XCTAssertNil(fetched?.title)
+        XCTAssertNil(fetched?.linkedCalendarEvent)
+        XCTAssertNil(fetched?.preferredTitle)
+    }
+
     // MARK: - Transcription Repository Tests
 
     func testSaveAndFetchTranscription() async throws {
@@ -135,6 +193,38 @@ final class CoreDataRepositoryTests: XCTestCase {
         XCTAssertEqual(fetched?.canonicalSummary?.summary, "Project status is on track.")
         XCTAssertEqual(fetched?.canonicalSummary?.trustFlags.isGroundedInTranscript, true)
         XCTAssertEqual(fetched?.canonicalSummary?.trustFlags.confidenceScore ?? -1, 0.92, accuracy: 0.001)
+    }
+
+    func testSaveTranscription_NonMeetingMetadataDoesNotExposeTitleOrCalendarFallback() async throws {
+        let meeting = MeetingEntity(
+            id: UUID(),
+            app: .importedFile,
+            title: "Imported title",
+            linkedCalendarEvent: MeetingCalendarEventSnapshot(
+                eventIdentifier: "calendar-2",
+                title: "Calendar fallback",
+                startDate: Date(),
+                endDate: Date().addingTimeInterval(3_600),
+                attendees: []
+            ),
+            startTime: Date()
+        )
+        try await meetingRepo.saveMeeting(meeting)
+
+        let transcription = TranscriptionEntity(
+            meeting: meeting,
+            config: .init(text: "Imported transcript", rawText: "Imported transcript")
+        )
+
+        try await transcriptionRepo.saveTranscription(transcription)
+
+        let fetched = try await transcriptionRepo.fetchTranscription(by: transcription.id)
+        let metadata = try await transcriptionRepo.fetchAllMetadata()
+
+        XCTAssertNil(fetched?.meeting.title)
+        XCTAssertNil(fetched?.meeting.linkedCalendarEvent)
+        XCTAssertNil(fetched?.meeting.preferredTitle)
+        XCTAssertNil(metadata.first?.meetingTitle)
     }
 
     func testFetchTranscriptionsForMeeting() async throws {

@@ -10,6 +10,10 @@ import os.log
 
 /// Stack CoreData thread-safe com suporte a operações em background
 public final class CoreDataStack: Sendable {
+    enum MigrationKeys {
+        static let didSanitizeNonMeetingPresentationDataV1 = "storage.migrations.non_meeting_presentation_data_sanitized.v1"
+    }
+
     private let persistentContainer: NSPersistentContainer
     private let logger = Logger(subsystem: AppIdentity.logSubsystem, category: "CoreData")
 
@@ -267,6 +271,29 @@ public final class CoreDataStack: Sendable {
     public func saveAsync(context: NSManagedObjectContext) async throws {
         try await context.perform {
             try self.save(context: context)
+        }
+    }
+
+    public func sanitizeMeetingOnlyPresentationDataIfNeeded(
+        checkpointKey: String? = nil
+    ) async {
+        let checkpointKey = checkpointKey ?? MigrationKeys.didSanitizeNonMeetingPresentationDataV1
+        guard !UserDefaults.standard.bool(forKey: checkpointKey) else { return }
+
+        do {
+            let updatedCount = try await performBackgroundTask { context in
+                try MeetingMO.sanitizeMeetingOnlyPresentationData(in: context)
+            }
+
+            UserDefaults.standard.set(true, forKey: checkpointKey)
+
+            if updatedCount > 0 {
+                logger.notice(
+                    "Sanitized non-meeting title/calendar data for \(updatedCount, privacy: .public) persisted meetings"
+                )
+            }
+        } catch {
+            logger.error("Failed to sanitize non-meeting meeting presentation data: \(error.localizedDescription)")
         }
     }
 

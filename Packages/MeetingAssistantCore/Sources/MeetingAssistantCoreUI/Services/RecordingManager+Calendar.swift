@@ -5,6 +5,10 @@ import MeetingAssistantCoreInfrastructure
 
 extension RecordingManager {
     func applyAutomaticCalendarEventIfAvailable(to meeting: Meeting) async -> Meeting {
+        guard meeting.supportsMeetingConversation else {
+            return meeting.sanitizedForPersistence()
+        }
+
         guard calendarEventService.authorizationState().isAuthorized else {
             return meeting
         }
@@ -29,7 +33,9 @@ extension RecordingManager {
         to meeting: Meeting,
         clearTitleWhenRemoving: Bool
     ) -> Meeting {
-        var updatedMeeting = meeting
+        var updatedMeeting = meeting.sanitizedForPersistence()
+        guard updatedMeeting.supportsMeetingConversation else { return updatedMeeting }
+
         updatedMeeting.linkedCalendarEvent = event
 
         if let event {

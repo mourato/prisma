@@ -5,16 +5,17 @@ extension FileSystemStorageService {
     // MARK: - Core Data helpers
 
     static func convertToEntity(_ transcription: Transcription) -> TranscriptionEntity {
+        let meeting = transcription.meeting.sanitizedForPersistence()
         let meetingEntity = MeetingEntity(
-            id: transcription.meeting.id,
-            app: DomainMeetingApp(rawValue: transcription.meeting.app.rawValue) ?? .unknown,
-            appBundleIdentifier: transcription.meeting.appBundleIdentifier,
-            appDisplayName: transcription.meeting.appDisplayName,
-            title: transcription.meeting.title,
-            linkedCalendarEvent: transcription.meeting.linkedCalendarEvent,
-            startTime: transcription.meeting.startTime,
-            endTime: transcription.meeting.endTime,
-            audioFilePath: transcription.meeting.audioFilePath
+            id: meeting.id,
+            app: DomainMeetingApp(rawValue: meeting.app.rawValue) ?? .unknown,
+            appBundleIdentifier: meeting.appBundleIdentifier,
+            appDisplayName: meeting.appDisplayName,
+            title: meeting.title,
+            linkedCalendarEvent: meeting.linkedCalendarEvent,
+            startTime: meeting.startTime,
+            endTime: meeting.endTime,
+            audioFilePath: meeting.audioFilePath
         )
 
         let segments = transcription.segments.map { segment in
@@ -85,16 +86,17 @@ extension FileSystemStorageService {
     }
 
     static func convertToModel(_ entity: TranscriptionEntity) -> Transcription {
+        let meetingEntity = entity.meeting.sanitizedForPersistence()
         let meeting = Meeting(
-            id: entity.meeting.id,
-            app: MeetingApp(rawValue: entity.meeting.app.rawValue) ?? .unknown,
-            appBundleIdentifier: entity.meeting.appBundleIdentifier,
-            appDisplayName: entity.meeting.appDisplayName,
-            title: entity.meeting.title,
-            linkedCalendarEvent: entity.meeting.linkedCalendarEvent,
-            startTime: entity.meeting.startTime,
-            endTime: entity.meeting.endTime,
-            audioFilePath: entity.meeting.audioFilePath
+            id: meetingEntity.id,
+            app: MeetingApp(rawValue: meetingEntity.app.rawValue) ?? .unknown,
+            appBundleIdentifier: meetingEntity.appBundleIdentifier,
+            appDisplayName: meetingEntity.appDisplayName,
+            title: meetingEntity.title,
+            linkedCalendarEvent: meetingEntity.linkedCalendarEvent,
+            startTime: meetingEntity.startTime,
+            endTime: meetingEntity.endTime,
+            audioFilePath: meetingEntity.audioFilePath
         )
 
         let segments = entity.segments.map { segment in

@@ -58,7 +58,7 @@ extension RecordingManager {
             }
         }
 
-        if let calendarEvent = meeting.linkedCalendarEvent {
+        if meeting.supportsMeetingConversation, let calendarEvent = meeting.linkedCalendarEvent {
             let calendarContext = calendarContextBlock(for: calendarEvent)
             items.append(TranscriptionContextItem(source: .calendarEvent, text: calendarContext))
 

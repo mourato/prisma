@@ -18,15 +18,18 @@ public actor MeetingRepositoryAdapter: MeetingRepository {
     }
 
     public func saveMeeting(_ meeting: MeetingEntity) async throws {
-        meetings[meeting.id] = meeting
+        let sanitizedMeeting = meeting.sanitizedForPersistence()
+        meetings[sanitizedMeeting.id] = sanitizedMeeting
     }
 
     public func fetchMeeting(by id: UUID) async throws -> MeetingEntity? {
-        meetings[id]
+        meetings[id]?.sanitizedForPersistence()
     }
 
     public func fetchAllMeetings() async throws -> [MeetingEntity] {
-        Array(meetings.values).sorted { $0.startTime > $1.startTime }
+        Array(meetings.values)
+            .map { $0.sanitizedForPersistence() }
+            .sorted { $0.startTime > $1.startTime }
     }
 
     public func deleteMeeting(by id: UUID) async throws {
@@ -34,6 +37,7 @@ public actor MeetingRepositoryAdapter: MeetingRepository {
     }
 
     public func updateMeeting(_ meeting: MeetingEntity) async throws {
-        meetings[meeting.id] = meeting
+        let sanitizedMeeting = meeting.sanitizedForPersistence()
+        meetings[sanitizedMeeting.id] = sanitizedMeeting
     }
 }
