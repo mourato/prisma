@@ -36,14 +36,14 @@ public struct PermissionsSettingsTab: View {
 
             DSGroup("settings.permissions.status".localized, icon: "checkmark.shield") {
                 PermissionStatusView(viewModel: viewModel, requiredSource: .all)
-                    .padding(.top, AppDesignSystem.Layout.spacing4)
+                    .padding(.top, 4)
             }
 
             if shortcutSettingsViewModel.shortcutCaptureHealthPresentation != nil ||
                 assistantShortcutSettingsViewModel.shortcutCaptureHealthPresentation != nil
             {
                 DSGroup("settings.shortcuts.health.title".localized, icon: "keyboard") {
-                    VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
+                    VStack(alignment: .leading, spacing: 12) {
                         if let globalPresentation = shortcutSettingsViewModel.shortcutCaptureHealthPresentation {
                             ShortcutCaptureHealthStatusView(presentation: globalPresentation) {
                                 shortcutSettingsViewModel.openShortcutCaptureHealthAction()

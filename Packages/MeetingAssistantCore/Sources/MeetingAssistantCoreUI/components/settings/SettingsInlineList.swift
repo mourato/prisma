@@ -72,8 +72,8 @@ public struct SettingsInlineList<Item: Identifiable, RowContent: View>: View {
         emptyText: "No items found"
     ) { item in
         Text(item.title)
-            .padding(.horizontal, AppDesignSystem.Layout.spacing12)
-            .padding(.vertical, AppDesignSystem.Layout.spacing8)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
     }
     .frame(width: 320)
     .padding()

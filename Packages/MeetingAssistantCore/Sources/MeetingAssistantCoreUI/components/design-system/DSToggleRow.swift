@@ -21,7 +21,7 @@ public struct DSToggleRow: View {
 
     public var body: some View {
         HStack {
-            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing4) {
+            VStack(alignment: .leading, spacing: 4) {
                 if let tooltip {
                     Text(title)
                         .font(.body)

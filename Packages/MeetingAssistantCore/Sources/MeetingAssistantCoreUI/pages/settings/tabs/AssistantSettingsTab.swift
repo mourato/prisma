@@ -95,7 +95,7 @@ public struct AssistantSettingsTab: View {
             groupIcon: "sparkles",
             descriptionText: "settings.assistant.toggle_command_desc".localized,
             settingsContent: {
-                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
+                VStack(alignment: .leading, spacing: 12) {
                     if let healthPresentation = viewModel.shortcutCaptureHealthPresentation {
                         ShortcutCaptureHealthStatusView(presentation: healthPresentation) {
                             viewModel.openShortcutCaptureHealthAction()
@@ -116,8 +116,8 @@ public struct AssistantSettingsTab: View {
             "settings.assistant.visual_feedback".localized,
             icon: "rectangle.inset.filled"
         ) {
-            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
-                HStack(spacing: AppDesignSystem.Layout.spacing8) {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(spacing: 8) {
                     previewButton
 
                     if isPreviewRunning {
@@ -158,7 +158,7 @@ public struct AssistantSettingsTab: View {
                     .pickerStyle(.segmented)
                 }
 
-                HStack(spacing: AppDesignSystem.Layout.spacing12) {
+                HStack(spacing: 12) {
                     Text("settings.assistant.border_color".localized)
                         .font(.body)
                         .fontWeight(.medium)
@@ -167,7 +167,7 @@ public struct AssistantSettingsTab: View {
 
                     DSThemePicker(
                         selection: $viewModel.borderColor,
-                        circleSpacing: AppDesignSystem.Layout.spacing4,
+                        circleSpacing: 4,
                         itemFrameSize: 34
                     )
                 }
@@ -175,7 +175,7 @@ public struct AssistantSettingsTab: View {
                 Divider()
 
                 if viewModel.borderStyle == .stroke {
-                    HStack(spacing: AppDesignSystem.Layout.spacing8) {
+                    HStack(spacing: 8) {
                         Text("settings.assistant.border_width".localized)
                             .font(.body)
                             .fontWeight(.medium)
@@ -192,14 +192,14 @@ public struct AssistantSettingsTab: View {
 
                     }
                 } else {
-                    HStack(spacing: AppDesignSystem.Layout.spacing8) {
+                    HStack(spacing: 8) {
                         Text("settings.assistant.glow_size".localized)
                             .font(.body)
                             .fontWeight(.medium)
 
                         Spacer()
 
-                        HStack(spacing: AppDesignSystem.Layout.spacing8) {
+                        HStack(spacing: 8) {
                             TextField("", text: glowSizeInputBinding)
                                 .textFieldStyle(.roundedBorder)
                                 .multilineTextAlignment(.trailing)

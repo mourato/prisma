@@ -44,7 +44,7 @@ public struct DSBadge: View {
 }
 
 #Preview("Badge Kinds") {
-    HStack(spacing: AppDesignSystem.Layout.spacing8) {
+    HStack(spacing: 8) {
         DSBadge("Success", kind: .success)
         DSBadge("Warning", kind: .warning)
         DSBadge("Error", kind: .error)

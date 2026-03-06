@@ -77,7 +77,7 @@ public struct MetricsDashboardSettingsTab: View {
 
     private var upcomingEventsSection: some View {
         DSGroup("metrics.calendar.upcoming.title".localized, icon: "calendar.badge.clock") {
-            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
+            VStack(alignment: .leading, spacing: 12) {
                 Text("metrics.calendar.upcoming.subtitle".localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -126,7 +126,7 @@ public struct MetricsDashboardSettingsTab: View {
 
     private var activityHeatmapSection: some View {
         DSGroup("metrics.activity.title".localized, icon: "calendar.badge.clock") {
-            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text("metrics.activity.subtitle".localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -456,7 +456,11 @@ public struct MetricsDashboardSettingsTab: View {
             }
         }
 
-        if activityCalendar.isDate(weekStart, equalTo: rangeStart, toGranularity: .month) {
+        if ActivityHeatmap.shouldShowRangeStartMonthLabel(
+            for: weekStart,
+            rangeStart: rangeStart,
+            calendar: activityCalendar
+        ) {
             return localizedMonthLabel(for: rangeStart)
         }
 
@@ -511,7 +515,7 @@ public struct MetricsDashboardSettingsTab: View {
     }
 
     private func legendItem(color: Color, label: String) -> some View {
-        HStack(spacing: AppDesignSystem.Layout.spacing4) {
+        HStack(spacing: 4) {
             RoundedRectangle(cornerRadius: ActivityHeatmap.legendSwatchCornerRadius, style: .continuous)
                 .fill(color)
                 .frame(width: ActivityHeatmap.legendSwatchSize, height: ActivityHeatmap.legendSwatchSize)
@@ -597,8 +601,8 @@ private struct UpcomingCalendarEventRow: View {
 
     var body: some View {
         DSCard {
-            HStack(alignment: .top, spacing: AppDesignSystem.Layout.spacing12) {
-                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing4) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(event.trimmedTitle.isEmpty ? "metrics.calendar.event.untitled".localized : event.trimmedTitle)
                         .font(.subheadline.weight(.semibold))
 
@@ -616,7 +620,7 @@ private struct UpcomingCalendarEventRow: View {
                 Spacer(minLength: 0)
 
                 if isLinked {
-                    VStack(alignment: .trailing, spacing: AppDesignSystem.Layout.spacing8) {
+                    VStack(alignment: .trailing, spacing: 8) {
                         Label("metrics.calendar.event.linked".localized, systemImage: "checkmark.circle.fill")
                             .font(.caption.weight(.medium))
                             .foregroundStyle(AppDesignSystem.Colors.success)
@@ -670,7 +674,7 @@ private struct MetricStatCard: View {
 
     var body: some View {
         DSCard {
-            HStack(alignment: .top, spacing: AppDesignSystem.Layout.spacing12) {
+            HStack(alignment: .top, spacing: 12) {
                 Image(systemName: icon)
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(tint)
@@ -680,7 +684,7 @@ private struct MetricStatCard: View {
                             .fill(tint.opacity(0.12))
                     )
 
-                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing4) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(title)
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(.secondary)
@@ -771,6 +775,14 @@ enum ActivityHeatmap {
         }
 
         return visibleMarkers
+    }
+
+    static func shouldShowRangeStartMonthLabel(
+        for weekStart: Date,
+        rangeStart: Date,
+        calendar: Calendar
+    ) -> Bool {
+        calendar.dateInterval(of: .weekOfYear, for: rangeStart)?.start == weekStart
     }
 
     static let legendSpacing: CGFloat = 12

@@ -32,7 +32,7 @@ public struct WebMarkdownTargetEditorSheet: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
+        VStack(alignment: .leading, spacing: 12) {
             Text("settings.markdown_targets.websites.editor_title".localized)
                 .font(.headline)
 
@@ -51,7 +51,7 @@ public struct WebMarkdownTargetEditorSheet: View {
                         isOn: $forceMarkdownOutput
                     )
 
-                    HStack(spacing: AppDesignSystem.Layout.spacing12) {
+                    HStack(spacing: 12) {
                         Text("settings.rules_per_app.language.title".localized)
                             .font(.body)
                             .fontWeight(.regular)
@@ -76,7 +76,7 @@ public struct WebMarkdownTargetEditorSheet: View {
                         isOn: $autoStartMeetingRecording
                     )
 
-                    VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
+                    VStack(alignment: .leading, spacing: 8) {
                         Text("settings.rules_per_app.custom_prompt.title".localized)
                             .font(.caption)
                             .foregroundStyle(.secondary)

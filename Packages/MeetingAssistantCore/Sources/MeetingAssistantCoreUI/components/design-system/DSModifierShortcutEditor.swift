@@ -41,14 +41,14 @@ public struct DSModifierShortcutEditor: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
+        VStack(alignment: .leading, spacing: 8) {
             if showsTitle {
                 Text("settings.shortcuts.modifier.title".localized)
                     .font(.subheadline)
                     .fontWeight(.medium)
             }
 
-            HStack(spacing: AppDesignSystem.Layout.spacing8) {
+            HStack(spacing: 8) {
                 Button {
                     openRecordingPopover()
                 } label: {
@@ -59,7 +59,7 @@ public struct DSModifierShortcutEditor: View {
                 .popover(isPresented: $isPopoverPresented, arrowEdge: .top) {
                     recordingPopover
                         .frame(width: 360)
-                        .padding(AppDesignSystem.Layout.spacing12)
+                        .padding(12)
                 }
 
                 if shortcut != nil {
@@ -116,7 +116,7 @@ public struct DSModifierShortcutEditor: View {
     }
 
     private var shortcutInputField: some View {
-        HStack(spacing: AppDesignSystem.Layout.spacing8) {
+        HStack(spacing: 8) {
             if displayLabels.isEmpty {
                 Text("settings.shortcuts.modifier.input_placeholder".localized)
                     .foregroundStyle(.secondary)
@@ -127,8 +127,8 @@ public struct DSModifierShortcutEditor: View {
 
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, AppDesignSystem.Layout.spacing10)
-        .padding(.vertical, AppDesignSystem.Layout.spacing8)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
         .frame(minHeight: 38)
         .background(
             RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
@@ -142,8 +142,8 @@ public struct DSModifierShortcutEditor: View {
     }
 
     private var recordingPopover: some View {
-        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing10) {
-            HStack(alignment: .center, spacing: AppDesignSystem.Layout.spacing10) {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .center, spacing: 10) {
                 Text("settings.shortcuts.modifier.popover.recording".localized)
                     .font(.subheadline)
                     .fontWeight(.semibold)
@@ -361,13 +361,13 @@ private struct ShortcutChipRow: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         } else {
-            HStack(spacing: AppDesignSystem.Layout.spacing6) {
+            HStack(spacing: 6) {
                 ForEach(Array(labels.enumerated()), id: \.offset) { _, label in
                     Text(label)
                         .font(.caption)
                         .fontWeight(.semibold)
-                        .padding(.horizontal, AppDesignSystem.Layout.spacing8)
-                        .padding(.vertical, AppDesignSystem.Layout.spacing4)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
                         .background(chipBackground)
                         .foregroundStyle(chipForeground)
                         .clipShape(Capsule())

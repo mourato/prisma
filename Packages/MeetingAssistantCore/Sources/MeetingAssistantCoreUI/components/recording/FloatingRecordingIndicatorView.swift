@@ -101,7 +101,7 @@ public struct FloatingRecordingIndicatorView: View {
         // Keep warning overlays out of layout sizing to prevent NSPanel constraint loops
         // when warnings appear/disappear while the panel uses a fixed content size.
         .overlay(alignment: .top) {
-            VStack(spacing: AppDesignSystem.Layout.spacing4) {
+            VStack(spacing: 4) {
                 if let warningDescriptor = postProcessingWarningDescriptor {
                     postProcessingReadinessWarningOverlay(warningDescriptor)
                         .transition(.move(edge: .top).combined(with: .opacity))
@@ -239,7 +239,7 @@ public struct FloatingRecordingIndicatorView: View {
     private var errorView: some View {
         let message = errorMessage ?? "Error"
 
-        return HStack(spacing: AppDesignSystem.Layout.spacing8) {
+        return HStack(spacing: 8) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundStyle(.white)
                 .font(.caption.weight(.bold))
@@ -250,8 +250,8 @@ public struct FloatingRecordingIndicatorView: View {
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
         }
-        .padding(.horizontal, AppDesignSystem.Layout.spacing16)
-        .padding(.vertical, AppDesignSystem.Layout.spacing8)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
         .background(AppDesignSystem.Colors.error.opacity(0.95))
         .clipShape(Capsule())
         .shadow(

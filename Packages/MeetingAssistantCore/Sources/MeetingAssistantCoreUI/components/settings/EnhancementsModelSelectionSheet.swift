@@ -25,25 +25,25 @@ public struct EnhancementsModelSelectionSheet: View {
     public var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                HStack(spacing: AppDesignSystem.Layout.spacing12) {
+                HStack(spacing: 12) {
                     Text("settings.enhancements.model_selector.title".localized)
                         .font(.headline)
 
-                    Spacer(minLength: AppDesignSystem.Layout.spacing8)
+                    Spacer(minLength: 8)
 
                     searchField
                         .frame(width: 320)
                 }
-                .padding(.horizontal, AppDesignSystem.Layout.spacing16)
-                .padding(.top, AppDesignSystem.Layout.spacing12)
-                .padding(.bottom, AppDesignSystem.Layout.spacing8)
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 8)
 
                 List(filteredOptions, id: \.id) { option in
                     Button {
                         onSelect(option)
                     } label: {
-                        HStack(spacing: AppDesignSystem.Layout.spacing8) {
-                            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing4) {
+                        HStack(spacing: 8) {
+                            VStack(alignment: .leading, spacing: 4) {
                                 Text(option.modelID)
                                     .font(.body)
                                     .foregroundStyle(.primary)
@@ -82,7 +82,7 @@ public struct EnhancementsModelSelectionSheet: View {
     }
 
     private var searchField: some View {
-        HStack(spacing: AppDesignSystem.Layout.spacing8) {
+        HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.secondary)
             TextField(
@@ -91,8 +91,8 @@ public struct EnhancementsModelSelectionSheet: View {
             )
             .textFieldStyle(.plain)
         }
-        .padding(.horizontal, AppDesignSystem.Layout.spacing10)
-        .padding(.vertical, AppDesignSystem.Layout.spacing8)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
         .frame(height: AppDesignSystem.Layout.compactButtonHeight)
         .background(AppDesignSystem.Colors.subtleFill)
         .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
@@ -104,7 +104,7 @@ public struct EnhancementsModelSelectionSheet: View {
         .init(provider: .openai, modelID: "gpt-4o-mini"),
         .init(provider: .openai, modelID: "gpt-4o"),
         .init(provider: .anthropic, modelID: "claude-3-5-sonnet"),
-        .init(provider: .google, modelID: "gemini-1.5-flash")
+        .init(provider: .google, modelID: "gemini-1.5-flash"),
     ]
 
     EnhancementsModelSelectionSheet(

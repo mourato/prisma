@@ -87,7 +87,7 @@ public struct PromptEditorSheet: View {
     // MARK: - Title Section
 
     private var titleSection: some View {
-        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing6) {
+        VStack(alignment: .leading, spacing: 6) {
             Text("prompt.title_label".localized)
                 .font(.subheadline)
                 .fontWeight(.medium)
@@ -100,18 +100,18 @@ public struct PromptEditorSheet: View {
     // MARK: - Icon Section
 
     private var iconSection: some View {
-        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing6) {
+        VStack(alignment: .leading, spacing: 6) {
             Text("prompt.icon_label".localized)
                 .font(.subheadline)
                 .fontWeight(.medium)
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: AppDesignSystem.Layout.spacing8) {
+                HStack(spacing: 8) {
                     ForEach(PostProcessingPrompt.availableIcons, id: \.self) { icon in
                         iconButton(icon)
                     }
                 }
-                .padding(.vertical, AppDesignSystem.Layout.spacing4)
+                .padding(.vertical, 4)
             }
         }
     }
@@ -141,7 +141,7 @@ public struct PromptEditorSheet: View {
     // MARK: - Description Section
 
     private var descriptionSection: some View {
-        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing6) {
+        VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text("prompt.description_label".localized)
                     .font(.subheadline)
@@ -160,7 +160,7 @@ public struct PromptEditorSheet: View {
     // MARK: - Prompt Section
 
     private var promptSection: some View {
-        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing6) {
+        VStack(alignment: .leading, spacing: 6) {
             Text("prompt.instructions_label".localized)
                 .font(.subheadline)
                 .fontWeight(.medium)
@@ -201,7 +201,7 @@ public struct PromptEditorSheet: View {
             .tint(AppDesignSystem.Colors.accent)
             .disabled(!isValid)
         }
-        .padding(AppDesignSystem.Layout.spacing16)
+        .padding(16)
         .background(AppDesignSystem.Colors.windowBackground)
     }
 

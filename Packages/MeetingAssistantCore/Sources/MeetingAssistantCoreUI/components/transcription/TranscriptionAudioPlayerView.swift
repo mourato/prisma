@@ -20,7 +20,7 @@ public struct TranscriptionAudioPlayerView: View {
     }
 
     public var body: some View {
-        HStack(spacing: AppDesignSystem.Layout.spacing12) {
+        HStack(spacing: 12) {
             // Play/Pause Button
             Button {
                 viewModel.togglePlayback()
@@ -60,8 +60,8 @@ public struct TranscriptionAudioPlayerView: View {
                 .foregroundStyle(.secondary)
                 .frame(width: 40, alignment: .trailing)
         }
-        .padding(.horizontal, AppDesignSystem.Layout.spacing12)
-        .padding(.vertical, AppDesignSystem.Layout.spacing8)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
         .background(Color.primary.opacity(0.05))
         .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.cardCornerRadius))
         .frame(width: Layout.fixedWidth)

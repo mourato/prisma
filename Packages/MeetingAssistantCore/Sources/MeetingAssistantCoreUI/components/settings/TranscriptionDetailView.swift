@@ -238,9 +238,9 @@ public struct TranscriptionDetailView: View {
     private func contentBox(title: String, text: String, isOriginal: Bool, showSparkles: Bool = false) -> some View {
         let displayText = transcriptionDisplayText(text)
 
-        return VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
+        return VStack(alignment: .leading, spacing: 12) {
             HStack {
-                HStack(spacing: AppDesignSystem.Layout.spacing6) {
+                HStack(spacing: 6) {
                     if showSparkles {
                         Image(systemName: "sparkles")
                             .foregroundStyle(AppDesignSystem.Colors.aiGradient)
@@ -263,7 +263,7 @@ public struct TranscriptionDetailView: View {
             Text(displayText)
                 .font(.body)
                 .textSelection(.enabled)
-                .padding(AppDesignSystem.Layout.spacing16)
+                .padding(16)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(
                     isOriginal ? AppDesignSystem.Colors.subtleFill2 : AppDesignSystem.Colors.cardBackground,
@@ -281,11 +281,11 @@ public struct TranscriptionDetailView: View {
     }
 
     private var groundedQnASection: some View {
-        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
+        VStack(alignment: .leading, spacing: 12) {
             Text("transcription.qa.title".localized)
                 .font(.headline)
 
-            HStack(spacing: AppDesignSystem.Layout.spacing8) {
+            HStack(spacing: 8) {
                 TextField(
                     "transcription.qa.placeholder".localized,
                     text: Binding(
@@ -303,7 +303,7 @@ public struct TranscriptionDetailView: View {
             }
 
             if isAnsweringQuestion {
-                HStack(spacing: AppDesignSystem.Layout.spacing8) {
+                HStack(spacing: 8) {
                     ProgressView()
                     Text("transcription.qa.loading".localized)
                         .font(.caption)
@@ -312,7 +312,7 @@ public struct TranscriptionDetailView: View {
             }
 
             if let qaErrorMessage, !qaErrorMessage.isEmpty {
-                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
+                VStack(alignment: .leading, spacing: 8) {
                     Text(qaErrorMessage)
                         .font(.caption)
                         .foregroundStyle(AppDesignSystem.Colors.error)
@@ -331,13 +331,13 @@ public struct TranscriptionDetailView: View {
                         .font(.body)
                         .foregroundStyle(.secondary)
                 } else {
-                    VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
+                    VStack(alignment: .leading, spacing: 12) {
                         Text(qaResponse.answer)
                             .font(.body)
                             .textSelection(.enabled)
 
                         if !qaResponse.evidence.isEmpty {
-                            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
+                            VStack(alignment: .leading, spacing: 8) {
                                 Text("transcription.qa.evidence_title".localized)
                                     .font(.subheadline)
                                     .fontWeight(.semibold)
@@ -350,8 +350,8 @@ public struct TranscriptionDetailView: View {
                                         Text(item.excerpt)
                                             .font(.caption)
                                     }
-                                    .padding(.horizontal, AppDesignSystem.Layout.spacing10)
-                                    .padding(.vertical, AppDesignSystem.Layout.spacing8)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 8)
                                     .background(
                                         AppDesignSystem.Colors.subtleFill,
                                         in: RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)

@@ -20,8 +20,8 @@ public struct SettingsDrillDownListRow<Destination: Hashable>: View {
 
     public var body: some View {
         NavigationLink(value: destination) {
-            HStack(spacing: AppDesignSystem.Layout.spacing8) {
-                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing4) {
+            HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(title)
                         .font(.body)
                         .foregroundStyle(.primary)
@@ -34,7 +34,7 @@ public struct SettingsDrillDownListRow<Destination: Hashable>: View {
                     }
                 }
 
-                Spacer(minLength: AppDesignSystem.Layout.spacing8)
+                Spacer(minLength: 8)
 
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.semibold))
@@ -44,8 +44,8 @@ public struct SettingsDrillDownListRow<Destination: Hashable>: View {
             .padding(
                 .vertical,
                 subtitle == nil
-                    ? AppDesignSystem.Layout.spacing16
-                    : AppDesignSystem.Layout.spacing12
+                    ? 16
+                    : 12
             )
             .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
             .contentShape(Rectangle())

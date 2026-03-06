@@ -34,8 +34,8 @@ public struct DSGroup<Content: View, HeaderAccessory: View>: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing10) {
-            HStack(spacing: AppDesignSystem.Layout.spacing8) {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
                 if let icon {
                     Image(systemName: icon)
                         .foregroundStyle(AppDesignSystem.Colors.accent)
@@ -47,7 +47,7 @@ public struct DSGroup<Content: View, HeaderAccessory: View>: View {
 
                 headerAccessory
             }
-            .padding(.leading, AppDesignSystem.Layout.spacing4)
+            .padding(.leading, 4)
 
             DSCard {
                 content

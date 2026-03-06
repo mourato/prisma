@@ -28,7 +28,7 @@ public struct DictationSettingsTab: View {
                 groupTitle: "settings.shortcuts.dictation".localized,
                 descriptionText: "settings.shortcuts.dictation_desc".localized,
                 settingsContent: {
-                    VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
+                    VStack(alignment: .leading, spacing: 12) {
                         if let healthPresentation = shortcutsViewModel.shortcutCaptureHealthPresentation {
                             ShortcutCaptureHealthStatusView(presentation: healthPresentation) {
                                 shortcutsViewModel.openShortcutCaptureHealthAction()
@@ -45,7 +45,7 @@ public struct DictationSettingsTab: View {
 
             // Workflow
             DSGroup("settings.dictation.workflow".localized, icon: "cpu") {
-                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
+                VStack(alignment: .leading, spacing: 16) {
                     DSToggleRow(
                         "settings.general.auto_copy_transcription".localized,
                         description: "settings.general.auto_copy_transcription_desc".localized,
@@ -84,7 +84,7 @@ public struct DictationSettingsTab: View {
                         .controlSize(.regular)
                     }
 
-                    VStack(spacing: AppDesignSystem.Layout.spacing8) {
+                    VStack(spacing: 8) {
                         noPostProcessingRow()
                         ForEach(promptViewModel.availablePrompts) { prompt in
                             promptRow(prompt: prompt)

@@ -33,8 +33,8 @@ public struct ServiceSettingsContent: View {
 
     private var modelInfoSection: some View {
         DSGroup("settings.service.model_info".localized, icon: "waveform") {
-            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
-                HStack(spacing: AppDesignSystem.Layout.spacing12) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 12) {
                     ZStack {
                         Circle()
                             .fill(AppDesignSystem.Colors.accent.opacity(0.1))
@@ -53,7 +53,7 @@ public struct ServiceSettingsContent: View {
                     }
                 }
 
-                Divider().padding(.vertical, AppDesignSystem.Layout.spacing4)
+                Divider().padding(.vertical, 4)
 
                 Grid(alignment: .leading, horizontalSpacing: 20, verticalSpacing: 12) {
                     GridRow {
@@ -155,7 +155,7 @@ public struct ServiceSettingsContent: View {
 
     private var performanceSection: some View {
         DSCard {
-            HStack(spacing: AppDesignSystem.Layout.spacing12) {
+            HStack(spacing: 12) {
                 Image(systemName: "speedometer")
                     .font(.title3)
                     .foregroundStyle(AppDesignSystem.Colors.warning)
@@ -177,11 +177,11 @@ public struct ServiceSettingsContent: View {
     private var statusSection: some View {
         DSCard {
             HStack {
-                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing8) {
+                VStack(alignment: .leading, spacing: 8) {
                     Text("settings.service.status".localized)
                         .font(.headline)
 
-                    HStack(spacing: AppDesignSystem.Layout.spacing6) {
+                    HStack(spacing: 6) {
                         Circle()
                             .fill(viewModel.transcriptionStatus.color)
                             .frame(width: 8, height: 8)

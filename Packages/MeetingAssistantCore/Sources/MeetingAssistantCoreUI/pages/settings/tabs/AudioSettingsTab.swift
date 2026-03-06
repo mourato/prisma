@@ -27,7 +27,7 @@ public struct AudioSettingsTab: View {
 
             // Audio Devices
             DSGroup("settings.general.audio_devices".localized, icon: "mic.fill") {
-                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
+                VStack(alignment: .leading, spacing: 12) {
                     DSToggleRow(
                         "settings.general.use_system_default_input".localized,
                         description: "settings.general.use_system_default_input_desc".localized,
@@ -35,14 +35,14 @@ public struct AudioSettingsTab: View {
                     )
 
                     if !viewModel.useSystemDefaultInput {
-                        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
+                        VStack(alignment: .leading, spacing: 12) {
                             Text("settings.general.audio_devices_desc".localized)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
 
-                            VStack(spacing: AppDesignSystem.Layout.spacing8) {
+                            VStack(spacing: 8) {
                                 ForEach(viewModel.availableDevices) { device in
-                                    HStack(spacing: AppDesignSystem.Layout.spacing12) {
+                                    HStack(spacing: 12) {
                                         Image(systemName: device.isAvailable ? "mic" : "mic.slash")
                                             .foregroundStyle(device.isAvailable ? .primary : .secondary)
                                             .frame(width: 20)
@@ -70,7 +70,7 @@ public struct AudioSettingsTab: View {
                                             .font(.caption)
                                             .foregroundStyle(.secondary)
                                     }
-                                    .padding(AppDesignSystem.Layout.spacing8)
+                                    .padding(8)
                                     .background(AppDesignSystem.Colors.subtleFill2)
                                     .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
                                     .onDrag {
@@ -109,7 +109,7 @@ public struct AudioSettingsTab: View {
 
             // Sound Feedback
             DSGroup("settings.general.sound_feedback".localized, icon: "speaker.wave.2.fill") {
-                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
+                VStack(alignment: .leading, spacing: 16) {
                     DSToggleRow(
                         "settings.general.sound_feedback.enabled".localized,
                         description: "settings.general.sound_feedback.enabled_desc".localized,
@@ -117,7 +117,7 @@ public struct AudioSettingsTab: View {
                     )
 
                     if viewModel.soundFeedbackEnabled {
-                        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
+                        VStack(alignment: .leading, spacing: 16) {
                             Divider()
 
                             soundPickerRow(

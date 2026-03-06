@@ -25,7 +25,7 @@ public struct WebMeetingTargetEditorSheet: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
+        VStack(alignment: .leading, spacing: 12) {
             Text("settings.meetings.web_targets.editor_title".localized)
                 .font(.headline)
 

@@ -68,7 +68,7 @@ public struct PromptSelectionRow<MenuContent: View>: View {
     }
 
     private var rowContent: some View {
-        HStack(spacing: AppDesignSystem.Layout.spacing12) {
+        HStack(spacing: 12) {
             promptIcon
             promptInfo
 
@@ -81,7 +81,7 @@ public struct PromptSelectionRow<MenuContent: View>: View {
 
             trailingMenu
         }
-        .padding(AppDesignSystem.Layout.spacing10)
+        .padding(10)
         .contentShape(Rectangle())
     }
 

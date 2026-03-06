@@ -123,7 +123,7 @@ public struct MeetingSettingsTab: View {
                 groupTitle: "settings.shortcuts.meeting".localized,
                 descriptionText: "settings.shortcuts.meeting_desc".localized,
                 settingsContent: {
-                    VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
+                    VStack(alignment: .leading, spacing: 12) {
                         if let healthPresentation = shortcutsViewModel.shortcutCaptureHealthPresentation {
                             ShortcutCaptureHealthStatusView(presentation: healthPresentation) {
                                 shortcutsViewModel.openShortcutCaptureHealthAction()
@@ -148,7 +148,7 @@ public struct MeetingSettingsTab: View {
             }
 
             DSGroup("settings.meetings.workflow".localized, icon: "bolt.fill") {
-                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
+                VStack(alignment: .leading, spacing: 16) {
                     DSToggleRow(
                         "settings.general.auto_start".localized,
                         isOn: $meetingViewModel.settings.autoStartRecording
@@ -168,7 +168,7 @@ public struct MeetingSettingsTab: View {
             }
 
             DSGroup("settings.meetings.export".localized, icon: "folder.fill") {
-                VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing16) {
+                VStack(alignment: .leading, spacing: 16) {
                     DSToggleRow(
                         "settings.meetings.auto_export".localized,
                         description: "settings.meetings.auto_export_desc".localized,
@@ -233,7 +233,7 @@ public struct MeetingSettingsTab: View {
                         if meetingViewModel.settings.summaryTemplateEnabled {
                             Divider()
 
-                            HStack(spacing: AppDesignSystem.Layout.spacing8) {
+                            HStack(spacing: 8) {
                                 Image(systemName: "doc.text")
                                     .foregroundStyle(AppDesignSystem.Colors.iconHighlight)
                                 Text("settings.meetings.template".localized)
@@ -288,7 +288,7 @@ public struct MeetingSettingsTab: View {
                         .controlSize(.regular)
                     }
 
-                    VStack(spacing: AppDesignSystem.Layout.spacing8) {
+                    VStack(spacing: 8) {
                         noPostProcessingRow()
                         ForEach(meetingViewModel.availablePrompts) { prompt in
                             promptRow(prompt: prompt)
@@ -340,7 +340,7 @@ public struct MeetingSettingsTab: View {
 
     private var webTargetsSection: some View {
         DSGroup("settings.meetings.web_targets.title".localized, icon: "globe") {
-            VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
+            VStack(alignment: .leading, spacing: 12) {
                 Text("settings.meetings.web_targets.desc".localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -367,7 +367,7 @@ public struct MeetingSettingsTab: View {
     }
 
     private func webTargetRow(_ target: WebMeetingTarget) -> some View {
-        HStack(spacing: AppDesignSystem.Layout.spacing12) {
+        HStack(spacing: 12) {
             Image(systemName: target.app.icon)
                 .font(.title3)
                 .foregroundStyle(target.app.color)
@@ -401,8 +401,8 @@ public struct MeetingSettingsTab: View {
                 }
             }
         }
-        .padding(.horizontal, AppDesignSystem.Layout.spacing12)
-        .padding(.vertical, AppDesignSystem.Layout.spacing8)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(webTargetAccessibilityLabel(for: target))
         .accessibilityHint("settings.rules_per_app.actions".localized)

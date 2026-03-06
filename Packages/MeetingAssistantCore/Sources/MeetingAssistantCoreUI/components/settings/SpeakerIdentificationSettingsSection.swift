@@ -88,7 +88,7 @@ public struct SpeakerIdentificationSettingsSection: View {
                     }
                 }
             }
-            .padding(.vertical, AppDesignSystem.Layout.spacing4)
+            .padding(.vertical, 4)
         }
     }
 
@@ -134,7 +134,7 @@ private struct SpeakerIdentificationSettingsSectionPreview: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: AppDesignSystem.Layout.spacing12) {
+        VStack(alignment: .leading, spacing: 12) {
             SpeakerIdentificationSettingsSection(settings: settings, modelManager: .shared)
         }
         .padding()

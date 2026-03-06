@@ -14,8 +14,8 @@ struct RecordingSilenceWarningOverlay: View {
             .multilineTextAlignment(.center)
             .lineLimit(nil)
             .fixedSize(horizontal: true, vertical: true)
-            .padding(.horizontal, AppDesignSystem.Layout.spacing10)
-            .padding(.vertical, AppDesignSystem.Layout.spacing4)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
             .background(AppDesignSystem.Colors.recordingOverlayBackground)
             .clipShape(Capsule())
             .overlay(
@@ -54,7 +54,7 @@ struct RecordingPostProcessingWarningOverlay: View {
     let onOpenSettings: (String) -> Void
 
     var body: some View {
-        HStack(spacing: AppDesignSystem.Layout.spacing8) {
+        HStack(spacing: 8) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.caption.weight(.bold))
                 .foregroundStyle(.white)
@@ -73,8 +73,8 @@ struct RecordingPostProcessingWarningOverlay: View {
             .foregroundStyle(.white)
             .underline()
         }
-        .padding(.horizontal, AppDesignSystem.Layout.spacing10)
-        .padding(.vertical, AppDesignSystem.Layout.spacing6)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
         .background(AppDesignSystem.Colors.warning.opacity(0.95))
         .clipShape(Capsule())
         .overlay(
