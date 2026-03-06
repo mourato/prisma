@@ -420,7 +420,7 @@ public struct MetricsDashboardSettingsTab: View {
     }
 
     private var monthMarkers: [ActivityHeatmapMonthMarker] {
-        heatmapWeekColumns.compactMap { column in
+        let rawMarkers: [ActivityHeatmapMonthMarker] = heatmapWeekColumns.compactMap { column in
             guard let monthLabel = column.monthLabel else {
                 return nil
             }
@@ -428,6 +428,8 @@ public struct MetricsDashboardSettingsTab: View {
             let xOffset = CGFloat(column.id) * (ActivityHeatmap.squareSize + ActivityHeatmap.spacing)
             return ActivityHeatmapMonthMarker(id: column.id, label: monthLabel, xOffset: xOffset)
         }
+
+        return ActivityHeatmap.resolveVisibleMonthMarkers(rawMarkers)
     }
 
     private var heatmapGridWidth: CGFloat {
@@ -653,7 +655,7 @@ private struct ActivityHeatmapWeekColumn: Identifiable {
     let days: [MetricsDailyBucket?]
 }
 
-private struct ActivityHeatmapMonthMarker: Identifiable {
+struct ActivityHeatmapMonthMarker: Identifiable, Equatable {
     let id: Int
     let label: String
     let xOffset: CGFloat
@@ -729,13 +731,15 @@ private enum Formatters {
     }
 }
 
-private enum ActivityHeatmap {
+enum ActivityHeatmap {
     static let squareSize: CGFloat = 10
     static let spacing: CGFloat = 2
     static let verticalPadding: CGFloat = 8
     static let baseColor = AppDesignSystem.Colors.subtleFill
     static let monthHeaderHeight: CGFloat = 14
     static let monthToGridSpacing: CGFloat = 6
+    static let estimatedMonthLabelWidth: CGFloat = 24
+    static let monthLabelMinimumSpacing: CGFloat = 6
     static let weekdayLabelWidth: CGFloat = 24
     static let weekdayToGridSpacing: CGFloat = 8
     static let weekColumnPrefix = "heatmap-week"
@@ -747,6 +751,26 @@ private enum ActivityHeatmap {
 
     static var scrollHeight: CGFloat {
         monthHeaderHeight + monthToGridSpacing + gridHeight + verticalPadding * 2
+    }
+
+    static func resolveVisibleMonthMarkers(
+        _ markers: [ActivityHeatmapMonthMarker],
+        estimatedLabelWidth: CGFloat = estimatedMonthLabelWidth,
+        minimumSpacing: CGFloat = monthLabelMinimumSpacing
+    ) -> [ActivityHeatmapMonthMarker] {
+        var visibleMarkers: [ActivityHeatmapMonthMarker] = []
+        var lastTrailingEdge = -CGFloat.greatestFiniteMagnitude
+
+        for marker in markers.sorted(by: { $0.xOffset < $1.xOffset }) {
+            guard marker.xOffset >= lastTrailingEdge + minimumSpacing else {
+                continue
+            }
+
+            visibleMarkers.append(marker)
+            lastTrailingEdge = marker.xOffset + estimatedLabelWidth
+        }
+
+        return visibleMarkers
     }
 
     static let legendSpacing: CGFloat = 12
