@@ -285,7 +285,7 @@ public struct SettingsView: View {
             )
             
             Divider()
-                .frame(height: 14)
+                .frame(height: 20)
                 .padding(.vertical, AppDesignSystem.Layout.spacing6)
 
             toolbarNavigationButton(
@@ -308,8 +308,8 @@ public struct SettingsView: View {
         Button(action: action) {
             Image(systemName: systemImage)
                 .symbolRenderingMode(.monochrome)
-                .font(.system(size: 13, weight: .semibold))
-                .frame(width: 28, height: 28)
+                .font(.system(size: 15, weight: .medium))
+                .frame(width: 36, height: 36)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
