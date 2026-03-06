@@ -19,7 +19,7 @@ extension AppDelegate {
         statusItem?.button?.contentTintColor = nil
     }
 
-    private func makeStatusBarImage(isRecording: Bool, accessibilityDescription: String) -> NSImage? {
+    func makeStatusBarImage(isRecording: Bool, accessibilityDescription: String) -> NSImage? {
         let iconName = isRecording ? "record.circle.fill" : "waveform"
         guard let baseImage = NSImage(
             systemSymbolName: iconName,
