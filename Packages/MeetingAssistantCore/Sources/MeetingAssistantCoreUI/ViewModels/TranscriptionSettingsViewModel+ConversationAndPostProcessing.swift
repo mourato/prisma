@@ -246,7 +246,23 @@ public extension TranscriptionSettingsViewModel {
         }
     }
 
-    func deleteTranscription(_ metadata: TranscriptionMetadata) async {
+    func confirmDeleteTranscription(_ metadata: TranscriptionMetadata) {
+        pendingDeleteTranscription = metadata
+        showDeleteConfirmation = true
+    }
+
+    func cancelDeleteTranscription() {
+        pendingDeleteTranscription = nil
+        showDeleteConfirmation = false
+    }
+
+    func executeDeleteTranscription() async {
+        guard let metadata = pendingDeleteTranscription else { return }
+        await doDeleteTranscription(metadata)
+        cancelDeleteTranscription()
+    }
+
+    private func doDeleteTranscription(_ metadata: TranscriptionMetadata) async {
         do {
             try await storage.deleteTranscription(by: metadata.id)
             if selectedId == metadata.id {
@@ -256,6 +272,35 @@ public extension TranscriptionSettingsViewModel {
         } catch {
             logger.error("Failed to delete transcription: \(error.localizedDescription)")
             errorMessage = "Failed to delete: \(error.localizedDescription)"
+        }
+    }
+
+    func exportTranscription(for metadata: TranscriptionMetadata) async {
+        do {
+            let transcription: Transcription
+            if selectedId == metadata.id, let current = selectedTranscription {
+                transcription = current
+            } else {
+                guard let loaded = try await storage.loadTranscription(by: metadata.id) else {
+                    errorMessage = "transcription.export.error.missing_transcription".localized
+                    return
+                }
+                transcription = loaded
+            }
+
+            let panel = savePanelProvider()
+            panel.allowedContentTypes = [.plainText]
+            panel.nameFieldStringValue = summaryExportHelper.defaultExportFilename(for: transcription) + ".md"
+
+            let response = panel.runModal()
+            guard response == .OK, let destinationURL = panel.url else {
+                return
+            }
+
+            try await summaryExportHelper.exportManually(transcription: transcription, to: destinationURL)
+        } catch {
+            logger.error("Failed to manually export transcription: \(error.localizedDescription)")
+            errorMessage = error.localizedDescription
         }
     }
 

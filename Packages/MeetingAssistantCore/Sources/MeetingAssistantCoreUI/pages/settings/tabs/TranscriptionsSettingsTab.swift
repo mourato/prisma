@@ -80,6 +80,22 @@ public struct TranscriptionsSettingsTab: View {
         .onChange(of: viewModel.transcriptions) { _, transcriptions in
             sanitizeNavigationHistory(using: transcriptions)
         }
+        .confirmationDialog(
+            "settings.transcriptions.delete_title".localized,
+            isPresented: $viewModel.showDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("common.delete".localized, role: .destructive) {
+                Task {
+                    await viewModel.executeDeleteTranscription()
+                }
+            }
+            Button("common.cancel".localized, role: .cancel) {
+                viewModel.cancelDeleteTranscription()
+            }
+        } message: {
+            Text("settings.transcriptions.delete_message".localized(with: viewModel.pendingDeleteTranscription?.appName ?? ""))
+        }
     }
 
     // MARK: - Content Section
@@ -431,8 +447,10 @@ public struct TranscriptionsSettingsTab: View {
                 await viewModel.retryTranscription(for: metadata)
             }
         case .delete:
+            viewModel.confirmDeleteTranscription(metadata)
+        case .export:
             Task {
-                await viewModel.deleteTranscription(metadata)
+                await viewModel.exportTranscription(for: metadata)
             }
         }
     }

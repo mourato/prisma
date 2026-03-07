@@ -9,7 +9,7 @@ final class SummaryExportSafetyServicesTests: XCTestCase {
 
         let decision = evaluator.evaluate(
             transcription: transcription,
-            exportFolder: URL(fileURLWithPath: "/tmp"),
+            exportDestination: URL(fileURLWithPath: "/tmp"),
             candidateContent: "Valid content",
             policyLevel: .standard
         )
@@ -34,7 +34,7 @@ final class SummaryExportSafetyServicesTests: XCTestCase {
 
         let decision = evaluator.evaluate(
             transcription: transcription,
-            exportFolder: URL(fileURLWithPath: "/tmp"),
+            exportDestination: URL(fileURLWithPath: "/tmp"),
             candidateContent: "Valid content",
             policyLevel: .standard
         )
@@ -60,7 +60,7 @@ final class SummaryExportSafetyServicesTests: XCTestCase {
 
         let decision = evaluator.evaluate(
             transcription: transcription,
-            exportFolder: URL(fileURLWithPath: "/tmp"),
+            exportDestination: URL(fileURLWithPath: "/tmp"),
             candidateContent: "Valid content",
             policyLevel: .strict
         )

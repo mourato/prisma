@@ -83,12 +83,17 @@ public class TranscriptionSettingsViewModel: ObservableObject {
     @Published public var searchText = ""
     @Published public var appFilterId = FilterConstants.allAppsId
     @Published public var errorMessage: String?
+    
+    @Published public var showDeleteConfirmation = false
+    @Published public var pendingDeleteTranscription: TranscriptionMetadata?
 
     let storage: StorageService
     let recordingManager: RecordingManager
     let meetingRepository: MeetingRepository
     let meetingQAService: any MeetingQAServiceProtocol
     let settings: AppSettingsStore
+    let savePanelProvider: @MainActor () -> NSSavePanel
+    let summaryExportHelper: SummaryExportHelperProtocol
     let logger = Logger(subsystem: AppIdentity.logSubsystem, category: "TranscriptionSettingsViewModel")
     var lastAskedQuestion: String?
     var lastQuestionTranscriptionId: UUID?
@@ -108,13 +113,17 @@ public class TranscriptionSettingsViewModel: ObservableObject {
         recordingManager: RecordingManager = .shared,
         meetingRepository: MeetingRepository = CoreDataMeetingRepository(),
         meetingQAService: any MeetingQAServiceProtocol = MeetingQAService.shared,
-        settings: AppSettingsStore = .shared
+        settings: AppSettingsStore = .shared,
+        savePanelProvider: @escaping @MainActor () -> NSSavePanel = { NSSavePanel() },
+        summaryExportHelper: SummaryExportHelperProtocol = SummaryExportHelper()
     ) {
         self.storage = storage
         self.recordingManager = recordingManager
         self.meetingRepository = meetingRepository
         self.meetingQAService = meetingQAService
         self.settings = settings
+        self.savePanelProvider = savePanelProvider
+        self.summaryExportHelper = summaryExportHelper
     }
 
     public var isMeetingQnAEnabled: Bool {
