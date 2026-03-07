@@ -60,7 +60,10 @@ extension TranscriptionSegmentMO {
         transcription: TranscriptionMO,
         in context: NSManagedObjectContext
     ) -> TranscriptionSegmentMO {
-        let segmentMO = TranscriptionSegmentMO(context: context)
+        let segmentMO = TranscriptionSegmentMO(
+            entity: resolvedEntityDescription(named: "TranscriptionSegmentMO", in: context),
+            insertInto: context
+        )
         segmentMO.update(from: segment)
         segmentMO.transcription = transcription
         return segmentMO

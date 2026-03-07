@@ -82,7 +82,10 @@ extension MeetingMO {
 
     /// Cria novo Managed Object a partir de Domain Entity
     static func create(from entity: MeetingEntity, in context: NSManagedObjectContext) -> MeetingMO {
-        let meetingMO = MeetingMO(context: context)
+        let meetingMO = MeetingMO(
+            entity: resolvedEntityDescription(named: "MeetingMO", in: context),
+            insertInto: context
+        )
         meetingMO.update(from: entity)
         return meetingMO
     }

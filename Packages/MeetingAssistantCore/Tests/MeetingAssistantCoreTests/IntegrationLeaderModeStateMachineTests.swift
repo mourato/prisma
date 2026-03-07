@@ -179,19 +179,19 @@ final class IntegrationLeaderModeStateMachineTests: XCTestCase {
         _ = machine.actionKeyPressed()
         XCTAssertTrue(machine.isTerminalState)
 
-        _ = machine.reset()
-        _ = machine.leaderPressed(for: UUID())
-        _ = machine.timeoutElapsed()
+        machine.reset()
+        machine.leaderPressed(for: UUID())
+        machine.timeoutElapsed()
         XCTAssertTrue(machine.isTerminalState)
 
-        _ = machine.reset()
-        _ = machine.leaderPressed(for: UUID())
-        _ = machine.cancelledByEscapeOrBlur()
+        machine.reset()
+        machine.leaderPressed(for: UUID())
+        machine.cancelledByEscapeOrBlur()
         XCTAssertTrue(machine.isTerminalState)
     }
 
     func testLeaderModeStateMachineCustomTimeout() {
-        var machine = IntegrationLeaderModeStateMachine(actionTimeoutSeconds: 5.0)
+        let machine = IntegrationLeaderModeStateMachine(actionTimeoutSeconds: 5.0)
 
         XCTAssertEqual(machine.actionTimeoutSeconds, 5.0)
         XCTAssertEqual(machine.actionTimeoutNanoseconds, 5_000_000_000)

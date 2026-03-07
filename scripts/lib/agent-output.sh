@@ -154,7 +154,7 @@ ma_agent_error_count() {
         return
     fi
 
-    count="$(grep -Eic "error:|fatal error:" "${log_path}" 2>/dev/null || true)"
+    count="$(grep -Ec "error:|fatal error:" "${log_path}" 2>/dev/null || true)"
     if [ -z "${count}" ]; then
         count=0
     fi
