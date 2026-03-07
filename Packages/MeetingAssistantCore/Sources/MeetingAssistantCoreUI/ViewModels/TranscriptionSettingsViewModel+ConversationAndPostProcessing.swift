@@ -10,6 +10,29 @@ import OSLog
 import SwiftUI
 
 public extension TranscriptionSettingsViewModel {
+    enum ManualTranscriptionExportKind: Sendable {
+        case summary
+        case original
+
+        var filenameSuffixKey: String {
+            switch self {
+            case .summary:
+                "transcription.export.filename.summary_suffix"
+            case .original:
+                "transcription.export.filename.original_suffix"
+            }
+        }
+
+        var emptyContentErrorKey: String {
+            switch self {
+            case .summary:
+                "transcription.export.error.empty_summary"
+            case .original:
+                "transcription.export.error.empty_original"
+            }
+        }
+    }
+
     func submitQuestion(for transcription: Transcription) async {
         let trimmedQuestion = qaQuestion.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedQuestion.isEmpty else {
@@ -219,7 +242,7 @@ public extension TranscriptionSettingsViewModel {
             logger.error("Failed to apply post-processing: \(error.localizedDescription)")
             let message = "transcription.post_processing.error".localized
             postProcessingErrorByTranscriptionID[transcriptionID] = message
-            errorMessage = message
+            operationErrorMessage = message
         }
     }
 
@@ -242,7 +265,7 @@ public extension TranscriptionSettingsViewModel {
             try await renameSpeaker(in: &transcription, from: oldValue, to: newValue, selectedID: transcriptionID)
         } catch {
             logger.error("Failed to rename speaker: \(error.localizedDescription)")
-            errorMessage = "transcription.speaker.rename.error".localized
+            operationErrorMessage = "transcription.speaker.rename.error".localized
         }
     }
 
@@ -271,36 +294,40 @@ public extension TranscriptionSettingsViewModel {
             await loadTranscriptions()
         } catch {
             logger.error("Failed to delete transcription: \(error.localizedDescription)")
-            errorMessage = "Failed to delete: \(error.localizedDescription)"
+            operationErrorMessage = error.localizedDescription
         }
     }
 
-    func exportTranscription(for metadata: TranscriptionMetadata) async {
+    func exportTranscription(
+        for metadata: TranscriptionMetadata,
+        kind: ManualTranscriptionExportKind
+    ) async {
+        operationErrorMessage = nil
         do {
-            let transcription: Transcription
-            if selectedId == metadata.id, let current = selectedTranscription {
-                transcription = current
-            } else {
-                guard let loaded = try await storage.loadTranscription(by: metadata.id) else {
-                    errorMessage = "transcription.export.error.missing_transcription".localized
-                    return
-                }
-                transcription = loaded
+            guard let transcription = try await transcriptionForAction(metadata) else {
+                operationErrorMessage = "transcription.export.error.missing_transcription".localized
+                return
+            }
+
+            let exportContent = contentForManualExport(transcription: transcription, kind: kind)
+            guard !exportContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                operationErrorMessage = kind.emptyContentErrorKey.localized
+                return
             }
 
             let panel = savePanelProvider()
             panel.allowedContentTypes = [.plainText]
-            panel.nameFieldStringValue = summaryExportHelper.defaultExportFilename(for: transcription) + ".md"
+            panel.nameFieldStringValue = suggestedExportFilename(for: transcription, kind: kind)
 
             let response = panel.runModal()
             guard response == .OK, let destinationURL = panel.url else {
                 return
             }
 
-            try await summaryExportHelper.exportManually(transcription: transcription, to: destinationURL)
+            try summaryExportHelper.exportContentManually(exportContent, to: destinationURL)
         } catch {
             logger.error("Failed to manually export transcription: \(error.localizedDescription)")
-            errorMessage = error.localizedDescription
+            operationErrorMessage = error.localizedDescription
         }
     }
 
@@ -310,18 +337,18 @@ public extension TranscriptionSettingsViewModel {
         }
 
         do {
-            guard let transcription = try await storage.loadTranscription(by: metadata.id) else {
-                errorMessage = "transcription.retry.missing_transcription".localized
+            guard let transcription = try await transcriptionForAction(metadata) else {
+                operationErrorMessage = "transcription.retry.missing_transcription".localized
                 return
             }
 
             guard let audioURL = transcription.audioURL else {
-                errorMessage = "transcription.retry.missing_audio".localized
+                operationErrorMessage = "transcription.retry.missing_audio".localized
                 return
             }
 
             guard FileManager.default.fileExists(atPath: audioURL.path) else {
-                errorMessage = "transcription.retry.missing_audio".localized
+                operationErrorMessage = "transcription.retry.missing_audio".localized
                 return
             }
 
@@ -332,7 +359,7 @@ public extension TranscriptionSettingsViewModel {
             }
         } catch {
             logger.error("Failed to retry transcription: \(error.localizedDescription)")
-            errorMessage = error.localizedDescription
+            operationErrorMessage = error.localizedDescription
         }
     }
 
@@ -358,7 +385,7 @@ public extension TranscriptionSettingsViewModel {
             }
         } catch {
             logger.error("Failed to update meeting title: \(error.localizedDescription)")
-            errorMessage = error.localizedDescription
+            operationErrorMessage = error.localizedDescription
         }
     }
 
@@ -390,8 +417,37 @@ public extension TranscriptionSettingsViewModel {
             }
         } catch {
             logger.error("Failed to update recording source: \(error.localizedDescription)")
-            errorMessage = error.localizedDescription
+            operationErrorMessage = error.localizedDescription
         }
+    }
+
+    private func transcriptionForAction(_ metadata: TranscriptionMetadata) async throws -> Transcription? {
+        if selectedId == metadata.id, let current = selectedTranscription {
+            return current
+        }
+
+        return try await storage.loadTranscription(by: metadata.id)
+    }
+
+    private func contentForManualExport(
+        transcription: Transcription,
+        kind: ManualTranscriptionExportKind
+    ) -> String {
+        switch kind {
+        case .summary:
+            return transcription.processedContent ?? transcription.text
+        case .original:
+            return transcription.rawText
+        }
+    }
+
+    private func suggestedExportFilename(
+        for transcription: Transcription,
+        kind: ManualTranscriptionExportKind
+    ) -> String {
+        let baseFilename = summaryExportHelper.defaultExportFilename(for: transcription)
+        let suffix = kind.filenameSuffixKey.localized
+        return "\(baseFilename) \(suffix).md"
     }
 
     private func makeUpdatedMeetingEntity(

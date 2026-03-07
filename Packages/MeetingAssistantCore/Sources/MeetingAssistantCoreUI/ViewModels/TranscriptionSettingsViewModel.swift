@@ -82,8 +82,9 @@ public class TranscriptionSettingsViewModel: ObservableObject {
     @Published public var dateFilter: DateFilter = .today
     @Published public var searchText = ""
     @Published public var appFilterId = FilterConstants.allAppsId
-    @Published public var errorMessage: String?
-    
+    @Published public var loadErrorMessage: String?
+    @Published public var operationErrorMessage: String?
+
     @Published public var showDeleteConfirmation = false
     @Published public var pendingDeleteTranscription: TranscriptionMetadata?
 
@@ -317,6 +318,7 @@ public class TranscriptionSettingsViewModel: ObservableObject {
 
     public func loadTranscriptions() async {
         isLoading = true
+        loadErrorMessage = nil
         do {
             let query = TranscriptionMetadataQuery(
                 sourceFilter: sourceFilter,
@@ -339,7 +341,7 @@ public class TranscriptionSettingsViewModel: ObservableObject {
             }
         } catch {
             logger.error("Failed to load transcriptions: \(error.localizedDescription)")
-            errorMessage = "settings.transcriptions.error_load".localized
+            loadErrorMessage = "settings.transcriptions.error_load".localized
         }
         isLoading = false
     }

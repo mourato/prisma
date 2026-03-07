@@ -761,23 +761,54 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
 
     // MARK: - Manual Export Tests
 
-    func testExportTranscriptionWritesExpectedMarkdownWhenPanelReturnsURL() async {
+    func testExportSummaryWritesProcessedContentWhenPanelReturnsURL() async {
         let id = UUID()
-        let transcription = Transcription(id: id, meeting: Meeting(id: id, app: .zoom), text: "Export Content", rawText: "Export Content")
+        let transcription = Transcription(
+            id: id,
+            meeting: Meeting(id: id, app: .zoom),
+            text: "Processed Export Content",
+            rawText: "Original Export Content",
+            processedContent: "Processed Export Content"
+        )
         storage.mockTranscriptions = [transcription]
         await viewModel.loadTranscriptions()
 
         let metadata = try! XCTUnwrap(viewModel.transcriptions.first)
         let destinationURL = URL(fileURLWithPath: "/tmp/mock_export.md")
-        
+
         mockSavePanel.mockRunModalResponse = .OK
         mockSavePanel.mockURL = destinationURL
 
-        await viewModel.exportTranscription(for: metadata)
+        await viewModel.exportTranscription(for: metadata, kind: .summary)
 
-        XCTAssertTrue(mockSummaryExportHelper.exportManuallyCalled)
-        XCTAssertEqual(mockSummaryExportHelper.exportManuallyDestination, destinationURL)
-        XCTAssertEqual(mockSummaryExportHelper.exportManuallyTranscription?.id, id)
+        XCTAssertTrue(mockSummaryExportHelper.exportContentManuallyCalled)
+        XCTAssertEqual(mockSummaryExportHelper.exportContentManuallyDestination, destinationURL)
+        XCTAssertEqual(mockSummaryExportHelper.exportedContent, "Processed Export Content")
+        XCTAssertNil(viewModel.operationErrorMessage)
+    }
+
+    func testExportOriginalWritesRawTextWhenPanelReturnsURL() async {
+        let id = UUID()
+        let transcription = Transcription(
+            meeting: Meeting(id: id, app: .zoom),
+            text: "Processed Export Content",
+            rawText: "Original Export Content",
+            processedContent: "Processed Export Content"
+        )
+        storage.mockTranscriptions = [transcription]
+        await viewModel.loadTranscriptions()
+
+        let metadata = try! XCTUnwrap(viewModel.transcriptions.first)
+        let destinationURL = URL(fileURLWithPath: "/tmp/mock_original_export.md")
+        mockSavePanel.mockRunModalResponse = .OK
+        mockSavePanel.mockURL = destinationURL
+
+        await viewModel.exportTranscription(for: metadata, kind: .original)
+
+        XCTAssertTrue(mockSummaryExportHelper.exportContentManuallyCalled)
+        XCTAssertEqual(mockSummaryExportHelper.exportContentManuallyDestination, destinationURL)
+        XCTAssertEqual(mockSummaryExportHelper.exportedContent, "Original Export Content")
+        XCTAssertNil(viewModel.operationErrorMessage)
     }
 
     func testExportTranscriptionDoesNothingOnPanelCancel() async {
@@ -790,13 +821,13 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
         mockSavePanel.mockRunModalResponse = .cancel
         mockSavePanel.mockURL = nil
 
-        await viewModel.exportTranscription(for: metadata)
+        await viewModel.exportTranscription(for: metadata, kind: .summary)
 
-        XCTAssertFalse(mockSummaryExportHelper.exportManuallyCalled)
-        XCTAssertNil(viewModel.errorMessage)
+        XCTAssertFalse(mockSummaryExportHelper.exportContentManuallyCalled)
+        XCTAssertNil(viewModel.operationErrorMessage)
     }
 
-    func testExportTranscriptionSurfacesLocalizedErrorWhenSafetyPolicyBlocks() async {
+    func testExportTranscriptionSurfacesOperationalErrorWithoutTouchingLoadErrorState() async {
         let id = UUID()
         let transcription = Transcription(meeting: Meeting(id: id, app: .zoom), text: "Export Content", rawText: "Export Content")
         storage.mockTranscriptions = [transcription]
@@ -804,16 +835,21 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
 
         let metadata = try! XCTUnwrap(viewModel.transcriptions.first)
         let destinationURL = URL(fileURLWithPath: "/tmp/mock_export.md")
-        
+
         mockSavePanel.mockRunModalResponse = .OK
         mockSavePanel.mockURL = destinationURL
-        
-        mockSummaryExportHelper.errorToThrow = NSError(domain: "SummaryExportHelper", code: 2, userInfo: [NSLocalizedDescriptionKey: "Blocked by policy."])
 
-        await viewModel.exportTranscription(for: metadata)
+        mockSummaryExportHelper.errorToThrow = NSError(
+            domain: "SummaryExportHelper",
+            code: 2,
+            userInfo: [NSLocalizedDescriptionKey: "Export failed."]
+        )
 
-        XCTAssertTrue(mockSummaryExportHelper.exportManuallyCalled)
-        XCTAssertEqual(viewModel.errorMessage, "Blocked by policy.")
+        await viewModel.exportTranscription(for: metadata, kind: .summary)
+
+        XCTAssertTrue(mockSummaryExportHelper.exportContentManuallyCalled)
+        XCTAssertEqual(viewModel.operationErrorMessage, "Export failed.")
+        XCTAssertNil(viewModel.loadErrorMessage)
     }
 }
 
@@ -825,17 +861,17 @@ class MockSavePanel: NSSavePanel, @unchecked Sendable {
 }
 
 class MockSummaryExportHelper: SummaryExportHelperProtocol, @unchecked Sendable {
-    var exportManuallyCalled = false
-    var exportManuallyTranscription: Transcription?
-    var exportManuallyDestination: URL?
+    var exportContentManuallyCalled = false
+    var exportContentManuallyDestination: URL?
+    var exportedContent: String?
     var errorToThrow: Error?
 
     func exportAutomatically(transcription: Transcription) async {}
-    
-    func exportManually(transcription: Transcription, to destinationURL: URL) async throws {
-        exportManuallyCalled = true
-        exportManuallyTranscription = transcription
-        exportManuallyDestination = destinationURL
+
+    func exportContentManually(_ content: String, to destinationURL: URL) throws {
+        exportContentManuallyCalled = true
+        exportContentManuallyDestination = destinationURL
+        exportedContent = content
         if let error = errorToThrow {
             throw error
         }
@@ -845,4 +881,3 @@ class MockSummaryExportHelper: SummaryExportHelperProtocol, @unchecked Sendable 
         return "mock_file"
     }
 }
-

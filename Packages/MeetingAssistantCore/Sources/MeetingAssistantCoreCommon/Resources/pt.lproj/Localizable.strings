@@ -698,8 +698,17 @@
 "transcription.tab.ai_processed" = "Processado por IA";
 "transcription.tab.original" = "Original";
 "transcription.tab.segmented" = "Segmentado";
+"transcription.actions.export" = "Exportar";
+"transcription.actions.export_summary" = "Exportar Resumo";
+"transcription.actions.export_original" = "Exportar Original";
 "transcription.actions.redo_post_processing" = "Refazer pós-processamento";
 "transcription.actions.retry_transcription" = "Refazer transcrição";
+"transcription.export.error.missing_transcription" = "Não foi possível carregar a transcrição. Tente novamente.";
+"transcription.export.error.empty_content" = "Não há conteúdo disponível para exportar.";
+"transcription.export.error.empty_summary" = "Não há resumo disponível para exportar.";
+"transcription.export.error.empty_original" = "Não há transcrição original disponível para exportar.";
+"transcription.export.filename.summary_suffix" = "Resumo";
+"transcription.export.filename.original_suffix" = "Original";
 "transcription.retry.missing_audio" = "Arquivo de áudio original não encontrado.";
 "transcription.retry.missing_transcription" = "Transcrição não encontrada.";
 
@@ -736,7 +745,10 @@
 "common.copy" = "Copiar";
 "common.save" = "Salvar";
 "common.create" = "Criar";
+"common.select" = "Selecionar";
 "common.optional" = "(opcional)";
+"settings.transcriptions.delete_title" = "Excluir Transcrição";
+"settings.transcriptions.delete_message" = "Excluir a transcrição de %@?";
 
 /* Prompt Editor */
 "prompt.edit_title" = "Editar Prompt";

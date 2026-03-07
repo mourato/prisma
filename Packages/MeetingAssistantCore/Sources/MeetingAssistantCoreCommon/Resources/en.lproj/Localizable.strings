@@ -698,8 +698,17 @@
 "transcription.tab.ai_processed" = "AI Processed";
 "transcription.tab.original" = "Original";
 "transcription.tab.segmented" = "Segmented";
+"transcription.actions.export" = "Export";
+"transcription.actions.export_summary" = "Export Summary";
+"transcription.actions.export_original" = "Export Original";
 "transcription.actions.redo_post_processing" = "Redo Post-processing";
 "transcription.actions.retry_transcription" = "Retry transcription";
+"transcription.export.error.missing_transcription" = "Could not load the transcription. Please try again.";
+"transcription.export.error.empty_content" = "There is no content available to export.";
+"transcription.export.error.empty_summary" = "There is no summary available to export.";
+"transcription.export.error.empty_original" = "There is no original transcription available to export.";
+"transcription.export.filename.summary_suffix" = "Summary";
+"transcription.export.filename.original_suffix" = "Original";
 "transcription.retry.missing_audio" = "Original audio file not found.";
 "transcription.retry.missing_transcription" = "Transcription not found.";
 
@@ -738,6 +747,8 @@
 "common.create" = "Create";
 "common.select" = "Select";
 "common.optional" = "(optional)";
+"settings.transcriptions.delete_title" = "Delete Transcription";
+"settings.transcriptions.delete_message" = "Delete the transcription from %@?";
 
 /* Prompt Editor */
 "prompt.edit_title" = "Edit Prompt";
