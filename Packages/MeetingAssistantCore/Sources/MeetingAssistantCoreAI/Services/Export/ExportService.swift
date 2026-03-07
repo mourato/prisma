@@ -19,6 +19,14 @@ public struct ExportService: Sendable {
         try content.write(to: url, atomically: true, encoding: .utf8)
     }
 
+    /// Exports pre-rendered text content to a file at the specified URL.
+    /// - Parameters:
+    ///   - content: The content to write.
+    ///   - url: The file URL to save to.
+    public func export(content: String, to url: URL) throws {
+        try content.write(to: url, atomically: true, encoding: .utf8)
+    }
+
     /// Generates a suggested filename for the export.
     /// - Parameter meeting: The meeting entity.
     /// - Returns: A safe filename string (e.g., "Meeting_2023-10-27_Standup.md").

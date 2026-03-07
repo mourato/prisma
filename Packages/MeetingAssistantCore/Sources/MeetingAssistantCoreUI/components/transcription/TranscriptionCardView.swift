@@ -53,6 +53,11 @@ public struct TranscriptionCardView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public enum TranscriptionAction {
+        public enum ExportKind: Sendable {
+            case summary
+            case original
+        }
+
         case askAboutMeeting
         case copy(text: String)
         case updateMeetingTitle(String?)
@@ -60,7 +65,7 @@ public struct TranscriptionCardView: View {
         case retryTranscription
         case info
         case delete
-        case export
+        case export(ExportKind)
     }
 
     public enum TranscriptionTab: CaseIterable {
@@ -205,8 +210,19 @@ public struct TranscriptionCardView: View {
                             Label("common.copy".localized, systemImage: "doc.on.doc")
                         }
 
-                        Button {
-                            onAction(.export)
+                        Menu {
+                            Button {
+                                onAction(.export(.summary))
+                            } label: {
+                                Label("transcription.actions.export_summary".localized, systemImage: "sparkles")
+                            }
+                            .disabled(!hasPostProcessingContent)
+
+                            Button {
+                                onAction(.export(.original))
+                            } label: {
+                                Label("transcription.actions.export_original".localized, systemImage: "doc.plaintext")
+                            }
                         } label: {
                             Label("transcription.actions.export".localized, systemImage: "square.and.arrow.up")
                         }
@@ -234,8 +250,14 @@ public struct TranscriptionCardView: View {
                         Button(role: .destructive) {
                             onAction(.delete)
                         } label: {
-                            Label("common.delete".localized, systemImage: "trash")
+                            Label {
+                                Text("common.delete".localized)
+                            } icon: {
+                                Image(systemName: "trash")
+                            }
+                            .foregroundStyle(AppDesignSystem.Colors.error)
                         }
+                        .foregroundStyle(AppDesignSystem.Colors.error)
                     } label: {
                         Image(systemName: "ellipsis.circle")
                             .font(.body)

@@ -96,6 +96,20 @@ public struct TranscriptionsSettingsTab: View {
         } message: {
             Text("settings.transcriptions.delete_message".localized(with: viewModel.pendingDeleteTranscription?.appName ?? ""))
         }
+        .alert("common.error".localized, isPresented: Binding(
+            get: { viewModel.operationErrorMessage != nil },
+            set: {
+                if !$0 {
+                    viewModel.operationErrorMessage = nil
+                }
+            }
+        )) {
+            Button("common.ok".localized, role: .cancel) {}
+        } message: {
+            if let errorMessage = viewModel.operationErrorMessage {
+                Text(errorMessage)
+            }
+        }
     }
 
     // MARK: - Content Section
@@ -133,7 +147,7 @@ public struct TranscriptionsSettingsTab: View {
                         .frame(width: AppDesignSystem.Layout.narrowPickerWidth)
                 }
 
-                if let errorMessage = viewModel.errorMessage {
+                if let errorMessage = viewModel.loadErrorMessage {
                     SettingsStateBlock(
                         kind: .warning,
                         title: "settings.transcriptions.error_load".localized,
@@ -448,9 +462,15 @@ public struct TranscriptionsSettingsTab: View {
             }
         case .delete:
             viewModel.confirmDeleteTranscription(metadata)
-        case .export:
+        case let .export(kind):
             Task {
-                await viewModel.exportTranscription(for: metadata)
+                let exportKind: TranscriptionSettingsViewModel.ManualTranscriptionExportKind = switch kind {
+                case .summary:
+                    .summary
+                case .original:
+                    .original
+                }
+                await viewModel.exportTranscription(for: metadata, kind: exportKind)
             }
         }
     }

@@ -7,7 +7,7 @@ import MeetingAssistantCoreInfrastructure
 @MainActor
 public protocol SummaryExportHelperProtocol: Sendable {
     func exportAutomatically(transcription: Transcription) async
-    func exportManually(transcription: Transcription, to destinationURL: URL) async throws
+    func exportContentManually(_ content: String, to destinationURL: URL) throws
     func defaultExportFilename(for transcription: Transcription) -> String
 }
 
@@ -70,39 +70,17 @@ public struct SummaryExportHelper: SummaryExportHelperProtocol {
         }
     }
 
-    public func exportManually(transcription: Transcription, to destinationURL: URL) async throws {
-        let settings = AppSettingsStore.shared
-        let exportPolicyLevel = settings.summaryExportSafetyPolicyLevel
-
-        guard let content = prepareExportContent(transcription: transcription, settings: settings) else {
-            throw NSError(domain: "SummaryExportHelper", code: 1, userInfo: [NSLocalizedDescriptionKey: "Export content could not be prepared."])
-        }
-
-        let safetyDecision = evaluateExportSafety(
-            transcription: transcription,
-            destination: destinationURL,
-            settings: settings,
-            content: content
-        )
-
-        guard safetyDecision.isCompliant else {
-            await handleBlockedExport(
-                transcription: transcription,
-                safetyDecision: safetyDecision,
-                exportPolicyLevel: exportPolicyLevel
+    public func exportContentManually(_ content: String, to destinationURL: URL) throws {
+        let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedContent.isEmpty else {
+            throw NSError(
+                domain: "SummaryExportHelper",
+                code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "transcription.export.error.empty_content".localized]
             )
-            throw NSError(domain: "SummaryExportHelper", code: 2, userInfo: [NSLocalizedDescriptionKey: "transcription.export.error.blocked_by_policy".localized])
         }
 
-        try await performExport(
-            destinationURL: destinationURL,
-            isSecurityScoped: false,
-            folderToUnlock: nil,
-            transcription: transcription,
-            content: content,
-            safetyDecision: safetyDecision,
-            exportPolicyLevel: exportPolicyLevel
-        )
+        try ExportService().export(content: trimmedContent, to: destinationURL)
     }
 
     public func defaultExportFilename(for transcription: Transcription) -> String {
