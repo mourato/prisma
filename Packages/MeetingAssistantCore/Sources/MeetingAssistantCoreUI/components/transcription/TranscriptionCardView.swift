@@ -60,6 +60,7 @@ public struct TranscriptionCardView: View {
         case retryTranscription
         case info
         case delete
+        case export
     }
 
     public enum TranscriptionTab: CaseIterable {
@@ -170,7 +171,7 @@ public struct TranscriptionCardView: View {
 
                 Spacer()
 
-                HStack(spacing: 12) {
+                HStack(spacing: 8) {
                     if transcription.supportsMeetingConversation {
                         Button {
                             onAction(.askAboutMeeting)
@@ -182,56 +183,12 @@ public struct TranscriptionCardView: View {
                     }
 
                     Button {
-                        onAction(.copy(text: currentText))
-                    } label: {
-                        Image(systemName: "doc.on.doc")
-                            .font(.body)
-                            .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .help("common.copy".localized)
-
-                    Menu {
-                        ForEach(filteredPrompts) { prompt in
-                            Button(prompt.title) {
-                                onAction(.reprocess(prompt: prompt))
-                            }
-                        }
-                    } label: {
-                        if isPostProcessing {
-                            ProgressView()
-                                .controlSize(.small)
-                                .frame(width: 16, height: 16)
-                        } else {
-                            Image(systemName: "wand.and.sparkles")
-                                .font(.body)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    .menuStyle(.borderlessButton)
-                    .help("transcription.actions.redo_post_processing".localized)
-                    .fixedSize()
-                    .disabled(filteredPrompts.isEmpty || isPostProcessing)
-
-                    Button {
-                        onAction(.retryTranscription)
-                    } label: {
-                        Image(systemName: "arrow.clockwise.circle")
-                            .font(.body)
-                            .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .help("transcription.actions.retry_transcription".localized)
-                    .disabled(audioURL == nil)
-
-                    Button {
                         showInfoPopover.toggle()
                     } label: {
-                        Image(systemName: "info.circle")
-                            .font(.body)
-                            .foregroundStyle(.secondary)
+                        Label("transcription.info.title".localized, systemImage: "info.circle")
+                            .font(.caption)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.bordered)
                     .popover(isPresented: $showInfoPopover) {
                         if let details = transcriptionDetail {
                             TranscriptionInfoPopover(transcription: details)
@@ -241,7 +198,51 @@ public struct TranscriptionCardView: View {
                         }
                     }
 
-                    actionButton(icon: "trash", action: .delete, isDestructive: true)
+                    Menu {
+                        Button {
+                            onAction(.copy(text: currentText))
+                        } label: {
+                            Label("common.copy".localized, systemImage: "doc.on.doc")
+                        }
+
+                        Button {
+                            onAction(.export)
+                        } label: {
+                            Label("transcription.actions.export".localized, systemImage: "square.and.arrow.up")
+                        }
+
+                        Menu {
+                            ForEach(filteredPrompts) { prompt in
+                                Button(prompt.title) {
+                                    onAction(.reprocess(prompt: prompt))
+                                }
+                            }
+                        } label: {
+                            Label("transcription.actions.redo_post_processing".localized, systemImage: "wand.and.sparkles")
+                        }
+                        .disabled(filteredPrompts.isEmpty || isPostProcessing)
+
+                        Button {
+                            onAction(.retryTranscription)
+                        } label: {
+                            Label("transcription.actions.retry_transcription".localized, systemImage: "arrow.clockwise.circle")
+                        }
+                        .disabled(audioURL == nil)
+
+                        Divider()
+
+                        Button(role: .destructive) {
+                            onAction(.delete)
+                        } label: {
+                            Label("common.delete".localized, systemImage: "trash")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                            .font(.body)
+                    }
+                    .menuStyle(.borderlessButton)
+                    .fixedSize()
+                    .buttonStyle(.bordered)
                 }
             }
         }

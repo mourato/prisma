@@ -9,15 +9,21 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
     var meetingRepository: MockMeetingRepository!
     var meetingQAService: MockMeetingQAService!
     var cancellables: Set<AnyCancellable>!
+    var mockSavePanel: MockSavePanel!
+    var mockSummaryExportHelper: MockSummaryExportHelper!
 
     override func setUp() async throws {
         storage = MockStorageService()
         meetingRepository = MockMeetingRepository()
         meetingQAService = MockMeetingQAService()
+        mockSavePanel = MockSavePanel()
+        mockSummaryExportHelper = MockSummaryExportHelper()
         viewModel = TranscriptionSettingsViewModel(
             storage: storage,
             meetingRepository: meetingRepository,
-            meetingQAService: meetingQAService
+            meetingQAService: meetingQAService,
+            savePanelProvider: { [weak self] in self?.mockSavePanel ?? NSSavePanel() },
+            summaryExportHelper: mockSummaryExportHelper
         )
         cancellables = []
     }
@@ -26,6 +32,8 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
         storage = nil
         meetingRepository = nil
         meetingQAService = nil
+        mockSavePanel = nil
+        mockSummaryExportHelper = nil
         viewModel = nil
         cancellables = nil
     }
@@ -699,4 +707,142 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.qaModelSelectionByTranscription[id]?.providerRawValue, AIProvider.anthropic.rawValue)
         XCTAssertEqual(viewModel.qaModelSelectionByTranscription[id]?.modelID, "claude-3-7-sonnet")
     }
+
+    // MARK: - Delete Confirmation Tests
+
+    func testConfirmDeleteTranscriptionOnlyStagesDeletion() {
+        let metadata = makeMetadata(appName: "Test", appRawValue: "test", previewText: "test")
+        viewModel.confirmDeleteTranscription(metadata)
+
+        XCTAssertTrue(viewModel.showDeleteConfirmation)
+        XCTAssertEqual(viewModel.pendingDeleteTranscription?.id, metadata.id)
+    }
+
+    func testCancelDeleteTranscriptionClearsConfirmationStateWithoutDeleting() {
+        let metadata = makeMetadata(appName: "Test", appRawValue: "test", previewText: "test")
+        viewModel.confirmDeleteTranscription(metadata)
+        viewModel.cancelDeleteTranscription()
+
+        XCTAssertFalse(viewModel.showDeleteConfirmation)
+        XCTAssertNil(viewModel.pendingDeleteTranscription)
+    }
+
+    func testExecuteDeleteTranscriptionDeletesItemAndClearsState() async {
+        let id = UUID()
+        let transcription = Transcription(id: id, meeting: Meeting(id: id, app: .zoom), text: "Test", rawText: "Test")
+        storage.mockTranscriptions = [transcription]
+        await viewModel.loadTranscriptions()
+
+        let metadata = makeMetadata(appName: "Test", appRawValue: "test", previewText: "test")
+        let metadataWithId = TranscriptionMetadata(
+            id: id,
+            meetingId: id,
+            appName: metadata.appName,
+            appRawValue: metadata.appRawValue,
+            appBundleIdentifier: nil,
+            startTime: metadata.startTime,
+            createdAt: metadata.createdAt,
+            previewText: metadata.previewText,
+            wordCount: 1,
+            language: "en",
+            isPostProcessed: false,
+            duration: 1,
+            audioFilePath: nil,
+            inputSource: "test"
+        )
+        viewModel.confirmDeleteTranscription(metadataWithId)
+
+        await viewModel.executeDeleteTranscription()
+
+        XCTAssertFalse(viewModel.showDeleteConfirmation)
+        XCTAssertNil(viewModel.pendingDeleteTranscription)
+        XCTAssertTrue(storage.mockTranscriptions.isEmpty)
+    }
+
+    // MARK: - Manual Export Tests
+
+    func testExportTranscriptionWritesExpectedMarkdownWhenPanelReturnsURL() async {
+        let id = UUID()
+        let transcription = Transcription(id: id, meeting: Meeting(id: id, app: .zoom), text: "Export Content", rawText: "Export Content")
+        storage.mockTranscriptions = [transcription]
+        await viewModel.loadTranscriptions()
+
+        let metadata = try! XCTUnwrap(viewModel.transcriptions.first)
+        let destinationURL = URL(fileURLWithPath: "/tmp/mock_export.md")
+        
+        mockSavePanel.mockRunModalResponse = .OK
+        mockSavePanel.mockURL = destinationURL
+
+        await viewModel.exportTranscription(for: metadata)
+
+        XCTAssertTrue(mockSummaryExportHelper.exportManuallyCalled)
+        XCTAssertEqual(mockSummaryExportHelper.exportManuallyDestination, destinationURL)
+        XCTAssertEqual(mockSummaryExportHelper.exportManuallyTranscription?.id, id)
+    }
+
+    func testExportTranscriptionDoesNothingOnPanelCancel() async {
+        let id = UUID()
+        let transcription = Transcription(meeting: Meeting(id: id, app: .zoom), text: "Export Content", rawText: "Export Content")
+        storage.mockTranscriptions = [transcription]
+        await viewModel.loadTranscriptions()
+
+        let metadata = try! XCTUnwrap(viewModel.transcriptions.first)
+        mockSavePanel.mockRunModalResponse = .cancel
+        mockSavePanel.mockURL = nil
+
+        await viewModel.exportTranscription(for: metadata)
+
+        XCTAssertFalse(mockSummaryExportHelper.exportManuallyCalled)
+        XCTAssertNil(viewModel.errorMessage)
+    }
+
+    func testExportTranscriptionSurfacesLocalizedErrorWhenSafetyPolicyBlocks() async {
+        let id = UUID()
+        let transcription = Transcription(meeting: Meeting(id: id, app: .zoom), text: "Export Content", rawText: "Export Content")
+        storage.mockTranscriptions = [transcription]
+        await viewModel.loadTranscriptions()
+
+        let metadata = try! XCTUnwrap(viewModel.transcriptions.first)
+        let destinationURL = URL(fileURLWithPath: "/tmp/mock_export.md")
+        
+        mockSavePanel.mockRunModalResponse = .OK
+        mockSavePanel.mockURL = destinationURL
+        
+        mockSummaryExportHelper.errorToThrow = NSError(domain: "SummaryExportHelper", code: 2, userInfo: [NSLocalizedDescriptionKey: "Blocked by policy."])
+
+        await viewModel.exportTranscription(for: metadata)
+
+        XCTAssertTrue(mockSummaryExportHelper.exportManuallyCalled)
+        XCTAssertEqual(viewModel.errorMessage, "Blocked by policy.")
+    }
 }
+
+class MockSavePanel: NSSavePanel, @unchecked Sendable {
+    var mockRunModalResponse: NSApplication.ModalResponse = .cancel
+    var mockURL: URL?
+    override var url: URL? { mockURL }
+    override func runModal() -> NSApplication.ModalResponse { mockRunModalResponse }
+}
+
+class MockSummaryExportHelper: SummaryExportHelperProtocol, @unchecked Sendable {
+    var exportManuallyCalled = false
+    var exportManuallyTranscription: Transcription?
+    var exportManuallyDestination: URL?
+    var errorToThrow: Error?
+
+    func exportAutomatically(transcription: Transcription) async {}
+    
+    func exportManually(transcription: Transcription, to destinationURL: URL) async throws {
+        exportManuallyCalled = true
+        exportManuallyTranscription = transcription
+        exportManuallyDestination = destinationURL
+        if let error = errorToThrow {
+            throw error
+        }
+    }
+    
+    func defaultExportFilename(for transcription: Transcription) -> String {
+        return "mock_file"
+    }
+}
+

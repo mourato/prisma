@@ -7,13 +7,13 @@ public struct SummaryExportSafetyEvaluator: Sendable {
 
     public func evaluate(
         transcription: Transcription,
-        exportFolder: URL?,
+        exportDestination: URL?,
         candidateContent: String,
         policyLevel: SummaryExportSafetyPolicyLevel
     ) -> SummaryExportSafetyDecision {
         var reasons: [SummaryExportBlockReason] = []
 
-        if exportFolder == nil {
+        if exportDestination == nil {
             reasons.append(.init(
                 code: .missingExportFolder,
                 message: "Export folder is not configured."
