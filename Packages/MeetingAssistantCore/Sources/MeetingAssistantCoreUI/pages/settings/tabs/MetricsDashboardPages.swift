@@ -5,6 +5,7 @@ import SwiftUI
 
 struct MetricsDashboardIndexPage: View {
     @ObservedObject var viewModel: MetricsDashboardViewModel
+    let openMoreInsights: () -> Void
 
     var body: some View {
         SettingsScrollableContent {
@@ -22,7 +23,7 @@ struct MetricsDashboardIndexPage: View {
             )
 
             MetricsDashboardActivitySection(viewModel: viewModel)
-            MetricsDashboardMoreInsightsLinkSection()
+            MetricsDashboardMoreInsightsLinkSection(openMoreInsights: openMoreInsights)
             MetricsDashboardUpcomingEventsSection(viewModel: viewModel)
         }
     }
@@ -52,7 +53,6 @@ struct MetricsDashboardMoreInsightsPage: View {
                 MetricsDashboardWeekdayPeaksSection(viewModel: viewModel)
             }
         }
-        .navigationTitle("metrics.more_insights.title".localized)
     }
 }
 
@@ -77,13 +77,16 @@ private struct MetricsDashboardLoadErrorSection: View {
 }
 
 private struct MetricsDashboardMoreInsightsLinkSection: View {
+    let openMoreInsights: () -> Void
+
     var body: some View {
         DSCard {
-            SettingsDrillDownListRow(
-                destination: MetricsDashboardRoute.moreInsights,
+            SettingsDrillDownButtonRow(
                 title: "metrics.more_insights.title".localized,
                 accessibilityHint: "metrics.more_insights.accessibility_hint".localized
-            )
+            ) {
+                openMoreInsights()
+            }
         }
     }
 }
@@ -236,8 +239,6 @@ private struct MetricsDashboardWeekdayPeaksSection: View {
 }
 
 #Preview("Dashboard More Insights") {
-    NavigationStack {
-        MetricsDashboardMoreInsightsPage(viewModel: MetricsDashboardViewModel())
-    }
-    .frame(width: 720, height: 780)
+    MetricsDashboardMoreInsightsPage(viewModel: MetricsDashboardViewModel())
+        .frame(width: 720, height: 780)
 }

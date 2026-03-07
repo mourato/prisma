@@ -56,7 +56,6 @@ public struct EnhancementsProviderModelsPage: View {
                 }
             }
         }
-        .navigationTitle("settings.enhancements.provider_models.title".localized)
         .onAppear {
             let initialProvider = expandedProvider ?? viewModel.activeEnhancementsProvider
             expandedProvider = initialProvider

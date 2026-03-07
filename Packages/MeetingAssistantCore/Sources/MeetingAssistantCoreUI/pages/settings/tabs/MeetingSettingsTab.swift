@@ -10,10 +10,6 @@ import SwiftUI
 
 /// Tab for meeting-specific settings like app monitoring and automation.
 public struct MeetingSettingsTab: View {
-    private enum MeetingPageRoute: Hashable {
-        case monitoringTargets
-    }
-
     @Binding private var navigationState: MeetingSettingsNavigationState
     @StateObject private var meetingViewModel: MeetingSettingsViewModel
     @StateObject private var shortcutsViewModel = ShortcutSettingsViewModel()
@@ -39,14 +35,13 @@ public struct MeetingSettingsTab: View {
     }
 
     public var body: some View {
-        NavigationStack(path: meetingPathBinding) {
-            mainPage
-                .navigationDestination(for: MeetingPageRoute.self) { route in
-                    switch route {
-                    case .monitoringTargets:
-                        monitoringTargetsPage
-                    }
-                }
+        Group {
+            switch navigationState.currentRoute {
+            case .root:
+                mainPage
+            case .monitoringTargets:
+                monitoringTargetsPage
+            }
         }
         .sheet(isPresented: $meetingViewModel.showPromptEditor) {
             PromptEditorSheet(
@@ -75,25 +70,6 @@ public struct MeetingSettingsTab: View {
                 Text("settings.post_processing.delete_confirm_message".localized(with: prompt.title))
             }
         }
-    }
-
-    private var meetingPathBinding: Binding<[MeetingPageRoute]> {
-        Binding(
-            get: {
-                switch navigationState.currentRoute {
-                case .root:
-                    []
-                case .monitoringTargets:
-                    [.monitoringTargets]
-                }
-            },
-            set: { newPath in
-                let nextRoute: MeetingSettingsNavigationRoute = newPath.last == .monitoringTargets
-                    ? .monitoringTargets
-                    : .root
-                updateNavigationState(to: nextRoute)
-            }
-        )
     }
 
     private func updateNavigationState(to route: MeetingSettingsNavigationRoute) {
@@ -139,12 +115,13 @@ public struct MeetingSettingsTab: View {
             )
 
             DSGroup("settings.meetings.monitoring_access.title".localized, icon: "app.badge") {
-                SettingsDrillDownListRow(
-                    destination: MeetingPageRoute.monitoringTargets,
+                SettingsDrillDownButtonRow(
                     title: "settings.meetings.monitoring_access.button".localized,
                     subtitle: "settings.meetings.monitoring_access.desc".localized,
                     accessibilityHint: "settings.meetings.monitoring_access.accessibility_hint".localized
-                )
+                ) {
+                    updateNavigationState(to: .monitoringTargets)
+                }
             }
 
             DSGroup("settings.meetings.workflow".localized, icon: "bolt.fill") {
@@ -318,7 +295,6 @@ public struct MeetingSettingsTab: View {
 
             webTargetsSection
         }
-        .navigationTitle("settings.meetings.monitoring_access.modal_title".localized)
         .sheet(isPresented: $webTargetsViewModel.showEditor) {
             WebMeetingTargetEditorSheet(
                 target: webTargetsViewModel.editingTarget,

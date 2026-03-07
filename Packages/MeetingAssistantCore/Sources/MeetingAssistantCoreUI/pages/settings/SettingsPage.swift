@@ -30,8 +30,10 @@ public struct SettingsView: View {
 
     private let chromeMode: ChromeMode
     @State private var selectedSection: SettingsSection = .metrics
+    @State private var metricsNavigationState = SettingsSubpageNavigationState<MetricsDashboardRoute>()
     @State private var transcriptionsNavigationHistory = TranscriptionsNavigationHistory()
     @State private var meetingNavigationState = MeetingSettingsNavigationState()
+    @State private var enhancementsNavigationState = SettingsSubpageNavigationState<EnhancementsSettingsRoute>()
     @State private var columnVisibility = NavigationSplitViewVisibility.all
     @StateObject private var navigationService = NavigationService.shared
 
@@ -345,6 +347,11 @@ public struct SettingsView: View {
     }
 
     private func navigateBack() {
+        if selectedSection == .metrics, metricsNavigationState.canGoBack {
+            _ = metricsNavigationState.goBack()
+            return
+        }
+
         if selectedSection == .transcriptions, transcriptionsNavigationHistory.canGoBack {
             _ = transcriptionsNavigationHistory.goBack()
             return
@@ -354,9 +361,19 @@ public struct SettingsView: View {
             _ = meetingNavigationState.goBack()
             return
         }
+
+        if selectedSection == .enhancements, enhancementsNavigationState.canGoBack {
+            _ = enhancementsNavigationState.goBack()
+            return
+        }
     }
 
     private func navigateForward() {
+        if selectedSection == .metrics, metricsNavigationState.canGoForward {
+            _ = metricsNavigationState.goForward()
+            return
+        }
+
         if selectedSection == .transcriptions, transcriptionsNavigationHistory.canGoForward {
             _ = transcriptionsNavigationHistory.goForward()
             return
@@ -366,6 +383,11 @@ public struct SettingsView: View {
             _ = meetingNavigationState.goForward()
             return
         }
+
+        if selectedSection == .enhancements, enhancementsNavigationState.canGoForward {
+            _ = enhancementsNavigationState.goForward()
+            return
+        }
     }
 
     private func selectSection(_ section: SettingsSection) {
@@ -373,6 +395,10 @@ public struct SettingsView: View {
     }
 
     private var canNavigateBack: Bool {
+        if selectedSection == .metrics {
+            return metricsNavigationState.canGoBack
+        }
+
         if selectedSection == .transcriptions {
             return transcriptionsNavigationHistory.canGoBack
         }
@@ -381,16 +407,28 @@ public struct SettingsView: View {
             return meetingNavigationState.canGoBack
         }
 
+        if selectedSection == .enhancements {
+            return enhancementsNavigationState.canGoBack
+        }
+
         return false
     }
 
     private var canNavigateForward: Bool {
+        if selectedSection == .metrics {
+            return metricsNavigationState.canGoForward
+        }
+
         if selectedSection == .transcriptions {
             return transcriptionsNavigationHistory.canGoForward
         }
 
         if selectedSection == .meetings {
             return meetingNavigationState.canGoForward
+        }
+
+        if selectedSection == .enhancements {
+            return enhancementsNavigationState.canGoForward
         }
 
         return false
@@ -401,7 +439,7 @@ public struct SettingsView: View {
     private var detailView: some View {
         switch selectedSection {
         case .metrics:
-            MetricsDashboardSettingsTab()
+            MetricsDashboardSettingsTab(navigationState: $metricsNavigationState)
         case .general:
             GeneralSettingsTab()
         case .rulesPerApp:
@@ -421,7 +459,7 @@ public struct SettingsView: View {
         case .transcriptions:
             TranscriptionsSettingsTab(navigationHistory: $transcriptionsNavigationHistory)
         case .enhancements:
-            EnhancementsSettingsTab()
+            EnhancementsSettingsTab(navigationState: $enhancementsNavigationState)
         case .permissions:
             PermissionsSettingsTab()
         }

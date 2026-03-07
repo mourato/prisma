@@ -20,39 +20,76 @@ public struct SettingsDrillDownListRow<Destination: Hashable>: View {
 
     public var body: some View {
         NavigationLink(value: destination) {
-            HStack(spacing: 8) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(title)
-                        .font(.body)
-                        .foregroundStyle(.primary)
-
-                    if let subtitle {
-                        Text(subtitle)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(nil)
-                    }
-                }
-
-                Spacer(minLength: 8)
-
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 0)
-            .padding(
-                .vertical,
-                subtitle == nil
-                    ? 16
-                    : 12
-            )
-            .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
-            .contentShape(Rectangle())
+            SettingsDrillDownRowLabel(title: title, subtitle: subtitle)
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
         .modifier(OptionalAccessibilityHintModifier(accessibilityHint: accessibilityHint))
+    }
+}
+
+public struct SettingsDrillDownButtonRow: View {
+    private let title: String
+    private let subtitle: String?
+    private let accessibilityHint: String?
+    private let action: () -> Void
+
+    public init(
+        title: String,
+        subtitle: String? = nil,
+        accessibilityHint: String? = nil,
+        action: @escaping () -> Void
+    ) {
+        self.title = title
+        self.subtitle = subtitle
+        self.accessibilityHint = accessibilityHint
+        self.action = action
+    }
+
+    public var body: some View {
+        Button(action: action) {
+            SettingsDrillDownRowLabel(title: title, subtitle: subtitle)
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .modifier(OptionalAccessibilityHintModifier(accessibilityHint: accessibilityHint))
+    }
+}
+
+private struct SettingsDrillDownRowLabel: View {
+    let title: String
+    let subtitle: String?
+
+    var body: some View {
+        HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.body)
+                    .foregroundStyle(.primary)
+
+                if let subtitle {
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(nil)
+                }
+            }
+
+            Spacer(minLength: 8)
+
+            Image(systemName: "chevron.right")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 0)
+        .padding(
+            .vertical,
+            subtitle == nil
+                ? 16
+                : 12
+        )
+        .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
+        .contentShape(Rectangle())
     }
 }
 

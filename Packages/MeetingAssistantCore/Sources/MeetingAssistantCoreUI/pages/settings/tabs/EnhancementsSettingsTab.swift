@@ -8,53 +8,61 @@ import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
+public enum EnhancementsSettingsRoute: Hashable {
+    case systemGuidelines
+    case providerModels
+}
+
 // MARK: - AI Settings Tab
 
 /// Tab for configuring AI post-processing settings.
 public struct EnhancementsSettingsTab: View {
-    private enum EnhancementsPageRoute: Hashable {
-        case systemGuidelines
-        case providerModels
-    }
-
     @StateObject private var viewModel: AISettingsViewModel
     @StateObject private var postProcessingViewModel: PostProcessingSettingsViewModel
+    @Binding private var navigationState: SettingsSubpageNavigationState<EnhancementsSettingsRoute>
     @State private var supportStatus: TextContextSupportStatus = .unknown
     @State private var hasScreenRecordingPermission = CGPreflightScreenCaptureAccess()
     @State private var systemGuidelinesDraft = ""
     private let supportChecker = TextContextSupportChecker()
 
-    public init(settings: AppSettingsStore = .shared) {
+    public init(
+        settings: AppSettingsStore = .shared,
+        navigationState: Binding<SettingsSubpageNavigationState<EnhancementsSettingsRoute>> = .constant(SettingsSubpageNavigationState())
+    ) {
         _viewModel = StateObject(wrappedValue: AISettingsViewModel(settings: settings))
         _postProcessingViewModel = StateObject(wrappedValue: PostProcessingSettingsViewModel(settings: settings))
+        _navigationState = navigationState
     }
 
     public var body: some View {
-        NavigationStack {
-            SettingsScrollableContent {
-                SettingsSectionHeader(
-                    title: "settings.section.ai".localized,
-                    description: "settings.post_processing.description".localized
-                )
-
-                mainSection
-                if postProcessingViewModel.settings.postProcessingEnabled {
-                    meetingIntelligenceSection
-                }
-                contextAwarenessSection
-            }
-            .navigationDestination(for: EnhancementsPageRoute.self) { route in
-                switch route {
-                case .systemGuidelines:
-                    systemGuidelinesPage
-                case .providerModels:
-                    providerModelsPage
-                }
+        Group {
+            switch navigationState.currentRoute {
+            case nil:
+                rootPage
+            case .some(.systemGuidelines):
+                systemGuidelinesPage
+            case .some(.providerModels):
+                providerModelsPage
             }
         }
     }
 
     // MARK: - Sections
+
+    private var rootPage: some View {
+        SettingsScrollableContent {
+            SettingsSectionHeader(
+                title: "settings.section.ai".localized,
+                description: "settings.post_processing.description".localized
+            )
+
+            mainSection
+            if postProcessingViewModel.settings.postProcessingEnabled {
+                meetingIntelligenceSection
+            }
+            contextAwarenessSection
+        }
+    }
 
     private var mainSection: some View {
         DSGroup("settings.post_processing.title".localized, icon: "brain") {
@@ -69,19 +77,21 @@ public struct EnhancementsSettingsTab: View {
 
                     Divider()
 
-                    SettingsDrillDownListRow(
-                        destination: EnhancementsPageRoute.systemGuidelines,
+                    SettingsDrillDownButtonRow(
                         title: "settings.post_processing.edit_system_prompt".localized,
                         accessibilityHint: "settings.post_processing.system_guidelines.accessibility_hint".localized
-                    )
+                    ) {
+                        navigationState.open(.systemGuidelines)
+                    }
 
                     Divider()
 
-                    SettingsDrillDownListRow(
-                        destination: EnhancementsPageRoute.providerModels,
+                    SettingsDrillDownButtonRow(
                         title: "settings.enhancements.provider_models.title".localized,
                         accessibilityHint: "settings.enhancements.provider_models.drilldown_hint".localized
-                    )
+                    ) {
+                        navigationState.open(.providerModels)
+                    }
 
                     Divider()
                 }
@@ -316,7 +326,6 @@ public struct EnhancementsSettingsTab: View {
                 }
             }
         }
-        .navigationTitle("settings.post_processing.system_prompt_editor_title".localized)
         .onAppear {
             systemGuidelinesDraft = postProcessingViewModel.settings.systemPrompt
         }
