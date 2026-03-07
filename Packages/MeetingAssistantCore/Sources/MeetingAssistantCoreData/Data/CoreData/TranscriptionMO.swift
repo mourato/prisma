@@ -158,7 +158,10 @@ extension TranscriptionMO {
 
     /// Cria novo Managed Object a partir de Domain Entity
     static func create(from entity: TranscriptionEntity, meeting: MeetingMO, in context: NSManagedObjectContext) -> TranscriptionMO {
-        let transcriptionMO = TranscriptionMO(context: context)
+        let transcriptionMO = TranscriptionMO(
+            entity: resolvedEntityDescription(named: "TranscriptionMO", in: context),
+            insertInto: context
+        )
         transcriptionMO.id = entity.id
         transcriptionMO.text = entity.text
         transcriptionMO.rawText = entity.rawText

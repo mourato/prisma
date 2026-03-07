@@ -106,7 +106,13 @@ final class CoreDataRepositoryTests: XCTestCase {
 
         let meetingID = UUID()
         try await stack.performBackgroundTask { context in
-            let meeting = MeetingMO(context: context)
+            guard let entityDescription = NSEntityDescription.entity(forEntityName: "MeetingMO", in: context) else {
+                preconditionFailure("Missing Core Data entity description for MeetingMO")
+            }
+            let meeting = MeetingMO(
+                entity: entityDescription,
+                insertInto: context
+            )
             meeting.id = meetingID
             meeting.appRawValue = DomainMeetingApp.importedFile.rawValue
             meeting.title = "Legacy imported title"
