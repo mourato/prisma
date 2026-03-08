@@ -95,7 +95,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
 
             try await audioRecorder.startRecording(to: outputURL, source: .microphone)
             isRecording = true
-            indicator.show(mode: .recording)
+            indicator.show(renderState: recordingIndicatorRenderState(mode: .recording))
             screenBorder.show()
             let now = Date()
             PerformanceMonitor.shared.reportMetric(
@@ -514,6 +514,19 @@ public final class AssistantVoiceCommandService: ObservableObject {
         return fallback.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    private func recordingIndicatorRenderState(mode: FloatingRecordingIndicatorMode) -> RecordingIndicatorRenderState {
+        switch currentExecutionFlow {
+        case .assistantMode:
+            RecordingIndicatorRenderState(mode: mode, kind: .assistant)
+        case .integrationDispatch:
+            RecordingIndicatorRenderState(
+                mode: mode,
+                kind: .assistantIntegration,
+                assistantIntegrationID: settings.assistantSelectedIntegrationId
+            )
+        }
+    }
+
     private func assistantPromptInstructions(
         baseInstructions: String?,
         voiceCommand: String,
@@ -530,23 +543,17 @@ public final class AssistantVoiceCommandService: ObservableObject {
             guard let baseInstructions,
                   !baseInstructions.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             else {
-                return """
-                \(immutableInstructions)
-
-                User command:
-                \(normalizedVoiceCommand)
-                """
+                return [
+                    immutableInstructions,
+                    "User command:\n\(normalizedVoiceCommand)",
+                ].joined(separator: "\n\n")
             }
 
-            return """
-            \(immutableInstructions)
-
-            Additional user instructions:
-            \(baseInstructions)
-
-            User command:
-            \(normalizedVoiceCommand)
-            """
+            return [
+                immutableInstructions,
+                "Additional user instructions:\n\(baseInstructions)",
+                "User command:\n\(normalizedVoiceCommand)",
+            ].joined(separator: "\n\n")
         }
 
         guard let baseInstructions,
@@ -555,12 +562,10 @@ public final class AssistantVoiceCommandService: ObservableObject {
             return normalizedVoiceCommand
         }
 
-        return """
-        \(baseInstructions)
-
-        Comando do usuário:
-        \(normalizedVoiceCommand)
-        """
+        return [
+            baseInstructions,
+            "Comando do usuário:\n\(normalizedVoiceCommand)",
+        ].joined(separator: "\n\n")
     }
 
     private func requireNonEmptyCommand(_ command: String, fallback: String?) throws -> String {

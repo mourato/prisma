@@ -89,6 +89,8 @@ public struct AssistantIntegrationEditorSheet: View {
                 )
             }
 
+            overlayVisibilitySection
+
             if !isBuiltInIntegration {
                 placeholderSection
 
@@ -129,6 +131,36 @@ public struct AssistantIntegrationEditorSheet: View {
 
     private var isBuiltInIntegration: Bool {
         draft.integration.id == AssistantIntegrationConfig.raycastDefaultID
+    }
+
+    private var overlayVisibilitySection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("settings.assistant.integrations.editor.overlay_visibility.title".localized)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Text("settings.assistant.integrations.editor.overlay_visibility.description".localized)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+
+            DSToggleRow(
+                "settings.assistant.integrations.editor.overlay_visibility.prompt.title".localized,
+                description: "settings.assistant.integrations.editor.overlay_visibility.prompt.description".localized,
+                isOn: Binding(
+                    get: { draft.integration.showsPromptSelectorInOverlay },
+                    set: { draft.integration.showsPromptSelectorInOverlay = $0 }
+                )
+            )
+
+            DSToggleRow(
+                "settings.assistant.integrations.editor.overlay_visibility.language.title".localized,
+                description: "settings.assistant.integrations.editor.overlay_visibility.language.description".localized,
+                isOn: Binding(
+                    get: { draft.integration.showsLanguageSelectorInOverlay },
+                    set: { draft.integration.showsLanguageSelectorInOverlay = $0 }
+                )
+            )
+        }
     }
 
     private var placeholderSection: some View {

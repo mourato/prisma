@@ -52,6 +52,31 @@ final class AssistantOverlayLifecycleTests: XCTestCase {
         XCTAssertFalse(controller.isVisible)
     }
 
+    func testFloatingIndicatorAssistantIntegrationRenderStateShowUpdateHideDoesNotCrash() async throws {
+        try skipIfOverlayLifecycleDisabled()
+
+        guard NSScreen.main != nil else {
+            throw XCTSkip("No main screen available in current test environment")
+        }
+
+        let controller = FloatingRecordingIndicatorController()
+        let integrationID = UUID()
+        let recordingState = RecordingIndicatorRenderState(
+            mode: .recording,
+            kind: .assistantIntegration,
+            assistantIntegrationID: integrationID
+        )
+        let processingState = recordingState.with(mode: .processing)
+
+        controller.show(renderState: recordingState)
+        controller.update(renderState: processingState)
+        controller.hide()
+
+        try await Task.sleep(nanoseconds: 250_000_000)
+
+        XCTAssertFalse(controller.isVisible)
+    }
+
     func testAssistantBorderRapidShowHideDoesNotCrash() async throws {
         try skipIfOverlayLifecycleDisabled()
 

@@ -15,9 +15,8 @@ public struct FloatingRecordingIndicatorView: View {
     @ObservedObject private var settingsStore: AppSettingsStore
     private let navigationService = NavigationService.shared
     let style: RecordingIndicatorStyle
-    let mode: FloatingRecordingIndicatorMode
+    let renderState: RecordingIndicatorRenderState
     let isAnimationActive: Bool
-    private let previewForceDictationRecording: Bool
     private let previewLanguageOverride: DictationOutputLanguage?
     let onStop: @Sendable () -> Void
     let onCancel: @Sendable () -> Void
@@ -35,9 +34,8 @@ public struct FloatingRecordingIndicatorView: View {
     public init(
         audioMonitor: AudioLevelMonitor,
         style: RecordingIndicatorStyle,
-        mode: FloatingRecordingIndicatorMode,
+        renderState: RecordingIndicatorRenderState,
         isAnimationActive: Bool = true,
-        previewForceDictationRecording: Bool = false,
         previewLanguageOverride: DictationOutputLanguage? = nil,
         recordingManager: RecordingManager = .shared,
         settingsStore: AppSettingsStore = .shared,
@@ -46,9 +44,8 @@ public struct FloatingRecordingIndicatorView: View {
     ) {
         self.audioMonitor = audioMonitor
         self.style = style
-        self.mode = mode
+        self.renderState = renderState
         self.isAnimationActive = isAnimationActive
-        self.previewForceDictationRecording = previewForceDictationRecording
         self.previewLanguageOverride = previewLanguageOverride
         self.recordingManager = recordingManager
         self.settingsStore = settingsStore
@@ -57,7 +54,7 @@ public struct FloatingRecordingIndicatorView: View {
     }
 
     public var body: some View {
-        switch mode {
+        switch renderState.mode {
         case .error:
             errorView
         case .starting, .recording, .processing:
@@ -83,12 +80,12 @@ public struct FloatingRecordingIndicatorView: View {
         HStack(spacing: AppDesignSystem.Layout.recordingIndicatorPromptGap) {
             mainPill(size: size)
 
-            if isRecordingMode {
+            if overlayLayout.showsPromptSelector {
                 promptSelectionPill(size: size)
+            }
 
-                if isDictationRecording {
-                    languageSelectionPill(size: size)
-                }
+            if overlayLayout.showsLanguageSelector {
+                languageSelectionPill(size: size)
             }
         }
         .onDisappear {
@@ -197,24 +194,28 @@ public struct FloatingRecordingIndicatorView: View {
     }
 
     private var isRecordingMode: Bool {
-        if case .recording = mode {
+        if case .recording = renderState.mode {
             return true
         }
         return false
     }
 
     private var isStartingMode: Bool {
-        if case .starting = mode {
+        if case .starting = renderState.mode {
             return true
         }
         return false
     }
 
     private var isProcessingMode: Bool {
-        if case .processing = mode {
+        if case .processing = renderState.mode {
             return true
         }
         return false
+    }
+
+    private var overlayLayout: RecordingIndicatorOverlayLayout {
+        RecordingIndicatorOverlayLayout.resolve(renderState: renderState, settingsStore: settingsStore)
     }
 
     private var postProcessingWarningDescriptor: RecordingIndicatorPostProcessingWarningDescriptor? {
@@ -230,7 +231,7 @@ public struct FloatingRecordingIndicatorView: View {
     }
 
     private var visualizerModeForIndicator: AudioVisualizerMode {
-        if case .recording = mode {
+        if case .recording = renderState.mode {
             return .recording
         }
         return .processing
@@ -263,23 +264,14 @@ public struct FloatingRecordingIndicatorView: View {
     }
 
     private var errorMessage: String? {
-        guard case let .error(message) = mode else {
+        guard case let .error(message) = renderState.mode else {
             return nil
         }
         return message
     }
 
-    private var isDictationRecording: Bool {
-        if previewForceDictationRecording { return true }
-        guard recordingManager.isRecording else { return false }
-        // Assistant recordings use the shared AudioRecorder directly and do not create a Meeting.
-        // In that case we should render the dictation-style indicator (without duration).
-        if recordingManager.currentMeeting == nil { return true }
-        return recordingManager.recordingSource == .microphone
-    }
-
-    private var isMeetingRecording: Bool {
-        recordingManager.isRecording && !isDictationRecording
+    private var usesMeetingPromptSource: Bool {
+        renderState.kind == .meeting
     }
 
     private func recordingCluster(size: IndicatorSize) -> some View {
@@ -298,7 +290,7 @@ public struct FloatingRecordingIndicatorView: View {
                 minHeight: AppDesignSystem.Layout.recordingIndicatorWaveformMinHeight
             )
 
-            if isRecordingMode, isMeetingRecording {
+            if overlayLayout.showsMeetingTimer {
                 Group {
                     if isAnimationActive {
                         TimelineView(.periodic(from: .now, by: 1.0)) { context in
@@ -401,11 +393,11 @@ public struct FloatingRecordingIndicatorView: View {
     }
 
     private var promptPickerPrompts: [PostProcessingPrompt] {
-        isDictationRecording ? settingsStore.dictationAvailablePrompts : settingsStore.meetingAvailablePrompts
+        usesMeetingPromptSource ? settingsStore.meetingAvailablePrompts : settingsStore.dictationAvailablePrompts
     }
 
     private var currentPromptIconName: String {
-        if isDictationRecording {
+        if !usesMeetingPromptSource {
             if settingsStore.isDictationPostProcessingDisabled {
                 return "nosign"
             }
@@ -422,7 +414,7 @@ public struct FloatingRecordingIndicatorView: View {
     private func applyPostProcessingSelection(_ promptId: UUID?) {
         let selectionId = promptId ?? AppSettingsStore.noPostProcessingPromptId
 
-        if isDictationRecording {
+        if !usesMeetingPromptSource {
             settingsStore.dictationSelectedPromptId = selectionId
             return
         }
@@ -601,8 +593,7 @@ public struct FloatingRecordingIndicatorView: View {
     FloatingRecordingIndicatorView(
         audioMonitor: monitor,
         style: .classic,
-        mode: .recording,
-        previewForceDictationRecording: true,
+        renderState: RecordingIndicatorRenderState(mode: .recording, kind: .dictation),
         previewLanguageOverride: .portuguese,
         onStop: {},
         onCancel: {}
@@ -617,8 +608,10 @@ public struct FloatingRecordingIndicatorView: View {
     FloatingRecordingIndicatorView(
         audioMonitor: monitor,
         style: .mini,
-        mode: .error(message: "recording_indicator.error_message".localized),
-        previewForceDictationRecording: true,
+        renderState: RecordingIndicatorRenderState(
+            mode: .error(message: "recording_indicator.error_message".localized),
+            kind: .dictation
+        ),
         onStop: {},
         onCancel: {}
     )

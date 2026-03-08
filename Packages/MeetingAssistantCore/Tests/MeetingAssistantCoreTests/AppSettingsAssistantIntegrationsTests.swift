@@ -21,6 +21,8 @@ final class AppSettingsAssistantIntegrationsTests: XCTestCase {
         let raycast = settings.assistantIntegrations.first
         XCTAssertEqual(raycast?.name, "Raycast")
         XCTAssertEqual(raycast?.deepLink, AssistantIntegrationConfig.defaultRaycastDeepLink)
+        XCTAssertEqual(raycast?.showsPromptSelectorInOverlay, false)
+        XCTAssertEqual(raycast?.showsLanguageSelectorInOverlay, false)
         XCTAssertEqual(settings.assistantSelectedIntegrationId, raycast?.id)
         XCTAssertEqual(settings.assistantSelectedIntegration?.id, raycast?.id)
         XCTAssertEqual(raycast?.shortcutDefinition, AssistantIntegrationConfig.defaultRaycast.shortcutDefinition)
@@ -92,7 +94,9 @@ final class AppSettingsAssistantIntegrationsTests: XCTestCase {
                 trigger: .singleTap
             ),
             shortcutPresetKey: .custom,
-            shortcutActivationMode: .toggle
+            shortcutActivationMode: .toggle,
+            showsPromptSelectorInOverlay: true,
+            showsLanguageSelectorInOverlay: true
         )
 
         let encoder = JSONEncoder()
@@ -103,10 +107,12 @@ final class AppSettingsAssistantIntegrationsTests: XCTestCase {
 
         XCTAssertEqual(decoded.name, original.name)
         XCTAssertEqual(decoded.shortcutDefinition, original.shortcutDefinition)
+        XCTAssertEqual(decoded.showsPromptSelectorInOverlay, true)
+        XCTAssertEqual(decoded.showsLanguageSelectorInOverlay, true)
     }
 
     func testAssistantIntegrationConfigDecodesLegacyLayerKeysWithoutPersistingThem() throws {
-        let payload = """
+        let payload = Data("""
         {
           "id": "00000000-0000-0000-0000-000000000111",
           "name": "Legacy",
@@ -116,12 +122,14 @@ final class AppSettingsAssistantIntegrationsTests: XCTestCase {
           "layerShortcutKey": "R",
           "leaderModeEnabled": true
         }
-        """.data(using: .utf8)!
+        """.utf8)
 
         let decoded = try JSONDecoder().decode(AssistantIntegrationConfig.self, from: payload)
 
         XCTAssertEqual(decoded.name, "Legacy")
         XCTAssertEqual(decoded.deepLink, "raycast://legacy")
         XCTAssertNil(decoded.shortcutDefinition)
+        XCTAssertEqual(decoded.showsPromptSelectorInOverlay, false)
+        XCTAssertEqual(decoded.showsLanguageSelectorInOverlay, false)
     }
 }

@@ -83,6 +83,8 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
     public var shortcutActivationMode: ShortcutActivationMode
     public var modifierShortcutGesture: ModifierShortcutGesture?
     public var advancedScript: AssistantIntegrationScriptConfig?
+    public var showsPromptSelectorInOverlay: Bool
+    public var showsLanguageSelectorInOverlay: Bool
 
     public init(
         id: UUID = UUID(),
@@ -96,7 +98,9 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
         shortcutPresetKey: PresetShortcutKey = .notSpecified,
         shortcutActivationMode: ShortcutActivationMode = .holdOrToggle,
         modifierShortcutGesture: ModifierShortcutGesture? = nil,
-        advancedScript: AssistantIntegrationScriptConfig? = nil
+        advancedScript: AssistantIntegrationScriptConfig? = nil,
+        showsPromptSelectorInOverlay: Bool = false,
+        showsLanguageSelectorInOverlay: Bool = false
     ) {
         self.id = id
         self.name = name
@@ -116,6 +120,8 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
         self.shortcutActivationMode = shortcutActivationMode
         self.modifierShortcutGesture = modifierShortcutGesture
         self.advancedScript = advancedScript
+        self.showsPromptSelectorInOverlay = showsPromptSelectorInOverlay
+        self.showsLanguageSelectorInOverlay = showsLanguageSelectorInOverlay
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -131,6 +137,8 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
         case shortcutActivationMode
         case modifierShortcutGesture
         case advancedScript
+        case showsPromptSelectorInOverlay
+        case showsLanguageSelectorInOverlay
 
         // Legacy keys kept only for backward-compatible decoding.
         case layerShortcutKey
@@ -151,28 +159,35 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
         shortcutPresetKey = try container.decodeIfPresent(PresetShortcutKey.self, forKey: .shortcutPresetKey) ?? .notSpecified
         shortcutActivationMode = try container.decodeIfPresent(ShortcutActivationMode.self, forKey: .shortcutActivationMode) ?? .holdOrToggle
         modifierShortcutGesture = try container.decodeIfPresent(ModifierShortcutGesture.self, forKey: .modifierShortcutGesture)
+        advancedScript = try container.decodeIfPresent(AssistantIntegrationScriptConfig.self, forKey: .advancedScript)
+        showsPromptSelectorInOverlay = try container.decodeIfPresent(Bool.self, forKey: .showsPromptSelectorInOverlay) ?? false
+        showsLanguageSelectorInOverlay = try container.decodeIfPresent(Bool.self, forKey: .showsLanguageSelectorInOverlay) ?? false
+
+        let activationMode = shortcutActivationMode
+        let modifierGesture = modifierShortcutGesture
+        let presetKey = shortcutPresetKey
 
         let decodedShortcutDefinition = try container.decodeIfPresent(ShortcutDefinition.self, forKey: .shortcutDefinition)
         let normalizedDecodedShortcut = decodedShortcutDefinition.flatMap {
             normalizedInHouseShortcutDefinition(
                 $0,
-                activationMode: shortcutActivationMode,
+                activationMode: activationMode,
                 allowReturnOrEnter: false
             )
         }
-        let normalizedGestureShortcut = modifierShortcutGesture.flatMap {
+        let normalizedGestureShortcut = modifierGesture.flatMap {
             normalizedInHouseShortcutDefinition(
                 $0.asShortcutDefinition,
-                activationMode: shortcutActivationMode,
+                activationMode: activationMode,
                 allowReturnOrEnter: false
             )
         }
-        let normalizedLegacyShortcut = shortcutPresetKey
-            .asLegacyModifierGesture(activationMode: shortcutActivationMode)
+        let normalizedLegacyShortcut = presetKey
+            .asLegacyModifierGesture(activationMode: activationMode)
             .flatMap {
                 normalizedInHouseShortcutDefinition(
                     $0.asShortcutDefinition,
-                    activationMode: shortcutActivationMode,
+                    activationMode: activationMode,
                     allowReturnOrEnter: false
                 )
             }
@@ -181,8 +196,6 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
         if modifierShortcutGesture == nil {
             modifierShortcutGesture = shortcutDefinition?.asModifierShortcutGesture
         }
-
-        advancedScript = try container.decodeIfPresent(AssistantIntegrationScriptConfig.self, forKey: .advancedScript)
 
         // Decode and ignore legacy fields to keep backward compatibility with older persisted payloads.
         _ = try container.decodeIfPresent(String.self, forKey: .layerShortcutKey)
@@ -203,6 +216,8 @@ public struct AssistantIntegrationConfig: Codable, Identifiable, Equatable, Send
         try container.encode(shortcutActivationMode, forKey: .shortcutActivationMode)
         try container.encodeIfPresent(modifierShortcutGesture, forKey: .modifierShortcutGesture)
         try container.encodeIfPresent(advancedScript, forKey: .advancedScript)
+        try container.encode(showsPromptSelectorInOverlay, forKey: .showsPromptSelectorInOverlay)
+        try container.encode(showsLanguageSelectorInOverlay, forKey: .showsLanguageSelectorInOverlay)
     }
 
     public static var defaultRaycast: AssistantIntegrationConfig {

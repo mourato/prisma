@@ -479,6 +479,12 @@
 "settings.assistant.integrations.editor.title" = "Editar Prompt";
 "settings.assistant.integrations.editor.title.integration" = "Editar Integração";
 "settings.assistant.integrations.editor.instructions" = "Instruções (Opcional)";
+"settings.assistant.integrations.editor.overlay_visibility.title" = "Visibilidade do Overlay";
+"settings.assistant.integrations.editor.overlay_visibility.description" = "Escolha quais controles auxiliares podem aparecer durante a gravação com esta integração.";
+"settings.assistant.integrations.editor.overlay_visibility.prompt.title" = "Mostrar seletor de prompt";
+"settings.assistant.integrations.editor.overlay_visibility.prompt.description" = "Exibe o seletor de prompt ao lado da pílula principal do Assistant durante o despacho para a integração.";
+"settings.assistant.integrations.editor.overlay_visibility.language.title" = "Mostrar seletor de idioma";
+"settings.assistant.integrations.editor.overlay_visibility.language.description" = "Exibe o seletor de idioma ao lado da pílula principal do Assistant durante o despacho para a integração.";
 "settings.assistant.integrations.editor.placeholders.title" = "Placeholders";
 "settings.assistant.integrations.editor.placeholders.subtitle" = "Clique para copiar e usar em URLs/Deeplinks.";
 "settings.assistant.integrations.editor.placeholders.copy_help" = "Copiar placeholder";

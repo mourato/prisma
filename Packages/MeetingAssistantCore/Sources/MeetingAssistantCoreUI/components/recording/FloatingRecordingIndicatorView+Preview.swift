@@ -6,8 +6,7 @@ import SwiftUI
     FloatingRecordingIndicatorView(
         audioMonitor: monitor,
         style: .classic,
-        mode: .recording,
-        previewForceDictationRecording: true,
+        renderState: RecordingIndicatorRenderState(mode: .recording, kind: .dictation),
         previewLanguageOverride: .portuguese,
         onStop: {},
         onCancel: {}
