@@ -44,6 +44,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
 
     /// Whether the indicator is currently visible.
     @Published public private(set) var isVisible = false
+    public var renderState: RecordingIndicatorRenderState { currentRenderState }
 
     // MARK: - Configuration
 
@@ -194,7 +195,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
             } completionHandler: { [weak self, weak panelToHide] in
                 Task { @MainActor [weak self, weak panelToHide] in
                     guard let self, let panelToHide else { return }
-                    guard self.visibilityTransitionID == transitionID else { return }
+                    guard visibilityTransitionID == transitionID else { return }
                     panelToHide.orderOut(nil)
                     panelToHide.alphaValue = 1
                 }
@@ -317,7 +318,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         let indicatorView = FloatingRecordingIndicatorView(
             audioMonitor: audioMonitor,
             style: settingsStore.recordingIndicatorStyle,
-            mode: currentRenderState.mode,
+            renderState: currentRenderState,
             isAnimationActive: isVisible && !prefersReducedMotion,
             onStop: onStopAction,
             onCancel: onCancelAction
@@ -383,16 +384,62 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         case .error:
             return Constants.panelWidthError
         case .starting, .recording, .processing:
-            let isMeetingType = renderState.kind == .meeting
-            switch style {
-            case .classic:
-                return isMeetingType ? Constants.panelWidthClassicMeeting : Constants.panelWidthClassicDictation
-            case .mini:
-                return isMeetingType ? Constants.panelWidthMiniMeeting : Constants.panelWidthMiniDictation
-            case .none:
-                return Constants.panelWidthMiniDictation
-            }
+            let layout = RecordingIndicatorOverlayLayout.resolve(
+                renderState: renderState,
+                settingsStore: settingsStore
+            )
+            let auxiliaryUnitWidth = auxiliaryUnitWidth(for: style)
+            let mainOnlyWidth = panelMainOnlyWidth(for: style, renderState: renderState)
+            return mainOnlyWidth + (CGFloat(layout.auxiliaryControlCount) * auxiliaryUnitWidth)
         }
+    }
+
+    private func panelMainOnlyWidth(
+        for style: RecordingIndicatorStyle,
+        renderState: RecordingIndicatorRenderState
+    ) -> CGFloat {
+        let auxiliaryUnitWidth = auxiliaryUnitWidth(for: style)
+
+        switch renderState.kind {
+        case .meeting:
+            return legacyMeetingPanelWidth(for: style) - auxiliaryUnitWidth
+        case .dictation, .assistant, .assistantIntegration:
+            return legacyDictationPanelWidth(for: style) - (auxiliaryUnitWidth * 2)
+        }
+    }
+
+    private func legacyDictationPanelWidth(for style: RecordingIndicatorStyle) -> CGFloat {
+        switch style {
+        case .classic:
+            Constants.panelWidthClassicDictation
+        case .mini:
+            Constants.panelWidthMiniDictation
+        case .none:
+            Constants.panelWidthMiniDictation
+        }
+    }
+
+    private func legacyMeetingPanelWidth(for style: RecordingIndicatorStyle) -> CGFloat {
+        switch style {
+        case .classic:
+            Constants.panelWidthClassicMeeting
+        case .mini:
+            Constants.panelWidthMiniMeeting
+        case .none:
+            Constants.panelWidthMiniMeeting
+        }
+    }
+
+    private func auxiliaryUnitWidth(for style: RecordingIndicatorStyle) -> CGFloat {
+        let indicatorSize: FloatingRecordingIndicatorView.IndicatorSize = switch style {
+        case .classic:
+            .classic
+        case .mini, .none:
+            .mini
+        }
+
+        return FloatingRecordingIndicatorViewUtilities.promptSize(for: indicatorSize)
+            + AppDesignSystem.Layout.recordingIndicatorPromptGap
     }
 
     private func shouldShowIndicator(for mode: FloatingRecordingIndicatorMode) -> Bool {

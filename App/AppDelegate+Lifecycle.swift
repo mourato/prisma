@@ -269,6 +269,18 @@ extension AppDelegate {
         let isAssistantProcessing = assistantVoiceCommandService.isProcessing
         let isProcessing = isTranscribing || isAssistantProcessing
         let currentMeetingType = recordingManager.currentMeeting?.type
+        let isAssistantOwnedOverlayVisible = floatingIndicatorController.isVisible && {
+            switch floatingIndicatorController.renderState.kind {
+            case .assistant, .assistantIntegration:
+                true
+            case .dictation, .meeting:
+                false
+            }
+        }()
+        let shouldDeferIndicatorUpdatesToAssistant = !isRecording
+            && !isStarting
+            && !isTranscribing
+            && (isAssistantRecording || isAssistantProcessing || isAssistantOwnedOverlayVisible)
         let renderState = RecordingUIRenderState(
             isRecording: isRecording,
             isStarting: isStarting,
@@ -285,13 +297,15 @@ extension AppDelegate {
         lastRecordingUIRenderState = renderState
 
         updateStatusIcon(isRecording: isRecording || isAssistantRecording || isStarting)
-        updateFloatingIndicator(
-            isRecording: isRecording || isAssistantRecording,
-            isAssistantRecording: isAssistantRecording,
-            isStarting: isStarting,
-            isProcessing: isProcessing,
-            meetingType: currentMeetingType
-        )
+        if !shouldDeferIndicatorUpdatesToAssistant {
+            updateFloatingIndicator(
+                isRecording: isRecording,
+                isAssistantRecording: false,
+                isStarting: isStarting,
+                isProcessing: isProcessing,
+                meetingType: currentMeetingType
+            )
+        }
 
         if isRecording || isStarting,
            settingsStore.recordingIndicatorEnabled,

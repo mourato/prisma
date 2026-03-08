@@ -78,7 +78,11 @@ extension AppDelegate {
     }
 
     private func indicatorRenderState(mode: FloatingRecordingIndicatorMode, meetingType: MeetingType?) -> RecordingIndicatorRenderState {
-        RecordingIndicatorRenderState.fromLegacy(mode: mode, meetingType: meetingType)
+        RecordingIndicatorRenderState(
+            mode: mode,
+            kind: meetingType == nil ? .dictation : .meeting,
+            meetingType: meetingType
+        )
     }
 
     /// Applies the dock visibility setting by changing the app's activation policy.

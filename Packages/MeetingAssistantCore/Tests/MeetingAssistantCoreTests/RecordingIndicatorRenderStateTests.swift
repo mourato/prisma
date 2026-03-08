@@ -27,4 +27,29 @@ final class RecordingIndicatorRenderStateTests: XCTestCase {
         XCTAssertEqual(updated.kind, .meeting)
         XCTAssertEqual(updated.meetingType, .planning)
     }
+
+    func testWithMode_PreservesAssistantKind() {
+        let initial = RecordingIndicatorRenderState(mode: .starting, kind: .assistant)
+
+        let updated = initial.with(mode: .processing)
+
+        XCTAssertEqual(updated.mode, .processing)
+        XCTAssertEqual(updated.kind, .assistant)
+        XCTAssertNil(updated.assistantIntegrationID)
+    }
+
+    func testWithMode_PreservesAssistantIntegrationIdentifier() {
+        let integrationID = UUID()
+        let initial = RecordingIndicatorRenderState(
+            mode: .recording,
+            kind: .assistantIntegration,
+            assistantIntegrationID: integrationID
+        )
+
+        let updated = initial.with(mode: .processing)
+
+        XCTAssertEqual(updated.mode, .processing)
+        XCTAssertEqual(updated.kind, .assistantIntegration)
+        XCTAssertEqual(updated.assistantIntegrationID, integrationID)
+    }
 }

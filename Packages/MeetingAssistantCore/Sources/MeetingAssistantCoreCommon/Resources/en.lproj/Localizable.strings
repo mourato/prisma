@@ -479,6 +479,12 @@
 "settings.assistant.integrations.editor.title" = "Edit Prompt";
 "settings.assistant.integrations.editor.title.integration" = "Edit Integration";
 "settings.assistant.integrations.editor.instructions" = "Instructions (Optional)";
+"settings.assistant.integrations.editor.overlay_visibility.title" = "Overlay Visibility";
+"settings.assistant.integrations.editor.overlay_visibility.description" = "Choose which auxiliary controls can appear while recording with this integration.";
+"settings.assistant.integrations.editor.overlay_visibility.prompt.title" = "Show prompt selector";
+"settings.assistant.integrations.editor.overlay_visibility.prompt.description" = "Displays the prompt selector beside the main Assistant pill during integration dispatch.";
+"settings.assistant.integrations.editor.overlay_visibility.language.title" = "Show language selector";
+"settings.assistant.integrations.editor.overlay_visibility.language.description" = "Displays the language selector beside the main Assistant pill during integration dispatch.";
 "settings.assistant.integrations.editor.placeholders.title" = "Placeholders";
 "settings.assistant.integrations.editor.placeholders.subtitle" = "Click to copy and use in URLs/Deeplinks.";
 "settings.assistant.integrations.editor.placeholders.copy_help" = "Copy placeholder";

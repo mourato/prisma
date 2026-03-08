@@ -39,6 +39,16 @@ final class IntegrationSettingsViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.integration(for: integrationID)?.shortcutPresetKey, .notSpecified)
     }
 
+    func testAddIntegrationDefaultsOverlayVisibilityFlagsToFalse() {
+        let viewModel = IntegrationSettingsViewModel()
+
+        viewModel.addIntegration()
+
+        let integration = viewModel.customIntegrations.last
+        XCTAssertEqual(integration?.showsPromptSelectorInOverlay, false)
+        XCTAssertEqual(integration?.showsLanguageSelectorInOverlay, false)
+    }
+
     func testIntegrationShortcutConflictWithAssistantReturnsModifierConflictMessage() {
         settings.assistantShortcutDefinition = ShortcutDefinition(
             modifiers: [.command],
@@ -142,5 +152,41 @@ final class IntegrationSettingsViewModelTests: XCTestCase {
 
         XCTAssertEqual(message, "settings.shortcuts.modifier.primary_key_required".localized)
         XCTAssertNil(viewModel.integration(for: integrationID)?.shortcutDefinition)
+    }
+
+    func testSaveIntegrationPersistsOverlayVisibilityFlags() {
+        let viewModel = IntegrationSettingsViewModel()
+        viewModel.addIntegration()
+
+        guard var integration = viewModel.customIntegrations.last else {
+            XCTFail("Expected a custom integration after addIntegration")
+            return
+        }
+
+        integration.showsPromptSelectorInOverlay = true
+        integration.showsLanguageSelectorInOverlay = true
+        viewModel.saveIntegration(integration)
+
+        XCTAssertEqual(viewModel.integration(for: integration.id)?.showsPromptSelectorInOverlay, true)
+        XCTAssertEqual(viewModel.integration(for: integration.id)?.showsLanguageSelectorInOverlay, true)
+        XCTAssertEqual(settings.assistantIntegrations.last?.showsPromptSelectorInOverlay, true)
+        XCTAssertEqual(settings.assistantIntegrations.last?.showsLanguageSelectorInOverlay, true)
+    }
+
+    func testSaveBuiltInIntegrationPersistsOverlayVisibilityFlags() {
+        let viewModel = IntegrationSettingsViewModel()
+
+        guard var integration = viewModel.builtInIntegrations.first else {
+            XCTFail("Expected built-in integration")
+            return
+        }
+
+        integration.showsPromptSelectorInOverlay = true
+        integration.showsLanguageSelectorInOverlay = false
+        viewModel.saveIntegration(integration)
+
+        XCTAssertEqual(viewModel.builtInIntegrations.first?.showsPromptSelectorInOverlay, true)
+        XCTAssertEqual(settings.assistantIntegrations.first?.showsPromptSelectorInOverlay, true)
+        XCTAssertEqual(settings.assistantIntegrations.first?.showsLanguageSelectorInOverlay, false)
     }
 }
