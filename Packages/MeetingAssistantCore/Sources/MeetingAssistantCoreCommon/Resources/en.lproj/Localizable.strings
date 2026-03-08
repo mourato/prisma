@@ -607,7 +607,6 @@
 
 /* Transcriptions Settings */
 "settings.transcriptions.items_found" = "%lld items found";
-"settings.transcriptions.open_folder" = "Open Folder";
 "settings.transcriptions.loading" = "Loading...";
 "settings.transcriptions.source" = "Source";
 "settings.transcriptions.search_placeholder" = "Search transcription text";

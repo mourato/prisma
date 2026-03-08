@@ -21,6 +21,11 @@ private enum LayoutConstants {
 /// Settings view for app configuration.
 /// Uses sidebar navigation pattern similar to macOS System Settings.
 public struct SettingsView: View {
+    private enum ToolbarLayout {
+        static let transcriptionsSearchWidth: CGFloat = 230
+        static let transcriptionsSearchHeight: CGFloat = AppDesignSystem.Layout.compactButtonHeight
+    }
+
     fileprivate enum ChromeMode {
         case automatic
         case toolbar
@@ -32,6 +37,7 @@ public struct SettingsView: View {
     @State private var selectedSection: SettingsSection = .metrics
     @State private var metricsNavigationState = SettingsSubpageNavigationState<MetricsDashboardRoute>()
     @State private var transcriptionsNavigationHistory = TranscriptionsNavigationHistory()
+    @State private var transcriptionsSearchText = ""
     @State private var meetingNavigationState = MeetingSettingsNavigationState()
     @State private var enhancementsNavigationState = SettingsSubpageNavigationState<EnhancementsSettingsRoute>()
     @State private var columnVisibility = NavigationSplitViewVisibility.all
@@ -167,9 +173,21 @@ public struct SettingsView: View {
     private var settingsToolbarContent: some ToolbarContent {
         if #available(macOS 26.0, *) {
             ToolbarItem(placement: .navigation) {
-                toolbarChromeContent
+                glassNavigationPill
             }
             .sharedBackgroundVisibility(.hidden)
+
+            ToolbarItem(placement: .principal) {
+                toolbarSectionTitle
+            }
+            .sharedBackgroundVisibility(.hidden)
+
+            if shouldShowTranscriptionsSearch {
+                ToolbarItem(placement: .primaryAction) {
+                    transcriptionsToolbarSearchField
+                }
+                .sharedBackgroundVisibility(.hidden)
+            }
         }
     }
 
@@ -206,12 +224,8 @@ public struct SettingsView: View {
         }
     }
 
-    @available(macOS 26.0, *)
-    private var toolbarChromeContent: some View {
-        HStack(spacing: 8) {
-            glassNavigationPill
-            toolbarSectionTitle
-        }
+    private var shouldShowTranscriptionsSearch: Bool {
+        selectedSection == .transcriptions && transcriptionsNavigationHistory.currentRoute == .list
     }
 
     @available(macOS 26.0, *)
@@ -219,7 +233,10 @@ public struct SettingsView: View {
         HStack(spacing: 8) {
             glassNavigationPill
             toolbarSectionTitle
-            Spacer(minLength: 0)
+            if shouldShowTranscriptionsSearch {
+                Spacer()
+                transcriptionsToolbarSearchField
+            }
         }
         .padding(.horizontal, 10)
         .padding(.top, 6)
@@ -267,6 +284,11 @@ public struct SettingsView: View {
                 .lineLimit(1)
 
             Spacer(minLength: 0)
+
+            if shouldShowTranscriptionsSearch {
+                transcriptionsSearchField
+                    .frame(width: ToolbarLayout.transcriptionsSearchWidth)
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
@@ -274,6 +296,20 @@ public struct SettingsView: View {
         .overlay(alignment: .bottom) {
             Divider()
         }
+    }
+
+    @available(macOS 26.0, *)
+    private var transcriptionsToolbarSearchField: some View {
+        transcriptionsSearchField
+            .frame(width: ToolbarLayout.transcriptionsSearchWidth)
+    }
+
+    private var transcriptionsSearchField: some View {
+        NativeSearchField(
+            text: $transcriptionsSearchText,
+            placeholder: "settings.transcriptions.search_placeholder".localized
+        )
+        .frame(height: ToolbarLayout.transcriptionsSearchHeight)
     }
 
     @available(macOS 26.0, *)
@@ -391,6 +427,9 @@ public struct SettingsView: View {
     }
 
     private func selectSection(_ section: SettingsSection) {
+        if selectedSection == .transcriptions, section != .transcriptions {
+            transcriptionsSearchText = ""
+        }
         selectedSection = section
     }
 
@@ -457,7 +496,10 @@ public struct SettingsView: View {
         case .audio:
             AudioSettingsTab()
         case .transcriptions:
-            TranscriptionsSettingsTab(navigationHistory: $transcriptionsNavigationHistory)
+            TranscriptionsSettingsTab(
+                searchText: $transcriptionsSearchText,
+                navigationHistory: $transcriptionsNavigationHistory
+            )
         case .enhancements:
             EnhancementsSettingsTab(navigationState: $enhancementsNavigationState)
         case .permissions:

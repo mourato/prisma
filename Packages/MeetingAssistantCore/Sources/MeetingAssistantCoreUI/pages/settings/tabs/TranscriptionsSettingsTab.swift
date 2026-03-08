@@ -11,16 +11,10 @@ import SwiftUI
 
 /// Main tab for managing transcriptions in Settings.
 public struct TranscriptionsSettingsTab: View {
-    private enum Layout {
-        static let controlHeight: CGFloat = AppDesignSystem.Layout.compactButtonHeight
-        static let searchWidthRatio: CGFloat = 0.6
-        static let minSearchWidth: CGFloat = 240
-        static let maxSearchWidth: CGFloat = 520
-    }
-
     @StateObject private var viewModel = TranscriptionSettingsViewModel()
     @StateObject private var dictationService = MeetingQuestionDictationService()
     @State private var searchReloadTask: Task<Void, Never>?
+    @Binding private var searchText: String
     @Binding private var navigationHistory: TranscriptionsNavigationHistory
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -29,8 +23,10 @@ public struct TranscriptionsSettingsTab: View {
     }
 
     public init(
+        searchText: Binding<String> = .constant(""),
         navigationHistory: Binding<TranscriptionsNavigationHistory> = .constant(TranscriptionsNavigationHistory())
     ) {
+        _searchText = searchText
         _navigationHistory = navigationHistory
     }
 
@@ -39,6 +35,7 @@ public struct TranscriptionsSettingsTab: View {
             contentSection
         }
         .task {
+            synchronizeSearchTextFromChrome()
             await viewModel.loadTranscriptions()
             syncSelectionForCurrentRoute()
         }
@@ -63,12 +60,16 @@ public struct TranscriptionsSettingsTab: View {
             }
         }
         .onChange(of: viewModel.searchText) { _, _ in
+            synchronizeChromeSearchText()
             searchReloadTask?.cancel()
             searchReloadTask = Task {
                 try? await Task.sleep(for: .milliseconds(300))
                 guard !Task.isCancelled else { return }
                 await viewModel.loadTranscriptions()
             }
+        }
+        .onChange(of: searchText) { _, _ in
+            synchronizeSearchTextFromChrome()
         }
         .onDisappear {
             searchReloadTask?.cancel()
@@ -134,8 +135,6 @@ public struct TranscriptionsSettingsTab: View {
                     description: "settings.transcriptions.items_found".localized(with: viewModel.filteredTranscriptions.count)
                 )
 
-                searchAndFolderRow
-
                 HStack(spacing: 16) {
                     sourceFilterPicker
                         .frame(maxWidth: .infinity)
@@ -180,35 +179,6 @@ public struct TranscriptionsSettingsTab: View {
         .background(AppDesignSystem.Colors.windowBackground)
     }
 
-    private var searchAndFolderRow: some View {
-        GeometryReader { geometry in
-            let searchWidth = min(
-                Layout.maxSearchWidth,
-                max(Layout.minSearchWidth, geometry.size.width * Layout.searchWidthRatio)
-            )
-
-            HStack(spacing: 16) {
-                searchField
-                    .frame(width: searchWidth)
-
-                Spacer(minLength: 0)
-
-                openFolderButton
-            }
-        }
-        .frame(height: Layout.controlHeight)
-    }
-
-    private var openFolderButton: some View {
-        Button(action: { viewModel.openRecordingsDirectory() }) {
-            Label("settings.transcriptions.open_folder".localized, systemImage: "folder")
-                .font(.body)
-                .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
-        }
-        .buttonStyle(.bordered)
-        .controlSize(.large)
-    }
-
     private var sourceFilterPicker: some View {
         Picker(
             "",
@@ -221,23 +191,6 @@ public struct TranscriptionsSettingsTab: View {
         .pickerStyle(.segmented)
         .controlSize(.regular)
         .labelsHidden()
-    }
-
-    private var searchField: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
-            TextField(
-                "settings.transcriptions.search_placeholder".localized,
-                text: $viewModel.searchText
-            )
-            .textFieldStyle(.plain)
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .frame(height: Layout.controlHeight)
-        .background(AppDesignSystem.Colors.subtleFill)
-        .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
     }
 
     private var appFilterMenu: some View {
@@ -433,6 +386,16 @@ public struct TranscriptionsSettingsTab: View {
         let validIDs = Set(transcriptions.map(\.id))
         navigationHistory.sanitize(validConversationIDs: validIDs)
         syncSelectionForCurrentRoute()
+    }
+
+    private func synchronizeSearchTextFromChrome() {
+        guard viewModel.searchText != searchText else { return }
+        viewModel.searchText = searchText
+    }
+
+    private func synchronizeChromeSearchText() {
+        guard searchText != viewModel.searchText else { return }
+        searchText = viewModel.searchText
     }
 
     // MARK: - Actions

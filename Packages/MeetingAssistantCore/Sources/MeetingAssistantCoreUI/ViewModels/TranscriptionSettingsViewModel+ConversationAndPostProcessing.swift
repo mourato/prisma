@@ -163,10 +163,6 @@ public extension TranscriptionSettingsViewModel {
         qaHistoryByTranscription[transcriptionID] = turns
     }
 
-    func openRecordingsDirectory() {
-        NSWorkspace.shared.open(storage.recordingsDirectory)
-    }
-
     func isPostProcessing(transcriptionID: UUID) -> Bool {
         postProcessingByTranscriptionID.contains(transcriptionID)
     }
