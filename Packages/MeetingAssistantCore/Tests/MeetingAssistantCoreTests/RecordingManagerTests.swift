@@ -134,6 +134,21 @@ final class RecordingManagerTests: XCTestCase {
         XCTAssertFalse(mockMic.startRecordingCalled)
     }
 
+    func testSharedRecorderState_DoesNotMarkRecordingWhenManagerHasNoOwnedCapture() async throws {
+        let manager = try XCTUnwrap(manager)
+        let mockMic = try XCTUnwrap(mockMic)
+
+        XCTAssertFalse(manager.isRecording)
+        XCTAssertFalse(manager.isStartingRecording)
+        XCTAssertNil(manager.currentCapturePurpose)
+
+        mockMic.isRecording = true
+        await Task.yield()
+        try? await Task.sleep(nanoseconds: 20_000_000)
+
+        XCTAssertFalse(manager.isRecording)
+    }
+
     func testShouldApplyEnhancementsPostProcessing_ReturnsFalseWhenModelIsMissing() {
         let settings = AppSettingsStore.shared
         let originalPostProcessing = settings.postProcessingEnabled

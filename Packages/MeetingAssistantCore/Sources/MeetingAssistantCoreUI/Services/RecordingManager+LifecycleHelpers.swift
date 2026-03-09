@@ -54,10 +54,16 @@ extension RecordingManager {
         // Sync with audio recorder state
         micRecorder.isRecordingPublisher
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] isRecording in
+            .sink { [weak self] recorderIsRecording in
                 guard let self else { return }
-                self.isRecording = isRecording
-                if isRecording {
+
+                // AudioRecorder is shared between recording and assistant flows.
+                // Only mirror recorder state when RecordingManager owns an active capture lifecycle.
+                let managerOwnsCapture = isStartingRecording || currentCapturePurpose != nil || isRecording
+                guard managerOwnsCapture else { return }
+
+                isRecording = recorderIsRecording
+                if recorderIsRecording {
                     isStartingRecording = false
                 }
             }

@@ -302,7 +302,7 @@ extension AppDelegate {
         if !shouldDeferIndicatorUpdatesToAssistant {
             updateFloatingIndicator(
                 isRecording: isRecording,
-                isAssistantRecording: false,
+                isAssistantRecording: isAssistantRecording,
                 isStarting: isStarting,
                 isProcessing: isProcessing,
                 capturePurpose: recordingManager.currentCapturePurpose,

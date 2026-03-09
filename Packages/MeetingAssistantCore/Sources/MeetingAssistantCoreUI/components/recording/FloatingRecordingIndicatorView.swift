@@ -512,7 +512,7 @@ public struct FloatingRecordingIndicatorView: View {
 
     private var meetingNotesControl: some View {
         ActionIconButton(
-            symbol: recordingManager.isMeetingNotesPanelVisible ? "note.text.badge.minus" : "note.text.badge.plus",
+            symbol: recordingManager.isMeetingNotesPanelVisible ? "note.text" : "note.text.badge.plus",
             helpKey: recordingManager.isMeetingNotesPanelVisible
                 ? "recording_indicator.meeting_notes.hide.help"
                 : "recording_indicator.meeting_notes.show.help",
