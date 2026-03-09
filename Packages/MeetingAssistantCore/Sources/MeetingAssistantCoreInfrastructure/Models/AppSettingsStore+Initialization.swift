@@ -269,6 +269,7 @@ extension AppSettingsStore {
     /// Struct for meeting summary settings to avoid large tuple.
     struct MeetingSummarySettingsValues {
         let meetingTypeAutoDetectEnabled: Bool
+        let meetingSummaryOutputLanguage: DictationOutputLanguage
         let meetingPrompts: [PostProcessingPrompt]
         let summaryExportFolder: URL?
         let summaryTemplate: String
@@ -289,6 +290,7 @@ extension AppSettingsStore {
 
         return MeetingSummarySettingsValues(
             meetingTypeAutoDetectEnabled: UserDefaults.standard.bool(forKey: Keys.meetingTypeAutoDetectEnabled),
+            meetingSummaryOutputLanguage: loadEnum(forKey: Keys.meetingSummaryOutputLanguage, defaultValue: .original),
             meetingPrompts: prompts,
             summaryExportFolder: loadURLBookmark(forKey: Keys.summaryExportFolder),
             summaryTemplate: UserDefaults.standard.string(forKey: Keys.summaryTemplate) ?? defaultSummaryTemplate,

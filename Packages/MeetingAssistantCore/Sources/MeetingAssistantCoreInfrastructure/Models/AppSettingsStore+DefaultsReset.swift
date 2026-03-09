@@ -67,6 +67,7 @@ public extension AppSettingsStore {
         showInDock = false
         meetingPrompts = []
         meetingTypeAutoDetectEnabled = false
+        meetingSummaryOutputLanguage = .original
         summaryTemplateEnabled = true
         summaryExportSafetyPolicyLevel = .standard
         meetingQnAEnabled = true

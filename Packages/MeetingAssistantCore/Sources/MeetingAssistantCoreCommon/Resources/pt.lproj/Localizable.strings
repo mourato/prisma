@@ -1036,3 +1036,11 @@
 "onboarding.continue" = "Continuar";
 "onboarding.skip" = "Pular";
 "onboarding.step" = "Etapa %d de %d";
+"settings.meetings.summary_output_language" = "Idioma de saída do resumo";
+"settings.meetings.summary_output_language_desc" = "Escolha o idioma usado nos resumos de reunião gerados.";
+"settings.meetings.summary_output_language.option.meeting_spoken" = "Usar idioma falado na reunião";
+"recording_indicator.meeting_notes.title" = "Anotações da reunião";
+"recording_indicator.meeting_notes.help" = "Faça anotações durante a reunião. Essas anotações têm prioridade na geração do resumo.";
+"recording_indicator.meeting_notes.show.help" = "Abrir janela de anotações da reunião";
+"recording_indicator.meeting_notes.hide.help" = "Ocultar janela de anotações da reunião";
+"transcription.context.source.meeting_notes" = "Anotações da reunião";

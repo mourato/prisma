@@ -280,6 +280,8 @@ struct TranscriptionInfoPopover: View {
             "transcription.context.source.focused_text".localized
         case .calendarEvent:
             "transcription.context.source.calendar_event".localized
+        case .meetingNotes:
+            "transcription.context.source.meeting_notes".localized
         }
     }
 

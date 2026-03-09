@@ -97,6 +97,31 @@ extension AppDelegate {
         }
     }
 
+    func updateMeetingNotesPanel(isRecording: Bool, capturePurpose: CapturePurpose?) {
+        guard isRecording, capturePurpose == .meeting else {
+            meetingNotesPanelController.hide()
+            if recordingManager.isMeetingNotesPanelVisible {
+                recordingManager.setMeetingNotesPanelVisible(false)
+            }
+            return
+        }
+
+        guard recordingManager.isMeetingNotesPanelVisible else {
+            meetingNotesPanelController.hide()
+            return
+        }
+
+        meetingNotesPanelController.show(
+            text: recordingManager.currentMeetingNotesText,
+            onTextChange: { [weak self] text in
+                self?.recordingManager.updateMeetingNotesText(text)
+            },
+            onClose: { [weak self] in
+                self?.recordingManager.setMeetingNotesPanelVisible(false)
+            }
+        )
+    }
+
     private func indicatorRenderState(
         mode: FloatingRecordingIndicatorMode,
         capturePurpose: CapturePurpose?,

@@ -249,6 +249,7 @@ extension AppDelegate {
             assistantVoiceCommandService.$isRecording.map { _ in () }.eraseToAnyPublisher(),
             assistantVoiceCommandService.$isProcessing.map { _ in () }.eraseToAnyPublisher(),
             recordingManager.currentMeetingPublisher.map { _ in () }.eraseToAnyPublisher(),
+            recordingManager.$isMeetingNotesPanelVisible.map { _ in () }.eraseToAnyPublisher(),
             settingsStore.$cancelRecordingShortcutDefinition.map { _ in () }.eraseToAnyPublisher()
         )
         // @Published emits in willSet; schedule refresh so re-reads observe committed values.
@@ -308,6 +309,7 @@ extension AppDelegate {
                 meetingType: currentMeetingType
             )
         }
+        updateMeetingNotesPanel(isRecording: isRecording, capturePurpose: recordingManager.currentCapturePurpose)
 
         if isRecording || isStarting,
            settingsStore.recordingIndicatorEnabled,

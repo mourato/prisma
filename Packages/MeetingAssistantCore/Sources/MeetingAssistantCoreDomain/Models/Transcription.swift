@@ -224,6 +224,7 @@ public struct TranscriptionContextItem: Identifiable, Codable, Hashable, Sendabl
         case windowOCR
         case focusedText
         case calendarEvent
+        case meetingNotes
     }
 
     public let id: UUID

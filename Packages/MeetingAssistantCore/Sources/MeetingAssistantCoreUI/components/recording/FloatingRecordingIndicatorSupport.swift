@@ -269,6 +269,8 @@ enum FloatingRecordingIndicatorViewUtilities {
 
         if renderState.kind == .meeting, renderState.mode == .recording {
             elementWidths.append(actionButtonSize)
+            elementWidths.append(dividerWidth)
+            elementWidths.append(actionButtonSize)
 
             if layout.showsMeetingTimer {
                 elementWidths.append(dividerWidth)

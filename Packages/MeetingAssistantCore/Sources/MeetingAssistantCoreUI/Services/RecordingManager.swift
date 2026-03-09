@@ -37,6 +37,8 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     @Published public var currentCapturePurpose: CapturePurpose?
     @Published public var recordingSource: RecordingSource = .microphone
     @Published public var isMeetingMicrophoneEnabled = false
+    @Published public var isMeetingNotesPanelVisible = false
+    @Published public var currentMeetingNotesText = ""
     @Published public var dictationSessionOutputLanguageOverride: DictationOutputLanguage?
     @Published public var postProcessingReadinessWarningIssue: EnhancementsInferenceReadinessIssue?
     @Published public var postProcessingReadinessWarningMode: IntelligenceKernelMode?

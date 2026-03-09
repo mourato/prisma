@@ -100,6 +100,15 @@ extension RecordingManager {
             ]
         )
 
+        var resolvedContextItems = postProcessingContextItems
+        if let meetingNotesItem = currentMeetingNotesContextItem() {
+            if let existingIndex = resolvedContextItems.firstIndex(where: { $0.source == .meetingNotes }) {
+                resolvedContextItems[existingIndex] = meetingNotesItem
+            } else {
+                resolvedContextItems.append(meetingNotesItem)
+            }
+        }
+
         return UseCaseConfig(
             kernelMode: kernelMode,
             applyPostProcessing: true,
@@ -110,7 +119,7 @@ extension RecordingManager {
             autoDetectMeetingType: autoDetectMeetingType,
             availablePrompts: availablePrompts,
             postProcessingContext: postProcessingContext,
-            postProcessingContextItems: postProcessingContextItems
+            postProcessingContextItems: resolvedContextItems
         )
     }
 
@@ -229,17 +238,25 @@ extension RecordingManager {
         case .autodetect:
             return nil
         case .standup:
-            return domainPrompt(from: .standup)
+            return domainPrompt(from: promptWithMeetingSummaryOverrides(prompt: .standup))
         case .presentation:
-            return domainPrompt(from: .presentation)
+            return domainPrompt(from: promptWithMeetingSummaryOverrides(prompt: .presentation))
         case .designReview:
-            return domainPrompt(from: .designReview)
+            return domainPrompt(from: promptWithMeetingSummaryOverrides(prompt: .designReview))
         case .oneOnOne:
-            return domainPrompt(from: .oneOnOne)
+            return domainPrompt(from: promptWithMeetingSummaryOverrides(prompt: .oneOnOne))
         case .planning:
-            return domainPrompt(from: .planning)
+            return domainPrompt(from: promptWithMeetingSummaryOverrides(prompt: .planning))
         case .general:
-            return defaultMeetingPrompt
+            guard let defaultMeetingPrompt else { return nil }
+            let prompt = PostProcessingPrompt(
+                id: defaultMeetingPrompt.id,
+                title: defaultMeetingPrompt.title,
+                promptText: defaultMeetingPrompt.content,
+                isPredefined: false
+            )
+            let enrichedPrompt = promptWithMeetingSummaryOverrides(prompt: prompt)
+            return domainPrompt(from: enrichedPrompt)
         }
     }
 
@@ -397,6 +414,33 @@ extension RecordingManager {
         Translate the final output to \(language.instructionDisplayName). This requirement overrides any instruction that says to keep the original language.
         </OUTPUT_LANGUAGE>
         """
+    }
+
+    static let meetingNotesPriorityInstruction = """
+    <MEETING_NOTES_POLICY>
+    If a <MEETING_NOTES> block is present, treat it as high-priority user-provided signal.
+    Preserve those points in the summary and enrich them only with grounded details from the transcription.
+    Never contradict explicit meeting notes unless the transcription clearly disproves them.
+    </MEETING_NOTES_POLICY>
+    """
+
+    func promptWithMeetingSummaryOverrides(
+        prompt: PostProcessingPrompt
+    ) -> PostProcessingPrompt {
+        let augmentedText = [
+            prompt.promptText,
+            Self.meetingNotesPriorityInstruction,
+        ].joined(separator: "\n\n")
+
+        return PostProcessingPrompt(
+            id: prompt.id,
+            title: prompt.title,
+            promptText: augmentedText,
+            isActive: prompt.isActive,
+            icon: prompt.icon,
+            description: prompt.description,
+            isPredefined: prompt.isPredefined
+        )
     }
 
     static func siteOrAppPriorityInstructionBlock(_ instructions: String) -> String {

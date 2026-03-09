@@ -43,6 +43,7 @@ extension RecordingManager {
         postProcessingContext = nil
         postProcessingContextItems = []
         dictationSessionOutputLanguageOverride = nil
+        clearMeetingNotesState(removePersistedValue: true)
         activeStartTelemetry = nil
         clearPostProcessingReadinessWarning()
         lastError = error

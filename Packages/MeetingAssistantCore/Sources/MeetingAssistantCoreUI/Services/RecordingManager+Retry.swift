@@ -99,6 +99,7 @@ extension RecordingManager {
             transcriptionText: qualityProfile.normalizedTextForIntelligence,
             qualityProfile: qualityProfile,
             context: postProcessingContext,
+            meetingNotes: transcription.contextItems.first(where: { $0.source == .meetingNotes })?.text,
             includeQualityMetadata: includeQualityMetadata
         )
 
@@ -186,11 +187,25 @@ extension RecordingManager {
         transcriptionText: String,
         qualityProfile: TranscriptionQualityProfile,
         context: String?,
+        meetingNotes: String?,
         includeQualityMetadata: Bool
     ) -> String {
         var blocks = [transcriptionText]
         if includeQualityMetadata {
             blocks.append(qualityMetadataBlock(from: qualityProfile))
+        }
+
+        if let meetingNotes {
+            let trimmedMeetingNotes = meetingNotes.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmedMeetingNotes.isEmpty {
+                blocks.append(
+                    """
+                    <MEETING_NOTES>
+                    \(trimmedMeetingNotes)
+                    </MEETING_NOTES>
+                    """
+                )
+            }
         }
 
         if let context {

@@ -1047,3 +1047,11 @@
 "onboarding.continue" = "Continue";
 "onboarding.skip" = "Skip";
 "onboarding.step" = "Step %d of %d";
+"settings.meetings.summary_output_language" = "Summary output language";
+"settings.meetings.summary_output_language_desc" = "Choose the language used for generated meeting summaries.";
+"settings.meetings.summary_output_language.option.meeting_spoken" = "Use meeting spoken language";
+"recording_indicator.meeting_notes.title" = "Meeting notes";
+"recording_indicator.meeting_notes.help" = "Take notes during the meeting. These notes are prioritized during summary generation.";
+"recording_indicator.meeting_notes.show.help" = "Open meeting notes window";
+"recording_indicator.meeting_notes.hide.help" = "Hide meeting notes window";
+"transcription.context.source.meeting_notes" = "Meeting notes";

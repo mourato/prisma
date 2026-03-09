@@ -70,6 +70,7 @@ extension AppSettingsStore {
         // MARK: - Meeting Summary Configuration
 
         static let meetingTypeAutoDetectEnabled = "meetingTypeAutoDetectEnabled"
+        static let meetingSummaryOutputLanguage = "meetingSummaryOutputLanguage"
         static let meetingPrompts = "meetingPrompts"
         static let summaryExportFolder = "summaryExportFolder"
         static let summaryTemplate = "summaryTemplate"

@@ -458,10 +458,14 @@ public struct FloatingRecordingIndicatorView: View {
                 divider
                 meetingTimerView
             }
-            
             if showsMeetingMicrophoneControl {
                 divider
                 meetingMicrophoneControl
+            }
+
+            if showsMeetingNotesControl {
+                divider
+                meetingNotesControl
             }
 
             if isRecordingMode, isHovering {
@@ -487,6 +491,10 @@ public struct FloatingRecordingIndicatorView: View {
         renderState.kind == .meeting && isRecordingMode
     }
 
+    private var showsMeetingNotesControl: Bool {
+        renderState.kind == .meeting && isRecordingMode
+    }
+
     private var meetingMicrophoneControl: some View {
         ActionIconButton(
             symbol: recordingManager.isMeetingMicrophoneEnabled ? "mic.fill" : "mic.slash.fill",
@@ -499,6 +507,19 @@ public struct FloatingRecordingIndicatorView: View {
             Task {
                 await recordingManager.toggleMeetingMicrophone()
             }
+        }
+    }
+
+    private var meetingNotesControl: some View {
+        ActionIconButton(
+            symbol: recordingManager.isMeetingNotesPanelVisible ? "note.text.badge.minus" : "note.text.badge.plus",
+            helpKey: recordingManager.isMeetingNotesPanelVisible
+                ? "recording_indicator.meeting_notes.hide.help"
+                : "recording_indicator.meeting_notes.show.help",
+            keyboardShortcut: nil,
+            style: .neutral
+        ) {
+            recordingManager.toggleMeetingNotesPanel()
         }
     }
 

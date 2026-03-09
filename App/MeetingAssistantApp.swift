@@ -86,6 +86,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     lazy var recordingManager: RecordingManager = .shared
     let settingsStore = AppSettingsStore.shared
     lazy var floatingIndicatorController = FloatingRecordingIndicatorController()
+    lazy var meetingNotesPanelController = MeetingNotesFloatingPanelController()
     lazy var globalShortcutController = GlobalShortcutController(recordingManager: RecordingManager.shared)
     lazy var assistantVoiceCommandService = AssistantVoiceCommandService(
         indicator: floatingIndicatorController

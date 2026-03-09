@@ -115,6 +115,8 @@ public extension RecordingManager {
             currentCapturePurpose = meeting.capturePurpose
             postProcessingContext = nil
             postProcessingContextItems = []
+            restoreMeetingNotesIfNeeded(for: meeting.id)
+            isMeetingNotesPanelVisible = false
 
             // We only need one output URL because AudioRecorder handles mixing
             let audioURL = storage.createRecordingURL(for: meeting, type: .merged)
@@ -268,6 +270,7 @@ public extension RecordingManager {
                 postProcessingContext = nil
                 postProcessingContextItems = []
                 dictationSessionOutputLanguageOverride = nil
+                clearMeetingNotesState(removePersistedValue: true)
                 currentCapturePurpose = nil
                 isMeetingMicrophoneEnabled = false
                 currentMeeting = nil // Clear current meeting if done
@@ -287,6 +290,7 @@ public extension RecordingManager {
             postProcessingContextItems = []
             isStartingRecording = false
             dictationSessionOutputLanguageOverride = nil
+            clearMeetingNotesState(removePersistedValue: true)
             currentCapturePurpose = nil
             isMeetingMicrophoneEnabled = false
             activeStartTelemetry = nil
@@ -311,6 +315,7 @@ public extension RecordingManager {
             postProcessingContext = nil
             postProcessingContextItems = []
             dictationSessionOutputLanguageOverride = nil
+            clearMeetingNotesState(removePersistedValue: true)
             activeStartTelemetry = nil
             clearPostProcessingReadinessWarning()
             await RecordingExclusivityCoordinator.shared.endRecording()
@@ -345,6 +350,7 @@ public extension RecordingManager {
         postProcessingContext = nil
         postProcessingContextItems = []
         dictationSessionOutputLanguageOverride = nil
+        clearMeetingNotesState(removePersistedValue: true)
         activeStartTelemetry = nil
         clearPostProcessingReadinessWarning()
         await RecordingExclusivityCoordinator.shared.endRecording()

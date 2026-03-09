@@ -42,7 +42,8 @@ extension PostProcessingService {
             config: config,
             transcription: context.transcription,
             prompt: context.prompt,
-            systemPromptOverride: context.systemPromptOverride
+            systemPromptOverride: context.systemPromptOverride,
+            mode: context.mode
         )
 
         AppLogger.debug(
@@ -182,17 +183,22 @@ extension PostProcessingService {
         config: AIConfiguration,
         transcription: String,
         prompt: PostProcessingPrompt,
-        systemPromptOverride: String?
+        systemPromptOverride: String?,
+        mode: IntelligenceKernelMode
     ) throws {
         let extracted = AIPromptTemplates.extractSiteOrAppPriorityInstructions(from: prompt.promptText)
         let baseSystemMessage = systemPromptOverride ?? settings.systemPrompt
+        let promptWithLanguage = applyMeetingLanguagePreferenceIfNeeded(
+            to: extracted.cleanPrompt,
+            mode: mode
+        )
         let systemMessage = AIPromptTemplates.systemPrompt(
             basePrompt: baseSystemMessage,
             priorityInstructions: extracted.priorityInstructions
         )
         let userContent = AIPromptTemplates.userMessage(
             transcription: transcription,
-            prompt: extracted.cleanPrompt,
+            prompt: promptWithLanguage,
             priorityInstructions: extracted.priorityInstructions
         )
 
@@ -245,6 +251,29 @@ extension PostProcessingService {
             AppLogger.error("Failed to encode request body", category: .transcriptionEngine, error: error)
             throw PostProcessingError.requestFailed(error)
         }
+    }
+
+    private func applyMeetingLanguagePreferenceIfNeeded(
+        to prompt: String,
+        mode: IntelligenceKernelMode
+    ) -> String {
+        guard mode == .meeting else { return prompt }
+
+        let language = settings.meetingSummaryOutputLanguage
+        let languageInstruction = if language == .original {
+            """
+            <OUTPUT_LANGUAGE>
+            The final summary must be written in the same language spoken in the meeting transcription.
+            </OUTPUT_LANGUAGE>
+            """
+        } else {
+            """
+            <OUTPUT_LANGUAGE>
+            Translate the final output to \(language.instructionDisplayName). This requirement overrides any instruction that says to keep the original language.
+            </OUTPUT_LANGUAGE>
+            """
+        }
+        return [prompt, languageInstruction].joined(separator: "\n\n")
     }
 
     func validateHTTPResponse(_ response: URLResponse, data: Data) throws {

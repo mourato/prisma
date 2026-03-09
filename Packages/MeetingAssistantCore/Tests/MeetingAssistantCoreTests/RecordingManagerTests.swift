@@ -247,6 +247,46 @@ final class RecordingManagerTests: XCTestCase {
         XCTAssertEqual(manager.postProcessingReadinessWarningMode, .assistant)
     }
 
+    func testMeetingNotes_AutosaveAndRestore_ByMeetingID() throws {
+        let manager = try XCTUnwrap(manager)
+        let meetingID = UUID()
+        manager.currentCapturePurpose = .meeting
+        manager.currentMeeting = Meeting(id: meetingID, app: .zoom, capturePurpose: .meeting)
+
+        manager.updateMeetingNotesText("Important note")
+        manager.currentMeetingNotesText = ""
+        manager.restoreMeetingNotesIfNeeded(for: meetingID)
+
+        XCTAssertEqual(manager.currentMeetingNotesText, "Important note")
+
+        manager.clearMeetingNotesState(removePersistedValue: true)
+        manager.currentMeeting = Meeting(id: meetingID, app: .zoom, capturePurpose: .meeting)
+        manager.restoreMeetingNotesIfNeeded(for: meetingID)
+        XCTAssertEqual(manager.currentMeetingNotesText, "")
+    }
+
+    func testMergedPostProcessingInput_IncludesMeetingNotesBlock() throws {
+        let manager = try XCTUnwrap(manager)
+        let qualityProfile = TranscriptionQualityProfile(
+            normalizedTextForIntelligence: "Normalized text",
+            overallConfidence: 0.9,
+            containsUncertainty: false,
+            markers: []
+        )
+
+        let input = manager.mergedPostProcessingInput(
+            transcriptionText: qualityProfile.normalizedTextForIntelligence,
+            qualityProfile: qualityProfile,
+            context: nil,
+            meetingNotes: "User highlight",
+            includeQualityMetadata: true
+        )
+
+        XCTAssertTrue(input.contains("<MEETING_NOTES>"))
+        XCTAssertTrue(input.contains("User highlight"))
+        XCTAssertTrue(input.contains("</MEETING_NOTES>"))
+    }
+
     func testRefreshPostProcessingReadinessWarning_ClearsIssueWhenConfigurationIsReady() throws {
         let manager = try XCTUnwrap(manager)
         let settings = AppSettingsStore.shared

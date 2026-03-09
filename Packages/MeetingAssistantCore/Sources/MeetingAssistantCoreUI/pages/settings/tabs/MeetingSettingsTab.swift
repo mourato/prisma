@@ -239,6 +239,25 @@ public struct MeetingSettingsTab: View {
 
             DSGroup("settings.meetings.prompts".localized, icon: "sparkles") {
                 VStack(alignment: .leading, spacing: AppDesignSystem.Layout.cardPadding) {
+                    HStack {
+                        Text("settings.meetings.summary_output_language".localized)
+                        Spacer()
+                        Picker("", selection: $meetingViewModel.settings.meetingSummaryOutputLanguage) {
+                            ForEach(DictationOutputLanguage.allCases, id: \.self) { language in
+                                Text(meetingSummaryOutputLanguageLabel(language))
+                                    .tag(language)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                    }
+
+                    Text("settings.meetings.summary_output_language_desc".localized)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    Divider()
+
                     DSToggleRow(
                         "settings.meetings.autodetect_type".localized,
                         description: "settings.meetings.autodetect_type_desc".localized,
@@ -409,6 +428,13 @@ public struct MeetingSettingsTab: View {
         case .strict:
             "settings.meetings.export_safety_policy.strict".localized
         }
+    }
+
+    private func meetingSummaryOutputLanguageLabel(_ language: DictationOutputLanguage) -> String {
+        if language == .original {
+            return "\(language.flagEmoji) \("settings.meetings.summary_output_language.option.meeting_spoken".localized)"
+        }
+        return language.displayName
     }
 
     // MARK: - Prompt Row

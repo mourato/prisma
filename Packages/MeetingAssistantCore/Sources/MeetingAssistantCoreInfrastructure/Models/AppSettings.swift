@@ -350,6 +350,11 @@ public class AppSettingsStore: ObservableObject {
         didSet { UserDefaults.standard.set(meetingTypeAutoDetectEnabled, forKey: Keys.meetingTypeAutoDetectEnabled) }
     }
 
+    /// Preferred output language for meeting summaries.
+    @Published public var meetingSummaryOutputLanguage: DictationOutputLanguage {
+        didSet { UserDefaults.standard.set(meetingSummaryOutputLanguage.rawValue, forKey: Keys.meetingSummaryOutputLanguage) }
+    }
+
     /// Path URL for exporting summaries.
     @Published public var summaryExportFolder: URL? {
         didSet {
@@ -633,6 +638,7 @@ public class AppSettingsStore: ObservableObject {
 
         let meeting = Self.loadMeetingSummarySettings()
         meetingTypeAutoDetectEnabled = meeting.meetingTypeAutoDetectEnabled
+        meetingSummaryOutputLanguage = meeting.meetingSummaryOutputLanguage
         meetingPrompts = meeting.meetingPrompts
         summaryExportFolder = meeting.summaryExportFolder
         summaryTemplate = meeting.summaryTemplate

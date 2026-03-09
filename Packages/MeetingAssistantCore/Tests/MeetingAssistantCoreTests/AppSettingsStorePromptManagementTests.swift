@@ -72,4 +72,8 @@ final class AppSettingsStorePromptManagementTests: XCTestCase {
         XCTAssertTrue(settings.isDictationPostProcessingDisabled)
         XCTAssertNil(settings.selectedDictationPrompt)
     }
+
+    func testMeetingSummaryOutputLanguage_DefaultsToOriginal() {
+        XCTAssertEqual(settings.meetingSummaryOutputLanguage, .original)
+    }
 }
