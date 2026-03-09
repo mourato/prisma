@@ -121,6 +121,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
 @MainActor
 final class SettingsWindowController {
+    private enum Layout {
+        static let defaultContentSize = NSSize(width: 900, height: 640)
+        static let sidebarWidthRange: ClosedRange<CGFloat> = 220...260
+        static let frameMargin: CGFloat = 12
+    }
+
     private var window: NSWindow?
 
     func showSettingsWindow() {
@@ -131,11 +137,13 @@ final class SettingsWindowController {
         }
 
         let settingsWindow = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 900, height: 640),
+            contentRect: NSRect(origin: .zero, size: Layout.defaultContentSize),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
         )
+        settingsWindow.setContentSize(Layout.defaultContentSize)
+        settingsWindow.contentMinSize = Layout.defaultContentSize
         settingsWindow.styleMask.insert(.fullSizeContentView)
         settingsWindow.title = "settings.title".localized
         settingsWindow.titleVisibility = .hidden
@@ -147,13 +155,91 @@ final class SettingsWindowController {
         if #available(macOS 11.0, *) {
             settingsWindow.titlebarSeparatorStyle = .none
         }
+
+        let layoutEvaluation = evaluatePersistedLayoutState()
+        resetPersistedLayoutIfNeeded(using: layoutEvaluation)
+
         settingsWindow.setFrameAutosaveName(AppIdentity.settingsWindowAutosaveName)
         settingsWindow.isReleasedWhenClosed = false
         settingsWindow.contentViewController = NSHostingController(rootView: SettingsView())
-        settingsWindow.center()
+
+        if layoutEvaluation.shouldCenterWindow {
+            settingsWindow.center()
+        }
+
+        if layoutEvaluation.requiresFrameClamp {
+            clampWindowFrameIfNeeded(settingsWindow)
+        }
+
         settingsWindow.makeKeyAndOrderFront(nil)
+
+        if layoutEvaluation.requiresFrameClamp {
+            clampWindowFrameIfNeeded(settingsWindow)
+        }
 
         window = settingsWindow
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    private func evaluatePersistedLayoutState() -> SettingsWindowLayoutStateEvaluation {
+        SettingsWindowLayoutStateEvaluator.evaluate(
+            visibleScreenFrames: NSScreen.screens.map(\.visibleFrame),
+            defaultContentSize: Layout.defaultContentSize,
+            sidebarWidthRange: Layout.sidebarWidthRange
+        )
+    }
+
+    private func resetPersistedLayoutIfNeeded(using evaluation: SettingsWindowLayoutStateEvaluation) {
+        guard evaluation.shouldResetPersistedLayout else {
+            return
+        }
+
+        let defaults = UserDefaults.standard
+        for key in evaluation.keysToReset {
+            defaults.removeObject(forKey: key)
+        }
+    }
+
+    private func clampWindowFrameIfNeeded(_ window: NSWindow) {
+        guard let targetScreenFrame = bestVisibleFrame(for: window.frame) else {
+            return
+        }
+
+        let clampedFrame = clampedFrame(for: window.frame, within: targetScreenFrame)
+        guard !window.frame.equalTo(clampedFrame) else {
+            return
+        }
+
+        window.setFrame(clampedFrame, display: false)
+    }
+
+    private func bestVisibleFrame(for frame: NSRect) -> NSRect? {
+        let midpoint = NSPoint(x: frame.midX, y: frame.midY)
+
+        if let midpointScreen = NSScreen.screens.first(where: { $0.visibleFrame.contains(midpoint) }) {
+            return midpointScreen.visibleFrame
+        }
+
+        if let mainScreenFrame = NSScreen.main?.visibleFrame {
+            return mainScreenFrame
+        }
+
+        return NSScreen.screens.first?.visibleFrame
+    }
+
+    private func clampedFrame(for frame: NSRect, within visibleFrame: NSRect) -> NSRect {
+        let availableWidth = max(visibleFrame.width - (Layout.frameMargin * 2), 0)
+        let availableHeight = max(visibleFrame.height - (Layout.frameMargin * 2), 0)
+
+        let width = min(frame.width, availableWidth)
+        let height = min(frame.height, availableHeight)
+
+        let maxX = visibleFrame.maxX - Layout.frameMargin - width
+        let maxY = visibleFrame.maxY - Layout.frameMargin - height
+
+        let originX = min(max(frame.minX, visibleFrame.minX + Layout.frameMargin), maxX)
+        let originY = min(max(frame.minY, visibleFrame.minY + Layout.frameMargin), maxY)
+
+        return NSRect(x: originX, y: originY, width: width, height: height)
     }
 }
