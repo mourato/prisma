@@ -132,7 +132,7 @@ public enum SettingsWindowLayoutStateEvaluator {
             return .invalid
         }
 
-        if !containsMidpoint && bestIntersectionRatio < minimumVisibleAreaRatio {
+        if !containsMidpoint, bestIntersectionRatio < minimumVisibleAreaRatio {
             return .invalid
         }
 

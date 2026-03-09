@@ -38,7 +38,7 @@ public struct SummaryExportHelper: SummaryExportHelperProtocol {
         }
 
         let destinationURL = resolveExportDestinationURL(folder: folder, transcription: transcription)
-        
+
         let safetyDecision = evaluateExportSafety(
             transcription: transcription,
             destination: destinationURL,
@@ -199,7 +199,7 @@ public struct SummaryExportHelper: SummaryExportHelperProtocol {
             try tryWriteAndAudit(exportContent: exportContent, destinationURL: destinationURL, transcription: transcription, safetyDecision: safetyDecision, exportPolicyLevel: exportPolicyLevel, redactionApplied: redactionApplied)
         }
     }
-    
+
     private func tryWriteAndAudit(
         exportContent: String,
         destinationURL: URL,

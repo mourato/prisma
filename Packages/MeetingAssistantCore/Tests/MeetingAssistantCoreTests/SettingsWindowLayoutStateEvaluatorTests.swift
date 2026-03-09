@@ -3,7 +3,7 @@ import AppKit
 import XCTest
 
 final class SettingsWindowLayoutStateEvaluatorTests: XCTestCase {
-    private let visibleScreenFrames = [CGRect(x: 0, y: 0, width: 1512, height: 948)]
+    private let visibleScreenFrames = [CGRect(x: 0, y: 0, width: 1_512, height: 948)]
     private let defaultContentSize = CGSize(width: 900, height: 640)
     private let sidebarWidthRange: ClosedRange<CGFloat> = 220...260
 

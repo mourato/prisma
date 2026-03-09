@@ -36,9 +36,9 @@ final class ActivityHeatmapMonthMarkerTests: XCTestCase {
         calendar.locale = Locale(identifier: "en_US")
         calendar.firstWeekday = 2
 
-        let rangeStart = date(year: 2025, month: 3, day: 8, calendar: calendar)
-        let firstWeekStart = date(year: 2025, month: 3, day: 3, calendar: calendar)
-        let secondWeekStart = date(year: 2025, month: 3, day: 10, calendar: calendar)
+        let rangeStart = date(year: 2_025, month: 3, day: 8, calendar: calendar)
+        let firstWeekStart = date(year: 2_025, month: 3, day: 3, calendar: calendar)
+        let secondWeekStart = date(year: 2_025, month: 3, day: 10, calendar: calendar)
 
         XCTAssertTrue(
             ActivityHeatmap.shouldShowRangeStartMonthLabel(

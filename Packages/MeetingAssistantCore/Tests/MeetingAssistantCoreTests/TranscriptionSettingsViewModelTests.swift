@@ -904,7 +904,7 @@ class MockSummaryExportHelper: SummaryExportHelperProtocol, @unchecked Sendable 
             throw error
         }
     }
-    
+
     func defaultExportFilename(for transcription: Transcription) -> String {
         return "mock_file"
     }

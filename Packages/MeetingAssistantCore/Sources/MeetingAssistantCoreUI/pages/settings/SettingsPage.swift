@@ -218,9 +218,9 @@ public struct SettingsView: View {
     private var shouldShowLegacyChrome: Bool {
         switch chromeMode {
         case .none, .toolbar:
-            return false
+            false
         case .embedded, .automatic:
-            return !showsEmbeddedTahoeChrome
+            !showsEmbeddedTahoeChrome
         }
     }
 
@@ -256,9 +256,9 @@ public struct SettingsView: View {
                 .lineLimit(1)
                 .fixedSize(horizontal: true, vertical: false)
         }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 10)
-            .glassEffect(in: Capsule())
+        .padding(.horizontal, 10)
+        .padding(.vertical, 10)
+        .glassEffect(in: Capsule())
     }
 
     private var legacyDetailNavigationBar: some View {
@@ -512,7 +512,6 @@ public struct SettingsView: View {
 private struct SettingsDetailChromeModifier<LegacyHeader: View>: ViewModifier {
     let legacyHeader: LegacyHeader
 
-    @ViewBuilder
     func body(content: Content) -> some View {
         if #available(macOS 26.0, *), !PreviewRuntime.isRunning {
             content

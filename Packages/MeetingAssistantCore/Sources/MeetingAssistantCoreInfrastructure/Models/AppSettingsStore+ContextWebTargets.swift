@@ -166,7 +166,7 @@ extension AppSettingsStore {
         return browsersFromRules.isEmpty ? legacy : browsersFromRules
     }
 
-    nonisolated private static func normalizeBundleIdentifier(_ value: String) -> String {
+    private nonisolated static func normalizeBundleIdentifier(_ value: String) -> String {
         value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 }
