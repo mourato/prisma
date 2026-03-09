@@ -137,30 +137,38 @@ public struct RulesPerAppSettingsTab: View {
 
     private func appRow(for resolvedRule: ResolvedDictationAppRule) -> some View {
         HStack(spacing: 12) {
-            AppIconView(
-                bundleIdentifier: resolvedRule.rule.bundleIdentifier,
-                fallbackSystemName: "app.fill",
-                size: 32,
-                cornerRadius: AppDesignSystem.Layout.smallCornerRadius
-            )
-            .padding(.leading, 8)
+            SettingsRowClickSurface(
+                onDoubleClick: {
+                    openAppRuleEditor(for: resolvedRule)
+                }
+            ) {
+                HStack(spacing: 12) {
+                    AppIconView(
+                        bundleIdentifier: resolvedRule.rule.bundleIdentifier,
+                        fallbackSystemName: "app.fill",
+                        size: 32,
+                        cornerRadius: AppDesignSystem.Layout.smallCornerRadius
+                    )
+                    .padding(.leading, 8)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(resolvedRule.displayName)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                Text(resolvedRule.rule.bundleIdentifier)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(resolvedRule.displayName)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        Text(resolvedRule.rule.bundleIdentifier)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    appRuleSummary(for: resolvedRule.rule)
+                }
             }
-
-            Spacer()
-
-            appRuleSummary(for: resolvedRule.rule)
 
             SettingsContextMenuButton(accessibilityLabel: "settings.rules_per_app.actions".localized) {
                 Button {
-                    viewModel.editRule(bundleIdentifier: resolvedRule.rule.bundleIdentifier)
+                    openAppRuleEditor(for: resolvedRule)
                 } label: {
                     Label("settings.rules_per_app.edit_app".localized, systemImage: "pencil")
                 }
@@ -254,26 +262,34 @@ public struct RulesPerAppSettingsTab: View {
 
     private func websiteRow(_ target: WebContextTarget) -> some View {
         HStack(spacing: 12) {
-            Image(systemName: "globe")
-                .font(.title3)
-                .foregroundStyle(AppDesignSystem.Colors.iconHighlight)
-                .frame(width: 24)
+            SettingsRowClickSurface(
+                onDoubleClick: {
+                    markdownWebTargetsViewModel.editTarget(target)
+                }
+            ) {
+                HStack(spacing: 12) {
+                    Image(systemName: "globe")
+                        .font(.title3)
+                        .foregroundStyle(AppDesignSystem.Colors.iconHighlight)
+                        .frame(width: 24)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(target.displayName)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                Text(target.urlPatterns.joined(separator: ", "))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text(browserNames(from: target.browserBundleIdentifiers))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(target.displayName)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        Text(target.urlPatterns.joined(separator: ", "))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text(browserNames(from: target.browserBundleIdentifiers))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    websiteRuleSummary(for: target)
+                }
             }
-
-            Spacer()
-
-            websiteRuleSummary(for: target)
 
             SettingsContextMenuButton(accessibilityLabel: "settings.rules_per_app.actions".localized) {
                 Button {
@@ -302,6 +318,10 @@ public struct RulesPerAppSettingsTab: View {
             fallbackBundleIdentifiers: viewModel.effectiveWebTargetBrowserBundleIdentifiers,
             localizedListKey: "settings.markdown_targets.websites.browsers"
         )
+    }
+
+    private func openAppRuleEditor(for resolvedRule: ResolvedDictationAppRule) {
+        viewModel.editRule(bundleIdentifier: resolvedRule.rule.bundleIdentifier)
     }
 
     private var editingAppRule: ResolvedDictationAppRule? {

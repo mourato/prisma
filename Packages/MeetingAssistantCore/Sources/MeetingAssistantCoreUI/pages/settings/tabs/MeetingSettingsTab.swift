@@ -344,24 +344,32 @@ public struct MeetingSettingsTab: View {
 
     private func webTargetRow(_ target: WebMeetingTarget) -> some View {
         HStack(spacing: 12) {
-            Image(systemName: target.app.icon)
-                .font(.title3)
-                .foregroundStyle(target.app.color)
-                .frame(width: 24)
+            SettingsRowClickSurface(
+                onDoubleClick: {
+                    webTargetsViewModel.editTarget(target)
+                }
+            ) {
+                HStack(spacing: 12) {
+                    Image(systemName: target.app.icon)
+                        .font(.title3)
+                        .foregroundStyle(target.app.color)
+                        .frame(width: 24)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(target.displayName)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                Text(target.urlPatterns.joined(separator: ", "))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text(browserNames(from: target.browserBundleIdentifiers))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(target.displayName)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        Text(target.urlPatterns.joined(separator: ", "))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text(browserNames(from: target.browserBundleIdentifiers))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+                }
             }
-
-            Spacer()
 
             SettingsContextMenuButton(accessibilityLabel: "settings.rules_per_app.actions".localized) {
                 Button {
@@ -417,6 +425,9 @@ public struct MeetingSettingsTab: View {
             onSelect: isAutoDetectEnabled ? nil : {
                 meetingViewModel.selectPrompt(prompt.id)
             },
+            onDoubleClick: {
+                openPromptEditor(for: prompt)
+            },
             unselectedStrokeColor: AppDesignSystem.Colors.separator.opacity(0.4),
             menuAccessibilityLabel: "transcription.ai_actions".localized
         ) {
@@ -437,8 +448,7 @@ public struct MeetingSettingsTab: View {
         }
 
         Button {
-            meetingViewModel.editingPrompt = prompt
-            meetingViewModel.showPromptEditor = true
+            openPromptEditor(for: prompt)
         } label: {
             Label("settings.post_processing.edit".localized, systemImage: "pencil")
         }
@@ -483,6 +493,11 @@ public struct MeetingSettingsTab: View {
         [target.displayName, target.urlPatterns.joined(separator: ", "), browserNames(from: target.browserBundleIdentifiers)]
             .filter { !$0.isEmpty }
             .joined(separator: ", ")
+    }
+
+    private func openPromptEditor(for prompt: PostProcessingPrompt) {
+        meetingViewModel.editingPrompt = prompt
+        meetingViewModel.showPromptEditor = true
     }
 }
 

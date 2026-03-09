@@ -71,26 +71,32 @@ public struct VocabularySettingsTab: View {
 
     private func row(for rule: VocabularyReplacementRule) -> some View {
         HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(rule.find)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                Text(rule.replace.isEmpty ? "settings.vocabulary.empty_replace".localized : rule.replace)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            SettingsRowClickSurface(
+                onDoubleClick: {
+                    openRuleEditor(for: rule)
+                }
+            ) {
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(rule.find)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        Text(rule.replace.isEmpty ? "settings.vocabulary.empty_replace".localized : rule.replace)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "arrow.right")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
-
-            Spacer()
-
-            Image(systemName: "arrow.right")
-                .font(.caption)
-                .foregroundStyle(.secondary)
 
             SettingsContextMenuButton(accessibilityLabel: "settings.vocabulary.actions".localized) {
                 Button {
-                    ruleFindInput = rule.find
-                    ruleReplaceInput = rule.replace
-                    viewModel.startEditingRule(rule)
+                    openRuleEditor(for: rule)
                 } label: {
                     Label("settings.vocabulary.edit_rule".localized, systemImage: "pencil")
                 }
@@ -190,6 +196,12 @@ public struct VocabularySettingsTab: View {
     private func vocabularyRowAccessibilityLabel(for rule: VocabularyReplacementRule) -> String {
         [rule.find, rule.replace.isEmpty ? "settings.vocabulary.empty_replace".localized : rule.replace]
             .joined(separator: ", ")
+    }
+
+    private func openRuleEditor(for rule: VocabularyReplacementRule) {
+        ruleFindInput = rule.find
+        ruleReplaceInput = rule.replace
+        viewModel.startEditingRule(rule)
     }
 }
 

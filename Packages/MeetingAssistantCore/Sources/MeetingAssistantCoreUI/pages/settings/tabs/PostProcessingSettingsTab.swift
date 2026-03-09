@@ -154,6 +154,9 @@ public struct PostProcessingSettingsTab: View {
             onSelect: {
                 viewModel.selectPrompt(prompt.id)
             },
+            onDoubleClick: {
+                openPromptEditor(for: prompt)
+            },
             menuAccessibilityLabel: "transcription.ai_actions".localized
         ) {
             promptMenuContent(prompt: prompt, isSelected: isSelected)
@@ -171,12 +174,7 @@ public struct PostProcessingSettingsTab: View {
         Divider()
 
         Button {
-            if prompt.isPredefined {
-                viewModel.prepareCopy(of: prompt, asDuplicate: false)
-            } else {
-                viewModel.editingPrompt = prompt
-                viewModel.showPromptEditor = true
-            }
+            openPromptEditor(for: prompt)
         } label: {
             Label("settings.post_processing.edit".localized, systemImage: "pencil")
         }
@@ -193,6 +191,15 @@ public struct PostProcessingSettingsTab: View {
             viewModel.confirmDeletePrompt(prompt)
         } label: {
             Label("settings.post_processing.delete".localized, systemImage: "trash")
+        }
+    }
+
+    private func openPromptEditor(for prompt: PostProcessingPrompt) {
+        if prompt.isPredefined {
+            viewModel.prepareCopy(of: prompt, asDuplicate: false)
+        } else {
+            viewModel.editingPrompt = prompt
+            viewModel.showPromptEditor = true
         }
     }
 }

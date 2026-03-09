@@ -125,6 +125,9 @@ public struct DictationSettingsTab: View {
             onSelect: {
                 promptViewModel.selectPrompt(prompt.id, forceSelect: true)
             },
+            onDoubleClick: {
+                openPromptEditor(for: prompt)
+            },
             menuAccessibilityLabel: "transcription.ai_actions".localized
         ) {
             promptMenuContent(prompt: prompt, isSelected: isSelected)
@@ -142,8 +145,7 @@ public struct DictationSettingsTab: View {
         Divider()
 
         Button {
-            promptViewModel.editingPrompt = prompt
-            promptViewModel.showPromptEditor = true
+            openPromptEditor(for: prompt)
         } label: {
             Label("settings.post_processing.edit".localized, systemImage: "pencil")
         }
@@ -180,6 +182,11 @@ public struct DictationSettingsTab: View {
         ) {
             EmptyView()
         }
+    }
+
+    private func openPromptEditor(for prompt: PostProcessingPrompt) {
+        promptViewModel.editingPrompt = prompt
+        promptViewModel.showPromptEditor = true
     }
 }
 

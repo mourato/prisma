@@ -82,6 +82,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var dictateMenuItem: NSMenuItem?
     var recordMeetingMenuItem: NSMenuItem?
     var assistantMenuItem: NSMenuItem?
+    var cancelRecordingMenuItem: NSMenuItem?
     lazy var recordingManager: RecordingManager = .shared
     let settingsStore = AppSettingsStore.shared
     lazy var floatingIndicatorController = FloatingRecordingIndicatorController()

@@ -844,6 +844,7 @@
 "menubar.record_meeting" = "Gravar Reunião";
 "menubar.assistant" = "Assistant";
 "menubar.stop_assistant" = "Parar Assistant";
+"menubar.cancel_recording" = "Cancelar Gravação";
 "menubar.history" = "Histórico";
 
 /* Settings */

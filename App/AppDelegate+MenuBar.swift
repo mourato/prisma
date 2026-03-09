@@ -56,6 +56,14 @@ extension AppDelegate {
         assistantMenuItem = assistantItem
         contextMenu?.addItem(assistantItem)
 
+        let cancelItem = createMenuItem(
+            key: "menubar.cancel_recording",
+            action: #selector(cancelRecordingFromMenu)
+        )
+        cancelRecordingMenuItem = cancelItem
+        cancelItem.isHidden = true
+        contextMenu?.addItem(cancelItem)
+
         contextMenu?.addItem(NSMenuItem.separator())
 
         contextMenu?.addItem(createMenuItem(
@@ -113,24 +121,83 @@ extension AppDelegate {
     }
 
     func updateMenuTitles() {
-        // Update Dictate
-        let dictateKey = recordingManager.dictationMenuKey
-        updateMenuItem(dictateMenuItem, key: dictateKey, shortcutName: .dictationToggle)
-
-        // Update Meeting
-        let meetingKey = recordingManager.meetingMenuKey
-        updateMenuItem(recordMeetingMenuItem, key: meetingKey, shortcutName: .meetingToggle)
-
-        // Update Assistant
-        let isAssistantRecording = assistantVoiceCommandService.isRecording
-        let assistantKey = isAssistantRecording ? "menubar.stop_assistant" : "menubar.assistant"
-        updateMenuItem(assistantMenuItem, key: assistantKey, shortcutName: .assistantCommand)
+        let sectionState = recordingSectionState()
+        renderRecordingSection(for: sectionState)
     }
 
     private func updateMenuItem(_ item: NSMenuItem?, key: String, shortcutName: KeyboardShortcuts.Name) {
         let title = key.localized
         if let item {
             applyShortcut(to: item, title: title, shortcutName: shortcutName)
+        }
+    }
+
+    private func updateMenuItem(_ item: NSMenuItem?, key: String, shortcutDefinition: ShortcutDefinition?) {
+        let title = key.localized
+        guard let item else { return }
+        applyShortcutDefinition(shortcutDefinition, to: item, title: title)
+    }
+
+    private func recordingSectionState() -> MenuBarRecordingSectionState {
+        MenuBarRecordingSectionState(
+            isRecordingManagerActive: recordingManager.isRecording || recordingManager.isStartingRecording,
+            recordingSource: recordingManager.recordingSource,
+            isAssistantRecording: assistantVoiceCommandService.isRecording
+        )
+    }
+
+    private func renderRecordingSection(for state: MenuBarRecordingSectionState) {
+        switch state {
+        case .idle:
+            updateMenuItem(dictateMenuItem, key: "menubar.dictate", shortcutName: .dictationToggle)
+            updateMenuItem(recordMeetingMenuItem, key: "menubar.record_meeting", shortcutName: .meetingToggle)
+            updateMenuItem(assistantMenuItem, key: "menubar.assistant", shortcutName: .assistantCommand)
+            updateMenuItem(
+                cancelRecordingMenuItem,
+                key: "menubar.cancel_recording",
+                shortcutDefinition: settingsStore.cancelRecordingShortcutDefinition
+            )
+
+            dictateMenuItem?.isHidden = false
+            recordMeetingMenuItem?.isHidden = false
+            assistantMenuItem?.isHidden = false
+            cancelRecordingMenuItem?.isHidden = true
+        case .dictationActive:
+            updateMenuItem(dictateMenuItem, key: "menubar.stop_dictation", shortcutName: .dictationToggle)
+            updateMenuItem(
+                cancelRecordingMenuItem,
+                key: "menubar.cancel_recording",
+                shortcutDefinition: settingsStore.cancelRecordingShortcutDefinition
+            )
+
+            dictateMenuItem?.isHidden = false
+            recordMeetingMenuItem?.isHidden = true
+            assistantMenuItem?.isHidden = true
+            cancelRecordingMenuItem?.isHidden = false
+        case .meetingActive:
+            updateMenuItem(recordMeetingMenuItem, key: "menubar.stop_recording", shortcutName: .meetingToggle)
+            updateMenuItem(
+                cancelRecordingMenuItem,
+                key: "menubar.cancel_recording",
+                shortcutDefinition: settingsStore.cancelRecordingShortcutDefinition
+            )
+
+            dictateMenuItem?.isHidden = true
+            recordMeetingMenuItem?.isHidden = false
+            assistantMenuItem?.isHidden = true
+            cancelRecordingMenuItem?.isHidden = false
+        case .assistantActive:
+            updateMenuItem(assistantMenuItem, key: "menubar.stop_assistant", shortcutName: .assistantCommand)
+            updateMenuItem(
+                cancelRecordingMenuItem,
+                key: "menubar.cancel_recording",
+                shortcutDefinition: settingsStore.cancelRecordingShortcutDefinition
+            )
+
+            dictateMenuItem?.isHidden = true
+            recordMeetingMenuItem?.isHidden = true
+            assistantMenuItem?.isHidden = false
+            cancelRecordingMenuItem?.isHidden = false
         }
     }
 
@@ -145,11 +212,7 @@ extension AppDelegate {
         let settings = AppSettingsStore.shared
         switch resolveShortcutDisplaySource(for: shortcutName, settings: settings) {
         case let .inHouse(shortcut):
-            if applyShortcutDefinition(shortcut, to: item, title: title) {
-                return
-            }
-            item.title = "\(title) [\(shortcut.menuDisplayString)]"
-            clearShortcut(from: item)
+            applyShortcutDefinition(Optional(shortcut), to: item, title: title)
         case let .preset(presetString):
             item.title = "\(title) [\(presetString)]"
             clearShortcut(from: item)
@@ -164,6 +227,25 @@ extension AppDelegate {
             item.title = title
             clearShortcut(from: item)
         }
+    }
+
+    private func applyShortcutDefinition(
+        _ shortcutDefinition: ShortcutDefinition?,
+        to item: NSMenuItem,
+        title: String
+    ) {
+        guard let shortcutDefinition else {
+            item.title = title
+            clearShortcut(from: item)
+            return
+        }
+
+        if applyShortcutDefinition(shortcutDefinition, to: item, title: title) {
+            return
+        }
+
+        item.title = "\(title) [\(shortcutDefinition.menuDisplayString)]"
+        clearShortcut(from: item)
     }
 
     private func resolveShortcutDisplaySource(
@@ -372,6 +454,16 @@ extension AppDelegate {
                 await assistantVoiceCommandService.stopAndProcess()
             } else {
                 await assistantVoiceCommandService.startRecording()
+            }
+        }
+    }
+
+    @objc private func cancelRecordingFromMenu() {
+        Task {
+            if assistantVoiceCommandService.isRecording {
+                await assistantVoiceCommandService.cancelRecording()
+            } else if recordingManager.isRecording || recordingManager.isStartingRecording {
+                await recordingManager.cancelRecording()
             }
         }
     }

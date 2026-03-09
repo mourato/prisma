@@ -12,6 +12,7 @@ public struct PromptSelectionRow<MenuContent: View>: View {
     private let description: String?
     private let isSelected: Bool
     private let onSelect: (() -> Void)?
+    private let onDoubleClick: (() -> Void)?
     private let unselectedStrokeColor: Color
     private let showMenu: Bool
     private let preserveMenuSpacing: Bool
@@ -25,6 +26,7 @@ public struct PromptSelectionRow<MenuContent: View>: View {
         description: String?,
         isSelected: Bool,
         onSelect: (() -> Void)?,
+        onDoubleClick: (() -> Void)? = nil,
         unselectedStrokeColor: Color = .clear,
         showMenu: Bool = true,
         preserveMenuSpacing: Bool = false,
@@ -37,6 +39,7 @@ public struct PromptSelectionRow<MenuContent: View>: View {
         self.description = description
         self.isSelected = isSelected
         self.onSelect = onSelect
+        self.onDoubleClick = onDoubleClick
         self.unselectedStrokeColor = unselectedStrokeColor
         self.showMenu = showMenu
         self.preserveMenuSpacing = preserveMenuSpacing
@@ -46,16 +49,17 @@ public struct PromptSelectionRow<MenuContent: View>: View {
     }
 
     public var body: some View {
-        Group {
-            if let onSelect {
-                Button(action: onSelect) {
-                    rowContent
-                }
-                .buttonStyle(.plain)
-            } else {
-                rowContent
+        HStack(spacing: 12) {
+            clickableContent
+
+            if isSelected {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(AppDesignSystem.Colors.success)
             }
+
+            trailingMenu
         }
+        .padding(10)
         .background(isSelected ? AppDesignSystem.Colors.selectionFill : Color.clear)
         .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.cardCornerRadius))
         .overlay(
@@ -67,21 +71,26 @@ public struct PromptSelectionRow<MenuContent: View>: View {
         }
     }
 
-    private var rowContent: some View {
+    @ViewBuilder
+    private var clickableContent: some View {
+        if onSelect != nil || onDoubleClick != nil {
+            SettingsRowClickSurface(
+                onSingleClick: onSelect,
+                onDoubleClick: onDoubleClick
+            ) {
+                mainContent
+            }
+        } else {
+            mainContent
+        }
+    }
+
+    private var mainContent: some View {
         HStack(spacing: 12) {
             promptIcon
             promptInfo
-
             Spacer()
-
-            if isSelected {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(AppDesignSystem.Colors.success)
-            }
-
-            trailingMenu
         }
-        .padding(10)
         .contentShape(Rectangle())
     }
 
@@ -136,6 +145,7 @@ public struct PromptSelectionRow<MenuContent: View>: View {
         description: "Description",
         isSelected: true,
         onSelect: {},
+        onDoubleClick: {},
         showMenu: true,
         menuAccessibilityLabel: "transcription.ai_actions".localized
     ) {

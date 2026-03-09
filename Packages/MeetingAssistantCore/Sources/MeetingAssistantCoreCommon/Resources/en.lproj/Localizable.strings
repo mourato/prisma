@@ -844,6 +844,7 @@
 "menubar.record_meeting" = "Record Meeting";
 "menubar.assistant" = "Assistant";
 "menubar.stop_assistant" = "Stop Assistant";
+"menubar.cancel_recording" = "Cancel Recording";
 "menubar.history" = "History";
 
 /* Settings */

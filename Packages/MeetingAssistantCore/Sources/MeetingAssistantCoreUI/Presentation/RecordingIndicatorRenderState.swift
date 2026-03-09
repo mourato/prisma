@@ -58,7 +58,7 @@ public struct RecordingIndicatorRenderState: Sendable, Equatable {
                 assistantIntegrationID: nil,
                 meetingType: nil
             )
-        case .all:
+        case .system, .all:
             return RecordingIndicatorRenderState(
                 mode: mode,
                 kind: .meeting,

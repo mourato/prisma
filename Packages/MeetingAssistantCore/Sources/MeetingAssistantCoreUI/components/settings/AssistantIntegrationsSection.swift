@@ -79,31 +79,39 @@ public struct AssistantIntegrationsSection: View {
 
     private func integrationRow(integration: AssistantIntegrationConfig, isCardStyle: Bool) -> some View {
         HStack(spacing: 12) {
-            if isCardStyle {
-                RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
-                    .fill(Color.secondary.opacity(0.12))
-                    .frame(width: 36, height: 36)
-                    .overlay(
-                        Image(systemName: "line.3.horizontal")
+            SettingsRowClickSurface(
+                onDoubleClick: {
+                    editingIntegration = integration
+                }
+            ) {
+                HStack(spacing: 12) {
+                    if isCardStyle {
+                        RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
+                            .fill(Color.secondary.opacity(0.12))
+                            .frame(width: 36, height: 36)
+                            .overlay(
+                                Image(systemName: "line.3.horizontal")
+                                    .foregroundStyle(.secondary)
+                            )
+                    }
+
+                    Text(integration.name)
+                        .font(.body)
+                        .fontWeight(.medium)
+
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("settings.assistant.integrations.shortcut.direct".localized)
+                            .font(.caption2)
                             .foregroundStyle(.secondary)
-                    )
+                        Text(shortcutSummary(for: integration))
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.primary)
+                    }
+
+                    Spacer()
+                }
             }
-
-            Text(integration.name)
-                .font(.body)
-                .fontWeight(.medium)
-
-            VStack(alignment: .trailing, spacing: 2) {
-                Text("settings.assistant.integrations.shortcut.direct".localized)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                Text(shortcutSummary(for: integration))
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.primary)
-            }
-
-            Spacer()
 
             Button {
                 editingIntegration = integration
