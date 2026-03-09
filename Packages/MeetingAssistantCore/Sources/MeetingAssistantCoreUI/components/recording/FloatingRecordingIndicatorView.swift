@@ -454,13 +454,14 @@ public struct FloatingRecordingIndicatorView: View {
 
             recordingCluster(size: size)
 
-            if showsMeetingMicrophoneControl {
-                meetingMicrophoneControl
-            }
-
             if showsMeetingMicrophoneControl, overlayLayout.showsMeetingTimer {
                 divider
                 meetingTimerView
+            }
+            
+            if showsMeetingMicrophoneControl {
+                divider
+                meetingMicrophoneControl
             }
 
             if isRecordingMode, isHovering {

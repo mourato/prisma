@@ -292,7 +292,7 @@ enum FloatingRecordingIndicatorViewUtilities {
         size: FloatingRecordingIndicatorView.IndicatorSize
     ) -> NSImage {
         let fallbackName = "doc.text"
-        let symbolConfig = NSImage.SymbolConfiguration(pointSize: promptIconSize(for: size), weight: .regular)
+        let symbolConfig = NSImage.SymbolConfiguration(pointSize: promptIconSize(for: size), weight: .medium)
             .applying(NSImage.SymbolConfiguration(paletteColors: [.white]))
 
         let rawImage = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil)
@@ -313,9 +313,9 @@ enum FloatingRecordingIndicatorViewUtilities {
     private static func promptIconSize(for size: FloatingRecordingIndicatorView.IndicatorSize) -> CGFloat {
         switch size {
         case .classic:
-            13
+            14
         case .mini:
-            13
+            14
         }
     }
 
