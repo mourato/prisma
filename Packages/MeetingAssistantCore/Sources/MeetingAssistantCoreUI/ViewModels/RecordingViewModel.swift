@@ -96,16 +96,10 @@ public class RecordingViewModel: ObservableObject {
     // MARK: - Methods
 
     public func startRecording(source: RecordingSource? = nil) async {
-        // If specific source requested, use it (and maybe update selection?)
-        // Or just use it for this session. User request implies clicking arrow chooses what to record.
-        // If I click "Mic Only" in menu, I expect it to start recording Mic Only.
-        // Does it change the DEFAULT for the main button?
-        // User said: "se eu clicar no botão em si, ele inicia a gravação de tudo... mas se eu clicar no canto direito, posso escolher..."
-        // This implies main button is ALWAYS "Tudo" or "Default".
-        // Let's support passing source.
         let sourceToUse = source ?? .microphone
         selectedSource = sourceToUse // Sync UI state
-        await recordingManager.startRecording(source: sourceToUse)
+        let purpose: CapturePurpose = sourceToUse == .microphone ? .dictation : .meeting
+        await recordingManager.startCapture(purpose: purpose)
     }
 
     public func stopRecording() async {

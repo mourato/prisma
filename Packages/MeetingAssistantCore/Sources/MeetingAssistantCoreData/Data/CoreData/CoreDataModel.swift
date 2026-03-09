@@ -9,7 +9,7 @@ import Foundation
 /// Configuração programática do modelo CoreData
 public enum CoreDataModel {
     /// Versão atual do modelo
-    public static let currentVersion = "1.3"
+    public static let currentVersion = "1.4"
 
     /// Cria o modelo CoreData programaticamente
     // swiftlint:disable function_body_length
@@ -31,6 +31,11 @@ public enum CoreDataModel {
         meetingAppAttribute.name = "appRawValue"
         meetingAppAttribute.attributeType = .stringAttributeType
         meetingAppAttribute.isOptional = false
+
+        let meetingCapturePurposeAttribute = NSAttributeDescription()
+        meetingCapturePurposeAttribute.name = "capturePurposeRawValue"
+        meetingCapturePurposeAttribute.attributeType = .stringAttributeType
+        meetingCapturePurposeAttribute.isOptional = true
 
         let meetingAppBundleIdentifierAttribute = NSAttributeDescription()
         meetingAppBundleIdentifierAttribute.name = "appBundleIdentifier"
@@ -71,6 +76,7 @@ public enum CoreDataModel {
         meetingEntity.properties = [
             meetingIdAttribute,
             meetingAppAttribute,
+            meetingCapturePurposeAttribute,
             meetingAppBundleIdentifierAttribute,
             meetingAppDisplayNameAttribute,
             meetingTitleAttribute,

@@ -5,6 +5,12 @@ import MeetingAssistantCoreInfrastructure
 
 // MARK: - Context Capture
 
+private struct ContextCaptureResult {
+    let context: String?
+    let items: [TranscriptionContextItem]
+    let didTimeout: Bool
+}
+
 extension RecordingManager {
     func capturePostProcessingContext(for meeting: Meeting) async -> (context: String?, items: [TranscriptionContextItem]) {
         let settings = AppSettingsStore.shared
@@ -43,84 +49,19 @@ extension RecordingManager {
         var items = makeContextItems(from: snapshot)
 
         if let activeTabURL {
-            items.append(TranscriptionContextItem(source: .activeTabURL, text: activeTabURL))
-
-            let activeTabURLBlock = "- Active tab URL: \(activeTabURL)"
-            if let existingContext = context,
-               !existingContext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            {
-                context = "\(existingContext)\n\(activeTabURLBlock)"
-            } else {
-                context = """
-                CONTEXT_METADATA
-                \(activeTabURLBlock)
-                """
-            }
+            appendActiveTabURLContext(activeTabURL, to: &context, items: &items)
         }
 
-        if meeting.supportsMeetingConversation, let calendarEvent = meeting.linkedCalendarEvent {
-            let calendarContext = calendarContextBlock(for: calendarEvent)
-            items.append(TranscriptionContextItem(source: .calendarEvent, text: calendarContext))
+        appendCalendarContextIfNeeded(for: meeting, to: &context, items: &items)
+        await appendFocusedTextContextIfNeeded(
+            snapshot: snapshot,
+            meeting: meeting,
+            settings: settings,
+            context: &context,
+            items: &items
+        )
 
-            if let existingContext = context,
-               !existingContext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            {
-                context = "\(existingContext)\n\(calendarContext)"
-            } else {
-                context = calendarContext
-            }
-        }
-
-        if isDictationMode(for: meeting),
-           settings.contextAwarenessIncludeAccessibilityText,
-           snapshot.activeAccessibilityText == nil,
-           let focusedText = await captureFocusedTextContext(settings: settings),
-           !items.contains(where: { $0.source == .focusedText && $0.text == focusedText })
-        {
-            items.append(TranscriptionContextItem(source: .focusedText, text: focusedText))
-
-            let focusedTextBlock = """
-            - Focused text:
-            \(focusedText)
-            """
-
-            if let existingContext = context,
-               !existingContext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            {
-                context = "\(existingContext)\n\(focusedTextBlock)"
-            } else {
-                context = """
-                CONTEXT_METADATA
-                \(focusedTextBlock)
-                """
-            }
-        }
-
-        if settings.contextAwarenessIncludeWindowOCR, snapshot.activeWindowOCRText == nil {
-            AppLogger.debug(
-                "Context capture finished without OCR text",
-                category: .recordingManager,
-                extra: ["reasonCode": "context.ocr_missing"]
-            )
-        }
-
-        if items.isEmpty {
-            AppLogger.info(
-                "Context capture finished with no context items",
-                category: .recordingManager,
-                extra: ["reasonCode": "context.empty"]
-            )
-        } else {
-            AppLogger.debug(
-                "Context capture finished",
-                category: .recordingManager,
-                extra: [
-                    "reasonCode": "context.captured",
-                    "itemCount": items.count,
-                    "sources": items.map(\ .source.rawValue).joined(separator: ","),
-                ]
-            )
-        }
+        logContextCaptureSummary(snapshot: snapshot, items: items, settings: settings)
 
         return (context, items)
     }
@@ -187,52 +128,39 @@ extension RecordingManager {
         return items
     }
 
-    func capturePostProcessingContextWithTimeout(
+    private func capturePostProcessingContextWithTimeout(
         for meeting: Meeting
-    ) async -> (context: String?, items: [TranscriptionContextItem], didTimeout: Bool) {
+    ) async -> ContextCaptureResult {
         await withTaskGroup(
-            of: (context: String?, items: [TranscriptionContextItem], didTimeout: Bool).self,
-            returning: (context: String?, items: [TranscriptionContextItem], didTimeout: Bool).self
+            of: ContextCaptureResult.self,
+            returning: ContextCaptureResult.self
         ) { group in
             group.addTask { [weak self] in
                 guard let self else {
-                    return (nil, [], false)
+                    return ContextCaptureResult(context: nil, items: [], didTimeout: false)
                 }
                 let capture = await capturePostProcessingContext(for: meeting)
-                return (capture.context, capture.items, false)
+                return ContextCaptureResult(context: capture.context, items: capture.items, didTimeout: false)
             }
 
             group.addTask {
                 try? await Task.sleep(nanoseconds: Constants.startContextCaptureTimeout)
-                return (nil, [], true)
+                return ContextCaptureResult(context: nil, items: [], didTimeout: true)
             }
 
-            let firstResult = await group.next() ?? (nil, [], true)
+            let firstResult = await group.next() ?? ContextCaptureResult(context: nil, items: [], didTimeout: true)
             group.cancelAll()
             return firstResult
         }
     }
 
-    func startContextCaptureAfterRecordingStart(meetingID: UUID, source: RecordingSource) {
+    func startContextCaptureAfterRecordingStart(meetingID: UUID) {
         postStartContextCaptureTask?.cancel()
         postStartContextCaptureTask = Task { @MainActor [weak self] in
             guard let self else { return }
             let contextCaptureStartAt = Date()
-
-            let activeContext = try? await activeAppContextProvider.fetchActiveAppContext()
             guard !Task.isCancelled else { return }
-            guard var meeting = currentMeeting, meeting.id == meetingID else { return }
-
-            if source == .microphone {
-                dictationStartBundleIdentifier = activeContext?.bundleIdentifier
-                dictationStartURL = activeBrowserURL(for: activeContext?.bundleIdentifier)
-            } else {
-                dictationStartBundleIdentifier = nil
-                dictationStartURL = nil
-            }
-
-            meeting = applyStartAppContext(meeting, source: source, activeContext: activeContext)
-            currentMeeting = meeting
+            guard let meeting = currentMeeting, meeting.id == meetingID else { return }
 
             let captureResult = await capturePostProcessingContextWithTimeout(for: meeting)
             guard !Task.isCancelled else { return }
@@ -254,5 +182,102 @@ extension RecordingManager {
                 unit: "ms"
             )
         }
+    }
+
+    private func appendContextBlock(_ block: String, to context: inout String?) {
+        if let existingContext = context,
+           !existingContext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        {
+            context = "\(existingContext)\n\(block)"
+        } else {
+            context = """
+            CONTEXT_METADATA
+            \(block)
+            """
+        }
+    }
+
+    private func appendActiveTabURLContext(
+        _ activeTabURL: String,
+        to context: inout String?,
+        items: inout [TranscriptionContextItem]
+    ) {
+        items.append(TranscriptionContextItem(source: .activeTabURL, text: activeTabURL))
+        appendContextBlock("- Active tab URL: \(activeTabURL)", to: &context)
+    }
+
+    private func appendCalendarContextIfNeeded(
+        for meeting: Meeting,
+        to context: inout String?,
+        items: inout [TranscriptionContextItem]
+    ) {
+        guard meeting.supportsMeetingConversation, let calendarEvent = meeting.linkedCalendarEvent else { return }
+
+        let calendarContext = calendarContextBlock(for: calendarEvent)
+        items.append(TranscriptionContextItem(source: .calendarEvent, text: calendarContext))
+
+        if let existingContext = context,
+           !existingContext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        {
+            context = "\(existingContext)\n\(calendarContext)"
+        } else {
+            context = calendarContext
+        }
+    }
+
+    private func appendFocusedTextContextIfNeeded(
+        snapshot: ContextAwarenessSnapshot,
+        meeting: Meeting,
+        settings: AppSettingsStore,
+        context: inout String?,
+        items: inout [TranscriptionContextItem]
+    ) async {
+        guard isDictationMode(for: meeting) else { return }
+        guard settings.contextAwarenessIncludeAccessibilityText else { return }
+        guard snapshot.activeAccessibilityText == nil else { return }
+        guard let focusedText = await captureFocusedTextContext(settings: settings) else { return }
+        guard !items.contains(where: { $0.source == .focusedText && $0.text == focusedText }) else { return }
+
+        items.append(TranscriptionContextItem(source: .focusedText, text: focusedText))
+        appendContextBlock(
+            """
+            - Focused text:
+            \(focusedText)
+            """,
+            to: &context
+        )
+    }
+
+    private func logContextCaptureSummary(
+        snapshot: ContextAwarenessSnapshot,
+        items: [TranscriptionContextItem],
+        settings: AppSettingsStore
+    ) {
+        if settings.contextAwarenessIncludeWindowOCR, snapshot.activeWindowOCRText == nil {
+            AppLogger.debug(
+                "Context capture finished without OCR text",
+                category: .recordingManager,
+                extra: ["reasonCode": "context.ocr_missing"]
+            )
+        }
+
+        if items.isEmpty {
+            AppLogger.info(
+                "Context capture finished with no context items",
+                category: .recordingManager,
+                extra: ["reasonCode": "context.empty"]
+            )
+            return
+        }
+
+        AppLogger.debug(
+            "Context capture finished",
+            category: .recordingManager,
+            extra: [
+                "reasonCode": "context.captured",
+                "itemCount": items.count,
+                "sources": items.map(\.source.rawValue).joined(separator: ","),
+            ]
+        )
     }
 }

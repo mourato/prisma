@@ -6,6 +6,7 @@ import Foundation
 public struct TranscriptionEntity: Identifiable, Codable, Hashable, Sendable {
     public let id: UUID
     public let meeting: MeetingEntity
+    public let capturePurpose: CapturePurpose
 
     /// Context items used during post-processing.
     public let contextItems: [TranscriptionContextItem]
@@ -86,6 +87,7 @@ public struct TranscriptionEntity: Identifiable, Codable, Hashable, Sendable {
     public init(meeting: MeetingEntity, config: Configuration) {
         id = config.id
         self.meeting = meeting
+        capturePurpose = meeting.capturePurpose
         contextItems = config.contextItems
         segments = config.segments
         text = config.text

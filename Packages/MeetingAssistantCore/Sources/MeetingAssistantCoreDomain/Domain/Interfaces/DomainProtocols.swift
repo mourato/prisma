@@ -353,6 +353,7 @@ public struct DomainTranscriptionMetadata: Identifiable, Codable, Hashable, Send
     public let meetingTitle: String?
     public let appName: String
     public let appRawValue: String
+    public let capturePurpose: CapturePurpose
     public let appBundleIdentifier: String?
     public let startTime: Date
     public let createdAt: Date
@@ -375,6 +376,7 @@ public struct DomainTranscriptionMetadata: Identifiable, Codable, Hashable, Send
         meetingTitle: String? = nil,
         appName: String,
         appRawValue: String,
+        capturePurpose: CapturePurpose? = nil,
         appBundleIdentifier: String?,
         startTime: Date,
         createdAt: Date,
@@ -396,6 +398,7 @@ public struct DomainTranscriptionMetadata: Identifiable, Codable, Hashable, Send
         self.meetingTitle = meetingTitle
         self.appName = appName
         self.appRawValue = appRawValue
+        self.capturePurpose = capturePurpose ?? CapturePurpose.defaultValue(for: DomainMeetingApp(rawValue: appRawValue) ?? .unknown)
         self.appBundleIdentifier = appBundleIdentifier
         self.startTime = startTime
         self.createdAt = createdAt

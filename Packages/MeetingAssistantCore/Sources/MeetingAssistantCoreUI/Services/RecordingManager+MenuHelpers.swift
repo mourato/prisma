@@ -14,10 +14,10 @@ import UserNotifications
 
 public extension RecordingManager {
     var dictationMenuKey: String {
-        (isRecording && recordingSource == .microphone) ? "menubar.stop_dictation" : "menubar.dictate"
+        (isRecording && currentCapturePurpose == .dictation) ? "menubar.stop_dictation" : "menubar.dictate"
     }
 
     var meetingMenuKey: String {
-        (isRecording && (recordingSource == .system || recordingSource == .all)) ? "menubar.stop_recording" : "menubar.record_meeting"
+        (isRecording && currentCapturePurpose == .meeting) ? "menubar.stop_recording" : "menubar.record_meeting"
     }
 }

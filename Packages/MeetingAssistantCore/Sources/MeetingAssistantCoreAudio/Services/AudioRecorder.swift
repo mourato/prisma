@@ -52,6 +52,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     var audioEngine: AVAudioEngine?
     var mixerNode: AVAudioMixerNode?
     var systemAudioSourceNode: AVAudioSourceNode?
+    var microphoneMixingDestination: AVAudioMixingDestination?
 
     /// Simple recorder for mic-only recordings. Bypasses AVAudioEngine and its
     /// aggregate device, which can malfunction on macOS with USB microphones.
@@ -179,6 +180,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         }
 
         let settings = AppSettingsStore.shared
+        setMeetingMicrophoneEnabled(true)
         let shouldBoostMicInputVolume = settings.autoIncreaseMicrophoneVolume
             && settings.useSystemDefaultInput
             && (source == .microphone || source == .all)
@@ -281,6 +283,10 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             }
             throw error
         }
+    }
+
+    public func setMeetingMicrophoneEnabled(_ isEnabled: Bool) {
+        microphoneMixingDestination?.volume = isEnabled ? 1.0 : 0.0
     }
 
     // MARK: - Simple Mic Recording (AVAudioRecorder)
@@ -463,6 +469,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
         mixerNode = nil
         systemAudioSourceNode = nil
+        microphoneMixingDestination = nil
 
         if let engine = audioEngine {
             stopMicDiagnostics(for: engine.inputNode)

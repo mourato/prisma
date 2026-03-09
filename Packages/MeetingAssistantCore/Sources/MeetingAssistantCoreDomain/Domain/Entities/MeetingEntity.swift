@@ -92,6 +92,7 @@ public enum DomainMeetingApp: String, CaseIterable, Codable, Sendable {
 public struct MeetingEntity: Identifiable, Codable, Hashable, Sendable {
     public let id: UUID
     public let app: DomainMeetingApp
+    public let capturePurpose: CapturePurpose
     public let appBundleIdentifier: String?
     public let appDisplayName: String?
     public var title: String?
@@ -103,6 +104,7 @@ public struct MeetingEntity: Identifiable, Codable, Hashable, Sendable {
     public init(
         id: UUID = UUID(),
         app: DomainMeetingApp,
+        capturePurpose: CapturePurpose? = nil,
         appBundleIdentifier: String? = nil,
         appDisplayName: String? = nil,
         title: String? = nil,
@@ -113,6 +115,7 @@ public struct MeetingEntity: Identifiable, Codable, Hashable, Sendable {
     ) {
         self.id = id
         self.app = app
+        self.capturePurpose = capturePurpose ?? CapturePurpose.defaultValue(for: app)
         self.appBundleIdentifier = appBundleIdentifier
         self.appDisplayName = appDisplayName
         self.title = title

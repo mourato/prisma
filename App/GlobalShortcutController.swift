@@ -434,10 +434,10 @@ final class GlobalShortcutController {
     func performAction(_ action: SmartShortcutHandler.Action, for type: ShortcutType) async {
         switch action {
         case .startRecording:
-            let source: RecordingSource = type == .dictation ? .microphone : .all
+            let purpose: CapturePurpose = type == .dictation ? .dictation : .meeting
             let triggerLabel = type == .dictation ? "shortcut.dictation" : "shortcut.meeting"
-            await recordingManager.startRecording(
-                source: source,
+            await recordingManager.startCapture(
+                purpose: purpose,
                 requestedAt: Date(),
                 triggerLabel: triggerLabel
             )

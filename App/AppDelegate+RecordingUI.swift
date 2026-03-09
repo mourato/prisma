@@ -44,23 +44,27 @@ extension AppDelegate {
         isAssistantRecording: Bool,
         isStarting: Bool,
         isProcessing: Bool,
+        capturePurpose: CapturePurpose?,
         recordingSource: RecordingSource,
         meetingType: MeetingType? = nil
     ) {
         let recordingState = indicatorRenderState(
             mode: .recording,
+            capturePurpose: capturePurpose,
             recordingSource: recordingSource,
             meetingType: meetingType,
             isAssistantRecording: isAssistantRecording
         )
         let startingState = indicatorRenderState(
             mode: .starting,
+            capturePurpose: capturePurpose,
             recordingSource: recordingSource,
             meetingType: meetingType,
             isAssistantRecording: isAssistantRecording
         )
         let processingState = indicatorRenderState(
             mode: .processing,
+            capturePurpose: capturePurpose,
             recordingSource: recordingSource,
             meetingType: meetingType,
             isAssistantRecording: isAssistantRecording
@@ -95,11 +99,22 @@ extension AppDelegate {
 
     private func indicatorRenderState(
         mode: FloatingRecordingIndicatorMode,
+        capturePurpose: CapturePurpose?,
         recordingSource: RecordingSource,
         meetingType: MeetingType?,
         isAssistantRecording: Bool
     ) -> RecordingIndicatorRenderState {
         guard isAssistantRecording else {
+            if let capturePurpose {
+                let kind: RecordingIndicatorKind = capturePurpose == .dictation ? .dictation : .meeting
+                return RecordingIndicatorRenderState(
+                    mode: mode,
+                    kind: kind,
+                    assistantIntegrationID: nil,
+                    meetingType: capturePurpose == .meeting ? meetingType : nil
+                )
+            }
+
             return RecordingIndicatorRenderState.forRecordingSource(
                 mode: mode,
                 recordingSource: recordingSource,

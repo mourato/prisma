@@ -11,6 +11,8 @@ final class RecordingManagerTests: XCTestCase {
     var mockTranscription: MockTranscriptionClient?
     var mockPostProcessing: MockPostProcessingService?
     var mockStorage: MockStorageService?
+    var mockActiveAppContextProvider: MockActiveAppContextProvider?
+    var mockCaptureContextResolver: MockCaptureContextResolver?
 
     override func setUp() async throws {
         try await super.setUp()
@@ -20,12 +22,16 @@ final class RecordingManagerTests: XCTestCase {
         let transcription = MockTranscriptionClient()
         let postProcessing = MockPostProcessingService()
         let storage = MockStorageService()
+        let activeAppContextProvider = MockActiveAppContextProvider()
+        let captureContextResolver = MockCaptureContextResolver()
 
         mockMic = mic
         mockSystem = system
         mockTranscription = transcription
         mockPostProcessing = postProcessing
         mockStorage = storage
+        mockActiveAppContextProvider = activeAppContextProvider
+        mockCaptureContextResolver = captureContextResolver
 
         manager = RecordingManager(
             micRecorder: mic,
@@ -33,6 +39,8 @@ final class RecordingManagerTests: XCTestCase {
             transcriptionClient: transcription,
             postProcessingService: postProcessing,
             storage: storage,
+            activeAppContextProvider: activeAppContextProvider,
+            captureContextResolver: captureContextResolver,
             apiKeyExists: { _ in true }
         )
     }
@@ -51,6 +59,8 @@ final class RecordingManagerTests: XCTestCase {
         mockTranscription = nil
         mockPostProcessing = nil
         mockStorage = nil
+        mockActiveAppContextProvider = nil
+        mockCaptureContextResolver = nil
         try await super.tearDown()
     }
 

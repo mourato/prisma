@@ -227,11 +227,15 @@ extension AudioRecorder {
             )
             // Instead of skipping, we should let AVAudioEngine handle it or log it clearly
             engine.connect(inputNode, to: mixer, format: inputFormat)
+            microphoneMixingDestination = inputNode.destination(forMixer: mixer, bus: Constants.tapBusNumber)
+            microphoneMixingDestination?.volume = 1.0
             return
         }
 
         AppLogger.debug("Connecting Microphone with format: \(inputFormat)", category: .recordingManager)
         engine.connect(inputNode, to: mixer, format: inputFormat)
+        microphoneMixingDestination = inputNode.destination(forMixer: mixer, bus: Constants.tapBusNumber)
+        microphoneMixingDestination?.volume = 1.0
 
         if Constants.micDiagnosticsEnabled {
             startMicDiagnostics(for: inputNode)

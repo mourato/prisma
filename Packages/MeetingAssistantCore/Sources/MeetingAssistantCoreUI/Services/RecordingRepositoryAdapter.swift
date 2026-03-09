@@ -17,7 +17,7 @@ public final class RecordingRepositoryAdapter: RecordingRepository {
 
     public func startRecording(to outputURL: URL, retryCount: Int) async throws {
         // `RecordingManager` owns URL creation internally.
-        await recordingManager.startRecording(source: .microphone)
+        await recordingManager.startCapture(purpose: .dictation)
     }
 
     public func stopRecording() async throws -> URL? {

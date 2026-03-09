@@ -11,6 +11,7 @@ import Foundation
 public final class MeetingMO: NSManagedObject {
     @NSManaged public var id: UUID
     @NSManaged public var appRawValue: String
+    @NSManaged public var capturePurposeRawValue: String?
     @NSManaged public var appBundleIdentifier: String?
     @NSManaged public var appDisplayName: String?
     @NSManaged public var title: String?
@@ -52,11 +53,22 @@ extension MeetingMO {
         DomainMeetingApp(rawValue: appRawValue)?.supportsMeetingConversation ?? false
     }
 
+    var capturePurpose: CapturePurpose {
+        if let capturePurposeRawValue,
+           let decoded = CapturePurpose(rawValue: capturePurposeRawValue)
+        {
+            return decoded
+        }
+
+        return CapturePurpose.defaultValue(for: DomainMeetingApp(rawValue: appRawValue) ?? .unknown)
+    }
+
     /// Converte Managed Object para Domain Entity
     func toDomain() -> MeetingEntity {
         MeetingEntity(
             id: id,
             app: DomainMeetingApp(rawValue: appRawValue) ?? .unknown,
+            capturePurpose: capturePurpose,
             appBundleIdentifier: appBundleIdentifier,
             appDisplayName: appDisplayName,
             title: title,
@@ -71,6 +83,7 @@ extension MeetingMO {
     func update(from entity: MeetingEntity) {
         id = entity.id
         appRawValue = entity.app.rawValue
+        capturePurposeRawValue = entity.capturePurpose.rawValue
         appBundleIdentifier = entity.appBundleIdentifier
         appDisplayName = entity.appDisplayName
         title = entity.title

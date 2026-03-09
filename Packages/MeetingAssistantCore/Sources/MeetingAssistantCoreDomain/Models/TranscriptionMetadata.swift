@@ -7,6 +7,7 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
     public let meetingTitle: String?
     public let appName: String
     public let appRawValue: String
+    public let capturePurpose: CapturePurpose
     public let appBundleIdentifier: String?
     public let startTime: Date
     public let createdAt: Date
@@ -40,6 +41,7 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
         case meetingTitle
         case appName
         case appRawValue
+        case capturePurpose
         case appBundleIdentifier
         case startTime
         case createdAt
@@ -65,6 +67,7 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
         meetingTitle: String? = nil,
         appName: String,
         appRawValue: String,
+        capturePurpose: CapturePurpose? = nil,
         appBundleIdentifier: String?,
         startTime: Date,
         createdAt: Date,
@@ -88,6 +91,8 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
         self.meetingTitle = meetingTitle
         self.appName = appName
         self.appRawValue = appRawValue
+        let resolvedMeetingApp = MeetingApp(rawValue: appRawValue) ?? .unknown
+        self.capturePurpose = capturePurpose ?? CapturePurpose.defaultValue(for: resolvedMeetingApp)
         self.appBundleIdentifier = appBundleIdentifier
         self.startTime = startTime
         self.createdAt = createdAt
@@ -115,6 +120,7 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
         let meetingTitle = try container.decodeIfPresent(String.self, forKey: .meetingTitle)
         let appName = try container.decode(String.self, forKey: .appName)
         let appRawValue = try container.decode(String.self, forKey: .appRawValue)
+        let capturePurpose = try container.decodeIfPresent(CapturePurpose.self, forKey: .capturePurpose)
         let appBundleIdentifier = try container.decodeIfPresent(String.self, forKey: .appBundleIdentifier)
         let startTime = try container.decode(Date.self, forKey: .startTime)
         let createdAt = try container.decode(Date.self, forKey: .createdAt)
@@ -139,6 +145,7 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
             meetingTitle: meetingTitle,
             appName: appName,
             appRawValue: appRawValue,
+            capturePurpose: capturePurpose,
             appBundleIdentifier: appBundleIdentifier,
             startTime: startTime,
             createdAt: createdAt,

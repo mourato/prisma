@@ -57,6 +57,8 @@ extension RecordingManager {
         isStartingRecording = false
         isTranscribing = false
         currentMeeting = nil
+        currentCapturePurpose = nil
+        isMeetingMicrophoneEnabled = false
         lastError = nil
         activeStartTelemetry = nil
         clearPostProcessingReadinessWarning()

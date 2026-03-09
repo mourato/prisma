@@ -91,6 +91,7 @@ public enum MeetingApp: String, CaseIterable, Codable, Sendable {
 public struct Meeting: Identifiable, Codable, Hashable, Sendable {
     public let id: UUID
     public let app: MeetingApp
+    public let capturePurpose: CapturePurpose
     public let appBundleIdentifier: String?
     public let appDisplayName: String?
     public var title: String?
@@ -104,6 +105,7 @@ public struct Meeting: Identifiable, Codable, Hashable, Sendable {
     public init(
         id: UUID = UUID(),
         app: MeetingApp,
+        capturePurpose: CapturePurpose? = nil,
         appBundleIdentifier: String? = nil,
         appDisplayName: String? = nil,
         title: String? = nil,
@@ -116,6 +118,7 @@ public struct Meeting: Identifiable, Codable, Hashable, Sendable {
     ) {
         self.id = id
         self.app = app
+        self.capturePurpose = capturePurpose ?? CapturePurpose.defaultValue(for: app)
         self.appBundleIdentifier = appBundleIdentifier
         self.appDisplayName = appDisplayName
         self.title = title
@@ -199,6 +202,6 @@ public struct Meeting: Identifiable, Codable, Hashable, Sendable {
 
     /// Indicates if the meeting represents a dictation (unknown app source).
     public var isDictation: Bool {
-        app == .unknown
+        capturePurpose == .dictation
     }
 }

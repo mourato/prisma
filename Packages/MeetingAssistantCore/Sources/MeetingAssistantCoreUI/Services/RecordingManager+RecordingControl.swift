@@ -13,18 +13,51 @@ import UserNotifications
 // MARK: - Recording Control
 
 public extension RecordingManager {
+    func startCapture(purpose: CapturePurpose) async {
+        let triggerLabel = purpose == .dictation ? "recording.start.dictation" : "recording.start.meeting"
+        await startCapture(purpose: purpose, requestedAt: Date(), triggerLabel: triggerLabel)
+    }
+
+    func startCapture(
+        purpose: CapturePurpose,
+        requestedAt: Date,
+        triggerLabel: String
+    ) async {
+        await startCapture(
+            purpose: purpose,
+            source: source(for: purpose),
+            requestedAt: requestedAt,
+            triggerLabel: triggerLabel
+        )
+    }
+
     /// Start recording audio for a meeting.
     /// - Parameters:
     ///   - source: The audio source to record.
     func startRecording(source: RecordingSource = .microphone) async {
-        await startRecording(
-            source: source,
+        await startCapture(
+            purpose: normalizedCapturePurpose(for: source),
+            source: normalizedRecordingSource(for: source),
             requestedAt: Date(),
             triggerLabel: "recording.start.default"
         )
     }
 
     func startRecording(
+        source: RecordingSource,
+        requestedAt: Date,
+        triggerLabel: String
+    ) async {
+        await startCapture(
+            purpose: normalizedCapturePurpose(for: source),
+            source: normalizedRecordingSource(for: source),
+            requestedAt: requestedAt,
+            triggerLabel: triggerLabel
+        )
+    }
+
+    func startCapture(
+        purpose: CapturePurpose,
         source: RecordingSource,
         requestedAt: Date,
         triggerLabel: String
@@ -39,10 +72,12 @@ public extension RecordingManager {
             return
         }
 
+        currentCapturePurpose = purpose
         recordingSource = source
-        activePostProcessingKernelMode = source == .microphone ? .dictation : .meeting
+        activePostProcessingKernelMode = purpose == .dictation ? .dictation : .meeting
+        isMeetingMicrophoneEnabled = purpose == .meeting
         dictationSessionOutputLanguageOverride = nil
-        refreshPostProcessingReadinessWarning(for: source == .microphone ? .dictation : .meeting)
+        refreshPostProcessingReadinessWarning(for: purpose == .dictation ? .dictation : .meeting)
 
         // Prevent re-entrancy during async setup
         guard !isStartOperationInFlight else { return }
@@ -62,10 +97,22 @@ public extension RecordingManager {
         await Task.yield()
 
         do {
-            let meeting = await applyAutomaticCalendarEventIfAvailable(to: createMeeting(type: resolveMeetingType()))
-            dictationStartBundleIdentifier = nil
-            dictationStartURL = nil
+            let activeContext = try? await activeAppContextProvider.fetchActiveAppContext()
+            let resolvedContext = captureContextResolver.resolveContext(
+                for: purpose,
+                activeContext: activeContext
+            )
+            let meeting = await applyAutomaticCalendarEventIfAvailable(
+                to: createMeeting(
+                    type: resolveMeetingType(),
+                    purpose: purpose,
+                    resolvedContext: resolvedContext
+                )
+            )
+            dictationStartBundleIdentifier = purpose == .dictation ? resolvedContext.appBundleIdentifier : nil
+            dictationStartURL = purpose == .dictation ? resolvedContext.activeBrowserURL : nil
             currentMeeting = meeting
+            currentCapturePurpose = meeting.capturePurpose
             postProcessingContext = nil
             postProcessingContextItems = []
 
@@ -84,7 +131,7 @@ public extension RecordingManager {
             currentMeeting?.state = .recording // Sync entity state
             currentMeeting?.audioFilePath = outputURL.path
 
-            startContextCaptureAfterRecordingStart(meetingID: meeting.id, source: source)
+            startContextCaptureAfterRecordingStart(meetingID: meeting.id)
 
             AppLogger.info("Recording started successfully", category: .recordingManager, extra: [
                 "app": meeting.appName,
@@ -145,29 +192,17 @@ public extension RecordingManager {
         currentMeeting = meeting
     }
 
-    func applyStartAppContext(
-        _ meeting: Meeting,
-        source: RecordingSource,
-        activeContext: ActiveAppContext?
-    ) -> Meeting {
-        let resolvedApp: MeetingApp = source == .microphone ? .unknown : meeting.app
-        let appBundleIdentifier = activeContext?.bundleIdentifier
-        let trimmedName = activeContext?.name?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let appDisplayName = (trimmedName?.isEmpty == false) ? trimmedName : nil
+    func toggleMeetingMicrophone() async {
+        await setMeetingMicrophoneEnabled(!isMeetingMicrophoneEnabled)
+    }
 
-        return Meeting(
-            id: meeting.id,
-            app: resolvedApp,
-            appBundleIdentifier: appBundleIdentifier,
-            appDisplayName: appDisplayName,
-            title: meeting.title,
-            linkedCalendarEvent: meeting.linkedCalendarEvent,
-            type: meeting.type,
-            state: meeting.state,
-            startTime: meeting.startTime,
-            endTime: meeting.endTime,
-            audioFilePath: meeting.audioFilePath
-        )
+    func setMeetingMicrophoneEnabled(_ isEnabled: Bool) async {
+        guard currentCapturePurpose == .meeting, isRecording || isStartingRecording || isTranscribing else { return }
+        isMeetingMicrophoneEnabled = isEnabled
+
+        if let recorder = micRecorder as? AudioRecorder {
+            recorder.setMeetingMicrophoneEnabled(isEnabled)
+        }
     }
 
     /// Stop recording and optionally transcribe.
@@ -224,6 +259,8 @@ public extension RecordingManager {
                 postProcessingContext = nil
                 postProcessingContextItems = []
                 dictationSessionOutputLanguageOverride = nil
+                currentCapturePurpose = nil
+                isMeetingMicrophoneEnabled = false
                 currentMeeting = nil // Clear current meeting if done
                 activeStartTelemetry = nil
                 clearPostProcessingReadinessWarning()
@@ -241,6 +278,8 @@ public extension RecordingManager {
             postProcessingContextItems = []
             isStartingRecording = false
             dictationSessionOutputLanguageOverride = nil
+            currentCapturePurpose = nil
+            isMeetingMicrophoneEnabled = false
             activeStartTelemetry = nil
             clearPostProcessingReadinessWarning()
         }
@@ -257,6 +296,8 @@ public extension RecordingManager {
             postStartContextCaptureTask?.cancel()
             postStartContextCaptureTask = nil
             isStartingRecording = false
+            currentCapturePurpose = nil
+            isMeetingMicrophoneEnabled = false
             currentMeeting = nil
             postProcessingContext = nil
             postProcessingContextItems = []
@@ -289,6 +330,8 @@ public extension RecordingManager {
         // Reset state
         isRecording = false
         isStartingRecording = false
+        currentCapturePurpose = nil
+        isMeetingMicrophoneEnabled = false
         currentMeeting = nil
         postProcessingContext = nil
         postProcessingContextItems = []
@@ -335,11 +378,14 @@ public extension RecordingManager {
         // Create meeting record for imported file
         let meeting = Meeting(
             app: .importedFile,
+            capturePurpose: .meeting,
             title: audioURL.deletingPathExtension().lastPathComponent,
             audioFilePath: audioURL.path
         )
         currentMeeting = meeting
+        currentCapturePurpose = .meeting
         activePostProcessingKernelMode = .meeting
+        isMeetingMicrophoneEnabled = false
         refreshPostProcessingReadinessWarning(for: .meeting)
 
         AppLogger.info(
@@ -362,7 +408,7 @@ public extension RecordingManager {
                 Task { @MainActor in
                     let isCurrentlyRecording = self?.isRecording ?? false
                     if detected != nil, !isCurrentlyRecording {
-                        await self?.startRecording(source: .all)
+                        await self?.startCapture(purpose: .meeting)
                     } else if detected == nil, isCurrentlyRecording {
                         await self?.stopRecording()
                     }
@@ -409,9 +455,46 @@ extension RecordingManager {
         }
     }
 
-    private func createMeeting(type: MeetingType) -> Meeting {
-        let app = meetingDetector.detectedMeeting ?? .unknown
-        return Meeting(app: app, type: type, state: .recording)
+    private func createMeeting(
+        type: MeetingType,
+        purpose: CapturePurpose,
+        resolvedContext: ResolvedCaptureContext
+    ) -> Meeting {
+        Meeting(
+            app: purpose == .dictation ? .unknown : resolvedContext.meetingApp,
+            capturePurpose: purpose,
+            appBundleIdentifier: resolvedContext.appBundleIdentifier,
+            appDisplayName: resolvedContext.appDisplayName,
+            type: type,
+            state: .recording
+        )
+    }
+
+    private func normalizedCapturePurpose(for source: RecordingSource) -> CapturePurpose {
+        switch source {
+        case .microphone:
+            .dictation
+        case .system, .all:
+            .meeting
+        }
+    }
+
+    private func normalizedRecordingSource(for source: RecordingSource) -> RecordingSource {
+        switch source {
+        case .microphone:
+            .microphone
+        case .system, .all:
+            .all
+        }
+    }
+
+    private func source(for purpose: CapturePurpose) -> RecordingSource {
+        switch purpose {
+        case .dictation:
+            .microphone
+        case .meeting:
+            .all
+        }
     }
 
     private func handleStartRecordingError(_ error: Error) async {
@@ -431,6 +514,8 @@ extension RecordingManager {
         _ = await systemRecorder.stopRecording()
 
         currentMeeting = nil
+        currentCapturePurpose = nil
+        isMeetingMicrophoneEnabled = false
         activeStartTelemetry = nil
         clearPostProcessingReadinessWarning()
     }

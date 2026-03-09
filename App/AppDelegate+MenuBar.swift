@@ -142,6 +142,7 @@ extension AppDelegate {
         MenuBarRecordingSectionState(
             isRecordingManagerActive: recordingManager.isRecording || recordingManager.isStartingRecording,
             recordingSource: recordingManager.recordingSource,
+            capturePurpose: recordingManager.currentCapturePurpose,
             isAssistantRecording: assistantVoiceCommandService.isRecording
         )
     }

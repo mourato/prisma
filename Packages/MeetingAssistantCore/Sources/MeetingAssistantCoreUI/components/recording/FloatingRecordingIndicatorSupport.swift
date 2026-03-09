@@ -39,6 +39,7 @@ struct ActionIconButton: View {
     enum Style {
         case neutral
         case success
+        case warning
     }
 
     let symbol: String
@@ -92,6 +93,11 @@ struct ActionIconButton: View {
                 return AnyShapeStyle(AppDesignSystem.Colors.success.opacity(0.85))
             }
             return AnyShapeStyle(AppDesignSystem.Colors.success.opacity(0.76))
+        case .warning:
+            if isHovered {
+                return AnyShapeStyle(AppDesignSystem.Colors.error.opacity(0.82))
+            }
+            return AnyShapeStyle(AppDesignSystem.Colors.error.opacity(0.68))
         }
     }
 }
@@ -148,6 +154,9 @@ struct RecordingIndicatorPostProcessingWarningDescriptor: Equatable {
 }
 
 enum FloatingRecordingIndicatorViewUtilities {
+    static let actionButtonSize: CGFloat = 28
+    static let dividerWidth: CGFloat = 1
+
     static func controlHeight(for size: FloatingRecordingIndicatorView.IndicatorSize) -> CGFloat {
         switch size {
         case .classic:
@@ -205,6 +214,79 @@ enum FloatingRecordingIndicatorViewUtilities {
         formatter.allowedUnits = duration >= 3_600 ? [.hour, .minute, .second] : [.minute, .second]
         formatter.zeroFormattingBehavior = .pad
         return formatter.string(from: duration) ?? "00:00"
+    }
+
+    static func waveformWidth(for size: FloatingRecordingIndicatorView.IndicatorSize) -> CGFloat {
+        let count = CGFloat(waveCount(for: size))
+        guard count > 0 else { return 0 }
+
+        let totalBarWidth = count * AppDesignSystem.Layout.recordingIndicatorWaveformBarWidth
+        let totalSpacing = max(0, count - 1) * AppDesignSystem.Layout.recordingIndicatorWaveformBarSpacing
+        return totalBarWidth + totalSpacing
+    }
+
+    static func timerReservedWidth(for size: FloatingRecordingIndicatorView.IndicatorSize) -> CGFloat {
+        switch size {
+        case .classic:
+            56
+        case .mini:
+            48
+        }
+    }
+
+    static func horizontalPadding(for size: FloatingRecordingIndicatorView.IndicatorSize, expanded: Bool) -> CGFloat {
+        if expanded {
+            return AppDesignSystem.Layout.recordingIndicatorSidePadding
+        }
+
+        switch size {
+        case .classic, .mini:
+            return max(AppDesignSystem.Layout.recordingIndicatorSidePadding, 16)
+        }
+    }
+
+    static func clusterWidth(
+        for size: FloatingRecordingIndicatorView.IndicatorSize,
+        showsMeetingTimer: Bool
+    ) -> CGFloat {
+        var width = AppDesignSystem.Layout.recordingIndicatorDotSize
+            + contentSpacing(for: size)
+            + waveformWidth(for: size)
+
+        if showsMeetingTimer {
+            width += contentSpacing(for: size) + timerReservedWidth(for: size)
+        }
+
+        return width
+    }
+
+    static func buttonGroupWidth(for size: FloatingRecordingIndicatorView.IndicatorSize) -> CGFloat {
+        actionButtonSize + controlSpacing(for: size) + dividerWidth
+    }
+
+    static func mainPillWidth(
+        for size: FloatingRecordingIndicatorView.IndicatorSize,
+        renderState: RecordingIndicatorRenderState,
+        layout: RecordingIndicatorOverlayLayout,
+        expanded: Bool
+    ) -> CGFloat {
+        var elementWidths: [CGFloat] = [
+            clusterWidth(for: size, showsMeetingTimer: layout.showsMeetingTimer),
+        ]
+
+        if renderState.kind == .meeting, renderState.mode == .recording {
+            elementWidths.append(actionButtonSize)
+        }
+
+        if expanded, renderState.mode == .recording {
+            elementWidths.insert(buttonGroupWidth(for: size), at: 0)
+            elementWidths.append(buttonGroupWidth(for: size))
+        }
+
+        let spacingCount = max(0, elementWidths.count - 1)
+        return (horizontalPadding(for: size, expanded: expanded) * 2)
+            + elementWidths.reduce(0, +)
+            + (CGFloat(spacingCount) * contentSpacing(for: size))
     }
 
     static func promptIconImage(

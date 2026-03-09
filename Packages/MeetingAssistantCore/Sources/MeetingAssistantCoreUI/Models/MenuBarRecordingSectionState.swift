@@ -9,6 +9,7 @@ public enum MenuBarRecordingSectionState: Equatable {
     public init(
         isRecordingManagerActive: Bool,
         recordingSource: RecordingSource,
+        capturePurpose: CapturePurpose? = nil,
         isAssistantRecording: Bool
     ) {
         if isAssistantRecording {
@@ -18,6 +19,16 @@ public enum MenuBarRecordingSectionState: Equatable {
 
         guard isRecordingManagerActive else {
             self = .idle
+            return
+        }
+
+        if let capturePurpose {
+            switch capturePurpose {
+            case .dictation:
+                self = .dictationActive
+            case .meeting:
+                self = .meetingActive
+            }
             return
         }
 

@@ -39,10 +39,10 @@ public struct TranscriptionDeliveryService {
 
     private static func isDictationDelivery(transcription: Transcription, recordingSource: RecordingSource?) -> Bool {
         if let recordingSource {
-            return recordingSource == .microphone
+            return recordingSource == .microphone && transcription.capturePurpose == .dictation
         }
 
-        return transcription.meeting.isDictation
+        return transcription.capturePurpose == .dictation
     }
 
     private static func transcriptionDeliveryText(from transcription: Transcription) -> String {

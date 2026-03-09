@@ -415,10 +415,10 @@ extension RecordingManager {
         }
 
         if isRecording || isTranscribing {
-            return recordingSource == .microphone
+            return currentCapturePurpose == .dictation
         }
 
-        return meeting?.isDictation == true || recordingSource == .microphone
+        return meeting?.capturePurpose == .dictation || currentCapturePurpose == .dictation
     }
 
     func postProcessingKernelMode(for meeting: Meeting?) -> IntelligenceKernelMode {

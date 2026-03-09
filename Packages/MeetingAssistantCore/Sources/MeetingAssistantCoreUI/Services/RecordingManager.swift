@@ -33,7 +33,9 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     @Published public var currentMeeting: Meeting?
     @Published public var lastError: Error?
     @Published public var hasRequiredPermissions = false
+    @Published public var currentCapturePurpose: CapturePurpose?
     @Published public var recordingSource: RecordingSource = .microphone
+    @Published public var isMeetingMicrophoneEnabled = false
     @Published public var dictationSessionOutputLanguageOverride: DictationOutputLanguage?
     @Published public var postProcessingReadinessWarningIssue: EnhancementsInferenceReadinessIssue?
     @Published public var postProcessingReadinessWarningMode: IntelligenceKernelMode?
@@ -84,6 +86,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     let transcribeAudioUseCase: TranscribeAudioUseCase
     let transcriptPreprocessor = TranscriptIntelligencePreprocessor()
     let activeAppContextProvider: any ActiveAppContextProvider
+    let captureContextResolver: any CaptureContextResolving
     let apiKeyExists: (AIProvider) -> Bool
     var browserProviders: [String: BrowserActiveTabURLProviding] = BrowserProviderRegistry.defaultProviders()
 
@@ -151,6 +154,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             textContextGuardrails: TextContextGuardrails(),
             textContextPolicy: .default,
             activeAppContextProvider: NSWorkspaceActiveAppContextProvider(),
+            captureContextResolver: CaptureContextResolver.shared,
             apiKeyExists: { provider in
                 KeychainManager.existsAPIKey(for: provider)
             }
@@ -200,6 +204,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         textContextGuardrails: TextContextGuardrails = TextContextGuardrails(),
         textContextPolicy: TextContextPolicy = .default,
         activeAppContextProvider: any ActiveAppContextProvider = NSWorkspaceActiveAppContextProvider(),
+        captureContextResolver: any CaptureContextResolving = CaptureContextResolver.shared,
         apiKeyExists: @escaping (AIProvider) -> Bool = { provider in
             KeychainManager.existsAPIKey(for: provider)
         }
@@ -218,6 +223,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         self.textContextGuardrails = textContextGuardrails
         self.textContextPolicy = textContextPolicy
         self.activeAppContextProvider = activeAppContextProvider
+        self.captureContextResolver = captureContextResolver
         self.apiKeyExists = apiKeyExists
 
         // Initialize UseCase with Adapters
@@ -251,6 +257,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         isRecording = await recordingActor.recordingState
         isTranscribing = await recordingActor.transcribingState
         currentMeeting = await recordingActor.currentMeetingState
+        currentCapturePurpose = currentMeeting?.capturePurpose
         lastError = await recordingActor.lastErrorState
         hasRequiredPermissions = await recordingActor.permissionsState
     }

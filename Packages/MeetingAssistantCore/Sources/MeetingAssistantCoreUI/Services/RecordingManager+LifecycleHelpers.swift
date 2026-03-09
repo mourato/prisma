@@ -38,6 +38,8 @@ extension RecordingManager {
         meetingState = .failed(error.localizedDescription)
         currentMeeting?.state = .failed(error.localizedDescription)
         currentMeeting = nil
+        currentCapturePurpose = nil
+        isMeetingMicrophoneEnabled = false
         postProcessingContext = nil
         postProcessingContextItems = []
         dictationSessionOutputLanguageOverride = nil

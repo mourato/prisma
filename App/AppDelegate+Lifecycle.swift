@@ -186,7 +186,7 @@ extension AppDelegate {
             guard let self else { return }
             let hasStatusButton = statusItem?.button != nil
             let isStatusItemVisible = statusItem?.isVisible ?? false
-            guard hasStatusButton && isStatusItemVisible else {
+            guard hasStatusButton, isStatusItemVisible else {
                 logger.fault("Primary UI did not initialize correctly. Presenting settings recovery window.")
                 promoteAppForWindowPresentation()
                 settingsWindowController.showSettingsWindow()
@@ -209,10 +209,10 @@ extension AppDelegate {
 
             let hasStatusButton = statusItem?.button != nil
             let isStatusItemVisible = statusItem?.isVisible ?? false
-            let hasVisibleWindow = NSApp.windows.contains(where: { $0.isVisible })
+            let hasVisibleWindow = NSApp.windows.contains(where: \.isVisible)
 
             guard !hasVisibleWindow else { return }
-            guard !(hasStatusButton && isStatusItemVisible) else { return }
+            guard !hasStatusButton || !isStatusItemVisible else { return }
 
             logger.fault("Launch recovery triggered: no visible status item and no visible window.")
             promoteAppForWindowPresentation()
@@ -303,6 +303,7 @@ extension AppDelegate {
                 isAssistantRecording: false,
                 isStarting: isStarting,
                 isProcessing: isProcessing,
+                capturePurpose: recordingManager.currentCapturePurpose,
                 recordingSource: recordingManager.recordingSource,
                 meetingType: currentMeetingType
             )
@@ -331,9 +332,10 @@ extension AppDelegate {
         if recordingManager.isRecording {
             await recordingManager.stopRecording(transcribe: true)
         } else {
-            let triggerLabel = source == .microphone ? "menu.dictation" : "menu.meeting"
-            await recordingManager.startRecording(
-                source: source,
+            let purpose: CapturePurpose = source == .microphone ? .dictation : .meeting
+            let triggerLabel = purpose == .dictation ? "menu.dictation" : "menu.meeting"
+            await recordingManager.startCapture(
+                purpose: purpose,
                 requestedAt: Date(),
                 triggerLabel: triggerLabel
             )

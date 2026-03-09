@@ -44,17 +44,15 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
 
     /// Whether the indicator is currently visible.
     @Published public private(set) var isVisible = false
-    public var renderState: RecordingIndicatorRenderState { currentRenderState }
+    public var renderState: RecordingIndicatorRenderState {
+        currentRenderState
+    }
 
     // MARK: - Configuration
 
     private enum Constants {
         static let panelHeightClassic: CGFloat = AppDesignSystem.Layout.recordingIndicatorClassicHeight
         static let panelHeightMini: CGFloat = AppDesignSystem.Layout.recordingIndicatorMiniHeight
-        static let panelWidthClassicMeeting: CGFloat = 305
-        static let panelWidthClassicDictation: CGFloat = 254
-        static let panelWidthMiniMeeting: CGFloat = 235
-        static let panelWidthMiniDictation: CGFloat = 188
         static let panelWidthError: CGFloat = AppDesignSystem.Layout.recordingIndicatorPanelWidth
         static let screenPadding: CGFloat = 40
         static let panelShadowInset: CGFloat = AppDesignSystem.Layout.recordingIndicatorMainShadowRadius
@@ -389,47 +387,36 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
                 settingsStore: settingsStore
             )
             let auxiliaryUnitWidth = auxiliaryUnitWidth(for: style)
-            let mainOnlyWidth = panelMainOnlyWidth(for: style, renderState: renderState)
+            let mainOnlyWidth = panelMainOnlyWidth(for: style, renderState: renderState, layout: layout)
             return mainOnlyWidth + (CGFloat(layout.auxiliaryControlCount) * auxiliaryUnitWidth)
         }
     }
 
     private func panelMainOnlyWidth(
         for style: RecordingIndicatorStyle,
-        renderState: RecordingIndicatorRenderState
+        renderState: RecordingIndicatorRenderState,
+        layout: RecordingIndicatorOverlayLayout
     ) -> CGFloat {
-        let auxiliaryUnitWidth = auxiliaryUnitWidth(for: style)
-
-        switch renderState.kind {
-        case .meeting:
-            return legacyMeetingPanelWidth(for: style) - auxiliaryUnitWidth
-        case .dictation:
-            return legacyDictationPanelWidth(for: style) - (auxiliaryUnitWidth * 2)
-        case .assistant, .assistantIntegration:
-            return legacyDictationPanelWidth(for: style)
-        }
-    }
-
-    private func legacyDictationPanelWidth(for style: RecordingIndicatorStyle) -> CGFloat {
-        switch style {
+        let indicatorSize: FloatingRecordingIndicatorView.IndicatorSize = switch style {
         case .classic:
-            Constants.panelWidthClassicDictation
-        case .mini:
-            Constants.panelWidthMiniDictation
-        case .none:
-            Constants.panelWidthMiniDictation
+            .classic
+        case .mini, .none:
+            .mini
         }
-    }
 
-    private func legacyMeetingPanelWidth(for style: RecordingIndicatorStyle) -> CGFloat {
-        switch style {
-        case .classic:
-            Constants.panelWidthClassicMeeting
-        case .mini:
-            Constants.panelWidthMiniMeeting
-        case .none:
-            Constants.panelWidthMiniMeeting
-        }
+        let collapsedWidth = FloatingRecordingIndicatorViewUtilities.mainPillWidth(
+            for: indicatorSize,
+            renderState: renderState,
+            layout: layout,
+            expanded: false
+        )
+        let expandedWidth = FloatingRecordingIndicatorViewUtilities.mainPillWidth(
+            for: indicatorSize,
+            renderState: renderState,
+            layout: layout,
+            expanded: true
+        )
+        return max(collapsedWidth, expandedWidth)
     }
 
     private func auxiliaryUnitWidth(for style: RecordingIndicatorStyle) -> CGFloat {

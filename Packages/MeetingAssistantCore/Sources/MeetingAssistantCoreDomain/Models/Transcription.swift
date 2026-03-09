@@ -4,6 +4,7 @@ import Foundation
 public struct Transcription: Identifiable, Codable, Hashable, Sendable {
     public let id: UUID
     public let meeting: Meeting
+    public let capturePurpose: CapturePurpose
 
     /// Context items used during post-processing.
     public let contextItems: [TranscriptionContextItem]
@@ -69,6 +70,7 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
     ) {
         self.id = id
         self.meeting = meeting
+        capturePurpose = meeting.capturePurpose
         self.contextItems = contextItems
         self.segments = segments
         self.text = text

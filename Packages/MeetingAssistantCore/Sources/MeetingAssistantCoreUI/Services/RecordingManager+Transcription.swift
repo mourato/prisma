@@ -74,6 +74,8 @@ extension RecordingManager {
         isStartingRecording = false
         meetingState = .idle
         currentMeeting = nil
+        currentCapturePurpose = nil
+        isMeetingMicrophoneEnabled = false
         postProcessingContext = nil
         postProcessingContextItems = []
         dictationSessionOutputLanguageOverride = nil
@@ -95,6 +97,7 @@ extension RecordingManager {
         var entity = MeetingEntity(
             id: meeting.id,
             app: DomainMeetingApp(rawValue: meeting.app.rawValue) ?? .unknown,
+            capturePurpose: meeting.capturePurpose,
             appBundleIdentifier: meeting.appBundleIdentifier,
             appDisplayName: meeting.appDisplayName,
             title: meeting.title,
@@ -117,6 +120,7 @@ extension RecordingManager {
             meeting: Meeting(
                 id: entity.meeting.id,
                 app: MeetingApp(rawValue: entity.meeting.app.rawValue) ?? .unknown,
+                capturePurpose: entity.meeting.capturePurpose,
                 appBundleIdentifier: entity.meeting.appBundleIdentifier,
                 appDisplayName: entity.meeting.appDisplayName,
                 title: entity.meeting.title,
@@ -190,10 +194,10 @@ extension RecordingManager {
         }
 
         if preferCurrentRecordingSource {
-            return recordingSource != .microphone
+            return currentCapturePurpose == .meeting
         }
 
-        return meeting.app.supportsMeetingConversation
+        return meeting.capturePurpose == .meeting && meeting.app.supportsMeetingConversation
     }
 
     // MARK: - Notifications

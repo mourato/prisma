@@ -9,6 +9,7 @@ extension FileSystemStorageService {
         let meetingEntity = MeetingEntity(
             id: meeting.id,
             app: DomainMeetingApp(rawValue: meeting.app.rawValue) ?? .unknown,
+            capturePurpose: meeting.capturePurpose,
             appBundleIdentifier: meeting.appBundleIdentifier,
             appDisplayName: meeting.appDisplayName,
             title: meeting.title,
@@ -65,6 +66,7 @@ extension FileSystemStorageService {
             meetingTitle: mo.meeting.preferredTitle,
             appName: resolvedName,
             appRawValue: mo.meeting.appRawValue,
+            capturePurpose: mo.meeting.capturePurpose,
             appBundleIdentifier: mo.meeting.appBundleIdentifier,
             startTime: mo.meeting.startTime,
             createdAt: mo.createdAt,
@@ -90,6 +92,7 @@ extension FileSystemStorageService {
         let meeting = Meeting(
             id: meetingEntity.id,
             app: MeetingApp(rawValue: meetingEntity.app.rawValue) ?? .unknown,
+            capturePurpose: meetingEntity.capturePurpose,
             appBundleIdentifier: meetingEntity.appBundleIdentifier,
             appDisplayName: meetingEntity.appDisplayName,
             title: meetingEntity.title,

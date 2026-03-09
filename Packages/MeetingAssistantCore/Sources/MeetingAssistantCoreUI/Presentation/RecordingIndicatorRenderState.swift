@@ -52,14 +52,14 @@ public struct RecordingIndicatorRenderState: Sendable, Equatable {
     ) -> RecordingIndicatorRenderState {
         switch recordingSource {
         case .microphone:
-            return RecordingIndicatorRenderState(
+            RecordingIndicatorRenderState(
                 mode: mode,
                 kind: .dictation,
                 assistantIntegrationID: nil,
                 meetingType: nil
             )
         case .system, .all:
-            return RecordingIndicatorRenderState(
+            RecordingIndicatorRenderState(
                 mode: mode,
                 kind: .meeting,
                 assistantIntegrationID: nil,

@@ -373,12 +373,10 @@ public struct TranscriptionDetailView: View {
     }
 
     private var sourceSelection: SourceSelection {
-        switch transcription.meeting.app {
-        case .unknown:
+        switch transcription.capturePurpose {
+        case .dictation:
             .dictation
-        case .importedFile:
-            .dictation
-        default:
+        case .meeting:
             .meeting
         }
     }

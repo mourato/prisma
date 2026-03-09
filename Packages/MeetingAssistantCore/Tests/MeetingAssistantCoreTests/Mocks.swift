@@ -1,3 +1,4 @@
+import AppKit
 import Combine
 import Foundation
 import MeetingAssistantCore
@@ -403,6 +404,47 @@ class MockStorageService: StorageService, @unchecked Sendable {
             deletedAudioCount: preview.audioCount,
             deletedTranscriptionCount: preview.transcriptionCount
         )
+    }
+}
+
+// MARK: - Mock Active App Context
+
+@MainActor
+final class MockActiveAppContextProvider: ActiveAppContextProvider {
+    var activeContext: ActiveAppContext?
+
+    func fetchActiveAppContext() async throws -> ActiveAppContext? {
+        activeContext
+    }
+}
+
+// MARK: - Mock Capture Context Resolver
+
+@MainActor
+final class MockCaptureContextResolver: CaptureContextResolving {
+    var resolvedContext: ResolvedCaptureContext?
+    var detectedMeetingCandidate: ResolvedCaptureContext?
+
+    func resolveContext(for purpose: CapturePurpose, activeContext: ActiveAppContext?) -> ResolvedCaptureContext {
+        if let resolvedContext {
+            return resolvedContext
+        }
+
+        return ResolvedCaptureContext(
+            purpose: purpose,
+            meetingApp: purpose == .meeting ? .zoom : .unknown,
+            appBundleIdentifier: activeContext?.bundleIdentifier,
+            appDisplayName: activeContext?.name,
+            activeBrowserURL: nil,
+            matchedWebMeetingTargetID: nil,
+            matchedWebContextTargetID: nil,
+            matchedDictationRuleBundleID: nil,
+            isKnownMeetingCandidate: purpose == .meeting
+        )
+    }
+
+    func detectMeetingCandidate(in runningApps: [NSRunningApplication]) -> ResolvedCaptureContext? {
+        detectedMeetingCandidate
     }
 }
 

@@ -30,7 +30,8 @@ final class RecordingViewModelTests: XCTestCase {
     func testStartRecording() async {
         await viewModel.startRecording()
 
-        XCTAssertTrue(mockService.startRecordingCalled)
+        XCTAssertTrue(mockService.startCaptureCalled)
+        XCTAssertEqual(mockService.lastCapturePurpose, .dictation)
 
         // Simulate service update via publisher
         mockService.simulateState(recording: true, transcribing: false)

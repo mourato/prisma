@@ -201,10 +201,9 @@ public class TranscriptionSettingsViewModel: ObservableObject {
         case .all:
             true
         case .dictations:
-            // Dictation = Unknown app source (menu bar dictation) AND not imported file.
-            transcription.meetingApp == .unknown
+            transcription.capturePurpose == .dictation
         case .meetings:
-            transcription.meetingApp.supportsMeetingConversation
+            transcription.capturePurpose == .meeting
         }
     }
 

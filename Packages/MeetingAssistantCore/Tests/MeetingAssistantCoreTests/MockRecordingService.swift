@@ -9,6 +9,8 @@ class MockRecordingService: RecordingServiceProtocol {
     var isRecording: Bool = false
     var isTranscribing: Bool = false
     var currentMeeting: Meeting?
+    var currentCapturePurpose: CapturePurpose?
+    var isMeetingMicrophoneEnabled: Bool = false
     var transcriptionStatus = TranscriptionStatus()
     var permissionStatus = PermissionStatusManager()
 
@@ -36,6 +38,7 @@ class MockRecordingService: RecordingServiceProtocol {
 
     // Track calls
     var startRecordingCalled = false
+    var startCaptureCalled = false
     var stopRecordingCalled = false
     var checkPermissionCalled = false
     var requestPermissionCalled = false
@@ -46,9 +49,30 @@ class MockRecordingService: RecordingServiceProtocol {
     var requestAccessibilityPermissionCalled = false
     var openAccessibilitySettingsCalled = false
     var transcribeExternalAudioCalled = false
+    var lastCapturePurpose: CapturePurpose?
 
     func startRecording(source: RecordingSource) async {
         startRecordingCalled = true
+        currentCapturePurpose = source == .microphone ? .dictation : .meeting
+        lastCapturePurpose = currentCapturePurpose
+        isMeetingMicrophoneEnabled = currentCapturePurpose == .meeting
+        isRecording = true
+        isRecordingSubject.send(true)
+        meetingState = .recording
+        meetingStateSubject.send(.recording)
+    }
+
+    func startCapture(purpose: CapturePurpose) async {
+        await startCapture(purpose: purpose, requestedAt: Date(), triggerLabel: "test")
+    }
+
+    func startCapture(purpose: CapturePurpose, requestedAt: Date, triggerLabel: String) async {
+        _ = requestedAt
+        _ = triggerLabel
+        startCaptureCalled = true
+        lastCapturePurpose = purpose
+        currentCapturePurpose = purpose
+        isMeetingMicrophoneEnabled = purpose == .meeting
         isRecording = true
         isRecordingSubject.send(true)
         meetingState = .recording
@@ -58,7 +82,19 @@ class MockRecordingService: RecordingServiceProtocol {
     func stopRecording() async {
         stopRecordingCalled = true
         isRecording = false
+        currentCapturePurpose = nil
+        isMeetingMicrophoneEnabled = false
         isRecordingSubject.send(false)
+    }
+
+    func toggleMeetingMicrophone() async {
+        guard currentCapturePurpose == .meeting else { return }
+        isMeetingMicrophoneEnabled.toggle()
+    }
+
+    func setMeetingMicrophoneEnabled(_ isEnabled: Bool) async {
+        guard currentCapturePurpose == .meeting else { return }
+        isMeetingMicrophoneEnabled = isEnabled
     }
 
     func checkPermission() async {

@@ -150,9 +150,10 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.filteredTranscriptions.count, 1)
         XCTAssertEqual(viewModel.filteredTranscriptions.first?.id, mockId1)
 
-        // Test .meetings (non-unknown and non-imported)
+        // Test .meetings (meeting capture, including imported files)
         viewModel.sourceFilter = .meetings
-        XCTAssertEqual(viewModel.filteredTranscriptions.count, 0)
+        XCTAssertEqual(viewModel.filteredTranscriptions.count, 1)
+        XCTAssertEqual(viewModel.filteredTranscriptions.first?.id, mockId2)
 
         // Imported files remain visible under .all
         viewModel.sourceFilter = .all

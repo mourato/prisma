@@ -75,6 +75,7 @@ public final class CoreDataTranscriptionStorageRepository: TranscriptionStorageR
                     meetingTitle: mo.meeting.preferredTitle,
                     appName: resolvedName,
                     appRawValue: mo.meeting.appRawValue,
+                    capturePurpose: mo.meeting.capturePurpose,
                     appBundleIdentifier: mo.meeting.appBundleIdentifier,
                     startTime: mo.meeting.startTime,
                     createdAt: mo.createdAt,

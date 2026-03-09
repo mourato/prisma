@@ -15,6 +15,8 @@ public protocol RecordingServiceProtocol: AnyObject {
     var isRecording: Bool { get }
     var isTranscribing: Bool { get }
     var currentMeeting: Meeting? { get }
+    var currentCapturePurpose: CapturePurpose? { get }
+    var isMeetingMicrophoneEnabled: Bool { get }
     var transcriptionStatus: TranscriptionStatus { get }
     var permissionStatus: PermissionStatusManager { get }
 
@@ -25,8 +27,12 @@ public protocol RecordingServiceProtocol: AnyObject {
     var currentMeetingPublisher: AnyPublisher<Meeting?, Never> { get }
 
     // Actions
+    func startCapture(purpose: CapturePurpose) async
+    func startCapture(purpose: CapturePurpose, requestedAt: Date, triggerLabel: String) async
     func startRecording(source: RecordingSource) async
     func stopRecording() async
+    func toggleMeetingMicrophone() async
+    func setMeetingMicrophoneEnabled(_ isEnabled: Bool) async
     func transcribeExternalAudio(from audioURL: URL) async
     func checkPermission() async
     func checkPermission(for source: RecordingSource) async

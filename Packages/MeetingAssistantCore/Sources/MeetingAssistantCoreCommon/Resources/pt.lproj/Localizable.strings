@@ -895,6 +895,8 @@
 "recording_indicator.prompt.help" = "Escolher prompt de pós-processamento";
 "recording_indicator.prompt.none" = "Sem pós-processamento";
 "recording_indicator.prompt.none_desc" = "Pular o pós-processamento por IA após a gravação.";
+"recording_indicator.microphone.enabled.help" = "O microfone está incluído nesta gravação de reunião";
+"recording_indicator.microphone.disabled.help" = "O microfone está excluído desta gravação de reunião";
 "recording_indicator.post_processing_warning.mode.meeting" = "reunião";
 "recording_indicator.post_processing_warning.mode.dictation" = "ditado";
 "recording_indicator.post_processing_warning.mode.assistant" = "assistant";

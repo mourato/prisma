@@ -454,6 +454,10 @@ public struct FloatingRecordingIndicatorView: View {
 
             recordingCluster(size: size)
 
+            if showsMeetingMicrophoneControl {
+                meetingMicrophoneControl
+            }
+
             if isRecordingMode, isHovering {
                 trailingControl
             }
@@ -470,6 +474,25 @@ public struct FloatingRecordingIndicatorView: View {
         .contentShape(Capsule())
         .onHover { hovering in
             handleMainRegionHover(hovering)
+        }
+    }
+
+    private var showsMeetingMicrophoneControl: Bool {
+        renderState.kind == .meeting && isRecordingMode
+    }
+
+    private var meetingMicrophoneControl: some View {
+        ActionIconButton(
+            symbol: recordingManager.isMeetingMicrophoneEnabled ? "mic.fill" : "mic.slash.fill",
+            helpKey: recordingManager.isMeetingMicrophoneEnabled
+                ? "recording_indicator.microphone.enabled.help"
+                : "recording_indicator.microphone.disabled.help",
+            keyboardShortcut: nil,
+            style: recordingManager.isMeetingMicrophoneEnabled ? .neutral : .warning
+        ) {
+            Task {
+                await recordingManager.toggleMeetingMicrophone()
+            }
         }
     }
 

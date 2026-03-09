@@ -73,7 +73,7 @@ public extension FileSystemStorageService {
             checkpointKey: Keys.didSanitizeNonMeetingPresentationDataV1
         )
 
-        guard transcription.meeting.app != .unknown else {
+        guard transcription.capturePurpose != .dictation else {
             AppLogger.info(
                 "Skipped transcription persistence for dictation",
                 category: .databaseManager,
@@ -330,10 +330,25 @@ public extension FileSystemStorageService {
         case .all:
             break
         case .dictations:
-            predicates.append(NSPredicate(format: "meeting.appRawValue == %@", MeetingApp.unknown.rawValue))
+            predicates.append(
+                NSCompoundPredicate(orPredicateWithSubpredicates: [
+                    NSPredicate(format: "meeting.capturePurposeRawValue == %@", CapturePurpose.dictation.rawValue),
+                    NSPredicate(
+                        format: "meeting.capturePurposeRawValue == nil AND meeting.appRawValue == %@",
+                        MeetingApp.unknown.rawValue
+                    ),
+                ])
+            )
         case .meetings:
-            predicates.append(NSPredicate(format: "meeting.appRawValue != %@", MeetingApp.unknown.rawValue))
-            predicates.append(NSPredicate(format: "meeting.appRawValue != %@", MeetingApp.importedFile.rawValue))
+            predicates.append(
+                NSCompoundPredicate(orPredicateWithSubpredicates: [
+                    NSPredicate(format: "meeting.capturePurposeRawValue == %@", CapturePurpose.meeting.rawValue),
+                    NSPredicate(
+                        format: "meeting.capturePurposeRawValue == nil AND meeting.appRawValue != %@",
+                        MeetingApp.unknown.rawValue
+                    ),
+                ])
+            )
         }
 
         if query.dateFilter != .allEntries {
