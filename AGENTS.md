@@ -1,15 +1,13 @@
 # AGENTS.md - Prisma Development Guide
 
-**Document Status:** v2.6 | Updated: Mar 5, 2026 | Maintained by: Team
+**Document Status:** v2.7 | Updated: Mar 9, 2026 | Maintained by: Team
 
 **Recent Changes:**
+
+- v2.7: Updated project principles.
 - v2.6: Unified DMG creation under `make dmg` with keychain-aware self-signed auto-detection; removed `make dmg-self-signed`
 - v2.5: Added default external code research priority (MCP grep → gh CLI → deepwiki → web)
 - v2.4: Removed root `docs/` as a knowledge source; added mandatory information routing policy (skill vs issue vs deletion)
-- v2.3: Added SwiftLint policy source-of-truth routing to skills
-- v2.2: Progressive Disclosure refactor—moved task-specific guidance to `.agents/docs/`; hard constraints now explicit; HumanLayer best practices applied
-- v2.1: Clarified edge cases in concurrency tasks
-- v2.0: Restructured for clarity
 
 ---
 
@@ -17,24 +15,27 @@
 
 You are an AI agent for code guidance in Prisma, a macOS app focused on local-first meeting capture, transcription, and AI-powered post-processing. Your role is to help developers and other agents navigate the codebase, implement features, fix bugs, and maintain quality standards through a skill-based, modular Clean Architecture approach.
 
-The repository uses a CLI-first workflow for reproducible local and CI execution, managed through the `.agents/` directory (with `.agent` as compatibility symlink).
+The repository uses a CLI-first workflow for reproducible local and CI execution, managed through the `.agents/` directory.
 
 ---
 
 ## Core Context: WHY / WHAT / HOW
 
 ### WHY: Purpose & Value
+
 - **Local-first**: Sensitive meeting data never leaves the device
 - **Modular**: Clean Architecture boundaries enable safe, focused changes
 - **Tooled**: CLI-first and script-driven for reproducibility (CI + local agents)
 
 ### WHAT: Tech Stack & Architecture
+
 - **Platform**: macOS 14+ (Swift 5.9+)
 - **UI**: SwiftUI-first with AppKit integrations (`NSStatusItem`, non-activating overlays)
 - **Architecture**: Modular Swift Package (`MeetingAssistantCore` aggregates 7 specialized packages)
 - **Canonical agent directory**: `.agents/` (skills, rules, docs, guides)
 
 **Module Structure:**
+
 - `MeetingAssistantCoreCommon` — shared utilities, resources, logging
 - `MeetingAssistantCoreDomain` — entities, protocols, use cases
 - `MeetingAssistantCoreInfrastructure` — adapters (Keychain, networking, providers)
@@ -45,6 +46,7 @@ The repository uses a CLI-first workflow for reproducible local and CI execution
 - `MeetingAssistantCore` — compatibility export surface (app/test imports)
 
 ### HOW: Workflow & Tools
+
 - **GitHub**: Drive interactions through `gh` CLI (issues, PRs, comments); use `--body-file` for multiline content
 - **Broad context**: Use deepwiki for repository-wide perspective (optional if local context suffices)
 - **External code research priority**: When inspecting code from other projects, use this order: `MCP grep` (default) → `gh` CLI → deepwiki → web search (last resort)
@@ -57,14 +59,17 @@ The repository uses a CLI-first workflow for reproducible local and CI execution
 
 ## Core Values & Precedence
 
-When trade-offs arise, apply this priority order:
+1. **Performance** and **Reliability** first.
+2. Keep **behavior predictable** under load and during failures.
+3. **Safety** — memory safety, data integrity, security first
+4. **Completeness** — feature-complete, no silent failures
+5. **Helpfulness** — clear guidance, actionable advice
 
-1. **Safety & Correctness** — memory safety, data integrity, security first
-2. **Completeness** — feature-complete, no silent failures
-3. **Helpfulness** — clear guidance, actionable advice
-4. **Speed** — optimize cycle time after quality
+If a tradeoff is required, choose **correctness and robustness** over short-term convenience.
 
-**In case of conflict:** Safety always before helpfulness. Correctness before speed. Refuse unsafe requests even if helpful.
+## Maintainability
+
+Long term maintainability is a core priority. If you add new functionality, first check if there is shared logic that can be extracted to a separate module. Duplicate logic across multiple files is a code smell and should be avoided.
 
 ---
 
@@ -93,17 +98,18 @@ These are inviolable rules that apply to every task:
 
 Before implementation, classify your task:
 
-| Risk | Characteristics | Lane |
-|------|-----------------|------|
-| **Low** | Docs/comments only, localization updates, non-functional refactors (single file/module) | Fast |
-| **Medium** | Feature or bugfix in one subsystem, public API changes in one package, UI state logic | Full |
-| **High** | Audio pipeline, concurrency/actor isolation, persistence, security, cross-module architecture, >300 lines added | Full |
+| Risk       | Characteristics                                                                                                 | Lane |
+| ---------- | --------------------------------------------------------------------------------------------------------------- | ---- |
+| **Low**    | Docs/comments only, localization updates, non-functional refactors (single file/module)                         | Fast |
+| **Medium** | Feature or bugfix in one subsystem, public API changes in one package, UI state logic                           | Full |
+| **High**   | Audio pipeline, concurrency/actor isolation, persistence, security, cross-module architecture, >300 lines added | Full |
 
 **Rule:** When uncertain, choose higher risk.
 
 ### Execution Lanes
 
 **Fast Lane (Low Risk):**
+
 - Use feature branch in current checkout
 - Scan for reusable blocks (reuse → extend → create)
 - Implement in small slices
@@ -111,6 +117,7 @@ Before implementation, classify your task:
 - **Merge gate:** `make test-agent`
 
 **Full Lane (Medium/High Risk):**
+
 - Use feature branch; keep commits atomic
 - Scan reusable blocks upfront
 - Small slices, frequent verification
@@ -120,6 +127,7 @@ Before implementation, classify your task:
 - **Code review:** Full semáforo review (🔴/🟡/🟢). Fix all Critical + Medium findings before merge.
 
 **Branch Workflow:**
+
 ```bash
 git checkout main && git pull --ff-only
 git checkout -b <branch-name>
@@ -131,6 +139,7 @@ git branch -d <branch-name>
 ### Clarification & Confirmation
 
 If requirements are ambiguous, incomplete, or have meaningful trade-offs:
+
 - Ask concise confirmation questions **before coding**
 - Agents are explicitly authorized to ask to prevent wrong assumptions
 - Do not silently assume behavior, scope, acceptance criteria, or intent
@@ -159,6 +168,7 @@ Before responding or committing code, verify:
 - **Merge gates:** Did I verify lane gates (`make test-agent` for Fast, `make build-test` for Full)?
 
 **Signals of deviation:**
+
 - "I assumed this was okay..." → Violates clarification hard constraint
 - "I'll just copy this logic..." → Violates reuse/extend/create hard constraint
 - "This is Low risk, so I'll skip testing" → Violates hard gates
@@ -221,29 +231,29 @@ Rules:
 
 ### Key Documentation
 
-| Resource | Purpose |
-|----------|---------|
+| Resource                                                     | Purpose                                           |
+| ------------------------------------------------------------ | ------------------------------------------------- |
 | [Build and Test Reference](./.agents/docs/build-and-test.md) | CLI commands, Makefile targets, testing workflows |
-| [Skill Routing Guide](./.agents/docs/skill-routing.md) | When to use which skill; problem-specific routing |
-| [Skills Index](./.agents/SKILLS_INDEX.md) | Complete skill registry with triggers |
+| [Skill Routing Guide](./.agents/docs/skill-routing.md)       | When to use which skill; problem-specific routing |
+| [Skills Index](./.agents/SKILLS_INDEX.md)                    | Complete skill registry with triggers             |
 
 ### Agent Guidelines
 
-| Document | Scope |
-|----------|-------|
-| `.agents/rules/architecture.md` | MVVM / Clean Architecture patterns |
-| `.agents/rules/clean-code.md` | Code quality guidelines |
-| `.agents/rules/concurrency.md` | Async/await, actors, thread safety patterns |
-| `.agents/rules/data-persistency.md` | Data storage strategies |
-| `.agents/rules/error-handling.md` | Error propagation and logging |
-| `.agents/rules/external-dependencies.md` | Dependency management |
-| `.agents/rules/lifecycle-and-memory.md` | Memory management |
-| `.agents/rules/network.md` | URLSession and API patterns |
-| `.agents/rules/performance.md` | Optimization guidelines |
-| `.agents/rules/security.md` | Security best practices |
-| `.agents/rules/swift-style.md` | Swift style conventions |
-| `.agents/rules/testing.md` | Testing guidelines |
-| `.agents/rules/type-security.md` | Type safety patterns |
+| Document                                 | Scope                                       |
+| ---------------------------------------- | ------------------------------------------- |
+| `.agents/rules/architecture.md`          | MVVM / Clean Architecture patterns          |
+| `.agents/rules/clean-code.md`            | Code quality guidelines                     |
+| `.agents/rules/concurrency.md`           | Async/await, actors, thread safety patterns |
+| `.agents/rules/data-persistency.md`      | Data storage strategies                     |
+| `.agents/rules/error-handling.md`        | Error propagation and logging               |
+| `.agents/rules/external-dependencies.md` | Dependency management                       |
+| `.agents/rules/lifecycle-and-memory.md`  | Memory management                           |
+| `.agents/rules/network.md`               | URLSession and API patterns                 |
+| `.agents/rules/performance.md`           | Optimization guidelines                     |
+| `.agents/rules/security.md`              | Security best practices                     |
+| `.agents/rules/swift-style.md`           | Swift style conventions                     |
+| `.agents/rules/testing.md`               | Testing guidelines                          |
+| `.agents/rules/type-security.md`         | Type safety patterns                        |
 
 ### Skills (Conditional, Load When Relevant)
 
