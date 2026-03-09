@@ -277,6 +277,10 @@ private extension TranscribeAudioUseCase {
             id: UUID(),
             title: "Classifier",
             content: """
+            <INTERNAL_MEETING_TYPE_CLASSIFIER>
+            true
+            </INTERNAL_MEETING_TYPE_CLASSIFIER>
+
             Analise a transcrição e classifique o tipo de reunião.
             Responda APENAS com o JSON no seguinte formato:
             { "type": "VALOR" }

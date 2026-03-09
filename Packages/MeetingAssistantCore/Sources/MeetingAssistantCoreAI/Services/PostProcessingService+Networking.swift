@@ -188,10 +188,12 @@ extension PostProcessingService {
     ) throws {
         let extracted = AIPromptTemplates.extractSiteOrAppPriorityInstructions(from: prompt.promptText)
         let baseSystemMessage = systemPromptOverride ?? settings.systemPrompt
-        let promptWithLanguage = applyMeetingLanguagePreferenceIfNeeded(
-            to: extracted.cleanPrompt,
-            mode: mode
-        )
+        let promptWithLanguage = shouldApplyMeetingLanguagePreference(mode: mode, prompt: prompt)
+            ? applyMeetingLanguagePreferenceIfNeeded(
+                to: extracted.cleanPrompt,
+                mode: mode
+            )
+            : extracted.cleanPrompt
         let systemMessage = AIPromptTemplates.systemPrompt(
             basePrompt: baseSystemMessage,
             priorityInstructions: extracted.priorityInstructions
@@ -208,6 +210,14 @@ extension PostProcessingService {
             systemMessage: systemMessage,
             userContent: userContent
         )
+    }
+
+    private func shouldApplyMeetingLanguagePreference(
+        mode: IntelligenceKernelMode,
+        prompt: PostProcessingPrompt
+    ) -> Bool {
+        guard mode == .meeting else { return false }
+        return !prompt.promptText.contains("<INTERNAL_MEETING_TYPE_CLASSIFIER>")
     }
 
     func setCustomRequestBody(

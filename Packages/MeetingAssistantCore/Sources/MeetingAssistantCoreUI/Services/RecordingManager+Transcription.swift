@@ -73,10 +73,10 @@ extension RecordingManager {
         isTranscribing = false
         isStartingRecording = false
         meetingState = .idle
+        clearMeetingNotesState(removePersistedValue: true)
         currentMeeting = nil
         currentCapturePurpose = nil
         isMeetingMicrophoneEnabled = false
-        clearMeetingNotesState(removePersistedValue: true)
         postProcessingContext = nil
         postProcessingContextItems = []
         dictationSessionOutputLanguageOverride = nil

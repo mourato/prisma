@@ -113,6 +113,10 @@ extension RecordingManager {
         PostProcessingPrompt(
             title: "Classifier",
             promptText: """
+            <INTERNAL_MEETING_TYPE_CLASSIFIER>
+            true
+            </INTERNAL_MEETING_TYPE_CLASSIFIER>
+
             Analyze the transcription and classify the meeting type.
             Reply ONLY with JSON in the following format:
             { "type": "VALUE" }

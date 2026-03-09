@@ -129,6 +129,62 @@ final class TranscribeAudioPostProcessingTests: XCTestCase {
         XCTAssertTrue(input.contains("- Active app: Safari"))
     }
 
+    func testExecute_AutoDetectClassifierPrompt_UsesInternalClassifierTag() async throws {
+        let transcriptionRepository = MeetingAssistantCoreDomain.MacroMockTranscriptionRepository()
+        let storageRepository = MeetingAssistantCoreDomain.MacroMockTranscriptionStorageRepository()
+        let postProcessingRepository = MeetingAssistantCoreDomain.MacroMockPostProcessingRepository()
+
+        transcriptionRepository.healthCheckHandler = { () async throws -> Bool in true }
+        transcriptionRepository.transcribeHandler = { _, _ in
+            DomainTranscriptionResponse(
+                text: "Standup transcript",
+                language: "en",
+                durationSeconds: 1.0,
+                model: "test-model",
+                processedAt: "now"
+            )
+        }
+
+        var capturedClassifierPrompt: DomainPostProcessingPrompt?
+        postProcessingRepository.processTranscription_4Handler = { _, providedPrompt, _ in
+            capturedClassifierPrompt = providedPrompt
+            return #"{"type":"standup"}"#
+        }
+        postProcessingRepository.processTranscriptionStructured_4Handler = { _, providedPrompt, _ in
+            DomainPostProcessingResult(
+                processedText: "Processed standup",
+                canonicalSummary: CanonicalSummary(
+                    title: providedPrompt.title,
+                    summary: "Processed standup"
+                ),
+                outputState: .structured
+            )
+        }
+        storageRepository.saveTranscriptionHandler = { _ in }
+
+        let useCase = TranscribeAudioUseCase(
+            transcriptionRepository: transcriptionRepository,
+            transcriptionStorageRepository: storageRepository,
+            postProcessingRepository: postProcessingRepository
+        )
+
+        let standupPrompt = DomainPostProcessingPrompt(title: "standup", content: "Summarize standup")
+        let fallbackPrompt = DomainPostProcessingPrompt(title: "general", content: "Summarize generally")
+
+        _ = try await useCase.execute(
+            audioURL: URL(fileURLWithPath: "/tmp/test.wav"),
+            meeting: MeetingEntity(app: .googleMeet),
+            applyPostProcessing: true,
+            defaultPostProcessingPrompt: fallbackPrompt,
+            autoDetectMeetingType: true,
+            availablePrompts: [standupPrompt]
+        )
+
+        let classifierPrompt = try XCTUnwrap(capturedClassifierPrompt)
+        XCTAssertEqual(classifierPrompt.title, "Classifier")
+        XCTAssertTrue(classifierPrompt.content.contains("<INTERNAL_MEETING_TYPE_CLASSIFIER>"))
+    }
+
     func testExecute_DictationStructuredDisabled_UsesFastPipelineWithoutCanonicalSummary() async throws {
         let transcriptionRepository = MeetingAssistantCoreDomain.MacroMockTranscriptionRepository()
         let storageRepository = MeetingAssistantCoreDomain.MacroMockTranscriptionStorageRepository()

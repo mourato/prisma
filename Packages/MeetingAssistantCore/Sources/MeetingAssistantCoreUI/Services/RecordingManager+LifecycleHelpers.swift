@@ -37,13 +37,13 @@ extension RecordingManager {
         isTranscribing = false
         meetingState = .failed(error.localizedDescription)
         currentMeeting?.state = .failed(error.localizedDescription)
+        clearMeetingNotesState(removePersistedValue: true)
         currentMeeting = nil
         currentCapturePurpose = nil
         isMeetingMicrophoneEnabled = false
         postProcessingContext = nil
         postProcessingContextItems = []
         dictationSessionOutputLanguageOverride = nil
-        clearMeetingNotesState(removePersistedValue: true)
         activeStartTelemetry = nil
         clearPostProcessingReadinessWarning()
         lastError = error

@@ -288,7 +288,8 @@ extension AppDelegate {
             isTranscribing: isTranscribing,
             isAssistantRecording: isAssistantRecording,
             isAssistantProcessing: isAssistantProcessing,
-            meetingTypeRawValue: currentMeetingType?.rawValue
+            meetingTypeRawValue: currentMeetingType?.rawValue,
+            isMeetingNotesPanelVisible: recordingManager.isMeetingNotesPanelVisible
         )
 
         guard renderState != lastRecordingUIRenderState else {

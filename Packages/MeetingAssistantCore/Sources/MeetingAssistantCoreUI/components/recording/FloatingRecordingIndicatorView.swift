@@ -519,7 +519,9 @@ public struct FloatingRecordingIndicatorView: View {
             keyboardShortcut: nil,
             style: .neutral
         ) {
-            recordingManager.toggleMeetingNotesPanel()
+            Task { @MainActor in
+                recordingManager.toggleMeetingNotesPanel()
+            }
         }
     }
 

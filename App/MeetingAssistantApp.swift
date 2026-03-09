@@ -74,6 +74,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let isAssistantRecording: Bool
         let isAssistantProcessing: Bool
         let meetingTypeRawValue: String?
+        let isMeetingNotesPanelVisible: Bool
     }
 
     let logger = Logger(subsystem: AppIdentity.logSubsystem, category: "AppDelegate")

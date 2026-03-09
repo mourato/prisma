@@ -311,11 +311,11 @@ public extension RecordingManager {
             isStartingRecording = false
             currentCapturePurpose = nil
             isMeetingMicrophoneEnabled = false
+            clearMeetingNotesState(removePersistedValue: true)
             currentMeeting = nil
             postProcessingContext = nil
             postProcessingContextItems = []
             dictationSessionOutputLanguageOverride = nil
-            clearMeetingNotesState(removePersistedValue: true)
             activeStartTelemetry = nil
             clearPostProcessingReadinessWarning()
             await RecordingExclusivityCoordinator.shared.endRecording()
@@ -346,11 +346,11 @@ public extension RecordingManager {
         isStartingRecording = false
         currentCapturePurpose = nil
         isMeetingMicrophoneEnabled = false
+        clearMeetingNotesState(removePersistedValue: true)
         currentMeeting = nil
         postProcessingContext = nil
         postProcessingContextItems = []
         dictationSessionOutputLanguageOverride = nil
-        clearMeetingNotesState(removePersistedValue: true)
         activeStartTelemetry = nil
         clearPostProcessingReadinessWarning()
         await RecordingExclusivityCoordinator.shared.endRecording()
