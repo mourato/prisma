@@ -328,10 +328,9 @@ class MockStorageService: StorageService, @unchecked Sendable {
                 case .all:
                     true
                 case .dictations:
-                    metadata.appRawValue == MeetingApp.unknown.rawValue
+                    metadata.capturePurpose == .dictation
                 case .meetings:
-                    metadata.appRawValue != MeetingApp.unknown.rawValue &&
-                        metadata.appRawValue != MeetingApp.importedFile.rawValue
+                    metadata.capturePurpose == .meeting
                 }
             }
             .filter { metadata in
@@ -365,6 +364,7 @@ class MockStorageService: StorageService, @unchecked Sendable {
                 meetingTitle: transcription.meeting.preferredTitle,
                 appName: transcription.meeting.appName,
                 appRawValue: transcription.meeting.app.rawValue,
+                capturePurpose: transcription.capturePurpose,
                 appBundleIdentifier: transcription.meeting.appBundleIdentifier,
                 startTime: transcription.meeting.startTime,
                 createdAt: transcription.createdAt,

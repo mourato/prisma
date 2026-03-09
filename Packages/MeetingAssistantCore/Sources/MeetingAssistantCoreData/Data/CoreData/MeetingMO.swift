@@ -50,7 +50,7 @@ extension MeetingMO {
     private static let calendarEventDecoder = JSONDecoder()
 
     var supportsMeetingConversation: Bool {
-        DomainMeetingApp(rawValue: appRawValue)?.supportsMeetingConversation ?? false
+        capturePurpose == .meeting && DomainMeetingApp(rawValue: appRawValue) != .importedFile
     }
 
     var capturePurpose: CapturePurpose {

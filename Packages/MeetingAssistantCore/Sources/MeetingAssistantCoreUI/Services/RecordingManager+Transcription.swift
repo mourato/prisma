@@ -198,7 +198,7 @@ extension RecordingManager {
             return currentCapturePurpose == .meeting
         }
 
-        return meeting.capturePurpose == .meeting && meeting.app.supportsMeetingConversation
+        return meeting.supportsMeetingConversation
     }
 
     // MARK: - Notifications

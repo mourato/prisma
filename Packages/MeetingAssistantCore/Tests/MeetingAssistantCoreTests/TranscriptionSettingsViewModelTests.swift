@@ -514,6 +514,33 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.qaErrorMessage, "transcription.qa.error.disabled".localized)
     }
 
+    func testSubmitQuestionForMeetingCaptureWithUnknownAppCallsService() async {
+        let transcription = Transcription(
+            meeting: Meeting(
+                id: UUID(),
+                app: .unknown,
+                capturePurpose: .meeting,
+                startTime: Date(),
+                endTime: Date().addingTimeInterval(60)
+            ),
+            text: "Resumo",
+            rawText: "Resumo"
+        )
+
+        viewModel.qaQuestion = "What did we decide?"
+        meetingQAService.nextResponse = MeetingQAResponse(
+            status: .answered,
+            answer: "Action items captured.",
+            evidence: []
+        )
+
+        await viewModel.submitQuestion(for: transcription)
+
+        XCTAssertEqual(meetingQAService.askCallCount, 1)
+        XCTAssertEqual(viewModel.qaResponse?.status, .answered)
+        XCTAssertNil(viewModel.qaErrorMessage)
+    }
+
     func testRetryLastQuestionAfterTimeoutUsesSameQuestion() async {
         let transcription = Transcription(
             meeting: Meeting(id: UUID(), app: .googleMeet, startTime: Date(), endTime: Date().addingTimeInterval(60)),

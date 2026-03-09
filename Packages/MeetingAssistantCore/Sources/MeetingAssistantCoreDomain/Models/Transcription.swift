@@ -131,7 +131,7 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
 
     /// Whether meeting-only conversation features should be enabled.
     public var supportsMeetingConversation: Bool {
-        meeting.app.supportsMeetingConversation
+        meeting.supportsMeetingConversation
     }
 
     /// Cached formatter for transcription dates.
