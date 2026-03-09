@@ -135,12 +135,13 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         onStop: @escaping @Sendable () -> Void,
         onCancel: @escaping @Sendable () -> Void
     ) {
+        onStopAction = onStop
+        onCancelAction = onCancel
+
         guard shouldShowIndicator(for: renderState.mode) else { return }
         let wasVisible = isVisible
         visibilityTransitionID &+= 1
         currentRenderState = renderState
-        onStopAction = onStop
-        onCancelAction = onCancel
         isVisible = true
 
         let panel = ensurePanel(for: renderState)
@@ -506,5 +507,15 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         }
 
         return panel.screen ?? NSScreen.main
+    }
+
+    // MARK: - Testing Hooks
+
+    func invokeStopActionForTesting() {
+        onStopAction()
+    }
+
+    func invokeCancelActionForTesting() {
+        onCancelAction()
     }
 }

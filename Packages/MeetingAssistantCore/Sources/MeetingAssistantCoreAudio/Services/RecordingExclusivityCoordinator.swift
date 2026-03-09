@@ -6,23 +6,43 @@ public actor RecordingExclusivityCoordinator {
     private var activeMode: ActiveMode?
 
     public enum ActiveMode: String, Sendable {
-        case recording
+        case dictation
+        case meeting
         case assistant
+    }
+
+    public enum RecordingMode: String, Sendable {
+        case dictation
+        case meeting
+
+        var activeMode: ActiveMode {
+            switch self {
+            case .dictation:
+                .dictation
+            case .meeting:
+                .meeting
+            }
+        }
     }
 
     private init() {}
 
+    /// Backward-compatible entry point used by older tests/callers.
     public func beginRecording() -> Bool {
+        beginRecording(mode: .meeting)
+    }
+
+    public func beginRecording(mode: RecordingMode) -> Bool {
         guard activeMode == nil else {
             return false
         }
 
-        activeMode = .recording
+        activeMode = mode.activeMode
         return true
     }
 
     public func endRecording() {
-        guard activeMode == .recording else {
+        guard activeMode == .dictation || activeMode == .meeting else {
             return
         }
 
@@ -44,5 +64,31 @@ public actor RecordingExclusivityCoordinator {
         }
 
         activeMode = nil
+    }
+
+    public func activeModeSnapshot() -> ActiveMode? {
+        activeMode
+    }
+
+    public func activeRecordingMode() -> RecordingMode? {
+        switch activeMode {
+        case .dictation:
+            .dictation
+        case .meeting:
+            .meeting
+        case .assistant, .none:
+            nil
+        }
+    }
+
+    public func isRecordingActive(mode: RecordingMode) -> Bool {
+        activeMode == mode.activeMode
+    }
+
+    public func blockingMode(for requestedMode: ActiveMode) -> ActiveMode? {
+        guard let activeMode, activeMode != requestedMode else {
+            return nil
+        }
+        return activeMode
     }
 }

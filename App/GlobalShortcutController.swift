@@ -13,7 +13,7 @@ final class GlobalShortcutController {
 
     private lazy var dictationHandler = SmartShortcutHandler(
         doubleTapInterval: currentDoubleTapInterval,
-        isRecordingProvider: { [weak self] in self?.recordingManager.isRecording ?? false },
+        isRecordingProvider: { [weak self] in self?.isCaptureActive(for: .dictation) ?? false },
         actionHandler: { [weak self] action in
             Task { @MainActor [weak self] in
                 await self?.performAction(action, for: .dictation)
@@ -23,7 +23,7 @@ final class GlobalShortcutController {
 
     private lazy var meetingHandler = SmartShortcutHandler(
         doubleTapInterval: currentDoubleTapInterval,
-        isRecordingProvider: { [weak self] in self?.recordingManager.isRecording ?? false },
+        isRecordingProvider: { [weak self] in self?.isCaptureActive(for: .meeting) ?? false },
         actionHandler: { [weak self] action in
             Task { @MainActor [weak self] in
                 await self?.performAction(action, for: .meeting)
@@ -434,6 +434,18 @@ final class GlobalShortcutController {
     func performAction(_ action: SmartShortcutHandler.Action, for type: ShortcutType) async {
         switch action {
         case .startRecording:
+            if let blockingMode = await RecordingExclusivityCoordinator.shared
+                .blockingMode(for: requestedExclusivityMode(for: type))
+            {
+                emitShortcutRejected(
+                    for: type,
+                    source: "shortcut_engine",
+                    trigger: activationMode(for: type),
+                    reason: "blocked_by_active_\(blockingMode.rawValue)_capture"
+                )
+                return
+            }
+
             let purpose: CapturePurpose = type == .dictation ? .dictation : .meeting
             let triggerLabel = type == .dictation ? "shortcut.dictation" : "shortcut.meeting"
             await recordingManager.startCapture(
@@ -442,6 +454,22 @@ final class GlobalShortcutController {
                 triggerLabel: triggerLabel
             )
         case .stopRecording:
+            guard isCaptureActive(for: type) else {
+                let blockingMode = await RecordingExclusivityCoordinator.shared
+                    .blockingMode(for: requestedExclusivityMode(for: type))
+                let reason = if let blockingMode {
+                    "stop_ignored_active_\(blockingMode.rawValue)_capture"
+                } else {
+                    "stop_ignored_no_active_capture"
+                }
+                emitShortcutRejected(
+                    for: type,
+                    source: "shortcut_engine",
+                    trigger: activationMode(for: type),
+                    reason: reason
+                )
+                return
+            }
             await recordingManager.stopRecording()
         }
     }
@@ -571,6 +599,24 @@ final class GlobalShortcutController {
             "dictation"
         case .meeting:
             "meeting"
+        }
+    }
+
+    private func isCaptureActive(for type: ShortcutType) -> Bool {
+        let expectedPurpose: CapturePurpose = type == .dictation ? .dictation : .meeting
+        guard recordingManager.currentCapturePurpose == expectedPurpose else {
+            return false
+        }
+
+        return recordingManager.isRecording || recordingManager.isStartingRecording
+    }
+
+    private func requestedExclusivityMode(for type: ShortcutType) -> RecordingExclusivityCoordinator.ActiveMode {
+        switch type {
+        case .dictation:
+            .dictation
+        case .meeting:
+            .meeting
         }
     }
 }

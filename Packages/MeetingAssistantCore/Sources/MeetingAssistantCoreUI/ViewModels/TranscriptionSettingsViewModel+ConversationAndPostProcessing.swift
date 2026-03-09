@@ -14,10 +14,10 @@ public extension TranscriptionSettingsViewModel {
         case summary
         case original
 
-        var filenameSuffixKey: String {
+        var filenameSuffixKey: String? {
             switch self {
             case .summary:
-                "transcription.export.filename.summary_suffix"
+                nil
             case .original:
                 "transcription.export.filename.original_suffix"
             }
@@ -31,6 +31,17 @@ public extension TranscriptionSettingsViewModel {
                 "transcription.export.error.empty_original"
             }
         }
+    }
+
+    static func manualExportSuggestedFilename(
+        baseFilename: String,
+        kind: ManualTranscriptionExportKind
+    ) -> String {
+        guard let suffixKey = kind.filenameSuffixKey else {
+            return "\(baseFilename).md"
+        }
+
+        return "\(baseFilename) \(suffixKey.localized).md"
     }
 
     func submitQuestion(for transcription: Transcription) async {
@@ -431,9 +442,9 @@ public extension TranscriptionSettingsViewModel {
     ) -> String {
         switch kind {
         case .summary:
-            return transcription.processedContent ?? transcription.text
+            transcription.processedContent ?? transcription.text
         case .original:
-            return transcription.rawText
+            transcription.rawText
         }
     }
 
@@ -442,8 +453,7 @@ public extension TranscriptionSettingsViewModel {
         kind: ManualTranscriptionExportKind
     ) -> String {
         let baseFilename = summaryExportHelper.defaultExportFilename(for: transcription)
-        let suffix = kind.filenameSuffixKey.localized
-        return "\(baseFilename) \(suffix).md"
+        return Self.manualExportSuggestedFilename(baseFilename: baseFilename, kind: kind)
     }
 
     private func makeUpdatedMeetingEntity(

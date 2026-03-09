@@ -246,18 +246,11 @@ enum FloatingRecordingIndicatorViewUtilities {
     }
 
     static func clusterWidth(
-        for size: FloatingRecordingIndicatorView.IndicatorSize,
-        showsMeetingTimer: Bool
+        for size: FloatingRecordingIndicatorView.IndicatorSize
     ) -> CGFloat {
-        var width = AppDesignSystem.Layout.recordingIndicatorDotSize
+        AppDesignSystem.Layout.recordingIndicatorDotSize
             + contentSpacing(for: size)
             + waveformWidth(for: size)
-
-        if showsMeetingTimer {
-            width += contentSpacing(for: size) + timerReservedWidth(for: size)
-        }
-
-        return width
     }
 
     static func buttonGroupWidth(for size: FloatingRecordingIndicatorView.IndicatorSize) -> CGFloat {
@@ -271,11 +264,16 @@ enum FloatingRecordingIndicatorViewUtilities {
         expanded: Bool
     ) -> CGFloat {
         var elementWidths: [CGFloat] = [
-            clusterWidth(for: size, showsMeetingTimer: layout.showsMeetingTimer),
+            clusterWidth(for: size),
         ]
 
         if renderState.kind == .meeting, renderState.mode == .recording {
             elementWidths.append(actionButtonSize)
+
+            if layout.showsMeetingTimer {
+                elementWidths.append(dividerWidth)
+                elementWidths.append(timerReservedWidth(for: size))
+            }
         }
 
         if expanded, renderState.mode == .recording {

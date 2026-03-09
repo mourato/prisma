@@ -48,6 +48,8 @@ struct MetricsDashboardUpcomingEventsSection: View {
                             viewModel.linkCalendarEvent(event)
                         } onClear: {
                             viewModel.clearLinkedCalendarEvent()
+                        } onIgnore: {
+                            viewModel.ignoreUpcomingEvent(event)
                         }
                     }
                 }
@@ -418,6 +420,7 @@ private struct UpcomingCalendarEventRow: View {
     let isLinked: Bool
     let onLink: () -> Void
     let onClear: () -> Void
+    let onIgnore: () -> Void
 
     var body: some View {
         DSCard {
@@ -452,10 +455,30 @@ private struct UpcomingCalendarEventRow: View {
                             .buttonStyle(.bordered)
                             .controlSize(.small)
                         }
+
+                        Button("metrics.calendar.event.ignore".localized, role: .destructive) {
+                            onIgnore()
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
                     }
                 } else if isRecording {
-                    Button("metrics.calendar.event.use_for_recording".localized) {
-                        onLink()
+                    VStack(alignment: .trailing, spacing: 8) {
+                        Button("metrics.calendar.event.use_for_recording".localized) {
+                            onLink()
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+
+                        Button("metrics.calendar.event.ignore".localized, role: .destructive) {
+                            onIgnore()
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                    }
+                } else {
+                    Button("metrics.calendar.event.ignore".localized, role: .destructive) {
+                        onIgnore()
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)

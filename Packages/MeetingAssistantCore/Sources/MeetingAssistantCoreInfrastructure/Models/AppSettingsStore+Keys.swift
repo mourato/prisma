@@ -74,6 +74,7 @@ extension AppSettingsStore {
         static let summaryTemplateEnabled = "summaryTemplateEnabled"
         static let autoExportSummaries = "autoExportSummaries"
         static let summaryExportSafetyPolicyLevel = "summaryExportSafetyPolicyLevel"
+        static let ignoredCalendarEventIdentifiers = "ignoredCalendarEventIdentifiers"
         static let meetingQnAEnabled = "meetingQnAEnabled"
         static let contextAwarenessEnabled = "contextAwarenessEnabled"
         static let contextAwarenessExplicitActionOnly = "contextAwarenessExplicitActionOnly"

@@ -289,42 +289,42 @@ public struct FloatingRecordingIndicatorView: View {
                 barSpacing: AppDesignSystem.Layout.recordingIndicatorWaveformBarSpacing,
                 minHeight: AppDesignSystem.Layout.recordingIndicatorWaveformMinHeight
             )
+        }
+    }
 
-            if overlayLayout.showsMeetingTimer {
-                Group {
-                    if isAnimationActive {
-                        TimelineView(.periodic(from: .now, by: 1.0)) { context in
-                            let durationText = FloatingRecordingIndicatorViewUtilities.formatRecordingDuration(
-                                startTime: recordingManager.currentMeeting?.startTime,
-                                at: context.date
-                            )
-                            Text(durationText)
-                                .font(.system(size: 13, weight: .medium))
-                                .monospacedDigit()
-                                .contentTransition(.numericText())
-                                .lineLimit(1)
-                                .fixedSize(horizontal: true, vertical: false)
-                                .layoutPriority(1)
-                                .foregroundStyle(AppDesignSystem.Colors.overlayForegroundMuted)
-                        }
-                    } else {
-                        let durationText = FloatingRecordingIndicatorViewUtilities.formatRecordingDuration(
-                            startTime: recordingManager.currentMeeting?.startTime,
-                            at: Date()
-                        )
-                        Text(durationText)
-                            .font(.system(size: 13, weight: .medium))
-                            .monospacedDigit()
-                            .contentTransition(.numericText())
-                            .lineLimit(1)
-                            .fixedSize(horizontal: true, vertical: false)
-                            .layoutPriority(1)
-                            .foregroundStyle(AppDesignSystem.Colors.overlayForegroundMuted)
-                    }
+    private var meetingTimerView: some View {
+        Group {
+            if isAnimationActive {
+                TimelineView(.periodic(from: .now, by: 1.0)) { context in
+                    let durationText = FloatingRecordingIndicatorViewUtilities.formatRecordingDuration(
+                        startTime: recordingManager.currentMeeting?.startTime,
+                        at: context.date
+                    )
+                    Text(durationText)
+                        .font(.system(size: 13, weight: .medium))
+                        .monospacedDigit()
+                        .contentTransition(.numericText())
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
+                        .layoutPriority(1)
+                        .foregroundStyle(AppDesignSystem.Colors.overlayForegroundMuted)
                 }
-                .accessibilityLabel("recording_indicator.duration".localized)
+            } else {
+                let durationText = FloatingRecordingIndicatorViewUtilities.formatRecordingDuration(
+                    startTime: recordingManager.currentMeeting?.startTime,
+                    at: Date()
+                )
+                Text(durationText)
+                    .font(.system(size: 13, weight: .medium))
+                    .monospacedDigit()
+                    .contentTransition(.numericText())
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .layoutPriority(1)
+                    .foregroundStyle(AppDesignSystem.Colors.overlayForegroundMuted)
             }
         }
+        .accessibilityLabel("recording_indicator.duration".localized)
     }
 
     private func promptPickerControl(size: IndicatorSize) -> some View {
@@ -456,6 +456,11 @@ public struct FloatingRecordingIndicatorView: View {
 
             if showsMeetingMicrophoneControl {
                 meetingMicrophoneControl
+            }
+
+            if showsMeetingMicrophoneControl, overlayLayout.showsMeetingTimer {
+                divider
+                meetingTimerView
             }
 
             if isRecordingMode, isHovering {

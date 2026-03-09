@@ -11,6 +11,23 @@ public enum AssistantExecutionFlow: Sendable {
     case integrationDispatch
 }
 
+@MainActor
+public protocol AssistantRecordingService: AnyObject {
+    var isRecording: Bool { get }
+    func startRecording(to outputURL: URL, source: RecordingSource, retryCount: Int) async throws
+    func stopRecording() async -> URL?
+    func hasPermission() async -> Bool
+    func requestPermission() async
+}
+
+extension AudioRecorder: AssistantRecordingService {}
+
+public extension AssistantRecordingService {
+    func startRecording(to outputURL: URL, source: RecordingSource) async throws {
+        try await startRecording(to: outputURL, source: source, retryCount: 0)
+    }
+}
+
 public enum AssistantIntegrationDeepLinkShortcode {
     public static let finalText = "{{assistant_text}}"
     public static let finalTextURLEncoded = "{{assistant_text_urlencoded}}"
@@ -23,7 +40,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
     @Published public private(set) var isRecording = false
     @Published public private(set) var isProcessing = false
 
-    private let audioRecorder: AudioRecorder
+    private let audioRecorder: any AssistantRecordingService
     private let transcriptionClient: TranscriptionClient
     private let postProcessingService: PostProcessingService
     private let recordingManager: RecordingManager
@@ -38,7 +55,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
     private var currentExecutionFlow: AssistantExecutionFlow = .assistantMode
 
     public init(
-        audioRecorder: AudioRecorder = .shared,
+        audioRecorder: any AssistantRecordingService = AudioRecorder.shared,
         transcriptionClient: TranscriptionClient = .shared,
         postProcessingService: PostProcessingService = .shared,
         recordingManager: RecordingManager = .shared,
@@ -65,13 +82,18 @@ public final class AssistantVoiceCommandService: ObservableObject {
         guard !isRecording, !isProcessing else { return }
         let requestedAt = Date()
 
-        guard !recordingManager.isRecording else {
-            AppLogger.info("Assistant start blocked because Recording is active", category: .assistant)
+        guard !recordingManager.isRecording, !recordingManager.isStartingRecording else {
+            AppLogger.info(
+                "Assistant start blocked because RecordingManager capture is active",
+                category: .assistant
+            )
+            showError(.recordingInProgress)
             return
         }
 
         guard await RecordingExclusivityCoordinator.shared.beginAssistant() else {
             AppLogger.info("Assistant recording start blocked by exclusivity coordinator", category: .assistant)
+            showError(.recordingInProgress)
             return
         }
 
@@ -95,7 +117,19 @@ public final class AssistantVoiceCommandService: ObservableObject {
 
             try await audioRecorder.startRecording(to: outputURL, source: .microphone)
             isRecording = true
-            indicator.show(renderState: recordingIndicatorRenderState(mode: .recording))
+            indicator.show(
+                renderState: recordingIndicatorRenderState(mode: .recording),
+                onStop: { [weak self] in
+                    Task { @MainActor [weak self] in
+                        await self?.stopAndProcess()
+                    }
+                },
+                onCancel: { [weak self] in
+                    Task { @MainActor [weak self] in
+                        await self?.cancelRecording()
+                    }
+                }
+            )
             screenBorder.show()
             let now = Date()
             PerformanceMonitor.shared.reportMetric(

@@ -196,6 +196,15 @@ extension AssistantShortcutController {
     func performAction(_ action: SmartShortcutHandler.Action) async {
         switch action {
         case .startRecording:
+            if let blockingMode = await RecordingExclusivityCoordinator.shared.blockingMode(for: .assistant) {
+                emitShortcutRejected(
+                    shortcutTarget: "assistant",
+                    source: "assistant_shortcut_action",
+                    trigger: settings.assistantShortcutActivationMode,
+                    reason: "blocked_by_active_\(blockingMode.rawValue)_capture"
+                )
+                return
+            }
             await assistantService.startRecording(flow: .assistantMode)
         case .stopRecording:
             await assistantService.stopAndProcess()

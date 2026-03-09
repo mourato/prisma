@@ -1,0 +1,93 @@
+import Foundation
+@testable import MeetingAssistantCore
+@testable import MeetingAssistantCoreUI
+import XCTest
+
+@MainActor
+final class AssistantIndicatorActionWiringTests: XCTestCase {
+    private var settings: AppSettingsStore!
+    private var originalIndicatorEnabled = false
+    private var originalIndicatorStyle: RecordingIndicatorStyle = .mini
+
+    override func setUp() async throws {
+        try await super.setUp()
+        settings = .shared
+        originalIndicatorEnabled = settings.recordingIndicatorEnabled
+        originalIndicatorStyle = settings.recordingIndicatorStyle
+        settings.recordingIndicatorEnabled = false
+        settings.recordingIndicatorStyle = .none
+    }
+
+    override func tearDown() async throws {
+        settings.recordingIndicatorEnabled = originalIndicatorEnabled
+        settings.recordingIndicatorStyle = originalIndicatorStyle
+        await RecordingExclusivityCoordinator.shared.endAssistant()
+        await RecordingExclusivityCoordinator.shared.endRecording()
+        try await super.tearDown()
+    }
+
+    func testAssistantIndicatorCancelActionInvokesAssistantCancellationPath() async {
+        let recorder = MockAssistantAudioRecorder()
+        let indicator = FloatingRecordingIndicatorController(settingsStore: settings)
+        let service = AssistantVoiceCommandService(
+            audioRecorder: recorder,
+            indicator: indicator,
+            settings: settings
+        )
+
+        await service.startRecording(flow: .assistantMode)
+        XCTAssertTrue(service.isRecording)
+
+        indicator.invokeCancelActionForTesting()
+        try? await Task.sleep(nanoseconds: 20_000_000)
+
+        XCTAssertFalse(service.isRecording)
+        XCTAssertEqual(recorder.stopCallCount, 1)
+    }
+
+    func testAssistantIndicatorStopActionInvokesAssistantStopAndProcessPath() async {
+        let recorder = MockAssistantAudioRecorder()
+        recorder.nextStopURL = nil
+        let indicator = FloatingRecordingIndicatorController(settingsStore: settings)
+        let service = AssistantVoiceCommandService(
+            audioRecorder: recorder,
+            indicator: indicator,
+            settings: settings
+        )
+
+        await service.startRecording(flow: .integrationDispatch)
+        XCTAssertTrue(service.isRecording)
+
+        indicator.invokeStopActionForTesting()
+        try? await Task.sleep(nanoseconds: 30_000_000)
+
+        XCTAssertFalse(service.isRecording)
+        XCTAssertFalse(service.isProcessing)
+        XCTAssertEqual(recorder.stopCallCount, 1)
+    }
+}
+
+@MainActor
+private final class MockAssistantAudioRecorder: AssistantRecordingService {
+    var isRecording = false
+    var startCallCount = 0
+    var stopCallCount = 0
+    var nextStopURL: URL? = URL(fileURLWithPath: "/tmp/mock-assistant-audio.m4a")
+
+    func startRecording(to _: URL, source _: RecordingSource, retryCount _: Int) async throws {
+        startCallCount += 1
+        isRecording = true
+    }
+
+    func stopRecording() async -> URL? {
+        stopCallCount += 1
+        isRecording = false
+        return nextStopURL
+    }
+
+    func hasPermission() async -> Bool {
+        true
+    }
+
+    func requestPermission() async {}
+}

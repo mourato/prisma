@@ -32,6 +32,7 @@ public final class MetricsDashboardViewModel: ObservableObject {
     private let storage: StorageService
     private let calendarEventService: any CalendarEventServiceProtocol
     private let recordingManager: RecordingManager
+    private let settingsStore: AppSettingsStore
     private let logger = Logger(subsystem: AppIdentity.logSubsystem, category: "MetricsDashboardViewModel")
     private var allMetadata: [TranscriptionMetadata] = []
     private var isRefreshing = false
@@ -44,11 +45,13 @@ public final class MetricsDashboardViewModel: ObservableObject {
     public init(
         storage: StorageService = FileSystemStorageService.shared,
         calendarEventService: any CalendarEventServiceProtocol = CalendarEventService.shared,
-        recordingManager: RecordingManager = .shared
+        recordingManager: RecordingManager = .shared,
+        settingsStore: AppSettingsStore = .shared
     ) {
         self.storage = storage
         self.calendarEventService = calendarEventService
         self.recordingManager = recordingManager
+        self.settingsStore = settingsStore
         calendarPermissionState = calendarEventService.authorizationState()
         activeLinkedCalendarEventID = recordingManager.currentMeeting?.linkedCalendarEvent?.eventIdentifier
         isRecording = recordingManager.isRecording
@@ -145,6 +148,14 @@ public final class MetricsDashboardViewModel: ObservableObject {
         recordingManager.linkCurrentMeeting(to: nil)
     }
 
+    public func ignoreUpcomingEvent(_ event: MeetingCalendarEventSnapshot) {
+        settingsStore.ignoreCalendarEventIdentifier(event.eventIdentifier)
+        if activeLinkedCalendarEventID == event.eventIdentifier {
+            clearLinkedCalendarEvent()
+        }
+        upcomingEvents.removeAll { $0.eventIdentifier == event.eventIdentifier }
+    }
+
     public func isLinkedEvent(_ event: MeetingCalendarEventSnapshot) -> Bool {
         activeLinkedCalendarEventID == event.eventIdentifier
     }
@@ -163,7 +174,12 @@ public final class MetricsDashboardViewModel: ObservableObject {
         }
 
         do {
-            upcomingEvents = try calendarEventService.fetchUpcomingEvents(limit: 10, now: Date(), window: 24 * 60 * 60)
+            upcomingEvents = try calendarEventService.fetchUpcomingEvents(
+                limit: 10,
+                now: Date(),
+                window: 24 * 60 * 60,
+                ignoredEventIdentifiers: settingsStore.ignoredCalendarEventIdentifiers()
+            )
         } catch {
             logger.error("Failed to load upcoming calendar events: \(error.localizedDescription)")
             upcomingEvents = []

@@ -116,6 +116,15 @@ extension AssistantShortcutController {
     func performIntegrationAction(_ action: SmartShortcutHandler.Action, integrationID: UUID) async {
         switch action {
         case .startRecording:
+            if let blockingMode = await RecordingExclusivityCoordinator.shared.blockingMode(for: .assistant) {
+                emitShortcutRejected(
+                    shortcutTarget: "integration",
+                    source: "integration_shortcut_action",
+                    triggerToken: "integration",
+                    reason: "blocked_by_active_\(blockingMode.rawValue)_capture"
+                )
+                return
+            }
             settings.assistantSelectedIntegrationId = integrationID
             await assistantService.startRecording(flow: .integrationDispatch)
         case .stopRecording:

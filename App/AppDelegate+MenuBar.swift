@@ -453,6 +453,12 @@ extension AppDelegate {
         Task {
             if assistantVoiceCommandService.isRecording {
                 await assistantVoiceCommandService.stopAndProcess()
+            } else if recordingManager.isRecording || recordingManager.isStartingRecording {
+                AppLogger.info(
+                    "Assistant menu start blocked by active recording capture",
+                    category: .assistant
+                )
+                floatingIndicatorController.showError("assistant.error.recording_in_progress".localized)
             } else {
                 await assistantVoiceCommandService.startRecording()
             }

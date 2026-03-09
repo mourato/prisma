@@ -14,7 +14,13 @@ extension RecordingManager {
         }
 
         do {
-            let events = try calendarEventService.fetchUpcomingEvents(limit: 10, now: meeting.startTime, window: 24 * 60 * 60)
+            let ignoredEventIdentifiers = AppSettingsStore.shared.ignoredCalendarEventIdentifiers()
+            let events = try calendarEventService.fetchUpcomingEvents(
+                limit: 10,
+                now: meeting.startTime,
+                window: 24 * 60 * 60,
+                ignoredEventIdentifiers: ignoredEventIdentifiers
+            )
             let selectedEvent = calendarEventService.bestMatchingEvent(at: meeting.startTime, in: events)
             return meetingApplyingCalendarEvent(selectedEvent, to: meeting, clearTitleWhenRemoving: false)
         } catch {

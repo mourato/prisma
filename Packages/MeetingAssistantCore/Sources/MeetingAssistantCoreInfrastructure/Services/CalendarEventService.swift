@@ -12,7 +12,8 @@ public protocol CalendarEventServiceProtocol: Sendable {
     func fetchUpcomingEvents(
         limit: Int,
         now: Date,
-        window: TimeInterval
+        window: TimeInterval,
+        ignoredEventIdentifiers: Set<String>
     ) throws -> [MeetingCalendarEventSnapshot]
     func bestMatchingEvent(
         at startDate: Date,
@@ -90,7 +91,8 @@ public final class CalendarEventService: CalendarEventServiceProtocol {
     public func fetchUpcomingEvents(
         limit: Int = 10,
         now: Date = Date(),
-        window: TimeInterval = 24 * 60 * 60
+        window: TimeInterval = 24 * 60 * 60,
+        ignoredEventIdentifiers: Set<String> = []
     ) throws -> [MeetingCalendarEventSnapshot] {
         guard authorizationState().isAuthorized else { return [] }
 
@@ -98,7 +100,17 @@ public final class CalendarEventService: CalendarEventServiceProtocol {
         let predicate = eventStore.predicateForEvents(withStart: now, end: endDate, calendars: nil)
 
         return eventStore.events(matching: predicate)
-            .filter { !$0.isAllDay }
+            .filter { event in
+                guard !event.isAllDay else { return false }
+
+                if let identifier = event.eventIdentifier,
+                   ignoredEventIdentifiers.contains(identifier)
+                {
+                    return false
+                }
+
+                return isMeetingEligible(event)
+            }
             .sorted { lhs, rhs in
                 if lhs.startDate != rhs.startDate {
                     return lhs.startDate < rhs.startDate
@@ -150,5 +162,50 @@ public final class CalendarEventService: CalendarEventServiceProtocol {
                     .trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
                 return fallbackEmail.isEmpty ? nil : fallbackEmail
             }
+    }
+
+    static func isEligibleUpcomingEvent(attendeeCount: Int, searchableValues: [String]) -> Bool {
+        let isSoloOrNoAttendees = attendeeCount <= 1
+        return !(isSoloOrNoAttendees && !hasDetectedCallLink(in: searchableValues))
+    }
+
+    static func hasDetectedCallLink(in searchableValues: [String]) -> Bool {
+        searchableValues.contains(where: containsKnownMeetingLink)
+    }
+
+    private func isMeetingEligible(_ event: EKEvent) -> Bool {
+        Self.isEligibleUpcomingEvent(
+            attendeeCount: event.attendees?.count ?? 0,
+            searchableValues: searchableValues(for: event)
+        )
+    }
+
+    private func searchableValues(for event: EKEvent) -> [String] {
+        [
+            event.url?.absoluteString,
+            event.location,
+            event.notes,
+        ]
+        .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+        .filter { !$0.isEmpty }
+    }
+
+    static func containsKnownMeetingLink(_ value: String) -> Bool {
+        let normalized = value.lowercased()
+        let knownCallDomains = [
+            "meet.google.com",
+            "zoom.us",
+            "teams.microsoft.com",
+            "webex.com",
+            "whereby.com",
+            "jitsi",
+            "bluejeans.com",
+            "gotomeeting.com",
+            "join.me",
+            "discord.com",
+            "discord.gg",
+        ]
+
+        return knownCallDomains.contains(where: normalized.contains)
     }
 }

@@ -63,6 +63,7 @@
 "metrics.calendar.event.linked" = "Vinculado";
 "metrics.calendar.event.clear" = "Limpar";
 "metrics.calendar.event.use_for_recording" = "Usar na gravação";
+"metrics.calendar.event.ignore" = "Ignorar";
 "metrics.more_insights.title" = "Mais insights";
 "metrics.more_insights.accessibility_hint" = "Abre uma página com filtros e gráficos adicionais do dashboard.";
 
@@ -543,6 +544,7 @@
 "assistant.error.start_failed" = "Não foi possível iniciar a gravação do Assistant.";
 "assistant.error.stop_failed" = "Não foi possível finalizar a gravação do Assistant.";
 "assistant.error.recording_in_progress" = "Há uma gravação em andamento. Finalize antes de usar o Assistant.";
+"recording.error.mode_switch_blocked" = "Finalize a gravação atual antes de iniciar outro modo.";
 "assistant.error.processing_failed" = "Não foi possível processar o comando do Assistant.";
 "assistant.error.integration_disabled" = "A integração selecionada está desativada nas configurações de Integrações.";
 "assistant.error.raycast_integration_disabled" = "A integração com Raycast está desativada nas configurações de Integrações.";
@@ -712,7 +714,6 @@
 "transcription.export.error.empty_content" = "Não há conteúdo disponível para exportar.";
 "transcription.export.error.empty_summary" = "Não há resumo disponível para exportar.";
 "transcription.export.error.empty_original" = "Não há transcrição original disponível para exportar.";
-"transcription.export.filename.summary_suffix" = "Resumo";
 "transcription.export.filename.original_suffix" = "Original";
 "transcription.retry.missing_audio" = "Arquivo de áudio original não encontrado.";
 "transcription.retry.missing_transcription" = "Transcrição não encontrada.";

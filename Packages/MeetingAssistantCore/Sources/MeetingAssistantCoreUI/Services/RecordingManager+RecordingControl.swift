@@ -67,7 +67,7 @@ public extension RecordingManager {
             return
         }
 
-        guard await RecordingExclusivityCoordinator.shared.beginRecording() else {
+        guard await RecordingExclusivityCoordinator.shared.beginRecording(mode: exclusivityMode(for: purpose)) else {
             AppLogger.info("Recording start blocked by exclusivity coordinator", category: .recordingManager)
             return
         }
@@ -202,6 +202,15 @@ public extension RecordingManager {
 
         if let recorder = micRecorder as? AudioRecorder {
             recorder.setMeetingMicrophoneEnabled(isEnabled)
+        }
+    }
+
+    private func exclusivityMode(for purpose: CapturePurpose) -> RecordingExclusivityCoordinator.RecordingMode {
+        switch purpose {
+        case .dictation:
+            .dictation
+        case .meeting:
+            .meeting
         }
     }
 

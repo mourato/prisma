@@ -329,16 +329,33 @@ extension AppDelegate {
 
     /// Toggle recording state when global shortcut is activated.
     func startRecording(source: RecordingSource) async {
-        if recordingManager.isRecording {
+        let purpose: CapturePurpose = source == .microphone ? .dictation : .meeting
+
+        if recordingManager.currentCapturePurpose == purpose,
+           recordingManager.isRecording
+        {
             await recordingManager.stopRecording(transcribe: true)
-        } else {
-            let purpose: CapturePurpose = source == .microphone ? .dictation : .meeting
-            let triggerLabel = purpose == .dictation ? "menu.dictation" : "menu.meeting"
-            await recordingManager.startCapture(
-                purpose: purpose,
-                requestedAt: Date(),
-                triggerLabel: triggerLabel
-            )
+            return
         }
+
+        if recordingManager.isRecording || recordingManager.isStartingRecording || assistantVoiceCommandService.isRecording {
+            AppLogger.info(
+                "Menu recording start blocked by active capture",
+                category: .uiController,
+                extra: [
+                    "requestedPurpose": purpose == .dictation ? "dictation" : "meeting",
+                    "activePurpose": recordingManager.currentCapturePurpose?.rawValue ?? "assistant",
+                ]
+            )
+            floatingIndicatorController.showError("recording.error.mode_switch_blocked".localized)
+            return
+        }
+
+        let triggerLabel = purpose == .dictation ? "menu.dictation" : "menu.meeting"
+        await recordingManager.startCapture(
+            purpose: purpose,
+            requestedAt: Date(),
+            triggerLabel: triggerLabel
+        )
     }
 }
