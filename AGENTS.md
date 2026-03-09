@@ -77,18 +77,15 @@ Long term maintainability is a core priority. If you add new functionality, firs
 
 These are inviolable rules that apply to every task:
 
-- ⛔ **Always reuse/extend/create:** Before coding, scan for existing services/use cases/helpers. Use decision order: **Reuse** → **Extend** → **Create**. Never copy code.
+- ⛔ **Always reuse/extend/create:** Before coding, scan for existing services/use cases/helpers. Use decision order: **Reuse** → **Extend** → **Create**.
 - ⛔ **Always classify risk first:** Before implementation, classify task as Low/Medium/High risk. Never skip this step.
 - ⛔ **Always ask, never assume:** If requirements are ambiguous or incomplete, ask concise clarification questions. Never silently assume behavior, scope, or acceptance criteria.
 - ⛔ **Never commit knowingly broken code:** Split commits by intent (feature, refactor, tests, cleanup). Use Conventional Commits.
 - ⛔ **Always localize UI text:** User-facing strings must use `"key".localized`. Never hardcode. Remove orphaned keys from `Localizable.strings` when text is deleted.
 - ⛔ **Never hardcode secrets:** API keys, tokens, credentials always use Keychain. Never store in source/tests/scripts.
 - ⛔ **Never exceed 600 lines per file:** If longer, split logically into 2+ files (≥200 chars each).
-- ⛔ **Always run hard gates before merge:** Fast lane: `make test-agent`; Full lane: `make build-test` (mandatory). `make lint` for broad refactors.
 
 ---
-
-## Standard Task SOP (Mandatory)
 
 ## Standard Task SOP (Mandatory)
 
@@ -114,14 +111,17 @@ Before implementation, classify your task:
 - Scan for reusable blocks (reuse → extend → create)
 - Implement in small slices
 - Pre-commit: lint/format + targeted tests
-- **Merge gate:** `make test-agent`
+- **Merge gate:**
+  - `make lint-fix`
+  - `make test-agent`
 
 **Full Lane (Medium/High Risk):**
 
-- Use feature branch; keep commits atomic
+- Use a new feature branch; keep commits atomic
 - Scan reusable blocks upfront
 - Small slices, frequent verification
 - **Before push/merge (hard gates, no exceptions):**
+  - `make lint-fix`
   - `make build-test`
   - `make lint` (mandatory for broad refactors)
 - **Code review:** Full semáforo review (🔴/🟡/🟢). Fix all Critical + Medium findings before merge.
