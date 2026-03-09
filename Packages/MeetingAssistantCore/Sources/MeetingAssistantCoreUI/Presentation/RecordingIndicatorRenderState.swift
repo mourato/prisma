@@ -44,4 +44,27 @@ public struct RecordingIndicatorRenderState: Sendable, Equatable {
             meetingType: meetingType
         )
     }
+
+    public static func forRecordingSource(
+        mode: FloatingRecordingIndicatorMode,
+        recordingSource: RecordingSource,
+        meetingType: MeetingType?
+    ) -> RecordingIndicatorRenderState {
+        switch recordingSource {
+        case .microphone:
+            return RecordingIndicatorRenderState(
+                mode: mode,
+                kind: .dictation,
+                assistantIntegrationID: nil,
+                meetingType: nil
+            )
+        case .all:
+            return RecordingIndicatorRenderState(
+                mode: mode,
+                kind: .meeting,
+                assistantIntegrationID: nil,
+                meetingType: meetingType
+            )
+        }
+    }
 }

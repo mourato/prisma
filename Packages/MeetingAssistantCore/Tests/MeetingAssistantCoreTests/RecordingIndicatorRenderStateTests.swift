@@ -52,4 +52,26 @@ final class RecordingIndicatorRenderStateTests: XCTestCase {
         XCTAssertEqual(updated.kind, .assistantIntegration)
         XCTAssertEqual(updated.assistantIntegrationID, integrationID)
     }
+
+    func testForRecordingSource_MicrophoneAlwaysCreatesDictationKind() {
+        let state = RecordingIndicatorRenderState.forRecordingSource(
+            mode: .recording,
+            recordingSource: .microphone,
+            meetingType: .standup
+        )
+
+        XCTAssertEqual(state.kind, .dictation)
+        XCTAssertNil(state.meetingType)
+    }
+
+    func testForRecordingSource_AllCreatesMeetingKind() {
+        let state = RecordingIndicatorRenderState.forRecordingSource(
+            mode: .processing,
+            recordingSource: .all,
+            meetingType: .planning
+        )
+
+        XCTAssertEqual(state.kind, .meeting)
+        XCTAssertEqual(state.meetingType, .planning)
+    }
 }

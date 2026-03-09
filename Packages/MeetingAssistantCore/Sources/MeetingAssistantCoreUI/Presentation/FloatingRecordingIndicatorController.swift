@@ -403,8 +403,10 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         switch renderState.kind {
         case .meeting:
             return legacyMeetingPanelWidth(for: style) - auxiliaryUnitWidth
-        case .dictation, .assistant, .assistantIntegration:
+        case .dictation:
             return legacyDictationPanelWidth(for: style) - (auxiliaryUnitWidth * 2)
+        case .assistant, .assistantIntegration:
+            return legacyDictationPanelWidth(for: style)
         }
     }
 

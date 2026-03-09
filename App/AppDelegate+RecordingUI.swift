@@ -44,11 +44,27 @@ extension AppDelegate {
         isAssistantRecording: Bool,
         isStarting: Bool,
         isProcessing: Bool,
+        recordingSource: RecordingSource,
         meetingType: MeetingType? = nil
     ) {
-        let recordingState = indicatorRenderState(mode: .recording, meetingType: meetingType)
-        let startingState = indicatorRenderState(mode: .starting, meetingType: meetingType)
-        let processingState = indicatorRenderState(mode: .processing, meetingType: meetingType)
+        let recordingState = indicatorRenderState(
+            mode: .recording,
+            recordingSource: recordingSource,
+            meetingType: meetingType,
+            isAssistantRecording: isAssistantRecording
+        )
+        let startingState = indicatorRenderState(
+            mode: .starting,
+            recordingSource: recordingSource,
+            meetingType: meetingType,
+            isAssistantRecording: isAssistantRecording
+        )
+        let processingState = indicatorRenderState(
+            mode: .processing,
+            recordingSource: recordingSource,
+            meetingType: meetingType,
+            isAssistantRecording: isAssistantRecording
+        )
 
         if isRecording {
             if isAssistantRecording {
@@ -77,12 +93,30 @@ extension AppDelegate {
         }
     }
 
-    private func indicatorRenderState(mode: FloatingRecordingIndicatorMode, meetingType: MeetingType?) -> RecordingIndicatorRenderState {
-        RecordingIndicatorRenderState(
-            mode: mode,
-            kind: meetingType == nil ? .dictation : .meeting,
-            meetingType: meetingType
-        )
+    private func indicatorRenderState(
+        mode: FloatingRecordingIndicatorMode,
+        recordingSource: RecordingSource,
+        meetingType: MeetingType?,
+        isAssistantRecording: Bool
+    ) -> RecordingIndicatorRenderState {
+        guard isAssistantRecording else {
+            return RecordingIndicatorRenderState.forRecordingSource(
+                mode: mode,
+                recordingSource: recordingSource,
+                meetingType: meetingType
+            )
+        }
+
+        switch floatingIndicatorController.renderState.kind {
+        case .assistantIntegration:
+            return RecordingIndicatorRenderState(
+                mode: mode,
+                kind: .assistantIntegration,
+                assistantIntegrationID: floatingIndicatorController.renderState.assistantIntegrationID
+            )
+        case .assistant, .dictation, .meeting:
+            return RecordingIndicatorRenderState(mode: mode, kind: .assistant)
+        }
     }
 
     /// Applies the dock visibility setting by changing the app's activation policy.

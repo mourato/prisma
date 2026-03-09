@@ -303,6 +303,7 @@ extension AppDelegate {
                 isAssistantRecording: false,
                 isStarting: isStarting,
                 isProcessing: isProcessing,
+                recordingSource: recordingManager.recordingSource,
                 meetingType: currentMeetingType
             )
         }
