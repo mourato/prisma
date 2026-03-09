@@ -813,9 +813,13 @@
 "settings.general.language.portuguese" = "Português";
 "settings.general.language_restart_required" = "Reinicialização necessária para aplicar mudança de idioma.";
 "settings.general.audio_devices" = "Dispositivos de Áudio";
-"settings.general.audio_devices_desc" = "Arraste para reordenar os dispositivos por prioridade. O primeiro dispositivo disponível será usado automaticamente.";
+"settings.general.audio_devices_desc" = "Escolha como o microfone deve ser selecionado para as gravações.";
 "settings.general.use_system_default_input" = "Usar input padrão do sistema";
-"settings.general.use_system_default_input_desc" = "Quando ativado, o app usa o dispositivo de entrada padrão do macOS e ignora a lista de prioridade personalizada.";
+"settings.general.use_system_default_input_desc" = "Quando ativado, o app sempre usa o dispositivo de entrada padrão do macOS.";
+"settings.general.microphone_when_charging" = "Microfone ao carregar";
+"settings.general.microphone_on_battery" = "Microfone na bateria";
+"settings.general.power_based_microphone_desc" = "Quando a entrada personalizada estiver ativa, o Prisma escolhe o microfone com base na fonte de energia atual.";
+"settings.general.device_not_selected" = "Não selecionado";
 "settings.general.device_unavailable" = "Indisponível";
 "settings.general.device_default" = "Padrão";
 "settings.general.mute_output_during_recording" = "Silenciar Saída Durante Gravação";

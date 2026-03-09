@@ -11,7 +11,6 @@ import SwiftUI
 /// Tab for shared audio hardware settings like devices, formats, and system muting.
 public struct AudioSettingsTab: View {
     @StateObject private var viewModel = GeneralSettingsViewModel()
-    @State private var draggingDevice: AudioInputDevice?
     @State private var previewingSound: SoundFeedbackSound?
     @State private var previewResetTask: Task<Void, Never>?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -35,56 +34,20 @@ public struct AudioSettingsTab: View {
                     )
 
                     if !viewModel.useSystemDefaultInput {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("settings.general.audio_devices_desc".localized)
+                        VStack(alignment: .leading, spacing: 16) {
+                            microphonePickerRow(
+                                title: "settings.general.microphone_when_charging".localized,
+                                selection: $viewModel.microphoneWhenChargingUID
+                            )
+
+                            microphonePickerRow(
+                                title: "settings.general.microphone_on_battery".localized,
+                                selection: $viewModel.microphoneOnBatteryUID
+                            )
+
+                            Text("settings.general.power_based_microphone_desc".localized)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
-
-                            VStack(spacing: 8) {
-                                ForEach(viewModel.availableDevices) { device in
-                                    HStack(spacing: 12) {
-                                        Image(systemName: device.isAvailable ? "mic" : "mic.slash")
-                                            .foregroundStyle(device.isAvailable ? .primary : .secondary)
-                                            .frame(width: 20)
-
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            Text(device.name)
-                                                .font(.body)
-                                                .foregroundStyle(device.isAvailable ? .primary : .secondary)
-                                            if device.isDefault {
-                                                Text("settings.general.device_default".localized)
-                                                    .font(.caption2)
-                                                    .foregroundStyle(AppDesignSystem.Colors.accent)
-                                            }
-                                        }
-
-                                        Spacer()
-
-                                        if !device.isAvailable {
-                                            Text("settings.general.device_unavailable".localized)
-                                                .font(.caption2)
-                                                .foregroundStyle(AppDesignSystem.Colors.error)
-                                        }
-
-                                        Image(systemName: "line.3.horizontal")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                    .padding(8)
-                                    .background(AppDesignSystem.Colors.subtleFill2)
-                                    .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
-                                    .onDrag {
-                                        draggingDevice = device
-                                        return NSItemProvider(object: device.id as NSString)
-                                    }
-                                    .onDrop(of: [.text], delegate: DeviceDropDelegate(
-                                        item: device,
-                                        listData: $viewModel.availableDevices,
-                                        current: $draggingDevice,
-                                        onMove: viewModel.moveDevice
-                                    ))
-                                }
-                            }
                         }
                         .transition(SettingsMotion.sectionTransition(reduceMotion: reduceMotion))
                     }
@@ -173,6 +136,41 @@ public struct AudioSettingsTab: View {
         }
     }
 
+    private func microphonePickerRow(title: String, selection: Binding<String?>) -> some View {
+        HStack {
+            Text(title)
+                .font(.body)
+                .foregroundStyle(.primary)
+
+            Spacer()
+
+            Picker("", selection: selection) {
+                Text("settings.general.device_not_selected".localized)
+                    .tag(String?.none)
+
+                ForEach(viewModel.availableDevices) { device in
+                    Text(microphoneOptionTitle(for: device))
+                        .tag(Optional(device.id))
+                }
+            }
+            .labelsHidden()
+            .pickerStyle(.menu)
+            .frame(width: AppDesignSystem.Layout.smallPickerWidth)
+        }
+    }
+
+    private func microphoneOptionTitle(for device: AudioInputDevice) -> String {
+        if !device.isAvailable {
+            return "\(device.name) (\("settings.general.device_unavailable".localized))"
+        }
+
+        if device.isDefault {
+            return "\(device.name) (\("settings.general.device_default".localized))"
+        }
+
+        return device.name
+    }
+
     private func previewSound(_ sound: SoundFeedbackSound) {
         guard sound != .none else { return }
         previewResetTask?.cancel()
@@ -182,33 +180,6 @@ public struct AudioSettingsTab: View {
             try? await Task.sleep(for: .milliseconds(900))
             guard !Task.isCancelled else { return }
             previewingSound = nil
-        }
-    }
-}
-
-// MARK: - Drop Delegate
-
-struct DeviceDropDelegate: DropDelegate {
-    let item: AudioInputDevice
-    @Binding var listData: [AudioInputDevice]
-    @Binding var current: AudioInputDevice?
-    var onMove: (IndexSet, Int) -> Void
-
-    func performDrop(info: DropInfo) -> Bool {
-        current = nil
-        return true
-    }
-
-    func dropEntered(info: DropInfo) {
-        guard let current,
-              current != item,
-              let from = listData.firstIndex(of: current),
-              let to = listData.firstIndex(of: item) else { return }
-
-        if listData[to] != current {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                onMove(IndexSet(integer: from), to > from ? to + 1 : to)
-            }
         }
     }
 }

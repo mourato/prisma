@@ -23,6 +23,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     // MARK: - Input Device
 
     let audioDeviceManager = AudioDeviceManager()
+    let microphoneInputSelectionResolver: MicrophoneInputSelectionResolver
 
     // MARK: - Published State
 
@@ -225,6 +226,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         self.activeAppContextProvider = activeAppContextProvider
         self.captureContextResolver = captureContextResolver
         self.apiKeyExists = apiKeyExists
+        microphoneInputSelectionResolver = MicrophoneInputSelectionResolver(deviceManager: audioDeviceManager)
 
         // Initialize UseCase with Adapters
         transcribeAudioUseCase = TranscribeAudioUseCase(

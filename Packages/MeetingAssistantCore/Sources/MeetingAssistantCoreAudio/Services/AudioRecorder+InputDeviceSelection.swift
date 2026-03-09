@@ -65,20 +65,16 @@ extension AudioRecorder {
             logDeviceDiagnostics(for: resolvedDeviceID, label: "systemDefault")
             return
         }
-        let priorityList = AppSettingsStore.shared.audioDevicePriority
-        guard !priorityList.isEmpty else { return }
-
-        // Find the first available device from the priority list
-        var deviceID: AudioObjectID?
-        for uid in priorityList {
-            if let id = deviceManager.getAudioDeviceID(for: uid), deviceManager.isUsableInputDeviceID(id) {
-                deviceID = id
-                break
-            }
-        }
-
-        guard let id = deviceID else {
-            AppLogger.debug("No preferred input device from priority list is available. Using system default.", category: .recordingManager)
+        let preferredUID = microphoneInputSelectionResolver.preferredCustomMicrophoneUID()
+        guard let id = microphoneInputSelectionResolver.resolveCustomMicrophoneDeviceID() else {
+            AppLogger.debug(
+                "No usable custom input device for current power state. Using system default.",
+                category: .recordingManager,
+                extra: [
+                    "powerSource": microphoneInputSelectionResolver.currentPowerSourceState().rawValue,
+                    "preferredUID": preferredUID ?? "nil",
+                ]
+            )
             return
         }
 
@@ -96,10 +92,22 @@ extension AudioRecorder {
         )
 
         if status != noErr {
-            AppLogger.warning("Failed to set preferred input device", category: .recordingManager, extra: ["status": status, "deviceID": id])
+            AppLogger.warning(
+                "Failed to set preferred input device",
+                category: .recordingManager,
+                extra: ["status": status, "deviceID": id, "preferredUID": preferredUID ?? "nil"]
+            )
             applySystemDefaultInputDevice(to: inputUnit, reason: "priority_device_set_failed")
         } else {
-            AppLogger.info("Set preferred input device", category: .recordingManager, extra: ["deviceID": id])
+            AppLogger.info(
+                "Set preferred input device",
+                category: .recordingManager,
+                extra: [
+                    "deviceID": id,
+                    "preferredUID": preferredUID ?? "nil",
+                    "powerSource": microphoneInputSelectionResolver.currentPowerSourceState().rawValue,
+                ]
+            )
         }
         logDeviceDiagnostics(for: id, label: "priority")
     }

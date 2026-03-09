@@ -152,6 +152,8 @@ extension AppSettingsStore {
         let selectedLanguage: AppLanguage
         let audioDevicePriority: [String]
         let useSystemDefaultInput: Bool
+        let microphoneWhenChargingUID: String?
+        let microphoneOnBatteryUID: String?
         let muteOutputDuringRecording: Bool
         let autoIncreaseMicrophoneVolume: Bool
     }
@@ -162,6 +164,8 @@ extension AppSettingsStore {
             selectedLanguage: loadEnum(forKey: Keys.selectedLanguage, defaultValue: .system),
             audioDevicePriority: UserDefaults.standard.stringArray(forKey: Keys.audioDevicePriority) ?? [],
             useSystemDefaultInput: loadBoolDefaultIfUnset(forKey: Keys.useSystemDefaultInput, defaultValue: true),
+            microphoneWhenChargingUID: UserDefaults.standard.string(forKey: Keys.microphoneWhenChargingUID),
+            microphoneOnBatteryUID: UserDefaults.standard.string(forKey: Keys.microphoneOnBatteryUID),
             muteOutputDuringRecording: UserDefaults.standard.bool(forKey: Keys.muteOutputDuringRecording),
             autoIncreaseMicrophoneVolume: UserDefaults.standard.bool(forKey: Keys.autoIncreaseMicrophoneVolume)
         )
@@ -544,9 +548,28 @@ extension AppSettingsStore {
             migrateWebTargetBrowsersToGlobalSettingIfNeeded()
         }
 
+        migrateLegacyAudioDevicePriorityToPowerSelectionIfNeeded()
         migrateLegacyMarkdownTargetsToDictationAppRulesIfNeeded()
         migrateLegacyWebTargetBrowsersToDictationAppRulesIfNeeded()
         backfillEnhancementsSelectionModelsIfNeeded()
         applyLanguage(selectedLanguage)
+    }
+
+    public func migrateLegacyAudioDevicePriorityToPowerSelectionIfNeeded() {
+        let defaults = UserDefaults.standard
+        let hasChargingSelection = defaults.object(forKey: Keys.microphoneWhenChargingUID) != nil
+        let hasBatterySelection = defaults.object(forKey: Keys.microphoneOnBatteryUID) != nil
+
+        // If either setting was already configured, keep the user's explicit choices.
+        guard !hasChargingSelection, !hasBatterySelection else { return }
+
+        guard let firstLegacyUID = audioDevicePriority.first?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !firstLegacyUID.isEmpty
+        else {
+            return
+        }
+
+        microphoneWhenChargingUID = firstLegacyUID
+        microphoneOnBatteryUID = firstLegacyUID
     }
 }

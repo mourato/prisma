@@ -311,31 +311,10 @@ extension RecordingManager {
     func resolveMicrophoneDeviceName() -> String? {
         let settings = AppSettingsStore.shared
 
-        if settings.useSystemDefaultInput {
-            return resolveSystemDefaultMicrophoneDeviceName()
-        }
-
-        for uid in settings.audioDevicePriority {
-            guard let id = audioDeviceManager.getAudioDeviceID(for: uid) else { continue }
-            if let name = audioDeviceManager.getDeviceName(for: id) {
-                return name
-            }
-        }
-
-        return resolveSystemDefaultMicrophoneDeviceName()
+        return microphoneInputSelectionResolver.resolvePreferredMicrophoneDeviceName(settings: settings)
     }
 
     func resolveSystemDefaultMicrophoneDeviceName() -> String? {
-        if let id = audioDeviceManager.getDefaultInputDeviceID(),
-           let name = audioDeviceManager.getDeviceName(for: id)
-        {
-            return name
-        }
-
-        if let device = audioDeviceManager.availableInputDevices.first(where: { $0.isDefault }) {
-            return device.name
-        }
-
-        return nil
+        microphoneInputSelectionResolver.resolveSystemDefaultMicrophoneDeviceName()
     }
 }

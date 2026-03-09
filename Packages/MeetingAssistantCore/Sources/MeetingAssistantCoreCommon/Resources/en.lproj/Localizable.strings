@@ -813,9 +813,13 @@
 "settings.general.language.portuguese" = "Português";
 "settings.general.language_restart_required" = "Restart required to apply language change.";
 "settings.general.audio_devices" = "Audio Devices";
-"settings.general.audio_devices_desc" = "Drag to reorder devices by priority. The first available device will be used automatically.";
+"settings.general.audio_devices_desc" = "Choose how microphone input should be selected for recordings.";
 "settings.general.use_system_default_input" = "Use system default input";
-"settings.general.use_system_default_input_desc" = "When enabled, the app uses the macOS default input device and ignores the custom priority list.";
+"settings.general.use_system_default_input_desc" = "When enabled, the app always uses the macOS default input device.";
+"settings.general.microphone_when_charging" = "Microphone while charging";
+"settings.general.microphone_on_battery" = "Microphone on battery";
+"settings.general.power_based_microphone_desc" = "When custom input is enabled, Prisma chooses the microphone based on current power source.";
+"settings.general.device_not_selected" = "Not selected";
 "settings.general.device_unavailable" = "Unavailable";
 "settings.general.device_default" = "Default";
 "settings.general.mute_output_during_recording" = "Mute Output During Recording";

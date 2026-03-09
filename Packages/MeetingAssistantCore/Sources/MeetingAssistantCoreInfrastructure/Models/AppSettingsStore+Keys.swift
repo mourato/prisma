@@ -22,6 +22,8 @@ extension AppSettingsStore {
         static let selectedLanguage = "selectedLanguage"
         static let audioDevicePriority = "audioDevicePriority"
         static let useSystemDefaultInput = "useSystemDefaultInput"
+        static let microphoneWhenChargingUID = "microphoneWhenChargingUID"
+        static let microphoneOnBatteryUID = "microphoneOnBatteryUID"
         static let muteOutputDuringRecording = "muteOutputDuringRecording"
         static let autoIncreaseMicrophoneVolume = "autoIncreaseMicrophoneVolume"
         static let deletedPromptIds = "postProcessingDeletedPromptIds"

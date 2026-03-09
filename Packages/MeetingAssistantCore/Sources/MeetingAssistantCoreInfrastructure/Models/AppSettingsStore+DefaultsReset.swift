@@ -23,6 +23,8 @@ public extension AppSettingsStore {
         numSpeakers = nil
         audioDevicePriority = []
         useSystemDefaultInput = true
+        microphoneWhenChargingUID = nil
+        microphoneOnBatteryUID = nil
         muteOutputDuringRecording = false
         autoIncreaseMicrophoneVolume = false
         shortcutActivationMode = .holdOrToggle

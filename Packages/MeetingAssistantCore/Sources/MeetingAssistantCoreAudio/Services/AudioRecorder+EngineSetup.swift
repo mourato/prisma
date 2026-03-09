@@ -101,7 +101,7 @@ extension AudioRecorder {
         mixerNode = mixer
 
         if source.requiresMicrophonePermission {
-            // Only manually set the input device when the user has a custom device priority.
+            // Only manually set the input device when the user is not using the system default.
             // When useSystemDefaultInput is true, AVAudioEngine automatically creates the
             // correct aggregate device combining the system default input + output.
             // Calling AudioUnitSetProperty(kAudioOutputUnitProperty_CurrentDevice) on the
@@ -109,7 +109,7 @@ extension AudioRecorder {
             // output to the same device (e.g. USB mic with no speakers), breaking the
             // render cycle and producing zero-filled input buffers.
             if !AppSettingsStore.shared.useSystemDefaultInput {
-                AppLogger.debug("Selecting preferred input device (custom priority)...", category: .recordingManager)
+                AppLogger.debug("Selecting preferred input device (power-aware custom selection)...", category: .recordingManager)
                 await selectPreferredInputDevice(engine: engine)
             } else {
                 AppLogger.debug("Using engine-managed default input device", category: .recordingManager)

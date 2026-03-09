@@ -82,6 +82,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     private var outputMuteSession: SystemAudioMuteController.OutputMuteSession?
     private var outputMuteTask: Task<Void, Never>?
     let deviceManager = AudioDeviceManager()
+    let microphoneInputSelectionResolver: MicrophoneInputSelectionResolver
     var micDiagnosticsTimer: Timer?
     var isMicDiagnosticsTapInstalled = false
     let micDiagnosticsPeakBits = ManagedAtomic<UInt32>(0)
@@ -93,6 +94,8 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     private var fallbackMeterTimer: Timer?
 
     init() {
+        microphoneInputSelectionResolver = MicrophoneInputSelectionResolver(deviceManager: deviceManager)
+
         // Setup worker callbacks to bridge back to MainActor
         worker.setOnPowerUpdate { [weak self] avg, peak in
             Task { @MainActor [weak self] in

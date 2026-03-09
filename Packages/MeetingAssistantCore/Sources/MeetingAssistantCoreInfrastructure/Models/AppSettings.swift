@@ -174,6 +174,16 @@ public class AppSettingsStore: ObservableObject {
         didSet { UserDefaults.standard.set(useSystemDefaultInput, forKey: Keys.useSystemDefaultInput) }
     }
 
+    /// Custom microphone UID used while the Mac is connected to power.
+    @Published public var microphoneWhenChargingUID: String? {
+        didSet { UserDefaults.standard.set(microphoneWhenChargingUID, forKey: Keys.microphoneWhenChargingUID) }
+    }
+
+    /// Custom microphone UID used while the Mac is running on battery.
+    @Published public var microphoneOnBatteryUID: String? {
+        didSet { UserDefaults.standard.set(microphoneOnBatteryUID, forKey: Keys.microphoneOnBatteryUID) }
+    }
+
     /// Whether to mute system audio output while recording is in progress.
     @Published public var muteOutputDuringRecording: Bool {
         didSet { UserDefaults.standard.set(muteOutputDuringRecording, forKey: Keys.muteOutputDuringRecording) }
@@ -591,6 +601,8 @@ public class AppSettingsStore: ObservableObject {
         selectedLanguage = audioSettings.selectedLanguage
         audioDevicePriority = audioSettings.audioDevicePriority
         useSystemDefaultInput = audioSettings.useSystemDefaultInput
+        microphoneWhenChargingUID = audioSettings.microphoneWhenChargingUID
+        microphoneOnBatteryUID = audioSettings.microphoneOnBatteryUID
         muteOutputDuringRecording = audioSettings.muteOutputDuringRecording
         autoIncreaseMicrophoneVolume = audioSettings.autoIncreaseMicrophoneVolume
 

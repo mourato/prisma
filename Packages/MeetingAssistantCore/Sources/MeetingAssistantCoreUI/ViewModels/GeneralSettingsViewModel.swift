@@ -160,6 +160,20 @@ public class GeneralSettingsViewModel: ObservableObject {
         }
     }
 
+    @Published public var microphoneWhenChargingUID: String? {
+        didSet {
+            settingsStore.microphoneWhenChargingUID = microphoneWhenChargingUID
+            rebuildAvailableDevices()
+        }
+    }
+
+    @Published public var microphoneOnBatteryUID: String? {
+        didSet {
+            settingsStore.microphoneOnBatteryUID = microphoneOnBatteryUID
+            rebuildAvailableDevices()
+        }
+    }
+
     @Published public var availableDevices: [AudioInputDevice] = []
     @Published public var showCleanupSuccessAlert = false
     @Published public var showCleanupConfirmationDialog = false
@@ -188,6 +202,8 @@ public class GeneralSettingsViewModel: ObservableObject {
         autoPasteTranscriptionToActiveApp = settingsStore.autoPasteTranscriptionToActiveApp
         muteOutputDuringRecording = settingsStore.muteOutputDuringRecording
         useSystemDefaultInput = settingsStore.useSystemDefaultInput
+        microphoneWhenChargingUID = settingsStore.microphoneWhenChargingUID
+        microphoneOnBatteryUID = settingsStore.microphoneOnBatteryUID
         autoIncreaseMicrophoneVolume = settingsStore.autoIncreaseMicrophoneVolume
         recordingIndicatorEnabled = settingsStore.recordingIndicatorEnabled
         recordingIndicatorStyle = settingsStore.recordingIndicatorStyle
@@ -202,6 +218,7 @@ public class GeneralSettingsViewModel: ObservableObject {
         launchAtLogin = settingsStore.launchAtLogin
 
         setupDeviceObservation()
+        rebuildAvailableDevices()
     }
 
     public var cleanupConfirmationMessage: String {
@@ -225,44 +242,32 @@ public class GeneralSettingsViewModel: ObservableObject {
         deviceManager.$availableInputDevices
             .receive(on: DispatchQueue.main)
             .sink { [weak self] devices in
-                self?.updateAvailableDevices(devices)
+                self?.mergeAvailableDevices(detectedDevices: devices)
             }
             .store(in: &cancellables)
     }
 
-    private func updateAvailableDevices(_ detectedDevices: [AudioInputDevice]) {
-        let priorityList = settingsStore.audioDevicePriority
+    private func mergeAvailableDevices(detectedDevices: [AudioInputDevice]) {
+        let selectedUIDs = selectedMicrophoneUIDs
+        let detectedUIDs = Set(detectedDevices.map(\.id))
+        var merged = detectedDevices
 
-        // 1. Start with devices in priority list
-        var result: [AudioInputDevice] = []
-
-        for uid in priorityList {
-            if let detected = detectedDevices.first(where: { $0.id == uid }) {
-                result.append(detected)
-            } else {
-                // Device in priority list but not currently connected
-                // We keep it in the list (marked as unavailable) so the user doesn't lose their priority setting
-                result.append(AudioInputDevice(id: uid, name: "Unknown Device (\(uid))", isAvailable: false))
-            }
+        for uid in selectedUIDs where !detectedUIDs.contains(uid) {
+            // Preserve unavailable persisted selections so user intent remains visible in pickers.
+            merged.append(AudioInputDevice(id: uid, name: "Unknown Device (\(uid))", isAvailable: false))
         }
 
-        // 2. Add detected devices NOT in priority list at the end
-        for detected in detectedDevices {
-            if !priorityList.contains(detected.id) {
-                result.append(detected)
-            }
-        }
-
-        availableDevices = result
+        availableDevices = merged
     }
 
-    public func moveDevice(from offsets: IndexSet, to destination: Int) {
-        availableDevices.move(fromOffsets: offsets, toOffset: destination)
-        saveDevicePriority()
+    private var selectedMicrophoneUIDs: [String] {
+        [microphoneWhenChargingUID, microphoneOnBatteryUID]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
     }
 
-    private func saveDevicePriority() {
-        settingsStore.audioDevicePriority = availableDevices.map(\.id)
+    private func rebuildAvailableDevices() {
+        mergeAvailableDevices(detectedDevices: deviceManager.availableInputDevices)
     }
 
     public func selectRecordingsDirectory() {
