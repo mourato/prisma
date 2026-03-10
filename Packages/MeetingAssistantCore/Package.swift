@@ -8,7 +8,7 @@ let package = Package(
     name: "MeetingAssistantCore",
     defaultLocalization: "en",
     platforms: [
-        .macOS(.v14),
+        .macOS(.v15),
     ],
     products: [
         .library(
@@ -22,6 +22,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-atomics.git", .upToNextMajor(from: "1.2.0")),
         .package(url: "https://github.com/apple/swift-syntax.git", exact: "602.0.0"),
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.0.0"),
+        .package(url: "https://github.com/gonzalezreal/textual.git", exact: "0.3.1"),
     ],
     targets: [
         .target(
@@ -84,6 +85,7 @@ let package = Package(
                 "MeetingAssistantCoreDomain",
                 "MeetingAssistantCoreInfrastructure",
                 .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
+                .product(name: "Textual", package: "textual"),
             ]
         ),
         .target(

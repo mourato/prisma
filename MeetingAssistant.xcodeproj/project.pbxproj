@@ -384,7 +384,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-L$(DT_TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)",
@@ -472,7 +472,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-L$(DT_TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)",
@@ -497,7 +497,7 @@
 				CODE_SIGN_ENTITLEMENTS = MeetingAssistantAI/Resources/MeetingAssistantAI.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				INFOPLIST_FILE = MeetingAssistantAI/Resources/Info.plist;
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-L$(DT_TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)",
@@ -522,7 +522,7 @@
 				CODE_SIGN_ENTITLEMENTS = MeetingAssistantAI/Resources/MeetingAssistantAI.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				INFOPLIST_FILE = MeetingAssistantAI/Resources/Info.plist;
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-L$(DT_TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)",

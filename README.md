@@ -4,7 +4,7 @@ A native macOS app that detects video-call meetings, captures system audio, and 
 
 ## Key features
 
-- System audio capture via ScreenCaptureKit (macOS 14+)
+- System audio capture via ScreenCaptureKit (macOS 15+)
 - Auto-detection for Google Meet, Microsoft Teams, Slack, Zoom
 - Local transcription with Apple Neural Engine acceleration (Apple Silicon recommended)
 - Configurable global shortcut to start/stop recording
@@ -14,7 +14,7 @@ A native macOS app that detects video-call meetings, captures system audio, and 
 
 ## Requirements
 
-- macOS 14.0+ (Sonoma or later)
+- macOS 15.0+ (Sequoia or later)
 - Apple Silicon (recommended)
 - Xcode 16.0+ (development)
 

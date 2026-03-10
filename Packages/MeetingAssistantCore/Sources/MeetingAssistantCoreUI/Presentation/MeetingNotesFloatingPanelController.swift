@@ -1,14 +1,22 @@
 import AppKit
 import MeetingAssistantCoreCommon
 import SwiftUI
+import Textual
 
 @MainActor
 public final class MeetingNotesFloatingPanelController {
     private var panel: NSPanel?
     private var hostingView: NSHostingView<MeetingNotesFloatingPanelView>?
     private var panelDelegate: PanelDelegate?
+    private let editorEngineResolver: MeetingNotesEditorEngineResolver
 
-    public init() {}
+    public init() {
+        editorEngineResolver = .init()
+    }
+
+    init(editorEngineResolver: MeetingNotesEditorEngineResolver) {
+        self.editorEngineResolver = editorEngineResolver
+    }
 
     public var isVisible: Bool {
         panel?.isVisible ?? false
@@ -20,7 +28,17 @@ public final class MeetingNotesFloatingPanelController {
         onClose: @escaping () -> Void
     ) {
         let panel = ensurePanel(onClose: onClose)
-        let rootView = MeetingNotesFloatingPanelView(text: text, onTextChange: onTextChange)
+        let editorEngine = editorEngineResolver.resolve()
+        AppLogger.info(
+            "Meeting notes editor engine selected",
+            category: .uiController,
+            extra: ["engine": editorEngine.rawValue]
+        )
+        let rootView = MeetingNotesFloatingPanelView(
+            text: text,
+            editorEngine: editorEngine,
+            onTextChange: onTextChange
+        )
 
         if let hostingView {
             hostingView.rootView = rootView
@@ -86,10 +104,16 @@ private final class PanelDelegate: NSObject, NSWindowDelegate {
 
 private struct MeetingNotesFloatingPanelView: View {
     @State private var text: String
+    private let editorEngine: MeetingNotesEditorEngine
     let onTextChange: (String) -> Void
 
-    init(text: String, onTextChange: @escaping (String) -> Void) {
+    init(
+        text: String,
+        editorEngine: MeetingNotesEditorEngine,
+        onTextChange: @escaping (String) -> Void
+    ) {
         _text = State(initialValue: text)
+        self.editorEngine = editorEngine
         self.onTextChange = onTextChange
     }
 
@@ -99,14 +123,49 @@ private struct MeetingNotesFloatingPanelView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
+            switch editorEngine {
+            case .textual:
+                TextualMeetingNotesEditor(text: $text)
+            case .native:
+                NativeMeetingNotesEditor(text: $text)
+            }
+        }
+        .padding(12)
+        .onChange(of: text) { _, newValue in
+            onTextChange(newValue)
+        }
+    }
+}
+
+private struct NativeMeetingNotesEditor: View {
+    @Binding var text: String
+
+    var body: some View {
+        TextEditor(text: $text)
+            .font(.body)
+            .scrollContentBackground(.hidden)
+            .background(Color(nsColor: .textBackgroundColor))
+    }
+}
+
+private struct TextualMeetingNotesEditor: View {
+    @Binding var text: String
+
+    var body: some View {
+        VStack(spacing: 8) {
             TextEditor(text: $text)
                 .font(.body)
                 .scrollContentBackground(.hidden)
                 .background(Color(nsColor: .textBackgroundColor))
-                .onChange(of: text) { _, newValue in
-                    onTextChange(newValue)
-                }
+
+            Divider()
+
+            ScrollView {
+                StructuredText(markdown: text)
+                    .textual.textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .background(Color(nsColor: .textBackgroundColor))
         }
-        .padding(12)
     }
 }

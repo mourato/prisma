@@ -29,7 +29,7 @@ The repository uses a CLI-first workflow for reproducible local and CI execution
 
 ### WHAT: Tech Stack & Architecture
 
-- **Platform**: macOS 14+ (Swift 5.9+)
+- **Platform**: macOS 15+ (Swift 5.9+)
 - **UI**: SwiftUI-first with AppKit integrations (`NSStatusItem`, non-activating overlays)
 - **Architecture**: Modular Swift Package (`MeetingAssistantCore` aggregates 7 specialized packages)
 - **Canonical agent directory**: `.agents/` (skills, rules, docs, guides)
