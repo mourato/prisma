@@ -1,13 +1,6 @@
 # AGENTS.md - Prisma Development Guide
 
-**Document Status:** v2.7 | Updated: Mar 9, 2026 | Maintained by: Team
-
-**Recent Changes:**
-
-- v2.7: Updated project principles.
-- v2.6: Unified DMG creation under `make dmg` with keychain-aware self-signed auto-detection; removed `make dmg-self-signed`
-- v2.5: Added default external code research priority (MCP grep → gh CLI → deepwiki → web)
-- v2.4: Removed root `docs/` as a knowledge source; added mandatory information routing policy (skill vs issue vs deletion)
+**Document Status:** v2.8 | Updated: Mar 10, 2026 | Maintained by: Team
 
 ---
 
@@ -71,6 +64,22 @@ If a tradeoff is required, choose **correctness and robustness** over short-term
 
 Long term maintainability is a core priority. If you add new functionality, first check if there is shared logic that can be extracted to a separate module. Duplicate logic across multiple files is a code smell and should be avoided.
 
+Additional maintainability limits:
+
+- Prefer files at or below 600 lines.
+- If exceeding 600 lines is unavoidable, document rationale in PR notes and open a follow-up issue to split the file.
+
+## Policy Precedence
+
+When guidance conflicts, apply this order:
+
+1. `AGENTS.md` (this file)
+2. `.agents/rules/*`
+3. Relevant skill instructions in `.agents/skills/*`
+4. Reference docs and inline comments/examples
+
+If conflict remains unresolved, ask for clarification before implementing behavior changes.
+
 ---
 
 ## Hard Constraints (⛔ Never Violate)
@@ -79,11 +88,10 @@ These are inviolable rules that apply to every task:
 
 - ⛔ **Always reuse/extend/create:** Before coding, scan for existing services/use cases/helpers. Use decision order: **Reuse** → **Extend** → **Create**.
 - ⛔ **Always classify risk first:** Before implementation, classify task as Low/Medium/High risk. Never skip this step.
-- ⛔ **Always ask, never assume:** If requirements are ambiguous or incomplete, ask concise clarification questions. Never silently assume behavior, scope, or acceptance criteria.
+- ⛔ **Clarify material ambiguity, state minor assumptions:** If ambiguity impacts behavior, safety, architecture, or acceptance criteria, ask concise clarification questions before coding. For minor gaps, proceed only with explicit assumptions documented in the response/PR notes.
 - ⛔ **Never commit knowingly broken code:** Split commits by intent (feature, refactor, tests, cleanup). Use Conventional Commits.
 - ⛔ **Always localize UI text:** User-facing strings must use `"key".localized`. Never hardcode. Remove orphaned keys from `Localizable.strings` when text is deleted.
 - ⛔ **Never hardcode secrets:** API keys, tokens, credentials always use Keychain. Never store in source/tests/scripts.
-- ⛔ **Never exceed 600 lines per file:** If longer, split logically into 2+ files (≥200 chars each).
 
 ---
 
@@ -126,6 +134,21 @@ Before implementation, classify your task:
   - `make lint` (mandatory for broad refactors)
 - **Code review:** Full semáforo review (🔴/🟡/🟢). Fix all Critical + Medium findings before merge.
 
+### Definition of Done & Evidence
+
+For every task, leave auditable evidence in the PR description, issue comment, or agent output.
+
+| Lane | Required quality gates | Required evidence |
+| ---- | ---------------------- | ----------------- |
+| **Fast** | `make lint-fix`, `make test-agent` | Risk level, reusable-block decision (reuse/extend/create), commands executed, test result summary |
+| **Full** | `make lint-fix`, `make build-test`, and `make lint` for broad refactors | Risk level, reusable-block decision, semáforo review outcome, commands executed, test/build result summary |
+
+### PR & Merge Policy
+
+- Prefer pull requests for all non-trivial changes.
+- If a direct merge is used (for example urgent fix), record rationale and follow up with review notes.
+- Keep commits atomic and labeled with Conventional Commits.
+
 **Branch Workflow:**
 
 ```bash
@@ -140,9 +163,9 @@ git branch -d <branch-name>
 
 If requirements are ambiguous, incomplete, or have meaningful trade-offs:
 
-- Ask concise confirmation questions **before coding**
+- Ask concise confirmation questions **before coding** when ambiguity is material (behavior, safety, architecture, acceptance criteria)
 - Agents are explicitly authorized to ask to prevent wrong assumptions
-- Do not silently assume behavior, scope, acceptance criteria, or intent
+- For minor gaps, proceed only with explicit assumptions documented in the response/PR notes
 
 ### Reusable Blocks First (Decision Order)
 
@@ -163,9 +186,10 @@ Before responding or committing code, verify:
 - **Reusable blocks:** Did I scan for existing solutions?
 - **Risk classified:** Did I classify task as Low/Medium/High?
 - **Assumptions checked:** Did I ask clarification or assume silently?
-- **Hard constraints:** Am I violating any of the 8 hard constraints above?
+- **Hard constraints:** Am I violating any hard constraint above?
 - **Code review:** Did I plan for appropriate review depth (lightweight vs. full semáforo)?
 - **Merge gates:** Did I verify lane gates (`make test-agent` for Fast, `make build-test` for Full)?
+- **Evidence captured:** Did I record commands/results and assumptions where applicable?
 
 **Signals of deviation:**
 
@@ -186,16 +210,6 @@ When deviations occur, document in GitHub issue with label `known-limitation` or
 - Validate and sanitize external input at module boundaries (network payloads, file content, provider responses).
 - Avoid logging sensitive data (keys, tokens, full transcripts, personal identifiers).
 - See `.agents/rules/security.md` and `.agents/skills/keychain-security/` for implementation guidance.
-
----
-
-## Task Lifecycle Summary
-
-See [Task Lifecycle Skill](./.agents/skills/task-lifecycle/SKILL.md) for full procedures.
-
-**Low risk:** Feature branch, lightweight review optional, merge gate: `make test-agent`
-
-**Medium/High risk:** Feature branch, semáforo review mandatory, merge gates: `make build-test`
 
 ---
 
@@ -272,12 +286,21 @@ See [Skills Index](./.agents/SKILLS_INDEX.md) for full registry. Common entry po
 
 If a task or agent deviates from hard constraints, follow these steps:
 
-1. **Identify the violation** — Which of the 8 hard constraints was breached?
+1. **Identify the violation** — Which hard constraint was breached?
 2. **Minimal test case** — Create smallest reproducible example
 3. **Update guidance** — Refine AGENTS.md or relevant skill to prevent recurrence
 4. **Add example** — To relevant skill or `.agents/docs/` file, showing correct behavior
 5. **Mark for review** — Update document version, create GitHub issue if systemic
 6. **Communicate** — Link GitHub issue, escalate if needed
+
+### Exception Process (Hard Constraints)
+
+Hard constraints do not allow silent exceptions. If a temporary exception is unavoidable:
+
+1. Document scope, impact, and rollback plan in a GitHub issue.
+2. Label issue `needs-review` and assign an owner.
+3. Add expiry/reevaluation date.
+4. Merge only after explicit reviewer approval.
 
 **Example:**
 
@@ -290,7 +313,7 @@ Fix: Updated AGENTS.md hard constraint with clearer wording
 
 Added example: Before/after showing how to evaluate reusable blocks
 
-v2.2 changelog → "Hard constraints now explicit with examples"
+Document status updated with clarified hard-constraint wording
 
 Create issue #123 label:known-limitation describing pattern to avoid
 ```
@@ -305,3 +328,4 @@ This document evolves as the team discovers edge cases and patterns.
 - **Suggest improvements** → Open PR to `.agents/skills/` or `AGENTS.md`
 - **Track limitations** → Label issues `known-limitation` with context and workarounds
 - **3-month review cycle** → Document reviewed every 90 days or on major model/tool changes
+- **Ownership update trigger** → When Makefile targets, scripts, or module boundaries change, update `AGENTS.md` and relevant skills in the same PR
