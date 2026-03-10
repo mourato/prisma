@@ -304,12 +304,24 @@ public struct SettingsView: View {
             .frame(width: ToolbarLayout.transcriptionsSearchWidth)
     }
 
+    @ViewBuilder
     private var transcriptionsSearchField: some View {
-        NativeSearchField(
-            text: $transcriptionsSearchText,
-            placeholder: "settings.transcriptions.search_placeholder".localized
-        )
-        .frame(height: ToolbarLayout.transcriptionsSearchHeight)
+        if #available(macOS 26.0, *) {
+            NativeSearchField(
+                text: $transcriptionsSearchText,
+                placeholder: "settings.transcriptions.search_placeholder".localized,
+                style: .liquidGlass
+            )
+            .frame(height: ToolbarLayout.transcriptionsSearchHeight)
+            .padding(.horizontal, 10)
+            .glassEffect(in: Capsule())
+        } else {
+            NativeSearchField(
+                text: $transcriptionsSearchText,
+                placeholder: "settings.transcriptions.search_placeholder".localized
+            )
+            .frame(height: ToolbarLayout.transcriptionsSearchHeight)
+        }
     }
 
     @available(macOS 26.0, *)

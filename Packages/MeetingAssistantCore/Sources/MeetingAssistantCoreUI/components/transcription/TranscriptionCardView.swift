@@ -117,11 +117,13 @@ public struct TranscriptionCardView: View {
 
     private var collapsedContent: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(collapsedTitle)
-                .font(.headline)
-                .lineLimit(1)
-                .foregroundStyle(.primary)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            if shouldDisplayMeetingTitle {
+                Text(collapsedMeetingTitle)
+                    .font(.headline)
+                    .lineLimit(1)
+                    .foregroundStyle(.primary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
 
             Text(displayText(transcription.previewText))
                 .font(.body)
@@ -153,7 +155,16 @@ public struct TranscriptionCardView: View {
                 }
             }
 
-            inlineHeadingView
+            if shouldDisplayMeetingTitle {
+                if transcription.supportsMeetingConversation {
+                    meetingTitleEditor
+                } else {
+                    Text(collapsedMeetingTitle)
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(.primary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
 
             contentView
                 .font(.body)
@@ -455,23 +466,12 @@ public struct TranscriptionCardView: View {
         return nil
     }
 
-    private var collapsedTitle: String {
-        if transcription.supportsMeetingConversation, let currentPersistedMeetingTitle {
-            return currentPersistedMeetingTitle
-        }
-        return sourceDisplayName
+    private var shouldDisplayMeetingTitle: Bool {
+        transcription.capturePurpose == .meeting
     }
 
-    @ViewBuilder
-    private var inlineHeadingView: some View {
-        if transcription.supportsMeetingConversation {
-            meetingTitleEditor
-        } else {
-            Text(sourceDisplayName)
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(.primary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
+    private var collapsedMeetingTitle: String {
+        currentPersistedMeetingTitle ?? sourceDisplayName
     }
 
     private var meetingTitleEditor: some View {

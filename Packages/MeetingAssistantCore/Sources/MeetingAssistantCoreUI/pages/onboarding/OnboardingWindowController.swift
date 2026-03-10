@@ -6,10 +6,15 @@ import SwiftUI
 
 /// Manages the dedicated onboarding window with modal presentation.
 @MainActor
-public class OnboardingWindowController {
+public final class OnboardingWindowController: NSObject, NSWindowDelegate {
     private var window: NSWindow?
+    private var didCompleteOnboarding = false
+    private var hasHandledWindowClose = false
+    private var onDismiss: (() -> Void)?
 
-    public init() {}
+    override public init() {
+        super.init()
+    }
 
     /// Shows the onboarding window as a modal sheet over the main app.
     public func showOnboarding(
@@ -19,8 +24,13 @@ public class OnboardingWindowController {
         assistantShortcutViewModel: AssistantShortcutSettingsViewModel,
         modelManager: FluidAIModelManager,
         refreshPermissions: @escaping @MainActor () async -> Void,
-        completion: @escaping () -> Void
+        completion: @escaping () -> Void,
+        onDismiss: (() -> Void)? = nil
     ) {
+        didCompleteOnboarding = false
+        hasHandledWindowClose = false
+        self.onDismiss = onDismiss
+
         // Create the onboarding view with all dependencies
         let onboardingView = OnboardingView(
             viewModel: viewModel,
@@ -30,6 +40,7 @@ public class OnboardingWindowController {
             modelManager: modelManager,
             refreshPermissions: refreshPermissions,
             onComplete: { [weak self] in
+                self?.didCompleteOnboarding = true
                 self?.closeOnboarding()
                 completion()
             }
@@ -47,7 +58,7 @@ public class OnboardingWindowController {
         window.contentView = NSHostingView(rootView: onboardingView)
         window.center()
         window.isReleasedWhenClosed = false
-        window.delegate = WindowDelegate.shared
+        window.delegate = self
 
         // Style the window
         window.titlebarAppearsTransparent = true
@@ -59,8 +70,8 @@ public class OnboardingWindowController {
 
         // Make it modal
         if let mainWindow = NSApplication.shared.mainWindow {
-            mainWindow.beginSheet(window) { _ in
-                // Sheet closed
+            mainWindow.beginSheet(window) { [weak self] _ in
+                self?.handleWindowDidClose()
             }
         } else {
             window.makeKeyAndOrderFront(nil)
@@ -74,39 +85,32 @@ public class OnboardingWindowController {
     public func closeOnboarding() {
         guard let window else { return }
 
-        if let mainWindow = NSApplication.shared.mainWindow {
-            if mainWindow.sheets.contains(window) {
-                mainWindow.endSheet(window)
-            } else {
-                window.close()
-            }
+        if let sheetParent = window.sheetParent {
+            sheetParent.endSheet(window)
         } else {
             window.close()
         }
-
-        self.window = nil
-    }
-}
-
-// MARK: - Window Delegate
-
-@MainActor
-private class WindowDelegate: NSObject, NSWindowDelegate, @unchecked Sendable {
-    private static var sharedInstance: WindowDelegate?
-
-    static var shared: WindowDelegate {
-        if let sharedInstance {
-            return sharedInstance
-        }
-
-        let instance = WindowDelegate()
-        sharedInstance = instance
-        return instance
     }
 
-    func windowShouldClose(_ sender: NSWindow) -> Bool {
-        // Prevent closing via the red button during onboarding
-        // User must complete or skip all steps
-        false
+    public func windowShouldClose(_ sender: NSWindow) -> Bool {
+        true
+    }
+
+    public func windowWillClose(_ notification: Notification) {
+        handleWindowDidClose()
+    }
+
+    private func handleWindowDidClose() {
+        guard !hasHandledWindowClose else { return }
+        hasHandledWindowClose = true
+
+        window?.delegate = nil
+        window = nil
+
+        let onDismiss = onDismiss
+        self.onDismiss = nil
+
+        guard !didCompleteOnboarding else { return }
+        onDismiss?()
     }
 }

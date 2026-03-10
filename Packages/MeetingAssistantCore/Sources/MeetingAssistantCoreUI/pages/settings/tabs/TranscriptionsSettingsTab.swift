@@ -267,13 +267,12 @@ public struct TranscriptionsSettingsTab: View {
     }
 
     private var emptyState: some View {
-        SettingsStateBlock(
-            kind: .empty,
+        MAEmptyStateView(
+            iconName: "clock.arrow.circlepath",
             title: "settings.transcriptions.empty_title".localized,
             message: "settings.transcriptions.empty_desc".localized
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding()
     }
 
     private var transcriptionsList: some View {

@@ -42,8 +42,8 @@ struct MetricsDashboardMoreInsightsPage: View {
             MetricsDashboardFiltersSection(viewModel: viewModel)
 
             if viewModel.summary.sessionsRecorded == 0, !viewModel.isLoading {
-                SettingsStateBlock(
-                    kind: .empty,
+                MAEmptyStateView(
+                    iconName: "chart.bar.xaxis",
                     title: "metrics.empty.title".localized,
                     message: "metrics.empty.subtitle".localized
                 )

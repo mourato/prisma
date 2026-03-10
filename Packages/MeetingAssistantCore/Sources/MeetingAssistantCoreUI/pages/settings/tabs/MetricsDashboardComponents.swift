@@ -33,10 +33,11 @@ struct MetricsDashboardUpcomingEventsSection: View {
                         }
                     }
                 } else if viewModel.upcomingEvents.isEmpty {
-                    SettingsStateBlock(
-                        kind: .empty,
+                    MAEmptyStateView(
+                        iconName: "calendar.badge.exclamationmark",
                         title: "metrics.calendar.empty.title".localized,
-                        message: "metrics.calendar.empty.message".localized
+                        message: "metrics.calendar.empty.message".localized,
+                        emphasis: .compact
                     )
                 } else {
                     ForEach(viewModel.upcomingEvents, id: \.eventIdentifier) { event in
@@ -92,10 +93,11 @@ struct MetricsDashboardActivitySection: View {
                         .frame(maxWidth: .infinity, minHeight: ActivityHeatmap.scrollHeight)
                         .padding(.vertical, ActivityHeatmap.verticalPadding)
                 } else if viewModel.dailyBuckets.isEmpty {
-                    SettingsStateBlock(
-                        kind: .empty,
+                    MAEmptyStateView(
+                        iconName: "chart.bar.xaxis",
                         title: "metrics.empty.title".localized,
-                        message: "metrics.empty.subtitle".localized
+                        message: "metrics.empty.subtitle".localized,
+                        emphasis: .compact
                     )
                 } else {
                     HStack(alignment: .top, spacing: ActivityHeatmap.weekdayToGridSpacing) {

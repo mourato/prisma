@@ -2,8 +2,14 @@ import AppKit
 import SwiftUI
 
 struct NativeSearchField: NSViewRepresentable {
+    enum Style {
+        case standard
+        case liquidGlass
+    }
+
     @Binding var text: String
     let placeholder: String
+    var style: Style = .standard
 
     func makeCoordinator() -> Coordinator {
         Coordinator(text: $text)
@@ -20,6 +26,7 @@ struct NativeSearchField: NSViewRepresentable {
         searchField.recentsAutosaveName = nil
         searchField.cell?.controlSize = .regular
         searchField.stringValue = text
+        applyStyle(to: searchField)
         return searchField
     }
 
@@ -30,6 +37,21 @@ struct NativeSearchField: NSViewRepresentable {
 
         if nsView.placeholderString != placeholder {
             nsView.placeholderString = placeholder
+        }
+
+        applyStyle(to: nsView)
+    }
+
+    private func applyStyle(to searchField: NSSearchField) {
+        switch style {
+        case .standard:
+            searchField.isBezeled = true
+            searchField.isBordered = true
+            searchField.drawsBackground = true
+        case .liquidGlass:
+            searchField.isBezeled = false
+            searchField.isBordered = false
+            searchField.drawsBackground = false
         }
     }
 }
