@@ -7,9 +7,12 @@ final class StorageServiceSecurityTests: XCTestCase {
             ?? FileManager.default.temporaryDirectory).path
     }
 
+    private var homeDirectory: String {
+        FileManager.default.homeDirectoryForCurrentUser.path
+    }
+
     override func setUp() {
         super.setUp()
-        // Reset UserDefaults before each test
         UserDefaults.standard.removeObject(forKey: "recordingsDirectory")
     }
 
@@ -40,13 +43,11 @@ final class StorageServiceSecurityTests: XCTestCase {
         let directory = service.recordingsDirectory
 
         // Then: Should be resolved (no symlinks in path should lead outside container)
-        // Note: In sandboxed environment, this is hard to mock perfectly without actual symlinks,
-        // but we can verify the property still returns a valid container path.
         XCTAssertTrue(directory.path.hasPrefix(appSupportRoot))
     }
 
     func testOutsideContainerBlocked() {
-        // Given: Valid-looking path outside container
+        // Given: Valid-looking path outside user-accessible locations
         let outsidePath = "/tmp/recordings"
         UserDefaults.standard.set(outsidePath, forKey: "recordingsDirectory")
 
@@ -54,8 +55,33 @@ final class StorageServiceSecurityTests: XCTestCase {
         let service = FileSystemStorageService()
         let directory = service.recordingsDirectory
 
-        // Then: Should fallback to default
+        // Then: Should fallback to default (paths outside home/Volumes are blocked)
         XCTAssertFalse(directory.path.hasPrefix("/tmp"))
+        XCTAssertTrue(directory.path.hasPrefix(appSupportRoot))
+    }
+
+    func testUserAccessiblePathAllowed() {
+        // Given: Valid path under the user's home directory
+        let validPath = homeDirectory + "/Documents/PrismaRecordings"
+        UserDefaults.standard.set(validPath, forKey: "recordingsDirectory")
+
+        // When: Accessing recordings directory
+        let service = FileSystemStorageService()
+        let directory = service.recordingsDirectory
+
+        // Then: Should use the configured path, not the default
+        XCTAssertTrue(directory.path.hasPrefix(homeDirectory + "/Documents/PrismaRecordings"))
+    }
+
+    func testEmptyPathFallsBackToDefault() {
+        // Given: Empty path
+        UserDefaults.standard.set("", forKey: "recordingsDirectory")
+
+        // When: Accessing recordings directory
+        let service = FileSystemStorageService()
+        let directory = service.recordingsDirectory
+
+        // Then: Should use the default recordings directory
         XCTAssertTrue(directory.path.hasPrefix(appSupportRoot))
     }
 }

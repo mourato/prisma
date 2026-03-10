@@ -134,7 +134,7 @@ public final class FileSystemStorageService: StorageService {
 
         if !configuredPath.isEmpty {
             do {
-                let validatedURL = try validatePath(configuredPath)
+                let validatedURL = try validateRecordingPath(configuredPath)
                 try? FileManager.default.createDirectory(at: validatedURL, withIntermediateDirectories: true)
                 return validatedURL
             } catch {

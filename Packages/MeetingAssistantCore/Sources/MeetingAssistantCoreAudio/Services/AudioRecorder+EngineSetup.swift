@@ -100,30 +100,24 @@ extension AudioRecorder {
 
         mixerNode = mixer
 
-        if source.requiresMicrophonePermission {
-            // Only manually set the input device when the user is not using the system default.
-            // When useSystemDefaultInput is true, AVAudioEngine automatically creates the
-            // correct aggregate device combining the system default input + output.
-            // Calling AudioUnitSetProperty(kAudioOutputUnitProperty_CurrentDevice) on the
-            // inputNode corrupts the engine's internal I/O unit, changing BOTH input and
-            // output to the same device (e.g. USB mic with no speakers), breaking the
-            // render cycle and producing zero-filled input buffers.
-            if !AppSettingsStore.shared.useSystemDefaultInput, retryCount == 0 {
-                AppLogger.debug("Selecting preferred input device (power-aware custom selection)...", category: .recordingManager)
-                await selectPreferredInputDevice(engine: engine)
-                // Re-assert system default output after custom input selection to keep
-                // the AUHAL output side bound to a valid playback device.
-                restoreOutputDevice(engine: engine)
-            } else if !AppSettingsStore.shared.useSystemDefaultInput {
-                AppLogger.warning(
-                    "Retrying startup with engine-managed system default input to bypass unstable custom device selection",
-                    category: .recordingManager,
-                    extra: ["retryCount": retryCount]
-                )
-                restoreOutputDevice(engine: engine)
-            } else {
-                AppLogger.debug("Using engine-managed default input device", category: .recordingManager)
-            }
+        // Apply custom microphone selection before configuring the engine graph.
+        // This uses a system default input override instead of AUHAL device manipulation,
+        // avoiding aggregate device creation that destabilizes Bluetooth audio.
+        var originalDefaultInputID: AudioObjectID?
+        if source.requiresMicrophonePermission, retryCount == 0 {
+            originalDefaultInputID = applyPreferredInputDeviceOverride()
+        } else if source.requiresMicrophonePermission, !AppSettingsStore.shared.useSystemDefaultInput {
+            AppLogger.warning(
+                "Retrying startup with system default input to bypass unstable custom device selection",
+                category: .recordingManager,
+                extra: ["retryCount": retryCount]
+            )
+        }
+
+        // Small delay to let CoreAudio propagate the default device change.
+        // Without this, the engine may still see the previous default.
+        if originalDefaultInputID != nil {
+            try await Task.sleep(nanoseconds: 50_000_000) // 50ms
         }
 
         AppLogger.debug("Configuring inputs...", category: .recordingManager)
@@ -176,6 +170,11 @@ extension AudioRecorder {
 
         AppLogger.debug("Starting engine...", category: .recordingManager)
         try await startAudioEngine(engine, outputURL: outputURL, source: source, retryCount: retryCount)
+
+        // Restore the original system default input device now that the engine is running.
+        // The running engine has latched onto the device and won't be affected.
+        restoreSystemDefaultInputDevice(originalDefaultInputID)
+
         currentRecordingURL = outputURL
         dumpAudioDiagnostics(engine: engine, source: source)
         AppLogger.debug("Audio Engine setup complete.", category: .recordingManager)

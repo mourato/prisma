@@ -349,4 +349,46 @@ public final class AudioDeviceManager: ObservableObject {
         let status = AudioObjectSetPropertyData(id, &address, 0, nil, size, &mutableVolume)
         return status == noErr
     }
+
+    // MARK: - System Default Input Device Override
+
+    /// Returns the current system default input device ID (raw, no usability check).
+    /// Used to capture the original default before temporarily overriding it.
+    public nonisolated func getSystemDefaultInputDeviceID() -> AudioObjectID? {
+        getDefaultInputDeviceIDRaw()
+    }
+
+    /// Temporarily sets the system default input device.
+    ///
+    /// This is used to steer `AVAudioEngine` toward a specific microphone **without**
+    /// using `kAudioOutputUnitProperty_CurrentDevice` on the AUHAL, which changes
+    /// the I/O unit's device for both input AND output, forcing macOS to create an
+    /// aggregate device. Aggregate devices are fragile — especially with Bluetooth
+    /// headphones in SCO (call) mode — and cause cascading IO context failures.
+    ///
+    /// The system default is changed only briefly during engine setup and restored
+    /// immediately after the engine starts.
+    ///
+    /// - Returns: `true` if the system default was successfully changed.
+    @discardableResult
+    public nonisolated func setSystemDefaultInputDevice(_ deviceID: AudioObjectID) -> Bool {
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDefaultInputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+
+        var deviceIDToSet = deviceID
+        let size = UInt32(MemoryLayout<AudioObjectID>.size)
+        let status = AudioObjectSetPropertyData(
+            AudioObjectID(kAudioObjectSystemObject),
+            &address,
+            0,
+            nil,
+            size,
+            &deviceIDToSet
+        )
+
+        return status == noErr
+    }
 }

@@ -10,228 +10,110 @@ import MeetingAssistantCoreInfrastructure
 import os.log
 
 extension AudioRecorder {
-    func selectPreferredInputDevice(engine: AVAudioEngine) async {
-        guard let inputUnit = engine.inputNode.audioUnit else {
-            AppLogger.warning("Failed to resolve input audio unit for device selection", category: .recordingManager)
-            return
+    // MARK: - System Default Input Override
+
+    /// Applies the preferred custom microphone by temporarily overriding the system
+    /// default input device **before** the engine is initialized.
+    ///
+    /// This approach avoids using `kAudioOutputUnitProperty_CurrentDevice` on the
+    /// AUHAL, which changes the I/O unit device for BOTH input and output, forcing
+    /// macOS to create an aggregate device. Aggregate devices are fragile —
+    /// especially with Bluetooth headphones in SCO (call) mode — and cause
+    /// cascading IO context and engine initialization failures.
+    ///
+    /// The flow:
+    /// 1. Save the current system default input device ID.
+    /// 2. Set the system default input to the preferred custom mic.
+    /// 3. Return the original ID so the caller can restore it after the engine starts.
+    ///
+    /// - Returns: The original system default input device ID to restore later,
+    ///   or `nil` if no override was applied (system default should be used).
+    func applyPreferredInputDeviceOverride() -> AudioObjectID? {
+        guard !AppSettingsStore.shared.useSystemDefaultInput else {
+            AppLogger.debug("Using engine-managed default input device", category: .recordingManager)
+            return nil
         }
 
-        if AppSettingsStore.shared.useSystemDefaultInput {
-            applyPreferredSystemDefaultInputDevice(to: inputUnit)
-            return
-        }
-
-        applyPreferredCustomInputDevice(to: inputUnit)
-    }
-
-    private func applyPreferredSystemDefaultInputDevice(to inputUnit: AudioUnit) {
-        let resolvedDeviceID: AudioObjectID
-        if let defaultDeviceID = deviceManager.getDefaultInputDeviceID() {
-            resolvedDeviceID = defaultDeviceID
-        } else if let rawDeviceID = deviceManager.getDefaultInputDeviceIDRaw() {
-            // Fallback: use raw device ID without usability validation.
-            // This prevents silent failures when isUsableInputDeviceID is too strict.
-            AppLogger.warning(
-                "Validated default input device unavailable; falling back to raw system default",
-                category: .recordingManager,
-                extra: ["rawDeviceID": rawDeviceID]
-            )
-            resolvedDeviceID = rawDeviceID
-        } else {
-            AppLogger.fault(
-                "No system default input device found at all — microphone capture will produce silence",
-                category: .recordingManager
-            )
-            return
-        }
-
-        var deviceIDToSet = resolvedDeviceID
-        let size = UInt32(MemoryLayout<AudioObjectID>.size)
-        let status = AudioUnitSetProperty(
-            inputUnit,
-            kAudioOutputUnitProperty_CurrentDevice,
-            kAudioUnitScope_Global,
-            0,
-            &deviceIDToSet,
-            size
-        )
-
-        if status != noErr {
-            AppLogger.warning(
-                "Failed to set system default input device",
-                category: .recordingManager,
-                extra: ["status": status, "deviceID": resolvedDeviceID]
-            )
-        } else {
-            AppLogger.info(
-                "Using system default input device",
-                category: .recordingManager,
-                extra: ["deviceID": resolvedDeviceID]
-            )
-        }
-        logDeviceDiagnostics(for: resolvedDeviceID, label: "systemDefault")
-    }
-
-    private func applyPreferredCustomInputDevice(to inputUnit: AudioUnit) {
         let preferredUID = microphoneInputSelectionResolver.preferredCustomMicrophoneUID()
-        guard let id = microphoneInputSelectionResolver.resolveCustomMicrophoneDeviceID() else {
+        guard let customDeviceID = microphoneInputSelectionResolver.resolveCustomMicrophoneDeviceID() else {
             AppLogger.debug(
-                "No usable custom input device for current power state. Using system default.",
+                "No usable custom input device for current power state. Keeping system default.",
                 category: .recordingManager,
                 extra: [
                     "powerSource": microphoneInputSelectionResolver.currentPowerSourceState().rawValue,
                     "preferredUID": preferredUID ?? "nil",
                 ]
             )
-            return
+            return nil
         }
 
-        if let systemDefaultInputID = deviceManager.getDefaultInputDeviceIDRaw(),
-           id == systemDefaultInputID
+        // If the custom device is already the system default, no override needed.
+        if let systemDefaultID = deviceManager.getDefaultInputDeviceIDRaw(),
+           customDeviceID == systemDefaultID
         {
             AppLogger.info(
-                "Custom input selection matches system default. Skipping explicit device assignment.",
+                "Custom input selection matches system default. No override needed.",
                 category: .recordingManager,
                 extra: [
-                    "deviceID": id,
+                    "deviceID": customDeviceID,
                     "preferredUID": preferredUID ?? "nil",
                     "powerSource": microphoneInputSelectionResolver.currentPowerSourceState().rawValue,
                 ]
             )
-            return
+            return nil
         }
 
-        var deviceIDToSet = id
-        let size = UInt32(MemoryLayout<AudioObjectID>.size)
+        // Capture the original system default before overriding.
+        let originalDefaultID = deviceManager.getSystemDefaultInputDeviceID()
 
-        let status = AudioUnitSetProperty(
-            inputUnit,
-            kAudioOutputUnitProperty_CurrentDevice,
-            kAudioUnitScope_Global,
-            0,
-            &deviceIDToSet,
-            size
-        )
-
-        if status != noErr {
-            AppLogger.warning(
-                "Failed to set preferred input device",
-                category: .recordingManager,
-                extra: ["status": status, "deviceID": id, "preferredUID": preferredUID ?? "nil"]
-            )
-            applySystemDefaultInputDevice(to: inputUnit, reason: "priority_device_set_failed")
-        } else {
+        let didSet = deviceManager.setSystemDefaultInputDevice(customDeviceID)
+        if didSet {
+            let deviceName = deviceManager.getDeviceName(for: customDeviceID) ?? "Unknown"
             AppLogger.info(
-                "Set preferred input device",
+                "Temporarily set system default input to preferred custom mic",
                 category: .recordingManager,
                 extra: [
-                    "deviceID": id,
+                    "deviceID": customDeviceID,
+                    "deviceName": deviceName,
                     "preferredUID": preferredUID ?? "nil",
                     "powerSource": microphoneInputSelectionResolver.currentPowerSourceState().rawValue,
+                    "originalDefaultID": originalDefaultID as Any,
                 ]
             )
-        }
-        logDeviceDiagnostics(for: id, label: "priority")
-    }
-
-    private func applySystemDefaultInputDevice(to inputUnit: AudioUnit, reason: String) {
-        guard let defaultDeviceID = deviceManager.getDefaultInputDeviceID() else {
-            AppLogger.warning(
-                "Fallback to system default input device failed: no valid default device",
-                category: .recordingManager,
-                extra: ["reason": reason]
-            )
-            return
-        }
-
-        var deviceIDToSet = defaultDeviceID
-        let size = UInt32(MemoryLayout<AudioObjectID>.size)
-        let status = AudioUnitSetProperty(
-            inputUnit,
-            kAudioOutputUnitProperty_CurrentDevice,
-            kAudioUnitScope_Global,
-            0,
-            &deviceIDToSet,
-            size
-        )
-
-        if status == noErr {
-            AppLogger.info(
-                "Applied fallback to system default input device",
-                category: .recordingManager,
-                extra: ["reason": reason, "deviceID": defaultDeviceID]
-            )
-            logDeviceDiagnostics(for: defaultDeviceID, label: "fallbackSystemDefault")
+            logDeviceDiagnostics(for: customDeviceID, label: "customMicOverride")
+            return originalDefaultID
         } else {
             AppLogger.warning(
-                "Failed to apply fallback system default input device",
+                "Failed to set system default input device. Engine will use current default.",
                 category: .recordingManager,
-                extra: ["reason": reason, "status": status, "deviceID": defaultDeviceID]
+                extra: ["deviceID": customDeviceID, "preferredUID": preferredUID ?? "nil"]
             )
+            return nil
         }
     }
 
-    /// Restore the output device to the system default output after input device selection.
+    /// Restores the system default input device after the engine has started.
     ///
-    /// `selectPreferredInputDevice` uses `kAudioOutputUnitProperty_CurrentDevice` which
-    /// changes the device for the entire I/O unit (including output). This can redirect
-    /// audio output to a USB microphone that has no speakers, breaking the engine's
-    /// render cycle and producing zero-filled input buffers.
-    func restoreOutputDevice(engine: AVAudioEngine) {
-        guard let outputUnit = engine.outputNode.audioUnit else { return }
+    /// Once `AVAudioEngine` is running, it has latched onto the input device and
+    /// changing the system default will not affect the running engine. This restores
+    /// the original default so other apps are not affected.
+    func restoreSystemDefaultInputDevice(_ originalDeviceID: AudioObjectID?) {
+        guard let originalID = originalDeviceID else { return }
 
-        guard let defaultOutputID = deviceManager.getDefaultOutputDeviceID() else {
-            AppLogger.warning(
-                "No system default output device found; cannot restore output device",
-                category: .recordingManager
-            )
-            return
-        }
-
-        // Check if output is already correct
-        var currentOutputID: AudioObjectID = 0
-        var size = UInt32(MemoryLayout<AudioObjectID>.size)
-        let getStatus = AudioUnitGetProperty(
-            outputUnit,
-            kAudioOutputUnitProperty_CurrentDevice,
-            kAudioUnitScope_Global,
-            0,
-            &currentOutputID,
-            &size
-        )
-
-        if getStatus == noErr, currentOutputID == defaultOutputID {
-            return // Output device is already the system default
-        }
-
-        // Restore to system default output
-        var deviceIDToSet = defaultOutputID
-        let setStatus = AudioUnitSetProperty(
-            outputUnit,
-            kAudioOutputUnitProperty_CurrentDevice,
-            kAudioUnitScope_Global,
-            0,
-            &deviceIDToSet,
-            size
-        )
-
-        let deviceName = deviceManager.getDeviceName(for: defaultOutputID) ?? "Unknown"
-        if setStatus == noErr {
+        let didRestore = deviceManager.setSystemDefaultInputDevice(originalID)
+        if didRestore {
             AppLogger.info(
-                "Restored output device to system default",
+                "Restored system default input device after engine start",
                 category: .recordingManager,
-                extra: [
-                    "outputDeviceID": defaultOutputID,
-                    "outputDeviceName": deviceName,
-                    "previousOutputDeviceID": currentOutputID,
-                ]
+                extra: ["restoredDeviceID": originalID]
             )
         } else {
             AppLogger.warning(
-                "Failed to restore output device to system default",
+                "Failed to restore original system default input device",
                 category: .recordingManager,
-                extra: ["status": setStatus, "targetDeviceID": defaultOutputID]
+                extra: ["targetDeviceID": originalID]
             )
         }
     }
+
 }
