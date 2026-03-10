@@ -108,11 +108,18 @@ extension AudioRecorder {
             // inputNode corrupts the engine's internal I/O unit, changing BOTH input and
             // output to the same device (e.g. USB mic with no speakers), breaking the
             // render cycle and producing zero-filled input buffers.
-            if !AppSettingsStore.shared.useSystemDefaultInput {
+            if !AppSettingsStore.shared.useSystemDefaultInput, retryCount == 0 {
                 AppLogger.debug("Selecting preferred input device (power-aware custom selection)...", category: .recordingManager)
                 await selectPreferredInputDevice(engine: engine)
                 // Re-assert system default output after custom input selection to keep
                 // the AUHAL output side bound to a valid playback device.
+                restoreOutputDevice(engine: engine)
+            } else if !AppSettingsStore.shared.useSystemDefaultInput {
+                AppLogger.warning(
+                    "Retrying startup with engine-managed system default input to bypass unstable custom device selection",
+                    category: .recordingManager,
+                    extra: ["retryCount": retryCount]
+                )
                 restoreOutputDevice(engine: engine)
             } else {
                 AppLogger.debug("Using engine-managed default input device", category: .recordingManager)
