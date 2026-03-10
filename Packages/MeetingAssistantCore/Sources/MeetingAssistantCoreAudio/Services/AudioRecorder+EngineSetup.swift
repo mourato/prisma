@@ -111,6 +111,9 @@ extension AudioRecorder {
             if !AppSettingsStore.shared.useSystemDefaultInput {
                 AppLogger.debug("Selecting preferred input device (power-aware custom selection)...", category: .recordingManager)
                 await selectPreferredInputDevice(engine: engine)
+                // Re-assert system default output after custom input selection to keep
+                // the AUHAL output side bound to a valid playback device.
+                restoreOutputDevice(engine: engine)
             } else {
                 AppLogger.debug("Using engine-managed default input device", category: .recordingManager)
             }
@@ -132,7 +135,7 @@ extension AudioRecorder {
                 &size
             )
 
-            if status == noErr {
+            if status == noErr, deviceID != AudioObjectID(kAudioObjectUnknown) {
                 let deviceName = deviceManager.getDeviceName(for: deviceID) ?? "Unknown"
                 let usable = deviceManager.isUsableInputDeviceID(deviceID)
                 AppLogger.info(
@@ -323,7 +326,7 @@ extension AudioRecorder {
                 &size
             )
 
-            if status == noErr {
+            if status == noErr, deviceID != AudioObjectID(kAudioObjectUnknown) {
                 diagnostics["inputDeviceID"] = deviceID
                 diagnostics["inputDeviceName"] = deviceManager.getDeviceName(for: deviceID) ?? "Unknown"
                 diagnostics["inputDeviceUID"] = deviceManager.getDeviceUID(for: deviceID) ?? "Unknown"
@@ -332,7 +335,7 @@ extension AudioRecorder {
                 diagnostics["inputDeviceChannels"] = deviceManager.getInputChannelCount(for: deviceID) as Any
                 diagnostics["inputDeviceUsable"] = deviceManager.isUsableInputDeviceID(deviceID)
             } else {
-                diagnostics["inputDeviceError"] = "Failed to query (status: \(status))"
+                diagnostics["inputDeviceError"] = "Failed to query (status: \(status), deviceID: \(deviceID))"
             }
         } else {
             diagnostics["inputUnit"] = "nil"
@@ -360,12 +363,14 @@ extension AudioRecorder {
                 &outputDeviceID,
                 &outSize
             )
-            if outStatus == noErr {
+            if outStatus == noErr, outputDeviceID != AudioObjectID(kAudioObjectUnknown) {
                 diagnostics["outputDeviceID"] = outputDeviceID
                 diagnostics["outputDeviceName"] = deviceManager.getDeviceName(for: outputDeviceID) ?? "Unknown"
                 if let nominalRate = deviceManager.getDeviceNominalSampleRate(for: outputDeviceID) {
                     diagnostics["outputDeviceNominalRate"] = nominalRate
                 }
+            } else {
+                diagnostics["outputDeviceError"] = "Failed to query (status: \(outStatus), deviceID: \(outputDeviceID))"
             }
         }
 

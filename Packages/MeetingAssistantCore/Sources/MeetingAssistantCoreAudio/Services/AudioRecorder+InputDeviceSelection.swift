@@ -155,7 +155,7 @@ extension AudioRecorder {
     /// changes the device for the entire I/O unit (including output). This can redirect
     /// audio output to a USB microphone that has no speakers, breaking the engine's
     /// render cycle and producing zero-filled input buffers.
-    private func restoreOutputDevice(engine: AVAudioEngine) {
+    func restoreOutputDevice(engine: AVAudioEngine) {
         guard let outputUnit = engine.outputNode.audioUnit else { return }
 
         guard let defaultOutputID = deviceManager.getDefaultOutputDeviceID() else {
