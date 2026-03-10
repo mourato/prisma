@@ -1,22 +1,14 @@
 import AppKit
 import MeetingAssistantCoreCommon
 import SwiftUI
-import Textual
 
 @MainActor
 public final class MeetingNotesFloatingPanelController {
     private var panel: NSPanel?
     private var hostingView: NSHostingView<MeetingNotesFloatingPanelView>?
     private var panelDelegate: PanelDelegate?
-    private let editorEngineResolver: MeetingNotesEditorEngineResolver
 
-    public init() {
-        editorEngineResolver = .init()
-    }
-
-    init(editorEngineResolver: MeetingNotesEditorEngineResolver) {
-        self.editorEngineResolver = editorEngineResolver
-    }
+    public init() {}
 
     public var isVisible: Bool {
         panel?.isVisible ?? false
@@ -28,15 +20,8 @@ public final class MeetingNotesFloatingPanelController {
         onClose: @escaping () -> Void
     ) {
         let panel = ensurePanel(onClose: onClose)
-        let editorEngine = editorEngineResolver.resolve()
-        AppLogger.info(
-            "Meeting notes editor engine selected",
-            category: .uiController,
-            extra: ["engine": editorEngine.rawValue]
-        )
         let rootView = MeetingNotesFloatingPanelView(
             text: text,
-            editorEngine: editorEngine,
             onTextChange: onTextChange
         )
 
@@ -104,16 +89,13 @@ private final class PanelDelegate: NSObject, NSWindowDelegate {
 
 private struct MeetingNotesFloatingPanelView: View {
     @State private var text: String
-    private let editorEngine: MeetingNotesEditorEngine
     let onTextChange: (String) -> Void
 
     init(
         text: String,
-        editorEngine: MeetingNotesEditorEngine,
         onTextChange: @escaping (String) -> Void
     ) {
         _text = State(initialValue: text)
-        self.editorEngine = editorEngine
         self.onTextChange = onTextChange
     }
 
@@ -123,12 +105,7 @@ private struct MeetingNotesFloatingPanelView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            switch editorEngine {
-            case .textual:
-                TextualMeetingNotesEditor(text: $text)
-            case .native:
-                NativeMeetingNotesEditor(text: $text)
-            }
+            MeetingNotesMarkdownEditor(text: $text)
         }
         .padding(12)
         .onChange(of: text) { _, newValue in
@@ -137,35 +114,96 @@ private struct MeetingNotesFloatingPanelView: View {
     }
 }
 
-private struct NativeMeetingNotesEditor: View {
+private struct MeetingNotesMarkdownEditor: NSViewRepresentable {
     @Binding var text: String
+    private let formatter = MeetingNotesMarkdownFormatter()
 
-    var body: some View {
-        TextEditor(text: $text)
-            .font(.body)
-            .scrollContentBackground(.hidden)
-            .background(Color(nsColor: .textBackgroundColor))
+    func makeNSView(context: Context) -> NSScrollView {
+        let textView = NSTextView()
+        textView.delegate = context.coordinator
+        textView.isEditable = true
+        textView.isSelectable = true
+        textView.isRichText = true
+        textView.importsGraphics = false
+        textView.drawsBackground = true
+        textView.backgroundColor = .textBackgroundColor
+        textView.usesFindBar = false
+        textView.textContainerInset = NSSize(width: 0, height: 8)
+        textView.textContainer?.lineFragmentPadding = 0
+        textView.textContainer?.widthTracksTextView = true
+        textView.isHorizontallyResizable = false
+        textView.isVerticallyResizable = true
+        textView.autoresizingMask = [.width]
+        textView.allowsUndo = true
+
+        let scrollView = NSScrollView()
+        scrollView.borderType = .noBorder
+        scrollView.hasVerticalScroller = true
+        scrollView.hasHorizontalScroller = false
+        scrollView.autohidesScrollers = true
+        scrollView.drawsBackground = false
+        scrollView.documentView = textView
+
+        context.coordinator.applyExternalMarkdown(text, to: textView)
+        return scrollView
     }
-}
 
-private struct TextualMeetingNotesEditor: View {
-    @Binding var text: String
+    func updateNSView(_ nsView: NSScrollView, context: Context) {
+        guard let textView = nsView.documentView as? NSTextView else { return }
+        context.coordinator.applyExternalMarkdown(text, to: textView)
+    }
 
-    var body: some View {
-        VStack(spacing: 8) {
-            TextEditor(text: $text)
-                .font(.body)
-                .scrollContentBackground(.hidden)
-                .background(Color(nsColor: .textBackgroundColor))
+    func makeCoordinator() -> Coordinator {
+        Coordinator(text: $text, formatter: formatter)
+    }
 
-            Divider()
+    @MainActor
+    final class Coordinator: NSObject, NSTextViewDelegate {
+        @Binding private var text: String
+        private let formatter: MeetingNotesMarkdownFormatter
+        private var isApplyingProgrammaticUpdate = false
+        private var lastRenderedMarkdown = ""
+        private var lastEmittedMarkdown = ""
 
-            ScrollView {
-                StructuredText(markdown: text)
-                    .textual.textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+        init(text: Binding<String>, formatter: MeetingNotesMarkdownFormatter) {
+            _text = text
+            self.formatter = formatter
+        }
+
+        func applyExternalMarkdown(_ markdown: String, to textView: NSTextView) {
+            let sanitizedMarkdown = MeetingNotesMarkdownSanitizer.sanitizeForMarkdownRendering(markdown)
+            guard sanitizedMarkdown != lastRenderedMarkdown else {
+                return
             }
-            .background(Color(nsColor: .textBackgroundColor))
+
+            let attributedText = formatter.attributedStringForEditing(from: sanitizedMarkdown)
+            let currentSelection = textView.selectedRange()
+
+            isApplyingProgrammaticUpdate = true
+            textView.textStorage?.setAttributedString(attributedText)
+            let clampedLocation = min(currentSelection.location, attributedText.length)
+            textView.setSelectedRange(NSRange(location: clampedLocation, length: 0))
+            isApplyingProgrammaticUpdate = false
+
+            lastRenderedMarkdown = sanitizedMarkdown
+            lastEmittedMarkdown = sanitizedMarkdown
+        }
+
+        func textDidChange(_ notification: Notification) {
+            guard !isApplyingProgrammaticUpdate,
+                  let textView = notification.object as? NSTextView
+            else {
+                return
+            }
+
+            let markdown = formatter.markdownForPersistence(from: textView.attributedString())
+            guard markdown != lastEmittedMarkdown else {
+                return
+            }
+
+            lastEmittedMarkdown = markdown
+            lastRenderedMarkdown = markdown
+            text = markdown
         }
     }
 }

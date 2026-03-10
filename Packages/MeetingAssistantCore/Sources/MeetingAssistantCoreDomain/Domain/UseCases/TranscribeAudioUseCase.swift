@@ -278,10 +278,12 @@ public final class TranscribeAudioUseCase: Sendable {
         if let meetingNotes {
             let trimmedMeetingNotes = meetingNotes.trimmingCharacters(in: .whitespacesAndNewlines)
             if !trimmedMeetingNotes.isEmpty {
+                let sanitizedMeetingNotes = MeetingNotesMarkdownSanitizer
+                    .sanitizeForPromptBlockContent(trimmedMeetingNotes)
                 blocks.append(
                     """
                     <MEETING_NOTES>
-                    \(trimmedMeetingNotes)
+                    \(sanitizedMeetingNotes)
                     </MEETING_NOTES>
                     """
                 )
@@ -291,10 +293,12 @@ public final class TranscribeAudioUseCase: Sendable {
         if let context {
             let trimmedContext = context.trimmingCharacters(in: .whitespacesAndNewlines)
             if !trimmedContext.isEmpty {
+                let sanitizedContext = MeetingNotesMarkdownSanitizer
+                    .sanitizeForPromptBlockContent(trimmedContext)
                 blocks.append(
                     """
                     <CONTEXT_METADATA>
-                    \(trimmedContext)
+                    \(sanitizedContext)
                     </CONTEXT_METADATA>
                     """
                 )
