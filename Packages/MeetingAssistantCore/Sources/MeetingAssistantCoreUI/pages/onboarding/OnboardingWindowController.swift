@@ -24,12 +24,11 @@ public final class OnboardingWindowController: NSObject, NSWindowDelegate {
         assistantShortcutViewModel: AssistantShortcutSettingsViewModel,
         modelManager: FluidAIModelManager,
         refreshPermissions: @escaping @MainActor () async -> Void,
-        completion: @escaping () -> Void,
-        onDismiss: (() -> Void)? = nil
+        completion: @escaping () -> Void
     ) {
         didCompleteOnboarding = false
         hasHandledWindowClose = false
-        self.onDismiss = onDismiss
+        onDismiss = completion
 
         // Create the onboarding view with all dependencies
         let onboardingView = OnboardingView(

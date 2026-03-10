@@ -66,17 +66,12 @@ extension AppDelegate {
 
     func showFirstLaunchOnboarding() {
         promoteAppForWindowPresentation()
-        presentOnboarding(
-            completion: { [weak self] in
-                self?.completeOnboarding()
-            },
-            onDismiss: { [weak self] in
-                self?.completeOnboarding()
-            }
-        )
+        presentOnboarding { [weak self] in
+            self?.completeOnboarding()
+        }
     }
 
-    func presentOnboarding(completion: @escaping () -> Void, onDismiss: (() -> Void)? = nil) {
+    func presentOnboarding(completion: @escaping () -> Void) {
         let permissionViewModel = PermissionViewModel(
             manager: recordingManager.permissionStatus,
             requestMicrophone: { [weak self] in
@@ -113,8 +108,7 @@ extension AppDelegate {
             refreshPermissions: { [weak self] in
                 await self?.recordingManager.checkPermission()
             },
-            completion: completion,
-            onDismiss: onDismiss
+            completion: completion
         )
     }
 
