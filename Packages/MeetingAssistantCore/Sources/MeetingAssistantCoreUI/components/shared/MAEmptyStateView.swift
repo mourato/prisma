@@ -28,9 +28,9 @@ public struct MAEmptyStateView: View {
             Image(systemName: iconName)
                 .font(.system(size: iconSize, weight: .semibold))
                 .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(AppDesignSystem.Colors.accent)
+                .foregroundStyle(AppDesignSystem.Colors.neutral)
                 .frame(width: iconContainerSize, height: iconContainerSize)
-                .background(AppDesignSystem.Colors.accent.opacity(0.12))
+                .background(AppDesignSystem.Colors.neutral.opacity(0.08))
                 .clipShape(Circle())
 
             VStack(spacing: AppDesignSystem.Layout.spacing6) {
@@ -57,11 +57,11 @@ public struct MAEmptyStateView: View {
     }
 
     private var iconSize: CGFloat {
-        isProminent ? 62 : 34
+        isProminent ? 56 : 32
     }
 
     private var iconContainerSize: CGFloat {
-        isProminent ? 120 : 72
+        isProminent ? 112 : 64
     }
 
     private var stackSpacing: CGFloat {

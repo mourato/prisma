@@ -45,7 +45,7 @@ public struct AudioWaveformView: View {
         GeometryReader { geometry in
             let spacing = barSpacing(for: geometry.size.width)
 
-            HStack(alignment: .bottom, spacing: spacing) {
+            HStack(alignment: .center, spacing: spacing) {
                 ForEach(bars) { bar in
                     RoundedRectangle(cornerRadius: 1)
                         .fill(bar.relativePosition <= progress ? color : color.opacity(0.3))
@@ -74,8 +74,8 @@ public struct AudioWaveformView: View {
 
 #Preview {
     AudioWaveformView(
-        samples: [0.2, 0.4, 0.8, 0.5, 0.3, 0.9, 0.4, 0.2, 0.6, 0.8],
-        progress: 0.5
+        samples: [0.2, 0.4, 0.8, 0.5, 0.3, 0.9, 0.4, 0.2, 0.6, 0.8, 0.2, 0.4, 0.8, 0.5, 0.3, 0.9, 0.4, 0.2, 0.6, 0.8],
+        progress: 0.6
     )
     .frame(width: 200, height: 40)
     .padding()
