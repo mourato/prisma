@@ -313,8 +313,8 @@ public struct SettingsView: View {
                 style: .liquidGlass
             )
             .frame(height: ToolbarLayout.transcriptionsSearchHeight)
-            .padding(.horizontal, 10)
             .glassEffect(in: Capsule())
+            .padding(.horizontal, 10)
         } else {
             NativeSearchField(
                 text: $transcriptionsSearchText,

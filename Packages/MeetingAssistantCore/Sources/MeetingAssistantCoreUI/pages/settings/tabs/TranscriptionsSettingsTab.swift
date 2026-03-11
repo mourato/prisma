@@ -272,7 +272,7 @@ public struct TranscriptionsSettingsTab: View {
             title: "settings.transcriptions.empty_title".localized,
             message: "settings.transcriptions.empty_desc".localized
         )
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity)
     }
 
     private var transcriptionsList: some View {

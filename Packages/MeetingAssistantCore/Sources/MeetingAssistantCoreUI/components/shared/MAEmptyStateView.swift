@@ -47,7 +47,7 @@ public struct MAEmptyStateView: View {
             }
             .multilineTextAlignment(.center)
         }
-        .frame(maxWidth: .infinity, maxHeight: isProminent ? .infinity : nil)
+        .frame(maxWidth: .infinity)
         .padding(contentPadding)
         .accessibilityElement(children: .combine)
     }
