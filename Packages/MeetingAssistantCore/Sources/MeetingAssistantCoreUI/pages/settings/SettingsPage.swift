@@ -57,11 +57,12 @@ public struct SettingsView: View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             sidebar
         } detail: {
-            ZStack {
+            ZStack(alignment: .topLeading) {
                 AppDesignSystem.Colors.windowBackground
                     .ignoresSafeArea()
 
                 detailView
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
             .modifier(SettingsDetailChromeModifier(legacyHeader: detailNavigationBar))
             .tint(AppDesignSystem.Colors.accent)
@@ -111,6 +112,7 @@ public struct SettingsView: View {
             }
         }
         .listStyle(.sidebar)
+        .frame(maxHeight: .infinity, alignment: .top)
         .navigationSplitViewColumnWidth(
             min: LayoutConstants.sidebarMinWidth,
             ideal: LayoutConstants.sidebarIdealWidth,

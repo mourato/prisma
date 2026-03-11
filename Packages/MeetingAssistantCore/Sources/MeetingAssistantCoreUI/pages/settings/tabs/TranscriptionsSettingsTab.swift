@@ -34,6 +34,7 @@ public struct TranscriptionsSettingsTab: View {
         VStack(spacing: 0) {
             contentSection
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .task {
             synchronizeSearchTextFromChrome()
             await viewModel.loadTranscriptions()
@@ -176,6 +177,7 @@ public struct TranscriptionsSettingsTab: View {
                 transcriptionsList
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(AppDesignSystem.Colors.windowBackground)
     }
 
@@ -267,12 +269,18 @@ public struct TranscriptionsSettingsTab: View {
     }
 
     private var emptyState: some View {
-        MAEmptyStateView(
-            iconName: "clock.arrow.circlepath",
-            title: "settings.transcriptions.empty_title".localized,
-            message: "settings.transcriptions.empty_desc".localized
-        )
-        .frame(maxWidth: .infinity)
+        ScrollView {
+            MAEmptyStateView(
+                iconName: "clock.arrow.circlepath",
+                title: "settings.transcriptions.empty_title".localized,
+                message: "settings.transcriptions.empty_desc".localized
+            )
+            .frame(maxWidth: .infinity, alignment: .top)
+            .padding(.top, 48)
+            .padding(.horizontal, 24)
+        }
+        .scrollIndicators(.hidden)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     private var transcriptionsList: some View {
@@ -383,18 +391,36 @@ public struct TranscriptionsSettingsTab: View {
 
     private func sanitizeNavigationHistory(using transcriptions: [TranscriptionMetadata]) {
         let validIDs = Set(transcriptions.map(\.id))
-        navigationHistory.sanitize(validConversationIDs: validIDs)
-        syncSelectionForCurrentRoute()
+        var sanitizedHistory = navigationHistory
+        sanitizedHistory.sanitize(validConversationIDs: validIDs)
+
+        guard sanitizedHistory != navigationHistory else {
+            syncSelectionForCurrentRoute()
+            return
+        }
+
+        DispatchQueue.main.async {
+            navigationHistory = sanitizedHistory
+            syncSelectionForCurrentRoute()
+        }
     }
 
     private func synchronizeSearchTextFromChrome() {
         guard viewModel.searchText != searchText else { return }
-        viewModel.searchText = searchText
+        let updatedSearchText = searchText
+        DispatchQueue.main.async {
+            guard viewModel.searchText != updatedSearchText else { return }
+            viewModel.searchText = updatedSearchText
+        }
     }
 
     private func synchronizeChromeSearchText() {
         guard searchText != viewModel.searchText else { return }
-        searchText = viewModel.searchText
+        let updatedSearchText = viewModel.searchText
+        DispatchQueue.main.async {
+            guard searchText != updatedSearchText else { return }
+            searchText = updatedSearchText
+        }
     }
 
     // MARK: - Actions

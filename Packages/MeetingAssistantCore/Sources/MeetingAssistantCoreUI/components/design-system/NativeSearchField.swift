@@ -69,7 +69,12 @@ extension NativeSearchField {
 
         func controlTextDidChange(_ notification: Notification) {
             guard let searchField = notification.object as? NSSearchField else { return }
-            text = searchField.stringValue
+            let updatedText = searchField.stringValue
+            guard text != updatedText else { return }
+            DispatchQueue.main.async {
+                guard self.text != updatedText else { return }
+                self.text = updatedText
+            }
         }
     }
 }

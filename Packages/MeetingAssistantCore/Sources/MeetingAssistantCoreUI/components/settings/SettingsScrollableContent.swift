@@ -40,7 +40,10 @@ public struct SettingsScrollableContent<Content: View>: View {
         }
         .coordinateSpace(name: SettingsScrollableContentScrollTracking.coordinateSpaceName)
         .onPreferenceChange(SettingsScrollableContentTopOffsetKey.self) { value in
-            topOffset = value
+            guard abs(topOffset - value) > 0.5 else { return }
+            DispatchQueue.main.async {
+                topOffset = value
+            }
         }
         .overlay(alignment: .top) {
             if shouldShowTopFade {
