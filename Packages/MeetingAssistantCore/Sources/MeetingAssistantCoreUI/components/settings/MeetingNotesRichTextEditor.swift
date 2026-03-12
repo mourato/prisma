@@ -25,6 +25,39 @@ struct MeetingNotesRichTextEditor: View {
 
     private var toolbar: some View {
         HStack(spacing: 6) {
+            Picker(
+                "meeting_notes.rich_text.toolbar.font_family".localized,
+                selection: $editorController.selectedFontFamilyKey
+            ) {
+                Text("meeting_notes.rich_text.font.system".localized)
+                    .tag(MeetingNotesRichTextController.systemFontFamilyKey)
+                ForEach(editorController.fontFamilies, id: \.self) { family in
+                    Text(family).tag(family)
+                }
+            }
+            .labelsHidden()
+            .controlSize(.large)
+            .onChange(of: editorController.selectedFontFamilyKey) { _, newValue in
+                editorController.applyFontFamily(key: newValue)
+            }
+
+            Picker(
+                "meeting_notes.rich_text.toolbar.font_size".localized,
+                selection: $editorController.selectedFontSize
+            ) {
+                ForEach(MeetingNotesRichTextController.supportedFontSizes, id: \.self) { size in
+                    Text("\(Int(size))").tag(size)
+                }
+            }
+            .labelsHidden()
+            .controlSize(.large)
+            .onChange(of: editorController.selectedFontSize) { _, newValue in
+                editorController.applyFontSize(newValue)
+            }
+
+            Divider()
+                .frame(height: 16)
+            
             formatToggleButton(
                 title: "meeting_notes.rich_text.toolbar.bold".localized,
                 systemImage: "bold",
@@ -41,49 +74,13 @@ struct MeetingNotesRichTextEditor: View {
                 editorController.toggleItalic()
             }
 
-            Divider()
-                .frame(height: 16)
-
-            Picker(
-                "meeting_notes.rich_text.toolbar.font_family".localized,
-                selection: $editorController.selectedFontFamilyKey
-            ) {
-                Text("meeting_notes.rich_text.font.system".localized)
-                    .tag(MeetingNotesRichTextController.systemFontFamilyKey)
-                ForEach(editorController.fontFamilies, id: \.self) { family in
-                    Text(family).tag(family)
-                }
-            }
-            .labelsHidden()
-            .frame(width: 180, height: Self.toolbarControlHeight)
-            .onChange(of: editorController.selectedFontFamilyKey) { _, newValue in
-                editorController.applyFontFamily(key: newValue)
-            }
-
-            Picker(
-                "meeting_notes.rich_text.toolbar.font_size".localized,
-                selection: $editorController.selectedFontSize
-            ) {
-                ForEach(MeetingNotesRichTextController.supportedFontSizes, id: \.self) { size in
-                    Text("\(Int(size))").tag(size)
-                }
-            }
-            .labelsHidden()
-            .frame(width: 72, height: Self.toolbarControlHeight)
-            .onChange(of: editorController.selectedFontSize) { _, newValue in
-                editorController.applyFontSize(newValue)
-            }
-
-            Divider()
-                .frame(height: 16)
-
             Button {
                 editorController.toggleUnorderedList()
             } label: {
                 Image(systemName: "list.bullet")
             }
             .buttonStyle(.bordered)
-            .frame(minWidth: Self.toolbarControlHeight, minHeight: Self.toolbarControlHeight)
+            .controlSize(.large)
             .help("meeting_notes.rich_text.toolbar.unordered_list".localized)
 
             Button {
@@ -92,7 +89,7 @@ struct MeetingNotesRichTextEditor: View {
                 Image(systemName: "list.number")
             }
             .buttonStyle(.bordered)
-            .frame(minWidth: Self.toolbarControlHeight, minHeight: Self.toolbarControlHeight)
+            .controlSize(.large)
             .help("meeting_notes.rich_text.toolbar.ordered_list".localized)
 
             Button {
@@ -102,12 +99,11 @@ struct MeetingNotesRichTextEditor: View {
                 Image(systemName: "link")
             }
             .buttonStyle(.bordered)
-            .frame(minWidth: Self.toolbarControlHeight, minHeight: Self.toolbarControlHeight)
+            .controlSize(.large)
             .help("meeting_notes.rich_text.toolbar.link".localized)
 
             Spacer(minLength: 0)
         }
-        .controlSize(.small)
     }
 
     private var linkEditorSheet: some View {
@@ -153,7 +149,7 @@ struct MeetingNotesRichTextEditor: View {
             Image(systemName: systemImage)
         }
         .buttonStyle(.bordered)
-        .frame(minWidth: Self.toolbarControlHeight, minHeight: Self.toolbarControlHeight)
+        .controlSize(.large)
         .tint(isActive ? .accentColor : nil)
         .help(title)
     }
@@ -358,7 +354,7 @@ final class MeetingNotesRichTextController: ObservableObject {
     let fontFamilies: [String]
 
     @Published var selectedFontFamilyKey = systemFontFamilyKey
-    @Published var selectedFontSize: CGFloat = 13
+    @Published var selectedFontSize: CGFloat = 16
     @Published var isBoldEnabled = false
     @Published var isItalicEnabled = false
     @Published var selectedLinkString: String?
@@ -523,7 +519,7 @@ final class MeetingNotesRichTextController: ObservableObject {
     }
 
     private func closestSupportedSize(to size: CGFloat) -> CGFloat {
-        Self.supportedFontSizes.min(by: { abs($0 - size) < abs($1 - size) }) ?? 13
+        Self.supportedFontSizes.min(by: { abs($0 - size) < abs($1 - size) }) ?? 16
     }
 
     private func stringifyLink(_ value: Any) -> String? {

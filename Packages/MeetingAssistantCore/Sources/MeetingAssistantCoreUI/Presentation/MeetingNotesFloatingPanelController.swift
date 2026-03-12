@@ -119,5 +119,5 @@ private struct MeetingNotesFloatingPanelView: View {
         content: MeetingNotesContent(plainText: "- Revisar backlog\n- Alinhar owners para Q2"),
         onTextChange: { _ in }
     )
-    .frame(width: 420, height: 300)
+    .frame(width: 620, height: 300)
 }
