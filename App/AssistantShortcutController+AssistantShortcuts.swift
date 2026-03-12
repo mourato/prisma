@@ -3,6 +3,7 @@ import MeetingAssistantCore
 
 @MainActor
 extension AssistantShortcutController {
+
     // MARK: - ShortcutInputEvent handlers (new pluggable backend)
 
     func handleFlagsChanged(_ event: ShortcutInputEvent) {

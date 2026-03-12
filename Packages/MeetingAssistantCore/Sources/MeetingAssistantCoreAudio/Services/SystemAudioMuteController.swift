@@ -8,7 +8,7 @@ public final class SystemAudioMuteController: Sendable {
 
     private init() {}
 
-    struct OutputMuteSession: Sendable {
+    struct OutputMuteSession {
         let deviceID: AudioObjectID
         let wasMuted: Bool?
         let previousVolume: Float?
@@ -17,7 +17,7 @@ public final class SystemAudioMuteController: Sendable {
         var appliedStrategy: OutputMuteStrategy?
     }
 
-    enum OutputMuteStrategy: String, Sendable {
+    enum OutputMuteStrategy: String {
         case muteProperty
         case volumeProperty
     }

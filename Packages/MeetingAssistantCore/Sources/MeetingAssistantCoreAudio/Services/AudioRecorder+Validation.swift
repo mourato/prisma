@@ -4,6 +4,7 @@ import MeetingAssistantCoreCommon
 import MeetingAssistantCoreDomain
 
 extension AudioRecorder {
+
     // MARK: - Validation & Retry
 
     func startValidationTimer(url: URL, source: RecordingSource, retryCount: Int) {

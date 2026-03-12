@@ -6,6 +6,7 @@ import Foundation
 /// via the `injectEvent()` method, making it ideal for unit tests and replay scenarios.
 @MainActor
 public final class MockShortcutInputBackend: ShortcutInputBackend {
+
     // MARK: - Properties
 
     private var flagsChangedHandler: EventHandler?

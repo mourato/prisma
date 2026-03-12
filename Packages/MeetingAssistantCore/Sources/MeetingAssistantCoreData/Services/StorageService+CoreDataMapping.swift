@@ -2,6 +2,7 @@ import Foundation
 import MeetingAssistantCoreDomain
 
 extension FileSystemStorageService {
+
     // MARK: - Core Data helpers
 
     static func convertToEntity(_ transcription: Transcription) -> TranscriptionEntity {

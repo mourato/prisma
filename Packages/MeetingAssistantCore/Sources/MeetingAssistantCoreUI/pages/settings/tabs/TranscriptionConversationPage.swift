@@ -12,7 +12,6 @@ struct TranscriptionConversationPage: View {
     @ObservedObject var viewModel: TranscriptionSettingsViewModel
     @ObservedObject var dictationService: MeetingQuestionDictationService
     let onToggleDictation: () -> Void
-    let onBack: () -> Void
 
     @StateObject private var aiSettingsViewModel: AISettingsViewModel
 
@@ -22,15 +21,13 @@ struct TranscriptionConversationPage: View {
         viewModel: TranscriptionSettingsViewModel,
         dictationService: MeetingQuestionDictationService,
         settings: AppSettingsStore = .shared,
-        onToggleDictation: @escaping () -> Void,
-        onBack: @escaping () -> Void
+        onToggleDictation: @escaping () -> Void
     ) {
         self.transcriptionID = transcriptionID
         self.activeTranscription = activeTranscription
         self.viewModel = viewModel
         self.dictationService = dictationService
         self.onToggleDictation = onToggleDictation
-        self.onBack = onBack
         _aiSettingsViewModel = StateObject(
             wrappedValue: AISettingsViewModel(
                 settings: settings,
@@ -96,8 +93,7 @@ struct TranscriptionConversationPage: View {
                     Task {
                         await viewModel.renameSpeaker(from: original, to: updated, in: id)
                     }
-                },
-                onBack: onBack
+                }
             )
         }
         .task {
@@ -132,8 +128,7 @@ struct TranscriptionConversationPage: View {
         activeTranscription: activeTranscription,
         viewModel: TranscriptionSettingsViewModel(),
         dictationService: MeetingQuestionDictationService(),
-        onToggleDictation: {},
-        onBack: {}
+        onToggleDictation: {}
     )
     .frame(width: 780, height: 780)
 }

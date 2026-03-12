@@ -6,6 +6,7 @@ import os
 import SwiftUI
 
 extension AppDelegate {
+
     // MARK: - Public Methods
 
     /// Update menu bar icon and menu item based on recording state.

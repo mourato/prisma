@@ -17,6 +17,7 @@ public struct AudioMeter: Equatable, Sendable {
 /// Monitors audio levels from RecordingManager and publishes normalized samples for waveform visualization.
 @MainActor
 public final class AudioLevelMonitor: ObservableObject {
+
     // MARK: - Published Properties
 
     /// Current audio meter levels (0...1 normalized).

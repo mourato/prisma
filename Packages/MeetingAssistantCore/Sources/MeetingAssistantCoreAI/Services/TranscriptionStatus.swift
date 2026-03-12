@@ -5,6 +5,7 @@ import MeetingAssistantCoreDomain
 /// Comprehensive status of the transcription system.
 @MainActor
 public class TranscriptionStatus: ObservableObject {
+
     // MARK: - Service State
 
     @Published public private(set) var serviceState: ServiceState = .unknown

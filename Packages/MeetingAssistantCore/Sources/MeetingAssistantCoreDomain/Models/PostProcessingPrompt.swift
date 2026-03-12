@@ -38,6 +38,7 @@ public struct PostProcessingPrompt: Identifiable, Codable, Equatable, Sendable {
 public extension PostProcessingPrompt {
     /// Stable UUIDs for predefined prompts to ensure persistence consistency.
     private enum PredefinedIDs {
+
         // MARK: - Fallback UUIDs (valid for all Swift versions)
 
         private static func uuid(_ string: String) -> UUID {

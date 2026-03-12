@@ -6,6 +6,7 @@ import os
 import SwiftUI
 
 extension AppDelegate {
+
     // MARK: - Menu Bar Setup
 
     func setupMenuBar() {

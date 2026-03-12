@@ -20,6 +20,7 @@ public enum FloatingRecordingIndicatorMode: Sendable, Equatable {
 /// Uses NSPanel to create a non-activating floating overlay.
 @MainActor
 public final class FloatingRecordingIndicatorController: ObservableObject {
+
     // MARK: - Properties
 
     private var panel: NSPanel?

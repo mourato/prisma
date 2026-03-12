@@ -343,7 +343,7 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
     }
 
     /// Structure to hold raw diarization result
-    struct DiarizationSegment: Identifiable, Sendable {
+    struct DiarizationSegment: Identifiable {
         let id = UUID()
         let speakerId: String
         let startTime: Double
@@ -386,7 +386,7 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
     }
 
     /// Structure to hold ASR segment (text + timing)
-    struct AsrSegment: Sendable {
+    struct AsrSegment {
         let text: String
         let startTime: Double
         let endTime: Double

@@ -10,6 +10,7 @@ import SwiftUI
 /// Gerencia as abas de configurações e navegação entre elas.
 @MainActor
 public final class SettingsCoordinator: Coordinator {
+
     // MARK: - Properties
 
     public weak var parentCoordinator: Coordinator?
@@ -76,6 +77,7 @@ public final class SettingsCoordinator: Coordinator {
 /// ViewModel que conecta o coordinator com a view de configurações
 @MainActor
 public final class SettingsCoordinatorViewModel: ObservableObject {
+
     // MARK: - Properties
 
     @Published var selectedTab: AppRoute.SettingsTab

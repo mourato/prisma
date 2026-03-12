@@ -2,6 +2,7 @@ import Foundation
 import MeetingAssistantCoreCommon
 
 extension FileSystemStorageService {
+
     // MARK: - Path Validation
 
     enum PathValidationError: Error, LocalizedError {

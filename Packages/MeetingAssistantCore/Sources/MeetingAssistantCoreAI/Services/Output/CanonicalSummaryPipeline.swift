@@ -1,13 +1,13 @@
 import Foundation
 import MeetingAssistantCoreDomain
 
-enum CanonicalSummaryParsingError: Error, Sendable {
+enum CanonicalSummaryParsingError: Error {
     case emptyOutput
     case jsonObjectNotFound
     case decodeFailed
 }
 
-struct CanonicalSummaryPromptComposer: Sendable {
+struct CanonicalSummaryPromptComposer {
     func structuredPrompt(from basePrompt: String) -> String {
         """
         \(basePrompt)
@@ -42,7 +42,7 @@ struct CanonicalSummaryPromptComposer: Sendable {
     }
 }
 
-struct CanonicalSummaryRepairComposer: Sendable {
+struct CanonicalSummaryRepairComposer {
     func systemPrompt(basePrompt: String) -> String {
         """
         \(basePrompt)
@@ -181,7 +181,7 @@ struct CanonicalSummaryResponseParser {
     }
 }
 
-struct DeterministicSummaryFallbackBuilder: Sendable {
+struct DeterministicSummaryFallbackBuilder {
     private enum Constants {
         static let fallbackConfidenceScore = 0.2
         static let maxSummaryCharacters = 1_200
@@ -255,7 +255,7 @@ struct DeterministicSummaryFallbackBuilder: Sendable {
     }
 }
 
-struct CanonicalSummaryRenderer: Sendable {
+struct CanonicalSummaryRenderer {
     func render(_ summary: CanonicalSummary) -> String {
         var sections = [summary.summary.trimmingCharacters(in: .whitespacesAndNewlines)]
 

@@ -9,6 +9,7 @@ import os.lock
 /// This class is `@unchecked Sendable` because it protects all mutable state
 /// with `OSAllocatedUnfairLock`, which is safe for audio thread usage.
 public final class PartialBufferState: @unchecked Sendable {
+
     // MARK: - State
 
     private let lock = OSAllocatedUnfairLock()

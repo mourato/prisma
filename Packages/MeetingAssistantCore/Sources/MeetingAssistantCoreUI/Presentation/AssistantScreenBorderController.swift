@@ -11,6 +11,7 @@ import SwiftUI
 /// to provide visual feedback when the Assistant mode is active.
 @MainActor
 public final class AssistantScreenBorderController {
+
     // MARK: - Properties
 
     private var borderWindow: NSWindow?

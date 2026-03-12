@@ -13,6 +13,7 @@ import SwiftUI
 /// - Centralize spacing/typography/radius/shadows (DRY)
 /// - Keep styling consistent across Settings, Menu Bar, and in-app views
 public enum AppDesignSystem {
+
     // MARK: - Colors
 
     public enum Colors {

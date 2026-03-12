@@ -4,6 +4,7 @@ import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
 
 extension FileSystemStorageService {
+
     // MARK: - Legacy JSON migration
 
     /// One-time migration for legacy JSON transcriptions into Core Data.

@@ -6,7 +6,7 @@ import MeetingAssistantCoreCommon
 // MARK: - Post-Processing Helpers
 
 extension TranscribeAudioUseCase {
-    struct PostProcessingConfiguration: Sendable {
+    struct PostProcessingConfiguration {
         let applyPostProcessing: Bool
         let postProcessingPrompt: DomainPostProcessingPrompt?
         let defaultPostProcessingPrompt: DomainPostProcessingPrompt?
@@ -34,7 +34,7 @@ extension TranscribeAudioUseCase {
         }
     }
 
-    struct PostProcessingResult: Sendable {
+    struct PostProcessingResult {
         let processedContent: String?
         let canonicalSummary: CanonicalSummary?
         let promptId: UUID?

@@ -10,6 +10,7 @@ import MeetingAssistantCoreInfrastructure
 import os.log
 
 extension AudioRecorder {
+
     // MARK: - System Default Input Override
 
     /// Applies the preferred custom microphone by temporarily overriding the system

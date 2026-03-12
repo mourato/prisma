@@ -11,8 +11,8 @@ public struct DoubleEscapePressDetector: Sendable {
 
     public mutating func registerPress(at now: Date = Date(), token: String) -> Bool {
         guard let pendingPressAt, let pendingToken else {
-            self.pendingPressAt = now
-            self.pendingToken = token
+            pendingPressAt = now
+            pendingToken = token
             return false
         }
 

@@ -8,6 +8,7 @@ import SwiftUI
 /// Manages state and navigation for the onboarding flow.
 @MainActor
 public class OnboardingViewModel: ObservableObject {
+
     // MARK: - Published Properties
 
     /// The current step in the onboarding flow.

@@ -10,6 +10,7 @@ import SwiftUI
 
 @MainActor
 public class PermissionViewModel: ObservableObject {
+
     // MARK: - Dependencies
 
     private let permissionManager: PermissionStatusManager

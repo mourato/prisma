@@ -209,7 +209,7 @@ struct MetricsDashboardActivitySection: View {
     }
 
     private func weekdayLegendText(for weekdayNumber: Int) -> String {
-        let visibleWeekdays: Set<Int> = [2, 4, 6]
+        let visibleWeekdays: Set = [2, 4, 6]
         guard visibleWeekdays.contains(weekdayNumber) else {
             return ""
         }

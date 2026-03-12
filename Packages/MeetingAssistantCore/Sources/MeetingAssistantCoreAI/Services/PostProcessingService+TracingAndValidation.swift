@@ -4,6 +4,7 @@ import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
 
 extension PostProcessingService {
+
     // MARK: - Shared Validation & Tracing
 
     func validateInput(_ transcription: String) throws -> String {

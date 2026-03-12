@@ -9,6 +9,7 @@ import MeetingAssistantCoreInfrastructure
 /// Extracted from AudioRecorder.swift to adhere to Single Responsibility Principle.
 /// Uses Actor pattern for automatic thread safety isolation.
 actor AudioRecordingWorker {
+
     // MARK: - State
 
     private var audioFile: AVAudioFile?

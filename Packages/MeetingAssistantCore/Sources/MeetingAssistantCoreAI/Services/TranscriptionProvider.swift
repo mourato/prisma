@@ -4,13 +4,13 @@ import Foundation
 
 /// Unified result type for ASR transcription across all providers.
 /// Provides a consistent interface regardless of the underlying transcription engine.
-struct ASRTranscriptionResult: Sendable {
+struct ASRTranscriptionResult {
     let text: String
     let confidence: Float
     let tokenTimings: [TokenTiming]
 
     /// Represents timing information for a single token/word.
-    struct TokenTiming: Sendable {
+    struct TokenTiming {
         let token: String
         let startTime: Double
         let endTime: Double

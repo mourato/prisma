@@ -352,8 +352,7 @@ public struct TranscriptionsSettingsTab: View {
             activeTranscription: activeTranscription,
             viewModel: viewModel,
             dictationService: dictationService,
-            onToggleDictation: handleDictationToggle,
-            onBack: navigateBack
+            onToggleDictation: handleDictationToggle
         )
     }
 
@@ -435,6 +434,10 @@ public struct TranscriptionsSettingsTab: View {
         case let .updateMeetingTitle(title):
             Task {
                 await viewModel.updateMeetingTitle(for: metadata, to: title)
+            }
+        case let .updateCapturePurpose(capturePurpose):
+            Task {
+                await viewModel.updateCapturePurpose(for: metadata, to: capturePurpose)
             }
         case let .reprocess(prompt):
             if let transcription = viewModel.selectedTranscription, transcription.id == metadata.id {

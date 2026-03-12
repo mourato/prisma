@@ -10,6 +10,7 @@ import SwiftUI
 
 @MainActor
 public class TranscriptionViewModel: ObservableObject {
+
     // MARK: - Dependencies
 
     private let status: TranscriptionStatus

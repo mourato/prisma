@@ -63,6 +63,7 @@ public struct DefaultKeychainProvider: KeychainProvider {
 }
 
 public enum KeychainManager {
+
     // MARK: - Constants
 
     private static let serviceIdentifier = AppIdentity.keychainServiceIdentifier

@@ -10,6 +10,7 @@ import SwiftUI
 
 @MainActor
 public class RecordingViewModel: ObservableObject {
+
     // MARK: - Dependencies
 
     private let recordingManager: any RecordingServiceProtocol

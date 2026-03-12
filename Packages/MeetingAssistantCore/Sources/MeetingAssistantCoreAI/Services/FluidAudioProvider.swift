@@ -15,6 +15,7 @@ import os.log
 /// doesn't conform to Sendable.
 @MainActor
 final class FluidAudioProvider: @unchecked Sendable {
+
     // MARK: - Properties
 
     let name = "FluidAudio (Apple Silicon)"

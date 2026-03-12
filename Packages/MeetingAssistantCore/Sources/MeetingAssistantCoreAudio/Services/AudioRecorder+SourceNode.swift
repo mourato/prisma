@@ -3,6 +3,7 @@ import CoreAudio
 import Foundation
 
 extension AudioRecorder {
+
     // MARK: - Source Node Configuration
 
     /// Creates an AVAudioSourceNode for system audio capture.

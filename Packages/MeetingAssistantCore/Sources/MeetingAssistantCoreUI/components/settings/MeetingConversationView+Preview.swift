@@ -43,8 +43,7 @@ import SwiftUI
         onRefreshModelOptions: {},
         dictationState: .idle,
         dictationErrorMessage: nil,
-        onToggleDictation: {},
-        onBack: {}
+        onToggleDictation: {}
     )
     .frame(width: 700, height: 700)
 }
@@ -70,8 +69,7 @@ import SwiftUI
         onRefreshModelOptions: {},
         dictationState: .recording,
         dictationErrorMessage: nil,
-        onToggleDictation: {},
-        onBack: {}
+        onToggleDictation: {}
     )
     .frame(width: 700, height: 700)
 }

@@ -4,7 +4,7 @@ import SwiftUI
 
 // MARK: - Audio Visualizer (Native implementation based on VoiceInk)
 
-enum AudioVisualizerMode: Sendable {
+enum AudioVisualizerMode {
     case recording
     case processing
 }
