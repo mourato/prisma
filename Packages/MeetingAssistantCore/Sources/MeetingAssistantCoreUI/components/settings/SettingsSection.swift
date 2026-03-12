@@ -79,18 +79,18 @@ public enum SettingsSection: String, CaseIterable, Identifiable, Sendable {
 
     public var sidebarIconBackgroundColor: Color {
         switch self {
-        case .metrics: .orange
-        case .dictation: .red
-        case .assistant: .purple
-        case .integrations: .blue
-        case .meetings: .green
-        case .transcriptions: .indigo
-        case .general: .gray
-        case .rulesPerApp: .mint
-        case .vocabulary: .teal
-        case .enhancements: .pink
-        case .audio: .cyan
-        case .permissions: .blue
+        case .metrics: .accentColor
+        case .dictation: .accentColor
+        case .assistant: .accentColor
+        case .integrations: .accentColor
+        case .meetings: .accentColor
+        case .transcriptions: .accentColor
+        case .general: .accentColor
+        case .rulesPerApp: .accentColor
+        case .vocabulary: .accentColor
+        case .enhancements: .accentColor
+        case .audio: .accentColor
+        case .permissions: .accentColor
         }
     }
 }
