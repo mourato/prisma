@@ -3,6 +3,8 @@ import MeetingAssistantCoreCommon
 import SwiftUI
 
 struct MeetingNotesRichTextEditor: View {
+    private static let toolbarControlHeight: CGFloat = 24
+
     @Binding var content: MeetingNotesContent
     @StateObject private var editorController = MeetingNotesRichTextController()
     @State private var isShowingLinkEditor = false
@@ -53,7 +55,7 @@ struct MeetingNotesRichTextEditor: View {
                 }
             }
             .labelsHidden()
-            .frame(width: 180)
+            .frame(width: 180, height: Self.toolbarControlHeight)
             .onChange(of: editorController.selectedFontFamilyKey) { _, newValue in
                 editorController.applyFontFamily(key: newValue)
             }
@@ -67,7 +69,7 @@ struct MeetingNotesRichTextEditor: View {
                 }
             }
             .labelsHidden()
-            .frame(width: 72)
+            .frame(width: 72, height: Self.toolbarControlHeight)
             .onChange(of: editorController.selectedFontSize) { _, newValue in
                 editorController.applyFontSize(newValue)
             }
@@ -81,7 +83,7 @@ struct MeetingNotesRichTextEditor: View {
                 Image(systemName: "list.bullet")
             }
             .buttonStyle(.bordered)
-            .controlSize(.small)
+            .frame(minWidth: Self.toolbarControlHeight, minHeight: Self.toolbarControlHeight)
             .help("meeting_notes.rich_text.toolbar.unordered_list".localized)
 
             Button {
@@ -90,7 +92,7 @@ struct MeetingNotesRichTextEditor: View {
                 Image(systemName: "list.number")
             }
             .buttonStyle(.bordered)
-            .controlSize(.small)
+            .frame(minWidth: Self.toolbarControlHeight, minHeight: Self.toolbarControlHeight)
             .help("meeting_notes.rich_text.toolbar.ordered_list".localized)
 
             Button {
@@ -100,11 +102,12 @@ struct MeetingNotesRichTextEditor: View {
                 Image(systemName: "link")
             }
             .buttonStyle(.bordered)
-            .controlSize(.small)
+            .frame(minWidth: Self.toolbarControlHeight, minHeight: Self.toolbarControlHeight)
             .help("meeting_notes.rich_text.toolbar.link".localized)
 
             Spacer(minLength: 0)
         }
+        .controlSize(.small)
     }
 
     private var linkEditorSheet: some View {
@@ -150,7 +153,7 @@ struct MeetingNotesRichTextEditor: View {
             Image(systemName: systemImage)
         }
         .buttonStyle(.bordered)
-        .controlSize(.small)
+        .frame(minWidth: Self.toolbarControlHeight, minHeight: Self.toolbarControlHeight)
         .tint(isActive ? .accentColor : nil)
         .help(title)
     }
@@ -208,10 +211,18 @@ private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
         private let controller: MeetingNotesRichTextController
         private var isApplyingProgrammaticUpdate = false
         private var lastRenderedContent: MeetingNotesContent = .empty
+        private weak var observedTextStorage: NSTextStorage?
+        private var textStorageDidProcessEditingObserver: NSObjectProtocol?
 
         init(content: Binding<MeetingNotesContent>, controller: MeetingNotesRichTextController) {
             _content = content
             self.controller = controller
+        }
+
+        @MainActor deinit {
+            if let textStorageDidProcessEditingObserver {
+                NotificationCenter.default.removeObserver(textStorageDidProcessEditingObserver)
+            }
         }
 
         func connect(textView: NSTextView) {
@@ -219,6 +230,7 @@ private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
                 controller.textView = textView
                 controller.refreshState()
             }
+            observeTextStorageIfNeeded(textView.textStorage)
         }
 
         func applyExternalContent(_ externalContent: MeetingNotesContent, to textView: NSTextView) {
@@ -284,6 +296,39 @@ private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
                 from: range,
                 documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf]
             )
+        }
+
+        private func observeTextStorageIfNeeded(_ textStorage: NSTextStorage?) {
+            guard observedTextStorage !== textStorage else { return }
+
+            if let textStorageDidProcessEditingObserver {
+                NotificationCenter.default.removeObserver(textStorageDidProcessEditingObserver)
+                self.textStorageDidProcessEditingObserver = nil
+            }
+
+            observedTextStorage = textStorage
+            guard let textStorage else { return }
+
+            textStorageDidProcessEditingObserver = NotificationCenter.default.addObserver(
+                forName: NSTextStorage.didProcessEditingNotification,
+                object: textStorage,
+                queue: nil
+            ) { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    self?.handleTextStorageDidProcessEditing()
+                }
+            }
+        }
+
+        private func handleTextStorageDidProcessEditing() {
+            guard !isApplyingProgrammaticUpdate,
+                  let textView = controller.textView
+            else {
+                return
+            }
+
+            emitContent(from: textView)
+            controller.refreshState()
         }
     }
 }
