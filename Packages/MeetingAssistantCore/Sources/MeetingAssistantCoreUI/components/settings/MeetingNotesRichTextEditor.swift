@@ -164,7 +164,19 @@ private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
     let controller: MeetingNotesRichTextController
 
     func makeNSView(context: Context) -> NSScrollView {
-        let textView = NSTextView()
+        let textView = RichTextFormattingShortcutTextView()
+        textView.onFormattingShortcut = { action in
+            switch action {
+            case .bold:
+                controller.toggleBold()
+            case .italic:
+                controller.toggleItalic()
+            case .unorderedList:
+                controller.toggleUnorderedList()
+            case .orderedList:
+                controller.toggleOrderedList()
+            }
+        }
         textView.delegate = context.coordinator
         textView.isEditable = true
         textView.isSelectable = true
@@ -383,12 +395,8 @@ final class MeetingNotesRichTextController: ObservableObject {
 
     func applyFontFamily(key: String) {
         guard let textView else { return }
-        applyFontTransform(to: textView) { font in
-            if key == Self.systemFontFamilyKey {
-                return NSFont.systemFont(ofSize: font.pointSize)
-            }
-
-            return NSFont(name: key, size: font.pointSize) ?? font
+        applyFontTransform(to: textView) { currentFont in
+            resolvedFont(forFamilyKey: key, preservingTraitsFrom: currentFont)
         }
         refreshState()
     }
@@ -519,5 +527,71 @@ final class MeetingNotesRichTextController: ObservableObject {
             return url.absoluteString
         }
         return value as? String
+    }
+
+    private func resolvedFont(forFamilyKey key: String, preservingTraitsFrom sourceFont: NSFont) -> NSFont {
+        let targetFont: NSFont = if key == Self.systemFontFamilyKey {
+            .systemFont(ofSize: sourceFont.pointSize)
+        } else {
+            NSFont(name: key, size: sourceFont.pointSize) ?? sourceFont
+        }
+
+        let sourceTraits = NSFontManager.shared.traits(of: sourceFont)
+        var transformedFont = targetFont
+
+        if sourceTraits.contains(.boldFontMask) {
+            transformedFont = NSFontManager.shared.convert(transformedFont, toHaveTrait: .boldFontMask)
+        }
+        if sourceTraits.contains(.italicFontMask) {
+            transformedFont = NSFontManager.shared.convert(transformedFont, toHaveTrait: .italicFontMask)
+        }
+
+        return transformedFont
+    }
+}
+
+private final class RichTextFormattingShortcutTextView: NSTextView {
+    enum FormattingShortcutAction {
+        case bold
+        case italic
+        case unorderedList
+        case orderedList
+    }
+
+    var onFormattingShortcut: ((FormattingShortcutAction) -> Void)?
+
+    override func keyDown(with event: NSEvent) {
+        if handleFormattingShortcut(event) {
+            return
+        }
+        super.keyDown(with: event)
+    }
+
+    private func handleFormattingShortcut(_ event: NSEvent) -> Bool {
+        let normalizedFlags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        guard normalizedFlags.contains(.command),
+              !normalizedFlags.contains(.option),
+              !normalizedFlags.contains(.control),
+              let key = event.charactersIgnoringModifiers?.lowercased()
+        else {
+            return false
+        }
+
+        switch key {
+        case "b":
+            onFormattingShortcut?(.bold)
+            return true
+        case "i":
+            onFormattingShortcut?(.italic)
+            return true
+        case "7" where normalizedFlags.contains(.shift):
+            onFormattingShortcut?(.orderedList)
+            return true
+        case "8" where normalizedFlags.contains(.shift):
+            onFormattingShortcut?(.unorderedList)
+            return true
+        default:
+            return false
+        }
     }
 }
