@@ -32,7 +32,7 @@ public struct MeetingConversationView: View {
     let isLoadingTranscription: Bool
     let turns: [TranscriptionSettingsViewModel.QATurn]
     let questionText: String
-    let meetingNotesText: String
+    let meetingNotesContent: MeetingNotesContent
     let onQuestionChange: (String) -> Void
     let onAsk: () -> Void
     let onRetry: (String) -> Void
@@ -47,14 +47,14 @@ public struct MeetingConversationView: View {
     let dictationErrorMessage: String?
     let onToggleDictation: () -> Void
     let onRenameSpeaker: (_ original: String, _ updated: String, _ transcriptionID: UUID) -> Void
-    let onUpdateMeetingNotes: (_ notes: String, _ transcriptionID: UUID) -> Void
+    let onUpdateMeetingNotes: (_ content: MeetingNotesContent, _ transcriptionID: UUID) -> Void
 
     @State private var isShowingModelSelector = false
     @State private var selectedInternalTab: InternalTab = .chat
     @State private var speakerRenames: [String: String] = [:]
     @State private var sendOnReturn = false
-    @State private var notesDraft = ""
-    @State private var lastSavedNotes = ""
+    @State private var notesDraft: MeetingNotesContent = .empty
+    @State private var lastSavedNotes: MeetingNotesContent = .empty
     @State private var notesAutosaveTask: Task<Void, Never>?
 
     public init(
@@ -62,7 +62,7 @@ public struct MeetingConversationView: View {
         isLoadingTranscription: Bool,
         turns: [TranscriptionSettingsViewModel.QATurn],
         questionText: String,
-        meetingNotesText: String,
+        meetingNotesContent: MeetingNotesContent,
         onQuestionChange: @escaping (String) -> Void,
         onAsk: @escaping () -> Void,
         onRetry: @escaping (String) -> Void,
@@ -77,13 +77,13 @@ public struct MeetingConversationView: View {
         dictationErrorMessage: String?,
         onToggleDictation: @escaping () -> Void,
         onRenameSpeaker: @escaping (_ original: String, _ updated: String, _ transcriptionID: UUID) -> Void = { _, _, _ in },
-        onUpdateMeetingNotes: @escaping (_ notes: String, _ transcriptionID: UUID) -> Void = { _, _ in }
+        onUpdateMeetingNotes: @escaping (_ content: MeetingNotesContent, _ transcriptionID: UUID) -> Void = { _, _ in }
     ) {
         self.transcription = transcription
         self.isLoadingTranscription = isLoadingTranscription
         self.turns = turns
         self.questionText = questionText
-        self.meetingNotesText = meetingNotesText
+        self.meetingNotesContent = meetingNotesContent
         self.onQuestionChange = onQuestionChange
         self.onAsk = onAsk
         self.onRetry = onRetry
@@ -139,7 +139,7 @@ public struct MeetingConversationView: View {
         .onChange(of: hasSegments) { _, _ in
             ensureValidInternalTabSelection()
         }
-        .onChange(of: meetingNotesText) { oldValue, newValue in
+        .onChange(of: meetingNotesContent) { oldValue, newValue in
             if notesDraft == oldValue {
                 notesDraft = newValue
             }
@@ -543,7 +543,7 @@ public struct MeetingConversationView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            MeetingNotesMarkdownEditor(text: $notesDraft)
+            MeetingNotesRichTextEditor(content: $notesDraft)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .padding(16)
@@ -601,8 +601,8 @@ public struct MeetingConversationView: View {
     }
 
     private func syncNotesFromPersistedValue() {
-        notesDraft = meetingNotesText
-        lastSavedNotes = meetingNotesText
+        notesDraft = meetingNotesContent
+        lastSavedNotes = meetingNotesContent
     }
 
     private func scheduleNotesAutosave() {
@@ -627,10 +627,10 @@ public struct MeetingConversationView: View {
         persistNotesIfNeeded(notesDraft, for: transcriptionID)
     }
 
-    private func persistNotesIfNeeded(_ notes: String, for transcriptionID: UUID) {
-        guard notes != lastSavedNotes else { return }
-        onUpdateMeetingNotes(notes, transcriptionID)
-        lastSavedNotes = notes
+    private func persistNotesIfNeeded(_ content: MeetingNotesContent, for transcriptionID: UUID) {
+        guard content != lastSavedNotes else { return }
+        onUpdateMeetingNotes(content, transcriptionID)
+        lastSavedNotes = content
     }
 
     private var segmentListSection: some View {
@@ -685,7 +685,9 @@ public struct MeetingConversationView: View {
             ),
         ],
         questionText: "How should I finish this reorg?",
-        meetingNotesText: "Owner: Speaker 2\n- Prioritize screens with side effects",
+        meetingNotesContent: MeetingNotesContent(
+            plainText: "Owner: Speaker 2\n- Prioritize screens with side effects"
+        ),
         onQuestionChange: { _ in },
         onAsk: {},
         onRetry: { _ in },

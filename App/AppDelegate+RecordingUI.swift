@@ -113,9 +113,12 @@ extension AppDelegate {
         }
 
         meetingNotesPanelController.show(
-            text: recordingManager.currentMeetingNotesText,
-            onTextChange: { [weak self] text in
-                self?.recordingManager.updateMeetingNotesText(text)
+            content: MeetingNotesContent(
+                plainText: recordingManager.currentMeetingNotesText,
+                richTextRTFData: recordingManager.currentMeetingNotesRichTextData
+            ),
+            onTextChange: { [weak self] content in
+                self?.recordingManager.updateMeetingNotes(content)
             },
             onClose: { [weak self] in
                 self?.recordingManager.setMeetingNotesPanelVisible(false)

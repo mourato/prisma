@@ -8,23 +8,36 @@ final class MeetingNotesPersistenceTests: XCTestCase {
     private var storage: MockStorageService!
     private var meetingRepository: MockMeetingRepository!
     private var meetingQAService: MockMeetingQAService!
+    private var richTextStore: MeetingNotesRichTextStore!
+    private var userDefaults: UserDefaults!
+    private var suiteName: String!
 
     override func setUp() async throws {
         storage = MockStorageService()
         meetingRepository = MockMeetingRepository()
         meetingQAService = MockMeetingQAService()
+        suiteName = "MeetingNotesPersistenceTests.\(UUID().uuidString)"
+        userDefaults = UserDefaults(suiteName: suiteName)
+        richTextStore = MeetingNotesRichTextStore(userDefaults: userDefaults)
         viewModel = TranscriptionSettingsViewModel(
             storage: storage,
             meetingRepository: meetingRepository,
-            meetingQAService: meetingQAService
+            meetingQAService: meetingQAService,
+            meetingNotesRichTextStore: richTextStore
         )
     }
 
     override func tearDown() async throws {
+        if let suiteName {
+            userDefaults.removePersistentDomain(forName: suiteName)
+        }
+        suiteName = nil
         viewModel = nil
         storage = nil
         meetingRepository = nil
         meetingQAService = nil
+        richTextStore = nil
+        userDefaults = nil
     }
 
     func testUpdateMeetingNotes_UpdatesExistingEntryAndPersists() async throws {
@@ -124,6 +137,43 @@ final class MeetingNotesPersistenceTests: XCTestCase {
         )
         XCTAssertTrue(selected.contextItems.contains { $0.source == .calendarEvent && $0.text == "Planning sync" })
         XCTAssertTrue(selected.contextItems.contains { $0.source == .windowTitle && $0.text == "Roadmap" })
+    }
+
+    func testUpdateMeetingNotes_PersistsRichTextSidecar() async throws {
+        let transcription = makeTranscription(
+            contextItems: [
+                .init(source: .meetingNotes, text: "Old notes"),
+            ]
+        )
+        storage.mockTranscriptions = [transcription]
+        viewModel.selectedTranscription = transcription
+
+        let richData = Data([0x7B, 0x5C, 0x72, 0x74, 0x66])
+        await viewModel.updateMeetingNotes(
+            MeetingNotesContent(plainText: "Rich notes", richTextRTFData: richData),
+            in: transcription.id
+        )
+
+        XCTAssertEqual(richTextStore.transcriptionNotesRTFData(for: transcription.id), richData)
+    }
+
+    func testUpdateMeetingNotes_ClearsRichTextSidecarWhenNotesAreCleared() async throws {
+        let transcription = makeTranscription(
+            contextItems: [
+                .init(source: .meetingNotes, text: "Old notes"),
+            ]
+        )
+        storage.mockTranscriptions = [transcription]
+        viewModel.selectedTranscription = transcription
+
+        richTextStore.saveTranscriptionNotesRTFData(Data([0x7B, 0x5C, 0x72, 0x74, 0x66]), for: transcription.id)
+
+        await viewModel.updateMeetingNotes(
+            MeetingNotesContent(plainText: "   ", richTextRTFData: Data([0x01, 0x02])),
+            in: transcription.id
+        )
+
+        XCTAssertNil(richTextStore.transcriptionNotesRTFData(for: transcription.id))
     }
 
     private func makeTranscription(contextItems: [TranscriptionContextItem]) -> Transcription {

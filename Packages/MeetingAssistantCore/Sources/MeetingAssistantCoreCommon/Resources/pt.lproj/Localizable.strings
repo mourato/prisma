@@ -1061,3 +1061,14 @@
 "recording_indicator.meeting_notes.show.help" = "Abrir janela de anotações da reunião";
 "recording_indicator.meeting_notes.hide.help" = "Ocultar janela de anotações da reunião";
 "transcription.context.source.meeting_notes" = "Anotações da reunião";
+"meeting_notes.rich_text.toolbar.bold" = "Negrito";
+"meeting_notes.rich_text.toolbar.italic" = "Itálico";
+"meeting_notes.rich_text.toolbar.font_family" = "Família da fonte";
+"meeting_notes.rich_text.toolbar.font_size" = "Tamanho da fonte";
+"meeting_notes.rich_text.toolbar.unordered_list" = "Lista não ordenada";
+"meeting_notes.rich_text.toolbar.ordered_list" = "Lista ordenada";
+"meeting_notes.rich_text.toolbar.link" = "Inserir link";
+"meeting_notes.rich_text.font.system" = "Sistema";
+"meeting_notes.rich_text.link_sheet.title" = "Inserir ou editar link";
+"meeting_notes.rich_text.link_sheet.placeholder" = "https://exemplo.com";
+"meeting_notes.rich_text.link_sheet.apply" = "Aplicar";

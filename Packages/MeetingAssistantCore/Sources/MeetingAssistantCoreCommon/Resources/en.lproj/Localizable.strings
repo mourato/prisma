@@ -1072,3 +1072,14 @@
 "recording_indicator.meeting_notes.show.help" = "Open meeting notes window";
 "recording_indicator.meeting_notes.hide.help" = "Hide meeting notes window";
 "transcription.context.source.meeting_notes" = "Meeting notes";
+"meeting_notes.rich_text.toolbar.bold" = "Bold";
+"meeting_notes.rich_text.toolbar.italic" = "Italic";
+"meeting_notes.rich_text.toolbar.font_family" = "Font family";
+"meeting_notes.rich_text.toolbar.font_size" = "Font size";
+"meeting_notes.rich_text.toolbar.unordered_list" = "Unordered list";
+"meeting_notes.rich_text.toolbar.ordered_list" = "Ordered list";
+"meeting_notes.rich_text.toolbar.link" = "Insert link";
+"meeting_notes.rich_text.font.system" = "System";
+"meeting_notes.rich_text.link_sheet.title" = "Insert or edit link";
+"meeting_notes.rich_text.link_sheet.placeholder" = "https://example.com";
+"meeting_notes.rich_text.link_sheet.apply" = "Apply";

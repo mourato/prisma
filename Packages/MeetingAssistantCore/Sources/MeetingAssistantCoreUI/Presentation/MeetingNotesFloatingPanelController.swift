@@ -15,13 +15,13 @@ public final class MeetingNotesFloatingPanelController {
     }
 
     public func show(
-        text: String,
-        onTextChange: @escaping (String) -> Void,
+        content: MeetingNotesContent,
+        onTextChange: @escaping (MeetingNotesContent) -> Void,
         onClose: @escaping () -> Void
     ) {
         let panel = ensurePanel(onClose: onClose)
         let rootView = MeetingNotesFloatingPanelView(
-            text: text,
+            content: content,
             onTextChange: onTextChange
         )
 
@@ -88,14 +88,14 @@ private final class PanelDelegate: NSObject, NSWindowDelegate {
 }
 
 private struct MeetingNotesFloatingPanelView: View {
-    @State private var text: String
-    let onTextChange: (String) -> Void
+    @State private var content: MeetingNotesContent
+    let onTextChange: (MeetingNotesContent) -> Void
 
     init(
-        text: String,
-        onTextChange: @escaping (String) -> Void
+        content: MeetingNotesContent,
+        onTextChange: @escaping (MeetingNotesContent) -> Void
     ) {
-        _text = State(initialValue: text)
+        _content = State(initialValue: content)
         self.onTextChange = onTextChange
     }
 
@@ -105,10 +105,10 @@ private struct MeetingNotesFloatingPanelView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            MeetingNotesMarkdownEditor(text: $text)
+            MeetingNotesRichTextEditor(content: $content)
         }
         .padding(12)
-        .onChange(of: text) { _, newValue in
+        .onChange(of: content) { _, newValue in
             onTextChange(newValue)
         }
     }

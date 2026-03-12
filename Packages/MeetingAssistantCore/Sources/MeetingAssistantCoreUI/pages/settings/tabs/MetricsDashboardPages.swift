@@ -65,7 +65,7 @@ struct MetricsDashboardEventDetailPage: View {
     let event: MeetingCalendarEventSnapshot
     @ObservedObject var viewModel: MetricsDashboardViewModel
 
-    @State private var notesDraft = ""
+    @State private var notesDraft: MeetingNotesContent = .empty
     @State private var isAttendeesPopoverPresented = false
     @State private var notesAutosaveTask: Task<Void, Never>?
     @State private var hasLoadedInitialNotes = false
@@ -115,7 +115,7 @@ struct MetricsDashboardEventDetailPage: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
-                    MeetingNotesMarkdownEditor(text: $notesDraft)
+                    MeetingNotesRichTextEditor(content: $notesDraft)
                         .frame(minHeight: 280)
                 }
             }
@@ -170,7 +170,7 @@ struct MetricsDashboardEventDetailPage: View {
     private func loadPersistedNotesIfNeeded() {
         guard !hasLoadedInitialNotes else { return }
         hasLoadedInitialNotes = true
-        notesDraft = viewModel.calendarEventNotes(for: event)
+        notesDraft = viewModel.calendarEventNotesContent(for: event)
     }
 
     private func scheduleNotesAutosave() {

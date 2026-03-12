@@ -39,6 +39,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     @Published public var isMeetingMicrophoneEnabled = false
     @Published public var isMeetingNotesPanelVisible = false
     @Published public var currentMeetingNotesText = ""
+    @Published public var currentMeetingNotesRichTextData: Data?
     @Published public var dictationSessionOutputLanguageOverride: DictationOutputLanguage?
     @Published public var postProcessingReadinessWarningIssue: EnhancementsInferenceReadinessIssue?
     @Published public var postProcessingReadinessWarningMode: IntelligenceKernelMode?
@@ -87,6 +88,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     let textContextGuardrails: TextContextGuardrails
     let textContextPolicy: TextContextPolicy
     let transcribeAudioUseCase: TranscribeAudioUseCase
+    let meetingNotesRichTextStore: any MeetingNotesRichTextStoreProtocol
     let transcriptPreprocessor = TranscriptIntelligencePreprocessor()
     let activeAppContextProvider: any ActiveAppContextProvider
     let captureContextResolver: any CaptureContextResolving
@@ -158,6 +160,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             textContextPolicy: .default,
             activeAppContextProvider: NSWorkspaceActiveAppContextProvider(),
             captureContextResolver: CaptureContextResolver.shared,
+            meetingNotesRichTextStore: MeetingNotesRichTextStore(),
             apiKeyExists: { provider in
                 KeychainManager.existsAPIKey(for: provider)
             }
@@ -208,6 +211,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         textContextPolicy: TextContextPolicy = .default,
         activeAppContextProvider: any ActiveAppContextProvider = NSWorkspaceActiveAppContextProvider(),
         captureContextResolver: any CaptureContextResolving = CaptureContextResolver.shared,
+        meetingNotesRichTextStore: any MeetingNotesRichTextStoreProtocol = MeetingNotesRichTextStore(),
         apiKeyExists: @escaping (AIProvider) -> Bool = { provider in
             KeychainManager.existsAPIKey(for: provider)
         }
@@ -227,6 +231,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         self.textContextPolicy = textContextPolicy
         self.activeAppContextProvider = activeAppContextProvider
         self.captureContextResolver = captureContextResolver
+        self.meetingNotesRichTextStore = meetingNotesRichTextStore
         self.apiKeyExists = apiKeyExists
         microphoneInputSelectionResolver = MicrophoneInputSelectionResolver(deviceManager: audioDeviceManager)
 

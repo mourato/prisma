@@ -13,6 +13,9 @@ final class RecordingManagerTests: XCTestCase {
     var mockStorage: MockStorageService?
     var mockActiveAppContextProvider: MockActiveAppContextProvider?
     var mockCaptureContextResolver: MockCaptureContextResolver?
+    var meetingNotesRichTextStore: MeetingNotesRichTextStore?
+    var userDefaults: UserDefaults?
+    var suiteName: String?
 
     override func setUp() async throws {
         try await super.setUp()
@@ -24,6 +27,12 @@ final class RecordingManagerTests: XCTestCase {
         let storage = MockStorageService()
         let activeAppContextProvider = MockActiveAppContextProvider()
         let captureContextResolver = MockCaptureContextResolver()
+        let suiteName = "RecordingManagerTests.\(UUID().uuidString)"
+        guard let userDefaults = UserDefaults(suiteName: suiteName) else {
+            XCTFail("Failed to create test UserDefaults suite")
+            return
+        }
+        let richTextStore = MeetingNotesRichTextStore(userDefaults: userDefaults)
 
         mockMic = mic
         mockSystem = system
@@ -32,6 +41,9 @@ final class RecordingManagerTests: XCTestCase {
         mockStorage = storage
         mockActiveAppContextProvider = activeAppContextProvider
         mockCaptureContextResolver = captureContextResolver
+        meetingNotesRichTextStore = richTextStore
+        self.userDefaults = userDefaults
+        self.suiteName = suiteName
 
         manager = RecordingManager(
             micRecorder: mic,
@@ -41,6 +53,7 @@ final class RecordingManagerTests: XCTestCase {
             storage: storage,
             activeAppContextProvider: activeAppContextProvider,
             captureContextResolver: captureContextResolver,
+            meetingNotesRichTextStore: richTextStore,
             apiKeyExists: { _ in true }
         )
     }
@@ -61,6 +74,12 @@ final class RecordingManagerTests: XCTestCase {
         mockStorage = nil
         mockActiveAppContextProvider = nil
         mockCaptureContextResolver = nil
+        meetingNotesRichTextStore = nil
+        if let suiteName {
+            userDefaults?.removePersistentDomain(forName: suiteName)
+        }
+        userDefaults = nil
+        suiteName = nil
         try await super.tearDown()
     }
 
@@ -267,28 +286,38 @@ final class RecordingManagerTests: XCTestCase {
         let meetingID = UUID()
         manager.currentCapturePurpose = .meeting
         manager.currentMeeting = Meeting(id: meetingID, app: .zoom, capturePurpose: .meeting)
+        let richData = Data([0x7B, 0x5C, 0x72, 0x74, 0x66])
 
-        manager.updateMeetingNotesText("Important note")
+        manager.updateMeetingNotes(MeetingNotesContent(plainText: "Important note", richTextRTFData: richData))
         manager.currentMeetingNotesText = ""
+        manager.currentMeetingNotesRichTextData = nil
         manager.restoreMeetingNotesIfNeeded(for: meetingID)
 
         XCTAssertEqual(manager.currentMeetingNotesText, "Important note")
+        XCTAssertEqual(manager.currentMeetingNotesRichTextData, richData)
 
         manager.clearMeetingNotesState(removePersistedValue: true)
         manager.currentMeeting = Meeting(id: meetingID, app: .zoom, capturePurpose: .meeting)
         manager.restoreMeetingNotesIfNeeded(for: meetingID)
         XCTAssertEqual(manager.currentMeetingNotesText, "")
+        XCTAssertNil(manager.currentMeetingNotesRichTextData)
     }
 
     func testCalendarEventNotes_SaveAndRestore_ByEventIdentifier() throws {
         let manager = try XCTUnwrap(manager)
         let eventIdentifier = "event-\(UUID().uuidString)"
+        let richData = Data([0x7B, 0x5C, 0x72, 0x74, 0x66])
 
-        manager.updateCalendarEventNotesText("Event note", for: eventIdentifier)
+        manager.updateCalendarEventNotes(
+            MeetingNotesContent(plainText: "Event note", richTextRTFData: richData),
+            for: eventIdentifier
+        )
         XCTAssertEqual(manager.loadCalendarEventNotesText(for: eventIdentifier), "Event note")
+        XCTAssertEqual(manager.loadCalendarEventNotesContent(for: eventIdentifier).richTextRTFData, richData)
 
         manager.updateCalendarEventNotesText("   ", for: eventIdentifier)
         XCTAssertEqual(manager.loadCalendarEventNotesText(for: eventIdentifier), "")
+        XCTAssertNil(manager.loadCalendarEventNotesContent(for: eventIdentifier).richTextRTFData)
     }
 
     func testUpdateCalendarEventNotes_SyncsToLinkedActiveMeeting() throws {
@@ -354,8 +383,13 @@ final class RecordingManagerTests: XCTestCase {
         manager.currentCapturePurpose = .meeting
         manager.currentMeeting = Meeting(id: meetingID, app: .zoom, capturePurpose: .meeting)
 
-        manager.updateMeetingNotesText("Meeting note")
-        manager.updateCalendarEventNotesText("Event note", for: eventIdentifier)
+        manager.updateMeetingNotes(
+            MeetingNotesContent(plainText: "Meeting note", richTextRTFData: Data([0x01, 0x02]))
+        )
+        manager.updateCalendarEventNotes(
+            MeetingNotesContent(plainText: "Event note", richTextRTFData: Data([0x03, 0x04])),
+            for: eventIdentifier
+        )
         XCTAssertEqual(manager.loadCalendarEventNotesText(for: eventIdentifier), "Event note")
 
         let linkedEvent = MeetingCalendarEventSnapshot(
@@ -369,6 +403,8 @@ final class RecordingManagerTests: XCTestCase {
         let expected = "Event note\n\n---\n\nMeeting note"
         XCTAssertEqual(manager.currentMeetingNotesText, expected)
         XCTAssertEqual(manager.loadCalendarEventNotesText(for: eventIdentifier), expected)
+        XCTAssertNil(manager.currentMeetingNotesRichTextData)
+        XCTAssertNil(manager.loadCalendarEventNotesContent(for: eventIdentifier).richTextRTFData)
 
         manager.currentMeetingNotesText = ""
         manager.restoreMeetingNotesIfNeeded(for: meetingID)

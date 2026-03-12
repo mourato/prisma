@@ -38,7 +38,7 @@ struct TranscriptionConversationPage: View {
 
     var body: some View {
         let effectiveSelection = viewModel.effectiveMeetingQAModelSelection(for: transcriptionID)
-        let meetingNotes = activeTranscription?.contextItems.first(where: { $0.source == .meetingNotes })?.text ?? ""
+        let meetingNotesContent = viewModel.meetingNotesContent(for: activeTranscription)
 
         VStack(spacing: 0) {
             SettingsSectionHeader(
@@ -54,7 +54,7 @@ struct TranscriptionConversationPage: View {
                 isLoadingTranscription: activeTranscription == nil,
                 turns: viewModel.qaHistory(for: transcriptionID),
                 questionText: viewModel.qaQuestion,
-                meetingNotesText: meetingNotes,
+                meetingNotesContent: meetingNotesContent,
                 onQuestionChange: { newValue in
                     dictationService.clearError()
                     viewModel.qaQuestion = newValue
@@ -96,9 +96,9 @@ struct TranscriptionConversationPage: View {
                         await viewModel.renameSpeaker(from: original, to: updated, in: id)
                     }
                 },
-                onUpdateMeetingNotes: { notes, id in
+                onUpdateMeetingNotes: { content, id in
                     Task {
-                        await viewModel.updateMeetingNotes(notes, in: id)
+                        await viewModel.updateMeetingNotes(content, in: id)
                     }
                 }
             )

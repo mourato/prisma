@@ -23,38 +23,53 @@ extension RecordingManager {
     }
 
     func restoreMeetingNotesIfNeeded(for meetingID: UUID) {
-        currentMeetingNotesText = loadMeetingNotesText(for: meetingID)
+        let content = loadMeetingNotesContent(for: meetingID)
+        currentMeetingNotesText = content.plainText
+        currentMeetingNotesRichTextData = content.richTextRTFData
     }
 
-    public func updateMeetingNotesText(_ text: String) {
+    public func updateMeetingNotes(_ content: MeetingNotesContent) {
         guard let meeting = currentMeeting,
               meeting.capturePurpose == .meeting
         else {
             currentMeetingNotesText = ""
+            currentMeetingNotesRichTextData = nil
             return
         }
 
-        currentMeetingNotesText = text
-        saveMeetingNotesText(text, for: meeting.id)
+        currentMeetingNotesText = content.plainText
+        currentMeetingNotesRichTextData = content.richTextRTFData
+        saveMeetingNotesContent(content, for: meeting.id)
 
         if let linkedEventIdentifier = meeting.linkedCalendarEvent?.eventIdentifier {
-            saveCalendarEventNotesText(text, for: linkedEventIdentifier)
+            saveCalendarEventNotesContent(content, for: linkedEventIdentifier)
         }
+    }
+
+    public func updateMeetingNotesText(_ text: String) {
+        updateMeetingNotes(MeetingNotesContent(plainText: text))
+    }
+
+    func loadCalendarEventNotesContent(for eventIdentifier: String) -> MeetingNotesContent {
+        guard let normalizedIdentifier = normalizedCalendarEventIdentifier(eventIdentifier) else {
+            return .empty
+        }
+
+        let plainText = UserDefaults.standard.string(forKey: calendarEventNotesKey(for: normalizedIdentifier)) ?? ""
+        let richTextRTFData = meetingNotesRichTextStore.calendarEventNotesRTFData(for: normalizedIdentifier)
+        return MeetingNotesContent(plainText: plainText, richTextRTFData: richTextRTFData)
     }
 
     func loadCalendarEventNotesText(for eventIdentifier: String) -> String {
-        guard let normalizedIdentifier = normalizedCalendarEventIdentifier(eventIdentifier) else {
-            return ""
-        }
-        return UserDefaults.standard.string(forKey: calendarEventNotesKey(for: normalizedIdentifier)) ?? ""
+        loadCalendarEventNotesContent(for: eventIdentifier).plainText
     }
 
-    func updateCalendarEventNotesText(_ text: String, for eventIdentifier: String) {
+    func updateCalendarEventNotes(_ content: MeetingNotesContent, for eventIdentifier: String) {
         guard let normalizedIdentifier = normalizedCalendarEventIdentifier(eventIdentifier) else {
             return
         }
 
-        saveCalendarEventNotesText(text, for: normalizedIdentifier)
+        saveCalendarEventNotesContent(content, for: normalizedIdentifier)
 
         guard let meeting = currentMeeting,
               meeting.capturePurpose == .meeting,
@@ -63,8 +78,13 @@ extension RecordingManager {
             return
         }
 
-        currentMeetingNotesText = text
-        saveMeetingNotesText(text, for: meeting.id)
+        currentMeetingNotesText = content.plainText
+        currentMeetingNotesRichTextData = content.richTextRTFData
+        saveMeetingNotesContent(content, for: meeting.id)
+    }
+
+    func updateCalendarEventNotesText(_ text: String, for eventIdentifier: String) {
+        updateCalendarEventNotes(MeetingNotesContent(plainText: text), for: eventIdentifier)
     }
 
     func synchronizeMeetingNotesWithLinkedCalendarEventIfNeeded(
@@ -83,12 +103,16 @@ extension RecordingManager {
             return
         }
 
-        let eventNotes = loadCalendarEventNotesText(for: normalizedIdentifier)
+        let eventNotes = loadCalendarEventNotesContent(for: normalizedIdentifier).plainText
         let mergedNotes = mergeLinkedNotes(eventNotes: eventNotes, meetingNotes: currentMeetingNotesText)
 
         currentMeetingNotesText = mergedNotes
-        saveMeetingNotesText(mergedNotes, for: meeting.id)
-        saveCalendarEventNotesText(mergedNotes, for: normalizedIdentifier)
+        currentMeetingNotesRichTextData = nil
+
+        // Merge currently operates on plain text, so rich formatting is intentionally reset.
+        let mergedContent = MeetingNotesContent(plainText: mergedNotes, richTextRTFData: nil)
+        saveMeetingNotesContent(mergedContent, for: meeting.id)
+        saveCalendarEventNotesContent(mergedContent, for: normalizedIdentifier)
     }
 
     func currentMeetingNotesContextItem() -> TranscriptionContextItem? {
@@ -102,43 +126,51 @@ extension RecordingManager {
 
     func clearMeetingNotesState(removePersistedValue: Bool) {
         if removePersistedValue, let meetingID = currentMeeting?.id {
-            removeMeetingNotesText(for: meetingID)
+            removeMeetingNotesContent(for: meetingID)
         }
 
         isMeetingNotesPanelVisible = false
         currentMeetingNotesText = ""
+        currentMeetingNotesRichTextData = nil
     }
 
-    private func loadMeetingNotesText(for meetingID: UUID) -> String {
-        UserDefaults.standard.string(forKey: meetingNotesKey(for: meetingID)) ?? ""
+    func loadMeetingNotesContent(for meetingID: UUID) -> MeetingNotesContent {
+        let plainText = UserDefaults.standard.string(forKey: meetingNotesKey(for: meetingID)) ?? ""
+        let richTextRTFData = meetingNotesRichTextStore.meetingNotesRTFData(for: meetingID)
+        return MeetingNotesContent(plainText: plainText, richTextRTFData: richTextRTFData)
     }
 
-    private func saveMeetingNotesText(_ text: String, for meetingID: UUID) {
-        if normalizedNotesValue(text).isEmpty {
+    private func saveMeetingNotesContent(_ content: MeetingNotesContent, for meetingID: UUID) {
+        if normalizedNotesValue(content.plainText).isEmpty {
             UserDefaults.standard.removeObject(forKey: meetingNotesKey(for: meetingID))
+            meetingNotesRichTextStore.saveMeetingNotesRTFData(nil, for: meetingID)
             return
         }
 
-        UserDefaults.standard.set(text, forKey: meetingNotesKey(for: meetingID))
+        UserDefaults.standard.set(content.plainText, forKey: meetingNotesKey(for: meetingID))
+        meetingNotesRichTextStore.saveMeetingNotesRTFData(content.richTextRTFData, for: meetingID)
     }
 
-    private func removeMeetingNotesText(for meetingID: UUID) {
+    private func removeMeetingNotesContent(for meetingID: UUID) {
         UserDefaults.standard.removeObject(forKey: meetingNotesKey(for: meetingID))
+        meetingNotesRichTextStore.saveMeetingNotesRTFData(nil, for: meetingID)
     }
 
     private func meetingNotesKey(for meetingID: UUID) -> String {
         MeetingNotesConstants.userDefaultsKeyPrefix + meetingID.uuidString
     }
 
-    private func saveCalendarEventNotesText(_ text: String, for eventIdentifier: String) {
+    private func saveCalendarEventNotesContent(_ content: MeetingNotesContent, for eventIdentifier: String) {
         guard let normalizedIdentifier = normalizedCalendarEventIdentifier(eventIdentifier) else { return }
         let key = calendarEventNotesKey(for: normalizedIdentifier)
-        if normalizedNotesValue(text).isEmpty {
+        if normalizedNotesValue(content.plainText).isEmpty {
             UserDefaults.standard.removeObject(forKey: key)
+            meetingNotesRichTextStore.saveCalendarEventNotesRTFData(nil, for: normalizedIdentifier)
             return
         }
 
-        UserDefaults.standard.set(text, forKey: key)
+        UserDefaults.standard.set(content.plainText, forKey: key)
+        meetingNotesRichTextStore.saveCalendarEventNotesRTFData(content.richTextRTFData, for: normalizedIdentifier)
     }
 
     private func calendarEventNotesKey(for eventIdentifier: String) -> String {
