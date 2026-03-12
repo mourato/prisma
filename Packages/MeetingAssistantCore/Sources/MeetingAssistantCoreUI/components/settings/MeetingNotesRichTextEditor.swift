@@ -159,6 +159,10 @@ struct MeetingNotesRichTextEditor: View {
     }
 }
 
+#Preview("Meeting Notes Rich Text Editor") {
+    PreviewStateContainer(MeetingNotesContent.empty) { content in MeetingNotesRichTextEditor(content: content).frame(width: 700, height: 280).padding(12) }
+}
+
 private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
     @Binding var content: MeetingNotesContent
     let controller: MeetingNotesRichTextController

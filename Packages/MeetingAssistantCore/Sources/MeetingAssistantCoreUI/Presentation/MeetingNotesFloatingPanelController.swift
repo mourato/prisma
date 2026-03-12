@@ -113,3 +113,11 @@ private struct MeetingNotesFloatingPanelView: View {
         }
     }
 }
+
+#Preview("Meeting Notes Floating Panel") {
+    MeetingNotesFloatingPanelView(
+        content: MeetingNotesContent(plainText: "- Revisar backlog\n- Alinhar owners para Q2"),
+        onTextChange: { _ in }
+    )
+    .frame(width: 420, height: 300)
+}
