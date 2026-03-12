@@ -68,6 +68,13 @@
 "metrics.calendar.event.clear" = "Clear";
 "metrics.calendar.event.use_for_recording" = "Use for Recording";
 "metrics.calendar.event.ignore" = "Ignore";
+"metrics.calendar.detail.subtitle" = "Event details and notes.";
+"metrics.calendar.detail.metadata.title" = "Event Metadata";
+"metrics.calendar.detail.attendees.count" = "%d attendees";
+"metrics.calendar.detail.attendees.title" = "Attendees";
+"metrics.calendar.detail.attendees.empty" = "No attendees available for this event.";
+"metrics.calendar.detail.notes.title" = "Event Note";
+"metrics.calendar.detail.notes.subtitle" = "Use Markdown to format your note.";
 "metrics.more_insights.title" = "More Insights";
 "metrics.more_insights.accessibility_hint" = "Opens a page with filters and additional dashboard charts.";
 

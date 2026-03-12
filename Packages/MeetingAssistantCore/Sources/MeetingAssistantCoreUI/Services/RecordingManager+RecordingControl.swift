@@ -116,6 +116,7 @@ public extension RecordingManager {
             postProcessingContext = nil
             postProcessingContextItems = []
             restoreMeetingNotesIfNeeded(for: meeting.id)
+            synchronizeMeetingNotesWithLinkedCalendarEventIfNeeded()
             isMeetingNotesPanelVisible = false
 
             // We only need one output URL because AudioRecorder handles mixing

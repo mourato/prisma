@@ -5,6 +5,7 @@ import SwiftUI
 
 struct MetricsDashboardUpcomingEventsSection: View {
     @ObservedObject var viewModel: MetricsDashboardViewModel
+    let onOpenEventDetail: (MeetingCalendarEventSnapshot) -> Void
 
     var body: some View {
         DSGroup("metrics.calendar.upcoming.title".localized, icon: "calendar.badge.clock") {
@@ -44,14 +45,20 @@ struct MetricsDashboardUpcomingEventsSection: View {
                         UpcomingCalendarEventRow(
                             event: event,
                             isRecording: viewModel.isRecording,
-                            isLinked: viewModel.isLinkedEvent(event)
-                        ) {
-                            viewModel.linkCalendarEvent(event)
-                        } onClear: {
-                            viewModel.clearLinkedCalendarEvent()
-                        } onIgnore: {
-                            viewModel.ignoreUpcomingEvent(event)
-                        }
+                            isLinked: viewModel.isLinkedEvent(event),
+                            onOpen: {
+                                onOpenEventDetail(event)
+                            },
+                            onLink: {
+                                viewModel.linkCalendarEvent(event)
+                            },
+                            onClear: {
+                                viewModel.clearLinkedCalendarEvent()
+                            },
+                            onIgnore: {
+                                viewModel.ignoreUpcomingEvent(event)
+                            }
+                        )
                     }
                 }
             }
@@ -420,6 +427,7 @@ private struct UpcomingCalendarEventRow: View {
     let event: MeetingCalendarEventSnapshot
     let isRecording: Bool
     let isLinked: Bool
+    let onOpen: () -> Void
     let onLink: () -> Void
     let onClear: () -> Void
     let onIgnore: () -> Void
@@ -488,13 +496,17 @@ private struct UpcomingCalendarEventRow: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            onOpen()
+        }
     }
 
     private var timeLabel: String {
-        let formatter = DateIntervalFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter.string(from: event.startDate, to: event.endDate)
+        MetricsDashboardFormatters.calendarEventIntervalLabel(
+            startDate: event.startDate,
+            endDate: event.endDate
+        )
     }
 }
 

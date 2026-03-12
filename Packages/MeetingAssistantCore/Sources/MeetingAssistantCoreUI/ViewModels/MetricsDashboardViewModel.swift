@@ -161,6 +161,14 @@ public final class MetricsDashboardViewModel: ObservableObject {
         activeLinkedCalendarEventID == event.eventIdentifier
     }
 
+    public func calendarEventNotes(for event: MeetingCalendarEventSnapshot) -> String {
+        recordingManager.loadCalendarEventNotesText(for: event.eventIdentifier)
+    }
+
+    public func updateCalendarEventNotes(_ notes: String, for event: MeetingCalendarEventSnapshot) {
+        recordingManager.updateCalendarEventNotesText(notes, for: event.eventIdentifier)
+    }
+
     private func refreshUpcomingEvents(showLoadingIndicator: Bool) async {
         calendarPermissionState = calendarEventService.authorizationState()
 

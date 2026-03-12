@@ -6,6 +6,7 @@ import SwiftUI
 struct MetricsDashboardIndexPage: View {
     @ObservedObject var viewModel: MetricsDashboardViewModel
     let openMoreInsights: () -> Void
+    let openEventDetail: (MeetingCalendarEventSnapshot) -> Void
 
     var body: some View {
         SettingsScrollableContent {
@@ -24,7 +25,10 @@ struct MetricsDashboardIndexPage: View {
 
             MetricsDashboardActivitySection(viewModel: viewModel)
             MetricsDashboardMoreInsightsLinkSection(openMoreInsights: openMoreInsights)
-            MetricsDashboardUpcomingEventsSection(viewModel: viewModel)
+            MetricsDashboardUpcomingEventsSection(
+                viewModel: viewModel,
+                onOpenEventDetail: openEventDetail
+            )
         }
     }
 }
@@ -54,6 +58,137 @@ struct MetricsDashboardMoreInsightsPage: View {
                 MetricsDashboardWeekdayPeaksSection(viewModel: viewModel)
             }
         }
+    }
+}
+
+struct MetricsDashboardEventDetailPage: View {
+    let event: MeetingCalendarEventSnapshot
+    @ObservedObject var viewModel: MetricsDashboardViewModel
+
+    @State private var notesDraft = ""
+    @State private var isAttendeesPopoverPresented = false
+    @State private var notesAutosaveTask: Task<Void, Never>?
+    @State private var hasLoadedInitialNotes = false
+
+    var body: some View {
+        SettingsScrollableContent {
+            SettingsSectionHeader(
+                title: eventTitle,
+                description: "metrics.calendar.detail.subtitle".localized
+            )
+
+            DSGroup("metrics.calendar.detail.metadata.title".localized, icon: "calendar") {
+                VStack(alignment: .leading, spacing: 12) {
+                    Label(
+                        MetricsDashboardFormatters.calendarEventIntervalLabel(
+                            startDate: event.startDate,
+                            endDate: event.endDate
+                        ),
+                        systemImage: "calendar.badge.clock"
+                    )
+                    .font(.subheadline)
+
+                    if let location = event.location?.trimmingCharacters(in: .whitespacesAndNewlines), !location.isEmpty {
+                        Label(location, systemImage: "mappin.and.ellipse")
+                            .font(.subheadline)
+                    }
+
+                    Button {
+                        isAttendeesPopoverPresented.toggle()
+                    } label: {
+                        Label(
+                            "metrics.calendar.detail.attendees.count".localized(with: event.attendees.count),
+                            systemImage: "person.2"
+                        )
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .popover(isPresented: $isAttendeesPopoverPresented, arrowEdge: .bottom) {
+                        attendeesPopoverContent
+                    }
+                }
+            }
+
+            DSGroup("metrics.calendar.detail.notes.title".localized, icon: "note.text") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("metrics.calendar.detail.notes.subtitle".localized)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    MeetingNotesMarkdownEditor(text: $notesDraft)
+                        .frame(minHeight: 280)
+                }
+            }
+        }
+        .onAppear {
+            loadPersistedNotesIfNeeded()
+        }
+        .onChange(of: event.eventIdentifier) { _, _ in
+            hasLoadedInitialNotes = false
+            loadPersistedNotesIfNeeded()
+        }
+        .onChange(of: notesDraft) { _, _ in
+            scheduleNotesAutosave()
+        }
+        .onDisappear {
+            flushNotesAutosave()
+        }
+    }
+
+    private var eventTitle: String {
+        event.trimmedTitle.isEmpty ? "metrics.calendar.event.untitled".localized : event.trimmedTitle
+    }
+
+    private var attendeesPopoverContent: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("metrics.calendar.detail.attendees.title".localized)
+                .font(.headline)
+
+            if event.attendees.isEmpty {
+                Text("metrics.calendar.detail.attendees.empty".localized)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(Array(event.attendees.enumerated()), id: \.offset) { _, attendee in
+                            Text(attendee)
+                                .font(.subheadline)
+                                .textSelection(.enabled)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .frame(maxHeight: 220)
+            }
+        }
+        .padding(AppDesignSystem.Layout.cardPadding)
+        .frame(width: 320, alignment: .leading)
+    }
+
+    private func loadPersistedNotesIfNeeded() {
+        guard !hasLoadedInitialNotes else { return }
+        hasLoadedInitialNotes = true
+        notesDraft = viewModel.calendarEventNotes(for: event)
+    }
+
+    private func scheduleNotesAutosave() {
+        notesAutosaveTask?.cancel()
+        let pendingNotes = notesDraft
+        notesAutosaveTask = Task {
+            try? await Task.sleep(for: .milliseconds(250))
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                viewModel.updateCalendarEventNotes(pendingNotes, for: event)
+            }
+        }
+    }
+
+    private func flushNotesAutosave() {
+        notesAutosaveTask?.cancel()
+        notesAutosaveTask = nil
+        viewModel.updateCalendarEventNotes(notesDraft, for: event)
     }
 }
 

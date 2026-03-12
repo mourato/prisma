@@ -21,8 +21,19 @@ enum MetricsDashboardFormatters {
         return formatter
     }()
 
+    static let calendarIntervalFormatter: DateIntervalFormatter = {
+        let formatter = DateIntervalFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter
+    }()
+
     static func formattedNumber(_ value: Int) -> String {
         numberFormatter.string(from: NSNumber(value: value)) ?? "\(value)"
+    }
+
+    static func calendarEventIntervalLabel(startDate: Date, endDate: Date) -> String {
+        calendarIntervalFormatter.string(from: startDate, to: endDate)
     }
 }
 

@@ -1,9 +1,11 @@
 import Combine
 import MeetingAssistantCoreCommon
+import MeetingAssistantCoreDomain
 import SwiftUI
 
 public enum MetricsDashboardRoute: Hashable {
     case moreInsights
+    case eventDetail(MeetingCalendarEventSnapshot)
 }
 
 public struct MetricsDashboardSettingsTab: View {
@@ -23,9 +25,13 @@ public struct MetricsDashboardSettingsTab: View {
             case nil:
                 MetricsDashboardIndexPage(viewModel: viewModel) {
                     navigationState.open(.moreInsights)
+                } openEventDetail: { event in
+                    navigationState.open(.eventDetail(event))
                 }
             case .some(.moreInsights):
                 MetricsDashboardMoreInsightsPage(viewModel: viewModel)
+            case let .some(.eventDetail(event)):
+                MetricsDashboardEventDetailPage(event: event, viewModel: viewModel)
             }
         }
         .task {

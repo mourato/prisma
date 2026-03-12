@@ -32,6 +32,7 @@ extension RecordingManager {
     func linkCurrentMeeting(to event: MeetingCalendarEventSnapshot?) {
         guard var currentMeeting else { return }
         currentMeeting = meetingApplyingCalendarEvent(event, to: currentMeeting, clearTitleWhenRemoving: true)
+        synchronizeMeetingNotesWithLinkedCalendarEventIfNeeded(linkedEventIdentifier: event?.eventIdentifier)
     }
 
     func meetingApplyingCalendarEvent(

@@ -68,6 +68,13 @@
 "metrics.calendar.event.clear" = "Limpar";
 "metrics.calendar.event.use_for_recording" = "Usar na gravação";
 "metrics.calendar.event.ignore" = "Ignorar";
+"metrics.calendar.detail.subtitle" = "Detalhes e anotações do evento.";
+"metrics.calendar.detail.metadata.title" = "Metadados do evento";
+"metrics.calendar.detail.attendees.count" = "%d participantes";
+"metrics.calendar.detail.attendees.title" = "Participantes";
+"metrics.calendar.detail.attendees.empty" = "Nenhum participante disponível para este evento.";
+"metrics.calendar.detail.notes.title" = "Nota do evento";
+"metrics.calendar.detail.notes.subtitle" = "Use Markdown para formatar a sua nota.";
 "metrics.more_insights.title" = "Mais insights";
 "metrics.more_insights.accessibility_hint" = "Abre uma página com filtros e gráficos adicionais do dashboard.";
 

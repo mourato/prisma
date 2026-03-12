@@ -280,6 +280,104 @@ final class RecordingManagerTests: XCTestCase {
         XCTAssertEqual(manager.currentMeetingNotesText, "")
     }
 
+    func testCalendarEventNotes_SaveAndRestore_ByEventIdentifier() throws {
+        let manager = try XCTUnwrap(manager)
+        let eventIdentifier = "event-\(UUID().uuidString)"
+
+        manager.updateCalendarEventNotesText("Event note", for: eventIdentifier)
+        XCTAssertEqual(manager.loadCalendarEventNotesText(for: eventIdentifier), "Event note")
+
+        manager.updateCalendarEventNotesText("   ", for: eventIdentifier)
+        XCTAssertEqual(manager.loadCalendarEventNotesText(for: eventIdentifier), "")
+    }
+
+    func testUpdateCalendarEventNotes_SyncsToLinkedActiveMeeting() throws {
+        let manager = try XCTUnwrap(manager)
+        let meetingID = UUID()
+        let eventIdentifier = "event-\(UUID().uuidString)"
+        let linkedEvent = MeetingCalendarEventSnapshot(
+            eventIdentifier: eventIdentifier,
+            title: "Design review",
+            startDate: Date(),
+            endDate: Date().addingTimeInterval(3_600)
+        )
+        manager.currentCapturePurpose = .meeting
+        manager.currentMeeting = Meeting(
+            id: meetingID,
+            app: .zoom,
+            capturePurpose: .meeting,
+            linkedCalendarEvent: linkedEvent
+        )
+
+        manager.updateCalendarEventNotesText("Synced from event", for: eventIdentifier)
+
+        XCTAssertEqual(manager.currentMeetingNotesText, "Synced from event")
+        manager.currentMeetingNotesText = ""
+        manager.restoreMeetingNotesIfNeeded(for: meetingID)
+        XCTAssertEqual(manager.currentMeetingNotesText, "Synced from event")
+
+        manager.updateCalendarEventNotesText("   ", for: eventIdentifier)
+        manager.clearMeetingNotesState(removePersistedValue: true)
+    }
+
+    func testUpdateMeetingNotes_SyncsToLinkedCalendarEvent() throws {
+        let manager = try XCTUnwrap(manager)
+        let meetingID = UUID()
+        let eventIdentifier = "event-\(UUID().uuidString)"
+        let linkedEvent = MeetingCalendarEventSnapshot(
+            eventIdentifier: eventIdentifier,
+            title: "Team sync",
+            startDate: Date(),
+            endDate: Date().addingTimeInterval(3_600)
+        )
+        manager.currentCapturePurpose = .meeting
+        manager.currentMeeting = Meeting(
+            id: meetingID,
+            app: .zoom,
+            capturePurpose: .meeting,
+            linkedCalendarEvent: linkedEvent
+        )
+
+        manager.updateMeetingNotesText("Synced from meeting")
+
+        XCTAssertEqual(manager.loadCalendarEventNotesText(for: eventIdentifier), "Synced from meeting")
+
+        manager.updateMeetingNotesText("   ")
+        manager.updateCalendarEventNotesText("   ", for: eventIdentifier)
+    }
+
+    func testLinkCurrentMeeting_MergesEventAndMeetingNotes_EventFirst() async throws {
+        let manager = try XCTUnwrap(manager)
+        try await Task.sleep(for: .milliseconds(50))
+        let meetingID = UUID()
+        let eventIdentifier = "event-\(UUID().uuidString)"
+        manager.currentCapturePurpose = .meeting
+        manager.currentMeeting = Meeting(id: meetingID, app: .zoom, capturePurpose: .meeting)
+
+        manager.updateMeetingNotesText("Meeting note")
+        manager.updateCalendarEventNotesText("Event note", for: eventIdentifier)
+        XCTAssertEqual(manager.loadCalendarEventNotesText(for: eventIdentifier), "Event note")
+
+        let linkedEvent = MeetingCalendarEventSnapshot(
+            eventIdentifier: eventIdentifier,
+            title: "Merged notes check",
+            startDate: Date(),
+            endDate: Date().addingTimeInterval(3_600)
+        )
+        manager.linkCurrentMeeting(to: linkedEvent)
+
+        let expected = "Event note\n\n---\n\nMeeting note"
+        XCTAssertEqual(manager.currentMeetingNotesText, expected)
+        XCTAssertEqual(manager.loadCalendarEventNotesText(for: eventIdentifier), expected)
+
+        manager.currentMeetingNotesText = ""
+        manager.restoreMeetingNotesIfNeeded(for: meetingID)
+        XCTAssertEqual(manager.currentMeetingNotesText, expected)
+
+        manager.updateMeetingNotesText("   ")
+        manager.updateCalendarEventNotesText("   ", for: eventIdentifier)
+    }
+
     func testMergedPostProcessingInput_IncludesMeetingNotesBlock() throws {
         let manager = try XCTUnwrap(manager)
         let qualityProfile = TranscriptionQualityProfile(

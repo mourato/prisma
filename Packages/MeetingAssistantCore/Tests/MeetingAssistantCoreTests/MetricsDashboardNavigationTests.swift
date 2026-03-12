@@ -1,0 +1,40 @@
+@testable import MeetingAssistantCore
+import XCTest
+
+final class MetricsDashboardNavigationTests: XCTestCase {
+    func testOpenEventDetailRoute() {
+        var navigationState = SettingsSubpageNavigationState<MetricsDashboardRoute>()
+        let event = MeetingCalendarEventSnapshot(
+            eventIdentifier: "event-1",
+            title: "Design Review",
+            startDate: Date(timeIntervalSince1970: 1_700_000_000),
+            endDate: Date(timeIntervalSince1970: 1_700_003_600)
+        )
+
+        navigationState.open(.eventDetail(event))
+
+        XCTAssertEqual(navigationState.currentRoute, .eventDetail(event))
+        XCTAssertTrue(navigationState.canGoBack)
+        XCTAssertFalse(navigationState.canGoForward)
+    }
+
+    func testBackAndForwardRestoresEventDetailRoute() {
+        var navigationState = SettingsSubpageNavigationState<MetricsDashboardRoute>()
+        let event = MeetingCalendarEventSnapshot(
+            eventIdentifier: "event-2",
+            title: "Planning",
+            startDate: Date(timeIntervalSince1970: 1_700_010_000),
+            endDate: Date(timeIntervalSince1970: 1_700_013_600)
+        )
+
+        navigationState.open(.eventDetail(event))
+        _ = navigationState.goBack()
+
+        XCTAssertNil(navigationState.currentRoute)
+        XCTAssertTrue(navigationState.canGoForward)
+
+        _ = navigationState.goForward()
+
+        XCTAssertEqual(navigationState.currentRoute, .eventDetail(event))
+    }
+}
