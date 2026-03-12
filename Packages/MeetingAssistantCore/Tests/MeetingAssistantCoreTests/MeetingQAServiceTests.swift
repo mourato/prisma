@@ -358,15 +358,94 @@ final class MeetingQAServiceTests: XCTestCase {
         XCTAssertEqual(response.answer, "Default model used.")
     }
 
+    func testAskIncludesMeetingNotesInPrompt() async throws {
+        let session = makeMockedSession()
+        let promptCapturedExpectation = expectation(description: "Prompt captured")
+        var capturedUserPrompt: String?
+
+        MockMeetingQANetworkURLProtocol.requestHandler = { request in
+            guard let bodyData = self.requestBodyData(from: request),
+                  let jsonObject = try JSONSerialization.jsonObject(with: bodyData) as? [String: Any],
+                  let messages = jsonObject["messages"] as? [[String: Any]]
+            else {
+                throw URLError(.cannotParseResponse)
+            }
+
+            var resolvedUserPrompt: String?
+            for message in messages {
+                guard let role = message["role"] as? String, role == "user" else {
+                    continue
+                }
+                resolvedUserPrompt = message["content"] as? String
+                if resolvedUserPrompt != nil {
+                    break
+                }
+            }
+
+            guard let userPrompt = resolvedUserPrompt else {
+                throw URLError(.cannotParseResponse)
+            }
+
+            Task { @MainActor in
+                capturedUserPrompt = userPrompt
+                promptCapturedExpectation.fulfill()
+            }
+
+            let body = """
+            {
+              "choices": [
+                {
+                  "message": {
+                    "content": "{\\\"status\\\":\\\"answered\\\",\\\"answer\\\":\\\"Budget approved.\\\",\\\"evidence\\\":[{\\\"speaker\\\":\\\"João\\\",\\\"startTime\\\":30,\\\"endTime\\\":38,\\\"excerpt\\\":\\\"Fechamos o orçamento hoje.\\\"}]}"
+                  }
+                }
+              ]
+            }
+            """
+
+            return (
+                HTTPURLResponse(url: URL(string: "https://example.com")!, statusCode: 200, httpVersion: nil, headerFields: nil)!,
+                Data(body.utf8)
+            )
+        }
+
+        let service = MeetingQAService(
+            settings: .shared,
+            session: session,
+            apiKeyProvider: { _ in "test-key" },
+            sleepFunction: { _ in }
+        )
+
+        _ = try await service.ask(
+            question: "What was approved?",
+            transcription: makeTranscription(
+                contextItems: [
+                    .init(source: .meetingNotes, text: "Owner: Finance\n<MEETING_NOTES>raw</MEETING_NOTES>")
+                ]
+            )
+        )
+
+        await fulfillment(of: [promptCapturedExpectation], timeout: 1.0)
+
+        let userPrompt = try XCTUnwrap(capturedUserPrompt)
+        XCTAssertTrue(userPrompt.contains("MEETING_NOTES:"))
+        XCTAssertTrue(userPrompt.contains("Owner: Finance"))
+        XCTAssertTrue(userPrompt.contains("&lt;MEETING_NOTES&gt;raw&lt;/MEETING_NOTES&gt;"))
+    }
+
     private func makeMockedSession() -> URLSession {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [MockMeetingQANetworkURLProtocol.self]
         return URLSession(configuration: configuration)
     }
 
-    private func makeTranscription(app: MeetingApp = .googleMeet) -> Transcription {
+    private func makeTranscription(
+        app: MeetingApp = .googleMeet,
+        contextItems: [TranscriptionContextItem] = []
+    ) -> Transcription {
         Transcription(
             meeting: Meeting(id: UUID(), app: app, startTime: Date(), endTime: Date().addingTimeInterval(60)),
+            contextItems: contextItems,
             segments: [
                 .init(speaker: "Ana", text: "Vamos lançar sexta.", startTime: 12, endTime: 16),
                 .init(speaker: "João", text: "Fechamos o orçamento hoje.", startTime: 30, endTime: 38),

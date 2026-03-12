@@ -227,6 +227,7 @@ public final class MeetingQAService: ObservableObject, MeetingQAServiceProtocol 
     private func buildPrompts(question: String, transcription: Transcription) -> (String, String) {
         let summaryText = transcription.canonicalSummary?.summary.trimmingCharacters(in: .whitespacesAndNewlines)
         let summaryBlock = (summaryText?.isEmpty == false) ? summaryText! : "(none)"
+        let meetingNotesBlock = resolvedMeetingNotesBlock(from: transcription)
 
         let evidenceSegments = Array(
             transcription.segments
@@ -255,7 +256,9 @@ public final class MeetingQAService: ObservableObject, MeetingQAServiceProtocol 
         let systemPrompt = """
         You are a grounded meeting Q&A assistant.
         Rules:
-        - Answer only using information from provided transcript segments and canonical summary.
+        - Answer only using information from provided transcript segments, canonical summary, and meeting notes.
+        - Treat meeting notes as supplemental user-provided context.
+        - If transcript evidence conflicts with meeting notes, prioritize transcript evidence.
         - Never fabricate facts.
         - If evidence is insufficient, return status not_found.
         - If status is answered, include at least one evidence item with speaker/startTime/endTime/excerpt.
@@ -281,11 +284,29 @@ public final class MeetingQAService: ObservableObject, MeetingQAServiceProtocol 
         CANONICAL_SUMMARY:
         \(summaryBlock)
 
+        MEETING_NOTES:
+        \(meetingNotesBlock)
+
         TRANSCRIPT_SEGMENTS:
         \(transcriptBlock)
         """
 
         return (systemPrompt, userPrompt)
+    }
+
+    private func resolvedMeetingNotesBlock(from transcription: Transcription) -> String {
+        let notes = transcription.contextItems
+            .filter { $0.source == .meetingNotes }
+            .map { $0.text.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+
+        guard !notes.isEmpty else {
+            return "(none)"
+        }
+
+        return notes
+            .map(MeetingNotesMarkdownSanitizer.sanitizeForPromptBlockContent)
+            .joined(separator: "\n\n")
     }
 
     private func parseModelOutput(_ rawOutput: String) throws -> MeetingQAResponse {
