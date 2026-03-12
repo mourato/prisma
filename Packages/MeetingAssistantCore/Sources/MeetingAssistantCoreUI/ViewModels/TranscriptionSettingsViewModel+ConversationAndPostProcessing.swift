@@ -382,6 +382,7 @@ public extension TranscriptionSettingsViewModel {
                 existing: existing,
                 metadata: metadata,
                 app: existing?.app ?? (DomainMeetingApp(rawValue: metadata.appRawValue) ?? .unknown),
+                capturePurpose: existing?.capturePurpose ?? metadata.capturePurpose,
                 title: normalizedTitle
             )
 
@@ -397,23 +398,27 @@ public extension TranscriptionSettingsViewModel {
     }
 
     func updateSource(for metadata: TranscriptionMetadata, isMeeting: Bool) async {
-        let app = MeetingApp(rawValue: metadata.appRawValue) ?? .unknown
-        guard app != .importedFile else { return }
-        guard app == .unknown || app == .manualMeeting else { return }
+        await updateCapturePurpose(for: metadata, to: isMeeting ? .meeting : .dictation)
+    }
 
-        let targetApp: DomainMeetingApp = isMeeting ? .manualMeeting : .unknown
+    func updateCapturePurpose(for metadata: TranscriptionMetadata, to capturePurpose: CapturePurpose) async {
+        let metadataApp = DomainMeetingApp(rawValue: metadata.appRawValue) ?? .unknown
+        guard metadataApp != .importedFile else { return }
 
         do {
             let existing = try await meetingRepository.fetchMeeting(by: metadata.meetingId)
+            let existingApp = existing?.app ?? metadataApp
             let endTime = metadata.duration > 0
                 ? metadata.startTime.addingTimeInterval(metadata.duration)
                 : nil
+            let targetApp = adjustedApp(existingApp, for: capturePurpose)
 
             let updatedMeeting = makeUpdatedMeetingEntity(
                 existing: existing,
                 metadata: metadata,
                 app: targetApp,
-                title: existing?.title,
+                capturePurpose: capturePurpose,
+                title: existing?.title ?? metadata.meetingTitle,
                 fallbackEndTime: endTime
             )
 
@@ -423,7 +428,7 @@ public extension TranscriptionSettingsViewModel {
                 await loadFullTranscription(id: metadata.id)
             }
         } catch {
-            logger.error("Failed to update recording source: \(error.localizedDescription)")
+            logger.error("Failed to update capture purpose: \(error.localizedDescription)")
             operationErrorMessage = error.localizedDescription
         }
     }
@@ -460,12 +465,14 @@ public extension TranscriptionSettingsViewModel {
         existing: MeetingEntity?,
         metadata: TranscriptionMetadata,
         app: DomainMeetingApp,
+        capturePurpose: CapturePurpose,
         title: String?,
         fallbackEndTime: Date? = nil
     ) -> MeetingEntity {
         MeetingEntity(
             id: metadata.meetingId,
             app: app,
+            capturePurpose: capturePurpose,
             appBundleIdentifier: existing?.appBundleIdentifier ?? metadata.appBundleIdentifier,
             appDisplayName: existing?.appDisplayName ?? metadata.appName,
             title: title,
@@ -474,6 +481,17 @@ public extension TranscriptionSettingsViewModel {
             endTime: existing?.endTime ?? fallbackEndTime,
             audioFilePath: existing?.audioFilePath ?? metadata.audioFilePath
         )
+    }
+
+    private func adjustedApp(_ app: DomainMeetingApp, for capturePurpose: CapturePurpose) -> DomainMeetingApp {
+        switch (capturePurpose, app) {
+        case (.meeting, .unknown):
+            .manualMeeting
+        case (.dictation, .manualMeeting):
+            .unknown
+        default:
+            app
+        }
     }
 
     private func renameSpeaker(

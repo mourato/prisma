@@ -43,11 +43,11 @@ public struct MeetingConversationView: View {
     let dictationErrorMessage: String?
     let onToggleDictation: () -> Void
     let onRenameSpeaker: (_ original: String, _ updated: String, _ transcriptionID: UUID) -> Void
-    let onBack: () -> Void
 
     @State private var isShowingModelSelector = false
     @State private var selectedInternalTab: InternalTab = .chat
     @State private var speakerRenames: [String: String] = [:]
+    @State private var sendOnReturn = false
 
     public init(
         transcription: Transcription?,
@@ -67,8 +67,7 @@ public struct MeetingConversationView: View {
         dictationState: MeetingQuestionDictationService.State,
         dictationErrorMessage: String?,
         onToggleDictation: @escaping () -> Void,
-        onRenameSpeaker: @escaping (_ original: String, _ updated: String, _ transcriptionID: UUID) -> Void = { _, _, _ in },
-        onBack: @escaping () -> Void
+        onRenameSpeaker: @escaping (_ original: String, _ updated: String, _ transcriptionID: UUID) -> Void = { _, _, _ in }
     ) {
         self.transcription = transcription
         self.isLoadingTranscription = isLoadingTranscription
@@ -88,7 +87,6 @@ public struct MeetingConversationView: View {
         self.dictationErrorMessage = dictationErrorMessage
         self.onToggleDictation = onToggleDictation
         self.onRenameSpeaker = onRenameSpeaker
-        self.onBack = onBack
     }
 
     public var body: some View {
@@ -123,15 +121,6 @@ public struct MeetingConversationView: View {
 
     private var header: some View {
         HStack(spacing: 8) {
-            Button {
-                onBack()
-            } label: {
-                Image(systemName: "chevron.left")
-            }
-            .buttonStyle(.borderless)
-            .help("transcription.qa.navigation.back".localized)
-            .accessibilityLabel("transcription.qa.navigation.back".localized)
-
             Label("transcription.qa.title".localized, systemImage: "bubble.left.and.bubble.right.fill")
                 .font(.headline)
 
@@ -308,7 +297,8 @@ public struct MeetingConversationView: View {
                     set: { onQuestionChange($0) }
                 ),
                 placeholder: "transcription.qa.placeholder".localized,
-                onCommandReturn: onAsk
+                sendOnReturn: sendOnReturn,
+                onSubmit: onAsk
             )
 
             HStack(spacing: 8) {
@@ -317,6 +307,13 @@ public struct MeetingConversationView: View {
                 dictationButton
 
                 Spacer(minLength: 0)
+
+                Toggle("transcription.qa.send_on_return".localized, isOn: $sendOnReturn)
+                    .toggleStyle(.checkbox)
+                    .controlSize(.small)
+                    .font(.caption)
+                    .help("transcription.qa.send_on_return_help".localized)
+                    .accessibilityLabel("transcription.qa.send_on_return".localized)
 
                 Button("transcription.qa.ask".localized) {
                     onAsk()
@@ -597,7 +594,7 @@ public struct MeetingConversationView: View {
         dictationState: .idle,
         dictationErrorMessage: nil,
         onToggleDictation: {},
-        onBack: {}
+        onRenameSpeaker: { _, _, _ in }
     )
     .frame(width: 760, height: 680)
     .padding()

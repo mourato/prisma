@@ -383,6 +383,107 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
         XCTAssertNil(viewModel.transcriptions.first?.meetingTitle)
     }
 
+    func testUpdateMeetingTitle_PreservesMeetingCapturePurposeForUnknownApp() async throws {
+        let id = UUID()
+        let startTime = Date()
+        let transcription = Transcription(
+            id: id,
+            meeting: Meeting(
+                id: id,
+                app: .unknown,
+                capturePurpose: .meeting,
+                startTime: startTime,
+                endTime: startTime.addingTimeInterval(60)
+            ),
+            text: "Summary",
+            rawText: "Summary"
+        )
+        storage.mockTranscriptions = [transcription]
+        meetingRepository.meetingsByID[id] = MeetingEntity(
+            id: id,
+            app: .unknown,
+            capturePurpose: .meeting,
+            startTime: transcription.meeting.startTime,
+            endTime: transcription.meeting.endTime,
+            audioFilePath: transcription.meeting.audioFilePath
+        )
+
+        await viewModel.loadTranscriptions()
+        let metadata = try XCTUnwrap(viewModel.transcriptions.first)
+
+        await viewModel.updateMeetingTitle(for: metadata, to: " Team Sync ")
+
+        XCTAssertEqual(meetingRepository.updatedMeetings.last?.capturePurpose, .meeting)
+    }
+
+    func testUpdateCapturePurpose_ConvertsUnknownToManualMeeting() async throws {
+        let id = UUID()
+        let startTime = Date()
+        let transcription = Transcription(
+            id: id,
+            meeting: Meeting(
+                id: id,
+                app: .unknown,
+                capturePurpose: .dictation,
+                startTime: startTime,
+                endTime: startTime.addingTimeInterval(120)
+            ),
+            text: "Summary",
+            rawText: "Summary"
+        )
+        storage.mockTranscriptions = [transcription]
+        meetingRepository.meetingsByID[id] = MeetingEntity(
+            id: id,
+            app: .unknown,
+            capturePurpose: .dictation,
+            startTime: transcription.meeting.startTime,
+            endTime: transcription.meeting.endTime,
+            audioFilePath: transcription.meeting.audioFilePath
+        )
+
+        await viewModel.loadTranscriptions()
+        let metadata = try XCTUnwrap(viewModel.transcriptions.first)
+
+        await viewModel.updateCapturePurpose(for: metadata, to: .meeting)
+
+        XCTAssertEqual(meetingRepository.updatedMeetings.last?.capturePurpose, .meeting)
+        XCTAssertEqual(meetingRepository.updatedMeetings.last?.app, .manualMeeting)
+    }
+
+    func testUpdateCapturePurpose_ConvertsManualMeetingToUnknownDictation() async throws {
+        let id = UUID()
+        let startTime = Date()
+        let transcription = Transcription(
+            id: id,
+            meeting: Meeting(
+                id: id,
+                app: .manualMeeting,
+                capturePurpose: .meeting,
+                startTime: startTime,
+                endTime: startTime.addingTimeInterval(120)
+            ),
+            text: "Summary",
+            rawText: "Summary"
+        )
+        storage.mockTranscriptions = [transcription]
+        meetingRepository.meetingsByID[id] = MeetingEntity(
+            id: id,
+            app: .manualMeeting,
+            capturePurpose: .meeting,
+            startTime: transcription.meeting.startTime,
+            endTime: transcription.meeting.endTime,
+            audioFilePath: transcription.meeting.audioFilePath
+        )
+
+        await viewModel.loadTranscriptions()
+        let metadata = try XCTUnwrap(viewModel.transcriptions.first)
+
+        await viewModel.updateCapturePurpose(for: metadata, to: .dictation)
+
+        XCTAssertEqual(meetingRepository.updatedMeetings.last?.capturePurpose, .dictation)
+        XCTAssertEqual(meetingRepository.updatedMeetings.last?.app, .unknown)
+    }
+
     func testAppFilterOptionsIncludeUnknownAppsByDisplayName() {
         // Given
         let codexMetadata = makeMetadata(
@@ -433,7 +534,8 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
         appName: String,
         appRawValue: String,
         previewText: String,
-        meetingTitle: String? = nil
+        meetingTitle: String? = nil,
+        capturePurpose: CapturePurpose? = nil
     ) -> TranscriptionMetadata {
         let id = UUID()
         return TranscriptionMetadata(
@@ -442,6 +544,7 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
             meetingTitle: meetingTitle,
             appName: appName,
             appRawValue: appRawValue,
+            capturePurpose: capturePurpose,
             appBundleIdentifier: nil,
             startTime: Date(),
             createdAt: Date(),

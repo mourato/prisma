@@ -710,6 +710,8 @@
 "transcription.actions.export_original" = "Export Original";
 "transcription.actions.redo_post_processing" = "Redo Post-processing";
 "transcription.actions.retry_transcription" = "Retry transcription";
+"transcription.actions.mark_as_meeting" = "Mark as meeting";
+"transcription.actions.mark_as_dictation" = "Mark as dictation";
 "transcription.export.error.missing_transcription" = "Could not load the transcription. Please try again.";
 "transcription.export.error.empty_content" = "There is no content available to export.";
 "transcription.export.error.empty_summary" = "There is no summary available to export.";
@@ -930,6 +932,8 @@
 "transcription.qa.title" = "Ask about this meeting";
 "transcription.qa.placeholder" = "Ask a question grounded in this transcript";
 "transcription.qa.ask" = "Ask";
+"transcription.qa.send_on_return" = "Send on Return";
+"transcription.qa.send_on_return_help" = "When enabled, press Return to send and Shift+Return to add a new line.";
 "transcription.qa.loading" = "Searching grounded evidence...";
 "transcription.qa.retry" = "Try again";
 "transcription.qa.not_found" = "I couldn't find enough grounded evidence in this meeting to answer that question.";

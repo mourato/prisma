@@ -7,7 +7,8 @@ public struct MeetingQuestionComposerTextView: View {
     let placeholder: String
     let minHeight: CGFloat
     let maxHeight: CGFloat
-    let onCommandReturn: () -> Void
+    let sendOnReturn: Bool
+    let onSubmit: () -> Void
 
     @State private var dynamicHeight: CGFloat
 
@@ -16,13 +17,15 @@ public struct MeetingQuestionComposerTextView: View {
         placeholder: String,
         minHeight: CGFloat = 36,
         maxHeight: CGFloat = 140,
-        onCommandReturn: @escaping () -> Void
+        sendOnReturn: Bool = false,
+        onSubmit: @escaping () -> Void
     ) {
         _text = text
         self.placeholder = placeholder
         self.minHeight = minHeight
         self.maxHeight = maxHeight
-        self.onCommandReturn = onCommandReturn
+        self.sendOnReturn = sendOnReturn
+        self.onSubmit = onSubmit
         _dynamicHeight = State(initialValue: minHeight)
     }
 
@@ -33,7 +36,8 @@ public struct MeetingQuestionComposerTextView: View {
                 dynamicHeight: $dynamicHeight,
                 minHeight: minHeight,
                 maxHeight: maxHeight,
-                onCommandReturn: onCommandReturn
+                sendOnReturn: sendOnReturn,
+                onSubmit: onSubmit
             )
             .frame(height: dynamicHeight)
 
@@ -61,7 +65,7 @@ public struct MeetingQuestionComposerTextView: View {
         MeetingQuestionComposerTextView(
             text: text,
             placeholder: "transcription.qa.placeholder".localized,
-            onCommandReturn: {}
+            onSubmit: {}
         )
         .frame(width: 420)
         .padding()
@@ -73,11 +77,13 @@ private struct MeetingQuestionTextViewRepresentable: NSViewRepresentable {
     @Binding var dynamicHeight: CGFloat
     let minHeight: CGFloat
     let maxHeight: CGFloat
-    let onCommandReturn: () -> Void
+    let sendOnReturn: Bool
+    let onSubmit: () -> Void
 
     func makeNSView(context: Context) -> NSScrollView {
         let textView = CommandReturnTextView()
-        textView.onCommandReturn = onCommandReturn
+        textView.sendOnReturn = sendOnReturn
+        textView.onSubmit = onSubmit
         textView.delegate = context.coordinator
         textView.string = text
         textView.isEditable = true
@@ -107,7 +113,8 @@ private struct MeetingQuestionTextViewRepresentable: NSViewRepresentable {
 
     func updateNSView(_ nsView: NSScrollView, context: Context) {
         guard let textView = nsView.documentView as? CommandReturnTextView else { return }
-        textView.onCommandReturn = onCommandReturn
+        textView.sendOnReturn = sendOnReturn
+        textView.onSubmit = onSubmit
         if textView.string != text {
             textView.string = text
             context.coordinator.recalculateHeight(for: textView)
@@ -164,13 +171,18 @@ private struct MeetingQuestionTextViewRepresentable: NSViewRepresentable {
 }
 
 private final class CommandReturnTextView: NSTextView {
-    var onCommandReturn: (() -> Void)?
+    var sendOnReturn = false
+    var onSubmit: (() -> Void)?
 
     override func keyDown(with event: NSEvent) {
         if event.keyCode == 36 || event.keyCode == 76 {
             let normalizedFlags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
             if normalizedFlags.contains(.command) {
-                onCommandReturn?()
+                onSubmit?()
+                return
+            }
+            if sendOnReturn, !normalizedFlags.contains(.shift), normalizedFlags.isEmpty {
+                onSubmit?()
                 return
             }
         }

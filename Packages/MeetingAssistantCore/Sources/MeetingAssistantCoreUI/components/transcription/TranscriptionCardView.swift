@@ -61,6 +61,7 @@ public struct TranscriptionCardView: View {
         case askAboutMeeting
         case copy(text: String)
         case updateMeetingTitle(String?)
+        case updateCapturePurpose(CapturePurpose)
         case reprocess(prompt: PostProcessingPrompt)
         case retryTranscription
         case info
@@ -256,6 +257,14 @@ public struct TranscriptionCardView: View {
                         }
                         .disabled(audioURL == nil)
 
+                        if canUpdateCapturePurpose {
+                            Button {
+                                onAction(.updateCapturePurpose(toggledCapturePurpose))
+                            } label: {
+                                Label(toggleCapturePurposeLabel, systemImage: toggleCapturePurposeIcon)
+                            }
+                        }
+
                         Divider()
 
                         Button(role: .destructive) {
@@ -450,6 +459,32 @@ public struct TranscriptionCardView: View {
     private var sourceDisplayName: String {
         let trimmed = transcription.appName.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? appSource.displayName : trimmed
+    }
+
+    private var canUpdateCapturePurpose: Bool {
+        appSource != .importedFile
+    }
+
+    private var toggledCapturePurpose: CapturePurpose {
+        transcription.capturePurpose == .meeting ? .dictation : .meeting
+    }
+
+    private var toggleCapturePurposeLabel: String {
+        switch transcription.capturePurpose {
+        case .dictation:
+            "transcription.actions.mark_as_meeting".localized
+        case .meeting:
+            "transcription.actions.mark_as_dictation".localized
+        }
+    }
+
+    private var toggleCapturePurposeIcon: String {
+        switch transcription.capturePurpose {
+        case .dictation:
+            "person.2.fill"
+        case .meeting:
+            "text.bubble.fill"
+        }
     }
 
     private var currentPersistedMeetingTitle: String? {

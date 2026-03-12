@@ -710,6 +710,8 @@
 "transcription.actions.export_original" = "Exportar Original";
 "transcription.actions.redo_post_processing" = "Refazer pós-processamento";
 "transcription.actions.retry_transcription" = "Refazer transcrição";
+"transcription.actions.mark_as_meeting" = "Marcar como reunião";
+"transcription.actions.mark_as_dictation" = "Marcar como ditado";
 "transcription.export.error.missing_transcription" = "Não foi possível carregar a transcrição. Tente novamente.";
 "transcription.export.error.empty_content" = "Não há conteúdo disponível para exportar.";
 "transcription.export.error.empty_summary" = "Não há resumo disponível para exportar.";
@@ -920,6 +922,8 @@
 "transcription.qa.title" = "Perguntar sobre esta reunião";
 "transcription.qa.placeholder" = "Faça uma pergunta com base nesta transcrição";
 "transcription.qa.ask" = "Perguntar";
+"transcription.qa.send_on_return" = "Enviar com Return";
+"transcription.qa.send_on_return_help" = "Quando ativado, pressione Return para enviar e Shift+Return para quebrar linha.";
 "transcription.qa.loading" = "Buscando evidências no conteúdo...";
 "transcription.qa.retry" = "Tentar novamente";
 "transcription.qa.not_found" = "Não encontrei evidências suficientes nesta reunião para responder essa pergunta.";
