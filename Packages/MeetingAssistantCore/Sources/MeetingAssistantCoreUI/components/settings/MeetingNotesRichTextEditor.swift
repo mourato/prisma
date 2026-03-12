@@ -57,8 +57,8 @@ struct MeetingNotesRichTextEditor: View {
 
             Divider()
                 .frame(height: 16)
-            
-            formatToggleButton(
+
+            toolbarButton(
                 title: "meeting_notes.rich_text.toolbar.bold".localized,
                 systemImage: "bold",
                 isActive: editorController.isBoldEnabled
@@ -66,7 +66,7 @@ struct MeetingNotesRichTextEditor: View {
                 editorController.toggleBold()
             }
 
-            formatToggleButton(
+            toolbarButton(
                 title: "meeting_notes.rich_text.toolbar.italic".localized,
                 systemImage: "italic",
                 isActive: editorController.isItalicEnabled
@@ -74,33 +74,27 @@ struct MeetingNotesRichTextEditor: View {
                 editorController.toggleItalic()
             }
 
-            Button {
+            toolbarButton(
+                title: "meeting_notes.rich_text.toolbar.unordered_list".localized,
+                systemImage: "list.bullet"
+            ) {
                 editorController.toggleUnorderedList()
-            } label: {
-                Image(systemName: "list.bullet")
             }
-            .buttonStyle(.bordered)
-            .controlSize(.large)
-            .help("meeting_notes.rich_text.toolbar.unordered_list".localized)
 
-            Button {
+            toolbarButton(
+                title: "meeting_notes.rich_text.toolbar.ordered_list".localized,
+                systemImage: "list.number"
+            ) {
                 editorController.toggleOrderedList()
-            } label: {
-                Image(systemName: "list.number")
             }
-            .buttonStyle(.bordered)
-            .controlSize(.large)
-            .help("meeting_notes.rich_text.toolbar.ordered_list".localized)
 
-            Button {
+            toolbarButton(
+                title: "meeting_notes.rich_text.toolbar.link".localized,
+                systemImage: "link"
+            ) {
                 linkInput = editorController.selectedLinkString ?? "https://"
                 isShowingLinkEditor = true
-            } label: {
-                Image(systemName: "link")
             }
-            .buttonStyle(.bordered)
-            .controlSize(.large)
-            .help("meeting_notes.rich_text.toolbar.link".localized)
 
             Spacer(minLength: 0)
         }
@@ -139,10 +133,10 @@ struct MeetingNotesRichTextEditor: View {
         isShowingLinkEditor = false
     }
 
-    private func formatToggleButton(
+    private func toolbarButton(
         title: String,
         systemImage: String,
-        isActive: Bool,
+        isActive: Bool? = nil,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
@@ -150,7 +144,7 @@ struct MeetingNotesRichTextEditor: View {
         }
         .buttonStyle(.bordered)
         .controlSize(.large)
-        .tint(isActive ? .accentColor : nil)
+        .tint(isActive == true ? .accentColor : nil)
         .help(title)
     }
 }
