@@ -276,6 +276,21 @@ public extension TranscriptionSettingsViewModel {
         }
     }
 
+    func updateMeetingNotes(_ notes: String, in transcriptionID: UUID) async {
+        do {
+            guard var transcription = selectedTranscription, transcription.id == transcriptionID else {
+                guard var loaded = try await storage.loadTranscription(by: transcriptionID) else { return }
+                try await updateMeetingNotes(in: &loaded, notes: notes, selectedID: transcriptionID)
+                return
+            }
+
+            try await updateMeetingNotes(in: &transcription, notes: notes, selectedID: transcriptionID)
+        } catch {
+            logger.error("Failed to update meeting notes: \(error.localizedDescription)")
+            operationErrorMessage = "transcription.meeting_notes.error".localized
+        }
+    }
+
     func confirmDeleteTranscription(_ metadata: TranscriptionMetadata) {
         pendingDeleteTranscription = metadata
         showDeleteConfirmation = true
@@ -518,6 +533,50 @@ public extension TranscriptionSettingsViewModel {
             meeting: transcription.meeting,
             contextItems: transcription.contextItems,
             segments: sortedRenamedSegments,
+            text: transcription.text,
+            rawText: transcription.rawText,
+            processedContent: transcription.processedContent,
+            canonicalSummary: transcription.canonicalSummary,
+            qualityProfile: transcription.qualityProfile,
+            postProcessingPromptId: transcription.postProcessingPromptId,
+            postProcessingPromptTitle: transcription.postProcessingPromptTitle,
+            language: transcription.language,
+            createdAt: transcription.createdAt,
+            modelName: transcription.modelName,
+            inputSource: transcription.inputSource,
+            transcriptionDuration: transcription.transcriptionDuration,
+            postProcessingDuration: transcription.postProcessingDuration,
+            postProcessingModel: transcription.postProcessingModel,
+            meetingType: transcription.meetingType,
+            meetingConversationState: transcription.meetingConversationState
+        )
+
+        try await storage.saveTranscription(updatedTranscription)
+        if selectedId == selectedID || selectedTranscription?.id == selectedID {
+            selectedTranscription = updatedTranscription
+        }
+    }
+
+    private func updateMeetingNotes(
+        in transcription: inout Transcription,
+        notes: String,
+        selectedID: UUID
+    ) async throws {
+        let trimmedNotes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
+        let contextWithoutMeetingNotes = transcription.contextItems.filter { $0.source != .meetingNotes }
+        let updatedContextItems = if trimmedNotes.isEmpty {
+            contextWithoutMeetingNotes
+        } else {
+            contextWithoutMeetingNotes + [TranscriptionContextItem(source: .meetingNotes, text: notes)]
+        }
+
+        guard updatedContextItems != transcription.contextItems else { return }
+
+        let updatedTranscription = Transcription(
+            id: transcription.id,
+            meeting: transcription.meeting,
+            contextItems: updatedContextItems,
+            segments: transcription.segments,
             text: transcription.text,
             rawText: transcription.rawText,
             processedContent: transcription.processedContent,

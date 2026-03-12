@@ -25,6 +25,7 @@ import SwiftUI
             ),
         ],
         questionText: "",
+        meetingNotesText: "Follow-up: review roadmap on Friday.",
         onQuestionChange: { _ in },
         onAsk: {},
         onRetry: { _ in },
@@ -43,7 +44,8 @@ import SwiftUI
         onRefreshModelOptions: {},
         dictationState: .idle,
         dictationErrorMessage: nil,
-        onToggleDictation: {}
+        onToggleDictation: {},
+        onUpdateMeetingNotes: { _, _ in }
     )
     .frame(width: 700, height: 700)
 }
@@ -54,6 +56,7 @@ import SwiftUI
         isLoadingTranscription: false,
         turns: [],
         questionText: "",
+        meetingNotesText: "",
         onQuestionChange: { _ in },
         onAsk: {},
         onRetry: { _ in },
@@ -69,7 +72,8 @@ import SwiftUI
         onRefreshModelOptions: {},
         dictationState: .recording,
         dictationErrorMessage: nil,
-        onToggleDictation: {}
+        onToggleDictation: {},
+        onUpdateMeetingNotes: { _, _ in }
     )
     .frame(width: 700, height: 700)
 }

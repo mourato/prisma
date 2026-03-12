@@ -7,9 +7,10 @@ import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
 public struct MeetingConversationView: View {
-    private enum InternalTab: String, CaseIterable, Identifiable {
+    private enum InternalTab: String, Identifiable {
         case chat
         case segmented
+        case notes
 
         var id: String {
             rawValue
@@ -21,6 +22,8 @@ public struct MeetingConversationView: View {
                 "transcription.qa.tab.chat".localized
             case .segmented:
                 "transcription.qa.tab.segmented".localized
+            case .notes:
+                "transcription.qa.tab.notes".localized
             }
         }
     }
@@ -29,6 +32,7 @@ public struct MeetingConversationView: View {
     let isLoadingTranscription: Bool
     let turns: [TranscriptionSettingsViewModel.QATurn]
     let questionText: String
+    let meetingNotesText: String
     let onQuestionChange: (String) -> Void
     let onAsk: () -> Void
     let onRetry: (String) -> Void
@@ -43,17 +47,22 @@ public struct MeetingConversationView: View {
     let dictationErrorMessage: String?
     let onToggleDictation: () -> Void
     let onRenameSpeaker: (_ original: String, _ updated: String, _ transcriptionID: UUID) -> Void
+    let onUpdateMeetingNotes: (_ notes: String, _ transcriptionID: UUID) -> Void
 
     @State private var isShowingModelSelector = false
     @State private var selectedInternalTab: InternalTab = .chat
     @State private var speakerRenames: [String: String] = [:]
     @State private var sendOnReturn = false
+    @State private var notesDraft = ""
+    @State private var lastSavedNotes = ""
+    @State private var notesAutosaveTask: Task<Void, Never>?
 
     public init(
         transcription: Transcription?,
         isLoadingTranscription: Bool,
         turns: [TranscriptionSettingsViewModel.QATurn],
         questionText: String,
+        meetingNotesText: String,
         onQuestionChange: @escaping (String) -> Void,
         onAsk: @escaping () -> Void,
         onRetry: @escaping (String) -> Void,
@@ -67,12 +76,14 @@ public struct MeetingConversationView: View {
         dictationState: MeetingQuestionDictationService.State,
         dictationErrorMessage: String?,
         onToggleDictation: @escaping () -> Void,
-        onRenameSpeaker: @escaping (_ original: String, _ updated: String, _ transcriptionID: UUID) -> Void = { _, _, _ in }
+        onRenameSpeaker: @escaping (_ original: String, _ updated: String, _ transcriptionID: UUID) -> Void = { _, _, _ in },
+        onUpdateMeetingNotes: @escaping (_ notes: String, _ transcriptionID: UUID) -> Void = { _, _ in }
     ) {
         self.transcription = transcription
         self.isLoadingTranscription = isLoadingTranscription
         self.turns = turns
         self.questionText = questionText
+        self.meetingNotesText = meetingNotesText
         self.onQuestionChange = onQuestionChange
         self.onAsk = onAsk
         self.onRetry = onRetry
@@ -87,6 +98,7 @@ public struct MeetingConversationView: View {
         self.dictationErrorMessage = dictationErrorMessage
         self.onToggleDictation = onToggleDictation
         self.onRenameSpeaker = onRenameSpeaker
+        self.onUpdateMeetingNotes = onUpdateMeetingNotes
     }
 
     public var body: some View {
@@ -94,8 +106,10 @@ public struct MeetingConversationView: View {
             header
             Divider()
             content
-            Divider()
-            composer
+            if selectedInternalTab == .chat {
+                Divider()
+                composer
+            }
         }
         .background(AppDesignSystem.Colors.windowBackground)
         .sheet(isPresented: $isShowingModelSelector) {
@@ -115,6 +129,39 @@ public struct MeetingConversationView: View {
             )
             .onAppear {
                 onRefreshModelOptions()
+            }
+        }
+        .onAppear {
+            selectedInternalTab = .chat
+            syncNotesFromPersistedValue()
+            ensureValidInternalTabSelection()
+        }
+        .onChange(of: hasSegments) { _, _ in
+            ensureValidInternalTabSelection()
+        }
+        .onChange(of: meetingNotesText) { oldValue, newValue in
+            if notesDraft == oldValue {
+                notesDraft = newValue
+            }
+            lastSavedNotes = newValue
+        }
+        .onChange(of: notesDraft) { _, _ in
+            scheduleNotesAutosave()
+        }
+        .onChange(of: transcription?.id) { oldID, _ in
+            if let oldID {
+                flushNotesAutosave(for: oldID)
+            }
+            selectedInternalTab = .chat
+            syncNotesFromPersistedValue()
+            ensureValidInternalTabSelection()
+        }
+        .onDisappear {
+            if let transcriptionID = transcription?.id {
+                flushNotesAutosave(for: transcriptionID)
+            } else {
+                notesAutosaveTask?.cancel()
+                notesAutosaveTask = nil
             }
         }
     }
@@ -155,23 +202,23 @@ public struct MeetingConversationView: View {
             }
         } else {
             VStack(spacing: 0) {
-                if hasSegments {
-                    Picker("", selection: $selectedInternalTab) {
-                        ForEach(InternalTab.allCases) { tab in
-                            Text(tab.label).tag(tab)
-                        }
+                Picker("", selection: $selectedInternalTab) {
+                    ForEach(availableTabs) { tab in
+                        Text(tab.label).tag(tab)
                     }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
                 }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
 
                 switch selectedInternalTab {
                 case .chat:
                     chatContent
                 case .segmented:
                     segmentedContent
+                case .notes:
+                    notesContent
                 }
             }
         }
@@ -439,6 +486,13 @@ public struct MeetingConversationView: View {
 
     // MARK: - Segmented Tab
 
+    private var availableTabs: [InternalTab] {
+        if hasSegments {
+            return [.chat, .segmented, .notes]
+        }
+        return [.chat, .notes]
+    }
+
     private var hasSegments: Bool {
         guard let transcription else { return false }
         return !transcription.segments.isEmpty
@@ -479,6 +533,20 @@ public struct MeetingConversationView: View {
             }
             .padding(16)
         }
+    }
+
+    // MARK: - Notes Tab
+
+    private var notesContent: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("recording_indicator.meeting_notes.help".localized)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            MeetingNotesMarkdownEditor(text: $notesDraft)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .padding(16)
     }
 
     private var speakerRenameSection: some View {
@@ -523,6 +591,46 @@ public struct MeetingConversationView: View {
     private func isSaveDisabled(for speaker: String) -> Bool {
         let value = speakerRenames[speaker]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return value.isEmpty || value == speaker
+    }
+
+    private func ensureValidInternalTabSelection() {
+        guard availableTabs.contains(selectedInternalTab) else {
+            selectedInternalTab = .chat
+            return
+        }
+    }
+
+    private func syncNotesFromPersistedValue() {
+        notesDraft = meetingNotesText
+        lastSavedNotes = meetingNotesText
+    }
+
+    private func scheduleNotesAutosave() {
+        notesAutosaveTask?.cancel()
+        guard let transcription else { return }
+        guard notesDraft != lastSavedNotes else { return }
+
+        let pendingNotes = notesDraft
+        let transcriptionID = transcription.id
+        notesAutosaveTask = Task {
+            try? await Task.sleep(for: .milliseconds(400))
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                persistNotesIfNeeded(pendingNotes, for: transcriptionID)
+            }
+        }
+    }
+
+    private func flushNotesAutosave(for transcriptionID: UUID) {
+        notesAutosaveTask?.cancel()
+        notesAutosaveTask = nil
+        persistNotesIfNeeded(notesDraft, for: transcriptionID)
+    }
+
+    private func persistNotesIfNeeded(_ notes: String, for transcriptionID: UUID) {
+        guard notes != lastSavedNotes else { return }
+        onUpdateMeetingNotes(notes, transcriptionID)
+        lastSavedNotes = notes
     }
 
     private var segmentListSection: some View {
@@ -577,6 +685,7 @@ public struct MeetingConversationView: View {
             ),
         ],
         questionText: "How should I finish this reorg?",
+        meetingNotesText: "Owner: Speaker 2\n- Prioritize screens with side effects",
         onQuestionChange: { _ in },
         onAsk: {},
         onRetry: { _ in },
@@ -597,7 +706,8 @@ public struct MeetingConversationView: View {
         dictationState: .idle,
         dictationErrorMessage: nil,
         onToggleDictation: {},
-        onRenameSpeaker: { _, _, _ in }
+        onRenameSpeaker: { _, _, _ in },
+        onUpdateMeetingNotes: { _, _ in }
     )
     .frame(width: 760, height: 680)
     .padding()

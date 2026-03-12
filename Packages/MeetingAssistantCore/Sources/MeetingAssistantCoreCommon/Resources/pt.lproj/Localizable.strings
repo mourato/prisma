@@ -955,8 +955,10 @@
 "transcription.content.show_less" = "Ver menos";
 "transcription.post_processing.error" = "Falha no pós-processamento. Tente novamente.";
 "transcription.speaker.rename.error" = "Falha ao renomear speaker.";
+"transcription.meeting_notes.error" = "Falha ao atualizar anotações da reunião.";
 "transcription.qa.tab.chat" = "Chat";
 "transcription.qa.tab.segmented" = "Segmentado";
+"transcription.qa.tab.notes" = "Notas";
 "transcription.speaker.rename.save" = "Salvar";
 "transcription.speaker.rename.field_placeholder" = "Novo nome";
 
