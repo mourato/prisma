@@ -298,7 +298,10 @@ public struct MeetingConversationView: View {
                 ),
                 placeholder: "transcription.qa.placeholder".localized,
                 sendOnReturn: sendOnReturn,
-                onSubmit: onAsk
+                onSubmit: {
+                    guard !isAskDisabled else { return }
+                    onAsk()
+                }
             )
 
             HStack(spacing: 8) {
