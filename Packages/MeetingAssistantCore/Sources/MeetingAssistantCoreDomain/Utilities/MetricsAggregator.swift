@@ -73,6 +73,29 @@ public struct MetricsDailyBucket: Equatable, Identifiable, Sendable {
     }
 }
 
+public struct MetricsAppUsageBucket: Equatable, Identifiable, Sendable {
+    public let appRawValue: String
+    public let appName: String
+    public let sessions: Int
+    public let isOther: Bool
+
+    public var id: String {
+        appRawValue
+    }
+
+    public init(
+        appRawValue: String,
+        appName: String,
+        sessions: Int,
+        isOther: Bool
+    ) {
+        self.appRawValue = appRawValue
+        self.appName = appName
+        self.sessions = sessions
+        self.isOther = isOther
+    }
+}
+
 public enum MetricsAggregator {
     private static let KEYSTROKES_PER_WORD = 5
 
@@ -179,5 +202,91 @@ public enum MetricsAggregator {
 
             return MetricsDailyBucket(date: date, words: dayCounts[date, default: 0])
         }
+    }
+
+    public static func computeTopAppUsageBuckets(
+        metadata: [TranscriptionMetadata],
+        topLimit: Int = 6,
+        otherLabel: String = "Other"
+    ) -> [MetricsAppUsageBucket] {
+        guard topLimit > 0 else { return [] }
+
+        struct AppUsageAccumulator {
+            var appName: String
+            var sessions: Int
+        }
+
+        var appUsage: [String: AppUsageAccumulator] = [:]
+
+        for item in metadata {
+            let normalizedRawValue = normalizeAppRawValue(item.appRawValue)
+            let normalizedName = normalizeAppName(item.appName, appRawValue: normalizedRawValue)
+
+            if var existing = appUsage[normalizedRawValue] {
+                existing.sessions += 1
+                appUsage[normalizedRawValue] = existing
+            } else {
+                appUsage[normalizedRawValue] = AppUsageAccumulator(
+                    appName: normalizedName,
+                    sessions: 1
+                )
+            }
+        }
+
+        let sortedUsage = appUsage
+            .map { (appRawValue: $0.key, appName: $0.value.appName, sessions: $0.value.sessions) }
+            .sorted { lhs, rhs in
+                if lhs.sessions == rhs.sessions {
+                    return lhs.appName.localizedCaseInsensitiveCompare(rhs.appName) == .orderedAscending
+                }
+                return lhs.sessions > rhs.sessions
+            }
+
+        let topApps = sortedUsage.prefix(topLimit).map { app in
+            MetricsAppUsageBucket(
+                appRawValue: app.appRawValue,
+                appName: app.appName,
+                sessions: app.sessions,
+                isOther: false
+            )
+        }
+
+        let remainingSessions = sortedUsage.dropFirst(topLimit).reduce(0) { partialResult, usage in
+            partialResult + usage.sessions
+        }
+
+        guard remainingSessions > 0 else {
+            return topApps
+        }
+
+        return topApps + [
+            MetricsAppUsageBucket(
+                appRawValue: "other",
+                appName: otherLabel,
+                sessions: remainingSessions,
+                isOther: true
+            ),
+        ]
+    }
+
+    private static func normalizeAppRawValue(_ rawValue: String) -> String {
+        let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            return MeetingApp.unknown.rawValue
+        }
+        return trimmed
+    }
+
+    private static func normalizeAppName(_ appName: String, appRawValue: String) -> String {
+        let trimmedName = appName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedName.isEmpty {
+            return trimmedName
+        }
+
+        if let meetingApp = MeetingApp(rawValue: appRawValue) {
+            return meetingApp.displayName
+        }
+
+        return appRawValue
     }
 }

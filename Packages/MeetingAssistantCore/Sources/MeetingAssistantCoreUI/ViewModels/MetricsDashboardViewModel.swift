@@ -14,6 +14,7 @@ public final class MetricsDashboardViewModel: ObservableObject {
     @Published public private(set) var weekdayBuckets: [MetricsWeekdayBucket] = []
     @Published public private(set) var hourlyBuckets: [MetricsHourlyBucket] = []
     @Published public private(set) var dailyBuckets: [MetricsDailyBucket] = []
+    @Published public private(set) var appUsageBuckets: [MetricsAppUsageBucket] = []
     @Published public private(set) var upcomingEvents: [MeetingCalendarEventSnapshot] = []
     @Published public private(set) var calendarPermissionState: PermissionState
     @Published public private(set) var activeLinkedCalendarEventID: String?
@@ -218,6 +219,11 @@ public final class MetricsDashboardViewModel: ObservableObject {
         weekdayBuckets = MetricsAggregator.computeWeekdayBuckets(metadata: filtered)
         hourlyBuckets = MetricsAggregator.computeHourlyBuckets(metadata: filtered)
         dailyBuckets = MetricsAggregator.computeDailyBuckets(metadata: allMetadata)
+        appUsageBuckets = MetricsAggregator.computeTopAppUsageBuckets(
+            metadata: filtered,
+            topLimit: 6,
+            otherLabel: "metrics.apps.frequency.other".localized
+        )
     }
 
     private func upsertMetadata(from transcription: Transcription) {

@@ -63,13 +63,46 @@ final class MetricsDashboardViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.summary.wordsDictated, 9)
     }
 
-    private func makeTranscription(wordCount: Int) -> Transcription {
+    func testLoad_ComputesTopAppUsageBucketsWithOtherGroup() async {
+        let storage = MockStorageService()
+        storage.mockTranscriptions = [
+            makeTranscription(wordCount: 10, app: .zoom),
+            makeTranscription(wordCount: 10, app: .zoom),
+            makeTranscription(wordCount: 10, app: .microsoftTeams),
+            makeTranscription(wordCount: 10, app: .microsoftTeams),
+            makeTranscription(wordCount: 10, app: .slack),
+            makeTranscription(wordCount: 10, app: .discord),
+            makeTranscription(wordCount: 10, app: .googleMeet),
+            makeTranscription(wordCount: 10, app: .manualMeeting),
+            makeTranscription(wordCount: 10, app: .unknown),
+        ]
+
+        let viewModel = MetricsDashboardViewModel(storage: storage)
+        await viewModel.load()
+
+        XCTAssertEqual(viewModel.appUsageBuckets.count, 7)
+        XCTAssertEqual(viewModel.appUsageBuckets.first?.sessions, 2)
+        XCTAssertTrue(
+            viewModel.appUsageBuckets.contains {
+                $0.appRawValue == MeetingApp.zoom.rawValue && $0.sessions == 2
+            }
+        )
+        XCTAssertTrue(
+            viewModel.appUsageBuckets.contains {
+                $0.appRawValue == MeetingApp.microsoftTeams.rawValue && $0.sessions == 2
+            }
+        )
+        XCTAssertTrue(viewModel.appUsageBuckets.last?.isOther ?? false)
+        XCTAssertEqual(viewModel.appUsageBuckets.last?.sessions, 1)
+    }
+
+    private func makeTranscription(wordCount: Int, app: MeetingApp = .microsoftTeams) -> Transcription {
         let words = Array(repeating: "word", count: max(wordCount, 1)).joined(separator: " ")
         let start = Date()
         let end = start.addingTimeInterval(60)
         let meeting = Meeting(
             id: UUID(),
-            app: .microsoftTeams,
+            app: app,
             startTime: start,
             endTime: end
         )

@@ -28,6 +28,10 @@
 "metrics.summary.time_saved_detail" = "vs. typing by hand";
 "metrics.peaks.weekday.title" = "Weekday Peaks";
 "metrics.peaks.hourly.title" = "Hourly Peaks";
+"metrics.apps.frequency.title" = "Recording Starts by App";
+"metrics.apps.frequency.subtitle" = "Top 6 apps where recordings start most often.";
+"metrics.apps.frequency.total" = "starts";
+"metrics.apps.frequency.other" = "Other";
 "metrics.empty.title" = "No data yet";
 "metrics.empty.subtitle" = "Start your first recording to unlock insights.";
 "metrics.error.load" = "Failed to load dashboard data.";

@@ -49,6 +49,7 @@ struct MetricsDashboardMoreInsightsPage: View {
                 )
             } else {
                 MetricsDashboardSummarySection(viewModel: viewModel)
+                MetricsDashboardAppStartFrequencySection(viewModel: viewModel)
                 MetricsDashboardHourlyPeaksSection(viewModel: viewModel)
                 MetricsDashboardWeekdayPeaksSection(viewModel: viewModel)
             }
@@ -202,6 +203,97 @@ private struct MetricsDashboardHourlyPeaksSection: View {
             }
             .frame(height: AppDesignSystem.Layout.chartHeight)
         }
+    }
+}
+
+private struct MetricsDashboardAppStartFrequencySection: View {
+    @ObservedObject var viewModel: MetricsDashboardViewModel
+
+    private var totalSessions: Int {
+        viewModel.appUsageBuckets.reduce(0) { partialResult, bucket in
+            partialResult + bucket.sessions
+        }
+    }
+
+    var body: some View {
+        DSGroup("metrics.apps.frequency.title".localized, icon: "app.badge") {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("metrics.apps.frequency.subtitle".localized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                if viewModel.appUsageBuckets.isEmpty {
+                    MAEmptyStateView(
+                        iconName: "chart.pie",
+                        title: "metrics.empty.title".localized,
+                        message: "metrics.empty.subtitle".localized,
+                        emphasis: .compact
+                    )
+                } else {
+                    ZStack {
+                        Chart(viewModel.appUsageBuckets) { bucket in
+                            SectorMark(
+                                angle: .value("count", bucket.sessions),
+                                innerRadius: .ratio(0.62),
+                                angularInset: 2
+                            )
+                            .foregroundStyle(color(for: bucket))
+                        }
+                        .chartLegend(.hidden)
+
+                        VStack(spacing: 4) {
+                            Text(MetricsDashboardFormatters.formattedNumber(totalSessions))
+                                .font(.title3.weight(.semibold))
+                            Text("metrics.apps.frequency.total".localized)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .frame(height: max(AppDesignSystem.Layout.chartHeight, 220))
+
+                    VStack(spacing: 8) {
+                        ForEach(viewModel.appUsageBuckets) { bucket in
+                            HStack(spacing: 8) {
+                                Circle()
+                                    .fill(color(for: bucket))
+                                    .frame(width: 10, height: 10)
+
+                                Text(bucket.appName)
+                                    .font(.caption)
+                                    .lineLimit(1)
+
+                                Spacer(minLength: 12)
+
+                                Text(MetricsDashboardFormatters.formattedNumber(bucket.sessions))
+                                    .font(.caption.monospacedDigit())
+                                    .foregroundStyle(.secondary)
+
+                                Text(percentText(for: bucket.sessions))
+                                    .font(.caption.monospacedDigit())
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 42, alignment: .trailing)
+                            }
+                            .accessibilityElement(children: .combine)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func percentText(for sessions: Int) -> String {
+        guard totalSessions > 0 else { return "0%" }
+        let ratio = Double(sessions) / Double(totalSessions)
+        return ratio.formatted(.percent.precision(.fractionLength(0)))
+    }
+
+    private func color(for bucket: MetricsAppUsageBucket) -> Color {
+        if bucket.isOther {
+            return AppDesignSystem.Colors.subtleFill
+        }
+
+        let app = MeetingApp(rawValue: bucket.appRawValue) ?? .unknown
+        return app.color
     }
 }
 
