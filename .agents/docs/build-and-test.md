@@ -15,6 +15,7 @@ make build
 make build-test         # Run build + test in sequence (unified gate)
 make build              # Debug build only
 make test               # Run tests only
+make scope-check        # Scoped validation with smart targeted mapping + escalation
 make test-ci-strict     # Xcode test run without retry/fallback
 make preflight          # Build + Test + Lint + Benchmark (full validation)
 make preflight-fast     # Lint + Build + Test (skips benchmark, faster feedback)
@@ -51,6 +52,7 @@ MA_RELEASE_SIGNING_MODE=self-signed make dmg
 make build-test         # Build + test with concise progress
 make build-agent        # Debug build only (agent-friendly diagnostics)
 make test-agent         # Tests only (machine-readable output)
+make scope-check-agent  # Scoped validation in compact agent mode
 make test-ci-strict     # Strict xcodebuild run (no fallback/retry)
 make lint-agent         # Lint with compact reporting
 make preflight-agent    # Full validation (agent-optimized)
@@ -107,6 +109,37 @@ make test-ci-strict      # Strict xcodebuild parity mode
 ./scripts/run-tests.sh --test testInitialState
 ./scripts/run-tests.sh --verbose
 ./scripts/run-tests.sh --agent
+```
+
+### Scoped iteration workflow (faster feedback)
+
+Use this sequence while implementing, then keep lane merge gates at the end:
+
+```bash
+# Canonical smart command (auto-maps tests, escalates to full gate when needed)
+make scope-check
+
+# 1) Targeted tests for changed behavior
+./scripts/run-tests.sh --file <TestFile>
+./scripts/run-tests.sh --test <testName>
+
+# 2) Narrow compile confidence
+make build-agent
+
+# 3) Scope-specific checks (only when relevant)
+make preview-check
+make arch-check
+```
+
+Escalate early to `make build-test` when touching build/test/release infrastructure, cross-module/public APIs, or high-risk paths (audio, persistence, concurrency, security), or when scoped checks are flaky/inconclusive.
+
+Useful options for the script:
+
+```bash
+./scripts/scope-check.sh --dry-run
+./scripts/scope-check.sh --max-targeted 12
+./scripts/scope-check.sh --base main
+./scripts/scope-check.sh --no-build
 ```
 
 ### CI-style local checks
@@ -180,7 +213,7 @@ On failure, scripts print compact excerpts to terminal while keeping full logs o
 ## Minimum Verification Gates
 
 **Before push/merge (mandatory):**
-- ✓ Fast lane: `make test` — all tests pass
+- ✓ Fast lane: `make test-agent` — all tests pass (agent-compact output)
 - ✓ Full lane: `make build-test` — build + test gate passes
 
 **Recommended before merge:**
@@ -202,6 +235,7 @@ On failure, scripts print compact excerpts to terminal while keeping full logs o
 | Before push/release (recommended) | `make deliverable-gate` |
 | Pre-merge validation | `make preflight` |
 | Fast local feedback | `make preflight-fast` |
+| Smart scoped iteration | `make scope-check` |
 | Agent-based pre-merge | `make preflight-agent` |
 | Release preparation | `make lint && make build-test && make build-release && make dmg` |
 | CI-style check | `make ci-build` |
@@ -225,5 +259,5 @@ On failure, scripts print compact excerpts to terminal while keeping full logs o
 
 - SwiftLint config: `.swiftlint.yml`
 - SwiftFormat config: `.swiftformat`
-- Build scripts: `scripts/` (e.g., `build-release.sh`, `preflight.sh`)
+- Build scripts: `scripts/` (e.g., `build-release.sh`, `preflight.sh`, `scope-check.sh`)
 - Makefile targets: `Makefile` (root)

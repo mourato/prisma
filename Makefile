@@ -5,7 +5,7 @@
 # with CI/CD pipelines and headless environments.
 # =============================================================================
 
-.PHONY: help build build-debug build-release build-agent build-test xcodebuild-safe test test-agent test-swift test-verbose test-strict test-ci-strict benchmark-summary benchmark-summary-agent lint lint-agent lint-fix arch-check preview-check preflight preflight-fast preflight-agent preflight-agent-fast clean run run-release dmg setup-self-signed-cert setup format health ci-build ci-test ci-release-parity ci-release-parity-self-signed deliverable-gate docs docs-preview docs-clean profile profile-report profile-cpu profile-memory profile-animation profile-animation-report
+.PHONY: help build build-debug build-release build-agent build-test xcodebuild-safe test test-agent test-swift test-verbose test-strict test-ci-strict scope-check scope-check-agent benchmark-summary benchmark-summary-agent lint lint-agent lint-fix arch-check preview-check preflight preflight-fast preflight-agent preflight-agent-fast clean run run-release dmg setup-self-signed-cert setup format health ci-build ci-test ci-release-parity ci-release-parity-self-signed deliverable-gate docs docs-preview docs-clean profile profile-report profile-cpu profile-memory profile-animation profile-animation-report
 
 # Default target
 help:
@@ -27,6 +27,8 @@ help:
 	@echo "  make test-verbose   - Run tests with verbose output"
 	@echo "  make test-strict    - Run tests with strict concurrency checking"
 	@echo "  make test-ci-strict - Alias of make test (strict xcodebuild)"
+	@echo "  make scope-check    - Run scoped validation (targeted tests + smart escalation)"
+	@echo "  make scope-check-agent - Run scoped validation in compact agent mode"
 	@echo "  make benchmark-summary - Run summary benchmark gate in report-only mode"
 	@echo "  make benchmark-summary-agent - Run summary benchmark in compact mode"
 	@echo ""
@@ -133,6 +135,12 @@ test-strict:
 
 test-ci-strict:
 	@$(MAKE) test
+
+scope-check:
+	@./scripts/scope-check.sh $(ARGS)
+
+scope-check-agent:
+	@MA_AGENT_MODE=1 MA_AGENT_LOG_DIR="$(AGENT_LOG_DIR)" ./scripts/scope-check.sh --agent $(ARGS)
 
 benchmark-summary:
 	@./scripts/run-summary-benchmark.sh --report-only

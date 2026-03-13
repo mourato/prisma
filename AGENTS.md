@@ -118,7 +118,13 @@ Before implementation, classify your task:
 - Use feature branch in current checkout
 - Scan for reusable blocks (reuse → extend → create)
 - Implement in small slices
-- Pre-commit: lint/format + targeted tests
+- **Iteration gate (default):** lint/format + scoped checks for touched files/subsystem
+- Prefer quick scoped commands first:
+  - `make scope-check` (smart targeted checks + automatic escalation)
+  - `./scripts/run-tests.sh --file <TestFile>` or `--test <testName>` when you need explicit manual targeting
+  - `make build-agent` for fast compile confidence
+  - `make preview-check` when changing SwiftUI views
+  - `make arch-check` when changing architecture/import boundaries
 - **Merge gate:**
   - `make lint-fix`
   - `make test-agent`
@@ -127,12 +133,33 @@ Before implementation, classify your task:
 
 - Use a new feature branch; keep commits atomic
 - Scan reusable blocks upfront
-- Small slices, frequent verification
+- Small slices, frequent scoped verification (targeted tests + narrow build first)
+- Run `make build-test` at key milestones (before push/merge, after large rebases, or when escalation triggers fire)
 - **Before push/merge (hard gates, no exceptions):**
   - `make lint-fix`
   - `make build-test`
   - `make lint` (mandatory for broad refactors)
 - **Code review:** Full semáforo review (🔴/🟡/🟢). Fix all Critical + Medium findings before merge.
+
+### Scoped Validation Intelligence (Mandatory During Iteration)
+
+Use this decision order to keep feedback fast without sacrificing safety:
+
+1. **Targeted tests first** — run only affected tests when mapping is clear.
+2. **Narrow build second** — use `make build-agent`/`make build` to validate compilation.
+3. **Scope checks when relevant** — `make preview-check`, `make arch-check`, or focused subsystem checks.
+4. **Full gate when required** — run `make build-test` on merge gate and whenever escalation criteria apply.
+
+`make scope-check` is the canonical command for steps 1-4 above during iteration.
+
+**Escalate to immediate full gate (`make build-test`) if any trigger applies:**
+
+- Build/release/test infrastructure changed (`Makefile`, `scripts/`, `.github/workflows`, `Package.swift`, project config)
+- Cross-module or public API changes
+- Audio, persistence, concurrency/actor isolation, security-sensitive paths
+- Large delta (`>300` lines added) or high file churn (`>8` source files touched)
+- No trustworthy targeted test mapping
+- Flaky or non-deterministic failures detected in scoped checks
 
 ### Definition of Done & Evidence
 
@@ -140,8 +167,8 @@ For every task, leave auditable evidence in the PR description, issue comment, o
 
 | Lane | Required quality gates | Required evidence |
 | ---- | ---------------------- | ----------------- |
-| **Fast** | `make lint-fix`, `make test-agent` | Risk level, reusable-block decision (reuse/extend/create), commands executed, test result summary |
-| **Full** | `make lint-fix`, `make build-test`, and `make lint` for broad refactors | Risk level, reusable-block decision, semáforo review outcome, commands executed, test/build result summary |
+| **Fast** | Iteration scoped checks + `make lint-fix`, `make test-agent` | Risk level, reusable-block decision (reuse/extend/create), scoped commands executed, escalation rationale (if any), test result summary |
+| **Full** | Iteration scoped checks + `make lint-fix`, `make build-test`, and `make lint` for broad refactors | Risk level, reusable-block decision, semáforo review outcome, scoped commands executed, escalation rationale (if any), test/build result summary |
 
 ### PR & Merge Policy
 
@@ -188,13 +215,14 @@ Before responding or committing code, verify:
 - **Assumptions checked:** Did I ask clarification or assume silently?
 - **Hard constraints:** Am I violating any hard constraint above?
 - **Code review:** Did I plan for appropriate review depth (lightweight vs. full semáforo)?
-- **Merge gates:** Did I verify lane gates (`make test-agent` for Fast, `make build-test` for Full)?
+- **Verification strategy:** Did I run scoped checks during iteration and lane gates at merge (`make test-agent` for Fast, `make build-test` for Full)?
 - **Evidence captured:** Did I record commands/results and assumptions where applicable?
 
 **Signals of deviation:**
 
 - "I assumed this was okay..." → Violates clarification hard constraint
 - "I'll just copy this logic..." → Violates reuse/extend/create hard constraint
+- "I'll always run full build/test for every tiny edit" → Ignores scoped-validation workflow and slows feedback loops
 - "This is Low risk, so I'll skip testing" → Violates hard gates
 - "I know this breaks something, but..." → Violates "never commit broken code"
 

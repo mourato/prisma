@@ -60,6 +60,8 @@ Use `make help` to print the current target list from the `Makefile`.
 | `make test-verbose` | Run tests with verbose output. |
 | `make test-strict` | Run tests with strict concurrency checking enabled. |
 | `make test-ci-strict` | Alias for `make test`. |
+| `make scope-check` | Run scoped validation (targeted checks + automatic escalation to full gate when needed). |
+| `make scope-check-agent` | Run scoped validation in compact agent mode. |
 | `make benchmark-summary` | Run the summary benchmark gate in report-only mode. |
 | `make benchmark-summary-agent` | Run the summary benchmark in compact agent mode. |
 

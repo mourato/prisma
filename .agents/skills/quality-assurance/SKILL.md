@@ -24,7 +24,7 @@ Use for docs/comments-only updates, localization/resource text updates, and cons
 Minimum expectation:
 
 - Run staged lint/format checks (or equivalent lightweight checks).
-- Run targeted tests when the change could affect behavior.
+- Run scoped checks first (targeted tests + relevant scope checks) when the change could affect behavior.
 - Before push/merge, run `make test-agent`.
 
 ### Full lane (Medium/High risk)
@@ -33,10 +33,30 @@ Use for behavior changes, API changes, subsystem changes, concurrency/security/p
 
 Minimum expectation:
 
-- During development, run relevant targeted checks continuously.
+- During development, run scoped checks continuously (targeted tests + narrow build first).
+- Reserve `make build-test` for milestone validation and mandatory merge gate.
 - Before push/merge (hard gate):
   - `make build-test`
   - `make lint` (recommended; mandatory for broad refactors)
+
+## Scoped Validation Intelligence
+
+Use this order during implementation to optimize feedback loop time:
+
+1. Targeted tests (`./scripts/run-tests.sh --file ...` / `--test ...`)
+2. Narrow build confidence (`make build-agent` or `make build`)
+3. Scope-specific checks (`make preview-check`, `make arch-check`)
+4. Full suite gate (`make build-test`) when required by lane or escalation triggers
+
+Canonical automation for this sequence: `make scope-check`.
+
+Escalate immediately to full suite (`make build-test`) when:
+
+- Build/release/test infrastructure changes (`Makefile`, `scripts/`, `.github/workflows`, `Package.swift`, project config)
+- Cross-module/public API changes
+- Audio/persistence/concurrency/security-sensitive paths
+- Large change sets or low-confidence test mapping
+- Scoped checks show flaky or inconsistent behavior
 
 ## Scope-driven additional checks
 
@@ -57,6 +77,7 @@ make preflight
 # Isolated diagnostics
 make build-agent
 make test-agent
+make scope-check
 
 # Optional local parity diagnostics
 make build
@@ -70,6 +91,7 @@ make preview-check
 make build-test
 make lint-agent
 make preflight-agent
+make scope-check-agent
 
 # Isolated diagnostics
 make build-agent

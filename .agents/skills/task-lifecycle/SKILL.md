@@ -82,8 +82,11 @@ Repeat the following loop until the task is complete:
 
 1. **Implement a small, coherent slice**: Prefer incremental changes that follow the selected reusable-block strategy (`reuse`, `extend`, or `create`).
 2. **Run proportional checks during development**:
-   - Fast lane: staged lint/format and targeted tests when relevant.
-   - Full lane: run targeted tests and/or `make build-test` as needed while iterating.
+   - Fast lane: staged lint/format plus scoped checks for touched files/subsystem.
+   - Full lane: run scoped checks first (targeted tests + narrow build), then `make build-test` at milestones.
+   - Prefer `make scope-check` as the default scoped command (automatic test mapping + escalation).
+   - Scoped decision order: targeted tests → narrow build (`make build-agent`/`make build`) → scope checks (`make preview-check`, `make arch-check`) → full gate.
+   - Escalate to immediate `make build-test` when build/test infrastructure, cross-module/public API, audio/persistence/concurrency/security paths, large deltas, or low-confidence test mapping are present.
    - Prefer `make preflight` before final push/merge to run the canonical scripted gates (`build + test + lint + summary benchmark`).
    - Use `make preflight-fast` for faster local feedback (`lint + build + test`, skips summary benchmark).
    - When `STRICT_LINT=1`, preflight runs lint before tests to fail earlier on style violations.
@@ -115,7 +118,7 @@ Before the final push/merge, perform a local review using **[code-review](../cod
    - Must fix **🔴 Critical** and **🟡 Medium**.
    - Fix **🟢 Low** when it clearly improves clarity/safety with low risk.
 4. **Hard gate before push/merge**:
-   - Fast lane minimum: `make test`
+   - Fast lane minimum: `make test-agent`
    - Full lane minimum: `make build-test`
    - `make lint` is recommended (mandatory for broad refactors)
    - Preferred single command: `make preflight`
