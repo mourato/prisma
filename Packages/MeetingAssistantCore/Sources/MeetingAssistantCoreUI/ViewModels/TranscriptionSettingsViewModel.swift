@@ -93,6 +93,7 @@ public class TranscriptionSettingsViewModel: ObservableObject {
     let meetingRepository: MeetingRepository
     let meetingQAService: any MeetingQAServiceProtocol
     let meetingNotesRichTextStore: any MeetingNotesRichTextStoreProtocol
+    let meetingNotesMarkdownStore: any MeetingNotesMarkdownDocumentStoreProtocol
     let settings: AppSettingsStore
     let savePanelProvider: @MainActor () -> NSSavePanel
     let summaryExportHelper: SummaryExportHelperProtocol
@@ -116,6 +117,7 @@ public class TranscriptionSettingsViewModel: ObservableObject {
         meetingRepository: MeetingRepository = CoreDataMeetingRepository(),
         meetingQAService: any MeetingQAServiceProtocol = MeetingQAService.shared,
         meetingNotesRichTextStore: any MeetingNotesRichTextStoreProtocol = MeetingNotesRichTextStore(),
+        meetingNotesMarkdownStore: any MeetingNotesMarkdownDocumentStoreProtocol = MeetingNotesMarkdownDocumentStore.shared,
         settings: AppSettingsStore = .shared,
         savePanelProvider: @escaping @MainActor () -> NSSavePanel = { NSSavePanel() },
         summaryExportHelper: SummaryExportHelperProtocol = SummaryExportHelper()
@@ -125,6 +127,7 @@ public class TranscriptionSettingsViewModel: ObservableObject {
         self.meetingRepository = meetingRepository
         self.meetingQAService = meetingQAService
         self.meetingNotesRichTextStore = meetingNotesRichTextStore
+        self.meetingNotesMarkdownStore = meetingNotesMarkdownStore
         self.settings = settings
         self.savePanelProvider = savePanelProvider
         self.summaryExportHelper = summaryExportHelper

@@ -2,6 +2,7 @@ import Atomics
 @preconcurrency import AVFoundation
 import Foundation
 import MeetingAssistantCoreCommon
+import MeetingAssistantCoreData
 import MeetingAssistantCoreInfrastructure
 
 extension AudioRecorder {
@@ -197,16 +198,7 @@ extension AudioRecorder {
     }
 
     func makeMicProbeURL(label: String) -> URL {
-        let recordingsPath = AppSettingsStore.shared.recordingsDirectory
-        let baseURL: URL = if recordingsPath.isEmpty {
-            FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)
-                .first?
-                .appendingPathComponent("MeetingAssistant/recordings", isDirectory: true)
-                ?? URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
-        } else {
-            URL(fileURLWithPath: recordingsPath, isDirectory: true)
-        }
-
+        let baseURL = FileSystemStorageService.shared.recordingsDirectory
         let diagnosticsURL = baseURL.appendingPathComponent("diagnostics", isDirectory: true)
         try? FileManager.default.createDirectory(at: diagnosticsURL, withIntermediateDirectories: true)
 

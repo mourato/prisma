@@ -1,4 +1,5 @@
 import Combine
+import CryptoKit
 @testable import MeetingAssistantCore
 @testable import MeetingAssistantCoreUI
 import XCTest
@@ -14,8 +15,10 @@ final class RecordingManagerTests: XCTestCase {
     var mockActiveAppContextProvider: MockActiveAppContextProvider?
     var mockCaptureContextResolver: MockCaptureContextResolver?
     var meetingNotesRichTextStore: MeetingNotesRichTextStore?
+    var meetingNotesMarkdownStore: MeetingNotesMarkdownDocumentStore?
     var userDefaults: UserDefaults?
     var suiteName: String?
+    var markdownRootDirectoryURL: URL?
 
     override func setUp() async throws {
         try await super.setUp()
@@ -33,6 +36,13 @@ final class RecordingManagerTests: XCTestCase {
             return
         }
         let richTextStore = MeetingNotesRichTextStore(userDefaults: userDefaults)
+        let markdownRootDirectoryURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("recording-manager-markdown-tests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: markdownRootDirectoryURL, withIntermediateDirectories: true)
+        let markdownStore = MeetingNotesMarkdownDocumentStore(
+            userDefaults: userDefaults,
+            rootDirectoryURL: markdownRootDirectoryURL
+        )
 
         mockMic = mic
         mockSystem = system
@@ -42,8 +52,10 @@ final class RecordingManagerTests: XCTestCase {
         mockActiveAppContextProvider = activeAppContextProvider
         mockCaptureContextResolver = captureContextResolver
         meetingNotesRichTextStore = richTextStore
+        meetingNotesMarkdownStore = markdownStore
         self.userDefaults = userDefaults
         self.suiteName = suiteName
+        self.markdownRootDirectoryURL = markdownRootDirectoryURL
 
         manager = RecordingManager(
             micRecorder: mic,
@@ -54,6 +66,7 @@ final class RecordingManagerTests: XCTestCase {
             activeAppContextProvider: activeAppContextProvider,
             captureContextResolver: captureContextResolver,
             meetingNotesRichTextStore: richTextStore,
+            meetingNotesMarkdownStore: markdownStore,
             apiKeyExists: { _ in true }
         )
     }
@@ -75,11 +88,16 @@ final class RecordingManagerTests: XCTestCase {
         mockActiveAppContextProvider = nil
         mockCaptureContextResolver = nil
         meetingNotesRichTextStore = nil
+        meetingNotesMarkdownStore = nil
         if let suiteName {
             userDefaults?.removePersistentDomain(forName: suiteName)
         }
+        if let markdownRootDirectoryURL {
+            try? FileManager.default.removeItem(at: markdownRootDirectoryURL)
+        }
         userDefaults = nil
         suiteName = nil
+        markdownRootDirectoryURL = nil
         try await super.tearDown()
     }
 
@@ -289,6 +307,7 @@ final class RecordingManagerTests: XCTestCase {
         let richData = Data([0x7B, 0x5C, 0x72, 0x74, 0x66])
 
         manager.updateMeetingNotes(MeetingNotesContent(plainText: "Important note", richTextRTFData: richData))
+        XCTAssertTrue(markdownMeetingFileExists(for: meetingID))
         manager.currentMeetingNotesText = ""
         manager.currentMeetingNotesRichTextData = nil
         manager.restoreMeetingNotesIfNeeded(for: meetingID)
@@ -312,6 +331,7 @@ final class RecordingManagerTests: XCTestCase {
             MeetingNotesContent(plainText: "Event note", richTextRTFData: richData),
             for: eventIdentifier
         )
+        XCTAssertTrue(markdownEventFileExists(for: eventIdentifier))
         XCTAssertEqual(manager.loadCalendarEventNotesText(for: eventIdentifier), "Event note")
         XCTAssertEqual(manager.loadCalendarEventNotesContent(for: eventIdentifier).richTextRTFData, richData)
 
@@ -434,6 +454,24 @@ final class RecordingManagerTests: XCTestCase {
         XCTAssertTrue(input.contains("<MEETING_NOTES>"))
         XCTAssertTrue(input.contains("User highlight"))
         XCTAssertTrue(input.contains("</MEETING_NOTES>"))
+    }
+
+    private func markdownMeetingFileExists(for meetingID: UUID) -> Bool {
+        guard let markdownRootDirectoryURL else { return false }
+        let url = markdownRootDirectoryURL
+            .appendingPathComponent("meetings", isDirectory: true)
+            .appendingPathComponent("\(meetingID.uuidString).md", isDirectory: false)
+        return FileManager.default.fileExists(atPath: url.path)
+    }
+
+    private func markdownEventFileExists(for eventIdentifier: String) -> Bool {
+        guard let markdownRootDirectoryURL else { return false }
+        let digest = SHA256.hash(data: Data(eventIdentifier.utf8))
+        let hash = digest.map { String(format: "%02x", $0) }.joined()
+        let url = markdownRootDirectoryURL
+            .appendingPathComponent("calendar-events", isDirectory: true)
+            .appendingPathComponent("\(hash).md", isDirectory: false)
+        return FileManager.default.fileExists(atPath: url.path)
     }
 
     func testMergedPostProcessingInput_EscapesReservedTagsInMeetingNotesAndContext() throws {

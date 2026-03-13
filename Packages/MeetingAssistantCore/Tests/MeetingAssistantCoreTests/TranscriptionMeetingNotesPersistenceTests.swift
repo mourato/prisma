@@ -9,8 +9,10 @@ final class MeetingNotesPersistenceTests: XCTestCase {
     private var meetingRepository: MockMeetingRepository!
     private var meetingQAService: MockMeetingQAService!
     private var richTextStore: MeetingNotesRichTextStore!
+    private var markdownStore: MeetingNotesMarkdownDocumentStore!
     private var userDefaults: UserDefaults!
     private var suiteName: String!
+    private var markdownRootDirectoryURL: URL!
 
     override func setUp() async throws {
         storage = MockStorageService()
@@ -19,11 +21,19 @@ final class MeetingNotesPersistenceTests: XCTestCase {
         suiteName = "MeetingNotesPersistenceTests.\(UUID().uuidString)"
         userDefaults = UserDefaults(suiteName: suiteName)
         richTextStore = MeetingNotesRichTextStore(userDefaults: userDefaults)
+        markdownRootDirectoryURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("meeting-notes-persistence-tests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: markdownRootDirectoryURL, withIntermediateDirectories: true)
+        markdownStore = MeetingNotesMarkdownDocumentStore(
+            userDefaults: userDefaults,
+            rootDirectoryURL: markdownRootDirectoryURL
+        )
         viewModel = TranscriptionSettingsViewModel(
             storage: storage,
             meetingRepository: meetingRepository,
             meetingQAService: meetingQAService,
-            meetingNotesRichTextStore: richTextStore
+            meetingNotesRichTextStore: richTextStore,
+            meetingNotesMarkdownStore: markdownStore
         )
     }
 
@@ -31,13 +41,18 @@ final class MeetingNotesPersistenceTests: XCTestCase {
         if let suiteName {
             userDefaults.removePersistentDomain(forName: suiteName)
         }
+        if let markdownRootDirectoryURL {
+            try? FileManager.default.removeItem(at: markdownRootDirectoryURL)
+        }
         suiteName = nil
         viewModel = nil
         storage = nil
         meetingRepository = nil
         meetingQAService = nil
         richTextStore = nil
+        markdownStore = nil
         userDefaults = nil
+        markdownRootDirectoryURL = nil
     }
 
     func testUpdateMeetingNotes_UpdatesExistingEntryAndPersists() async throws {
@@ -155,6 +170,9 @@ final class MeetingNotesPersistenceTests: XCTestCase {
         )
 
         XCTAssertEqual(richTextStore.transcriptionNotesRTFData(for: transcription.id), richData)
+        let markdownContent = try XCTUnwrap(readMarkdownDocument(for: transcription.id))
+        XCTAssertTrue(markdownContent.contains("kind: transcription"))
+        XCTAssertTrue(markdownContent.contains("Rich notes"))
     }
 
     func testUpdateMeetingNotes_ClearsRichTextSidecarWhenNotesAreCleared() async throws {
@@ -176,6 +194,44 @@ final class MeetingNotesPersistenceTests: XCTestCase {
         XCTAssertNil(richTextStore.transcriptionNotesRTFData(for: transcription.id))
     }
 
+    func testExecuteDeleteTranscription_RemovesMarkdownDocument() async throws {
+        let transcription = makeTranscription(
+            contextItems: [
+                .init(source: .meetingNotes, text: "Delete me"),
+            ]
+        )
+        storage.mockTranscriptions = [transcription]
+        viewModel.selectedId = transcription.id
+        viewModel.selectedTranscription = transcription
+
+        await viewModel.updateMeetingNotes("Delete me", in: transcription.id)
+        XCTAssertNotNil(readMarkdownDocument(for: transcription.id))
+
+        let metadata = TranscriptionMetadata(
+            id: transcription.id,
+            meetingId: transcription.meeting.id,
+            meetingTitle: transcription.meeting.preferredTitle,
+            appName: transcription.meeting.appName,
+            appRawValue: transcription.meeting.app.rawValue,
+            capturePurpose: transcription.capturePurpose,
+            appBundleIdentifier: transcription.meeting.appBundleIdentifier,
+            startTime: transcription.meeting.startTime,
+            createdAt: transcription.createdAt,
+            previewText: transcription.preview,
+            wordCount: transcription.wordCount,
+            language: transcription.language,
+            isPostProcessed: transcription.isPostProcessed,
+            duration: transcription.meeting.duration,
+            audioFilePath: transcription.meeting.audioFilePath,
+            inputSource: transcription.inputSource
+        )
+
+        viewModel.confirmDeleteTranscription(metadata)
+        await viewModel.executeDeleteTranscription()
+
+        XCTAssertNil(readMarkdownDocument(for: transcription.id))
+    }
+
     private func makeTranscription(contextItems: [TranscriptionContextItem]) -> Transcription {
         let id = UUID()
         return Transcription(
@@ -191,5 +247,13 @@ final class MeetingNotesPersistenceTests: XCTestCase {
             text: "Content",
             rawText: "Content"
         )
+    }
+
+    private func readMarkdownDocument(for transcriptionID: UUID) -> String? {
+        let fileURL = markdownRootDirectoryURL
+            .appendingPathComponent("transcriptions", isDirectory: true)
+            .appendingPathComponent("\(transcriptionID.uuidString).md", isDirectory: false)
+        guard FileManager.default.fileExists(atPath: fileURL.path) else { return nil }
+        return try? String(contentsOf: fileURL, encoding: .utf8)
     }
 }

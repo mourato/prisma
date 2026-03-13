@@ -89,6 +89,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     let textContextPolicy: TextContextPolicy
     let transcribeAudioUseCase: TranscribeAudioUseCase
     let meetingNotesRichTextStore: any MeetingNotesRichTextStoreProtocol
+    let meetingNotesMarkdownStore: any MeetingNotesMarkdownDocumentStoreProtocol
     let transcriptPreprocessor = TranscriptIntelligencePreprocessor()
     let activeAppContextProvider: any ActiveAppContextProvider
     let captureContextResolver: any CaptureContextResolving
@@ -161,6 +162,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             activeAppContextProvider: NSWorkspaceActiveAppContextProvider(),
             captureContextResolver: CaptureContextResolver.shared,
             meetingNotesRichTextStore: MeetingNotesRichTextStore(),
+            meetingNotesMarkdownStore: MeetingNotesMarkdownDocumentStore.shared,
             apiKeyExists: { provider in
                 KeychainManager.existsAPIKey(for: provider)
             }
@@ -212,6 +214,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         activeAppContextProvider: any ActiveAppContextProvider = NSWorkspaceActiveAppContextProvider(),
         captureContextResolver: any CaptureContextResolving = CaptureContextResolver.shared,
         meetingNotesRichTextStore: any MeetingNotesRichTextStoreProtocol = MeetingNotesRichTextStore(),
+        meetingNotesMarkdownStore: any MeetingNotesMarkdownDocumentStoreProtocol = MeetingNotesMarkdownDocumentStore.shared,
         apiKeyExists: @escaping (AIProvider) -> Bool = { provider in
             KeychainManager.existsAPIKey(for: provider)
         }
@@ -232,6 +235,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         self.activeAppContextProvider = activeAppContextProvider
         self.captureContextResolver = captureContextResolver
         self.meetingNotesRichTextStore = meetingNotesRichTextStore
+        self.meetingNotesMarkdownStore = meetingNotesMarkdownStore
         self.apiKeyExists = apiKeyExists
         microphoneInputSelectionResolver = MicrophoneInputSelectionResolver(deviceManager: audioDeviceManager)
 
@@ -252,6 +256,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             await self?.checkPermission()
             if self?.isRunningAsAppBundle == true {
                 await self?.startStatusMonitoring()
+                await self?.runMeetingNotesMarkdownBackfillIfNeeded()
             }
             await self?.syncStateFromActor()
         }

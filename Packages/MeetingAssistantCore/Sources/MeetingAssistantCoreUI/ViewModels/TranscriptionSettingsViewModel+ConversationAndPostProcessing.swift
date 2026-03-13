@@ -336,9 +336,14 @@ public extension TranscriptionSettingsViewModel {
             return .empty
         }
 
-        let plainText = transcription.contextItems.first(where: { $0.source == .meetingNotes })?.text ?? ""
-        let richTextRTFData = meetingNotesRichTextStore.transcriptionNotesRTFData(for: transcription.id)
-        return MeetingNotesContent(plainText: plainText, richTextRTFData: richTextRTFData)
+        let legacyContent = MeetingNotesContent(
+            plainText: transcription.contextItems.first(where: { $0.source == .meetingNotes })?.text ?? "",
+            richTextRTFData: meetingNotesRichTextStore.transcriptionNotesRTFData(for: transcription.id)
+        )
+        return meetingNotesMarkdownStore.loadTranscriptionNotesContent(
+            for: transcription.id,
+            legacyContent: legacyContent
+        )
     }
 
     func updateMeetingNotes(_ content: MeetingNotesContent, in transcriptionID: UUID) async {
@@ -380,6 +385,7 @@ public extension TranscriptionSettingsViewModel {
         do {
             try await storage.deleteTranscription(by: metadata.id)
             meetingNotesRichTextStore.saveTranscriptionNotesRTFData(nil, for: metadata.id)
+            meetingNotesMarkdownStore.deleteTranscriptionNotesContent(for: metadata.id)
             if selectedId == metadata.id {
                 selectedId = nil
             }
@@ -647,8 +653,10 @@ public extension TranscriptionSettingsViewModel {
         if updatedContextItems == transcription.contextItems {
             if trimmedNotes.isEmpty {
                 meetingNotesRichTextStore.saveTranscriptionNotesRTFData(nil, for: transcription.id)
+                meetingNotesMarkdownStore.deleteTranscriptionNotesContent(for: transcription.id)
             } else {
                 meetingNotesRichTextStore.saveTranscriptionNotesRTFData(content.richTextRTFData, for: transcription.id)
+                meetingNotesMarkdownStore.saveTranscriptionNotesContent(content, for: transcription.id)
             }
             return
         }
@@ -679,8 +687,10 @@ public extension TranscriptionSettingsViewModel {
         try await storage.saveTranscription(updatedTranscription)
         if trimmedNotes.isEmpty {
             meetingNotesRichTextStore.saveTranscriptionNotesRTFData(nil, for: transcription.id)
+            meetingNotesMarkdownStore.deleteTranscriptionNotesContent(for: transcription.id)
         } else {
             meetingNotesRichTextStore.saveTranscriptionNotesRTFData(content.richTextRTFData, for: transcription.id)
+            meetingNotesMarkdownStore.saveTranscriptionNotesContent(content, for: transcription.id)
         }
 
         if selectedId == selectedID || selectedTranscription?.id == selectedID {

@@ -66,11 +66,26 @@ final class StorageServiceSecurityTests: XCTestCase {
         UserDefaults.standard.set(validPath, forKey: "recordingsDirectory")
 
         // When: Accessing recordings directory
-        let service = FileSystemStorageService()
+        let service = FileSystemStorageService(honorsConfiguredRecordingDirectory: true)
         let directory = service.recordingsDirectory
 
         // Then: Should use the configured path, not the default
         XCTAssertTrue(directory.path.hasPrefix(homeDirectory + "/Documents/PrismaRecordings"))
+    }
+
+    func testDefaultInitIgnoresConfiguredUserPathWhileRunningTests() {
+        // Given: A real user path persisted in defaults
+        let validPath = homeDirectory + "/Documents/PrismaRecordings"
+        UserDefaults.standard.set(validPath, forKey: "recordingsDirectory")
+
+        // When: Accessing recordings directory through the default test configuration
+        let service = FileSystemStorageService()
+        let directory = service.recordingsDirectory
+
+        // Then: Tests should stay inside app-managed storage instead of touching user folders
+        XCTAssertTrue(AppIdentity.isRunningTests)
+        XCTAssertTrue(directory.path.hasPrefix(appSupportRoot))
+        XCTAssertFalse(directory.path.hasPrefix(validPath))
     }
 
     func testEmptyPathFallsBackToDefault() {

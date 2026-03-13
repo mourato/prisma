@@ -130,7 +130,11 @@ public final class FileSystemStorageService: StorageService {
     }
 
     public var recordingsDirectory: URL {
-        let configuredPath = UserDefaults.standard.string(forKey: Keys.recordingsDirectory) ?? ""
+        let configuredPath = if honorsConfiguredRecordingDirectory {
+            UserDefaults.standard.string(forKey: Keys.recordingsDirectory) ?? ""
+        } else {
+            ""
+        }
 
         if !configuredPath.isEmpty {
             do {
@@ -148,8 +152,10 @@ public final class FileSystemStorageService: StorageService {
     let legacyTranscriptsDirectory: URL
     let coreDataStack: CoreDataStack
     let coreDataTranscriptionRepository: CoreDataTranscriptionStorageRepository
+    let honorsConfiguredRecordingDirectory: Bool
 
-    public init() {
+    public init(honorsConfiguredRecordingDirectory: Bool = !AppIdentity.isRunningTests) {
+        self.honorsConfiguredRecordingDirectory = honorsConfiguredRecordingDirectory
         let baseDir = AppIdentity.appSupportBaseDirectory(fileManager: .default)
         defaultRecordingsDirectory = baseDir.appendingPathComponent("recordings", isDirectory: true)
         legacyTranscriptsDirectory = baseDir.appendingPathComponent("transcripts", isDirectory: true)

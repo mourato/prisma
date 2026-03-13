@@ -6,6 +6,7 @@ public enum AppIdentity {
     public static let bundleIdentifier = "com.mourato.prisma"
     public static let xpcServiceName = "com.mourato.prisma.ai-service"
     public static let logSubsystem = "com.mourato.prisma"
+    public static let isRunningTests = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
 
     // Keep these identifiers stable to preserve existing window toolbar/autosave state.
     public static let settingsToolbarIdentifier = "MeetingAssistantSettingsToolbar"
