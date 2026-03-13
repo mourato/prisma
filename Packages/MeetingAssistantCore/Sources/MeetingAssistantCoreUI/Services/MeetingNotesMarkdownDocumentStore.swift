@@ -445,10 +445,9 @@ public final class MeetingNotesMarkdownDocumentStore: MeetingNotesMarkdownDocume
             }
         }
 
-        let sanitizedPlainText = MeetingNotesMarkdownSanitizer
+        return MeetingNotesMarkdownSanitizer
             .sanitizeForMarkdownRendering(content.plainText)
             .trimmingCharacters(in: Self.controlCharactersToTrim)
-        return sanitizedPlainText
     }
 
     private func rtfData(from attributedText: NSAttributedString) -> Data? {
