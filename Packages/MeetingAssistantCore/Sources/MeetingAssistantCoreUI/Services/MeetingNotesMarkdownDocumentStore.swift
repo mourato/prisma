@@ -296,17 +296,17 @@ public final class MeetingNotesMarkdownDocumentStore: MeetingNotesMarkdownDocume
     }
 
     private func deleteContent(for key: MeetingNotesDocumentKey) {
-        let fileURL: URL
+        let documentURL: URL
         do {
-            fileURL = try fileURL(for: key)
+            documentURL = try fileURL(for: key)
         } catch {
             AppLogger.error("Failed to resolve markdown notes path for deletion", category: .storage, error: error)
             return
         }
 
-        guard fileManager.fileExists(atPath: fileURL.path) else { return }
+        guard fileManager.fileExists(atPath: documentURL.path) else { return }
         do {
-            try fileManager.removeItem(at: fileURL)
+            try fileManager.removeItem(at: documentURL)
         } catch {
             AppLogger.error("Failed to delete markdown notes document", category: .storage, error: error)
         }
@@ -315,15 +315,15 @@ public final class MeetingNotesMarkdownDocumentStore: MeetingNotesMarkdownDocume
     private func backfillIfMissing(_ content: MeetingNotesContent, for key: MeetingNotesDocumentKey) -> Bool {
         guard hasPersistedContent(content) else { return true }
 
-        let fileURL: URL
+        let documentURL: URL
         do {
-            fileURL = try fileURL(for: key)
+            documentURL = try fileURL(for: key)
         } catch {
             AppLogger.error("Failed to resolve markdown notes path during backfill", category: .storage, error: error)
             return false
         }
 
-        guard !fileManager.fileExists(atPath: fileURL.path) else {
+        guard !fileManager.fileExists(atPath: documentURL.path) else {
             return true
         }
 
@@ -670,7 +670,7 @@ public final class MeetingNotesMarkdownDocumentStore: MeetingNotesMarkdownDocume
         value.range(of: "^[A-Fa-f0-9]{64}$", options: .regularExpression) != nil
     }
 
-    fileprivate static func sha256Hex(_ value: String) -> String {
+    fileprivate nonisolated static func sha256Hex(_ value: String) -> String {
         let digest = SHA256.hash(data: Data(value.utf8))
         return digest.map { String(format: "%02x", $0) }.joined()
     }
