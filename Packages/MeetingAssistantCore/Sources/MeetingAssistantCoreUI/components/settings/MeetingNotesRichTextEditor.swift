@@ -4,7 +4,8 @@ import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
 struct MeetingNotesRichTextEditor: View {
-    private static let toolbarControlHeight: CGFloat = 24
+    private static let toolbarControlWidth: CGFloat = 16
+    private static let toolbarControlHeight: CGFloat = 16
 
     @Binding var content: MeetingNotesContent
     @ObservedObject private var settings: AppSettingsStore
@@ -120,6 +121,7 @@ struct MeetingNotesRichTextEditor: View {
     ) -> some View {
         Button(action: action) {
             Image(systemName: systemImage)
+                .frame(width: Self.toolbarControlWidth, height: Self.toolbarControlHeight)
         }
         .buttonStyle(.bordered)
         .controlSize(.large)
