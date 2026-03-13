@@ -39,11 +39,7 @@ extension RecordingManager {
 
         currentMeetingNotesText = content.plainText
         currentMeetingNotesRichTextData = content.richTextRTFData
-        saveMeetingNotesContent(content, for: meeting.id)
-
-        if let linkedEventIdentifier = meeting.linkedCalendarEvent?.eventIdentifier {
-            saveCalendarEventNotesContent(content, for: linkedEventIdentifier)
-        }
+        saveSharedMeetingNotesContent(content, for: meeting)
     }
 
     public func updateMeetingNotesText(_ text: String) {
@@ -90,6 +86,34 @@ extension RecordingManager {
 
     func updateCalendarEventNotesText(_ text: String, for eventIdentifier: String) {
         updateCalendarEventNotes(MeetingNotesContent(plainText: text), for: eventIdentifier)
+    }
+
+    func loadSharedMeetingNotesContent(for meeting: Meeting) -> MeetingNotesContent {
+        if let linkedEventIdentifier = meeting.linkedCalendarEvent?.eventIdentifier,
+           let normalizedLinkedEventIdentifier = normalizedCalendarEventIdentifier(linkedEventIdentifier)
+        {
+            let eventContent = loadCalendarEventNotesContent(for: normalizedLinkedEventIdentifier)
+            if hasPersistedMeetingNotes(eventContent) {
+                return eventContent
+            }
+        }
+
+        let meetingContent = loadMeetingNotesContent(for: meeting.id)
+        if hasPersistedMeetingNotes(meetingContent) {
+            return meetingContent
+        }
+
+        return .empty
+    }
+
+    func saveSharedMeetingNotesContent(_ content: MeetingNotesContent, for meeting: Meeting) {
+        saveMeetingNotesContent(content, for: meeting.id)
+
+        if let linkedEventIdentifier = meeting.linkedCalendarEvent?.eventIdentifier,
+           let normalizedLinkedEventIdentifier = normalizedCalendarEventIdentifier(linkedEventIdentifier)
+        {
+            saveCalendarEventNotesContent(content, for: normalizedLinkedEventIdentifier)
+        }
     }
 
     func synchronizeMeetingNotesWithLinkedCalendarEventIfNeeded(
@@ -196,6 +220,10 @@ extension RecordingManager {
 
     private func normalizedNotesValue(_ text: String) -> String {
         text.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func hasPersistedMeetingNotes(_ content: MeetingNotesContent) -> Bool {
+        !normalizedNotesValue(content.plainText).isEmpty || (content.richTextRTFData?.isEmpty == false)
     }
 
     private func mergeLinkedNotes(eventNotes: String, meetingNotes: String) -> String {

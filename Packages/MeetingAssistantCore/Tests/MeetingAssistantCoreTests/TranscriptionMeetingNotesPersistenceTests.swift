@@ -1,13 +1,21 @@
 import Foundation
 @testable import MeetingAssistantCore
+@testable import MeetingAssistantCoreUI
 import XCTest
 
 @MainActor
 final class MeetingNotesPersistenceTests: XCTestCase {
     private var viewModel: TranscriptionSettingsViewModel!
+    private var recordingManager: RecordingManager!
     private var storage: MockStorageService!
     private var meetingRepository: MockMeetingRepository!
     private var meetingQAService: MockMeetingQAService!
+    private var mockMic: MockAudioRecorder!
+    private var mockSystem: MockAudioRecorder!
+    private var mockTranscriptionClient: MockTranscriptionClient!
+    private var mockPostProcessingService: MockPostProcessingService!
+    private var mockActiveAppContextProvider: MockActiveAppContextProvider!
+    private var mockCaptureContextResolver: MockCaptureContextResolver!
     private var richTextStore: MeetingNotesRichTextStore!
     private var markdownStore: MeetingNotesMarkdownDocumentStore!
     private var userDefaults: UserDefaults!
@@ -18,6 +26,12 @@ final class MeetingNotesPersistenceTests: XCTestCase {
         storage = MockStorageService()
         meetingRepository = MockMeetingRepository()
         meetingQAService = MockMeetingQAService()
+        mockMic = MockAudioRecorder()
+        mockSystem = MockAudioRecorder()
+        mockTranscriptionClient = MockTranscriptionClient()
+        mockPostProcessingService = MockPostProcessingService()
+        mockActiveAppContextProvider = MockActiveAppContextProvider()
+        mockCaptureContextResolver = MockCaptureContextResolver()
         suiteName = "MeetingNotesPersistenceTests.\(UUID().uuidString)"
         userDefaults = UserDefaults(suiteName: suiteName)
         richTextStore = MeetingNotesRichTextStore(userDefaults: userDefaults)
@@ -28,8 +42,21 @@ final class MeetingNotesPersistenceTests: XCTestCase {
             userDefaults: userDefaults,
             rootDirectoryURL: markdownRootDirectoryURL
         )
+        recordingManager = RecordingManager(
+            micRecorder: mockMic,
+            systemRecorder: mockSystem,
+            transcriptionClient: mockTranscriptionClient,
+            postProcessingService: mockPostProcessingService,
+            storage: storage,
+            activeAppContextProvider: mockActiveAppContextProvider,
+            captureContextResolver: mockCaptureContextResolver,
+            meetingNotesRichTextStore: richTextStore,
+            meetingNotesMarkdownStore: markdownStore,
+            apiKeyExists: { _ in true }
+        )
         viewModel = TranscriptionSettingsViewModel(
             storage: storage,
+            recordingManager: recordingManager,
             meetingRepository: meetingRepository,
             meetingQAService: meetingQAService,
             meetingNotesRichTextStore: richTextStore,
@@ -46,9 +73,16 @@ final class MeetingNotesPersistenceTests: XCTestCase {
         }
         suiteName = nil
         viewModel = nil
+        recordingManager = nil
         storage = nil
         meetingRepository = nil
         meetingQAService = nil
+        mockMic = nil
+        mockSystem = nil
+        mockTranscriptionClient = nil
+        mockPostProcessingService = nil
+        mockActiveAppContextProvider = nil
+        mockCaptureContextResolver = nil
         richTextStore = nil
         markdownStore = nil
         userDefaults = nil
@@ -194,6 +228,84 @@ final class MeetingNotesPersistenceTests: XCTestCase {
         XCTAssertNil(richTextStore.transcriptionNotesRTFData(for: transcription.id))
     }
 
+    func testMeetingNotesContent_PrefersSharedCalendarEventNotesForLinkedMeeting() {
+        let eventIdentifier = "calendar-event-123"
+        let linkedEvent = MeetingCalendarEventSnapshot(
+            eventIdentifier: eventIdentifier,
+            title: "Weekly Sync",
+            startDate: Date(),
+            endDate: Date().addingTimeInterval(3_600)
+        )
+        let transcription = makeTranscription(
+            contextItems: [.init(source: .meetingNotes, text: "Legacy transcription notes")],
+            linkedCalendarEvent: linkedEvent
+        )
+        storage.mockTranscriptions = [transcription]
+
+        let sharedContent = MeetingNotesContent(
+            plainText: "Shared calendar notes",
+            richTextRTFData: Data([0x7B, 0x5C, 0x72, 0x74, 0x66, 0x31])
+        )
+        recordingManager.updateCalendarEventNotes(sharedContent, for: eventIdentifier)
+
+        let loaded = viewModel.meetingNotesContent(for: transcription)
+        XCTAssertEqual(loaded, sharedContent)
+    }
+
+    func testUpdateMeetingNotes_LinkedMeeting_SyncsMeetingAndCalendarEventStores() async throws {
+        let eventIdentifier = "calendar-event-xyz"
+        let linkedEvent = MeetingCalendarEventSnapshot(
+            eventIdentifier: eventIdentifier,
+            title: "Planning",
+            startDate: Date(),
+            endDate: Date().addingTimeInterval(1_800)
+        )
+        let transcription = makeTranscription(
+            contextItems: [.init(source: .meetingNotes, text: "Old notes")],
+            linkedCalendarEvent: linkedEvent
+        )
+        storage.mockTranscriptions = [transcription]
+        viewModel.selectedTranscription = transcription
+
+        let richData = Data([0x7B, 0x5C, 0x72, 0x74, 0x66, 0x32])
+        await viewModel.updateMeetingNotes(
+            MeetingNotesContent(plainText: "Unified notes", richTextRTFData: richData),
+            in: transcription.id
+        )
+
+        XCTAssertEqual(richTextStore.meetingNotesRTFData(for: transcription.meeting.id), richData)
+        XCTAssertEqual(richTextStore.calendarEventNotesRTFData(for: eventIdentifier), richData)
+    }
+
+    func testUpdateMeetingNotes_WithoutLinkedEvent_DoesNotWriteCalendarEventStore() async throws {
+        let transcription = makeTranscription(
+            contextItems: [.init(source: .meetingNotes, text: "Initial notes")],
+            linkedCalendarEvent: nil
+        )
+        storage.mockTranscriptions = [transcription]
+        viewModel.selectedTranscription = transcription
+
+        let richData = Data([0x7B, 0x5C, 0x72, 0x74, 0x66, 0x33])
+        await viewModel.updateMeetingNotes(
+            MeetingNotesContent(plainText: "Meeting-only notes", richTextRTFData: richData),
+            in: transcription.id
+        )
+
+        XCTAssertEqual(richTextStore.meetingNotesRTFData(for: transcription.meeting.id), richData)
+        XCTAssertNil(richTextStore.calendarEventNotesRTFData(for: "non-existent-event"))
+    }
+
+    func testMeetingNotesContent_FallsBackToTranscriptionWhenSharedStoresAreEmpty() {
+        let transcription = makeTranscription(
+            contextItems: [.init(source: .meetingNotes, text: "Transcription fallback notes")],
+            linkedCalendarEvent: nil
+        )
+        storage.mockTranscriptions = [transcription]
+
+        let loaded = viewModel.meetingNotesContent(for: transcription)
+        XCTAssertEqual(loaded.plainText, "Transcription fallback notes")
+    }
+
     func testExecuteDeleteTranscription_RemovesMarkdownDocument() async throws {
         let transcription = makeTranscription(
             contextItems: [
@@ -232,13 +344,17 @@ final class MeetingNotesPersistenceTests: XCTestCase {
         XCTAssertNil(readMarkdownDocument(for: transcription.id))
     }
 
-    private func makeTranscription(contextItems: [TranscriptionContextItem]) -> Transcription {
+    private func makeTranscription(
+        contextItems: [TranscriptionContextItem],
+        linkedCalendarEvent: MeetingCalendarEventSnapshot? = nil
+    ) -> Transcription {
         let id = UUID()
         return Transcription(
             id: id,
             meeting: Meeting(
                 id: id,
                 app: .zoom,
+                linkedCalendarEvent: linkedCalendarEvent,
                 startTime: Date(),
                 endTime: Date().addingTimeInterval(60)
             ),

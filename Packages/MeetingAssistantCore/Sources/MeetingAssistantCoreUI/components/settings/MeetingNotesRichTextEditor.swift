@@ -159,6 +159,8 @@ private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
         textView.importsGraphics = false
         textView.drawsBackground = true
         textView.backgroundColor = .textBackgroundColor
+        textView.textColor = .labelColor
+        textView.insertionPointColor = .labelColor
         textView.usesFindBar = false
         textView.textContainerInset = NSSize(width: 0, height: 8)
         textView.textContainer?.lineFragmentPadding = 0
@@ -293,7 +295,7 @@ private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
         }
 
         private func emitContent(from textView: NSTextView) {
-            let attributedText = textView.attributedString()
+            let attributedText = normalizedForAdaptiveAppearance(textView.attributedString())
             let nextContent = MeetingNotesContent(
                 plainText: textView.string,
                 richTextRTFData: serializeAttributedText(attributedText)
@@ -312,10 +314,10 @@ private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
                    documentAttributes: nil
                )
             {
-                return attributed
+                return normalizedForAdaptiveAppearance(attributed)
             }
 
-            return NSAttributedString(string: content.plainText)
+            return normalizedForAdaptiveAppearance(NSAttributedString(string: content.plainText))
         }
 
         private func serializeAttributedText(_ attributedText: NSAttributedString) -> Data? {
@@ -325,6 +327,14 @@ private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
                 from: range,
                 documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf]
             )
+        }
+
+        private func normalizedForAdaptiveAppearance(_ attributedText: NSAttributedString) -> NSAttributedString {
+            guard attributedText.length > 0 else { return attributedText }
+
+            let normalized = NSMutableAttributedString(attributedString: attributedText)
+            normalized.removeAttribute(.foregroundColor, range: NSRange(location: 0, length: normalized.length))
+            return normalized
         }
 
         private func observeTextStorageIfNeeded(_ textStorage: NSTextStorage?) {

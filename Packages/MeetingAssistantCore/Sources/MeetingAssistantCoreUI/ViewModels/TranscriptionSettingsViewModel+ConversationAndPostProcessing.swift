@@ -336,13 +336,20 @@ public extension TranscriptionSettingsViewModel {
             return .empty
         }
 
-        let legacyContent = MeetingNotesContent(
+        if transcription.supportsMeetingConversation {
+            let sharedContent = recordingManager.loadSharedMeetingNotesContent(for: transcription.meeting)
+            if hasPersistedMeetingNotesContent(sharedContent) {
+                return sharedContent
+            }
+        }
+
+        let fallbackLegacyContent = MeetingNotesContent(
             plainText: transcription.contextItems.first(where: { $0.source == .meetingNotes })?.text ?? "",
             richTextRTFData: meetingNotesRichTextStore.transcriptionNotesRTFData(for: transcription.id)
         )
         return meetingNotesMarkdownStore.loadTranscriptionNotesContent(
             for: transcription.id,
-            legacyContent: legacyContent
+            legacyContent: fallbackLegacyContent
         )
     }
 
@@ -646,18 +653,21 @@ public extension TranscriptionSettingsViewModel {
         } else {
             contextWithoutMeetingNotes + [TranscriptionContextItem(source: .meetingNotes, text: notes)]
         }
-        let existingRichTextData = meetingNotesRichTextStore.transcriptionNotesRTFData(for: transcription.id)
-        let isSameRichText = existingRichTextData == content.richTextRTFData
-        guard updatedContextItems != transcription.contextItems || !isSameRichText else { return }
+        let currentTranscriptionRichTextData = meetingNotesRichTextStore.transcriptionNotesRTFData(for: transcription.id)
+        let isSameTranscriptionRichText = currentTranscriptionRichTextData == content.richTextRTFData
+        let isSameSharedContent = if transcription.supportsMeetingConversation {
+            recordingManager.loadSharedMeetingNotesContent(for: transcription.meeting) == content
+        } else {
+            true
+        }
+
+        guard updatedContextItems != transcription.contextItems
+            || !isSameTranscriptionRichText
+            || !isSameSharedContent
+        else { return }
 
         if updatedContextItems == transcription.contextItems {
-            if trimmedNotes.isEmpty {
-                meetingNotesRichTextStore.saveTranscriptionNotesRTFData(nil, for: transcription.id)
-                meetingNotesMarkdownStore.deleteTranscriptionNotesContent(for: transcription.id)
-            } else {
-                meetingNotesRichTextStore.saveTranscriptionNotesRTFData(content.richTextRTFData, for: transcription.id)
-                meetingNotesMarkdownStore.saveTranscriptionNotesContent(content, for: transcription.id)
-            }
+            persistMeetingNotesSideEffects(content, trimmedNotes: trimmedNotes, for: transcription)
             return
         }
 
@@ -685,6 +695,22 @@ public extension TranscriptionSettingsViewModel {
         )
 
         try await storage.saveTranscription(updatedTranscription)
+        persistMeetingNotesSideEffects(content, trimmedNotes: trimmedNotes, for: transcription)
+
+        if selectedId == selectedID || selectedTranscription?.id == selectedID {
+            selectedTranscription = updatedTranscription
+        }
+    }
+
+    private func persistMeetingNotesSideEffects(
+        _ content: MeetingNotesContent,
+        trimmedNotes: String,
+        for transcription: Transcription
+    ) {
+        if transcription.supportsMeetingConversation {
+            recordingManager.saveSharedMeetingNotesContent(content, for: transcription.meeting)
+        }
+
         if trimmedNotes.isEmpty {
             meetingNotesRichTextStore.saveTranscriptionNotesRTFData(nil, for: transcription.id)
             meetingNotesMarkdownStore.deleteTranscriptionNotesContent(for: transcription.id)
@@ -692,10 +718,11 @@ public extension TranscriptionSettingsViewModel {
             meetingNotesRichTextStore.saveTranscriptionNotesRTFData(content.richTextRTFData, for: transcription.id)
             meetingNotesMarkdownStore.saveTranscriptionNotesContent(content, for: transcription.id)
         }
+    }
 
-        if selectedId == selectedID || selectedTranscription?.id == selectedID {
-            selectedTranscription = updatedTranscription
-        }
+    private func hasPersistedMeetingNotesContent(_ content: MeetingNotesContent) -> Bool {
+        !content.plainText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || (content.richTextRTFData?.isEmpty == false)
     }
 
     private func sortedSegments(_ segments: [Transcription.Segment]) -> [Transcription.Segment] {
