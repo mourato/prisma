@@ -1,4 +1,6 @@
+import AudioToolbox
 @testable import MeetingAssistantCore
+@testable import MeetingAssistantCoreAudio
 import XCTest
 
 final class SystemAudioMuteControllerTests: XCTestCase {
@@ -25,5 +27,69 @@ final class SystemAudioMuteControllerTests: XCTestCase {
             // or if permissions are missing, so we log but don't necessarily fail if the error is CoreAudio -50 (paramErr)
             print("Mute toggle test skipped or failed due to environment: \(error)")
         }
+    }
+
+    func testMakeOutputVolumeStatePrefersVirtualMainVolume() {
+        let channelState = SystemAudioMuteController.OutputScalarPropertyState(
+            selector: kAudioDevicePropertyVolumeScalar,
+            element: 1,
+            value: 0.42
+        )
+
+        let state = SystemAudioMuteController.makeOutputVolumeState(
+            virtualMainVolume: 0.73,
+            channelVolumes: [channelState]
+        )
+
+        XCTAssertEqual(
+            state,
+            SystemAudioMuteController.OutputVolumeState(
+                properties: [
+                    SystemAudioMuteController.OutputScalarPropertyState(
+                        selector: kAudioHardwareServiceDeviceProperty_VirtualMainVolume,
+                        element: kAudioObjectPropertyElementMain,
+                        value: 0.73
+                    ),
+                ],
+                strategyDescription: "virtualMainVolume"
+            )
+        )
+    }
+
+    func testMakeOutputVolumeStateFallsBackToChannelVolumes() {
+        let channelStates = [
+            SystemAudioMuteController.OutputScalarPropertyState(
+                selector: kAudioDevicePropertyVolumeScalar,
+                element: 1,
+                value: 0.30
+            ),
+            SystemAudioMuteController.OutputScalarPropertyState(
+                selector: kAudioDevicePropertyVolumeScalar,
+                element: 2,
+                value: 0.45
+            ),
+        ]
+
+        let state = SystemAudioMuteController.makeOutputVolumeState(
+            virtualMainVolume: nil,
+            channelVolumes: channelStates
+        )
+
+        XCTAssertEqual(
+            state,
+            SystemAudioMuteController.OutputVolumeState(
+                properties: channelStates,
+                strategyDescription: "channelVolumeScalar"
+            )
+        )
+    }
+
+    func testMakeOutputVolumeStateReturnsNilWithoutRestorableState() {
+        XCTAssertNil(
+            SystemAudioMuteController.makeOutputVolumeState(
+                virtualMainVolume: nil,
+                channelVolumes: []
+            )
+        )
     }
 }
