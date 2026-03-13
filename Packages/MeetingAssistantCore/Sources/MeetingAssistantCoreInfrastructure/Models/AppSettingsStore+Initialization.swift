@@ -276,6 +276,8 @@ extension AppSettingsStore {
         let summaryTemplateEnabled: Bool
         let autoExportSummaries: Bool
         let summaryExportSafetyPolicyLevel: SummaryExportSafetyPolicyLevel
+        let meetingNotesFontFamilyKey: String
+        let meetingNotesFontSize: Double
         let meetingQnAEnabled: Bool
     }
 
@@ -297,6 +299,12 @@ extension AppSettingsStore {
             summaryTemplateEnabled: loadBoolDefaultIfUnset(forKey: Keys.summaryTemplateEnabled, defaultValue: true),
             autoExportSummaries: UserDefaults.standard.bool(forKey: Keys.autoExportSummaries),
             summaryExportSafetyPolicyLevel: SummaryExportSafetyPolicyLevel(rawValue: UserDefaults.standard.string(forKey: Keys.summaryExportSafetyPolicyLevel) ?? "") ?? .standard,
+            meetingNotesFontFamilyKey: MeetingNotesTypographyDefaults.normalizedFontFamilyKey(
+                UserDefaults.standard.string(forKey: Keys.meetingNotesFontFamilyKey) ?? MeetingNotesTypographyDefaults.systemFontFamilyKey
+            ),
+            meetingNotesFontSize: MeetingNotesTypographyDefaults.normalizedFontSize(
+                UserDefaults.standard.object(forKey: Keys.meetingNotesFontSize) as? Double ?? MeetingNotesTypographyDefaults.defaultFontSize
+            ),
             meetingQnAEnabled: loadBoolDefaultIfUnset(forKey: Keys.meetingQnAEnabled, defaultValue: true)
         )
     }

@@ -67,6 +67,14 @@ public extension TranscriptionSettingsViewModel {
     }
 
     func retryQuestion(_ question: String, for transcription: Transcription) async {
+        await retryQuestion(question, turnID: nil, for: transcription)
+    }
+
+    func retryQuestion(_ question: String, turnID: UUID, for transcription: Transcription) async {
+        await retryQuestion(question, turnID: Optional(turnID), for: transcription)
+    }
+
+    private func retryQuestion(_ question: String, turnID: UUID?, for transcription: Transcription) async {
         let trimmedQuestion = question.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedQuestion.isEmpty else {
             qaErrorMessage = "transcription.qa.error.empty_question".localized
@@ -74,12 +82,16 @@ public extension TranscriptionSettingsViewModel {
         }
 
         qaQuestion = trimmedQuestion
-        await askQuestion(trimmedQuestion, for: transcription)
+        await askQuestion(trimmedQuestion, for: transcription, retryTurnID: turnID)
     }
 
-    private func askQuestion(_ question: String, for transcription: Transcription) async {
+    private func askQuestion(
+        _ question: String,
+        for transcription: Transcription,
+        retryTurnID: UUID? = nil
+    ) async {
         guard transcription.supportsMeetingConversation else {
-            qaErrorMessage = localizedQuestionError(for: .disabled)
+            qaErrorMessage = localizedQuestionError(for: .disabled, transcriptionID: transcription.id)
             return
         }
 
@@ -100,41 +112,50 @@ public extension TranscriptionSettingsViewModel {
             )
             let response = try await meetingQAService.ask(request)
             qaResponse = response
-            appendQATurn(
+            upsertQATurn(
                 QATurn(
+                    id: retryTurnID ?? UUID(),
                     question: question,
                     response: response,
-                    errorMessage: nil
+                    errorMessage: nil,
+                    createdAt: turnCreationDate(for: retryTurnID, transcriptionID: transcription.id)
                 ),
-                transcriptionID: transcription.id
+                transcriptionID: transcription.id,
+                replacingTurnID: retryTurnID
             )
             await persistMeetingConversationState(for: transcription.id)
         } catch let error as MeetingQAError {
-            qaErrorMessage = localizedQuestionError(for: error)
-            appendQATurn(
+            qaErrorMessage = localizedQuestionError(for: error, transcriptionID: transcription.id)
+            upsertQATurn(
                 QATurn(
+                    id: retryTurnID ?? UUID(),
                     question: question,
                     response: nil,
-                    errorMessage: qaErrorMessage
+                    errorMessage: qaErrorMessage,
+                    createdAt: turnCreationDate(for: retryTurnID, transcriptionID: transcription.id)
                 ),
-                transcriptionID: transcription.id
+                transcriptionID: transcription.id,
+                replacingTurnID: retryTurnID
             )
             await persistMeetingConversationState(for: transcription.id)
         } catch {
             qaErrorMessage = "transcription.qa.error.generic".localized
-            appendQATurn(
+            upsertQATurn(
                 QATurn(
+                    id: retryTurnID ?? UUID(),
                     question: question,
                     response: nil,
-                    errorMessage: qaErrorMessage
+                    errorMessage: qaErrorMessage,
+                    createdAt: turnCreationDate(for: retryTurnID, transcriptionID: transcription.id)
                 ),
-                transcriptionID: transcription.id
+                transcriptionID: transcription.id,
+                replacingTurnID: retryTurnID
             )
             await persistMeetingConversationState(for: transcription.id)
         }
     }
 
-    private func localizedQuestionError(for error: MeetingQAError) -> String {
+    private func localizedQuestionError(for error: MeetingQAError, transcriptionID: UUID? = nil) -> String {
         switch error {
         case .disabled:
             "transcription.qa.error.disabled".localized
@@ -149,7 +170,7 @@ public extension TranscriptionSettingsViewModel {
         case .networkUnavailable:
             "transcription.qa.error.network".localized
         case .invalidResponse:
-            "transcription.qa.error.invalid_response".localized
+            invalidResponseQuestionError(transcriptionID: transcriptionID)
         case .requestFailed:
             "transcription.qa.error.generic".localized
         }
@@ -168,10 +189,44 @@ public extension TranscriptionSettingsViewModel {
         qaErrorMessage = nil
     }
 
-    private func appendQATurn(_ turn: QATurn, transcriptionID: UUID) {
+    private func upsertQATurn(
+        _ turn: QATurn,
+        transcriptionID: UUID,
+        replacingTurnID: UUID?
+    ) {
         var turns = qaHistoryByTranscription[transcriptionID] ?? []
-        turns.append(turn)
+        if let replacingTurnID,
+           let existingIndex = turns.firstIndex(where: { $0.id == replacingTurnID })
+        {
+            turns[existingIndex] = turn
+        } else {
+            turns.append(turn)
+        }
         qaHistoryByTranscription[transcriptionID] = turns
+    }
+
+    private func turnCreationDate(for turnID: UUID?, transcriptionID: UUID) -> Date {
+        guard let turnID,
+              let existingTurn = qaHistoryByTranscription[transcriptionID]?.first(where: { $0.id == turnID })
+        else {
+            return Date()
+        }
+        return existingTurn.createdAt
+    }
+
+    private func invalidResponseQuestionError(transcriptionID: UUID?) -> String {
+        guard let transcriptionID else {
+            return "transcription.qa.error.invalid_response".localized
+        }
+
+        let selection = effectiveMeetingQAModelSelection(for: transcriptionID)
+        let providerName = AIProvider(rawValue: selection.providerRawValue)?.displayName ?? selection.providerRawValue
+        let modelName = selection.modelID.trimmingCharacters(in: .whitespacesAndNewlines)
+        let resolvedModelName = modelName.isEmpty
+            ? "transcription.qa.error.invalid_response.unknown_model".localized
+            : modelName
+
+        return "transcription.qa.error.invalid_response.detailed".localized(with: providerName, resolvedModelName)
     }
 
     func isPostProcessing(transcriptionID: UUID) -> Bool {

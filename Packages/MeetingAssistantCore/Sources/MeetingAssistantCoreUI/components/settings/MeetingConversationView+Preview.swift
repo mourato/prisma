@@ -28,7 +28,7 @@ import SwiftUI
         meetingNotesContent: MeetingNotesContent(plainText: "Follow-up: review roadmap on Friday."),
         onQuestionChange: { _ in },
         onAsk: {},
-        onRetry: { _ in },
+        onRetry: { _, _ in },
         isAnswering: false,
         currentErrorMessage: nil,
         effectiveModelSelection: MeetingQAModelSelection(
@@ -59,7 +59,7 @@ import SwiftUI
         meetingNotesContent: .empty,
         onQuestionChange: { _ in },
         onAsk: {},
-        onRetry: { _ in },
+        onRetry: { _, _ in },
         isAnswering: false,
         currentErrorMessage: nil,
         effectiveModelSelection: MeetingQAModelSelection(

@@ -676,6 +676,73 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.qaHistory(for: transcription.id).count, 2)
     }
 
+    func testRetryQuestionWithTurnID_ReusesExistingFailedTurnInPlace() async throws {
+        let id = UUID()
+        let transcription = Transcription(
+            id: id,
+            meeting: Meeting(id: id, app: .zoom, startTime: Date(), endTime: Date().addingTimeInterval(60)),
+            text: "Summary",
+            rawText: "Summary"
+        )
+        storage.mockTranscriptions = [transcription]
+        viewModel.selectedTranscription = transcription
+        viewModel.qaQuestion = "What was decided?"
+        meetingQAService.nextError = .timeout
+
+        await viewModel.submitQuestion(for: transcription)
+
+        let failedTurn = try XCTUnwrap(viewModel.qaHistory(for: id).first)
+        let originalTurnID = failedTurn.id
+        let originalCreatedAt = failedTurn.createdAt
+        XCTAssertEqual(viewModel.qaHistory(for: id).count, 1)
+        XCTAssertNotNil(failedTurn.errorMessage)
+        XCTAssertNil(failedTurn.response)
+
+        meetingQAService.nextError = nil
+        meetingQAService.nextResponse = MeetingQAResponse(
+            status: .answered,
+            answer: "Decision captured.",
+            evidence: [.init(speaker: "A", startTime: 0, endTime: 1, excerpt: "Decision captured.")]
+        )
+
+        await viewModel.retryQuestion(failedTurn.question, turnID: failedTurn.id, for: transcription)
+
+        let history = viewModel.qaHistory(for: id)
+        XCTAssertEqual(history.count, 1)
+        let updatedTurn = try XCTUnwrap(history.first)
+        XCTAssertEqual(updatedTurn.id, originalTurnID)
+        XCTAssertEqual(updatedTurn.createdAt, originalCreatedAt)
+        XCTAssertNil(updatedTurn.errorMessage)
+        XCTAssertEqual(updatedTurn.response?.answer, "Decision captured.")
+    }
+
+    func testRetryQuestionWithTurnID_PersistsUpdatedTurnWithoutGrowingConversationHistory() async throws {
+        let id = UUID()
+        let transcription = Transcription(
+            id: id,
+            meeting: Meeting(id: id, app: .zoom, startTime: Date(), endTime: Date().addingTimeInterval(60)),
+            text: "Summary",
+            rawText: "Summary"
+        )
+        storage.mockTranscriptions = [transcription]
+        viewModel.selectedTranscription = transcription
+        viewModel.qaQuestion = "Question 1"
+        meetingQAService.nextError = .networkUnavailable
+
+        await viewModel.submitQuestion(for: transcription)
+        let failedTurn = try XCTUnwrap(viewModel.qaHistory(for: id).first)
+
+        meetingQAService.nextError = .invalidResponse
+        await viewModel.retryQuestion(failedTurn.question, turnID: failedTurn.id, for: transcription)
+
+        let persistedState = try XCTUnwrap(storage.savedTranscriptions.last?.meetingConversationState)
+        XCTAssertEqual(persistedState.turns.count, 1)
+        XCTAssertEqual(persistedState.turns.first?.id, failedTurn.id)
+        XCTAssertEqual(persistedState.turns.first?.question, failedTurn.question)
+        XCTAssertNotNil(persistedState.turns.first?.errorMessage)
+        XCTAssertNil(persistedState.turns.first?.response)
+    }
+
     func testSubmitQuestion_AppendsHistoryForCurrentTranscription() async {
         let transcription = Transcription(
             meeting: Meeting(id: UUID(), app: .googleMeet, startTime: Date(), endTime: Date().addingTimeInterval(60)),
@@ -892,7 +959,7 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
 
     // MARK: - Manual Export Tests
 
-    func testExportSummaryWritesProcessedContentWhenPanelReturnsURL() async {
+    func testExportSummaryWritesProcessedContentWhenPanelReturnsURL() async throws {
         let id = UUID()
         let transcription = Transcription(
             id: id,
@@ -904,7 +971,7 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
         storage.mockTranscriptions = [transcription]
         await viewModel.loadTranscriptions()
 
-        let metadata = try! XCTUnwrap(viewModel.transcriptions.first)
+        let metadata = try XCTUnwrap(viewModel.transcriptions.first)
         let destinationURL = URL(fileURLWithPath: "/tmp/mock_export.md")
 
         mockSavePanel.mockRunModalResponse = .OK
@@ -918,7 +985,7 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
         XCTAssertNil(viewModel.operationErrorMessage)
     }
 
-    func testExportOriginalWritesRawTextWhenPanelReturnsURL() async {
+    func testExportOriginalWritesRawTextWhenPanelReturnsURL() async throws {
         let id = UUID()
         let transcription = Transcription(
             meeting: Meeting(id: id, app: .zoom),
@@ -929,7 +996,7 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
         storage.mockTranscriptions = [transcription]
         await viewModel.loadTranscriptions()
 
-        let metadata = try! XCTUnwrap(viewModel.transcriptions.first)
+        let metadata = try XCTUnwrap(viewModel.transcriptions.first)
         let destinationURL = URL(fileURLWithPath: "/tmp/mock_original_export.md")
         mockSavePanel.mockRunModalResponse = .OK
         mockSavePanel.mockURL = destinationURL
@@ -942,13 +1009,13 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
         XCTAssertNil(viewModel.operationErrorMessage)
     }
 
-    func testExportTranscriptionDoesNothingOnPanelCancel() async {
+    func testExportTranscriptionDoesNothingOnPanelCancel() async throws {
         let id = UUID()
         let transcription = Transcription(meeting: Meeting(id: id, app: .zoom), text: "Export Content", rawText: "Export Content")
         storage.mockTranscriptions = [transcription]
         await viewModel.loadTranscriptions()
 
-        let metadata = try! XCTUnwrap(viewModel.transcriptions.first)
+        let metadata = try XCTUnwrap(viewModel.transcriptions.first)
         mockSavePanel.mockRunModalResponse = .cancel
         mockSavePanel.mockURL = nil
 
@@ -958,13 +1025,13 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
         XCTAssertNil(viewModel.operationErrorMessage)
     }
 
-    func testExportTranscriptionSurfacesOperationalErrorWithoutTouchingLoadErrorState() async {
+    func testExportTranscriptionSurfacesOperationalErrorWithoutTouchingLoadErrorState() async throws {
         let id = UUID()
         let transcription = Transcription(meeting: Meeting(id: id, app: .zoom), text: "Export Content", rawText: "Export Content")
         storage.mockTranscriptions = [transcription]
         await viewModel.loadTranscriptions()
 
-        let metadata = try! XCTUnwrap(viewModel.transcriptions.first)
+        let metadata = try XCTUnwrap(viewModel.transcriptions.first)
         let destinationURL = URL(fileURLWithPath: "/tmp/mock_export.md")
 
         mockSavePanel.mockRunModalResponse = .OK

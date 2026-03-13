@@ -956,6 +956,8 @@
 "transcription.qa.error.timeout" = "Request timed out. Please try again.";
 "transcription.qa.error.network" = "Network unavailable. Check your connection and retry.";
 "transcription.qa.error.invalid_response" = "Invalid response from provider. Please retry.";
+"transcription.qa.error.invalid_response.detailed" = "The provider reply for %@ (%@) could not be validated against the expected grounded Q&A format. Try again, or switch provider/model in Settings > Meetings.";
+"transcription.qa.error.invalid_response.unknown_model" = "Unknown model";
 "transcription.qa.error.generic" = "Failed to answer the question. Please try again.";
 "transcription.qa.error.no_retry_context" = "There is no previous question to retry.";
 "transcription.qa.summary_title" = "Meeting summary";
@@ -1067,6 +1069,11 @@
 "settings.meetings.summary_output_language" = "Summary output language";
 "settings.meetings.summary_output_language_desc" = "Choose the language used for generated meeting summaries.";
 "settings.meetings.summary_output_language.option.meeting_spoken" = "Use meeting spoken language";
+"settings.meetings.notes_typography.title" = "Notes typography";
+"settings.meetings.notes_typography.desc" = "Set the global font family and size used in meeting notes editors.";
+"settings.meetings.notes_typography.font_family" = "Font family";
+"settings.meetings.notes_typography.font_size" = "Font size";
+"settings.meetings.notes_typography.font_system" = "System";
 "recording_indicator.meeting_notes.title" = "Meeting notes";
 "recording_indicator.meeting_notes.help" = "Take notes during the meeting. These notes are prioritized during summary generation.";
 "recording_indicator.meeting_notes.show.help" = "Open meeting notes window";
@@ -1074,12 +1081,9 @@
 "transcription.context.source.meeting_notes" = "Meeting notes";
 "meeting_notes.rich_text.toolbar.bold" = "Bold";
 "meeting_notes.rich_text.toolbar.italic" = "Italic";
-"meeting_notes.rich_text.toolbar.font_family" = "Font family";
-"meeting_notes.rich_text.toolbar.font_size" = "Font size";
 "meeting_notes.rich_text.toolbar.unordered_list" = "Unordered list";
 "meeting_notes.rich_text.toolbar.ordered_list" = "Ordered list";
 "meeting_notes.rich_text.toolbar.link" = "Insert link";
-"meeting_notes.rich_text.font.system" = "System";
 "meeting_notes.rich_text.link_sheet.title" = "Insert or edit link";
 "meeting_notes.rich_text.link_sheet.placeholder" = "https://example.com";
 "meeting_notes.rich_text.link_sheet.apply" = "Apply";

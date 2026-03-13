@@ -35,7 +35,7 @@ public struct MeetingConversationView: View {
     let meetingNotesContent: MeetingNotesContent
     let onQuestionChange: (String) -> Void
     let onAsk: () -> Void
-    let onRetry: (String) -> Void
+    let onRetry: (_ turnID: UUID, _ question: String) -> Void
     let isAnswering: Bool
     let currentErrorMessage: String?
     let effectiveModelSelection: MeetingQAModelSelection
@@ -65,7 +65,7 @@ public struct MeetingConversationView: View {
         meetingNotesContent: MeetingNotesContent,
         onQuestionChange: @escaping (String) -> Void,
         onAsk: @escaping () -> Void,
-        onRetry: @escaping (String) -> Void,
+        onRetry: @escaping (_ turnID: UUID, _ question: String) -> Void,
         isAnswering: Bool,
         currentErrorMessage: String?,
         effectiveModelSelection: MeetingQAModelSelection,
@@ -309,7 +309,7 @@ public struct MeetingConversationView: View {
                         .foregroundStyle(AppDesignSystem.Colors.error)
 
                     Button("transcription.qa.retry".localized) {
-                        onRetry(turn.question)
+                        onRetry(turn.id, turn.question)
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
@@ -326,12 +326,6 @@ public struct MeetingConversationView: View {
 
     private var composer: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if let currentErrorMessage, !currentErrorMessage.isEmpty {
-                Text(currentErrorMessage)
-                    .font(.caption)
-                    .foregroundStyle(AppDesignSystem.Colors.error)
-            }
-
             if let dictationErrorMessage, !dictationErrorMessage.isEmpty {
                 Text(dictationErrorMessage)
                     .font(.caption)
@@ -690,7 +684,7 @@ public struct MeetingConversationView: View {
         ),
         onQuestionChange: { _ in },
         onAsk: {},
-        onRetry: { _ in },
+        onRetry: { _, _ in },
         isAnswering: false,
         currentErrorMessage: nil,
         effectiveModelSelection: MeetingQAModelSelection(

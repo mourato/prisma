@@ -391,6 +391,30 @@ public class AppSettingsStore: ObservableObject {
         didSet { UserDefaults.standard.set(summaryExportSafetyPolicyLevel.rawValue, forKey: Keys.summaryExportSafetyPolicyLevel) }
     }
 
+    /// Preferred font family key for meeting notes editors.
+    @Published public var meetingNotesFontFamilyKey: String {
+        didSet {
+            let normalized = MeetingNotesTypographyDefaults.normalizedFontFamilyKey(meetingNotesFontFamilyKey)
+            if normalized != meetingNotesFontFamilyKey {
+                meetingNotesFontFamilyKey = normalized
+                return
+            }
+            UserDefaults.standard.set(normalized, forKey: Keys.meetingNotesFontFamilyKey)
+        }
+    }
+
+    /// Preferred font size for meeting notes editors.
+    @Published public var meetingNotesFontSize: Double {
+        didSet {
+            let normalized = MeetingNotesTypographyDefaults.normalizedFontSize(meetingNotesFontSize)
+            if abs(normalized - meetingNotesFontSize) > 1e-4 {
+                meetingNotesFontSize = normalized
+                return
+            }
+            UserDefaults.standard.set(normalized, forKey: Keys.meetingNotesFontSize)
+        }
+    }
+
     /// Enables grounded single-turn Q&A in transcription detail.
     @Published public var meetingQnAEnabled: Bool {
         didSet { UserDefaults.standard.set(meetingQnAEnabled, forKey: Keys.meetingQnAEnabled) }
@@ -645,6 +669,8 @@ public class AppSettingsStore: ObservableObject {
         summaryTemplateEnabled = meeting.summaryTemplateEnabled
         autoExportSummaries = meeting.autoExportSummaries
         summaryExportSafetyPolicyLevel = meeting.summaryExportSafetyPolicyLevel
+        meetingNotesFontFamilyKey = meeting.meetingNotesFontFamilyKey
+        meetingNotesFontSize = meeting.meetingNotesFontSize
         meetingQnAEnabled = meeting.meetingQnAEnabled
 
         let ctx = Self.loadContextAwarenessSettings(from: context)

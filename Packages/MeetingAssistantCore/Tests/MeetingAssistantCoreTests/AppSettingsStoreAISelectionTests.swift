@@ -66,6 +66,31 @@ final class AppSettingsStoreAISelectionTests: XCTestCase {
         XCTAssertFalse(settings.dictationStructuredPostProcessingEnabled)
     }
 
+    func testResetDefaultsRestoresMeetingNotesTypographySettings() {
+        settings.meetingNotesFontFamilyKey = "Helvetica"
+        settings.meetingNotesFontSize = 24
+
+        settings.resetToDefaults()
+
+        XCTAssertEqual(settings.meetingNotesFontFamilyKey, "__system__")
+        XCTAssertEqual(settings.meetingNotesFontSize, 16, accuracy: 0.0001)
+    }
+
+    func testMeetingNotesTypographySettingsNormalizeAndPersist() {
+        settings.meetingNotesFontFamilyKey = "   "
+        settings.meetingNotesFontSize = 15
+
+        XCTAssertEqual(settings.meetingNotesFontFamilyKey, "__system__")
+        XCTAssertEqual(settings.meetingNotesFontSize, 14, accuracy: 0.0001)
+        XCTAssertEqual(
+            UserDefaults.standard.string(forKey: "meetingNotesFontFamilyKey"),
+            "__system__"
+        )
+        let persistedSize = UserDefaults.standard.object(forKey: "meetingNotesFontSize") as? Double
+        XCTAssertNotNil(persistedSize)
+        XCTAssertEqual(persistedSize ?? 0, 14, accuracy: 0.0001)
+    }
+
     func testDictationStructuredPostProcessingSettingIsPersisted() {
         settings.dictationStructuredPostProcessingEnabled = true
         XCTAssertEqual(

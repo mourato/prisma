@@ -1,3 +1,4 @@
+import AppKit
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
@@ -142,6 +143,40 @@ public struct MeetingSettingsTab: View {
 
             DSGroup("settings.meetings.speaker_identification".localized, icon: "person.wave.2.fill") {
                 SpeakerIdentificationSettingsSection(settings: meetingViewModel.settings)
+            }
+
+            DSGroup("settings.meetings.notes_typography.title".localized, icon: "textformat.size") {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("settings.meetings.notes_typography.desc".localized)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    HStack {
+                        Text("settings.meetings.notes_typography.font_family".localized)
+                        Spacer()
+                        Picker("", selection: $meetingViewModel.settings.meetingNotesFontFamilyKey) {
+                            Text("settings.meetings.notes_typography.font_system".localized)
+                                .tag(MeetingNotesTypographyDefaults.systemFontFamilyKey)
+                            ForEach(availableMeetingNotesFontFamilies, id: \.self) { family in
+                                Text(family).tag(family)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                    }
+
+                    HStack {
+                        Text("settings.meetings.notes_typography.font_size".localized)
+                        Spacer()
+                        Picker("", selection: $meetingViewModel.settings.meetingNotesFontSize) {
+                            ForEach(MeetingNotesTypographyDefaults.supportedFontSizes, id: \.self) { size in
+                                Text("\(Int(size))").tag(size)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                    }
+                }
             }
 
             DSGroup("settings.meetings.export".localized, icon: "folder.fill") {
@@ -427,6 +462,12 @@ public struct MeetingSettingsTab: View {
             "settings.meetings.export_safety_policy.standard".localized
         case .strict:
             "settings.meetings.export_safety_policy.strict".localized
+        }
+    }
+
+    private var availableMeetingNotesFontFamilies: [String] {
+        NSFontManager.shared.availableFontFamilies.sorted {
+            $0.localizedCaseInsensitiveCompare($1) == .orderedAscending
         }
     }
 

@@ -65,10 +65,10 @@ struct TranscriptionConversationPage: View {
                         await viewModel.submitQuestion(for: transcription)
                     }
                 },
-                onRetry: { question in
+                onRetry: { turnID, question in
                     guard let transcription = viewModel.selectedTranscription, transcription.id == transcriptionID else { return }
                     Task {
-                        await viewModel.retryQuestion(question, for: transcription)
+                        await viewModel.retryQuestion(question, turnID: turnID, for: transcription)
                     }
                 },
                 isAnswering: viewModel.isAnsweringQuestion,

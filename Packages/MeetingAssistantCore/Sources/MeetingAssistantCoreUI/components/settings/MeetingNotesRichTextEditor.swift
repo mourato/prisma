@@ -1,21 +1,33 @@
 import AppKit
 import MeetingAssistantCoreCommon
+import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
 struct MeetingNotesRichTextEditor: View {
     private static let toolbarControlHeight: CGFloat = 24
 
     @Binding var content: MeetingNotesContent
+    @ObservedObject private var settings: AppSettingsStore
     @StateObject private var editorController = MeetingNotesRichTextController()
     @State private var isShowingLinkEditor = false
     @State private var linkInput = ""
+
+    init(
+        content: Binding<MeetingNotesContent>,
+        settings: AppSettingsStore = .shared
+    ) {
+        _content = content
+        _settings = ObservedObject(wrappedValue: settings)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             toolbar
             MeetingNotesRichTextRepresentable(
                 content: $content,
-                controller: editorController
+                controller: editorController,
+                fontFamilyKey: settings.meetingNotesFontFamilyKey,
+                fontSize: CGFloat(settings.meetingNotesFontSize)
             )
         }
         .sheet(isPresented: $isShowingLinkEditor) {
@@ -25,39 +37,6 @@ struct MeetingNotesRichTextEditor: View {
 
     private var toolbar: some View {
         HStack(spacing: 6) {
-            Picker(
-                "meeting_notes.rich_text.toolbar.font_family".localized,
-                selection: $editorController.selectedFontFamilyKey
-            ) {
-                Text("meeting_notes.rich_text.font.system".localized)
-                    .tag(MeetingNotesRichTextController.systemFontFamilyKey)
-                ForEach(editorController.fontFamilies, id: \.self) { family in
-                    Text(family).tag(family)
-                }
-            }
-            .labelsHidden()
-            .controlSize(.large)
-            .onChange(of: editorController.selectedFontFamilyKey) { _, newValue in
-                editorController.applyFontFamily(key: newValue)
-            }
-
-            Picker(
-                "meeting_notes.rich_text.toolbar.font_size".localized,
-                selection: $editorController.selectedFontSize
-            ) {
-                ForEach(MeetingNotesRichTextController.supportedFontSizes, id: \.self) { size in
-                    Text("\(Int(size))").tag(size)
-                }
-            }
-            .labelsHidden()
-            .controlSize(.large)
-            .onChange(of: editorController.selectedFontSize) { _, newValue in
-                editorController.applyFontSize(newValue)
-            }
-
-            Divider()
-                .frame(height: 16)
-
             toolbarButton(
                 title: "meeting_notes.rich_text.toolbar.bold".localized,
                 systemImage: "bold",
@@ -75,17 +54,17 @@ struct MeetingNotesRichTextEditor: View {
             }
 
             toolbarButton(
-                title: "meeting_notes.rich_text.toolbar.unordered_list".localized,
-                systemImage: "list.bullet"
-            ) {
-                editorController.toggleUnorderedList()
-            }
-
-            toolbarButton(
                 title: "meeting_notes.rich_text.toolbar.ordered_list".localized,
                 systemImage: "list.number"
             ) {
                 editorController.toggleOrderedList()
+            }
+
+            toolbarButton(
+                title: "meeting_notes.rich_text.toolbar.unordered_list".localized,
+                systemImage: "list.bullet"
+            ) {
+                editorController.toggleUnorderedList()
             }
 
             toolbarButton(
@@ -156,6 +135,8 @@ struct MeetingNotesRichTextEditor: View {
 private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
     @Binding var content: MeetingNotesContent
     let controller: MeetingNotesRichTextController
+    let fontFamilyKey: String
+    let fontSize: CGFloat
 
     func makeNSView(context: Context) -> NSScrollView {
         let textView = RichTextFormattingShortcutTextView()
@@ -186,7 +167,7 @@ private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
         textView.isVerticallyResizable = true
         textView.autoresizingMask = [.width]
         textView.allowsUndo = true
-        textView.font = .systemFont(ofSize: NSFont.systemFontSize)
+        textView.font = controller.baseFont(familyKey: fontFamilyKey, size: fontSize)
 
         let scrollView = NSScrollView()
         scrollView.borderType = .noBorder
@@ -197,14 +178,26 @@ private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
         scrollView.documentView = textView
 
         context.coordinator.connect(textView: textView)
-        context.coordinator.applyExternalContent(content, to: textView)
+        let didApplyExternalContent = context.coordinator.applyExternalContent(content, to: textView)
+        context.coordinator.applyGlobalTypographyIfNeeded(
+            to: textView,
+            fontFamilyKey: fontFamilyKey,
+            fontSize: fontSize,
+            force: didApplyExternalContent
+        )
         return scrollView
     }
 
     func updateNSView(_ nsView: NSScrollView, context: Context) {
         guard let textView = nsView.documentView as? NSTextView else { return }
         context.coordinator.connect(textView: textView)
-        context.coordinator.applyExternalContent(content, to: textView)
+        let didApplyExternalContent = context.coordinator.applyExternalContent(content, to: textView)
+        context.coordinator.applyGlobalTypographyIfNeeded(
+            to: textView,
+            fontFamilyKey: fontFamilyKey,
+            fontSize: fontSize,
+            force: didApplyExternalContent
+        )
     }
 
     func makeCoordinator() -> Coordinator {
@@ -217,6 +210,8 @@ private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
         private let controller: MeetingNotesRichTextController
         private var isApplyingProgrammaticUpdate = false
         private var lastRenderedContent: MeetingNotesContent = .empty
+        private var lastAppliedFontFamilyKey = MeetingNotesTypographyDefaults.systemFontFamilyKey
+        private var lastAppliedFontSize: CGFloat = .init(MeetingNotesTypographyDefaults.defaultFontSize)
         private weak var observedTextStorage: NSTextStorage?
         private var textStorageDidProcessEditingObserver: NSObjectProtocol?
 
@@ -239,8 +234,9 @@ private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
             observeTextStorageIfNeeded(textView.textStorage)
         }
 
-        func applyExternalContent(_ externalContent: MeetingNotesContent, to textView: NSTextView) {
-            guard externalContent != lastRenderedContent else { return }
+        @discardableResult
+        func applyExternalContent(_ externalContent: MeetingNotesContent, to textView: NSTextView) -> Bool {
+            guard externalContent != lastRenderedContent else { return false }
             let currentSelection = textView.selectedRange()
             let attributedText = deserializeAttributedText(from: externalContent)
 
@@ -252,6 +248,33 @@ private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
 
             lastRenderedContent = externalContent
             controller.refreshState()
+            return true
+        }
+
+        func applyGlobalTypographyIfNeeded(
+            to textView: NSTextView,
+            fontFamilyKey: String,
+            fontSize: CGFloat,
+            force: Bool
+        ) {
+            let normalizedFontFamilyKey = MeetingNotesTypographyDefaults.normalizedFontFamilyKey(fontFamilyKey)
+            let normalizedFontSize = CGFloat(
+                MeetingNotesTypographyDefaults.normalizedFontSize(Double(fontSize))
+            )
+
+            let requiresTypographyUpdate = force
+                || normalizedFontFamilyKey != lastAppliedFontFamilyKey
+                || abs(normalizedFontSize - lastAppliedFontSize) > 0.001
+
+            guard requiresTypographyUpdate else { return }
+
+            isApplyingProgrammaticUpdate = true
+            controller.applyGlobalTypography(familyKey: normalizedFontFamilyKey, size: normalizedFontSize)
+            isApplyingProgrammaticUpdate = false
+
+            lastAppliedFontFamilyKey = normalizedFontFamilyKey
+            lastAppliedFontSize = normalizedFontSize
+            emitContent(from: textView)
         }
 
         func textDidChange(_ notification: Notification) {
@@ -341,14 +364,14 @@ private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
 
 @MainActor
 final class MeetingNotesRichTextController: ObservableObject {
-    static let systemFontFamilyKey = "__system__"
-    static let supportedFontSizes: [CGFloat] = [10, 11, 12, 13, 14, 16, 18, 20, 24, 28, 32]
+    static let systemFontFamilyKey = MeetingNotesTypographyDefaults.systemFontFamilyKey
+    static let supportedFontSizes: [CGFloat] = MeetingNotesTypographyDefaults.supportedFontSizes.map { CGFloat($0) }
 
     weak var textView: NSTextView?
     let fontFamilies: [String]
 
     @Published var selectedFontFamilyKey = systemFontFamilyKey
-    @Published var selectedFontSize: CGFloat = 16
+    @Published var selectedFontSize: CGFloat = .init(MeetingNotesTypographyDefaults.defaultFontSize)
     @Published var isBoldEnabled = false
     @Published var isItalicEnabled = false
     @Published var selectedLinkString: String?
@@ -388,18 +411,76 @@ final class MeetingNotesRichTextController: ObservableObject {
     }
 
     func applyFontFamily(key: String) {
+        let normalizedKey = MeetingNotesTypographyDefaults.normalizedFontFamilyKey(key)
         guard let textView else { return }
         applyFontTransform(to: textView) { currentFont in
-            resolvedFont(forFamilyKey: key, preservingTraitsFrom: currentFont)
+            resolvedFont(
+                forFamilyKey: normalizedKey,
+                size: currentFont.pointSize,
+                preservingTraitsFrom: currentFont
+            )
         }
         refreshState()
     }
 
     func applyFontSize(_ size: CGFloat) {
+        let normalizedSize = CGFloat(MeetingNotesTypographyDefaults.normalizedFontSize(Double(size)))
         guard let textView else { return }
         applyFontTransform(to: textView) { font in
-            NSFont(descriptor: font.fontDescriptor, size: size) ?? font
+            resolvedFont(
+                forFamilyKey: font.familyName ?? Self.systemFontFamilyKey,
+                size: normalizedSize,
+                preservingTraitsFrom: font
+            )
         }
+        refreshState()
+    }
+
+    func baseFont(familyKey: String, size: CGFloat) -> NSFont {
+        let normalizedFamilyKey = MeetingNotesTypographyDefaults.normalizedFontFamilyKey(familyKey)
+        let normalizedSize = CGFloat(MeetingNotesTypographyDefaults.normalizedFontSize(Double(size)))
+
+        if normalizedFamilyKey == Self.systemFontFamilyKey {
+            return .systemFont(ofSize: normalizedSize)
+        }
+
+        return NSFont(name: normalizedFamilyKey, size: normalizedSize) ?? .systemFont(ofSize: normalizedSize)
+    }
+
+    func applyGlobalTypography(familyKey: String, size: CGFloat) {
+        guard let textView else { return }
+
+        let normalizedFamilyKey = MeetingNotesTypographyDefaults.normalizedFontFamilyKey(familyKey)
+        let normalizedSize = CGFloat(MeetingNotesTypographyDefaults.normalizedFontSize(Double(size)))
+        let fallbackFont = baseFont(familyKey: normalizedFamilyKey, size: normalizedSize)
+
+        if let storage = textView.textStorage, storage.length > 0 {
+            let fullRange = NSRange(location: 0, length: storage.length)
+            storage.beginEditing()
+            storage.enumerateAttribute(.font, in: fullRange, options: []) { value, range, _ in
+                let sourceFont = (value as? NSFont) ?? fallbackFont
+                storage.addAttribute(
+                    .font,
+                    value: self.resolvedFont(
+                        forFamilyKey: normalizedFamilyKey,
+                        size: normalizedSize,
+                        preservingTraitsFrom: sourceFont
+                    ),
+                    range: range
+                )
+            }
+            storage.endEditing()
+        }
+
+        var typingAttributes = textView.typingAttributes
+        let typingSourceFont = (typingAttributes[.font] as? NSFont) ?? fallbackFont
+        typingAttributes[.font] = resolvedFont(
+            forFamilyKey: normalizedFamilyKey,
+            size: normalizedSize,
+            preservingTraitsFrom: typingSourceFont
+        )
+        textView.typingAttributes = typingAttributes
+        textView.font = fallbackFont
         refreshState()
     }
 
@@ -513,7 +594,8 @@ final class MeetingNotesRichTextController: ObservableObject {
     }
 
     private func closestSupportedSize(to size: CGFloat) -> CGFloat {
-        Self.supportedFontSizes.min(by: { abs($0 - size) < abs($1 - size) }) ?? 16
+        Self.supportedFontSizes.min(by: { abs($0 - size) < abs($1 - size) })
+            ?? CGFloat(MeetingNotesTypographyDefaults.defaultFontSize)
     }
 
     private func stringifyLink(_ value: Any) -> String? {
@@ -523,21 +605,61 @@ final class MeetingNotesRichTextController: ObservableObject {
         return value as? String
     }
 
-    private func resolvedFont(forFamilyKey key: String, preservingTraitsFrom sourceFont: NSFont) -> NSFont {
-        let targetFont: NSFont = if key == Self.systemFontFamilyKey {
-            .systemFont(ofSize: sourceFont.pointSize)
-        } else {
-            NSFont(name: key, size: sourceFont.pointSize) ?? sourceFont
+    private func resolvedFont(
+        forFamilyKey key: String,
+        size: CGFloat,
+        preservingTraitsFrom sourceFont: NSFont
+    ) -> NSFont {
+        let sourceTraits = NSFontManager.shared.traits(of: sourceFont)
+        let wantsBold = sourceTraits.contains(.boldFontMask)
+        let wantsItalic = sourceTraits.contains(.italicFontMask)
+        var desiredTraits: NSFontTraitMask = []
+        if wantsBold {
+            desiredTraits.insert(.boldFontMask)
+        }
+        if wantsItalic {
+            desiredTraits.insert(.italicFontMask)
         }
 
-        let sourceTraits = NSFontManager.shared.traits(of: sourceFont)
-        var transformedFont = targetFont
+        var transformedFont: NSFont
+        if key == Self.systemFontFamilyKey {
+            let systemFamily = NSFont.systemFont(ofSize: size).familyName
+            transformedFont = NSFontManager.shared.font(
+                withFamily: systemFamily ?? sourceFont.familyName ?? ".AppleSystemUIFont",
+                traits: desiredTraits,
+                weight: wantsBold ? 9 : 5,
+                size: size
+            ) ?? NSFont.systemFont(ofSize: size, weight: wantsBold ? .bold : .regular)
+        } else {
+            transformedFont = NSFontManager.shared.font(
+                withFamily: key,
+                traits: desiredTraits,
+                weight: wantsBold ? 9 : 5,
+                size: size
+            ) ?? NSFont(name: key, size: size)
+                ?? {
+                    var fontAttributes = sourceFont.fontDescriptor.fontAttributes
+                    fontAttributes[.family] = key
+                    fontAttributes.removeValue(forKey: .name)
+                    let descriptor = NSFontDescriptor(fontAttributes: fontAttributes)
+                    return NSFont(descriptor: descriptor, size: size)
+                }()
+                ?? NSFont(name: key, size: size)
+                ?? NSFont.systemFont(ofSize: size)
+        }
 
-        if sourceTraits.contains(.boldFontMask) {
+        if wantsBold, !NSFontManager.shared.traits(of: transformedFont).contains(.boldFontMask) {
             transformedFont = NSFontManager.shared.convert(transformedFont, toHaveTrait: .boldFontMask)
         }
-        if sourceTraits.contains(.italicFontMask) {
+        if wantsItalic, !NSFontManager.shared.traits(of: transformedFont).contains(.italicFontMask) {
             transformedFont = NSFontManager.shared.convert(transformedFont, toHaveTrait: .italicFontMask)
+        }
+
+        let finalTraits = NSFontManager.shared.traits(of: transformedFont)
+        let lostBoldTrait = sourceTraits.contains(.boldFontMask) && !finalTraits.contains(.boldFontMask)
+        let lostItalicTrait = sourceTraits.contains(.italicFontMask) && !finalTraits.contains(.italicFontMask)
+        if lostBoldTrait || lostItalicTrait {
+            return NSFontManager.shared.convert(sourceFont, toSize: size)
         }
 
         return transformedFont
