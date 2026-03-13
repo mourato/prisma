@@ -63,9 +63,6 @@ public protocol MeetingNotesMarkdownDocumentStoreProtocol: AnyObject {
     func loadMeetingNotesContent(for meetingID: UUID, legacyContent: MeetingNotesContent) -> MeetingNotesContent
     func saveMeetingNotesContent(_ content: MeetingNotesContent, for meetingID: UUID)
     func deleteMeetingNotesContent(for meetingID: UUID)
-    func exportMeetingNote(meetingID: UUID) -> MeetingNotesMarkdownDocument?
-    func allMeetingNoteDocuments() -> [MeetingNotesMarkdownDocument]
-    func upsertMeetingNoteFromCloud(meetingID: UUID, markdown: String, updatedAtMillis: Int64)
 
     func loadCalendarEventNotesContent(for eventIdentifier: String, legacyContent: MeetingNotesContent) -> MeetingNotesContent
     func saveCalendarEventNotesContent(_ content: MeetingNotesContent, for eventIdentifier: String)
@@ -174,100 +171,10 @@ public final class MeetingNotesMarkdownDocumentStore: MeetingNotesMarkdownDocume
 
     public func saveMeetingNotesContent(_ content: MeetingNotesContent, for meetingID: UUID) {
         saveContent(content, for: .meeting(meetingID))
-        publishMeetingNoteChange(for: meetingID)
     }
 
     public func deleteMeetingNotesContent(for meetingID: UUID) {
         deleteContent(for: .meeting(meetingID))
-        publishMeetingNoteChange(for: meetingID)
-    }
-
-    public func exportMeetingNote(meetingID: UUID) -> MeetingNotesMarkdownDocument? {
-        try? readDocument(for: .meeting(meetingID))
-    }
-
-    public func allMeetingNoteDocuments() -> [MeetingNotesMarkdownDocument] {
-        let directory = directoryURL(for: .meeting)
-        guard fileManager.fileExists(atPath: directory.path) else { return [] }
-
-        let urls: [URL]
-        do {
-            urls = try fileManager.contentsOfDirectory(
-                at: directory,
-                includingPropertiesForKeys: nil,
-                options: [.skipsHiddenFiles]
-            )
-        } catch {
-            AppLogger.error("Failed to enumerate meeting notes directory", category: .storage, error: error)
-            return []
-        }
-
-        return urls
-            .filter { $0.pathExtension.lowercased() == Paths.markdownExtension }
-            .compactMap { url in
-                do {
-                    let raw = try String(contentsOf: url, encoding: .utf8)
-                    let document = try deserialize(raw)
-                    guard document.kind == .meeting, document.meetingId != nil else { return nil }
-                    return document
-                } catch {
-                    AppLogger.error("Failed to read meeting note document", category: .storage, error: error)
-                    return nil
-                }
-            }
-            .sorted { lhs, rhs in
-                if lhs.updatedAt != rhs.updatedAt {
-                    return lhs.updatedAt < rhs.updatedAt
-                }
-                return lhs.documentId < rhs.documentId
-            }
-    }
-
-    public func upsertMeetingNoteFromCloud(meetingID: UUID, markdown: String, updatedAtMillis: Int64) {
-        let key = MeetingNotesDocumentKey.meeting(meetingID)
-        let normalizedMarkdown = markdown.trimmingCharacters(in: Self.controlCharactersToTrim)
-        let remoteUpdatedAt = Date(timeIntervalSince1970: max(Double(updatedAtMillis), 0) / 1_000.0)
-
-        do {
-            let fileURL = try fileURL(for: key)
-
-            guard !normalizedMarkdown.isEmpty else {
-                if fileManager.fileExists(atPath: fileURL.path) {
-                    try fileManager.removeItem(at: fileURL)
-                }
-                userDefaults.removeObject(forKey: LegacyKeys.meetingPrefix + meetingID.uuidString)
-                userDefaults.removeObject(forKey: LegacyKeys.meetingRichPrefix + meetingID.uuidString)
-                return
-            }
-
-            try ensureDirectoryStructure(for: fileURL)
-            let existingDocument = try? readDocument(for: key)
-            let document = MeetingNotesMarkdownDocument(
-                schemaVersion: Self.schemaVersion,
-                kind: .meeting,
-                documentId: key.documentId,
-                transcriptionId: nil,
-                meetingId: meetingID,
-                eventIdentifierHash: nil,
-                eventIdentifierRaw: nil,
-                createdAt: existingDocument?.createdAt ?? remoteUpdatedAt,
-                updatedAt: remoteUpdatedAt,
-                markdownBody: normalizedMarkdown
-            )
-
-            let serialized = serialize(document)
-            try serialized.write(to: fileURL, atomically: true, encoding: .utf8)
-
-            let plainText = content(from: document).plainText
-            if plainText.trimmingCharacters(in: Self.controlCharactersToTrim).isEmpty {
-                userDefaults.removeObject(forKey: LegacyKeys.meetingPrefix + meetingID.uuidString)
-            } else {
-                userDefaults.set(plainText, forKey: LegacyKeys.meetingPrefix + meetingID.uuidString)
-            }
-            userDefaults.removeObject(forKey: LegacyKeys.meetingRichPrefix + meetingID.uuidString)
-        } catch {
-            AppLogger.error("Failed to upsert cloud meeting note", category: .storage, error: error)
-        }
     }
 
     public func loadCalendarEventNotesContent(
@@ -479,29 +386,6 @@ public final class MeetingNotesMarkdownDocumentStore: MeetingNotesMarkdownDocume
             return true
         }
         return false
-    }
-
-    private func publishMeetingNoteChange(for meetingID: UUID) {
-        let updatedAtMillis: Int64
-        let markdown: String
-
-        if let document = exportMeetingNote(meetingID: meetingID) {
-            updatedAtMillis = Int64(document.updatedAt.timeIntervalSince1970 * 1_000.0)
-            markdown = document.markdownBody
-        } else {
-            updatedAtMillis = Int64(now().timeIntervalSince1970 * 1_000.0)
-            markdown = ""
-        }
-
-        NotificationCenter.default.post(
-            name: .meetingAssistantMeetingNoteDidSave,
-            object: nil,
-            userInfo: [
-                AppNotifications.UserInfoKey.meetingNoteMeetingID: meetingID.uuidString,
-                AppNotifications.UserInfoKey.meetingNoteMarkdown: markdown,
-                AppNotifications.UserInfoKey.meetingNoteUpdatedAtMillis: updatedAtMillis,
-            ]
-        )
     }
 
     private func content(from document: MeetingNotesMarkdownDocument) -> MeetingNotesContent {

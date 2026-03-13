@@ -22,7 +22,6 @@ public class AppSettingsStore: ObservableObject {
     }()
 
     var isSynchronizingAssistantIntegrations = false
-    var isApplyingCloudSnapshot = false
 
     // MARK: - Published Properties
 

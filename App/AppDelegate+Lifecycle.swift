@@ -26,7 +26,6 @@ extension AppDelegate {
         assistantShortcutController.start()
         recordingCancelShortcutController.start()
         setupRecordingObservation()
-        setupCloudSync()
         prewarmFloatingIndicatorIfEligible()
         updateMenuTitles() // Initial update
 
@@ -127,7 +126,6 @@ extension AppDelegate {
         assistantShortcutController.start()
         recordingCancelShortcutController.start()
         setupRecordingObservation()
-        setupCloudSync()
         prewarmFloatingIndicatorIfEligible()
         updateMenuTitles()
 
@@ -262,120 +260,6 @@ extension AppDelegate {
         .store(in: &cancellables)
 
         refreshRecordingUIState()
-    }
-
-    private func setupCloudSync() {
-        guard !cloudSyncObserversConfigured else { return }
-        cloudSyncObserversConfigured = true
-
-        Task { [weak self] in
-            await self?.bootstrapCloudSync()
-        }
-
-        NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)
-            .debounce(for: .milliseconds(500), scheduler: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.scheduleCloudSettingsPush()
-            }
-            .store(in: &cancellables)
-
-        NotificationCenter.default.publisher(for: .meetingAssistantMeetingNoteDidSave)
-            .sink { [weak self] notification in
-                self?.handleLocalMeetingNoteSaveNotification(notification)
-            }
-            .store(in: &cancellables)
-
-        NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)
-            .sink { [weak self] _ in
-                Task { [weak self] in
-                    await self?.refreshCloudSync()
-                }
-            }
-            .store(in: &cancellables)
-    }
-
-    private func bootstrapCloudSync() async {
-        let localSettingsSnapshot = settingsStore.exportCloudSnapshotV1()
-        let localMeetingNotes = localMeetingNoteSnapshots()
-        let result = await cloudSyncCoordinator.bootstrap(
-            localSettingsSnapshot: localSettingsSnapshot,
-            localMeetingNotes: localMeetingNotes
-        )
-        applyCloudPullResult(result)
-    }
-
-    private func refreshCloudSync() async {
-        let localSettingsSnapshot = settingsStore.exportCloudSnapshotV1()
-        let localMeetingNotes = localMeetingNoteSnapshots()
-        let result = await cloudSyncCoordinator.refresh(
-            localSettingsSnapshot: localSettingsSnapshot,
-            localMeetingNotes: localMeetingNotes
-        )
-        applyCloudPullResult(result)
-    }
-
-    private func applyCloudPullResult(_ result: CloudSyncPullResult) {
-        if let settingsSnapshot = result.settingsSnapshotToApply {
-            settingsStore.applyCloudSnapshotV1(settingsSnapshot, source: .cloud)
-        }
-
-        for noteSnapshot in result.meetingNoteSnapshotsToApply {
-            MeetingNotesMarkdownDocumentStore.shared.upsertMeetingNoteFromCloud(
-                meetingID: noteSnapshot.meetingID,
-                markdown: noteSnapshot.markdownBody,
-                updatedAtMillis: noteSnapshot.updatedAtMillis
-            )
-        }
-    }
-
-    private func scheduleCloudSettingsPush() {
-        let localSettingsSnapshot = settingsStore.exportCloudSnapshotV1()
-        Task {
-            await cloudSyncCoordinator.scheduleSettingsPush(localSnapshot: localSettingsSnapshot)
-        }
-    }
-
-    private func handleLocalMeetingNoteSaveNotification(_ notification: Notification) {
-        guard let userInfo = notification.userInfo,
-              let meetingIDRaw = userInfo[AppNotifications.UserInfoKey.meetingNoteMeetingID] as? String,
-              let meetingID = UUID(uuidString: meetingIDRaw),
-              let markdown = userInfo[AppNotifications.UserInfoKey.meetingNoteMarkdown] as? String
-        else {
-            return
-        }
-
-        let updatedAtMillis: Int64 = if let value = userInfo[AppNotifications.UserInfoKey.meetingNoteUpdatedAtMillis] as? Int64 {
-            value
-        } else if let value = userInfo[AppNotifications.UserInfoKey.meetingNoteUpdatedAtMillis] as? NSNumber {
-            value.int64Value
-        } else {
-            Int64(Date().timeIntervalSince1970 * 1_000.0)
-        }
-
-        let snapshot = CloudMeetingNoteSnapshotV1(
-            meetingID: meetingID,
-            markdownBody: markdown,
-            updatedAtMillis: updatedAtMillis,
-            sourceDeviceID: CloudSyncDeviceIdentity.current()
-        )
-
-        Task {
-            await cloudSyncCoordinator.scheduleMeetingNotePush(localSnapshot: snapshot)
-        }
-    }
-
-    private func localMeetingNoteSnapshots() -> [CloudMeetingNoteSnapshotV1] {
-        let deviceID = CloudSyncDeviceIdentity.current()
-        return MeetingNotesMarkdownDocumentStore.shared.allMeetingNoteDocuments().compactMap { document in
-            guard let meetingID = document.meetingId else { return nil }
-            let updatedAtMillis = Int64(document.updatedAt.timeIntervalSince1970 * 1_000.0)
-            return CloudMeetingNoteSnapshotV1(
-                meetingID: meetingID,
-                markdownBody: document.markdownBody,
-                updatedAtMillis: updatedAtMillis,
-                sourceDeviceID: deviceID
-            )
-        }
     }
 
     private func refreshRecordingUIState() {

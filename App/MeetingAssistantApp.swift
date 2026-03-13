@@ -95,7 +95,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     lazy var assistantShortcutController = AssistantShortcutController(
         assistantService: assistantVoiceCommandService
     )
-    lazy var cloudSyncCoordinator = CloudSyncCoordinator()
     lazy var recordingCancelShortcutController = RecordingCancelShortcutController(
         stateProvider: { [weak self] in
             guard let self else {
@@ -120,7 +119,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     lazy var settingsWindowController = SettingsWindowController()
     var cancellables = Set<AnyCancellable>()
     var dockObserver: AnyCancellable?
-    var cloudSyncObserversConfigured = false
     var lastRecordingUIRenderState: RecordingUIRenderState?
 }
 
