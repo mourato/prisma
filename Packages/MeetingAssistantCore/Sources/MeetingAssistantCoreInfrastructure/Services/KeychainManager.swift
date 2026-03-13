@@ -116,24 +116,23 @@ public enum KeychainManager {
             throw KeychainError.unableToConvertToData
         }
 
-        let query = baseQuery(for: key, serviceIdentifier: serviceIdentifier)
-
         // Delete existing item if present (including legacy services).
+        let query = baseQuery(for: key, serviceIdentifier: serviceIdentifier, synchronizable: nil)
         SecItemDelete(query as CFDictionary)
         for legacyServiceIdentifier in legacyServiceIdentifiers {
-            let legacyQuery = baseQuery(for: key, serviceIdentifier: legacyServiceIdentifier)
+            let legacyQuery = baseQuery(for: key, serviceIdentifier: legacyServiceIdentifier, synchronizable: nil)
             SecItemDelete(legacyQuery as CFDictionary)
         }
 
-        // Add new item
-        var addQuery = query
-        addQuery[kSecValueData as String] = data
-        addQuery[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-
-        let status = SecItemAdd(addQuery as CFDictionary, nil)
-
-        guard status == errSecSuccess else {
-            throw KeychainError.unexpectedStatus(status)
+        do {
+            try addItem(data, for: key, serviceIdentifier: serviceIdentifier, synchronizable: true)
+        } catch let KeychainError.unexpectedStatus(status) where isSynchronizableUnavailableStatus(status) {
+            AppLogger.warning(
+                "iCloud Keychain unavailable. Falling back to local Keychain item.",
+                category: .security,
+                extra: ["status": status]
+            )
+            try addItem(data, for: key, serviceIdentifier: serviceIdentifier, synchronizable: false)
         }
     }
 
@@ -239,7 +238,25 @@ public enum KeychainManager {
     }
 
     private static func retrieve(for key: Key, serviceIdentifier: String) throws -> String? {
-        var query = baseQuery(for: key, serviceIdentifier: serviceIdentifier)
+        if let value = try retrieve(for: key, serviceIdentifier: serviceIdentifier, synchronizable: true) {
+            return value
+        }
+
+        if let value = try retrieve(for: key, serviceIdentifier: serviceIdentifier, synchronizable: false) {
+            // Best-effort migration of local-only credentials into iCloud Keychain.
+            try? store(value, for: key)
+            return value
+        }
+
+        return nil
+    }
+
+    private static func retrieve(
+        for key: Key,
+        serviceIdentifier: String,
+        synchronizable: Bool
+    ) throws -> String? {
+        var query = baseQuery(for: key, serviceIdentifier: serviceIdentifier, synchronizable: synchronizable)
         query[kSecReturnData as String] = true
         query[kSecMatchLimit as String] = kSecMatchLimitOne
 
@@ -262,28 +279,77 @@ public enum KeychainManager {
     }
 
     private static func delete(for key: Key, serviceIdentifier: String) throws {
-        let query = baseQuery(for: key, serviceIdentifier: serviceIdentifier)
-        let status = SecItemDelete(query as CFDictionary)
+        let synchronizedQuery = baseQuery(for: key, serviceIdentifier: serviceIdentifier, synchronizable: true)
+        let localQuery = baseQuery(for: key, serviceIdentifier: serviceIdentifier, synchronizable: false)
+        let synchronizedStatus = SecItemDelete(synchronizedQuery as CFDictionary)
+        let localStatus = SecItemDelete(localQuery as CFDictionary)
 
         // Treat "not found" as success (nothing to delete)
-        guard status == errSecSuccess || status == errSecItemNotFound else {
-            throw KeychainError.unexpectedStatus(status)
+        guard synchronizedStatus == errSecSuccess || synchronizedStatus == errSecItemNotFound else {
+            throw KeychainError.unexpectedStatus(synchronizedStatus)
+        }
+
+        guard localStatus == errSecSuccess || localStatus == errSecItemNotFound else {
+            throw KeychainError.unexpectedStatus(localStatus)
         }
     }
 
     private static func exists(for key: Key, serviceIdentifier: String) -> Bool {
-        var query = baseQuery(for: key, serviceIdentifier: serviceIdentifier)
+        if exists(for: key, serviceIdentifier: serviceIdentifier, synchronizable: true) {
+            return true
+        }
+        return exists(for: key, serviceIdentifier: serviceIdentifier, synchronizable: false)
+    }
+
+    private static func exists(
+        for key: Key,
+        serviceIdentifier: String,
+        synchronizable: Bool
+    ) -> Bool {
+        var query = baseQuery(for: key, serviceIdentifier: serviceIdentifier, synchronizable: synchronizable)
         query[kSecReturnData as String] = false
         let status = SecItemCopyMatching(query as CFDictionary, nil)
         return status == errSecSuccess
     }
 
-    private static func baseQuery(for key: Key, serviceIdentifier: String) -> [String: Any] {
-        [
+    private static func baseQuery(
+        for key: Key,
+        serviceIdentifier: String,
+        synchronizable: Bool?
+    ) -> [String: Any] {
+        var query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: serviceIdentifier,
             kSecAttrAccount as String: key.rawValue,
         ]
+
+        if let synchronizable {
+            query[kSecAttrSynchronizable as String] = synchronizable ? kCFBooleanTrue : kCFBooleanFalse
+        }
+
+        return query
+    }
+
+    private static func addItem(
+        _ data: Data,
+        for key: Key,
+        serviceIdentifier: String,
+        synchronizable: Bool
+    ) throws {
+        var addQuery = baseQuery(for: key, serviceIdentifier: serviceIdentifier, synchronizable: synchronizable)
+        addQuery[kSecValueData as String] = data
+        addQuery[kSecAttrAccessible as String] = synchronizable
+            ? kSecAttrAccessibleWhenUnlocked
+            : kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+
+        let status = SecItemAdd(addQuery as CFDictionary, nil)
+        guard status == errSecSuccess else {
+            throw KeychainError.unexpectedStatus(status)
+        }
+    }
+
+    private static func isSynchronizableUnavailableStatus(_ status: OSStatus) -> Bool {
+        status == errSecNotAvailable || status == errSecParam || status == errSecMissingEntitlement
     }
 
     public static func mapAPIKeyItems(

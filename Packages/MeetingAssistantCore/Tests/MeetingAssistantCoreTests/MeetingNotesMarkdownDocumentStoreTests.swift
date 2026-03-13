@@ -202,6 +202,119 @@ final class MeetingNotesMarkdownDocumentStoreTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: fileURL.path))
     }
 
+    func testExportMeetingNote_ReturnsDocumentForMeeting() {
+        let meetingID = UUID()
+        store.saveMeetingNotesContent(MeetingNotesContent(plainText: "Meeting markdown"), for: meetingID)
+
+        let exported = store.exportMeetingNote(meetingID: meetingID)
+
+        XCTAssertEqual(exported?.kind, .meeting)
+        XCTAssertEqual(exported?.meetingId, meetingID)
+        XCTAssertEqual(exported?.markdownBody, "Meeting markdown")
+    }
+
+    func testAllMeetingNoteDocuments_ReturnsOnlyMeetingDocumentsSortedByUpdateDate() {
+        let firstMeetingID = UUID()
+        let secondMeetingID = UUID()
+        let baseMillis = Int64(Date().timeIntervalSince1970 * 1_000.0)
+
+        store.upsertMeetingNoteFromCloud(
+            meetingID: secondMeetingID,
+            markdown: "Second",
+            updatedAtMillis: baseMillis + 2_000
+        )
+        store.upsertMeetingNoteFromCloud(
+            meetingID: firstMeetingID,
+            markdown: "First",
+            updatedAtMillis: baseMillis + 1_000
+        )
+        store.saveTranscriptionNotesContent(
+            MeetingNotesContent(plainText: "Transcription"),
+            for: UUID()
+        )
+
+        let documents = store.allMeetingNoteDocuments()
+
+        XCTAssertEqual(documents.map(\.meetingId), [firstMeetingID, secondMeetingID])
+        XCTAssertEqual(documents.map(\.markdownBody), ["First", "Second"])
+    }
+
+    func testUpsertMeetingNoteFromCloud_WritesDocumentAndLegacyFallback() {
+        let meetingID = UUID()
+        let updatedAtMillis: Int64 = 1_700_000_000_000
+
+        store.upsertMeetingNoteFromCloud(
+            meetingID: meetingID,
+            markdown: "Cloud synced note",
+            updatedAtMillis: updatedAtMillis
+        )
+
+        let exported = store.exportMeetingNote(meetingID: meetingID)
+        XCTAssertEqual(exported?.meetingId, meetingID)
+        XCTAssertEqual(exported?.markdownBody, "Cloud synced note")
+        let exportedUpdatedAt = try? XCTUnwrap(exported?.updatedAt)
+        XCTAssertNotNil(exportedUpdatedAt)
+        XCTAssertEqual(exportedUpdatedAt?.timeIntervalSince1970 ?? 0, 1_700_000_000.0, accuracy: 0.0001)
+        XCTAssertEqual(userDefaults.string(forKey: "meetingNotes.\(meetingID.uuidString)"), "Cloud synced note")
+        XCTAssertNil(userDefaults.object(forKey: "meetingNotes.rich.\(meetingID.uuidString)"))
+    }
+
+    func testUpsertMeetingNoteFromCloud_EmptyMarkdownRemovesDocumentAndLegacyFallback() {
+        let meetingID = UUID()
+        store.upsertMeetingNoteFromCloud(
+            meetingID: meetingID,
+            markdown: "Some note",
+            updatedAtMillis: 1_700_000_000_000
+        )
+
+        store.upsertMeetingNoteFromCloud(
+            meetingID: meetingID,
+            markdown: "   ",
+            updatedAtMillis: 1_700_000_001_000
+        )
+
+        XCTAssertNil(store.exportMeetingNote(meetingID: meetingID))
+        XCTAssertNil(userDefaults.string(forKey: "meetingNotes.\(meetingID.uuidString)"))
+        XCTAssertNil(userDefaults.object(forKey: "meetingNotes.rich.\(meetingID.uuidString)"))
+    }
+
+    func testSaveAndDeleteMeetingNotes_PostMeetingNoteChangeNotification() {
+        let meetingID = UUID()
+        var receivedUserInfo: [AnyHashable: Any]?
+        let token = NotificationCenter.default.addObserver(
+            forName: .meetingAssistantMeetingNoteDidSave,
+            object: nil,
+            queue: nil
+        ) { notification in
+            receivedUserInfo = notification.userInfo
+        }
+        defer { NotificationCenter.default.removeObserver(token) }
+
+        store.saveMeetingNotesContent(MeetingNotesContent(plainText: "Meeting note body"), for: meetingID)
+
+        XCTAssertEqual(
+            receivedUserInfo?[AppNotifications.UserInfoKey.meetingNoteMeetingID] as? String,
+            meetingID.uuidString
+        )
+        XCTAssertEqual(
+            receivedUserInfo?[AppNotifications.UserInfoKey.meetingNoteMarkdown] as? String,
+            "Meeting note body"
+        )
+        XCTAssertNotNil(receivedUserInfo?[AppNotifications.UserInfoKey.meetingNoteUpdatedAtMillis] as? Int64)
+
+        receivedUserInfo = nil
+        store.deleteMeetingNotesContent(for: meetingID)
+
+        XCTAssertEqual(
+            receivedUserInfo?[AppNotifications.UserInfoKey.meetingNoteMeetingID] as? String,
+            meetingID.uuidString
+        )
+        XCTAssertEqual(
+            receivedUserInfo?[AppNotifications.UserInfoKey.meetingNoteMarkdown] as? String,
+            ""
+        )
+    }
+
     private func transcriptionURL(for transcriptionID: UUID) -> URL {
         rootDirectoryURL
             .appendingPathComponent("transcriptions", isDirectory: true)

@@ -24,6 +24,8 @@ public enum AppIdentity {
     public static let legacyLogDirectoryName = "MeetingAssistant"
 
     public static let legacyKeychainServiceIdentifiers = ["com.meeting-assistant"]
+    public static let cloudKitContainerIdentifier = "iCloud.com.mourato.prisma"
+    public static let cloudSyncDeviceIdentifierUserDefaultsKey = "cloud.sync.device_identifier.v1"
 
     public static func appSupportBaseDirectory(fileManager: FileManager = .default) -> URL {
         let appSupportURL = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
