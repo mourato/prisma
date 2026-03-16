@@ -47,4 +47,25 @@ final class MeetingNotesMarkdownFormatterTests: XCTestCase {
 
         XCTAssertEqual(attributed.string, markdown)
     }
+
+    func testMarkdownForPersistence_ConvertsEditorMarkersAndHeadingLevels() {
+        let formatter = MeetingNotesMarkdownFormatter()
+        let text = "☐ Open\n☑ Done\n• Bullet\n3. Ordered\nHeading Six"
+        let attributed = NSMutableAttributedString(string: text)
+        let fullRange = NSRange(location: 0, length: attributed.length)
+        attributed.addAttribute(.font, value: NSFont.systemFont(ofSize: 16), range: fullRange)
+
+        let headingRange = (text as NSString).range(of: "Heading Six")
+        attributed.addAttribute(.meetingNotesHeadingLevel, value: 6, range: headingRange)
+        attributed.addAttribute(.font, value: NSFont.boldSystemFont(ofSize: 18), range: headingRange)
+
+        let markdown = formatter.markdownForPersistence(from: attributed)
+
+        XCTAssertTrue(markdown.contains("- [ ] Open"))
+        XCTAssertTrue(markdown.contains("- [x] Done"))
+        XCTAssertTrue(markdown.contains("- Bullet"))
+        XCTAssertTrue(markdown.contains("3. Ordered"))
+        XCTAssertTrue(markdown.contains("######"))
+        XCTAssertTrue(markdown.contains("Heading Six"))
+    }
 }

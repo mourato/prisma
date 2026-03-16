@@ -151,6 +151,146 @@ final class MeetingNotesRichTextControllerTests: XCTestCase {
         XCTAssertEqual(textView.string, "Line 1\nLine 2")
     }
 
+    func testHandleTextMutation_TransformsUnorderedListTrigger() {
+        let controller = MeetingNotesRichTextController()
+        let textView = NSTextView()
+        textView.string = "-"
+        textView.setSelectedRange(NSRange(location: 1, length: 0))
+        controller.textView = textView
+
+        let handled = controller.handleTextMutation(
+            affectedRange: NSRange(location: 1, length: 0),
+            replacementString: " "
+        )
+
+        XCTAssertTrue(handled)
+        XCTAssertEqual(textView.string, "• ")
+    }
+
+    func testHandleTextMutation_TransformsOrderedListTrigger() {
+        let controller = MeetingNotesRichTextController()
+        let textView = NSTextView()
+        textView.string = "12."
+        textView.setSelectedRange(NSRange(location: 3, length: 0))
+        controller.textView = textView
+
+        let handled = controller.handleTextMutation(
+            affectedRange: NSRange(location: 3, length: 0),
+            replacementString: " "
+        )
+
+        XCTAssertTrue(handled)
+        XCTAssertEqual(textView.string, "1. ")
+    }
+
+    func testHandleTextMutation_TransformsTaskListTrigger() {
+        let controller = MeetingNotesRichTextController()
+        let textView = NSTextView()
+        textView.string = "[x]"
+        textView.setSelectedRange(NSRange(location: 3, length: 0))
+        controller.textView = textView
+
+        let handled = controller.handleTextMutation(
+            affectedRange: NSRange(location: 3, length: 0),
+            replacementString: " "
+        )
+
+        XCTAssertTrue(handled)
+        XCTAssertEqual(textView.string, "☑ ")
+    }
+
+    func testHandleTextMutation_TransformsHeadingTriggerAndStoresHeadingLevel() {
+        let controller = MeetingNotesRichTextController()
+        let textView = NSTextView()
+        textView.string = "###"
+        textView.setSelectedRange(NSRange(location: 3, length: 0))
+        controller.textView = textView
+
+        let handled = controller.handleTextMutation(
+            affectedRange: NSRange(location: 3, length: 0),
+            replacementString: " "
+        )
+
+        XCTAssertTrue(handled)
+        XCTAssertEqual(textView.string, "")
+        let typingHeading = textView.typingAttributes[.meetingNotesHeadingLevel] as? Int
+        XCTAssertEqual(typingHeading, 3)
+    }
+
+    func testHandleTextMutation_ReturnContinuesOrderedList() {
+        let controller = MeetingNotesRichTextController()
+        let textView = NSTextView()
+        textView.string = "1. Item"
+        textView.setSelectedRange(NSRange(location: 7, length: 0))
+        controller.textView = textView
+
+        let handled = controller.handleTextMutation(
+            affectedRange: NSRange(location: 7, length: 0),
+            replacementString: "\n"
+        )
+
+        XCTAssertTrue(handled)
+        XCTAssertEqual(textView.string, "1. Item\n2. ")
+    }
+
+    func testHandleTextMutation_ReturnExitsListOnEmptyItem() {
+        let controller = MeetingNotesRichTextController()
+        let textView = NSTextView()
+        textView.string = "• "
+        textView.setSelectedRange(NSRange(location: 2, length: 0))
+        controller.textView = textView
+
+        let handled = controller.handleTextMutation(
+            affectedRange: NSRange(location: 2, length: 0),
+            replacementString: "\n"
+        )
+
+        XCTAssertTrue(handled)
+        XCTAssertEqual(textView.string, "")
+    }
+
+    func testNormalizeMarkdownStructure_RenumbersNestedOrderedLines() {
+        let controller = MeetingNotesRichTextController()
+        let textView = NSTextView()
+        textView.string = "7. One\n9. Two\n\t8. Nested"
+        controller.textView = textView
+
+        controller.normalizeMarkdownStructure()
+
+        XCTAssertEqual(textView.string, "1. One\n2. Two\n\t1. Nested")
+    }
+
+    func testToggleTaskMarker_TogglesUncheckedAndCheckedMarkers() {
+        let controller = MeetingNotesRichTextController()
+        let textView = NSTextView()
+        textView.string = "☐ Task"
+        controller.textView = textView
+
+        let toggledToChecked = controller.toggleTaskMarker(at: 0)
+        XCTAssertTrue(toggledToChecked)
+        XCTAssertEqual(textView.string, "☑ Task")
+
+        let toggledToUnchecked = controller.toggleTaskMarker(at: 0)
+        XCTAssertTrue(toggledToUnchecked)
+        XCTAssertEqual(textView.string, "☐ Task")
+    }
+
+    func testApplyMarkdownPresentation_StylesCheckedTaskBodyAndMarker() {
+        let controller = MeetingNotesRichTextController()
+        let textView = NSTextView()
+        textView.string = "☑ Done item"
+        controller.textView = textView
+
+        controller.applyMarkdownPresentation()
+
+        let markerColor = textView.textStorage?.attribute(.foregroundColor, at: 0, effectiveRange: nil) as? NSColor
+        XCTAssertEqual(markerColor, NSColor.controlAccentColor)
+
+        let bodyStart = 2
+        let strikethrough = textView.textStorage?.attribute(.strikethroughStyle, at: bodyStart, effectiveRange: nil) as? Int
+        XCTAssertEqual(strikethrough, NSUnderlineStyle.single.rawValue)
+    }
+
     private func familySupporting(
         trait: NSFontTraitMask,
         excluding excludedFamily: String?,

@@ -158,6 +158,9 @@ private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
                 controller.outdentSelection()
             }
         }
+        textView.onTaskMarkerClick = { characterIndex in
+            controller.toggleTaskMarker(at: characterIndex)
+        }
         textView.delegate = context.coordinator
         textView.isEditable = true
         textView.isSelectable = true
@@ -252,6 +255,7 @@ private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
             textView.textStorage?.setAttributedString(attributedText)
             let clampedLocation = min(currentSelection.location, attributedText.length)
             textView.setSelectedRange(NSRange(location: clampedLocation, length: 0))
+            controller.applyMarkdownPresentation()
             isApplyingProgrammaticUpdate = false
 
             lastRenderedContent = externalContent
@@ -278,6 +282,7 @@ private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
 
             isApplyingProgrammaticUpdate = true
             controller.applyGlobalTypography(familyKey: normalizedFontFamilyKey, size: normalizedFontSize)
+            controller.applyMarkdownPresentation()
             isApplyingProgrammaticUpdate = false
 
             lastAppliedFontFamilyKey = normalizedFontFamilyKey
@@ -292,8 +297,35 @@ private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
                 return
             }
 
+            isApplyingProgrammaticUpdate = true
+            controller.normalizeMarkdownStructure()
+            controller.applyMarkdownPresentation()
+            isApplyingProgrammaticUpdate = false
             emitContent(from: textView)
             controller.refreshState()
+        }
+
+        func textView(
+            _ textView: NSTextView,
+            shouldChangeTextIn affectedCharRange: NSRange,
+            replacementString: String?
+        ) -> Bool {
+            guard !isApplyingProgrammaticUpdate,
+                  let replacementString
+            else {
+                return true
+            }
+
+            if controller.handleTextMutation(
+                affectedRange: affectedCharRange,
+                replacementString: replacementString
+            ) {
+                emitContent(from: textView)
+                controller.refreshState()
+                return false
+            }
+
+            return true
         }
 
         func textViewDidChangeSelection(_ notification: Notification) {
@@ -372,6 +404,14 @@ private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
                 return
             }
 
+            if let textStorage = observedTextStorage,
+               textStorage.editedMask.contains(.editedAttributes)
+            {
+                isApplyingProgrammaticUpdate = true
+                controller.applyMarkdownPresentation()
+                isApplyingProgrammaticUpdate = false
+            }
+
             emitContent(from: textView)
             controller.refreshState()
         }
@@ -391,6 +431,8 @@ final class MeetingNotesRichTextController: ObservableObject {
     @Published var isBoldEnabled = false
     @Published var isItalicEnabled = false
     @Published var selectedLinkString: String?
+    private var preferredBodyFontFamilyKey = systemFontFamilyKey
+    private var preferredBodyFontSize: CGFloat = .init(MeetingNotesTypographyDefaults.defaultFontSize)
 
     init() {
         fontFamilies = NSFontManager.shared.availableFontFamilies.sorted {
@@ -429,6 +471,7 @@ final class MeetingNotesRichTextController: ObservableObject {
     func applyFontFamily(key: String) {
         let normalizedKey = MeetingNotesTypographyDefaults.normalizedFontFamilyKey(key)
         guard let textView else { return }
+        preferredBodyFontFamilyKey = normalizedKey
         applyFontTransform(to: textView) { currentFont in
             resolvedFont(
                 forFamilyKey: normalizedKey,
@@ -442,6 +485,7 @@ final class MeetingNotesRichTextController: ObservableObject {
     func applyFontSize(_ size: CGFloat) {
         let normalizedSize = CGFloat(MeetingNotesTypographyDefaults.normalizedFontSize(Double(size)))
         guard let textView else { return }
+        preferredBodyFontSize = normalizedSize
         applyFontTransform(to: textView) { font in
             resolvedFont(
                 forFamilyKey: font.familyName ?? Self.systemFontFamilyKey,
@@ -468,6 +512,8 @@ final class MeetingNotesRichTextController: ObservableObject {
 
         let normalizedFamilyKey = MeetingNotesTypographyDefaults.normalizedFontFamilyKey(familyKey)
         let normalizedSize = CGFloat(MeetingNotesTypographyDefaults.normalizedFontSize(Double(size)))
+        preferredBodyFontFamilyKey = normalizedFamilyKey
+        preferredBodyFontSize = normalizedSize
         let fallbackFont = baseFont(familyKey: normalizedFamilyKey, size: normalizedSize)
 
         if let storage = textView.textStorage, storage.length > 0 {
@@ -502,10 +548,14 @@ final class MeetingNotesRichTextController: ObservableObject {
 
     func toggleUnorderedList() {
         applyPrefixList { _ in "• " }
+        normalizeMarkdownStructure()
+        applyMarkdownPresentation()
     }
 
     func toggleOrderedList() {
         applyPrefixList { index in "\(index + 1). " }
+        normalizeMarkdownStructure()
+        applyMarkdownPresentation()
     }
 
     func indentSelection() {
@@ -535,6 +585,266 @@ final class MeetingNotesRichTextController: ObservableObject {
         }
 
         refreshState()
+    }
+
+    @discardableResult
+    func handleTextMutation(affectedRange: NSRange, replacementString: String) -> Bool {
+        guard let textView else { return false }
+
+        if replacementString == " ", affectedRange.length == 0 {
+            return handleLineStartTrigger(affectedRange: affectedRange, in: textView)
+        }
+
+        if replacementString == "\n", affectedRange.length == 0 {
+            return handleReturn(affectedRange: affectedRange, in: textView)
+        }
+
+        return false
+    }
+
+    @discardableResult
+    func toggleTaskMarker(at characterIndex: Int) -> Bool {
+        guard let textView else { return false }
+
+        let text = textView.string as NSString
+        guard characterIndex >= 0, characterIndex <= text.length else { return false }
+
+        let lineRange = text.lineRange(for: NSRange(location: min(characterIndex, max(0, text.length - 1)), length: 0))
+        let line = MeetingNotesMarkdownAutoFormattingEngine.lineMatch(in: text, lineRange: lineRange)
+        guard case let .task(isChecked) = line.listKind,
+              let markerRange = line.markerRange
+        else {
+            return false
+        }
+
+        guard characterIndex >= markerRange.location,
+              characterIndex < markerRange.location + max(1, markerRange.length)
+        else {
+            return false
+        }
+
+        let nextMarker = isChecked
+            ? MeetingNotesMarkdownAutoFormattingEngine.uncheckedTaskMarker
+            : MeetingNotesMarkdownAutoFormattingEngine.checkedTaskMarker
+
+        textView.textStorage?.beginEditing()
+        textView.insertText(nextMarker, replacementRange: markerRange)
+        textView.textStorage?.endEditing()
+        applyMarkdownPresentation()
+        refreshState()
+        return true
+    }
+
+    func normalizeMarkdownStructure() {
+        guard let textView else { return }
+        renumberOrderedLists(in: textView)
+    }
+
+    func applyMarkdownPresentation() {
+        guard let textView,
+              let storage = textView.textStorage
+        else {
+            return
+        }
+
+        let fullRange = NSRange(location: 0, length: storage.length)
+        if fullRange.length == 0 { return }
+
+        storage.beginEditing()
+
+        storage.enumerateAttribute(.meetingNotesAdornment, in: fullRange, options: []) { value, range, _ in
+            guard value != nil else { return }
+            storage.removeAttribute(.meetingNotesAdornment, range: range)
+            storage.removeAttribute(.foregroundColor, range: range)
+            storage.removeAttribute(.strikethroughStyle, range: range)
+        }
+
+        let fullText = storage.string as NSString
+        let accentColor = NSColor.controlAccentColor
+        let secondaryTextColor = NSColor.secondaryLabelColor
+
+        MeetingNotesMarkdownAutoFormattingEngine.enumerateLineRanges(in: fullText) { lineRange in
+            let line = MeetingNotesMarkdownAutoFormattingEngine.lineMatch(in: fullText, lineRange: lineRange)
+
+            if let markerRange = line.markerRange {
+                storage.addAttribute(.foregroundColor, value: accentColor, range: markerRange)
+                storage.addAttribute(.meetingNotesAdornment, value: true, range: markerRange)
+            }
+
+            if case .task(isChecked: true) = line.listKind, line.bodyRange.length > 0 {
+                storage.addAttribute(.strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: line.bodyRange)
+                storage.addAttribute(.foregroundColor, value: secondaryTextColor, range: line.bodyRange)
+                storage.addAttribute(.meetingNotesAdornment, value: true, range: line.bodyRange)
+            }
+
+            applyHeadingTypographyIfNeeded(on: storage, lineRange: line.bodyRange)
+        }
+
+        storage.endEditing()
+    }
+
+    private func handleLineStartTrigger(affectedRange: NSRange, in textView: NSTextView) -> Bool {
+        let fullText = textView.string as NSString
+        let lineRange = fullText.lineRange(for: NSRange(location: affectedRange.location, length: 0))
+        let lineBodyRange = MeetingNotesMarkdownAutoFormattingEngine.bodyRange(for: lineRange, in: fullText)
+        let prefixRange = NSRange(
+            location: lineBodyRange.location,
+            length: max(0, affectedRange.location - lineBodyRange.location)
+        )
+        let linePrefix = fullText.substring(with: prefixRange)
+        guard let trigger = MeetingNotesMarkdownAutoFormattingEngine.lineStartTrigger(for: linePrefix) else {
+            return false
+        }
+
+        let replacementRange = NSRange(
+            location: lineBodyRange.location,
+            length: max(0, affectedRange.location - lineBodyRange.location)
+        )
+        let replacement: String
+        var headingLevel: Int?
+
+        switch trigger {
+        case let .unordered(indent):
+            replacement = indent + MeetingNotesMarkdownAutoFormattingEngine.unorderedMarker
+        case let .ordered(indent, number):
+            replacement = "\(indent)\(number). "
+        case let .task(indent, isChecked):
+            let marker = isChecked
+                ? MeetingNotesMarkdownAutoFormattingEngine.checkedTaskMarker
+                : MeetingNotesMarkdownAutoFormattingEngine.uncheckedTaskMarker
+            replacement = indent + marker
+        case let .heading(indent, level):
+            replacement = indent
+            headingLevel = level
+        }
+
+        textView.textStorage?.beginEditing()
+        textView.insertText(replacement, replacementRange: replacementRange)
+
+        if let headingLevel {
+            applyHeadingTypingAttributes(level: headingLevel, to: textView)
+            let updatedText = textView.string as NSString
+            let updatedLineRange = updatedText.lineRange(for: NSRange(location: replacementRange.location, length: 0))
+            let updatedBodyRange = MeetingNotesMarkdownAutoFormattingEngine.bodyRange(for: updatedLineRange, in: updatedText)
+            if updatedBodyRange.length > 0 {
+                textView.textStorage?.addAttribute(.meetingNotesHeadingLevel, value: headingLevel, range: updatedBodyRange)
+            }
+        }
+
+        textView.textStorage?.endEditing()
+        normalizeMarkdownStructure()
+        applyMarkdownPresentation()
+        refreshState()
+        return true
+    }
+
+    private func handleReturn(affectedRange: NSRange, in textView: NSTextView) -> Bool {
+        let fullText = textView.string as NSString
+        let headingLevel = MeetingNotesMarkdownAutoFormattingEngine.headingLevel(
+            at: max(0, affectedRange.location - 1),
+            in: textView
+        )
+        let action = MeetingNotesMarkdownAutoFormattingEngine.returnAction(
+            in: fullText,
+            insertionLocation: affectedRange.location,
+            headingLevel: headingLevel
+        )
+
+        switch action {
+        case let .continueList(insertion):
+            textView.textStorage?.beginEditing()
+            textView.insertText(insertion, replacementRange: affectedRange)
+            textView.textStorage?.endEditing()
+            normalizeMarkdownStructure()
+            applyMarkdownPresentation()
+            refreshState()
+            return true
+        case let .exitList(replacementRange):
+            textView.textStorage?.beginEditing()
+            textView.insertText("", replacementRange: replacementRange)
+            textView.setSelectedRange(NSRange(location: replacementRange.location, length: 0))
+            textView.textStorage?.endEditing()
+            normalizeMarkdownStructure()
+            applyMarkdownPresentation()
+            refreshState()
+            return true
+        case .resetHeading:
+            textView.textStorage?.beginEditing()
+            textView.insertText("\n", replacementRange: affectedRange)
+            applyBodyTypingAttributes(to: textView)
+            textView.textStorage?.endEditing()
+            applyMarkdownPresentation()
+            refreshState()
+            return true
+        case .none:
+            return false
+        }
+    }
+
+    private func renumberOrderedLists(in textView: NSTextView) {
+        let text = textView.string as NSString
+        let replacements = MeetingNotesMarkdownAutoFormattingEngine.orderedListRenumberReplacements(in: text)
+        guard !replacements.isEmpty else { return }
+
+        let originalSelection = textView.selectedRange()
+        var caretDelta = 0
+
+        textView.textStorage?.beginEditing()
+        for replacement in replacements.reversed() {
+            let previousLength = replacement.range.length
+            textView.insertText(replacement.replacement, replacementRange: replacement.range)
+            let delta = replacement.replacement.count - previousLength
+            if replacement.range.location <= originalSelection.location {
+                caretDelta += delta
+            }
+        }
+        textView.textStorage?.endEditing()
+
+        let adjustedLocation = max(0, originalSelection.location + caretDelta)
+        textView.setSelectedRange(NSRange(location: adjustedLocation, length: originalSelection.length))
+    }
+
+    private func applyHeadingTypingAttributes(level: Int, to textView: NSTextView) {
+        var typing = textView.typingAttributes
+        let currentFont = (typing[.font] as? NSFont) ?? bodyFont()
+        typing[.font] = headingFont(for: level, bodyFont: currentFont)
+        typing[.meetingNotesHeadingLevel] = level
+        textView.typingAttributes = typing
+    }
+
+    private func applyBodyTypingAttributes(to textView: NSTextView) {
+        var typing = textView.typingAttributes
+        typing[.font] = bodyFont()
+        typing.removeValue(forKey: .meetingNotesHeadingLevel)
+        textView.typingAttributes = typing
+    }
+
+    private func applyHeadingTypographyIfNeeded(on storage: NSTextStorage, lineRange: NSRange) {
+        guard lineRange.length > 0 else { return }
+
+        let headingValue = storage.attribute(.meetingNotesHeadingLevel, at: lineRange.location, effectiveRange: nil)
+        guard let headingLevel = headingValue as? Int, (1...6).contains(headingLevel) else { return }
+
+        storage.enumerateAttribute(.font, in: lineRange, options: []) { value, range, _ in
+            let sourceFont = (value as? NSFont) ?? self.bodyFont()
+            storage.addAttribute(.font, value: self.headingFont(for: headingLevel, bodyFont: sourceFont), range: range)
+        }
+    }
+
+    private func headingFont(for level: Int, bodyFont: NSFont) -> NSFont {
+        let sizeDeltaByLevel: [CGFloat] = [12, 10, 8, 6, 4, 2]
+        let clampedLevel = max(1, min(level, sizeDeltaByLevel.count))
+        let targetSize = bodyFont.pointSize + sizeDeltaByLevel[clampedLevel - 1]
+        let boldSource = NSFontManager.shared.convert(bodyFont, toHaveTrait: .boldFontMask)
+        return resolvedFont(
+            forFamilyKey: bodyFont.familyName ?? preferredBodyFontFamilyKey,
+            size: targetSize,
+            preservingTraitsFrom: boldSource
+        )
+    }
+
+    private func bodyFont() -> NSFont {
+        baseFont(familyKey: preferredBodyFontFamilyKey, size: preferredBodyFontSize)
     }
 
     private func toggleFontTrait(_ trait: NSFontTraitMask, enabled: Bool) {
@@ -580,13 +890,24 @@ final class MeetingNotesRichTextController: ObservableObject {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
             guard !trimmed.isEmpty else { return line }
 
+            let leadingIndent = String(line.prefix { $0 == " " || $0 == "\t" })
             let withoutBullet = line.replacingOccurrences(of: #"^\s*•\s+"#, with: "", options: .regularExpression)
-            let withoutNumber = withoutBullet.replacingOccurrences(
+            let withoutTaskUnchecked = withoutBullet.replacingOccurrences(
+                of: #"^\s*☐\s+"#,
+                with: "",
+                options: .regularExpression
+            )
+            let withoutTask = withoutTaskUnchecked.replacingOccurrences(
+                of: #"^\s*☑\s+"#,
+                with: "",
+                options: .regularExpression
+            )
+            let withoutNumber = withoutTask.replacingOccurrences(
                 of: #"^\s*\d+\.\s+"#,
                 with: "",
                 options: .regularExpression
             )
-            return prefixForLine(index) + withoutNumber
+            return leadingIndent + prefixForLine(index) + withoutNumber.trimmingCharacters(in: .whitespaces)
         }
         .joined(separator: "\n")
 
@@ -654,6 +975,8 @@ final class MeetingNotesRichTextController: ObservableObject {
         let adjustedEnd = adjustedPosition(originalSelectionEnd, deltas: deltas, isOutdenting: isOutdenting)
         let adjustedLength = max(0, adjustedEnd - adjustedStart)
         textView.setSelectedRange(NSRange(location: adjustedStart, length: adjustedLength))
+        normalizeMarkdownStructure()
+        applyMarkdownPresentation()
         refreshState()
     }
 
@@ -801,76 +1124,5 @@ final class MeetingNotesRichTextController: ObservableObject {
         }
 
         return transformedFont
-    }
-}
-
-private final class RichTextFormattingShortcutTextView: NSTextView {
-    enum FormattingShortcutAction {
-        case bold
-        case italic
-        case unorderedList
-        case orderedList
-        case indent
-        case outdent
-    }
-
-    var onFormattingShortcut: ((FormattingShortcutAction) -> Void)?
-
-    override func keyDown(with event: NSEvent) {
-        if handleIndentationShortcut(event) {
-            return
-        }
-        if handleFormattingShortcut(event) {
-            return
-        }
-        super.keyDown(with: event)
-    }
-
-    private func handleIndentationShortcut(_ event: NSEvent) -> Bool {
-        guard event.keyCode == 48 else { return false }
-
-        let normalizedFlags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-        let hasOnlyShiftModifier = normalizedFlags == [.shift]
-        let hasNoModifiers = normalizedFlags.isEmpty
-
-        if hasNoModifiers {
-            onFormattingShortcut?(.indent)
-            return true
-        }
-
-        if hasOnlyShiftModifier {
-            onFormattingShortcut?(.outdent)
-            return true
-        }
-
-        return false
-    }
-
-    private func handleFormattingShortcut(_ event: NSEvent) -> Bool {
-        let normalizedFlags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-        guard normalizedFlags.contains(.command),
-              !normalizedFlags.contains(.option),
-              !normalizedFlags.contains(.control),
-              let key = event.charactersIgnoringModifiers?.lowercased()
-        else {
-            return false
-        }
-
-        switch key {
-        case "b":
-            onFormattingShortcut?(.bold)
-            return true
-        case "i":
-            onFormattingShortcut?(.italic)
-            return true
-        case "7" where normalizedFlags.contains(.shift):
-            onFormattingShortcut?(.orderedList)
-            return true
-        case "8" where normalizedFlags.contains(.shift):
-            onFormattingShortcut?(.unorderedList)
-            return true
-        default:
-            return false
-        }
     }
 }

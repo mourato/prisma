@@ -32,7 +32,11 @@ public struct RichTextMarkdownConverter: Sendable {
 
             let paragraphStyle = paragraph.attribute(.paragraphStyle, at: 0, effectiveRange: nil) as? NSParagraphStyle
             let isCodeBlock = isMonospacedParagraph(paragraph)
-            let listPrefix = listPrefixForParagraph(paragraphStyle: paragraphStyle, listCounters: &listCounters)
+            let manualList = manualListMetadata(for: paragraphString)
+            let listPrefix = manualList?.prefix ?? listPrefixForParagraph(
+                paragraphStyle: paragraphStyle,
+                listCounters: &listCounters
+            )
             let headingPrefix = headingPrefixForParagraph(paragraph, baseFontSize: baseFontSize)
 
             if isCodeBlock {
@@ -42,7 +46,11 @@ public struct RichTextMarkdownConverter: Sendable {
                 return
             }
 
-            let formattedRuns = formatInlineRuns(paragraph)
+            let inlineRange = manualList?.contentRange ?? contentRangeForParagraph(paragraph)
+            let inlineParagraph = inlineRange.length > 0
+                ? paragraph.attributedSubstring(from: inlineRange)
+                : NSAttributedString(string: "")
+            let formattedRuns = formatInlineRuns(inlineParagraph)
             let prefix = headingPrefix ?? listPrefix
             let line = prefix == nil ? formattedRuns : "\(prefix!) \(formattedRuns)"
             outputLines.append(line)
@@ -133,21 +141,133 @@ public struct RichTextMarkdownConverter: Sendable {
     }
 
     private func headingPrefixForParagraph(_ paragraph: NSAttributedString, baseFontSize: CGFloat?) -> String? {
+        if paragraph.length > 0,
+           let explicitHeading = paragraph.attribute(
+               NSAttributedString.Key("meetingNotesHeadingLevel"),
+               at: 0,
+               effectiveRange: nil
+           ) as? Int,
+           (1...6).contains(explicitHeading)
+        {
+            return String(repeating: "#", count: explicitHeading)
+        }
+
         guard let baseFontSize else { return nil }
         guard let font = paragraph.attribute(.font, at: 0, effectiveRange: nil) as? NSFont else { return nil }
 
         let size = font.pointSize
-        if size >= baseFontSize + 6 {
+        if size >= baseFontSize + 11 {
             return "#"
         }
-        if size >= baseFontSize + 3 {
+        if size >= baseFontSize + 9 {
             return "##"
         }
-        if size >= baseFontSize + 1 {
+        if size >= baseFontSize + 7 {
             return "###"
+        }
+        if size >= baseFontSize + 5 {
+            return "####"
+        }
+        if size >= baseFontSize + 3 {
+            return "#####"
+        }
+        if size >= baseFontSize + 1 {
+            return "######"
         }
 
         return nil
+    }
+
+    private func manualListMetadata(for paragraphString: String) -> (prefix: String, contentRange: NSRange)? {
+        let hasTrailingLineBreak = paragraphString.hasSuffix("\n")
+        let content = hasTrailingLineBreak ? String(paragraphString.dropLast()) : paragraphString
+        let indent = String(content.prefix { $0 == " " || $0 == "\t" })
+        let markerStart = content.index(content.startIndex, offsetBy: indent.count)
+        let remainder = String(content[markerStart...])
+        let indentPrefix = String(repeating: "    ", count: indentationDepth(for: indent))
+
+        if remainder.hasPrefix("• ") {
+            let start = indent.count + 2
+            return (
+                prefix: indentPrefix + "-",
+                contentRange: NSRange(location: start, length: max(0, content.count - start))
+            )
+        }
+
+        if remainder.hasPrefix("☐ ") {
+            let start = indent.count + 2
+            return (
+                prefix: indentPrefix + "- [ ]",
+                contentRange: NSRange(location: start, length: max(0, content.count - start))
+            )
+        }
+
+        if remainder.hasPrefix("☑ ") {
+            let start = indent.count + 2
+            return (
+                prefix: indentPrefix + "- [x]",
+                contentRange: NSRange(location: start, length: max(0, content.count - start))
+            )
+        }
+
+        if let orderedMatch = orderedListMarker(in: remainder) {
+            let start = indent.count + orderedMatch.markerLength
+            return (
+                prefix: indentPrefix + "\(orderedMatch.number).",
+                contentRange: NSRange(location: start, length: max(0, content.count - start))
+            )
+        }
+
+        return nil
+    }
+
+    private func contentRangeForParagraph(_ paragraph: NSAttributedString) -> NSRange {
+        guard paragraph.length > 0 else { return NSRange(location: 0, length: 0) }
+        if paragraph.string.hasSuffix("\n") {
+            return NSRange(location: 0, length: max(0, paragraph.length - 1))
+        }
+        return NSRange(location: 0, length: paragraph.length)
+    }
+
+    private func indentationDepth(for indent: String) -> Int {
+        var depth = 0
+        var spaces = 0
+        for character in indent {
+            if character == "\t" {
+                depth += 1
+                spaces = 0
+            } else if character == " " {
+                spaces += 1
+                if spaces == 4 {
+                    depth += 1
+                    spaces = 0
+                }
+            }
+        }
+        if spaces > 0 {
+            depth += 1
+        }
+        return depth
+    }
+
+    private func orderedListMarker(in value: String) -> (number: Int, markerLength: Int)? {
+        var digits = ""
+        for character in value {
+            guard character.isNumber else { break }
+            digits.append(character)
+        }
+
+        guard !digits.isEmpty,
+              let number = Int(digits)
+        else {
+            return nil
+        }
+
+        let suffixStart = value.index(value.startIndex, offsetBy: digits.count)
+        let suffix = value[suffixStart...]
+        guard suffix.hasPrefix(". ") else { return nil }
+
+        return (number, digits.count + 2)
     }
 
     private func isMonospacedParagraph(_ paragraph: NSAttributedString) -> Bool {
