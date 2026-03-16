@@ -188,27 +188,31 @@ private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
         scrollView.drawsBackground = false
         scrollView.documentView = textView
 
-        context.coordinator.connect(textView: textView)
-        let didApplyExternalContent = context.coordinator.applyExternalContent(content, to: textView)
-        context.coordinator.applyGlobalTypographyIfNeeded(
-            to: textView,
-            fontFamilyKey: fontFamilyKey,
-            fontSize: fontSize,
-            force: didApplyExternalContent
-        )
+        context.coordinator.performSwiftUIViewUpdate {
+            context.coordinator.connect(textView: textView)
+            let didApplyExternalContent = context.coordinator.applyExternalContent(content, to: textView)
+            context.coordinator.applyGlobalTypographyIfNeeded(
+                to: textView,
+                fontFamilyKey: fontFamilyKey,
+                fontSize: fontSize,
+                force: didApplyExternalContent
+            )
+        }
         return scrollView
     }
 
     func updateNSView(_ nsView: NSScrollView, context: Context) {
         guard let textView = nsView.documentView as? NSTextView else { return }
-        context.coordinator.connect(textView: textView)
-        let didApplyExternalContent = context.coordinator.applyExternalContent(content, to: textView)
-        context.coordinator.applyGlobalTypographyIfNeeded(
-            to: textView,
-            fontFamilyKey: fontFamilyKey,
-            fontSize: fontSize,
-            force: didApplyExternalContent
-        )
+        context.coordinator.performSwiftUIViewUpdate {
+            context.coordinator.connect(textView: textView)
+            let didApplyExternalContent = context.coordinator.applyExternalContent(content, to: textView)
+            context.coordinator.applyGlobalTypographyIfNeeded(
+                to: textView,
+                fontFamilyKey: fontFamilyKey,
+                fontSize: fontSize,
+                force: didApplyExternalContent
+            )
+        }
     }
 
     func makeCoordinator() -> Coordinator {
@@ -225,6 +229,8 @@ private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
         private var lastAppliedFontSize: CGFloat = .init(MeetingNotesTypographyDefaults.defaultFontSize)
         private weak var observedTextStorage: NSTextStorage?
         private var textStorageDidProcessEditingObserver: NSObjectProtocol?
+        private var isPerformingSwiftUIViewUpdate = false
+        private var hasPendingDeferredRefresh = false
 
         init(content: Binding<MeetingNotesContent>, controller: MeetingNotesRichTextController) {
             _content = content
@@ -240,7 +246,7 @@ private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
         func connect(textView: NSTextView) {
             if controller.textView !== textView {
                 controller.textView = textView
-                controller.refreshState()
+                refreshControllerState()
             }
             observeTextStorageIfNeeded(textView.textStorage)
         }
@@ -259,7 +265,7 @@ private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
             isApplyingProgrammaticUpdate = false
 
             lastRenderedContent = externalContent
-            controller.refreshState()
+            refreshControllerState()
             return true
         }
 
@@ -281,13 +287,18 @@ private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
             guard requiresTypographyUpdate else { return }
 
             isApplyingProgrammaticUpdate = true
-            controller.applyGlobalTypography(familyKey: normalizedFontFamilyKey, size: normalizedFontSize)
+            controller.applyGlobalTypography(
+                familyKey: normalizedFontFamilyKey,
+                size: normalizedFontSize,
+                refreshState: false
+            )
             controller.applyMarkdownPresentation()
             isApplyingProgrammaticUpdate = false
 
             lastAppliedFontFamilyKey = normalizedFontFamilyKey
             lastAppliedFontSize = normalizedFontSize
             emitContent(from: textView)
+            refreshControllerState()
         }
 
         func textDidChange(_ notification: Notification) {
@@ -302,7 +313,7 @@ private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
             controller.applyMarkdownPresentation()
             isApplyingProgrammaticUpdate = false
             emitContent(from: textView)
-            controller.refreshState()
+            refreshControllerState()
         }
 
         func textView(
@@ -321,7 +332,7 @@ private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
                 replacementString: replacementString
             ) {
                 emitContent(from: textView)
-                controller.refreshState()
+                refreshControllerState()
                 return false
             }
 
@@ -329,7 +340,14 @@ private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
         }
 
         func textViewDidChangeSelection(_ notification: Notification) {
-            controller.refreshState()
+            refreshControllerState()
+        }
+
+        func performSwiftUIViewUpdate(_ updates: () -> Void) {
+            let previousState = isPerformingSwiftUIViewUpdate
+            isPerformingSwiftUIViewUpdate = true
+            updates()
+            isPerformingSwiftUIViewUpdate = previousState
         }
 
         private func emitContent(from textView: NSTextView) {
@@ -413,7 +431,22 @@ private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
             }
 
             emitContent(from: textView)
-            controller.refreshState()
+            refreshControllerState()
+        }
+
+        private func refreshControllerState() {
+            guard isPerformingSwiftUIViewUpdate else {
+                controller.refreshState()
+                return
+            }
+
+            guard !hasPendingDeferredRefresh else { return }
+            hasPendingDeferredRefresh = true
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.hasPendingDeferredRefresh = false
+                self.controller.refreshState()
+            }
         }
     }
 }
@@ -507,7 +540,7 @@ final class MeetingNotesRichTextController: ObservableObject {
         return NSFont(name: normalizedFamilyKey, size: normalizedSize) ?? .systemFont(ofSize: normalizedSize)
     }
 
-    func applyGlobalTypography(familyKey: String, size: CGFloat) {
+    func applyGlobalTypography(familyKey: String, size: CGFloat, refreshState: Bool = true) {
         guard let textView else { return }
 
         let normalizedFamilyKey = MeetingNotesTypographyDefaults.normalizedFontFamilyKey(familyKey)
@@ -543,7 +576,9 @@ final class MeetingNotesRichTextController: ObservableObject {
         )
         textView.typingAttributes = typingAttributes
         textView.font = fallbackFont
-        refreshState()
+        if refreshState {
+            self.refreshState()
+        }
     }
 
     func toggleUnorderedList() {
