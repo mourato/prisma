@@ -1,3 +1,4 @@
+import AppKit
 import Combine
 import CryptoKit
 @testable import MeetingAssistantCore
@@ -456,12 +457,72 @@ final class RecordingManagerTests: XCTestCase {
         XCTAssertTrue(input.contains("</MEETING_NOTES>"))
     }
 
+    func testPersistCurrentMeetingNotesForTranscription_PersistsRichTextAndMarkdown() throws {
+        let manager = try XCTUnwrap(manager)
+        let store = try XCTUnwrap(meetingNotesRichTextStore)
+        let transcriptionID = UUID()
+        let note = "Bold agenda"
+        let attributed = NSMutableAttributedString(string: note)
+        let boldFont = NSFontManager.shared.convert(NSFont.systemFont(ofSize: 13), toHaveTrait: .boldFontMask)
+        attributed.addAttribute(.font, value: boldFont, range: NSRange(location: 0, length: attributed.length))
+        let richData = try attributed.data(
+            from: NSRange(location: 0, length: attributed.length),
+            documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf]
+        )
+
+        manager.currentMeetingNotesText = note
+        manager.currentMeetingNotesRichTextData = richData
+
+        manager.persistCurrentMeetingNotesForTranscription(transcriptionID)
+
+        XCTAssertEqual(store.transcriptionNotesRTFData(for: transcriptionID), richData)
+        XCTAssertTrue(markdownTranscriptionFileExists(for: transcriptionID))
+        let markdown = try XCTUnwrap(readMarkdownTranscriptionFile(for: transcriptionID))
+        XCTAssertTrue(markdown.contains("kind: transcription"))
+        XCTAssertTrue(markdown.contains("**Bold agenda**"))
+    }
+
+    func testPersistCurrentMeetingNotesForTranscription_ClearsArtifactsWhenNotesAreEmpty() throws {
+        let manager = try XCTUnwrap(manager)
+        let store = try XCTUnwrap(meetingNotesRichTextStore)
+        let transcriptionID = UUID()
+
+        store.saveTranscriptionNotesRTFData(Data([0x01, 0x02]), for: transcriptionID)
+        manager.currentMeetingNotesText = "   "
+        manager.currentMeetingNotesRichTextData = Data([0x03, 0x04])
+
+        manager.persistCurrentMeetingNotesForTranscription(transcriptionID)
+
+        XCTAssertNil(store.transcriptionNotesRTFData(for: transcriptionID))
+        XCTAssertFalse(markdownTranscriptionFileExists(for: transcriptionID))
+    }
+
     private func markdownMeetingFileExists(for meetingID: UUID) -> Bool {
         guard let markdownRootDirectoryURL else { return false }
         let url = markdownRootDirectoryURL
             .appendingPathComponent("meetings", isDirectory: true)
             .appendingPathComponent("\(meetingID.uuidString).md", isDirectory: false)
         return FileManager.default.fileExists(atPath: url.path)
+    }
+
+    private func markdownTranscriptionFileExists(for transcriptionID: UUID) -> Bool {
+        let url = markdownTranscriptionFileURL(for: transcriptionID)
+        return FileManager.default.fileExists(atPath: url.path)
+    }
+
+    private func readMarkdownTranscriptionFile(for transcriptionID: UUID) -> String? {
+        let url = markdownTranscriptionFileURL(for: transcriptionID)
+        guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+        return try? String(contentsOf: url, encoding: .utf8)
+    }
+
+    private func markdownTranscriptionFileURL(for transcriptionID: UUID) -> URL {
+        guard let markdownRootDirectoryURL else {
+            return URL(fileURLWithPath: "/dev/null")
+        }
+        return markdownRootDirectoryURL
+            .appendingPathComponent("transcriptions", isDirectory: true)
+            .appendingPathComponent("\(transcriptionID.uuidString).md", isDirectory: false)
     }
 
     private func markdownEventFileExists(for eventIdentifier: String) -> Bool {

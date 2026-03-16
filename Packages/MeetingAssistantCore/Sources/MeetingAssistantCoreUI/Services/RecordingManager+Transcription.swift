@@ -48,6 +48,7 @@ extension RecordingManager {
             )
 
             let transcription = convertToModel(transcriptionEntity, audioDuration: audioDuration, transcriptionStart: transcriptionStart)
+            persistCurrentMeetingNotesForTranscription(transcription.id)
 
             meetingState = .processing(.generatingOutput)
             currentMeeting?.state = .completed

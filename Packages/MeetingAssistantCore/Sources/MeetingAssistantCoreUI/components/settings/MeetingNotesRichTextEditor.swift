@@ -152,6 +152,10 @@ private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
                 controller.toggleUnorderedList()
             case .orderedList:
                 controller.toggleOrderedList()
+            case .indent:
+                controller.indentSelection()
+            case .outdent:
+                controller.outdentSelection()
             }
         }
         textView.delegate = context.coordinator
@@ -504,6 +508,14 @@ final class MeetingNotesRichTextController: ObservableObject {
         applyPrefixList { index in "\(index + 1). " }
     }
 
+    func indentSelection() {
+        adjustIndentation(isOutdenting: false)
+    }
+
+    func outdentSelection() {
+        adjustIndentation(isOutdenting: true)
+    }
+
     func applyLink(_ value: String) {
         guard let textView else { return }
 
@@ -560,7 +572,7 @@ final class MeetingNotesRichTextController: ObservableObject {
         guard let textView else { return }
         let fullText = textView.string as NSString
         let selection = textView.selectedRange()
-        let paragraphRange = fullText.paragraphRange(for: selection)
+        let paragraphRange = paragraphRange(for: selection, in: fullText)
         let selectedText = fullText.substring(with: paragraphRange)
 
         let lines = selectedText.components(separatedBy: "\n")
@@ -582,6 +594,120 @@ final class MeetingNotesRichTextController: ObservableObject {
         textView.insertText(transformed, replacementRange: paragraphRange)
         textView.textStorage?.endEditing()
         refreshState()
+    }
+
+    private func adjustIndentation(isOutdenting: Bool) {
+        guard let textView else { return }
+
+        let fullText = textView.string as NSString
+        let selection = textView.selectedRange()
+        let paragraphRange = paragraphRange(for: selection, in: fullText)
+        let selectedText = fullText.substring(with: paragraphRange)
+        let lines = selectedText.components(separatedBy: "\n")
+        let hasTerminalNewline = selectedText.hasSuffix("\n")
+
+        var transformedLines: [String] = []
+        var deltas: [LineIndentationDelta] = []
+        var lineStart = paragraphRange.location
+        var didChange = false
+
+        for (index, line) in lines.enumerated() {
+            let isTrailingSyntheticLine = hasTerminalNewline && index == lines.count - 1 && line.isEmpty
+            if isTrailingSyntheticLine {
+                transformedLines.append(line)
+                deltas.append(LineIndentationDelta(lineStart: lineStart, added: 0, removed: 0))
+                continue
+            }
+
+            if isOutdenting {
+                let removablePrefix = removableIndentPrefixLength(in: line)
+                if removablePrefix > 0 {
+                    let updatedLine = String(line.dropFirst(removablePrefix))
+                    transformedLines.append(updatedLine)
+                    deltas.append(LineIndentationDelta(lineStart: lineStart, added: 0, removed: removablePrefix))
+                    didChange = true
+                } else {
+                    transformedLines.append(line)
+                    deltas.append(LineIndentationDelta(lineStart: lineStart, added: 0, removed: 0))
+                }
+            } else {
+                transformedLines.append("\t" + line)
+                deltas.append(LineIndentationDelta(lineStart: lineStart, added: 1, removed: 0))
+                didChange = true
+            }
+
+            if index < lines.count - 1 {
+                lineStart += (line as NSString).length + 1
+            }
+        }
+
+        guard didChange else { return }
+
+        let transformedText = transformedLines.joined(separator: "\n")
+        textView.textStorage?.beginEditing()
+        textView.insertText(transformedText, replacementRange: paragraphRange)
+        textView.textStorage?.endEditing()
+
+        let originalSelectionStart = selection.location
+        let originalSelectionEnd = selection.location + selection.length
+        let adjustedStart = adjustedPosition(originalSelectionStart, deltas: deltas, isOutdenting: isOutdenting)
+        let adjustedEnd = adjustedPosition(originalSelectionEnd, deltas: deltas, isOutdenting: isOutdenting)
+        let adjustedLength = max(0, adjustedEnd - adjustedStart)
+        textView.setSelectedRange(NSRange(location: adjustedStart, length: adjustedLength))
+        refreshState()
+    }
+
+    private func removableIndentPrefixLength(in line: String) -> Int {
+        if line.hasPrefix("\t") {
+            return 1
+        }
+
+        let leadingSpaces = line.prefix(while: { $0 == " " }).count
+        return min(leadingSpaces, 4)
+    }
+
+    private func adjustedPosition(
+        _ position: Int,
+        deltas: [LineIndentationDelta],
+        isOutdenting: Bool
+    ) -> Int {
+        var adjustment = 0
+        for delta in deltas {
+            if isOutdenting {
+                guard delta.removed > 0, position > delta.lineStart else { continue }
+                adjustment -= min(delta.removed, position - delta.lineStart)
+            } else {
+                guard delta.added > 0, position >= delta.lineStart else { continue }
+                adjustment += delta.added
+            }
+        }
+
+        return max(0, position + adjustment)
+    }
+
+    private struct LineIndentationDelta {
+        let lineStart: Int
+        let added: Int
+        let removed: Int
+    }
+
+    private func paragraphRange(for selection: NSRange, in fullText: NSString) -> NSRange {
+        let clampedLocation = min(max(selection.location, 0), fullText.length)
+        let startLineRange = fullText.lineRange(for: NSRange(location: clampedLocation, length: 0))
+
+        guard selection.length > 0 else {
+            return startLineRange
+        }
+
+        let lastSelectedCharacterLocation = min(
+            max(clampedLocation, clampedLocation + selection.length - 1),
+            max(0, fullText.length - 1)
+        )
+        let endLineRange = fullText.lineRange(for: NSRange(location: lastSelectedCharacterLocation, length: 0))
+
+        let rangeStart = startLineRange.location
+        let rangeEnd = endLineRange.location + endLineRange.length
+        return NSRange(location: rangeStart, length: max(0, rangeEnd - rangeStart))
     }
 
     private func effectiveAttributes() -> [NSAttributedString.Key: Any]? {
@@ -684,15 +810,40 @@ private final class RichTextFormattingShortcutTextView: NSTextView {
         case italic
         case unorderedList
         case orderedList
+        case indent
+        case outdent
     }
 
     var onFormattingShortcut: ((FormattingShortcutAction) -> Void)?
 
     override func keyDown(with event: NSEvent) {
+        if handleIndentationShortcut(event) {
+            return
+        }
         if handleFormattingShortcut(event) {
             return
         }
         super.keyDown(with: event)
+    }
+
+    private func handleIndentationShortcut(_ event: NSEvent) -> Bool {
+        guard event.keyCode == 48 else { return false }
+
+        let normalizedFlags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        let hasOnlyShiftModifier = normalizedFlags == [.shift]
+        let hasNoModifiers = normalizedFlags.isEmpty
+
+        if hasNoModifiers {
+            onFormattingShortcut?(.indent)
+            return true
+        }
+
+        if hasOnlyShiftModifier {
+            onFormattingShortcut?(.outdent)
+            return true
+        }
+
+        return false
     }
 
     private func handleFormattingShortcut(_ event: NSEvent) -> Bool {

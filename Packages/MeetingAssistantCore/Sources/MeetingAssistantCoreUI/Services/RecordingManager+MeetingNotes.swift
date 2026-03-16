@@ -153,6 +153,22 @@ extension RecordingManager {
         return TranscriptionContextItem(source: .meetingNotes, text: trimmed)
     }
 
+    func persistCurrentMeetingNotesForTranscription(_ transcriptionID: UUID) {
+        let trimmed = normalizedNotesValue(currentMeetingNotesText)
+        if trimmed.isEmpty {
+            meetingNotesRichTextStore.saveTranscriptionNotesRTFData(nil, for: transcriptionID)
+            meetingNotesMarkdownStore.deleteTranscriptionNotesContent(for: transcriptionID)
+            return
+        }
+
+        let content = MeetingNotesContent(
+            plainText: currentMeetingNotesText,
+            richTextRTFData: currentMeetingNotesRichTextData
+        )
+        meetingNotesRichTextStore.saveTranscriptionNotesRTFData(content.richTextRTFData, for: transcriptionID)
+        meetingNotesMarkdownStore.saveTranscriptionNotesContent(content, for: transcriptionID)
+    }
+
     func clearMeetingNotesState(removePersistedValue: Bool) {
         if removePersistedValue, let meetingID = currentMeeting?.id {
             removeMeetingNotesContent(for: meetingID)

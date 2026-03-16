@@ -108,6 +108,49 @@ final class MeetingNotesRichTextControllerTests: XCTestCase {
         XCTAssertEqual(typingFont?.familyName, "Helvetica")
     }
 
+    func testIndentSelection_IndentsSelectedLinesWithTabs() {
+        let controller = MeetingNotesRichTextController()
+        let textView = NSTextView()
+        textView.string = "Line 1\nLine 2\nLine 3"
+        controller.textView = textView
+
+        let fullText = textView.string as NSString
+        let selectedRange = fullText.range(of: "Line 1\nLine 2")
+        textView.setSelectedRange(selectedRange)
+
+        controller.indentSelection()
+
+        XCTAssertEqual(textView.string, "\tLine 1\n\tLine 2\nLine 3")
+    }
+
+    func testOutdentSelection_RemovesTabIndentFromSelectedLines() {
+        let controller = MeetingNotesRichTextController()
+        let textView = NSTextView()
+        textView.string = "\tLine 1\n\tLine 2\nLine 3"
+        controller.textView = textView
+
+        let fullText = textView.string as NSString
+        let selectedRange = fullText.range(of: "\tLine 1\n\tLine 2")
+        textView.setSelectedRange(selectedRange)
+
+        controller.outdentSelection()
+
+        XCTAssertEqual(textView.string, "Line 1\nLine 2\nLine 3")
+    }
+
+    func testOutdentSelection_RemovesUpToFourLeadingSpaces() {
+        let controller = MeetingNotesRichTextController()
+        let textView = NSTextView()
+        textView.string = "    Line 1\n  Line 2"
+        controller.textView = textView
+
+        textView.setSelectedRange(NSRange(location: 0, length: (textView.string as NSString).length))
+
+        controller.outdentSelection()
+
+        XCTAssertEqual(textView.string, "Line 1\nLine 2")
+    }
+
     private func familySupporting(
         trait: NSFontTraitMask,
         excluding excludedFamily: String?,
