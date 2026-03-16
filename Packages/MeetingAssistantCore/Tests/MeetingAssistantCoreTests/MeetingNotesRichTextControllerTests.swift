@@ -199,6 +199,22 @@ final class MeetingNotesRichTextControllerTests: XCTestCase {
         XCTAssertEqual(textView.string, "☑ ")
     }
 
+    func testHandleTextMutation_TransformsTaskListTriggerWithoutInnerSpace() {
+        let controller = MeetingNotesRichTextController()
+        let textView = NSTextView()
+        textView.string = "[]"
+        textView.setSelectedRange(NSRange(location: 2, length: 0))
+        controller.textView = textView
+
+        let handled = controller.handleTextMutation(
+            affectedRange: NSRange(location: 2, length: 0),
+            replacementString: " "
+        )
+
+        XCTAssertTrue(handled)
+        XCTAssertEqual(textView.string, "☐ ")
+    }
+
     func testHandleTextMutation_TransformsHeadingTriggerAndStoresHeadingLevel() {
         let controller = MeetingNotesRichTextController()
         let textView = NSTextView()
@@ -215,6 +231,40 @@ final class MeetingNotesRichTextControllerTests: XCTestCase {
         XCTAssertEqual(textView.string, "")
         let typingHeading = textView.typingAttributes[.meetingNotesHeadingLevel] as? Int
         XCTAssertEqual(typingHeading, 3)
+    }
+
+    func testHandleTextMutation_DoesNotMoveCaretToDocumentEndOnHeadingTrigger() {
+        let controller = MeetingNotesRichTextController()
+        let textView = NSTextView()
+        textView.string = "# Heading\nSecond line"
+        textView.setSelectedRange(NSRange(location: 1, length: 0))
+        controller.textView = textView
+
+        let handled = controller.handleTextMutation(
+            affectedRange: NSRange(location: 1, length: 0),
+            replacementString: " "
+        )
+
+        XCTAssertTrue(handled)
+        XCTAssertEqual(textView.selectedRange().location, 0)
+        XCTAssertNotEqual(textView.selectedRange().location, (textView.string as NSString).length)
+    }
+
+    func testHandleTextMutation_DoesNotMoveCaretToDocumentEndOnListTrigger() {
+        let controller = MeetingNotesRichTextController()
+        let textView = NSTextView()
+        textView.string = "- Item\nSecond line"
+        textView.setSelectedRange(NSRange(location: 1, length: 0))
+        controller.textView = textView
+
+        let handled = controller.handleTextMutation(
+            affectedRange: NSRange(location: 1, length: 0),
+            replacementString: " "
+        )
+
+        XCTAssertTrue(handled)
+        XCTAssertEqual(textView.selectedRange().location, 2)
+        XCTAssertNotEqual(textView.selectedRange().location, (textView.string as NSString).length)
     }
 
     func testHandleTextMutation_ReturnContinuesOrderedList() {

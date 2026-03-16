@@ -122,7 +122,7 @@ enum MeetingNotesMarkdownAutoFormattingEngine {
             return .ordered(indent: indent, number: ordered)
         }
 
-        if raw == "[ ]" {
+        if raw == "[ ]" || raw == "[]" {
             return .task(indent: indent, isChecked: false)
         }
 

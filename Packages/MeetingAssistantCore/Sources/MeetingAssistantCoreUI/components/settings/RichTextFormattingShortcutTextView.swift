@@ -1,6 +1,13 @@
 import AppKit
 
 final class RichTextFormattingShortcutTextView: NSTextView {
+    private struct TaskMarkerLayout {
+        let characterIndex: Int
+        let rect: NSRect
+    }
+
+    private static let taskMarkerTextSpacing: CGFloat = 4
+
     enum FormattingShortcutAction {
         case bold
         case italic
@@ -12,6 +19,7 @@ final class RichTextFormattingShortcutTextView: NSTextView {
 
     var onFormattingShortcut: ((FormattingShortcutAction) -> Void)?
     var onTaskMarkerClick: ((Int) -> Bool)?
+    private var taskMarkerLayouts: [TaskMarkerLayout] = []
 
     override func keyDown(with event: NSEvent) {
         if handleIndentationShortcut(event) {
@@ -33,6 +41,14 @@ final class RichTextFormattingShortcutTextView: NSTextView {
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
         drawTaskMarkers(in: dirtyRect)
+    }
+
+    override func resetCursorRects() {
+        super.resetCursorRects()
+
+        for layout in taskMarkerLayouts where !layout.rect.isEmpty {
+            addCursorRect(layout.rect, cursor: .pointingHand)
+        }
     }
 
     private func handleIndentationShortcut(_ event: NSEvent) -> Bool {
@@ -84,27 +100,14 @@ final class RichTextFormattingShortcutTextView: NSTextView {
     }
 
     private func handleTaskMarkerClick(_ event: NSEvent) -> Bool {
-        guard let onTaskMarkerClick,
-              let textContainer,
-              let layoutManager
-        else {
+        guard let onTaskMarkerClick else { return false }
+
+        let localPoint = convert(event.locationInWindow, from: nil)
+        guard let layout = taskMarkerLayouts.first(where: { $0.rect.contains(localPoint) }) else {
             return false
         }
 
-        let localPoint = convert(event.locationInWindow, from: nil)
-        let glyphPoint = NSPoint(
-            x: localPoint.x - textContainerInset.width,
-            y: localPoint.y - textContainerInset.height
-        )
-
-        var fraction: CGFloat = 0
-        let characterIndex = layoutManager.characterIndex(
-            for: glyphPoint,
-            in: textContainer,
-            fractionOfDistanceBetweenInsertionPoints: &fraction
-        )
-
-        return onTaskMarkerClick(characterIndex)
+        return onTaskMarkerClick(layout.characterIndex)
     }
 
     private func drawTaskMarkers(in dirtyRect: NSRect) {
@@ -123,6 +126,7 @@ final class RichTextFormattingShortcutTextView: NSTextView {
         let characterRange = layoutManager.characterRange(forGlyphRange: glyphRange, actualGlyphRange: nil)
         let accentColor = NSColor.controlAccentColor
         let fallbackLineHeight = layoutManager.defaultLineHeight(for: font ?? NSFont.systemFont(ofSize: 14))
+        var nextLayouts: [TaskMarkerLayout] = []
 
         textStorage.enumerateAttribute(.meetingNotesTaskMarkerState, in: characterRange, options: []) { value, range, _ in
             guard let rawValue = value as? Int,
@@ -139,14 +143,65 @@ final class RichTextFormattingShortcutTextView: NSTextView {
             let glyphRect = layoutManager.boundingRect(forGlyphRange: markerGlyphRange, in: textContainer)
             let lineHeight = max(fallbackLineHeight, glyphRect.height)
             let markerSize = max(12, min(18, round(lineHeight * 0.78)))
+            let bodyLeadingX = bodyGlyphLeadingX(
+                markerCharacterIndex: range.location,
+                textStorage: textStorage,
+                layoutManager: layoutManager,
+                textContainer: textContainer
+            )
+            let resolvedOriginX = max(
+                textContainerInset.width,
+                bodyLeadingX - Self.taskMarkerTextSpacing - markerSize
+            )
             let markerRect = NSRect(
-                x: glyphRect.minX + textContainerInset.width + 0.5,
+                x: resolvedOriginX,
                 y: glyphRect.midY + textContainerInset.height - (markerSize / 2),
                 width: markerSize,
                 height: markerSize
             )
 
+            nextLayouts.append(TaskMarkerLayout(characterIndex: range.location, rect: markerRect))
             MeetingNotesTaskCheckmarkAdornment.draw(in: markerRect, state: markerState, accentColor: accentColor)
         }
+
+        taskMarkerLayouts = nextLayouts
+        window?.invalidateCursorRects(for: self)
+    }
+
+    private func bodyGlyphLeadingX(
+        markerCharacterIndex: Int,
+        textStorage: NSTextStorage,
+        layoutManager: NSLayoutManager,
+        textContainer: NSTextContainer
+    ) -> CGFloat {
+        let string = textStorage.string as NSString
+        let bodyCharacterIndex = markerCharacterIndex + 2
+        guard bodyCharacterIndex < string.length else {
+            return textContainerInset.width + layoutManager.boundingRect(
+                forGlyphRange: layoutManager.glyphRange(
+                    forCharacterRange: NSRange(location: markerCharacterIndex, length: 1),
+                    actualCharacterRange: nil
+                ),
+                in: textContainer
+            ).maxX
+        }
+
+        let bodyCharacter = string.substring(with: NSRange(location: bodyCharacterIndex, length: 1))
+        guard bodyCharacter != "\n" else {
+            return textContainerInset.width + layoutManager.boundingRect(
+                forGlyphRange: layoutManager.glyphRange(
+                    forCharacterRange: NSRange(location: markerCharacterIndex, length: 1),
+                    actualCharacterRange: nil
+                ),
+                in: textContainer
+            ).maxX
+        }
+
+        let bodyGlyphRange = layoutManager.glyphRange(
+            forCharacterRange: NSRange(location: bodyCharacterIndex, length: 1),
+            actualCharacterRange: nil
+        )
+        let bodyGlyphRect = layoutManager.boundingRect(forGlyphRange: bodyGlyphRange, in: textContainer)
+        return bodyGlyphRect.minX + textContainerInset.width
     }
 }

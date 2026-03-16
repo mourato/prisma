@@ -649,9 +649,9 @@ final class MeetingNotesRichTextController: ObservableObject {
 
         let fullRange = NSRange(location: 0, length: storage.length)
         if fullRange.length == 0 { return }
+        let preservedSelection = textView.selectedRange()
 
         storage.beginEditing()
-        storage.removeAttribute(.meetingNotesTaskMarkerState, range: fullRange)
 
         storage.enumerateAttribute(.meetingNotesAdornment, in: fullRange, options: []) { value, range, _ in
             guard value != nil else { return }
@@ -692,6 +692,8 @@ final class MeetingNotesRichTextController: ObservableObject {
         }
 
         storage.endEditing()
+        let clampedSelection = clampedSelectionRange(preservedSelection, textLength: storage.length)
+        textView.setSelectedRange(clampedSelection)
         textView.needsDisplay = true
     }
 
@@ -732,6 +734,7 @@ final class MeetingNotesRichTextController: ObservableObject {
 
         textView.textStorage?.beginEditing()
         textView.insertText(replacement, replacementRange: replacementRange)
+        let desiredCaretLocation = replacementRange.location + (replacement as NSString).length
 
         if let headingLevel {
             applyHeadingTypingAttributes(level: headingLevel, to: textView)
@@ -743,9 +746,16 @@ final class MeetingNotesRichTextController: ObservableObject {
             }
         }
 
+        let currentLength = (textView.string as NSString).length
+        let clampedCaretLocation = min(max(desiredCaretLocation, 0), currentLength)
+        textView.setSelectedRange(NSRange(location: clampedCaretLocation, length: 0))
+
         textView.textStorage?.endEditing()
         normalizeMarkdownStructure()
         applyMarkdownPresentation()
+        let finalTextLength = (textView.string as NSString).length
+        let finalCaretLocation = min(max(desiredCaretLocation, 0), finalTextLength)
+        textView.setSelectedRange(NSRange(location: finalCaretLocation, length: 0))
         refreshState()
         return true
     }
@@ -857,6 +867,13 @@ final class MeetingNotesRichTextController: ObservableObject {
 
     private func markerStateRawValue(_ isChecked: Bool) -> Int {
         isChecked ? MeetingNotesTaskMarkerState.checked.rawValue : MeetingNotesTaskMarkerState.unchecked.rawValue
+    }
+
+    private func clampedSelectionRange(_ selection: NSRange, textLength: Int) -> NSRange {
+        let clampedLocation = min(max(selection.location, 0), textLength)
+        let maxLength = max(0, textLength - clampedLocation)
+        let clampedLength = min(max(selection.length, 0), maxLength)
+        return NSRange(location: clampedLocation, length: clampedLength)
     }
 
     private func bodyFont() -> NSFont {
