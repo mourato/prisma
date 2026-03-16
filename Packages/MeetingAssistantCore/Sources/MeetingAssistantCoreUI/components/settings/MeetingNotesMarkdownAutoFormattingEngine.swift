@@ -4,6 +4,7 @@ import Foundation
 extension NSAttributedString.Key {
     static let meetingNotesAdornment = NSAttributedString.Key("meetingNotesAdornment")
     static let meetingNotesHeadingLevel = NSAttributedString.Key("meetingNotesHeadingLevel")
+    static let meetingNotesTaskMarkerState = NSAttributedString.Key("meetingNotesTaskMarkerState")
 }
 
 enum MeetingNotesMarkdownListKind: Equatable {

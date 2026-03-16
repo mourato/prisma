@@ -651,10 +651,12 @@ final class MeetingNotesRichTextController: ObservableObject {
         if fullRange.length == 0 { return }
 
         storage.beginEditing()
+        storage.removeAttribute(.meetingNotesTaskMarkerState, range: fullRange)
 
         storage.enumerateAttribute(.meetingNotesAdornment, in: fullRange, options: []) { value, range, _ in
             guard value != nil else { return }
             storage.removeAttribute(.meetingNotesAdornment, range: range)
+            storage.removeAttribute(.meetingNotesTaskMarkerState, range: range)
             storage.removeAttribute(.foregroundColor, range: range)
             storage.removeAttribute(.strikethroughStyle, range: range)
         }
@@ -667,8 +669,17 @@ final class MeetingNotesRichTextController: ObservableObject {
             let line = MeetingNotesMarkdownAutoFormattingEngine.lineMatch(in: fullText, lineRange: lineRange)
 
             if let markerRange = line.markerRange {
-                storage.addAttribute(.foregroundColor, value: accentColor, range: markerRange)
-                storage.addAttribute(.meetingNotesAdornment, value: true, range: markerRange)
+                if case let .task(isChecked) = line.listKind {
+                    let markerCharacterRange = NSRange(location: markerRange.location, length: min(1, markerRange.length))
+                    storage.addAttribute(.meetingNotesAdornment, value: true, range: markerRange)
+                    if markerCharacterRange.length > 0 {
+                        storage.addAttribute(.meetingNotesTaskMarkerState, value: markerStateRawValue(isChecked), range: markerCharacterRange)
+                        storage.addAttribute(.foregroundColor, value: NSColor.clear, range: markerCharacterRange)
+                    }
+                } else {
+                    storage.addAttribute(.foregroundColor, value: accentColor, range: markerRange)
+                    storage.addAttribute(.meetingNotesAdornment, value: true, range: markerRange)
+                }
             }
 
             if case .task(isChecked: true) = line.listKind, line.bodyRange.length > 0 {
@@ -681,6 +692,7 @@ final class MeetingNotesRichTextController: ObservableObject {
         }
 
         storage.endEditing()
+        textView.needsDisplay = true
     }
 
     private func handleLineStartTrigger(affectedRange: NSRange, in textView: NSTextView) -> Bool {
@@ -807,7 +819,7 @@ final class MeetingNotesRichTextController: ObservableObject {
     private func applyHeadingTypingAttributes(level: Int, to textView: NSTextView) {
         var typing = textView.typingAttributes
         let currentFont = (typing[.font] as? NSFont) ?? bodyFont()
-        typing[.font] = headingFont(for: level, bodyFont: currentFont)
+        typing[.font] = headingFont(for: level, sourceFont: currentFont)
         typing[.meetingNotesHeadingLevel] = level
         textView.typingAttributes = typing
     }
@@ -827,20 +839,24 @@ final class MeetingNotesRichTextController: ObservableObject {
 
         storage.enumerateAttribute(.font, in: lineRange, options: []) { value, range, _ in
             let sourceFont = (value as? NSFont) ?? self.bodyFont()
-            storage.addAttribute(.font, value: self.headingFont(for: headingLevel, bodyFont: sourceFont), range: range)
+            storage.addAttribute(.font, value: self.headingFont(for: headingLevel, sourceFont: sourceFont), range: range)
         }
     }
 
-    private func headingFont(for level: Int, bodyFont: NSFont) -> NSFont {
+    private func headingFont(for level: Int, sourceFont: NSFont) -> NSFont {
         let sizeDeltaByLevel: [CGFloat] = [12, 10, 8, 6, 4, 2]
         let clampedLevel = max(1, min(level, sizeDeltaByLevel.count))
-        let targetSize = bodyFont.pointSize + sizeDeltaByLevel[clampedLevel - 1]
-        let boldSource = NSFontManager.shared.convert(bodyFont, toHaveTrait: .boldFontMask)
+        let targetSize = bodyFont().pointSize + sizeDeltaByLevel[clampedLevel - 1]
+        let boldSource = NSFontManager.shared.convert(sourceFont, toHaveTrait: .boldFontMask)
         return resolvedFont(
-            forFamilyKey: bodyFont.familyName ?? preferredBodyFontFamilyKey,
+            forFamilyKey: sourceFont.familyName ?? preferredBodyFontFamilyKey,
             size: targetSize,
             preservingTraitsFrom: boldSource
         )
+    }
+
+    private func markerStateRawValue(_ isChecked: Bool) -> Int {
+        isChecked ? MeetingNotesTaskMarkerState.checked.rawValue : MeetingNotesTaskMarkerState.unchecked.rawValue
     }
 
     private func bodyFont() -> NSFont {

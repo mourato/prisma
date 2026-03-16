@@ -283,12 +283,67 @@ final class MeetingNotesRichTextControllerTests: XCTestCase {
 
         controller.applyMarkdownPresentation()
 
-        let markerColor = textView.textStorage?.attribute(.foregroundColor, at: 0, effectiveRange: nil) as? NSColor
-        XCTAssertEqual(markerColor, NSColor.controlAccentColor)
+        let markerState = textView.textStorage?.attribute(.meetingNotesTaskMarkerState, at: 0, effectiveRange: nil) as? Int
+        XCTAssertEqual(markerState, MeetingNotesTaskMarkerState.checked.rawValue)
 
         let bodyStart = 2
         let strikethrough = textView.textStorage?.attribute(.strikethroughStyle, at: bodyStart, effectiveRange: nil) as? Int
         XCTAssertEqual(strikethrough, NSUnderlineStyle.single.rawValue)
+    }
+
+    func testApplyMarkdownPresentation_DoesNotCompoundHeadingFontSizeAcrossPasses() throws {
+        let controller = MeetingNotesRichTextController()
+        let textView = NSTextView()
+        controller.textView = textView
+
+        let text = "Heading title"
+        let attributed = NSMutableAttributedString(string: text)
+        let range = NSRange(location: 0, length: attributed.length)
+        attributed.addAttribute(.font, value: NSFont.systemFont(ofSize: 14), range: range)
+        attributed.addAttribute(.meetingNotesHeadingLevel, value: 1, range: range)
+        textView.textStorage?.setAttributedString(attributed)
+
+        controller.applyMarkdownPresentation()
+        let firstPassFont = try XCTUnwrap(textView.textStorage?.attribute(.font, at: 0, effectiveRange: nil) as? NSFont)
+
+        controller.applyMarkdownPresentation()
+        let secondPassFont = try XCTUnwrap(textView.textStorage?.attribute(.font, at: 0, effectiveRange: nil) as? NSFont)
+
+        XCTAssertEqual(firstPassFont.pointSize, secondPassFont.pointSize, accuracy: 0.001)
+        XCTAssertGreaterThan(secondPassFont.pointSize, 14)
+    }
+
+    func testApplyMarkdownPresentation_DoesNotChangeNonHeadingFontSizeAcrossPasses() throws {
+        let controller = MeetingNotesRichTextController()
+        let textView = NSTextView()
+        controller.textView = textView
+
+        let text = "☐ Pending item"
+        let attributed = NSMutableAttributedString(string: text)
+        let range = NSRange(location: 0, length: attributed.length)
+        attributed.addAttribute(.font, value: NSFont.systemFont(ofSize: 14), range: range)
+        textView.textStorage?.setAttributedString(attributed)
+
+        controller.applyMarkdownPresentation()
+        controller.applyMarkdownPresentation()
+
+        let bodyFont = try XCTUnwrap(textView.textStorage?.attribute(.font, at: 2, effectiveRange: nil) as? NSFont)
+        XCTAssertEqual(bodyFont.pointSize, 14, accuracy: 0.001)
+    }
+
+    func testApplyMarkdownPresentation_AssignsTaskMarkerStateForCustomRendering() {
+        let controller = MeetingNotesRichTextController()
+        let textView = NSTextView()
+        textView.string = "☐ Open\n☑ Done"
+        controller.textView = textView
+
+        controller.applyMarkdownPresentation()
+
+        let uncheckedMarkerState = textView.textStorage?.attribute(.meetingNotesTaskMarkerState, at: 0, effectiveRange: nil) as? Int
+        let checkedMarkerState = textView.textStorage?.attribute(.meetingNotesTaskMarkerState, at: 7, effectiveRange: nil) as? Int
+
+        XCTAssertEqual(uncheckedMarkerState, MeetingNotesTaskMarkerState.unchecked.rawValue)
+        XCTAssertEqual(checkedMarkerState, MeetingNotesTaskMarkerState.checked.rawValue)
     }
 
     private func familySupporting(
