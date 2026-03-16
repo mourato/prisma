@@ -713,9 +713,10 @@
 "transcription.context.source.window_ocr" = "Window OCR";
 "transcription.context.source.focused_text" = "Focused text";
 "transcription.context.source.calendar_event" = "Calendar event";
-"transcription.tab.ai_processed" = "AI Processed";
+"transcription.tab.ai_processed" = "Processed";
 "transcription.tab.original" = "Original";
 "transcription.tab.segmented" = "Segmented";
+"transcription.tab.notes" = "Notes";
 "transcription.actions.export" = "Export";
 "transcription.actions.export_summary" = "Export Summary";
 "transcription.actions.export_original" = "Export Original";

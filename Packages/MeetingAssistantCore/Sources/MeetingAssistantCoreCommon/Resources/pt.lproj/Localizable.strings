@@ -713,9 +713,10 @@
 "transcription.context.source.window_ocr" = "OCR da janela";
 "transcription.context.source.focused_text" = "Texto focado";
 "transcription.context.source.calendar_event" = "Evento do calendário";
-"transcription.tab.ai_processed" = "Processado por IA";
+"transcription.tab.ai_processed" = "Processado";
 "transcription.tab.original" = "Original";
 "transcription.tab.segmented" = "Segmentado";
+"transcription.tab.notes" = "Notas";
 "transcription.actions.export" = "Exportar";
 "transcription.actions.export_summary" = "Exportar Resumo";
 "transcription.actions.export_original" = "Exportar Original";

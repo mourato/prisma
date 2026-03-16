@@ -73,6 +73,7 @@ public struct TranscriptionCardView: View {
         case aiProcessed
         case original
         case segmented
+        case notes
 
         var localized: String {
             switch self {
@@ -82,6 +83,8 @@ public struct TranscriptionCardView: View {
                 "transcription.tab.original".localized
             case .segmented:
                 "transcription.tab.segmented".localized
+            case .notes:
+                "transcription.tab.notes".localized
             }
         }
     }
@@ -150,9 +153,9 @@ public struct TranscriptionCardView: View {
                             Text(tab.localized).tag(tab)
                         }
                     }
-                    .pickerStyle(.segmented)
+                    .pickerStyle(.menu)
                     .labelsHidden()
-                    .frame(width: isSegmentedTabEnabled ? 300 : 220)
+                    .frame(width: 180)
                 }
             }
 
@@ -300,14 +303,16 @@ public struct TranscriptionCardView: View {
     }
 
     private var availableTabs: [TranscriptionTab] {
-        guard hasPostProcessingContent else {
-            return [.original]
-        }
+        var tabs: [TranscriptionTab] = [.aiProcessed, .original]
 
         if isSegmentedTabEnabled {
-            return TranscriptionTab.allCases
+            tabs.append(.segmented)
         }
-        return [.aiProcessed, .original]
+        if isNotesTabEnabled {
+            tabs.append(.notes)
+        }
+
+        return tabs
     }
 
     private var shouldShowTabPicker: Bool {
@@ -322,9 +327,12 @@ public struct TranscriptionCardView: View {
     }
 
     private var isSegmentedTabEnabled: Bool {
-        hasPostProcessingContent
-            && transcription.supportsMeetingConversation
+        transcription.capturePurpose == .meeting
             && AppSettingsStore.shared.isDiarizationEnabled
+    }
+
+    private var isNotesTabEnabled: Bool {
+        transcription.capturePurpose == .meeting
     }
 
     private var filteredPrompts: [PostProcessingPrompt] {
@@ -354,6 +362,8 @@ public struct TranscriptionCardView: View {
             sortedSegments(transcriptionDetail?.segments ?? [])
                 .map { "\($0.speaker): \($0.text)" }
                 .joined(separator: "\n\n")
+        case .notes:
+            transcriptionDetail?.contextItems.first(where: { $0.source == .meetingNotes })?.text ?? ""
         }
     }
 
