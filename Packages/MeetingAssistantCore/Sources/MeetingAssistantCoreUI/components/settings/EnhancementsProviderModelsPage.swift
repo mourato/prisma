@@ -449,12 +449,18 @@ public struct EnhancementsProviderModelsPage: View {
     }
 
     private func providerLogoImage(for provider: AIProvider) -> Image? {
-        guard let logoAssetName = provider.logoAssetName,
-              let logoURL = Bundle.module.url(
-                  forResource: logoAssetName,
-                  withExtension: "png",
-                  subdirectory: "ProviderLogos"
-              ),
+        guard let logoAssetName = provider.logoAssetName else {
+            return nil
+        }
+
+        let logoURL = Bundle.module.url(forResource: logoAssetName, withExtension: "png")
+            ?? Bundle.module.url(
+                forResource: logoAssetName,
+                withExtension: "png",
+                subdirectory: "ProviderLogos"
+            )
+
+        guard let logoURL,
               let nsImage = NSImage(contentsOf: logoURL)
         else {
             return nil
