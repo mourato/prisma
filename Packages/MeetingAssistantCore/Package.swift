@@ -84,6 +84,9 @@ let package = Package(
                 "MeetingAssistantCoreDomain",
                 "MeetingAssistantCoreInfrastructure",
                 .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
+            ],
+            resources: [
+                .process("Resources"),
             ]
         ),
         .target(

@@ -48,33 +48,13 @@ public struct DSModifierShortcutEditor: View {
                     .fontWeight(.medium)
             }
 
-            HStack(spacing: 8) {
-                Button {
-                    openRecordingPopover()
-                } label: {
-                    shortcutInputField
-                }
-                .buttonStyle(.plain)
+            shortcutInputField
                 .frame(maxWidth: maxInputWidth, alignment: .leading)
                 .popover(isPresented: $isPopoverPresented, arrowEdge: .top) {
                     recordingPopover
                         .frame(width: 360)
                         .padding(12)
                 }
-
-                if shortcut != nil {
-                    Button {
-                        clearShortcut()
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(.secondary)
-                            .imageScale(.large)
-                    }
-                    .buttonStyle(.plain)
-                    .help("settings.shortcuts.modifier.clear".localized)
-                    .accessibilityLabel("settings.shortcuts.modifier.clear".localized)
-                }
-            }
 
             if let conflict = conflictMessage, !isPopoverPresented {
                 Text(conflict)
@@ -116,16 +96,38 @@ public struct DSModifierShortcutEditor: View {
     }
 
     private var shortcutInputField: some View {
-        HStack(spacing: 8) {
-            if displayLabels.isEmpty {
-                Text("settings.shortcuts.modifier.input_placeholder".localized)
-                    .foregroundStyle(.secondary)
-                    .font(.subheadline)
-            } else {
-                ShortcutChipRow(labels: displayLabels, colorStyle: .neutral)
-            }
+        HStack(spacing: 6) {
+            Button {
+                openRecordingPopover()
+            } label: {
+                HStack(spacing: 8) {
+                    if displayLabels.isEmpty {
+                        Text("settings.shortcuts.modifier.input_placeholder".localized)
+                            .foregroundStyle(.secondary)
+                            .font(.subheadline)
+                    } else {
+                        ShortcutChipRow(labels: displayLabels, colorStyle: .neutral)
+                    }
 
-            Spacer(minLength: 0)
+                    Spacer(minLength: 0)
+                }
+            }
+            .buttonStyle(.plain)
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            if shortcut != nil {
+                Button {
+                    clearShortcut()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 16, height: 16)
+                }
+                .buttonStyle(.plain)
+                .help("settings.shortcuts.modifier.clear".localized)
+                .accessibilityLabel("settings.shortcuts.modifier.clear".localized)
+            }
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)

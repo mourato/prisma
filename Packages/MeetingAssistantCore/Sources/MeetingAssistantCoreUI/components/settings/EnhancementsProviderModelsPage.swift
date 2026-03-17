@@ -418,12 +418,101 @@ public struct EnhancementsProviderModelsPage: View {
     private func providerAvatar(for provider: AIProvider) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
-                .fill(AppDesignSystem.Colors.subtleFill2)
+                .fill(provider.logoBackgroundColor)
                 .frame(width: 40, height: 40)
+                .overlay(
+                    RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
+                        .strokeBorder(AppDesignSystem.Colors.separator.opacity(0.18), lineWidth: 1)
+                )
 
-            Image(systemName: provider.icon)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(AppDesignSystem.Colors.accent)
+            if let logoImage = providerLogoImage(for: provider) {
+                if let tint = provider.logoTintColor {
+                    logoImage
+                        .renderingMode(.template)
+                        .resizable()
+                        .scaledToFit()
+                        .foregroundStyle(tint)
+                        .frame(width: 22, height: 22)
+                } else {
+                    logoImage
+                        .renderingMode(.original)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 22, height: 22)
+                }
+            } else {
+                Image(systemName: provider.icon)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(AppDesignSystem.Colors.accent)
+            }
+        }
+    }
+
+    private func providerLogoImage(for provider: AIProvider) -> Image? {
+        guard let logoAssetName = provider.logoAssetName,
+              let logoURL = Bundle.module.url(
+                  forResource: logoAssetName,
+                  withExtension: "png",
+                  subdirectory: "ProviderLogos"
+              ),
+              let nsImage = NSImage(contentsOf: logoURL)
+        else {
+            return nil
+        }
+
+        return Image(nsImage: nsImage)
+    }
+}
+
+private extension AIProvider {
+    var logoAssetName: String? {
+        switch self {
+        case .openai:
+            "openai"
+        case .anthropic:
+            "anthropic"
+        case .groq:
+            "groq"
+        case .google:
+            "google"
+        case .custom:
+            nil
+        }
+    }
+
+    var logoBackgroundColor: Color {
+        switch self {
+        case .openai:
+            Color(
+                red: 0.0 / 255.0,
+                green: 0.0 / 255.0,
+                blue: 0.0 / 255.0
+            )
+        case .anthropic:
+            Color(
+                red: 242.0 / 255.0,
+                green: 237.0 / 255.0,
+                blue: 229.0 / 255.0
+            )
+        case .groq:
+            Color(
+                red: 232.0 / 255.0,
+                green: 80.0 / 255.0,
+                blue: 53.0 / 255.0
+            )
+        case .google:
+            Color.white
+        case .custom:
+            AppDesignSystem.Colors.subtleFill2
+        }
+    }
+
+    var logoTintColor: Color? {
+        switch self {
+        case .openai, .groq:
+            .white
+        case .anthropic, .google, .custom:
+            nil
         }
     }
 }
