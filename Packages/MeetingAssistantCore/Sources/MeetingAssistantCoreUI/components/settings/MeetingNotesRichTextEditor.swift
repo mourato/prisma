@@ -466,6 +466,7 @@ final class MeetingNotesRichTextController: ObservableObject {
     @Published var selectedLinkString: String?
     private var preferredBodyFontFamilyKey = systemFontFamilyKey
     private var preferredBodyFontSize: CGFloat = .init(MeetingNotesTypographyDefaults.defaultFontSize)
+    private var isHandlingInterceptedMutation = false
 
     init() {
         fontFamilies = NSFontManager.shared.availableFontFamilies.sorted {
@@ -625,6 +626,10 @@ final class MeetingNotesRichTextController: ObservableObject {
     @discardableResult
     func handleTextMutation(affectedRange: NSRange, replacementString: String) -> Bool {
         guard let textView else { return false }
+        guard !isHandlingInterceptedMutation else { return false }
+
+        isHandlingInterceptedMutation = true
+        defer { isHandlingInterceptedMutation = false }
 
         if replacementString == " ", affectedRange.length == 0 {
             return handleLineStartTrigger(affectedRange: affectedRange, in: textView)

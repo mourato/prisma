@@ -396,6 +396,34 @@ final class MeetingNotesRichTextControllerTests: XCTestCase {
         XCTAssertEqual(checkedMarkerState, MeetingNotesTaskMarkerState.checked.rawValue)
     }
 
+    func testHandleTextMutation_ResetHeadingInsertsSingleNewlineWithoutRecursion() {
+        let controller = MeetingNotesRichTextController()
+        let textView = NSTextView(frame: .zero)
+        let delegate = InterceptingTextViewDelegate(controller: controller)
+        let initialText = "Heading"
+        let initialLength = (initialText as NSString).length
+
+        textView.textStorage?.setAttributedString(NSAttributedString(string: initialText))
+        textView.textStorage?.addAttribute(
+            .meetingNotesHeadingLevel,
+            value: 1,
+            range: NSRange(location: 0, length: initialLength)
+        )
+        textView.setSelectedRange(NSRange(location: initialLength, length: 0))
+        textView.delegate = delegate
+        controller.textView = textView
+
+        let shouldApplyDefaultEdit = delegate.textView(
+            textView,
+            shouldChangeTextIn: textView.selectedRange(),
+            replacementString: "\n"
+        )
+
+        XCTAssertFalse(shouldApplyDefaultEdit)
+        XCTAssertEqual(textView.string, "Heading\n")
+        XCTAssertEqual(textView.selectedRange(), NSRange(location: initialLength + 1, length: 0))
+    }
+
     private func familySupporting(
         trait: NSFontTraitMask,
         excluding excludedFamily: String?,
@@ -424,5 +452,30 @@ final class MeetingNotesRichTextControllerTests: XCTestCase {
             }
         }
         return nil
+    }
+}
+
+private final class InterceptingTextViewDelegate: NSObject, NSTextViewDelegate {
+    private let controller: MeetingNotesRichTextController
+
+    init(controller: MeetingNotesRichTextController) {
+        self.controller = controller
+    }
+
+    func textView(
+        _: NSTextView,
+        shouldChangeTextIn affectedCharRange: NSRange,
+        replacementString: String?
+    ) -> Bool {
+        guard let replacementString else { return true }
+
+        if controller.handleTextMutation(
+            affectedRange: affectedCharRange,
+            replacementString: replacementString
+        ) {
+            return false
+        }
+
+        return true
     }
 }
