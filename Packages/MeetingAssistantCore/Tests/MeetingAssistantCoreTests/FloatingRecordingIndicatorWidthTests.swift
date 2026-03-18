@@ -37,4 +37,57 @@ final class FloatingRecordingIndicatorWidthTests: XCTestCase {
 
         XCTAssertEqual(widthWithTimer - widthWithoutTimer, expectedDelta, accuracy: 0.001)
     }
+
+    func testMeetingProcessingClusterReservesProgressWidth() {
+        let size: FloatingRecordingIndicatorView.IndicatorSize = .classic
+        let processingRenderState = RecordingIndicatorRenderState(mode: .processing, kind: .meeting)
+        let processingWithoutMeetingFeedback = RecordingIndicatorRenderState(mode: .processing, kind: .dictation)
+
+        let layout = RecordingIndicatorOverlayLayout(
+            showsPromptSelector: false,
+            showsLanguageSelector: false,
+            showsMeetingTimer: false
+        )
+
+        let processingWidth = FloatingRecordingIndicatorViewUtilities.mainPillWidth(
+            for: size,
+            renderState: processingRenderState,
+            layout: layout,
+            expanded: false
+        )
+        let baseProcessingWidth = FloatingRecordingIndicatorViewUtilities.mainPillWidth(
+            for: size,
+            renderState: processingWithoutMeetingFeedback,
+            layout: layout,
+            expanded: false
+        )
+
+        let expectedDelta = FloatingRecordingIndicatorViewUtilities.contentSpacing(for: size)
+            + FloatingRecordingIndicatorViewUtilities.processingProgressReservedWidth(for: size)
+
+        XCTAssertEqual(processingWidth - baseProcessingWidth, expectedDelta, accuracy: 0.001)
+    }
+
+    func testMeetingProcessingProgressVisibility_IsLimitedToMeetingProcessing() {
+        XCTAssertTrue(
+            FloatingRecordingIndicatorViewUtilities.shouldShowMeetingProcessingProgress(
+                renderState: RecordingIndicatorRenderState(mode: .processing, kind: .meeting)
+            )
+        )
+        XCTAssertFalse(
+            FloatingRecordingIndicatorViewUtilities.shouldShowMeetingProcessingProgress(
+                renderState: RecordingIndicatorRenderState(mode: .recording, kind: .meeting)
+            )
+        )
+        XCTAssertFalse(
+            FloatingRecordingIndicatorViewUtilities.shouldShowMeetingProcessingProgress(
+                renderState: RecordingIndicatorRenderState(mode: .processing, kind: .dictation)
+            )
+        )
+        XCTAssertFalse(
+            FloatingRecordingIndicatorViewUtilities.shouldShowMeetingProcessingProgress(
+                renderState: RecordingIndicatorRenderState(mode: .processing, kind: .assistant)
+            )
+        )
+    }
 }

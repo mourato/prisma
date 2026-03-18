@@ -234,6 +234,21 @@ enum FloatingRecordingIndicatorViewUtilities {
         }
     }
 
+    static func processingProgressReservedWidth(for size: FloatingRecordingIndicatorView.IndicatorSize) -> CGFloat {
+        switch size {
+        case .classic:
+            176
+        case .mini:
+            136
+        }
+    }
+
+    static func shouldShowMeetingProcessingProgress(
+        renderState: RecordingIndicatorRenderState
+    ) -> Bool {
+        renderState.kind == .meeting && renderState.mode == .processing
+    }
+
     static func horizontalPadding(for size: FloatingRecordingIndicatorView.IndicatorSize, expanded: Bool) -> CGFloat {
         if expanded {
             return AppDesignSystem.Layout.recordingIndicatorSidePadding
@@ -246,11 +261,19 @@ enum FloatingRecordingIndicatorViewUtilities {
     }
 
     static func clusterWidth(
-        for size: FloatingRecordingIndicatorView.IndicatorSize
+        for size: FloatingRecordingIndicatorView.IndicatorSize,
+        renderState: RecordingIndicatorRenderState
     ) -> CGFloat {
-        AppDesignSystem.Layout.recordingIndicatorDotSize
+        var width = AppDesignSystem.Layout.recordingIndicatorDotSize
             + contentSpacing(for: size)
             + waveformWidth(for: size)
+
+        if shouldShowMeetingProcessingProgress(renderState: renderState) {
+            width += contentSpacing(for: size)
+                + processingProgressReservedWidth(for: size)
+        }
+
+        return width
     }
 
     static func buttonGroupWidth(for size: FloatingRecordingIndicatorView.IndicatorSize) -> CGFloat {
@@ -264,7 +287,7 @@ enum FloatingRecordingIndicatorViewUtilities {
         expanded: Bool
     ) -> CGFloat {
         var elementWidths: [CGFloat] = [
-            clusterWidth(for: size),
+            clusterWidth(for: size, renderState: renderState),
         ]
 
         if renderState.kind == .meeting, renderState.mode == .recording {

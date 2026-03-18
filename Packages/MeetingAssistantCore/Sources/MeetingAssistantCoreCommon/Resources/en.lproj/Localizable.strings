@@ -937,6 +937,12 @@
 "recording_indicator.silence_warning.action.continue" = "Continue listening";
 "recording_indicator.silence_warning.action.stop" = "Stop and transcribe";
 "recording_indicator.silence_warning.action.discard" = "Discard recording";
+"recording_indicator.processing.stage.preparing" = "Preparing";
+"recording_indicator.processing.stage.transcribing" = "Transcribing";
+"recording_indicator.processing.stage.post_processing" = "Post-processing";
+"recording_indicator.processing.stage.finalizing" = "Finalizing";
+"recording_indicator.processing.stage.failed" = "Processing";
+"recording_indicator.processing.progress" = "%@ %d%%";
 "settings.transcriptions.today" = "Today";
 "settings.transcriptions.yesterday" = "Yesterday";
 "transcription.empty_fallback" = "No transcription available";

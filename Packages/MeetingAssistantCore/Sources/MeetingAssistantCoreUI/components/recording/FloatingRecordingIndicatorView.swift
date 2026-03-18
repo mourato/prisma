@@ -12,6 +12,7 @@ import SwiftUI
 public struct FloatingRecordingIndicatorView: View {
     @ObservedObject var audioMonitor: AudioLevelMonitor
     @ObservedObject private var recordingManager: RecordingManager
+    @ObservedObject private var transcriptionStatus: TranscriptionStatus
     @ObservedObject private var settingsStore: AppSettingsStore
     private let navigationService = NavigationService.shared
     let style: RecordingIndicatorStyle
@@ -47,8 +48,9 @@ public struct FloatingRecordingIndicatorView: View {
         self.renderState = renderState
         self.isAnimationActive = isAnimationActive
         self.previewLanguageOverride = previewLanguageOverride
-        self.recordingManager = recordingManager
-        self.settingsStore = settingsStore
+        _recordingManager = ObservedObject(wrappedValue: recordingManager)
+        _transcriptionStatus = ObservedObject(wrappedValue: recordingManager.transcriptionStatus)
+        _settingsStore = ObservedObject(wrappedValue: settingsStore)
         self.onStop = onStop
         self.onCancel = onCancel
     }
@@ -289,6 +291,58 @@ public struct FloatingRecordingIndicatorView: View {
                 barSpacing: AppDesignSystem.Layout.recordingIndicatorWaveformBarSpacing,
                 minHeight: AppDesignSystem.Layout.recordingIndicatorWaveformMinHeight
             )
+
+            if showsMeetingProcessingProgress {
+                processingProgressView(size: size)
+            }
+        }
+    }
+
+    private func processingProgressView(size: IndicatorSize) -> some View {
+        Text(processingProgressText)
+            .font(.system(size: size == .classic ? 12 : 11, weight: .semibold))
+            .monospacedDigit()
+            .lineLimit(1)
+            .truncationMode(.tail)
+            .foregroundStyle(AppDesignSystem.Colors.overlayForegroundMuted)
+            .frame(
+                width: FloatingRecordingIndicatorViewUtilities.processingProgressReservedWidth(for: size),
+                alignment: .leading
+            )
+            .accessibilityLabel(
+                "recording_indicator.processing.progress".localized(
+                    with: processingStageTitle,
+                    processingProgressPercentage
+                )
+            )
+    }
+
+    private var showsMeetingProcessingProgress: Bool {
+        FloatingRecordingIndicatorViewUtilities.shouldShowMeetingProcessingProgress(renderState: renderState)
+    }
+
+    private var processingProgressText: String {
+        "\(processingStageTitle) \(processingProgressPercentage)%"
+    }
+
+    private var processingProgressPercentage: Int {
+        Int(min(max(transcriptionStatus.progressPercentage, 0), 100).rounded())
+    }
+
+    private var processingStageTitle: String {
+        switch transcriptionStatus.phase {
+        case .preparing:
+            "recording_indicator.processing.stage.preparing".localized
+        case .processing:
+            "recording_indicator.processing.stage.transcribing".localized
+        case .postProcessing:
+            "recording_indicator.processing.stage.post_processing".localized
+        case .completed:
+            "recording_indicator.processing.stage.finalizing".localized
+        case .failed:
+            "recording_indicator.processing.stage.failed".localized
+        case .idle:
+            "recording_indicator.processing.stage.transcribing".localized
         }
     }
 

@@ -11,6 +11,7 @@ import MeetingAssistantCoreInfrastructure
 extension RecordingManager {
     func transcribeRecording(audioURL: URL, meeting: Meeting) async {
         beginTranscriptionUIStateIfNeeded()
+        cancelEstimatedPostProcessingProgress()
 
         let audioDuration = await getAudioDuration(from: audioURL)
         transcriptionStatus.beginTranscription(audioDuration: audioDuration)
@@ -44,7 +45,17 @@ extension RecordingManager {
                 availablePrompts: config.availablePrompts,
                 postProcessingContext: config.postProcessingContext,
                 kernelMode: config.kernelMode,
-                dictationStructuredPostProcessingEnabled: config.dictationStructuredPostProcessingEnabled
+                dictationStructuredPostProcessingEnabled: config.dictationStructuredPostProcessingEnabled,
+                onPhaseChange: { [weak self] phase in
+                    Task { @MainActor [weak self] in
+                        self?.handleUseCasePhaseChange(phase, meeting: meeting)
+                    }
+                },
+                onTranscriptionProgress: { [weak self] progress in
+                    Task { @MainActor [weak self] in
+                        self?.handleUseCaseTranscriptionProgress(progress)
+                    }
+                }
             )
 
             let transcription = convertToModel(transcriptionEntity, audioDuration: audioDuration, transcriptionStart: transcriptionStart)
@@ -66,11 +77,13 @@ extension RecordingManager {
                 await exportSummary(transcription: transcription)
             }
         } catch {
+            cancelEstimatedPostProcessingProgress()
             handleTranscriptionError(error)
             meetingState = .failed(error.localizedDescription)
             currentMeeting?.state = .failed(error.localizedDescription)
         }
 
+        cancelEstimatedPostProcessingProgress()
         isTranscribing = false
         isStartingRecording = false
         meetingState = .idle
@@ -187,6 +200,66 @@ extension RecordingManager {
         )
     }
 
+    func handleUseCasePhaseChange(_ phase: TranscriptionPhase, meeting: Meeting) {
+        switch phase {
+        case .preparing:
+            transcriptionStatus.updateProgress(phase: .preparing)
+        case .processing:
+            transcriptionStatus.updateProgress(
+                phase: .processing,
+                percentage: max(Constants.processingProgress, transcriptionStatus.progressPercentage)
+            )
+        case .postProcessing:
+            let startProgress = max(Constants.postProcessingProgress, transcriptionStatus.progressPercentage)
+            transcriptionStatus.updateProgress(phase: .postProcessing, percentage: startProgress)
+
+            if meeting.capturePurpose == .meeting {
+                startEstimatedPostProcessingProgress(from: startProgress)
+            }
+        case .completed:
+            cancelEstimatedPostProcessingProgress()
+        case .failed:
+            cancelEstimatedPostProcessingProgress()
+        case .idle:
+            break
+        }
+    }
+
+    func handleUseCaseTranscriptionProgress(_ progress: Double) {
+        let clamped = min(max(progress, 0), 100)
+        let processingRange = Constants.postProcessingProgress - Constants.processingProgress
+        let mappedProgress = Constants.processingProgress + (clamped / 100.0 * processingRange)
+        transcriptionStatus.updateProgress(phase: .processing, percentage: mappedProgress)
+    }
+
+    func startEstimatedPostProcessingProgress(from startProgress: Double) {
+        cancelEstimatedPostProcessingProgress()
+
+        let clampedStart = min(max(startProgress, Constants.postProcessingProgress), Constants.postProcessingProgressCeiling)
+        transcriptionStatus.updateProgress(phase: .postProcessing, percentage: clampedStart)
+
+        estimatedPostProcessingProgressTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            let startDate = Date()
+
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: Constants.postProcessingProgressTickNanoseconds)
+                guard !Task.isCancelled else { return }
+
+                let elapsed = Date().timeIntervalSince(startDate)
+                let easedProgress = Constants.postProcessingProgressCeiling
+                    - (Constants.postProcessingProgressCeiling - clampedStart) * exp(-elapsed / Constants.postProcessingProgressSmoothingTau)
+                let nextProgress = min(Constants.postProcessingProgressCeiling, max(clampedStart, easedProgress))
+                transcriptionStatus.updateProgress(phase: .postProcessing, percentage: nextProgress)
+            }
+        }
+    }
+
+    func cancelEstimatedPostProcessingProgress() {
+        estimatedPostProcessingProgressTask?.cancel()
+        estimatedPostProcessingProgressTask = nil
+    }
+
     func shouldEnableDiarization(
         for meeting: Meeting,
         preferCurrentRecordingSource: Bool = false
@@ -230,6 +303,7 @@ extension RecordingManager {
     func handleTranscriptionError(_ error: Error) {
         AppLogger.error("Transcription failed", category: .recordingManager, error: error)
         lastError = error
+        cancelEstimatedPostProcessingProgress()
 
         transcriptionStatus.recordError(.transcriptionFailed(error.localizedDescription))
         transcriptionStatus.completeTranscription(success: false)

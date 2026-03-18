@@ -38,6 +38,7 @@ extension RecordingManager {
 
     func runRetryTranscription(audioURL: URL, transcription: Transcription) async {
         isTranscribing = true
+        cancelEstimatedPostProcessingProgress()
         let audioDuration = await getAudioDuration(from: audioURL)
         transcriptionStatus.beginTranscription(audioDuration: audioDuration)
 
@@ -52,9 +53,11 @@ extension RecordingManager {
             notifySuccess(for: updated)
             scheduleStatusReset()
         } catch {
+            cancelEstimatedPostProcessingProgress()
             handleTranscriptionError(error)
         }
 
+        cancelEstimatedPostProcessingProgress()
         isTranscribing = false
     }
 

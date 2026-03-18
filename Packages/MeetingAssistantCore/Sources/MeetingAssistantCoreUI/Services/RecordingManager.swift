@@ -100,6 +100,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     var statusCheckTask: Task<Void, Never>?
     var isStartOperationInFlight = false
     var postStartContextCaptureTask: Task<Void, Never>?
+    var estimatedPostProcessingProgressTask: Task<Void, Never>?
     var activeStartTelemetry: RecordingStartTelemetry?
     var postProcessingContext: String?
     var postProcessingContextItems: [TranscriptionContextItem] = []
@@ -123,6 +124,9 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         static let processingProgress: Double = 10.0
         static let postProcessingProgress: Double = 90.0
         static let aiProcessingProgress: Double = 92.0
+        static let postProcessingProgressCeiling: Double = 99.0
+        static let postProcessingProgressSmoothingTau: TimeInterval = 35.0
+        static let postProcessingProgressTickNanoseconds: UInt64 = 300_000_000
         static let statusResetDelay: Int = 3
         static let startContextCaptureTimeout: UInt64 = 1_500_000_000
     }

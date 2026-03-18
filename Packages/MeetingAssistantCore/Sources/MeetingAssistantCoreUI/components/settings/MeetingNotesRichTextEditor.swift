@@ -444,8 +444,8 @@ private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
             hasPendingDeferredRefresh = true
             Task { @MainActor [weak self] in
                 guard let self else { return }
-                self.hasPendingDeferredRefresh = false
-                self.controller.refreshState()
+                hasPendingDeferredRefresh = false
+                controller.refreshState()
             }
         }
     }

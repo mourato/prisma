@@ -268,6 +268,7 @@ public extension RecordingManager {
             if transcribe, let meeting = currentMeeting {
                 await transcribeRecording(audioURL: finalURL, meeting: meeting)
             } else {
+                cancelEstimatedPostProcessingProgress()
                 postProcessingContext = nil
                 postProcessingContextItems = []
                 dictationSessionOutputLanguageOverride = nil
@@ -284,6 +285,7 @@ public extension RecordingManager {
             lastError = error
             isRecording = false
             isTranscribing = false
+            cancelEstimatedPostProcessingProgress()
             meetingState = .failed(error.localizedDescription) // Sync state
             currentMeeting?.state = .failed(error.localizedDescription) // Sync entity state
             await RecordingExclusivityCoordinator.shared.endRecording()
@@ -310,6 +312,7 @@ public extension RecordingManager {
             postStartContextCaptureTask?.cancel()
             postStartContextCaptureTask = nil
             isStartingRecording = false
+            cancelEstimatedPostProcessingProgress()
             currentCapturePurpose = nil
             isMeetingMicrophoneEnabled = false
             clearMeetingNotesState(removePersistedValue: true)
@@ -345,6 +348,7 @@ public extension RecordingManager {
         // Reset state
         isRecording = false
         isStartingRecording = false
+        cancelEstimatedPostProcessingProgress()
         currentCapturePurpose = nil
         isMeetingMicrophoneEnabled = false
         clearMeetingNotesState(removePersistedValue: true)

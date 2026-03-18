@@ -35,6 +35,7 @@ extension RecordingManager {
         isRecording = false
         isStartingRecording = false
         isTranscribing = false
+        cancelEstimatedPostProcessingProgress()
         meetingState = .failed(error.localizedDescription)
         currentMeeting?.state = .failed(error.localizedDescription)
         clearMeetingNotesState(removePersistedValue: true)

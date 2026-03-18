@@ -5,6 +5,9 @@ import MeetingAssistantCoreCommon
 
 /// Caso de uso para transcrever arquivo de áudio
 public final class TranscribeAudioUseCase: Sendable {
+    public typealias PhaseChangeHandler = @Sendable (TranscriptionPhase) -> Void
+    public typealias TranscriptionProgressHandler = @Sendable (Double) -> Void
+
     private let transcriptionRepository: TranscriptionRepository
     private let transcriptionStorageRepository: TranscriptionStorageRepository
     private let postProcessingRepository: PostProcessingRepository?
@@ -46,97 +49,112 @@ public final class TranscribeAudioUseCase: Sendable {
         availablePrompts: [DomainPostProcessingPrompt] = [],
         postProcessingContext: String? = nil,
         kernelMode: IntelligenceKernelMode = .meeting,
-        dictationStructuredPostProcessingEnabled: Bool = false
+        dictationStructuredPostProcessingEnabled: Bool = false,
+        onPhaseChange: PhaseChangeHandler? = nil,
+        onTranscriptionProgress: TranscriptionProgressHandler? = nil
     ) async throws -> TranscriptionEntity {
-        // Verificar saúde do serviço
-        guard try await transcriptionRepository.healthCheck() else {
-            throw TranscriptionError.serviceUnavailable
-        }
+        onPhaseChange?(.preparing)
 
-        // Transcrever áudio
-        let transcriptionStartTime = Date()
-        let response: DomainTranscriptionResponse
         do {
-            if let diarizationAwareRepository = transcriptionRepository as? any TranscriptionRepositoryDiarizationOverride {
-                response = try await diarizationAwareRepository.transcribe(
-                    audioURL: audioURL,
-                    onProgress: nil,
-                    diarizationEnabledOverride: diarizationEnabledOverride
-                )
-            } else {
-                response = try await transcriptionRepository.transcribe(
-                    audioURL: audioURL,
-                    onProgress: nil
-                )
+            // Verificar saúde do serviço
+            guard try await transcriptionRepository.healthCheck() else {
+                throw TranscriptionError.serviceUnavailable
             }
-        } catch {
-            throw DomainTranscriptionError.transcriptionFailed(error.localizedDescription)
-        }
-        let transcriptionDuration = Date().timeIntervalSince(transcriptionStartTime)
 
-        // Aplicar substituições de vocabulário e preprocessamento
-        let (replacedTranscriptionText, replacedSegments, qualityProfile) = processTranscriptionResult(
-            response: response,
-            vocabularyReplacementRules: vocabularyReplacementRules
-        )
+            // Transcrever áudio
+            onPhaseChange?(.processing)
+            let transcriptionStartTime = Date()
+            let response: DomainTranscriptionResponse
+            do {
+                if let diarizationAwareRepository = transcriptionRepository as? any TranscriptionRepositoryDiarizationOverride {
+                    response = try await diarizationAwareRepository.transcribe(
+                        audioURL: audioURL,
+                        onProgress: onTranscriptionProgress,
+                        diarizationEnabledOverride: diarizationEnabledOverride
+                    )
+                } else {
+                    response = try await transcriptionRepository.transcribe(
+                        audioURL: audioURL,
+                        onProgress: onTranscriptionProgress
+                    )
+                }
+            } catch {
+                throw DomainTranscriptionError.transcriptionFailed(error.localizedDescription)
+            }
+            let transcriptionDuration = Date().timeIntervalSince(transcriptionStartTime)
 
-        // Preparar input para pós-processamento
-        let postProcessingInput = mergedPostProcessingInput(
-            transcriptionText: qualityProfile.normalizedTextForIntelligence,
-            qualityProfile: qualityProfile,
-            context: postProcessingContext,
-            meetingNotes: contextItems.first(where: { $0.source == .meetingNotes })?.text,
-            includeQualityMetadata: kernelMode == .meeting
-        )
+            // Aplicar substituições de vocabulário e preprocessamento
+            let (replacedTranscriptionText, replacedSegments, qualityProfile) = processTranscriptionResult(
+                response: response,
+                vocabularyReplacementRules: vocabularyReplacementRules
+            )
 
-        // Executar pós-processamento
-        let postProcessingConfig = PostProcessingConfiguration(
-            applyPostProcessing: applyPostProcessing,
-            postProcessingPrompt: postProcessingPrompt,
-            defaultPostProcessingPrompt: defaultPostProcessingPrompt,
-            autoDetectMeetingType: autoDetectMeetingType,
-            availablePrompts: availablePrompts,
-            kernelMode: kernelMode,
-            dictationStructuredPostProcessingEnabled: dictationStructuredPostProcessingEnabled
-        )
+            // Preparar input para pós-processamento
+            let postProcessingInput = mergedPostProcessingInput(
+                transcriptionText: qualityProfile.normalizedTextForIntelligence,
+                qualityProfile: qualityProfile,
+                context: postProcessingContext,
+                meetingNotes: contextItems.first(where: { $0.source == .meetingNotes })?.text,
+                includeQualityMetadata: kernelMode == .meeting
+            )
 
-        let postProcessingStartTime = Date()
-        let postProcessingResult = await performPostProcessing(
-            postProcessingInput: postProcessingInput,
-            postProcessingRepository: postProcessingRepository,
-            config: postProcessingConfig,
-            qualityProfile: qualityProfile
-        )
-        let postProcessingDuration = Date().timeIntervalSince(postProcessingStartTime)
-        let resolvedMeeting = meetingWithResolvedTitle(meeting, postProcessingResult: postProcessingResult)
+            // Executar pós-processamento
+            let postProcessingConfig = PostProcessingConfiguration(
+                applyPostProcessing: applyPostProcessing,
+                postProcessingPrompt: postProcessingPrompt,
+                defaultPostProcessingPrompt: defaultPostProcessingPrompt,
+                autoDetectMeetingType: autoDetectMeetingType,
+                availablePrompts: availablePrompts,
+                kernelMode: kernelMode,
+                dictationStructuredPostProcessingEnabled: dictationStructuredPostProcessingEnabled
+            )
 
-        // Construir entidade de transcrição
-        let transcription = TranscriptionEntity(
-            meeting: resolvedMeeting,
-            config: buildConfiguration(
-                .init(
-                    response: response,
-                    replacedText: replacedTranscriptionText,
-                    replacedSegments: replacedSegments,
-                    qualityProfile: qualityProfile,
-                    contextItems: contextItems,
-                    processedContent: postProcessingResult.processedContent,
-                    canonicalSummary: postProcessingResult.canonicalSummary,
-                    promptId: postProcessingResult.promptId,
-                    promptTitle: postProcessingResult.promptTitle,
-                    meetingType: postProcessingResult.meetingType,
-                    inputSource: inputSource,
-                    transcriptionDuration: transcriptionDuration,
-                    postProcessingDuration: postProcessingDuration,
-                    postProcessingModel: postProcessingModel
+            if postProcessingConfig.shouldRunPostProcessing(postProcessingRepository: postProcessingRepository) {
+                onPhaseChange?(.postProcessing)
+            }
+
+            let postProcessingStartTime = Date()
+            let postProcessingResult = await performPostProcessing(
+                postProcessingInput: postProcessingInput,
+                postProcessingRepository: postProcessingRepository,
+                config: postProcessingConfig,
+                qualityProfile: qualityProfile
+            )
+            let postProcessingDuration = Date().timeIntervalSince(postProcessingStartTime)
+            let resolvedMeeting = meetingWithResolvedTitle(meeting, postProcessingResult: postProcessingResult)
+
+            // Construir entidade de transcrição
+            let transcription = TranscriptionEntity(
+                meeting: resolvedMeeting,
+                config: buildConfiguration(
+                    .init(
+                        response: response,
+                        replacedText: replacedTranscriptionText,
+                        replacedSegments: replacedSegments,
+                        qualityProfile: qualityProfile,
+                        contextItems: contextItems,
+                        processedContent: postProcessingResult.processedContent,
+                        canonicalSummary: postProcessingResult.canonicalSummary,
+                        promptId: postProcessingResult.promptId,
+                        promptTitle: postProcessingResult.promptTitle,
+                        meetingType: postProcessingResult.meetingType,
+                        inputSource: inputSource,
+                        transcriptionDuration: transcriptionDuration,
+                        postProcessingDuration: postProcessingDuration,
+                        postProcessingModel: postProcessingModel
+                    )
                 )
             )
-        )
 
-        // Salvar transcrição
-        try await transcriptionStorageRepository.saveTranscription(transcription)
+            // Salvar transcrição
+            try await transcriptionStorageRepository.saveTranscription(transcription)
 
-        return transcription
+            onPhaseChange?(.completed)
+            return transcription
+        } catch {
+            onPhaseChange?(.failed)
+            throw error
+        }
     }
 
     // MARK: - Private Helpers

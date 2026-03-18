@@ -32,6 +32,10 @@ extension TranscribeAudioUseCase {
             self.kernelMode = kernelMode
             self.dictationStructuredPostProcessingEnabled = dictationStructuredPostProcessingEnabled
         }
+
+        func shouldRunPostProcessing(postProcessingRepository: PostProcessingRepository?) -> Bool {
+            applyPostProcessing && postProcessingRepository != nil
+        }
     }
 
     struct PostProcessingResult {

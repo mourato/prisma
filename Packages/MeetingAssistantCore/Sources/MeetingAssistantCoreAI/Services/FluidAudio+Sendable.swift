@@ -11,4 +11,4 @@ extension AsrManager: @unchecked @retroactive Sendable {}
 extension OfflineDiarizerManager: @unchecked @retroactive Sendable {}
 
 // Note: DiarizationResult, OfflineDiarizerConfig, and TokenTiming
-// are already Sendable in FluidAudio 0.10.1.
+// are already Sendable in FluidAudio 0.12.x.

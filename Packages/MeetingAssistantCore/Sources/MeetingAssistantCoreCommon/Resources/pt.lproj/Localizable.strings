@@ -927,6 +927,12 @@
 "recording_indicator.silence_warning.action.continue" = "Continuar ouvindo";
 "recording_indicator.silence_warning.action.stop" = "Parar e transcrever";
 "recording_indicator.silence_warning.action.discard" = "Descartar gravação";
+"recording_indicator.processing.stage.preparing" = "Preparando";
+"recording_indicator.processing.stage.transcribing" = "Transcrevendo";
+"recording_indicator.processing.stage.post_processing" = "Pós-processando";
+"recording_indicator.processing.stage.finalizing" = "Finalizando";
+"recording_indicator.processing.stage.failed" = "Processando";
+"recording_indicator.processing.progress" = "%@ %d%%";
 "settings.transcriptions.today" = "Hoje";
 "settings.transcriptions.yesterday" = "Ontem";
 "transcription.empty_fallback" = "Nenhuma transcrição disponível";
