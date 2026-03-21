@@ -2,16 +2,68 @@ import MeetingAssistantCoreAudio
 import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
-// MARK: - Audio Visualizer (Native implementation based on VoiceInk)
+// MARK: - Audio Visualizer
 
-enum AudioVisualizerMode {
-    case recording
-    case processing
+enum AudioVisualizerMath {
+    static let visibilityGate: Double = 0.20
+    static let amplitudeExponent: Double = 0.80
+    static let centerBoostStrength: Double = 0.22
+
+    static func shapedLevel(_ level: Double) -> Double {
+        let clamped = min(max(level, 0.0), 1.0)
+        guard clamped > visibilityGate else { return 0.0 }
+        let normalized = (clamped - visibilityGate) / (1.0 - visibilityGate)
+        return min(1.0, max(0.0, pow(normalized, amplitudeExponent)))
+    }
+
+    static func instantLevels(
+        snapshotLevels: [Double],
+        fallbackLevel: Double,
+        barCount: Int,
+        isAnimationActive: Bool
+    ) -> [Double] {
+        guard barCount > 0 else { return [] }
+
+        if !isAnimationActive {
+            return Array(repeating: 0.0, count: barCount)
+        }
+
+        let sourceLevels: [Double] = if snapshotLevels.isEmpty {
+            Array(repeating: fallbackLevel, count: barCount)
+        } else {
+            snapshotLevels
+        }
+
+        return (0..<barCount).map { index in
+            let sourceIndex = min(
+                Int(Double(index) * Double(sourceLevels.count) / Double(barCount)),
+                max(0, sourceLevels.count - 1)
+            )
+            let shaped = shapedLevel(sourceLevels[sourceIndex])
+            return centerBoostedLevel(shaped, index: index, barCount: barCount)
+        }
+    }
+
+    static func centerBoostedLevel(_ level: Double, index: Int, barCount: Int) -> Double {
+        guard barCount > 1 else { return min(max(level, 0.0), 1.0) }
+
+        let center = Double(barCount - 1) / 2.0
+        let distance = abs(Double(index) - center)
+        let normalizedDistance = min(1.0, distance / max(center, 1.0))
+        let centerInfluence = 1.0 - normalizedDistance
+        let boosted = level * (1.0 + (centerInfluence * centerBoostStrength))
+        return min(max(boosted, 0.0), 1.0)
+    }
+
+    static func barHeight(level: Double, minHeight: CGFloat, maxHeight: CGFloat) -> CGFloat {
+        let clamped = min(max(level, 0.0), 1.0)
+        return minHeight + CGFloat(clamped) * (maxHeight - minHeight)
+    }
 }
 
 struct AudioVisualizer: View {
     let audioMeter: AudioMeter
-    let mode: AudioVisualizerMode
+    let instantBarLevels: [Double]
     let isAnimationActive: Bool
     let animationSpeed: RecordingIndicatorAnimationSpeed
     let barCount: Int
@@ -20,17 +72,11 @@ struct AudioVisualizer: View {
     let barSpacing: CGFloat
     let minHeight: CGFloat
 
-    private let phaseOffsets: [Double]
-    private let secondaryOffsets: [Double]
-    private let recordingAmplitudeScales: [Double]
-    private let recordingPrimaryRateScales: [Double]
-    private let recordingSecondaryRateScales: [Double]
-
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(
         audioMeter: AudioMeter,
-        mode: AudioVisualizerMode,
+        instantBarLevels: [Double] = [],
         isAnimationActive: Bool = true,
         animationSpeed: RecordingIndicatorAnimationSpeed = .normal,
         barCount: Int,
@@ -40,7 +86,7 @@ struct AudioVisualizer: View {
         minHeight: CGFloat = 8
     ) {
         self.audioMeter = audioMeter
-        self.mode = mode
+        self.instantBarLevels = instantBarLevels
         self.isAnimationActive = isAnimationActive
         self.animationSpeed = animationSpeed
         self.barCount = barCount
@@ -48,144 +94,71 @@ struct AudioVisualizer: View {
         self.barWidth = barWidth
         self.barSpacing = barSpacing
         self.minHeight = minHeight
-
-        phaseOffsets = (0..<barCount).map { Double($0) * 0.4 }
-        secondaryOffsets = (0..<barCount).map { Double($0) * 0.73 }
-        recordingAmplitudeScales = (0..<barCount).map { index in
-            Self.deterministicValue(index: index, count: barCount, range: 0.78...1.32, seed: 0.31)
-        }
-        recordingPrimaryRateScales = (0..<barCount).map { index in
-            Self.deterministicValue(index: index, count: barCount, range: 0.86...1.24, seed: 0.61)
-        }
-        recordingSecondaryRateScales = (0..<barCount).map { index in
-            Self.deterministicValue(index: index, count: barCount, range: 1.45...2.30, seed: 1.09)
-        }
     }
 
     var body: some View {
-        Group {
-            switch mode {
-            case .recording:
-                recordingBars
-            case .processing:
-                processingBars
-            }
-        }
-    }
+        let levels = AudioVisualizerMath.instantLevels(
+            snapshotLevels: instantBarLevels,
+            fallbackLevel: audioMeter.averagePower,
+            barCount: barCount,
+            isAnimationActive: isAnimationActive
+        )
 
-    private var recordingBars: some View {
-        Group {
-            if isAnimationActive, !reduceMotion {
-                TimelineView(.animation(minimumInterval: 0.016)) { timeline in
-                    HStack(spacing: barSpacing) {
-                        ForEach(0..<barCount, id: \.self) { index in
-                            Capsule()
-                                .fill(Color.white)
-                                .frame(
-                                    width: barWidth,
-                                    height: recordingHeight(for: index, at: timeline.date)
-                                )
-                        }
-                    }
-                }
-            } else {
-                staticBars
-            }
-        }
-        .frame(height: maxHeight, alignment: .center)
-    }
-
-    private var processingBars: some View {
-        Group {
-            if isAnimationActive, !reduceMotion {
-                TimelineView(.animation(minimumInterval: 0.016)) { timeline in
-                    let time = timeline.date.timeIntervalSinceReferenceDate
-                    HStack(spacing: barSpacing) {
-                        ForEach(0..<barCount, id: \.self) { index in
-                            Capsule()
-                                .fill(Color.white)
-                                .frame(width: barWidth, height: processingHeight(for: index, time: time))
-                        }
-                    }
-                }
-            } else {
-                staticBars
-            }
-        }
-        .frame(height: maxHeight, alignment: .center)
-    }
-
-    private var staticBars: some View {
-        HStack(spacing: barSpacing) {
-            ForEach(0..<barCount, id: \.self) { _ in
+        return HStack(spacing: barSpacing) {
+            ForEach(0..<barCount, id: \.self) { index in
                 Capsule()
                     .fill(Color.white)
-                    .frame(width: barWidth, height: minHeight)
+                    .frame(
+                        width: barWidth,
+                        height: AudioVisualizerMath.barHeight(
+                            level: levels[safe: index] ?? 0.0,
+                            minHeight: minHeight,
+                            maxHeight: maxHeight
+                        )
+                    )
             }
         }
+        .frame(height: maxHeight, alignment: .center)
+        .animation(reduceMotion ? nil : .easeOut(duration: animationDuration), value: levels)
     }
 
-    private func recordingHeight(for index: Int, at date: Date) -> CGFloat {
-        let time = date.timeIntervalSince1970
-        let average = max(0.0, min(1.0, audioMeter.averagePower))
-        let peak = max(0.0, min(1.0, audioMeter.peakPower))
-        let energy = max(pow(average, 0.72), pow(peak, 0.68) * 0.55)
-
-        let baseRate = 8.0 * frequencyMultiplier
-        let primaryWave = (
-            sin(time * (baseRate * recordingPrimaryRateScales[index]) + phaseOffsets[index]) + 1.0
-        ) / 2.0
-        let secondaryWave = (
-            sin(time * (baseRate * recordingSecondaryRateScales[index]) + secondaryOffsets[index]) + 1.0
-        ) / 2.0
-        let independentWave = (0.58 * primaryWave) + (0.42 * secondaryWave)
-
-        let centerDistance = abs(Double(index) - Double(barCount) / 2.0) / Double(max(barCount / 2, 1))
-        let centerWeight = 1.0 - (centerDistance * 0.20)
-        let scaled = energy * (0.28 + 0.72 * independentWave) * centerWeight * recordingAmplitudeScales[index]
-        let clamped = min(1.0, max(0.0, scaled))
-        return minHeight + CGFloat(clamped) * (maxHeight - minHeight)
-    }
-
-    private func processingHeight(for index: Int, time: TimeInterval) -> CGFloat {
-        let base = (sin(time * (7.2 * frequencyMultiplier) + phaseOffsets[index]) + 1.0) / 2.0
-        let modulation = (sin(time * (3.8 * frequencyMultiplier) + secondaryOffsets[index]) + 1.0) / 2.0
-        let blended = (0.45 + 0.55 * base) * (0.65 + 0.35 * modulation)
-        let clamped = min(1.0, max(0.0, blended))
-        return minHeight + CGFloat(clamped) * (maxHeight - minHeight)
-    }
-
-    private var frequencyMultiplier: Double {
+    private var animationDuration: Double {
         switch animationSpeed {
         case .slow:
-            0.80
+            0.12
         case .normal:
-            1.00
+            0.08
         case .fast:
-            1.25
+            0.06
         }
-    }
-
-    private static func deterministicValue(
-        index: Int,
-        count: Int,
-        range: ClosedRange<Double>,
-        seed: Double
-    ) -> Double {
-        guard count > 0 else { return range.lowerBound }
-        let normalized = Double(index + 1) / Double(count + 1)
-        let wave = (sin((normalized + seed) * .pi * 2) + 1) / 2
-        return range.lowerBound + (range.upperBound - range.lowerBound) * wave
     }
 }
 
-#Preview("Processing Audio Visualizer", traits: .sizeThatFitsLayout) {
-    AudioVisualizer(
-        audioMeter: AudioMeter(averagePower: 0.5, peakPower: 0.8),
-        mode: .processing,
-        barCount: 6,
-        maxHeight: AppDesignSystem.Layout.recordingIndicatorClassicWaveHeight
-    )
-    .padding()
-    .background(AppDesignSystem.Colors.neutral.opacity(0.8))
+private struct AudioVisualizerLivePreview: View {
+    var body: some View {
+        AudioVisualizer(
+            audioMeter: AudioMeter(averagePower: 0.44, peakPower: 0.72),
+            instantBarLevels: [0.18, 0.24, 0.32, 0.52, 0.70, 0.64, 0.42, 0.28, 0.20],
+            isAnimationActive: true,
+            animationSpeed: .normal,
+            barCount: AppDesignSystem.Layout.recordingIndicatorClassicWaveCount,
+            maxHeight: AppDesignSystem.Layout.recordingIndicatorClassicWaveHeight,
+            barWidth: AppDesignSystem.Layout.recordingIndicatorWaveformBarWidth,
+            barSpacing: AppDesignSystem.Layout.recordingIndicatorWaveformBarSpacing,
+            minHeight: AppDesignSystem.Layout.recordingIndicatorWaveformMinHeight
+        )
+        .padding()
+        .background(AppDesignSystem.Colors.neutral.opacity(0.8))
+    }
+}
+
+#Preview("Recording Audio Visualizer", traits: .sizeThatFitsLayout) {
+    AudioVisualizerLivePreview()
+}
+
+private extension Array {
+    subscript(safe index: Int) -> Element? {
+        guard indices.contains(index) else { return nil }
+        return self[index]
+    }
 }

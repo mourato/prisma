@@ -46,6 +46,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     @Published public internal(set) var error: Error?
     @Published public internal(set) var currentAveragePower: Float = -160.0
     @Published public internal(set) var currentPeakPower: Float = -160.0
+    @Published public internal(set) var currentBarPowerLevels: [Float] = []
 
     // MARK: - Audio Engine
 
@@ -92,15 +93,17 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     var micRecorderProbeStopTask: Task<Void, Never>?
     private var fallbackRecorder: AVAudioRecorder?
     private var fallbackMeterTimer: Timer?
+    private var settingsSubscriptions = Set<AnyCancellable>()
 
     init() {
         microphoneInputSelectionResolver = MicrophoneInputSelectionResolver(deviceManager: deviceManager)
 
         // Setup worker callbacks to bridge back to MainActor
-        worker.setOnPowerUpdate { [weak self] avg, peak in
+        worker.setOnPowerUpdate { [weak self] avg, peak, barPowerLevels in
             Task { @MainActor [weak self] in
                 self?.currentAveragePower = avg
                 self?.currentPeakPower = peak
+                self?.currentBarPowerLevels = barPowerLevels
             }
         }
 
@@ -109,6 +112,15 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
                 self?.handleWorkerError(error)
             }
         }
+
+        AppSettingsStore.shared.$recordingIndicatorStyle
+            .removeDuplicates()
+            .sink { [weak self] style in
+                self?.worker.setMeteringBarCount(Self.waveformBarCount(for: style))
+            }
+            .store(in: &settingsSubscriptions)
+
+        worker.setMeteringBarCount(Self.waveformBarCount(for: AppSettingsStore.shared.recordingIndicatorStyle))
 
         // Link System Recorder to Queue
         // Capture queue directly to avoid 'self' (MainActor) capture in background thread
@@ -159,6 +171,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             category: .recordingManager,
             extra: ["path": outputURL.path, "source": source.rawValue]
         )
+        currentBarPowerLevels = []
 
         // Muting system output must only apply to Dictation/Assistant (mic-only).
         // Meetings (system + mic) must preserve the system output volume.
@@ -327,6 +340,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
                 rec.updateMeters()
                 currentAveragePower = rec.averagePower(forChannel: 0)
                 currentPeakPower = rec.peakPower(forChannel: 0)
+                currentBarPowerLevels = [currentAveragePower]
             }
         }
 
@@ -377,6 +391,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             isRecording = false
             currentAveragePower = -160.0
             currentPeakPower = -160.0
+            currentBarPowerLevels = []
             return currentRecordingURL
         }
 
@@ -386,6 +401,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             isRecording = false
             currentAveragePower = -160.0
             currentPeakPower = -160.0
+            currentBarPowerLevels = []
             return currentRecordingURL
         }
 
@@ -403,6 +419,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         isRecording = false
         currentAveragePower = -160.0
         currentPeakPower = -160.0
+        currentBarPowerLevels = []
 
         // Log dropped frames before clearing (for diagnostics)
         let queueStats = systemAudioQueue.stats
@@ -512,6 +529,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         currentRecordingURL = nil
         currentAveragePower = -160.0
         currentPeakPower = -160.0
+        currentBarPowerLevels = []
     }
 
     private func startupErrorCode(from error: Error) -> Int? {
@@ -569,6 +587,18 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         recorder.updateMeters()
         currentAveragePower = recorder.averagePower(forChannel: 0)
         currentPeakPower = recorder.peakPower(forChannel: 0)
+        currentBarPowerLevels = [currentAveragePower]
+    }
+
+    private static func waveformBarCount(for style: RecordingIndicatorStyle) -> Int {
+        switch style {
+        case .classic:
+            18
+        case .mini:
+            9
+        case .none:
+            0
+        }
     }
 
     // MARK: - Permission Checking

@@ -38,10 +38,10 @@ final class FloatingRecordingIndicatorWidthTests: XCTestCase {
         XCTAssertEqual(widthWithTimer - widthWithoutTimer, expectedDelta, accuracy: 0.001)
     }
 
-    func testMeetingProcessingClusterReservesProgressWidth() {
+    func testProcessingClusterWidth_IsIndependentFromRecordingKind() {
         let size: FloatingRecordingIndicatorView.IndicatorSize = .classic
         let processingRenderState = RecordingIndicatorRenderState(mode: .processing, kind: .meeting)
-        let processingWithoutMeetingFeedback = RecordingIndicatorRenderState(mode: .processing, kind: .dictation)
+        let dictationProcessingState = RecordingIndicatorRenderState(mode: .processing, kind: .dictation)
 
         let layout = RecordingIndicatorOverlayLayout(
             showsPromptSelector: false,
@@ -57,37 +57,45 @@ final class FloatingRecordingIndicatorWidthTests: XCTestCase {
         )
         let baseProcessingWidth = FloatingRecordingIndicatorViewUtilities.mainPillWidth(
             for: size,
-            renderState: processingWithoutMeetingFeedback,
+            renderState: dictationProcessingState,
             layout: layout,
             expanded: false
         )
 
-        let expectedDelta = FloatingRecordingIndicatorViewUtilities.contentSpacing(for: size)
-            + FloatingRecordingIndicatorViewUtilities.processingProgressReservedWidth(for: size)
-
-        XCTAssertEqual(processingWidth - baseProcessingWidth, expectedDelta, accuracy: 0.001)
+        XCTAssertEqual(processingWidth, baseProcessingWidth, accuracy: 0.001)
     }
 
-    func testMeetingProcessingProgressVisibility_IsLimitedToMeetingProcessing() {
+    func testProcessingClusterUsesStatusWidthInsteadOfWaveform() {
+        let size: FloatingRecordingIndicatorView.IndicatorSize = .classic
+        let processingState = RecordingIndicatorRenderState(mode: .processing, kind: .assistant)
+
+        let expectedClusterWidth = AppDesignSystem.Layout.recordingIndicatorDotSize
+            + FloatingRecordingIndicatorViewUtilities.processingProgressReservedWidth(for: size)
+            + FloatingRecordingIndicatorViewUtilities.contentSpacing(for: size)
+
+        let actualClusterWidth = FloatingRecordingIndicatorViewUtilities.clusterWidth(
+            for: size,
+            renderState: processingState
+        )
+
+        XCTAssertEqual(actualClusterWidth, expectedClusterWidth, accuracy: 0.001)
+    }
+
+    func testMainContentMode_UsesWaveformDuringRecordingAndStatusDuringProcessing() {
         XCTAssertTrue(
-            FloatingRecordingIndicatorViewUtilities.shouldShowMeetingProcessingProgress(
-                renderState: RecordingIndicatorRenderState(mode: .processing, kind: .meeting)
-            )
+            FloatingRecordingIndicatorViewUtilities.mainContentMode(
+                for: RecordingIndicatorRenderState(mode: .recording, kind: .meeting)
+            ) == .waveform
         )
-        XCTAssertFalse(
-            FloatingRecordingIndicatorViewUtilities.shouldShowMeetingProcessingProgress(
-                renderState: RecordingIndicatorRenderState(mode: .recording, kind: .meeting)
-            )
+        XCTAssertTrue(
+            FloatingRecordingIndicatorViewUtilities.mainContentMode(
+                for: RecordingIndicatorRenderState(mode: .starting, kind: .dictation)
+            ) == .waveform
         )
-        XCTAssertFalse(
-            FloatingRecordingIndicatorViewUtilities.shouldShowMeetingProcessingProgress(
-                renderState: RecordingIndicatorRenderState(mode: .processing, kind: .dictation)
-            )
-        )
-        XCTAssertFalse(
-            FloatingRecordingIndicatorViewUtilities.shouldShowMeetingProcessingProgress(
-                renderState: RecordingIndicatorRenderState(mode: .processing, kind: .assistant)
-            )
+        XCTAssertTrue(
+            FloatingRecordingIndicatorViewUtilities.mainContentMode(
+                for: RecordingIndicatorRenderState(mode: .processing, kind: .meeting)
+            ) == .processingStatus
         )
     }
 }

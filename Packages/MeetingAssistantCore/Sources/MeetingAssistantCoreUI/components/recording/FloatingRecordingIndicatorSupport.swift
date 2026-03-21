@@ -154,8 +154,17 @@ struct RecordingIndicatorPostProcessingWarningDescriptor: Equatable {
 }
 
 enum FloatingRecordingIndicatorViewUtilities {
+    enum MainContentMode: Equatable {
+        case waveform
+        case processingStatus
+    }
+
     static let actionButtonSize: CGFloat = 28
     static let dividerWidth: CGFloat = 1
+
+    static func mainContentMode(for renderState: RecordingIndicatorRenderState) -> MainContentMode {
+        renderState.mode == .processing ? .processingStatus : .waveform
+    }
 
     static func controlHeight(for size: FloatingRecordingIndicatorView.IndicatorSize) -> CGFloat {
         switch size {
@@ -243,12 +252,6 @@ enum FloatingRecordingIndicatorViewUtilities {
         }
     }
 
-    static func shouldShowMeetingProcessingProgress(
-        renderState: RecordingIndicatorRenderState
-    ) -> Bool {
-        renderState.kind == .meeting && renderState.mode == .processing
-    }
-
     static func horizontalPadding(for size: FloatingRecordingIndicatorView.IndicatorSize, expanded: Bool) -> CGFloat {
         if expanded {
             return AppDesignSystem.Layout.recordingIndicatorSidePadding
@@ -264,13 +267,13 @@ enum FloatingRecordingIndicatorViewUtilities {
         for size: FloatingRecordingIndicatorView.IndicatorSize,
         renderState: RecordingIndicatorRenderState
     ) -> CGFloat {
-        var width = AppDesignSystem.Layout.recordingIndicatorDotSize
-            + contentSpacing(for: size)
-            + waveformWidth(for: size)
+        var width = AppDesignSystem.Layout.recordingIndicatorDotSize + contentSpacing(for: size)
 
-        if shouldShowMeetingProcessingProgress(renderState: renderState) {
-            width += contentSpacing(for: size)
-                + processingProgressReservedWidth(for: size)
+        switch mainContentMode(for: renderState) {
+        case .waveform:
+            width += waveformWidth(for: size)
+        case .processingStatus:
+            width += processingProgressReservedWidth(for: size)
         }
 
         return width

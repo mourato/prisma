@@ -9,6 +9,11 @@ import MeetingAssistantCoreInfrastructure
 /// Extracted from AudioRecorder.swift to adhere to Single Responsibility Principle.
 /// Uses Actor pattern for automatic thread safety isolation.
 actor AudioRecordingWorker {
+    struct MeterSnapshot {
+        let averagePowerDB: Float
+        let peakPowerDB: Float
+        let barPowerDBLevels: [Float]
+    }
 
     // MARK: - State
 
@@ -23,8 +28,9 @@ actor AudioRecordingWorker {
     }
 
     // Callbacks - marked as Sendable since they are set from MainActor
-    private var onPowerUpdate: (@Sendable (Float, Float) -> Void)?
+    private var onPowerUpdate: (@Sendable (Float, Float, [Float]) -> Void)?
     private var onError: (@Sendable (AudioRecorderError) -> Void)?
+    private var meteringBarCount = 0
 
     /// Non-isolated buffer queue for synchronous enqueue from tap
     private nonisolated let bufferQueue = AudioBufferQueue(capacity: 100)
@@ -37,7 +43,7 @@ actor AudioRecordingWorker {
 
     // MARK: - Callback Setters
 
-    nonisolated func setOnPowerUpdate(_ callback: (@Sendable (Float, Float) -> Void)?) {
+    nonisolated func setOnPowerUpdate(_ callback: (@Sendable (Float, Float, [Float]) -> Void)?) {
         Task { await self.setOnPowerUpdateIsolated(callback) }
     }
 
@@ -45,12 +51,20 @@ actor AudioRecordingWorker {
         Task { await self.setOnErrorIsolated(callback) }
     }
 
-    private func setOnPowerUpdateIsolated(_ callback: (@Sendable (Float, Float) -> Void)?) {
+    nonisolated func setMeteringBarCount(_ barCount: Int) {
+        Task { await self.setMeteringBarCountIsolated(barCount) }
+    }
+
+    private func setOnPowerUpdateIsolated(_ callback: (@Sendable (Float, Float, [Float]) -> Void)?) {
         onPowerUpdate = callback
     }
 
     private func setOnErrorIsolated(_ callback: (@Sendable (AudioRecorderError) -> Void)?) {
         onError = callback
+    }
+
+    private func setMeteringBarCountIsolated(_ barCount: Int) {
+        meteringBarCount = max(0, barCount)
     }
 
     // MARK: - Property Accessors
@@ -206,7 +220,13 @@ actor AudioRecordingWorker {
     }
 
     private func processBufferInternal(_ buffer: AVAudioPCMBuffer) {
-        calculateMeters(from: buffer)
+        if let snapshot = Self.makeMeterSnapshot(from: buffer, barCount: meteringBarCount) {
+            onPowerUpdate?(
+                snapshot.averagePowerDB,
+                snapshot.peakPowerDB,
+                snapshot.barPowerDBLevels
+            )
+        }
 
         // Lock removed; serialized by queue
 
@@ -221,11 +241,14 @@ actor AudioRecordingWorker {
         }
     }
 
-    private func calculateMeters(from buffer: AVAudioPCMBuffer) {
-        guard let channelData = buffer.floatChannelData else { return }
+    nonisolated static func makeMeterSnapshot(
+        from buffer: AVAudioPCMBuffer,
+        barCount: Int
+    ) -> MeterSnapshot? {
+        guard let channelData = buffer.floatChannelData else { return nil }
         let channelCount = Int(buffer.format.channelCount)
         let frameLength = Int(buffer.frameLength)
-        guard channelCount > 0, frameLength > 0 else { return }
+        guard channelCount > 0, frameLength > 0 else { return nil }
 
         var maxRMS: Float = 0.0
         var maxPeak: Float = 0.0
@@ -236,21 +259,56 @@ actor AudioRecordingWorker {
             var sum: Float = 0.0
             var peak: Float = 0.0
 
-            for frame in stride(from: 0, to: frameLength, by: 10) {
+            for frame in 0..<frameLength {
                 let sample = abs(channel[frame])
                 if sample > peak { peak = sample }
                 sum += sample * sample
             }
 
-            let rms = sqrt(sum / Float(frameLength / 10))
+            let rms = sqrt(sum / Float(frameLength))
             if rms > maxRMS { maxRMS = rms }
             if peak > maxPeak { maxPeak = peak }
+        }
+
+        let sanitizedBarCount = max(0, barCount)
+        let barPowerDBLevels: [Float] = if sanitizedBarCount == 0 {
+            []
+        } else {
+            (0..<sanitizedBarCount).map { bucketIndex in
+                let start = Int(Double(bucketIndex) * Double(frameLength) / Double(sanitizedBarCount))
+                let end = Int(Double(bucketIndex + 1) * Double(frameLength) / Double(sanitizedBarCount))
+                guard end > start else { return -160.0 }
+
+                var maxBucketRMS: Float = 0.0
+                let sampleCount = end - start
+
+                for channelIndex in 0..<channelCount {
+                    let channel = channelData[channelIndex]
+                    var bucketSum: Float = 0.0
+
+                    for frame in start..<end {
+                        let sample = channel[frame]
+                        bucketSum += sample * sample
+                    }
+
+                    let rms = sqrt(bucketSum / Float(sampleCount))
+                    if rms > maxBucketRMS {
+                        maxBucketRMS = rms
+                    }
+                }
+
+                return 20.0 * log10(max(maxBucketRMS, 1e-10))
+            }
         }
 
         // Use a wider range for metering to capture more subtle sounds
         let averagePowerDb = 20.0 * log10(max(maxRMS, 1e-10))
         let peakPowerDb = 20.0 * log10(max(maxPeak, 1e-10))
 
-        onPowerUpdate?(averagePowerDb, peakPowerDb)
+        return MeterSnapshot(
+            averagePowerDB: averagePowerDb,
+            peakPowerDB: peakPowerDb,
+            barPowerDBLevels: barPowerDBLevels
+        )
     }
 }

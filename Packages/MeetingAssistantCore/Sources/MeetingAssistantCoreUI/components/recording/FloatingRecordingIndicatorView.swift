@@ -8,7 +8,7 @@ import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
-/// Floating indicator view that shows audio waveforms during recording or processing.
+/// Floating indicator view that shows waveform during recording and a dedicated status during processing.
 public struct FloatingRecordingIndicatorView: View {
     @ObservedObject var audioMonitor: AudioLevelMonitor
     @ObservedObject private var recordingManager: RecordingManager
@@ -232,13 +232,6 @@ public struct FloatingRecordingIndicatorView: View {
         return RecordingIndicatorPostProcessingWarningDescriptor(issue: issue, mode: warningMode)
     }
 
-    private var visualizerModeForIndicator: AudioVisualizerMode {
-        if case .recording = renderState.mode {
-            return .recording
-        }
-        return .processing
-    }
-
     private var errorView: some View {
         let message = errorMessage ?? "Error"
 
@@ -280,45 +273,70 @@ public struct FloatingRecordingIndicatorView: View {
         HStack(spacing: FloatingRecordingIndicatorViewUtilities.contentSpacing(for: size)) {
             statusDot(for: size)
 
-            AudioVisualizer(
-                audioMeter: audioMonitor.audioMeter,
-                mode: visualizerModeForIndicator,
-                isAnimationActive: isAnimationActive,
-                animationSpeed: settingsStore.recordingIndicatorAnimationSpeed,
-                barCount: FloatingRecordingIndicatorViewUtilities.waveCount(for: size),
-                maxHeight: FloatingRecordingIndicatorViewUtilities.waveformHeight(for: size),
-                barWidth: AppDesignSystem.Layout.recordingIndicatorWaveformBarWidth,
-                barSpacing: AppDesignSystem.Layout.recordingIndicatorWaveformBarSpacing,
-                minHeight: AppDesignSystem.Layout.recordingIndicatorWaveformMinHeight
-            )
-
-            if showsMeetingProcessingProgress {
-                processingProgressView(size: size)
+            switch FloatingRecordingIndicatorViewUtilities.mainContentMode(for: renderState) {
+            case .waveform:
+                AudioVisualizer(
+                    audioMeter: audioMonitor.audioMeter,
+                    instantBarLevels: audioMonitor.instantBarLevels,
+                    isAnimationActive: isAnimationActive,
+                    animationSpeed: settingsStore.recordingIndicatorAnimationSpeed,
+                    barCount: FloatingRecordingIndicatorViewUtilities.waveCount(for: size),
+                    maxHeight: FloatingRecordingIndicatorViewUtilities.waveformHeight(for: size),
+                    barWidth: AppDesignSystem.Layout.recordingIndicatorWaveformBarWidth,
+                    barSpacing: AppDesignSystem.Layout.recordingIndicatorWaveformBarSpacing,
+                    minHeight: AppDesignSystem.Layout.recordingIndicatorWaveformMinHeight
+                )
+            case .processingStatus:
+                processingStatusView(size: size)
             }
         }
     }
 
-    private func processingProgressView(size: IndicatorSize) -> some View {
-        Text(processingProgressText)
-            .font(.system(size: size == .classic ? 12 : 11, weight: .semibold))
-            .monospacedDigit()
-            .lineLimit(1)
-            .truncationMode(.tail)
-            .foregroundStyle(AppDesignSystem.Colors.overlayForegroundMuted)
-            .frame(
-                width: FloatingRecordingIndicatorViewUtilities.processingProgressReservedWidth(for: size),
-                alignment: .leading
+    private func processingStatusView(size: IndicatorSize) -> some View {
+        HStack(spacing: 6) {
+            Text(processingProgressText)
+                .font(.system(size: size == .classic ? 12 : 11, weight: .semibold))
+                .monospacedDigit()
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .foregroundStyle(AppDesignSystem.Colors.overlayForegroundMuted)
+                .layoutPriority(1)
+            processingActivityDots
+        }
+        .frame(
+            width: FloatingRecordingIndicatorViewUtilities.processingProgressReservedWidth(for: size),
+            alignment: .leading
+        )
+        .accessibilityLabel(
+            "recording_indicator.processing.progress".localized(
+                with: processingStageTitle,
+                processingProgressPercentage
             )
-            .accessibilityLabel(
-                "recording_indicator.processing.progress".localized(
-                    with: processingStageTitle,
-                    processingProgressPercentage
-                )
-            )
+        )
     }
 
-    private var showsMeetingProcessingProgress: Bool {
-        FloatingRecordingIndicatorViewUtilities.shouldShowMeetingProcessingProgress(renderState: renderState)
+    private var processingActivityDots: some View {
+        Group {
+            if isAnimationActive, !reduceMotion {
+                TimelineView(.periodic(from: .now, by: 0.35)) { context in
+                    let step = Int(context.date.timeIntervalSinceReferenceDate / 0.35)
+                    processingDots(activeIndex: step % 3)
+                }
+            } else {
+                processingDots(activeIndex: 0)
+            }
+        }
+    }
+
+    private func processingDots(activeIndex: Int) -> some View {
+        HStack(spacing: 3) {
+            ForEach(0..<3, id: \.self) { index in
+                Circle()
+                    .fill(AppDesignSystem.Colors.overlayForeground)
+                    .frame(width: 3, height: 3)
+                    .opacity(index == activeIndex ? 0.95 : 0.35)
+            }
+        }
     }
 
     private var processingProgressText: String {
