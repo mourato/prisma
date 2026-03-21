@@ -40,7 +40,8 @@ final class MeetingNotesPersistenceTests: XCTestCase {
         try FileManager.default.createDirectory(at: markdownRootDirectoryURL, withIntermediateDirectories: true)
         markdownStore = MeetingNotesMarkdownDocumentStore(
             userDefaults: userDefaults,
-            rootDirectoryURL: markdownRootDirectoryURL
+            rootDirectoryURL: markdownRootDirectoryURL,
+            writesAsynchronously: false
         )
         recordingManager = RecordingManager(
             micRecorder: mockMic,

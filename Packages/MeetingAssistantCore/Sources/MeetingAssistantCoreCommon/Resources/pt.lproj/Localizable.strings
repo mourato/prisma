@@ -1083,3 +1083,4 @@
 "meeting_notes.rich_text.link_sheet.title" = "Inserir ou editar link";
 "meeting_notes.rich_text.link_sheet.placeholder" = "https://exemplo.com";
 "meeting_notes.rich_text.link_sheet.apply" = "Aplicar";
+"meeting_notes.rich_text.shortcuts.cheatsheet" = "Atalhos Markdown: - + Espaço, 1. + Espaço, [ ] + Espaço, # + Espaço, Enter (continuar/sair de listas), Tab/Shift+Tab (indentar/desindentar), Cmd+B/Cmd+I.";

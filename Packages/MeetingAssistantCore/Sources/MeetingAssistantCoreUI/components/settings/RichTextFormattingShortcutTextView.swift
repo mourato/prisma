@@ -7,6 +7,8 @@ final class RichTextFormattingShortcutTextView: NSTextView {
     }
 
     private static let taskMarkerTextSpacing: CGFloat = 4
+    private static let orderedListKeyCode: UInt16 = 26
+    private static let unorderedListKeyCode: UInt16 = 28
 
     enum FormattingShortcutAction {
         case bold
@@ -81,6 +83,10 @@ final class RichTextFormattingShortcutTextView: NSTextView {
             return false
         }
 
+        if handleListShortcutByStableKeyCode(event: event, normalizedFlags: normalizedFlags) {
+            return true
+        }
+
         switch key {
         case "b":
             onFormattingShortcut?(.bold)
@@ -92,6 +98,26 @@ final class RichTextFormattingShortcutTextView: NSTextView {
             onFormattingShortcut?(.orderedList)
             return true
         case "8" where normalizedFlags.contains(.shift):
+            onFormattingShortcut?(.unorderedList)
+            return true
+        default:
+            return false
+        }
+    }
+
+    private func handleListShortcutByStableKeyCode(
+        event: NSEvent,
+        normalizedFlags: NSEvent.ModifierFlags
+    ) -> Bool {
+        guard normalizedFlags == [.command] || normalizedFlags == [.command, .shift] else {
+            return false
+        }
+
+        switch event.keyCode {
+        case Self.orderedListKeyCode:
+            onFormattingShortcut?(.orderedList)
+            return true
+        case Self.unorderedListKeyCode:
             onFormattingShortcut?(.unorderedList)
             return true
         default:

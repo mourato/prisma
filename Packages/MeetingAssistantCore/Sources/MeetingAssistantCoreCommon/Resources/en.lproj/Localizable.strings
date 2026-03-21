@@ -1094,3 +1094,4 @@
 "meeting_notes.rich_text.link_sheet.title" = "Insert or edit link";
 "meeting_notes.rich_text.link_sheet.placeholder" = "https://example.com";
 "meeting_notes.rich_text.link_sheet.apply" = "Apply";
+"meeting_notes.rich_text.shortcuts.cheatsheet" = "Markdown shortcuts: - + Space, 1. + Space, [ ] + Space, # + Space, Enter (continue/exit lists), Tab/Shift+Tab (indent/outdent), Cmd+B/Cmd+I.";

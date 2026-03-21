@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import MeetingAssistantCoreCommon
 import MeetingAssistantCoreDomain
@@ -132,14 +133,15 @@ extension RecordingManager {
             return
         }
 
-        let eventNotes = loadCalendarEventNotesContent(for: normalizedIdentifier).plainText
-        let mergedNotes = mergeLinkedNotes(eventNotes: eventNotes, meetingNotes: currentMeetingNotesText)
+        let eventContent = loadCalendarEventNotesContent(for: normalizedIdentifier)
+        let meetingContent = MeetingNotesContent(
+            plainText: currentMeetingNotesText,
+            richTextRTFData: currentMeetingNotesRichTextData
+        )
+        let mergedContent = mergeLinkedNotes(eventContent: eventContent, meetingContent: meetingContent)
 
-        currentMeetingNotesText = mergedNotes
-        currentMeetingNotesRichTextData = nil
-
-        // Merge currently operates on plain text, so rich formatting is intentionally reset.
-        let mergedContent = MeetingNotesContent(plainText: mergedNotes, richTextRTFData: nil)
+        currentMeetingNotesText = mergedContent.plainText
+        currentMeetingNotesRichTextData = mergedContent.richTextRTFData
         saveMeetingNotesContent(mergedContent, for: meeting.id)
         saveCalendarEventNotesContent(mergedContent, for: normalizedIdentifier)
     }
@@ -242,25 +244,79 @@ extension RecordingManager {
         !normalizedNotesValue(content.plainText).isEmpty || (content.richTextRTFData?.isEmpty == false)
     }
 
-    private func mergeLinkedNotes(eventNotes: String, meetingNotes: String) -> String {
-        let normalizedEventNotes = normalizedNotesValue(eventNotes)
-        let normalizedMeetingNotes = normalizedNotesValue(meetingNotes)
+    private func mergeLinkedNotes(
+        eventContent: MeetingNotesContent,
+        meetingContent: MeetingNotesContent
+    ) -> MeetingNotesContent {
+        let normalizedEventNotes = normalizedNotesValue(eventContent.plainText)
+        let normalizedMeetingNotes = normalizedNotesValue(meetingContent.plainText)
 
         if normalizedEventNotes.isEmpty {
-            return meetingNotes
+            return meetingContent
         }
 
         if normalizedMeetingNotes.isEmpty {
-            return eventNotes
+            return eventContent
         }
 
         if normalizedEventNotes == normalizedMeetingNotes {
-            return eventNotes
+            return MeetingNotesContent(
+                plainText: eventContent.plainText,
+                richTextRTFData: eventContent.richTextRTFData ?? meetingContent.richTextRTFData
+            )
         }
 
-        return normalizedEventNotes
+        let mergedPlainText = normalizedEventNotes
             + MeetingNotesConstants.mergeSeparator
             + normalizedMeetingNotes
+        let mergedRichText = mergeLinkedRichTextData(
+            eventContent: eventContent,
+            meetingContent: meetingContent,
+            normalizedEventNotes: normalizedEventNotes,
+            normalizedMeetingNotes: normalizedMeetingNotes
+        )
+
+        return MeetingNotesContent(plainText: mergedPlainText, richTextRTFData: mergedRichText)
+    }
+
+    private func mergeLinkedRichTextData(
+        eventContent: MeetingNotesContent,
+        meetingContent: MeetingNotesContent,
+        normalizedEventNotes: String,
+        normalizedMeetingNotes: String
+    ) -> Data? {
+        let eventAttributed = attributedString(from: eventContent.richTextRTFData)
+            ?? NSAttributedString(string: normalizedEventNotes)
+        let meetingAttributed = attributedString(from: meetingContent.richTextRTFData)
+            ?? NSAttributedString(string: normalizedMeetingNotes)
+
+        let merged = NSMutableAttributedString(attributedString: eventAttributed)
+        merged.append(NSAttributedString(string: MeetingNotesConstants.mergeSeparator))
+        merged.append(meetingAttributed)
+
+        if let serialized = rtfData(from: merged) {
+            return serialized
+        }
+
+        return eventContent.richTextRTFData ?? meetingContent.richTextRTFData
+    }
+
+    private func attributedString(from rtfData: Data?) -> NSAttributedString? {
+        guard let rtfData, !rtfData.isEmpty else { return nil }
+        return try? NSAttributedString(
+            data: rtfData,
+            options: [.documentType: NSAttributedString.DocumentType.rtf],
+            documentAttributes: nil
+        )
+    }
+
+    private func rtfData(from attributedText: NSAttributedString) -> Data? {
+        guard attributedText.length > 0 else { return nil }
+        let fullRange = NSRange(location: 0, length: attributedText.length)
+        return try? attributedText.data(
+            from: fullRange,
+            documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf]
+        )
     }
 
     func runMeetingNotesMarkdownBackfillIfNeeded() async {

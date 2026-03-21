@@ -24,6 +24,7 @@ struct MeetingNotesRichTextEditor: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             toolbar
+            shortcutsHint
             MeetingNotesRichTextRepresentable(
                 content: $content,
                 controller: editorController,
@@ -34,6 +35,14 @@ struct MeetingNotesRichTextEditor: View {
         .sheet(isPresented: $isShowingLinkEditor) {
             linkEditorSheet
         }
+    }
+
+    private var shortcutsHint: some View {
+        Text("meeting_notes.rich_text.shortcuts.cheatsheet".localized)
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .textSelection(.enabled)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     private var toolbar: some View {

@@ -42,7 +42,8 @@ final class RecordingManagerTests: XCTestCase {
         try FileManager.default.createDirectory(at: markdownRootDirectoryURL, withIntermediateDirectories: true)
         let markdownStore = MeetingNotesMarkdownDocumentStore(
             userDefaults: userDefaults,
-            rootDirectoryURL: markdownRootDirectoryURL
+            rootDirectoryURL: markdownRootDirectoryURL,
+            writesAsynchronously: false
         )
 
         mockMic = mic
@@ -424,8 +425,21 @@ final class RecordingManagerTests: XCTestCase {
         let expected = "Event note\n\n---\n\nMeeting note"
         XCTAssertEqual(manager.currentMeetingNotesText, expected)
         XCTAssertEqual(manager.loadCalendarEventNotesText(for: eventIdentifier), expected)
-        XCTAssertNil(manager.currentMeetingNotesRichTextData)
-        XCTAssertNil(manager.loadCalendarEventNotesContent(for: eventIdentifier).richTextRTFData)
+        XCTAssertNotNil(manager.currentMeetingNotesRichTextData)
+        let mergedEventContent = manager.loadCalendarEventNotesContent(for: eventIdentifier)
+        XCTAssertNotNil(mergedEventContent.richTextRTFData)
+        if let mergedRTF = mergedEventContent.richTextRTFData,
+           let mergedAttributedText = try? NSAttributedString(
+               data: mergedRTF,
+               options: [.documentType: NSAttributedString.DocumentType.rtf],
+               documentAttributes: nil
+           )
+        {
+            XCTAssertTrue(mergedAttributedText.string.contains("Event note"))
+            XCTAssertTrue(mergedAttributedText.string.contains("Meeting note"))
+        } else {
+            XCTFail("Expected merged rich-text notes to be decodable from RTF data")
+        }
 
         manager.currentMeetingNotesText = ""
         manager.restoreMeetingNotesIfNeeded(for: meetingID)

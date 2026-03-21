@@ -33,7 +33,8 @@ final class MeetingNotesMarkdownDocumentStoreTests: XCTestCase {
         try FileManager.default.createDirectory(at: rootDirectoryURL, withIntermediateDirectories: true)
         store = MeetingNotesMarkdownDocumentStore(
             userDefaults: userDefaults,
-            rootDirectoryURL: rootDirectoryURL
+            rootDirectoryURL: rootDirectoryURL,
+            writesAsynchronously: false
         )
         richTextStore = MeetingNotesRichTextStore(userDefaults: userDefaults)
         mockStorage = MockStorageService()
@@ -200,6 +201,24 @@ final class MeetingNotesMarkdownDocumentStoreTests: XCTestCase {
 
         store.deleteTranscriptionNotesContent(for: transcriptionID)
         XCTAssertFalse(FileManager.default.fileExists(atPath: fileURL.path))
+    }
+
+    func testAsynchronousWrites_LastWriteWinsDeterministically() async throws {
+        let asyncStore = MeetingNotesMarkdownDocumentStore(
+            userDefaults: userDefaults,
+            rootDirectoryURL: rootDirectoryURL,
+            writesAsynchronously: true,
+            writeCoalescingNanoseconds: 50_000_000
+        )
+        let meetingID = UUID()
+
+        asyncStore.saveMeetingNotesContent(MeetingNotesContent(plainText: "first"), for: meetingID)
+        asyncStore.saveMeetingNotesContent(MeetingNotesContent(plainText: "second"), for: meetingID)
+        await asyncStore.flushPendingWritesForTests()
+
+        let content = try XCTUnwrap(try readFile(at: meetingURL(for: meetingID)))
+        XCTAssertTrue(content.contains("second"))
+        XCTAssertFalse(content.contains("first"))
     }
 
     private func transcriptionURL(for transcriptionID: UUID) -> URL {
