@@ -299,6 +299,32 @@ final class MeetingNotesRichTextControllerTests: XCTestCase {
         XCTAssertEqual(textView.string, "")
     }
 
+    func testHandleTextMutation_ReturnAfterEmptyHeadingTriggerResetsTypingToBody() {
+        let controller = MeetingNotesRichTextController()
+        let textView = NSTextView()
+        textView.string = "#"
+        textView.setSelectedRange(NSRange(location: 1, length: 0))
+        controller.textView = textView
+
+        let headingHandled = controller.handleTextMutation(
+            affectedRange: NSRange(location: 1, length: 0),
+            replacementString: " "
+        )
+
+        XCTAssertTrue(headingHandled)
+        XCTAssertEqual(textView.string, "")
+        XCTAssertEqual(textView.typingAttributes[.meetingNotesHeadingLevel] as? Int, 1)
+
+        let returnHandled = controller.handleTextMutation(
+            affectedRange: textView.selectedRange(),
+            replacementString: "\n"
+        )
+
+        XCTAssertTrue(returnHandled)
+        XCTAssertEqual(textView.string, "\n")
+        XCTAssertNil(textView.typingAttributes[.meetingNotesHeadingLevel] as? Int)
+    }
+
     func testNormalizeMarkdownStructure_RenumbersNestedOrderedLines() {
         let controller = MeetingNotesRichTextController()
         let textView = NSTextView()

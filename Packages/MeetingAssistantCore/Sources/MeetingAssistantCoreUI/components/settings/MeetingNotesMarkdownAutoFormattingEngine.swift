@@ -138,7 +138,12 @@ enum MeetingNotesMarkdownAutoFormattingEngine {
     }
 
     static func returnAction(in text: NSString, insertionLocation: Int, headingLevel: Int?) -> MeetingNotesMarkdownReturnAction {
-        guard text.length > 0 else { return .none }
+        guard text.length > 0 else {
+            if headingLevel != nil {
+                return .resetHeading
+            }
+            return .none
+        }
 
         let clamped = min(max(insertionLocation, 0), text.length)
         let lineRange = text.lineRange(for: NSRange(location: clamped, length: 0))

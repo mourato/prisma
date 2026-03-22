@@ -431,14 +431,10 @@ private struct MeetingNotesRichTextRepresentable: NSViewRepresentable {
                 return
             }
 
-            if let textStorage = observedTextStorage,
-               textStorage.editedMask.contains(.editedAttributes)
-            {
-                isApplyingProgrammaticUpdate = true
-                controller.applyMarkdownPresentation()
-                isApplyingProgrammaticUpdate = false
-            }
-
+            // Avoid recursive attribute-edit loops: markdown presentation already runs
+            // on text mutations and explicit markdown actions. Reapplying it from the
+            // text-storage observer can repeatedly generate edited-attributes cycles,
+            // which destabilizes NSLayoutManager during live layout/resizing.
             emitContent(from: textView)
             refreshControllerState()
         }
@@ -695,6 +691,7 @@ final class MeetingNotesRichTextController: ObservableObject {
         else {
             return
         }
+        guard !textView.inLiveResize else { return }
 
         let fullRange = NSRange(location: 0, length: storage.length)
         if fullRange.length == 0 { return }
@@ -811,10 +808,12 @@ final class MeetingNotesRichTextController: ObservableObject {
 
     private func handleReturn(affectedRange: NSRange, in textView: NSTextView) -> Bool {
         let fullText = textView.string as NSString
-        let headingLevel = MeetingNotesMarkdownAutoFormattingEngine.headingLevel(
+        let storedHeadingLevel = MeetingNotesMarkdownAutoFormattingEngine.headingLevel(
             at: max(0, affectedRange.location - 1),
             in: textView
         )
+        let typingHeadingLevel = textView.typingAttributes[.meetingNotesHeadingLevel] as? Int
+        let headingLevel = storedHeadingLevel ?? typingHeadingLevel
         let action = MeetingNotesMarkdownAutoFormattingEngine.returnAction(
             in: fullText,
             insertionLocation: affectedRange.location,
@@ -841,8 +840,8 @@ final class MeetingNotesRichTextController: ObservableObject {
             return true
         case .resetHeading:
             textView.textStorage?.beginEditing()
-            textView.insertText("\n", replacementRange: affectedRange)
             applyBodyTypingAttributes(to: textView)
+            textView.insertText("\n", replacementRange: affectedRange)
             textView.textStorage?.endEditing()
             applyMarkdownPresentation()
             refreshState()

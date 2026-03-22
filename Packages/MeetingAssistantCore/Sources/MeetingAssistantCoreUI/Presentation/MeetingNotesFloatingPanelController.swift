@@ -4,6 +4,8 @@ import SwiftUI
 
 @MainActor
 public final class MeetingNotesFloatingPanelController {
+    static let maximumScreenHeightRatio: CGFloat = 0.9
+
     private var panel: NSPanel?
     private var hostingView: NSHostingView<MeetingNotesFloatingPanelView>?
     private var panelDelegate: PanelDelegate?
@@ -40,6 +42,7 @@ public final class MeetingNotesFloatingPanelController {
             hostingView = host
         }
 
+        enforcePanelHeightLimit(panel)
         panel.level = .floating
         panel.orderFrontRegardless()
         NSApp.activate(ignoringOtherApps: false)
@@ -51,6 +54,8 @@ public final class MeetingNotesFloatingPanelController {
 
     private func ensurePanel(onClose: @escaping () -> Void) -> NSPanel {
         if let panel {
+            panelDelegate?.onClose = onClose
+            enforcePanelHeightLimit(panel)
             return panel
         }
 
@@ -65,25 +70,93 @@ public final class MeetingNotesFloatingPanelController {
         panel.collectionBehavior = [.fullScreenAuxiliary, .canJoinAllSpaces]
         panel.title = "recording_indicator.meeting_notes.title".localized
         panel.minSize = NSSize(width: 320, height: 220)
-        let delegate = PanelDelegate(onClose: onClose)
+        let delegate = PanelDelegate(
+            onClose: onClose,
+            onGeometryChange: { [weak self, weak panel] in
+                guard let self, let panel else { return }
+                self.enforcePanelHeightLimit(panel)
+            }
+        )
         panel.delegate = delegate
         panelDelegate = delegate
         panel.center()
 
         self.panel = panel
+        enforcePanelHeightLimit(panel)
         return panel
+    }
+
+    private func enforcePanelHeightLimit(_ panel: NSPanel) {
+        guard let visibleFrame = targetVisibleFrame(for: panel) else { return }
+        let maxHeight = max(
+            panel.minSize.height,
+            floor(visibleFrame.height * Self.maximumScreenHeightRatio)
+        )
+
+        let currentMaxSize = panel.maxSize
+        panel.maxSize = NSSize(width: currentMaxSize.width, height: maxHeight)
+
+        let clampedFrame = Self.clampedPanelFrame(
+            panel.frame,
+            within: visibleFrame,
+            maxHeight: maxHeight
+        )
+        guard !panel.frame.equalTo(clampedFrame) else {
+            return
+        }
+
+        panel.setFrame(clampedFrame, display: false)
+    }
+
+    private func targetVisibleFrame(for panel: NSPanel) -> NSRect? {
+        if let screenFrame = panel.screen?.visibleFrame {
+            return screenFrame
+        }
+        if let mainScreenFrame = NSScreen.main?.visibleFrame {
+            return mainScreenFrame
+        }
+        return NSScreen.screens.first?.visibleFrame
+    }
+
+    static func clampedPanelFrame(
+        _ frame: NSRect,
+        within visibleFrame: NSRect,
+        maxHeight: CGFloat
+    ) -> NSRect {
+        let clampedHeight = min(frame.height, maxHeight)
+        let maxOriginY = visibleFrame.maxY - clampedHeight
+        let clampedOriginY = min(max(frame.origin.y, visibleFrame.minY), maxOriginY)
+        return NSRect(
+            x: frame.origin.x,
+            y: clampedOriginY,
+            width: frame.width,
+            height: clampedHeight
+        )
     }
 }
 
 private final class PanelDelegate: NSObject, NSWindowDelegate {
-    private let onClose: () -> Void
+    var onClose: () -> Void
+    private let onGeometryChange: () -> Void
 
-    init(onClose: @escaping () -> Void) {
+    init(
+        onClose: @escaping () -> Void,
+        onGeometryChange: @escaping () -> Void
+    ) {
         self.onClose = onClose
+        self.onGeometryChange = onGeometryChange
     }
 
     func windowWillClose(_ notification: Notification) {
         onClose()
+    }
+
+    func windowDidChangeScreen(_ notification: Notification) {
+        onGeometryChange()
+    }
+
+    func windowDidEndLiveResize(_ notification: Notification) {
+        onGeometryChange()
     }
 }
 
