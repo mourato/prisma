@@ -33,9 +33,9 @@ Guidelines for choosing the right storage mechanism and ensuring data integrity 
 
 Prioritize these files when storage behavior changes:
 
-- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreData/Data/CoreData/CoreDataStack.swift`
-- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreData/Services/StorageService.swift`
-- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreInfrastructure/Services/KeychainManager.swift`
+- `Packages/MeetingAssistantCore/Sources/Data/Data/CoreData/CoreDataStack.swift`
+- `Packages/MeetingAssistantCore/Sources/Data/Services/StorageService/StorageService.swift`
+- `Packages/MeetingAssistantCore/Sources/Infrastructure/Services/KeychainManager.swift`
 
 ### Migration Invariants (Must Hold)
 

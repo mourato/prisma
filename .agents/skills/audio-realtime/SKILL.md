@@ -365,8 +365,8 @@ destBuffer.baseAddress?.update(from: sourceBuffer.baseAddress!, count: copiesToW
 
 ## References
 
-- [AudioBufferQueue.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Services/AudioBufferQueue.swift)
-- [SystemAudioRecorder.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Services/SystemAudioRecorder.swift)
+- [AudioBufferQueue.swift](Packages/MeetingAssistantCore/Sources/Audio/Services/AudioBufferQueue.swift)
+- [SystemAudioRecorder.swift](Packages/MeetingAssistantCore/Sources/Audio/Services/SystemAudioRecorder.swift)
 - `.agents/skills/architecture/SKILL.md`
 
 
@@ -376,9 +376,9 @@ destBuffer.baseAddress?.update(from: sourceBuffer.baseAddress!, count: copiesToW
 
 Prioritize these files first when triaging regressions:
 
-- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreAudio/Services/AudioRecorder.swift`
-- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreAudio/Services/AudioDeviceManager.swift`
-- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreAudio/Services/AudioRecorder+Diagnostics.swift`
+- `Packages/MeetingAssistantCore/Sources/Audio/Services/AudioRecorder/AudioRecorder.swift`
+- `Packages/MeetingAssistantCore/Sources/Audio/Services/AudioDeviceManager.swift`
+- `Packages/MeetingAssistantCore/Sources/Audio/Services/AudioRecorder/Diagnostics.swift`
 
 Common recurring failures:
 
@@ -401,7 +401,7 @@ Use this order when addressing capture reliability bugs:
 ### New Evidence
 
 - `13acce3` and `9415604` re-opened concurrency/sendability risk in the audio path.
-- Recent fixes concentrated in `AudioRecorder.swift`, `AudioMerger.swift`, and `AudioRecorder+Diagnostics.swift`.
+- Recent fixes concentrated in `AudioRecorder/AudioRecorder.swift`, `AudioMerger.swift`, and `AudioRecorder/Diagnostics.swift`.
 
 ### Skill Deepening Focus
 

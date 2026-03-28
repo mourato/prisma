@@ -24,11 +24,16 @@ The repository uses a CLI-first workflow for reproducible local and CI execution
 
 - **Platform**: macOS 15+ (Swift 5.9+)
 - **UI**: SwiftUI-first with AppKit integrations (`NSStatusItem`, non-activating overlays)
-- **Architecture**: Modular Swift Package (`MeetingAssistantCore` aggregates 7 specialized packages)
+- **Architecture**: Modular Swift Package (`MeetingAssistantCore` aggregates specialized internal targets)
 - **Canonical agent directory**: `.agents/` (skills, rules, docs, guides)
 
 **Module Structure:**
 
+- Logical modules stay on `MeetingAssistantCore*` names for SwiftPM targets/imports.
+- Physical source directories under `Packages/MeetingAssistantCore/Sources/` use short PascalCase names: `Common`, `Domain`, `Infrastructure`, `Data`, `Audio`, `AI`, `UI`, `Core`, `Mocking`, `MockingMacros`.
+- Split type files use folder colocation instead of `Type+Concern.swift`: `Bucket/TypeName/TypeName.swift` plus sibling files for focused concerns.
+- Companion filenames must stay unique within a target. Prefer owner-prefixed PascalCase names such as `RecordingManagerRetry.swift`, `MeetingAppUI.swift`, or `FloatingRecordingIndicatorViewPreview.swift` when a short generic basename would collide.
+- Extension-only files whose primary type lives elsewhere should still colocate by owning type name, for example `Models/MeetingApp/MeetingAppUI.swift`.
 - `MeetingAssistantCoreCommon` — shared utilities, resources, logging
 - `MeetingAssistantCoreDomain` — entities, protocols, use cases
 - `MeetingAssistantCoreInfrastructure` — adapters (Keychain, networking, providers)
@@ -68,6 +73,9 @@ Additional maintainability limits:
 
 - Prefer files at or below 600 lines.
 - If exceeding 600 lines is unavoidable, document rationale in PR notes and open a follow-up issue to split the file.
+- Keep split Swift files organized by owning type directory instead of `+`-separated basenames.
+- Source layout should favor colocation: when a type spans multiple files, use `Bucket/TypeName/TypeName.swift` plus unique sibling files such as `RecordingManagerRetry.swift`, `AppSettingsStoreDefaults.swift`, or `MeetingConversationViewPreview.swift`.
+- Do not introduce `Type+Concern.swift` filenames. Split files by colocated directories instead.
 
 ## Policy Precedence
 
@@ -264,7 +272,7 @@ Rules:
 
 - `App/` — main app target
 - `Packages/MeetingAssistantCore/` — Swift package root
-- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCore{Common,Domain,Infrastructure,Data,Audio,AI,UI}/`
+- `Packages/MeetingAssistantCore/Sources/{Common,Domain,Infrastructure,Data,Audio,AI,UI,Core,Mocking,MockingMacros}/`
 - `.agents/` — agent guidance (rules, skills, docs, this file)
 
 ---

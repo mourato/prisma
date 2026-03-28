@@ -27,6 +27,8 @@ Guidelines for maintaining consistent project documentation and visibility into 
 - **Redundancy Audit**: Periodically audit repeated UI/logic guidance and consolidate duplicate instructions into reusable skill sections.
 - **B2 Module Awareness**: Keep docs aligned with the current module split (`Common`, `Domain`, `Infrastructure`, `Data`, `Audio`, `AI`, `UI`, compatibility `Core`).
 - **Path Validity**: After file moves between modules, update all documentation links and examples to the new canonical paths.
+- **Source Layout Standard**: Keep filesystem paths and public module names distinct in docs. Public imports stay `MeetingAssistantCore*`; physical source folders use short PascalCase names under `Packages/MeetingAssistantCore/Sources/`.
+- **Split File Naming**: Document and enforce colocated type directories such as `Services/RecordingManager/RecordingManager.swift` plus unique sibling basenames like `RecordingManagerRetry.swift`, `RecordingManagerPermissions.swift`, and similar companions. Do not reintroduce `Type+Concern.swift`.
 - **Command Surface Sync**: When Makefile/script targets are renamed or removed, update `AGENTS.md`, README, and affected skills/docs in the same PR to avoid stale guidance.
 
 ## 3. Information Routing (No Root `docs/`)

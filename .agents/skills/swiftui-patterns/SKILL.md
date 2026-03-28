@@ -284,6 +284,6 @@ HStack(spacing: 0) {
 
 ## References
 
-- [SettingsView.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Views/Settings/SettingsView.swift)
-- [TranscriptionListView.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Views/TranscriptionListView.swift)
+- [SettingsPage.swift](Packages/MeetingAssistantCore/Sources/UI/pages/settings/SettingsPage.swift)
+- [TranscriptionStatusPage.swift](Packages/MeetingAssistantCore/Sources/UI/pages/transcription/TranscriptionStatusPage.swift)
 - `.agents/skills/preview-coverage/SKILL.md`

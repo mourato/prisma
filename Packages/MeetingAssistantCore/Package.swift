@@ -26,6 +26,7 @@ let package = Package(
     targets: [
         .target(
             name: "MeetingAssistantCoreCommon",
+            path: "Sources/Common",
             resources: [
                 .process("Resources"),
             ]
@@ -35,7 +36,8 @@ let package = Package(
             dependencies: [
                 "MeetingAssistantCoreCommon",
                 "MeetingAssistantCoreMocking",
-            ]
+            ],
+            path: "Sources/Domain"
         ),
         .target(
             name: "MeetingAssistantCoreData",
@@ -43,7 +45,8 @@ let package = Package(
                 "MeetingAssistantCoreCommon",
                 "MeetingAssistantCoreDomain",
                 "MeetingAssistantCoreInfrastructure",
-            ]
+            ],
+            path: "Sources/Data"
         ),
         .target(
             name: "MeetingAssistantCoreInfrastructure",
@@ -52,7 +55,8 @@ let package = Package(
                 "MeetingAssistantCoreDomain",
                 .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
                 .product(name: "Sparkle", package: "Sparkle"),
-            ]
+            ],
+            path: "Sources/Infrastructure"
         ),
         .target(
             name: "MeetingAssistantCoreAudio",
@@ -62,7 +66,8 @@ let package = Package(
                 "MeetingAssistantCoreDomain",
                 "MeetingAssistantCoreInfrastructure",
                 .product(name: "Atomics", package: "swift-atomics"),
-            ]
+            ],
+            path: "Sources/Audio"
         ),
         .target(
             name: "MeetingAssistantCoreAI",
@@ -72,7 +77,8 @@ let package = Package(
                 "MeetingAssistantCoreDomain",
                 "MeetingAssistantCoreInfrastructure",
                 .product(name: "FluidAudio", package: "FluidAudio"),
-            ]
+            ],
+            path: "Sources/AI"
         ),
         .target(
             name: "MeetingAssistantCoreUI",
@@ -85,6 +91,7 @@ let package = Package(
                 "MeetingAssistantCoreInfrastructure",
                 .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
             ],
+            path: "Sources/UI",
             resources: [
                 .process("Resources"),
             ]
@@ -99,13 +106,15 @@ let package = Package(
                 "MeetingAssistantCoreDomain",
                 "MeetingAssistantCoreInfrastructure",
                 "MeetingAssistantCoreUI",
-            ]
+            ],
+            path: "Sources/Core"
         ),
         .target(
             name: "MeetingAssistantCoreMocking",
             dependencies: [
                 "MeetingAssistantCoreMockingMacros",
-            ]
+            ],
+            path: "Sources/Mocking"
         ),
         .macro(
             name: "MeetingAssistantCoreMockingMacros",
@@ -114,7 +123,8 @@ let package = Package(
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
                 .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
                 .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
-            ]
+            ],
+            path: "Sources/MockingMacros"
         ),
         .testTarget(
             name: "MeetingAssistantCoreTests",

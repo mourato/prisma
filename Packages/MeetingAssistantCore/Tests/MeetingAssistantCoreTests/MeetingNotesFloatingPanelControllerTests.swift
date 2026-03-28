@@ -5,7 +5,7 @@ import XCTest
 @MainActor
 final class MeetingNotesFloatingPanelControllerTests: XCTestCase {
     func testClampedPanelFrame_LimitsHeightToNinetyPercentOfVisibleFrame() {
-        let visibleFrame = NSRect(x: 0, y: 50, width: 1440, height: 1000)
+        let visibleFrame = NSRect(x: 0, y: 50, width: 1_440, height: 1_000)
         let maxHeight = floor(visibleFrame.height * MeetingNotesFloatingPanelController.maximumScreenHeightRatio)
         let frame = NSRect(x: 120, y: 100, width: 420, height: 980)
 
@@ -20,7 +20,7 @@ final class MeetingNotesFloatingPanelControllerTests: XCTestCase {
     }
 
     func testClampedPanelFrame_RepositionsWhenClampedHeightWouldOverflowTopEdge() {
-        let visibleFrame = NSRect(x: 0, y: 50, width: 1440, height: 1000)
+        let visibleFrame = NSRect(x: 0, y: 50, width: 1_440, height: 1_000)
         let maxHeight = floor(visibleFrame.height * MeetingNotesFloatingPanelController.maximumScreenHeightRatio)
         let frame = NSRect(x: 120, y: 300, width: 420, height: 980)
 

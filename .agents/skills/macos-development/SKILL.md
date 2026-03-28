@@ -128,9 +128,9 @@ When changes touch app lifecycle, enforce this contract:
 
 ### New Evidence
 
-- `094d280` and `918243b` both modified `App/AppDelegate+Lifecycle.swift` for launch recovery and prewarm sequencing.
+- `094d280` and `918243b` both modified `App/AppDelegate/Lifecycle.swift` for launch recovery and prewarm sequencing.
 - `f7243e0` and `166643c` repeatedly touched AppDelegate menu bar/recording UI surfaces to stabilize status and floating-indicator behavior.
-- File-frequency since last run shows `App/AppDelegate+Lifecycle.swift` as the top hotspot (4 commits).
+- File-frequency since last run shows `App/AppDelegate/Lifecycle.swift` as the top hotspot (4 commits).
 
 ### Skill Deepening Focus
 

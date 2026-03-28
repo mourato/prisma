@@ -167,6 +167,8 @@ The package uses a modular split and an aggregation target:
 - `MeetingAssistantCoreUI` (view models/coordinators/views)
 - `MeetingAssistantCore` (compatibility export layer)
 
+Physical source directories under `Packages/MeetingAssistantCore/Sources/` use the short names `Common`, `Domain`, `Infrastructure`, `Data`, `Audio`, `AI`, `UI`, `Core`, `Mocking`, and `MockingMacros`.
+
 Guideline: import only required modules in each file, and expose cross-module APIs intentionally through access control and domain protocols.
 
 ### Language standard

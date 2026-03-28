@@ -19,7 +19,7 @@ Activate this skill when:
 
 ## Required Rules
 
-1. Every `struct ...: View` must include at least one `#Preview`.
+1. Every `struct ...: View` must include at least one `#Preview`, either inline or in a colocated `Preview.swift` file within the same owning-type directory.
 2. Prefer multiple previews for meaningful states (for example: idle/loading/success/error, collapsed/expanded).
 3. Avoid side effects in previews (network, downloads, long-running tasks).
 4. If a view triggers startup work, gate it for previews using `PreviewRuntime.isRunning`.
@@ -30,9 +30,9 @@ Activate this skill when:
 ## Project Utilities
 
 - Preview runtime guard:
-  - `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreUI/PreviewSupport/PreviewRuntime.swift`
+  - `Packages/MeetingAssistantCore/Sources/UI/PreviewSupport/PreviewRuntime.swift`
 - Stateful preview helper:
-  - `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreUI/PreviewSupport/PreviewStateContainer.swift`
+  - `Packages/MeetingAssistantCore/Sources/UI/PreviewSupport/PreviewStateContainer.swift`
 
 ## Verification
 
@@ -42,7 +42,7 @@ Run:
 make preview-check
 ```
 
-The check fails if any SwiftUI view under `MeetingAssistantCoreUI` is missing preview coverage.
+The check fails if any SwiftUI view under `Packages/MeetingAssistantCore/Sources/UI` is missing preview coverage.
 
 ## References
 

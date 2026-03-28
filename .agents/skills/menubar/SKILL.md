@@ -257,8 +257,8 @@ init() {
 
 ## References
 
-- [MenuBarView.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Views/MenuBarView.swift)
-- [FloatingRecordingIndicatorView.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Views/Components/FloatingRecordingIndicatorView.swift)
+- [MenuBar.swift](App/AppDelegate/MenuBar.swift)
+- [FloatingRecordingIndicatorView.swift](Packages/MeetingAssistantCore/Sources/UI/components/recording/FloatingRecordingIndicatorView/FloatingRecordingIndicatorView.swift)
 - [Apple Status Bar Guide](https://developer.apple.com/documentation/appkit/nsstatusitem)
 
 ## 2026-03-06 Progression Drill

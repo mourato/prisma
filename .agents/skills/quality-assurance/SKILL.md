@@ -205,7 +205,7 @@ For recurring bug classes in this repository, require targeted checks in additio
 
 - `0302327` and `6cbde40` continued to harden `scripts/ci-release-parity.sh` around appcast signature correctness.
 - `f7243e0`, `918243b`, and `094d280` show repeated lifecycle/status-indicator stabilization fixes in a narrow time window.
-- Since last run, `scripts/ci-release-parity.sh` and `App/AppDelegate+Lifecycle.swift` are the most frequently re-touched critical paths.
+- Since last run, `scripts/ci-release-parity.sh` and `App/AppDelegate/Lifecycle.swift` are the most frequently re-touched critical paths.
 
 ### Skill Deepening Focus
 

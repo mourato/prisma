@@ -192,5 +192,5 @@ mcp--context7--query-docs(
 
 ## References
 
-- [Meeting.swift](Packages/MeetingAssistantCore/Sources/MeetingAssistantCore/Models/Meeting.swift)
+- [Meeting.swift](Packages/MeetingAssistantCore/Sources/Domain/Models/Meeting.swift)
 - [Apple DocC Guide](https://developer.apple.com/documentation/docc)

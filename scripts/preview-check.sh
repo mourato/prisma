@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-TARGET_DIR="${1:-Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreUI}"
+TARGET_DIR="${1:-Packages/MeetingAssistantCore/Sources/UI}"
 
 if ! command -v rg >/dev/null 2>&1; then
   echo "error: 'rg' (ripgrep) is required" >&2
@@ -17,7 +17,10 @@ if [[ -z "$view_files" ]]; then
   exit 0
 fi
 
-missing="$(comm -23 <(printf "%s\n" "$view_files" | sort -u) <(printf "%s\n" "$preview_files" | sort -u) || true)"
+view_dirs="$(printf "%s\n" "$view_files" | sed 's#/[^/]*$##' | sort -u)"
+preview_dirs="$(printf "%s\n" "$preview_files" | sed 's#/[^/]*$##' | sort -u)"
+
+missing="$(comm -23 <(printf "%s\n" "$view_dirs" | sort -u) <(printf "%s\n" "$preview_dirs" | sort -u) || true)"
 
 if [[ -n "$missing" ]]; then
   echo "Missing previews in:"

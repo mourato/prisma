@@ -51,6 +51,15 @@ Use this section as the practical "how to write code here" reference. Keep it al
 - Keep nesting shallow and use early exits even though `nesting` is disabled.
 - Avoid implicitly unwrapped optionals unless required by framework integration, then document why.
 
+### 1.5 File and Folder Naming
+
+- Keep Swift filenames in `PascalCase`.
+- When one type spans multiple files, colocate them in a directory named after the owning type.
+- Canonical pattern: `Bucket/TypeName/TypeName.swift` plus sibling files that keep a unique basename per target, such as `RecordingManagerRetry.swift`, `AppSettingsStoreDefaults.swift`, `MeetingAppUI.swift`, or `FloatingRecordingIndicatorViewPreview.swift`.
+- `.swiftlint.yml` disables `file_name` so colocated concern files can keep explicit owner-prefixed basenames when needed.
+- Do not use `Type+Concern.swift` filenames.
+- Public module names may stay verbose (`MeetingAssistantCoreUI`) even when filesystem directories are short (`Sources/UI`).
+
 ## 2. Type Safety & Modeling
 
 - **Avoid Any**: Prefer strong types over `Any` or `NSObject`.

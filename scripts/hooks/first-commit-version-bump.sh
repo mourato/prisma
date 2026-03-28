@@ -64,6 +64,6 @@ next_build="$((current_build + 1))"
 
 "${BUMP_SCRIPT}" --version "${target_version}" --build "${next_build}" >/dev/null
 git add App/Info.plist MeetingAssistantAI/Resources/Info.plist \
-    Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreCommon/AppVersion.swift
+    Packages/MeetingAssistantCore/Sources/Common/AppVersion.swift
 
 echo "📌 Daily version bump applied: ${target_version} (build ${next_build})"

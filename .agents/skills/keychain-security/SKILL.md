@@ -15,7 +15,7 @@ Guidance for secure credential storage in the B2 modular architecture.
 
 ## Module ownership
 
-- Canonical implementation: `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreInfrastructure/Services/KeychainManager.swift`
+- Canonical implementation: `Packages/MeetingAssistantCore/Sources/Infrastructure/Services/KeychainManager.swift`
 - Preferred cross-module access: `KeychainProvider` / `DefaultKeychainProvider`
 
 Do not duplicate keychain logic in UI/AI/Data modules.
@@ -74,5 +74,5 @@ let value = try keychain.retrieve(for: .aiAPIKeyOpenAI)
 
 ## References
 
-- `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreInfrastructure/Services/KeychainManager.swift`
+- `Packages/MeetingAssistantCore/Sources/Infrastructure/Services/KeychainManager.swift`
 - `AGENTS.md` (branch workflow + language policy)

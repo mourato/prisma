@@ -61,7 +61,7 @@ def internal_targets(package_json: dict) -> Set[str]:
     targets: Set[str] = set()
     for t in package_json.get("targets", []):
         name = t.get("name")
-        if isinstance(name, str) and name.startswith("MeetingAssistantCore"):
+        if isinstance(name, str) and name.startswith("MeetingAssistantCore") and not name.endswith("Tests"):
             targets.add(name)
     return targets
 
@@ -96,8 +96,22 @@ def dependency_map(package_json: dict, internal: Set[str]) -> Dict[str, Set[str]
     return mapping
 
 
-def swift_files_for_target(sources_root: Path, target: str) -> List[Path]:
-    target_root = sources_root / target
+def target_path_map(package_json: dict, internal: Set[str], package_dir: Path) -> Dict[str, Path]:
+    mapping: Dict[str, Path] = {}
+    for target in package_json.get("targets", []):
+        name = target.get("name")
+        if not isinstance(name, str) or name not in internal:
+            continue
+
+        configured_path = target.get("path")
+        if isinstance(configured_path, str) and configured_path:
+            mapping[name] = package_dir / configured_path
+        else:
+            mapping[name] = package_dir / "Sources" / name
+    return mapping
+
+
+def swift_files_for_target(target_root: Path) -> List[Path]:
     if not target_root.exists():
         return []
 
@@ -180,7 +194,6 @@ def main() -> int:
     script_path = Path(__file__)
     repo_root = repo_root_from_script(script_path)
     package_dir = repo_root / "Packages" / "MeetingAssistantCore"
-    sources_root = package_dir / "Sources"
 
     if not package_dir.exists():
         sys.stderr.write(f"error: package directory not found: {package_dir}\n")
@@ -189,11 +202,12 @@ def main() -> int:
     package_json = dump_package(package_dir=package_dir)
     internal = internal_targets(package_json)
     deps = dependency_map(package_json, internal=internal)
+    target_paths = target_path_map(package_json, internal=internal, package_dir=package_dir)
 
     violations: List[Violation] = []
     for target, target_deps in deps.items():
         allowed_internal = set(target_deps) | {target}
-        target_files = swift_files_for_target(sources_root=sources_root, target=target)
+        target_files = swift_files_for_target(target_root=target_paths[target])
         violations.extend(
             validate_imports(
                 target=target,

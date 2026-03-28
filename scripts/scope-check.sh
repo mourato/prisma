@@ -194,7 +194,7 @@ should_treat_as_infra_trigger() {
 should_treat_as_high_risk_path() {
     local file_path="$1"
     case "${file_path}" in
-        *MeetingAssistantCoreAudio/*|*MeetingAssistantCoreData/*|*Security/*|*Keychain*|*Concurrency*|*actor*|*Actor*)
+        *Packages/MeetingAssistantCore/Sources/Audio/*|*Packages/MeetingAssistantCore/Sources/Data/*|*Security/*|*Keychain*|*Concurrency*|*actor*|*Actor*)
             return 0
             ;;
         *)
@@ -209,14 +209,28 @@ map_tokens_from_changed_file() {
     local file_name
     local stem
     local root
+    local parent_dir
+    local grandparent_dir
 
     file_name="$(basename "${file_path}")"
     stem="${file_name%.swift}"
     root="${stem%%+*}"
+    parent_dir="$(basename "$(dirname "${file_path}")")"
+    grandparent_dir="$(basename "$(dirname "$(dirname "${file_path}")")")"
 
     append_line_once "${stem}" "${token_file}"
     if [ "${root}" != "${stem}" ]; then
         append_line_once "${root}" "${token_file}"
+    fi
+
+    if [ "${parent_dir}" != "$(basename "${PROJECT_DIR}")" ] && [ "${parent_dir}" != "$(basename "$(pwd)")" ]; then
+        append_line_once "${parent_dir}" "${token_file}"
+    fi
+
+    if [ "${parent_dir}" = "AppDelegate" ] || [ "${parent_dir}" = "AssistantShortcutController" ] || [ "${parent_dir}" = "AppSettingsStore" ] || [ "${parent_dir}" = "RecordingManager" ]; then
+        append_line_once "${parent_dir}" "${token_file}"
+    elif [ "${parent_dir}" = "Models" ] || [ "${parent_dir}" = "Services" ] || [ "${parent_dir}" = "ViewModels" ] || [ "${parent_dir}" = "components" ]; then
+        append_line_once "${grandparent_dir}" "${token_file}"
     fi
 }
 
@@ -343,7 +357,7 @@ main() {
         fi
 
         case "${file_path}" in
-            Packages/MeetingAssistantCore/Sources/MeetingAssistantCore*/*)
+            Packages/MeetingAssistantCore/Sources/*/*)
                 module_name="$(printf '%s\n' "${file_path}" | awk -F/ '{print $4}')"
                 append_line_once "${module_name}" "${modules_file}"
                 ;;

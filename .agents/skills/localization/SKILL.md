@@ -21,7 +21,7 @@ Activate this skill when working with:
 
 ### Resource Loading
 
-**CRITICAL**: This project centralizes localization bundle resolution in `Bundle.safeModule` (see `Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreCommon/Utilities/BundleExtension.swift`).
+**CRITICAL**: This project centralizes localization bundle resolution in `Bundle.safeModule` (see `Packages/MeetingAssistantCore/Sources/Common/Utilities/BundleExtension.swift`).
 
 ```swift
 // ✅ Standard (everywhere)
@@ -111,6 +111,6 @@ Follow this pattern for consistent naming:
 
 ## References
 
-- [BundleExtension.swift](../../../Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreCommon/Utilities/BundleExtension.swift)
-- [Localizable.strings](../../../Packages/MeetingAssistantCore/Sources/MeetingAssistantCoreCommon/Resources/en.lproj/Localizable.strings)
+- [BundleExtension.swift](../../../Packages/MeetingAssistantCore/Sources/Common/Utilities/BundleExtension.swift)
+- [Localizable.strings](../../../Packages/MeetingAssistantCore/Sources/Common/Resources/en.lproj/Localizable.strings)
 - [Apple Accessibility Guide](https://developer.apple.com/documentation/accessibility)
