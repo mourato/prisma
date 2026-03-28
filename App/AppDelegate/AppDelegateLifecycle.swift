@@ -246,6 +246,7 @@ extension AppDelegate {
             recordingManager.isRecordingPublisher.map { _ in () }.eraseToAnyPublisher(),
             recordingManager.isStartingPublisher.map { _ in () }.eraseToAnyPublisher(),
             recordingManager.isTranscribingPublisher.map { _ in () }.eraseToAnyPublisher(),
+            recordingManager.isForegroundTranscribingPublisher.map { _ in () }.eraseToAnyPublisher(),
             assistantVoiceCommandService.$isRecording.map { _ in () }.eraseToAnyPublisher(),
             assistantVoiceCommandService.$isProcessing.map { _ in () }.eraseToAnyPublisher(),
             recordingManager.currentMeetingPublisher.map { _ in () }.eraseToAnyPublisher(),
@@ -265,7 +266,7 @@ extension AppDelegate {
     private func refreshRecordingUIState() {
         let isRecording = recordingManager.isRecording
         let isStarting = recordingManager.isStartingRecording
-        let isTranscribing = recordingManager.isTranscribing
+        let isTranscribing = recordingManager.isForegroundTranscribing
         let isAssistantRecording = assistantVoiceCommandService.isRecording
         let isAssistantProcessing = assistantVoiceCommandService.isProcessing
         let isProcessing = isTranscribing || isAssistantProcessing

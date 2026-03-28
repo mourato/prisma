@@ -10,6 +10,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 PACKAGE_DIR="${PROJECT_DIR}/Packages/MeetingAssistantCore"
 DERIVED_DATA="${PROJECT_DIR}/.xcode-build"
+PATCH_SCRIPT="${PROJECT_DIR}/scripts/apply-fluidaudio-patches.sh"
 
 # shellcheck source=scripts/lib/agent-output.sh
 source "${SCRIPT_DIR}/lib/agent-output.sh"
@@ -92,6 +93,14 @@ if [ "${AGENT_MODE}" -eq 0 ]; then
         echo -e "${YELLOW}Strict mode enabled: no recoverable retry or swift test fallback${NC}"
         echo -e "${YELLOW}Strict mode derived data path: ${DERIVED_DATA}${NC}"
     fi
+fi
+
+if [ -x "${PATCH_SCRIPT}" ]; then
+    (
+        cd "${PACKAGE_DIR}"
+        xcodebuild -resolvePackageDependencies -scheme MeetingAssistantCore -derivedDataPath "${DERIVED_DATA}" >/dev/null
+    )
+    "${PATCH_SCRIPT}" "${DERIVED_DATA}/SourcePackages/checkouts/FluidAudio"
 fi
 
 run_xcode_tests() {

@@ -30,6 +30,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     @Published public var isRecording = false
     @Published public var isStartingRecording = false
     @Published public var isTranscribing = false
+    @Published public internal(set) var isForegroundTranscribing = false
     @Published public var meetingState: MeetingState = .idle
     @Published public var currentMeeting: Meeting?
     @Published public var lastError: Error?
@@ -56,6 +57,10 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
 
     public var isTranscribingPublisher: AnyPublisher<Bool, Never> {
         $isTranscribing.eraseToAnyPublisher()
+    }
+
+    public var isForegroundTranscribingPublisher: AnyPublisher<Bool, Never> {
+        $isForegroundTranscribing.eraseToAnyPublisher()
     }
 
     public var isStartingPublisher: AnyPublisher<Bool, Never> {
@@ -101,12 +106,15 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     var isStartOperationInFlight = false
     var postStartContextCaptureTask: Task<Void, Never>?
     var estimatedPostProcessingProgressTask: Task<Void, Never>?
+    var estimatedPostProcessingProgressSessionID: UUID?
     var activeStartTelemetry: RecordingStartTelemetry?
     var postProcessingContext: String?
     var postProcessingContextItems: [TranscriptionContextItem] = []
     var activePostProcessingKernelMode: IntelligenceKernelMode?
     var dictationStartBundleIdentifier: String?
     var dictationStartURL: URL?
+    var activeTranscriptionSessionIDs = Set<UUID>()
+    var foregroundTranscriptionSessionID: UUID?
 
     struct RecordingStartTelemetry {
         let traceID = UUID().uuidString
@@ -116,6 +124,19 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         let managerEntryAt: Date
         var recorderStartedAt: Date?
         var indicatorShownAt: Date?
+    }
+
+    struct TranscriptionSessionSnapshot: Sendable {
+        let id: UUID
+        let meeting: Meeting
+        let recordingSource: RecordingSource
+        let kernelMode: IntelligenceKernelMode
+        let postProcessingContext: String?
+        let postProcessingContextItems: [TranscriptionContextItem]
+        let meetingNotesContent: MeetingNotesContent
+        let dictationSessionOutputLanguageOverride: DictationOutputLanguage?
+        let dictationStartBundleIdentifier: String?
+        let dictationStartURL: URL?
     }
 
     // MARK: - Constants

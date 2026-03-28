@@ -9,31 +9,33 @@ import MeetingAssistantCoreInfrastructure
 // MARK: - Transcription
 
 extension RecordingManager {
-    func transcribeRecording(audioURL: URL, meeting: Meeting) async {
-        beginTranscriptionUIStateIfNeeded()
-        cancelEstimatedPostProcessingProgress()
+    func transcribeRecording(audioURL: URL, session: TranscriptionSessionSnapshot) async {
+        beginTranscriptionUIStateIfNeeded(for: session)
+        cancelEstimatedPostProcessingProgress(for: session.id)
 
         let audioDuration = await getAudioDuration(from: audioURL)
-        transcriptionStatus.beginTranscription(audioDuration: audioDuration)
+        beginVisibleTranscriptionStatus(audioDuration: audioDuration, sessionID: session.id)
 
         do {
-            try await performHealthCheck()
+            try await performHealthCheck(sessionID: session.id)
 
             let settings = AppSettingsStore.shared
             let transcriptionStart = Date()
-            let meetingEntity = makeMeetingEntity(meeting: meeting, audioDuration: audioDuration)
-            let config = makeUseCaseConfig(meeting: meeting, settings: settings)
+            let meetingEntity = makeMeetingEntity(meeting: session.meeting, audioDuration: audioDuration)
+            let config = makeUseCaseConfig(session: session, settings: settings)
             let diarizationEnabledOverride = shouldEnableDiarization(
-                for: meeting,
-                preferCurrentRecordingSource: true
+                for: session.meeting,
+                capturePurposeOverride: session.meeting.capturePurpose
             )
 
-            meetingState = .processing(.transcribing)
+            if shouldDriveSharedTranscriptionState(for: session.id) {
+                meetingState = .processing(.transcribing)
+            }
 
             let transcriptionEntity = try await transcribeAudioUseCase.execute(
                 audioURL: audioURL,
                 meeting: meetingEntity,
-                inputSource: resolveInputSourceLabel(for: meeting),
+                inputSource: resolveInputSourceLabel(for: session.meeting, recordingSource: session.recordingSource),
                 contextItems: config.postProcessingContextItems,
                 vocabularyReplacementRules: settings.vocabularyReplacementRules,
                 diarizationEnabledOverride: diarizationEnabledOverride,
@@ -48,62 +50,82 @@ extension RecordingManager {
                 dictationStructuredPostProcessingEnabled: config.dictationStructuredPostProcessingEnabled,
                 onPhaseChange: { [weak self] phase in
                     Task { @MainActor [weak self] in
-                        self?.handleUseCasePhaseChange(phase, meeting: meeting)
+                        self?.handleUseCasePhaseChange(phase, meeting: session.meeting, sessionID: session.id)
                     }
                 },
                 onTranscriptionProgress: { [weak self] progress in
                     Task { @MainActor [weak self] in
-                        self?.handleUseCaseTranscriptionProgress(progress)
+                        self?.handleUseCaseTranscriptionProgress(progress, sessionID: session.id)
                     }
                 }
             )
 
             let transcription = convertToModel(transcriptionEntity, audioDuration: audioDuration, transcriptionStart: transcriptionStart)
-            persistCurrentMeetingNotesForTranscription(transcription.id)
+            persistMeetingNotes(session.meetingNotesContent, forTranscription: transcription.id)
 
-            meetingState = .processing(.generatingOutput)
-            currentMeeting?.state = .completed
+            if shouldDriveSharedTranscriptionState(for: session.id) {
+                meetingState = .processing(.generatingOutput)
+            }
+            if currentMeeting?.id == session.id {
+                currentMeeting?.state = .completed
+            }
 
             TranscriptionDeliveryService.deliver(
                 transcription: transcription,
-                recordingSource: recordingSource
+                recordingSource: session.recordingSource
             )
 
-            transcriptionStatus.completeTranscription(success: true)
+            completeVisibleTranscription(success: true, sessionID: session.id)
             notifySuccess(for: transcription)
-            scheduleStatusReset()
+            scheduleStatusReset(sessionID: session.id)
 
             if settings.autoExportSummaries {
                 await exportSummary(transcription: transcription)
             }
         } catch {
-            cancelEstimatedPostProcessingProgress()
-            handleTranscriptionError(error)
-            meetingState = .failed(error.localizedDescription)
-            currentMeeting?.state = .failed(error.localizedDescription)
+            cancelEstimatedPostProcessingProgress(for: session.id)
+            handleTranscriptionError(error, sessionID: session.id)
+            if shouldDriveSharedTranscriptionState(for: session.id) {
+                meetingState = .failed(error.localizedDescription)
+            }
+            if currentMeeting?.id == session.id {
+                currentMeeting?.state = .failed(error.localizedDescription)
+            }
         }
 
-        cancelEstimatedPostProcessingProgress()
-        isTranscribing = false
+        unregisterTranscriptionSession(session.id)
+        cancelEstimatedPostProcessingProgress(for: session.id)
         isStartingRecording = false
-        meetingState = .idle
-        clearMeetingNotesState(removePersistedValue: true)
-        currentMeeting = nil
-        currentCapturePurpose = nil
-        isMeetingMicrophoneEnabled = false
-        postProcessingContext = nil
-        postProcessingContextItems = []
-        dictationSessionOutputLanguageOverride = nil
-        activeStartTelemetry = nil
-        postStartContextCaptureTask = nil
-        clearPostProcessingReadinessWarning()
+
+        if foregroundTranscriptionSessionID == nil, !isRecording, !isStartingRecording {
+            meetingState = .idle
+        }
+
+        clearMeetingNotesState(removePersistedValue: true, meetingID: session.id)
+
+        if currentMeeting?.id == session.id {
+            currentMeeting = nil
+            currentCapturePurpose = nil
+            isMeetingMicrophoneEnabled = false
+            postProcessingContext = nil
+            postProcessingContextItems = []
+            dictationSessionOutputLanguageOverride = nil
+            dictationStartBundleIdentifier = nil
+            dictationStartURL = nil
+            activeStartTelemetry = nil
+            postStartContextCaptureTask = nil
+            clearPostProcessingReadinessWarning()
+        }
     }
 
-    func beginTranscriptionUIStateIfNeeded() {
-        guard !isTranscribing else { return }
-        isTranscribing = true
-        meetingState = .processing(.transcribing)
-        currentMeeting?.state = .processing(.transcribing)
+    func beginTranscriptionUIStateIfNeeded(for session: TranscriptionSessionSnapshot) {
+        registerTranscriptionSession(session.id, foreground: true)
+        if shouldDriveSharedTranscriptionState(for: session.id) {
+            meetingState = .processing(.transcribing)
+        }
+        if currentMeeting?.id == session.id {
+            currentMeeting?.state = .processing(.transcribing)
+        }
     }
 
     // MARK: - Entity Conversion
@@ -167,8 +189,8 @@ extension RecordingManager {
 
     // MARK: - Health Check & Transcription
 
-    func performHealthCheck() async throws {
-        transcriptionStatus.updateProgress(phase: .preparing)
+    func performHealthCheck(sessionID: UUID? = nil) async throws {
+        updateVisibleTranscriptionProgress(phase: .preparing, sessionID: sessionID)
         let isHealthy = try await transcriptionClient.healthCheck()
         guard isHealthy else {
             throw TranscriptionError.serviceUnavailable
@@ -177,12 +199,21 @@ extension RecordingManager {
 
     func performTranscription(
         audioURL: URL,
-        diarizationEnabledOverride: Bool? = nil
+        diarizationEnabledOverride: Bool? = nil,
+        sessionID: UUID? = nil
     ) async throws -> TranscriptionResponse {
-        transcriptionStatus.updateProgress(phase: .processing, percentage: Constants.processingProgress)
+        updateVisibleTranscriptionProgress(
+            phase: .processing,
+            percentage: Constants.processingProgress,
+            sessionID: sessionID
+        )
         let onProgress: @Sendable (Double) -> Void = { [weak self] percentage in
             Task { @MainActor in
-                self?.transcriptionStatus.updateProgress(phase: .processing, percentage: percentage)
+                self?.updateVisibleTranscriptionProgress(
+                    phase: .processing,
+                    percentage: percentage,
+                    sessionID: sessionID
+                )
             }
         }
 
@@ -200,43 +231,59 @@ extension RecordingManager {
         )
     }
 
-    func handleUseCasePhaseChange(_ phase: TranscriptionPhase, meeting: Meeting) {
+    func handleUseCasePhaseChange(_ phase: TranscriptionPhase, meeting: Meeting, sessionID: UUID) {
         switch phase {
         case .preparing:
-            transcriptionStatus.updateProgress(phase: .preparing)
+            updateVisibleTranscriptionProgress(phase: .preparing, sessionID: sessionID)
         case .processing:
-            transcriptionStatus.updateProgress(
+            updateVisibleTranscriptionProgress(
                 phase: .processing,
-                percentage: max(Constants.processingProgress, transcriptionStatus.progressPercentage)
+                percentage: max(Constants.processingProgress, transcriptionStatus.progressPercentage),
+                sessionID: sessionID
             )
         case .postProcessing:
             let startProgress = max(Constants.postProcessingProgress, transcriptionStatus.progressPercentage)
-            transcriptionStatus.updateProgress(phase: .postProcessing, percentage: startProgress)
+            updateVisibleTranscriptionProgress(
+                phase: .postProcessing,
+                percentage: startProgress,
+                sessionID: sessionID
+            )
 
             if meeting.capturePurpose == .meeting {
-                startEstimatedPostProcessingProgress(from: startProgress)
+                startEstimatedPostProcessingProgress(from: startProgress, sessionID: sessionID)
             }
         case .completed:
-            cancelEstimatedPostProcessingProgress()
+            cancelEstimatedPostProcessingProgress(for: sessionID)
         case .failed:
-            cancelEstimatedPostProcessingProgress()
+            cancelEstimatedPostProcessingProgress(for: sessionID)
         case .idle:
             break
         }
     }
 
-    func handleUseCaseTranscriptionProgress(_ progress: Double) {
+    func handleUseCaseTranscriptionProgress(_ progress: Double, sessionID: UUID) {
         let clamped = min(max(progress, 0), 100)
         let processingRange = Constants.postProcessingProgress - Constants.processingProgress
         let mappedProgress = Constants.processingProgress + (clamped / 100.0 * processingRange)
-        transcriptionStatus.updateProgress(phase: .processing, percentage: mappedProgress)
+        updateVisibleTranscriptionProgress(
+            phase: .processing,
+            percentage: mappedProgress,
+            sessionID: sessionID
+        )
     }
 
-    func startEstimatedPostProcessingProgress(from startProgress: Double) {
-        cancelEstimatedPostProcessingProgress()
+    func startEstimatedPostProcessingProgress(from startProgress: Double, sessionID: UUID) {
+        guard shouldDriveForegroundTranscriptionUI(for: sessionID) else { return }
+
+        cancelEstimatedPostProcessingProgress(for: sessionID)
 
         let clampedStart = min(max(startProgress, Constants.postProcessingProgress), Constants.postProcessingProgressCeiling)
-        transcriptionStatus.updateProgress(phase: .postProcessing, percentage: clampedStart)
+        estimatedPostProcessingProgressSessionID = sessionID
+        updateVisibleTranscriptionProgress(
+            phase: .postProcessing,
+            percentage: clampedStart,
+            sessionID: sessionID
+        )
 
         estimatedPostProcessingProgressTask = Task { @MainActor [weak self] in
             guard let self else { return }
@@ -250,26 +297,34 @@ extension RecordingManager {
                 let easedProgress = Constants.postProcessingProgressCeiling
                     - (Constants.postProcessingProgressCeiling - clampedStart) * exp(-elapsed / Constants.postProcessingProgressSmoothingTau)
                 let nextProgress = min(Constants.postProcessingProgressCeiling, max(clampedStart, easedProgress))
-                transcriptionStatus.updateProgress(phase: .postProcessing, percentage: nextProgress)
+                updateVisibleTranscriptionProgress(
+                    phase: .postProcessing,
+                    percentage: nextProgress,
+                    sessionID: sessionID
+                )
             }
         }
     }
 
-    func cancelEstimatedPostProcessingProgress() {
+    func cancelEstimatedPostProcessingProgress(for sessionID: UUID? = nil) {
+        if let sessionID, estimatedPostProcessingProgressSessionID != sessionID {
+            return
+        }
         estimatedPostProcessingProgressTask?.cancel()
         estimatedPostProcessingProgressTask = nil
+        estimatedPostProcessingProgressSessionID = nil
     }
 
     func shouldEnableDiarization(
         for meeting: Meeting,
-        preferCurrentRecordingSource: Bool = false
+        capturePurposeOverride: CapturePurpose? = nil
     ) -> Bool {
         if meeting.app == .importedFile {
             return false
         }
 
-        if preferCurrentRecordingSource {
-            return currentCapturePurpose == .meeting
+        if let capturePurposeOverride {
+            return capturePurposeOverride == .meeting
         }
 
         return meeting.supportsMeetingConversation
@@ -300,13 +355,15 @@ extension RecordingManager {
         )
     }
 
-    func handleTranscriptionError(_ error: Error) {
+    func handleTranscriptionError(_ error: Error, sessionID: UUID? = nil) {
         AppLogger.error("Transcription failed", category: .recordingManager, error: error)
         lastError = error
-        cancelEstimatedPostProcessingProgress()
+        cancelEstimatedPostProcessingProgress(for: sessionID)
 
-        transcriptionStatus.recordError(.transcriptionFailed(error.localizedDescription))
-        transcriptionStatus.completeTranscription(success: false)
+        if shouldDriveForegroundTranscriptionUI(for: sessionID) {
+            transcriptionStatus.recordError(.transcriptionFailed(error.localizedDescription))
+            transcriptionStatus.completeTranscription(success: false)
+        }
 
         notificationService.sendNotification(
             title: "notification.transcription_failed".localized,
@@ -314,11 +371,68 @@ extension RecordingManager {
         )
     }
 
-    func scheduleStatusReset() {
+    func scheduleStatusReset(sessionID: UUID? = nil) {
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(Constants.statusResetDelay))
+            guard self.shouldResetVisibleTranscriptionStatus(for: sessionID) else { return }
             self.transcriptionStatus.resetToIdle()
         }
+    }
+
+    func registerTranscriptionSession(_ sessionID: UUID, foreground: Bool) {
+        activeTranscriptionSessionIDs.insert(sessionID)
+        isTranscribing = true
+
+        guard foreground else { return }
+        foregroundTranscriptionSessionID = sessionID
+        isForegroundTranscribing = true
+    }
+
+    func unregisterTranscriptionSession(_ sessionID: UUID) {
+        activeTranscriptionSessionIDs.remove(sessionID)
+        isTranscribing = !activeTranscriptionSessionIDs.isEmpty
+
+        if foregroundTranscriptionSessionID == sessionID {
+            foregroundTranscriptionSessionID = nil
+            isForegroundTranscribing = false
+        }
+    }
+
+    func shouldDriveForegroundTranscriptionUI(for sessionID: UUID?) -> Bool {
+        guard let sessionID else { return true }
+        return foregroundTranscriptionSessionID == sessionID
+    }
+
+    func shouldResetVisibleTranscriptionStatus(for sessionID: UUID?) -> Bool {
+        guard let sessionID else { return true }
+        return foregroundTranscriptionSessionID == nil || foregroundTranscriptionSessionID == sessionID
+    }
+
+    func shouldDriveSharedTranscriptionState(for sessionID: UUID) -> Bool {
+        if currentMeeting?.id == sessionID {
+            return true
+        }
+
+        return !isRecording && !isStartingRecording
+    }
+
+    func beginVisibleTranscriptionStatus(audioDuration: Double?, sessionID: UUID?) {
+        guard shouldDriveForegroundTranscriptionUI(for: sessionID) else { return }
+        transcriptionStatus.beginTranscription(audioDuration: audioDuration)
+    }
+
+    func updateVisibleTranscriptionProgress(
+        phase: TranscriptionPhase,
+        percentage: Double? = nil,
+        sessionID: UUID?
+    ) {
+        guard shouldDriveForegroundTranscriptionUI(for: sessionID) else { return }
+        transcriptionStatus.updateProgress(phase: phase, percentage: percentage)
+    }
+
+    func completeVisibleTranscription(success: Bool, sessionID: UUID?) {
+        guard shouldDriveForegroundTranscriptionUI(for: sessionID) else { return }
+        transcriptionStatus.completeTranscription(success: success)
     }
 
     /// Get audio duration from file for progress estimation.

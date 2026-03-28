@@ -309,12 +309,15 @@ extension RecordingManager {
         return updatedMeeting
     }
 
-    func resolveInputSourceLabel(for meeting: Meeting) -> String? {
+    func resolveInputSourceLabel(
+        for meeting: Meeting,
+        recordingSource: RecordingSource? = nil
+    ) -> String? {
         if meeting.app == .importedFile {
             return "meeting.app.imported".localized
         }
 
-        switch recordingSource {
+        switch recordingSource ?? self.recordingSource {
         case .microphone:
             return resolveMicrophoneDeviceName() ?? "recording.source.microphone".localized
         case .system:

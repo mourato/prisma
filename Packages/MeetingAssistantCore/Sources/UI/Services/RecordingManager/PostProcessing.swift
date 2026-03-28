@@ -20,13 +20,19 @@ extension RecordingManager {
         let postProcessingContextItems: [TranscriptionContextItem]
     }
 
-    func makeUseCaseConfig(meeting: Meeting, settings: AppSettingsStore) -> UseCaseConfig {
-        let kernelMode = postProcessingKernelMode(for: meeting)
+    func makeUseCaseConfig(
+        session: TranscriptionSessionSnapshot,
+        settings: AppSettingsStore
+    ) -> UseCaseConfig {
+        let meeting = session.meeting
+        let kernelMode = session.kernelMode
         let isDictation = kernelMode == .dictation
         let readinessIssue = settings.postProcessingEnabled
             ? settings.enhancementsInferenceReadinessIssue(for: kernelMode, apiKeyExists: apiKeyExists)
             : nil
-        setPostProcessingReadinessWarning(issue: readinessIssue, mode: kernelMode)
+        if currentMeeting?.id == session.id {
+            setPostProcessingReadinessWarning(issue: readinessIssue, mode: kernelMode)
+        }
         let applyPostProcessing = Self.shouldApplyEnhancementsPostProcessing(
             settings: settings,
             kernelMode: kernelMode,
@@ -74,7 +80,7 @@ extension RecordingManager {
                 autoDetectMeetingType: false,
                 availablePrompts: [],
                 postProcessingContext: nil,
-                postProcessingContextItems: postProcessingContextItems
+                postProcessingContextItems: session.postProcessingContextItems
             )
         }
 
@@ -84,7 +90,8 @@ extension RecordingManager {
             meeting: meeting,
             isDictation: isDictation,
             settings: settings,
-            defaultMeetingPrompt: defaultMeetingPrompt
+            defaultMeetingPrompt: defaultMeetingPrompt,
+            session: session
         )
 
         let autoDetectMeetingType = !isDictation && meeting.type == .autodetect
@@ -100,8 +107,11 @@ extension RecordingManager {
             ]
         )
 
-        var resolvedContextItems = postProcessingContextItems
-        if let meetingNotesItem = currentMeetingNotesContextItem() {
+        var resolvedContextItems = session.postProcessingContextItems
+        if let meetingNotesItem = meetingNotesContextItem(
+            from: session.meetingNotesContent,
+            capturePurpose: meeting.capturePurpose
+        ) {
             if let existingIndex = resolvedContextItems.firstIndex(where: { $0.source == .meetingNotes }) {
                 resolvedContextItems[existingIndex] = meetingNotesItem
             } else {
@@ -118,7 +128,7 @@ extension RecordingManager {
             postProcessingModel: settings.resolvedEnhancementsAIConfiguration(for: kernelMode).selectedModel,
             autoDetectMeetingType: autoDetectMeetingType,
             availablePrompts: availablePrompts,
-            postProcessingContext: postProcessingContext,
+            postProcessingContext: session.postProcessingContext,
             postProcessingContextItems: resolvedContextItems
         )
     }
@@ -145,8 +155,9 @@ extension RecordingManager {
         meeting: Meeting,
         settings: AppSettingsStore = .shared
     ) -> PostProcessingConfigurationDebugInfo {
-        let kernelMode = postProcessingKernelMode(for: meeting)
-        let config = makeUseCaseConfig(meeting: meeting, settings: settings)
+        let snapshot = makeTranscriptionSessionSnapshot(meeting)
+        let kernelMode = snapshot.kernelMode
+        let config = makeUseCaseConfig(session: snapshot, settings: settings)
         return PostProcessingConfigurationDebugInfo(
             kernelMode: kernelMode,
             applyPostProcessing: config.applyPostProcessing,
@@ -226,11 +237,16 @@ extension RecordingManager {
         meeting: Meeting,
         isDictation: Bool,
         settings: AppSettingsStore,
-        defaultMeetingPrompt: DomainPostProcessingPrompt?
+        defaultMeetingPrompt: DomainPostProcessingPrompt?,
+        session: TranscriptionSessionSnapshot? = nil
     ) -> DomainPostProcessingPrompt? {
         if isDictation {
             let basePrompt = settings.selectedDictationPrompt ?? .cleanTranscription
-            let resolvedPrompt = promptWithDictationRuleOverrides(prompt: basePrompt, settings: settings)
+            let resolvedPrompt = promptWithDictationRuleOverrides(
+                prompt: basePrompt,
+                settings: settings,
+                session: session
+            )
             return domainPrompt(from: resolvedPrompt)
         }
 
@@ -268,20 +284,21 @@ extension RecordingManager {
 
     func promptWithDictationRuleOverrides(
         prompt: PostProcessingPrompt,
-        settings: AppSettingsStore
+        settings: AppSettingsStore,
+        session: TranscriptionSessionSnapshot? = nil
     ) -> PostProcessingPrompt {
         var appliedInstructions: [String] = []
 
-        if shouldForceMarkdownForDictation(settings: settings) {
+        if shouldForceMarkdownForDictation(settings: settings, session: session) {
             appliedInstructions.append(Self.markdownFormatInstruction)
         }
 
-        let outputLanguage = outputLanguageForDictation(settings: settings)
+        let outputLanguage = outputLanguageForDictation(settings: settings, session: session)
         if outputLanguage != .original {
             appliedInstructions.append(Self.translationInstruction(for: outputLanguage))
         }
 
-        if let customInstructions = effectiveCustomPromptInstructionsForDictation(settings: settings) {
+        if let customInstructions = effectiveCustomPromptInstructionsForDictation(settings: settings, session: session) {
             appliedInstructions.append(Self.siteOrAppPriorityInstructionBlock(customInstructions))
         }
 
@@ -300,15 +317,18 @@ extension RecordingManager {
         )
     }
 
-    func effectiveCustomPromptInstructionsForDictation(settings: AppSettingsStore) -> String? {
-        if let websiteTarget = matchingWebContextTargetForDictation(settings: settings),
+    func effectiveCustomPromptInstructionsForDictation(
+        settings: AppSettingsStore,
+        session: TranscriptionSessionSnapshot? = nil
+    ) -> String? {
+        if let websiteTarget = matchingWebContextTargetForDictation(settings: settings, session: session),
            let instructions = websiteTarget.customPromptInstructions?.trimmingCharacters(in: .whitespacesAndNewlines),
            !instructions.isEmpty
         {
             return instructions
         }
 
-        if let appRule = matchingDictationAppRule(settings: settings),
+        if let appRule = matchingDictationAppRule(settings: settings, session: session),
            let instructions = appRule.customPromptInstructions?.trimmingCharacters(in: .whitespacesAndNewlines),
            !instructions.isEmpty
         {
@@ -318,8 +338,11 @@ extension RecordingManager {
         return nil
     }
 
-    func matchingDictationAppRule(settings: AppSettingsStore) -> DictationAppRule? {
-        guard let bundleIdentifier = dictationStartBundleIdentifier else { return nil }
+    func matchingDictationAppRule(
+        settings: AppSettingsStore,
+        session: TranscriptionSessionSnapshot? = nil
+    ) -> DictationAppRule? {
+        guard let bundleIdentifier = session?.dictationStartBundleIdentifier ?? dictationStartBundleIdentifier else { return nil }
         let normalized = WebTargetDetection.normalizeBundleIdentifier(bundleIdentifier)
 
         return settings.dictationAppRules.first {
@@ -327,30 +350,36 @@ extension RecordingManager {
         }
     }
 
-    func outputLanguageForDictation(settings: AppSettingsStore) -> DictationOutputLanguage {
-        if let override = dictationSessionOutputLanguageOverride {
+    func outputLanguageForDictation(
+        settings: AppSettingsStore,
+        session: TranscriptionSessionSnapshot? = nil
+    ) -> DictationOutputLanguage {
+        if let override = session?.dictationSessionOutputLanguageOverride ?? dictationSessionOutputLanguageOverride {
             return override
         }
 
-        if let websiteTarget = matchingWebContextTargetForDictation(settings: settings),
+        if let websiteTarget = matchingWebContextTargetForDictation(settings: settings, session: session),
            websiteTarget.outputLanguage != .original
         {
             return websiteTarget.outputLanguage
         }
 
-        guard let rule = matchingDictationAppRule(settings: settings) else { return .original }
+        guard let rule = matchingDictationAppRule(settings: settings, session: session) else { return .original }
         return rule.outputLanguage
     }
 
-    func shouldForceMarkdownForDictation(settings: AppSettingsStore) -> Bool {
-        guard let bundleIdentifier = dictationStartBundleIdentifier else { return false }
+    func shouldForceMarkdownForDictation(
+        settings: AppSettingsStore,
+        session: TranscriptionSessionSnapshot? = nil
+    ) -> Bool {
+        guard let bundleIdentifier = session?.dictationStartBundleIdentifier ?? dictationStartBundleIdentifier else { return false }
         let normalized = WebTargetDetection.normalizeBundleIdentifier(bundleIdentifier)
 
-        if let websiteTarget = matchingWebContextTargetForDictation(settings: settings) {
+        if let websiteTarget = matchingWebContextTargetForDictation(settings: settings, session: session) {
             return websiteTarget.forceMarkdownOutput
         }
 
-        if let rule = matchingDictationAppRule(settings: settings), rule.forceMarkdownOutput {
+        if let rule = matchingDictationAppRule(settings: settings, session: session), rule.forceMarkdownOutput {
             return true
         }
 
@@ -362,13 +391,16 @@ extension RecordingManager {
         return false
     }
 
-    func matchingWebContextTargetForDictation(settings: AppSettingsStore) -> WebContextTarget? {
-        guard let bundleIdentifier = dictationStartBundleIdentifier else { return nil }
+    func matchingWebContextTargetForDictation(
+        settings: AppSettingsStore,
+        session: TranscriptionSessionSnapshot? = nil
+    ) -> WebContextTarget? {
+        guard let bundleIdentifier = session?.dictationStartBundleIdentifier ?? dictationStartBundleIdentifier else { return nil }
         let normalized = WebTargetDetection.normalizeBundleIdentifier(bundleIdentifier)
         let webTargets = settings.markdownWebTargets
         guard !webTargets.isEmpty else { return nil }
 
-        if let url = dictationStartURL,
+        if let url = session?.dictationStartURL ?? dictationStartURL,
            let target = WebTargetDetection.matchTarget(
                for: url,
                bundleIdentifier: normalized,
@@ -453,24 +485,30 @@ extension RecordingManager {
 
     // MARK: - Mode Detection
 
-    func isDictationMode(for meeting: Meeting?) -> Bool {
+    func isDictationMode(
+        for meeting: Meeting?,
+        capturePurposeOverride: CapturePurpose? = nil
+    ) -> Bool {
         if let meeting, meeting.app == .importedFile {
             return false
         }
 
         if isRecording || isTranscribing {
-            return currentCapturePurpose == .dictation
+            return (capturePurposeOverride ?? currentCapturePurpose) == .dictation
         }
 
-        return meeting?.capturePurpose == .dictation || currentCapturePurpose == .dictation
+        return meeting?.capturePurpose == .dictation || (capturePurposeOverride ?? currentCapturePurpose) == .dictation
     }
 
-    func postProcessingKernelMode(for meeting: Meeting?) -> IntelligenceKernelMode {
-        if let activePostProcessingKernelMode {
+    func postProcessingKernelMode(
+        for meeting: Meeting?,
+        capturePurposeOverride: CapturePurpose? = nil
+    ) -> IntelligenceKernelMode {
+        if let activePostProcessingKernelMode, capturePurposeOverride == nil {
             return activePostProcessingKernelMode
         }
 
-        return isDictationMode(for: meeting) ? .dictation : .meeting
+        return isDictationMode(for: meeting, capturePurposeOverride: capturePurposeOverride) ? .dictation : .meeting
     }
 
     func isPostProcessingDisabled(isDictation: Bool, settings: AppSettingsStore) -> Bool {

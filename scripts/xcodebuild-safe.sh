@@ -6,12 +6,13 @@
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+PATCH_SCRIPT="${PROJECT_DIR}/scripts/apply-fluidaudio-patches.sh"
 
 # shellcheck source=scripts/config/app_identity.sh
 source "${PROJECT_DIR}/scripts/config/app_identity.sh"
 
 XCODEPROJ="${PROJECT_DIR}/${XCODEPROJ_NAME}"
-DERIVED_DATA_PATH=""
+DERIVED_DATA_PATH="${PROJECT_DIR}/.xcode-build"
 
 SCHEME="${APP_SCHEME}"
 CONFIGURATION="Debug"
@@ -80,6 +81,15 @@ done
 if [[ ! -d "${XCODEPROJ}" ]]; then
     echo "Error: Xcode project not found at ${XCODEPROJ}" >&2
     exit 1
+fi
+
+if [[ -x "${PATCH_SCRIPT}" ]]; then
+    xcodebuild \
+        -resolvePackageDependencies \
+        -project "${XCODEPROJ}" \
+        -scheme "${SCHEME}" \
+        -derivedDataPath "${DERIVED_DATA_PATH}" >/dev/null
+    "${PATCH_SCRIPT}" "${DERIVED_DATA_PATH}/SourcePackages/checkouts/FluidAudio"
 fi
 
 CMD=(

@@ -155,25 +155,48 @@ extension RecordingManager {
         return TranscriptionContextItem(source: .meetingNotes, text: trimmed)
     }
 
+    func meetingNotesContextItem(
+        from content: MeetingNotesContent,
+        capturePurpose: CapturePurpose
+    ) -> TranscriptionContextItem? {
+        guard capturePurpose == .meeting else { return nil }
+
+        let trimmed = content.plainText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+
+        return TranscriptionContextItem(source: .meetingNotes, text: trimmed)
+    }
+
     func persistCurrentMeetingNotesForTranscription(_ transcriptionID: UUID) {
-        let trimmed = normalizedNotesValue(currentMeetingNotesText)
+        persistMeetingNotes(
+            MeetingNotesContent(
+                plainText: currentMeetingNotesText,
+                richTextRTFData: currentMeetingNotesRichTextData
+            ),
+            forTranscription: transcriptionID
+        )
+    }
+
+    func persistMeetingNotes(_ content: MeetingNotesContent, forTranscription transcriptionID: UUID) {
+        let trimmed = normalizedNotesValue(content.plainText)
         if trimmed.isEmpty {
             meetingNotesRichTextStore.saveTranscriptionNotesRTFData(nil, for: transcriptionID)
             meetingNotesMarkdownStore.deleteTranscriptionNotesContent(for: transcriptionID)
             return
         }
 
-        let content = MeetingNotesContent(
-            plainText: currentMeetingNotesText,
-            richTextRTFData: currentMeetingNotesRichTextData
-        )
         meetingNotesRichTextStore.saveTranscriptionNotesRTFData(content.richTextRTFData, for: transcriptionID)
         meetingNotesMarkdownStore.saveTranscriptionNotesContent(content, for: transcriptionID)
     }
 
-    func clearMeetingNotesState(removePersistedValue: Bool) {
-        if removePersistedValue, let meetingID = currentMeeting?.id {
-            removeMeetingNotesContent(for: meetingID)
+    func clearMeetingNotesState(removePersistedValue: Bool, meetingID: UUID? = nil) {
+        let persistedMeetingID = meetingID ?? currentMeeting?.id
+        if removePersistedValue, let persistedMeetingID {
+            removeMeetingNotesContent(for: persistedMeetingID)
+        }
+
+        if let meetingID, currentMeeting?.id != meetingID {
+            return
         }
 
         isMeetingNotesPanelVisible = false

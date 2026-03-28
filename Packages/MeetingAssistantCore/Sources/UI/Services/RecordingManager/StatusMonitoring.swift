@@ -56,11 +56,17 @@ extension RecordingManager {
         isRecording = false
         isStartingRecording = false
         isTranscribing = false
+        isForegroundTranscribing = false
+        activeTranscriptionSessionIDs.removeAll()
+        foregroundTranscriptionSessionID = nil
         cancelEstimatedPostProcessingProgress()
         currentMeeting = nil
         currentCapturePurpose = nil
         isMeetingMicrophoneEnabled = false
         lastError = nil
+        dictationSessionOutputLanguageOverride = nil
+        dictationStartBundleIdentifier = nil
+        dictationStartURL = nil
         activeStartTelemetry = nil
         clearPostProcessingReadinessWarning()
     }

@@ -231,6 +231,7 @@ public extension RecordingManager {
         postStartContextCaptureTask?.cancel()
         postStartContextCaptureTask = nil
         isStartingRecording = false
+        var transcriptionSession: TranscriptionSessionSnapshot?
 
         do {
             // Stop both recorders
@@ -239,11 +240,12 @@ public extension RecordingManager {
 
             // Update meeting
             currentMeeting?.endTime = Date()
+            transcriptionSession = currentMeeting.map(makeTranscriptionSessionSnapshot)
 
             // Issue #2: Start transcribing state BEFORE stopping recording state
             // to prevent the UI from hiding the indicator during audio merging gap.
-            if transcribe {
-                isTranscribing = true
+            if transcribe, let transcriptionSession {
+                registerTranscriptionSession(transcriptionSession.id, foreground: true)
                 meetingState = .processing(.transcribing) // Sync state
                 currentMeeting?.state = .processing(.transcribing) // Sync entity state
             } else {
@@ -265,13 +267,15 @@ public extension RecordingManager {
             let finalURL = try await processRecordedAudio(micURL: micURL, sysURL: sysURL)
 
             // Transcribe if requested
-            if transcribe, let meeting = currentMeeting {
-                await transcribeRecording(audioURL: finalURL, meeting: meeting)
+            if transcribe, let transcriptionSession {
+                await transcribeRecording(audioURL: finalURL, session: transcriptionSession)
             } else {
-                cancelEstimatedPostProcessingProgress()
+                cancelEstimatedPostProcessingProgress(for: currentMeeting?.id)
                 postProcessingContext = nil
                 postProcessingContextItems = []
                 dictationSessionOutputLanguageOverride = nil
+                dictationStartBundleIdentifier = nil
+                dictationStartURL = nil
                 clearMeetingNotesState(removePersistedValue: true)
                 currentCapturePurpose = nil
                 isMeetingMicrophoneEnabled = false
@@ -284,8 +288,10 @@ public extension RecordingManager {
             AppLogger.error("Failed to stop recording cleanly", category: .recordingManager, error: error)
             lastError = error
             isRecording = false
-            isTranscribing = false
-            cancelEstimatedPostProcessingProgress()
+            if let transcriptionSession {
+                unregisterTranscriptionSession(transcriptionSession.id)
+            }
+            cancelEstimatedPostProcessingProgress(for: currentMeeting?.id)
             meetingState = .failed(error.localizedDescription) // Sync state
             currentMeeting?.state = .failed(error.localizedDescription) // Sync entity state
             await RecordingExclusivityCoordinator.shared.endRecording()
@@ -293,6 +299,8 @@ public extension RecordingManager {
             postProcessingContextItems = []
             isStartingRecording = false
             dictationSessionOutputLanguageOverride = nil
+            dictationStartBundleIdentifier = nil
+            dictationStartURL = nil
             clearMeetingNotesState(removePersistedValue: true)
             currentCapturePurpose = nil
             isMeetingMicrophoneEnabled = false
@@ -312,7 +320,7 @@ public extension RecordingManager {
             postStartContextCaptureTask?.cancel()
             postStartContextCaptureTask = nil
             isStartingRecording = false
-            cancelEstimatedPostProcessingProgress()
+            cancelEstimatedPostProcessingProgress(for: currentMeeting?.id)
             currentCapturePurpose = nil
             isMeetingMicrophoneEnabled = false
             clearMeetingNotesState(removePersistedValue: true)
@@ -320,6 +328,8 @@ public extension RecordingManager {
             postProcessingContext = nil
             postProcessingContextItems = []
             dictationSessionOutputLanguageOverride = nil
+            dictationStartBundleIdentifier = nil
+            dictationStartURL = nil
             activeStartTelemetry = nil
             clearPostProcessingReadinessWarning()
             await RecordingExclusivityCoordinator.shared.endRecording()
@@ -348,7 +358,7 @@ public extension RecordingManager {
         // Reset state
         isRecording = false
         isStartingRecording = false
-        cancelEstimatedPostProcessingProgress()
+        cancelEstimatedPostProcessingProgress(for: currentMeeting?.id)
         currentCapturePurpose = nil
         isMeetingMicrophoneEnabled = false
         clearMeetingNotesState(removePersistedValue: true)
@@ -356,6 +366,8 @@ public extension RecordingManager {
         postProcessingContext = nil
         postProcessingContextItems = []
         dictationSessionOutputLanguageOverride = nil
+        dictationStartBundleIdentifier = nil
+        dictationStartURL = nil
         activeStartTelemetry = nil
         clearPostProcessingReadinessWarning()
         await RecordingExclusivityCoordinator.shared.endRecording()
@@ -413,7 +425,10 @@ public extension RecordingManager {
             category: .recordingManager,
             extra: ["filename": audioURL.lastPathComponent]
         )
-        await transcribeRecording(audioURL: audioURL, meeting: meeting)
+        await transcribeRecording(
+            audioURL: audioURL,
+            session: makeTranscriptionSessionSnapshot(meeting)
+        )
     }
 
     /// Enable automatic recording when meetings are detected.
@@ -456,6 +471,27 @@ public extension RecordingManager {
 }
 
 extension RecordingManager {
+    func makeTranscriptionSessionSnapshot(_ meeting: Meeting) -> TranscriptionSessionSnapshot {
+        TranscriptionSessionSnapshot(
+            id: meeting.id,
+            meeting: meeting,
+            recordingSource: recordingSource,
+            kernelMode: postProcessingKernelMode(
+                for: meeting,
+                capturePurposeOverride: meeting.capturePurpose
+            ),
+            postProcessingContext: postProcessingContext,
+            postProcessingContextItems: postProcessingContextItems,
+            meetingNotesContent: MeetingNotesContent(
+                plainText: currentMeetingNotesText,
+                richTextRTFData: currentMeetingNotesRichTextData
+            ),
+            dictationSessionOutputLanguageOverride: dictationSessionOutputLanguageOverride,
+            dictationStartBundleIdentifier: dictationStartBundleIdentifier,
+            dictationStartURL: dictationStartURL
+        )
+    }
+
     private func resolveMeetingType() -> MeetingType {
         let settings = AppSettingsStore.shared
         return settings.meetingTypeAutoDetectEnabled ? .autodetect : .general

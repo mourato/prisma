@@ -3,11 +3,8 @@ import Foundation
 
 // MARK: - Sendable Conformances for FluidAudio
 
-// FluidAudio types are not yet marked as Sendable in the library,
-// but they are designed to be used with Swift Concurrency and are
-// internally thread-safe for their intended purpose.
-
-extension AsrManager: @unchecked @retroactive Sendable {}
+// FluidAudio checkouts are patched before supported builds/tests so
+// AsrManager carries its unchecked Sendable conformance in-module.
 extension OfflineDiarizerManager: @unchecked @retroactive Sendable {}
 
 // Note: DiarizationResult, OfflineDiarizerConfig, and TokenTiming

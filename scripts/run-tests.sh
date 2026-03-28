@@ -8,6 +8,7 @@ set -o pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+PATCH_SCRIPT="${PROJECT_DIR}/scripts/apply-fluidaudio-patches.sh"
 # shellcheck source=scripts/config/app_identity.sh
 source "${SCRIPT_DIR}/config/app_identity.sh"
 
@@ -168,6 +169,10 @@ fi
 
 run_swift_tests() {
     cd "${PROJECT_DIR}/Packages/MeetingAssistantCore"
+    swift package resolve >/dev/null
+    if [ -x "${PATCH_SCRIPT}" ]; then
+        "${PATCH_SCRIPT}" "${PROJECT_DIR}/Packages/MeetingAssistantCore/.build/checkouts/FluidAudio"
+    fi
     if [ "${#TEST_ARGS[@]}" -gt 0 ]; then
         swift test "${TEST_ARGS[@]}"
     else

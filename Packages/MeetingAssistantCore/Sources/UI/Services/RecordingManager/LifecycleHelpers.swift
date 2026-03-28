@@ -34,8 +34,8 @@ extension RecordingManager {
         postStartContextCaptureTask = nil
         isRecording = false
         isStartingRecording = false
-        isTranscribing = false
-        cancelEstimatedPostProcessingProgress()
+        isTranscribing = !activeTranscriptionSessionIDs.isEmpty
+        cancelEstimatedPostProcessingProgress(for: currentMeeting?.id)
         meetingState = .failed(error.localizedDescription)
         currentMeeting?.state = .failed(error.localizedDescription)
         clearMeetingNotesState(removePersistedValue: true)
@@ -45,6 +45,8 @@ extension RecordingManager {
         postProcessingContext = nil
         postProcessingContextItems = []
         dictationSessionOutputLanguageOverride = nil
+        dictationStartBundleIdentifier = nil
+        dictationStartURL = nil
         activeStartTelemetry = nil
         clearPostProcessingReadinessWarning()
         lastError = error
