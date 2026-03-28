@@ -66,4 +66,14 @@ final class AudioVisualizerMathTests: XCTestCase {
             XCTAssertLessThanOrEqual(height, maxHeight)
         }
     }
+
+    func testDisplayLevel_BoostsVisualHeightWithoutLeakingLowSignal() {
+        XCTAssertEqual(AudioVisualizerMath.displayLevel(0.0), 0.0, accuracy: 0.0001)
+
+        let quiet = AudioVisualizerMath.displayLevel(0.16)
+        let medium = AudioVisualizerMath.displayLevel(0.55)
+
+        XCTAssertLessThan(quiet, 0.17)
+        XCTAssertGreaterThan(medium, 0.55)
+    }
 }

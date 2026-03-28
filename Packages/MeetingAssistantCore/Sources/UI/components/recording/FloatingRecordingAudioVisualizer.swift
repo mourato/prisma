@@ -6,8 +6,9 @@ import SwiftUI
 
 enum AudioVisualizerMath {
     static let visibilityGate: Double = 0.20
-    static let amplitudeExponent: Double = 0.80
+    static let amplitudeExponent: Double = 1.10
     static let centerBoostStrength: Double = 0.22
+    static let visualHeightBoost: Double = 0.40
 
     static func shapedLevel(_ level: Double) -> Double {
         let clamped = min(max(level, 0.0), 1.0)
@@ -55,9 +56,15 @@ enum AudioVisualizerMath {
         return min(max(boosted, 0.0), 1.0)
     }
 
-    static func barHeight(level: Double, minHeight: CGFloat, maxHeight: CGFloat) -> CGFloat {
+    static func displayLevel(_ level: Double) -> Double {
         let clamped = min(max(level, 0.0), 1.0)
-        return minHeight + CGFloat(clamped) * (maxHeight - minHeight)
+        let boosted = clamped + visualHeightBoost * pow(clamped, 3)
+        return min(max(boosted, 0.0), 1.0)
+    }
+
+    static func barHeight(level: Double, minHeight: CGFloat, maxHeight: CGFloat) -> CGFloat {
+        let displayLevel = displayLevel(level)
+        return minHeight + CGFloat(displayLevel) * (maxHeight - minHeight)
     }
 }
 
