@@ -1,3 +1,4 @@
+import AppKit
 import MeetingAssistantCoreAI
 import MeetingAssistantCoreAudio
 import MeetingAssistantCoreCommon
@@ -14,6 +15,16 @@ import SwiftUI
 /// - Keep styling consistent across Settings, Menu Bar, and in-app views
 public enum AppDesignSystem {
 
+    public enum Accessibility {
+        public static var reduceTransparency: Bool {
+            NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
+        }
+
+        public static var increaseContrast: Bool {
+            NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
+        }
+    }
+
     // MARK: - Colors
 
     public enum Colors {
@@ -29,10 +40,10 @@ public enum AppDesignSystem {
             .white
         }
 
-        public static let success = Color.green
-        public static let warning = Color.orange
-        public static let error = Color.red
-        public static let neutral = Color.gray
+        public static let success = Color(nsColor: .systemGreen)
+        public static let warning = Color(nsColor: .systemOrange)
+        public static let error = Color(nsColor: .systemRed)
+        public static let neutral = Color(nsColor: .systemGray)
 
         public static var iconHighlight: Color {
             accent
@@ -67,21 +78,47 @@ public enum AppDesignSystem {
         public static let textBackground = Color(NSColor.textBackgroundColor)
         public static let separator = Color(NSColor.separatorColor)
 
-        public static let glassBackground = windowBackground.opacity(0.7)
-        public static let cardBackground = controlBackground.opacity(0.5)
-        public static let cardStroke = Color.primary.opacity(0.1)
+        public static var glassBackground: Color {
+            Accessibility.reduceTransparency ? windowBackground : windowBackground.opacity(0.82)
+        }
 
-        public static let subtleFill = Color.primary.opacity(0.05)
-        public static let subtleFill2 = Color.primary.opacity(0.03)
+        public static var cardBackground: Color {
+            if Accessibility.reduceTransparency {
+                return controlBackground
+            }
+            return controlBackground.opacity(Accessibility.increaseContrast ? 0.9 : 0.72)
+        }
 
-        public static let secondaryFill = Color.secondary.opacity(0.1)
+        public static var cardStroke: Color {
+            Color.primary.opacity(Accessibility.increaseContrast ? 0.22 : 0.1)
+        }
+
+        public static var subtleFill: Color {
+            Color.primary.opacity(Accessibility.increaseContrast ? 0.11 : 0.05)
+        }
+
+        public static var subtleFill2: Color {
+            Color.primary.opacity(Accessibility.increaseContrast ? 0.08 : 0.03)
+        }
+
+        public static var secondaryFill: Color {
+            Color.secondary.opacity(Accessibility.increaseContrast ? 0.16 : 0.1)
+        }
 
         public static var selectionFill: Color {
-            accent.opacity(0.08)
+            accent.opacity(Accessibility.increaseContrast ? 0.16 : 0.08)
         }
 
         public static var selectionStroke: Color {
-            accent.opacity(0.3)
+            accent.opacity(Accessibility.increaseContrast ? 0.55 : 0.3)
+        }
+
+        public static var topFadeLeading: Color {
+            windowBackground
+        }
+
+        public static var topFadeTrailing: Color {
+            windowBackground.opacity(Accessibility.reduceTransparency ? 1 : 0)
         }
     }
 
@@ -107,12 +144,12 @@ public enum AppDesignSystem {
         public static let heroCornerRadius: CGFloat = 16
         public static let heroPadding: CGFloat = 24
 
-        public static let cardPadding: CGFloat = 16
-        public static let sectionSpacing: CGFloat = 20
-        public static let itemSpacing: CGFloat = 12
+        public static let cardPadding: CGFloat = 14
+        public static let sectionSpacing: CGFloat = 16
+        public static let itemSpacing: CGFloat = 10
 
-        public static let controlHeight: CGFloat = 44
-        public static let compactButtonHeight: CGFloat = 32
+        public static let controlHeight: CGFloat = 34
+        public static let compactButtonHeight: CGFloat = 30
         public static let recordingIndicatorMiniHeight: CGFloat = 38
         public static let recordingIndicatorClassicHeight: CGFloat = 42
 
@@ -168,13 +205,13 @@ public enum AppDesignSystem {
 
         public static let sidebarContainerCornerRadius: CGFloat = 18
         public static let sidebarItemCornerRadius: CGFloat = 8
-        public static let sidebarItemHeight: CGFloat = 44
-        public static let sidebarHorizontalPadding: CGFloat = 10
-        public static let sidebarVerticalPadding: CGFloat = 12
-        public static let sidebarTopInset: CGFloat = 48
+        public static let sidebarItemHeight: CGFloat = 36
+        public static let sidebarHorizontalPadding: CGFloat = 8
+        public static let sidebarVerticalPadding: CGFloat = 10
+        public static let sidebarTopInset: CGFloat = 36
         public static let sidebarSectionSpacing: CGFloat = 6
         public static let sidebarItemContentSpacing: CGFloat = 8
-        public static let sidebarLabelFontSize: CGFloat = 13
-        public static let sidebarSymbolFontSize: CGFloat = 15
+        public static let sidebarLabelFontSize: CGFloat = 12
+        public static let sidebarSymbolFontSize: CGFloat = 14
     }
 }

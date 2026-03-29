@@ -41,16 +41,16 @@ public struct OnboardingView: View {
                 currentStep: viewModel.currentStep,
                 totalSteps: OnboardingStep.allCases.count
             )
-            .padding(.top, 20)
+            .padding(.top, 16)
 
             // Content Area
             contentView
                 .frame(maxHeight: .infinity)
-                .padding(.horizontal, 40)
+                .padding(.horizontal, 32)
 
             Spacer()
         }
-        .frame(width: 650, height: 550)
+        .frame(width: 620, height: 520)
         .background(Color(NSColor.windowBackgroundColor))
     }
 

@@ -61,14 +61,14 @@ public struct SettingsScrollableContent<Content: View>: View {
     private var topFadeOverlay: some View {
         LinearGradient(
             colors: [
-                AppDesignSystem.Colors.windowBackground,
-                AppDesignSystem.Colors.windowBackground.opacity(0.88),
-                AppDesignSystem.Colors.windowBackground.opacity(0),
+                AppDesignSystem.Colors.topFadeLeading,
+                AppDesignSystem.Colors.glassBackground,
+                AppDesignSystem.Colors.topFadeTrailing,
             ],
             startPoint: .top,
             endPoint: .bottom
         )
-        .background(.ultraThinMaterial)
+        .background(AppDesignSystem.Colors.glassBackground)
         .frame(height: SettingsScrollableContentLayout.topFadeHeight)
         .allowsHitTesting(false)
     }

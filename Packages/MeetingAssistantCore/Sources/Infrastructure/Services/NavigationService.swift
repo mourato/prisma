@@ -8,13 +8,21 @@ public class NavigationService: ObservableObject {
     public static let shared = NavigationService()
 
     @Published public var requestedSettingsSection: String?
+    @Published public private(set) var settingsSidebarToggleRequestID: UInt64 = 0
+    @Published public private(set) var isSettingsSidebarVisible = true
     private var openSettingsHandler: (@MainActor () -> Void)?
+    private var openOnboardingHandler: (@MainActor () -> Void)?
 
     private init() {}
 
     /// Registers an explicit settings opener provided by the app target.
     public func registerOpenSettingsHandler(_ handler: @escaping @MainActor () -> Void) {
         openSettingsHandler = handler
+    }
+
+    /// Registers an explicit onboarding opener provided by the app target.
+    public func registerOpenOnboardingHandler(_ handler: @escaping @MainActor () -> Void) {
+        openOnboardingHandler = handler
     }
 
     /// Opens the settings/dashboard window.
@@ -51,6 +59,19 @@ public class NavigationService: ObservableObject {
     public func openSettings(section: String) {
         requestedSettingsSection = section
         openSettings()
+    }
+
+    public func openOnboarding() {
+        openOnboardingHandler?()
+    }
+
+    public func requestSettingsSidebarToggle() {
+        settingsSidebarToggleRequestID &+= 1
+    }
+
+    public func setSettingsSidebarVisible(_ isVisible: Bool) {
+        guard isSettingsSidebarVisible != isVisible else { return }
+        isSettingsSidebarVisible = isVisible
     }
 
     /// Shows the About alert.

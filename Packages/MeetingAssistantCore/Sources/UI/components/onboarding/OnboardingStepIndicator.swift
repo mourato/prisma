@@ -33,6 +33,7 @@ private struct StepCircle: View {
     let step: OnboardingStep
     let isCompleted: Bool
     let isCurrent: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ZStack {
@@ -54,8 +55,8 @@ private struct StepCircle: View {
             Circle()
                 .strokeBorder(borderColor, lineWidth: 2)
         )
-        .animation(.easeInOut(duration: 0.2), value: isCompleted)
-        .animation(.easeInOut(duration: 0.2), value: isCurrent)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: isCompleted)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: isCurrent)
     }
 
     private var backgroundColor: Color {

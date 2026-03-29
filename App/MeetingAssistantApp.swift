@@ -17,16 +17,10 @@ struct MeetingAssistantApp: App {
 
     var body: some Scene {
         Settings {
-            SettingsView()
+            SettingsSceneBridgeView()
         }
-        .windowResizability(.contentSize)
         .commands {
-            CommandGroup(replacing: .appSettings) {
-                SettingsLink {
-                    Text("settings.title".localized + "...")
-                }
-                .keyboardShortcut(",", modifiers: .command)
-            }
+            MeetingAssistantCommands()
         }
     }
 }
@@ -38,6 +32,255 @@ private func clearLegacyLanguageOverrideIfNeeded() {
     // Keep system language behavior stable across launches, even if a stale override exists.
     if selectedLanguage == nil || selectedLanguage == "system" {
         defaults.removeObject(forKey: "AppleLanguages")
+    }
+}
+
+private struct SettingsSceneBridgeView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var hasForwarded = false
+
+    var body: some View {
+        Color.clear
+            .frame(width: 1, height: 1)
+            .accessibilityHidden(true)
+            .task {
+                guard !hasForwarded else { return }
+                hasForwarded = true
+
+                if let appDelegate = NSApp.delegate as? AppDelegate {
+                    appDelegate.settingsWindowController.showSettingsWindow()
+                }
+
+                dismiss()
+            }
+    }
+}
+
+private struct AppCommandKeyboardShortcut {
+    let key: KeyEquivalent
+    let modifiers: EventModifiers
+}
+
+private struct OptionalCommandKeyboardShortcutModifier: ViewModifier {
+    let shortcut: AppCommandKeyboardShortcut?
+
+    func body(content: Content) -> some View {
+        if let shortcut {
+            content.keyboardShortcut(shortcut.key, modifiers: shortcut.modifiers)
+        } else {
+            content
+        }
+    }
+}
+
+private enum AppCommandShortcutDisplaySource {
+    case inHouse(ShortcutDefinition)
+    case preset
+    case custom(KeyboardShortcuts.Shortcut)
+    case none
+}
+
+@MainActor
+final class AppCommandRouter: ObservableObject {
+    struct Handlers {
+        let toggleDictation: () -> Void
+        let toggleMeeting: () -> Void
+        let toggleAssistant: () -> Void
+        let cancelCapture: () -> Void
+        let openSettings: () -> Void
+        let openHistory: () -> Void
+        let openOnboarding: () -> Void
+        let checkForUpdates: () -> Void
+        let quit: () -> Void
+    }
+
+    static let shared = AppCommandRouter()
+
+    @Published private(set) var state = AppCommandState()
+
+    private var toggleDictationHandler: (() -> Void)?
+    private var toggleMeetingHandler: (() -> Void)?
+    private var toggleAssistantHandler: (() -> Void)?
+    private var cancelCaptureHandler: (() -> Void)?
+    private var openSettingsHandler: (() -> Void)?
+    private var openHistoryHandler: (() -> Void)?
+    private var openOnboardingHandler: (() -> Void)?
+    private var checkForUpdatesHandler: (() -> Void)?
+    private var quitHandler: (() -> Void)?
+
+    private init() {}
+
+    func registerHandlers(_ handlers: Handlers) {
+        toggleDictationHandler = handlers.toggleDictation
+        toggleMeetingHandler = handlers.toggleMeeting
+        toggleAssistantHandler = handlers.toggleAssistant
+        cancelCaptureHandler = handlers.cancelCapture
+        openSettingsHandler = handlers.openSettings
+        openHistoryHandler = handlers.openHistory
+        openOnboardingHandler = handlers.openOnboarding
+        checkForUpdatesHandler = handlers.checkForUpdates
+        quitHandler = handlers.quit
+    }
+
+    func update(state: AppCommandState) {
+        guard self.state != state else { return }
+        self.state = state
+    }
+
+    func toggleDictation() {
+        toggleDictationHandler?()
+    }
+
+    func toggleMeeting() {
+        toggleMeetingHandler?()
+    }
+
+    func toggleAssistant() {
+        toggleAssistantHandler?()
+    }
+
+    func cancelCapture() {
+        cancelCaptureHandler?()
+    }
+
+    func openSettings() {
+        if let openSettingsHandler {
+            openSettingsHandler()
+        } else {
+            NavigationService.shared.openSettings()
+        }
+    }
+
+    func toggleSettingsSidebar() {
+        openSettings()
+        NavigationService.shared.requestSettingsSidebarToggle()
+    }
+
+    func openHistory() {
+        if let openHistoryHandler {
+            openHistoryHandler()
+        } else {
+            NavigationService.shared.openSettings(section: SettingsSection.transcriptions.rawValue)
+        }
+    }
+
+    func openOnboarding() {
+        if let openOnboardingHandler {
+            openOnboardingHandler()
+        } else {
+            NavigationService.shared.openOnboarding()
+        }
+    }
+
+    func checkForUpdates() {
+        if let checkForUpdatesHandler {
+            checkForUpdatesHandler()
+        } else {
+            NavigationService.shared.checkForUpdates()
+        }
+    }
+
+    func bringAllToFront() {
+        NSApp.arrangeInFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    func quit() {
+        quitHandler?()
+    }
+}
+
+struct MeetingAssistantCommands: Commands {
+    @ObservedObject private var commandRouter = AppCommandRouter.shared
+    @ObservedObject private var navigationService = NavigationService.shared
+
+    var body: some Commands {
+        CommandGroup(replacing: .appSettings) {
+            Button("menubar.settings".localized) {
+                commandRouter.openSettings()
+            }
+            .keyboardShortcut(",", modifiers: .command)
+        }
+
+        CommandGroup(after: .appInfo) {
+            Divider()
+
+            Button("menubar.check_updates".localized) {
+                commandRouter.checkForUpdates()
+            }
+        }
+
+        CommandMenu("commands.capture.title".localized) {
+            if commandRouter.state.showsDictationAction {
+                Button(commandRouter.state.dictationTitleKey.localized) {
+                    commandRouter.toggleDictation()
+                }
+                .modifier(OptionalCommandKeyboardShortcutModifier(shortcut: appCommandKeyboardShortcut(for: .dictationToggle)))
+            }
+
+            if commandRouter.state.showsMeetingAction {
+                Button(commandRouter.state.meetingTitleKey.localized) {
+                    commandRouter.toggleMeeting()
+                }
+                .modifier(OptionalCommandKeyboardShortcutModifier(shortcut: appCommandKeyboardShortcut(for: .meetingToggle)))
+            }
+
+            if commandRouter.state.showsAssistantAction {
+                Button(commandRouter.state.assistantTitleKey.localized) {
+                    commandRouter.toggleAssistant()
+                }
+                .modifier(OptionalCommandKeyboardShortcutModifier(shortcut: appCommandKeyboardShortcut(for: .assistantCommand)))
+            }
+
+            if commandRouter.state.showsCancelAction {
+                Divider()
+
+                Button(commandRouter.state.cancelTitleKey.localized) {
+                    commandRouter.cancelCapture()
+                }
+                .modifier(
+                    OptionalCommandKeyboardShortcutModifier(
+                        shortcut: appCommandKeyboardShortcut(for: commandRouter.state.cancelRecordingShortcutDefinition)
+                    )
+                )
+            }
+        }
+
+        CommandGroup(replacing: .sidebar) {
+            Button(sidebarTitle) {
+                commandRouter.toggleSettingsSidebar()
+            }
+            .keyboardShortcut("S", modifiers: [.command, .control])
+        }
+
+        CommandGroup(after: .sidebar) {
+            Button("menubar.history".localized) {
+                commandRouter.openHistory()
+            }
+        }
+
+        CommandGroup(after: .windowArrangement) {
+            Button("menubar.settings".localized) {
+                commandRouter.openSettings()
+            }
+
+            Button("commands.window.bring_all_to_front".localized) {
+                commandRouter.bringAllToFront()
+            }
+        }
+
+        CommandGroup(after: .help) {
+            Button("menubar.onboarding".localized) {
+                commandRouter.openOnboarding()
+            }
+        }
+    }
+
+    private var sidebarTitle: String {
+        let key = navigationService.isSettingsSidebarVisible
+            ? "commands.view.hide_sidebar"
+            : "commands.view.show_sidebar"
+        return key.localized
     }
 }
 
@@ -61,6 +304,187 @@ extension ShortcutDefinition {
         }
 
         return tokens.joined()
+    }
+}
+
+@MainActor
+private func appCommandShortcutDisplaySource(
+    for shortcutName: KeyboardShortcuts.Name
+) -> AppCommandShortcutDisplaySource {
+    let settings = AppSettingsStore.shared
+
+    switch shortcutName {
+    case .dictationToggle:
+        return resolveShortcutDisplaySource(
+            definition: settings.dictationShortcutDefinition,
+            hasModifierShortcut: settings.dictationModifierShortcutGesture != nil,
+            selectedPresetKey: settings.dictationSelectedPresetKey,
+            fallbackShortcutName: shortcutName
+        )
+    case .assistantCommand:
+        return resolveShortcutDisplaySource(
+            definition: settings.assistantShortcutDefinition,
+            hasModifierShortcut: settings.assistantModifierShortcutGesture != nil,
+            selectedPresetKey: settings.assistantSelectedPresetKey,
+            fallbackShortcutName: shortcutName
+        )
+    case .meetingToggle:
+        return resolveShortcutDisplaySource(
+            definition: settings.meetingShortcutDefinition,
+            hasModifierShortcut: settings.meetingModifierShortcutGesture != nil,
+            selectedPresetKey: settings.meetingSelectedPresetKey,
+            fallbackShortcutName: shortcutName
+        )
+    default:
+        guard let shortcut = KeyboardShortcuts.Shortcut(name: shortcutName) else {
+            return .none
+        }
+        return .custom(shortcut)
+    }
+}
+
+private func resolveShortcutDisplaySource(
+    definition: ShortcutDefinition?,
+    hasModifierShortcut: Bool,
+    selectedPresetKey: PresetShortcutKey,
+    fallbackShortcutName: KeyboardShortcuts.Name
+) -> AppCommandShortcutDisplaySource {
+    if let definition {
+        return .inHouse(definition)
+    }
+
+    if hasModifierShortcut {
+        return .none
+    }
+
+    if selectedPresetKey != .custom, selectedPresetKey != .notSpecified {
+        return .preset
+    }
+
+    guard let shortcut = KeyboardShortcuts.Shortcut(name: fallbackShortcutName) else {
+        return .none
+    }
+    return .custom(shortcut)
+}
+
+@MainActor
+private func appCommandKeyboardShortcut(for shortcutName: KeyboardShortcuts.Name) -> AppCommandKeyboardShortcut? {
+    switch appCommandShortcutDisplaySource(for: shortcutName) {
+    case let .inHouse(shortcut):
+        appCommandKeyboardShortcut(for: shortcut)
+    case let .custom(shortcut):
+        appCommandKeyboardShortcut(forCustomShortcut: shortcut)
+    case .preset, .none:
+        nil
+    }
+}
+
+@MainActor
+private func appCommandKeyboardShortcut(for shortcutDefinition: ShortcutDefinition?) -> AppCommandKeyboardShortcut? {
+    guard let shortcutDefinition else { return nil }
+    guard shortcutDefinition.trigger == .singleTap, let primaryKey = shortcutDefinition.primaryKey else {
+        return nil
+    }
+    guard let keyEquivalent = keyEquivalent(for: primaryKey) else {
+        return nil
+    }
+    return AppCommandKeyboardShortcut(
+        key: keyEquivalent,
+        modifiers: eventModifiers(from: shortcutDefinition.modifiers)
+    )
+}
+
+@MainActor
+private func appCommandKeyboardShortcut(forCustomShortcut shortcut: KeyboardShortcuts.Shortcut) -> AppCommandKeyboardShortcut? {
+    let normalizedKey = normalizedShortcutKey(from: shortcut.description)
+    guard let keyEquivalent = keyEquivalent(from: normalizedKey) else { return nil }
+    return AppCommandKeyboardShortcut(
+        key: keyEquivalent,
+        modifiers: EventModifiers(shortcut.modifiers)
+    )
+}
+
+private func normalizedShortcutKey(from description: String) -> String {
+    let modifierSymbols = ["⌘", "⌥", "⌃", "⇧"]
+    var cleanKey = description
+    for symbol in modifierSymbols {
+        cleanKey = cleanKey.replacingOccurrences(of: symbol, with: "")
+    }
+    return cleanKey.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+}
+
+private func keyEquivalent(for primaryKey: ShortcutPrimaryKey) -> KeyEquivalent? {
+    let mappedKey: KeyEquivalent? = switch primaryKey.kind {
+    case .space:
+        KeyEquivalent.space
+    case .function:
+        nil
+    default:
+        keyEquivalent(from: primaryKey.display.trimmingCharacters(in: .whitespacesAndNewlines).lowercased())
+    }
+    return mappedKey
+}
+
+private func keyEquivalent(from normalizedKey: String) -> KeyEquivalent? {
+    switch normalizedKey {
+    case "space":
+        return KeyEquivalent.space
+    case "return", "enter":
+        return KeyEquivalent.return
+    case "tab":
+        return KeyEquivalent.tab
+    case "backspace", "delete":
+        return KeyEquivalent.delete
+    case "escape", "esc":
+        return KeyEquivalent.escape
+    case "left":
+        return KeyEquivalent.leftArrow
+    case "right":
+        return KeyEquivalent.rightArrow
+    case "up":
+        return KeyEquivalent.upArrow
+    case "down":
+        return KeyEquivalent.downArrow
+    default:
+        guard let character = normalizedKey.first, normalizedKey.count == 1 else {
+            return nil
+        }
+        return KeyEquivalent(character)
+    }
+}
+
+private func eventModifiers(from modifiers: [ModifierShortcutKey]) -> EventModifiers {
+    modifiers.reduce(into: EventModifiers()) { partialResult, modifier in
+        switch modifier {
+        case .leftCommand, .rightCommand, .command:
+            partialResult.insert(.command)
+        case .leftShift, .rightShift, .shift:
+            partialResult.insert(.shift)
+        case .leftOption, .rightOption, .option:
+            partialResult.insert(.option)
+        case .leftControl, .rightControl, .control:
+            partialResult.insert(.control)
+        case .fn:
+            break
+        }
+    }
+}
+
+private extension EventModifiers {
+    init(_ flags: NSEvent.ModifierFlags) {
+        self = []
+        if flags.contains(.command) {
+            insert(.command)
+        }
+        if flags.contains(.shift) {
+            insert(.shift)
+        }
+        if flags.contains(.option) {
+            insert(.option)
+        }
+        if flags.contains(.control) {
+            insert(.control)
+        }
     }
 }
 

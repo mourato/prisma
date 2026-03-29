@@ -12,6 +12,7 @@ extension AppDelegate {
         CrashReporter.shared.setup()
         PerformanceMonitor.shared.startMonitoring()
         configureNavigationService()
+        configureCommandRouter()
 
         // Show onboarding if first launch
         if !settingsStore.hasCompletedOnboarding {
@@ -119,6 +120,7 @@ extension AppDelegate {
 
     private func continueAppSetup() {
         configureNavigationService()
+        configureCommandRouter()
         setupMenuBar()
         verifyPrimaryInterfaceAfterLaunch()
         setupContextMenu()
@@ -175,7 +177,7 @@ extension AppDelegate {
         }
     }
 
-    private func promoteAppForWindowPresentation() {
+    func promoteAppForWindowPresentation() {
         guard NSApp.activationPolicy() != .regular else { return }
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
@@ -199,6 +201,46 @@ extension AppDelegate {
         NavigationService.shared.registerOpenSettingsHandler { [weak self] in
             self?.settingsWindowController.showSettingsWindow()
         }
+        NavigationService.shared.registerOpenOnboardingHandler { [weak self] in
+            self?.promoteAppForWindowPresentation()
+            self?.presentOnboarding {}
+        }
+        NavigationService.shared.setSettingsSidebarVisible(settingsStore.isSettingsSidebarVisible)
+    }
+
+    private func configureCommandRouter() {
+        AppCommandRouter.shared.registerHandlers(
+            .init(
+                toggleDictation: { [weak self] in
+                self?.toggleRecordingFromMenu()
+            },
+                toggleMeeting: { [weak self] in
+                self?.startMeetingFromMenu()
+            },
+                toggleAssistant: { [weak self] in
+                self?.startAssistantFromMenu()
+            },
+                cancelCapture: { [weak self] in
+                self?.cancelRecordingFromMenu()
+            },
+                openSettings: { [weak self] in
+                self?.settingsWindowController.showSettingsWindow()
+            },
+                openHistory: { [weak self] in
+                self?.openHistory()
+            },
+                openOnboarding: { [weak self] in
+                self?.promoteAppForWindowPresentation()
+                self?.openOnboarding()
+            },
+                checkForUpdates: { [weak self] in
+                self?.checkForUpdates()
+            },
+                quit: { [weak self] in
+                self?.quitApp()
+                }
+            )
+        )
     }
 
     /// Ensures the app is recoverable when launch completes without any visible affordance.
@@ -283,6 +325,15 @@ extension AppDelegate {
             && !isStarting
             && !isTranscribing
             && (isAssistantRecording || isAssistantProcessing || isAssistantOwnedOverlayVisible)
+        let commandState = AppCommandState(
+            recordingSection: MenuBarRecordingSectionState(
+                isRecordingManagerActive: isRecording || isStarting || isTranscribing,
+                recordingSource: recordingManager.recordingSource,
+                capturePurpose: recordingManager.currentCapturePurpose,
+                isAssistantRecording: isAssistantRecording || isAssistantOwnedOverlayVisible
+            ),
+            cancelRecordingShortcutDefinition: settingsStore.cancelRecordingShortcutDefinition
+        )
         let renderState = RecordingUIRenderState(
             isRecording: isRecording,
             isStarting: isStarting,
@@ -292,6 +343,9 @@ extension AppDelegate {
             meetingTypeRawValue: currentMeetingType?.rawValue,
             isMeetingNotesPanelVisible: recordingManager.isMeetingNotesPanelVisible
         )
+
+        AppCommandRouter.shared.update(state: commandState)
+        updateMenuTitles()
 
         guard renderState != lastRecordingUIRenderState else {
             recordingCancelShortcutController.refresh()

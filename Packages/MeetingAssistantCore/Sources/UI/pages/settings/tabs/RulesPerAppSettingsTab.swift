@@ -5,6 +5,8 @@ import SwiftUI
 public struct RulesPerAppSettingsTab: View {
     @StateObject private var viewModel: RulesPerAppSettingsViewModel
     @StateObject private var markdownWebTargetsViewModel: WebMarkdownTargetsViewModel
+    @State private var selectedAppRuleID: String?
+    @State private var selectedWebsiteID: UUID?
 
     public init(settings: AppSettingsStore = .shared) {
         _viewModel = StateObject(wrappedValue: RulesPerAppSettingsViewModel(settings: settings))
@@ -59,6 +61,7 @@ public struct RulesPerAppSettingsTab: View {
                 Text("settings.markdown_targets.websites.delete_confirm_message".localized(with: target.displayName))
             }
         }
+        .onDeleteCommand(perform: deleteSelectedItem)
     }
 
     private var appRulesSection: some View {
@@ -138,7 +141,13 @@ public struct RulesPerAppSettingsTab: View {
     private func appRow(for resolvedRule: ResolvedDictationAppRule) -> some View {
         HStack(spacing: 12) {
             SettingsRowClickSurface(
+                onSingleClick: {
+                    selectedAppRuleID = resolvedRule.id
+                    selectedWebsiteID = nil
+                },
                 onDoubleClick: {
+                    selectedAppRuleID = resolvedRule.id
+                    selectedWebsiteID = nil
                     openAppRuleEditor(for: resolvedRule)
                 }
             ) {
@@ -168,12 +177,16 @@ public struct RulesPerAppSettingsTab: View {
 
             SettingsContextMenuButton(accessibilityLabel: "settings.rules_per_app.actions".localized) {
                 Button {
+                    selectedAppRuleID = resolvedRule.id
+                    selectedWebsiteID = nil
                     openAppRuleEditor(for: resolvedRule)
                 } label: {
                     Label("settings.rules_per_app.edit_app".localized, systemImage: "pencil")
                 }
 
                 Button(role: .destructive) {
+                    selectedAppRuleID = resolvedRule.id
+                    selectedWebsiteID = nil
                     viewModel.removeRule(bundleIdentifier: resolvedRule.rule.bundleIdentifier)
                 } label: {
                     Label("settings.rules_per_app.remove_app".localized, systemImage: "trash")
@@ -182,6 +195,25 @@ public struct RulesPerAppSettingsTab: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
+        .background(selectionBackground(isSelected: selectedAppRuleID == resolvedRule.id))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
+        .contextMenu {
+            Button {
+                selectedAppRuleID = resolvedRule.id
+                selectedWebsiteID = nil
+                openAppRuleEditor(for: resolvedRule)
+            } label: {
+                Label("settings.rules_per_app.edit_app".localized, systemImage: "pencil")
+            }
+
+            Button(role: .destructive) {
+                selectedAppRuleID = resolvedRule.id
+                selectedWebsiteID = nil
+                viewModel.removeRule(bundleIdentifier: resolvedRule.rule.bundleIdentifier)
+            } label: {
+                Label("settings.rules_per_app.remove_app".localized, systemImage: "trash")
+            }
+        }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(appRowAccessibilityLabel(for: resolvedRule))
         .accessibilityHint("settings.rules_per_app.actions".localized)
@@ -263,7 +295,13 @@ public struct RulesPerAppSettingsTab: View {
     private func websiteRow(_ target: WebContextTarget) -> some View {
         HStack(spacing: 12) {
             SettingsRowClickSurface(
+                onSingleClick: {
+                    selectedWebsiteID = target.id
+                    selectedAppRuleID = nil
+                },
                 onDoubleClick: {
+                    selectedWebsiteID = target.id
+                    selectedAppRuleID = nil
                     markdownWebTargetsViewModel.editTarget(target)
                 }
             ) {
@@ -293,12 +331,16 @@ public struct RulesPerAppSettingsTab: View {
 
             SettingsContextMenuButton(accessibilityLabel: "settings.rules_per_app.actions".localized) {
                 Button {
+                    selectedWebsiteID = target.id
+                    selectedAppRuleID = nil
                     markdownWebTargetsViewModel.editTarget(target)
                 } label: {
                     Label("settings.markdown_targets.websites.edit".localized, systemImage: "pencil")
                 }
 
                 Button(role: .destructive) {
+                    selectedWebsiteID = target.id
+                    selectedAppRuleID = nil
                     markdownWebTargetsViewModel.confirmDelete(target)
                 } label: {
                     Label("settings.markdown_targets.websites.delete".localized, systemImage: "trash")
@@ -307,6 +349,25 @@ public struct RulesPerAppSettingsTab: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
+        .background(selectionBackground(isSelected: selectedWebsiteID == target.id))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
+        .contextMenu {
+            Button {
+                selectedWebsiteID = target.id
+                selectedAppRuleID = nil
+                markdownWebTargetsViewModel.editTarget(target)
+            } label: {
+                Label("settings.markdown_targets.websites.edit".localized, systemImage: "pencil")
+            }
+
+            Button(role: .destructive) {
+                selectedWebsiteID = target.id
+                selectedAppRuleID = nil
+                markdownWebTargetsViewModel.confirmDelete(target)
+            } label: {
+                Label("settings.markdown_targets.websites.delete".localized, systemImage: "trash")
+            }
+        }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(websiteRowAccessibilityLabel(for: target))
         .accessibilityHint("settings.rules_per_app.actions".localized)
@@ -458,6 +519,35 @@ public struct RulesPerAppSettingsTab: View {
             parts.append("settings.markdown_targets.websites.summary.auto_record".localized)
         }
         return parts.joined(separator: ", ")
+    }
+
+    @ViewBuilder
+    private func selectionBackground(isSelected: Bool) -> some View {
+        if isSelected {
+            RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
+                .fill(AppDesignSystem.Colors.selectionFill)
+                .overlay(
+                    RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
+                        .stroke(AppDesignSystem.Colors.selectionStroke, lineWidth: 1)
+                )
+        } else {
+            Color.clear
+        }
+    }
+
+    private func deleteSelectedItem() {
+        if let selectedAppRuleID,
+           let resolvedRule = viewModel.resolvedRules.first(where: { $0.id == selectedAppRuleID })
+        {
+            viewModel.removeRule(bundleIdentifier: resolvedRule.rule.bundleIdentifier)
+            return
+        }
+
+        if let selectedWebsiteID,
+           let target = markdownWebTargetsViewModel.targets.first(where: { $0.id == selectedWebsiteID })
+        {
+            markdownWebTargetsViewModel.confirmDelete(target)
+        }
     }
 }
 

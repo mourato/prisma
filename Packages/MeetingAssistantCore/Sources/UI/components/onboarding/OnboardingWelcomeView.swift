@@ -11,7 +11,7 @@ public struct OnboardingWelcomeView: View {
     }
 
     public var body: some View {
-        VStack(spacing: 32) {
+        VStack(spacing: 24) {
             Spacer()
 
             // App Icon
@@ -24,12 +24,13 @@ public struct OnboardingWelcomeView: View {
 
             // Title
             Text("onboarding.welcome.title".localized)
-                .font(.system(size: 32, weight: .bold))
+                .font(.title)
+                .fontWeight(.bold)
                 .multilineTextAlignment(.center)
 
             // Subtitle
             Text("onboarding.welcome.subtitle".localized)
-                .font(.system(size: 16))
+                .font(.body)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
@@ -37,19 +38,13 @@ public struct OnboardingWelcomeView: View {
             Spacer()
 
             // Get Started Button
-            Button(action: onGetStarted) {
-                Text("onboarding.welcome.button".localized)
-                    .font(.system(size: 16, weight: .semibold))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(Color.accentColor)
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
-            }
-            .buttonStyle(.plain)
-            .frame(maxWidth: 300)
+            Button("onboarding.welcome.button".localized, action: onGetStarted)
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .keyboardShortcut(.defaultAction)
+                .frame(maxWidth: 300)
         }
-        .padding(40)
+        .padding(32)
     }
 }
 

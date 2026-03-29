@@ -34,7 +34,6 @@ public struct DSCard<Content: View>: View {
                         .stroke(AppDesignSystem.Colors.cardStroke, lineWidth: 0.5)
                 )
         )
-        .background(.ultraThinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
         .frame(maxWidth: .infinity, alignment: .leading)
     }

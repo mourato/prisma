@@ -53,7 +53,7 @@ public struct DSActionButton<Label: View>: View {
         .foregroundStyle(kind.foreground.opacity(isEnabled ? 1 : 0.7))
         .background(kind.background(isEnabled: isEnabled))
         .clipShape(Capsule())
-        .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+        .shadow(color: Color.primary.opacity(0.08), radius: 3, x: 0, y: 1)
     }
 }
 

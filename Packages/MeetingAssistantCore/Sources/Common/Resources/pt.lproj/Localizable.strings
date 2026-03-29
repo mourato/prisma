@@ -865,6 +865,10 @@
 "menubar.stop_assistant" = "Parar Assistant";
 "menubar.cancel_recording" = "Cancelar Gravação";
 "menubar.history" = "Histórico";
+"commands.capture.title" = "Captura";
+"commands.view.show_sidebar" = "Mostrar Barra Lateral";
+"commands.view.hide_sidebar" = "Ocultar Barra Lateral";
+"commands.window.bring_all_to_front" = "Trazer Tudo para Frente";
 
 /* Settings */
 "settings.title" = "Configurações";

@@ -67,14 +67,9 @@ public struct OnboardingPermissionRow: View {
         case .notDetermined:
             Button(action: onGrant) {
                 Text("onboarding.permissions.grant".localized)
-                    .font(.system(size: 13, weight: .medium))
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(Color.accentColor)
-                    .foregroundColor(.white)
-                    .cornerRadius(8)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.borderedProminent)
+            .controlSize(.regular)
 
         case .granted:
             HStack(spacing: 6) {
@@ -91,14 +86,9 @@ public struct OnboardingPermissionRow: View {
                     Image(systemName: "gear")
                     Text("onboarding.permissions.open_settings".localized)
                 }
-                .font(.system(size: 13, weight: .medium))
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(Color.orange.opacity(0.2))
-                .foregroundColor(.orange)
-                .cornerRadius(8)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.bordered)
+            .controlSize(.regular)
             .help("onboarding.permissions.denied.help".localized)
 
         case .restricted:

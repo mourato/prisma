@@ -17,6 +17,7 @@ public struct MeetingSettingsTab: View {
     @StateObject private var monitoredAppsViewModel: InstalledAppsSelectionViewModel
     @StateObject private var webTargetsViewModel: WebMeetingTargetsViewModel
     @State private var showSummaryTemplateEditor = false
+    @State private var selectedWebTargetID: UUID?
 
     public init(
         settings: AppSettingsStore = .shared,
@@ -71,6 +72,7 @@ public struct MeetingSettingsTab: View {
                 Text("settings.post_processing.delete_confirm_message".localized(with: prompt.title))
             }
         }
+        .onDeleteCommand(perform: deleteSelectedWebTarget)
     }
 
     private func updateNavigationState(to route: MeetingSettingsNavigationRoute) {
@@ -399,7 +401,11 @@ public struct MeetingSettingsTab: View {
     private func webTargetRow(_ target: WebMeetingTarget) -> some View {
         HStack(spacing: 12) {
             SettingsRowClickSurface(
+                onSingleClick: {
+                    selectedWebTargetID = target.id
+                },
                 onDoubleClick: {
+                    selectedWebTargetID = target.id
                     webTargetsViewModel.editTarget(target)
                 }
             ) {
@@ -427,12 +433,14 @@ public struct MeetingSettingsTab: View {
 
             SettingsContextMenuButton(accessibilityLabel: "settings.rules_per_app.actions".localized) {
                 Button {
+                    selectedWebTargetID = target.id
                     webTargetsViewModel.editTarget(target)
                 } label: {
                     Label("settings.meetings.web_targets.edit".localized, systemImage: "pencil")
                 }
 
                 Button(role: .destructive) {
+                    selectedWebTargetID = target.id
                     webTargetsViewModel.confirmDelete(target)
                 } label: {
                     Label("settings.meetings.web_targets.delete".localized, systemImage: "trash")
@@ -441,6 +449,23 @@ public struct MeetingSettingsTab: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
+        .background(selectionBackground(isSelected: selectedWebTargetID == target.id))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
+        .contextMenu {
+            Button {
+                selectedWebTargetID = target.id
+                webTargetsViewModel.editTarget(target)
+            } label: {
+                Label("settings.meetings.web_targets.edit".localized, systemImage: "pencil")
+            }
+
+            Button(role: .destructive) {
+                selectedWebTargetID = target.id
+                webTargetsViewModel.confirmDelete(target)
+            } label: {
+                Label("settings.meetings.web_targets.delete".localized, systemImage: "trash")
+            }
+        }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(webTargetAccessibilityLabel(for: target))
         .accessibilityHint("settings.rules_per_app.actions".localized)
@@ -476,6 +501,29 @@ public struct MeetingSettingsTab: View {
             return "\(language.flagEmoji) \("settings.meetings.summary_output_language.option.meeting_spoken".localized)"
         }
         return language.displayName
+    }
+
+    @ViewBuilder
+    private func selectionBackground(isSelected: Bool) -> some View {
+        if isSelected {
+            RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
+                .fill(AppDesignSystem.Colors.selectionFill)
+                .overlay(
+                    RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
+                        .stroke(AppDesignSystem.Colors.selectionStroke, lineWidth: 1)
+                )
+        } else {
+            Color.clear
+        }
+    }
+
+    private func deleteSelectedWebTarget() {
+        guard let selectedWebTargetID,
+              let target = webTargetsViewModel.targets.first(where: { $0.id == selectedWebTargetID })
+        else {
+            return
+        }
+        webTargetsViewModel.confirmDelete(target)
     }
 
     // MARK: - Prompt Row

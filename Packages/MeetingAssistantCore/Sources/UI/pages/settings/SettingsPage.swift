@@ -34,23 +34,26 @@ public struct SettingsView: View {
     }
 
     private let chromeMode: ChromeMode
+    private let settingsStore = AppSettingsStore.shared
     @State private var selectedSection: SettingsSection = .metrics
     @State private var metricsNavigationState = SettingsSubpageNavigationState<MetricsDashboardRoute>()
     @State private var transcriptionsNavigationHistory = TranscriptionsNavigationHistory()
     @State private var transcriptionsSearchText = ""
     @State private var meetingNavigationState = MeetingSettingsNavigationState()
     @State private var enhancementsNavigationState = SettingsSubpageNavigationState<EnhancementsSettingsRoute>()
-    @State private var columnVisibility = NavigationSplitViewVisibility.all
+    @State private var columnVisibility: NavigationSplitViewVisibility
     @StateObject private var navigationService = NavigationService.shared
 
     @MainActor
     public init() {
         chromeMode = .automatic
+        _columnVisibility = State(initialValue: AppSettingsStore.shared.isSettingsSidebarVisible ? .all : .detailOnly)
     }
 
     @MainActor
     fileprivate init(chromeMode: ChromeMode) {
         self.chromeMode = chromeMode
+        _columnVisibility = State(initialValue: AppSettingsStore.shared.isSettingsSidebarVisible ? .all : .detailOnly)
     }
 
     public var body: some View {
@@ -76,6 +79,7 @@ public struct SettingsView: View {
         .frame(minWidth: LayoutConstants.windowWidth, minHeight: LayoutConstants.windowHeight)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
+            persistSidebarVisibility(columnVisibility)
             if let sectionId = navigationService.requestedSettingsSection,
                let section = SettingsSection(rawValue: sectionId)
             {
@@ -83,11 +87,17 @@ public struct SettingsView: View {
                 navigationService.requestedSettingsSection = nil
             }
         }
+        .onChange(of: columnVisibility) { _, newValue in
+            persistSidebarVisibility(newValue)
+        }
         .onReceive(navigationService.$requestedSettingsSection.compactMap(\.self)) { sectionId in
             if let section = SettingsSection(rawValue: sectionId) {
                 selectSection(section)
             }
             navigationService.requestedSettingsSection = nil
+        }
+        .onReceive(navigationService.$settingsSidebarToggleRequestID.dropFirst()) { _ in
+            toggleSidebar()
         }
     }
 
@@ -124,15 +134,12 @@ public struct SettingsView: View {
         HStack(spacing: 8) {
             Image(systemName: section.icon)
                 .symbolRenderingMode(.monochrome)
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(.white)
-                .frame(width: 24, height: 24)
+                .frame(width: 20, height: 20)
                 .background(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
                         .fill(section.sidebarIconBackgroundColor)
-                )
-                .shadow(
-                    color: Color.black.opacity(0.2), radius: 3, x: 0, y: 1
                 )
             Text(section.title)
                 .font(
@@ -175,7 +182,10 @@ public struct SettingsView: View {
     private var settingsToolbarContent: some ToolbarContent {
         if #available(macOS 26.0, *) {
             ToolbarItem(placement: .navigation) {
-                glassNavigationPill
+                HStack(spacing: 6) {
+                    sidebarToggleButton
+                    glassNavigationPill
+                }
             }
             .sharedBackgroundVisibility(.hidden)
 
@@ -233,6 +243,7 @@ public struct SettingsView: View {
     @available(macOS 26.0, *)
     private var tahoeDetailNavigationBar: some View {
         HStack(spacing: 8) {
+            sidebarToggleButton
             glassNavigationPill
             toolbarSectionTitle
             if shouldShowTranscriptionsSearch {
@@ -247,24 +258,24 @@ public struct SettingsView: View {
 
     @available(macOS 26.0, *)
     private var toolbarSectionTitle: some View {
-        HStack(spacing: 6) {
+        Label {
+            Text(selectedSection.title)
+                .font(.headline)
+                .lineLimit(1)
+        } icon: {
             Image(systemName: selectedSection.icon)
                 .symbolRenderingMode(.monochrome)
-                .font(.system(size: 13, weight: .semibold))
-                .frame(width: 14, height: 14)
-
-            Text(selectedSection.title)
-                .font(.system(size: 13, weight: .semibold))
-                .lineLimit(1)
-                .fixedSize(horizontal: true, vertical: false)
+                .font(.system(size: 12, weight: .semibold))
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 10)
-        .glassEffect(in: Capsule())
+        .labelStyle(.titleAndIcon)
+        .fixedSize(horizontal: true, vertical: false)
+        .padding(.horizontal, 4)
     }
 
     private var legacyDetailNavigationBar: some View {
         HStack(spacing: 12) {
+            legacySidebarToggleButton
+
             HStack(spacing: 6) {
                 legacyNavigationHistoryButton(
                     systemImage: "chevron.left",
@@ -294,7 +305,7 @@ public struct SettingsView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(.ultraThinMaterial)
+        .background(AppDesignSystem.Colors.glassBackground)
         .overlay(alignment: .bottom) {
             Divider()
         }
@@ -348,6 +359,36 @@ public struct SettingsView: View {
             )
         }
         .glassEffect(in: Capsule())
+    }
+
+    @available(macOS 26.0, *)
+    private var sidebarToggleButton: some View {
+        Button(action: toggleSidebar) {
+            Image(systemName: "sidebar.left")
+                .symbolRenderingMode(.monochrome)
+                .font(.system(size: 14, weight: .medium))
+                .frame(width: 32, height: 32)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(sidebarToggleHelpText)
+        .accessibilityLabel(sidebarToggleHelpText)
+    }
+
+    private var legacySidebarToggleButton: some View {
+        Button(action: toggleSidebar) {
+            Image(systemName: "sidebar.left")
+                .font(.system(size: 13, weight: .semibold))
+                .frame(width: 26, height: 24)
+                .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .background(
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .fill(AppDesignSystem.Colors.subtleFill)
+        )
+        .help(sidebarToggleHelpText)
+        .accessibilityLabel(sidebarToggleHelpText)
     }
 
     @available(macOS 26.0, *)
@@ -445,6 +486,23 @@ public struct SettingsView: View {
             transcriptionsSearchText = ""
         }
         selectedSection = section
+    }
+
+    private func toggleSidebar() {
+        columnVisibility = navigationService.isSettingsSidebarVisible ? .detailOnly : .all
+    }
+
+    private func persistSidebarVisibility(_ visibility: NavigationSplitViewVisibility) {
+        let isVisible = visibility != .detailOnly
+        settingsStore.isSettingsSidebarVisible = isVisible
+        navigationService.setSettingsSidebarVisible(isVisible)
+    }
+
+    private var sidebarToggleHelpText: String {
+        let key = navigationService.isSettingsSidebarVisible
+            ? "commands.view.hide_sidebar"
+            : "commands.view.show_sidebar"
+        return key.localized
     }
 
     private var canNavigateBack: Bool {

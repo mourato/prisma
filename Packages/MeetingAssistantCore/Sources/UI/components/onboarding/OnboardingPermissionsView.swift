@@ -23,7 +23,7 @@ public struct OnboardingPermissionsView: View {
     }
 
     public var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 20) {
             // Header
             VStack(spacing: 12) {
                 Image(systemName: "shield.checkered")
@@ -31,10 +31,11 @@ public struct OnboardingPermissionsView: View {
                     .foregroundColor(.accentColor)
 
                 Text("onboarding.permissions.title".localized)
-                    .font(.system(size: 28, weight: .bold))
+                    .font(.title2)
+                    .fontWeight(.bold)
 
                 Text("onboarding.permissions.subtitle".localized)
-                    .font(.system(size: 14))
+                    .font(.body)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
@@ -62,26 +63,18 @@ public struct OnboardingPermissionsView: View {
                 if onSkip != nil {
                     Button(action: { onSkip?() }) {
                         Text("onboarding.skip".localized)
-                            .font(.system(size: 14))
-                            .foregroundColor(.secondary)
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.borderless)
+                    .keyboardShortcut(.cancelAction)
                 }
 
                 // Continue button (right)
-                Button(action: onContinue) {
-                    Text("onboarding.continue".localized)
-                        .font(.system(size: 16, weight: .semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(viewModel.allPermissionsGranted ? Color.accentColor : Color.secondary)
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
-                }
-                .buttonStyle(.plain)
-                .disabled(!viewModel.allPermissionsGranted)
+                Button("onboarding.continue".localized, action: onContinue)
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(!viewModel.allPermissionsGranted)
             }
             .frame(maxWidth: 400)
             .padding(.bottom, 24)

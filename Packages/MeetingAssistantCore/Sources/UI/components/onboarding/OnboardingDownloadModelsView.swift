@@ -23,7 +23,7 @@ public struct OnboardingDownloadModelsView: View {
     }
 
     public var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 20) {
             // Header
             VStack(spacing: 12) {
                 headerIcon
@@ -31,10 +31,11 @@ public struct OnboardingDownloadModelsView: View {
                     .foregroundColor(headerColor)
 
                 Text("onboarding.download.title".localized)
-                    .font(.system(size: 28, weight: .bold))
+                    .font(.title2)
+                    .fontWeight(.bold)
 
                 Text("onboarding.download.subtitle".localized)
-                    .font(.system(size: 14))
+                    .font(.body)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
@@ -55,25 +56,21 @@ public struct OnboardingDownloadModelsView: View {
                 if onSkip != nil, !isDownloading {
                     Button(action: { onSkip?() }) {
                         Text("onboarding.skip".localized)
-                            .font(.system(size: 14))
-                            .foregroundColor(.secondary)
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.borderless)
+                    .keyboardShortcut(.cancelAction)
                 }
 
                 // Continue/Download button (right)
                 Button(action: handlePrimaryAction) {
                     primaryButtonLabel
-                        .font(.system(size: 16, weight: .semibold))
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(primaryButtonBackground)
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .tint(primaryButtonBackground)
+                .keyboardShortcut(.defaultAction)
                 .disabled(isDownloading && !downloadComplete)
             }
             .frame(maxWidth: 400)
@@ -145,7 +142,7 @@ public struct OnboardingDownloadModelsView: View {
         VStack(spacing: 16) {
             // Status text
             Text(statusText)
-                .font(.system(size: 15))
+                .font(.body)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
 
@@ -157,7 +154,7 @@ public struct OnboardingDownloadModelsView: View {
                         .frame(height: 6)
 
                     Text(modelManager.downloadPhase.localizedDescription)
-                        .font(.system(size: 13))
+                        .font(.caption)
                         .foregroundColor(.secondary)
                 }
             }
@@ -165,7 +162,7 @@ public struct OnboardingDownloadModelsView: View {
             // Error message
             if let error = modelManager.lastError {
                 Text(error)
-                    .font(.system(size: 13))
+                    .font(.caption)
                     .foregroundColor(.red)
                     .multilineTextAlignment(.center)
             }
@@ -234,7 +231,7 @@ public struct OnboardingDownloadModelsView: View {
             }
 
             Text(title)
-                .font(.system(size: 14))
+                .font(.subheadline)
                 .foregroundColor(isComplete ? .primary : .secondary)
 
             Spacer()

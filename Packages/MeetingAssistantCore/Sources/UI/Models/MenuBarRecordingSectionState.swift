@@ -1,6 +1,6 @@
 import MeetingAssistantCoreDomain
 
-public enum MenuBarRecordingSectionState: Equatable {
+public enum MenuBarRecordingSectionState: Equatable, Sendable {
     case idle
     case dictationActive
     case meetingActive

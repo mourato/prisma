@@ -122,8 +122,7 @@ extension AppDelegate {
     }
 
     func updateMenuTitles() {
-        let sectionState = recordingSectionState()
-        renderRecordingSection(for: sectionState)
+        renderRecordingSection(for: AppCommandRouter.shared.state)
     }
 
     private func updateMenuItem(_ item: NSMenuItem?, key: String, shortcutName: KeyboardShortcuts.Name) {
@@ -139,68 +138,20 @@ extension AppDelegate {
         applyShortcutDefinition(shortcutDefinition, to: item, title: title)
     }
 
-    private func recordingSectionState() -> MenuBarRecordingSectionState {
-        MenuBarRecordingSectionState(
-            isRecordingManagerActive: recordingManager.isRecording || recordingManager.isStartingRecording,
-            recordingSource: recordingManager.recordingSource,
-            capturePurpose: recordingManager.currentCapturePurpose,
-            isAssistantRecording: assistantVoiceCommandService.isRecording
+    private func renderRecordingSection(for state: AppCommandState) {
+        updateMenuItem(dictateMenuItem, key: state.dictationTitleKey, shortcutName: .dictationToggle)
+        updateMenuItem(recordMeetingMenuItem, key: state.meetingTitleKey, shortcutName: .meetingToggle)
+        updateMenuItem(assistantMenuItem, key: state.assistantTitleKey, shortcutName: .assistantCommand)
+        updateMenuItem(
+            cancelRecordingMenuItem,
+            key: state.cancelTitleKey,
+            shortcutDefinition: state.cancelRecordingShortcutDefinition
         )
-    }
 
-    private func renderRecordingSection(for state: MenuBarRecordingSectionState) {
-        switch state {
-        case .idle:
-            updateMenuItem(dictateMenuItem, key: "menubar.dictate", shortcutName: .dictationToggle)
-            updateMenuItem(recordMeetingMenuItem, key: "menubar.record_meeting", shortcutName: .meetingToggle)
-            updateMenuItem(assistantMenuItem, key: "menubar.assistant", shortcutName: .assistantCommand)
-            updateMenuItem(
-                cancelRecordingMenuItem,
-                key: "menubar.cancel_recording",
-                shortcutDefinition: settingsStore.cancelRecordingShortcutDefinition
-            )
-
-            dictateMenuItem?.isHidden = false
-            recordMeetingMenuItem?.isHidden = false
-            assistantMenuItem?.isHidden = false
-            cancelRecordingMenuItem?.isHidden = true
-        case .dictationActive:
-            updateMenuItem(dictateMenuItem, key: "menubar.stop_dictation", shortcutName: .dictationToggle)
-            updateMenuItem(
-                cancelRecordingMenuItem,
-                key: "menubar.cancel_recording",
-                shortcutDefinition: settingsStore.cancelRecordingShortcutDefinition
-            )
-
-            dictateMenuItem?.isHidden = false
-            recordMeetingMenuItem?.isHidden = true
-            assistantMenuItem?.isHidden = true
-            cancelRecordingMenuItem?.isHidden = false
-        case .meetingActive:
-            updateMenuItem(recordMeetingMenuItem, key: "menubar.stop_recording", shortcutName: .meetingToggle)
-            updateMenuItem(
-                cancelRecordingMenuItem,
-                key: "menubar.cancel_recording",
-                shortcutDefinition: settingsStore.cancelRecordingShortcutDefinition
-            )
-
-            dictateMenuItem?.isHidden = true
-            recordMeetingMenuItem?.isHidden = false
-            assistantMenuItem?.isHidden = true
-            cancelRecordingMenuItem?.isHidden = false
-        case .assistantActive:
-            updateMenuItem(assistantMenuItem, key: "menubar.stop_assistant", shortcutName: .assistantCommand)
-            updateMenuItem(
-                cancelRecordingMenuItem,
-                key: "menubar.cancel_recording",
-                shortcutDefinition: settingsStore.cancelRecordingShortcutDefinition
-            )
-
-            dictateMenuItem?.isHidden = true
-            recordMeetingMenuItem?.isHidden = true
-            assistantMenuItem?.isHidden = false
-            cancelRecordingMenuItem?.isHidden = false
-        }
+        dictateMenuItem?.isHidden = !state.showsDictationAction
+        recordMeetingMenuItem?.isHidden = !state.showsMeetingAction
+        assistantMenuItem?.isHidden = !state.showsAssistantAction
+        cancelRecordingMenuItem?.isHidden = !state.showsCancelAction
     }
 
     private enum ShortcutDisplaySource {
@@ -424,33 +375,34 @@ extension AppDelegate {
 
     // MARK: - Menu Actions
 
-    @objc private func openSettings() {
+    @objc func openSettings() {
         NavigationService.shared.openSettings()
     }
 
-    @objc private func openOnboarding() {
+    @objc func openOnboarding() {
+        promoteAppForWindowPresentation()
         presentOnboarding {}
     }
 
-    @objc private func openHistory() {
+    @objc func openHistory() {
         NavigationService.shared.openSettings(section: SettingsSection.transcriptions.rawValue)
     }
 
-    @objc private func toggleRecordingFromMenu() {
+    @objc func toggleRecordingFromMenu() {
         Task { @MainActor in
             // Default "Dictation" mode (Mic Only)
             await self.startRecording(source: .microphone)
         }
     }
 
-    @objc private func startMeetingFromMenu() {
+    @objc func startMeetingFromMenu() {
         Task { @MainActor in
             // Meeting mode (System + Mic) permissions will be checked by manager
             await self.startRecording(source: .all)
         }
     }
 
-    @objc private func startAssistantFromMenu() {
+    @objc func startAssistantFromMenu() {
         Task {
             if assistantVoiceCommandService.isRecording {
                 await assistantVoiceCommandService.stopAndProcess()
@@ -466,7 +418,7 @@ extension AppDelegate {
         }
     }
 
-    @objc private func cancelRecordingFromMenu() {
+    @objc func cancelRecordingFromMenu() {
         Task {
             if assistantVoiceCommandService.isRecording {
                 await assistantVoiceCommandService.cancelRecording()
@@ -476,11 +428,11 @@ extension AppDelegate {
         }
     }
 
-    @objc private func checkForUpdates() {
+    @objc func checkForUpdates() {
         NavigationService.shared.checkForUpdates()
     }
 
-    @objc private func quitApp() {
+    @objc func quitApp() {
         Task { @MainActor in
             await self.performGracefulShutdown()
         }

@@ -7,6 +7,7 @@ public struct VocabularySettingsTab: View {
     @StateObject private var viewModel: VocabularySettingsViewModel
     @State private var ruleFindInput = ""
     @State private var ruleReplaceInput = ""
+    @State private var selectedRuleID: UUID?
 
     public init(settings: AppSettingsStore = .shared) {
         _viewModel = StateObject(wrappedValue: VocabularySettingsViewModel(settings: settings))
@@ -67,12 +68,17 @@ public struct VocabularySettingsTab: View {
                 Text("settings.vocabulary.delete_confirm_message".localized(with: rule.find))
             }
         }
+        .onDeleteCommand(perform: deleteSelectedRule)
     }
 
     private func row(for rule: VocabularyReplacementRule) -> some View {
         HStack(spacing: 12) {
             SettingsRowClickSurface(
+                onSingleClick: {
+                    selectedRuleID = rule.id
+                },
                 onDoubleClick: {
+                    selectedRuleID = rule.id
                     openRuleEditor(for: rule)
                 }
             ) {
@@ -96,12 +102,14 @@ public struct VocabularySettingsTab: View {
 
             SettingsContextMenuButton(accessibilityLabel: "settings.vocabulary.actions".localized) {
                 Button {
+                    selectedRuleID = rule.id
                     openRuleEditor(for: rule)
                 } label: {
                     Label("settings.vocabulary.edit_rule".localized, systemImage: "pencil")
                 }
 
                 Button(role: .destructive) {
+                    selectedRuleID = rule.id
                     viewModel.confirmDelete(rule)
                 } label: {
                     Label("settings.vocabulary.delete_rule".localized, systemImage: "trash")
@@ -110,6 +118,23 @@ public struct VocabularySettingsTab: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
+        .background(rowBackground(isSelected: selectedRuleID == rule.id))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
+        .contextMenu {
+            Button {
+                selectedRuleID = rule.id
+                openRuleEditor(for: rule)
+            } label: {
+                Label("settings.vocabulary.edit_rule".localized, systemImage: "pencil")
+            }
+
+            Button(role: .destructive) {
+                selectedRuleID = rule.id
+                viewModel.confirmDelete(rule)
+            } label: {
+                Label("settings.vocabulary.delete_rule".localized, systemImage: "trash")
+            }
+        }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(vocabularyRowAccessibilityLabel(for: rule))
         .accessibilityHint("settings.vocabulary.actions".localized)
@@ -202,6 +227,29 @@ public struct VocabularySettingsTab: View {
         ruleFindInput = rule.find
         ruleReplaceInput = rule.replace
         viewModel.startEditingRule(rule)
+    }
+
+    @ViewBuilder
+    private func rowBackground(isSelected: Bool) -> some View {
+        if isSelected {
+            RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
+                .fill(AppDesignSystem.Colors.selectionFill)
+                .overlay(
+                    RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
+                        .stroke(AppDesignSystem.Colors.selectionStroke, lineWidth: 1)
+                )
+        } else {
+            Color.clear
+        }
+    }
+
+    private func deleteSelectedRule() {
+        guard let selectedRuleID,
+              let rule = viewModel.rules.first(where: { $0.id == selectedRuleID })
+        else {
+            return
+        }
+        viewModel.confirmDelete(rule)
     }
 }
 

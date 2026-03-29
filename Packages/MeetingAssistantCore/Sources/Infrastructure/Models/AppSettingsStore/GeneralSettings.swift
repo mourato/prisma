@@ -5,6 +5,7 @@ public extension AppSettingsStore {
         static let recordingsDirectory = "recordingsDirectory"
         static let autoStartRecording = "autoStartRecording"
         static let showSettingsOnLaunch = "showSettingsOnLaunch"
+        static let isSettingsSidebarVisible = "isSettingsSidebarVisible"
         static let autoCopyTranscriptionToClipboard = "autoCopyTranscriptionToClipboard"
         static let autoPasteTranscriptionToActiveApp = "autoPasteTranscriptionToActiveApp"
         static let launchAtLogin = "launchAtLogin"
@@ -27,6 +28,17 @@ public extension AppSettingsStore {
     var showSettingsOnLaunch: Bool {
         get { UserDefaults.standard.bool(forKey: GeneralKeys.showSettingsOnLaunch) }
         set { UserDefaults.standard.set(newValue, forKey: GeneralKeys.showSettingsOnLaunch) }
+    }
+
+    /// Whether the Settings sidebar is currently visible.
+    var isSettingsSidebarVisible: Bool {
+        get {
+            if UserDefaults.standard.object(forKey: GeneralKeys.isSettingsSidebarVisible) == nil {
+                return true
+            }
+            return UserDefaults.standard.bool(forKey: GeneralKeys.isSettingsSidebarVisible)
+        }
+        set { UserDefaults.standard.set(newValue, forKey: GeneralKeys.isSettingsSidebarVisible) }
     }
 
     /// Whether to automatically copy the latest transcription to the clipboard.
