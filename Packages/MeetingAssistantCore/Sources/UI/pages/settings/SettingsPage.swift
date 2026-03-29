@@ -182,10 +182,7 @@ public struct SettingsView: View {
     private var settingsToolbarContent: some ToolbarContent {
         if #available(macOS 26.0, *) {
             ToolbarItem(placement: .navigation) {
-                HStack(spacing: 6) {
-                    sidebarToggleButton
-                    glassNavigationPill
-                }
+                glassNavigationPill
             }
             .sharedBackgroundVisibility(.hidden)
 
@@ -243,7 +240,6 @@ public struct SettingsView: View {
     @available(macOS 26.0, *)
     private var tahoeDetailNavigationBar: some View {
         HStack(spacing: 8) {
-            sidebarToggleButton
             glassNavigationPill
             toolbarSectionTitle
             if shouldShowTranscriptionsSearch {
@@ -359,20 +355,6 @@ public struct SettingsView: View {
             )
         }
         .glassEffect(in: Capsule())
-    }
-
-    @available(macOS 26.0, *)
-    private var sidebarToggleButton: some View {
-        Button(action: toggleSidebar) {
-            Image(systemName: "sidebar.left")
-                .symbolRenderingMode(.monochrome)
-                .font(.system(size: 14, weight: .medium))
-                .frame(width: 32, height: 32)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .help(sidebarToggleHelpText)
-        .accessibilityLabel(sidebarToggleHelpText)
     }
 
     private var legacySidebarToggleButton: some View {
