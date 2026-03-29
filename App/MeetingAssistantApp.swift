@@ -414,7 +414,7 @@ private func normalizedShortcutKey(from description: String) -> String {
 }
 
 private func keyEquivalent(for primaryKey: ShortcutPrimaryKey) -> KeyEquivalent? {
-    let mappedKey: KeyEquivalent? = switch primaryKey.kind {
+    switch primaryKey.kind {
     case .space:
         KeyEquivalent.space
     case .function:
@@ -422,7 +422,6 @@ private func keyEquivalent(for primaryKey: ShortcutPrimaryKey) -> KeyEquivalent?
     default:
         keyEquivalent(from: primaryKey.display.trimmingCharacters(in: .whitespacesAndNewlines).lowercased())
     }
-    return mappedKey
 }
 
 private func keyEquivalent(from normalizedKey: String) -> KeyEquivalent? {

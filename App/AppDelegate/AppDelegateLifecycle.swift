@@ -212,32 +212,32 @@ extension AppDelegate {
         AppCommandRouter.shared.registerHandlers(
             .init(
                 toggleDictation: { [weak self] in
-                self?.toggleRecordingFromMenu()
-            },
+                    self?.toggleRecordingFromMenu()
+                },
                 toggleMeeting: { [weak self] in
-                self?.startMeetingFromMenu()
-            },
+                    self?.startMeetingFromMenu()
+                },
                 toggleAssistant: { [weak self] in
-                self?.startAssistantFromMenu()
-            },
+                    self?.startAssistantFromMenu()
+                },
                 cancelCapture: { [weak self] in
-                self?.cancelRecordingFromMenu()
-            },
+                    self?.cancelRecordingFromMenu()
+                },
                 openSettings: { [weak self] in
-                self?.settingsWindowController.showSettingsWindow()
-            },
+                    self?.settingsWindowController.showSettingsWindow()
+                },
                 openHistory: { [weak self] in
-                self?.openHistory()
-            },
+                    self?.openHistory()
+                },
                 openOnboarding: { [weak self] in
-                self?.promoteAppForWindowPresentation()
-                self?.openOnboarding()
-            },
+                    self?.promoteAppForWindowPresentation()
+                    self?.openOnboarding()
+                },
                 checkForUpdates: { [weak self] in
-                self?.checkForUpdates()
-            },
+                    self?.checkForUpdates()
+                },
                 quit: { [weak self] in
-                self?.quitApp()
+                    self?.quitApp()
                 }
             )
         )
