@@ -18,7 +18,7 @@ Use this skill when the task requires any of the following:
 - Split oversized `SKILL.md` files into `references/`, `scripts/`, or `assets/`
 - Standardize frontmatter descriptions and cross-skill routing
 
-If the request is to find or install external skills from a registry, use `../skills-discovery/SKILL.md`.
+If the request is to find or install external skills, use `../skills-discovery/SKILL.md`.
 
 ## Required Workflow
 
@@ -59,6 +59,7 @@ Use available tooling and local checks to ensure consistency.
 - Ensure each skill directory has `SKILL.md`.
 - Validate all relative links from `SKILL.md`.
 - Verify no directory is left as an empty placeholder.
+- Ensure indexes and routing docs mention only existing skills.
 
 ## Resource Map
 

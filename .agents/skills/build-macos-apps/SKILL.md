@@ -7,24 +7,28 @@ description: This skill should be used when the user asks to "build a macOS app"
 
 ## Role
 
-Use this skill as an orchestrator only.
+Use this skill as an intake router only.
 
-- Route user intent to the right workflow quickly.
+- Route user intent to the right canonical skill quickly.
 - Delegate implementation rules to `../macos-development/SKILL.md`.
 - Delegate UI/UX direction to `../native-app-designer/SKILL.md`.
-- Delegate verification policy to `../quality-assurance/SKILL.md`.
-- Delegate specialist domains to their dedicated skills.
+- Delegate lifecycle and verification policy to `../task-lifecycle/SKILL.md` and `../quality-assurance/SKILL.md`.
+- Keep release and CI triage notes here only when they affect routing.
 
 ## Scope Boundary
 
-Use this skill for intake and routing. Do not duplicate deep implementation guidance here.
+Use this skill for intake and routing only. Do not add duplicated implementation workflows or reference trees here.
 
 - Architecture, platform lifecycle, and AppKit/SwiftUI implementation -> `macos-development`
+- Human Interface Guidelines and native interaction quality -> `macos-design-guidelines`
 - UI/UX direction and experience quality baseline -> `native-app-designer`
-- Test strategy and merge gates -> `quality-assurance`
+- Risk classification and merge lifecycle -> `task-lifecycle`
+- Verification commands and scope checks -> `quality-assurance`
 - Swift concurrency remediation -> `swift-concurrency-expert`
 - SwiftUI runtime performance -> `swiftui-performance-audit`
 - Advanced motion/animation work -> `swiftui-animation`
+- XCTest implementation details -> `testing-xctest`
+- Accessibility audit and keyboard/focus review -> `accessibility-audit`
 
 ## Intake
 
@@ -42,35 +46,20 @@ Ask the user what they need:
 
 | User intent | Route to |
 |---|---|
-| New app, bootstrap, scaffold | `workflows/build-new-app.md` |
-| Bug, crash, regression | `workflows/debug-app.md` |
-| Feature implementation | `workflows/add-feature.md` |
-| Test creation/execution | `workflows/write-tests.md` |
-| Performance optimization | `workflows/optimize-performance.md` |
-| Distribution/release | `workflows/ship-app.md` |
+| New app, bootstrap, scaffold | `../macos-development/workflows/build-new-app.md` |
+| Bug, crash, regression | `../macos-development/workflows/debug-app.md` + `../debugging-strategies/SKILL.md` |
+| Feature implementation | `../macos-development/workflows/add-feature.md` |
+| Test creation/execution | `../testing-xctest/SKILL.md` + `../quality-assurance/SKILL.md` |
+| Performance optimization | `../macos-development/workflows/optimize-performance.md` |
+| Distribution/release | `../macos-development/workflows/ship-app.md` |
 | Unclear | Ask one clarification question, then route |
 
-## Workflow Execution Rules
+## Canonical References
 
-1. Pick exactly one primary workflow.
-2. Load supporting references only when needed from `references/`.
-3. Keep implementation details in specialized skills instead of adding them here.
-4. Before final push/merge, apply quality gates via `quality-assurance`.
-
-## Verification Baseline
-
-Use repository commands:
-
-```bash
-make build-test
-make preflight-agent
-```
-
-For Medium/High risk merge gates, keep canonical checks:
-
-```bash
-make build-test
-```
+- Implementation references live under `../macos-development/references/`.
+- Routing, risk, and merge policy live in `../task-lifecycle/SKILL.md`.
+- Verification commands live in `../quality-assurance/SKILL.md`.
+- If a topic already has a specialist owner, route there instead of adding more guidance here.
 
 ## Release Command Surface (Current)
 
@@ -97,16 +86,6 @@ Recent release automation churn (commits `51c53eb`, `37bcb34`, `d82fb9d`, `09bb4
 ### Routing Note
 
 When a task is specifically about failing GitHub Actions checks, route to `gh-fix-ci` first, then return to this skill for macOS release workflow wiring.
-
-## Related Skills
-
-- `../macos-development/SKILL.md`
-- `../native-app-designer/SKILL.md`
-- `../quality-assurance/SKILL.md`
-- `../swift-concurrency-expert/SKILL.md`
-- `../swiftui-performance-audit/SKILL.md`
-- `../swiftui-animation/SKILL.md`
-
 
 ## 2026-03-05 Progression Drill
 
@@ -137,3 +116,13 @@ When a task is specifically about failing GitHub Actions checks, route to `gh-fi
 2. Require a deterministic checklist item in task notes: keychain identity discovery result, selected signing mode, and final `make dmg` path taken.
 3. Treat any parity-script diff (`scripts/ci-release-parity.sh`) as release-surface change and require explicit mapping to expected Sparkle/appcast behavior.
 4. If signing failures are runner- or env-sensitive, route first triage to `gh-fix-ci`, then return here only for workflow/command-surface corrections.
+
+## Related Skills
+
+- `../macos-development/SKILL.md`
+- `../macos-design-guidelines/SKILL.md`
+- `../native-app-designer/SKILL.md`
+- `../task-lifecycle/SKILL.md`
+- `../quality-assurance/SKILL.md`
+- `../testing-xctest/SKILL.md`
+- `../accessibility-audit/SKILL.md`

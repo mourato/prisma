@@ -1,21 +1,23 @@
 ---
 name: localization
-description: This skill should be used when the user asks to "localize UI text", "update Localizable.strings", "improve VoiceOver labels", or "add accessibility localization".
+description: This skill should be used when the user asks to "localize UI text", "update Localizable.strings", "improve accessible copy", or "add accessibility localization".
 ---
 
-# Localization and Accessibility
+# Localization and Accessible Copy
 
 ## Overview
 
-Complete guide for internationalization (i18n) and accessibility (a11y) for the Prisma.
+Guide for internationalization and accessible copy in Prisma.
 
 ## When to Use
 
 Activate this skill when working with:
 - `Bundle.safeModule` resource resolution
 - `"some.key".localized` / `"some.key".localized(with: ...)`
-- Accessibility modifiers
-- VoiceOver support
+- localized accessibility labels and hints
+- string-key cleanup across locale files
+
+Route broad accessibility audits, keyboard focus checks, reduced-motion review, and overlay/panel accessibility to `../accessibility-audit/SKILL.md`.
 
 ## Key Concepts
 
@@ -76,7 +78,7 @@ Use descriptive, dot-separated keys with `lower_snake_case` segments:
 "settings.transcriptions.empty_desc" // Empty state description
 ```
 
-## Accessibility (VoiceOver)
+## Accessible Copy (VoiceOver Text)
 
 ### Purpose Descriptions
 
@@ -114,3 +116,4 @@ Follow this pattern for consistent naming:
 - [BundleExtension.swift](../../../Packages/MeetingAssistantCore/Sources/Common/Utilities/BundleExtension.swift)
 - [Localizable.strings](../../../Packages/MeetingAssistantCore/Sources/Common/Resources/en.lproj/Localizable.strings)
 - [Apple Accessibility Guide](https://developer.apple.com/documentation/accessibility)
+- `../accessibility-audit/SKILL.md`

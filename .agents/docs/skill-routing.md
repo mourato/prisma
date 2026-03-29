@@ -1,149 +1,161 @@
 # Skill Routing Guide
 
-When working on Prisma, multiple skills may be relevant to your task. This guide provides routing logic to select the most appropriate skill and reduce noise and instruction overlap.
+When working on Prisma, multiple skills may be relevant to a task. This guide provides routing logic that keeps one canonical owner per domain and avoids instruction overlap.
 
 ## General Routing Priority
 
 When uncertain which skill to use, apply this priority order:
 
-1. **`build-macos-apps`** — Request intake and workflow routing (fast lane selector)
-2. **`macos-development`** — Canonical macOS/Swift implementation guidance (go-to for platform-specific work)
-3. **`native-app-designer`** — Primary UI/UX direction and experience design (consult first for any UI/UX work)
-4. **`swift-concurrency-expert`** — Swift 6.2 concurrency/actor isolation (compiler errors, Sendable fixes)
-5. **`swiftui-performance-audit`** — SwiftUI runtime performance diagnosis (janky scrolling, excessive updates)
-6. **`swiftui-animation`** — Advanced animations/transitions (matched geometry, shaders)
+1. **`build-macos-apps`** — request intake and workflow routing for macOS app tasks
+2. **`macos-development`** — canonical macOS and Swift implementation guidance
+3. **`task-lifecycle`** — source of truth for risk lane and lifecycle phases
+4. **`native-app-designer`** — primary UI and UX direction
+5. **`swift-concurrency-expert`** — Swift 6.2 concurrency remediation
+6. **`swiftui-performance-audit`** — SwiftUI runtime performance diagnosis
 
-**Note:** `build-macos-apps` acts as an orchestrator to select the right lane quickly, not as canonical technical reference. Prefer direct skill calls for implementation work.
+`build-macos-apps` is an orchestrator, not a deep implementation reference.
 
 ## External Project Code Lookup Priority
 
-When you need to inspect code from projects outside this repository, use this source order:
+When inspecting code outside this repository, use this source order:
 
-1. **`MCP grep`** - default source for code-centric GitHub lookup
-2. **`gh` CLI** - issues/PRs/history and direct repository inspection
-3. **`deepwiki`** - broad repository context
-4. **Web search** - last resort only
+1. `MCP grep`
+2. `gh` CLI
+3. `deepwiki`
+4. Web search
 
 ---
 
-
-
 ## Problem-Specific Routing
+
+### Architecture and Boundaries
+
+**Primary:** `architecture`
+- Clean Architecture boundaries
+- Dependency injection
+- Cross-module ownership
+
+**Complementary:** `macos-development`
+
+**Example:** "Refactor meeting post-processing into a separate module" → `architecture`
+
+---
 
 ### UI/UX and Interaction Work
 
 **Start here:** `native-app-designer`
-- Define visual/motion direction
+- Define visual and motion direction
 - Set UX acceptance criteria
 - Analyze interface quality
 
-**Then (if needed):** `swiftui-patterns` → `swiftui-animation` → `swiftui-performance-audit`
-- Implement view composition
-- Add advanced animations
-- Diagnose performance issues
+**Then (if needed):** `macos-design-guidelines` → `swiftui-patterns` → `swiftui-animation` → `swiftui-performance-audit`
 
-**Example:** "Design the meeting recording UI" → `native-app-designer` for UX direction → `swiftui-patterns` for view implementation → `swiftui-performance-audit` if scrolling is slow
+**Example:** "Design the meeting recording UI" → `native-app-designer`
 
 ---
 
 ### SwiftUI Performance Issues
 
 **Primary:** `swiftui-performance-audit`
-- Janky scrolling, layout thrash, excessive view updates
-- Animation hitches or jank
-- View rendering bottlenecks
+- Janky scrolling
+- Layout thrash
+- Excessive view updates
 
-**Complementary:** `swiftui-patterns` for view composition refactors
-**Profile with:** `make profile-report` (trace capture + metric extraction)
+**Complementary:** `swiftui-patterns`
 
-**Example:** "Scrolling in recording list is janky" → `swiftui-performance-audit` → recommend profile-report
+**Example:** "Scrolling in recording list is janky" → `swiftui-performance-audit`
 
 ---
 
-### System-Level Performance (CPU, Memory, Energy)
+### System-Level Performance
 
 **Primary:** `performance`
-- CPU/memory profiling outside SwiftUI rendering
-- Energy drain diagnosis
-- App startup optimization
-- I/O bottlenecks
+- CPU, memory, startup, and energy profiling outside SwiftUI rendering
 
-**Not:** `swiftui-performance-audit` (that's for UI rendering only)
+**Complementary:** `observability-diagnostics`
 
-**Profile with:** Instruments.app, `make profile-report`
-
-**Example:** "Meeting app drains battery quickly" → `performance` for system-level energy profiling
+**Example:** "Meeting app drains battery quickly" → `performance`
 
 ---
 
-### Audio Capture/Processing Bottlenecks
+### Audio Capture and Processing
 
-**Primary:** `audio-realtime` (when MeetingAssistantCoreAudio is involved)
+**Primary:** `audio-realtime`
 - Audio glitches, underruns, dropout
-- Low-latency audio callback optimization
+- Low-latency callback optimization
 - ProcessTap or AVAudioSourceNode work
-- Real-time buffer management
 
-**Not:** `performance` (unless CPU profiling needed alongside)
-
-**Example:** "Audio recording has glitches on M2" → `audio-realtime` for real-time callback tuning
+**Example:** "Audio recording has glitches on M2" → `audio-realtime`
 
 ---
 
 ### Concurrency and Actor Isolation
 
-**Swift 6.2 compiler errors or Sendable diagnostics:**
-→ **`swift-concurrency-expert`** (remediation, error fixes)
+**Compiler errors or Sendable diagnostics:** `swift-concurrency-expert`
 
-**Foundational/conceptual guidance only:**
-→ **`concurrency`** (when no compiler issue in scope)
+**Conceptual guidance only:** `concurrency`
 
-**Code-level verification:** Before merge on any concurrency-touching code:
-```bash
-make test-strict
-./scripts/preflight.sh --strict-concurrency
-```
-
-**Example:** "error: Actor-isolated property accessed from non-isolated context" → `swift-concurrency-expert` for isolation fix
+**Example:** "Actor-isolated property accessed from non-isolated context" → `swift-concurrency-expert`
 
 ---
 
-### Code Quality, Readability, Refactoring
+### Code Quality and Refactoring
 
 **Primary:** `code-quality`
-- Improve readability
-- Rename for clarity
-- Refactor duplicated logic
-- Apply clean code conventions
+- Readability and maintainability improvements
+- Refactoring duplicated logic
 
-**Complementary:** `code-review` if a full semáforo review is needed (Medium/High risk)
+**Complementary:** `swift-conventions`, `code-review`
 
-**Example:** "Extract duplicate audio logic into reusable service" → `code-quality`
+**Example:** "Extract duplicate audio logic into a reusable service" → `code-quality`
 
 ---
 
-### Debugging, Crashes, Flaky Tests
+### Error Modeling and Recovery
+
+**Primary:** `error-handling`
+- Error types and recovery paths
+- Logging expectations for failures
+
+**Complementary:** `observability-diagnostics`
+
+**Example:** "Standardize export errors and recovery messaging" → `error-handling`
+
+---
+
+### Debugging, Crashes, and Flaky Behavior
 
 **Primary:** `debugging-strategies`
-- Investigate crashes
-- Trace unknown root causes
-- Analyze flaky behavior
-- Multi-subsystem diagnosis
+- Unknown root cause investigation
+- Crash analysis
+- Flaky behavior
 
-**Complementary:** Other skills (audio-realtime, concurrency, performance) if area-specific
+**Complementary:** `observability-diagnostics`, plus any subsystem skill that matches the narrowed scope
 
-**Example:** "Crash on app quit when recording is active" → `debugging-strategies` → narrows to subsystem → escalate
+**Example:** "Crash on app quit when recording is active" → `debugging-strategies`
 
 ---
 
-### Data Persistence, Storage, Migrations
+### Logging, Telemetry, and Diagnostics
+
+**Primary:** `observability-diagnostics`
+- `AppLogger` and `Logger`
+- Structured event naming
+- Payload redaction
+- Failure signatures and metric correlation
+
+**Example:** "Add diagnostic logging around shortcut capture failures" → `observability-diagnostics`
+
+---
+
+### Data Persistence, Storage, and Migrations
 
 **Primary:** `data-persistence`
-- Design repositories
-- Plan data migrations
-- Implement synchronization
+- Repositories
+- Storage strategy
+- Migrations and synchronization
 
-**Complementary:** `security` if PII/sensitive data handling needed
+**Complementary:** `security`
 
 **Example:** "Design storage strategy for meeting transcripts" → `data-persistence`
 
@@ -152,11 +164,11 @@ make test-strict
 ### Intelligence Kernel and Summary Quality
 
 **Primary:** `intelligence-kernel`
-- Kernel mode routing and feature-flag gating
-- Canonical summary schema/trust-flags validation
-- Summary benchmark thresholds, baseline, and enforce/report modes
+- Kernel mode routing and feature flags
+- Canonical summary schema and trust flags
+- Summary benchmark thresholds and enforcement
 
-**Complementary:** `data-persistence` (schema/migration impact), `quality-assurance` (regression gates)
+**Complementary:** `data-persistence`, `quality-assurance`
 
 **Example:** "Adjust canonical summary confidence rules" → `intelligence-kernel`
 
@@ -164,11 +176,12 @@ make test-strict
 
 ### Security and Secret Management
 
-**General security posture:**
-→ **`security`** (validate input, protect sensitive data, platform controls)
+**Primary:** `security`
+- Threat model baseline
+- Input validation
+- Sensitive data controls
 
-**Keychain/credential handling specifically:**
-→ **`keychain-security`** (KeychainManager patterns, secret storage)
+**Credentials specifically:** `keychain-security`
 
 **Example:** "Safely store API key for transcription service" → `keychain-security`
 
@@ -178,59 +191,33 @@ make test-strict
 
 **Primary:** `networking`
 - API client design
-- Request/response modeling
+- Request and response modeling
 - URLSession configuration
-- Network resiliency
 
-**Complementary:** `security` for credential/TLS handling
+**Complementary:** `security`
 
-**Example:** "Integrate with transcription API" → `networking` + `security`
-
----
-
-### Documentation and API Comments
-
-**Primary:** `documentation`
-- DocC comments
-- API documentation
-- MARK organization
-- README and guides
-
-**Example:** "Add DocC comments to AudioRecorder public API" → `documentation`
-
----
-
-### Git and Version Control
-
-**Standard Git workflows:**
-→ **`git-workflow`** (branches, commits, PRs, merges)
-
-**Advanced Git operations:**
-→ **`git-advanced-workflows`** (rebase, bisect, cherry-pick, reflog)
-
-**Example:** "Rebase feature branch onto latest main" → `git-advanced-workflows`
+**Example:** "Integrate with transcription API" → `networking`
 
 ---
 
 ### Testing and Quality Assurance
 
-**Test writing and mocking:**
-→ **`quality-assurance`** (XCTest patterns, mocks, verification gates)
+**Verification policy and merge gates:** `quality-assurance`
 
-**XCTest specifics:**
-→ **`testing-xctest`** (@Test syntax, XCTAssert patterns)
+**XCTest implementation details:** `testing-xctest`
 
-**Example:** "Add unit tests for TranscriptionService" → `quality-assurance` or `testing-xctest`
+**Example:** "Add unit tests for TranscriptionService" → `testing-xctest`
 
 ---
 
 ### Localization and Accessibility
 
 **Primary:** `localization`
-- Localize UI text (`"key".localized`)
-- Bundle module management
-- Accessibility labels (VoiceOver)
-- Sanitize removed text from Localizable.strings
+- Localize UI text
+- Manage locale-file hygiene
+- Keep accessibility copy localizable
+
+**Audit and interaction accessibility:** `accessibility-audit`
 
 **Example:** "Add Portuguese (Brazil) localization" → `localization`
 
@@ -243,7 +230,7 @@ make test-strict
 - NSMenu and NSPopover behavior
 - Non-activating overlays
 
-**Complementary:** `macos-development` for platform integration context
+**Complementary:** `macos-design-guidelines`, `macos-development`
 
 **Example:** "Implement menu-bar popover for recording controls" → `menubar`
 
@@ -252,7 +239,7 @@ make test-strict
 ### Swift Package Manager and Dependencies
 
 **Primary:** `swift-package-manager`
-- Edit Package.swift
+- Edit `Package.swift`
 - Manage SPM dependencies
 - Fix package resolution
 
@@ -263,44 +250,53 @@ make test-strict
 ### Repository Standards and Project Maintenance
 
 **Primary:** `project-standards`
-- Update AGENTS.md
+- Update `AGENTS.md`
 - Document project policy
-- Track known limitations
 - Align repository standards
 
 **Example:** "Update AGENTS.md to reflect new skill" → `project-standards`
 
 ---
 
-## Skill Files and Direct Access
+### Skill Discovery and Authoring
 
-| Skill | File | When to use |
-|-------|------|-----------|
-| `audio-realtime` | `.agents/skills/audio-realtime/SKILL.md` | AVAudioSourceNode, ProcessTap, underruns |
-| `build-macos-apps` | `.agents/skills/build-macos-apps/SKILL.md` | Quick workflow routing |
-| `code-quality` | `.agents/skills/code-quality/SKILL.md` | Readability, refactoring |
-| `code-review` | `.agents/skills/code-review/SKILL.md` | Semáforo review (🔴/🟡/🟢) |
-| `concurrency` | `.agents/skills/concurrency/SKILL.md` | Conceptual async/await guidance |
-| `data-persistence` | `.agents/skills/data-persistence/SKILL.md` | Storage design, migrations |
-| `debugging-strategies` | `.agents/skills/debugging-strategies/SKILL.md` | Crash/flaky investigation |
-| `documentation` | `.agents/skills/documentation/SKILL.md` | DocC, API docs |
-| `intelligence-kernel` | `.agents/skills/intelligence-kernel/SKILL.md` | Kernel modes, canonical summary, summary benchmark gates |
-| `macos-development` | `.agents/skills/macos-development/SKILL.md` | Canonical macOS/Swift guidance |
-| `native-app-designer` | `.agents/skills/native-app-designer/SKILL.md` | UI/UX direction & design |
-| `networking` | `.agents/skills/networking/SKILL.md` | API clients, URLSession |
-| `performance` | `.agents/skills/performance/SKILL.md` | CPU/memory/energy profiling |
-| `security` | `.agents/skills/security/SKILL.md` | Input validation, data protection |
-| `swift-concurrency-expert` | `.agents/skills/swift-concurrency-expert/SKILL.md` | Swift 6.2 actor isolation, Sendable|
-| `swiftui-animation` | `.agents/skills/swiftui-animation/SKILL.md` | Advanced animations, shaders |
-| `swiftui-patterns` | `.agents/skills/swiftui-patterns/SKILL.md` | View composition, @State |
-| `swiftui-performance-audit` | `.agents/skills/swiftui-performance-audit/SKILL.md` | UI rendering performance |
-| `testing-xctest` | `.agents/skills/testing-xctest/SKILL.md` | XCTest, @Test, mocking |
+**External skill search or installation:** `skills-discovery`
+
+**Create or refactor a local skill:** `skill-development`
+
+**Example:** "Find a skill for OpenAI docs" → `skills-discovery`
 
 ---
 
-## Notes
+## Skill Files and Direct Access
 
-- Skills are loaded **conditionally**—consult only when relevant to task
-- One skill per session usually best; chain skills only when sequential layers apply
-- If uncertain, default to `macos-development` or `native-app-designer` as fallback
-- Always cite the skill file in your request if you want specific guidance
+| Skill | File | When to use |
+|-------|------|-------------|
+| `accessibility-audit` | `.agents/skills/accessibility-audit/SKILL.md` | VoiceOver, focus order, keyboard navigation, reduced motion |
+| `architecture` | `.agents/skills/architecture/SKILL.md` | Module boundaries, Clean Architecture, DI |
+| `audio-realtime` | `.agents/skills/audio-realtime/SKILL.md` | AVAudioSourceNode, ProcessTap, underruns |
+| `build-macos-apps` | `.agents/skills/build-macos-apps/SKILL.md` | Quick workflow routing |
+| `code-quality` | `.agents/skills/code-quality/SKILL.md` | Readability, refactoring |
+| `code-review` | `.agents/skills/code-review/SKILL.md` | Semáforo review |
+| `concurrency` | `.agents/skills/concurrency/SKILL.md` | Conceptual async/await guidance |
+| `data-persistence` | `.agents/skills/data-persistence/SKILL.md` | Storage design, migrations |
+| `debugging-strategies` | `.agents/skills/debugging-strategies/SKILL.md` | Crash and flaky investigation |
+| `documentation` | `.agents/skills/documentation/SKILL.md` | DocC and API docs |
+| `error-handling` | `.agents/skills/error-handling/SKILL.md` | Error modeling, recovery, logging |
+| `intelligence-kernel` | `.agents/skills/intelligence-kernel/SKILL.md` | Kernel modes and summary benchmark gates |
+| `macos-design-guidelines` | `.agents/skills/macos-design-guidelines/SKILL.md` | Human Interface Guidelines for Mac |
+| `macos-development` | `.agents/skills/macos-development/SKILL.md` | Canonical macOS and Swift guidance |
+| `native-app-designer` | `.agents/skills/native-app-designer/SKILL.md` | UI and UX direction |
+| `networking` | `.agents/skills/networking/SKILL.md` | API clients and URLSession |
+| `observability-diagnostics` | `.agents/skills/observability-diagnostics/SKILL.md` | Logs, telemetry, redaction, diagnostic signatures |
+| `performance` | `.agents/skills/performance/SKILL.md` | CPU, memory, startup, and energy profiling |
+| `quality-assurance` | `.agents/skills/quality-assurance/SKILL.md` | Verification gates and command policy |
+| `skills-discovery` | `.agents/skills/skills-discovery/SKILL.md` | Find or install external skills |
+| `skill-development` | `.agents/skills/skill-development/SKILL.md` | Create or refactor local skills |
+| `task-lifecycle` | `.agents/skills/task-lifecycle/SKILL.md` | Risk classification and lifecycle policy |
+| `testing-xctest` | `.agents/skills/testing-xctest/SKILL.md` | XCTest code structure, mocks, async tests |
+| `security` | `.agents/skills/security/SKILL.md` | Input validation and data protection |
+| `swift-concurrency-expert` | `.agents/skills/swift-concurrency-expert/SKILL.md` | Swift 6.2 actor isolation and Sendable fixes |
+| `swiftui-animation` | `.agents/skills/swiftui-animation/SKILL.md` | Advanced animations and shaders |
+| `swiftui-patterns` | `.agents/skills/swiftui-patterns/SKILL.md` | View composition and state management |
+| `swiftui-performance-audit` | `.agents/skills/swiftui-performance-audit/SKILL.md` | UI rendering performance |

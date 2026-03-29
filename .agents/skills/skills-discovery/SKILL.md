@@ -5,68 +5,30 @@ description: This skill should be used when the user asks to "find skills", "sea
 
 # Skills Discovery
 
-You can extend your capabilities by discovering and installing Agent Skills from the claude-plugins.dev registry. Skills provide specialized knowledge, tools, and techniques for specific technologies, frameworks, and domains.
+Use this skill to discover and optionally install external skills from the `skills.sh` ecosystem.
 
 ## When to search for skills
 
-First, check if an installed skill matches the task. If not, search the registry—specialized skills may exist that you haven't installed yet.
+First, check whether an installed local skill already owns the task. Search externally only when:
 
-Before starting any non-trivial task, ask yourself:
-
-1. Do I have a skill for this? → Use it
-2. Might one exist that I don't have? → Search the registry
-3. Do I need to create a new skill? → Use [skill-development](../skill-development/SKILL.md) to create one
-
-Search proactively when:
-
-- The task involves specific technologies, frameworks, or file formats
-- You're about to do something where best practices matter (testing, deployment, APIs, documentation)
-- The domain is specialized (PDF processing, data pipelines, ML workflows)
-- You notice yourself about to give generic advice where expert patterns would help
-
-Also search when users explicitly ask to find, install, or manage skills.
+- The user explicitly asks to find or install a skill.
+- The task is specialized and local skills are too generic.
+- A mature external skill would materially improve advice quality.
 
 ## Discovery workflow
 
-Use the registry API for search (the CLI's search command is interactive and not suitable for programmatic use):
+Prefer the `skills.sh` website and the `npx skills` CLI.
 
 ```bash
-curl "https://claude-plugins.dev/api/skills?q=QUERY&limit=20&offset=0"
+npx skills find <query>
 ```
 
-**Parameters:**
+Browse popular skills first when the domain is common:
 
-- `q`: Search query (e.g., "frontend", "python", "pdf")
-- `limit`: Results per page (max 100)
-- `offset`: Pagination offset
+- [skills.sh](https://skills.sh/)
+- [skills.sh leaderboard](https://skills.sh/)
 
-**Response structure:**
-
-```json
-{
-  "skills": [
-    {
-      "id": "...",
-      "name": "skill-name",
-      "namespace": "@owner/repo/skill-name",
-      "sourceUrl": "https://github.com/...",
-      "description": "...",
-      "author": "...",
-      "installs": 123,
-      "stars": 45
-    }
-  ],
-  "total": 100,
-  "limit": 10,
-  "offset": 0
-}
-```
-
-## Search strategies
-
-The registry indexes skill names, descriptions, and tags. Construct queries that match how skill authors describe their work.
-
-**Query construction:**
+Use short, concrete queries:
 
 - Use 1-3 specific terms (too broad = noise, too narrow = misses)
 - Prefer widely-used terminology over project-specific jargon
@@ -77,171 +39,56 @@ The registry indexes skill names, descriptions, and tags. Construct queries that
 
 Determine which client the user is working in before installing. If unclear, ask.
 
-**Supported clients:**
-
-- `claude-code` — Claude Code CLI
-- `codex` — Codex
-- `cursor` — Cursor editor
-- `amp` - amp CLI
-- `opencode` - OpenCode CLI
-- `goose` - Goose CLI
-- `github` — VSCode/ github
-- `vscode` — VS Code
-- `letta` — Letta CLI
-- **Client selection:**
+Default client for this repository: `codex`.
 
 ```bash
-npx skills-installer install @owner/repo/skill-name --client claude-code  # default
-npx skills-installer install @owner/repo/skill-name --client cursor
-npx skills-installer install @owner/repo/skill-name --client vscode
+npx skills add <owner/repo@skill>
+npx skills add <owner/repo@skill> -g -y
 ```
-
-**Scope selection:**
-
-```bash
-npx skills-installer install @owner/repo/skill-name  # global (default)
-npx skills-installer install @owner/repo/skill-name --local  # project-specific
-```
-
-**Combined:**
-
-```bash
-npx skills-installer install @owner/repo/skill-name --client cursor --local
-```
-
-**Defaults:**
-
-- Client: `claude-code`
-- Scope: global
 
 ## Management
 
 ```bash
-# List installed skills
-npx skills-installer list
-
-# Uninstall a skill
-npx skills-installer uninstall @owner/repo/skill-name
+npx skills check
+npx skills update
 ```
 
 ## Presenting results to users
 
 When you find relevant skills:
 
-1. Show 3-5 most relevant results maximum
-2. Include: name, namespace, description, stars, installs
-3. **Evaluate quality**: Consider stars, installs, last updated date, and maintenance activity
-4. Explain how each skill helps with their _specific_ task
-5. Prioritize those with high installs AND recent updates
-6. Always ask for confirmation before installing
-7. Offer to help directly if no good skill exists or user declines
+1. Show 3-5 most relevant results maximum.
+2. Include: skill name, what it does, install count, source, and the install command.
+3. Evaluate quality using source reputation, installs, recent activity, and fit for the specific task.
+4. Always ask for confirmation before installing.
+5. Offer direct help if no strong skill exists or the user declines installation.
 
-## Quality Evaluation Criteria
+## Quality Criteria
 
-When presenting skills to users, evaluate using these criteria:
+Prefer skills with:
 
-| Criterion | What to Look For | Weight |
-|-----------|------------------|--------|
-| **Stars** | Community validation and popularity | Medium |
-| **Installs** | Real-world adoption | High |
-| **Last Updated** | Recent maintenance (check GitHub activity) | High |
-| **Author Reputation** | Known organizations or maintainers | Medium |
-| **Description Quality** | Clear trigger phrases and scope | High |
+- Strong adoption
+- Recognizable maintainers or organizations
+- Recent maintenance activity
+- A description that clearly matches the user intent
 
-**Red flags to watch for:**
-- No updates in 6+ months
-- Low stars with high installs (possible bot activity)
-- Vague descriptions without specific triggers
-- Skills from unknown authors without verified repositories
+Be cautious with:
 
-**Best practice:** Prioritize skills with high installs AND recent activity. A skill with 500 installs and a commit from last week is better than one with 5,000 installs and no updates in 2 years.
+- Low-adoption skills from unknown authors
+- Vague descriptions
+- Stale repositories
+- Skills that overlap heavily with an existing local skill without adding new expertise
 
-## Examples
+## Suggested Reference Skills
 
-**Example: Proactive suggestion**
+These are useful references for Prisma-adjacent work:
 
-User: "I need to create a Django REST API"
+- [`openai-docs`](https://skills.sh/openai/skills/openai-docs) for OpenAI product and API documentation
+- [`axiom-ios-testing`](https://skills.sh/charleswiltgen/axiom/axiom-ios-testing) as an external testing reference
+- [`axiom-ios-accessibility`](https://skills.sh/charleswiltgen/axiom/axiom-ios-accessibility) as an accessibility reference
 
-```bash
-curl "https://claude-plugins.dev/api/skills?q=django&limit=10"
-```
+Do not install these automatically. Use them as references or propose them when the user's task directly matches.
 
-Present suggestion:
+## Related Skills
 
-```
-I found some skills that could help:
-
-1. django-rest-framework-expert (@anthropics/claude-code/django-rest-framework-expert)
-   Description: Django REST API development with best practices
-   ⭐ 234 stars • 1,567 installs
-
-Would you like me to install this, or help you directly without installing a skill?
-```
-
-**Example: Explicit search request**
-
-User: "find skills for Python"
-
-```bash
-curl "https://claude-plugins.dev/api/skills?q=python&limit=10"
-```
-
-Present results and ask which to install.
-
-## API reference
-
-| Endpoint                                 | Description       |
-| ---------------------------------------- | ----------------- |
-| `GET /api/skills/search?q=QUERY`         | Search skills     |
-| `GET /api/skills/@owner/repo/skill-name` | Get skill details |
-
-**Web registry:** https://claude-plugins.dev/skills
-
-## Troubleshooting
-
-**No results found:**
-
-- Try broader search terms
-- Browse web registry: https://claude-plugins.dev/skills
-
-**Installation fails:**
-
-- Verify namespace format: `@owner/repo/skill-name`
-- Check skill exists in registry
-- Verify directory permissions
-
-**Skill not activating:**
-
-- User may need to restart their client
-- Verify correct installation directory
-- Confirm SKILL.md exists in installation path
-
----
-
-## Agent Skills MCP
-
-Use Agent Skills MCP to get best practices for skill development itself.
-
-### When to Use Agent Skills MCP
-
-- Creating new skills for your project
-- Improving existing skill descriptions
-- Following skill development patterns
-- Structuring skill documentation
-
-### How to Query
-
-```bash
-mcp--agent-skills--SearchAgentSkills(
-  query: "skill development best practices structure"
-)
-```
-
-### Integration with This Skill
-
-When creating new skills:
-
-1. Use this skill to find existing skills in the registry
-2. If no suitable skill exists, use `skill-development` skill with Agent Skills MCP
-3. Follow Agent Skills MCP guidance for best practices
-4. Create and document the new skill
+- `../skill-development/SKILL.md`

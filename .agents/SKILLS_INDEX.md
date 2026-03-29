@@ -1,11 +1,13 @@
 # Skills Index
 
-Comprehensive index of all available agent skills for Prisma. For routing logic and guidance on selecting the right skill, see [Skill Routing Guide](./.agents/docs/skill-routing.md).
+Comprehensive index of all available agent skills for Prisma. For routing logic and guidance on selecting the right skill, see [Skill Routing Guide](./docs/skill-routing.md).
 
 ## Complete Skills Table
 
 | Skill | Location | Triggers / When to Use |
 |-------|----------|------------------------|
+| `accessibility-audit` | `.agents/skills/accessibility-audit/` | Audit VoiceOver, keyboard navigation, focus order, reduced motion, overlays, and other accessibility-sensitive UI behavior |
+| `architecture` | `.agents/skills/architecture/` | Design module boundaries, apply Clean Architecture, refactor architecture, define dependency injection |
 | `audio-realtime` | `.agents/skills/audio-realtime/` | AVAudioSourceNode, AudioRecorder, ProcessTap, audio glitches, underruns, low-latency optimization |
 | `build-macos-apps` | `.agents/skills/build-macos-apps/` | Request intake and workflow routing for macOS app tasks (select Fast vs Full lane quickly) |
 | `code-quality` | `.agents/skills/code-quality/` | Improve code readability, rename for clarity, refactor duplicated logic, apply clean code conventions |
@@ -20,25 +22,28 @@ Comprehensive index of all available agent skills for Prisma. For routing logic 
 | `git-worktree` | `.agents/skills/git-worktree/` | Use git worktree, migrate away from worktrees, handle legacy worktree setup |
 | `intelligence-kernel` | `.agents/skills/intelligence-kernel/` | Canonical summary schema, intelligence kernel modes, trust flags, summary benchmark gates |
 | `keychain-security` | `.agents/skills/keychain-security/` | Store secret in Keychain, retrieve API keys securely, delete credential, harden KeychainManager usage |
-| `localization` | `.agents/skills/localization/` | Localize UI text, update Localizable.strings, improve VoiceOver labels, add accessibility localization |
+| `localization` | `.agents/skills/localization/` | Localize UI text, update Localizable.strings, improve accessible copy, remove orphaned locale keys |
+| `macos-design-guidelines` | `.agents/skills/macos-design-guidelines/` | Apply macOS Human Interface Guidelines for desktop UI, menus, shortcuts, windows, and native interaction patterns |
 | `macos-development` | `.agents/skills/macos-development/` | Implement macOS features, integrate SwiftUI with AppKit, fix macOS lifecycle issues, platform-specific patterns |
 | `menubar` | `.agents/skills/menubar/` | Build menu-bar behavior, configure NSStatusItem, implement popover, manage non-activating overlays |
-| `native-app-designer` | `.agents/skills/native-app-designer/` | **Primary for UI/UX**: Design/redesign macOS/iOS interface, improve UX, analyze UI quality, define visual/motion direction |
+| `native-app-designer` | `.agents/skills/native-app-designer/` | Primary for UI/UX: design or redesign macOS/iOS interfaces, improve UX, analyze UI quality, define visual and motion direction |
 | `networking` | `.agents/skills/networking/` | Build API client, model request/response, configure URLSession, improve network resiliency/security |
+| `observability-diagnostics` | `.agents/skills/observability-diagnostics/` | Standardize logging, telemetry, redaction, diagnostic signatures, and metric correlation |
 | `performance` | `.agents/skills/performance/` | Optimize CPU/memory/startup, profile with Instruments, improve app-wide performance (outside SwiftUI rendering) |
 | `preview-coverage` | `.agents/skills/preview-coverage/` | Add SwiftUI previews, verify preview state coverage, ensure all views have #Preview |
 | `project-standards` | `.agents/skills/project-standards/` | Update AGENTS.md, document project policy, track known limitations, align repository standards |
-| `quality-assurance` | `.agents/skills/quality-assurance/` | Write tests, create mocks, define verification gates, run quality checks before merge |
+| `quality-assurance` | `.agents/skills/quality-assurance/` | Define verification gates, select validation commands, and run quality checks before merge |
 | `security` | `.agents/skills/security/` | Improve security posture, validate untrusted input, protect sensitive data, apply platform security controls |
 | `skill-development` | `.agents/skills/skill-development/` | Create a skill, refactor SKILL.md, improve skill trigger descriptions, modularize skill resources |
 | `skills-discovery` | `.agents/skills/skills-discovery/` | Find skills, search the skills registry, install/manage installed skills |
-| `swift-concurrency-expert` | `.agents/skills/swift-concurrency-expert/` | **PRIMARY for concurrency issues**: Fix Swift concurrency errors, resolve actor isolation, remediate Sendable diagnostics, upgrade Swift 6.2 |
+| `swift-concurrency-expert` | `.agents/skills/swift-concurrency-expert/` | Primary for concurrency issues: fix Swift concurrency errors, resolve actor isolation, remediate Sendable diagnostics, upgrade Swift 6.2 |
 | `swift-conventions` | `.agents/skills/swift-conventions/` | Apply Swift style conventions, improve type safety, refactor API naming, organize Swift modules |
 | `swift-package-manager` | `.agents/skills/swift-package-manager/` | Edit Package.swift, manage SPM dependencies, fix package resolution, troubleshoot SwiftPM |
 | `swiftui-animation` | `.agents/skills/swiftui-animation/` | Implement SwiftUI transitions, create advanced animations, use matched geometry, apply shader-based effects |
 | `swiftui-patterns` | `.agents/skills/swiftui-patterns/` | Build SwiftUI views, improve state management, refactor SwiftUI layouts, use design system components |
-| `swiftui-performance-audit` | `.agents/skills/swiftui-performance-audit/` | **PRIMARY for UI performance**: Fix janky SwiftUI scrolling, reduce excessive view updates, diagnose layout thrash, audit runtime performance |
+| `swiftui-performance-audit` | `.agents/skills/swiftui-performance-audit/` | Primary for UI performance: fix janky SwiftUI scrolling, reduce excessive view updates, diagnose layout thrash, audit runtime performance |
 | `task-lifecycle` | `.agents/skills/task-lifecycle/` | Run task lifecycle, classify risk lane, prepare implementation workflow, enforce pre-merge gates |
+| `testing-xctest` | `.agents/skills/testing-xctest/` | Write XCTest code, structure async and `@MainActor` tests, build mocks/fakes/spies, and keep test suites maintainable |
 
 ---
 
@@ -48,12 +53,14 @@ Comprehensive index of all available agent skills for Prisma. For routing logic 
 
 **UI/UX and Interfaces**
 - First: `native-app-designer`
-- Then: `swiftui-patterns` → `swiftui-animation` → `swiftui-performance-audit`
+- Then: `macos-design-guidelines` → `swiftui-patterns` → `swiftui-animation` → `swiftui-performance-audit`
+- Audit accessibility-sensitive UI with `accessibility-audit`
 
 **Performance Issues**
 - SwiftUI rendering: `swiftui-performance-audit`
 - System-level (CPU/memory/energy): `performance`
 - Audio capture/processing: `audio-realtime`
+- Logging and telemetry quality: `observability-diagnostics`
 
 **Concurrency and Safety**
 - Swift 6.2 compiler errors: `swift-concurrency-expert`
@@ -61,8 +68,11 @@ Comprehensive index of all available agent skills for Prisma. For routing logic 
 
 **Code Quality**
 - Readability/refactoring: `code-quality`
-- Testing/mocks: `quality-assurance` or `testing` (if XCTest-specific)
+- Testing/mocks and test code structure: `testing-xctest`
+- Merge gates and verification policy: `quality-assurance`
 - Code review: `code-review`
+- Architecture boundaries: `architecture`
+- Error propagation and recovery: `error-handling`
 
 **Security**
 - Data protection/input validation: `security`
@@ -77,19 +87,16 @@ Comprehensive index of all available agent skills for Prisma. For routing logic 
 
 **Debugging**
 - Crashes/flaky tests: `debugging-strategies`
-- Area-specific: escalate to relevant skill (audio-realtime, concurrency, etc.)
-
-**Git and Version Control**
-- Standard operations: `git-workflow`
-- Advanced (rebase, bisect): `git-advanced-workflows`
-- Worktrees: `git-worktree`
+- Area-specific diagnostics: `observability-diagnostics`
 
 **Documentation and Localization**
 - API docs/DocC: `documentation`
-- UI localization/VoiceOver: `localization`
+- UI localization and accessible copy: `localization`
+- Accessibility audit and keyboard/focus review: `accessibility-audit`
 
 **Platform-Specific (macOS)**
 - General macOS/Swift guidance: `macos-development`
+- Native HIG alignment: `macos-design-guidelines`
 - Menu bar UI: `menubar`
 
 **Dependencies and Build**
@@ -99,13 +106,15 @@ Comprehensive index of all available agent skills for Prisma. For routing logic 
 **Project Maintenance**
 - Repository standards: `project-standards`
 - Skill development: `skill-development`
+- External skill discovery: `skills-discovery`
 
 ---
 
 ## Skill Dependencies
 
-Some skills reference or build on others:
-
+- `accessibility-audit` → `localization` (copy and keys stay localizable)
+- `build-macos-apps` → `macos-development` (router → canonical implementation)
+- `build-macos-apps` → `task-lifecycle` (router → lifecycle policy)
 - `swiftui-patterns` → `native-app-designer` (UX direction first)
 - `swiftui-animation` → `swiftui-patterns` (composition before animation)
 - `swiftui-performance-audit` → `swiftui-patterns` (diagnose then refactor)
@@ -113,13 +122,5 @@ Some skills reference or build on others:
 - `security` → `keychain-security` (general → specific for secrets)
 - `data-persistence` → `security` (if sensitive data involved)
 - `quality-assurance` → `testing-xctest` (general QA → XCTest specifics)
+- `observability-diagnostics` → `debugging-strategies` (diagnostic data supports investigation)
 - `code-review` → other skills (review may escalate to specific domain)
-
----
-
-## Notes
-
-- Skills are referenced by folder name (e.g., `macos-development` → `.agents/skills/macos-development/SKILL.md`)
-- See [Skill Routing Guide](./.agents/docs/skill-routing.md) for decision logic and flow
-- Each skill file (SKILL.md) contains detailed guidance, examples, and implementation patterns
-- Not all skills apply to every task—consult selectively based on problem type

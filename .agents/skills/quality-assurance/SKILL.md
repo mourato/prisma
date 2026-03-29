@@ -7,19 +7,17 @@ description: This skill should be used when the user asks to "write tests", "cre
 
 ## Overview
 
-This skill defines verification practices that keep quality high while preserving development speed.
+This skill owns verification strategy and command selection for the repository.
 
 Core policy alignment:
 
-- Use the risk matrix and Fast/Full lanes from `AGENTS.md`.
-- Keep hard gates at push/merge, not on every local edit.
+- `AGENTS.md` and `../task-lifecycle/SKILL.md` own risk classification and lane policy.
+- This skill translates those lanes into concrete validation commands.
 - When running checks via AI agents, prefer compact `*-agent` targets to reduce context volume while preserving failure diagnostics.
 
 ## Verification by Lane
 
 ### Fast lane (Low risk)
-
-Use for docs/comments-only updates, localization/resource text updates, and constrained non-functional refactors.
 
 Minimum expectation:
 
@@ -28,8 +26,6 @@ Minimum expectation:
 - Before push/merge, run `make test-agent`.
 
 ### Full lane (Medium/High risk)
-
-Use for behavior changes, API changes, subsystem changes, concurrency/security/persistence/audio, and large/cross-module deltas.
 
 Minimum expectation:
 
@@ -65,6 +61,7 @@ Run these only when relevant to the changed scope:
 - `make arch-check` for architecture boundary/access-control/import-rule changes.
 - `make preview-check` when adding/changing SwiftUI views.
 - `make test-verbose` or targeted `./scripts/run-tests.sh ...` commands when debugging flaky or scope-specific tests.
+- Use `../testing-xctest/SKILL.md` when the task is about structuring or writing XCTest code rather than selecting verification gates.
 
 ## Practical command set
 
@@ -92,10 +89,6 @@ make build-test
 make lint-agent
 make preflight-agent
 make scope-check-agent
-
-# Isolated diagnostics
-make build-agent
-make test-agent
 
 # Targeted test workflows
 ./scripts/run-tests.sh --file <TestFile>
@@ -142,74 +135,7 @@ brew install swiftlint swiftformat
 ## References
 
 - `AGENTS.md`
+- `../task-lifecycle/SKILL.md`
 - `Makefile`
 - `scripts/lint.sh`
 - `scripts/run-tests.sh`
-
-## 2026-03 Policy Alignment Update
-
-### Canonical Merge Gates (AGENTS.md)
-
-Use AGENTS.md as source of truth for lane gates:
-
-- Fast lane (Low risk): `make test-agent`
-- Full lane (Medium/High risk): `make build-test`
-- `make lint`: mandatory for broad refactors
-
-When legacy hooks or scripts still run `make test`, treat it as an additional local guard, not a replacement for the canonical lane gate above.
-
-### Regression Matrix Priority
-
-For recurring bug classes in this repository, require targeted checks in addition to lane gates:
-
-1. Audio device matrix (internal, shared I/O, USB mic).
-2. Global shortcut registration/capture across lifecycle transitions.
-3. Onboarding/settings transitions with localization-aware UI states.
-4. Migration/retention behavior for persisted data continuity.
-
-## 2026-03-04 Progression Drill
-
-### New Evidence
-
-- Release workflow changed multiple times on 2026-03-03 (`sparkle-release.yml` touched repeatedly).
-- Audio sendability fixes and shortcut behavior updates happened in the same window.
-
-### Skill Deepening Focus
-
-1. Keep Fast lane gate as `make test-agent` (not `make test`) for low-risk changes.
-2. Add a targeted release-workflow smoke checklist for CI-only paths (gate command parity + artifacts).
-3. Expand regression matrix templates to include:
-   - Audio sendability-sensitive paths
-   - Shortcut Enter/Return behavior across focus states
-   - Meeting-QA persistence round trips
-4. Record failed-check signatures in PR notes to improve repeated triage speed.
-
-## 2026-03-05 Progression Drill
-
-### New Evidence
-
-- `efe08a7` added local release parity gate + strict Xcode test hardening.
-- `ffb3bd5` switched strict Xcode test mode to default.
-- `be3e56f`, `44db00e`, and `f3d928f` show repeated release regressions caught only after CI/publish flow execution.
-
-### Skill Deepening Focus
-
-1. Add a CI-release smoke template that always runs `scripts/ci-release-parity.sh` for release-workflow edits.
-2. Require explicit reporting of strict-test mode used (`scripts/run-tests-xcode.sh` default strict) in validation notes.
-3. For `.github/workflows/sparkle-release.yml` changes, treat validation as Full-lane even if code delta is small.
-4. Standardize failure reporting format: failing command, failing stage, and first actionable mismatch.
-
-## 2026-03-06 Progression Drill
-
-### New Evidence
-
-- `0302327` and `6cbde40` continued to harden `scripts/ci-release-parity.sh` around appcast signature correctness.
-- `f7243e0`, `918243b`, and `094d280` show repeated lifecycle/status-indicator stabilization fixes in a narrow time window.
-- Since last run, `scripts/ci-release-parity.sh` and `App/AppDelegate/Lifecycle.swift` are the most frequently re-touched critical paths.
-
-### Skill Deepening Focus
-
-1. For release/signing changes, require parity-script execution evidence plus failing-stage capture before merge approval.
-2. For AppDelegate lifecycle/menu bar changes, add a focused manual smoke: launch visibility, status-item responsiveness, indicator show/hide, relaunch recovery.
-3. Standardize verification notes with two blocks only: `Release Parity` and `Lifecycle UI Smoke` when either surface is touched.
-4. Escalate repeated hot-path churn (>=3 touches/week in same file) to explicit regression-test backlog item.
