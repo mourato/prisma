@@ -178,7 +178,7 @@ public struct TranscriptionsSettingsTab: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(AppDesignSystem.Colors.windowBackground)
+        .background(AppDesignSystem.Colors.settingsCanvasBackground)
     }
 
     private var sourceFilterPicker: some View {

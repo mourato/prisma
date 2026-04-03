@@ -266,7 +266,7 @@ public struct TranscriptionDetailView: View {
                 .padding(16)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(
-                    isOriginal ? AppDesignSystem.Colors.subtleFill2 : AppDesignSystem.Colors.cardBackground,
+                    isOriginal ? AppDesignSystem.Colors.subtleFill2 : AppDesignSystem.Colors.settingsCardBackground,
                     in: RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
                 )
         }

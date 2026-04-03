@@ -28,6 +28,20 @@ public enum AppDesignSystem {
     // MARK: - Colors
 
     public enum Colors {
+        private static func dynamicNSColor(
+            light: @escaping @autoclosure () -> NSColor,
+            dark: @escaping @autoclosure () -> NSColor
+        ) -> NSColor {
+            NSColor(name: nil) { appearance in
+                switch appearance.bestMatch(from: [.darkAqua, .aqua]) {
+                case .darkAqua:
+                    dark()
+                default:
+                    light()
+                }
+            }
+        }
+
         public static var accent: Color {
             Color(nsColor: .controlAccentColor)
         }
@@ -78,8 +92,17 @@ public enum AppDesignSystem {
         public static let textBackground = Color(NSColor.textBackgroundColor)
         public static let separator = Color(NSColor.separatorColor)
 
+        public static var settingsCanvasBackground: Color {
+            let lightCanvas = NSColor.windowBackgroundColor.blended(withFraction: 0.06, of: .black) ?? .windowBackgroundColor
+            return Color(nsColor: dynamicNSColor(light: lightCanvas, dark: .windowBackgroundColor))
+        }
+
         public static var glassBackground: Color {
             Accessibility.reduceTransparency ? windowBackground : windowBackground.opacity(0.82)
+        }
+
+        public static var settingsGlassBackground: Color {
+            Accessibility.reduceTransparency ? settingsCanvasBackground : settingsCanvasBackground.opacity(0.94)
         }
 
         public static var cardBackground: Color {
@@ -89,8 +112,30 @@ public enum AppDesignSystem {
             return controlBackground.opacity(Accessibility.increaseContrast ? 0.9 : 0.72)
         }
 
+        public static var settingsCardBackground: Color {
+            if Accessibility.reduceTransparency {
+                return Color(nsColor: dynamicNSColor(light: .white, dark: .controlBackgroundColor))
+            }
+
+            let darkCard = NSColor.controlBackgroundColor.withAlphaComponent(Accessibility.increaseContrast ? 0.9 : 0.72)
+            return Color(nsColor: dynamicNSColor(light: .white, dark: darkCard))
+        }
+
         public static var cardStroke: Color {
             Color.primary.opacity(Accessibility.increaseContrast ? 0.22 : 0.1)
+        }
+
+        public static var settingsCardStroke: Color {
+            let lightOpacity = Accessibility.increaseContrast ? 0.14 : 0.08
+            let darkOpacity = Accessibility.increaseContrast ? 0.22 : 0.1
+            let lightStroke = NSColor.black.withAlphaComponent(lightOpacity)
+            let darkStroke = NSColor.white.withAlphaComponent(darkOpacity)
+            return Color(nsColor: dynamicNSColor(light: lightStroke, dark: darkStroke))
+        }
+
+        public static var settingsCardShadow: Color {
+            let lightShadow = NSColor.black.withAlphaComponent(Accessibility.increaseContrast ? 0.07 : 0.045)
+            return Color(nsColor: dynamicNSColor(light: lightShadow, dark: .clear))
         }
 
         public static var subtleFill: Color {
@@ -119,6 +164,14 @@ public enum AppDesignSystem {
 
         public static var topFadeTrailing: Color {
             windowBackground.opacity(Accessibility.reduceTransparency ? 1 : 0)
+        }
+
+        public static var settingsTopFadeLeading: Color {
+            settingsCanvasBackground
+        }
+
+        public static var settingsTopFadeTrailing: Color {
+            settingsCanvasBackground.opacity(Accessibility.reduceTransparency ? 1 : 0)
         }
     }
 
@@ -152,21 +205,26 @@ public enum AppDesignSystem {
         public static let compactButtonHeight: CGFloat = 30
         public static let recordingIndicatorMiniHeight: CGFloat = 38
         public static let recordingIndicatorClassicHeight: CGFloat = 42
+        public static let recordingIndicatorSuperHeight: CGFloat = 98
 
         public static let recordingIndicatorPanelWidth: CGFloat = 380
 
         // Recording Indicator Metrics
         public static let recordingIndicatorClassicPromptSize: CGFloat = 42
         public static let recordingIndicatorMiniPromptSize: CGFloat = 38
+        public static let recordingIndicatorSuperPromptSize: CGFloat = 110
 
         public static let recordingIndicatorClassicInnerSpacing: CGFloat = 12
         public static let recordingIndicatorMiniInnerSpacing: CGFloat = 8
+        public static let recordingIndicatorSuperInnerSpacing: CGFloat = 10
 
         public static let recordingIndicatorClassicWaveCount: Int = 18
         public static let recordingIndicatorMiniWaveCount: Int = 9
+        public static let recordingIndicatorSuperWaveCount: Int = 56
 
         public static let recordingIndicatorClassicWaveHeight: CGFloat = 24
         public static let recordingIndicatorMiniWaveHeight: CGFloat = 20
+        public static let recordingIndicatorSuperWaveHeight: CGFloat = 34
 
         public static let recordingIndicatorWaveformBarWidth: CGFloat = 2
         public static let recordingIndicatorWaveformBarSpacing: CGFloat = 2
@@ -177,6 +235,19 @@ public enum AppDesignSystem {
         public static let recordingIndicatorMiniDotSize: CGFloat = 8
         public static let recordingIndicatorPromptGap: CGFloat = 2
         public static let recordingIndicatorSidePadding: CGFloat = 8
+        public static let recordingIndicatorSuperHorizontalPadding: CGFloat = 14
+        public static let recordingIndicatorSuperVerticalPadding: CGFloat = 14
+        public static let recordingIndicatorSuperFooterHeight: CGFloat = 30
+        public static let recordingIndicatorSuperFooterSpacing: CGFloat = 8
+        public static let recordingIndicatorSuperFooterGroupSpacing: CGFloat = 12
+        public static let recordingIndicatorSuperFooterChipHeight: CGFloat = 22
+        public static let recordingIndicatorSuperFooterChipHorizontalPadding: CGFloat = 8
+        public static let recordingIndicatorSuperFooterIconWidth: CGFloat = 24
+        public static let recordingIndicatorSuperActionStopWidth: CGFloat = 88
+        public static let recordingIndicatorSuperActionCancelWidth: CGFloat = 98
+        public static let recordingIndicatorSuperKeycapMinWidth: CGFloat = 28
+        public static let recordingIndicatorSuperKeycapHorizontalPadding: CGFloat = 8
+        public static let recordingIndicatorSuperCornerRadius: CGFloat = 18
 
         public static let shadowRadius: CGFloat = 10
         public static let shadowX: CGFloat = 0

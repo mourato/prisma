@@ -111,7 +111,7 @@ public struct MeetingConversationView: View {
                 composer
             }
         }
-        .background(AppDesignSystem.Colors.windowBackground)
+        .background(AppDesignSystem.Colors.settingsCanvasBackground)
         .sheet(isPresented: $isShowingModelSelector) {
             EnhancementsModelSelectionSheet(
                 options: modelOptions,
@@ -237,7 +237,7 @@ public struct MeetingConversationView: View {
         }
         .padding(12)
         .background(
-            AppDesignSystem.Colors.cardBackground,
+            AppDesignSystem.Colors.settingsCardBackground,
             in: RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
         )
     }

@@ -7,15 +7,23 @@ import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
 public struct DSCard<Content: View>: View {
+    public enum Style {
+        case standard
+        case settings
+    }
+
+    private let style: Style
     private let cornerRadius: CGFloat
     private let padding: CGFloat
     private let content: Content
 
     public init(
+        style: Style = .standard,
         cornerRadius: CGFloat = AppDesignSystem.Layout.cardCornerRadius,
         padding: CGFloat = AppDesignSystem.Layout.cardPadding,
         @ViewBuilder content: () -> Content
     ) {
+        self.style = style
         self.cornerRadius = cornerRadius
         self.padding = padding
         self.content = content()
@@ -28,14 +36,60 @@ public struct DSCard<Content: View>: View {
         .padding(padding)
         .background(
             RoundedRectangle(cornerRadius: cornerRadius)
-                .fill(AppDesignSystem.Colors.cardBackground)
+                .fill(backgroundColor)
                 .overlay(
                     RoundedRectangle(cornerRadius: cornerRadius)
-                        .stroke(AppDesignSystem.Colors.cardStroke, lineWidth: 0.5)
+                        .stroke(strokeColor, lineWidth: 0.5)
                 )
         )
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+        .shadow(color: shadowColor, radius: shadowRadius, x: 0, y: shadowYOffset)
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var backgroundColor: Color {
+        switch style {
+        case .standard:
+            AppDesignSystem.Colors.cardBackground
+        case .settings:
+            AppDesignSystem.Colors.settingsCardBackground
+        }
+    }
+
+    private var strokeColor: Color {
+        switch style {
+        case .standard:
+            AppDesignSystem.Colors.cardStroke
+        case .settings:
+            AppDesignSystem.Colors.settingsCardStroke
+        }
+    }
+
+    private var shadowColor: Color {
+        switch style {
+        case .standard:
+            .clear
+        case .settings:
+            AppDesignSystem.Colors.settingsCardShadow
+        }
+    }
+
+    private var shadowRadius: CGFloat {
+        switch style {
+        case .standard:
+            0
+        case .settings:
+            2
+        }
+    }
+
+    private var shadowYOffset: CGFloat {
+        switch style {
+        case .standard:
+            0
+        case .settings:
+            1
+        }
     }
 }
 

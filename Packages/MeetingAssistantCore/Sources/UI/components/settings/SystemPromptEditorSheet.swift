@@ -72,7 +72,7 @@ struct SystemPromptEditorSheet: View {
             .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.chipCornerRadius))
         }
         .padding()
-        .background(AppDesignSystem.Colors.windowBackground)
+        .background(AppDesignSystem.Colors.settingsCanvasBackground)
     }
 
     // MARK: - Sections
@@ -122,7 +122,7 @@ struct SystemPromptEditorSheet: View {
             .disabled(systemPrompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
         .padding()
-        .background(AppDesignSystem.Colors.windowBackground)
+        .background(AppDesignSystem.Colors.settingsCanvasBackground)
     }
 }
 

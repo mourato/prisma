@@ -81,7 +81,7 @@ public struct PromptEditorSheet: View {
             Spacer()
         }
         .padding()
-        .background(AppDesignSystem.Colors.windowBackground)
+        .background(AppDesignSystem.Colors.settingsCanvasBackground)
     }
 
     // MARK: - Title Section
@@ -202,7 +202,7 @@ public struct PromptEditorSheet: View {
             .disabled(!isValid)
         }
         .padding(16)
-        .background(AppDesignSystem.Colors.windowBackground)
+        .background(AppDesignSystem.Colors.settingsCanvasBackground)
     }
 
     // MARK: - Validation

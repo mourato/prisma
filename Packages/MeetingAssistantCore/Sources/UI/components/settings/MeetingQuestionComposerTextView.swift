@@ -51,11 +51,11 @@ public struct MeetingQuestionComposerTextView: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
-        .background(AppDesignSystem.Colors.cardBackground)
+        .background(AppDesignSystem.Colors.settingsCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
         .overlay(
             RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
-                .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                .stroke(AppDesignSystem.Colors.settingsCardStroke, lineWidth: 1)
         )
     }
 }

@@ -61,7 +61,7 @@ public struct SettingsView: View {
             sidebar
         } detail: {
             ZStack(alignment: .topLeading) {
-                AppDesignSystem.Colors.windowBackground
+                AppDesignSystem.Colors.settingsCanvasBackground
                     .ignoresSafeArea()
 
                 detailView
@@ -301,7 +301,7 @@ public struct SettingsView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(AppDesignSystem.Colors.glassBackground)
+        .background(AppDesignSystem.Colors.settingsGlassBackground)
         .overlay(alignment: .bottom) {
             Divider()
         }

@@ -49,7 +49,7 @@ public struct DSGroup<Content: View, HeaderAccessory: View>: View {
             }
             .padding(.leading, 4)
 
-            DSCard {
+            DSCard(style: .settings) {
                 content
             }
             .frame(maxWidth: .infinity, alignment: .leading)
