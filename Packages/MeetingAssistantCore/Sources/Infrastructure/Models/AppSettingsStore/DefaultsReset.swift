@@ -27,6 +27,7 @@ public extension AppSettingsStore {
         microphoneOnBatteryUID = nil
         muteOutputDuringRecording = false
         autoIncreaseMicrophoneVolume = false
+        removeSilenceBeforeProcessing = false
         shortcutActivationMode = .holdOrToggle
         dictationShortcutActivationMode = .holdOrToggle
         shortcutDoubleTapIntervalMilliseconds = Self.defaultShortcutDoubleTapIntervalMilliseconds

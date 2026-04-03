@@ -268,7 +268,15 @@ public extension RecordingManager {
 
             // Transcribe if requested
             if transcribe, let transcriptionSession {
-                await transcribeRecording(audioURL: finalURL, session: transcriptionSession)
+                let preparedAudio = await prepareAudioForTranscription(
+                    audioURL: finalURL,
+                    allowSilenceRemoval: true
+                )
+                await transcribeRecording(
+                    audioURL: preparedAudio.transcriptionURL,
+                    session: transcriptionSession,
+                    cleanupAudioURL: preparedAudio.cleanupURL
+                )
             } else {
                 cancelEstimatedPostProcessingProgress(for: currentMeeting?.id)
                 postProcessingContext = nil
@@ -427,7 +435,8 @@ public extension RecordingManager {
         )
         await transcribeRecording(
             audioURL: audioURL,
-            session: makeTranscriptionSessionSnapshot(meeting)
+            session: makeTranscriptionSessionSnapshot(meeting),
+            cleanupAudioURL: nil
         )
     }
 

@@ -2,6 +2,7 @@ import AppKit
 import Combine
 import Foundation
 import MeetingAssistantCore
+import MeetingAssistantCoreAudio
 
 // MARK: - Mock Audio Recording Service
 
@@ -300,6 +301,9 @@ class MockStorageService: StorageService, @unchecked Sendable {
 
     func cleanupTemporaryFiles(urls: [URL]) {
         cleanupTemporaryFilesCalled = true
+        for url in urls where FileManager.default.fileExists(atPath: url.path) {
+            try? FileManager.default.removeItem(at: url)
+        }
     }
 
     func saveTranscription(_ transcription: Transcription) async throws {
@@ -415,6 +419,46 @@ final class MockActiveAppContextProvider: ActiveAppContextProvider {
 
     func fetchActiveAppContext() async throws -> ActiveAppContext? {
         activeContext
+    }
+}
+
+final class MockAudioSilenceCompactor: AudioSilenceCompacting, @unchecked Sendable {
+    var compactCallCount = 0
+    var lastInputURL: URL?
+    var lastOutputURL: URL?
+    var lastFormat: AppSettingsStore.AudioFormat?
+    var shouldThrow = false
+    var materializeOutputFile = true
+    var nextWasCompacted = true
+    var nextRemovedRatio = 0.4
+
+    func compactForTranscription(
+        inputURL: URL,
+        outputURL: URL,
+        format: AppSettingsStore.AudioFormat
+    ) async throws -> AudioCompactionResult {
+        compactCallCount += 1
+        lastInputURL = inputURL
+        lastOutputURL = outputURL
+        lastFormat = format
+
+        if shouldThrow {
+            throw AudioSilenceCompactorError.exportFailed(nil)
+        }
+
+        if materializeOutputFile, nextWasCompacted {
+            FileManager.default.createFile(atPath: outputURL.path, contents: Data("temp".utf8))
+        }
+
+        let resolvedOutputURL = nextWasCompacted ? outputURL : inputURL
+        return AudioCompactionResult(
+            outputURL: resolvedOutputURL,
+            originalDuration: 10,
+            compactedDuration: nextWasCompacted ? 6 : 10,
+            removedDuration: nextWasCompacted ? 4 : 0,
+            removedRatio: nextWasCompacted ? nextRemovedRatio : 0,
+            wasCompacted: nextWasCompacted
+        )
     }
 }
 

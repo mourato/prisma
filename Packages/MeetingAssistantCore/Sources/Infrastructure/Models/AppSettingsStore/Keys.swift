@@ -26,6 +26,7 @@ extension AppSettingsStore {
         static let microphoneOnBatteryUID = "microphoneOnBatteryUID"
         static let muteOutputDuringRecording = "muteOutputDuringRecording"
         static let autoIncreaseMicrophoneVolume = "autoIncreaseMicrophoneVolume"
+        static let removeSilenceBeforeProcessing = "removeSilenceBeforeProcessing"
         static let deletedPromptIds = "postProcessingDeletedPromptIds"
         static let shortcutActivationMode = "shortcutActivationMode"
         static let dictationShortcutActivationMode = "dictationShortcutActivationMode"

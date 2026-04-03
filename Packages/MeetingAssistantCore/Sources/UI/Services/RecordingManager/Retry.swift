@@ -37,14 +37,22 @@ extension RecordingManager {
     }
 
     func runRetryTranscription(audioURL: URL, transcription: Transcription) async {
+        let preparedAudio = await prepareAudioForTranscription(
+            audioURL: audioURL,
+            allowSilenceRemoval: true
+        )
+        defer {
+            cleanupPreparedTranscriptionAudio(preparedAudio)
+        }
+
         isTranscribing = true
         cancelEstimatedPostProcessingProgress()
-        let audioDuration = await getAudioDuration(from: audioURL)
+        let audioDuration = await getAudioDuration(from: preparedAudio.transcriptionURL)
         transcriptionStatus.beginTranscription(audioDuration: audioDuration)
 
         do {
             let updated = try await performRetryTranscription(
-                audioURL: audioURL,
+                audioURL: preparedAudio.transcriptionURL,
                 transcription: transcription,
                 audioDuration: audioDuration
             )

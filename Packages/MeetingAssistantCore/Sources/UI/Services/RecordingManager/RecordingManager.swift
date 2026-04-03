@@ -82,6 +82,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     let micRecorder: any AudioRecordingService
     let systemRecorder: any AudioRecordingService
     let audioMerger: AudioMerger
+    let audioSilenceCompactor: any AudioSilenceCompacting
     let meetingDetector: MeetingDetector
     let transcriptionClient: any TranscriptionService
     let postProcessingService: any PostProcessingServiceProtocol
@@ -177,6 +178,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
             postProcessingService: PostProcessingService.shared,
             calendarEventService: CalendarEventService.shared,
             audioMerger: AudioMerger(),
+            audioSilenceCompactor: AudioSilenceCompactor(),
             meetingDetector: MeetingDetector.shared,
             storage: FileSystemStorageService.shared,
             notificationService: .shared,
@@ -229,6 +231,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         postProcessingService: any PostProcessingServiceProtocol = PostProcessingService.shared,
         calendarEventService: any CalendarEventServiceProtocol = CalendarEventService.shared,
         audioMerger: AudioMerger = AudioMerger(),
+        audioSilenceCompactor: any AudioSilenceCompacting = AudioSilenceCompactor(),
         meetingDetector: MeetingDetector = MeetingDetector.shared,
         storage: any StorageService = FileSystemStorageService.shared,
         notificationService: NotificationService = .shared,
@@ -250,6 +253,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         self.postProcessingService = postProcessingService
         self.calendarEventService = calendarEventService
         self.audioMerger = audioMerger
+        self.audioSilenceCompactor = audioSilenceCompactor
         self.meetingDetector = meetingDetector
         self.storage = storage
         self.notificationService = notificationService

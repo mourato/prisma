@@ -1,4 +1,5 @@
 import AppKit
+import AVFoundation
 import Combine
 import CryptoKit
 @testable import MeetingAssistantCore
@@ -12,6 +13,7 @@ final class RecordingManagerTests: XCTestCase {
     var mockSystem: MockAudioRecorder?
     var mockTranscription: MockTranscriptionClient?
     var mockPostProcessing: MockPostProcessingService?
+    var mockAudioSilenceCompactor: MockAudioSilenceCompactor?
     var mockStorage: MockStorageService?
     var mockActiveAppContextProvider: MockActiveAppContextProvider?
     var mockCaptureContextResolver: MockCaptureContextResolver?
@@ -28,6 +30,7 @@ final class RecordingManagerTests: XCTestCase {
         let system = MockAudioRecorder()
         let transcription = MockTranscriptionClient()
         let postProcessing = MockPostProcessingService()
+        let audioSilenceCompactor = MockAudioSilenceCompactor()
         let storage = MockStorageService()
         let activeAppContextProvider = MockActiveAppContextProvider()
         let captureContextResolver = MockCaptureContextResolver()
@@ -50,6 +53,7 @@ final class RecordingManagerTests: XCTestCase {
         mockSystem = system
         mockTranscription = transcription
         mockPostProcessing = postProcessing
+        mockAudioSilenceCompactor = audioSilenceCompactor
         mockStorage = storage
         mockActiveAppContextProvider = activeAppContextProvider
         mockCaptureContextResolver = captureContextResolver
@@ -64,6 +68,7 @@ final class RecordingManagerTests: XCTestCase {
             systemRecorder: system,
             transcriptionClient: transcription,
             postProcessingService: postProcessing,
+            audioSilenceCompactor: audioSilenceCompactor,
             storage: storage,
             activeAppContextProvider: activeAppContextProvider,
             captureContextResolver: captureContextResolver,
@@ -86,6 +91,7 @@ final class RecordingManagerTests: XCTestCase {
         mockSystem = nil
         mockTranscription = nil
         mockPostProcessing = nil
+        mockAudioSilenceCompactor = nil
         mockStorage = nil
         mockActiveAppContextProvider = nil
         mockCaptureContextResolver = nil
@@ -763,6 +769,121 @@ final class RecordingManagerTests: XCTestCase {
         XCTAssertFalse(manager.isRecording)
     }
 
+    func testStopRecording_WithSilenceRemovalDisabled_UsesOriginalAudio() async throws {
+        let manager = try XCTUnwrap(manager)
+        let mockMic = try XCTUnwrap(mockMic)
+        let mockSystem = try XCTUnwrap(mockSystem)
+        let mockTranscription = try XCTUnwrap(mockTranscription)
+        let mockCompactor = try XCTUnwrap(mockAudioSilenceCompactor)
+        let settings = AppSettingsStore.shared
+
+        settings.removeSilenceBeforeProcessing = false
+        mockMic.permissionGranted = true
+        mockSystem.permissionGranted = true
+
+        await manager.startRecording()
+        let rawURL = try XCTUnwrap(mockMic.currentRecordingURL)
+        try writeTestAudioFile(at: rawURL)
+
+        await manager.stopRecording()
+
+        XCTAssertEqual(mockTranscription.lastTranscribeAudioURL, rawURL)
+        XCTAssertEqual(mockCompactor.compactCallCount, 0)
+    }
+
+    func testStopRecording_WithSilenceRemovalEnabled_UsesTemporaryCompactedAudioAndCleansItUp() async throws {
+        let manager = try XCTUnwrap(manager)
+        let mockMic = try XCTUnwrap(mockMic)
+        let mockSystem = try XCTUnwrap(mockSystem)
+        let mockTranscription = try XCTUnwrap(mockTranscription)
+        let mockCompactor = try XCTUnwrap(mockAudioSilenceCompactor)
+        let settings = AppSettingsStore.shared
+
+        settings.removeSilenceBeforeProcessing = true
+        mockMic.permissionGranted = true
+        mockSystem.permissionGranted = true
+
+        await manager.startRecording()
+        let rawURL = try XCTUnwrap(mockMic.currentRecordingURL)
+        try writeTestAudioFile(at: rawURL)
+
+        await manager.stopRecording()
+
+        let compactedURL = try XCTUnwrap(mockCompactor.lastOutputURL)
+        XCTAssertEqual(mockTranscription.lastTranscribeAudioURL, compactedURL)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: compactedURL.path))
+    }
+
+    func testStopRecording_WhenCompactionFails_FallsBackToOriginalAudio() async throws {
+        let manager = try XCTUnwrap(manager)
+        let mockMic = try XCTUnwrap(mockMic)
+        let mockSystem = try XCTUnwrap(mockSystem)
+        let mockTranscription = try XCTUnwrap(mockTranscription)
+        let mockCompactor = try XCTUnwrap(mockAudioSilenceCompactor)
+        let settings = AppSettingsStore.shared
+
+        settings.removeSilenceBeforeProcessing = true
+        mockCompactor.shouldThrow = true
+        mockMic.permissionGranted = true
+        mockSystem.permissionGranted = true
+
+        await manager.startRecording()
+        let rawURL = try XCTUnwrap(mockMic.currentRecordingURL)
+        try writeTestAudioFile(at: rawURL)
+
+        await manager.stopRecording()
+
+        XCTAssertEqual(mockTranscription.lastTranscribeAudioURL, rawURL)
+    }
+
+    func testRetryTranscription_ReappliesSilenceCompactionAndCleansTemporaryCopy() async throws {
+        let manager = try XCTUnwrap(manager)
+        let mockTranscription = try XCTUnwrap(mockTranscription)
+        let mockCompactor = try XCTUnwrap(mockAudioSilenceCompactor)
+        let settings = AppSettingsStore.shared
+
+        settings.removeSilenceBeforeProcessing = true
+
+        let rawURL = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).wav")
+        try writeTestAudioFile(at: rawURL)
+        defer { try? FileManager.default.removeItem(at: rawURL) }
+
+        let transcription = Transcription(
+            meeting: Meeting(app: .zoom, capturePurpose: .meeting, audioFilePath: rawURL.path),
+            text: "Existing",
+            rawText: "Existing",
+            processedContent: nil,
+            postProcessingPromptId: nil,
+            postProcessingPromptTitle: nil,
+            language: "en",
+            modelName: "test-model"
+        )
+
+        await manager.retryTranscription(for: transcription)
+
+        let compactedURL = try XCTUnwrap(mockCompactor.lastOutputURL)
+        XCTAssertEqual(mockTranscription.lastTranscribeAudioURL, compactedURL)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: compactedURL.path))
+    }
+
+    func testTranscribeExternalAudio_DoesNotApplySilenceCompaction() async throws {
+        let manager = try XCTUnwrap(manager)
+        let mockTranscription = try XCTUnwrap(mockTranscription)
+        let mockCompactor = try XCTUnwrap(mockAudioSilenceCompactor)
+        let settings = AppSettingsStore.shared
+
+        settings.removeSilenceBeforeProcessing = true
+
+        let importedURL = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).wav")
+        try writeTestAudioFile(at: importedURL)
+        defer { try? FileManager.default.removeItem(at: importedURL) }
+
+        await manager.transcribeExternalAudio(from: importedURL)
+
+        XCTAssertEqual(mockTranscription.lastTranscribeAudioURL, importedURL)
+        XCTAssertEqual(mockCompactor.compactCallCount, 0)
+    }
+
     func testTranscription_FailsWithInvalidURL() async throws {
         // Given
         let mockTranscription = try XCTUnwrap(mockTranscription)
@@ -829,5 +950,60 @@ final class RecordingManagerTests: XCTestCase {
         XCTAssertEqual(mockMic.startRecordingParams.count, 1)
         XCTAssertEqual(mockMic.startRecordingParams.first?.url, audioURL)
         XCTAssertEqual(mockMic.stopRecordingCalledCount, 1)
+    }
+
+    private func writeTestAudioFile(at url: URL) throws {
+        let format = AppSettingsStore.AudioFormat(rawValue: url.pathExtension.lowercased()) ?? .wav
+        let sampleRate = 16_000.0
+        let settings: [String: Any] = switch format {
+        case .m4a:
+            [
+                AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
+                AVSampleRateKey: sampleRate,
+                AVNumberOfChannelsKey: 1,
+                AVEncoderBitRateKey: 64_000,
+            ]
+        case .wav:
+            [
+                AVFormatIDKey: kAudioFormatLinearPCM,
+                AVSampleRateKey: sampleRate,
+                AVNumberOfChannelsKey: 1,
+                AVLinearPCMBitDepthKey: 32,
+                AVLinearPCMIsFloatKey: true,
+                AVLinearPCMIsBigEndianKey: false,
+                AVLinearPCMIsNonInterleaved: true,
+            ]
+        }
+
+        if FileManager.default.fileExists(atPath: url.path) {
+            try FileManager.default.removeItem(at: url)
+        }
+
+        try FileManager.default.createDirectory(
+            at: url.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+
+        let file = try AVAudioFile(
+            forWriting: url,
+            settings: settings,
+            commonFormat: .pcmFormatFloat32,
+            interleaved: false
+        )
+        let frameCount = AVAudioFrameCount(sampleRate * 0.2)
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: frameCount) else {
+            XCTFail("Failed to allocate test audio buffer")
+            return
+        }
+
+        buffer.frameLength = frameCount
+        if let channelData = buffer.floatChannelData {
+            for frameIndex in 0 ..< Int(frameCount) {
+                let sample = Float(sin(2 * .pi * Double(frameIndex) / 40.0) * 0.2)
+                channelData[0][frameIndex] = sample
+            }
+        }
+
+        try file.write(from: buffer)
     }
 }

@@ -9,7 +9,17 @@ import MeetingAssistantCoreInfrastructure
 // MARK: - Transcription
 
 extension RecordingManager {
-    func transcribeRecording(audioURL: URL, session: TranscriptionSessionSnapshot) async {
+    func transcribeRecording(
+        audioURL: URL,
+        session: TranscriptionSessionSnapshot,
+        cleanupAudioURL: URL? = nil
+    ) async {
+        defer {
+            if let cleanupAudioURL {
+                storage.cleanupTemporaryFiles(urls: [cleanupAudioURL])
+            }
+        }
+
         beginTranscriptionUIStateIfNeeded(for: session)
         cancelEstimatedPostProcessingProgress(for: session.id)
 

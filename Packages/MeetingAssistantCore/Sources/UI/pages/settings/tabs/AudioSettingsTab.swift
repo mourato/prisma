@@ -67,6 +67,21 @@ public struct AudioSettingsTab: View {
                 }
             }
 
+            DSGroup("settings.general.audio_processing".localized, icon: "waveform.badge.minus") {
+                VStack(alignment: .leading, spacing: 12) {
+                    DSToggleRow(
+                        "settings.general.remove_silence_before_processing".localized,
+                        description: "settings.general.remove_silence_before_processing_desc".localized,
+                        isOn: $viewModel.removeSilenceBeforeProcessing
+                    )
+
+                    Text("settings.general.remove_silence_before_processing_note".localized)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
             // Sound Feedback
             DSGroup("settings.general.sound_feedback".localized, icon: "speaker.wave.2.fill") {
                 VStack(alignment: .leading, spacing: 16) {

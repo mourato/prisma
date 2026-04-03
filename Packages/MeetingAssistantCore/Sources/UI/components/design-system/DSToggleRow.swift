@@ -41,6 +41,7 @@ public struct DSToggleRow: View {
             Toggle("", isOn: $isOn)
                 .labelsHidden()
                 .toggleStyle(.switch)
+                .controlSize(.small)
         }
         .contentShape(Rectangle())
         .onTapGesture {

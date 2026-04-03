@@ -840,6 +840,10 @@
 "settings.general.mute_output_desc" = "Mutes system audio during Dictation and Assistant recordings.";
 "settings.general.auto_increase_microphone_volume" = "Automatically increase microphone volume";
 "settings.general.auto_increase_microphone_volume_tooltip" = "Sets microphone input volume to max when starting a recording. Only works if using system default device.";
+"settings.general.audio_processing" = "Audio Processing";
+"settings.general.remove_silence_before_processing" = "Remove silence before processing";
+"settings.general.remove_silence_before_processing_desc" = "If enabled, silence will be removed from a temporary copy of the recording before processing, improving accuracy and reducing processing time.";
+"settings.general.remove_silence_before_processing_note" = "The original recording is preserved.";
 
 /* Transcribe File */
 "transcribe.import_audio" = "Import Audio";

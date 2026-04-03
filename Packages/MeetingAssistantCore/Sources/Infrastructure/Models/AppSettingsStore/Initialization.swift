@@ -158,6 +158,7 @@ extension AppSettingsStore {
         let microphoneOnBatteryUID: String?
         let muteOutputDuringRecording: Bool
         let autoIncreaseMicrophoneVolume: Bool
+        let removeSilenceBeforeProcessing: Bool
     }
 
     /// Loads audio and language settings.
@@ -169,7 +170,11 @@ extension AppSettingsStore {
             microphoneWhenChargingUID: UserDefaults.standard.string(forKey: Keys.microphoneWhenChargingUID),
             microphoneOnBatteryUID: UserDefaults.standard.string(forKey: Keys.microphoneOnBatteryUID),
             muteOutputDuringRecording: UserDefaults.standard.bool(forKey: Keys.muteOutputDuringRecording),
-            autoIncreaseMicrophoneVolume: UserDefaults.standard.bool(forKey: Keys.autoIncreaseMicrophoneVolume)
+            autoIncreaseMicrophoneVolume: UserDefaults.standard.bool(forKey: Keys.autoIncreaseMicrophoneVolume),
+            removeSilenceBeforeProcessing: loadBoolDefaultIfUnset(
+                forKey: Keys.removeSilenceBeforeProcessing,
+                defaultValue: false
+            )
         )
     }
 

@@ -840,6 +840,10 @@
 "settings.general.mute_output_desc" = "Silencia o áudio do sistema enquanto uma gravação está em andamento.";
 "settings.general.auto_increase_microphone_volume" = "Aumentar automaticamente o volume do microfone";
 "settings.general.auto_increase_microphone_volume_tooltip" = "Define o volume de entrada do microfone no máximo ao iniciar uma gravação. Só funciona ao usar o dispositivo padrão do sistema.";
+"settings.general.audio_processing" = "Processamento de Áudio";
+"settings.general.remove_silence_before_processing" = "Remover silêncio antes do processamento";
+"settings.general.remove_silence_before_processing_desc" = "Se ativado, o silêncio será removido de uma cópia temporária da gravação antes do processamento, melhorando a precisão e reduzindo o tempo de processamento.";
+"settings.general.remove_silence_before_processing_note" = "A gravação original é preservada.";
 
 /* Transcribe File */
 "transcribe.import_audio" = "Importar Áudio";

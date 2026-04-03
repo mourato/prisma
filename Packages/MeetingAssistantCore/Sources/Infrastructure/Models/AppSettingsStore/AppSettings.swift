@@ -194,6 +194,13 @@ public class AppSettingsStore: ObservableObject {
         didSet { UserDefaults.standard.set(autoIncreaseMicrophoneVolume, forKey: Keys.autoIncreaseMicrophoneVolume) }
     }
 
+    /// Whether silence should be removed from a temporary audio copy before transcription.
+    @Published public var removeSilenceBeforeProcessing: Bool {
+        didSet {
+            UserDefaults.standard.set(removeSilenceBeforeProcessing, forKey: Keys.removeSilenceBeforeProcessing)
+        }
+    }
+
     /// How keyboard shortcuts activate recording.
     @Published public var shortcutActivationMode: ShortcutActivationMode {
         didSet { UserDefaults.standard.set(shortcutActivationMode.rawValue, forKey: Keys.shortcutActivationMode) }
@@ -634,6 +641,7 @@ public class AppSettingsStore: ObservableObject {
         microphoneOnBatteryUID = audioSettings.microphoneOnBatteryUID
         muteOutputDuringRecording = audioSettings.muteOutputDuringRecording
         autoIncreaseMicrophoneVolume = audioSettings.autoIncreaseMicrophoneVolume
+        removeSilenceBeforeProcessing = audioSettings.removeSilenceBeforeProcessing
 
         let shortcuts = Self.loadShortcutActivationSettings()
         shortcutActivationMode = shortcuts.shortcutActivationMode

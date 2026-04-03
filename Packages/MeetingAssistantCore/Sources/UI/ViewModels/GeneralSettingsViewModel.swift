@@ -88,6 +88,12 @@ public class GeneralSettingsViewModel: ObservableObject {
         }
     }
 
+    @Published public var removeSilenceBeforeProcessing: Bool {
+        didSet {
+            settingsStore.removeSilenceBeforeProcessing = removeSilenceBeforeProcessing
+        }
+    }
+
     @Published public var recordingIndicatorEnabled: Bool {
         didSet {
             settingsStore.recordingIndicatorEnabled = recordingIndicatorEnabled
@@ -205,6 +211,7 @@ public class GeneralSettingsViewModel: ObservableObject {
         microphoneWhenChargingUID = settingsStore.microphoneWhenChargingUID
         microphoneOnBatteryUID = settingsStore.microphoneOnBatteryUID
         autoIncreaseMicrophoneVolume = settingsStore.autoIncreaseMicrophoneVolume
+        removeSilenceBeforeProcessing = settingsStore.removeSilenceBeforeProcessing
         recordingIndicatorEnabled = settingsStore.recordingIndicatorEnabled
         recordingIndicatorStyle = settingsStore.recordingIndicatorStyle
         recordingIndicatorPosition = settingsStore.recordingIndicatorPosition
