@@ -3,36 +3,9 @@ import CoreGraphics
 import XCTest
 
 final class AudioVisualizerMathTests: XCTestCase {
-    func testShapedLevel_BelowGateIsHidden() {
-        XCTAssertEqual(AudioVisualizerMath.shapedLevel(0.0), 0.0, accuracy: 0.0001)
-        XCTAssertEqual(AudioVisualizerMath.shapedLevel(0.2), 0.0, accuracy: 0.0001)
-    }
-
-    func testShapedLevel_AboveGateGrowsNonlinearly() {
-        let soft = AudioVisualizerMath.shapedLevel(0.35)
-        let firm = AudioVisualizerMath.shapedLevel(0.75)
-
-        XCTAssertGreaterThan(firm, soft)
-        XCTAssertLessThan(soft, 0.2)
-    }
-
-    func testInstantLevels_RespectsBarCountAndBounds() {
-        let snapshot: [Double] = [0.0, 0.15, 0.4, 0.8, 0.3, 0.6, 0.95, 0.2, 0.5]
-        let levels = AudioVisualizerMath.instantLevels(
-            snapshotLevels: snapshot,
-            fallbackLevel: 0.0,
-            barCount: 6,
-            isAnimationActive: true
-        )
-
-        XCTAssertEqual(levels.count, 6)
-        XCTAssertTrue(levels.allSatisfy { $0 >= 0.0 && $0 <= 1.0 })
-    }
-
-    func testInstantLevels_WhenAnimationInactive_ReturnsFlatZero() {
-        let levels = AudioVisualizerMath.instantLevels(
-            snapshotLevels: [0.9, 0.9, 0.9],
-            fallbackLevel: 0.9,
+    func testPresentedLevels_WhenAnimationInactive_ReturnsFlatZero() {
+        let levels = AudioVisualizerMath.presentedLevels(
+            [0.9, 0.6, 0.3],
             barCount: 6,
             isAnimationActive: false
         )
@@ -40,16 +13,26 @@ final class AudioVisualizerMathTests: XCTestCase {
         XCTAssertEqual(levels, Array(repeating: 0.0, count: 6))
     }
 
-    func testInstantLevels_DoesNotApplyCenterBiasWhenCenterBoostIsDisabled() {
-        let levels = AudioVisualizerMath.instantLevels(
-            snapshotLevels: Array(repeating: 0.75, count: 5),
-            fallbackLevel: 0.75,
+    func testPresentedLevels_ResamplesToRequestedBarCount() {
+        let levels = AudioVisualizerMath.presentedLevels(
+            [0.0, 0.2, 0.5, 0.9],
+            barCount: 8,
+            isAnimationActive: true
+        )
+
+        XCTAssertEqual(levels.count, 8)
+        XCTAssertTrue(levels.allSatisfy { $0 >= 0.0 && $0 <= 1.0 })
+        XCTAssertGreaterThan(levels[6], levels[1])
+    }
+
+    func testPresentedLevels_UsesZeroWhenSourceIsEmpty() {
+        let levels = AudioVisualizerMath.presentedLevels(
+            [],
             barCount: 5,
             isAnimationActive: true
         )
 
-        XCTAssertEqual(levels[2], levels[0], accuracy: 0.0001)
-        XCTAssertEqual(levels[2], levels[4], accuracy: 0.0001)
+        XCTAssertEqual(levels, Array(repeating: 0.0, count: 5))
     }
 
     func testBarHeight_StaysWithinMinAndMaxBounds() {
@@ -67,7 +50,7 @@ final class AudioVisualizerMathTests: XCTestCase {
         }
     }
 
-    func testDisplayLevel_BoostsVisualHeightWithoutLeakingLowSignal() {
+    func testDisplayLevel_BoostsVisualHeightWithoutRevivingSilence() {
         XCTAssertEqual(AudioVisualizerMath.displayLevel(0.0), 0.0, accuracy: 0.0001)
 
         let quiet = AudioVisualizerMath.displayLevel(0.16)

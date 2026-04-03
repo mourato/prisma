@@ -31,8 +31,9 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         static let fallbackSampleRate: Double = 48_000.0
         static let fallbackChannels: Int = 1
         static let fallbackBitRate: Int = 128_000
-        static let fallbackMeterUpdateInterval: TimeInterval = 0.2
+        static let fallbackMeterUpdateInterval: TimeInterval = 0.05
         static let fallbackMeterTimerToleranceRatio: Double = 0.25
+        static let simpleMeterUpdateInterval: TimeInterval = 0.05
         static let outputMuteDelayAfterStart: UInt64 = 200_000_000 // 200ms
         static let retriableEngineStartErrorCodes: Set<Int> = [-10_875, -10_877]
     }
@@ -47,6 +48,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     @Published public internal(set) var currentAveragePower: Float = -160.0
     @Published public internal(set) var currentPeakPower: Float = -160.0
     @Published public internal(set) var currentBarPowerLevels: [Float] = []
+    @Published var latestMeterSnapshot: AudioRecordingWorker.MeterSnapshot?
 
     // MARK: - Audio Engine
 
@@ -94,6 +96,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     private var fallbackRecorder: AVAudioRecorder?
     private var fallbackMeterTimer: Timer?
     private var settingsSubscriptions = Set<AnyCancellable>()
+    private var lastMeterSnapshotDate: Date?
 
     init() {
         microphoneInputSelectionResolver = MicrophoneInputSelectionResolver(deviceManager: deviceManager)
@@ -101,9 +104,11 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         // Setup worker callbacks to bridge back to MainActor
         worker.setOnPowerUpdate { [weak self] avg, peak, barPowerLevels in
             Task { @MainActor [weak self] in
-                self?.currentAveragePower = avg
-                self?.currentPeakPower = peak
-                self?.currentBarPowerLevels = barPowerLevels
+                self?.publishMeterSnapshot(
+                    averagePower: avg,
+                    peakPower: peak,
+                    barPowerLevels: barPowerLevels
+                )
             }
         }
 
@@ -171,6 +176,8 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             category: .recordingManager,
             extra: ["path": outputURL.path, "source": source.rawValue]
         )
+        lastMeterSnapshotDate = nil
+        latestMeterSnapshot = nil
         currentBarPowerLevels = []
 
         // Muting system output must only apply to Dictation/Assistant (mic-only).
@@ -334,13 +341,15 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         isRecording = true
 
         // Periodic metering for UI power updates
-        simpleMeterTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+        simpleMeterTimer = Timer.scheduledTimer(withTimeInterval: Constants.simpleMeterUpdateInterval, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
                 guard let self, let rec = simpleRecorder else { return }
                 rec.updateMeters()
-                currentAveragePower = rec.averagePower(forChannel: 0)
-                currentPeakPower = rec.peakPower(forChannel: 0)
-                currentBarPowerLevels = [currentAveragePower]
+                self.publishMeterSnapshot(
+                    averagePower: rec.averagePower(forChannel: 0),
+                    peakPower: rec.peakPower(forChannel: 0),
+                    barPowerLevels: []
+                )
             }
         }
 
@@ -354,6 +363,8 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     private func stopSimpleMicRecording() -> URL? {
         simpleMeterTimer?.invalidate()
         simpleMeterTimer = nil
+        lastMeterSnapshotDate = nil
+        latestMeterSnapshot = nil
 
         guard let recorder = simpleRecorder else { return nil }
         simpleRecorder = nil
@@ -392,6 +403,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             currentAveragePower = -160.0
             currentPeakPower = -160.0
             currentBarPowerLevels = []
+            latestMeterSnapshot = nil
             return currentRecordingURL
         }
 
@@ -402,6 +414,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             currentAveragePower = -160.0
             currentPeakPower = -160.0
             currentBarPowerLevels = []
+            latestMeterSnapshot = nil
             return currentRecordingURL
         }
 
@@ -420,6 +433,8 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         currentAveragePower = -160.0
         currentPeakPower = -160.0
         currentBarPowerLevels = []
+        latestMeterSnapshot = nil
+        lastMeterSnapshotDate = nil
 
         // Log dropped frames before clearing (for diagnostics)
         let queueStats = systemAudioQueue.stats
@@ -530,6 +545,8 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         currentAveragePower = -160.0
         currentPeakPower = -160.0
         currentBarPowerLevels = []
+        latestMeterSnapshot = nil
+        lastMeterSnapshotDate = nil
     }
 
     private func startupErrorCode(from error: Error) -> Int? {
@@ -574,6 +591,8 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     private func stopFallbackRecorder(_ recorder: AVAudioRecorder) {
         fallbackMeterTimer?.invalidate()
         fallbackMeterTimer = nil
+        lastMeterSnapshotDate = nil
+        latestMeterSnapshot = nil
 
         recorder.stop()
         fallbackRecorder = nil
@@ -585,9 +604,36 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     private func updateFallbackMeters() {
         guard let recorder = fallbackRecorder else { return }
         recorder.updateMeters()
-        currentAveragePower = recorder.averagePower(forChannel: 0)
-        currentPeakPower = recorder.peakPower(forChannel: 0)
-        currentBarPowerLevels = [currentAveragePower]
+        publishMeterSnapshot(
+            averagePower: recorder.averagePower(forChannel: 0),
+            peakPower: recorder.peakPower(forChannel: 0),
+            barPowerLevels: []
+        )
+    }
+
+    @MainActor
+    private func publishMeterSnapshot(
+        averagePower: Float,
+        peakPower: Float,
+        barPowerLevels: [Float]
+    ) {
+        currentAveragePower = averagePower
+        currentPeakPower = peakPower
+        currentBarPowerLevels = barPowerLevels
+
+        let now = Date()
+        let deltaTime = if let lastMeterSnapshotDate {
+            max(0.001, now.timeIntervalSince(lastMeterSnapshotDate))
+        } else {
+            Constants.simpleMeterUpdateInterval
+        }
+        lastMeterSnapshotDate = now
+        latestMeterSnapshot = AudioRecordingWorker.MeterSnapshot(
+            averagePowerDB: averagePower,
+            peakPowerDB: peakPower,
+            barPowerDBLevels: barPowerLevels,
+            deltaTime: deltaTime
+        )
     }
 
     static func waveformBarCount(for style: RecordingIndicatorStyle) -> Int {

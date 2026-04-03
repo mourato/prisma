@@ -284,8 +284,9 @@ public struct FloatingRecordingIndicatorView: View {
             switch FloatingRecordingIndicatorViewUtilities.mainContentMode(for: renderState) {
             case .waveform:
                 AudioVisualizer(
-                    audioMeter: audioMonitor.audioMeter,
-                    instantBarLevels: audioMonitor.instantBarLevels,
+                    barLevels: audioMonitor.displayLevels(
+                        for: FloatingRecordingIndicatorViewUtilities.waveCount(for: size)
+                    ),
                     isAnimationActive: isAnimationActive,
                     animationSpeed: settingsStore.recordingIndicatorAnimationSpeed,
                     barCount: FloatingRecordingIndicatorViewUtilities.waveCount(for: size),

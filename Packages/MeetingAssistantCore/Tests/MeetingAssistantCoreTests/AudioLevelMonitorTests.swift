@@ -25,50 +25,74 @@ final class AudioLevelMonitorTests: XCTestCase {
         XCTAssertEqual(monitor.audioMeter.peakPower, 1.0, accuracy: 0.001)
     }
 
-    func testIngestLevels_ClampsValuesOutsideVisibleRange() {
-        let monitor = AudioLevelMonitor(samplingInterval: 0.03)
+    func testIngestLevels_BuildsCanonicalEnvelopeAndProjectedLevels() {
+        let monitor = AudioLevelMonitor(samplingInterval: 0.05)
 
-        monitor.ingestLevels(averageDB: -90, peakDB: 12)
+        for level in [-34.0, -28.0, -18.0, -12.0, -20.0, -26.0] {
+            monitor.ingestLevels(averageDB: Float(level), peakDB: Float(level + 4), deltaTime: 0.05)
+        }
 
-        XCTAssertEqual(monitor.audioMeter.averagePower, 0.0, accuracy: 0.001)
-        XCTAssertEqual(monitor.audioMeter.peakPower, 1.0, accuracy: 0.001)
-    }
-
-    func testIngestLevels_NormalizesInstantBarLevelsFromCurrentSnapshot() {
-        let monitor = AudioLevelMonitor(samplingInterval: 0.03)
-
-        monitor.ingestLevels(
-            averageDB: -30,
-            peakDB: -30,
-            barLevelsDB: [-60, -30, 0]
-        )
-
-        XCTAssertEqual(monitor.instantBarLevels.count, 3)
-        XCTAssertEqual(monitor.instantBarLevels[0], 0.0, accuracy: 0.001)
-        XCTAssertEqual(monitor.instantBarLevels[1], 0.5, accuracy: 0.001)
-        XCTAssertEqual(monitor.instantBarLevels[2], 1.0, accuracy: 0.001)
+        XCTAssertEqual(monitor.canonicalEnvelopeLevels.count, 48)
+        XCTAssertFalse(monitor.instantBarLevels.isEmpty)
         XCTAssertEqual(monitor.recentAverageLevels, monitor.instantBarLevels)
+
+        let projectedLevels = monitor.displayLevels(for: 18)
+        XCTAssertEqual(projectedLevels.count, 18)
+        XCTAssertGreaterThan(projectedLevels.max() ?? 0.0, 0.2)
     }
 
-    func testIngestLevels_InstantBarsDoNotAccumulateAcrossFrames() {
-        let monitor = AudioLevelMonitor(samplingInterval: 0.03)
+    func testDisplayLevels_ProducesQuasiSymmetricProfile() {
+        let monitor = AudioLevelMonitor(samplingInterval: 0.05)
 
-        monitor.ingestLevels(averageDB: -18, peakDB: -12, barLevelsDB: [-18, -12, -6])
-        monitor.ingestLevels(averageDB: -24, peakDB: -20, barLevelsDB: [-24, -20])
+        for level in [-42.0, -30.0, -16.0, -8.0, -14.0, -24.0, -36.0] {
+            monitor.ingestLevels(averageDB: Float(level), peakDB: Float(level + 3), deltaTime: 0.05)
+        }
 
-        XCTAssertEqual(monitor.instantBarLevels.count, 2)
-        XCTAssertEqual(monitor.recentAverageLevels.count, 2)
+        let projectedLevels = monitor.displayLevels(for: 9)
+        XCTAssertEqual(projectedLevels.count, 9)
+
+        let mirroredPairs = zip(projectedLevels.prefix(4), projectedLevels.suffix(4).reversed())
+        for pair in mirroredPairs {
+            XCTAssertLessThan(abs(pair.0 - pair.1), 0.16)
+        }
+
+        XCTAssertGreaterThan(projectedLevels[4], projectedLevels[0])
+    }
+
+    func testIngestLevels_UsesFastAttackAndSlowDecay() {
+        let monitor = AudioLevelMonitor(samplingInterval: 0.05)
+
+        monitor.ingestLevels(averageDB: -10, peakDB: -6, deltaTime: 0.05)
+        let firstPeak = monitor.canonicalEnvelopeLevels.max() ?? 0.0
+
+        monitor.ingestLevels(averageDB: -55, peakDB: -50, deltaTime: 0.05)
+        let afterDrop = monitor.canonicalEnvelopeLevels.max() ?? 0.0
+
+        XCTAssertGreaterThan(firstPeak, 0.5)
+        XCTAssertGreaterThan(afterDrop, 0.05)
+        XCTAssertLessThan(afterDrop, firstPeak)
+    }
+
+    func testIngestLevels_CollapsesNearSilence() {
+        let monitor = AudioLevelMonitor(samplingInterval: 0.05)
+
+        for _ in 0..<8 {
+            monitor.ingestLevels(averageDB: -58, peakDB: -56, deltaTime: 0.05)
+        }
+
+        XCTAssertLessThan(monitor.canonicalEnvelopeLevels.max() ?? 1.0, 0.08)
+        XCTAssertLessThan(monitor.displayLevels(for: 18).max() ?? 1.0, 0.08)
     }
 
     func testIngestLevels_ShowsSilenceWarningAfterConfiguredDuration() {
         let monitor = AudioLevelMonitor(samplingInterval: 1.0)
 
         for _ in 0..<3 {
-            monitor.ingestLevels(averageDB: -80, peakDB: -80)
+            monitor.ingestLevels(averageDB: -80, peakDB: -80, deltaTime: 1.0)
             XCTAssertFalse(monitor.isSilenceWarningVisible)
         }
 
-        monitor.ingestLevels(averageDB: -80, peakDB: -80)
+        monitor.ingestLevels(averageDB: -80, peakDB: -80, deltaTime: 1.0)
         XCTAssertTrue(monitor.isSilenceWarningVisible)
     }
 
@@ -76,11 +100,11 @@ final class AudioLevelMonitorTests: XCTestCase {
         let monitor = AudioLevelMonitor(samplingInterval: 1.0)
 
         for _ in 0..<10 {
-            monitor.ingestLevels(averageDB: -6, peakDB: -6)
+            monitor.ingestLevels(averageDB: -6, peakDB: -6, deltaTime: 1.0)
         }
 
         for _ in 0..<8 {
-            monitor.ingestLevels(averageDB: -80, peakDB: -80)
+            monitor.ingestLevels(averageDB: -80, peakDB: -80, deltaTime: 1.0)
         }
 
         XCTAssertFalse(monitor.isSilenceWarningVisible)
@@ -90,7 +114,7 @@ final class AudioLevelMonitorTests: XCTestCase {
         let monitor = AudioLevelMonitor(samplingInterval: 1.0)
 
         for _ in 0..<4 {
-            monitor.ingestLevels(averageDB: -80, peakDB: -80)
+            monitor.ingestLevels(averageDB: -80, peakDB: -80, deltaTime: 1.0)
         }
         XCTAssertTrue(monitor.isSilenceWarningVisible)
 
@@ -98,33 +122,27 @@ final class AudioLevelMonitorTests: XCTestCase {
         XCTAssertFalse(monitor.isSilenceWarningVisible)
 
         for _ in 0..<8 {
-            monitor.ingestLevels(averageDB: -80, peakDB: -80)
+            monitor.ingestLevels(averageDB: -80, peakDB: -80, deltaTime: 1.0)
         }
         XCTAssertFalse(monitor.isSilenceWarningVisible)
     }
 
-    func testStopMonitoring_ResetsSilenceWarningSessionState() {
+    func testStopMonitoring_ResetsEnvelopeAndSilenceWarningSessionState() {
         let monitor = AudioLevelMonitor(samplingInterval: 1.0)
 
-        monitor.ingestLevels(averageDB: -20, peakDB: -10, barLevelsDB: [-30, -12])
-        XCTAssertFalse(monitor.instantBarLevels.isEmpty)
+        monitor.ingestLevels(averageDB: -20, peakDB: -10, deltaTime: 1.0)
+        XCTAssertFalse(monitor.canonicalEnvelopeLevels.isEmpty)
 
         for _ in 0..<4 {
-            monitor.ingestLevels(averageDB: -80, peakDB: -80)
+            monitor.ingestLevels(averageDB: -80, peakDB: -80, deltaTime: 1.0)
         }
         XCTAssertTrue(monitor.isSilenceWarningVisible)
 
-        monitor.dismissSilenceWarning()
-        for _ in 0..<6 {
-            monitor.ingestLevels(averageDB: -80, peakDB: -80)
-        }
-        XCTAssertFalse(monitor.isSilenceWarningVisible)
-
         monitor.stopMonitoring()
-        XCTAssertTrue(monitor.instantBarLevels.isEmpty)
+        XCTAssertTrue(monitor.canonicalEnvelopeLevels.isEmpty)
 
         for _ in 0..<4 {
-            monitor.ingestLevels(averageDB: -80, peakDB: -80)
+            monitor.ingestLevels(averageDB: -80, peakDB: -80, deltaTime: 1.0)
         }
         XCTAssertTrue(monitor.isSilenceWarningVisible)
     }

@@ -13,6 +13,7 @@ actor AudioRecordingWorker {
         let averagePowerDB: Float
         let peakPowerDB: Float
         let barPowerDBLevels: [Float]
+        let deltaTime: TimeInterval
     }
 
     // MARK: - State
@@ -303,7 +304,8 @@ actor AudioRecordingWorker {
         return MeterSnapshot(
             averagePowerDB: averagePowerDb,
             peakPowerDB: peakPowerDb,
-            barPowerDBLevels: barPowerDBLevels
+            barPowerDBLevels: barPowerDBLevels,
+            deltaTime: Double(frameLength) / buffer.format.sampleRate
         )
     }
 }

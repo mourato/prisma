@@ -5,21 +5,10 @@ import SwiftUI
 // MARK: - Audio Visualizer
 
 enum AudioVisualizerMath {
-    static let visibilityGate: Double = 0.20
-    static let amplitudeExponent: Double = 1.10
-    static let centerBoostStrength: Double = 0
     static let visualHeightBoost: Double = 0.40
 
-    static func shapedLevel(_ level: Double) -> Double {
-        let clamped = min(max(level, 0.0), 1.0)
-        guard clamped > visibilityGate else { return 0.0 }
-        let normalized = (clamped - visibilityGate) / (1.0 - visibilityGate)
-        return min(1.0, max(0.0, pow(normalized, amplitudeExponent)))
-    }
-
-    static func instantLevels(
-        snapshotLevels: [Double],
-        fallbackLevel: Double,
+    static func presentedLevels(
+        _ sourceLevels: [Double],
         barCount: Int,
         isAnimationActive: Bool
     ) -> [Double] {
@@ -29,31 +18,15 @@ enum AudioVisualizerMath {
             return Array(repeating: 0.0, count: barCount)
         }
 
-        let sourceLevels: [Double] = if snapshotLevels.isEmpty {
-            Array(repeating: fallbackLevel, count: barCount)
-        } else {
-            snapshotLevels
-        }
+        guard !sourceLevels.isEmpty else { return Array(repeating: 0.0, count: barCount) }
 
         return (0..<barCount).map { index in
             let sourceIndex = min(
                 Int(Double(index) * Double(sourceLevels.count) / Double(barCount)),
                 max(0, sourceLevels.count - 1)
             )
-            let shaped = shapedLevel(sourceLevels[sourceIndex])
-            return centerBoostedLevel(shaped, index: index, barCount: barCount)
+            return min(max(sourceLevels[sourceIndex], 0.0), 1.0)
         }
-    }
-
-    static func centerBoostedLevel(_ level: Double, index: Int, barCount: Int) -> Double {
-        guard barCount > 1 else { return min(max(level, 0.0), 1.0) }
-
-        let center = Double(barCount - 1) / 2.0
-        let distance = abs(Double(index) - center)
-        let normalizedDistance = min(1.0, distance / max(center, 1.0))
-        let centerInfluence = 1.0 - normalizedDistance
-        let boosted = level * (1.0 + (centerInfluence * centerBoostStrength))
-        return min(max(boosted, 0.0), 1.0)
     }
 
     static func displayLevel(_ level: Double) -> Double {
@@ -69,8 +42,7 @@ enum AudioVisualizerMath {
 }
 
 struct AudioVisualizer: View {
-    let audioMeter: AudioMeter
-    let instantBarLevels: [Double]
+    let barLevels: [Double]
     let isAnimationActive: Bool
     let animationSpeed: RecordingIndicatorAnimationSpeed
     let barCount: Int
@@ -82,8 +54,7 @@ struct AudioVisualizer: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(
-        audioMeter: AudioMeter,
-        instantBarLevels: [Double] = [],
+        barLevels: [Double],
         isAnimationActive: Bool = true,
         animationSpeed: RecordingIndicatorAnimationSpeed = .normal,
         barCount: Int,
@@ -92,8 +63,7 @@ struct AudioVisualizer: View {
         barSpacing: CGFloat = 2,
         minHeight: CGFloat = 8
     ) {
-        self.audioMeter = audioMeter
-        self.instantBarLevels = instantBarLevels
+        self.barLevels = barLevels
         self.isAnimationActive = isAnimationActive
         self.animationSpeed = animationSpeed
         self.barCount = barCount
@@ -104,9 +74,8 @@ struct AudioVisualizer: View {
     }
 
     var body: some View {
-        let levels = AudioVisualizerMath.instantLevels(
-            snapshotLevels: instantBarLevels,
-            fallbackLevel: audioMeter.averagePower,
+        let levels = AudioVisualizerMath.presentedLevels(
+            barLevels,
             barCount: barCount,
             isAnimationActive: isAnimationActive
         )
@@ -144,8 +113,7 @@ struct AudioVisualizer: View {
 private struct AudioVisualizerLivePreview: View {
     var body: some View {
         AudioVisualizer(
-            audioMeter: AudioMeter(averagePower: 0.44, peakPower: 0.72),
-            instantBarLevels: [0.18, 0.24, 0.32, 0.52, 0.70, 0.64, 0.42, 0.28, 0.20],
+            barLevels: [0.18, 0.24, 0.32, 0.52, 0.70, 0.64, 0.42, 0.28, 0.20],
             isAnimationActive: true,
             animationSpeed: .normal,
             barCount: AppDesignSystem.Layout.recordingIndicatorClassicWaveCount,
