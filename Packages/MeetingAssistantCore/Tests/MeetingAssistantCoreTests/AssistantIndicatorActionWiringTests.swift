@@ -27,6 +27,9 @@ final class AssistantIndicatorActionWiringTests: XCTestCase {
     }
 
     func testAssistantIndicatorCancelActionInvokesAssistantCancellationPath() async {
+        settings.recordingIndicatorEnabled = true
+        settings.recordingIndicatorStyle = .`super`
+
         let recorder = MockAssistantAudioRecorder()
         let indicator = FloatingRecordingIndicatorController(settingsStore: settings)
         let service = AssistantVoiceCommandService(
@@ -46,6 +49,9 @@ final class AssistantIndicatorActionWiringTests: XCTestCase {
     }
 
     func testAssistantIndicatorStopActionInvokesAssistantStopAndProcessPath() async {
+        settings.recordingIndicatorEnabled = true
+        settings.recordingIndicatorStyle = .`super`
+
         let recorder = MockAssistantAudioRecorder()
         recorder.nextStopURL = nil
         let indicator = FloatingRecordingIndicatorController(settingsStore: settings)

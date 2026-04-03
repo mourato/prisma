@@ -54,6 +54,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
     private enum Constants {
         static let panelHeightClassic: CGFloat = AppDesignSystem.Layout.recordingIndicatorClassicHeight
         static let panelHeightMini: CGFloat = AppDesignSystem.Layout.recordingIndicatorMiniHeight
+        static let panelHeightSuper: CGFloat = AppDesignSystem.Layout.recordingIndicatorSuperHeight
         static let panelWidthError: CGFloat = AppDesignSystem.Layout.recordingIndicatorPanelWidth
         static let screenPadding: CGFloat = 40
         static let panelShadowInset: CGFloat = AppDesignSystem.Layout.recordingIndicatorMainShadowRadius
@@ -363,15 +364,24 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
     ) -> CGFloat {
         switch mode {
         case .error:
-            Constants.panelHeightClassic
+            return Constants.panelHeightClassic
         case .starting, .recording, .processing:
             switch style {
             case .classic:
-                Constants.panelHeightClassic
+                return Constants.panelHeightClassic
             case .mini:
-                Constants.panelHeightMini
+                return Constants.panelHeightMini
+            case .`super`:
+                let layout = RecordingIndicatorOverlayLayout.resolve(
+                    renderState: currentRenderState.with(mode: mode),
+                    settingsStore: settingsStore
+                )
+                return FloatingRecordingIndicatorViewUtilities.superCardHeight(
+                    layout: layout,
+                    renderState: currentRenderState.with(mode: mode)
+                )
             case .none:
-                Constants.panelHeightMini
+                return Constants.panelHeightMini
             }
         }
     }
@@ -388,6 +398,12 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
                 renderState: renderState,
                 settingsStore: settingsStore
             )
+            if style == .`super` {
+                return FloatingRecordingIndicatorViewUtilities.superCardWidth(
+                    layout: layout,
+                    renderState: renderState
+                )
+            }
             let auxiliaryUnitWidth = auxiliaryUnitWidth(for: style)
             let mainOnlyWidth = panelMainOnlyWidth(for: style, renderState: renderState, layout: layout)
             return mainOnlyWidth + (CGFloat(layout.auxiliaryControlCount) * auxiliaryUnitWidth)
@@ -404,6 +420,8 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
             .classic
         case .mini, .none:
             .mini
+        case .`super`:
+            .`super`
         }
 
         let collapsedWidth = FloatingRecordingIndicatorViewUtilities.mainPillWidth(
@@ -427,6 +445,8 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
             .classic
         case .mini, .none:
             .mini
+        case .`super`:
+            .`super`
         }
 
         return FloatingRecordingIndicatorViewUtilities.promptSize(for: indicatorSize)
@@ -518,5 +538,22 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
 
     func invokeCancelActionForTesting() {
         onCancelAction()
+    }
+
+    func panelWidthForTesting(
+        style: RecordingIndicatorStyle,
+        renderState: RecordingIndicatorRenderState
+    ) -> CGFloat {
+        panelWidth(for: style, renderState: renderState)
+    }
+
+    func panelHeightForTesting(
+        style: RecordingIndicatorStyle,
+        renderState: RecordingIndicatorRenderState
+    ) -> CGFloat {
+        let previousRenderState = currentRenderState
+        currentRenderState = renderState
+        defer { currentRenderState = previousRenderState }
+        return panelHeight(for: style, mode: renderState.mode)
     }
 }

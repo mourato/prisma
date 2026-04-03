@@ -98,4 +98,39 @@ final class FloatingRecordingIndicatorWidthTests: XCTestCase {
             ) == .processingStatus
         )
     }
+
+    func testSuperWaveCount_IsFiftySix() {
+        XCTAssertEqual(FloatingRecordingIndicatorViewUtilities.waveCount(for: .`super`), 56)
+    }
+
+    func testSuperPanelWidth_UsesIntegratedFooterLayout() {
+        let settings = AppSettingsStore.shared
+        let controller = FloatingRecordingIndicatorController(settingsStore: settings)
+        let renderState = RecordingIndicatorRenderState(mode: .recording, kind: .dictation)
+        let layout = RecordingIndicatorOverlayLayout.resolve(renderState: renderState, settingsStore: settings)
+
+        let panelWidth = controller.panelWidthForTesting(style: .`super`, renderState: renderState)
+        let expectedWidth = FloatingRecordingIndicatorViewUtilities.superCardWidth(
+            layout: layout,
+            renderState: renderState
+        )
+
+        XCTAssertEqual(panelWidth, expectedWidth, accuracy: 0.001)
+    }
+
+    func testSuperPanelHeight_IncludesFooterDuringRecording() {
+        let settings = AppSettingsStore.shared
+        let controller = FloatingRecordingIndicatorController(settingsStore: settings)
+        let renderState = RecordingIndicatorRenderState(mode: .recording, kind: .meeting)
+        let layout = RecordingIndicatorOverlayLayout.resolve(renderState: renderState, settingsStore: settings)
+
+        let panelHeight = controller.panelHeightForTesting(style: .`super`, renderState: renderState)
+        let expectedHeight = FloatingRecordingIndicatorViewUtilities.superCardHeight(
+            layout: layout,
+            renderState: renderState
+        )
+
+        XCTAssertEqual(panelHeight, expectedHeight, accuracy: 0.001)
+        XCTAssertGreaterThan(panelHeight, AppDesignSystem.Layout.recordingIndicatorClassicHeight)
+    }
 }

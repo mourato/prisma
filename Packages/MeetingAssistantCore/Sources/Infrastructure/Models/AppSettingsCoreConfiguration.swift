@@ -152,6 +152,7 @@ func canonicalSimpleOrIntermediateModifiers(
 public enum RecordingIndicatorStyle: String, CaseIterable, Codable, Sendable {
     case classic
     case mini
+    case `super`
     case none
 
     public var displayName: String {
@@ -160,6 +161,8 @@ public enum RecordingIndicatorStyle: String, CaseIterable, Codable, Sendable {
             "settings.general.recording_indicator.style.classic".localized
         case .mini:
             "settings.general.recording_indicator.style.mini".localized
+        case .`super`:
+            "settings.general.recording_indicator.style.super".localized
         case .none:
             "settings.general.recording_indicator.style.none".localized
         }

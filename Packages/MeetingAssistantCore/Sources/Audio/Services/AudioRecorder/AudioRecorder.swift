@@ -590,12 +590,14 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         currentBarPowerLevels = [currentAveragePower]
     }
 
-    private static func waveformBarCount(for style: RecordingIndicatorStyle) -> Int {
+    static func waveformBarCount(for style: RecordingIndicatorStyle) -> Int {
         switch style {
         case .classic:
             18
         case .mini:
             9
+        case .`super`:
+            56
         case .none:
             0
         }

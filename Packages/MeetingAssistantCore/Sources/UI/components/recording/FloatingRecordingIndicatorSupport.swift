@@ -172,6 +172,8 @@ enum FloatingRecordingIndicatorViewUtilities {
             AppDesignSystem.Layout.recordingIndicatorClassicHeight
         case .mini:
             AppDesignSystem.Layout.recordingIndicatorMiniHeight
+        case .`super`:
+            AppDesignSystem.Layout.recordingIndicatorSuperFooterHeight
         }
     }
 
@@ -181,6 +183,8 @@ enum FloatingRecordingIndicatorViewUtilities {
             AppDesignSystem.Layout.recordingIndicatorClassicInnerSpacing
         case .mini:
             AppDesignSystem.Layout.recordingIndicatorMiniInnerSpacing
+        case .`super`:
+            AppDesignSystem.Layout.recordingIndicatorSuperInnerSpacing
         }
     }
 
@@ -194,6 +198,8 @@ enum FloatingRecordingIndicatorViewUtilities {
             AppDesignSystem.Layout.recordingIndicatorClassicPromptSize
         case .mini:
             AppDesignSystem.Layout.recordingIndicatorMiniPromptSize
+        case .`super`:
+            AppDesignSystem.Layout.recordingIndicatorSuperPromptSize
         }
     }
 
@@ -203,6 +209,8 @@ enum FloatingRecordingIndicatorViewUtilities {
             AppDesignSystem.Layout.recordingIndicatorClassicWaveHeight
         case .mini:
             AppDesignSystem.Layout.recordingIndicatorMiniWaveHeight
+        case .`super`:
+            AppDesignSystem.Layout.recordingIndicatorSuperWaveHeight
         }
     }
 
@@ -212,6 +220,8 @@ enum FloatingRecordingIndicatorViewUtilities {
             AppDesignSystem.Layout.recordingIndicatorClassicWaveCount
         case .mini:
             AppDesignSystem.Layout.recordingIndicatorMiniWaveCount
+        case .`super`:
+            AppDesignSystem.Layout.recordingIndicatorSuperWaveCount
         }
     }
 
@@ -240,6 +250,8 @@ enum FloatingRecordingIndicatorViewUtilities {
             56
         case .mini:
             48
+        case .`super`:
+            56
         }
     }
 
@@ -249,6 +261,8 @@ enum FloatingRecordingIndicatorViewUtilities {
             176
         case .mini:
             136
+        case .`super`:
+            188
         }
     }
 
@@ -260,6 +274,8 @@ enum FloatingRecordingIndicatorViewUtilities {
         switch size {
         case .classic, .mini:
             return max(AppDesignSystem.Layout.recordingIndicatorSidePadding, 16)
+        case .`super`:
+            return AppDesignSystem.Layout.recordingIndicatorSuperHorizontalPadding
         }
     }
 
@@ -344,6 +360,8 @@ enum FloatingRecordingIndicatorViewUtilities {
             14
         case .mini:
             14
+        case .`super`:
+            12
         }
     }
 
@@ -353,7 +371,128 @@ enum FloatingRecordingIndicatorViewUtilities {
             18
         case .mini:
             13
+        case .`super`:
+            13
         }
+    }
+
+    static func superFooterChipHeight() -> CGFloat {
+        AppDesignSystem.Layout.recordingIndicatorSuperFooterChipHeight
+    }
+
+    static func superFooterChipWidth(for contentWidth: CGFloat) -> CGFloat {
+        contentWidth + (AppDesignSystem.Layout.recordingIndicatorSuperFooterChipHorizontalPadding * 2)
+    }
+
+    static func superFooterSpacing() -> CGFloat {
+        AppDesignSystem.Layout.recordingIndicatorSuperFooterSpacing
+    }
+
+    static func superFooterGroupSpacing() -> CGFloat {
+        AppDesignSystem.Layout.recordingIndicatorSuperFooterGroupSpacing
+    }
+
+    static func superFooterIconWidth() -> CGFloat {
+        AppDesignSystem.Layout.recordingIndicatorSuperFooterIconWidth
+    }
+
+    static func superActionWidth(kind: FloatingRecordingIndicatorView.SuperActionKind) -> CGFloat {
+        switch kind {
+        case .stop:
+            AppDesignSystem.Layout.recordingIndicatorSuperActionStopWidth
+        case .cancel:
+            AppDesignSystem.Layout.recordingIndicatorSuperActionCancelWidth
+        }
+    }
+
+    static func superActionGroupWidth(for renderState: RecordingIndicatorRenderState) -> CGFloat {
+        guard renderState.mode == .recording else { return 0 }
+
+        return superActionWidth(kind: .stop)
+            + superFooterSpacing()
+            + superActionWidth(kind: .cancel)
+    }
+
+    static func superFooterLeadingWidth(
+        layout: RecordingIndicatorOverlayLayout,
+        renderState: RecordingIndicatorRenderState
+    ) -> CGFloat {
+        guard renderState.mode == .recording else { return 0 }
+
+        var widths: [CGFloat] = []
+        if layout.showsPromptSelector {
+            widths.append(superFooterChipWidth(for: promptSize(for: .`super`)))
+        }
+        if layout.showsLanguageSelector {
+            widths.append(superFooterChipWidth(for: superFooterIconWidth()))
+        }
+        if layout.showsMeetingTimer {
+            widths.append(superFooterChipWidth(for: timerReservedWidth(for: .`super`)))
+        }
+        if renderState.kind == .meeting {
+            widths.append(superFooterChipWidth(for: superFooterIconWidth()))
+            widths.append(superFooterChipWidth(for: superFooterIconWidth()))
+        }
+
+        guard !widths.isEmpty else { return 0 }
+        return widths.reduce(0, +)
+            + (CGFloat(max(0, widths.count - 1)) * superFooterSpacing())
+    }
+
+    static func superShowsFooter(
+        layout: RecordingIndicatorOverlayLayout,
+        renderState: RecordingIndicatorRenderState
+    ) -> Bool {
+        superFooterLeadingWidth(layout: layout, renderState: renderState) > 0
+            || superActionGroupWidth(for: renderState) > 0
+    }
+
+    static func superBodyWidth(renderState: RecordingIndicatorRenderState) -> CGFloat {
+        (AppDesignSystem.Layout.recordingIndicatorSuperHorizontalPadding * 2)
+            + clusterWidth(for: .`super`, renderState: renderState)
+    }
+
+    static func superFooterWidth(
+        layout: RecordingIndicatorOverlayLayout,
+        renderState: RecordingIndicatorRenderState
+    ) -> CGFloat {
+        guard superShowsFooter(layout: layout, renderState: renderState) else { return 0 }
+
+        let leadingWidth = superFooterLeadingWidth(layout: layout, renderState: renderState)
+        let trailingWidth = superActionGroupWidth(for: renderState)
+        let groupSpacing: CGFloat = leadingWidth > 0 && trailingWidth > 0 ? superFooterGroupSpacing() : 0
+
+        return (AppDesignSystem.Layout.recordingIndicatorSuperHorizontalPadding * 2)
+            + leadingWidth
+            + trailingWidth
+            + groupSpacing
+    }
+
+    static func superCardWidth(
+        layout: RecordingIndicatorOverlayLayout,
+        renderState: RecordingIndicatorRenderState
+    ) -> CGFloat {
+        max(
+            superBodyWidth(renderState: renderState),
+            superFooterWidth(layout: layout, renderState: renderState)
+        )
+    }
+
+    static func superCardHeight(
+        layout: RecordingIndicatorOverlayLayout,
+        renderState: RecordingIndicatorRenderState
+    ) -> CGFloat {
+        let baseHeight = (AppDesignSystem.Layout.recordingIndicatorSuperVerticalPadding * 2)
+            + waveformHeight(for: .`super`)
+
+        guard superShowsFooter(layout: layout, renderState: renderState) else {
+            return baseHeight
+        }
+
+        return baseHeight
+            + superFooterChipHeight()
+            + AppDesignSystem.Layout.recordingIndicatorSuperVerticalPadding
+            + dividerWidth
     }
 
     private static func emojiImage(_ emoji: String, pointSize: CGFloat) -> NSImage {
