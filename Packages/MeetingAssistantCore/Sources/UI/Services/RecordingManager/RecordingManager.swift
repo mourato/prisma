@@ -127,7 +127,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
         var indicatorShownAt: Date?
     }
 
-    struct TranscriptionSessionSnapshot: Sendable {
+    struct TranscriptionSessionSnapshot {
         let id: UUID
         let meeting: Meeting
         let recordingSource: RecordingSource

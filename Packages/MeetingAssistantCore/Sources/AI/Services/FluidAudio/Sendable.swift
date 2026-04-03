@@ -3,8 +3,8 @@ import Foundation
 
 // MARK: - Sendable Conformances for FluidAudio
 
-// FluidAudio checkouts are patched before supported builds/tests so
-// AsrManager carries its unchecked Sendable conformance in-module.
+/// FluidAudio checkouts are patched before supported builds/tests so
+/// AsrManager carries its unchecked Sendable conformance in-module.
 extension OfflineDiarizerManager: @unchecked @retroactive Sendable {}
 
 // Note: DiarizationResult, OfflineDiarizerConfig, and TokenTiming

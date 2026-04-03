@@ -65,7 +65,7 @@ public struct FloatingRecordingIndicatorView: View {
                 indicatorPill(size: .classic)
             case .mini:
                 indicatorPill(size: .mini)
-            case .`super`:
+            case .super:
                 superIndicatorCard
             case .none:
                 EmptyView()
@@ -90,11 +90,11 @@ public struct FloatingRecordingIndicatorView: View {
         HStack(spacing: AppDesignSystem.Layout.recordingIndicatorPromptGap) {
             mainPill(size: size)
 
-            if overlayLayout.showsPromptSelector {
+            if showsExternalPromptSelector {
                 promptSelectionPill(size: size)
             }
 
-            if overlayLayout.showsLanguageSelector {
+            if showsExternalLanguageSelector {
                 languageSelectionPill(size: size)
             }
         }
@@ -303,7 +303,7 @@ public struct FloatingRecordingIndicatorView: View {
 
     private func processingStatusView(size: IndicatorSize) -> some View {
         let fontSize: CGFloat = switch size {
-        case .classic, .`super`:
+        case .classic, .super:
             12
         case .mini:
             11
@@ -537,8 +537,8 @@ public struct FloatingRecordingIndicatorView: View {
             .classic
         case .mini:
             .mini
-        case .`super`:
-            .`super`
+        case .super:
+            .super
         case .none:
             .classic
         }
@@ -558,6 +558,16 @@ public struct FloatingRecordingIndicatorView: View {
             }
 
             recordingCluster(size: size)
+
+            if showsInlinePromptSelector {
+                divider
+                inlinePromptControl(size: size)
+            }
+
+            if showsInlineLanguageSelector {
+                divider
+                inlineLanguageControl(size: size)
+            }
 
             if showsMeetingMicrophoneControl {
                 divider
@@ -594,7 +604,7 @@ public struct FloatingRecordingIndicatorView: View {
 
     private var superIndicatorCard: some View {
         VStack(spacing: 0) {
-            recordingCluster(size: .`super`)
+            recordingCluster(size: .super)
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.horizontal, AppDesignSystem.Layout.recordingIndicatorSuperHorizontalPadding)
                 .padding(.vertical, AppDesignSystem.Layout.recordingIndicatorSuperVerticalPadding)
@@ -609,7 +619,7 @@ public struct FloatingRecordingIndicatorView: View {
 
                 superFooter
                     .padding(.horizontal, AppDesignSystem.Layout.recordingIndicatorSuperHorizontalPadding)
-                    .padding(.vertical, (AppDesignSystem.Layout.recordingIndicatorSuperVerticalPadding / 2))
+                    .padding(.vertical, AppDesignSystem.Layout.recordingIndicatorSuperVerticalPadding / 2)
             }
         }
         .frame(
@@ -755,7 +765,7 @@ public struct FloatingRecordingIndicatorView: View {
         } label: {
             let promptIcon = FloatingRecordingIndicatorViewUtilities.promptIconImage(
                 symbolName: currentPromptIconName,
-                size: .`super`
+                size: .super
             )
             superFooterChip {
                 HStack(spacing: 6) {
@@ -769,7 +779,7 @@ public struct FloatingRecordingIndicatorView: View {
                         .lineLimit(1)
                         .truncationMode(.tail)
                 }
-                .frame(width: FloatingRecordingIndicatorViewUtilities.promptSize(for: .`super`), alignment: .leading)
+                .frame(width: FloatingRecordingIndicatorViewUtilities.promptSize(for: .super), alignment: .leading)
             }
         }
         .menuStyle(.borderlessButton)
@@ -790,7 +800,7 @@ public struct FloatingRecordingIndicatorView: View {
         } label: {
             let flagIcon = FloatingRecordingIndicatorViewUtilities.languageFlagImage(
                 currentDictationOutputLanguage.flagEmoji,
-                size: .`super`
+                size: .super
             )
             superFooterChip {
                 Image(nsImage: flagIcon)
@@ -842,18 +852,22 @@ public struct FloatingRecordingIndicatorView: View {
         }
 
         return Button(action: action) {
-            Text(titleKey.localized)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(AppDesignSystem.Colors.overlayForegroundMuted)
-                .lineLimit(1)
-                .padding(.horizontal, 12)
-            .frame(
-                height: 24
-            )
-            .background(Color.white.opacity(0.05))
+            Label {
+                Text(titleKey.localized)
+                    .font(.system(size: 11, weight: .semibold))
+                    .lineLimit(1)
+            } icon: {
+                Image(systemName: kind == .stop ? "arrow.up" : "trash")
+                    .font(.system(size: 11, weight: .semibold))
+            }
+            .foregroundStyle(superActionForegroundColor(for: kind))
+            .padding(.horizontal, 12)
+            .frame(minWidth: FloatingRecordingIndicatorViewUtilities.superActionWidth(kind: kind))
+            .frame(height: 24)
+            .background(superActionBackground(for: kind))
             .overlay(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .strokeBorder(AppDesignSystem.Colors.recordingIndicatorStroke.opacity(0.9), lineWidth: 1)
+                    .strokeBorder(superActionBorderColor(for: kind), lineWidth: 1)
             )
             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
@@ -865,7 +879,7 @@ public struct FloatingRecordingIndicatorView: View {
         )
     }
 
-    private func superFooterChip<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+    private func superFooterChip(@ViewBuilder content: () -> some View) -> some View {
         HStack(spacing: 0, content: content)
             .padding(.horizontal, AppDesignSystem.Layout.recordingIndicatorSuperFooterChipHorizontalPadding)
             .frame(height: FloatingRecordingIndicatorViewUtilities.superFooterChipHeight())
@@ -885,6 +899,33 @@ public struct FloatingRecordingIndicatorView: View {
             AppDesignSystem.Colors.success
         case .warning:
             AppDesignSystem.Colors.error
+        }
+    }
+
+    private func superActionForegroundColor(for kind: SuperActionKind) -> Color {
+        switch kind {
+        case .stop:
+            .white
+        case .cancel:
+            AppDesignSystem.Colors.overlayForegroundMuted
+        }
+    }
+
+    private func superActionBackground(for kind: SuperActionKind) -> Color {
+        switch kind {
+        case .stop:
+            AppDesignSystem.Colors.success.opacity(0.82)
+        case .cancel:
+            Color.white.opacity(0.05)
+        }
+    }
+
+    private func superActionBorderColor(for kind: SuperActionKind) -> Color {
+        switch kind {
+        case .stop:
+            AppDesignSystem.Colors.success.opacity(0.9)
+        case .cancel:
+            AppDesignSystem.Colors.recordingIndicatorStroke.opacity(0.9)
         }
     }
 
@@ -924,6 +965,42 @@ public struct FloatingRecordingIndicatorView: View {
                 recordingManager.toggleMeetingNotesPanel()
             }
         }
+    }
+
+    private func inlinePromptControl(size: IndicatorSize) -> some View {
+        promptPickerControl(size: size)
+            .frame(
+                width: FloatingRecordingIndicatorViewUtilities.promptSize(for: size),
+                height: FloatingRecordingIndicatorViewUtilities.controlHeight(for: size)
+            )
+    }
+
+    private func inlineLanguageControl(size: IndicatorSize) -> some View {
+        languagePickerControl(size: size)
+            .frame(
+                width: FloatingRecordingIndicatorViewUtilities.promptSize(for: size),
+                height: FloatingRecordingIndicatorViewUtilities.controlHeight(for: size)
+            )
+    }
+
+    private var usesInlineDictationSelectors: Bool {
+        renderState.kind == .dictation && (style == .classic || style == .mini)
+    }
+
+    private var showsInlinePromptSelector: Bool {
+        usesInlineDictationSelectors && isRecordingMode && isHovering && overlayLayout.showsPromptSelector
+    }
+
+    private var showsInlineLanguageSelector: Bool {
+        usesInlineDictationSelectors && isRecordingMode && isHovering && overlayLayout.showsLanguageSelector
+    }
+
+    private var showsExternalPromptSelector: Bool {
+        overlayLayout.showsPromptSelector && !usesInlineDictationSelectors
+    }
+
+    private var showsExternalLanguageSelector: Bool {
+        overlayLayout.showsLanguageSelector && !usesInlineDictationSelectors
     }
 
     private func promptSelectionPill(size: IndicatorSize) -> some View {
@@ -1090,7 +1167,7 @@ public struct FloatingRecordingIndicatorView: View {
     let monitor = AudioLevelMonitor()
     FloatingRecordingIndicatorView(
         audioMonitor: monitor,
-        style: .`super`,
+        style: .super,
         renderState: RecordingIndicatorRenderState(mode: .recording, kind: .dictation),
         previewLanguageOverride: .portuguese,
         onStop: {},
@@ -1105,7 +1182,7 @@ public struct FloatingRecordingIndicatorView: View {
     let monitor = AudioLevelMonitor()
     FloatingRecordingIndicatorView(
         audioMonitor: monitor,
-        style: .`super`,
+        style: .super,
         renderState: RecordingIndicatorRenderState(mode: .recording, kind: .assistant),
         previewLanguageOverride: .portuguese,
         onStop: {},
@@ -1120,7 +1197,7 @@ public struct FloatingRecordingIndicatorView: View {
     let monitor = AudioLevelMonitor()
     FloatingRecordingIndicatorView(
         audioMonitor: monitor,
-        style: .`super`,
+        style: .super,
         renderState: RecordingIndicatorRenderState(mode: .recording, kind: .meeting),
         previewLanguageOverride: .portuguese,
         onStop: {},

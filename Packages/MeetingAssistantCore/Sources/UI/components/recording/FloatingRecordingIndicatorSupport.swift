@@ -172,7 +172,7 @@ enum FloatingRecordingIndicatorViewUtilities {
             AppDesignSystem.Layout.recordingIndicatorClassicHeight
         case .mini:
             AppDesignSystem.Layout.recordingIndicatorMiniHeight
-        case .`super`:
+        case .super:
             AppDesignSystem.Layout.recordingIndicatorSuperFooterHeight
         }
     }
@@ -183,7 +183,7 @@ enum FloatingRecordingIndicatorViewUtilities {
             AppDesignSystem.Layout.recordingIndicatorClassicInnerSpacing
         case .mini:
             AppDesignSystem.Layout.recordingIndicatorMiniInnerSpacing
-        case .`super`:
+        case .super:
             AppDesignSystem.Layout.recordingIndicatorSuperInnerSpacing
         }
     }
@@ -198,7 +198,7 @@ enum FloatingRecordingIndicatorViewUtilities {
             AppDesignSystem.Layout.recordingIndicatorClassicPromptSize
         case .mini:
             AppDesignSystem.Layout.recordingIndicatorMiniPromptSize
-        case .`super`:
+        case .super:
             AppDesignSystem.Layout.recordingIndicatorSuperPromptSize
         }
     }
@@ -209,7 +209,7 @@ enum FloatingRecordingIndicatorViewUtilities {
             AppDesignSystem.Layout.recordingIndicatorClassicWaveHeight
         case .mini:
             AppDesignSystem.Layout.recordingIndicatorMiniWaveHeight
-        case .`super`:
+        case .super:
             AppDesignSystem.Layout.recordingIndicatorSuperWaveHeight
         }
     }
@@ -220,7 +220,7 @@ enum FloatingRecordingIndicatorViewUtilities {
             AppDesignSystem.Layout.recordingIndicatorClassicWaveCount
         case .mini:
             AppDesignSystem.Layout.recordingIndicatorMiniWaveCount
-        case .`super`:
+        case .super:
             AppDesignSystem.Layout.recordingIndicatorSuperWaveCount
         }
     }
@@ -248,7 +248,7 @@ enum FloatingRecordingIndicatorViewUtilities {
         switch size {
         case .classic, .mini:
             AppDesignSystem.Layout.recordingIndicatorWaveformBarWidth
-        case .`super`:
+        case .super:
             AppDesignSystem.Layout.recordingIndicatorSuperWaveformBarWidth
         }
     }
@@ -257,7 +257,7 @@ enum FloatingRecordingIndicatorViewUtilities {
         switch size {
         case .classic, .mini:
             AppDesignSystem.Layout.recordingIndicatorWaveformBarSpacing
-        case .`super`:
+        case .super:
             AppDesignSystem.Layout.recordingIndicatorSuperWaveformBarSpacing
         }
     }
@@ -268,7 +268,7 @@ enum FloatingRecordingIndicatorViewUtilities {
             56
         case .mini:
             48
-        case .`super`:
+        case .super:
             56
         }
     }
@@ -279,7 +279,7 @@ enum FloatingRecordingIndicatorViewUtilities {
             176
         case .mini:
             136
-        case .`super`:
+        case .super:
             188
         }
     }
@@ -292,7 +292,7 @@ enum FloatingRecordingIndicatorViewUtilities {
         switch size {
         case .classic, .mini:
             return max(AppDesignSystem.Layout.recordingIndicatorSidePadding, 16)
-        case .`super`:
+        case .super:
             return AppDesignSystem.Layout.recordingIndicatorSuperHorizontalPadding
         }
     }
@@ -315,6 +315,17 @@ enum FloatingRecordingIndicatorViewUtilities {
 
     static func buttonGroupWidth(for size: FloatingRecordingIndicatorView.IndicatorSize) -> CGFloat {
         actionButtonSize + controlSpacing(for: size) + dividerWidth
+    }
+
+    static func externalAuxiliaryControlCount(
+        for size: FloatingRecordingIndicatorView.IndicatorSize,
+        renderState: RecordingIndicatorRenderState,
+        layout: RecordingIndicatorOverlayLayout
+    ) -> Int {
+        if usesInlineDictationSelectors(for: size, renderState: renderState) {
+            return 0
+        }
+        return [layout.showsPromptSelector, layout.showsLanguageSelector].count(where: { $0 })
     }
 
     static func mainPillWidth(
@@ -340,6 +351,22 @@ enum FloatingRecordingIndicatorViewUtilities {
 
         if expanded, renderState.mode == .recording {
             elementWidths.insert(buttonGroupWidth(for: size), at: 0)
+
+            if usesInlineDictationSelectors(
+                for: size,
+                renderState: renderState
+            ) {
+                if layout.showsPromptSelector {
+                    elementWidths.append(dividerWidth)
+                    elementWidths.append(promptSize(for: size))
+                }
+
+                if layout.showsLanguageSelector {
+                    elementWidths.append(dividerWidth)
+                    elementWidths.append(promptSize(for: size))
+                }
+            }
+
             elementWidths.append(buttonGroupWidth(for: size))
         }
 
@@ -378,7 +405,7 @@ enum FloatingRecordingIndicatorViewUtilities {
             14
         case .mini:
             14
-        case .`super`:
+        case .super:
             12
         }
     }
@@ -389,7 +416,7 @@ enum FloatingRecordingIndicatorViewUtilities {
             18
         case .mini:
             13
-        case .`super`:
+        case .super:
             13
         }
     }
@@ -415,12 +442,21 @@ enum FloatingRecordingIndicatorViewUtilities {
     }
 
     static func superActionWidth(kind: FloatingRecordingIndicatorView.SuperActionKind) -> CGFloat {
-        switch kind {
+        let titleKey = switch kind {
         case .stop:
-            AppDesignSystem.Layout.recordingIndicatorSuperActionStopWidth
+            "recording_indicator.super.stop"
         case .cancel:
-            AppDesignSystem.Layout.recordingIndicatorSuperActionCancelWidth
+            "recording_indicator.super.cancel"
         }
+
+        let title = titleKey.localized as NSString
+        let font = NSFont.systemFont(ofSize: 11, weight: .semibold)
+        let textWidth = ceil(title.size(withAttributes: [.font: font]).width)
+        let iconWidth: CGFloat = 12
+        let spacing: CGFloat = 6
+        let horizontalPadding: CGFloat = 24
+
+        return ceil(textWidth + iconWidth + spacing + horizontalPadding)
     }
 
     static func superActionGroupWidth(for renderState: RecordingIndicatorRenderState) -> CGFloat {
@@ -439,13 +475,13 @@ enum FloatingRecordingIndicatorViewUtilities {
 
         var widths: [CGFloat] = []
         if layout.showsPromptSelector {
-            widths.append(superFooterChipWidth(for: promptSize(for: .`super`)))
+            widths.append(superFooterChipWidth(for: promptSize(for: .super)))
         }
         if layout.showsLanguageSelector {
             widths.append(superFooterChipWidth(for: superFooterIconWidth()))
         }
         if layout.showsMeetingTimer {
-            widths.append(superFooterChipWidth(for: timerReservedWidth(for: .`super`)))
+            widths.append(superFooterChipWidth(for: timerReservedWidth(for: .super)))
         }
         if renderState.kind == .meeting {
             widths.append(superFooterChipWidth(for: superFooterIconWidth()))
@@ -467,7 +503,7 @@ enum FloatingRecordingIndicatorViewUtilities {
 
     static func superBodyWidth(renderState: RecordingIndicatorRenderState) -> CGFloat {
         (AppDesignSystem.Layout.recordingIndicatorSuperHorizontalPadding * 2)
-            + clusterWidth(for: .`super`, renderState: renderState)
+            + clusterWidth(for: .super, renderState: renderState)
     }
 
     static func superFooterWidth(
@@ -501,7 +537,7 @@ enum FloatingRecordingIndicatorViewUtilities {
         renderState: RecordingIndicatorRenderState
     ) -> CGFloat {
         let baseHeight = (AppDesignSystem.Layout.recordingIndicatorSuperVerticalPadding * 2)
-            + waveformHeight(for: .`super`)
+            + waveformHeight(for: .super)
 
         guard superShowsFooter(layout: layout, renderState: renderState) else {
             return baseHeight
@@ -537,6 +573,15 @@ enum FloatingRecordingIndicatorViewUtilities {
         image.unlockFocus()
         image.isTemplate = false
         return image
+    }
+
+    private static func usesInlineDictationSelectors(
+        for size: FloatingRecordingIndicatorView.IndicatorSize,
+        renderState: RecordingIndicatorRenderState
+    ) -> Bool {
+        renderState.mode == .recording
+            && renderState.kind == .dictation
+            && size != .super
     }
 }
 

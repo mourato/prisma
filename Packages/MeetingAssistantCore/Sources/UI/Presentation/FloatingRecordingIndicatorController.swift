@@ -371,7 +371,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
                 return Constants.panelHeightClassic
             case .mini:
                 return Constants.panelHeightMini
-            case .`super`:
+            case .super:
                 let layout = RecordingIndicatorOverlayLayout.resolve(
                     renderState: currentRenderState.with(mode: mode),
                     settingsStore: settingsStore
@@ -398,7 +398,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
                 renderState: renderState,
                 settingsStore: settingsStore
             )
-            if style == .`super` {
+            if style == .super {
                 return FloatingRecordingIndicatorViewUtilities.superCardWidth(
                     layout: layout,
                     renderState: renderState
@@ -406,7 +406,20 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
             }
             let auxiliaryUnitWidth = auxiliaryUnitWidth(for: style)
             let mainOnlyWidth = panelMainOnlyWidth(for: style, renderState: renderState, layout: layout)
-            return mainOnlyWidth + (CGFloat(layout.auxiliaryControlCount) * auxiliaryUnitWidth)
+            let indicatorSize: FloatingRecordingIndicatorView.IndicatorSize = switch style {
+            case .classic:
+                .classic
+            case .mini, .none:
+                .mini
+            case .super:
+                .super
+            }
+            let auxiliaryCount = FloatingRecordingIndicatorViewUtilities.externalAuxiliaryControlCount(
+                for: indicatorSize,
+                renderState: renderState,
+                layout: layout
+            )
+            return mainOnlyWidth + (CGFloat(auxiliaryCount) * auxiliaryUnitWidth)
         }
     }
 
@@ -420,8 +433,8 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
             .classic
         case .mini, .none:
             .mini
-        case .`super`:
-            .`super`
+        case .super:
+            .super
         }
 
         let collapsedWidth = FloatingRecordingIndicatorViewUtilities.mainPillWidth(
@@ -445,8 +458,8 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
             .classic
         case .mini, .none:
             .mini
-        case .`super`:
-            .`super`
+        case .super:
+            .super
         }
 
         return FloatingRecordingIndicatorViewUtilities.promptSize(for: indicatorSize)

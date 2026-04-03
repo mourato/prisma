@@ -345,7 +345,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             Task { @MainActor [weak self] in
                 guard let self, let rec = simpleRecorder else { return }
                 rec.updateMeters()
-                self.publishMeterSnapshot(
+                publishMeterSnapshot(
                     averagePower: rec.averagePower(forChannel: 0),
                     peakPower: rec.peakPower(forChannel: 0),
                     barPowerLevels: []
@@ -642,7 +642,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             18
         case .mini:
             9
-        case .`super`:
+        case .super:
             80
         case .none:
             0

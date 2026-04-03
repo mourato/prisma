@@ -14,7 +14,7 @@ public struct AudioMeter: Equatable, Sendable {
     public static let zero = AudioMeter(averagePower: 0, peakPower: 0)
 }
 
-struct CanonicalWaveformFrame: Equatable, Sendable {
+struct CanonicalWaveformFrame: Equatable {
     let timestamp: TimeInterval
     let normalizedLevel: Double
 }
@@ -107,7 +107,7 @@ public final class AudioLevelMonitor: ObservableObject {
         resetState()
         meterSubscription?.cancel()
         meterSubscription = audioRecorder?.$latestMeterSnapshot
-            .compactMap { $0 }
+            .compactMap(\.self)
             .sink { [weak self] snapshot in
                 self?.ingestLevels(
                     averageDB: snapshot.averagePowerDB,

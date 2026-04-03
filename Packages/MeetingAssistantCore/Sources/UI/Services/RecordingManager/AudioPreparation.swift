@@ -4,7 +4,7 @@ import MeetingAssistantCoreCommon
 import MeetingAssistantCoreInfrastructure
 
 extension RecordingManager {
-    struct PreparedTranscriptionAudio: Sendable {
+    struct PreparedTranscriptionAudio {
         let transcriptionURL: URL
         let cleanupURL: URL?
     }

@@ -157,7 +157,7 @@ public struct AssistantSettingsTab: View {
                     .labelsHidden()
                     .pickerStyle(.segmented)
                 }
-                
+
                 Divider()
 
                 HStack(spacing: 12) {

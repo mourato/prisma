@@ -186,7 +186,7 @@ public final class AudioSilenceCompactor: AudioSilenceCompacting, @unchecked Sen
             }
 
             if let channelData = buffer.floatChannelData {
-                for frameIndex in 0 ..< framesRead {
+                for frameIndex in 0..<framesRead {
                     let monoSample = monoFloatSample(
                         channelData: channelData,
                         channelCount: channelCount,
@@ -211,7 +211,7 @@ public final class AudioSilenceCompactor: AudioSilenceCompacting, @unchecked Sen
                     }
                 }
             } else if let channelData = buffer.int16ChannelData {
-                for frameIndex in 0 ..< framesRead {
+                for frameIndex in 0..<framesRead {
                     let monoSample = monoInt16Sample(
                         channelData: channelData,
                         channelCount: channelCount,
@@ -270,7 +270,7 @@ public final class AudioSilenceCompactor: AudioSilenceCompacting, @unchecked Sen
             }
 
             if let silenceStart = activeSilenceStart {
-                let silenceRange = silenceStart ..< window.startFrame
+                let silenceRange = silenceStart..<window.startFrame
                 if AVAudioFramePosition(silenceRange.count) >= minimumSilenceFrames {
                     removableRanges.append(silenceRange)
                 }
@@ -279,7 +279,7 @@ public final class AudioSilenceCompactor: AudioSilenceCompacting, @unchecked Sen
         }
 
         if let activeSilenceStart, let lastWindow = windows.last {
-            let silenceRange = activeSilenceStart ..< lastWindow.endFrame
+            let silenceRange = activeSilenceStart..<lastWindow.endFrame
             if AVAudioFramePosition(silenceRange.count) >= minimumSilenceFrames {
                 removableRanges.append(silenceRange)
             }
@@ -295,26 +295,26 @@ public final class AudioSilenceCompactor: AudioSilenceCompacting, @unchecked Sen
         mergeGapFrames: AVAudioFramePosition
     ) -> [Range<AVAudioFramePosition>] {
         guard totalFrames > 0 else { return [] }
-        guard !removableSilence.isEmpty else { return [0 ..< totalFrames] }
+        guard !removableSilence.isEmpty else { return [0..<totalFrames] }
 
         var keepRanges: [Range<AVAudioFramePosition>] = []
         var cursor: AVAudioFramePosition = 0
 
         for silenceRange in removableSilence {
             if cursor < silenceRange.lowerBound {
-                keepRanges.append(cursor ..< silenceRange.lowerBound)
+                keepRanges.append(cursor..<silenceRange.lowerBound)
             }
             cursor = max(cursor, silenceRange.upperBound)
         }
 
         if cursor < totalFrames {
-            keepRanges.append(cursor ..< totalFrames)
+            keepRanges.append(cursor..<totalFrames)
         }
 
         let paddedRanges = keepRanges.map { range in
             let start = max(0, range.lowerBound - paddingFrames)
             let end = min(totalFrames, range.upperBound + paddingFrames)
-            return start ..< end
+            return start..<end
         }
 
         return mergeRanges(paddedRanges, mergeGapFrames: mergeGapFrames)
@@ -336,7 +336,7 @@ public final class AudioSilenceCompactor: AudioSilenceCompacting, @unchecked Sen
 
             let gap = range.lowerBound - last.upperBound
             if gap <= mergeGapFrames {
-                merged[merged.count - 1] = last.lowerBound ..< max(last.upperBound, range.upperBound)
+                merged[merged.count - 1] = last.lowerBound..<max(last.upperBound, range.upperBound)
             } else {
                 merged.append(range)
             }
@@ -422,7 +422,7 @@ public final class AudioSilenceCompactor: AudioSilenceCompacting, @unchecked Sen
         frameIndex: Int
     ) -> Double {
         var monoSample = 0.0
-        for channelIndex in 0 ..< channelCount {
+        for channelIndex in 0..<channelCount {
             monoSample += Double(channelData[channelIndex][frameIndex])
         }
         return monoSample / Double(channelCount)
@@ -434,7 +434,7 @@ public final class AudioSilenceCompactor: AudioSilenceCompacting, @unchecked Sen
         frameIndex: Int
     ) -> Double {
         var monoSample = 0.0
-        for channelIndex in 0 ..< channelCount {
+        for channelIndex in 0..<channelCount {
             monoSample += Double(channelData[channelIndex][frameIndex]) / Double(Int16.max)
         }
         return monoSample / Double(channelCount)
