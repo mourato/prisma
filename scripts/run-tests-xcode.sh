@@ -9,6 +9,7 @@ set -o pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 PACKAGE_DIR="${PROJECT_DIR}/Packages/MeetingAssistantCore"
+XCODEPROJ="${PROJECT_DIR}/MeetingAssistant.xcodeproj"
 DERIVED_DATA="${PROJECT_DIR}/.xcode-build"
 PATCH_SCRIPT="${PROJECT_DIR}/scripts/apply-fluidaudio-patches.sh"
 
@@ -28,6 +29,7 @@ VERBOSE=0
 STRICT_XCODE=0
 BUNDLE_ERROR_PATTERN="Failed to create a bundle instance representing"
 PACKAGE_CONTEXT_ERROR_PATTERN="does not contain an Xcode project, workspace or package"
+MISSING_TEST_ACTION_PATTERN="Scheme .* is not currently configured for the test action\\."
 OVERLAY_TEST_SUITE_IDENTIFIER="MeetingAssistantCoreTests/AssistantOverlayLifecycleTests"
 HEARTBEAT_INTERVAL_SEC="${MA_XCODEBUILD_HEARTBEAT_INTERVAL_SEC:-15}"
 STRICT_DERIVED_DATA_PATH="${MA_XCODE_STRICT_DERIVED_DATA:-}"
@@ -97,14 +99,14 @@ fi
 
 if [ -x "${PATCH_SCRIPT}" ]; then
     (
-        cd "${PACKAGE_DIR}"
-        xcodebuild -resolvePackageDependencies -scheme MeetingAssistantCore -derivedDataPath "${DERIVED_DATA}" >/dev/null
+        cd "${PROJECT_DIR}"
+        xcodebuild -project "${XCODEPROJ}" -resolvePackageDependencies -scheme MeetingAssistantCore -derivedDataPath "${DERIVED_DATA}" >/dev/null
     )
     "${PATCH_SCRIPT}" "${DERIVED_DATA}/SourcePackages/checkouts/FluidAudio"
 fi
 
 run_xcode_tests() {
-    cd "${PACKAGE_DIR}"
+    cd "${PROJECT_DIR}"
     local host_arch
     host_arch="$(uname -m)"
     local destination="platform=macOS"
@@ -113,6 +115,7 @@ run_xcode_tests() {
     fi
 
     local xcode_args=(
+        -project "${XCODEPROJ}"
         -scheme MeetingAssistantCore
         -derivedDataPath "${DERIVED_DATA}"
         -destination "${destination}"
@@ -144,6 +147,15 @@ is_recoverable_runner_failure() {
     fi
 
     return 1
+}
+
+is_missing_test_action_failure() {
+    local log_path="$1"
+    if [ ! -f "${log_path}" ]; then
+        return 1
+    fi
+
+    grep -Eq "${MISSING_TEST_ACTION_PATTERN}" "${log_path}"
 }
 
 run_xcode_tests_with_heartbeat() {
@@ -211,7 +223,8 @@ else
 fi
 
 # Update progress for fallback if needed
-if [ "${STRICT_XCODE}" -ne 1 ] && [ "${AGENT_MODE}" -eq 1 ] && [ "${EXIT_CODE}" -ne 0 ] && is_recoverable_runner_failure "${LOG_PATH}"; then
+if [ "${AGENT_MODE}" -eq 1 ] && [ "${EXIT_CODE}" -ne 0 ] && \
+    { is_recoverable_runner_failure "${LOG_PATH}" || is_missing_test_action_failure "${LOG_PATH}"; }; then
     ma_agent_progress_update "Running tests (swift test fallback)"
 fi
 
@@ -241,10 +254,11 @@ if [ "${STRICT_XCODE}" -ne 1 ] && [ "${EXIT_CODE}" -ne 0 ] && is_recoverable_run
     DURATION=$((DURATION + RETRY_DURATION))
 fi
 
-if [ "${STRICT_XCODE}" -ne 1 ] && [ "${EXIT_CODE}" -ne 0 ] && is_recoverable_runner_failure "${LOG_PATH}"; then
+if [ "${EXIT_CODE}" -ne 0 ] && \
+    { { [ "${STRICT_XCODE}" -ne 1 ] && is_recoverable_runner_failure "${LOG_PATH}"; } || is_missing_test_action_failure "${LOG_PATH}"; }; then
     FALLBACK_USED=1
     if [ "${AGENT_MODE}" -eq 0 ] && [ "${QUIET}" -eq 0 ]; then
-        echo -e "${YELLOW}xcodebuild runner reported recoverable setup error; retrying via swift test fallback...${NC}"
+        echo -e "${YELLOW}xcodebuild could not execute the generated package test scheme; retrying via swift test fallback...${NC}"
     fi
 
     FALLBACK_START_TIME=$(date +%s)

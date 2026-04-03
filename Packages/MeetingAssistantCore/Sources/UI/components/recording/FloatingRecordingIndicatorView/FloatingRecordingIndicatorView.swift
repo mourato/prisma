@@ -850,13 +850,12 @@ public struct FloatingRecordingIndicatorView: View {
 
         return Button(action: action) {
             Text(titleKey.localized)
-                .font(.system(size: 13, weight: .medium))
+                .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(AppDesignSystem.Colors.overlayForegroundMuted)
                 .lineLimit(1)
-                .padding(.horizontal, 10)
+                .padding(.horizontal, 12)
             .frame(
-                width: FloatingRecordingIndicatorViewUtilities.superActionWidth(kind: kind),
-                height: AppDesignSystem.Layout.recordingIndicatorSuperFooterHeight
+                height: 24
             )
             .background(Color.white.opacity(0.05))
             .overlay(

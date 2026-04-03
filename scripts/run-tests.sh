@@ -150,6 +150,24 @@ if [ -z "${SAFE_TARGET_LABEL}" ]; then
     SAFE_TARGET_LABEL="all"
 fi
 
+clear_stale_swiftpm_lock() {
+    local lock_path="${PROJECT_DIR}/Packages/MeetingAssistantCore/.build/.lock"
+    if [ ! -f "${lock_path}" ]; then
+        return
+    fi
+
+    local lock_pid
+    lock_pid="$(cat "${lock_path}" 2>/dev/null || true)"
+    if ! [[ "${lock_pid}" =~ ^[0-9]+$ ]]; then
+        rm -f "${lock_path}"
+        return
+    fi
+
+    if ! kill -0 "${lock_pid}" 2>/dev/null; then
+        rm -f "${lock_path}"
+    fi
+}
+
 if [ "${AGENT_MODE}" -eq 1 ]; then
     ma_agent_prepare_sandbox_env "${PROJECT_DIR}"
     LOG_DIR="$(ma_agent_prepare_log_dir)"
@@ -169,6 +187,7 @@ fi
 
 run_swift_tests() {
     cd "${PROJECT_DIR}/Packages/MeetingAssistantCore"
+    clear_stale_swiftpm_lock
     swift package resolve >/dev/null
     if [ -x "${PATCH_SCRIPT}" ]; then
         "${PATCH_SCRIPT}" "${PROJECT_DIR}/Packages/MeetingAssistantCore/.build/checkouts/FluidAudio"

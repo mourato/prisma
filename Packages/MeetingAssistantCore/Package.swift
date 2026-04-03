@@ -12,6 +12,11 @@ let package = Package(
     ],
     products: [
         .library(
+            name: "MeetingAssistantCoreUI",
+            type: .dynamic,
+            targets: ["MeetingAssistantCoreUI"]
+        ),
+        .library(
             name: "MeetingAssistantCore",
             targets: ["MeetingAssistantCore"]
         ),
