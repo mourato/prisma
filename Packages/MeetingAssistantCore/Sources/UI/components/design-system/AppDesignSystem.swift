@@ -220,7 +220,7 @@ public enum AppDesignSystem {
 
         public static let recordingIndicatorClassicWaveCount: Int = 18
         public static let recordingIndicatorMiniWaveCount: Int = 9
-        public static let recordingIndicatorSuperWaveCount: Int = 56
+        public static let recordingIndicatorSuperWaveCount: Int = 80
 
         public static let recordingIndicatorClassicWaveHeight: CGFloat = 24
         public static let recordingIndicatorMiniWaveHeight: CGFloat = 20
@@ -228,6 +228,8 @@ public enum AppDesignSystem {
 
         public static let recordingIndicatorWaveformBarWidth: CGFloat = 2
         public static let recordingIndicatorWaveformBarSpacing: CGFloat = 2
+        public static let recordingIndicatorSuperWaveformBarWidth: CGFloat = 1.5
+        public static let recordingIndicatorSuperWaveformBarSpacing: CGFloat = 1.25
         public static let recordingIndicatorWaveformMinHeight: CGFloat = 2
         public static let recordingIndicatorWaveformMaxHeight: CGFloat = 24
 
@@ -243,10 +245,8 @@ public enum AppDesignSystem {
         public static let recordingIndicatorSuperFooterChipHeight: CGFloat = 22
         public static let recordingIndicatorSuperFooterChipHorizontalPadding: CGFloat = 8
         public static let recordingIndicatorSuperFooterIconWidth: CGFloat = 24
-        public static let recordingIndicatorSuperActionStopWidth: CGFloat = 88
-        public static let recordingIndicatorSuperActionCancelWidth: CGFloat = 98
-        public static let recordingIndicatorSuperKeycapMinWidth: CGFloat = 28
-        public static let recordingIndicatorSuperKeycapHorizontalPadding: CGFloat = 8
+        public static let recordingIndicatorSuperActionStopWidth: CGFloat = 64
+        public static let recordingIndicatorSuperActionCancelWidth: CGFloat = 86
         public static let recordingIndicatorSuperCornerRadius: CGFloat = 18
 
         public static let shadowRadius: CGFloat = 10

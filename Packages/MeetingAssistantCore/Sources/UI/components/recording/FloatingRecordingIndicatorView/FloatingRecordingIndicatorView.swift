@@ -290,8 +290,8 @@ public struct FloatingRecordingIndicatorView: View {
                     animationSpeed: settingsStore.recordingIndicatorAnimationSpeed,
                     barCount: FloatingRecordingIndicatorViewUtilities.waveCount(for: size),
                     maxHeight: FloatingRecordingIndicatorViewUtilities.waveformHeight(for: size),
-                    barWidth: AppDesignSystem.Layout.recordingIndicatorWaveformBarWidth,
-                    barSpacing: AppDesignSystem.Layout.recordingIndicatorWaveformBarSpacing,
+                    barWidth: FloatingRecordingIndicatorViewUtilities.waveformBarWidth(for: size),
+                    barSpacing: FloatingRecordingIndicatorViewUtilities.waveformBarSpacing(for: size),
                     minHeight: AppDesignSystem.Layout.recordingIndicatorWaveformMinHeight
                 )
             case .processingStatus:
@@ -839,12 +839,6 @@ public struct FloatingRecordingIndicatorView: View {
         case .cancel:
             "recording_indicator.super.cancel"
         }
-        let keyLabel = switch kind {
-        case .stop:
-            "recording_indicator.super.key.space".localized
-        case .cancel:
-            "recording_indicator.super.key.escape".localized
-        }
         let action = {
             switch kind {
             case .stop:
@@ -855,15 +849,11 @@ public struct FloatingRecordingIndicatorView: View {
         }
 
         return Button(action: action) {
-            HStack(spacing: 8) {
-                Text(titleKey.localized)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(AppDesignSystem.Colors.overlayForegroundMuted)
-                    .lineLimit(1)
-
-                superKeycap(keyLabel)
-            }
-            .padding(.horizontal, 10)
+            Text(titleKey.localized)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(AppDesignSystem.Colors.overlayForegroundMuted)
+                .lineLimit(1)
+                .padding(.horizontal, 10)
             .frame(
                 width: FloatingRecordingIndicatorViewUtilities.superActionWidth(kind: kind),
                 height: AppDesignSystem.Layout.recordingIndicatorSuperFooterHeight
@@ -878,24 +868,9 @@ public struct FloatingRecordingIndicatorView: View {
         .buttonStyle(.plain)
         .help(
             kind == .stop
-                ? "recording_indicator.stop.help".localized
-                : "recording_indicator.cancel.help".localized
+                ? "recording_indicator.super.stop.help".localized
+                : "recording_indicator.super.cancel.help".localized
         )
-    }
-
-    private func superKeycap(_ label: String) -> some View {
-        Text(label)
-            .font(.system(size: 11, weight: .semibold))
-            .foregroundStyle(AppDesignSystem.Colors.overlayForeground)
-            .padding(.horizontal, AppDesignSystem.Layout.recordingIndicatorSuperKeycapHorizontalPadding)
-            .frame(minWidth: AppDesignSystem.Layout.recordingIndicatorSuperKeycapMinWidth)
-            .frame(height: FloatingRecordingIndicatorViewUtilities.superFooterChipHeight())
-            .background(Color.white.opacity(0.08))
-            .overlay(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .strokeBorder(AppDesignSystem.Colors.recordingIndicatorStroke.opacity(0.95), lineWidth: 1)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
     }
 
     private func superFooterChip<Content: View>(@ViewBuilder content: () -> Content) -> some View {

@@ -99,8 +99,21 @@ final class FloatingRecordingIndicatorWidthTests: XCTestCase {
         )
     }
 
-    func testSuperWaveCount_IsFiftySix() {
-        XCTAssertEqual(FloatingRecordingIndicatorViewUtilities.waveCount(for: .`super`), 56)
+    func testSuperWaveCount_IsEighty() {
+        XCTAssertEqual(FloatingRecordingIndicatorViewUtilities.waveCount(for: .`super`), 80)
+    }
+
+    func testSuperWaveformWidth_UsesCompressedMetrics() {
+        let expectedWidth =
+            (CGFloat(AppDesignSystem.Layout.recordingIndicatorSuperWaveCount)
+                * AppDesignSystem.Layout.recordingIndicatorSuperWaveformBarWidth)
+            + (CGFloat(AppDesignSystem.Layout.recordingIndicatorSuperWaveCount - 1)
+                * AppDesignSystem.Layout.recordingIndicatorSuperWaveformBarSpacing)
+
+        let actualWidth = FloatingRecordingIndicatorViewUtilities.waveformWidth(for: .`super`)
+
+        XCTAssertEqual(actualWidth, expectedWidth, accuracy: 0.001)
+        XCTAssertLessThan(actualWidth, 225)
     }
 
     func testSuperPanelWidth_UsesIntegratedFooterLayout() {

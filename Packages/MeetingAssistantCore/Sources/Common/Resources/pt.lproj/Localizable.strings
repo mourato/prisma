@@ -921,8 +921,8 @@
 "recording_indicator.cancel.help" = "Cancelar e descartar";
 "recording_indicator.super.stop" = "Parar";
 "recording_indicator.super.cancel" = "Cancelar";
-"recording_indicator.super.key.space" = "Espaço";
-"recording_indicator.super.key.escape" = "esc";
+"recording_indicator.super.stop.help" = "Parar e transcrever (Espaço)";
+"recording_indicator.super.cancel.help" = "Cancelar e descartar (Esc)";
 "recording_indicator.duration" = "Duração da gravação";
 "recording_indicator.prompt.help" = "Escolher prompt de pós-processamento";
 "recording_indicator.prompt.none" = "Sem pós-processamento";

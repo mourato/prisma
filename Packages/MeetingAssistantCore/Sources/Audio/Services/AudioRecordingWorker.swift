@@ -279,25 +279,20 @@ actor AudioRecordingWorker {
                 let end = Int(Double(bucketIndex + 1) * Double(frameLength) / Double(sanitizedBarCount))
                 guard end > start else { return -160.0 }
 
-                var maxBucketRMS: Float = 0.0
-                let sampleCount = end - start
+                var maxBucketPeak: Float = 0.0
 
                 for channelIndex in 0..<channelCount {
                     let channel = channelData[channelIndex]
-                    var bucketSum: Float = 0.0
 
                     for frame in start..<end {
-                        let sample = channel[frame]
-                        bucketSum += sample * sample
-                    }
-
-                    let rms = sqrt(bucketSum / Float(sampleCount))
-                    if rms > maxBucketRMS {
-                        maxBucketRMS = rms
+                        let sample = abs(channel[frame])
+                        if sample > maxBucketPeak {
+                            maxBucketPeak = sample
+                        }
                     }
                 }
 
-                return 20.0 * log10(max(maxBucketRMS, 1e-10))
+                return 20.0 * log10(max(maxBucketPeak, 1e-10))
             }
         }
 

@@ -239,9 +239,27 @@ enum FloatingRecordingIndicatorViewUtilities {
         let count = CGFloat(waveCount(for: size))
         guard count > 0 else { return 0 }
 
-        let totalBarWidth = count * AppDesignSystem.Layout.recordingIndicatorWaveformBarWidth
-        let totalSpacing = max(0, count - 1) * AppDesignSystem.Layout.recordingIndicatorWaveformBarSpacing
+        let totalBarWidth = count * waveformBarWidth(for: size)
+        let totalSpacing = max(0, count - 1) * waveformBarSpacing(for: size)
         return totalBarWidth + totalSpacing
+    }
+
+    static func waveformBarWidth(for size: FloatingRecordingIndicatorView.IndicatorSize) -> CGFloat {
+        switch size {
+        case .classic, .mini:
+            AppDesignSystem.Layout.recordingIndicatorWaveformBarWidth
+        case .`super`:
+            AppDesignSystem.Layout.recordingIndicatorSuperWaveformBarWidth
+        }
+    }
+
+    static func waveformBarSpacing(for size: FloatingRecordingIndicatorView.IndicatorSize) -> CGFloat {
+        switch size {
+        case .classic, .mini:
+            AppDesignSystem.Layout.recordingIndicatorWaveformBarSpacing
+        case .`super`:
+            AppDesignSystem.Layout.recordingIndicatorSuperWaveformBarSpacing
+        }
     }
 
     static func timerReservedWidth(for size: FloatingRecordingIndicatorView.IndicatorSize) -> CGFloat {

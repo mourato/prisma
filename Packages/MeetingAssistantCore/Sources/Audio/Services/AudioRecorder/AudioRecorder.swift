@@ -597,7 +597,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         case .mini:
             9
         case .`super`:
-            56
+            80
         case .none:
             0
         }

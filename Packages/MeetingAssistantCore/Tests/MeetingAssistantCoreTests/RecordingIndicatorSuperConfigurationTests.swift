@@ -33,7 +33,7 @@ final class RecordingIndicatorSuperConfigurationTests: XCTestCase {
         XCTAssertEqual(settings.recordingIndicatorStyle, .mini)
     }
 
-    func testWaveformBarCount_ForSuper_IsFiftySix() {
-        XCTAssertEqual(AudioRecorder.waveformBarCount(for: .`super`), 56)
+    func testWaveformBarCount_ForSuper_IsEighty() {
+        XCTAssertEqual(AudioRecorder.waveformBarCount(for: .`super`), 80)
     }
 }

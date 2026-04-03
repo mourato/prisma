@@ -3,8 +3,8 @@ import AVFoundation
 import XCTest
 
 final class AudioRecordingWorkerMeteringTests: XCTestCase {
-    func testMakeMeterSnapshot_ComputesPerBucketRMSFromCurrentBuffer() throws {
-        let format = try XCTUnwrap(AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 2))
+    func testMakeMeterSnapshot_ComputesPerBucketPeakFromCurrentBuffer() throws {
+        let format = try XCTUnwrap(AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 1))
         let buffer = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 8))
         buffer.frameLength = 8
 
@@ -12,13 +12,11 @@ final class AudioRecordingWorkerMeteringTests: XCTestCase {
             return XCTFail("Expected float channel data")
         }
 
-        let ch0: [Float] = [1, 1, 1, 1, 0, 0, 0, 0]
-        let ch1: [Float] = [0, 0, 0, 0, 0.5, 0.5, 0.5, 0.5]
-
         for frame in 0..<8 {
-            channelData[0][frame] = ch0[frame]
-            channelData[1][frame] = ch1[frame]
+            channelData[0][frame] = 0
         }
+        channelData[0][0] = 1
+        channelData[0][4] = 0.5
 
         let snapshot = AudioRecordingWorker.makeMeterSnapshot(from: buffer, barCount: 2)
         let unwrapped = try XCTUnwrap(snapshot)
@@ -30,8 +28,30 @@ final class AudioRecordingWorkerMeteringTests: XCTestCase {
         XCTAssertLessThan(unwrapped.barPowerDBLevels[1], -5.5)
         XCTAssertGreaterThan(unwrapped.barPowerDBLevels[1], -6.5)
 
-        XCTAssertLessThan(unwrapped.averagePowerDB, -2.5)
-        XCTAssertGreaterThan(unwrapped.averagePowerDB, -3.8)
+        XCTAssertLessThan(unwrapped.averagePowerDB, -8.0)
+        XCTAssertGreaterThan(unwrapped.averagePowerDB, -12.5)
+    }
+
+    func testMakeMeterSnapshot_PreservesIndependentBucketsWithoutRMSSmoothing() throws {
+        let format = try XCTUnwrap(AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 1))
+        let buffer = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 8))
+        buffer.frameLength = 8
+
+        guard let channelData = buffer.floatChannelData else {
+            return XCTFail("Expected float channel data")
+        }
+
+        for frame in 0..<8 {
+            channelData[0][frame] = 0
+        }
+        channelData[0][0] = 1
+        channelData[0][7] = 0.25
+
+        let snapshot = try XCTUnwrap(AudioRecordingWorker.makeMeterSnapshot(from: buffer, barCount: 2))
+
+        XCTAssertGreaterThan(snapshot.barPowerDBLevels[0], -0.5)
+        XCTAssertLessThan(snapshot.barPowerDBLevels[1], -11.5)
+        XCTAssertGreaterThan(snapshot.barPowerDBLevels[1], -12.5)
     }
 
     func testMakeMeterSnapshot_WithZeroBarCount_ReturnsOnlyGlobalMeters() throws {

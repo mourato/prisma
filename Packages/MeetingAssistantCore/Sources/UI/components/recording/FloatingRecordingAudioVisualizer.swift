@@ -7,7 +7,7 @@ import SwiftUI
 enum AudioVisualizerMath {
     static let visibilityGate: Double = 0.20
     static let amplitudeExponent: Double = 1.10
-    static let centerBoostStrength: Double = 0.22
+    static let centerBoostStrength: Double = 0
     static let visualHeightBoost: Double = 0.40
 
     static func shapedLevel(_ level: Double) -> Double {
