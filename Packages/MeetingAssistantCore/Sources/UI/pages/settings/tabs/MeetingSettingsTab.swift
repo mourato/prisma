@@ -166,6 +166,8 @@ public struct MeetingSettingsTab: View {
                         .labelsHidden()
                         .pickerStyle(.menu)
                     }
+                    
+                    Divider()
 
                     HStack {
                         Text("settings.meetings.notes_typography.font_size".localized)

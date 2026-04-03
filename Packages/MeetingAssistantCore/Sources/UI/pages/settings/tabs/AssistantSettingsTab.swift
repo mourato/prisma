@@ -157,6 +157,8 @@ public struct AssistantSettingsTab: View {
                     .labelsHidden()
                     .pickerStyle(.segmented)
                 }
+                
+                Divider()
 
                 HStack(spacing: 12) {
                     Text("settings.assistant.border_color".localized)
