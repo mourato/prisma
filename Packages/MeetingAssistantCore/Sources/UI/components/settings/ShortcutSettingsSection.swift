@@ -29,19 +29,22 @@ public struct ShortcutSettingsSection<SettingsContent: View>: View {
             groupTitle,
             icon: groupIcon,
             headerAccessory: {
-                DSInfoPopoverButton(
-                    title: "settings.shortcuts.external_remap.title".localized,
-                    message: "settings.shortcuts.external_remap.message".localized
-                )
+                HStack(spacing: 8) {
+                    if !descriptionText.isEmpty {
+                        DSInfoPopoverButton(
+                            title: groupTitle,
+                            message: descriptionText
+                        )
+                    }
+
+                    DSInfoPopoverButton(
+                        title: "settings.shortcuts.external_remap.title".localized,
+                        message: "settings.shortcuts.external_remap.message".localized
+                    )
+                }
             }
         ) {
-            VStack(alignment: .leading, spacing: 12) {
-                Text(descriptionText)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                settingsContent()
-            }
+            settingsContent()
         }
     }
 }

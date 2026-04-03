@@ -27,9 +27,15 @@ public struct InstalledAppsSelectionSection: View {
     }
 
     public var body: some View {
-        DSGroup(titleKey.localized, icon: icon) {
+        DSGroup(titleKey.localized, icon: icon, headerAccessory: {
+            if !descriptionKey.localized.isEmpty {
+                DSInfoPopoverButton(
+                    title: titleKey.localized,
+                    message: descriptionKey.localized
+                )
+            }
+        }) {
             InstalledAppsSelectionList(
-                descriptionKey: descriptionKey,
                 emptyKey: emptyKey,
                 addButtonKey: addButtonKey,
                 viewModel: viewModel
@@ -39,18 +45,15 @@ public struct InstalledAppsSelectionSection: View {
 }
 
 public struct InstalledAppsSelectionList: View {
-    private let descriptionKey: String
     private let emptyKey: String
     private let addButtonKey: String
     @ObservedObject private var viewModel: InstalledAppsSelectionViewModel
 
     public init(
-        descriptionKey: String,
         emptyKey: String,
         addButtonKey: String,
         viewModel: InstalledAppsSelectionViewModel
     ) {
-        self.descriptionKey = descriptionKey
         self.emptyKey = emptyKey
         self.addButtonKey = addButtonKey
         self.viewModel = viewModel
@@ -58,10 +61,6 @@ public struct InstalledAppsSelectionList: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(descriptionKey.localized)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
             if viewModel.installedApps.isEmpty {
                 Text(emptyKey.localized)
                     .font(.caption)
@@ -154,7 +153,6 @@ public struct InstalledAppsSelectionList: View {
 #Preview {
     PreviewStateContainer(AppSettingsStore.defaultMarkdownTargetBundleIdentifiers) { identifiers in
         InstalledAppsSelectionList(
-            descriptionKey: "settings.markdown_targets.description",
             emptyKey: "settings.markdown_targets.empty",
             addButtonKey: "settings.markdown_targets.add",
             viewModel: InstalledAppsSelectionViewModel(

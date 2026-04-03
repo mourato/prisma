@@ -51,15 +51,10 @@ public struct GeneralSettingsTab: View {
                     Divider()
 
                     HStack(alignment: .center, spacing: 12) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("settings.general.shortcut_double_tap_interval".localized)
-                                .font(.body)
-                                .foregroundStyle(.primary)
-
-                            Text("settings.general.shortcut_double_tap_interval_desc".localized)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
+                        SettingsTitleWithPopover(
+                            title: "settings.general.shortcut_double_tap_interval".localized,
+                            helperMessage: "settings.general.shortcut_double_tap_interval_desc".localized
+                        )
 
                         Spacer()
 
@@ -84,13 +79,10 @@ public struct GeneralSettingsTab: View {
                     Divider()
 
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("settings.general.cancel_recording_shortcut".localized)
-                            .font(.body)
-                            .foregroundStyle(.primary)
-
-                        Text("settings.general.cancel_recording_shortcut_desc".localized)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        SettingsTitleWithPopover(
+                            title: "settings.general.cancel_recording_shortcut".localized,
+                            helperMessage: "settings.general.cancel_recording_shortcut_desc".localized
+                        )
 
                         DSModifierShortcutEditor(
                             shortcut: $recordingCancelShortcutViewModel.cancelRecordingShortcutDefinition,
@@ -172,13 +164,10 @@ public struct GeneralSettingsTab: View {
                                 alignment: .leading,
                                 spacing: 8
                             ) {
-                                Text("settings.general.recording_indicator.animation_speed".localized)
-                                    .font(.body)
-                                    .foregroundStyle(.primary)
-
-                                Text("settings.general.recording_indicator.animation_speed_desc".localized)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                SettingsTitleWithPopover(
+                                    title: "settings.general.recording_indicator.animation_speed".localized,
+                                    helperMessage: "settings.general.recording_indicator.animation_speed_desc".localized
+                                )
 
                                 Picker("", selection: $viewModel.recordingIndicatorAnimationSpeed) {
                                     ForEach(RecordingIndicatorAnimationSpeed.allCases, id: \.self) { speed in

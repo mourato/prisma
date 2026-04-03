@@ -37,17 +37,14 @@ public struct AudioSettingsTab: View {
                         VStack(alignment: .leading, spacing: 16) {
                             microphonePickerRow(
                                 title: "settings.general.microphone_when_charging".localized,
-                                selection: $viewModel.microphoneWhenChargingUID
+                                selection: $viewModel.microphoneWhenChargingUID,
+                                helperMessage: "settings.general.power_based_microphone_desc".localized
                             )
 
                             microphonePickerRow(
                                 title: "settings.general.microphone_on_battery".localized,
                                 selection: $viewModel.microphoneOnBatteryUID
                             )
-
-                            Text("settings.general.power_based_microphone_desc".localized)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
                         }
                         .transition(SettingsMotion.sectionTransition(reduceMotion: reduceMotion))
                     }
@@ -104,9 +101,7 @@ public struct AudioSettingsTab: View {
 
     private func soundPickerRow(title: String, selection: Binding<SoundFeedbackSound>) -> some View {
         HStack {
-            Text(title)
-                .font(.body)
-                .foregroundStyle(.primary)
+            SettingsTitleWithPopover(title: title)
 
             Spacer()
 
@@ -136,11 +131,16 @@ public struct AudioSettingsTab: View {
         }
     }
 
-    private func microphonePickerRow(title: String, selection: Binding<String?>) -> some View {
+    private func microphonePickerRow(
+        title: String,
+        selection: Binding<String?>,
+        helperMessage: String? = nil
+    ) -> some View {
         HStack {
-            Text(title)
-                .font(.body)
-                .foregroundStyle(.primary)
+            SettingsTitleWithPopover(
+                title: title,
+                helperMessage: helperMessage
+            )
 
             Spacer()
 

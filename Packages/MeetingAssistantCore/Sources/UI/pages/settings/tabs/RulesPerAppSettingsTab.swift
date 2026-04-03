@@ -65,12 +65,13 @@ public struct RulesPerAppSettingsTab: View {
     }
 
     private var appRulesSection: some View {
-        DSGroup("settings.rules_per_app.title".localized, icon: "slider.horizontal.3") {
+        DSGroup("settings.rules_per_app.title".localized, icon: "slider.horizontal.3", headerAccessory: {
+            DSInfoPopoverButton(
+                title: "settings.rules_per_app.title".localized,
+                message: "settings.rules_per_app.description".localized
+            )
+        }) {
             VStack(alignment: .leading, spacing: 12) {
-                Text("settings.rules_per_app.description".localized)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
                 rulesList
 
                 HStack {
@@ -88,12 +89,13 @@ public struct RulesPerAppSettingsTab: View {
     }
 
     private var websitesSection: some View {
-        DSGroup("settings.markdown_targets.websites.title".localized, icon: "globe") {
+        DSGroup("settings.markdown_targets.websites.title".localized, icon: "globe", headerAccessory: {
+            DSInfoPopoverButton(
+                title: "settings.markdown_targets.websites.title".localized,
+                message: "settings.markdown_targets.websites.desc".localized
+            )
+        }) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("settings.markdown_targets.websites.desc".localized)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
                 SettingsInlineList(
                     items: markdownWebTargetsViewModel.targets,
                     emptyText: "settings.markdown_targets.websites.empty".localized

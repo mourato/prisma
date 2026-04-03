@@ -161,13 +161,12 @@ public struct EnhancementsSettingsTab: View {
 
                     if postProcessingViewModel.settings.contextAwarenessProtectSensitiveApps {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("settings.context_awareness.excluded_apps".localized)
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-
-                            Text("settings.context_awareness.excluded_apps_desc".localized)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            SettingsTitleWithPopover(
+                                title: "settings.context_awareness.excluded_apps".localized,
+                                helperMessage: "settings.context_awareness.excluded_apps_desc".localized,
+                                font: .subheadline,
+                                fontWeight: .medium
+                            )
 
                             TextEditor(text: excludedBundleIDsBinding)
                                 .font(.caption.monospaced())
@@ -176,13 +175,12 @@ public struct EnhancementsSettingsTab: View {
                                 .background(AppDesignSystem.Colors.subtleFill2)
                                 .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
 
-                            Text("settings.context_awareness.base_exclusions".localized)
-                                .font(.caption)
-                                .fontWeight(.medium)
-
-                            Text("settings.context_awareness.base_exclusions_desc".localized)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            SettingsTitleWithPopover(
+                                title: "settings.context_awareness.base_exclusions".localized,
+                                helperMessage: "settings.context_awareness.base_exclusions_desc".localized,
+                                font: .caption,
+                                fontWeight: .medium
+                            )
 
                             Text(TextContextExclusionPolicy.defaultBundleIDs.joined(separator: "\n"))
                                 .font(.caption.monospaced())
@@ -288,9 +286,12 @@ public struct EnhancementsSettingsTab: View {
             DSGroup("settings.post_processing.system_prompt".localized, icon: "terminal.fill") {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
-                        Text("settings.post_processing.base_instructions".localized)
-                            .font(.subheadline)
-                            .fontWeight(.medium)
+                        SettingsTitleWithPopover(
+                            title: "settings.post_processing.base_instructions".localized,
+                            helperMessage: "prompt.instructions_hint".localized,
+                            font: .subheadline,
+                            fontWeight: .medium
+                        )
                         Spacer()
                         Button("settings.post_processing.restore_default".localized) {
                             restoreSystemGuidelines()
@@ -298,10 +299,6 @@ public struct EnhancementsSettingsTab: View {
                         .buttonStyle(.bordered)
                         .controlSize(.regular)
                     }
-
-                    Text("prompt.instructions_hint".localized)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
 
                     TextEditor(text: $systemGuidelinesDraft)
                         .font(.body)

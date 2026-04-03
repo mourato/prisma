@@ -62,18 +62,10 @@ private struct SettingsDrillDownRowLabel: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.body)
-                    .foregroundStyle(.primary)
-
-                if let subtitle {
-                    Text(subtitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(nil)
-                }
-            }
+            SettingsTitleWithPopover(
+                title: title,
+                helperMessage: subtitle
+            )
 
             Spacer(minLength: 8)
 
@@ -82,12 +74,7 @@ private struct SettingsDrillDownRowLabel: View {
                 .foregroundStyle(.secondary)
         }
         .padding(.horizontal, 0)
-        .padding(
-            .vertical,
-            subtitle == nil
-                ? 16
-                : 12
-        )
+        .padding(.vertical, 16)
         .clipShape(RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius))
         .contentShape(Rectangle())
     }

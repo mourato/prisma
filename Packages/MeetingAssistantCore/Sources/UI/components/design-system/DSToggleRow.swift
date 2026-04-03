@@ -22,22 +22,17 @@ public struct DSToggleRow: View {
     public var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                if let tooltip {
-                    Text(title)
-                        .font(.body)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .help(tooltip)
+                if let tooltip, !tooltip.isEmpty {
+                    SettingsTitleWithPopover(
+                        title: title,
+                        helperMessage: description
+                    )
+                    .help(tooltip)
                 } else {
-                    Text(title)
-                        .font(.body)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                if let description {
-                    Text(description)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    SettingsTitleWithPopover(
+                        title: title,
+                        helperMessage: description
+                    )
                 }
             }
 

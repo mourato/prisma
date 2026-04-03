@@ -149,12 +149,12 @@ public struct MeetingSettingsTab: View {
 
             DSGroup("settings.meetings.notes_typography.title".localized, icon: "textformat.size") {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("settings.meetings.notes_typography.desc".localized)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
                     HStack {
-                        Text("settings.meetings.notes_typography.font_family".localized)
+                        SettingsTitleWithPopover(
+                            title: "settings.meetings.notes_typography.font_family".localized,
+                            helperTitle: "settings.meetings.notes_typography.title".localized,
+                            helperMessage: "settings.meetings.notes_typography.desc".localized
+                        )
                         Spacer()
                         Picker("", selection: $meetingViewModel.settings.meetingNotesFontFamilyKey) {
                             Text("settings.meetings.notes_typography.font_system".localized)
@@ -193,7 +193,10 @@ public struct MeetingSettingsTab: View {
                         Divider()
 
                         HStack {
-                            Text("settings.meetings.export_location".localized)
+                            SettingsTitleWithPopover(
+                                title: "settings.meetings.export_location".localized,
+                                helperMessage: "settings.meetings.export_location_desc".localized
+                            )
                             Spacer()
                             if let url = meetingViewModel.settings.summaryExportFolder {
                                 Text(url.lastPathComponent)
@@ -208,10 +211,6 @@ public struct MeetingSettingsTab: View {
                             }
                         }
 
-                        Text("settings.meetings.export_location_desc".localized)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-
                         Divider()
 
                         DSToggleRow(
@@ -223,7 +222,10 @@ public struct MeetingSettingsTab: View {
                         Divider()
 
                         HStack {
-                            Text("settings.meetings.export_safety_policy".localized)
+                            SettingsTitleWithPopover(
+                                title: "settings.meetings.export_safety_policy".localized,
+                                helperMessage: "settings.meetings.export_safety_policy_desc".localized
+                            )
                             Spacer()
                             Picker("", selection: $meetingViewModel.settings.summaryExportSafetyPolicyLevel) {
                                 ForEach(SummaryExportSafetyPolicyLevel.allCases, id: \.self) { level in
@@ -233,10 +235,6 @@ public struct MeetingSettingsTab: View {
                             .labelsHidden()
                             .pickerStyle(.menu)
                         }
-
-                        Text("settings.meetings.export_safety_policy_desc".localized)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
 
                         if meetingViewModel.settings.summaryExportFolder == nil {
                             Text("settings.meetings.export_location_required".localized)
@@ -250,14 +248,13 @@ public struct MeetingSettingsTab: View {
                             HStack(spacing: 8) {
                                 Image(systemName: "doc.text")
                                     .foregroundStyle(AppDesignSystem.Colors.iconHighlight)
-                                Text("settings.meetings.template".localized)
-                                    .font(.subheadline)
-                                    .fontWeight(.semibold)
+                                SettingsTitleWithPopover(
+                                    title: "settings.meetings.template".localized,
+                                    helperMessage: "settings.meetings.template_desc".localized,
+                                    font: .subheadline,
+                                    fontWeight: .semibold
+                                )
                             }
-
-                            Text("settings.meetings.template_desc".localized)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
 
                             HStack {
                                 Spacer()
@@ -277,7 +274,10 @@ public struct MeetingSettingsTab: View {
             DSGroup("settings.meetings.prompts".localized, icon: "sparkles") {
                 VStack(alignment: .leading, spacing: AppDesignSystem.Layout.cardPadding) {
                     HStack {
-                        Text("settings.meetings.summary_output_language".localized)
+                        SettingsTitleWithPopover(
+                            title: "settings.meetings.summary_output_language".localized,
+                            helperMessage: "settings.meetings.summary_output_language_desc".localized
+                        )
                         Spacer()
                         Picker("", selection: $meetingViewModel.settings.meetingSummaryOutputLanguage) {
                             ForEach(DictationOutputLanguage.allCases, id: \.self) { language in
@@ -288,10 +288,6 @@ public struct MeetingSettingsTab: View {
                         .labelsHidden()
                         .pickerStyle(.menu)
                     }
-
-                    Text("settings.meetings.summary_output_language_desc".localized)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
 
                     Divider()
 
@@ -371,12 +367,13 @@ public struct MeetingSettingsTab: View {
     }
 
     private var webTargetsSection: some View {
-        DSGroup("settings.meetings.web_targets.title".localized, icon: "globe") {
+        DSGroup("settings.meetings.web_targets.title".localized, icon: "globe", headerAccessory: {
+            DSInfoPopoverButton(
+                title: "settings.meetings.web_targets.title".localized,
+                message: "settings.meetings.web_targets.desc".localized
+            )
+        }) {
             VStack(alignment: .leading, spacing: 12) {
-                Text("settings.meetings.web_targets.desc".localized)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
                 SettingsInlineList(
                     items: webTargetsViewModel.targets,
                     emptyText: "settings.meetings.web_targets.empty".localized
