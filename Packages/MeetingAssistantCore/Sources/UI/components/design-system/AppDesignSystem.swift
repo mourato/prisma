@@ -220,7 +220,7 @@ public enum AppDesignSystem {
 
         public static let recordingIndicatorClassicWaveCount: Int = 18
         public static let recordingIndicatorMiniWaveCount: Int = 9
-        public static let recordingIndicatorSuperWaveCount: Int = 80
+        public static let recordingIndicatorSuperWaveCount: Int = 72
 
         public static let recordingIndicatorClassicWaveHeight: CGFloat = 24
         public static let recordingIndicatorMiniWaveHeight: CGFloat = 20

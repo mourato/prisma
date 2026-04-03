@@ -558,7 +558,7 @@ public struct FloatingRecordingIndicatorView: View {
 
             recordingCluster(size: size)
 
-            if showsMeetingMicrophoneControl, overlayLayout.showsMeetingTimer {
+            if showsMeetingMicrophoneControl {
                 divider
                 meetingTimerView
             }
@@ -688,7 +688,6 @@ public struct FloatingRecordingIndicatorView: View {
     private var superFooterHasLeadingContent: Bool {
         overlayLayout.showsPromptSelector
             || overlayLayout.showsLanguageSelector
-            || overlayLayout.showsMeetingTimer
             || showsMeetingMicrophoneControl
             || showsMeetingNotesControl
     }
@@ -701,13 +700,6 @@ public struct FloatingRecordingIndicatorView: View {
 
             if overlayLayout.showsLanguageSelector {
                 languageFooterControl
-            }
-
-            if overlayLayout.showsMeetingTimer {
-                superFooterChip {
-                    meetingTimerView
-                        .frame(width: FloatingRecordingIndicatorViewUtilities.timerReservedWidth(for: .`super`))
-                }
             }
 
             if showsMeetingMicrophoneControl {
