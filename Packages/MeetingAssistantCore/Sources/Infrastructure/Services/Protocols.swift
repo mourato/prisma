@@ -70,6 +70,15 @@ public protocol TranscriptionServiceDiarizationOverride: ObservableObject {
     ) async throws -> TranscriptionResponse
 }
 
+@MainActor
+public protocol TranscriptionServiceFinalDiarization: ObservableObject {
+    func diarize(audioURL: URL) async throws -> [SpeakerTimelineSegment]
+    func assignSpeakers(
+        to segments: [Transcription.Segment],
+        using speakerTimeline: [SpeakerTimelineSegment]
+    ) -> [Transcription.Segment]
+}
+
 // MARK: - Post-Processing Protocol
 
 /// Abstract interface for AI post-processing services.

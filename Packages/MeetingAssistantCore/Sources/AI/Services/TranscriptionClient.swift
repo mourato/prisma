@@ -10,7 +10,7 @@ import os.log
 /// Client for communicating with the local FluidAudio transcription service.
 /// Adapts the local model manager to the existing client interface.
 @MainActor
-public class TranscriptionClient: ObservableObject, TranscriptionService, TranscriptionServiceDiarizationOverride {
+public class TranscriptionClient: ObservableObject, TranscriptionService, TranscriptionServiceDiarizationOverride, TranscriptionServiceFinalDiarization {
     public static let shared = TranscriptionClient()
 
     private let logger = Logger(subsystem: AppIdentity.logSubsystem, category: "TranscriptionClient")
@@ -170,6 +170,32 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
             updateCachedReadiness(.unhealthy)
             throw error
         }
+    }
+
+    public func diarize(audioURL: URL) async throws -> [SpeakerTimelineSegment] {
+        guard transcriptionImplementation == .local else {
+            throw TranscriptionError.transcriptionFailed("Final diarization unsupported in current backend")
+        }
+
+        do {
+            let speakerTimeline = try await LocalTranscriptionClient.shared.diarize(audioURL: audioURL)
+            updateCachedReadiness(.healthy)
+            return speakerTimeline
+        } catch {
+            updateCachedReadiness(.unhealthy)
+            throw error
+        }
+    }
+
+    public func assignSpeakers(
+        to segments: [Transcription.Segment],
+        using speakerTimeline: [SpeakerTimelineSegment]
+    ) -> [Transcription.Segment] {
+        guard transcriptionImplementation == .local else { return segments }
+        return LocalTranscriptionClient.shared.assignSpeakers(
+            to: segments,
+            using: speakerTimeline
+        )
     }
 
     public func warmupModelIfNeededInBackground() {

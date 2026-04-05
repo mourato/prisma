@@ -32,7 +32,7 @@ extension RecordingManager {
 
         postStartContextCaptureTask?.cancel()
         postStartContextCaptureTask = nil
-        await cancelIncrementalDictationSessionIfNeeded()
+        await cancelIncrementalTranscriptionSessionsIfNeeded()
         isRecording = false
         isStartingRecording = false
         isTranscribing = !activeTranscriptionSessionIDs.isEmpty

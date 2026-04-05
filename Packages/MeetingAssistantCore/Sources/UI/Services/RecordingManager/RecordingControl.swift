@@ -128,6 +128,11 @@ public extension RecordingManager {
                 purpose: purpose,
                 source: source
             )
+            try await prepareIncrementalMeetingSessionIfNeeded(
+                meeting: meeting,
+                purpose: purpose,
+                source: source
+            )
             try await startRecorder(to: outputURL, source: source)
 
             let recorderStartAt = Date()
@@ -148,7 +153,7 @@ public extension RecordingManager {
             ])
 
         } catch {
-            await cancelIncrementalDictationSessionIfNeeded()
+            await cancelIncrementalTranscriptionSessionsIfNeeded()
             isStartingRecording = false
             await RecordingExclusivityCoordinator.shared.endRecording()
             postStartContextCaptureTask?.cancel()
@@ -315,6 +320,68 @@ public extension RecordingManager {
                         activeStartTelemetry = nil
                         clearPostProcessingReadinessWarning()
                     }
+                } else if incrementalMeetingCoordinator != nil, transcriptionSession.meeting.capturePurpose == .meeting {
+                    let checkpointID = incrementalMeetingCoordinator?.checkpointID
+
+                    do {
+                        let transcription = try await finishIncrementalMeetingSession(
+                            audioURL: finalURL,
+                            session: transcriptionSession
+                        )
+                        persistMeetingNotes(transcriptionSession.meetingNotesContent, forTranscription: transcription.id)
+                        if shouldDriveSharedTranscriptionState(for: transcriptionSession.id) {
+                            meetingState = .processing(.generatingOutput)
+                        }
+                        if currentMeeting?.id == transcriptionSession.id {
+                            currentMeeting?.state = .completed
+                        }
+                        TranscriptionDeliveryService.deliver(
+                            transcription: transcription,
+                            recordingSource: transcriptionSession.recordingSource
+                        )
+                        completeVisibleTranscription(success: true, sessionID: transcriptionSession.id)
+                        notifySuccess(for: transcription)
+                        scheduleStatusReset(sessionID: transcriptionSession.id)
+                        unregisterTranscriptionSession(transcriptionSession.id)
+                        cancelEstimatedPostProcessingProgress(for: transcriptionSession.id)
+                        isStartingRecording = false
+                        if foregroundTranscriptionSessionID == nil, !isRecording, !isStartingRecording {
+                            meetingState = .idle
+                        }
+                        if AppSettingsStore.shared.autoExportSummaries {
+                            await exportSummary(transcription: transcription)
+                        }
+                        clearMeetingNotesState(removePersistedValue: true, meetingID: transcriptionSession.id)
+                        if currentMeeting?.id == transcriptionSession.id {
+                            currentMeeting = nil
+                            currentCapturePurpose = nil
+                            isMeetingMicrophoneEnabled = false
+                            postProcessingContext = nil
+                            postProcessingContextItems = []
+                            dictationSessionOutputLanguageOverride = nil
+                            dictationStartBundleIdentifier = nil
+                            dictationStartURL = nil
+                            activeStartTelemetry = nil
+                            clearPostProcessingReadinessWarning()
+                        }
+                    } catch {
+                        AppLogger.warning(
+                            "Meeting incremental transcription failed during finalization; falling back to legacy full-file pipeline",
+                            category: .recordingManager,
+                            extra: ["error": error.localizedDescription]
+                        )
+                        teardownIncrementalMeetingSession()
+                        let preparedAudio = await prepareAudioForTranscription(
+                            audioURL: finalURL,
+                            allowSilenceRemoval: true
+                        )
+                        await transcribeRecording(
+                            audioURL: preparedAudio.transcriptionURL,
+                            session: transcriptionSession,
+                            cleanupAudioURL: preparedAudio.cleanupURL,
+                            transcriptionIDOverride: checkpointID
+                        )
+                    }
                 } else {
                     let preparedAudio = await prepareAudioForTranscription(
                         audioURL: finalURL,
@@ -327,7 +394,7 @@ public extension RecordingManager {
                     )
                 }
             } else {
-                await cancelIncrementalDictationSessionIfNeeded()
+                await cancelIncrementalTranscriptionSessionsIfNeeded()
                 cancelEstimatedPostProcessingProgress(for: currentMeeting?.id)
                 postProcessingContext = nil
                 postProcessingContextItems = []
@@ -344,7 +411,7 @@ public extension RecordingManager {
 
         } catch {
             AppLogger.error("Failed to stop recording cleanly", category: .recordingManager, error: error)
-            await cancelIncrementalDictationSessionIfNeeded()
+            await cancelIncrementalTranscriptionSessionsIfNeeded()
             lastError = error
             isRecording = false
             if let transcriptionSession {
@@ -376,7 +443,7 @@ public extension RecordingManager {
             AppLogger.info("Cancelling recording during startup...", category: .recordingManager)
             _ = await micRecorder.stopRecording()
             _ = await systemRecorder.stopRecording()
-            await cancelIncrementalDictationSessionIfNeeded()
+            await cancelIncrementalTranscriptionSessionsIfNeeded()
             postStartContextCaptureTask?.cancel()
             postStartContextCaptureTask = nil
             isStartingRecording = false
@@ -403,7 +470,7 @@ public extension RecordingManager {
         // Stop recorders
         _ = await micRecorder.stopRecording()
         _ = await systemRecorder.stopRecording()
-        await cancelIncrementalDictationSessionIfNeeded()
+        await cancelIncrementalTranscriptionSessionsIfNeeded()
         postStartContextCaptureTask?.cancel()
         postStartContextCaptureTask = nil
 

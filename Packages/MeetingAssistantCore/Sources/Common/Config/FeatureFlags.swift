@@ -23,13 +23,19 @@ public enum FeatureFlags {
     public static let enableDiarization: Bool = true
 
     /// Enable dictation transcription during recording using windowed incremental ASR.
-    public static let enableIncrementalDictationTranscription: Bool = false
+    public static let enableIncrementalDictationTranscription: Bool = true
 
     /// Enable real-time VAD for dictation incremental transcription windows.
-    public static let enableRealtimeVADForDictation: Bool = false
+    public static let enableRealtimeVADForDictation: Bool = true
+
+    /// Enable meeting transcription during recording using windowed incremental ASR.
+    public static let enableIncrementalMeetingTranscription: Bool = true
+
+    /// Enable real-time VAD for meeting incremental transcription windows.
+    public static let enableRealtimeVADForMeetings: Bool = true
 
     /// Enable cached readiness gating instead of synchronous health checks in the critical path.
-    public static let enableCachedTranscriptionReadinessGate: Bool = false
+    public static let enableCachedTranscriptionReadinessGate: Bool = true
 
     /// Enable AI post-processing for transcriptions.
     public static let enablePostProcessing: Bool = true

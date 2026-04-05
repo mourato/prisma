@@ -36,6 +36,7 @@ public final class TranscribeAudioUseCase: Sendable {
     /// - Throws: TranscriptionError se falhar na transcrição
     public func execute(
         audioURL: URL,
+        transcriptionID: UUID? = nil,
         meeting: MeetingEntity,
         inputSource: String? = nil,
         contextItems: [TranscriptionContextItem] = [],
@@ -79,7 +80,7 @@ public final class TranscribeAudioUseCase: Sendable {
 
             return try await finalizePreparedResponse(
                 response: response,
-                transcriptionID: nil,
+                transcriptionID: transcriptionID,
                 meeting: meeting,
                 inputSource: inputSource,
                 contextItems: contextItems,

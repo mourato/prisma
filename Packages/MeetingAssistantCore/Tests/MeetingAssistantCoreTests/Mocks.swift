@@ -63,7 +63,7 @@ class MockAudioRecorder: AudioRecordingService {
 
 // MARK: - Mock Transcription Service
 
-class MockTranscriptionClient: TranscriptionService {
+class MockTranscriptionClient: TranscriptionService, TranscriptionServiceFinalDiarization {
     @Published var isTranscribing = false
 
     var shouldFailHealthCheck = false
@@ -74,11 +74,16 @@ class MockTranscriptionClient: TranscriptionService {
     var mockModel = "mock-model"
     var mockConfidenceScore: Double?
     var mockSegments: [Transcription.Segment] = []
+    var mockSpeakerTimeline: [SpeakerTimelineSegment] = []
 
     // Call tracking properties
     var healthCheckCallCount = 0
     var fetchServiceStatusCallCount = 0
     var transcribeCallCount = 0
+    var fileTranscribeCallCount = 0
+    var sampleTranscribeCallCount = 0
+    var diarizeCallCount = 0
+    var assignSpeakersCallCount = 0
     var lastTranscribeAudioURL: URL?
     var lastTranscribeSamples: [Float] = []
 
@@ -108,6 +113,7 @@ class MockTranscriptionClient: TranscriptionService {
         onProgress: (@Sendable (Double) -> Void)? = nil
     ) async throws -> TranscriptionResponse {
         transcribeCallCount += 1
+        fileTranscribeCallCount += 1
         lastTranscribeAudioURL = audioURL
 
         // Simulate progress updates if callback provided
@@ -134,6 +140,7 @@ class MockTranscriptionClient: TranscriptionService {
 
     func transcribe(samples: [Float]) async throws -> TranscriptionResponse {
         transcribeCallCount += 1
+        sampleTranscribeCallCount += 1
         lastTranscribeSamples = samples
 
         if shouldFailTranscription {
@@ -149,6 +156,37 @@ class MockTranscriptionClient: TranscriptionService {
             processedAt: Date().ISO8601Format(),
             confidenceScore: mockConfidenceScore
         )
+    }
+
+    func diarize(audioURL: URL) async throws -> [SpeakerTimelineSegment] {
+        diarizeCallCount += 1
+        lastTranscribeAudioURL = audioURL
+        if shouldFailTranscription {
+            throw NSError(domain: "MockTranscription", code: 3, userInfo: [NSLocalizedDescriptionKey: "Diarization failed"])
+        }
+        return mockSpeakerTimeline
+    }
+
+    func assignSpeakers(
+        to segments: [Transcription.Segment],
+        using speakerTimeline: [SpeakerTimelineSegment]
+    ) -> [Transcription.Segment] {
+        assignSpeakersCallCount += 1
+        guard !speakerTimeline.isEmpty else { return segments }
+
+        return segments.map { segment in
+            let midPoint = (segment.startTime + segment.endTime) / 2.0
+            let speaker = speakerTimeline.first {
+                $0.startTime <= midPoint && $0.endTime >= midPoint
+            }?.speaker ?? segment.speaker
+            return Transcription.Segment(
+                id: segment.id,
+                speaker: speaker,
+                text: segment.text,
+                startTime: segment.startTime,
+                endTime: segment.endTime
+            )
+        }
     }
 }
 

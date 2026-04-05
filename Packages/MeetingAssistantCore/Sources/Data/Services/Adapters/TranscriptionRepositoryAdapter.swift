@@ -6,7 +6,7 @@ import MeetingAssistantCoreInfrastructure
 
 /// Adapter que implementa TranscriptionRepository usando TranscriptionClient existente
 @MainActor
-public final class TranscriptionRepositoryAdapter: TranscriptionRepository, TranscriptionRepositoryDiarizationOverride {
+public final class TranscriptionRepositoryAdapter: TranscriptionRepository, TranscriptionRepositoryDiarizationOverride, TranscriptionRepositoryFinalDiarization {
     private let transcriptionService: any TranscriptionService
 
     public init(transcriptionService: any TranscriptionService) {
@@ -63,6 +63,45 @@ public final class TranscriptionRepositoryAdapter: TranscriptionRepository, Tran
     ) async throws -> DomainTranscriptionResponse {
         let response = try await transcriptionService.transcribe(samples: samples)
         return mapToDomainResponse(response)
+    }
+
+    public func diarize(audioURL: URL) async throws -> [SpeakerTimelineSegment] {
+        guard let diarizationService = transcriptionService as? any TranscriptionServiceFinalDiarization else {
+            throw TranscriptionError.transcriptionFailed("Final diarization unsupported in current backend")
+        }
+        return try await diarizationService.diarize(audioURL: audioURL)
+    }
+
+    public func assignSpeakers(
+        to segments: [DomainTranscriptionSegment],
+        using speakerTimeline: [SpeakerTimelineSegment]
+    ) -> [DomainTranscriptionSegment] {
+        guard let diarizationService = transcriptionService as? any TranscriptionServiceFinalDiarization else {
+            return segments
+        }
+
+        let mappedSegments = segments.map { segment in
+            Transcription.Segment(
+                id: segment.id,
+                speaker: segment.speaker,
+                text: segment.text,
+                startTime: segment.startTime,
+                endTime: segment.endTime
+            )
+        }
+
+        return diarizationService.assignSpeakers(
+            to: mappedSegments,
+            using: speakerTimeline
+        ).map { segment in
+            DomainTranscriptionSegment(
+                id: segment.id,
+                speaker: segment.speaker,
+                text: segment.text,
+                startTime: segment.startTime,
+                endTime: segment.endTime
+            )
+        }
     }
 
     private func mapToDomainResponse(_ response: TranscriptionResponse) -> DomainTranscriptionResponse {

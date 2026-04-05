@@ -117,6 +117,7 @@ public class RecordingManager: ObservableObject, RecordingServiceProtocol {
     var activeTranscriptionSessionIDs = Set<UUID>()
     var foregroundTranscriptionSessionID: UUID?
     var incrementalDictationCoordinator: IncrementalDictationTranscriptionCoordinator?
+    var incrementalMeetingCoordinator: IncrementalMeetingTranscriptionCoordinator?
 
     struct RecordingStartTelemetry {
         let traceID = UUID().uuidString

@@ -142,54 +142,77 @@ public class LocalTranscriptionClient {
         )
     }
 
-    /// Merges ASR segments with Speaker segments to produce aligned transcription segments.
-    private func merge(
-        text: String,
-        asrSegments: [FluidAIModelManager.AsrSegment],
-        speakers: [FluidAIModelManager.DiarizationSegment]
-    ) -> [Transcription.Segment] {
-        guard let firstAsrSegment = asrSegments.first,
-              let firstSpeaker = speakers.first
-        else {
-            return []
+    public func diarize(audioURL: URL) async throws -> [SpeakerTimelineSegment] {
+        let diarizationSegments = try await manager.diarize(audioURL: audioURL)
+        return diarizationSegments.map { segment in
+            SpeakerTimelineSegment(
+                speaker: segment.speakerId,
+                startTime: segment.startTime,
+                endTime: segment.endTime
+            )
         }
-        _ = firstAsrSegment // Validates asrSegments is not empty
-        _ = firstSpeaker // Validates speakers is not empty
+    }
+
+    public func assignSpeakers(
+        to segments: [Transcription.Segment],
+        using speakerTimeline: [SpeakerTimelineSegment]
+    ) -> [Transcription.Segment] {
+        guard !segments.isEmpty, !speakerTimeline.isEmpty else { return segments }
 
         var result: [Transcription.Segment] = []
-        var currentSpeakerId = ""
-        var currentBatch: [FluidAIModelManager.AsrSegment] = []
+        var currentSpeaker = ""
+        var currentBatch: [Transcription.Segment] = []
 
-        // Simple algorithm: Assign each ASR segment to the speaker active at its midpoint
-        // Then group consecutive segments of same speaker.
-
-        for segment in asrSegments {
+        for segment in segments {
             let midPoint = (segment.startTime + segment.endTime) / 2.0
+            let speaker = speakerTimeline.first {
+                $0.startTime <= midPoint && $0.endTime >= midPoint
+            }?.speaker ?? Transcription.unknownSpeaker
 
-            // Find speaker active at midPoint
-            // If overlapping speakers, pick the first one (simplification)
-            let speaker =
-                speakers.first { $0.startTime <= midPoint && $0.endTime >= midPoint }?.speakerId
-                    ?? Transcription.unknownSpeaker
-
-            if speaker != currentSpeakerId {
-                // Determine if we should start a new segment
-                if let segment = makeSegment(from: currentBatch, speaker: currentSpeakerId) {
-                    result.append(segment)
+            if speaker != currentSpeaker {
+                if let mergedSegment = makeAssignedSegment(from: currentBatch, speaker: currentSpeaker) {
+                    result.append(mergedSegment)
                 }
-                currentSpeakerId = speaker
+                currentSpeaker = speaker
                 currentBatch = []
             }
 
             currentBatch.append(segment)
         }
 
-        // Flush last segment
-        if let segment = makeSegment(from: currentBatch, speaker: currentSpeakerId) {
-            result.append(segment)
+        if let mergedSegment = makeAssignedSegment(from: currentBatch, speaker: currentSpeaker) {
+            result.append(mergedSegment)
         }
 
-        return result
+        return result.isEmpty ? segments : result
+    }
+
+    /// Merges ASR segments with Speaker segments to produce aligned transcription segments.
+    private func merge(
+        text _: String,
+        asrSegments: [FluidAIModelManager.AsrSegment],
+        speakers: [FluidAIModelManager.DiarizationSegment]
+    ) -> [Transcription.Segment] {
+        guard !asrSegments.isEmpty, !speakers.isEmpty else { return [] }
+
+        let transcriptionSegments = asrSegments.map { segment in
+            Transcription.Segment(
+                speaker: Transcription.unknownSpeaker,
+                text: segment.text,
+                startTime: segment.startTime,
+                endTime: segment.endTime
+            )
+        }
+
+        let speakerTimeline = speakers.map { segment in
+            SpeakerTimelineSegment(
+                speaker: segment.speakerId,
+                startTime: segment.startTime,
+                endTime: segment.endTime
+            )
+        }
+
+        return assignSpeakers(to: transcriptionSegments, using: speakerTimeline)
     }
 
     private func fallbackSegments(
@@ -257,25 +280,23 @@ public class LocalTranscriptionClient {
 
         return result
     }
-
-    private func makeSegment(from batch: [FluidAIModelManager.AsrSegment], speaker: String)
-        -> Transcription.Segment?
-    {
+    private func makeAssignedSegment(
+        from batch: [Transcription.Segment],
+        speaker: String
+    ) -> Transcription.Segment? {
         guard !batch.isEmpty else { return nil }
 
-        let segmentText = batch.map(\.text).joined(separator: "").trimmingCharacters(
-            in: .whitespaces
-        )
+        let segmentText = batch
+            .map(\.text)
+            .joined(separator: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
         guard !segmentText.isEmpty else { return nil }
 
-        let start = batch.first.map(\.startTime) ?? 0
-        let end = batch.last.map(\.endTime) ?? 0
-
         return Transcription.Segment(
-            speaker: speaker,
+            speaker: speaker.isEmpty ? Transcription.unknownSpeaker : speaker,
             text: segmentText,
-            startTime: start,
-            endTime: end
+            startTime: batch.first?.startTime ?? 0,
+            endTime: batch.last?.endTime ?? 0
         )
     }
 }

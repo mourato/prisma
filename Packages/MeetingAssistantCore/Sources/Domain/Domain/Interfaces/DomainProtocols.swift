@@ -86,6 +86,15 @@ public protocol TranscriptionRepositoryDiarizationOverride: Sendable {
     ) async throws -> DomainTranscriptionResponse
 }
 
+@MainActor
+public protocol TranscriptionRepositoryFinalDiarization: Sendable {
+    func diarize(audioURL: URL) async throws -> [SpeakerTimelineSegment]
+    func assignSpeakers(
+        to segments: [DomainTranscriptionSegment],
+        using speakerTimeline: [SpeakerTimelineSegment]
+    ) -> [DomainTranscriptionSegment]
+}
+
 // Protocolo para operações de pós-processamento
 #if DEBUG
 @GenerateMock

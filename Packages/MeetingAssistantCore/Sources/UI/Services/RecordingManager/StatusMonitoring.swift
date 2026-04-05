@@ -59,7 +59,7 @@ extension RecordingManager {
         isForegroundTranscribing = false
         activeTranscriptionSessionIDs.removeAll()
         foregroundTranscriptionSessionID = nil
-        await cancelIncrementalDictationSessionIfNeeded()
+        await cancelIncrementalTranscriptionSessionsIfNeeded()
         cancelEstimatedPostProcessingProgress()
         currentMeeting = nil
         currentCapturePurpose = nil

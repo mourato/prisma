@@ -241,6 +241,26 @@ public struct TranscriptionContextItem: Identifiable, Codable, Hashable, Sendabl
     }
 }
 
+/// Speaker timeline segment produced by diarization.
+public struct SpeakerTimelineSegment: Identifiable, Codable, Hashable, Sendable {
+    public let id: UUID
+    public let speaker: String
+    public let startTime: Double
+    public let endTime: Double
+
+    public init(
+        id: UUID = UUID(),
+        speaker: String,
+        startTime: Double,
+        endTime: Double
+    ) {
+        self.id = id
+        self.speaker = speaker
+        self.startTime = startTime
+        self.endTime = endTime
+    }
+}
+
 /// Response from transcription API.
 public struct TranscriptionResponse: Codable, Sendable {
     public let text: String

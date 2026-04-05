@@ -12,7 +12,8 @@ extension RecordingManager {
     func transcribeRecording(
         audioURL: URL,
         session: TranscriptionSessionSnapshot,
-        cleanupAudioURL: URL? = nil
+        cleanupAudioURL: URL? = nil,
+        transcriptionIDOverride: UUID? = nil
     ) async {
         defer {
             if let cleanupAudioURL {
@@ -42,6 +43,7 @@ extension RecordingManager {
 
             let transcriptionEntity = try await transcribeAudioUseCase.execute(
                 audioURL: audioURL,
+                transcriptionID: transcriptionIDOverride,
                 meeting: meetingEntity,
                 inputSource: resolveInputSourceLabel(for: session.meeting, recordingSource: session.recordingSource),
                 contextItems: config.postProcessingContextItems,
