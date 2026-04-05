@@ -32,6 +32,7 @@ extension RecordingManager {
 
         postStartContextCaptureTask?.cancel()
         postStartContextCaptureTask = nil
+        await cancelIncrementalDictationSessionIfNeeded()
         isRecording = false
         isStartingRecording = false
         isTranscribing = !activeTranscriptionSessionIDs.isEmpty
@@ -114,6 +115,13 @@ extension RecordingManager {
     func processRecordedAudio(micURL: URL?, sysURL: URL?) async throws -> URL {
         guard let outputURL = await getMergedAudioURL() else {
             throw RecordingManagerError.noOutputPath
+        }
+
+        if incrementalDictationCoordinator != nil,
+           currentCapturePurpose == .dictation,
+           let micURL
+        {
+            return micURL
         }
 
         let settings = AppSettingsStore.shared

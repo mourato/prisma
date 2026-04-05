@@ -436,6 +436,25 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
         return (result.text, mappedSegments, Double(result.confidence))
     }
 
+    func transcribe(samples: [Float]) async throws -> (text: String, segments: [AsrSegment], confidenceScore: Double?) {
+        guard let manager = asrManager, modelState == .loaded else {
+            throw FluidError.modelNotLoaded
+        }
+
+        logger.info("Transcribing in-memory audio samples: \(samples.count)")
+        let result = try await manager.transcribe(samples, source: .microphone)
+
+        let mappedSegments = (result.tokenTimings ?? []).map { timing in
+            AsrSegment(
+                text: timing.token,
+                startTime: Double(timing.startTime),
+                endTime: Double(timing.endTime)
+            )
+        }
+
+        return (result.text, mappedSegments, Double(result.confidence))
+    }
+
     private func convertTo16kHz(buffer: AVAudioPCMBuffer) throws -> AVAudioPCMBuffer {
         guard
             let targetFormat = AVAudioFormat(

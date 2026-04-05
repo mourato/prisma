@@ -45,6 +45,7 @@ public struct TranscriptionEntity: Identifiable, Codable, Hashable, Sendable {
     public let postProcessingDuration: Double
     public let postProcessingModel: String?
     public let meetingType: String?
+    public let lifecycleState: TranscriptionLifecycleState
     public var meetingConversationState: MeetingConversationState?
 
     /// Inicializador completo com suporte a pós-processamento.
@@ -68,6 +69,7 @@ public struct TranscriptionEntity: Identifiable, Codable, Hashable, Sendable {
         public var postProcessingDuration: Double = 0
         public var postProcessingModel: String?
         public var meetingType: String?
+        public var lifecycleState: TranscriptionLifecycleState = .completed
         public var meetingConversationState: MeetingConversationState?
 
         public init(
@@ -105,6 +107,7 @@ public struct TranscriptionEntity: Identifiable, Codable, Hashable, Sendable {
         postProcessingDuration = config.postProcessingDuration
         postProcessingModel = config.postProcessingModel
         meetingType = config.meetingType
+        lifecycleState = config.lifecycleState
         meetingConversationState = config.meetingConversationState
     }
 

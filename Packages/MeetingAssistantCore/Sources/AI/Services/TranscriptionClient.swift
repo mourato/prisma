@@ -15,6 +15,12 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
 
     private let logger = Logger(subsystem: AppIdentity.logSubsystem, category: "TranscriptionClient")
 
+    public enum CachedReadinessState: String, Sendable {
+        case unknown
+        case healthy
+        case unhealthy
+    }
+
     /// The underlying transcription implementation based on feature flags.
     private enum TranscriptionImplementation {
         case xpc
@@ -25,21 +31,30 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
         FeatureFlags.useXPCService ? .xpc : .local
     }
 
+    @Published public private(set) var cachedReadinessState: CachedReadinessState = .unknown
+
+    public var supportsIncrementalTranscription: Bool {
+        transcriptionImplementation == .local
+    }
+
     private init() {}
 
     /// Check if the transcription service is healthy.
     public func healthCheck() async throws -> Bool {
+        let isHealthy: Bool
         switch transcriptionImplementation {
         case .xpc:
             do {
                 let status = try await MeetingAssistantAIClient.shared.fetchServiceStatus()
-                return status.status == "healthy"
+                isHealthy = status.status == "healthy"
             } catch {
-                return false
+                isHealthy = false
             }
         case .local:
-            return FluidAIModelManager.shared.modelState == .loaded
+            isHealthy = FluidAIModelManager.shared.modelState == .loaded
         }
+        updateCachedReadiness(isHealthy ? .healthy : .unhealthy)
+        return isHealthy
     }
 
     /// Fetch detailed service status.
@@ -47,6 +62,7 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
         switch transcriptionImplementation {
         case .xpc:
             let xpcStatus = try await MeetingAssistantAIClient.shared.fetchServiceStatus()
+            updateCachedReadiness(xpcStatus.status == "healthy" ? .healthy : .unhealthy)
             return ServiceStatusResponse(
                 status: xpcStatus.status,
                 modelState: xpcStatus.modelState,
@@ -60,6 +76,7 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
             )
         case .local:
             let state = FluidAIModelManager.shared.modelState
+            updateCachedReadiness(state == .loaded ? .healthy : (state == .error ? .unhealthy : .unknown))
             return ServiceStatusResponse(
                 status: state == .error ? "unhealthy" : "healthy",
                 modelState: state.rawValue,
@@ -78,12 +95,19 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
     public func warmupModel() async throws {
         switch transcriptionImplementation {
         case .xpc:
-            try await MeetingAssistantAIClient.shared.warmupModel()
+            do {
+                try await MeetingAssistantAIClient.shared.warmupModel()
+                updateCachedReadiness(.healthy)
+            } catch {
+                updateCachedReadiness(.unhealthy)
+                throw error
+            }
         case .local:
             await FluidAIModelManager.shared.loadModels()
             if FeatureFlags.enableDiarization, AppSettingsStore.shared.isDiarizationEnabled {
                 await FluidAIModelManager.shared.loadDiarizationModels()
             }
+            updateCachedReadiness(FluidAIModelManager.shared.modelState == .loaded ? .healthy : .unhealthy)
         }
     }
 
@@ -126,6 +150,41 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
         }
     }
 
+    public func transcribe(samples: [Float]) async throws -> TranscriptionResponse {
+        AppLogger.info(
+            "Transcribing in-memory samples",
+            category: .transcriptionEngine,
+            extra: ["sampleCount": samples.count, "implementation": transcriptionImplementation == .xpc ? "XPC" : "local"]
+        )
+
+        guard supportsIncrementalTranscription else {
+            updateCachedReadiness(.unhealthy)
+            throw TranscriptionError.transcriptionFailed("Incremental transcription unsupported in current backend")
+        }
+
+        do {
+            let response = try await LocalTranscriptionClient.shared.transcribe(samples: samples)
+            updateCachedReadiness(.healthy)
+            return response
+        } catch {
+            updateCachedReadiness(.unhealthy)
+            throw error
+        }
+    }
+
+    public func warmupModelIfNeededInBackground() {
+        guard FeatureFlags.enableCachedTranscriptionReadinessGate else { return }
+        guard cachedReadinessState != .healthy else { return }
+
+        Task { @MainActor [weak self] in
+            do {
+                try await self?.warmupModel()
+            } catch {
+                self?.logger.error("Background warmup failed: \(error.localizedDescription)")
+            }
+        }
+    }
+
     private func transcribeViaXPC(
         audioURL: URL,
         onProgress: (@Sendable (Double) -> Void)?,
@@ -136,6 +195,7 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
                 audioURL: audioURL,
                 diarizationEnabledOverride: diarizationEnabledOverride
             )
+            updateCachedReadiness(.healthy)
             AppLogger.info(
                 "Transcription completed via XPC",
                 category: .transcriptionEngine,
@@ -143,6 +203,7 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
             )
             return response
         } catch {
+            updateCachedReadiness(.unhealthy)
             AppLogger.error(
                 "Transcription failed via XPC",
                 category: .transcriptionEngine,
@@ -164,6 +225,7 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
                 isDiarizationEnabled: diarizationEnabledOverride,
                 onProgress: onProgress
             )
+            updateCachedReadiness(.healthy)
             AppLogger.info(
                 "Transcription completed locally",
                 category: .transcriptionEngine,
@@ -171,6 +233,7 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
             )
             return response
         } catch {
+            updateCachedReadiness(.unhealthy)
             AppLogger.error(
                 "Transcription failed locally",
                 category: .transcriptionEngine,
@@ -179,6 +242,11 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
             )
             throw error
         }
+    }
+
+    private func updateCachedReadiness(_ state: CachedReadinessState) {
+        guard FeatureFlags.enableCachedTranscriptionReadinessGate else { return }
+        cachedReadinessState = state
     }
 
     deinit {

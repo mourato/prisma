@@ -54,6 +54,11 @@ public protocol TranscriptionService: ObservableObject {
         audioURL: URL,
         onProgress: (@Sendable (Double) -> Void)?
     ) async throws -> TranscriptionResponse
+
+    /// Transcribe a window of mono 16kHz PCM float samples.
+    func transcribe(
+        samples: [Float]
+    ) async throws -> TranscriptionResponse
 }
 
 @MainActor

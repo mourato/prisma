@@ -54,7 +54,7 @@ public final class CoreDataTranscriptionStorageRepository: TranscriptionStorageR
     public func fetchAllTranscriptions() async throws -> [TranscriptionEntity] {
         await stack.sanitizeMeetingOnlyPresentationDataIfNeeded()
         return try await stack.performBackgroundTask { context in
-            let request = TranscriptionMO.fetchRequest()
+            let request = TranscriptionMO.visibleHistoryFetchRequest()
             let results = try context.fetch(request)
             return results.map { Self.sanitizedTranscriptionEntity(from: $0.toDomain()) }
         }
@@ -63,7 +63,7 @@ public final class CoreDataTranscriptionStorageRepository: TranscriptionStorageR
     public func fetchAllMetadata() async throws -> [DomainTranscriptionMetadata] {
         await stack.sanitizeMeetingOnlyPresentationDataIfNeeded()
         return try await stack.performBackgroundTask { context in
-            let request = TranscriptionMO.fetchRequest()
+            let request = TranscriptionMO.visibleHistoryFetchRequest()
             let results = try context.fetch(request)
             return results.map { mo in
                 let fallbackName = DomainMeetingApp(rawValue: mo.meeting.appRawValue)?.displayName ?? "Unknown"
@@ -84,6 +84,7 @@ public final class CoreDataTranscriptionStorageRepository: TranscriptionStorageR
                     isPostProcessed: mo.processedContent != nil,
                     duration: mo.meeting.endTime?.timeIntervalSince(mo.meeting.startTime) ?? 0,
                     audioFilePath: mo.meeting.audioFilePath,
+                    lifecycleState: TranscriptionLifecycleState(rawValue: mo.lifecycleStateRawValue) ?? .completed,
                     summarySchemaVersion: Int(mo.canonicalSummarySchemaVersion),
                     summaryGroundedInTranscript: mo.summaryGroundedInTranscript,
                     summaryContainsSpeculation: mo.summaryContainsSpeculation,
@@ -150,6 +151,7 @@ public final class CoreDataTranscriptionStorageRepository: TranscriptionStorageR
         config.postProcessingDuration = transcription.postProcessingDuration
         config.postProcessingModel = transcription.postProcessingModel
         config.meetingType = transcription.meetingType
+        config.lifecycleState = transcription.lifecycleState
         config.meetingConversationState = transcription.meetingConversationState
         return TranscriptionEntity(meeting: sanitizedMeeting, config: config)
     }

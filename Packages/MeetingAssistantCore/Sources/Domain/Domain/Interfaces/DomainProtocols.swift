@@ -71,6 +71,11 @@ public protocol TranscriptionRepository: Sendable {
         audioURL: URL,
         onProgress: (@Sendable (Double) -> Void)?
     ) async throws -> DomainTranscriptionResponse
+
+    /// Transcribe a window of mono 16kHz PCM float samples.
+    func transcribe(
+        samples: [Float]
+    ) async throws -> DomainTranscriptionResponse
 }
 
 public protocol TranscriptionRepositoryDiarizationOverride: Sendable {
@@ -362,6 +367,7 @@ public struct DomainTranscriptionMetadata: Identifiable, Codable, Hashable, Send
     public let isPostProcessed: Bool
     public let duration: Double
     public let audioFilePath: String?
+    public let lifecycleState: TranscriptionLifecycleState
     public let summarySchemaVersion: Int
     public let summaryGroundedInTranscript: Bool
     public let summaryContainsSpeculation: Bool
@@ -385,6 +391,7 @@ public struct DomainTranscriptionMetadata: Identifiable, Codable, Hashable, Send
         isPostProcessed: Bool,
         duration: Double,
         audioFilePath: String?,
+        lifecycleState: TranscriptionLifecycleState = .completed,
         summarySchemaVersion: Int = 0,
         summaryGroundedInTranscript: Bool = false,
         summaryContainsSpeculation: Bool = false,
@@ -407,6 +414,7 @@ public struct DomainTranscriptionMetadata: Identifiable, Codable, Hashable, Send
         self.isPostProcessed = isPostProcessed
         self.duration = duration
         self.audioFilePath = audioFilePath
+        self.lifecycleState = lifecycleState
         self.summarySchemaVersion = summarySchemaVersion
         self.summaryGroundedInTranscript = summaryGroundedInTranscript
         self.summaryContainsSpeculation = summaryContainsSpeculation

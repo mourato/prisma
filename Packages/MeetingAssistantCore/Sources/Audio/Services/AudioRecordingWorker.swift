@@ -31,6 +31,7 @@ actor AudioRecordingWorker {
     // Callbacks - marked as Sendable since they are set from MainActor
     private var onPowerUpdate: (@Sendable (Float, Float, [Float]) -> Void)?
     private var onError: (@Sendable (AudioRecorderError) -> Void)?
+    private var onProcessedBuffer: (@Sendable (AVAudioPCMBuffer) -> Void)?
     private var meteringBarCount = 0
 
     /// Non-isolated buffer queue for synchronous enqueue from tap
@@ -52,6 +53,10 @@ actor AudioRecordingWorker {
         Task { await self.setOnErrorIsolated(callback) }
     }
 
+    nonisolated func setOnProcessedBuffer(_ callback: (@Sendable (AVAudioPCMBuffer) -> Void)?) {
+        Task { await self.setOnProcessedBufferIsolated(callback) }
+    }
+
     nonisolated func setMeteringBarCount(_ barCount: Int) {
         Task { await self.setMeteringBarCountIsolated(barCount) }
     }
@@ -62,6 +67,10 @@ actor AudioRecordingWorker {
 
     private func setOnErrorIsolated(_ callback: (@Sendable (AudioRecorderError) -> Void)?) {
         onError = callback
+    }
+
+    private func setOnProcessedBufferIsolated(_ callback: (@Sendable (AVAudioPCMBuffer) -> Void)?) {
+        onProcessedBuffer = callback
     }
 
     private func setMeteringBarCountIsolated(_ barCount: Int) {
@@ -233,6 +242,8 @@ actor AudioRecordingWorker {
 
         guard let audioFile else { return }
         guard buffer.frameLength > 0 else { return }
+
+        onProcessedBuffer?(buffer)
 
         do {
             try audioFile.write(from: buffer)

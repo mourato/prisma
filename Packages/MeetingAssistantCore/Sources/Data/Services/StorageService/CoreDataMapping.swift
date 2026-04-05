@@ -50,6 +50,7 @@ extension FileSystemStorageService {
         config.postProcessingDuration = transcription.postProcessingDuration
         config.postProcessingModel = transcription.postProcessingModel
         config.meetingType = transcription.meetingType
+        config.lifecycleState = transcription.lifecycleState
         config.meetingConversationState = transcription.meetingConversationState
 
         return TranscriptionEntity(meeting: meetingEntity, config: config)
@@ -78,6 +79,7 @@ extension FileSystemStorageService {
             duration: mo.meeting.endTime?.timeIntervalSince(mo.meeting.startTime) ?? 0,
             audioFilePath: mo.meeting.audioFilePath,
             inputSource: mo.inputSource,
+            lifecycleState: TranscriptionLifecycleState(rawValue: mo.lifecycleStateRawValue) ?? .completed,
             summarySchemaVersion: Int(mo.canonicalSummarySchemaVersion),
             summaryGroundedInTranscript: mo.summaryGroundedInTranscript,
             summaryContainsSpeculation: mo.summaryContainsSpeculation,
@@ -133,6 +135,7 @@ extension FileSystemStorageService {
             postProcessingDuration: entity.postProcessingDuration,
             postProcessingModel: entity.postProcessingModel,
             meetingType: entity.meetingType,
+            lifecycleState: entity.lifecycleState,
             meetingConversationState: entity.meetingConversationState
         )
     }

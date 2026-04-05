@@ -27,8 +27,6 @@ extension RecordingManager {
         beginVisibleTranscriptionStatus(audioDuration: audioDuration, sessionID: session.id)
 
         do {
-            try await performHealthCheck(sessionID: session.id)
-
             let settings = AppSettingsStore.shared
             let transcriptionStart = Date()
             let meetingEntity = makeMeetingEntity(meeting: session.meeting, audioDuration: audioDuration)
@@ -193,7 +191,8 @@ extension RecordingManager {
             transcriptionDuration: entity.transcriptionDuration,
             postProcessingDuration: entity.postProcessingDuration,
             postProcessingModel: entity.postProcessingModel,
-            meetingType: entity.meetingType
+            meetingType: entity.meetingType,
+            lifecycleState: entity.lifecycleState
         )
     }
 

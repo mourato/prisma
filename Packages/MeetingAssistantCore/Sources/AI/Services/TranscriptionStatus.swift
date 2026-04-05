@@ -30,6 +30,7 @@ public class TranscriptionStatus: ObservableObject {
     @Published public private(set) var estimatedTimeRemaining: TimeInterval?
     @Published public private(set) var audioDurationSeconds: Double?
     @Published public private(set) var processedDurationSeconds: Double = 0.0
+    @Published public private(set) var livePreviewText: String = ""
 
     // MARK: - Error Tracking
 
@@ -132,6 +133,7 @@ public class TranscriptionStatus: ObservableObject {
         processedDurationSeconds = 0.0
         transcriptionStartTime = Date()
         lastError = nil
+        livePreviewText = ""
     }
 
     /// Updates transcription progress during processing.
@@ -184,6 +186,7 @@ public class TranscriptionStatus: ObservableObject {
         audioDurationSeconds = nil
         processedDurationSeconds = 0.0
         transcriptionStartTime = nil
+        livePreviewText = ""
     }
 
     /// Records an error that occurred.
@@ -207,6 +210,10 @@ public class TranscriptionStatus: ObservableObject {
     public func clearError() {
         lastError = nil
         lastErrorTime = nil
+    }
+
+    public func updateLivePreviewText(_ text: String) {
+        livePreviewText = text
     }
 
     // MARK: - Private Methods

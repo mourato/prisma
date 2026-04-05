@@ -58,6 +58,13 @@ public final class TranscriptionRepositoryAdapter: TranscriptionRepository, Tran
         return mapToDomainResponse(response)
     }
 
+    public func transcribe(
+        samples: [Float]
+    ) async throws -> DomainTranscriptionResponse {
+        let response = try await transcriptionService.transcribe(samples: samples)
+        return mapToDomainResponse(response)
+    }
+
     private func mapToDomainResponse(_ response: TranscriptionResponse) -> DomainTranscriptionResponse {
         DomainTranscriptionResponse(
             text: response.text,

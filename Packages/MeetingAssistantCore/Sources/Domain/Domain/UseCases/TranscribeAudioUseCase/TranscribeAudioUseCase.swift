@@ -56,12 +56,6 @@ public final class TranscribeAudioUseCase: Sendable {
         onPhaseChange?(.preparing)
 
         do {
-            // Verificar saúde do serviço
-            guard try await transcriptionRepository.healthCheck() else {
-                throw TranscriptionError.serviceUnavailable
-            }
-
-            // Transcrever áudio
             onPhaseChange?(.processing)
             let transcriptionStartTime = Date()
             let response: DomainTranscriptionResponse
@@ -83,13 +77,56 @@ public final class TranscribeAudioUseCase: Sendable {
             }
             let transcriptionDuration = Date().timeIntervalSince(transcriptionStartTime)
 
-            // Aplicar substituições de vocabulário e preprocessamento
+            return try await finalizePreparedResponse(
+                response: response,
+                transcriptionID: nil,
+                meeting: meeting,
+                inputSource: inputSource,
+                contextItems: contextItems,
+                vocabularyReplacementRules: vocabularyReplacementRules,
+                applyPostProcessing: applyPostProcessing,
+                postProcessingPrompt: postProcessingPrompt,
+                defaultPostProcessingPrompt: defaultPostProcessingPrompt,
+                postProcessingModel: postProcessingModel,
+                autoDetectMeetingType: autoDetectMeetingType,
+                availablePrompts: availablePrompts,
+                postProcessingContext: postProcessingContext,
+                kernelMode: kernelMode,
+                dictationStructuredPostProcessingEnabled: dictationStructuredPostProcessingEnabled,
+                transcriptionDuration: transcriptionDuration,
+                onPhaseChange: onPhaseChange
+            )
+        } catch {
+            onPhaseChange?(.failed)
+            throw error
+        }
+    }
+
+    public func finalizePreparedResponse(
+        response: DomainTranscriptionResponse,
+        transcriptionID: UUID?,
+        meeting: MeetingEntity,
+        inputSource: String? = nil,
+        contextItems: [TranscriptionContextItem] = [],
+        vocabularyReplacementRules: [VocabularyReplacementRule] = [],
+        applyPostProcessing: Bool = false,
+        postProcessingPrompt: DomainPostProcessingPrompt? = nil,
+        defaultPostProcessingPrompt: DomainPostProcessingPrompt? = nil,
+        postProcessingModel: String? = nil,
+        autoDetectMeetingType: Bool = false,
+        availablePrompts: [DomainPostProcessingPrompt] = [],
+        postProcessingContext: String? = nil,
+        kernelMode: IntelligenceKernelMode = .meeting,
+        dictationStructuredPostProcessingEnabled: Bool = false,
+        transcriptionDuration: Double,
+        onPhaseChange: PhaseChangeHandler? = nil
+    ) async throws -> TranscriptionEntity {
+        do {
             let (replacedTranscriptionText, replacedSegments, qualityProfile) = processTranscriptionResult(
                 response: response,
                 vocabularyReplacementRules: vocabularyReplacementRules
             )
 
-            // Preparar input para pós-processamento
             let postProcessingInput = mergedPostProcessingInput(
                 transcriptionText: qualityProfile.normalizedTextForIntelligence,
                 qualityProfile: qualityProfile,
@@ -98,7 +135,6 @@ public final class TranscribeAudioUseCase: Sendable {
                 includeQualityMetadata: kernelMode == .meeting
             )
 
-            // Executar pós-processamento
             let postProcessingConfig = PostProcessingConfiguration(
                 applyPostProcessing: applyPostProcessing,
                 postProcessingPrompt: postProcessingPrompt,
@@ -123,11 +159,11 @@ public final class TranscribeAudioUseCase: Sendable {
             let postProcessingDuration = Date().timeIntervalSince(postProcessingStartTime)
             let resolvedMeeting = meetingWithResolvedTitle(meeting, postProcessingResult: postProcessingResult)
 
-            // Construir entidade de transcrição
             let transcription = TranscriptionEntity(
                 meeting: resolvedMeeting,
                 config: buildConfiguration(
                     .init(
+                        transcriptionID: transcriptionID,
                         response: response,
                         replacedText: replacedTranscriptionText,
                         replacedSegments: replacedSegments,
@@ -146,9 +182,7 @@ public final class TranscribeAudioUseCase: Sendable {
                 )
             )
 
-            // Salvar transcrição
             try await transcriptionStorageRepository.saveTranscription(transcription)
-
             onPhaseChange?(.completed)
             return transcription
         } catch {
@@ -226,6 +260,7 @@ public final class TranscribeAudioUseCase: Sendable {
     }
 
     private struct ConfigurationBuildInput {
+        let transcriptionID: UUID?
         let response: DomainTranscriptionResponse
         let replacedText: String
         let replacedSegments: [DomainTranscriptionSegment]
@@ -266,6 +301,9 @@ public final class TranscribeAudioUseCase: Sendable {
             },
             language: input.response.language
         )
+        if let transcriptionID = input.transcriptionID {
+            config.id = transcriptionID
+        }
         config.contextItems = input.contextItems
         config.processedContent = input.processedContent
         config.canonicalSummary = input.canonicalSummary

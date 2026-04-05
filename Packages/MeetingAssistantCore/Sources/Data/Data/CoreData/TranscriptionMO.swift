@@ -27,6 +27,7 @@ public final class TranscriptionMO: NSManagedObject {
     @NSManaged public var postProcessingDuration: Double
     @NSManaged public var postProcessingModel: String?
     @NSManaged public var meetingType: String?
+    @NSManaged public var lifecycleStateRawValue: String
     @NSManaged public var meetingConversationStateData: Data?
     @NSManaged public var contextItemsData: Data?
     @NSManaged public var canonicalSummaryData: Data?
@@ -54,6 +55,15 @@ public extension TranscriptionMO {
         return request
     }
 
+    @nonobjc class func visibleHistoryFetchRequest() -> NSFetchRequest<TranscriptionMO> {
+        let request = fetchRequest()
+        request.predicate = NSPredicate(
+            format: "lifecycleStateRawValue IN %@",
+            [TranscriptionLifecycleState.completed.rawValue, TranscriptionLifecycleState.failed.rawValue]
+        )
+        return request
+    }
+
     // swiftlint:enable force_unwrapping
 
     /// Fetch request para buscar transcrição por ID
@@ -67,7 +77,15 @@ public extension TranscriptionMO {
     /// Fetch request para buscar transcrições de uma reunião
     @nonobjc class func fetchRequest(forMeetingId meetingId: UUID) -> NSFetchRequest<TranscriptionMO> {
         let request = NSFetchRequest<TranscriptionMO>(entityName: "TranscriptionMO")
-        request.predicate = NSPredicate(format: "meeting.id == %@", meetingId as CVarArg)
+        request.predicate = NSCompoundPredicate(
+            andPredicateWithSubpredicates: [
+                NSPredicate(format: "meeting.id == %@", meetingId as CVarArg),
+                NSPredicate(
+                    format: "lifecycleStateRawValue IN %@",
+                    [TranscriptionLifecycleState.completed.rawValue, TranscriptionLifecycleState.failed.rawValue]
+                ),
+            ]
+        )
         request.sortDescriptors = [NSSortDescriptor(key: "createdAt", ascending: false)]
         return request
     }
@@ -118,6 +136,7 @@ extension TranscriptionMO {
         config.postProcessingDuration = postProcessingDuration
         config.postProcessingModel = postProcessingModel
         config.meetingType = meetingType
+        config.lifecycleState = lifecycleState
         config.meetingConversationState = decodeMeetingConversationState()
         config.canonicalSummary = decodeCanonicalSummary()
         config.qualityProfile = decodeTranscriptionQuality()
@@ -141,6 +160,7 @@ extension TranscriptionMO {
         postProcessingDuration = entity.postProcessingDuration
         postProcessingModel = entity.postProcessingModel
         meetingType = entity.meetingType
+        lifecycleStateRawValue = entity.lifecycleState.rawValue
         meetingConversationStateData = encodeMeetingConversationState(entity.meetingConversationState)
         contextItemsData = encodeContextItems(entity.contextItems)
         applyCanonicalSummary(entity.canonicalSummary)
@@ -176,6 +196,7 @@ extension TranscriptionMO {
         transcriptionMO.postProcessingDuration = entity.postProcessingDuration
         transcriptionMO.postProcessingModel = entity.postProcessingModel
         transcriptionMO.meetingType = entity.meetingType
+        transcriptionMO.lifecycleStateRawValue = entity.lifecycleState.rawValue
         transcriptionMO.meetingConversationStateData = transcriptionMO.encodeMeetingConversationState(entity.meetingConversationState)
         transcriptionMO.contextItemsData = transcriptionMO.encodeContextItems(entity.contextItems)
         transcriptionMO.applyCanonicalSummary(entity.canonicalSummary)
@@ -209,6 +230,10 @@ extension TranscriptionMO {
     private func encodeMeetingConversationState(_ state: MeetingConversationState?) -> Data? {
         guard let state else { return nil }
         return try? Self.meetingConversationStateEncoder.encode(state)
+    }
+
+    private var lifecycleState: TranscriptionLifecycleState {
+        TranscriptionLifecycleState(rawValue: lifecycleStateRawValue) ?? .completed
     }
 
     private func decodeCanonicalSummary() -> CanonicalSummary? {

@@ -21,6 +21,10 @@ public extension FileSystemStorageService {
         } catch {
             AppLogger.fault("Failed to create storage directories", category: .databaseManager, error: error)
         }
+
+        Task { [weak self] in
+            try? await self?.cleanupStaleDictationCheckpoints()
+        }
     }
 
     func createRecordingURL(for meeting: Meeting, type: RecordingType) -> URL {
@@ -72,15 +76,6 @@ public extension FileSystemStorageService {
         await coreDataStack.sanitizeMeetingOnlyPresentationDataIfNeeded(
             checkpointKey: Keys.didSanitizeNonMeetingPresentationDataV1
         )
-
-        guard transcription.capturePurpose != .dictation else {
-            AppLogger.info(
-                "Skipped transcription persistence for dictation",
-                category: .databaseManager,
-                extra: ["id": transcription.id.uuidString]
-            )
-            return
-        }
 
         let entity = Self.convertToEntity(transcription)
         try await coreDataTranscriptionRepository.saveTranscription(entity)
@@ -174,6 +169,28 @@ public extension FileSystemStorageService {
             guard let path = meta.audioFilePath else { return nil }
             return standardizePath(path: path)
         })
+    }
+
+    func cleanupStaleDictationCheckpoints() async throws {
+        try await coreDataStack.performBackgroundTask { context in
+            let request = TranscriptionMO.fetchRequest()
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+                NSPredicate(
+                    format: "lifecycleStateRawValue IN %@",
+                    [TranscriptionLifecycleState.partial.rawValue, TranscriptionLifecycleState.finalizing.rawValue]
+                ),
+                NSPredicate(format: "meeting.capturePurposeRawValue == %@", CapturePurpose.dictation.rawValue),
+            ])
+
+            let results = try context.fetch(request)
+            guard !results.isEmpty else { return }
+
+            for transcription in results {
+                context.delete(transcription)
+            }
+
+            try context.save()
+        }
     }
 
     internal static func computeRetentionCleanupPreviewSync(context: RetentionPreviewContext) -> RetentionCleanupPreview {
@@ -325,6 +342,11 @@ public extension FileSystemStorageService {
 
     internal static func buildMetadataPredicate(for query: TranscriptionMetadataQuery) -> NSPredicate? {
         var predicates: [NSPredicate] = []
+
+        if !query.includeNonVisibleLifecycleStates {
+            let visibleStates = [TranscriptionLifecycleState.completed.rawValue, TranscriptionLifecycleState.failed.rawValue]
+            predicates.append(NSPredicate(format: "lifecycleStateRawValue IN %@", visibleStates))
+        }
 
         switch query.sourceFilter {
         case .all:

@@ -66,6 +66,23 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
     private var injectedEngine: AVAudioEngine?
 
+    private final class MixedBufferCallbackStorage: @unchecked Sendable {
+        private let lock = NSLock()
+        private var callback: (@Sendable (AVAudioPCMBuffer) -> Void)?
+
+        func get() -> (@Sendable (AVAudioPCMBuffer) -> Void)? {
+            lock.lock()
+            defer { lock.unlock() }
+            return callback
+        }
+
+        func set(_ callback: (@Sendable (AVAudioPCMBuffer) -> Void)?) {
+            lock.lock()
+            self.callback = callback
+            lock.unlock()
+        }
+    }
+
     // MARK: - System Audio Integration
 
     let systemRecorder = SystemAudioRecorder.shared
@@ -97,6 +114,12 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     private var fallbackMeterTimer: Timer?
     private var settingsSubscriptions = Set<AnyCancellable>()
     private var lastMeterSnapshotDate: Date?
+    private let mixedBufferCallbackStorage = MixedBufferCallbackStorage()
+
+    public nonisolated var onMixedAudioBuffer: (@Sendable (AVAudioPCMBuffer) -> Void)? {
+        get { mixedBufferCallbackStorage.get() }
+        set { mixedBufferCallbackStorage.set(newValue) }
+    }
 
     init() {
         microphoneInputSelectionResolver = MicrophoneInputSelectionResolver(deviceManager: deviceManager)
@@ -116,6 +139,11 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             Task { @MainActor [weak self] in
                 self?.handleWorkerError(error)
             }
+        }
+
+        let mixedBufferCallbackStorage = mixedBufferCallbackStorage
+        worker.setOnProcessedBuffer { buffer in
+            mixedBufferCallbackStorage.get()?(buffer)
         }
 
         AppSettingsStore.shared.$recordingIndicatorStyle
@@ -265,7 +293,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
             // and output devices differ, which can malfunction with USB microphones
             // (zero-filled buffers, reconfig loops). AVAudioRecorder uses a simple
             // I/O path without aggregate devices — proven to capture audio correctly.
-            if source == .microphone {
+            if source == .microphone, !shouldUseRealtimeMicrophonePipeline {
                 try await startSimpleMicRecording(to: outputURL)
                 scheduleOutputMuteIfNeeded()
                 return
@@ -515,6 +543,12 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
             audioEngine = nil
         }
+    }
+
+    private var shouldUseRealtimeMicrophonePipeline: Bool {
+        FeatureFlags.enableIncrementalDictationTranscription
+            && FeatureFlags.enableRealtimeVADForDictation
+            && onMixedAudioBuffer != nil
     }
 
     private var hasPendingStartupResources: Bool {

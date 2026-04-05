@@ -204,6 +204,12 @@ public enum CoreDataModel {
         meetingTypeAttribute.attributeType = .stringAttributeType
         meetingTypeAttribute.isOptional = true
 
+        let lifecycleStateAttribute = NSAttributeDescription()
+        lifecycleStateAttribute.name = "lifecycleStateRawValue"
+        lifecycleStateAttribute.attributeType = .stringAttributeType
+        lifecycleStateAttribute.isOptional = false
+        lifecycleStateAttribute.defaultValue = TranscriptionLifecycleState.completed.rawValue
+
         let meetingConversationStateDataAttribute = NSAttributeDescription()
         meetingConversationStateDataAttribute.name = "meetingConversationStateData"
         meetingConversationStateDataAttribute.attributeType = .binaryDataAttributeType
@@ -285,6 +291,7 @@ public enum CoreDataModel {
             postProcessingDurationAttribute,
             postProcessingModelAttribute,
             meetingTypeAttribute,
+            lifecycleStateAttribute,
             meetingConversationStateDataAttribute,
             transcriptionContextItemsAttribute,
             canonicalSummaryDataAttribute,

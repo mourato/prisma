@@ -80,6 +80,7 @@ class MockTranscriptionClient: TranscriptionService {
     var fetchServiceStatusCallCount = 0
     var transcribeCallCount = 0
     var lastTranscribeAudioURL: URL?
+    var lastTranscribeSamples: [Float] = []
 
     func healthCheck() async throws -> Bool {
         healthCheckCallCount += 1
@@ -120,6 +121,25 @@ class MockTranscriptionClient: TranscriptionService {
         if shouldFailTranscription {
             throw NSError(domain: "MockTranscription", code: 2, userInfo: [NSLocalizedDescriptionKey: "Transcription failed"])
         }
+        return TranscriptionResponse(
+            text: mockText,
+            segments: mockSegments,
+            language: mockLanguage,
+            durationSeconds: mockDurationSeconds,
+            model: mockModel,
+            processedAt: Date().ISO8601Format(),
+            confidenceScore: mockConfidenceScore
+        )
+    }
+
+    func transcribe(samples: [Float]) async throws -> TranscriptionResponse {
+        transcribeCallCount += 1
+        lastTranscribeSamples = samples
+
+        if shouldFailTranscription {
+            throw NSError(domain: "MockTranscription", code: 2, userInfo: [NSLocalizedDescriptionKey: "Transcription failed"])
+        }
+
         return TranscriptionResponse(
             text: mockText,
             segments: mockSegments,

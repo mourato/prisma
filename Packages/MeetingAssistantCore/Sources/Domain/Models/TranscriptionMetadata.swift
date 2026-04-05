@@ -18,6 +18,7 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
     public let duration: TimeInterval
     public let audioFilePath: String?
     public let inputSource: String?
+    public let lifecycleState: TranscriptionLifecycleState
     public let summarySchemaVersion: Int
     public let summaryGroundedInTranscript: Bool
     public let summaryContainsSpeculation: Bool
@@ -52,6 +53,7 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
         case duration
         case audioFilePath
         case inputSource
+        case lifecycleState
         case summarySchemaVersion
         case summaryGroundedInTranscript
         case summaryContainsSpeculation
@@ -78,6 +80,7 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
         duration: TimeInterval,
         audioFilePath: String?,
         inputSource: String?,
+        lifecycleState: TranscriptionLifecycleState = .completed,
         summarySchemaVersion: Int = 0,
         summaryGroundedInTranscript: Bool = false,
         summaryContainsSpeculation: Bool = false,
@@ -103,6 +106,7 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
         self.duration = duration
         self.audioFilePath = audioFilePath
         self.inputSource = inputSource
+        self.lifecycleState = lifecycleState
         self.summarySchemaVersion = summarySchemaVersion
         self.summaryGroundedInTranscript = summaryGroundedInTranscript
         self.summaryContainsSpeculation = summaryContainsSpeculation
@@ -131,6 +135,7 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
         let duration = try container.decode(TimeInterval.self, forKey: .duration)
         let audioFilePath = try container.decodeIfPresent(String.self, forKey: .audioFilePath)
         let inputSource = try container.decodeIfPresent(String.self, forKey: .inputSource)
+        let lifecycleState = try container.decodeIfPresent(TranscriptionLifecycleState.self, forKey: .lifecycleState) ?? .completed
         let summarySchemaVersion = try container.decodeIfPresent(Int.self, forKey: .summarySchemaVersion) ?? 0
         let summaryGroundedInTranscript = try container.decodeIfPresent(Bool.self, forKey: .summaryGroundedInTranscript) ?? false
         let summaryContainsSpeculation = try container.decodeIfPresent(Bool.self, forKey: .summaryContainsSpeculation) ?? false
@@ -156,6 +161,7 @@ public struct TranscriptionMetadata: Identifiable, Codable, Hashable, Sendable {
             duration: duration,
             audioFilePath: audioFilePath,
             inputSource: inputSource,
+            lifecycleState: lifecycleState,
             summarySchemaVersion: summarySchemaVersion,
             summaryGroundedInTranscript: summaryGroundedInTranscript,
             summaryContainsSpeculation: summaryContainsSpeculation,
@@ -173,16 +179,19 @@ public struct TranscriptionMetadataQuery: Hashable, Sendable {
     public let dateFilter: DateFilter
     public let searchText: String
     public let appRawValue: String?
+    public let includeNonVisibleLifecycleStates: Bool
 
     public init(
         sourceFilter: RecordingSourceFilter = .all,
         dateFilter: DateFilter = .allEntries,
         searchText: String = "",
-        appRawValue: String? = nil
+        appRawValue: String? = nil,
+        includeNonVisibleLifecycleStates: Bool = false
     ) {
         self.sourceFilter = sourceFilter
         self.dateFilter = dateFilter
         self.searchText = searchText
         self.appRawValue = appRawValue
+        self.includeNonVisibleLifecycleStates = includeNonVisibleLifecycleStates
     }
 }

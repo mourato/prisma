@@ -110,6 +110,38 @@ public class LocalTranscriptionClient {
         )
     }
 
+    public func transcribe(samples: [Float]) async throws -> TranscriptionResponse {
+        logger.info("Starting local in-memory transcription for \(samples.count) samples")
+
+        if manager.modelState != .loaded {
+            await manager.loadModels()
+        }
+
+        let startTime = Date()
+        let (text, segmentsFromASR, confidenceScore) = try await manager.transcribe(samples: samples)
+        let duration = Date().timeIntervalSince(startTime)
+        let processedAt = ISO8601DateFormatter().string(from: Date())
+
+        let segments = segmentsFromASR.map { segment in
+            Transcription.Segment(
+                speaker: Transcription.unknownSpeaker,
+                text: segment.text,
+                startTime: segment.startTime,
+                endTime: segment.endTime
+            )
+        }
+
+        return TranscriptionResponse(
+            text: text,
+            segments: segments,
+            language: "auto",
+            durationSeconds: duration,
+            model: "parakeet-tdt-0.6b-v3-coreml",
+            processedAt: processedAt,
+            confidenceScore: confidenceScore
+        )
+    }
+
     /// Merges ASR segments with Speaker segments to produce aligned transcription segments.
     private func merge(
         text: String,
