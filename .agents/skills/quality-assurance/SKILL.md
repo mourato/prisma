@@ -23,7 +23,7 @@ Minimum expectation:
 
 - Run staged lint/format checks (or equivalent lightweight checks).
 - Run scoped checks first (targeted tests + relevant scope checks) when the change could affect behavior.
-- Before push/merge, run `make test-agent`.
+- Before push/merge, run `make scope-check` or `make test-agent`.
 
 ### Full lane (Medium/High risk)
 
@@ -39,7 +39,7 @@ Minimum expectation:
 
 Use this order during implementation to optimize feedback loop time:
 
-1. Targeted tests (`./scripts/run-tests.sh --file ...` / `--test ...`)
+1. Targeted tests (`./scripts/run-tests.sh --suite dev --file ...` / `--test ...`)
 2. Narrow build confidence (`make build-agent` or `make build`)
 3. Scope-specific checks (`make preview-check`, `make arch-check`)
 4. Full suite gate (`make build-test`) when required by lane or escalation triggers
@@ -68,6 +68,10 @@ Run these only when relevant to the changed scope:
 ```bash
 # Core
 make build-test
+make test-full
+make test-smoke
+make test-sensitive
+make test-appkit
 make lint
 make preflight
 
@@ -91,8 +95,8 @@ make preflight-agent
 make scope-check-agent
 
 # Targeted test workflows
-./scripts/run-tests.sh --file <TestFile>
-./scripts/run-tests.sh --test <testName>
+./scripts/run-tests.sh --suite dev --file <TestFile>
+./scripts/run-tests.sh --suite dev --test <testName>
 ./scripts/run-tests.sh --verbose
 ./scripts/run-tests.sh --agent
 ```
@@ -110,7 +114,7 @@ Compact-mode notes:
   - `chmod +x scripts/hooks/pre-commit scripts/hooks/pre-push scripts/hooks/first-commit-version-bump.sh`
   - `find scripts/hooks -maxdepth 1 -type f ! -perm -u+x -print` (must print nothing).
 - `pre-commit` is optimized for speed and can run lightweight staged checks.
-- `pre-push` enforces `make test` unless explicitly bypassed.
+- `pre-push` enforces scoped validation unless explicitly bypassed.
 
 Emergency bypasses should be rare and followed by immediate remediation.
 
@@ -129,7 +133,7 @@ brew install swiftlint swiftformat
 
 ### Build/Test mismatch
 
-- Prefer `make test` for Xcode parity.
+- Prefer `make test-parity` for Xcode parity.
 - Use targeted tests to isolate issues before running full suite again.
 
 ## References

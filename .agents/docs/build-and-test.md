@@ -14,7 +14,13 @@ make build
 ```bash
 make build-test         # Run build + test in sequence (unified gate)
 make build              # Debug build only
-make test               # Run tests only
+make test               # Fast local dev suite
+make test-full          # Broad swift-test suite
+make test-smoke         # Curated smoke suite
+make test-perf          # Isolated performance suite
+make test-sensitive     # Isolated sensitive subsystem suite
+make test-appkit        # Isolated AppKit lifecycle suite
+make test-parity        # Xcode parity run
 make scope-check        # Scoped validation with smart targeted mapping + escalation
 make test-ci-strict     # Xcode test run without retry/fallback
 make preflight          # Build + Test + Lint + Benchmark (full validation)
@@ -99,14 +105,20 @@ Use `xcodebuild-safe.sh` to avoid SwiftPM transitive-module resolution instabili
 ```bash
 make test
 make test-agent          # Agent-focused, compact output
+make test-full
+make test-smoke
+make test-perf
+make test-sensitive
+make test-appkit
+make test-parity
 make test-verbose        # Detailed output
 make test-ci-strict      # Strict xcodebuild parity mode
 ```
 
 ### Run specific tests
 ```bash
-./scripts/run-tests.sh --file RecordingViewModelTests
-./scripts/run-tests.sh --test testInitialState
+./scripts/run-tests.sh --suite dev --file RecordingViewModelTests
+./scripts/run-tests.sh --suite dev --test testInitialState
 ./scripts/run-tests.sh --verbose
 ./scripts/run-tests.sh --agent
 ```
@@ -119,9 +131,12 @@ Use this sequence while implementing, then keep lane merge gates at the end:
 # Canonical smart command (auto-maps tests, escalates to full gate when needed)
 make scope-check
 
+# Fastest confidence pass
+make test-smoke
+
 # 1) Targeted tests for changed behavior
-./scripts/run-tests.sh --file <TestFile>
-./scripts/run-tests.sh --test <testName>
+./scripts/run-tests.sh --suite dev --file <TestFile>
+./scripts/run-tests.sh --suite dev --test <testName>
 
 # 2) Narrow compile confidence
 make build-agent
@@ -213,8 +228,8 @@ On failure, scripts print compact excerpts to terminal while keeping full logs o
 ## Minimum Verification Gates
 
 **Before push/merge (mandatory):**
-- ✓ Fast lane: `make test-agent` — all tests pass (agent-compact output)
-- ✓ Full lane: `make build-test` — build + test gate passes
+- ✓ Fast lane: `make scope-check` or `make test-agent`
+- ✓ Full lane: `make test-full` + `make build-test`
 
 **Recommended before merge:**
 - ✓ `make preflight` — full validation
@@ -231,7 +246,7 @@ On failure, scripts print compact excerpts to terminal while keeping full logs o
 | Goal | Command |
 |------|---------|
 | Local development loop | `make build && make run` |
-| Before committing | `make build-test && make lint` |
+| Before committing | `make test-smoke && make lint` |
 | Before push/release (recommended) | `make deliverable-gate` |
 | Pre-merge validation | `make preflight` |
 | Fast local feedback | `make preflight-fast` |
@@ -248,7 +263,7 @@ On failure, scripts print compact excerpts to terminal while keeping full logs o
 - Clear build cache: `rm -rf build/`
 
 **Tests fail intermittently:**
-- Run tests in isolation: `./scripts/run-tests.sh --file SpecificTestFile`
+- Run tests in isolation: `./scripts/run-tests.sh --suite dev --file SpecificTestFile`
 - Check for concurrency/timing issues in test code
 
 **Linter or formatter issues:**
