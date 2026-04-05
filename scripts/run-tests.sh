@@ -169,7 +169,6 @@ clear_stale_swiftpm_lock() {
 }
 
 if [ "${AGENT_MODE}" -eq 1 ]; then
-    ma_agent_prepare_sandbox_env "${PROJECT_DIR}"
     LOG_DIR="$(ma_agent_prepare_log_dir)"
     LOG_PATH="${LOG_DIR}/test-swift-${SAFE_TARGET_LABEL}.log"
     RESULT_PATH="${LOG_DIR}/test-swift-${SAFE_TARGET_LABEL}.result.json"
@@ -187,15 +186,40 @@ fi
 
 run_swift_tests() {
     cd "${PROJECT_DIR}/Packages/MeetingAssistantCore"
-    clear_stale_swiftpm_lock
-    swift package resolve >/dev/null
+    local scratch_path=""
+    if [ "${AGENT_MODE}" -eq 1 ]; then
+        scratch_path="${PROJECT_DIR}/.tmp/swiftpm-agent"
+        mkdir -p "${scratch_path}"
+    else
+        clear_stale_swiftpm_lock
+    fi
+
+    if [ "${AGENT_MODE}" -eq 1 ]; then
+        swift package resolve --disable-sandbox --scratch-path "${scratch_path}" >/dev/null
+    else
+        swift package resolve >/dev/null
+    fi
+
+    local fluidaudio_checkout="${PROJECT_DIR}/Packages/MeetingAssistantCore/.build/checkouts/FluidAudio"
+    if [ -n "${scratch_path}" ]; then
+        fluidaudio_checkout="${scratch_path}/checkouts/FluidAudio"
+    fi
+
     if [ -x "${PATCH_SCRIPT}" ]; then
-        "${PATCH_SCRIPT}" "${PROJECT_DIR}/Packages/MeetingAssistantCore/.build/checkouts/FluidAudio"
+        "${PATCH_SCRIPT}" "${fluidaudio_checkout}"
     fi
     if [ "${#TEST_ARGS[@]}" -gt 0 ]; then
-        swift test "${TEST_ARGS[@]}"
+        if [ "${AGENT_MODE}" -eq 1 ]; then
+            swift test --disable-sandbox --scratch-path "${scratch_path}" "${TEST_ARGS[@]}"
+        else
+            swift test "${TEST_ARGS[@]}"
+        fi
     else
-        swift test
+        if [ "${AGENT_MODE}" -eq 1 ]; then
+            swift test --disable-sandbox --scratch-path "${scratch_path}"
+        else
+            swift test
+        fi
     fi
 }
 

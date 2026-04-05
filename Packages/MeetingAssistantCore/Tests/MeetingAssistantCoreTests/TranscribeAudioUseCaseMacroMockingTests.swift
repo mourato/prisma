@@ -62,7 +62,7 @@ final class TranscribeAudioUseCaseMacroMockingTests: XCTestCase {
 
         XCTAssertEqual(transcription.text, "Hello world")
         XCTAssertEqual(saved.count, 1)
-        XCTAssertEqual(transcriptionRepository.healthCheckCallCount, 1)
+        XCTAssertEqual(transcriptionRepository.healthCheckCallCount, 0)
         XCTAssertEqual(transcriptionRepository.transcribeCalls.count, 1)
     }
 

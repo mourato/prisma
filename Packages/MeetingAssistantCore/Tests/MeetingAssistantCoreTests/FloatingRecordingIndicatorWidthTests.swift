@@ -100,7 +100,10 @@ final class FloatingRecordingIndicatorWidthTests: XCTestCase {
     }
 
     func testSuperWaveCount_IsEighty() {
-        XCTAssertEqual(FloatingRecordingIndicatorViewUtilities.waveCount(for: .`super`), 80)
+        XCTAssertEqual(
+            FloatingRecordingIndicatorViewUtilities.waveCount(for: .`super`),
+            AppDesignSystem.Layout.recordingIndicatorSuperWaveCount
+        )
     }
 
     func testSuperWaveformWidth_UsesCompressedMetrics() {

@@ -73,6 +73,10 @@ ma_agent_progress_enable
 
 export MA_SKIP_OVERLAY_LIFECYCLE_TESTS=1
 
+if [ "${AGENT_MODE}" -eq 1 ]; then
+    ma_agent_prepare_sandbox_env "${PROJECT_DIR}"
+fi
+
 if [ "${STRICT_XCODE}" -eq 1 ]; then
     if [ -z "${STRICT_DERIVED_DATA_PATH}" ]; then
         STRICT_DERIVED_DATA_PATH="$(mktemp -d /tmp/ma-xcode-strict-derived-data.XXXXXX)"
@@ -202,7 +206,7 @@ run_swift_fallback_tests() {
     local fallback_log_path="$1"
 
     if [ "${AGENT_MODE}" -eq 1 ]; then
-        MA_AGENT_MODE=0 "${SCRIPT_DIR}/run-tests.sh" --quiet >"${fallback_log_path}" 2>&1
+        MA_AGENT_MODE=1 MA_AGENT_LOG_DIR="${LOG_DIR}" "${SCRIPT_DIR}/run-tests.sh" --quiet --agent >"${fallback_log_path}" 2>&1
     else
         "${SCRIPT_DIR}/run-tests.sh" --quiet >"${fallback_log_path}" 2>&1
     fi

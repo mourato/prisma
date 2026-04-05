@@ -117,6 +117,7 @@ public final class MeetingNotesMarkdownDocumentStore: MeetingNotesMarkdownDocume
     private let now: () -> Date
     private let writeCoordinator: MeetingNotesMarkdownWriteCoordinator?
     private var nextWriteSequence: UInt64 = 0
+    private var pendingWriteSubmissionTasks: [Task<Void, Never>] = []
 
     private let isoFormatterWithFractionalSeconds: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
@@ -306,7 +307,7 @@ public final class MeetingNotesMarkdownDocumentStore: MeetingNotesMarkdownDocume
     private func saveContent(_ content: MeetingNotesContent, for key: MeetingNotesDocumentKey) {
         if let writeCoordinator {
             let sequence = consumeNextWriteSequence()
-            writeCoordinator.enqueueSaveFromAnyThread(
+            let submissionTask = writeCoordinator.enqueueSaveFromAnyThread(
                 content: content,
                 for: key,
                 sequence: sequence,
@@ -314,6 +315,7 @@ public final class MeetingNotesMarkdownDocumentStore: MeetingNotesMarkdownDocume
                 includeRawEventIdentifier: userDefaults.bool(forKey: Keys.includeRawEventIdentifier),
                 timestamp: now()
             )
+            pendingWriteSubmissionTasks.append(submissionTask)
             return
         }
         writeContent(content, for: key, overwriteExisting: true)
@@ -322,7 +324,8 @@ public final class MeetingNotesMarkdownDocumentStore: MeetingNotesMarkdownDocume
     private func deleteContent(for key: MeetingNotesDocumentKey) {
         if let writeCoordinator {
             let sequence = consumeNextWriteSequence()
-            writeCoordinator.enqueueDeleteFromAnyThread(for: key, sequence: sequence)
+            let submissionTask = writeCoordinator.enqueueDeleteFromAnyThread(for: key, sequence: sequence)
+            pendingWriteSubmissionTasks.append(submissionTask)
             return
         }
 
@@ -343,6 +346,13 @@ public final class MeetingNotesMarkdownDocumentStore: MeetingNotesMarkdownDocume
     }
 
     func flushPendingWritesForTests() async {
+        while !pendingWriteSubmissionTasks.isEmpty {
+            let tasks = pendingWriteSubmissionTasks
+            pendingWriteSubmissionTasks.removeAll(keepingCapacity: true)
+            for task in tasks {
+                await task.value
+            }
+        }
         await writeCoordinator?.flush()
     }
 
@@ -757,6 +767,7 @@ private actor MeetingNotesMarkdownWriteCoordinator {
         self.coalescingNanoseconds = coalescingNanoseconds
     }
 
+    @discardableResult
     nonisolated func enqueueSaveFromAnyThread(
         content: MeetingNotesContent,
         for key: MeetingNotesDocumentKey,
@@ -764,7 +775,7 @@ private actor MeetingNotesMarkdownWriteCoordinator {
         overwriteExisting: Bool,
         includeRawEventIdentifier: Bool,
         timestamp: Date
-    ) {
+    ) -> Task<Void, Never> {
         Task {
             await enqueueSave(
                 content: content,
@@ -777,7 +788,8 @@ private actor MeetingNotesMarkdownWriteCoordinator {
         }
     }
 
-    nonisolated func enqueueDeleteFromAnyThread(for key: MeetingNotesDocumentKey, sequence: UInt64) {
+    @discardableResult
+    nonisolated func enqueueDeleteFromAnyThread(for key: MeetingNotesDocumentKey, sequence: UInt64) -> Task<Void, Never> {
         Task {
             await enqueueDelete(for: key, sequence: sequence)
         }

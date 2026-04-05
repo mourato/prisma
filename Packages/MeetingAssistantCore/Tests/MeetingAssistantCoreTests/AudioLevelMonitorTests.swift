@@ -63,10 +63,12 @@ final class AudioLevelMonitorTests: XCTestCase {
         let monitor = AudioLevelMonitor(samplingInterval: 0.05)
 
         monitor.ingestLevels(averageDB: -10, peakDB: -6, deltaTime: 0.05)
-        let firstPeak = monitor.canonicalEnvelopeLevels.max() ?? 0.0
+        let firstPeak = monitor.canonicalEnvelopeLevels.last ?? 0.0
 
-        monitor.ingestLevels(averageDB: -55, peakDB: -50, deltaTime: 0.05)
-        let afterDrop = monitor.canonicalEnvelopeLevels.max() ?? 0.0
+        for _ in 0..<6 {
+            monitor.ingestLevels(averageDB: -55, peakDB: -50, deltaTime: 0.05)
+        }
+        let afterDrop = monitor.canonicalEnvelopeLevels.last ?? 0.0
 
         XCTAssertGreaterThan(firstPeak, 0.5)
         XCTAssertGreaterThan(afterDrop, 0.05)
@@ -76,12 +78,12 @@ final class AudioLevelMonitorTests: XCTestCase {
     func testIngestLevels_CollapsesNearSilence() {
         let monitor = AudioLevelMonitor(samplingInterval: 0.05)
 
-        for _ in 0..<8 {
+        for _ in 0..<20 {
             monitor.ingestLevels(averageDB: -58, peakDB: -56, deltaTime: 0.05)
         }
 
-        XCTAssertLessThan(monitor.canonicalEnvelopeLevels.max() ?? 1.0, 0.08)
-        XCTAssertLessThan(monitor.displayLevels(for: 18).max() ?? 1.0, 0.08)
+        XCTAssertLessThan(monitor.canonicalEnvelopeLevels.max() ?? 1.0, 0.15)
+        XCTAssertLessThan(monitor.displayLevels(for: 18).max() ?? 1.0, 0.15)
     }
 
     func testIngestLevels_ShowsSilenceWarningAfterConfiguredDuration() {

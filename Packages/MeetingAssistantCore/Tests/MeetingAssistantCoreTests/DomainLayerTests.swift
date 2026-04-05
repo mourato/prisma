@@ -124,7 +124,6 @@ final class DomainLayerTests: XCTestCase {
             processedAt: "now"
         )
 
-        mockTranscriptionRepo.healthCheckHandler = { () async throws -> Bool in true }
         mockTranscriptionRepo.transcribeHandler = { _, _ in response }
         mockTranscriptionStorageRepo.saveTranscriptionHandler = { _ in }
 
@@ -134,7 +133,7 @@ final class DomainLayerTests: XCTestCase {
         // Then
         XCTAssertEqual(transcription.text, "Hello world")
         XCTAssertEqual(transcription.meeting.id, meeting.id)
-        XCTAssertEqual(mockTranscriptionRepo.healthCheckCallCount, 1)
+        XCTAssertEqual(mockTranscriptionRepo.healthCheckCallCount, 0)
         XCTAssertEqual(mockTranscriptionRepo.transcribeCalls.count, 1)
         XCTAssertEqual(mockTranscriptionRepo.transcribeCalls.first?.audioURL, audioURL)
         XCTAssertEqual(mockTranscriptionStorageRepo.saveTranscriptionCalls.count, 1)

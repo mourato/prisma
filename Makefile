@@ -22,7 +22,7 @@ help:
 	@echo ""
 	@echo "Test Commands:"
 	@echo "  make test           - Run all tests (strict xcodebuild, no fallback/retry)"
-	@echo "  make test-agent     - Run compact strict xcodebuild test output for AI agents"
+	@echo "  make test-agent     - Run compact swift test output for AI agents"
 	@echo "  make test-swift     - Run tests with swift test (faster, no IDE parity)"
 	@echo "  make test-verbose   - Run tests with verbose output"
 	@echo "  make test-strict    - Run tests with strict concurrency checking"
@@ -118,7 +118,7 @@ test:
 	@./scripts/run-tests-xcode.sh --strict-xcode
 
 test-agent:
-	@MA_AGENT_MODE=1 MA_AGENT_LOG_DIR="$(AGENT_LOG_DIR)" ./scripts/run-tests-xcode.sh --strict-xcode --agent
+	@MA_AGENT_MODE=1 MA_AGENT_LOG_DIR="$(AGENT_LOG_DIR)" ./scripts/run-tests.sh --agent
 
 test-swift:
 	@echo -e "$(BLUE)Running tests (swift test)...$(NC)"

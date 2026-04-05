@@ -348,6 +348,9 @@ class MockStorageService: StorageService, @unchecked Sendable {
     func loadMetadata(matching query: TranscriptionMetadataQuery) async throws -> [TranscriptionMetadata] {
         allMetadata()
             .filter { metadata in
+                query.includeNonVisibleLifecycleStates || metadata.lifecycleState.isVisibleInHistory
+            }
+            .filter { metadata in
                 switch query.sourceFilter {
                 case .all:
                     true
@@ -398,7 +401,8 @@ class MockStorageService: StorageService, @unchecked Sendable {
                 isPostProcessed: transcription.isPostProcessed,
                 duration: transcription.meeting.duration,
                 audioFilePath: transcription.meeting.audioFilePath,
-                inputSource: transcription.inputSource
+                inputSource: transcription.inputSource,
+                lifecycleState: transcription.lifecycleState
             )
         }
     }

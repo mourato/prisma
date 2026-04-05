@@ -1,0 +1,116 @@
+import AVFoundation
+@testable import MeetingAssistantCore
+@testable import MeetingAssistantCoreUI
+import XCTest
+
+@MainActor
+final class IncrementalDictationTranscriptionCoordinatorTests: XCTestCase {
+    func testAppend_LongSpeechPersistsPartialCheckpointBeforeFinish() async throws {
+        let storage = MockStorageService()
+        let transcriptionClient = MockTranscriptionClient()
+        transcriptionClient.mockText = "partial"
+        let previewRecorder = PreviewRecorder()
+        let coordinator = IncrementalDictationTranscriptionCoordinator(
+            transcriptionID: UUID(),
+            meeting: makeMeeting(),
+            inputSource: "microphone",
+            storage: storage,
+            transcriptionClient: transcriptionClient,
+            callbacks: .init(
+                onPreviewTextChanged: { text in previewRecorder.values.append(text) },
+                onProcessedDurationChanged: { _ in }
+            )
+        )
+
+        try await coordinator.start()
+        try await coordinator.append(buffer: makeBuffer(segments: [.tone(13.0, amplitude: 0.25)]))
+
+        XCTAssertGreaterThanOrEqual(storage.savedTranscriptions.count, 2)
+        XCTAssertEqual(storage.savedTranscriptions[0].lifecycleState, .partial)
+        XCTAssertTrue(storage.savedTranscriptions.contains(where: { $0.lifecycleState == .partial && !$0.rawText.isEmpty }))
+        XCTAssertEqual(transcriptionClient.transcribeCallCount, 1)
+        XCTAssertFalse(previewRecorder.values.isEmpty)
+
+        let result = try await coordinator.finish()
+        XCTAssertEqual(result.response.text, "partial partial")
+        XCTAssertEqual(storage.savedTranscriptions.last?.lifecycleState, .finalizing)
+        XCTAssertEqual(transcriptionClient.transcribeCallCount, 2)
+    }
+
+    func testFinish_WhenTranscriptionFails_PersistsFailedCheckpoint() async throws {
+        let storage = MockStorageService()
+        let transcriptionClient = MockTranscriptionClient()
+        transcriptionClient.shouldFailTranscription = true
+        let coordinator = IncrementalDictationTranscriptionCoordinator(
+            transcriptionID: UUID(),
+            meeting: makeMeeting(),
+            inputSource: "microphone",
+            storage: storage,
+            transcriptionClient: transcriptionClient,
+            callbacks: .init(
+                onPreviewTextChanged: { _ in },
+                onProcessedDurationChanged: { _ in }
+            )
+        )
+
+        try await coordinator.start()
+        try await coordinator.append(buffer: makeBuffer(segments: [.tone(1.0, amplitude: 0.25)]))
+
+        do {
+            _ = try await coordinator.finish()
+            XCTFail("Expected finish to throw")
+        } catch {}
+
+        XCTAssertEqual(storage.savedTranscriptions.last?.lifecycleState, .failed)
+    }
+
+    private func makeMeeting() -> Meeting {
+        Meeting(
+            app: .unknown,
+            capturePurpose: .dictation,
+            title: "Dictation Test",
+            audioFilePath: "/tmp/dictation-test.wav"
+        )
+    }
+
+    private func makeBuffer(segments: [CoordinatorSampleSegment], sampleRate: Double = 16_000) throws -> AVAudioPCMBuffer {
+        let samples = segments.flatMap { segment in
+            let sampleCount = Int(segment.duration * sampleRate)
+            return (0..<sampleCount).map { frameIndex in
+                segment.sample(at: frameIndex, sampleRate: sampleRate)
+            }
+        }
+
+        let format = try XCTUnwrap(AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1))
+        let frameCount = AVAudioFrameCount(samples.count)
+        let buffer = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount))
+        buffer.frameLength = frameCount
+        guard let channelData = buffer.floatChannelData else {
+            throw NSError(domain: "IncrementalDictationTranscriptionCoordinatorTests", code: 1)
+        }
+
+        for (index, sample) in samples.enumerated() {
+            channelData[0][index] = sample
+        }
+
+        return buffer
+    }
+}
+
+private final class PreviewRecorder: @unchecked Sendable {
+    var values: [String] = []
+}
+
+private struct CoordinatorSampleSegment {
+    let duration: Double
+    let amplitude: Float
+
+    static func tone(_ duration: Double, amplitude: Float) -> CoordinatorSampleSegment {
+        CoordinatorSampleSegment(duration: duration, amplitude: amplitude)
+    }
+
+    func sample(at frameIndex: Int, sampleRate: Double) -> Float {
+        let angle = 2 * Double.pi * Double(frameIndex) * 220 / sampleRate
+        return sin(Float(angle)) * amplitude
+    }
+}
