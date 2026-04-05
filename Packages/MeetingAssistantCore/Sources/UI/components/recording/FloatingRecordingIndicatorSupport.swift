@@ -274,14 +274,75 @@ enum FloatingRecordingIndicatorViewUtilities {
     }
 
     static func processingProgressReservedWidth(for size: FloatingRecordingIndicatorView.IndicatorSize) -> CGFloat {
+        processingStatusWidth(for: size, processingSnapshot: nil)
+    }
+
+    static func processingStatusWidth(
+        for size: FloatingRecordingIndicatorView.IndicatorSize,
+        processingSnapshot: RecordingIndicatorProcessingSnapshot?
+    ) -> CGFloat {
+        let textWidth = ceil(
+            (processingText(for: processingSnapshot) as NSString).size(
+                withAttributes: [.font: processingStatusFont(for: size)]
+            ).width
+        )
+        let dotsWidth: CGFloat = 15
+        let totalWidth = textWidth + 6 + dotsWidth
+        return min(
+            max(totalWidth, processingStatusMinWidth(for: size)),
+            processingStatusMaxWidth(for: size)
+        )
+    }
+
+    static func processingStatusFont(for size: FloatingRecordingIndicatorView.IndicatorSize) -> NSFont {
+        let pointSize: CGFloat = switch size {
+        case .classic, .super:
+            12
+        case .mini:
+            11
+        }
+        return .systemFont(ofSize: pointSize, weight: .semibold)
+    }
+
+    static func processingStatusMinWidth(for size: FloatingRecordingIndicatorView.IndicatorSize) -> CGFloat {
         switch size {
         case .classic:
-            176
+            112
         case .mini:
-            136
+            92
         case .super:
-            188
+            128
         }
+    }
+
+    static func processingStatusMaxWidth(for size: FloatingRecordingIndicatorView.IndicatorSize) -> CGFloat {
+        switch size {
+        case .classic:
+            220
+        case .mini:
+            180
+        case .super:
+            240
+        }
+    }
+
+    static func processingText(for snapshot: RecordingIndicatorProcessingSnapshot?) -> String {
+        (snapshot ?? defaultProcessingSnapshot()).step.localizedTitleKey.localized
+    }
+
+    static func defaultProcessingSnapshot(
+        for renderState: RecordingIndicatorRenderState = RecordingIndicatorRenderState(
+            mode: .processing,
+            kind: .dictation
+        )
+    ) -> RecordingIndicatorProcessingSnapshot {
+        let step: RecordingIndicatorProcessingStep = switch renderState.kind {
+        case .assistant, .assistantIntegration:
+            .transcribingCommand
+        case .dictation, .meeting:
+            .transcribingAudio
+        }
+        return RecordingIndicatorProcessingSnapshot(step: step)
     }
 
     static func horizontalPadding(for size: FloatingRecordingIndicatorView.IndicatorSize, expanded: Bool) -> CGFloat {
@@ -299,7 +360,8 @@ enum FloatingRecordingIndicatorViewUtilities {
 
     static func clusterWidth(
         for size: FloatingRecordingIndicatorView.IndicatorSize,
-        renderState: RecordingIndicatorRenderState
+        renderState: RecordingIndicatorRenderState,
+        processingSnapshot: RecordingIndicatorProcessingSnapshot? = nil
     ) -> CGFloat {
         var width = AppDesignSystem.Layout.recordingIndicatorDotSize + contentSpacing(for: size)
 
@@ -307,7 +369,7 @@ enum FloatingRecordingIndicatorViewUtilities {
         case .waveform:
             width += waveformWidth(for: size)
         case .processingStatus:
-            width += processingProgressReservedWidth(for: size)
+            width += processingStatusWidth(for: size, processingSnapshot: processingSnapshot)
         }
 
         return width
@@ -332,10 +394,11 @@ enum FloatingRecordingIndicatorViewUtilities {
         for size: FloatingRecordingIndicatorView.IndicatorSize,
         renderState: RecordingIndicatorRenderState,
         layout: RecordingIndicatorOverlayLayout,
-        expanded: Bool
+        expanded: Bool,
+        processingSnapshot: RecordingIndicatorProcessingSnapshot? = nil
     ) -> CGFloat {
         var elementWidths: [CGFloat] = [
-            clusterWidth(for: size, renderState: renderState),
+            clusterWidth(for: size, renderState: renderState, processingSnapshot: processingSnapshot),
         ]
 
         if renderState.kind == .meeting, renderState.mode == .recording {
@@ -501,9 +564,12 @@ enum FloatingRecordingIndicatorViewUtilities {
             || superActionGroupWidth(for: renderState) > 0
     }
 
-    static func superBodyWidth(renderState: RecordingIndicatorRenderState) -> CGFloat {
+    static func superBodyWidth(
+        renderState: RecordingIndicatorRenderState,
+        processingSnapshot: RecordingIndicatorProcessingSnapshot? = nil
+    ) -> CGFloat {
         (AppDesignSystem.Layout.recordingIndicatorSuperHorizontalPadding * 2)
-            + clusterWidth(for: .super, renderState: renderState)
+            + clusterWidth(for: .super, renderState: renderState, processingSnapshot: processingSnapshot)
     }
 
     static func superFooterWidth(
@@ -524,10 +590,11 @@ enum FloatingRecordingIndicatorViewUtilities {
 
     static func superCardWidth(
         layout: RecordingIndicatorOverlayLayout,
-        renderState: RecordingIndicatorRenderState
+        renderState: RecordingIndicatorRenderState,
+        processingSnapshot: RecordingIndicatorProcessingSnapshot? = nil
     ) -> CGFloat {
         max(
-            superBodyWidth(renderState: renderState),
+            superBodyWidth(renderState: renderState, processingSnapshot: processingSnapshot),
             superFooterWidth(layout: layout, renderState: renderState)
         )
     }

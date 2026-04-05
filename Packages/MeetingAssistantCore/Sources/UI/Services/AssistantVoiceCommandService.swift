@@ -149,6 +149,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
 
         recordingManager.refreshPostProcessingReadinessWarning(for: .assistant, settings: settings)
         isProcessing = true
+        indicator.updateProcessingSnapshot(.init(step: .transcribingCommand))
         indicator.update(mode: .processing)
 
         let recordingURL = await audioRecorder.stopRecording()
@@ -207,6 +208,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
         executionFlow: AssistantExecutionFlow,
         selectedIntegration: AssistantIntegrationConfig?
     ) {
+        indicator.updateProcessingSnapshot(.init(step: .transcribingCommand))
         guard let recordingURL else {
             throw AssistantVoiceCommandError.failedToStopRecording
         }
@@ -261,6 +263,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
         sourceText: String,
         selectedTextResult: (text: String, snapshot: AssistantTextSelectionService.PasteboardSnapshot)?
     ) {
+        indicator.updateProcessingSnapshot(.init(step: .capturingContext))
         if executionFlow == .integrationDispatch {
             logPayloadIfNeeded("Assistant integration source payload", [
                 "length": command.count,
@@ -283,6 +286,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
         executionFlow: AssistantExecutionFlow,
         selectedIntegration: AssistantIntegrationConfig?
     ) async throws -> String {
+        indicator.updateProcessingSnapshot(.init(step: .interpretingCommand))
         guard let beforeAICommand = try await applyScriptIfNeeded(
             stage: .beforeAI,
             input: command,
@@ -353,6 +357,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
         selectedIntegration: AssistantIntegrationConfig?,
         selectedTextResult: (text: String, snapshot: AssistantTextSelectionService.PasteboardSnapshot)?
     ) async throws {
+        indicator.updateProcessingSnapshot(.init(step: .dispatchingResult))
         logPayloadIfNeeded("Assistant dispatch payload", [
             "length": finalCommand.count,
             "preview": AssistantPayloadLogging.payloadPreview(finalCommand),

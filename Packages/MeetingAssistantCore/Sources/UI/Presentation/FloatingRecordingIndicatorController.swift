@@ -27,8 +27,10 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
     private var hostingView: NSHostingView<AnyView>?
     private let audioMonitor: AudioLevelMonitor
     private let settingsStore: AppSettingsStore
+    private let processingStateStore: RecordingIndicatorProcessingStateStore
     private var cancellables = Set<AnyCancellable>()
     private var currentRenderState = RecordingIndicatorRenderState(mode: .recording, kind: .dictation)
+    private var currentProcessingSnapshot: RecordingIndicatorProcessingSnapshot?
     private var visibilityTransitionID: UInt64 = 0
     private var deferredGeometryTask: Task<Void, Never>?
     private var onStopAction: @Sendable () -> Void = {
@@ -47,6 +49,9 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
     @Published public private(set) var isVisible = false
     public var renderState: RecordingIndicatorRenderState {
         currentRenderState
+    }
+    public var processingSnapshot: RecordingIndicatorProcessingSnapshot? {
+        currentProcessingSnapshot
     }
 
     // MARK: - Configuration
@@ -78,10 +83,13 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
     ///   - settingsStore: The settings store for configuration.
     public init(
         audioMonitor: AudioLevelMonitor = AudioLevelMonitor(),
-        settingsStore: AppSettingsStore = .shared
+        settingsStore: AppSettingsStore = .shared,
+        processingStateStore: RecordingIndicatorProcessingStateStore = .shared
     ) {
         self.audioMonitor = audioMonitor
         self.settingsStore = settingsStore
+        self.processingStateStore = processingStateStore
+        currentProcessingSnapshot = processingStateStore.currentSnapshot
         setupBindings()
     }
 
@@ -141,6 +149,9 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
         onCancelAction = onCancel
 
         guard shouldShowIndicator(for: renderState.mode) else { return }
+        if renderState.mode != .processing {
+            resetProcessingSnapshot()
+        }
         let wasVisible = isVisible
         visibilityTransitionID &+= 1
         currentRenderState = renderState
@@ -181,6 +192,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
 
         isVisible = false
         updateContent()
+        resetProcessingSnapshot()
 
         // Stop monitoring audio levels
         audioMonitor.stopMonitoring()
@@ -231,6 +243,9 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
 
     public func update(renderState: RecordingIndicatorRenderState) {
         guard isVisible else { return }
+        if renderState.mode != .processing {
+            resetProcessingSnapshot()
+        }
         currentRenderState = renderState
         updateMode(renderState.mode)
         updateContent()
@@ -246,6 +261,14 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
             try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
             self?.hide()
         }
+    }
+
+    public func updateProcessingSnapshot(_ snapshot: RecordingIndicatorProcessingSnapshot) {
+        processingStateStore.update(snapshot: snapshot)
+    }
+
+    public func resetProcessingSnapshot() {
+        processingStateStore.reset()
     }
 
     /// Update indicator position without recreating the panel.
@@ -307,6 +330,18 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
                 update(renderState: currentRenderState)
             }
             .store(in: &cancellables)
+
+        processingStateStore.$currentSnapshot
+            .sink { [weak self] snapshot in
+                guard let self else { return }
+                currentProcessingSnapshot = snapshot
+                guard isVisible, currentRenderState.mode == .processing else { return }
+                updateContent()
+                if let panel {
+                    applyPanelGeometry(panel, deferIfPanelVisible: true)
+                }
+            }
+            .store(in: &cancellables)
     }
 
     private func updateContent() {
@@ -320,6 +355,7 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
             audioMonitor: audioMonitor,
             style: settingsStore.recordingIndicatorStyle,
             renderState: currentRenderState,
+            processingSnapshot: currentProcessingSnapshot,
             isAnimationActive: isVisible && !prefersReducedMotion,
             onStop: onStopAction,
             onCancel: onCancelAction
@@ -401,7 +437,8 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
             if style == .super {
                 return FloatingRecordingIndicatorViewUtilities.superCardWidth(
                     layout: layout,
-                    renderState: renderState
+                    renderState: renderState,
+                    processingSnapshot: currentProcessingSnapshot
                 )
             }
             let auxiliaryUnitWidth = auxiliaryUnitWidth(for: style)
@@ -441,13 +478,15 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
             for: indicatorSize,
             renderState: renderState,
             layout: layout,
-            expanded: false
+            expanded: false,
+            processingSnapshot: currentProcessingSnapshot
         )
         let expandedWidth = FloatingRecordingIndicatorViewUtilities.mainPillWidth(
             for: indicatorSize,
             renderState: renderState,
             layout: layout,
-            expanded: true
+            expanded: true,
+            processingSnapshot: currentProcessingSnapshot
         )
         return max(collapsedWidth, expandedWidth)
     }
@@ -555,9 +594,13 @@ public final class FloatingRecordingIndicatorController: ObservableObject {
 
     func panelWidthForTesting(
         style: RecordingIndicatorStyle,
-        renderState: RecordingIndicatorRenderState
+        renderState: RecordingIndicatorRenderState,
+        processingSnapshot: RecordingIndicatorProcessingSnapshot? = nil
     ) -> CGFloat {
-        panelWidth(for: style, renderState: renderState)
+        let previousSnapshot = currentProcessingSnapshot
+        currentProcessingSnapshot = processingSnapshot
+        defer { currentProcessingSnapshot = previousSnapshot }
+        return panelWidth(for: style, renderState: renderState)
     }
 
     func panelHeightForTesting(

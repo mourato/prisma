@@ -12,11 +12,11 @@ import SwiftUI
 public struct FloatingRecordingIndicatorView: View {
     @ObservedObject var audioMonitor: AudioLevelMonitor
     @ObservedObject private var recordingManager: RecordingManager
-    @ObservedObject private var transcriptionStatus: TranscriptionStatus
     @ObservedObject private var settingsStore: AppSettingsStore
     private let navigationService = NavigationService.shared
     let style: RecordingIndicatorStyle
     let renderState: RecordingIndicatorRenderState
+    let processingSnapshot: RecordingIndicatorProcessingSnapshot?
     let isAnimationActive: Bool
     private let previewLanguageOverride: DictationOutputLanguage?
     let onStop: @Sendable () -> Void
@@ -36,6 +36,7 @@ public struct FloatingRecordingIndicatorView: View {
         audioMonitor: AudioLevelMonitor,
         style: RecordingIndicatorStyle,
         renderState: RecordingIndicatorRenderState,
+        processingSnapshot: RecordingIndicatorProcessingSnapshot? = nil,
         isAnimationActive: Bool = true,
         previewLanguageOverride: DictationOutputLanguage? = nil,
         recordingManager: RecordingManager = .shared,
@@ -46,10 +47,10 @@ public struct FloatingRecordingIndicatorView: View {
         self.audioMonitor = audioMonitor
         self.style = style
         self.renderState = renderState
+        self.processingSnapshot = processingSnapshot
         self.isAnimationActive = isAnimationActive
         self.previewLanguageOverride = previewLanguageOverride
         _recordingManager = ObservedObject(wrappedValue: recordingManager)
-        _transcriptionStatus = ObservedObject(wrappedValue: recordingManager.transcriptionStatus)
         _settingsStore = ObservedObject(wrappedValue: settingsStore)
         self.onStop = onStop
         self.onCancel = onCancel
@@ -302,17 +303,9 @@ public struct FloatingRecordingIndicatorView: View {
     }
 
     private func processingStatusView(size: IndicatorSize) -> some View {
-        let fontSize: CGFloat = switch size {
-        case .classic, .super:
-            12
-        case .mini:
-            11
-        }
-
         return HStack(spacing: 6) {
-            Text(processingProgressText)
-                .font(.system(size: fontSize, weight: .semibold))
-                .monospacedDigit()
+            Text(processingStageTitle)
+                .font(Font(FloatingRecordingIndicatorViewUtilities.processingStatusFont(for: size)))
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .foregroundStyle(AppDesignSystem.Colors.overlayForegroundMuted)
@@ -320,15 +313,14 @@ public struct FloatingRecordingIndicatorView: View {
             processingActivityDots
         }
         .frame(
-            width: FloatingRecordingIndicatorViewUtilities.processingProgressReservedWidth(for: size),
+            width: FloatingRecordingIndicatorViewUtilities.processingStatusWidth(
+                for: size,
+                processingSnapshot: activeProcessingSnapshot
+            ),
             alignment: .leading
         )
-        .accessibilityLabel(
-            "recording_indicator.processing.progress".localized(
-                with: processingStageTitle,
-                processingProgressPercentage
-            )
-        )
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: processingStageTitle)
+        .accessibilityLabel(processingAccessibilityLabel)
     }
 
     private var processingActivityDots: some View {
@@ -355,29 +347,24 @@ public struct FloatingRecordingIndicatorView: View {
         }
     }
 
-    private var processingProgressText: String {
-        "\(processingStageTitle) \(processingProgressPercentage)%"
-    }
-
-    private var processingProgressPercentage: Int {
-        Int(min(max(transcriptionStatus.progressPercentage, 0), 100).rounded())
+    private var activeProcessingSnapshot: RecordingIndicatorProcessingSnapshot {
+        processingSnapshot
+            ?? FloatingRecordingIndicatorViewUtilities.defaultProcessingSnapshot(for: renderState)
     }
 
     private var processingStageTitle: String {
-        switch transcriptionStatus.phase {
-        case .preparing:
-            "recording_indicator.processing.stage.preparing".localized
-        case .processing:
-            "recording_indicator.processing.stage.transcribing".localized
-        case .postProcessing:
-            "recording_indicator.processing.stage.post_processing".localized
-        case .completed:
-            "recording_indicator.processing.stage.finalizing".localized
-        case .failed:
-            "recording_indicator.processing.stage.failed".localized
-        case .idle:
-            "recording_indicator.processing.stage.transcribing".localized
+        activeProcessingSnapshot.step.localizedTitleKey.localized
+    }
+
+    private var processingAccessibilityLabel: String {
+        if let progressPercent = activeProcessingSnapshot.progressPercent {
+            return "recording_indicator.processing.accessibility.with_progress".localized(
+                with: processingStageTitle,
+                Int(progressPercent.rounded())
+            )
         }
+
+        return "recording_indicator.processing.accessibility.title_only".localized(with: processingStageTitle)
     }
 
     private var meetingTimerView: some View {
@@ -625,7 +612,8 @@ public struct FloatingRecordingIndicatorView: View {
         .frame(
             width: FloatingRecordingIndicatorViewUtilities.superCardWidth(
                 layout: overlayLayout,
-                renderState: renderState
+                renderState: renderState,
+                processingSnapshot: activeProcessingSnapshot
             )
         )
         .background(.ultraThinMaterial)

@@ -42,6 +42,7 @@ final class FloatingRecordingIndicatorWidthTests: XCTestCase {
         let size: FloatingRecordingIndicatorView.IndicatorSize = .classic
         let processingRenderState = RecordingIndicatorRenderState(mode: .processing, kind: .meeting)
         let dictationProcessingState = RecordingIndicatorRenderState(mode: .processing, kind: .dictation)
+        let snapshot = RecordingIndicatorProcessingSnapshot(step: .postProcessing)
 
         let layout = RecordingIndicatorOverlayLayout(
             showsPromptSelector: false,
@@ -53,13 +54,15 @@ final class FloatingRecordingIndicatorWidthTests: XCTestCase {
             for: size,
             renderState: processingRenderState,
             layout: layout,
-            expanded: false
+            expanded: false,
+            processingSnapshot: snapshot
         )
         let baseProcessingWidth = FloatingRecordingIndicatorViewUtilities.mainPillWidth(
             for: size,
             renderState: dictationProcessingState,
             layout: layout,
-            expanded: false
+            expanded: false,
+            processingSnapshot: snapshot
         )
 
         XCTAssertEqual(processingWidth, baseProcessingWidth, accuracy: 0.001)
@@ -68,14 +71,16 @@ final class FloatingRecordingIndicatorWidthTests: XCTestCase {
     func testProcessingClusterUsesStatusWidthInsteadOfWaveform() {
         let size: FloatingRecordingIndicatorView.IndicatorSize = .classic
         let processingState = RecordingIndicatorRenderState(mode: .processing, kind: .assistant)
+        let snapshot = RecordingIndicatorProcessingSnapshot(step: .capturingContext)
 
         let expectedClusterWidth = AppDesignSystem.Layout.recordingIndicatorDotSize
-            + FloatingRecordingIndicatorViewUtilities.processingProgressReservedWidth(for: size)
+            + FloatingRecordingIndicatorViewUtilities.processingStatusWidth(for: size, processingSnapshot: snapshot)
             + FloatingRecordingIndicatorViewUtilities.contentSpacing(for: size)
 
         let actualClusterWidth = FloatingRecordingIndicatorViewUtilities.clusterWidth(
             for: size,
-            renderState: processingState
+            renderState: processingState,
+            processingSnapshot: snapshot
         )
 
         XCTAssertEqual(actualClusterWidth, expectedClusterWidth, accuracy: 0.001)
@@ -148,5 +153,45 @@ final class FloatingRecordingIndicatorWidthTests: XCTestCase {
 
         XCTAssertEqual(panelHeight, expectedHeight, accuracy: 0.001)
         XCTAssertGreaterThan(panelHeight, AppDesignSystem.Layout.recordingIndicatorClassicHeight)
+    }
+
+    func testProcessingWidthGrowsAndShrinksWithTextWithinBounds() {
+        let size: FloatingRecordingIndicatorView.IndicatorSize = .classic
+        let shortSnapshot = RecordingIndicatorProcessingSnapshot(step: .postProcessing)
+        let longSnapshot = RecordingIndicatorProcessingSnapshot(step: .detectingMeetingType)
+
+        let shortWidth = FloatingRecordingIndicatorViewUtilities.processingStatusWidth(
+            for: size,
+            processingSnapshot: shortSnapshot
+        )
+        let longWidth = FloatingRecordingIndicatorViewUtilities.processingStatusWidth(
+            for: size,
+            processingSnapshot: longSnapshot
+        )
+
+        XCTAssertGreaterThan(longWidth, shortWidth)
+        XCTAssertGreaterThanOrEqual(shortWidth, FloatingRecordingIndicatorViewUtilities.processingStatusMinWidth(for: size))
+        XCTAssertLessThanOrEqual(longWidth, FloatingRecordingIndicatorViewUtilities.processingStatusMaxWidth(for: size))
+    }
+
+    func testPanelWidthForProcessingUsesSnapshotDrivenTextWidth() {
+        let settings = AppSettingsStore.shared
+        let controller = FloatingRecordingIndicatorController(settingsStore: settings)
+        let renderState = RecordingIndicatorRenderState(mode: .processing, kind: .meeting)
+        let shortSnapshot = RecordingIndicatorProcessingSnapshot(step: .postProcessing)
+        let longSnapshot = RecordingIndicatorProcessingSnapshot(step: .detectingMeetingType)
+
+        let shortWidth = controller.panelWidthForTesting(
+            style: .classic,
+            renderState: renderState,
+            processingSnapshot: shortSnapshot
+        )
+        let longWidth = controller.panelWidthForTesting(
+            style: .classic,
+            renderState: renderState,
+            processingSnapshot: longSnapshot
+        )
+
+        XCTAssertGreaterThan(longWidth, shortWidth)
     }
 }

@@ -33,6 +33,12 @@ extension RecordingManager {
         qualityProfile: TranscriptionQualityProfile?
     ) async -> PostProcessingResult {
         transcriptionStatus.updateProgress(phase: .postProcessing, percentage: Constants.postProcessingProgress)
+        RecordingIndicatorProcessingStateStore.shared.update(
+            snapshot: RecordingIndicatorProcessingSnapshot(
+                step: .postProcessing,
+                progressPercent: Constants.postProcessingProgress
+            )
+        )
 
         let settings = AppSettingsStore.shared
         guard settings.postProcessingEnabled else { return .empty }
@@ -53,6 +59,14 @@ extension RecordingManager {
         guard !isPostProcessingDisabled(isDictation: isDictation, settings: settings) else { return .empty }
 
         let type = meeting?.type ?? currentMeeting?.type ?? .general
+        if type == .autodetect {
+            RecordingIndicatorProcessingStateStore.shared.update(
+                snapshot: RecordingIndicatorProcessingSnapshot(
+                    step: .detectingMeetingType,
+                    progressPercent: Constants.postProcessingProgress
+                )
+            )
+        }
         let prompt = await resolvePostProcessingPrompt(
             rawText: postProcessingInput,
             isDictation: isDictation,
@@ -61,6 +75,12 @@ extension RecordingManager {
         )
 
         transcriptionStatus.updateProgress(phase: .postProcessing, percentage: Constants.aiProcessingProgress)
+        RecordingIndicatorProcessingStateStore.shared.update(
+            snapshot: RecordingIndicatorProcessingSnapshot(
+                step: .postProcessing,
+                progressPercent: Constants.aiProcessingProgress
+            )
+        )
         return await runPostProcessing(
             postProcessingInput: postProcessingInput,
             prompt: prompt,
@@ -183,6 +203,9 @@ extension RecordingManager {
 
             let duration = Date().timeIntervalSince(startTime)
             let model = settings.resolvedEnhancementsAIConfiguration(for: kernelMode).selectedModel
+            RecordingIndicatorProcessingStateStore.shared.update(
+                snapshot: RecordingIndicatorProcessingSnapshot(step: .finalizingResult, progressPercent: 100)
+            )
             return PostProcessingResult(
                 processedContent: processedContent,
                 canonicalSummary: canonicalSummary,

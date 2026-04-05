@@ -2,6 +2,16 @@ import XCTest
 @testable import MeetingAssistantCore
 
 final class RecordingIndicatorRenderStateTests: XCTestCase {
+    func testProcessingSnapshotUsesStepLocalizationKeys() {
+        let snapshot = RecordingIndicatorProcessingSnapshot(
+            step: .capturingContext,
+            progressPercent: 37
+        )
+
+        XCTAssertEqual(snapshot.step.localizedTitleKey, "recording_indicator.processing.step.capturing_context")
+        XCTAssertEqual(snapshot.progressPercent, 37)
+    }
+
     func testFromLegacy_WithoutMeetingType_CreatesDictationKind() {
         let state = RecordingIndicatorRenderState.fromLegacy(mode: .recording, meetingType: nil)
 
@@ -73,5 +83,17 @@ final class RecordingIndicatorRenderStateTests: XCTestCase {
 
         XCTAssertEqual(state.kind, .meeting)
         XCTAssertEqual(state.meetingType, .planning)
+    }
+
+    @MainActor
+    func testProcessingStateStoreResetClearsCurrentSnapshot() {
+        let store = RecordingIndicatorProcessingStateStore()
+        let snapshot = RecordingIndicatorProcessingSnapshot(step: .interpretingCommand)
+
+        store.update(snapshot: snapshot)
+        XCTAssertEqual(store.currentSnapshot, snapshot)
+
+        store.reset()
+        XCTAssertNil(store.currentSnapshot)
     }
 }

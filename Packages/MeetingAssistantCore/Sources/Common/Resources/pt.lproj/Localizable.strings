@@ -946,6 +946,17 @@
 "recording_indicator.processing.stage.finalizing" = "Finalizando";
 "recording_indicator.processing.stage.failed" = "Processando";
 "recording_indicator.processing.progress" = "%@ %d%%";
+"recording_indicator.processing.step.preparing_audio" = "Preparando áudio";
+"recording_indicator.processing.step.transcribing_audio" = "Transcrevendo áudio";
+"recording_indicator.processing.step.detecting_meeting_type" = "Identificando tipo da reunião";
+"recording_indicator.processing.step.post_processing" = "Pós-processando";
+"recording_indicator.processing.step.finalizing_result" = "Finalizando resultado";
+"recording_indicator.processing.step.transcribing_command" = "Transcrevendo comando";
+"recording_indicator.processing.step.capturing_context" = "Capturando contexto";
+"recording_indicator.processing.step.interpreting_command" = "Interpretando comando";
+"recording_indicator.processing.step.dispatching_result" = "Enviando resultado";
+"recording_indicator.processing.accessibility.with_progress" = "%@, %d%%";
+"recording_indicator.processing.accessibility.title_only" = "%@";
 "settings.transcriptions.today" = "Hoje";
 "settings.transcriptions.yesterday" = "Ontem";
 "transcription.empty_fallback" = "Nenhuma transcrição disponível";

@@ -72,6 +72,11 @@ extension RecordingManager {
 
             let transcription = convertToModel(transcriptionEntity, audioDuration: audioDuration, transcriptionStart: transcriptionStart)
             persistMeetingNotes(session.meetingNotesContent, forTranscription: transcription.id)
+            updateIndicatorProcessingSnapshot(
+                step: .finalizingResult,
+                progressPercent: 100,
+                sessionID: session.id
+            )
 
             if shouldDriveSharedTranscriptionState(for: session.id) {
                 meetingState = .processing(.generatingOutput)
@@ -259,6 +264,13 @@ extension RecordingManager {
                 percentage: startProgress,
                 sessionID: sessionID
             )
+            if meeting.capturePurpose == .meeting, meeting.type == .autodetect {
+                updateIndicatorProcessingSnapshot(
+                    step: .detectingMeetingType,
+                    progressPercent: startProgress,
+                    sessionID: sessionID
+                )
+            }
 
             if meeting.capturePurpose == .meeting {
                 startEstimatedPostProcessingProgress(from: startProgress, sessionID: sessionID)
@@ -370,6 +382,7 @@ extension RecordingManager {
         AppLogger.error("Transcription failed", category: .recordingManager, error: error)
         lastError = error
         cancelEstimatedPostProcessingProgress(for: sessionID)
+        resetIndicatorProcessingSnapshot(sessionID: sessionID)
 
         if shouldDriveForegroundTranscriptionUI(for: sessionID) {
             transcriptionStatus.recordError(.transcriptionFailed(error.localizedDescription))
@@ -387,6 +400,7 @@ extension RecordingManager {
             try? await Task.sleep(for: .seconds(Constants.statusResetDelay))
             guard self.shouldResetVisibleTranscriptionStatus(for: sessionID) else { return }
             self.transcriptionStatus.resetToIdle()
+            self.resetIndicatorProcessingSnapshot(sessionID: sessionID)
         }
     }
 
@@ -430,6 +444,7 @@ extension RecordingManager {
     func beginVisibleTranscriptionStatus(audioDuration: Double?, sessionID: UUID?) {
         guard shouldDriveForegroundTranscriptionUI(for: sessionID) else { return }
         transcriptionStatus.beginTranscription(audioDuration: audioDuration)
+        updateIndicatorProcessingSnapshot(step: .preparingAudio, progressPercent: 0, sessionID: sessionID)
     }
 
     func updateVisibleTranscriptionProgress(
@@ -439,11 +454,48 @@ extension RecordingManager {
     ) {
         guard shouldDriveForegroundTranscriptionUI(for: sessionID) else { return }
         transcriptionStatus.updateProgress(phase: phase, percentage: percentage)
+        if let step = indicatorProcessingStep(for: phase) {
+            updateIndicatorProcessingSnapshot(step: step, progressPercent: percentage, sessionID: sessionID)
+        }
     }
 
     func completeVisibleTranscription(success: Bool, sessionID: UUID?) {
         guard shouldDriveForegroundTranscriptionUI(for: sessionID) else { return }
         transcriptionStatus.completeTranscription(success: success)
+    }
+
+    func indicatorProcessingStep(for phase: TranscriptionPhase) -> RecordingIndicatorProcessingStep? {
+        switch phase {
+        case .idle, .failed:
+            nil
+        case .preparing:
+            .preparingAudio
+        case .processing:
+            .transcribingAudio
+        case .postProcessing:
+            .postProcessing
+        case .completed:
+            .finalizingResult
+        }
+    }
+
+    func updateIndicatorProcessingSnapshot(
+        step: RecordingIndicatorProcessingStep,
+        progressPercent: Double? = nil,
+        sessionID: UUID?
+    ) {
+        guard shouldDriveForegroundTranscriptionUI(for: sessionID) else { return }
+        RecordingIndicatorProcessingStateStore.shared.update(
+            snapshot: RecordingIndicatorProcessingSnapshot(
+                step: step,
+                progressPercent: progressPercent
+            )
+        )
+    }
+
+    func resetIndicatorProcessingSnapshot(sessionID: UUID?) {
+        guard shouldResetVisibleTranscriptionStatus(for: sessionID) else { return }
+        RecordingIndicatorProcessingStateStore.shared.reset()
     }
 
     /// Get audio duration from file for progress estimation.

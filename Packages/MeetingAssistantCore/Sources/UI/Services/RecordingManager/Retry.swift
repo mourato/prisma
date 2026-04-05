@@ -49,6 +49,9 @@ extension RecordingManager {
         cancelEstimatedPostProcessingProgress()
         let audioDuration = await getAudioDuration(from: preparedAudio.transcriptionURL)
         transcriptionStatus.beginTranscription(audioDuration: audioDuration)
+        RecordingIndicatorProcessingStateStore.shared.update(
+            snapshot: RecordingIndicatorProcessingSnapshot(step: .preparingAudio, progressPercent: 0)
+        )
 
         do {
             let updated = try await performRetryTranscription(
@@ -57,6 +60,9 @@ extension RecordingManager {
                 audioDuration: audioDuration
             )
             try await storage.saveTranscription(updated)
+            RecordingIndicatorProcessingStateStore.shared.update(
+                snapshot: RecordingIndicatorProcessingSnapshot(step: .finalizingResult, progressPercent: 100)
+            )
             transcriptionStatus.completeTranscription(success: true)
             notifySuccess(for: updated)
             scheduleStatusReset()

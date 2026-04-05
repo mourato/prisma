@@ -14,11 +14,13 @@ final class AssistantIndicatorActionWiringTests: XCTestCase {
         settings = .shared
         originalIndicatorEnabled = settings.recordingIndicatorEnabled
         originalIndicatorStyle = settings.recordingIndicatorStyle
+        RecordingIndicatorProcessingStateStore.shared.reset()
         settings.recordingIndicatorEnabled = false
         settings.recordingIndicatorStyle = .none
     }
 
     override func tearDown() async throws {
+        RecordingIndicatorProcessingStateStore.shared.reset()
         settings.recordingIndicatorEnabled = originalIndicatorEnabled
         settings.recordingIndicatorStyle = originalIndicatorStyle
         await RecordingExclusivityCoordinator.shared.endAssistant()
@@ -74,6 +76,30 @@ final class AssistantIndicatorActionWiringTests: XCTestCase {
         XCTAssertFalse(service.isRecording)
         XCTAssertFalse(service.isProcessing)
         XCTAssertEqual(recorder.stopCallCount, 1)
+    }
+
+    func testAssistantProcessingSnapshotTracksLifecycle() async {
+        settings.recordingIndicatorEnabled = true
+        settings.recordingIndicatorStyle = .mini
+
+        let recorder = MockAssistantAudioRecorder()
+        recorder.nextStopURL = nil
+        let indicator = FloatingRecordingIndicatorController(settingsStore: settings)
+        let service = AssistantVoiceCommandService(
+            audioRecorder: recorder,
+            indicator: indicator,
+            settings: settings
+        )
+
+        await service.startRecording(flow: .assistantMode)
+        XCTAssertNil(indicator.processingSnapshot)
+
+        indicator.invokeStopActionForTesting()
+        await waitUntil(message: "Assistant processing should finish.") {
+            !service.isProcessing
+        }
+
+        XCTAssertNil(indicator.processingSnapshot)
     }
 }
 

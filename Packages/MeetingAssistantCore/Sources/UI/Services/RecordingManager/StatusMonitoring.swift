@@ -70,5 +70,6 @@ extension RecordingManager {
         dictationStartURL = nil
         activeStartTelemetry = nil
         clearPostProcessingReadinessWarning()
+        RecordingIndicatorProcessingStateStore.shared.reset()
     }
 }
