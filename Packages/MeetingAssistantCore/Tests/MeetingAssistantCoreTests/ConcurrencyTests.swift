@@ -169,8 +169,8 @@ final class ConcurrencyTests: XCTestCase {
             }
         }
 
-        // Allow processing to complete
-        try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
+        // Allow processing to complete.
+        try? await Task.sleep(nanoseconds: 100_000_000)
 
         _ = await worker.stop()
 

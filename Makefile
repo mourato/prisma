@@ -5,7 +5,7 @@
 # with CI/CD pipelines and headless environments.
 # =============================================================================
 
-.PHONY: help build build-debug build-release build-agent build-test xcodebuild-safe test test-agent test-swift test-verbose test-strict test-ci-strict scope-check scope-check-agent benchmark-summary benchmark-summary-agent lint lint-agent lint-fix arch-check preview-check preflight preflight-fast preflight-agent preflight-agent-fast clean run run-release dmg setup-self-signed-cert setup format health ci-build ci-test ci-release-parity ci-release-parity-self-signed deliverable-gate docs docs-preview docs-clean profile profile-report profile-cpu profile-memory profile-animation profile-animation-report
+.PHONY: help build build-debug build-release build-agent build-test xcodebuild-safe test test-agent test-full test-full-agent test-smoke test-perf test-sensitive test-appkit test-parity test-parity-agent test-swift test-verbose test-strict test-ci-strict scope-check scope-check-agent benchmark-summary benchmark-summary-agent lint lint-agent lint-fix arch-check preview-check preflight preflight-fast preflight-agent preflight-agent-fast clean run run-release dmg setup-self-signed-cert setup format health ci-build ci-test ci-release-parity ci-release-parity-self-signed deliverable-gate docs docs-preview docs-clean profile profile-report profile-cpu profile-memory profile-animation profile-animation-report
 
 # Default target
 help:
@@ -21,12 +21,20 @@ help:
 	@echo "  make xcodebuild-safe - Build via canonical direct xcodebuild wrapper"
 	@echo ""
 	@echo "Test Commands:"
-	@echo "  make test           - Run all tests (strict xcodebuild, no fallback/retry)"
-	@echo "  make test-agent     - Run compact swift test output for AI agents"
-	@echo "  make test-swift     - Run tests with swift test (faster, no IDE parity)"
+	@echo "  make test           - Run fast local dev suite (swift test, parallel)"
+	@echo "  make test-agent     - Run fast local dev suite in compact mode"
+	@echo "  make test-full      - Run broad swift-test suite for preflight/local gates"
+	@echo "  make test-full-agent - Run broad swift-test suite in compact mode"
+	@echo "  make test-smoke     - Run curated smoke suite"
+	@echo "  make test-perf      - Run isolated performance tests"
+	@echo "  make test-sensitive - Run isolated sensitive subsystem tests"
+	@echo "  make test-appkit    - Run isolated AppKit lifecycle tests"
+	@echo "  make test-parity    - Run xcodebuild parity tests"
+	@echo "  make test-parity-agent - Run xcodebuild parity tests in compact mode"
+	@echo "  make test-swift     - Alias of make test-full"
 	@echo "  make test-verbose   - Run tests with verbose output"
 	@echo "  make test-strict    - Run tests with strict concurrency checking"
-	@echo "  make test-ci-strict - Alias of make test (strict xcodebuild)"
+	@echo "  make test-ci-strict - Run strict xcodebuild parity gate"
 	@echo "  make scope-check    - Run scoped validation (targeted tests + smart escalation)"
 	@echo "  make scope-check-agent - Run scoped validation in compact agent mode"
 	@echo "  make benchmark-summary - Run summary benchmark gate in report-only mode"
@@ -115,15 +123,38 @@ xcodebuild-safe:
 
 # Test Commands
 test:
-	@./scripts/run-tests-xcode.sh --strict-xcode
+	@./scripts/run-tests.sh --suite dev
 
 test-agent:
-	@MA_AGENT_MODE=1 MA_AGENT_LOG_DIR="$(AGENT_LOG_DIR)" ./scripts/run-tests.sh --agent
+	@MA_AGENT_MODE=1 MA_AGENT_LOG_DIR="$(AGENT_LOG_DIR)" ./scripts/run-tests.sh --suite dev --agent
+
+test-full:
+	@./scripts/run-tests.sh --suite full
+
+test-full-agent:
+	@MA_AGENT_MODE=1 MA_AGENT_LOG_DIR="$(AGENT_LOG_DIR)" ./scripts/run-tests.sh --suite full --agent
+
+test-smoke:
+	@./scripts/run-tests.sh --suite smoke
+
+test-perf:
+	@./scripts/run-tests.sh --suite perf
+
+test-sensitive:
+	@./scripts/run-tests.sh --suite sensitive
+
+test-appkit:
+	@./scripts/run-tests.sh --suite appkit
+
+test-parity:
+	@./scripts/run-tests-xcode.sh
+
+test-parity-agent:
+	@MA_AGENT_MODE=1 MA_AGENT_LOG_DIR="$(AGENT_LOG_DIR)" ./scripts/run-tests-xcode.sh --agent
 
 test-swift:
 	@echo -e "$(BLUE)Running tests (swift test)...$(NC)"
-	@echo -e "$(YELLOW)Warning: Faster but may differ from Xcode IDE results$(NC)"
-	@./scripts/run-tests.sh
+	@./scripts/run-tests.sh --suite full
 
 test-verbose:
 	@echo -e "$(BLUE)Running tests (verbose)...$(NC)"
@@ -134,7 +165,7 @@ test-strict:
 	@./scripts/run-tests.sh --strict
 
 test-ci-strict:
-	@$(MAKE) test
+	@./scripts/run-tests-xcode.sh --strict-xcode
 
 scope-check:
 	@./scripts/scope-check.sh $(ARGS)

@@ -42,7 +42,9 @@ final class AssistantIndicatorActionWiringTests: XCTestCase {
         XCTAssertTrue(service.isRecording)
 
         indicator.invokeCancelActionForTesting()
-        try? await Task.sleep(nanoseconds: 20_000_000)
+        await waitUntil(message: "Assistant cancellation should stop recording.") {
+            !service.isRecording
+        }
 
         XCTAssertFalse(service.isRecording)
         XCTAssertEqual(recorder.stopCallCount, 1)
@@ -65,7 +67,9 @@ final class AssistantIndicatorActionWiringTests: XCTestCase {
         XCTAssertTrue(service.isRecording)
 
         indicator.invokeStopActionForTesting()
-        try? await Task.sleep(nanoseconds: 30_000_000)
+        await waitUntil(message: "Assistant stop action should finish processing.") {
+            !service.isRecording && !service.isProcessing
+        }
 
         XCTAssertFalse(service.isRecording)
         XCTAssertFalse(service.isProcessing)

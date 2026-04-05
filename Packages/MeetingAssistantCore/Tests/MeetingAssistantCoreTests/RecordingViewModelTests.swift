@@ -36,8 +36,9 @@ final class RecordingViewModelTests: XCTestCase {
         // Simulate service update via publisher
         mockService.simulateState(recording: true, transcribing: false)
 
-        // Wait for Combine loop
-        try? await Task.sleep(nanoseconds: 10_000_000)
+        await waitUntil(message: "Recording state should propagate to the view model.") {
+            self.viewModel.isRecording && self.viewModel.statusText == "status.recording".localized
+        }
 
         XCTAssertTrue(viewModel.isRecording)
         XCTAssertEqual(viewModel.statusText, "status.recording".localized)
@@ -46,7 +47,7 @@ final class RecordingViewModelTests: XCTestCase {
     func testStopRecording() async {
         // Init state
         mockService.simulateState(recording: true, transcribing: false)
-        try? await Task.sleep(nanoseconds: 10_000_000)
+        await waitUntil { self.viewModel.isRecording }
 
         await viewModel.stopRecording()
 
@@ -54,7 +55,9 @@ final class RecordingViewModelTests: XCTestCase {
 
         // Simulate transitioning to transcribing
         mockService.simulateState(recording: false, transcribing: true)
-        try? await Task.sleep(nanoseconds: 10_000_000)
+        await waitUntil(message: "Transcribing state should propagate to the view model.") {
+            !self.viewModel.isRecording && self.viewModel.isTranscribing
+        }
 
         XCTAssertFalse(viewModel.isRecording)
         XCTAssertTrue(viewModel.isTranscribing)

@@ -33,6 +33,7 @@ MISSING_TEST_ACTION_PATTERN="Scheme .* is not currently configured for the test 
 OVERLAY_TEST_SUITE_IDENTIFIER="MeetingAssistantCoreTests/AssistantOverlayLifecycleTests"
 HEARTBEAT_INTERVAL_SEC="${MA_XCODEBUILD_HEARTBEAT_INTERVAL_SEC:-15}"
 STRICT_DERIVED_DATA_PATH="${MA_XCODE_STRICT_DERIVED_DATA:-}"
+SERIAL_XCODE_TESTS="${MA_SERIAL_XCODE_TESTS:-0}"
 
 if ma_agent_mode_enabled; then
     AGENT_MODE=1
@@ -127,8 +128,8 @@ run_xcode_tests() {
         test
     )
 
-    # Single-worker execution is more stable for constrained or strict runs.
-    if [ "${AGENT_MODE}" -eq 1 ] || [ "${STRICT_XCODE}" -eq 1 ]; then
+    # Single-worker execution is reserved for strict or explicitly serialized runs.
+    if [ "${STRICT_XCODE}" -eq 1 ] || [ "${SERIAL_XCODE_TESTS}" = "1" ]; then
         xcode_args=(-parallel-testing-enabled NO -jobs 1 "${xcode_args[@]}")
     fi
 

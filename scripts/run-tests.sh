@@ -9,8 +9,10 @@ set -o pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 PATCH_SCRIPT="${PROJECT_DIR}/scripts/apply-fluidaudio-patches.sh"
+TEST_SUITES_CONFIG="${SCRIPT_DIR}/config/test-suites.sh"
 # shellcheck source=scripts/config/app_identity.sh
 source "${SCRIPT_DIR}/config/app_identity.sh"
+source "${TEST_SUITES_CONFIG}"
 
 XCODEPROJ="${PROJECT_DIR}/${XCODEPROJ_NAME}"
 
@@ -31,7 +33,10 @@ STRICT=0
 AGENT_MODE=0
 SPECIFIC_TEST=""
 TEST_FILE=""
+SUITE="${TEST_SUITE_DEFAULT}"
 HEARTBEAT_INTERVAL_SEC="${MA_SWIFT_TEST_HEARTBEAT_INTERVAL_SEC:-15}"
+PARALLEL_ENABLED=0
+PARALLEL_WORKERS="${TEST_SUITE_PARALLEL_WORKERS}"
 
 if ma_agent_mode_enabled; then
     AGENT_MODE=1
@@ -65,6 +70,18 @@ while [[ $# -gt 0 ]]; do
             TEST_FILE="$2"
             shift 2
             ;;
+        --suite)
+            SUITE="$2"
+            shift 2
+            ;;
+        --parallel)
+            PARALLEL_ENABLED=1
+            shift
+            ;;
+        --no-parallel)
+            PARALLEL_ENABLED=0
+            shift
+            ;;
         --help|-h)
             echo "Usage: $0 [options]"
             echo ""
@@ -75,6 +92,9 @@ while [[ $# -gt 0 ]]; do
             echo "  --agent          Emit compact machine-readable result lines"
             echo "  --test, -t TEST  Run specific test (e.g., testInitialState)"
             echo "  --file, -f FILE  Run tests from specific file (e.g., RecordingViewModelTests)"
+            echo "  --suite NAME     Suite to run: dev, full, smoke, perf, benchmark, sensitive, appkit"
+            echo "  --parallel       Force parallel execution when the suite supports it"
+            echo "  --no-parallel    Force serial execution"
             echo "  --help, -h       Show this help"
             echo ""
             echo "Examples:"
@@ -120,13 +140,52 @@ if [ "${CI:-}" = "true" ]; then
     export SWIFT_BACKTRACE_MODE=full
 fi
 
-# Overlay lifecycle tests rely on AppKit windowing behavior that is unstable in
-# Swift Package CLI runners without a fully interactive app host.
-export MA_SKIP_OVERLAY_LIFECYCLE_TESTS=1
+suite_skip_regex=""
+suite_filter_regex=""
+suite_allows_parallel=0
+
+case "${SUITE}" in
+    dev)
+        suite_skip_regex="${TEST_SUITE_DEV_SKIP_REGEX}"
+        suite_allows_parallel=1
+        export MA_SKIP_OVERLAY_LIFECYCLE_TESTS=1
+        ;;
+    full)
+        suite_skip_regex="${TEST_SUITE_FULL_SKIP_REGEX}"
+        suite_allows_parallel=1
+        export MA_SKIP_OVERLAY_LIFECYCLE_TESTS=1
+        ;;
+    smoke)
+        suite_filter_regex="${TEST_SUITE_SMOKE_FILTER_REGEX}"
+        suite_skip_regex="${TEST_SUITE_SMOKE_SKIP_REGEX}"
+        suite_allows_parallel=1
+        export MA_SKIP_OVERLAY_LIFECYCLE_TESTS=1
+        ;;
+    perf)
+        suite_filter_regex="${TEST_SUITE_PERFORMANCE_FILTER_REGEX}"
+        export MA_SKIP_OVERLAY_LIFECYCLE_TESTS=1
+        ;;
+    benchmark)
+        suite_filter_regex="${TEST_SUITE_BENCHMARK_FILTER_REGEX}"
+        export MA_SKIP_OVERLAY_LIFECYCLE_TESTS=1
+        ;;
+    sensitive)
+        suite_filter_regex="${TEST_SUITE_SENSITIVE_FILTER_REGEX}"
+        export MA_SKIP_OVERLAY_LIFECYCLE_TESTS=1
+        ;;
+    appkit)
+        suite_filter_regex="${TEST_SUITE_APPKIT_FILTER_REGEX}"
+        unset MA_SKIP_OVERLAY_LIFECYCLE_TESTS
+        ;;
+    *)
+        echo -e "${RED}Unknown suite: ${SUITE}${NC}"
+        exit 1
+        ;;
+esac
 
 TEST_ARGS=()
-TARGET_DESCRIPTION="all tests"
-TARGET_LABEL="all"
+TARGET_DESCRIPTION="${SUITE} suite"
+TARGET_LABEL="${SUITE}"
 if [ -n "${TEST_FILE}" ]; then
     TEST_ARGS+=(--filter "${TEST_FILE}")
     TARGET_DESCRIPTION="tests from file: ${TEST_FILE}"
@@ -135,6 +194,12 @@ elif [ -n "${SPECIFIC_TEST}" ]; then
     TEST_ARGS+=(--filter "${SPECIFIC_TEST}")
     TARGET_DESCRIPTION="specific test: ${SPECIFIC_TEST}"
     TARGET_LABEL="${SPECIFIC_TEST}"
+elif [ -n "${suite_filter_regex}" ]; then
+    TEST_ARGS+=(--filter "${suite_filter_regex}")
+fi
+
+if [ -n "${suite_skip_regex}" ]; then
+    TEST_ARGS+=(--skip "${suite_skip_regex}")
 fi
 
 if [ "${VERBOSE}" -eq 1 ]; then
@@ -143,6 +208,14 @@ fi
 
 if [ "${STRICT}" -eq 1 ]; then
     TEST_ARGS+=(-Xswiftc -strict-concurrency=complete)
+fi
+
+if [ -z "${TEST_FILE}" ] && [ -z "${SPECIFIC_TEST}" ] && [ "${suite_allows_parallel}" -eq 1 ]; then
+    PARALLEL_ENABLED=1
+fi
+
+if [ "${PARALLEL_ENABLED}" -eq 1 ]; then
+    TEST_ARGS+=(--parallel --num-workers "${PARALLEL_WORKERS}")
 fi
 
 SAFE_TARGET_LABEL="$(echo "${TARGET_LABEL}" | tr -cs '[:alnum:]' '_' | sed 's/^_//; s/_$//')"

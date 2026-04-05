@@ -189,7 +189,9 @@ final class RecordingManagerTests: XCTestCase {
 
         mockMic.isRecording = true
         await Task.yield()
-        try? await Task.sleep(nanoseconds: 20_000_000)
+        await waitUntil(message: "Shared recorder state should not mark the manager as recording.") {
+            !manager.isRecording
+        }
 
         XCTAssertFalse(manager.isRecording)
     }

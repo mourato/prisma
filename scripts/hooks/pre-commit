@@ -89,5 +89,5 @@ fi
 echo ""
 echo "🎉 All pre-commit checks passed!"
 echo ""
-echo "💡 Tip: Full tests run on 'git push' (pre-push hook)"
+echo "💡 Tip: Scoped validation runs on 'git push' (pre-push hook)"
 echo ""

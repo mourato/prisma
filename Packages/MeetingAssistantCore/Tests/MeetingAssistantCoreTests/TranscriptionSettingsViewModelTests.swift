@@ -92,8 +92,9 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
         // When
         viewModel.selectedId = mockId
 
-        // Wait for async loading
-        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1s
+        await waitUntil(message: "Selected transcription should load full detail.") {
+            self.viewModel.selectedTranscription?.id == mockId
+        }
 
         // Then
         XCTAssertNotNil(viewModel.selectedTranscription)
@@ -305,7 +306,9 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
 
         await viewModel.loadTranscriptions()
         viewModel.selectedId = id
-        try? await Task.sleep(nanoseconds: 100_000_000)
+        await waitUntil(message: "Selected transcription should reflect the updated meeting title.") {
+            self.viewModel.selectedTranscription?.id == id
+        }
 
         let metadata = try XCTUnwrap(viewModel.transcriptions.first)
         await viewModel.updateMeetingTitle(for: metadata, to: "  Executive Sync  ")
@@ -785,9 +788,9 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
 
         viewModel.qaQuestion = "Question"
         viewModel.selectedId = id1
-        try? await Task.sleep(nanoseconds: 80_000_000)
+        await waitUntil { self.viewModel.selectedTranscription?.id == id1 }
         viewModel.selectedId = id2
-        try? await Task.sleep(nanoseconds: 80_000_000)
+        await waitUntil { self.viewModel.selectedTranscription?.id == id2 }
 
         XCTAssertEqual(viewModel.qaQuestion, "")
     }
@@ -823,7 +826,9 @@ final class TranscriptionSettingsViewModelTests: XCTestCase {
 
         await viewModel.loadTranscriptions()
         viewModel.selectedId = id
-        try? await Task.sleep(nanoseconds: 100_000_000)
+        await waitUntil(message: "Persisted conversation state should restore after selection.") {
+            self.viewModel.selectedTranscription?.id == id
+        }
 
         XCTAssertEqual(viewModel.qaHistory(for: id).count, 1)
         XCTAssertEqual(viewModel.qaHistory(for: id).first?.question, "What was decided?")

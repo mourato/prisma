@@ -8,6 +8,7 @@ set -o pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+TEST_MAPPING_CONFIG="${SCRIPT_DIR}/config/test-target-mapping.conf"
 
 # shellcheck source=scripts/lib/agent-output.sh
 source "${SCRIPT_DIR}/lib/agent-output.sh"
@@ -293,6 +294,27 @@ build_targeted_test_candidates() {
         done < "${test_file_paths}"
     done < "${token_file}"
 
+    if [ -f "${TEST_MAPPING_CONFIG}" ]; then
+        while IFS='|' read -r pattern mapped_tests; do
+            [ -n "${pattern}" ] || continue
+            case "${pattern}" in
+                \#*)
+                    continue
+                    ;;
+            esac
+
+            while IFS= read -r file_path; do
+                [ -n "${file_path}" ] || continue
+                if [[ "${file_path}" == ${pattern} ]]; then
+                    IFS=',' read -r -a mapped_array <<< "${mapped_tests}"
+                    for mapped_test in "${mapped_array[@]}"; do
+                        append_line_once "${mapped_test}" "${exact_matches}"
+                    done
+                fi
+            done < "${changed_file_list}"
+        done < "${TEST_MAPPING_CONFIG}"
+    fi
+
     cat "${exact_matches}" "${fuzzy_matches}" | sed '/^$/d' | sort -u > "${targeted_tests_file}"
 
     if [ ! -s "${targeted_tests_file}" ]; then
@@ -430,9 +452,9 @@ main() {
     while IFS= read -r test_identifier; do
         [ -n "${test_identifier}" ] || continue
         if [ "${AGENT_MODE}" -eq 1 ]; then
-            run_cmd "./scripts/run-tests.sh --file ${test_identifier} --agent" || return $?
+            run_cmd "./scripts/run-tests.sh --suite dev --file ${test_identifier} --agent" || return $?
         else
-            run_cmd "./scripts/run-tests.sh --file ${test_identifier}" || return $?
+            run_cmd "./scripts/run-tests.sh --suite dev --file ${test_identifier}" || return $?
         fi
     done < "${targeted_tests_file}"
 

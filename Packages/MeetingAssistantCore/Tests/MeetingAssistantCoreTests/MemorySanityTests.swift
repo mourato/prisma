@@ -34,8 +34,9 @@ final class MemorySanityTests: XCTestCase {
         manager = nil
 
         // Then
-        // Small delay to allow any pending async tasks/auto-release pools to drain
-        try? await Task.sleep(for: .milliseconds(100))
+        await waitUntil(message: "RecordingManager should deallocate after references are released.") {
+            weakManager == nil
+        }
         XCTAssertNil(weakManager, "RecordingManager should have been deallocated")
     }
 
@@ -50,7 +51,9 @@ final class MemorySanityTests: XCTestCase {
         service = nil
 
         // Then
-        try? await Task.sleep(for: .milliseconds(100))
+        await waitUntil(message: "Shared PostProcessingService should remain retained.") {
+            weakService != nil
+        }
         // Shared singletons remain allocated
         XCTAssertNotNil(weakService, "PostProcessingService.shared should remain allocated")
     }
@@ -66,7 +69,9 @@ final class MemorySanityTests: XCTestCase {
         client = nil
 
         // Then
-        try? await Task.sleep(for: .milliseconds(100))
+        await waitUntil(message: "Shared TranscriptionClient should remain retained.") {
+            weakClient != nil
+        }
         XCTAssertNotNil(weakClient, "TranscriptionClient.shared should remain allocated")
     }
 }

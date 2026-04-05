@@ -97,7 +97,7 @@ if [ "${AGENT_MODE}" -eq 0 ]; then
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
     run_tests() {
-        make test
+        make test-full
     }
 
     if [ "${FAST_MODE}" -eq 1 ]; then
@@ -154,7 +154,7 @@ START_TIME=$(date +%s)
 SUMMARY="Preflight completed successfully"
 
 run_test_agent() {
-    make test-agent
+    make test-full-agent
 }
 
 if [ "${FAST_MODE}" -eq 1 ]; then

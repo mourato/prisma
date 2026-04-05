@@ -1,0 +1,23 @@
+#!/bin/bash
+# Shared suite definitions for local test workflows.
+
+TEST_SUITE_DEFAULT="dev"
+
+# Fast local loop: skip performance, benchmark, and AppKit-hosted lifecycle tests.
+TEST_SUITE_DEV_SKIP_REGEX='testPerformance_|SummaryBenchmarkRegressionTests|AssistantOverlayLifecycleTests|AudioSystemTests|AudioRecorderTests|AudioRecordingWorkerTests|RecordingManagerTests|ConcurrencyTests|MemorySanityTests|AssistantIndicatorActionWiringTests'
+
+# Broad functional coverage while leaving perf, benchmark, and host-app lifecycle coverage isolated.
+TEST_SUITE_FULL_SKIP_REGEX='testPerformance_|SummaryBenchmarkRegressionTests|AssistantOverlayLifecycleTests'
+
+# Curated confidence suite for very short loops.
+TEST_SUITE_SMOKE_FILTER_REGEX='RecordingViewModelTests|TranscriptionSettingsViewModelTests|RecordingManagerTests|NavigationServiceTests|TranscriptionDeliveryServiceTests|CoreDataRepositoryTests'
+TEST_SUITE_SMOKE_SKIP_REGEX='testPerformance_|SummaryBenchmarkRegressionTests|AssistantOverlayLifecycleTests'
+
+# Dedicated slow/specialized suites.
+TEST_SUITE_PERFORMANCE_FILTER_REGEX='testPerformance_|AudioSystemPerformanceTests'
+TEST_SUITE_BENCHMARK_FILTER_REGEX='SummaryBenchmarkRegressionTests'
+TEST_SUITE_APPKIT_FILTER_REGEX='AssistantOverlayLifecycleTests'
+TEST_SUITE_SENSITIVE_FILTER_REGEX='AudioSystemTests|AudioRecorderTests|AudioRecordingWorkerTests|RecordingManagerTests|ConcurrencyTests|CoreDataRepositoryTests|StorageServiceSecurityTests|KeychainManager.*Tests'
+
+# Parallel workers for suites that benefit from broad execution.
+TEST_SUITE_PARALLEL_WORKERS="${MA_TEST_WORKERS:-4}"
