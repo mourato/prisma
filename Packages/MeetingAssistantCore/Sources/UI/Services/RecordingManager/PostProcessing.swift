@@ -489,15 +489,15 @@ extension RecordingManager {
         for meeting: Meeting?,
         capturePurposeOverride: CapturePurpose? = nil
     ) -> Bool {
-        if let meeting, meeting.app == .importedFile {
-            return false
+        if let capturePurposeOverride {
+            return capturePurposeOverride == .dictation
         }
 
         if isRecording || isTranscribing {
-            return (capturePurposeOverride ?? currentCapturePurpose) == .dictation
+            return currentCapturePurpose == .dictation
         }
 
-        return meeting?.capturePurpose == .dictation || (capturePurposeOverride ?? currentCapturePurpose) == .dictation
+        return meeting?.capturePurpose == .dictation || currentCapturePurpose == .dictation
     }
 
     func postProcessingKernelMode(

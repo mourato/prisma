@@ -22,15 +22,17 @@ extension RecordingManager {
             return PreparedTranscriptionAudio(transcriptionURL: audioURL, cleanupURL: nil)
         }
 
-        let format = resolvedAudioFormat(for: audioURL, defaultFormat: settings.audioFormat)
-        let tempOutputURL = temporaryCompactedAudioURL(for: format)
+        // The compacted copy is only an internal transcription artifact.
+        // Keep it PCM/WAV to avoid fragile AAC re-encoding in the hot path.
+        let compactionFormat: AppSettingsStore.AudioFormat = .wav
+        let tempOutputURL = temporaryCompactedAudioURL(for: compactionFormat)
         let startedAt = Date()
 
         do {
             let result = try await audioSilenceCompactor.compactForTranscription(
                 inputURL: audioURL,
                 outputURL: tempOutputURL,
-                format: format
+                format: compactionFormat
             )
             let elapsedMs = Date().timeIntervalSince(startedAt) * 1_000
 
@@ -86,13 +88,6 @@ extension RecordingManager {
     func cleanupPreparedTranscriptionAudio(_ preparedAudio: PreparedTranscriptionAudio) {
         guard let cleanupURL = preparedAudio.cleanupURL else { return }
         storage.cleanupTemporaryFiles(urls: [cleanupURL])
-    }
-
-    private func resolvedAudioFormat(
-        for audioURL: URL,
-        defaultFormat: AppSettingsStore.AudioFormat
-    ) -> AppSettingsStore.AudioFormat {
-        AppSettingsStore.AudioFormat(rawValue: audioURL.pathExtension.lowercased()) ?? defaultFormat
     }
 
     private func temporaryCompactedAudioURL(for format: AppSettingsStore.AudioFormat) -> URL {

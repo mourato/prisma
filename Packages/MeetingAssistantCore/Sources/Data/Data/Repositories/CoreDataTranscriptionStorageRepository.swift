@@ -14,8 +14,13 @@ public final class CoreDataTranscriptionStorageRepository: TranscriptionStorageR
         self.stack = stack
     }
 
-    public func saveTranscription(_ transcription: TranscriptionEntity) async throws {
+    private func sanitizePersistentHistoryIfNeeded() async {
+        await stack.sanitizeMockTranscriptionArtifactsIfNeeded()
         await stack.sanitizeMeetingOnlyPresentationDataIfNeeded()
+    }
+
+    public func saveTranscription(_ transcription: TranscriptionEntity) async throws {
+        await sanitizePersistentHistoryIfNeeded()
         try validateCanonicalSummary(for: transcription)
         let sanitizedTranscription = Self.sanitizedTranscriptionEntity(from: transcription)
         try await stack.performBackgroundTask { context in
@@ -34,7 +39,7 @@ public final class CoreDataTranscriptionStorageRepository: TranscriptionStorageR
     }
 
     public func fetchTranscription(by id: UUID) async throws -> TranscriptionEntity? {
-        await stack.sanitizeMeetingOnlyPresentationDataIfNeeded()
+        await sanitizePersistentHistoryIfNeeded()
         return try await stack.performBackgroundTask { context in
             let request = TranscriptionMO.fetchRequest(forTranscriptionId: id)
             let result = try context.fetch(request)
@@ -43,7 +48,7 @@ public final class CoreDataTranscriptionStorageRepository: TranscriptionStorageR
     }
 
     public func fetchTranscriptions(for meetingId: UUID) async throws -> [TranscriptionEntity] {
-        await stack.sanitizeMeetingOnlyPresentationDataIfNeeded()
+        await sanitizePersistentHistoryIfNeeded()
         return try await stack.performBackgroundTask { context in
             let request = TranscriptionMO.fetchRequest(forMeetingId: meetingId)
             let results = try context.fetch(request)
@@ -52,7 +57,7 @@ public final class CoreDataTranscriptionStorageRepository: TranscriptionStorageR
     }
 
     public func fetchAllTranscriptions() async throws -> [TranscriptionEntity] {
-        await stack.sanitizeMeetingOnlyPresentationDataIfNeeded()
+        await sanitizePersistentHistoryIfNeeded()
         return try await stack.performBackgroundTask { context in
             let request = TranscriptionMO.visibleHistoryFetchRequest()
             let results = try context.fetch(request)
@@ -61,7 +66,7 @@ public final class CoreDataTranscriptionStorageRepository: TranscriptionStorageR
     }
 
     public func fetchAllMetadata() async throws -> [DomainTranscriptionMetadata] {
-        await stack.sanitizeMeetingOnlyPresentationDataIfNeeded()
+        await sanitizePersistentHistoryIfNeeded()
         return try await stack.performBackgroundTask { context in
             let request = TranscriptionMO.visibleHistoryFetchRequest()
             let results = try context.fetch(request)
@@ -108,7 +113,7 @@ public final class CoreDataTranscriptionStorageRepository: TranscriptionStorageR
     }
 
     public func updateTranscription(_ transcription: TranscriptionEntity) async throws {
-        await stack.sanitizeMeetingOnlyPresentationDataIfNeeded()
+        await sanitizePersistentHistoryIfNeeded()
         try validateCanonicalSummary(for: transcription)
         let sanitizedTranscription = Self.sanitizedTranscriptionEntity(from: transcription)
         try await stack.performBackgroundTask { context in

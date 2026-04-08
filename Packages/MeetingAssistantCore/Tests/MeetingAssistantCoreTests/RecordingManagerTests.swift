@@ -801,6 +801,7 @@ final class RecordingManagerTests: XCTestCase {
         let mockCompactor = try XCTUnwrap(mockAudioSilenceCompactor)
         let settings = AppSettingsStore.shared
 
+        settings.audioFormat = .m4a
         settings.removeSilenceBeforeProcessing = true
         mockMic.permissionGranted = true
         mockSystem.permissionGranted = true
@@ -813,6 +814,8 @@ final class RecordingManagerTests: XCTestCase {
 
         let compactedURL = try XCTUnwrap(mockCompactor.lastOutputURL)
         XCTAssertEqual(mockTranscription.lastTranscribeAudioURL, compactedURL)
+        XCTAssertEqual(mockCompactor.lastFormat, .wav)
+        XCTAssertEqual(compactedURL.pathExtension.lowercased(), "wav")
         XCTAssertFalse(FileManager.default.fileExists(atPath: compactedURL.path))
     }
 
@@ -866,6 +869,65 @@ final class RecordingManagerTests: XCTestCase {
         let compactedURL = try XCTUnwrap(mockCompactor.lastOutputURL)
         XCTAssertEqual(mockTranscription.lastTranscribeAudioURL, compactedURL)
         XCTAssertFalse(FileManager.default.fileExists(atPath: compactedURL.path))
+    }
+
+    func testApplyPostProcessing_UsesDictationPromptForImportedDictationAudio() async throws {
+        let manager = try XCTUnwrap(manager)
+        let mockPostProcessing = try XCTUnwrap(mockPostProcessing)
+        let settings = AppSettingsStore.shared
+
+        let originalPostProcessingEnabled = settings.postProcessingEnabled
+        let originalSelectedPromptId = settings.selectedPromptId
+        let originalDictationSelectedPromptId = settings.dictationSelectedPromptId
+        let originalMeetingPrompts = settings.meetingPrompts
+        let originalDictationPrompts = settings.dictationPrompts
+        let originalMeetingSelection = settings.enhancementsAISelection
+        let originalDictationSelection = settings.enhancementsDictationAISelection
+        let originalProviderModels = settings.enhancementsProviderSelectedModels
+
+        defer {
+            settings.postProcessingEnabled = originalPostProcessingEnabled
+            settings.selectedPromptId = originalSelectedPromptId
+            settings.dictationSelectedPromptId = originalDictationSelectedPromptId
+            settings.meetingPrompts = originalMeetingPrompts
+            settings.dictationPrompts = originalDictationPrompts
+            settings.enhancementsAISelection = originalMeetingSelection
+            settings.enhancementsDictationAISelection = originalDictationSelection
+            settings.enhancementsProviderSelectedModels = originalProviderModels
+        }
+
+        let meetingPrompt = PostProcessingPrompt(
+            title: "Meeting Prompt",
+            promptText: "meeting",
+            isPredefined: false
+        )
+        let dictationPrompt = PostProcessingPrompt(
+            title: "Dictation Prompt",
+            promptText: "dictation",
+            isPredefined: false
+        )
+        settings.meetingPrompts = [meetingPrompt]
+        settings.dictationPrompts = [dictationPrompt]
+        settings.selectedPromptId = meetingPrompt.id
+        settings.dictationSelectedPromptId = dictationPrompt.id
+        settings.updateEnhancementsSelection(provider: .openai, model: "gpt-5.4-mini", for: .meeting)
+        settings.updateEnhancementsSelection(provider: .openai, model: "gpt-5.4-mini", for: .dictation)
+        settings.postProcessingEnabled = true
+
+        let meeting = Meeting(
+            app: .importedFile,
+            capturePurpose: .dictation,
+            audioFilePath: "/tmp/imported-dictation.wav"
+        )
+
+        _ = await manager.applyPostProcessing(
+            postProcessingInput: "raw dictation text",
+            meeting: meeting,
+            qualityProfile: nil,
+            capturePurposeOverride: .dictation
+        )
+
+        XCTAssertEqual(mockPostProcessing.lastPromptTitle, dictationPrompt.title)
     }
 
     func testTranscribeExternalAudio_DoesNotApplySilenceCompaction() async throws {

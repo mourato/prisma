@@ -12,6 +12,7 @@ import os.log
 public final class CoreDataStack: Sendable {
     enum MigrationKeys {
         static let didSanitizeNonMeetingPresentationDataV1 = "storage.migrations.non_meeting_presentation_data_sanitized.v1"
+        static let didRemoveMockTranscriptionArtifactsV1 = "storage.migrations.mock_transcription_artifacts_removed.v1"
     }
 
     private let persistentContainer: NSPersistentContainer
@@ -38,8 +39,9 @@ public final class CoreDataStack: Sendable {
     public init(name: String = AppIdentity.appSupportDirectoryName, inMemory: Bool = false) {
         let model = CoreDataModel.createManagedObjectModel()
         persistentContainer = NSPersistentContainer(name: name, managedObjectModel: model)
+        let usesInMemoryStore = inMemory || AppIdentity.isRunningTests
 
-        if inMemory {
+        if usesInMemoryStore {
             let description = NSPersistentStoreDescription()
             description.type = NSInMemoryStoreType
             description.shouldMigrateStoreAutomatically = true
@@ -294,6 +296,29 @@ public final class CoreDataStack: Sendable {
             }
         } catch {
             logger.error("Failed to sanitize non-meeting meeting presentation data: \(error.localizedDescription)")
+        }
+    }
+
+    public func sanitizeMockTranscriptionArtifactsIfNeeded(
+        checkpointKey: String? = nil
+    ) async {
+        let checkpointKey = checkpointKey ?? MigrationKeys.didRemoveMockTranscriptionArtifactsV1
+        guard !UserDefaults.standard.bool(forKey: checkpointKey) else { return }
+
+        do {
+            let removedCount = try await performBackgroundTask { context in
+                try TranscriptionMO.removeMockArtifacts(in: context)
+            }
+
+            UserDefaults.standard.set(true, forKey: checkpointKey)
+
+            if removedCount > 0 {
+                logger.notice(
+                    "Removed \(removedCount, privacy: .public) mock transcription artifacts from persistent history"
+                )
+            }
+        } catch {
+            logger.error("Failed to remove mock transcription artifacts: \(error.localizedDescription)")
         }
     }
 

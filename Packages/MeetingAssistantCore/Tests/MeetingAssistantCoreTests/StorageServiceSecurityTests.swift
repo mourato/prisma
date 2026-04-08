@@ -1,4 +1,5 @@
 @testable import MeetingAssistantCore
+import CoreData
 import XCTest
 
 final class StorageServiceSecurityTests: XCTestCase {
@@ -86,6 +87,14 @@ final class StorageServiceSecurityTests: XCTestCase {
         XCTAssertTrue(AppIdentity.isRunningTests)
         XCTAssertTrue(directory.path.hasPrefix(appSupportRoot))
         XCTAssertFalse(directory.path.hasPrefix(validPath))
+    }
+
+    func testCoreDataStackDefaultsToInMemoryWhileRunningTests() {
+        let stack = CoreDataStack(name: "StorageServiceSecurityTests.\(UUID().uuidString)")
+        let storeType = stack.mainContext.persistentStoreCoordinator?.persistentStores.first?.type
+
+        XCTAssertTrue(AppIdentity.isRunningTests)
+        XCTAssertEqual(storeType, NSInMemoryStoreType)
     }
 
     func testEmptyPathFallsBackToDefault() {

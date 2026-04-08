@@ -111,7 +111,10 @@ extension RecordingManager {
             },
             asrConfidenceScore: response.confidenceScore
         )
-        let includeQualityMetadata = !isDictationMode(for: transcription.meeting)
+        let includeQualityMetadata = !isDictationMode(
+            for: transcription.meeting,
+            capturePurposeOverride: transcription.meeting.capturePurpose
+        )
         let postProcessingInput = mergedPostProcessingInput(
             transcriptionText: qualityProfile.normalizedTextForIntelligence,
             qualityProfile: qualityProfile,
@@ -124,7 +127,8 @@ extension RecordingManager {
         let postProcessing = await applyPostProcessing(
             postProcessingInput: postProcessingInput,
             meeting: meeting,
-            qualityProfile: qualityProfile
+            qualityProfile: qualityProfile,
+            capturePurposeOverride: transcription.meeting.capturePurpose
         )
         let resolvedMeeting = meetingWithResolvedTitle(meeting, canonicalSummary: postProcessing.canonicalSummary)
 

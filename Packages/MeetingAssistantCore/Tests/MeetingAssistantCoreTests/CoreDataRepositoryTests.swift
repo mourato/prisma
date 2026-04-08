@@ -138,6 +138,32 @@ final class CoreDataRepositoryTests: XCTestCase {
         XCTAssertNil(fetched?.preferredTitle)
     }
 
+    func testSanitizeMockTranscriptionArtifactsIfNeeded_RemovesPersistedMockRows() async throws {
+        let checkpointKey = "coredata.tests.mock_artifact_sanitizer.\(UUID().uuidString)"
+        UserDefaults.standard.removeObject(forKey: checkpointKey)
+
+        let meeting = MeetingEntity(app: .unknown, capturePurpose: .dictation)
+        try await meetingRepo.saveMeeting(meeting)
+
+        var config = TranscriptionEntity.Configuration(
+            text: TranscriptionMO.mockArtifactDefaultText,
+            rawText: TranscriptionMO.mockArtifactDefaultText
+        )
+        config.modelName = TranscriptionMO.mockArtifactDefaultModel
+        let transcription = TranscriptionEntity(meeting: meeting, config: config)
+
+        try await transcriptionRepo.saveTranscription(transcription)
+        let persistedMetadata = try await transcriptionRepo.fetchAllMetadata()
+        XCTAssertEqual(persistedMetadata.count, 1)
+
+        await stack.sanitizeMockTranscriptionArtifactsIfNeeded(checkpointKey: checkpointKey)
+
+        let sanitizedMetadata = try await transcriptionRepo.fetchAllMetadata()
+        let sanitizedTranscription = try await transcriptionRepo.fetchTranscription(by: transcription.id)
+        XCTAssertTrue(sanitizedMetadata.isEmpty)
+        XCTAssertNil(sanitizedTranscription)
+    }
+
     // MARK: - Transcription Repository Tests
 
     func testSaveAndFetchTranscription() async throws {

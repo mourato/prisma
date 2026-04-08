@@ -73,6 +73,7 @@ public extension FileSystemStorageService {
     }
 
     func saveTranscription(_ transcription: Transcription) async throws {
+        await coreDataStack.sanitizeMockTranscriptionArtifactsIfNeeded()
         await coreDataStack.sanitizeMeetingOnlyPresentationDataIfNeeded(
             checkpointKey: Keys.didSanitizeNonMeetingPresentationDataV1
         )
@@ -83,6 +84,7 @@ public extension FileSystemStorageService {
     }
 
     func loadTranscriptions() async throws -> [Transcription] {
+        await coreDataStack.sanitizeMockTranscriptionArtifactsIfNeeded()
         await coreDataStack.sanitizeMeetingOnlyPresentationDataIfNeeded(
             checkpointKey: Keys.didSanitizeNonMeetingPresentationDataV1
         )
@@ -105,6 +107,7 @@ public extension FileSystemStorageService {
     }
 
     func loadMetadata(matching query: TranscriptionMetadataQuery) async throws -> [TranscriptionMetadata] {
+        await coreDataStack.sanitizeMockTranscriptionArtifactsIfNeeded()
         await coreDataStack.sanitizeMeetingOnlyPresentationDataIfNeeded(
             checkpointKey: Keys.didSanitizeNonMeetingPresentationDataV1
         )
@@ -121,6 +124,7 @@ public extension FileSystemStorageService {
     }
 
     func loadTranscription(by id: UUID) async throws -> Transcription? {
+        await coreDataStack.sanitizeMockTranscriptionArtifactsIfNeeded()
         await coreDataStack.sanitizeMeetingOnlyPresentationDataIfNeeded(
             checkpointKey: Keys.didSanitizeNonMeetingPresentationDataV1
         )

@@ -48,6 +48,9 @@ public final class TranscriptionMO: NSManagedObject {
 // MARK: - Fetch Requests
 
 public extension TranscriptionMO {
+    static let mockArtifactDefaultText = "Mock transcription text"
+    static let mockArtifactDefaultModel = "mock-model"
+
     /// Fetch request para buscar todas as transcrições ordenadas por data
     @nonobjc class func fetchRequest() -> NSFetchRequest<TranscriptionMO> {
         let request = NSFetchRequest<TranscriptionMO>(entityName: "TranscriptionMO")
@@ -88,6 +91,27 @@ public extension TranscriptionMO {
         )
         request.sortDescriptors = [NSSortDescriptor(key: "createdAt", ascending: false)]
         return request
+    }
+
+    @nonobjc class func mockArtifactsFetchRequest() -> NSFetchRequest<TranscriptionMO> {
+        let request = NSFetchRequest<TranscriptionMO>(entityName: "TranscriptionMO")
+        request.predicate = NSCompoundPredicate(orPredicateWithSubpredicates: [
+            NSPredicate(format: "modelName == %@", mockArtifactDefaultModel),
+            NSPredicate(format: "text == %@", mockArtifactDefaultText),
+        ])
+        return request
+    }
+
+    static func removeMockArtifacts(in context: NSManagedObjectContext) throws -> Int {
+        let artifacts = try context.fetch(mockArtifactsFetchRequest())
+        guard !artifacts.isEmpty else { return 0 }
+
+        for artifact in artifacts {
+            context.delete(artifact)
+        }
+
+        try context.save()
+        return artifacts.count
     }
 }
 

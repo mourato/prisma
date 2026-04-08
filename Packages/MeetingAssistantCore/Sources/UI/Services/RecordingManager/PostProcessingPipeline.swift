@@ -30,7 +30,8 @@ extension RecordingManager {
     func applyPostProcessing(
         postProcessingInput: String,
         meeting: Meeting?,
-        qualityProfile: TranscriptionQualityProfile?
+        qualityProfile: TranscriptionQualityProfile?,
+        capturePurposeOverride: CapturePurpose? = nil
     ) async -> PostProcessingResult {
         transcriptionStatus.updateProgress(phase: .postProcessing, percentage: Constants.postProcessingProgress)
         RecordingIndicatorProcessingStateStore.shared.update(
@@ -42,7 +43,10 @@ extension RecordingManager {
 
         let settings = AppSettingsStore.shared
         guard settings.postProcessingEnabled else { return .empty }
-        let kernelMode = postProcessingKernelMode(for: meeting)
+        let kernelMode = postProcessingKernelMode(
+            for: meeting,
+            capturePurposeOverride: capturePurposeOverride
+        )
         let readinessIssue = settings.enhancementsInferenceReadinessIssue(for: kernelMode, apiKeyExists: apiKeyExists)
         setPostProcessingReadinessWarning(issue: readinessIssue, mode: kernelMode)
         if let readinessIssue {
