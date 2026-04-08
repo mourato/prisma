@@ -375,7 +375,6 @@
 "settings.rules_per_app.custom_prompt.title" = "Instruções Prioritárias de Site/App";
 "settings.rules_per_app.custom_prompt.hint" = "Opcional. Essas instruções são anexadas ao prompt do sistema e ao do usuário com prioridade máxima para este app/site.";
 "settings.rules_per_app.custom_prompt.badge_accessibility" = "Tem instruções customizadas de site ou app";
-"settings.vocabulary.title" = "Vocabulário";
 "settings.vocabulary.description" = "Defina regras instantâneas de buscar e substituir aplicadas após a transcrição e antes do pós-processamento por IA.";
 "settings.vocabulary.applied_order_note" = "As regras são aplicadas na ordem da lista. A correspondência é por palavra inteira e sem diferenciar maiúsculas/minúsculas.";
 "settings.vocabulary.empty" = "Nenhuma regra de vocabulário configurada ainda.";
@@ -614,7 +613,6 @@
 "settings.shortcuts.health.action.open_accessibility" = "Abrir Acessibilidade";
 "settings.shortcuts.health.accessibility.hint.read_only" = "Mostra o estado atual da captura de atalhos.";
 "settings.shortcuts.health.accessibility.hint.actionable" = "Mostra o estado atual da captura de atalhos e permite abrir a configuração recomendada.";
-"settings.shortcuts.external_remap.title" = "Remapeamento externo (opcional)";
 "settings.shortcuts.external_remap.message" = "Para reproduzir comportamento de duplo modificador sem permissões extras, faça remapeamento externo (por exemplo com Karabiner/HyperKey): duplo Shift direito → F18, duplo Control esquerdo → F19, duplo Option direito → F20. Depois atribua F18/F19/F20 como atalhos normais no app.";
 
 /* Permissions Settings */

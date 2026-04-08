@@ -375,7 +375,6 @@
 "settings.rules_per_app.custom_prompt.title" = "Site/App Priority Instructions";
 "settings.rules_per_app.custom_prompt.hint" = "Optional. These instructions are appended to both system and user prompts with highest priority for this app/site.";
 "settings.rules_per_app.custom_prompt.badge_accessibility" = "Has custom site or app instructions";
-"settings.vocabulary.title" = "Vocabulary";
 "settings.vocabulary.description" = "Define instant find-and-replace rules applied after transcription and before AI post-processing.";
 "settings.vocabulary.applied_order_note" = "Rules are applied in list order. Matching is whole-word and case-insensitive.";
 "settings.vocabulary.empty" = "No vocabulary rules configured yet.";
@@ -614,7 +613,6 @@
 "settings.shortcuts.health.action.open_accessibility" = "Open Accessibility";
 "settings.shortcuts.health.accessibility.hint.read_only" = "Shows the current shortcut capture status.";
 "settings.shortcuts.health.accessibility.hint.actionable" = "Shows the current shortcut capture status and allows opening the recommended setting.";
-"settings.shortcuts.external_remap.title" = "External remap (optional)";
 "settings.shortcuts.external_remap.message" = "For double-modifier behavior without extra permissions, remap gestures externally (for example with Karabiner/HyperKey): double right Shift → F18, double left Control → F19, double right Option → F20. Then assign F18/F19/F20 as normal shortcuts in this app.";
 
 /* Permissions Settings */

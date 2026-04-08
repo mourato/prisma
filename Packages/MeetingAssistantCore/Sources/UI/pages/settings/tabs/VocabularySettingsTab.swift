@@ -19,12 +19,8 @@ public struct VocabularySettingsTab: View {
                 title: "settings.section.vocabulary".localized,
                 description: "settings.vocabulary.description".localized
             )
-            DSGroup("settings.vocabulary.title".localized, icon: "character.book.closed") {
+            DSCard(style: .settings) {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("settings.vocabulary.description".localized)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
                     Text("settings.vocabulary.applied_order_note".localized)
                         .font(.caption2)
                         .foregroundStyle(.secondary)

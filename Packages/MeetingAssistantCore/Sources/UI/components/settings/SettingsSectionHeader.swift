@@ -23,11 +23,16 @@ public struct SettingsSectionHeader: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            SettingsTitleWithPopover(
-                title: title,
-                helperMessage: description,
-                font: .headline
-            )
+            Text(title)
+                .font(.headline)
+                .foregroundStyle(.primary)
+
+            if let description, !description.isEmpty {
+                Text(description)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
             if let calloutKind,
                let calloutTitle,

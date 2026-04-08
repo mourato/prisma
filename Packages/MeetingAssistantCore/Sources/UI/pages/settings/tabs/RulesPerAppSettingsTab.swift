@@ -65,12 +65,7 @@ public struct RulesPerAppSettingsTab: View {
     }
 
     private var appRulesSection: some View {
-        DSGroup("settings.rules_per_app.title".localized, icon: "slider.horizontal.3", headerAccessory: {
-            DSInfoPopoverButton(
-                title: "settings.rules_per_app.title".localized,
-                message: "settings.rules_per_app.description".localized
-            )
-        }) {
+        DSGroup("settings.rules_per_app.title".localized, icon: "slider.horizontal.3") {
             VStack(alignment: .leading, spacing: 12) {
                 rulesList
 

@@ -29,23 +29,22 @@ public struct ShortcutSettingsSection<SettingsContent: View>: View {
             groupTitle,
             icon: groupIcon,
             headerAccessory: {
-                HStack(spacing: 8) {
-                    if !descriptionText.isEmpty {
-                        DSInfoPopoverButton(
-                            title: groupTitle,
-                            message: descriptionText
-                        )
-                    }
-
+                if !helperMessage.isEmpty {
                     DSInfoPopoverButton(
-                        title: "settings.shortcuts.external_remap.title".localized,
-                        message: "settings.shortcuts.external_remap.message".localized
+                        title: groupTitle,
+                        message: helperMessage
                     )
                 }
             }
         ) {
             settingsContent()
         }
+    }
+
+    private var helperMessage: String {
+        [descriptionText, "settings.shortcuts.external_remap.message".localized]
+            .filter { !$0.isEmpty }
+            .joined(separator: "\n\n")
     }
 }
 
