@@ -94,6 +94,11 @@ extension RecordingManager {
             to: response.text,
             with: settings.vocabularyReplacementRules
         )
+        guard !replacedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw TranscriptionError.transcriptionFailed(
+                PostProcessingError.emptyTranscription.localizedDescription
+            )
+        }
         let replacedSegments = applyVocabularyReplacements(
             to: response.segments,
             with: settings.vocabularyReplacementRules

@@ -96,6 +96,14 @@ final class IncrementalMeetingTranscriptionCoordinator {
             throw fallbackError
         }
 
+        guard hasAccumulatedTranscriptionContent else {
+            let error = TranscriptionError.transcriptionFailed(
+                PostProcessingError.emptyTranscription.localizedDescription
+            )
+            await markForLegacyFallback(error)
+            throw error
+        }
+
         var finalizedSegments = accumulatedSegments
         if diarizationEnabled {
             guard let finalDiarizationService else {
@@ -248,5 +256,15 @@ final class IncrementalMeetingTranscriptionCoordinator {
     private var mergedConfidenceScore: Double? {
         guard !confidenceScores.isEmpty else { return nil }
         return confidenceScores.reduce(0, +) / Double(confidenceScores.count)
+    }
+
+    private var hasAccumulatedTranscriptionContent: Bool {
+        if !accumulatedRawText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return true
+        }
+
+        return accumulatedSegments.contains {
+            !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
     }
 }

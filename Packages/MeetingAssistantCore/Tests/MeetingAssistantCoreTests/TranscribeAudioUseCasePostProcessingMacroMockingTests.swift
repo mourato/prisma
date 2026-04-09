@@ -129,6 +129,48 @@ final class TranscribeAudioPostProcessingTests: XCTestCase {
         XCTAssertTrue(input.contains("- Active app: Safari"))
     }
 
+    func testExecute_WithEmptyTranscript_ThrowsBeforePostProcessing() async throws {
+        let transcriptionRepository = MeetingAssistantCoreDomain.MacroMockTranscriptionRepository()
+        let storageRepository = MeetingAssistantCoreDomain.MacroMockTranscriptionStorageRepository()
+        let postProcessingRepository = MeetingAssistantCoreDomain.MacroMockPostProcessingRepository()
+
+        transcriptionRepository.healthCheckHandler = { () async throws -> Bool in true }
+        transcriptionRepository.transcribeHandler = { _, _ in
+            DomainTranscriptionResponse(
+                text: "   ",
+                language: "en",
+                durationSeconds: 1.0,
+                model: "test-model",
+                processedAt: "now"
+            )
+        }
+
+        storageRepository.saveTranscriptionHandler = { _ in
+            XCTFail("Empty transcripts should not be persisted")
+        }
+
+        let useCase = TranscribeAudioUseCase(
+            transcriptionRepository: transcriptionRepository,
+            transcriptionStorageRepository: storageRepository,
+            postProcessingRepository: postProcessingRepository
+        )
+
+        do {
+            _ = try await useCase.execute(
+                audioURL: URL(fileURLWithPath: "/tmp/test.wav"),
+                meeting: MeetingEntity(app: .googleMeet),
+                applyPostProcessing: true
+            )
+            XCTFail("Expected empty transcript to fail")
+        } catch let error as DomainTranscriptionError {
+            guard case let .transcriptionFailed(message) = error else {
+                return XCTFail("Unexpected error: \(error)")
+            }
+            XCTAssertEqual(message, PostProcessingError.emptyTranscription.localizedDescription)
+            XCTAssertEqual(postProcessingRepository.processTranscriptionStructured_4Calls.count, 0)
+        }
+    }
+
     func testExecuteWithMeetingNotes_EscapesReservedPromptTags() async throws {
         let transcriptionRepository = MeetingAssistantCoreDomain.MacroMockTranscriptionRepository()
         let storageRepository = MeetingAssistantCoreDomain.MacroMockTranscriptionStorageRepository()

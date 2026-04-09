@@ -90,6 +90,43 @@ final class IncrementalMeetingTranscriptionCoordinatorTests: XCTestCase {
         XCTAssertEqual(storage.savedTranscriptions.last?.lifecycleState, .failed)
     }
 
+    func testFinish_WhenNoIncrementalTranscriptIsProduced_MarksFallbackAndThrows() async throws {
+        let storage = MockStorageService()
+        let transcriptionClient = MockTranscriptionClient()
+        let coordinator = IncrementalMeetingTranscriptionCoordinator(
+            transcriptionID: UUID(),
+            meeting: makeMeeting(),
+            inputSource: "system+microphone",
+            storage: storage,
+            transcriptionClient: transcriptionClient,
+            callbacks: .init(
+                onProcessedDurationChanged: { _ in }
+            )
+        )
+
+        try await coordinator.start()
+
+        do {
+            _ = try await coordinator.finish(
+                audioURL: URL(fileURLWithPath: "/tmp/meeting-test.wav"),
+                diarizationEnabled: true,
+                finalDiarizationService: transcriptionClient
+            )
+            XCTFail("Expected finish to throw")
+        } catch let error as TranscriptionError {
+            guard case let .transcriptionFailed(message) = error else {
+                return XCTFail("Unexpected error: \(error)")
+            }
+            XCTAssertEqual(message, PostProcessingError.emptyTranscription.localizedDescription)
+        }
+
+        XCTAssertTrue(coordinator.requiresLegacyFallback)
+        XCTAssertNotNil(coordinator.fallbackError)
+        XCTAssertEqual(storage.savedTranscriptions.last?.lifecycleState, .failed)
+        XCTAssertEqual(transcriptionClient.fileTranscribeCallCount, 0)
+        XCTAssertEqual(transcriptionClient.sampleTranscribeCallCount, 0)
+    }
+
     private func makeMeeting() -> Meeting {
         Meeting(
             app: .unknown,

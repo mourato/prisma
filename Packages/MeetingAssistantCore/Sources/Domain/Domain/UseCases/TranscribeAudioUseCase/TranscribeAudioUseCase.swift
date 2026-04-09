@@ -127,6 +127,7 @@ public final class TranscribeAudioUseCase: Sendable {
                 response: response,
                 vocabularyReplacementRules: vocabularyReplacementRules
             )
+            try ensureNonEmptyTranscriptionText(replacedTranscriptionText)
 
             let postProcessingInput = mergedPostProcessingInput(
                 transcriptionText: qualityProfile.normalizedTextForIntelligence,
@@ -213,6 +214,14 @@ public final class TranscribeAudioUseCase: Sendable {
             asrConfidenceScore: response.confidenceScore
         )
         return (replacedTranscriptionText, replacedSegments, qualityProfile)
+    }
+
+    private func ensureNonEmptyTranscriptionText(_ text: String) throws {
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw DomainTranscriptionError.transcriptionFailed(
+                PostProcessingError.emptyTranscription.localizedDescription
+            )
+        }
     }
 
     private func applyVocabularyReplacements(
