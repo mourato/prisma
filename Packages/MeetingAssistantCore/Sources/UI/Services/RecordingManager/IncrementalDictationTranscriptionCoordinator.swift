@@ -53,6 +53,10 @@ final class IncrementalDictationTranscriptionCoordinator {
         createdAt = Date()
     }
 
+    var checkpointID: UUID {
+        transcriptionID
+    }
+
     func start() async throws {
         try await persistCheckpoint(lifecycleState: .partial)
     }
@@ -74,6 +78,7 @@ final class IncrementalDictationTranscriptionCoordinator {
         }
 
         try throwIfTerminalError()
+        try await ensureAccumulatedTranscriptionContent()
         try await persistCheckpoint(lifecycleState: .finalizing)
 
         let response = DomainTranscriptionResponse(
@@ -202,6 +207,24 @@ final class IncrementalDictationTranscriptionCoordinator {
     private var mergedConfidenceScore: Double? {
         guard !confidenceScores.isEmpty else { return nil }
         return confidenceScores.reduce(0, +) / Double(confidenceScores.count)
+    }
+
+    private func ensureAccumulatedTranscriptionContent() async throws {
+        if !accumulatedRawText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return
+        }
+
+        let hasSegmentText = accumulatedSegments.contains {
+            !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+        guard !hasSegmentText else { return }
+
+        let error = TranscriptionError.transcriptionFailed(
+            PostProcessingError.emptyTranscription.localizedDescription
+        )
+        terminalError = error
+        try? await persistCheckpoint(lifecycleState: .failed)
+        throw error
     }
 
     private func throwIfTerminalError() throws {

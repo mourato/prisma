@@ -64,6 +64,37 @@ final class IncrementalDictationTranscriptionCoordinatorTests: XCTestCase {
         XCTAssertEqual(storage.savedTranscriptions.last?.lifecycleState, .failed)
     }
 
+    func testFinish_WhenNoIncrementalTranscriptIsProduced_ThrowsAndPersistsFailedCheckpoint() async throws {
+        let storage = MockStorageService()
+        let transcriptionClient = MockTranscriptionClient()
+        let coordinator = IncrementalDictationTranscriptionCoordinator(
+            transcriptionID: UUID(),
+            meeting: makeMeeting(),
+            inputSource: "microphone",
+            storage: storage,
+            transcriptionClient: transcriptionClient,
+            callbacks: .init(
+                onPreviewTextChanged: { _ in },
+                onProcessedDurationChanged: { _ in }
+            )
+        )
+
+        try await coordinator.start()
+
+        do {
+            _ = try await coordinator.finish()
+            XCTFail("Expected finish to throw")
+        } catch let error as TranscriptionError {
+            guard case let .transcriptionFailed(message) = error else {
+                return XCTFail("Unexpected error: \(error)")
+            }
+            XCTAssertEqual(message, PostProcessingError.emptyTranscription.localizedDescription)
+        }
+
+        XCTAssertEqual(storage.savedTranscriptions.last?.lifecycleState, .failed)
+        XCTAssertEqual(transcriptionClient.transcribeCallCount, 0)
+    }
+
     private func makeMeeting() -> Meeting {
         Meeting(
             app: .unknown,

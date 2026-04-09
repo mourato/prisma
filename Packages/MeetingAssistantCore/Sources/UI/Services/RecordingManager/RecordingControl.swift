@@ -280,45 +280,66 @@ public extension RecordingManager {
             // Transcribe if requested
             if transcribe, let transcriptionSession {
                 if incrementalDictationCoordinator != nil, transcriptionSession.meeting.capturePurpose == .dictation {
-                    let transcription = try await finishIncrementalDictationSession(
-                        audioURL: finalURL,
-                        session: transcriptionSession
-                    )
-                    persistMeetingNotes(transcriptionSession.meetingNotesContent, forTranscription: transcription.id)
-                    if shouldDriveSharedTranscriptionState(for: transcriptionSession.id) {
-                        meetingState = .processing(.generatingOutput)
-                    }
-                    if currentMeeting?.id == transcriptionSession.id {
-                        currentMeeting?.state = .completed
-                    }
-                    TranscriptionDeliveryService.deliver(
-                        transcription: transcription,
-                        recordingSource: transcriptionSession.recordingSource
-                    )
-                    completeVisibleTranscription(success: true, sessionID: transcriptionSession.id)
-                    notifySuccess(for: transcription)
-                    scheduleStatusReset(sessionID: transcriptionSession.id)
-                    unregisterTranscriptionSession(transcriptionSession.id)
-                    cancelEstimatedPostProcessingProgress(for: transcriptionSession.id)
-                    isStartingRecording = false
-                    if foregroundTranscriptionSessionID == nil, !isRecording, !isStartingRecording {
-                        meetingState = .idle
-                    }
-                    if AppSettingsStore.shared.autoExportSummaries {
-                        await exportSummary(transcription: transcription)
-                    }
-                    clearMeetingNotesState(removePersistedValue: true, meetingID: transcriptionSession.id)
-                    if currentMeeting?.id == transcriptionSession.id {
-                        currentMeeting = nil
-                        currentCapturePurpose = nil
-                        isMeetingMicrophoneEnabled = false
-                        postProcessingContext = nil
-                        postProcessingContextItems = []
-                        dictationSessionOutputLanguageOverride = nil
-                        dictationStartBundleIdentifier = nil
-                        dictationStartURL = nil
-                        activeStartTelemetry = nil
-                        clearPostProcessingReadinessWarning()
+                    let checkpointID = incrementalDictationCoordinator?.checkpointID
+
+                    do {
+                        let transcription = try await finishIncrementalDictationSession(
+                            audioURL: finalURL,
+                            session: transcriptionSession
+                        )
+                        persistMeetingNotes(transcriptionSession.meetingNotesContent, forTranscription: transcription.id)
+                        if shouldDriveSharedTranscriptionState(for: transcriptionSession.id) {
+                            meetingState = .processing(.generatingOutput)
+                        }
+                        if currentMeeting?.id == transcriptionSession.id {
+                            currentMeeting?.state = .completed
+                        }
+                        TranscriptionDeliveryService.deliver(
+                            transcription: transcription,
+                            recordingSource: transcriptionSession.recordingSource
+                        )
+                        completeVisibleTranscription(success: true, sessionID: transcriptionSession.id)
+                        notifySuccess(for: transcription)
+                        scheduleStatusReset(sessionID: transcriptionSession.id)
+                        unregisterTranscriptionSession(transcriptionSession.id)
+                        cancelEstimatedPostProcessingProgress(for: transcriptionSession.id)
+                        isStartingRecording = false
+                        if foregroundTranscriptionSessionID == nil, !isRecording, !isStartingRecording {
+                            meetingState = .idle
+                        }
+                        if AppSettingsStore.shared.autoExportSummaries {
+                            await exportSummary(transcription: transcription)
+                        }
+                        clearMeetingNotesState(removePersistedValue: true, meetingID: transcriptionSession.id)
+                        if currentMeeting?.id == transcriptionSession.id {
+                            currentMeeting = nil
+                            currentCapturePurpose = nil
+                            isMeetingMicrophoneEnabled = false
+                            postProcessingContext = nil
+                            postProcessingContextItems = []
+                            dictationSessionOutputLanguageOverride = nil
+                            dictationStartBundleIdentifier = nil
+                            dictationStartURL = nil
+                            activeStartTelemetry = nil
+                            clearPostProcessingReadinessWarning()
+                        }
+                    } catch {
+                        AppLogger.warning(
+                            "Dictation incremental transcription failed during finalization; falling back to legacy full-file pipeline",
+                            category: .recordingManager,
+                            extra: ["error": error.localizedDescription]
+                        )
+                        teardownIncrementalDictationSession()
+                        let preparedAudio = await prepareAudioForTranscription(
+                            audioURL: finalURL,
+                            allowSilenceRemoval: true
+                        )
+                        await transcribeRecording(
+                            audioURL: preparedAudio.transcriptionURL,
+                            session: transcriptionSession,
+                            cleanupAudioURL: preparedAudio.cleanupURL,
+                            transcriptionIDOverride: checkpointID
+                        )
                     }
                 } else if incrementalMeetingCoordinator != nil, transcriptionSession.meeting.capturePurpose == .meeting {
                     let checkpointID = incrementalMeetingCoordinator?.checkpointID
