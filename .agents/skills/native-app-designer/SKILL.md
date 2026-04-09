@@ -44,11 +44,14 @@ Use this sequence:
 4. **Accessibility**: Labels, contrast, and reduced-motion paths are covered.
 5. **Motion Quality**: Animation supports comprehension, not decoration.
 6. **Visual Rhythm**: Spacing/typography form clear grouping and scanning flow.
+7. **Redundancy Control**: Nearby titles, descriptions, tooltips, and popovers do not repeat the same message.
 
 ## Practical Guidelines
 
 - Prefer semantic colors/materials and design-system tokens over hardcoded values.
 - Avoid generic, repetitive layouts that flatten hierarchy.
+- In settings and inspector-style screens, keep one primary explanation per cluster. Do not repeat identical copy in the page header, section header, card body, and tooltip.
+- Treat popovers/help affordances as escalation, not baseline content. If two or more nearby popovers explain the same concept or add little beyond visible copy, consolidate or remove them.
 - Use motion to guide attention and communicate state changes.
 - Keep reduced-motion behavior available for motion-heavy transitions.
 - For macOS surfaces, use AppKit bridging only when SwiftUI behavior is insufficient.

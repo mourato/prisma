@@ -1,6 +1,6 @@
 # AGENTS.md - Prisma Development Guide
 
-**Document Status:** v2.8 | Updated: Mar 10, 2026 | Maintained by: Team
+**Document Status:** v2.9 | Updated: Apr 8, 2026 | Maintained by: Team
 
 ---
 
@@ -100,6 +100,7 @@ These are inviolable rules that apply to every task:
 - ⛔ **Never commit knowingly broken code:** Split commits by intent (feature, refactor, tests, cleanup). Use Conventional Commits.
 - ⛔ **Always localize UI text:** User-facing strings must use `"key".localized`. Never hardcode. Remove orphaned keys from `Localizable.strings` when text is deleted.
 - ⛔ **Never hardcode secrets:** API keys, tokens, credentials always use Keychain. Never store in source/tests/scripts.
+- ⛔ **Do not stack redundant UI copy or helpers:** In the same viewport, avoid repeating the same title/description across section headers, cards, and popovers. Prefer one visible explanation plus one optional helper surface when the extra context is materially different.
 
 ---
 

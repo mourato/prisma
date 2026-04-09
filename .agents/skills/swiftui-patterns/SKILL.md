@@ -146,6 +146,9 @@ struct ContentView: View {
 - Use drill-down rows consistently for secondary settings pages.
 - For any settings row that pushes a secondary page, reuse `SettingsDrillDownListRow` inside a `NavigationStack`, following the pattern in `EnhancementsSettingsTab` before creating a custom row wrapper.
 - Keep row anatomy stable: title, optional short subtitle, disclosure indicator.
+- Avoid repeating the same title or description in the page header and again in the first settings card unless the card introduces materially new context.
+- Prefer inline descriptive copy for the page-level explanation. Reserve info popovers/tooltips for secondary guidance, edge cases, or optional workflows.
+- If two or more info affordances appear in the same local cluster, consolidate them into one helper surface unless each serves a clearly distinct purpose.
 - Ensure keyboard navigation works (Tab/Arrow/Enter/Escape) across rows and detail pages.
 - Surface explicit loading/empty/success/warning states in dynamic settings blocks.
 - Keep destructive actions visually separated from neutral actions.
@@ -158,7 +161,7 @@ Use the project's Design System tokens/components to keep UI consistent and DRY:
 - Tokens: `MeetingAssistantDesignSystem`
 - Components: `MACard`, `MAGroup`, `MAToggleRow`, `MACallout`, `MABadge`, `MAActionButton`, `MAThemePicker`
 - Always evaluate reusing/extending these components before introducing custom wrappers in feature views.
-- Keyboard shortcut registration sections should use `MAShortcutSettingsSection` (instead of duplicating section layout). This component is the standard place for the trailing info icon + popover that explains the optional external remap flow; do not inline repeated `MACallout` warnings in each settings tab.
+- Keyboard shortcut registration sections should use `MAShortcutSettingsSection` (instead of duplicating section layout). Keep a single consolidated helper affordance for shortcut context plus optional external remap guidance; do not stack multiple adjacent info popovers or repeat the same warning inline in each settings tab.
 
 ```swift
 // Use MAGroup for labeled sections
