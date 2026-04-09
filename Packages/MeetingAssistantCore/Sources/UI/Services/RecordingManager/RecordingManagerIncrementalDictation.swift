@@ -68,17 +68,10 @@ extension RecordingManager {
             transcriptionClient.warmupModelIfNeededInBackground()
         }
 
-        recorder.onMixedAudioBuffer = { [weak self] buffer in
+        recorder.onMixedAudioBuffer = { buffer in
             let bufferBox = SendableAudioBufferBox(buffer: buffer)
-            Task { @MainActor [weak self] in
-                do {
-                    try await coordinator.append(buffer: bufferBox.buffer)
-                } catch {
-                    self?.transcriptionStatus.recordError(.transcriptionFailed(error.localizedDescription))
-                    if let self {
-                        await self.handleIncrementalDictationPipelineFailure(error)
-                    }
-                }
+            Task { @MainActor in
+                await coordinator.append(buffer: bufferBox.buffer)
             }
         }
 
@@ -109,6 +102,15 @@ extension RecordingManager {
         )
 
         let result = try await incrementalDictationCoordinator.finish()
+        AppLogger.info(
+            "Selected transcription pipeline",
+            category: .recordingManager,
+            extra: [
+                "path": "incremental-final",
+                "sessionID": session.id.uuidString,
+                "capturePurpose": session.meeting.capturePurpose.rawValue,
+            ]
+        )
         let settings = AppSettingsStore.shared
         let meetingEntity = makeMeetingEntity(meeting: session.meeting, audioDuration: audioDuration)
         let config = makeUseCaseConfig(session: session, settings: settings)
@@ -163,24 +165,5 @@ extension RecordingManager {
             await incrementalDictationCoordinator.cancelAndDiscard()
         }
         teardownIncrementalDictationSession()
-    }
-
-    func handleIncrementalDictationPipelineFailure(_ error: Error) async {
-        if let incrementalDictationCoordinator {
-            await incrementalDictationCoordinator.fail(with: error)
-        }
-        teardownIncrementalDictationSession()
-
-        guard isRecording || isStartingRecording else { return }
-
-        _ = await micRecorder.stopRecording()
-        _ = await systemRecorder.stopRecording()
-        isRecording = false
-        isStartingRecording = false
-        cancelEstimatedPostProcessingProgress(for: currentMeeting?.id)
-        meetingState = .failed(error.localizedDescription)
-        currentMeeting?.state = .failed(error.localizedDescription)
-        lastError = error
-        await RecordingExclusivityCoordinator.shared.endRecording()
     }
 }

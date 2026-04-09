@@ -1,6 +1,7 @@
 @preconcurrency import AVFoundation
 import Foundation
 import MeetingAssistantCoreAudio
+import MeetingAssistantCoreCommon
 import MeetingAssistantCoreData
 import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
@@ -34,6 +35,7 @@ final class IncrementalMeetingTranscriptionCoordinator {
     private var hasPersistedCheckpoint = false
     private(set) var requiresLegacyFallback = false
     private(set) var fallbackError: Error?
+    private(set) var fallbackReason: IncrementalTranscriptionFallbackReason?
 
     init(
         transcriptionID: UUID,
@@ -69,7 +71,9 @@ final class IncrementalMeetingTranscriptionCoordinator {
                 try await transcribe(window: window)
             }
         } catch {
-            await markForLegacyFallback(error)
+            if !requiresLegacyFallback {
+                await markForLegacyFallback(error, reason: .assemblerFailed)
+            }
         }
     }
 
@@ -88,7 +92,9 @@ final class IncrementalMeetingTranscriptionCoordinator {
                 try await transcribe(window: window)
             }
         } catch {
-            await markForLegacyFallback(error)
+            if !requiresLegacyFallback {
+                await markForLegacyFallback(error, reason: .assemblerFailed)
+            }
             throw error
         }
 
@@ -100,7 +106,7 @@ final class IncrementalMeetingTranscriptionCoordinator {
             let error = TranscriptionError.transcriptionFailed(
                 PostProcessingError.emptyTranscription.localizedDescription
             )
-            await markForLegacyFallback(error)
+            await markForLegacyFallback(error, reason: .emptyTranscript)
             throw error
         }
 
@@ -108,7 +114,7 @@ final class IncrementalMeetingTranscriptionCoordinator {
         if diarizationEnabled {
             guard let finalDiarizationService else {
                 let error = TranscriptionError.transcriptionFailed("Final diarization unsupported in current backend")
-                await markForLegacyFallback(error)
+                await markForLegacyFallback(error, reason: .finalDiarizationFailed)
                 throw error
             }
 
@@ -119,7 +125,7 @@ final class IncrementalMeetingTranscriptionCoordinator {
                     using: speakerTimeline
                 )
             } catch {
-                await markForLegacyFallback(error)
+                await markForLegacyFallback(error, reason: .finalDiarizationFailed)
                 throw error
             }
         }
@@ -168,6 +174,7 @@ final class IncrementalMeetingTranscriptionCoordinator {
             )
             try await persistCheckpoint(lifecycleState: .partial)
         } catch {
+            await markForLegacyFallback(error, reason: .windowTranscriptionFailed)
             throw error
         }
     }
@@ -246,10 +253,22 @@ final class IncrementalMeetingTranscriptionCoordinator {
         hasPersistedCheckpoint = true
     }
 
-    private func markForLegacyFallback(_ error: Error) async {
+    private func markForLegacyFallback(
+        _ error: Error,
+        reason: IncrementalTranscriptionFallbackReason
+    ) async {
         guard !requiresLegacyFallback else { return }
         requiresLegacyFallback = true
         fallbackError = error
+        fallbackReason = reason
+        AppLogger.warning(
+            "Meeting incremental transcription degraded; full-file fallback required",
+            category: .recordingManager,
+            extra: [
+                "reason": reason.rawValue,
+                "error": error.localizedDescription,
+            ]
+        )
         try? await persistCheckpoint(lifecycleState: .failed)
     }
 

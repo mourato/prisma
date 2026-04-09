@@ -68,6 +68,7 @@ class MockTranscriptionClient: TranscriptionService, TranscriptionServiceFinalDi
 
     var shouldFailHealthCheck = false
     var shouldFailTranscription = false
+    var shouldFailDiarization = false
     var mockText = "Mock transcription text"
     var mockLanguage = "pt"
     var mockDurationSeconds = 10.0
@@ -161,7 +162,7 @@ class MockTranscriptionClient: TranscriptionService, TranscriptionServiceFinalDi
     func diarize(audioURL: URL) async throws -> [SpeakerTimelineSegment] {
         diarizeCallCount += 1
         lastTranscribeAudioURL = audioURL
-        if shouldFailTranscription {
+        if shouldFailDiarization {
             throw NSError(domain: "MockTranscription", code: 3, userInfo: [NSLocalizedDescriptionKey: "Diarization failed"])
         }
         return mockSpeakerTimeline

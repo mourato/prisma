@@ -64,20 +64,10 @@ extension RecordingManager {
             transcriptionClient.warmupModelIfNeededInBackground()
         }
 
-        recorder.onMixedAudioBuffer = { [weak self] buffer in
+        recorder.onMixedAudioBuffer = { buffer in
             let bufferBox = SendableMeetingAudioBufferBox(buffer: buffer)
-            Task { @MainActor [weak self] in
-                guard let self else { return }
+            Task { @MainActor in
                 await coordinator.append(buffer: bufferBox.buffer)
-                if coordinator.requiresLegacyFallback {
-                    AppLogger.warning(
-                        "Meeting incremental transcription degraded; will fallback to legacy full-file transcription on stop",
-                        category: .recordingManager,
-                        extra: [
-                            "error": coordinator.fallbackError?.localizedDescription ?? "unknown",
-                        ]
-                    )
-                }
             }
         }
 
@@ -117,6 +107,15 @@ extension RecordingManager {
             audioURL: audioURL,
             diarizationEnabled: diarizationEnabled,
             finalDiarizationService: finalDiarizationService
+        )
+        AppLogger.info(
+            "Selected transcription pipeline",
+            category: .recordingManager,
+            extra: [
+                "path": "incremental-final",
+                "sessionID": session.id.uuidString,
+                "capturePurpose": session.meeting.capturePurpose.rawValue,
+            ]
         )
         let settings = AppSettingsStore.shared
         let meetingEntity = makeMeetingEntity(meeting: session.meeting, audioDuration: audioDuration)

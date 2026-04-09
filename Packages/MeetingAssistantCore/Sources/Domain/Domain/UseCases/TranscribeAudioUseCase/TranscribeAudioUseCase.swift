@@ -128,6 +128,11 @@ public final class TranscribeAudioUseCase: Sendable {
                 vocabularyReplacementRules: vocabularyReplacementRules
             )
             try ensureNonEmptyTranscriptionText(replacedTranscriptionText)
+            logValidatedTranscriptMetrics(
+                text: replacedTranscriptionText,
+                segmentCount: replacedSegments.count,
+                durationSeconds: response.durationSeconds
+            )
 
             let postProcessingInput = mergedPostProcessingInput(
                 transcriptionText: qualityProfile.normalizedTextForIntelligence,
@@ -222,6 +227,25 @@ public final class TranscribeAudioUseCase: Sendable {
                 PostProcessingError.emptyTranscription.localizedDescription
             )
         }
+    }
+
+    private func logValidatedTranscriptMetrics(
+        text: String,
+        segmentCount: Int,
+        durationSeconds: Double
+    ) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let wordCount = trimmed.split { $0.isWhitespace || $0.isNewline }.count
+        AppLogger.info(
+            "Validated transcript before post-processing",
+            category: .transcriptionEngine,
+            extra: [
+                "characters": String(trimmed.count),
+                "words": String(wordCount),
+                "segments": String(segmentCount),
+                "durationSeconds": String(durationSeconds),
+            ]
+        )
     }
 
     private func applyVocabularyReplacements(

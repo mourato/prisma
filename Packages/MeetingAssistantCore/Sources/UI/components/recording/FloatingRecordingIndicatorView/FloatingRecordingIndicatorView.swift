@@ -544,12 +544,12 @@ public struct FloatingRecordingIndicatorView: View {
                 leadingControls
             }
 
-            recordingCluster(size: size)
-
             if showsInlinePromptSelector {
-                divider
                 inlinePromptControl(size: size)
+                divider
             }
+
+            recordingCluster(size: size)
 
             if showsInlineLanguageSelector {
                 divider
@@ -560,6 +560,7 @@ public struct FloatingRecordingIndicatorView: View {
                 divider
                 meetingTimerView
             }
+
             if showsMeetingMicrophoneControl {
                 divider
                 meetingMicrophoneControl

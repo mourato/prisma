@@ -86,6 +86,7 @@ final class IncrementalMeetingTranscriptionCoordinatorTests: XCTestCase {
         } catch {}
 
         XCTAssertTrue(coordinator.requiresLegacyFallback)
+        XCTAssertEqual(coordinator.fallbackReason, .windowTranscriptionFailed)
         XCTAssertNotNil(coordinator.fallbackError)
         XCTAssertEqual(storage.savedTranscriptions.last?.lifecycleState, .failed)
     }
@@ -121,10 +122,56 @@ final class IncrementalMeetingTranscriptionCoordinatorTests: XCTestCase {
         }
 
         XCTAssertTrue(coordinator.requiresLegacyFallback)
+        XCTAssertEqual(coordinator.fallbackReason, .emptyTranscript)
         XCTAssertNotNil(coordinator.fallbackError)
         XCTAssertEqual(storage.savedTranscriptions.last?.lifecycleState, .failed)
         XCTAssertEqual(transcriptionClient.fileTranscribeCallCount, 0)
         XCTAssertEqual(transcriptionClient.sampleTranscribeCallCount, 0)
+    }
+
+    func testFinish_WhenFinalDiarizationFails_MarksFallbackAndThrows() async throws {
+        let storage = MockStorageService()
+        let transcriptionClient = MockTranscriptionClient()
+        transcriptionClient.mockText = "meeting partial"
+        transcriptionClient.mockSegments = [
+            Transcription.Segment(
+                speaker: Transcription.unknownSpeaker,
+                text: "meeting partial",
+                startTime: 0,
+                endTime: 1.0
+            ),
+        ]
+        transcriptionClient.shouldFailDiarization = true
+
+        let coordinator = IncrementalMeetingTranscriptionCoordinator(
+            transcriptionID: UUID(),
+            meeting: makeMeeting(),
+            inputSource: "system+microphone",
+            storage: storage,
+            transcriptionClient: transcriptionClient,
+            callbacks: .init(
+                onProcessedDurationChanged: { _ in }
+            )
+        )
+
+        try await coordinator.start()
+        await coordinator.append(buffer: try makeBuffer(segments: [.tone(1.0, amplitude: 0.25)]))
+
+        do {
+            _ = try await coordinator.finish(
+                audioURL: URL(fileURLWithPath: "/tmp/meeting-test.wav"),
+                diarizationEnabled: true,
+                finalDiarizationService: transcriptionClient
+            )
+            XCTFail("Expected finish to throw")
+        } catch {}
+
+        XCTAssertTrue(coordinator.requiresLegacyFallback)
+        XCTAssertEqual(coordinator.fallbackReason, .finalDiarizationFailed)
+        XCTAssertNotNil(coordinator.fallbackError)
+        XCTAssertEqual(storage.savedTranscriptions.last?.lifecycleState, .failed)
+        XCTAssertEqual(transcriptionClient.sampleTranscribeCallCount, 1)
+        XCTAssertEqual(transcriptionClient.diarizeCallCount, 1)
     }
 
     private func makeMeeting() -> Meeting {

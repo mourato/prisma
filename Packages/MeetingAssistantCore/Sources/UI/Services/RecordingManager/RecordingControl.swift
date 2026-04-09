@@ -324,10 +324,14 @@ public extension RecordingManager {
                             clearPostProcessingReadinessWarning()
                         }
                     } catch {
+                        let fallbackReason = incrementalDictationCoordinator?.fallbackReason?.rawValue ?? "unknown"
                         AppLogger.warning(
                             "Dictation incremental transcription failed during finalization; falling back to legacy full-file pipeline",
                             category: .recordingManager,
-                            extra: ["error": error.localizedDescription]
+                            extra: [
+                                "error": error.localizedDescription,
+                                "reason": fallbackReason,
+                            ]
                         )
                         teardownIncrementalDictationSession()
                         let preparedAudio = await prepareAudioForTranscription(
@@ -338,7 +342,9 @@ public extension RecordingManager {
                             audioURL: preparedAudio.transcriptionURL,
                             session: transcriptionSession,
                             cleanupAudioURL: preparedAudio.cleanupURL,
-                            transcriptionIDOverride: checkpointID
+                            transcriptionIDOverride: checkpointID,
+                            pipelinePath: "incremental->fallback-full-file",
+                            fallbackReason: fallbackReason
                         )
                     }
                 } else if incrementalMeetingCoordinator != nil, transcriptionSession.meeting.capturePurpose == .meeting {
@@ -386,10 +392,14 @@ public extension RecordingManager {
                             clearPostProcessingReadinessWarning()
                         }
                     } catch {
+                        let fallbackReason = incrementalMeetingCoordinator?.fallbackReason?.rawValue ?? "unknown"
                         AppLogger.warning(
                             "Meeting incremental transcription failed during finalization; falling back to legacy full-file pipeline",
                             category: .recordingManager,
-                            extra: ["error": error.localizedDescription]
+                            extra: [
+                                "error": error.localizedDescription,
+                                "reason": fallbackReason,
+                            ]
                         )
                         teardownIncrementalMeetingSession()
                         let preparedAudio = await prepareAudioForTranscription(
@@ -400,7 +410,9 @@ public extension RecordingManager {
                             audioURL: preparedAudio.transcriptionURL,
                             session: transcriptionSession,
                             cleanupAudioURL: preparedAudio.cleanupURL,
-                            transcriptionIDOverride: checkpointID
+                            transcriptionIDOverride: checkpointID,
+                            pipelinePath: "incremental->fallback-full-file",
+                            fallbackReason: fallbackReason
                         )
                     }
                 } else {

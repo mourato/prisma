@@ -99,6 +99,17 @@ extension RecordingManager {
                 PostProcessingError.emptyTranscription.localizedDescription
             )
         }
+        let wordCount = replacedText.split { $0.isWhitespace || $0.isNewline }.count
+        AppLogger.info(
+            "Validated transcript before post-processing",
+            category: .recordingManager,
+            extra: [
+                "characters": String(replacedText.trimmingCharacters(in: .whitespacesAndNewlines).count),
+                "words": String(wordCount),
+                "segments": String(response.segments.count),
+                "durationSeconds": String(response.durationSeconds),
+            ]
+        )
         let replacedSegments = applyVocabularyReplacements(
             to: response.segments,
             with: settings.vocabularyReplacementRules

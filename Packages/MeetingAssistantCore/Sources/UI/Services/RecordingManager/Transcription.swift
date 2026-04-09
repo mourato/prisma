@@ -13,13 +13,30 @@ extension RecordingManager {
         audioURL: URL,
         session: TranscriptionSessionSnapshot,
         cleanupAudioURL: URL? = nil,
-        transcriptionIDOverride: UUID? = nil
+        transcriptionIDOverride: UUID? = nil,
+        pipelinePath: String = "full-file-direct",
+        fallbackReason: String? = nil
     ) async {
         defer {
             if let cleanupAudioURL {
                 storage.cleanupTemporaryFiles(urls: [cleanupAudioURL])
             }
         }
+
+        var pipelineLogExtra: [String: String] = [
+            "path": pipelinePath,
+            "sessionID": session.id.uuidString,
+            "capturePurpose": session.meeting.capturePurpose.rawValue,
+            "audio": audioURL.lastPathComponent,
+        ]
+        if let fallbackReason {
+            pipelineLogExtra["reason"] = fallbackReason
+        }
+        AppLogger.info(
+            "Selected transcription pipeline",
+            category: .recordingManager,
+            extra: pipelineLogExtra
+        )
 
         beginTranscriptionUIStateIfNeeded(for: session)
         cancelEstimatedPostProcessingProgress(for: session.id)

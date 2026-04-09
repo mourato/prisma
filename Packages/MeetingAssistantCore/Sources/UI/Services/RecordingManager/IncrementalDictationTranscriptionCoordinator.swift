@@ -34,7 +34,9 @@ final class IncrementalDictationTranscriptionCoordinator {
     private var processedDurationSeconds: Double = 0
     private var confidenceScores: [Double] = []
     private var hasPersistedCheckpoint = false
-    private var terminalError: Error?
+    private(set) var requiresLegacyFallback = false
+    private(set) var fallbackError: Error?
+    private(set) var fallbackReason: IncrementalTranscriptionFallbackReason?
 
     init(
         transcriptionID: UUID,
@@ -61,23 +63,41 @@ final class IncrementalDictationTranscriptionCoordinator {
         try await persistCheckpoint(lifecycleState: .partial)
     }
 
-    func append(buffer: AVAudioPCMBuffer) async throws {
-        try throwIfTerminalError()
-        let windows = try await assembler.append(buffer: buffer)
-        for window in windows {
-            try await transcribe(window: window)
+    func append(buffer: AVAudioPCMBuffer) async {
+        guard !requiresLegacyFallback else { return }
+
+        do {
+            let windows = try await assembler.append(buffer: buffer)
+            for window in windows {
+                try await transcribe(window: window)
+            }
+        } catch {
+            if !requiresLegacyFallback {
+                await markForLegacyFallback(error, reason: .assemblerFailed)
+            }
         }
     }
 
     func finish() async throws -> FinalizedResult {
-        try throwIfTerminalError()
-
-        let windows = try await assembler.finish()
-        for window in windows {
-            try await transcribe(window: window)
+        if let fallbackError {
+            throw fallbackError
         }
 
-        try throwIfTerminalError()
+        do {
+            let windows = try await assembler.finish()
+            for window in windows {
+                try await transcribe(window: window)
+            }
+        } catch {
+            if !requiresLegacyFallback {
+                await markForLegacyFallback(error, reason: .assemblerFailed)
+            }
+            throw error
+        }
+
+        if let fallbackError {
+            throw fallbackError
+        }
         try await ensureAccumulatedTranscriptionContent()
         try await persistCheckpoint(lifecycleState: .finalizing)
 
@@ -102,13 +122,9 @@ final class IncrementalDictationTranscriptionCoordinator {
         return FinalizedResult(response: response, checkpointID: transcriptionID)
     }
 
-    func fail(with error: Error) async {
-        terminalError = error
-        try? await persistCheckpoint(lifecycleState: .failed)
-    }
-
     func cancelAndDiscard() async {
-        terminalError = CancellationError()
+        fallbackError = CancellationError()
+        requiresLegacyFallback = true
         if hasPersistedCheckpoint {
             try? await storage.deleteTranscription(by: transcriptionID)
         }
@@ -119,12 +135,10 @@ final class IncrementalDictationTranscriptionCoordinator {
 
         do {
             let response = try await transcriptionClient.transcribe(samples: window.samples)
-            try throwIfTerminalError()
             append(response: response, absoluteWindowStartTime: window.startTime, absoluteWindowEndTime: window.endTime)
             try await persistCheckpoint(lifecycleState: .partial)
         } catch {
-            terminalError = error
-            try? await persistCheckpoint(lifecycleState: .failed)
+            await markForLegacyFallback(error, reason: .windowTranscriptionFailed)
             throw error
         }
     }
@@ -222,14 +236,26 @@ final class IncrementalDictationTranscriptionCoordinator {
         let error = TranscriptionError.transcriptionFailed(
             PostProcessingError.emptyTranscription.localizedDescription
         )
-        terminalError = error
-        try? await persistCheckpoint(lifecycleState: .failed)
+        await markForLegacyFallback(error, reason: .emptyTranscript)
         throw error
     }
 
-    private func throwIfTerminalError() throws {
-        if let terminalError {
-            throw terminalError
-        }
+    private func markForLegacyFallback(
+        _ error: Error,
+        reason: IncrementalTranscriptionFallbackReason
+    ) async {
+        guard !requiresLegacyFallback else { return }
+        requiresLegacyFallback = true
+        fallbackError = error
+        fallbackReason = reason
+        AppLogger.warning(
+            "Dictation incremental transcription degraded; full-file fallback required",
+            category: .recordingManager,
+            extra: [
+                "reason": reason.rawValue,
+                "error": error.localizedDescription,
+            ]
+        )
+        try? await persistCheckpoint(lifecycleState: .failed)
     }
 }

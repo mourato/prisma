@@ -23,7 +23,7 @@ final class IncrementalDictationTranscriptionCoordinatorTests: XCTestCase {
         )
 
         try await coordinator.start()
-        try await coordinator.append(buffer: makeBuffer(segments: [.tone(13.0, amplitude: 0.25)]))
+        await coordinator.append(buffer: try makeBuffer(segments: [.tone(13.0, amplitude: 0.25)]))
 
         XCTAssertGreaterThanOrEqual(storage.savedTranscriptions.count, 2)
         XCTAssertEqual(storage.savedTranscriptions[0].lifecycleState, .partial)
@@ -54,13 +54,16 @@ final class IncrementalDictationTranscriptionCoordinatorTests: XCTestCase {
         )
 
         try await coordinator.start()
-        try await coordinator.append(buffer: makeBuffer(segments: [.tone(1.0, amplitude: 0.25)]))
+        await coordinator.append(buffer: try makeBuffer(segments: [.tone(1.0, amplitude: 0.25)]))
 
         do {
             _ = try await coordinator.finish()
             XCTFail("Expected finish to throw")
         } catch {}
 
+        XCTAssertTrue(coordinator.requiresLegacyFallback)
+        XCTAssertEqual(coordinator.fallbackReason, .windowTranscriptionFailed)
+        XCTAssertNotNil(coordinator.fallbackError)
         XCTAssertEqual(storage.savedTranscriptions.last?.lifecycleState, .failed)
     }
 
@@ -92,6 +95,8 @@ final class IncrementalDictationTranscriptionCoordinatorTests: XCTestCase {
         }
 
         XCTAssertEqual(storage.savedTranscriptions.last?.lifecycleState, .failed)
+        XCTAssertTrue(coordinator.requiresLegacyFallback)
+        XCTAssertEqual(coordinator.fallbackReason, .emptyTranscript)
         XCTAssertEqual(transcriptionClient.transcribeCallCount, 0)
     }
 
