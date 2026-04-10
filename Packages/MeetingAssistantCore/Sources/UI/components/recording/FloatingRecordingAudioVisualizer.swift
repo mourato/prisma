@@ -95,7 +95,7 @@ struct AudioVisualizer: View {
             }
         }
         .frame(height: maxHeight, alignment: .center)
-        .animation(reduceMotion ? nil : .easeOut(duration: animationDuration), value: levels)
+        .animation(reduceMotion ? nil : .linear(duration: animationDuration), value: levels)
     }
 
     private var animationDuration: Double {
