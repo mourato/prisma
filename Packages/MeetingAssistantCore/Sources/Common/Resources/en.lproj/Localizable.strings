@@ -1119,3 +1119,10 @@
 "meeting_notes.rich_text.link_sheet.placeholder" = "https://example.com";
 "meeting_notes.rich_text.link_sheet.apply" = "Apply";
 "meeting_notes.rich_text.shortcuts.cheatsheet" = "Markdown shortcuts: - + Space, 1. + Space, [ ] + Space, # + Space, Enter (continue/exit lists), Tab/Shift+Tab (indent/outdent), Cmd+B/Cmd+I.";
+
+/* Transcription Prompt Viewer */
+"transcription.prompt.view" = "View Prompt";
+"transcription.prompt.title" = "Request Prompt";
+"transcription.prompt.system" = "System Prompt";
+"transcription.prompt.user" = "User Prompt";
+"transcription.prompt.not_available" = "Prompt text not available";

@@ -46,6 +46,7 @@ public struct TranscriptionCardView: View {
 
     @State private var selectedTab: TranscriptionTab = .aiProcessed
     @State private var showInfoPopover = false
+    @State private var showPromptPopover = false
     @State private var expandedTabs: Set<TranscriptionTab> = []
     @State private var draftMeetingTitle = ""
     @State private var isEditingMeetingTitle = false
@@ -65,6 +66,7 @@ public struct TranscriptionCardView: View {
         case reprocess(prompt: PostProcessingPrompt)
         case retryTranscription
         case info
+        case viewPrompt
         case delete
         case export(ExportKind)
     }
@@ -218,6 +220,21 @@ public struct TranscriptionCardView: View {
                         }
                     }
 
+                    if hasPromptText {
+                        Button {
+                            showPromptPopover.toggle()
+                        } label: {
+                            Label("transcription.prompt.view".localized, systemImage: "text.quote")
+                                .font(.caption)
+                        }
+                        .buttonStyle(.bordered)
+                        .popover(isPresented: $showPromptPopover) {
+                            if let details = transcriptionDetail {
+                                TranscriptionPromptPopover(transcription: details)
+                            }
+                        }
+                    }
+
                     Menu {
                         Button {
                             onAction(.copy(text: currentText))
@@ -324,6 +341,11 @@ public struct TranscriptionCardView: View {
             return !processedContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
         return transcription.isPostProcessed
+    }
+
+    private var hasPromptText: Bool {
+        transcriptionDetail?.postProcessingRequestSystemPrompt != nil
+            || transcriptionDetail?.postProcessingRequestUserPrompt != nil
     }
 
     private var isSegmentedTabEnabled: Bool {

@@ -161,6 +161,18 @@ public enum CoreDataModel {
         transcriptionPromptTitleAttribute.attributeType = .stringAttributeType
         transcriptionPromptTitleAttribute.isOptional = true
 
+        let transcriptionRequestSystemPromptAttribute = NSAttributeDescription()
+        transcriptionRequestSystemPromptAttribute.name = "postProcessingRequestSystemPrompt"
+        transcriptionRequestSystemPromptAttribute.attributeType = .stringAttributeType
+        transcriptionRequestSystemPromptAttribute.isOptional = true
+        transcriptionRequestSystemPromptAttribute.allowsExternalBinaryDataStorage = true
+
+        let transcriptionRequestUserPromptAttribute = NSAttributeDescription()
+        transcriptionRequestUserPromptAttribute.name = "postProcessingRequestUserPrompt"
+        transcriptionRequestUserPromptAttribute.attributeType = .stringAttributeType
+        transcriptionRequestUserPromptAttribute.isOptional = true
+        transcriptionRequestUserPromptAttribute.allowsExternalBinaryDataStorage = true
+
         let transcriptionLanguageAttribute = NSAttributeDescription()
         transcriptionLanguageAttribute.name = "language"
         transcriptionLanguageAttribute.attributeType = .stringAttributeType
@@ -283,6 +295,8 @@ public enum CoreDataModel {
             transcriptionProcessedContentAttribute,
             transcriptionPromptIdAttribute,
             transcriptionPromptTitleAttribute,
+            transcriptionRequestSystemPromptAttribute,
+            transcriptionRequestUserPromptAttribute,
             transcriptionLanguageAttribute,
             transcriptionCreatedAtAttribute,
             transcriptionModelNameAttribute,

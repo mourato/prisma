@@ -160,6 +160,8 @@ extension RecordingManager {
             qualityProfile: qualityProfile,
             postProcessingPromptId: postProcessing.promptId,
             postProcessingPromptTitle: postProcessing.promptTitle,
+            postProcessingRequestSystemPrompt: postProcessing.requestSystemPrompt,
+            postProcessingRequestUserPrompt: postProcessing.requestUserPrompt,
             language: response.language,
             createdAt: transcription.createdAt,
             modelName: response.model,

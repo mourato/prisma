@@ -447,6 +447,8 @@ public struct TranscriptionsSettingsTab: View {
             }
         case .info:
             break
+        case .viewPrompt:
+            break
         case .retryTranscription:
             Task {
                 await viewModel.retryTranscription(for: metadata)

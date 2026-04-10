@@ -2,6 +2,7 @@
 
 import Foundation
 import MeetingAssistantCoreCommon
+import MeetingAssistantCoreDomain
 
 // MARK: - Post-Processing Helpers
 
@@ -44,6 +45,8 @@ extension TranscribeAudioUseCase {
         let promptId: UUID?
         let promptTitle: String?
         let meetingType: String?
+        let requestSystemPrompt: String?
+        let requestUserPrompt: String?
     }
 
     func performPostProcessing(
@@ -58,7 +61,9 @@ extension TranscribeAudioUseCase {
                 canonicalSummary: nil,
                 promptId: nil,
                 promptTitle: nil,
-                meetingType: nil
+                meetingType: nil,
+                requestSystemPrompt: nil,
+                requestUserPrompt: nil
             )
         }
 
@@ -115,7 +120,9 @@ extension TranscribeAudioUseCase {
                 canonicalSummary: nil,
                 promptId: nil,
                 promptTitle: nil,
-                meetingType: nil
+                meetingType: nil,
+                requestSystemPrompt: nil,
+                requestUserPrompt: nil
             )
         }
     }
@@ -170,6 +177,12 @@ private extension TranscribeAudioUseCase {
         context: PostProcessingExecutionContext,
         meetingType: String?
     ) async throws -> PostProcessingResult {
+        let (systemPrompt, userPrompt) = buildRequestPrompts(
+            from: prompt.content,
+            transcription: input,
+            mode: context.kernelMode
+        )
+
         if context.useStructuredPipeline {
             let structuredResult = try await context.repository.processTranscriptionStructured(
                 input,
@@ -184,7 +197,9 @@ private extension TranscribeAudioUseCase {
                 ),
                 promptId: prompt.id,
                 promptTitle: prompt.title,
-                meetingType: meetingType
+                meetingType: meetingType,
+                requestSystemPrompt: systemPrompt,
+                requestUserPrompt: userPrompt
             )
         }
 
@@ -198,7 +213,9 @@ private extension TranscribeAudioUseCase {
             canonicalSummary: nil,
             promptId: prompt.id,
             promptTitle: prompt.title,
-            meetingType: meetingType
+            meetingType: meetingType,
+            requestSystemPrompt: systemPrompt,
+            requestUserPrompt: userPrompt
         )
     }
 
@@ -256,7 +273,9 @@ private extension TranscribeAudioUseCase {
                 ),
                 promptId: nil,
                 promptTitle: nil,
-                meetingType: meetingType
+                meetingType: meetingType,
+                requestSystemPrompt: nil,
+                requestUserPrompt: nil
             )
         }
 
@@ -269,7 +288,9 @@ private extension TranscribeAudioUseCase {
             canonicalSummary: nil,
             promptId: nil,
             promptTitle: nil,
-            meetingType: meetingType
+            meetingType: meetingType,
+            requestSystemPrompt: nil,
+            requestUserPrompt: nil
         )
     }
 
@@ -372,5 +393,36 @@ private extension TranscribeAudioUseCase {
             openQuestions: summary.openQuestions,
             trustFlags: trustFlags
         )
+    }
+
+    func buildRequestPrompts(
+        from promptContent: String,
+        transcription: String,
+        mode: IntelligenceKernelMode
+    ) -> (systemPrompt: String, userPrompt: String) {
+        let extracted = AIPromptTemplates.extractSiteOrAppPriorityInstructions(from: promptContent)
+        let baseSystemMessage = AIPromptTemplates.defaultSystemPrompt
+        let promptWithLanguage = applyMeetingLanguagePreferenceIfNeeded(
+            to: extracted.cleanPrompt,
+            mode: mode
+        )
+        let systemMessage = AIPromptTemplates.systemPrompt(
+            basePrompt: baseSystemMessage,
+            priorityInstructions: extracted.priorityInstructions
+        )
+        let userContent = AIPromptTemplates.userMessage(
+            transcription: transcription,
+            prompt: promptWithLanguage,
+            priorityInstructions: extracted.priorityInstructions
+        )
+        return (systemMessage, userContent)
+    }
+
+    private func applyMeetingLanguagePreferenceIfNeeded(
+        to prompt: String,
+        mode: IntelligenceKernelMode
+    ) -> String {
+        guard mode == .meeting else { return prompt }
+        return prompt
     }
 }

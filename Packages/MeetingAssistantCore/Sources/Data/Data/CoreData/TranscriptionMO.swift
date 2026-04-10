@@ -17,6 +17,8 @@ public final class TranscriptionMO: NSManagedObject {
     @NSManaged public var processedContent: String?
     @NSManaged public var postProcessingPromptId: UUID?
     @NSManaged public var postProcessingPromptTitle: String?
+    @NSManaged public var postProcessingRequestSystemPrompt: String?
+    @NSManaged public var postProcessingRequestUserPrompt: String?
     @NSManaged public var language: String
     @NSManaged public var createdAt: Date
     @NSManaged public var modelName: String
@@ -153,6 +155,8 @@ extension TranscriptionMO {
         config.processedContent = processedContent
         config.postProcessingPromptId = postProcessingPromptId
         config.postProcessingPromptTitle = postProcessingPromptTitle
+        config.postProcessingRequestSystemPrompt = postProcessingRequestSystemPrompt
+        config.postProcessingRequestUserPrompt = postProcessingRequestUserPrompt
         config.createdAt = createdAt
         config.modelName = modelName
         config.inputSource = inputSource
@@ -176,6 +180,8 @@ extension TranscriptionMO {
         processedContent = entity.processedContent
         postProcessingPromptId = entity.postProcessingPromptId
         postProcessingPromptTitle = entity.postProcessingPromptTitle
+        postProcessingRequestSystemPrompt = entity.postProcessingRequestSystemPrompt
+        postProcessingRequestUserPrompt = entity.postProcessingRequestUserPrompt
         language = entity.language
         createdAt = entity.createdAt
         modelName = entity.modelName
@@ -212,6 +218,8 @@ extension TranscriptionMO {
         transcriptionMO.processedContent = entity.processedContent
         transcriptionMO.postProcessingPromptId = entity.postProcessingPromptId
         transcriptionMO.postProcessingPromptTitle = entity.postProcessingPromptTitle
+        transcriptionMO.postProcessingRequestSystemPrompt = entity.postProcessingRequestSystemPrompt
+        transcriptionMO.postProcessingRequestUserPrompt = entity.postProcessingRequestUserPrompt
         transcriptionMO.language = entity.language
         transcriptionMO.createdAt = entity.createdAt
         transcriptionMO.modelName = entity.modelName

@@ -14,6 +14,8 @@ extension RecordingManager {
         let promptTitle: String?
         let duration: Double
         let model: String?
+        let requestSystemPrompt: String?
+        let requestUserPrompt: String?
 
         static var empty: PostProcessingResult {
             PostProcessingResult(
@@ -22,7 +24,9 @@ extension RecordingManager {
                 promptId: nil,
                 promptTitle: nil,
                 duration: 0,
-                model: nil
+                model: nil,
+                requestSystemPrompt: nil,
+                requestUserPrompt: nil
             )
         }
     }
@@ -159,6 +163,12 @@ extension RecordingManager {
         kernelMode: IntelligenceKernelMode,
         dictationStructuredPostProcessingEnabled: Bool
     ) async -> PostProcessingResult {
+        let (requestSystemPrompt, requestUserPrompt) = buildRequestPrompts(
+            from: prompt.promptText,
+            transcription: postProcessingInput,
+            mode: kernelMode
+        )
+
         do {
             let startTime = Date()
             let useStructuredPipeline = kernelMode == .meeting || dictationStructuredPostProcessingEnabled
@@ -216,7 +226,9 @@ extension RecordingManager {
                 promptId: prompt.id,
                 promptTitle: prompt.title,
                 duration: duration,
-                model: model
+                model: model,
+                requestSystemPrompt: requestSystemPrompt,
+                requestUserPrompt: requestUserPrompt
             )
         } catch {
             AppLogger.error("Post-processing failed, using raw transcription", category: .recordingManager, error: error)
@@ -271,5 +283,36 @@ extension RecordingManager {
 
         let allowed: Set<MeetingType> = [.standup, .presentation, .designReview, .oneOnOne, .planning, .general]
         return allowed.contains(type) ? type : nil
+    }
+
+    private func buildRequestPrompts(
+        from promptContent: String,
+        transcription: String,
+        mode: IntelligenceKernelMode
+    ) -> (systemPrompt: String, userPrompt: String) {
+        let extracted = AIPromptTemplates.extractSiteOrAppPriorityInstructions(from: promptContent)
+        let baseSystemMessage = AIPromptTemplates.defaultSystemPrompt
+        let promptWithLanguage = applyMeetingLanguagePreferenceIfNeeded(
+            to: extracted.cleanPrompt,
+            mode: mode
+        )
+        let systemMessage = AIPromptTemplates.systemPrompt(
+            basePrompt: baseSystemMessage,
+            priorityInstructions: extracted.priorityInstructions
+        )
+        let userContent = AIPromptTemplates.userMessage(
+            transcription: transcription,
+            prompt: promptWithLanguage,
+            priorityInstructions: extracted.priorityInstructions
+        )
+        return (systemMessage, userContent)
+    }
+
+    private func applyMeetingLanguagePreferenceIfNeeded(
+        to prompt: String,
+        mode: IntelligenceKernelMode
+    ) -> String {
+        guard mode == .meeting else { return prompt }
+        return prompt
     }
 }

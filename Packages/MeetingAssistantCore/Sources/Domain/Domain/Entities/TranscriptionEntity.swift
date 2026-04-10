@@ -35,6 +35,12 @@ public struct TranscriptionEntity: Identifiable, Codable, Hashable, Sendable {
     /// Título do prompt usado para pós-processamento (nil se não processado).
     public var postProcessingPromptTitle: String?
 
+    /// System prompt text actually sent to the provider.
+    public var postProcessingRequestSystemPrompt: String?
+
+    /// User prompt text actually sent to the provider.
+    public var postProcessingRequestUserPrompt: String?
+
     public let language: String
     public let createdAt: Date
     public let modelName: String
@@ -61,6 +67,8 @@ public struct TranscriptionEntity: Identifiable, Codable, Hashable, Sendable {
         public var qualityProfile: TranscriptionQualityProfile?
         public var postProcessingPromptId: UUID?
         public var postProcessingPromptTitle: String?
+        public var postProcessingRequestSystemPrompt: String?
+        public var postProcessingRequestUserPrompt: String?
         public var language: String = "pt"
         public var createdAt: Date = .init()
         public var modelName: String = "parakeet-tdt-0.6b-v3"
@@ -99,6 +107,8 @@ public struct TranscriptionEntity: Identifiable, Codable, Hashable, Sendable {
         qualityProfile = config.qualityProfile
         postProcessingPromptId = config.postProcessingPromptId
         postProcessingPromptTitle = config.postProcessingPromptTitle
+        postProcessingRequestSystemPrompt = config.postProcessingRequestSystemPrompt
+        postProcessingRequestUserPrompt = config.postProcessingRequestUserPrompt
         language = config.language
         createdAt = config.createdAt
         modelName = config.modelName

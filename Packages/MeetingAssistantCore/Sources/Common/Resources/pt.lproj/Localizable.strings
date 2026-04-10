@@ -1108,3 +1108,10 @@
 "meeting_notes.rich_text.link_sheet.placeholder" = "https://exemplo.com";
 "meeting_notes.rich_text.link_sheet.apply" = "Aplicar";
 "meeting_notes.rich_text.shortcuts.cheatsheet" = "Atalhos Markdown: - + Espaço, 1. + Espaço, [ ] + Espaço, # + Espaço, Enter (continuar/sair de listas), Tab/Shift+Tab (indentar/desindentar), Cmd+B/Cmd+I.";
+
+/* Transcription Prompt Viewer */
+"transcription.prompt.view" = "Ver Prompt";
+"transcription.prompt.title" = "Prompt da Requisição";
+"transcription.prompt.system" = "Prompt do Sistema";
+"transcription.prompt.user" = "Prompt do Usuário";
+"transcription.prompt.not_available" = "Texto do prompt não disponível";

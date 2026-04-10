@@ -33,6 +33,12 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
     /// Title of the prompt used for post-processing (nil if not processed).
     public var postProcessingPromptTitle: String?
 
+    /// System prompt text actually sent to the provider.
+    public var postProcessingRequestSystemPrompt: String?
+
+    /// User prompt text actually sent to the provider.
+    public var postProcessingRequestUserPrompt: String?
+
     public let language: String
     public let createdAt: Date
     public let modelName: String
@@ -59,6 +65,8 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
         qualityProfile: TranscriptionQualityProfile? = nil,
         postProcessingPromptId: UUID? = nil,
         postProcessingPromptTitle: String? = nil,
+        postProcessingRequestSystemPrompt: String? = nil,
+        postProcessingRequestUserPrompt: String? = nil,
         language: String = "pt",
         createdAt: Date = Date(),
         modelName: String = "parakeet-tdt-0.6b-v3",
