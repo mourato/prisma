@@ -149,7 +149,8 @@ public final class TranscribeAudioUseCase: Sendable {
                 autoDetectMeetingType: autoDetectMeetingType,
                 availablePrompts: availablePrompts,
                 kernelMode: kernelMode,
-                dictationStructuredPostProcessingEnabled: dictationStructuredPostProcessingEnabled
+                dictationStructuredPostProcessingEnabled: dictationStructuredPostProcessingEnabled,
+                postProcessingContext: postProcessingContext
             )
 
             if postProcessingConfig.shouldRunPostProcessing(postProcessingRepository: postProcessingRepository) {

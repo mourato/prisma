@@ -15,6 +15,7 @@ extension TranscribeAudioUseCase {
         let availablePrompts: [DomainPostProcessingPrompt]
         let kernelMode: IntelligenceKernelMode
         let dictationStructuredPostProcessingEnabled: Bool
+        let postProcessingContext: String?
 
         init(
             applyPostProcessing: Bool,
@@ -23,7 +24,8 @@ extension TranscribeAudioUseCase {
             autoDetectMeetingType: Bool = false,
             availablePrompts: [DomainPostProcessingPrompt] = [],
             kernelMode: IntelligenceKernelMode = .meeting,
-            dictationStructuredPostProcessingEnabled: Bool = false
+            dictationStructuredPostProcessingEnabled: Bool = false,
+            postProcessingContext: String? = nil
         ) {
             self.applyPostProcessing = applyPostProcessing
             self.postProcessingPrompt = postProcessingPrompt
@@ -32,6 +34,7 @@ extension TranscribeAudioUseCase {
             self.availablePrompts = availablePrompts
             self.kernelMode = kernelMode
             self.dictationStructuredPostProcessingEnabled = dictationStructuredPostProcessingEnabled
+            self.postProcessingContext = postProcessingContext
         }
 
         func shouldRunPostProcessing(postProcessingRepository: PostProcessingRepository?) -> Bool {
@@ -55,17 +58,39 @@ extension TranscribeAudioUseCase {
         config: PostProcessingConfiguration,
         qualityProfile: TranscriptionQualityProfile
     ) async -> PostProcessingResult {
-        guard config.applyPostProcessing, let postProcessingRepository else {
-            return PostProcessingResult(
-                processedContent: nil,
-                canonicalSummary: nil,
-                promptId: nil,
-                promptTitle: nil,
-                meetingType: nil,
-                requestSystemPrompt: nil,
-                requestUserPrompt: nil
-            )
-        }
+        // ...
+        
+        // (existing logic)
+        
+        do {
+            if let prompt = config.postProcessingPrompt {
+                return try await processWithSpecificPrompt(
+                    prompt: prompt,
+                    input: postProcessingInput,
+                    context: context,
+                    meetingType: nil,
+                    postProcessingContext: config.postProcessingContext
+                )
+            }
+        // ...
+    }
+    
+    func processWithSpecificPrompt(
+        prompt: DomainPostProcessingPrompt,
+        input: String,
+        context: PostProcessingExecutionContext,
+        meetingType: String?,
+        postProcessingContext: String?
+    ) async throws -> PostProcessingResult {
+        let (systemPrompt, userPrompt) = buildRequestPrompts(
+            from: prompt.content,
+            transcription: input,
+            mode: context.kernelMode,
+            contextMetadata: postProcessingContext
+        )
+        // ...
+    }
+
 
         let context = makeExecutionContext(
             postProcessingRepository: postProcessingRepository,
@@ -175,24 +200,15 @@ private extension TranscribeAudioUseCase {
         prompt: DomainPostProcessingPrompt,
         input: String,
         context: PostProcessingExecutionContext,
-        meetingType: String?
+        meetingType: String?,
+        postProcessingContext: String? // Added this
     ) async throws -> PostProcessingResult {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        let contextMetadata = """
-        Current time: \(formatter.string(from: Date()))
-        Time zone: \(TimeZone.current.identifier)
-        Locale: \(Locale.current.identifier)
-        Computer name: \(Host.current().localizedName ?? "Unknown")
-        User's full name: \(NSFullUserName())
-        """
-
+        // ... (use postProcessingContext here)
         let (systemPrompt, userPrompt) = buildRequestPrompts(
             from: prompt.content,
             transcription: input,
             mode: context.kernelMode,
-            contextMetadata: contextMetadata
+            contextMetadata: postProcessingContext // Pass it
         )
 
         if context.useStructuredPipeline {

@@ -43,6 +43,8 @@ extension FileSystemStorageService {
         config.qualityProfile = transcription.qualityProfile
         config.postProcessingPromptId = transcription.postProcessingPromptId
         config.postProcessingPromptTitle = transcription.postProcessingPromptTitle
+        config.postProcessingRequestSystemPrompt = transcription.postProcessingRequestSystemPrompt
+        config.postProcessingRequestUserPrompt = transcription.postProcessingRequestUserPrompt
         config.createdAt = transcription.createdAt
         config.modelName = transcription.modelName
         config.inputSource = transcription.inputSource
