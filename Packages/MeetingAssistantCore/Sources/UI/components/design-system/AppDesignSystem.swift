@@ -33,7 +33,7 @@ public enum AppDesignSystem {
             dark: @escaping @autoclosure () -> NSColor
         ) -> NSColor {
             NSColor(name: nil) { appearance in
-                switch appearance.bestMatch(from: [.darkAqua, .aqua]) {
+                switch appearance.bestMatch(from: [.aqua, .darkAqua]) {
                 case .darkAqua:
                     dark()
                 default:

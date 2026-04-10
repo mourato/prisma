@@ -301,7 +301,7 @@ public struct SettingsView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(AppDesignSystem.Colors.settingsGlassBackground)
+        .background(.ultraThinMaterial)
         .overlay(alignment: .bottom) {
             Divider()
         }
