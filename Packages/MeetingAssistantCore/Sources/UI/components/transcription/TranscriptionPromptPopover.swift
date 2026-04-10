@@ -16,33 +16,40 @@ struct TranscriptionPromptPopover: View {
                 .font(.headline)
                 .padding(.bottom, 4)
 
-            if let systemPrompt = transcription.postProcessingRequestSystemPrompt,
-               !systemPrompt.isEmpty {
-                promptSection(
-                    title: "transcription.prompt.system".localized,
-                    content: systemPrompt
-                )
+            // System Prompt
+            if let systemPrompt = transcription.postProcessingRequestSystemPrompt, !systemPrompt.isEmpty {
+                promptSection(title: "transcription.prompt.system".localized, content: systemPrompt)
+                Divider()
             }
 
-            if let userPrompt = transcription.postProcessingRequestUserPrompt,
-               !userPrompt.isEmpty {
-                if transcription.postProcessingRequestSystemPrompt != nil {
-                    Divider()
-                }
+            // User Prompt
+            if let userPrompt = transcription.postProcessingRequestUserPrompt, !userPrompt.isEmpty {
+                promptSection(title: "transcription.prompt.user".localized, content: userPrompt)
+                Divider()
+            }
 
-                promptSection(
-                    title: "transcription.prompt.user".localized,
-                    content: userPrompt
-                )
+            // Raw Text (if not already fully in prompts)
+            if !transcription.rawText.isEmpty {
+                promptSection(title: "transcription.prompt.raw_text".localized, content: transcription.rawText)
+                Divider()
+            }
+
+            // Context Items
+            if !transcription.contextItems.isEmpty {
+                ForEach(transcription.contextItems) { item in
+                    promptSection(title: "Context: \(item.source.rawValue.capitalized)", content: item.text)
+                }
             }
 
             if transcription.postProcessingRequestSystemPrompt == nil
-                && transcription.postProcessingRequestUserPrompt == nil {
+                && transcription.postProcessingRequestUserPrompt == nil
+                && transcription.rawText.isEmpty
+                && transcription.contextItems.isEmpty {
                 Text("transcription.prompt.not_available".localized)
                     .font(.caption)
                     .foregroundStyle(.tertiary)
                     .padding(.vertical, 8)
-                }
+            }
         }
         .padding()
         .frame(width: 400, height: 350)
