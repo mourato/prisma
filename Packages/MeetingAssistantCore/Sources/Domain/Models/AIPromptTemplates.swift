@@ -69,26 +69,13 @@ public enum AIPromptTemplates {
     - Do not treat <CONTEXT_METADATA> as part of the transcript
     """
 
-    /// Constructs a user message with the transcription.
-    /// - Parameter transcription: The transcription text to process.
-    /// - Returns: Formatted user message for the AI.
-    public static func userMessage(transcription: String) -> String {
-        """
-        <TRANSCRIPTION>
-        \(transcription)
-        </TRANSCRIPTION>
-
-        Processe a transcrição acima conforme as instruções.
-        """
-    }
-
     /// Constructs a user message with transcription and specific prompt.
     /// - Parameters:
     ///   - transcription: The transcription text to process.
     ///   - prompt: The specific processing instructions.
     /// - Returns: Formatted user message for the AI.
     public static func userMessage(transcription: String, prompt: String) -> String {
-        userMessage(transcription: transcription, prompt: prompt, priorityInstructions: nil)
+        userMessage(transcription: transcription, prompt: prompt, priorityInstructions: nil, contextMetadata: nil)
     }
 
     /// Constructs a user message with transcription and specific prompt, plus optional site/app priority instructions.
@@ -98,6 +85,10 @@ public enum AIPromptTemplates {
     ///   - priorityInstructions: Optional site/app-specific instructions that override other prompts.
     /// - Returns: Formatted user message for the AI.
     public static func userMessage(transcription: String, prompt: String, priorityInstructions: String?) -> String {
+        userMessage(transcription: transcription, prompt: prompt, priorityInstructions: priorityInstructions, contextMetadata: nil)
+    }
+
+    public static func userMessage(transcription: String, prompt: String, priorityInstructions: String?, contextMetadata: String?) -> String {
         let priorityBlock = if let priorityInstructions {
             """
 
@@ -106,6 +97,17 @@ public enum AIPromptTemplates {
             If they conflict with other user instructions or the system prompt, these must win.
             \(priorityInstructions)
             </SITE_APP_PRIORITY>
+            """
+        } else {
+            ""
+        }
+
+        let contextBlock = if let contextMetadata {
+            """
+
+            <CONTEXT_METADATA>
+            \(contextMetadata)
+            </CONTEXT_METADATA>
             """
         } else {
             ""
@@ -120,6 +122,7 @@ public enum AIPromptTemplates {
         \(prompt)
         </INSTRUCTIONS>
         \(priorityBlock)
+        \(contextBlock)
 
         Process the transcription above according to the instructions provided.
         """

@@ -82,6 +82,19 @@ extension RecordingManager {
             settings: settings
         )
 
+        // Construct context metadata
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        let contextMetadata = """
+        Current time: \(formatter.string(from: Date()))
+        Time zone: \(TimeZone.current.identifier)
+        Locale: \(Locale.current.identifier)
+        Computer name: \(Host.current().localizedName ?? "Unknown")
+        User's full name: \(NSFullUserName())
+        Application context: \(meeting?.app.displayName ?? "Unknown")
+        """
+
         transcriptionStatus.updateProgress(phase: .postProcessing, percentage: Constants.aiProcessingProgress)
         RecordingIndicatorProcessingStateStore.shared.update(
             snapshot: RecordingIndicatorProcessingSnapshot(
@@ -95,63 +108,8 @@ extension RecordingManager {
             settings: settings,
             qualityProfile: qualityProfile,
             kernelMode: kernelMode,
-            dictationStructuredPostProcessingEnabled: settings.dictationStructuredPostProcessingEnabled
-        )
-    }
-
-    func resolvePostProcessingPrompt(
-        rawText: String,
-        isDictation: Bool,
-        meetingType: MeetingType,
-        settings: AppSettingsStore
-    ) async -> PostProcessingPrompt {
-        if isDictation {
-            return settings.selectedDictationPrompt ?? .defaultPrompt
-        }
-
-        if meetingType == .autodetect {
-            return await resolveAutodetectPrompt(rawText: rawText, settings: settings)
-        }
-
-        if meetingType != .general {
-            let strategy = PromptService.shared.strategy(for: meetingType)
-            let prompt = strategy.promptObject()
-            AppLogger.info("Using context-aware prompt for type: \(meetingType.displayName)", category: .transcriptionEngine)
-            return prompt
-        }
-
-        return settings.selectedPrompt ?? PromptService.shared.strategy(for: .general).promptObject()
-    }
-
-    func resolveAutodetectPrompt(rawText: String, settings: AppSettingsStore) async -> PostProcessingPrompt {
-        let fallback = settings.selectedPrompt ?? PromptService.shared.strategy(for: .general).promptObject()
-        let classifierPrompt = makeMeetingTypeClassifierPrompt()
-
-        do {
-            let jsonString = try await postProcessingService.processTranscription(rawText, with: classifierPrompt)
-            guard let detectedType = parseMeetingType(from: jsonString), detectedType != .general else { return fallback }
-            return resolveBuiltInMeetingPrompt(for: detectedType, fallbackGeneral: fallback)
-        } catch {
-            AppLogger.warning("Meeting type autodetect failed; falling back to general prompt", category: .recordingManager, extra: ["error": error.localizedDescription])
-            return fallback
-        }
-    }
-
-    func makeMeetingTypeClassifierPrompt() -> PostProcessingPrompt {
-        PostProcessingPrompt(
-            title: "Classifier",
-            promptText: """
-            <INTERNAL_MEETING_TYPE_CLASSIFIER>
-            true
-            </INTERNAL_MEETING_TYPE_CLASSIFIER>
-
-            Analyze the transcription and classify the meeting type.
-            Reply ONLY with JSON in the following format:
-            { "type": "VALUE" }
-            Allowed values: standup, presentation, design_review, one_on_one, planning, general.
-            """,
-            icon: "sparkles",
-            isPredefined: false
+            dictationStructuredPostProcessingEnabled: settings.dictationStructuredPostProcessingEnabled,
+            contextMetadata: contextMetadata
         )
     }
 
@@ -161,12 +119,14 @@ extension RecordingManager {
         settings: AppSettingsStore,
         qualityProfile: TranscriptionQualityProfile?,
         kernelMode: IntelligenceKernelMode,
-        dictationStructuredPostProcessingEnabled: Bool
+        dictationStructuredPostProcessingEnabled: Bool,
+        contextMetadata: String
     ) async -> PostProcessingResult {
         let (requestSystemPrompt, requestUserPrompt) = buildRequestPrompts(
             from: prompt.promptText,
             transcription: postProcessingInput,
-            mode: kernelMode
+            mode: kernelMode,
+            contextMetadata: contextMetadata
         )
 
         do {
@@ -236,6 +196,62 @@ extension RecordingManager {
         }
     }
 
+    func resolvePostProcessingPrompt(
+        rawText: String,
+        isDictation: Bool,
+        meetingType: MeetingType,
+        settings: AppSettingsStore
+    ) async -> PostProcessingPrompt {
+        if isDictation {
+            return settings.selectedDictationPrompt ?? .defaultPrompt
+        }
+
+        if meetingType == .autodetect {
+            return await resolveAutodetectPrompt(rawText: rawText, settings: settings)
+        }
+
+        if meetingType != .general {
+            let strategy = PromptService.shared.strategy(for: meetingType)
+            let prompt = strategy.promptObject()
+            AppLogger.info("Using context-aware prompt for type: \(meetingType.displayName)", category: .transcriptionEngine)
+            return prompt
+        }
+
+        return settings.selectedPrompt ?? PromptService.shared.strategy(for: .general).promptObject()
+    }
+
+    func resolveAutodetectPrompt(rawText: String, settings: AppSettingsStore) async -> PostProcessingPrompt {
+        let fallback = settings.selectedPrompt ?? PromptService.shared.strategy(for: .general).promptObject()
+        let classifierPrompt = makeMeetingTypeClassifierPrompt()
+
+        do {
+            let jsonString = try await postProcessingService.processTranscription(rawText, with: classifierPrompt)
+            guard let detectedType = parseMeetingType(from: jsonString), detectedType != .general else { return fallback }
+            return resolveBuiltInMeetingPrompt(for: detectedType, fallbackGeneral: fallback)
+        } catch {
+            AppLogger.warning("Meeting type autodetect failed; falling back to general prompt", category: .recordingManager, extra: ["error": error.localizedDescription])
+            return fallback
+        }
+    }
+
+    func makeMeetingTypeClassifierPrompt() -> PostProcessingPrompt {
+        PostProcessingPrompt(
+            title: "Classifier",
+            promptText: """
+            <INTERNAL_MEETING_TYPE_CLASSIFIER>
+            true
+            </INTERNAL_MEETING_TYPE_CLASSIFIER>
+
+            Analyze the transcription and classify the meeting type.
+            Reply ONLY with JSON in the following format:
+            { "type": "VALUE" }
+            Allowed values: standup, presentation, design_review, one_on_one, planning, general.
+            """,
+            icon: "sparkles",
+            isPredefined: false
+        )
+    }
+
     func resolveBuiltInMeetingPrompt(for type: MeetingType, fallbackGeneral: PostProcessingPrompt) -> PostProcessingPrompt {
         switch type {
         case .standup:
@@ -288,7 +304,8 @@ extension RecordingManager {
     private func buildRequestPrompts(
         from promptContent: String,
         transcription: String,
-        mode: IntelligenceKernelMode
+        mode: IntelligenceKernelMode,
+        contextMetadata: String
     ) -> (systemPrompt: String, userPrompt: String) {
         let extracted = AIPromptTemplates.extractSiteOrAppPriorityInstructions(from: promptContent)
         let baseSystemMessage = AIPromptTemplates.defaultSystemPrompt
@@ -303,7 +320,8 @@ extension RecordingManager {
         let userContent = AIPromptTemplates.userMessage(
             transcription: transcription,
             prompt: promptWithLanguage,
-            priorityInstructions: extracted.priorityInstructions
+            priorityInstructions: extracted.priorityInstructions,
+            contextMetadata: contextMetadata
         )
         return (systemMessage, userContent)
     }

@@ -177,10 +177,22 @@ private extension TranscribeAudioUseCase {
         context: PostProcessingExecutionContext,
         meetingType: String?
     ) async throws -> PostProcessingResult {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        let contextMetadata = """
+        Current time: \(formatter.string(from: Date()))
+        Time zone: \(TimeZone.current.identifier)
+        Locale: \(Locale.current.identifier)
+        Computer name: \(Host.current().localizedName ?? "Unknown")
+        User's full name: \(NSFullUserName())
+        """
+
         let (systemPrompt, userPrompt) = buildRequestPrompts(
             from: prompt.content,
             transcription: input,
-            mode: context.kernelMode
+            mode: context.kernelMode,
+            contextMetadata: contextMetadata
         )
 
         if context.useStructuredPipeline {
@@ -398,7 +410,8 @@ private extension TranscribeAudioUseCase {
     func buildRequestPrompts(
         from promptContent: String,
         transcription: String,
-        mode: IntelligenceKernelMode
+        mode: IntelligenceKernelMode,
+        contextMetadata: String
     ) -> (systemPrompt: String, userPrompt: String) {
         let extracted = AIPromptTemplates.extractSiteOrAppPriorityInstructions(from: promptContent)
         let baseSystemMessage = AIPromptTemplates.defaultSystemPrompt
@@ -413,7 +426,8 @@ private extension TranscribeAudioUseCase {
         let userContent = AIPromptTemplates.userMessage(
             transcription: transcription,
             prompt: promptWithLanguage,
-            priorityInstructions: extracted.priorityInstructions
+            priorityInstructions: extracted.priorityInstructions,
+            contextMetadata: contextMetadata
         )
         return (systemMessage, userContent)
     }

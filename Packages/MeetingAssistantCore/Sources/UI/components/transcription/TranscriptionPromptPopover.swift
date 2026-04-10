@@ -12,67 +12,58 @@ struct TranscriptionPromptPopover: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("transcription.prompt.title".localized)
+            Text("Request Prompt")
                 .font(.headline)
                 .padding(.bottom, 4)
 
-            // System Prompt
-            if let systemPrompt = transcription.postProcessingRequestSystemPrompt, !systemPrompt.isEmpty {
-                promptSection(title: "transcription.prompt.system".localized, content: systemPrompt)
-                Divider()
-            }
-
-            // User Prompt
-            if let userPrompt = transcription.postProcessingRequestUserPrompt, !userPrompt.isEmpty {
-                promptSection(title: "transcription.prompt.user".localized, content: userPrompt)
-                Divider()
-            }
-
-            // Raw Text (if not already fully in prompts)
-            if !transcription.rawText.isEmpty {
-                promptSection(title: "transcription.prompt.raw_text".localized, content: transcription.rawText)
-                Divider()
-            }
-
-            // Context Items
-            if !transcription.contextItems.isEmpty {
-                ForEach(transcription.contextItems) { item in
-                    promptSection(title: "Context: \(item.source.rawValue.capitalized)", content: item.text)
-                }
-            }
-
-            if transcription.postProcessingRequestSystemPrompt == nil
-                && transcription.postProcessingRequestUserPrompt == nil
-                && transcription.rawText.isEmpty
-                && transcription.contextItems.isEmpty {
-                Text("transcription.prompt.not_available".localized)
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-                    .padding(.vertical, 8)
-            }
-        }
-        .padding()
-        .frame(width: 400, height: 350)
-    }
-
-    private func promptSection(title: String, content: String) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            // Combine everything into one single input view
+            let fullPrompt = constructFullPrompt()
 
             ScrollView {
-                Text(content)
+                Text(fullPrompt)
                     .font(.system(.caption, design: .monospaced))
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(8)
+                    .background(Color(nsColor: .textBackgroundColor))
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
             }
-            .frame(maxHeight: 120)
-            .padding(8)
-            .background(Color(nsColor: .textBackgroundColor))
-            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .frame(maxWidth: .infinity, maxHeight: .infinity) // Increased area
         }
+        .padding()
+        .frame(width: 500, height: 600) // Increased popover size
     }
+
+    private func constructFullPrompt() -> String {
+        var lines: [String] = []
+        
+        // System Context
+        lines.append("SYSTEM CONTEXT:")
+        lines.append("Current time: \(Date().formatted())") // Placeholder for actual time if stored, otherwise use current
+        lines.append("Time zone: \(TimeZone.current.identifier)")
+        lines.append("Locale: \(Locale.current.identifier)")
+        lines.append("Computer name: \(Host.current().localizedName ?? "Unknown")")
+        lines.append("")
+
+        // User Information
+        lines.append("USER INFORMATION:")
+        lines.append("User's full name: \(NSFullUserName())")
+        lines.append("")
+
+        // Application Context
+        lines.append("APPLICATION CONTEXT:")
+        lines.append("User is currently using: \(transcription.meeting.app.rawValue)") // Assuming app info is available via meeting
+        lines.append("")
+
+        // User Prompt
+        if let userPrompt = transcription.postProcessingRequestUserPrompt {
+            lines.append("USER MESSAGE:")
+            lines.append(userPrompt)
+        }
+
+        return lines.joined(separator: "\n")
+    }
+
 }
 
 #Preview {
