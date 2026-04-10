@@ -58,39 +58,17 @@ extension TranscribeAudioUseCase {
         config: PostProcessingConfiguration,
         qualityProfile: TranscriptionQualityProfile
     ) async -> PostProcessingResult {
-        // ...
-        
-        // (existing logic)
-        
-        do {
-            if let prompt = config.postProcessingPrompt {
-                return try await processWithSpecificPrompt(
-                    prompt: prompt,
-                    input: postProcessingInput,
-                    context: context,
-                    meetingType: nil,
-                    postProcessingContext: config.postProcessingContext
-                )
-            }
-        // ...
-    }
-    
-    func processWithSpecificPrompt(
-        prompt: DomainPostProcessingPrompt,
-        input: String,
-        context: PostProcessingExecutionContext,
-        meetingType: String?,
-        postProcessingContext: String?
-    ) async throws -> PostProcessingResult {
-        let (systemPrompt, userPrompt) = buildRequestPrompts(
-            from: prompt.content,
-            transcription: input,
-            mode: context.kernelMode,
-            contextMetadata: postProcessingContext
-        )
-        // ...
-    }
-
+        guard config.applyPostProcessing, let postProcessingRepository else {
+            return PostProcessingResult(
+                processedContent: nil,
+                canonicalSummary: nil,
+                promptId: nil,
+                promptTitle: nil,
+                meetingType: nil,
+                requestSystemPrompt: nil,
+                requestUserPrompt: nil
+            )
+        }
 
         let context = makeExecutionContext(
             postProcessingRepository: postProcessingRepository,
@@ -108,7 +86,8 @@ extension TranscribeAudioUseCase {
                     prompt: prompt,
                     input: postProcessingInput,
                     context: context,
-                    meetingType: nil
+                    meetingType: nil,
+                    postProcessingContext: config.postProcessingContext
                 )
             }
 
@@ -116,7 +95,8 @@ extension TranscribeAudioUseCase {
                 return try await processWithAutoDetection(
                     input: postProcessingInput,
                     selection: selection,
-                    context: context
+                    context: context,
+                    postProcessingContext: config.postProcessingContext
                 )
             }
 
@@ -125,14 +105,16 @@ extension TranscribeAudioUseCase {
                     prompt: fallback,
                     input: postProcessingInput,
                     context: context,
-                    meetingType: nil
+                    meetingType: nil,
+                    postProcessingContext: config.postProcessingContext
                 )
             }
 
             return try await processWithoutPrompt(
                 input: postProcessingInput,
                 context: context,
-                meetingType: nil
+                meetingType: nil,
+                postProcessingContext: config.postProcessingContext
             )
         } catch {
             AppLogger.error(
@@ -151,22 +133,22 @@ extension TranscribeAudioUseCase {
             )
         }
     }
-}
 
-private extension TranscribeAudioUseCase {
-    struct PostProcessingExecutionContext {
+    // MARK: - Internal Helper Structs and Methods
+
+    private struct PostProcessingExecutionContext {
         let repository: PostProcessingRepository
         let kernelMode: IntelligenceKernelMode
         let useStructuredPipeline: Bool
         let qualityProfile: TranscriptionQualityProfile
     }
 
-    struct PromptSelection {
+    private struct PromptSelection {
         let availablePrompts: [DomainPostProcessingPrompt]
         let fallback: DomainPostProcessingPrompt?
     }
 
-    func makeExecutionContext(
+    private func makeExecutionContext(
         postProcessingRepository: PostProcessingRepository,
         config: PostProcessingConfiguration,
         qualityProfile: TranscriptionQualityProfile
@@ -184,31 +166,28 @@ private extension TranscribeAudioUseCase {
         )
     }
 
-    func shouldUseStructuredPostProcessing(
+    private func shouldUseStructuredPostProcessing(
         mode: IntelligenceKernelMode,
         dictationStructuredPostProcessingEnabled: Bool
     ) -> Bool {
         switch mode {
-        case .meeting:
-            true
-        case .dictation, .assistant:
-            dictationStructuredPostProcessingEnabled
+        case .meeting: return true
+        case .dictation, .assistant: return dictationStructuredPostProcessingEnabled
         }
     }
 
-    func processWithSpecificPrompt(
+    private func processWithSpecificPrompt(
         prompt: DomainPostProcessingPrompt,
         input: String,
         context: PostProcessingExecutionContext,
         meetingType: String?,
-        postProcessingContext: String? // Added this
+        postProcessingContext: String?
     ) async throws -> PostProcessingResult {
-        // ... (use postProcessingContext here)
         let (systemPrompt, userPrompt) = buildRequestPrompts(
             from: prompt.content,
             transcription: input,
             mode: context.kernelMode,
-            contextMetadata: postProcessingContext // Pass it
+            contextMetadata: postProcessingContext
         )
 
         if context.useStructuredPipeline {
@@ -247,10 +226,11 @@ private extension TranscribeAudioUseCase {
         )
     }
 
-    func processWithAutoDetection(
+    private func processWithAutoDetection(
         input: String,
         selection: PromptSelection,
-        context: PostProcessingExecutionContext
+        context: PostProcessingExecutionContext,
+        postProcessingContext: String?
     ) async throws -> PostProcessingResult {
         let meetingType = try await classifyMeeting(text: input, context: context)
         let normalizedType = meetingType?.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines).lowercased()
@@ -263,7 +243,8 @@ private extension TranscribeAudioUseCase {
                 prompt: match,
                 input: input,
                 context: context,
-                meetingType: meetingType
+                meetingType: meetingType,
+                postProcessingContext: postProcessingContext
             )
         }
 
@@ -272,21 +253,24 @@ private extension TranscribeAudioUseCase {
                 prompt: fallback,
                 input: input,
                 context: context,
-                meetingType: meetingType
+                meetingType: meetingType,
+                postProcessingContext: postProcessingContext
             )
         }
 
         return try await processWithoutPrompt(
             input: input,
             context: context,
-            meetingType: meetingType
+            meetingType: meetingType,
+            postProcessingContext: postProcessingContext
         )
     }
 
-    func processWithoutPrompt(
+    private func processWithoutPrompt(
         input: String,
         context: PostProcessingExecutionContext,
-        meetingType: String?
+        meetingType: String?,
+        postProcessingContext: String?
     ) async throws -> PostProcessingResult {
         if context.useStructuredPipeline {
             let structuredResult = try await context.repository.processTranscriptionStructured(
@@ -322,7 +306,7 @@ private extension TranscribeAudioUseCase {
         )
     }
 
-    func classifyMeeting(
+    private func classifyMeeting(
         text: String,
         context: PostProcessingExecutionContext
     ) async throws -> String? {
@@ -350,7 +334,7 @@ private extension TranscribeAudioUseCase {
         return parseMeetingType(from: jsonString)
     }
 
-    func findPrompt(for type: String, in prompts: [DomainPostProcessingPrompt]) -> DomainPostProcessingPrompt? {
+    private func findPrompt(for type: String, in prompts: [DomainPostProcessingPrompt]) -> DomainPostProcessingPrompt? {
         let normalizedType = normalizedMatchKey(type)
 
         return prompts.first { prompt in
@@ -359,12 +343,11 @@ private extension TranscribeAudioUseCase {
         }
     }
 
-    func parseMeetingType(from jsonString: String) -> String? {
+    private func parseMeetingType(from jsonString: String) -> String? {
         if let type = parseMeetingTypeFromJSON(jsonString) {
             return type
         }
 
-        // Fallback: try extracting the first JSON object from the string (handles code fences / extra text)
         guard let startIndex = jsonString.firstIndex(of: "{"),
               let endIndex = jsonString.lastIndex(of: "}")
         else {
@@ -374,7 +357,7 @@ private extension TranscribeAudioUseCase {
         return parseMeetingTypeFromJSON(candidate)
     }
 
-    func parseMeetingTypeFromJSON(_ jsonString: String) -> String? {
+    private func parseMeetingTypeFromJSON(_ jsonString: String) -> String? {
         guard let data = jsonString.data(using: .utf8),
               let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let rawType = object["type"] as? String
@@ -387,7 +370,7 @@ private extension TranscribeAudioUseCase {
         return allowed.contains(type) ? type : nil
     }
 
-    func normalizedMatchKey(_ value: String) -> String {
+    private func normalizedMatchKey(_ value: String) -> String {
         value
             .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
             .replacingOccurrences(of: "_", with: " ")
@@ -399,7 +382,7 @@ private extension TranscribeAudioUseCase {
             .lowercased()
     }
 
-    func recalibrateCanonicalSummary(
+    private func recalibrateCanonicalSummary(
         _ summary: CanonicalSummary,
         with qualityProfile: TranscriptionQualityProfile
     ) -> CanonicalSummary {
@@ -423,11 +406,11 @@ private extension TranscribeAudioUseCase {
         )
     }
 
-    func buildRequestPrompts(
+    private func buildRequestPrompts(
         from promptContent: String,
         transcription: String,
         mode: IntelligenceKernelMode,
-        contextMetadata: String
+        contextMetadata: String?
     ) -> (systemPrompt: String, userPrompt: String) {
         let extracted = AIPromptTemplates.extractSiteOrAppPriorityInstructions(from: promptContent)
         let baseSystemMessage = AIPromptTemplates.defaultSystemPrompt
