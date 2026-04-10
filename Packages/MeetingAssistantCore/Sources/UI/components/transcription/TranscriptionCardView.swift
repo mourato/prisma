@@ -346,6 +346,7 @@ public struct TranscriptionCardView: View {
     private var hasPromptText: Bool {
         transcriptionDetail?.postProcessingRequestSystemPrompt != nil
             || transcriptionDetail?.postProcessingRequestUserPrompt != nil
+            || transcriptionDetail?.postProcessingPromptId != nil
     }
 
     private var isSegmentedTabEnabled: Bool {
