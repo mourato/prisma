@@ -12,7 +12,7 @@ struct TranscriptionPromptPopover: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Request Prompt")
+            Text("transcription.prompt.title".localized)
                 .font(.headline)
                 .padding(.bottom, 4)
 
@@ -36,30 +36,74 @@ struct TranscriptionPromptPopover: View {
 
     private func constructFullPrompt() -> String {
         var lines: [String] = []
-        
+
         // System Context
-        lines.append("SYSTEM CONTEXT:")
-        lines.append("Current time: \(Date().formatted())") // Placeholder for actual time if stored, otherwise use current
-        lines.append("Time zone: \(TimeZone.current.identifier)")
-        lines.append("Locale: \(Locale.current.identifier)")
-        lines.append("Computer name: \(Host.current().localizedName ?? "Unknown")")
+        lines.append("transcription.prompt.section.system_context".localized)
+        lines.append("\("transcription.prompt.current_time".localized): \(Date().formatted())")
+        lines.append("\("transcription.prompt.time_zone".localized): \(TimeZone.current.identifier)")
+        lines.append("\("transcription.prompt.locale".localized): \(Locale.current.identifier)")
+        lines.append(
+            "\("transcription.prompt.computer_name".localized): \(Host.current().localizedName ?? "transcription.prompt.unknown".localized)"
+        )
         lines.append("")
 
         // User Information
-        lines.append("USER INFORMATION:")
-        lines.append("User's full name: \(NSFullUserName())")
+        lines.append("transcription.prompt.section.user_information".localized)
+        lines.append("\("transcription.prompt.user_full_name".localized): \(NSFullUserName())")
         lines.append("")
 
         // Application Context
-        lines.append("APPLICATION CONTEXT:")
-        lines.append("User is currently using: \(transcription.meeting.app.rawValue)") // Assuming app info is available via meeting
+        lines.append("transcription.prompt.section.application_context".localized)
+        lines.append("\("transcription.prompt.current_app".localized): \(transcription.meeting.app.rawValue)")
         lines.append("")
 
         // User Prompt
+        lines.append("transcription.prompt.section.user_message".localized)
         if let userPrompt = transcription.postProcessingRequestUserPrompt {
-            lines.append("USER MESSAGE:")
             lines.append(userPrompt)
+        } else {
+            lines.append("transcription.prompt.not_available".localized)
         }
+
+        // Raw transcription
+        lines.append("")
+        lines.append("transcription.prompt.section.raw_transcription".localized)
+        lines.append(transcription.rawText)
+
+        // Post-processing diagnostics
+        let settings = AppSettingsStore.shared
+        let hasProcessedContent = transcription.processedContent?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .isEmpty == false
+        let processingStatus = hasProcessedContent
+            ? "transcription.prompt.value.applied".localized
+            : "transcription.prompt.value.skipped".localized
+        let globalStatus = settings.postProcessingEnabled
+            ? "transcription.prompt.value.enabled".localized
+            : "transcription.prompt.value.disabled".localized
+
+        lines.append("")
+        lines.append("transcription.prompt.section.post_processing_diagnostics".localized)
+        lines.append("\("transcription.prompt.global_post_processing_enabled".localized): \(globalStatus)")
+        lines.append(
+            "\("transcription.prompt.dictation_selected_prompt_id".localized): \(settings.dictationSelectedPromptId?.uuidString ?? "transcription.prompt.unset".localized)"
+        )
+        lines.append(
+            "\("transcription.prompt.meeting_selected_prompt_id".localized): \(settings.selectedPromptId?.uuidString ?? "transcription.prompt.unset".localized)"
+        )
+        lines.append(
+            "\("transcription.prompt.used_prompt_id".localized): \(transcription.postProcessingPromptId?.uuidString ?? "transcription.prompt.unset".localized)"
+        )
+        lines.append(
+            "\("transcription.prompt.used_prompt_title".localized): \(transcription.postProcessingPromptTitle ?? "transcription.prompt.unset".localized)"
+        )
+        lines.append("\("transcription.prompt.post_processing_applied".localized): \(processingStatus)")
+        lines.append(
+            "\("transcription.prompt.post_processing_model".localized): \(transcription.postProcessingModel ?? "transcription.prompt.unset".localized)"
+        )
+        lines.append(
+            "\("transcription.prompt.post_processing_duration".localized): \(String(format: "%.2fs", transcription.postProcessingDuration))"
+        )
 
         return lines.joined(separator: "\n")
     }

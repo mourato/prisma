@@ -155,4 +155,54 @@ final class TranscriptionDeliveryServiceTests: XCTestCase {
         XCTAssertNil(mockPasteboard.storedString, "Clipboard should be empty when settings are disabled")
     }
 
+    func testDeliver_WithLeakedContextBlock_StripsMetadataAndCopiesCleanProcessedText() {
+        // Given
+        let meeting = Meeting(app: .unknown)
+        let transcription = Transcription(
+            meeting: meeting,
+            text: "Clean result",
+            rawText: kDictationText,
+            processedContent: "Clean result\n\n<CONTEXT_METADATA>\n- Active window OCR: leaked\n</CONTEXT_METADATA>"
+        )
+        let settings = MockDeliverySettings(
+            autoCopyTranscriptionToClipboard: true,
+            autoPasteTranscriptionToActiveApp: false
+        )
+
+        // When
+        TranscriptionDeliveryService.deliver(
+            transcription: transcription,
+            settings: settings,
+            pasteboard: mockPasteboard
+        )
+
+        // Then
+        XCTAssertEqual(mockPasteboard.storedString, "Clean result")
+    }
+
+    func testDeliver_WithOnlyLeakedContextBlock_FallsBackToRawText() {
+        // Given
+        let meeting = Meeting(app: .unknown)
+        let transcription = Transcription(
+            meeting: meeting,
+            text: kDictationText,
+            rawText: kDictationText,
+            processedContent: "<CONTEXT_METADATA>\n- Active window OCR: leaked\n</CONTEXT_METADATA>"
+        )
+        let settings = MockDeliverySettings(
+            autoCopyTranscriptionToClipboard: true,
+            autoPasteTranscriptionToActiveApp: false
+        )
+
+        // When
+        TranscriptionDeliveryService.deliver(
+            transcription: transcription,
+            settings: settings,
+            pasteboard: mockPasteboard
+        )
+
+        // Then
+        XCTAssertEqual(mockPasteboard.storedString, kDictationText)
+    }
+
 }

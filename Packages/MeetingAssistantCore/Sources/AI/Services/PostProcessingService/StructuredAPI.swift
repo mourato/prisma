@@ -111,7 +111,14 @@ extension PostProcessingService {
                     extra: ["output_state": result.outputState.rawValue]
                 )
             )
-            return result
+            let mergedContextMetadata = TranscriptionOutputSanitizer.extractContextMetadata(
+                fromPromptInput: context.transcription
+            )
+            return sanitizeStructuredResult(
+                result,
+                transcription: context.transcription,
+                contextMetadata: mergedContextMetadata
+            )
         } catch {
             return try await handleStructuredFailure(context: context, error: error)
         }
@@ -209,12 +216,21 @@ extension PostProcessingService {
                 requestProfile: fallbackProfile,
                 traceContext: fallbackTraceContext
             )
+            let mergedContextMetadata = TranscriptionOutputSanitizer.extractContextMetadata(
+                fromPromptInput: context.transcription
+            )
+            let sanitizedFallback = TranscriptionOutputSanitizer.sanitize(
+                processedContent: fallbackText,
+                contextMetadata: mergedContextMetadata
+            )
+            let baseTranscriptionText = TranscriptionOutputSanitizer.stripPromptMetadata(from: context.transcription)
+            let resolvedFallbackText = sanitizedFallback.text ?? (baseTranscriptionText.isEmpty ? context.transcription : baseTranscriptionText)
             let fallbackSummary = summaryFallbackBuilder.build(
-                providerOutput: fallbackText,
+                providerOutput: resolvedFallbackText,
                 transcription: context.transcription
             )
             return DomainPostProcessingResult(
-                processedText: fallbackText,
+                processedText: resolvedFallbackText,
                 canonicalSummary: fallbackSummary.canonicalSummary,
                 outputState: .deterministicFallback
             )
@@ -223,5 +239,49 @@ extension PostProcessingService {
             lastError = fallbackError
             throw fallbackError
         }
+    }
+
+    private func sanitizeStructuredResult(
+        _ result: DomainPostProcessingResult,
+        transcription: String,
+        contextMetadata: String?
+    ) -> DomainPostProcessingResult {
+        let baseTranscriptionText = TranscriptionOutputSanitizer.stripPromptMetadata(from: transcription)
+        let resolvedBaseText = baseTranscriptionText.isEmpty ? transcription : baseTranscriptionText
+        let sanitized = TranscriptionOutputSanitizer.sanitize(
+            processedContent: result.processedText,
+            contextMetadata: contextMetadata
+        )
+
+        guard sanitized.text != result.processedText else {
+            return result
+        }
+
+        if let sanitizedText = sanitized.text {
+            AppLogger.warning(
+                "Structured post-processing output sanitized after reserved metadata block detection",
+                category: .transcriptionEngine
+            )
+            return DomainPostProcessingResult(
+                processedText: sanitizedText,
+                canonicalSummary: result.canonicalSummary,
+                outputState: result.outputState
+            )
+        }
+
+        AppLogger.warning(
+            "Structured post-processing output discarded due to context leakage; using deterministic fallback text",
+            category: .transcriptionEngine
+        )
+
+        let fallbackSummary = summaryFallbackBuilder.build(
+            providerOutput: resolvedBaseText,
+            transcription: transcription
+        )
+        return DomainPostProcessingResult(
+            processedText: resolvedBaseText,
+            canonicalSummary: fallbackSummary.canonicalSummary,
+            outputState: .deterministicFallback
+        )
     }
 }

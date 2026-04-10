@@ -46,8 +46,21 @@ public struct TranscriptionDeliveryService {
     }
 
     private static func transcriptionDeliveryText(from transcription: Transcription) -> String {
-        let candidate = transcription.processedContent?.trimmingCharacters(in: .whitespacesAndNewlines)
-        if let candidate, !candidate.isEmpty {
+        let contextMetadata: String? = {
+            let normalizedItems = transcription.contextItems
+                .map(\.text)
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+
+            guard !normalizedItems.isEmpty else { return nil }
+            return normalizedItems.joined(separator: "\n")
+        }()
+
+        let sanitized = TranscriptionOutputSanitizer.sanitize(
+            processedContent: transcription.processedContent,
+            contextMetadata: contextMetadata
+        )
+        if let candidate = sanitized.text, !candidate.isEmpty {
             return candidate
         }
         return transcription.rawText

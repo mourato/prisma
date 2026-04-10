@@ -100,8 +100,36 @@ extension PostProcessingService {
                 requestProfile: context.requestProfile,
                 traceContext: context.traceContext
             )
+            let mergedContextMetadata = TranscriptionOutputSanitizer.extractContextMetadata(
+                fromPromptInput: context.transcription
+            )
+            let fallbackText = TranscriptionOutputSanitizer.stripPromptMetadata(from: context.transcription)
+            let sanitizedResult = TranscriptionOutputSanitizer.sanitize(
+                processedContent: result,
+                contextMetadata: mergedContextMetadata
+            )
+
+            if sanitizedResult.contextLeakDetected {
+                AppLogger.warning(
+                    "Post-processing output discarded due to context leakage; using raw transcription fallback",
+                    category: .transcriptionEngine
+                )
+                return fallbackText.isEmpty ? context.transcription : fallbackText
+            }
+
+            if sanitizedResult.removedReservedBlocks {
+                AppLogger.warning(
+                    "Post-processing output sanitized after reserved metadata block detection",
+                    category: .transcriptionEngine
+                )
+            }
+
             logRequestSuccess(message: "Post-processing completed", context: context.traceContext, startedAt: context.startedAt)
-            return result
+            if let sanitizedText = sanitizedResult.text, !sanitizedText.isEmpty {
+                return sanitizedText
+            }
+
+            return fallbackText.isEmpty ? context.transcription : fallbackText
         } catch {
             return try await handleLegacyFailure(context: context, error: error)
         }

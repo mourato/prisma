@@ -90,6 +90,8 @@ public struct Transcription: Identifiable, Codable, Hashable, Sendable {
         self.qualityProfile = qualityProfile
         self.postProcessingPromptId = postProcessingPromptId
         self.postProcessingPromptTitle = postProcessingPromptTitle
+        self.postProcessingRequestSystemPrompt = postProcessingRequestSystemPrompt
+        self.postProcessingRequestUserPrompt = postProcessingRequestUserPrompt
         self.language = language
         self.createdAt = createdAt
         self.modelName = modelName
