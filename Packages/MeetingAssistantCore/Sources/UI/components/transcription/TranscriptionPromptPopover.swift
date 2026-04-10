@@ -36,6 +36,10 @@ struct TranscriptionPromptPopover: View {
 
     private func constructFullPrompt() -> String {
         var lines: [String] = []
+        let requestSystemPrompt = transcription.postProcessingRequestSystemPrompt?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let requestUserPrompt = transcription.postProcessingRequestUserPrompt?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
 
         // System Context
         lines.append("transcription.prompt.section.system_context".localized)
@@ -62,7 +66,7 @@ struct TranscriptionPromptPopover: View {
 
         // System prompt sent to post-processing provider
         lines.append("transcription.prompt.section.system_prompt".localized)
-        if let systemPrompt = transcription.postProcessingRequestSystemPrompt {
+        if let systemPrompt = requestSystemPrompt, !systemPrompt.isEmpty {
             lines.append(systemPrompt)
         } else {
             lines.append("transcription.prompt.not_available".localized)
@@ -71,7 +75,7 @@ struct TranscriptionPromptPopover: View {
         // User Prompt
         lines.append("")
         lines.append("transcription.prompt.section.user_message".localized)
-        if let userPrompt = transcription.postProcessingRequestUserPrompt {
+        if let userPrompt = requestUserPrompt, !userPrompt.isEmpty {
             lines.append(userPrompt)
 
             lines.append("")
@@ -90,6 +94,12 @@ struct TranscriptionPromptPopover: View {
         } else {
             lines.append("transcription.prompt.not_available".localized)
         }
+
+        lines.append("")
+        lines.append("transcription.prompt.section.output_language".localized)
+        lines.append(
+            resolvedOutputLanguage(from: requestUserPrompt) ?? "transcription.prompt.not_available".localized
+        )
 
         // Raw transcription
         lines.append("")
@@ -148,6 +158,62 @@ struct TranscriptionPromptPopover: View {
         let extracted = text[startRange.upperBound..<endRange.lowerBound]
             .trimmingCharacters(in: .whitespacesAndNewlines)
         return extracted.isEmpty ? nil : extracted
+    }
+
+    private func resolvedOutputLanguage(from requestUserPrompt: String?) -> String? {
+        if let requestUserPrompt,
+           let outputLanguageBlock = extractTaggedBlock(named: "OUTPUT_LANGUAGE", from: requestUserPrompt)
+        {
+            return extractLanguageName(fromOutputLanguageInstruction: outputLanguageBlock) ?? outputLanguageBlock
+        }
+
+        return outputLanguageFromCurrentDictationRules()
+    }
+
+    private func outputLanguageFromCurrentDictationRules() -> String? {
+        guard transcription.capturePurpose == .dictation,
+              let bundleIdentifier = transcription.meeting.appBundleIdentifier
+        else {
+            return nil
+        }
+
+        let normalizedBundleIdentifier = WebTargetDetection.normalizeBundleIdentifier(bundleIdentifier)
+        let prismaBundleIdentifier = WebTargetDetection.normalizeBundleIdentifier(AppIdentity.bundleIdentifier)
+        guard normalizedBundleIdentifier != prismaBundleIdentifier else {
+            return nil
+        }
+
+        let settings = AppSettingsStore.shared
+        guard let rule = settings.dictationAppRules.first(where: {
+            WebTargetDetection.normalizeBundleIdentifier($0.bundleIdentifier) == normalizedBundleIdentifier
+        }) else {
+            return nil
+        }
+
+        if rule.outputLanguage == .original {
+            return "transcription.prompt.value.original_language".localized
+        }
+
+        return rule.outputLanguage.instructionDisplayName
+    }
+
+    private func extractLanguageName(fromOutputLanguageInstruction instruction: String) -> String? {
+        let pattern = #"Translate the final output to\s+([^\.\n]+)"#
+
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else {
+            return nil
+        }
+
+        let nsRange = NSRange(instruction.startIndex..<instruction.endIndex, in: instruction)
+        guard let match = regex.firstMatch(in: instruction, options: [], range: nsRange),
+              match.numberOfRanges > 1,
+              let capturedRange = Range(match.range(at: 1), in: instruction)
+        else {
+            return nil
+        }
+
+        let languageName = instruction[capturedRange].trimmingCharacters(in: .whitespacesAndNewlines)
+        return languageName.isEmpty ? nil : languageName
     }
 
 }

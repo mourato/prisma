@@ -1122,6 +1122,7 @@
 "transcription.prompt.section.user_message" = "MENSAGEM DO USUÁRIO:";
 "transcription.prompt.section.extracted_instructions" = "BLOCO <INSTRUCTIONS> EXTRAIDO:";
 "transcription.prompt.section.extracted_site_app_priority" = "BLOCO <SITE_OR_APP_PRIORITY_INSTRUCTIONS> EXTRAIDO:";
+"transcription.prompt.section.output_language" = "IDIOMA DE SAIDA:";
 "transcription.prompt.section.raw_transcription" = "TRANSCRIÇÃO BRUTA:";
 "transcription.prompt.current_time" = "Horário atual";
 "transcription.prompt.time_zone" = "Fuso horário";
@@ -1144,4 +1145,5 @@
 "transcription.prompt.value.disabled" = "Desabilitado";
 "transcription.prompt.value.applied" = "Sim";
 "transcription.prompt.value.skipped" = "Nao";
+"transcription.prompt.value.original_language" = "Idioma original";
 "transcription.prompt.unset" = "<nao definido>";

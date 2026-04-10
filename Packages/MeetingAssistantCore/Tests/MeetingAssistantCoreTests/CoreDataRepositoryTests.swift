@@ -227,6 +227,27 @@ final class CoreDataRepositoryTests: XCTestCase {
         XCTAssertEqual(fetched?.canonicalSummary?.trustFlags.confidenceScore ?? -1, 0.92, accuracy: 0.001)
     }
 
+    func testSaveAndFetchTranscription_PreservesRequestPrompts() async throws {
+        let meeting = MeetingEntity(app: .unknown, capturePurpose: .dictation)
+        try await meetingRepo.saveMeeting(meeting)
+
+        var config = TranscriptionEntity.Configuration(
+            text: "Processed text",
+            rawText: "Raw text"
+        )
+        config.postProcessingPromptId = UUID()
+        config.postProcessingPromptTitle = "Dictation Prompt"
+        config.postProcessingRequestSystemPrompt = "System prompt payload"
+        config.postProcessingRequestUserPrompt = "User prompt payload"
+
+        let transcription = TranscriptionEntity(meeting: meeting, config: config)
+        try await transcriptionRepo.saveTranscription(transcription)
+
+        let fetched = try await transcriptionRepo.fetchTranscription(by: transcription.id)
+        XCTAssertEqual(fetched?.postProcessingRequestSystemPrompt, "System prompt payload")
+        XCTAssertEqual(fetched?.postProcessingRequestUserPrompt, "User prompt payload")
+    }
+
     func testSaveTranscription_NonMeetingMetadataDoesNotExposeTitleOrCalendarFallback() async throws {
         let meeting = MeetingEntity(
             id: UUID(),

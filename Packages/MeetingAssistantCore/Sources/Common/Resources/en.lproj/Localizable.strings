@@ -1133,6 +1133,7 @@
 "transcription.prompt.section.user_message" = "USER MESSAGE:";
 "transcription.prompt.section.extracted_instructions" = "EXTRACTED <INSTRUCTIONS> BLOCK:";
 "transcription.prompt.section.extracted_site_app_priority" = "EXTRACTED <SITE_OR_APP_PRIORITY_INSTRUCTIONS> BLOCK:";
+"transcription.prompt.section.output_language" = "OUTPUT LANGUAGE:";
 "transcription.prompt.section.raw_transcription" = "RAW TRANSCRIPTION:";
 "transcription.prompt.current_time" = "Current time";
 "transcription.prompt.time_zone" = "Time zone";
@@ -1155,4 +1156,5 @@
 "transcription.prompt.value.disabled" = "Disabled";
 "transcription.prompt.value.applied" = "Yes";
 "transcription.prompt.value.skipped" = "No";
+"transcription.prompt.value.original_language" = "Original language";
 "transcription.prompt.unset" = "<unset>";
