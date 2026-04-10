@@ -41,7 +41,7 @@ public final class DictationPromptSettingsViewModel: ObservableObject {
             return AppSettingsStore.noPostProcessingPromptId
         }
 
-        return settings.dictationSelectedPromptId ?? PostProcessingPrompt.cleanTranscription.id
+        return settings.dictationSelectedPromptId ?? PostProcessingPrompt.defaultPrompt.id
     }
 
     public func selectPrompt(_ id: UUID, forceSelect: Bool = false) {

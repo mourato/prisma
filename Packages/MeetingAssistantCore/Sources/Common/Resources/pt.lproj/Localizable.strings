@@ -894,6 +894,8 @@
 /* AI Prompts */
 "prompt.clean_transcription.title" = "Transcrição Limpa";
 "prompt.clean_transcription.description" = "Remove hesitações e corrige erros de fala";
+"prompt.default.title" = "Padrão";
+"prompt.default.description" = "Instruções padrão de limpeza de ditado";
 "prompt.flex.title" = "Flex";
 "prompt.flex.description" = "Regras estritas de formatação para limpeza avançada do ditado";
 

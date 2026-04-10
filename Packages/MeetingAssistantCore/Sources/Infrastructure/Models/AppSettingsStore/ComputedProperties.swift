@@ -43,7 +43,7 @@ public extension AppSettingsStore {
     /// Dictation prompts (predefined + user-created).
     var dictationAvailablePrompts: [PostProcessingPrompt] {
         let predefined: [PostProcessingPrompt] = [
-            .cleanTranscription,
+            .defaultPrompt,
             .flex,
         ]
         let predefinedIds = Set(predefined.map(\.id))

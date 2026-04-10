@@ -160,7 +160,7 @@ extension PostProcessingService {
 
     private func runLegacyFallback(from context: LegacyRequestContext) async throws -> String {
         let fallbackProfile = dictationFallbackProfile()
-        let fallbackPrompt = PostProcessingPrompt.cleanTranscription
+        let fallbackPrompt = PostProcessingPrompt.defaultPrompt
         let fallbackTraceContext = makeTraceContext(
             mode: context.mode,
             provider: context.requestConfig.provider,

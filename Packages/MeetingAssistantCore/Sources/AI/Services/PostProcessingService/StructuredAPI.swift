@@ -191,7 +191,7 @@ extension PostProcessingService {
 
     private func runStructuredFallback(from context: StructuredRequestContext) async throws -> DomainPostProcessingResult {
         let fallbackProfile = dictationFallbackProfile()
-        let fallbackPrompt = PostProcessingPrompt.cleanTranscription
+        let fallbackPrompt = PostProcessingPrompt.defaultPrompt
         let fallbackTraceContext = makeTraceContext(
             mode: context.mode,
             provider: context.requestConfig.provider,

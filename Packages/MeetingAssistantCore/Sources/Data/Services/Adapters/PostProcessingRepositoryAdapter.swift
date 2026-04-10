@@ -124,7 +124,7 @@ public final class PostProcessingRepositoryAdapter: PostProcessingRepository {
         case .meeting:
             settings.selectedPrompt
         case .dictation, .assistant:
-            settings.selectedDictationPrompt ?? .cleanTranscription
+            settings.selectedDictationPrompt ?? .defaultPrompt
         }
     }
 }

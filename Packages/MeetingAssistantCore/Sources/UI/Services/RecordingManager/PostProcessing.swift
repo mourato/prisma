@@ -241,7 +241,7 @@ extension RecordingManager {
         session: TranscriptionSessionSnapshot? = nil
     ) -> DomainPostProcessingPrompt? {
         if isDictation {
-            let basePrompt = settings.selectedDictationPrompt ?? .cleanTranscription
+            let basePrompt = settings.selectedDictationPrompt ?? .defaultPrompt
             let resolvedPrompt = promptWithDictationRuleOverrides(
                 prompt: basePrompt,
                 settings: settings,

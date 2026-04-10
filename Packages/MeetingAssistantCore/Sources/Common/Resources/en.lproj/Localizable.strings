@@ -894,6 +894,8 @@
 /* AI Prompts */
 "prompt.clean_transcription.title" = "Clean Transcription";
 "prompt.clean_transcription.description" = "Removes hesitations and corrects speech errors";
+"prompt.default.title" = "Default";
+"prompt.default.description" = "Standard dictation cleanup instructions";
 "prompt.flex.title" = "Flex";
 "prompt.flex.description" = "Strict formatting rules for advanced dictation cleanup";
 "prompt.standup.title" = "Standup";

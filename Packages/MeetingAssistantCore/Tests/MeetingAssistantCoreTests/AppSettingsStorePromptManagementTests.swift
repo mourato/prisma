@@ -17,8 +17,8 @@ final class AppSettingsStorePromptManagementTests: XCTestCase {
 
     func testEditingBuiltInDictationPromptKeepsSamePromptId() {
         let editedPrompt = PostProcessingPrompt(
-            id: PostProcessingPrompt.cleanTranscription.id,
-            title: "Edited Clean Prompt",
+            id: PostProcessingPrompt.defaultPrompt.id,
+            title: "Edited Default Prompt",
             promptText: "Edited text",
             icon: "text.badge.checkmark",
             description: "Edited description",
@@ -33,9 +33,16 @@ final class AppSettingsStorePromptManagementTests: XCTestCase {
     }
 
     func testDeletingBuiltInDictationPromptRemovesItFromAvailablePrompts() {
-        settings.deleteDictationPrompt(id: PostProcessingPrompt.cleanTranscription.id)
+        settings.deleteDictationPrompt(id: PostProcessingPrompt.defaultPrompt.id)
 
-        XCTAssertFalse(settings.dictationAvailablePrompts.contains { $0.id == PostProcessingPrompt.cleanTranscription.id })
+        XCTAssertFalse(settings.dictationAvailablePrompts.contains { $0.id == PostProcessingPrompt.defaultPrompt.id })
+    }
+
+    func testDictationAvailablePromptsContainsDefaultAndFlex() {
+        let availableIds = settings.dictationAvailablePrompts.map(\.id)
+
+        XCTAssertTrue(availableIds.contains(PostProcessingPrompt.defaultPrompt.id))
+        XCTAssertTrue(availableIds.contains(PostProcessingPrompt.flex.id))
     }
 
     func testDeletingAndEditingBuiltInMeetingPromptRestoresEditedPrompt() {

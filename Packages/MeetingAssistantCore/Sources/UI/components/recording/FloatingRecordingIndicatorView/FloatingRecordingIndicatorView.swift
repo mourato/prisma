@@ -476,7 +476,7 @@ public struct FloatingRecordingIndicatorView: View {
             if settingsStore.isDictationPostProcessingDisabled {
                 return "nosign"
             }
-            return (settingsStore.selectedDictationPrompt ?? .cleanTranscription).icon
+            return (settingsStore.selectedDictationPrompt ?? .defaultPrompt).icon
         }
 
         if settingsStore.isMeetingPostProcessingDisabled {
@@ -491,7 +491,7 @@ public struct FloatingRecordingIndicatorView: View {
             if settingsStore.isDictationPostProcessingDisabled {
                 return "recording_indicator.prompt.none".localized
             }
-            return (settingsStore.selectedDictationPrompt ?? .cleanTranscription).title
+            return (settingsStore.selectedDictationPrompt ?? .defaultPrompt).title
         }
 
         if settingsStore.isMeetingPostProcessingDisabled {

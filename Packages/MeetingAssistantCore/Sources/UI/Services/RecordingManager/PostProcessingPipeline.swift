@@ -102,7 +102,7 @@ extension RecordingManager {
         settings: AppSettingsStore
     ) async -> PostProcessingPrompt {
         if isDictation {
-            return settings.selectedDictationPrompt ?? .cleanTranscription
+            return settings.selectedDictationPrompt ?? .defaultPrompt
         }
 
         if meetingType == .autodetect {
