@@ -16,11 +16,11 @@ struct TranscriptionPromptPopover: View {
                 .font(.headline)
                 .padding(.bottom, 4)
 
-            // Combine everything into one single input view
-            let fullPrompt = constructFullPrompt()
+            let promptInput = constructPromptInput()
+            let diagnosticsLines = postProcessingDiagnosticsLines()
 
             ScrollView {
-                Text(fullPrompt)
+                Text(promptInput)
                     .font(.system(.caption, design: .monospaced))
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -29,84 +29,142 @@ struct TranscriptionPromptPopover: View {
                     .clipShape(RoundedRectangle(cornerRadius: 6))
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity) // Increased area
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("transcription.prompt.section.post_processing_diagnostics".localized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                ForEach(Array(diagnosticsLines.enumerated()), id: \.offset) { _, line in
+                    Text(line)
+                        .font(.system(.caption, design: .monospaced))
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
         }
         .padding()
         .frame(width: 500, height: 600) // Increased popover size
     }
 
-    private func constructFullPrompt() -> String {
-        var lines: [String] = []
+    private func constructPromptInput() -> String {
         let requestSystemPrompt = transcription.postProcessingRequestSystemPrompt?
             .trimmingCharacters(in: .whitespacesAndNewlines)
         let requestUserPrompt = transcription.postProcessingRequestUserPrompt?
             .trimmingCharacters(in: .whitespacesAndNewlines)
+        var lines: [String] = []
 
-        // System Context
-        lines.append("transcription.prompt.section.system_context".localized)
-        lines.append("\("transcription.prompt.current_time".localized): \(Date().formatted())")
-        lines.append("\("transcription.prompt.time_zone".localized): \(TimeZone.current.identifier)")
-        lines.append("\("transcription.prompt.locale".localized): \(Locale.current.identifier)")
-        lines.append(
-            "\("transcription.prompt.computer_name".localized): \(Host.current().localizedName ?? "transcription.prompt.unknown".localized)"
-        )
-        lines.append("")
+        lines.append(contentsOf: systemContextLines())
+        lines.append(contentsOf: userInformationLines())
+        lines.append(contentsOf: applicationContextLines())
+        lines.append(contentsOf: systemPromptLines(requestSystemPrompt))
+        lines.append(contentsOf: userPromptLines(requestUserPrompt))
+        lines.append(contentsOf: outputLanguageLines(requestUserPrompt))
+        lines.append(contentsOf: rawTranscriptionLines())
 
-        // User Information
-        lines.append("transcription.prompt.section.user_information".localized)
-        lines.append("\("transcription.prompt.user_full_name".localized): \(NSFullUserName())")
-        lines.append("")
+        return lines.joined(separator: "\n")
+    }
 
-        // Application Context
-        lines.append("transcription.prompt.section.application_context".localized)
-        lines.append("\("transcription.prompt.current_app".localized): \(transcription.meeting.app.rawValue)")
-        lines.append(
-            "\("transcription.prompt.captured_bundle_identifier".localized): \(transcription.meeting.appBundleIdentifier ?? "transcription.prompt.unset".localized)"
-        )
-        lines.append("")
+    private func systemContextLines() -> [String] {
+        [
+            "transcription.prompt.section.system_context".localized,
+            "\("transcription.prompt.current_time".localized): \(Date().formatted())",
+            "\("transcription.prompt.time_zone".localized): \(TimeZone.current.identifier)",
+            "\("transcription.prompt.locale".localized): \(Locale.current.identifier)",
+            "\("transcription.prompt.computer_name".localized): \(Host.current().localizedName ?? "transcription.prompt.unknown".localized)",
+            "",
+        ]
+    }
 
-        // System prompt sent to post-processing provider
-        lines.append("transcription.prompt.section.system_prompt".localized)
+    private func userInformationLines() -> [String] {
+        [
+            "transcription.prompt.section.user_information".localized,
+            "\("transcription.prompt.user_full_name".localized): \(NSFullUserName())",
+            "",
+        ]
+    }
+
+    private func applicationContextLines() -> [String] {
+        [
+            "transcription.prompt.section.application_context".localized,
+            "\("transcription.prompt.current_app".localized): \(transcription.meeting.app.rawValue)",
+            "\("transcription.prompt.captured_bundle_identifier".localized): \(transcription.meeting.appBundleIdentifier ?? "transcription.prompt.unset".localized)",
+            "",
+        ]
+    }
+
+    private func systemPromptLines(_ requestSystemPrompt: String?) -> [String] {
+        var lines = ["transcription.prompt.section.system_prompt".localized]
         if let systemPrompt = requestSystemPrompt, !systemPrompt.isEmpty {
             lines.append(systemPrompt)
         } else {
             lines.append("transcription.prompt.not_available".localized)
         }
+        return lines
+    }
 
-        // User Prompt
-        lines.append("")
-        lines.append("transcription.prompt.section.user_message".localized)
+    private func userPromptLines(_ requestUserPrompt: String?) -> [String] {
+        var lines = ["", "transcription.prompt.section.user_message".localized]
+
         if let userPrompt = requestUserPrompt, !userPrompt.isEmpty {
             lines.append(userPrompt)
-
             lines.append("")
             lines.append("transcription.prompt.section.extracted_instructions".localized)
             lines.append(
                 extractTaggedBlock(named: "INSTRUCTIONS", from: userPrompt)
                     ?? "transcription.prompt.not_available".localized
             )
-
             lines.append("")
             lines.append("transcription.prompt.section.extracted_site_app_priority".localized)
             lines.append(
                 extractTaggedBlock(named: AIPromptTemplates.siteOrAppPriorityTag, from: userPrompt)
                     ?? "transcription.prompt.not_available".localized
             )
-        } else {
-            lines.append("transcription.prompt.not_available".localized)
+            lines.append("")
+            lines.append("transcription.prompt.section.context_sent".localized)
+            lines.append(
+                resolvedContextSent(from: requestUserPrompt) ?? "transcription.prompt.not_available".localized
+            )
+            lines.append("")
+            lines.append("transcription.prompt.section.extracted_transcription".localized)
+            lines.append(
+                extractTaggedBlock(named: "TRANSCRIPTION", from: userPrompt)
+                    ?? "transcription.prompt.not_available".localized
+            )
+            return lines
         }
 
+        lines.append("transcription.prompt.not_available".localized)
         lines.append("")
-        lines.append("transcription.prompt.section.output_language".localized)
+        lines.append("transcription.prompt.section.context_sent".localized)
         lines.append(
-            resolvedOutputLanguage(from: requestUserPrompt) ?? "transcription.prompt.not_available".localized
+            resolvedContextSent(from: requestUserPrompt) ?? "transcription.prompt.not_available".localized
         )
-
-        // Raw transcription
         lines.append("")
-        lines.append("transcription.prompt.section.raw_transcription".localized)
-        lines.append(transcription.rawText)
+        lines.append("transcription.prompt.section.extracted_transcription".localized)
+        lines.append("transcription.prompt.not_available".localized)
+        return lines
+    }
 
-        // Post-processing diagnostics
+    private func outputLanguageLines(_ requestUserPrompt: String?) -> [String] {
+        [
+            "",
+            "transcription.prompt.section.output_language".localized,
+            resolvedOutputLanguage(from: requestUserPrompt) ?? "transcription.prompt.not_available".localized,
+        ]
+    }
+
+    private func rawTranscriptionLines() -> [String] {
+        [
+            "",
+            "transcription.prompt.section.raw_transcription".localized,
+            transcription.rawText,
+        ]
+    }
+
+    private func postProcessingDiagnosticsLines() -> [String] {
         let settings = AppSettingsStore.shared
         let hasProcessedContent = transcription.processedContent?
             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -118,30 +176,16 @@ struct TranscriptionPromptPopover: View {
             ? "transcription.prompt.value.enabled".localized
             : "transcription.prompt.value.disabled".localized
 
-        lines.append("")
-        lines.append("transcription.prompt.section.post_processing_diagnostics".localized)
-        lines.append("\("transcription.prompt.global_post_processing_enabled".localized): \(globalStatus)")
-        lines.append(
-            "\("transcription.prompt.dictation_selected_prompt_id".localized): \(settings.dictationSelectedPromptId?.uuidString ?? "transcription.prompt.unset".localized)"
-        )
-        lines.append(
-            "\("transcription.prompt.meeting_selected_prompt_id".localized): \(settings.selectedPromptId?.uuidString ?? "transcription.prompt.unset".localized)"
-        )
-        lines.append(
-            "\("transcription.prompt.used_prompt_id".localized): \(transcription.postProcessingPromptId?.uuidString ?? "transcription.prompt.unset".localized)"
-        )
-        lines.append(
-            "\("transcription.prompt.used_prompt_title".localized): \(transcription.postProcessingPromptTitle ?? "transcription.prompt.unset".localized)"
-        )
-        lines.append("\("transcription.prompt.post_processing_applied".localized): \(processingStatus)")
-        lines.append(
-            "\("transcription.prompt.post_processing_model".localized): \(transcription.postProcessingModel ?? "transcription.prompt.unset".localized)"
-        )
-        lines.append(
-            "\("transcription.prompt.post_processing_duration".localized): \(String(format: "%.2fs", transcription.postProcessingDuration))"
-        )
-
-        return lines.joined(separator: "\n")
+        return [
+            "\("transcription.prompt.global_post_processing_enabled".localized): \(globalStatus)",
+            "\("transcription.prompt.dictation_selected_prompt_id".localized): \(settings.dictationSelectedPromptId?.uuidString ?? "transcription.prompt.unset".localized)",
+            "\("transcription.prompt.meeting_selected_prompt_id".localized): \(settings.selectedPromptId?.uuidString ?? "transcription.prompt.unset".localized)",
+            "\("transcription.prompt.used_prompt_id".localized): \(transcription.postProcessingPromptId?.uuidString ?? "transcription.prompt.unset".localized)",
+            "\("transcription.prompt.used_prompt_title".localized): \(transcription.postProcessingPromptTitle ?? "transcription.prompt.unset".localized)",
+            "\("transcription.prompt.post_processing_applied".localized): \(processingStatus)",
+            "\("transcription.prompt.post_processing_model".localized): \(transcription.postProcessingModel ?? "transcription.prompt.unset".localized)",
+            "\("transcription.prompt.post_processing_duration".localized): \(String(format: "%.2fs", transcription.postProcessingDuration))",
+        ]
     }
 
     private func extractTaggedBlock(named tag: String, from text: String) -> String? {
@@ -214,6 +258,73 @@ struct TranscriptionPromptPopover: View {
 
         let languageName = instruction[capturedRange].trimmingCharacters(in: .whitespacesAndNewlines)
         return languageName.isEmpty ? nil : languageName
+    }
+
+    private func resolvedContextSent(from requestUserPrompt: String?) -> String? {
+        if let requestUserPrompt,
+           let contextMetadataBlock = extractTaggedBlock(named: "CONTEXT_METADATA", from: requestUserPrompt)
+        {
+            return contextMetadataBlock
+        }
+
+        return fallbackContextSentFromItems()
+    }
+
+    private func fallbackContextSentFromItems() -> String? {
+        let sourceRank: [TranscriptionContextItem.Source: Int] = [
+            .activeApp: 0,
+            .windowTitle: 1,
+            .accessibilityText: 2,
+            .clipboard: 3,
+            .windowOCR: 4,
+            .activeTabURL: 5,
+            .calendarEvent: 6,
+            .focusedText: 7,
+            .meetingNotes: 8,
+        ]
+
+        let orderedLines = transcription.contextItems
+            .enumerated()
+            .sorted { lhs, rhs in
+                let lhsRank = sourceRank[lhs.element.source] ?? Int.max
+                let rhsRank = sourceRank[rhs.element.source] ?? Int.max
+                if lhsRank == rhsRank {
+                    return lhs.offset < rhs.offset
+                }
+                return lhsRank < rhsRank
+            }
+            .map(\.element)
+            .compactMap { item -> String? in
+                let trimmed = item.text.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else { return nil }
+                return "- \(contextSourceLabel(for: item.source)): \(trimmed)"
+            }
+
+        guard !orderedLines.isEmpty else { return nil }
+        return orderedLines.joined(separator: "\n")
+    }
+
+    private func contextSourceLabel(for source: TranscriptionContextItem.Source) -> String {
+        switch source {
+        case .activeApp:
+            return "Active app"
+        case .activeTabURL:
+            return "Active tab URL"
+        case .windowTitle:
+            return "Active window title"
+        case .accessibilityText:
+            return "Focused UI text (Accessibility)"
+        case .clipboard:
+            return "Clipboard text"
+        case .windowOCR:
+            return "Active window visible text (OCR)"
+        case .focusedText:
+            return "Focused text"
+        case .calendarEvent:
+            return "Calendar event"
+        case .meetingNotes:
+            return "Meeting notes"
+        }
     }
 
 }

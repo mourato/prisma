@@ -114,15 +114,15 @@ public enum AIPromptTemplates {
         }
 
         return """
-        <TRANSCRIPTION>
-        \(transcription)
-        </TRANSCRIPTION>
-
         <INSTRUCTIONS>
         \(prompt)
         </INSTRUCTIONS>
         \(priorityBlock)
         \(contextBlock)
+
+        <TRANSCRIPTION>
+        \(transcription)
+        </TRANSCRIPTION>
 
         Process the transcription above according to the instructions provided.
         """

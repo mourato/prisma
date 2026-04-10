@@ -84,29 +84,6 @@ struct TranscriptionInfoPopover: View {
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
-
-            Divider()
-
-            // Context Items Section
-            VStack(alignment: .leading, spacing: 8) {
-                Text("transcription.context.title".localized)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                if displayedContextItems.isEmpty {
-                    Text("transcription.context.none".localized)
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                } else {
-                    ForEach(displayedContextItems) { item in
-                        ContextItemRow(
-                            title: contextItemTitle(for: item.source),
-                            preview: previewText(item.text),
-                            fullText: item.text
-                        )
-                    }
-                }
-            }
         }
         .padding()
         .frame(width: 300)
@@ -156,10 +133,6 @@ struct TranscriptionInfoPopover: View {
 
     private var sourceValueIsPlaceholder: Bool {
         sourceValue == "transcription.info.url_not_captured".localized
-    }
-
-    private var displayedContextItems: [TranscriptionContextItem] {
-        transcription.contextItems.filter { $0.source != .activeApp }
     }
 
     private var isBrowserSource: Bool {
@@ -262,35 +235,6 @@ struct TranscriptionInfoPopover: View {
         return lowered
     }
 
-    private func contextItemTitle(for source: TranscriptionContextItem.Source) -> String {
-        switch source {
-        case .activeApp:
-            "transcription.context.source.active_app".localized
-        case .activeTabURL:
-            "transcription.context.source.active_tab_url".localized
-        case .windowTitle:
-            "transcription.context.source.window_title".localized
-        case .accessibilityText:
-            "transcription.context.source.accessibility_text".localized
-        case .clipboard:
-            "transcription.context.source.clipboard".localized
-        case .windowOCR:
-            "transcription.context.source.window_ocr".localized
-        case .focusedText:
-            "transcription.context.source.focused_text".localized
-        case .calendarEvent:
-            "transcription.context.source.calendar_event".localized
-        case .meetingNotes:
-            "transcription.context.source.meeting_notes".localized
-        }
-    }
-
-    private func previewText(_ text: String) -> String {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard trimmed.count > 120 else { return trimmed }
-        return String(trimmed.prefix(120)) + "..."
-    }
-
     private func formatDuration(_ duration: Double) -> String {
         if duration <= 0 { return "-" }
         if duration < 60 {
@@ -332,25 +276,6 @@ private struct InfoRow: View {
             Text(value)
                 .font(.subheadline) // Monospaced for numbers?
                 .foregroundStyle(.secondary)
-        }
-    }
-}
-
-private struct ContextItemRow: View {
-    let title: String
-    let preview: String
-    let fullText: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            Text(preview)
-                .font(.subheadline)
-                .lineLimit(2)
-                .help(fullText)
         }
     }
 }

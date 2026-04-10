@@ -1131,9 +1131,11 @@
 "transcription.prompt.section.application_context" = "APPLICATION CONTEXT:";
 "transcription.prompt.section.system_prompt" = "SYSTEM PROMPT SENT:";
 "transcription.prompt.section.user_message" = "USER MESSAGE:";
+"transcription.prompt.section.extracted_transcription" = "EXTRACTED <TRANSCRIPTION> BLOCK:";
 "transcription.prompt.section.extracted_instructions" = "EXTRACTED <INSTRUCTIONS> BLOCK:";
 "transcription.prompt.section.extracted_site_app_priority" = "EXTRACTED <SITE_OR_APP_PRIORITY_INSTRUCTIONS> BLOCK:";
 "transcription.prompt.section.output_language" = "OUTPUT LANGUAGE:";
+"transcription.prompt.section.context_sent" = "CONTEXT SENT:";
 "transcription.prompt.section.raw_transcription" = "RAW TRANSCRIPTION:";
 "transcription.prompt.current_time" = "Current time";
 "transcription.prompt.time_zone" = "Time zone";
