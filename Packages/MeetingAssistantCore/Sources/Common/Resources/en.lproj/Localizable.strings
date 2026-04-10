@@ -1129,7 +1129,10 @@
 "transcription.prompt.section.system_context" = "SYSTEM CONTEXT:";
 "transcription.prompt.section.user_information" = "USER INFORMATION:";
 "transcription.prompt.section.application_context" = "APPLICATION CONTEXT:";
+"transcription.prompt.section.system_prompt" = "SYSTEM PROMPT SENT:";
 "transcription.prompt.section.user_message" = "USER MESSAGE:";
+"transcription.prompt.section.extracted_instructions" = "EXTRACTED <INSTRUCTIONS> BLOCK:";
+"transcription.prompt.section.extracted_site_app_priority" = "EXTRACTED <SITE_OR_APP_PRIORITY_INSTRUCTIONS> BLOCK:";
 "transcription.prompt.section.raw_transcription" = "RAW TRANSCRIPTION:";
 "transcription.prompt.current_time" = "Current time";
 "transcription.prompt.time_zone" = "Time zone";
@@ -1137,6 +1140,7 @@
 "transcription.prompt.computer_name" = "Computer name";
 "transcription.prompt.user_full_name" = "User's full name";
 "transcription.prompt.current_app" = "User is currently using";
+"transcription.prompt.captured_bundle_identifier" = "Captured app bundle identifier";
 "transcription.prompt.unknown" = "Unknown";
 "transcription.prompt.section.post_processing_diagnostics" = "POST-PROCESSING DIAGNOSTICS:";
 "transcription.prompt.global_post_processing_enabled" = "Global post-processing enabled";

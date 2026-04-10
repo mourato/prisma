@@ -55,12 +55,38 @@ struct TranscriptionPromptPopover: View {
         // Application Context
         lines.append("transcription.prompt.section.application_context".localized)
         lines.append("\("transcription.prompt.current_app".localized): \(transcription.meeting.app.rawValue)")
+        lines.append(
+            "\("transcription.prompt.captured_bundle_identifier".localized): \(transcription.meeting.appBundleIdentifier ?? "transcription.prompt.unset".localized)"
+        )
         lines.append("")
 
+        // System prompt sent to post-processing provider
+        lines.append("transcription.prompt.section.system_prompt".localized)
+        if let systemPrompt = transcription.postProcessingRequestSystemPrompt {
+            lines.append(systemPrompt)
+        } else {
+            lines.append("transcription.prompt.not_available".localized)
+        }
+
         // User Prompt
+        lines.append("")
         lines.append("transcription.prompt.section.user_message".localized)
         if let userPrompt = transcription.postProcessingRequestUserPrompt {
             lines.append(userPrompt)
+
+            lines.append("")
+            lines.append("transcription.prompt.section.extracted_instructions".localized)
+            lines.append(
+                extractTaggedBlock(named: "INSTRUCTIONS", from: userPrompt)
+                    ?? "transcription.prompt.not_available".localized
+            )
+
+            lines.append("")
+            lines.append("transcription.prompt.section.extracted_site_app_priority".localized)
+            lines.append(
+                extractTaggedBlock(named: AIPromptTemplates.siteOrAppPriorityTag, from: userPrompt)
+                    ?? "transcription.prompt.not_available".localized
+            )
         } else {
             lines.append("transcription.prompt.not_available".localized)
         }
@@ -106,6 +132,22 @@ struct TranscriptionPromptPopover: View {
         )
 
         return lines.joined(separator: "\n")
+    }
+
+    private func extractTaggedBlock(named tag: String, from text: String) -> String? {
+        let openTag = "<\(tag)>"
+        let closeTag = "</\(tag)>"
+
+        guard let startRange = text.range(of: openTag),
+              let endRange = text.range(of: closeTag, range: startRange.upperBound..<text.endIndex),
+              startRange.upperBound <= endRange.lowerBound
+        else {
+            return nil
+        }
+
+        let extracted = text[startRange.upperBound..<endRange.lowerBound]
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return extracted.isEmpty ? nil : extracted
     }
 
 }

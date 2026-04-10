@@ -288,6 +288,7 @@ extension RecordingManager {
         session: TranscriptionSessionSnapshot? = nil
     ) -> PostProcessingPrompt {
         var appliedInstructions: [String] = []
+        var priorityInstructions: [String] = []
 
         if shouldForceMarkdownForDictation(settings: settings, session: session) {
             appliedInstructions.append(Self.markdownFormatInstruction)
@@ -295,11 +296,17 @@ extension RecordingManager {
 
         let outputLanguage = outputLanguageForDictation(settings: settings, session: session)
         if outputLanguage != .original {
-            appliedInstructions.append(Self.translationInstruction(for: outputLanguage))
+            priorityInstructions.append(Self.translationInstruction(for: outputLanguage))
         }
 
         if let customInstructions = effectiveCustomPromptInstructionsForDictation(settings: settings, session: session) {
-            appliedInstructions.append(Self.siteOrAppPriorityInstructionBlock(customInstructions))
+            priorityInstructions.append(customInstructions)
+        }
+
+        if !priorityInstructions.isEmpty {
+            appliedInstructions.append(
+                Self.siteOrAppPriorityInstructionBlock(priorityInstructions.joined(separator: "\n\n"))
+            )
         }
 
         guard !appliedInstructions.isEmpty else { return prompt }

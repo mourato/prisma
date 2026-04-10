@@ -267,6 +267,53 @@ final class RecordingManagerTests: XCTestCase {
         XCTAssertTrue(shouldApply)
     }
 
+    func testPromptWithDictationRuleOverrides_EmbedsLanguageAndCustomInstructionsAsPriorityBlock() throws {
+        let manager = try XCTUnwrap(manager)
+        let settings = AppSettingsStore.shared
+        let originalRules = settings.dictationAppRules
+        let originalMarkdownTargets = settings.markdownTargetBundleIdentifiers
+
+        defer {
+            settings.dictationAppRules = originalRules
+            settings.markdownTargetBundleIdentifiers = originalMarkdownTargets
+            manager.dictationStartBundleIdentifier = nil
+        }
+
+        settings.dictationAppRules = [
+            DictationAppRule(
+                bundleIdentifier: "com.microsoft.VSCode",
+                forceMarkdownOutput: false,
+                outputLanguage: .english,
+                customPromptInstructions: "Keep terminology concise and developer-focused."
+            ),
+        ]
+        settings.markdownTargetBundleIdentifiers = []
+        manager.dictationStartBundleIdentifier = "com.microsoft.VSCode"
+
+        let basePrompt = PostProcessingPrompt(
+            title: "Dictation",
+            promptText: "Base dictation prompt"
+        )
+        let resolvedPrompt = manager.promptWithDictationRuleOverrides(prompt: basePrompt, settings: settings)
+
+        XCTAssertTrue(
+            resolvedPrompt.promptText.contains("<\(AIPromptTemplates.siteOrAppPriorityTag)>"),
+            "Expected site/app priority wrapper in prompt"
+        )
+        XCTAssertTrue(
+            resolvedPrompt.promptText.contains("<OUTPUT_LANGUAGE>"),
+            "Expected output language instruction to be included"
+        )
+        XCTAssertTrue(
+            resolvedPrompt.promptText.contains("Translate the final output to English."),
+            "Expected explicit translation requirement"
+        )
+        XCTAssertTrue(
+            resolvedPrompt.promptText.contains("Keep terminology concise and developer-focused."),
+            "Expected custom app instructions to be included"
+        )
+    }
+
     func testRefreshPostProcessingReadinessWarning_SetsIssueForMeetingMode() throws {
         let manager = try XCTUnwrap(manager)
         let settings = AppSettingsStore.shared

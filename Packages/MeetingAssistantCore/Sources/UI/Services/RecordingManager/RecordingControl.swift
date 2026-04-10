@@ -91,13 +91,24 @@ public extension RecordingManager {
             requestedAt: requestedAt,
             managerEntryAt: managerEntryAt
         )
+
+        let initialActiveContext = try? await activeAppContextProvider.fetchActiveAppContext()
         isStartingRecording = true
         await Task.yield()
         SoundFeedbackService.shared.playRecordingStartSound()
         await Task.yield()
 
         do {
-            let activeContext = try? await activeAppContextProvider.fetchActiveAppContext()
+            let refreshedActiveContext: ActiveAppContext?
+            if purpose == .dictation, shouldRefreshContextCapture(initialActiveContext) {
+                refreshedActiveContext = try? await activeAppContextProvider.fetchActiveAppContext()
+            } else {
+                refreshedActiveContext = nil
+            }
+            let activeContext = preferredContextForCapture(
+                primary: initialActiveContext,
+                fallback: refreshedActiveContext
+            )
             let resolvedContext = captureContextResolver.resolveContext(
                 for: purpose,
                 activeContext: activeContext
@@ -163,6 +174,33 @@ public extension RecordingManager {
             activeStartTelemetry = nil
             await handleStartRecordingError(error)
         }
+    }
+
+    private func shouldRefreshContextCapture(_ context: ActiveAppContext?) -> Bool {
+        guard let context else { return true }
+        return isPrismaBundleIdentifier(context.bundleIdentifier)
+    }
+
+    private func preferredContextForCapture(
+        primary: ActiveAppContext?,
+        fallback: ActiveAppContext?
+    ) -> ActiveAppContext? {
+        if let primary, !isPrismaBundleIdentifier(primary.bundleIdentifier) {
+            return primary
+        }
+
+        if let fallback, !isPrismaBundleIdentifier(fallback.bundleIdentifier) {
+            return fallback
+        }
+
+        return primary ?? fallback
+    }
+
+    private func isPrismaBundleIdentifier(_ bundleIdentifier: String) -> Bool {
+        let normalized = WebTargetDetection.normalizeBundleIdentifier(bundleIdentifier)
+        let appBundleID = WebTargetDetection.normalizeBundleIdentifier(AppIdentity.bundleIdentifier)
+        let runtimeBundleID = WebTargetDetection.normalizeBundleIdentifier(Bundle.main.bundleIdentifier ?? "")
+        return normalized == appBundleID || (!runtimeBundleID.isEmpty && normalized == runtimeBundleID)
     }
 
     func noteIndicatorShownForStartIfNeeded() {
