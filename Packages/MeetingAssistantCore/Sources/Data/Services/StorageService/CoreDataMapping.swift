@@ -127,6 +127,8 @@ extension FileSystemStorageService {
             qualityProfile: entity.qualityProfile,
             postProcessingPromptId: entity.postProcessingPromptId,
             postProcessingPromptTitle: entity.postProcessingPromptTitle,
+            postProcessingRequestSystemPrompt: entity.postProcessingRequestSystemPrompt,
+            postProcessingRequestUserPrompt: entity.postProcessingRequestUserPrompt,
             language: entity.language,
             createdAt: entity.createdAt,
             modelName: entity.modelName,
