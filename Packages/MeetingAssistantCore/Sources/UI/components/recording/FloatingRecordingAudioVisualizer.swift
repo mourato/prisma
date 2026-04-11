@@ -37,32 +37,42 @@ enum AudioVisualizerMath {
 struct AudioVisualizer: View {
     let audioLevel: Double
     let isAnimationActive: Bool
+    let isSetup: Bool
     let barCount: Int
     let maxHeight: CGFloat
     let barWidth: CGFloat
     let barSpacing: CGFloat
+    let barCornerRadius: CGFloat
     let minHeight: CGFloat
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var bounceIndex = 0
+    @State private var bounceTimer: Timer?
 
     init(
         audioLevel: Double = 0.0,
         isAnimationActive: Bool = true,
+        isSetup: Bool = false,
         barCount: Int,
         maxHeight: CGFloat,
         barWidth: CGFloat = 4,
         barSpacing: CGFloat = 2,
+        barCornerRadius: CGFloat = 1.5,
         minHeight: CGFloat = 8
     ) {
         self.audioLevel = audioLevel
         self.isAnimationActive = isAnimationActive
+        self.isSetup = isSetup
         self.barCount = barCount
         self.maxHeight = maxHeight
         self.barWidth = barWidth
         self.barSpacing = barSpacing
+        self.barCornerRadius = barCornerRadius
         self.minHeight = minHeight
     }
 
     var body: some View {
-        let levels = AudioVisualizerMath.typeWhisperWaveformLevels(
+        let levels = isSetup ? bounceLevels : AudioVisualizerMath.typeWhisperWaveformLevels(
             audioLevel: audioLevel,
             barCount: barCount,
             isAnimationActive: isAnimationActive
@@ -70,7 +80,7 @@ struct AudioVisualizer: View {
 
         return HStack(spacing: barSpacing) {
             ForEach(0..<barCount, id: \.self) { index in
-                Capsule()
+                RoundedRectangle(cornerRadius: barCornerRadius)
                     .fill(Color.white)
                     .frame(
                         width: barWidth,
@@ -80,9 +90,60 @@ struct AudioVisualizer: View {
                             maxHeight: maxHeight
                         )
                     )
+                    .animation(isSetup ? setupBounceAnimation : nil, value: bounceIndex)
             }
         }
         .frame(height: maxHeight, alignment: .center)
+        .onAppear {
+            updateBounceState()
+        }
+        .onChange(of: isSetup) { _, _ in
+            updateBounceState()
+        }
+        .onChange(of: isAnimationActive) { _, _ in
+            updateBounceState()
+        }
+        .onChange(of: reduceMotion) { _, _ in
+            updateBounceState()
+        }
+        .onDisappear {
+            stopBounce()
+        }
+    }
+
+    private var setupBounceAnimation: Animation? {
+        reduceMotion ? nil : .easeInOut(duration: 0.3)
+    }
+
+    private var bounceLevels: [Double] {
+        guard barCount > 0 else { return [] }
+        let bounceLevel = max(0.0, min(1.0, (14.0 - minHeight) / max(maxHeight - minHeight, 0.0001)))
+        return (0..<barCount).map { index in
+            index == bounceIndex ? bounceLevel : 0.0
+        }
+    }
+
+    private func updateBounceState() {
+        if isSetup, isAnimationActive, !reduceMotion {
+            startBounce()
+        } else {
+            stopBounce()
+        }
+    }
+
+    private func startBounce() {
+        bounceIndex = 0
+        bounceTimer?.invalidate()
+        bounceTimer = Timer.scheduledTimer(withTimeInterval: 0.06, repeats: true) { _ in
+            Task { @MainActor in
+                bounceIndex = (bounceIndex + 1) % max(barCount, 1)
+            }
+        }
+    }
+
+    private func stopBounce() {
+        bounceTimer?.invalidate()
+        bounceTimer = nil
     }
 }
 
@@ -95,6 +156,7 @@ private struct AudioVisualizerLivePreview: View {
             maxHeight: AppDesignSystem.Layout.recordingIndicatorClassicWaveHeight,
             barWidth: AppDesignSystem.Layout.recordingIndicatorWaveformBarWidth,
             barSpacing: AppDesignSystem.Layout.recordingIndicatorWaveformBarSpacing,
+            barCornerRadius: 1.5,
             minHeight: AppDesignSystem.Layout.recordingIndicatorWaveformMinHeight
         )
         .padding()

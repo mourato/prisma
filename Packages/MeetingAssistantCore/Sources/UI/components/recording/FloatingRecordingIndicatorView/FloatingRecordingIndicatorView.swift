@@ -279,7 +279,7 @@ public struct FloatingRecordingIndicatorView: View {
     }
 
     private func recordingCluster(size: IndicatorSize) -> some View {
-        let waveCount = FloatingRecordingIndicatorViewUtilities.waveCount(for: size)
+        let waveformMetrics = FloatingRecordingIndicatorViewUtilities.waveformMetrics(for: size)
 
         return HStack(spacing: FloatingRecordingIndicatorViewUtilities.contentSpacing(for: size)) {
             statusDot(for: size)
@@ -289,10 +289,12 @@ public struct FloatingRecordingIndicatorView: View {
                 AudioVisualizer(
                     audioLevel: audioMonitor.audioMeter.averagePower,
                     isAnimationActive: isAnimationActive,
-                    barCount: waveCount,
-                    maxHeight: FloatingRecordingIndicatorViewUtilities.waveformHeight(for: size),
-                    barWidth: FloatingRecordingIndicatorViewUtilities.waveformBarWidth(for: size),
-                    barSpacing: FloatingRecordingIndicatorViewUtilities.waveformBarSpacing(for: size),
+                    isSetup: isStartingMode,
+                    barCount: waveformMetrics.barCount,
+                    maxHeight: waveformMetrics.height,
+                    barWidth: waveformMetrics.barWidth,
+                    barSpacing: waveformMetrics.barSpacing,
+                    barCornerRadius: waveformMetrics.barCornerRadius,
                     minHeight: AppDesignSystem.Layout.recordingIndicatorWaveformMinHeight
                 )
             case .processingStatus:

@@ -203,28 +203,6 @@ enum FloatingRecordingIndicatorViewUtilities {
         }
     }
 
-    static func waveformHeight(for size: FloatingRecordingIndicatorView.IndicatorSize) -> CGFloat {
-        switch size {
-        case .classic:
-            AppDesignSystem.Layout.recordingIndicatorClassicWaveHeight
-        case .mini:
-            AppDesignSystem.Layout.recordingIndicatorMiniWaveHeight
-        case .super:
-            AppDesignSystem.Layout.recordingIndicatorSuperWaveHeight
-        }
-    }
-
-    static func waveCount(for size: FloatingRecordingIndicatorView.IndicatorSize) -> Int {
-        switch size {
-        case .classic:
-            AppDesignSystem.Layout.recordingIndicatorClassicWaveCount
-        case .mini:
-            AppDesignSystem.Layout.recordingIndicatorMiniWaveCount
-        case .super:
-            AppDesignSystem.Layout.recordingIndicatorSuperWaveCount
-        }
-    }
-
     static func formatRecordingDuration(startTime: Date?, at date: Date) -> String {
         guard let startTime else { return "00:00" }
 
@@ -233,33 +211,6 @@ enum FloatingRecordingIndicatorViewUtilities {
         formatter.allowedUnits = duration >= 3_600 ? [.hour, .minute, .second] : [.minute, .second]
         formatter.zeroFormattingBehavior = .pad
         return formatter.string(from: duration) ?? "00:00"
-    }
-
-    static func waveformWidth(for size: FloatingRecordingIndicatorView.IndicatorSize) -> CGFloat {
-        let count = CGFloat(waveCount(for: size))
-        guard count > 0 else { return 0 }
-
-        let totalBarWidth = count * waveformBarWidth(for: size)
-        let totalSpacing = max(0, count - 1) * waveformBarSpacing(for: size)
-        return totalBarWidth + totalSpacing
-    }
-
-    static func waveformBarWidth(for size: FloatingRecordingIndicatorView.IndicatorSize) -> CGFloat {
-        switch size {
-        case .classic, .mini:
-            AppDesignSystem.Layout.recordingIndicatorWaveformBarWidth
-        case .super:
-            AppDesignSystem.Layout.recordingIndicatorSuperWaveformBarWidth
-        }
-    }
-
-    static func waveformBarSpacing(for size: FloatingRecordingIndicatorView.IndicatorSize) -> CGFloat {
-        switch size {
-        case .classic, .mini:
-            AppDesignSystem.Layout.recordingIndicatorWaveformBarSpacing
-        case .super:
-            AppDesignSystem.Layout.recordingIndicatorSuperWaveformBarSpacing
-        }
     }
 
     static func timerReservedWidth(for size: FloatingRecordingIndicatorView.IndicatorSize) -> CGFloat {

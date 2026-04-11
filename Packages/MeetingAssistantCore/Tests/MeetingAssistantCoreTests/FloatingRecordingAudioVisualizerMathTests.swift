@@ -65,4 +65,28 @@ final class AudioVisualizerMathTests: XCTestCase {
         XCTAssertEqual(highLevels.count, lowLevels.count)
         XCTAssertGreaterThan(highLevels.reduce(0, +), lowLevels.reduce(0, +))
     }
+
+    func testSetupBounceLevel_MapsToExpectedNormalizedHeight() {
+        let minHeight: CGFloat = 2
+        let maxHeight: CGFloat = 24
+        let expected = max(0.0, min(1.0, (14.0 - minHeight) / (maxHeight - minHeight)))
+
+        XCTAssertEqual(expected, 12.0 / 22.0, accuracy: 0.0001)
+    }
+
+    func testSetupBounce_ProducesSingleActiveBarLevel() {
+        let barCount = 8
+        let activeIndex = 3
+        let minHeight: CGFloat = 2
+        let maxHeight: CGFloat = 24
+        let bounceLevel = max(0.0, min(1.0, (14.0 - minHeight) / (maxHeight - minHeight)))
+
+        let levels = (0..<barCount).map { index in
+            index == activeIndex ? bounceLevel : 0.0
+        }
+
+        XCTAssertEqual(levels.count, barCount)
+        XCTAssertEqual(levels.filter { $0 > 0 }.count, 1)
+        XCTAssertEqual(levels[activeIndex], bounceLevel, accuracy: 0.0001)
+    }
 }
