@@ -6,6 +6,7 @@ final class AppSettingsStoreAISelectionTests: XCTestCase {
     private var settings: AppSettingsStore!
 
     override func setUp() async throws {
+        try AppSettingsTestIsolationLock.acquire()
         settings = .shared
         settings.resetToDefaults()
     }
@@ -13,6 +14,7 @@ final class AppSettingsStoreAISelectionTests: XCTestCase {
     override func tearDown() async throws {
         settings.resetToDefaults()
         settings = nil
+        AppSettingsTestIsolationLock.release()
     }
 
     func testResolvedEnhancementsConfigurationUsesProviderDefaults() {

@@ -11,6 +11,7 @@ final class CalendarEventFilteringAndIgnoreTests: XCTestCase {
 
     override func setUp() async throws {
         try await super.setUp()
+        try AppSettingsTestIsolationLock.acquire()
         settings = AppSettingsStore.shared
         originalIgnoredIdentifiers = settings.ignoredCalendarEventIdentifiers()
     }
@@ -18,6 +19,7 @@ final class CalendarEventFilteringAndIgnoreTests: XCTestCase {
     override func tearDown() async throws {
         restoreIgnoredIdentifiers()
         settings = nil
+        AppSettingsTestIsolationLock.release()
         try await super.tearDown()
     }
 
@@ -45,22 +47,25 @@ final class CalendarEventFilteringAndIgnoreTests: XCTestCase {
     }
 
     func testIgnoredEventIdentifiersPersistAndRoundTrip() {
-        settings.ignoreCalendarEventIdentifier("event-a")
-        settings.ignoreCalendarEventIdentifier("event-b")
+        let eventA = "event-a-\(UUID().uuidString)"
+        let eventB = "event-b-\(UUID().uuidString)"
+        settings.ignoreCalendarEventIdentifier(eventA)
+        settings.ignoreCalendarEventIdentifier(eventB)
 
         var ignored = settings.ignoredCalendarEventIdentifiers()
-        XCTAssertTrue(ignored.contains("event-a"))
-        XCTAssertTrue(ignored.contains("event-b"))
+        XCTAssertTrue(ignored.contains(eventA))
+        XCTAssertTrue(ignored.contains(eventB))
 
-        settings.unignoreCalendarEventIdentifier("event-a")
+        settings.unignoreCalendarEventIdentifier(eventA)
 
         ignored = settings.ignoredCalendarEventIdentifiers()
-        XCTAssertFalse(ignored.contains("event-a"))
-        XCTAssertTrue(ignored.contains("event-b"))
+        XCTAssertFalse(ignored.contains(eventA))
+        XCTAssertTrue(ignored.contains(eventB))
     }
 
     func testDashboardRefreshPassesIgnoredIdentifiersToCalendarService() async {
-        let ignoredIdentifier = "calendar-event-ignored"
+        let ignoredIdentifier = "calendar-event-ignored-\(UUID().uuidString)"
+        let allowedIdentifier = "calendar-event-team-sync-\(UUID().uuidString)"
         settings.ignoreCalendarEventIdentifier(ignoredIdentifier)
 
         let calendarService = MockCalendarEventService()
@@ -73,7 +78,7 @@ final class CalendarEventFilteringAndIgnoreTests: XCTestCase {
                 attendees: []
             ),
             MeetingCalendarEventSnapshot(
-                eventIdentifier: "calendar-event-team-sync",
+                eventIdentifier: allowedIdentifier,
                 title: "Team Sync",
                 startDate: Date(),
                 endDate: Date().addingTimeInterval(3_600),
@@ -92,7 +97,7 @@ final class CalendarEventFilteringAndIgnoreTests: XCTestCase {
 
         XCTAssertTrue(calendarService.lastIgnoredIdentifiers.contains(ignoredIdentifier))
         XCTAssertFalse(viewModel.upcomingEvents.map(\.eventIdentifier).contains(ignoredIdentifier))
-        XCTAssertTrue(viewModel.upcomingEvents.map(\.eventIdentifier).contains("calendar-event-team-sync"))
+        XCTAssertTrue(viewModel.upcomingEvents.map(\.eventIdentifier).contains(allowedIdentifier))
     }
 
     private func restoreIgnoredIdentifiers() {
