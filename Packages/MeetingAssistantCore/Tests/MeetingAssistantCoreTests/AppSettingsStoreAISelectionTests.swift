@@ -276,6 +276,18 @@ final class AppSettingsStoreAISelectionTests: XCTestCase {
         XCTAssertEqual(resolved.selectedModel, "whisper-large-v3")
     }
 
+    func testResolvedTranscriptionSelection_AssistantFollowsConfiguredProvider() {
+        settings.updateTranscriptionDictationSelection(
+            provider: .groq,
+            model: "whisper-large-v3"
+        )
+
+        let resolved = settings.resolvedTranscriptionSelection(for: .assistant)
+
+        XCTAssertEqual(resolved.provider, .groq)
+        XCTAssertEqual(resolved.selectedModel, "whisper-large-v3")
+    }
+
     func testSupportsIncrementalTranscription_DisabledForGroqDictationEnabledForMeeting() {
         settings.updateTranscriptionDictationSelection(
             provider: .groq,
@@ -283,6 +295,16 @@ final class AppSettingsStoreAISelectionTests: XCTestCase {
         )
 
         XCTAssertFalse(settings.supportsIncrementalTranscription(for: .dictation))
+        XCTAssertTrue(settings.supportsIncrementalTranscription(for: .meeting))
+    }
+
+    func testSupportsIncrementalTranscription_DisabledForGroqAssistantEnabledForMeeting() {
+        settings.updateTranscriptionDictationSelection(
+            provider: .groq,
+            model: "whisper-large-v3-turbo"
+        )
+
+        XCTAssertFalse(settings.supportsIncrementalTranscription(for: .assistant))
         XCTAssertTrue(settings.supportsIncrementalTranscription(for: .meeting))
     }
 }
