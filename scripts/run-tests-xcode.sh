@@ -12,6 +12,8 @@ PACKAGE_DIR="${PROJECT_DIR}/Packages/MeetingAssistantCore"
 XCODEPROJ="${PROJECT_DIR}/MeetingAssistant.xcodeproj"
 DERIVED_DATA="${PROJECT_DIR}/.xcode-build"
 PATCH_SCRIPT="${PROJECT_DIR}/scripts/apply-fluidaudio-patches.sh"
+# shellcheck source=scripts/config/app_identity.sh
+source "${SCRIPT_DIR}/config/app_identity.sh"
 
 # shellcheck source=scripts/lib/agent-output.sh
 source "${SCRIPT_DIR}/lib/agent-output.sh"
@@ -34,6 +36,8 @@ OVERLAY_TEST_SUITE_IDENTIFIER="MeetingAssistantCoreTests/AssistantOverlayLifecyc
 HEARTBEAT_INTERVAL_SEC="${MA_XCODEBUILD_HEARTBEAT_INTERVAL_SEC:-15}"
 STRICT_DERIVED_DATA_PATH="${MA_XCODE_STRICT_DERIVED_DATA:-}"
 SERIAL_XCODE_TESTS="${MA_SERIAL_XCODE_TESTS:-0}"
+SERIAL_SWIFT_FALLBACK_TESTS="${MA_SERIAL_SWIFT_FALLBACK_TESTS:-0}"
+TEST_SCHEME="${MA_XCODE_TEST_SCHEME:-${APP_SCHEME}}"
 
 if ma_agent_mode_enabled; then
     AGENT_MODE=1
@@ -105,7 +109,7 @@ fi
 if [ -x "${PATCH_SCRIPT}" ]; then
     (
         cd "${PROJECT_DIR}"
-        xcodebuild -project "${XCODEPROJ}" -resolvePackageDependencies -scheme MeetingAssistantCore -derivedDataPath "${DERIVED_DATA}" >/dev/null
+        xcodebuild -project "${XCODEPROJ}" -resolvePackageDependencies -scheme "${TEST_SCHEME}" -derivedDataPath "${DERIVED_DATA}" >/dev/null
     )
     "${PATCH_SCRIPT}" "${DERIVED_DATA}/SourcePackages/checkouts/FluidAudio"
 fi
@@ -121,7 +125,7 @@ run_xcode_tests() {
 
     local xcode_args=(
         -project "${XCODEPROJ}"
-        -scheme MeetingAssistantCore
+        -scheme "${TEST_SCHEME}"
         -derivedDataPath "${DERIVED_DATA}"
         -destination "${destination}"
         "-skip-testing:${OVERLAY_TEST_SUITE_IDENTIFIER}"
@@ -205,11 +209,16 @@ run_xcode_tests_with_heartbeat() {
 
 run_swift_fallback_tests() {
     local fallback_log_path="$1"
+    local fallback_args=(--quiet)
+
+    if [ "${STRICT_XCODE}" -eq 1 ] || [ "${SERIAL_SWIFT_FALLBACK_TESTS}" = "1" ]; then
+        fallback_args+=(--no-parallel)
+    fi
 
     if [ "${AGENT_MODE}" -eq 1 ]; then
-        MA_AGENT_MODE=1 MA_AGENT_LOG_DIR="${LOG_DIR}" "${SCRIPT_DIR}/run-tests.sh" --quiet --agent >"${fallback_log_path}" 2>&1
+        MA_AGENT_MODE=1 MA_AGENT_LOG_DIR="${LOG_DIR}" "${SCRIPT_DIR}/run-tests.sh" "${fallback_args[@]}" --agent >"${fallback_log_path}" 2>&1
     else
-        "${SCRIPT_DIR}/run-tests.sh" --quiet >"${fallback_log_path}" 2>&1
+        "${SCRIPT_DIR}/run-tests.sh" "${fallback_args[@]}" >"${fallback_log_path}" 2>&1
     fi
 }
 

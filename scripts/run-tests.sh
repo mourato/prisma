@@ -37,6 +37,7 @@ SUITE="${TEST_SUITE_DEFAULT}"
 HEARTBEAT_INTERVAL_SEC="${MA_SWIFT_TEST_HEARTBEAT_INTERVAL_SEC:-15}"
 PARALLEL_ENABLED=0
 PARALLEL_WORKERS="${TEST_SUITE_PARALLEL_WORKERS}"
+PARALLEL_OVERRIDE_SET=0
 
 if ma_agent_mode_enabled; then
     AGENT_MODE=1
@@ -76,10 +77,12 @@ while [[ $# -gt 0 ]]; do
             ;;
         --parallel)
             PARALLEL_ENABLED=1
+            PARALLEL_OVERRIDE_SET=1
             shift
             ;;
         --no-parallel)
             PARALLEL_ENABLED=0
+            PARALLEL_OVERRIDE_SET=1
             shift
             ;;
         --help|-h)
@@ -210,7 +213,7 @@ if [ "${STRICT}" -eq 1 ]; then
     TEST_ARGS+=(-Xswiftc -strict-concurrency=complete)
 fi
 
-if [ -z "${TEST_FILE}" ] && [ -z "${SPECIFIC_TEST}" ] && [ "${suite_allows_parallel}" -eq 1 ]; then
+if [ "${PARALLEL_OVERRIDE_SET}" -eq 0 ] && [ -z "${TEST_FILE}" ] && [ -z "${SPECIFIC_TEST}" ] && [ "${suite_allows_parallel}" -eq 1 ]; then
     PARALLEL_ENABLED=1
 fi
 
