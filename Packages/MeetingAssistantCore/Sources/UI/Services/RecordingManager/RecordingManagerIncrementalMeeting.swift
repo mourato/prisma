@@ -7,27 +7,19 @@ import MeetingAssistantCoreDomain
 import MeetingAssistantCoreInfrastructure
 
 extension RecordingManager {
-    private final class SendableMeetingAudioBufferBox: @unchecked Sendable {
-        let buffer: AVAudioPCMBuffer
-
-        init(buffer: AVAudioPCMBuffer) {
-            self.buffer = buffer
-        }
-    }
-
     func shouldUseIncrementalMeetingCapture(
         purpose: CapturePurpose,
         source: RecordingSource
     ) -> Bool {
-        guard purpose == .meeting, source == .all else { return false }
-        guard FeatureFlags.enableIncrementalMeetingTranscription else { return false }
-        guard FeatureFlags.enableRealtimeVADForMeetings else { return false }
-        guard let recorder = micRecorder as? AudioRecorder else { return false }
-        guard recorder === AudioRecorder.shared else { return false }
-        guard let transcriptionClient = transcriptionClient as? TranscriptionClient else { return false }
-        guard transcriptionClient.supportsIncrementalTranscription(for: .meeting) else { return false }
         guard transcriptionClient is any TranscriptionServiceFinalDiarization else { return false }
-        return true
+        let config = IncrementalCaptureSupportConfig(
+            expectedPurpose: .meeting,
+            expectedSource: .all,
+            incrementalFeatureEnabled: FeatureFlags.enableIncrementalMeetingTranscription,
+            realtimeFeatureEnabled: FeatureFlags.enableRealtimeVADForMeetings,
+            executionMode: .meeting
+        )
+        return supportsIncrementalCapture(config, actualPurpose: purpose, actualSource: source)
     }
 
     func prepareIncrementalMeetingSessionIfNeeded(
@@ -60,15 +52,10 @@ extension RecordingManager {
             )
         )
 
-        if let transcriptionClient = transcriptionClient as? TranscriptionClient {
-            transcriptionClient.warmupModelIfNeededInBackground()
-        }
+        warmupIncrementalTranscriptionIfNeeded()
 
-        recorder.onMixedAudioBuffer = { buffer in
-            let bufferBox = SendableMeetingAudioBufferBox(buffer: buffer)
-            Task { @MainActor in
-                await coordinator.append(buffer: bufferBox.buffer)
-            }
+        installIncrementalBufferForwarder(on: recorder) { buffer in
+            await coordinator.append(buffer: buffer)
         }
 
         do {
@@ -95,11 +82,8 @@ extension RecordingManager {
         )
         let finalDiarizationService = transcriptionClient as? any TranscriptionServiceFinalDiarization
 
-        let audioDuration = await getAudioDuration(from: audioURL)
-        beginVisibleTranscriptionStatus(audioDuration: audioDuration, sessionID: session.id)
-        updateVisibleTranscriptionProgress(
-            phase: .processing,
-            percentage: Constants.processingProgress,
+        let audioDuration = await beginIncrementalFinalizationUI(
+            audioURL: audioURL,
             sessionID: session.id
         )
 
@@ -117,42 +101,11 @@ extension RecordingManager {
                 "capturePurpose": session.meeting.capturePurpose.rawValue,
             ]
         )
-        let settings = AppSettingsStore.shared
-        let meetingEntity = makeMeetingEntity(meeting: session.meeting, audioDuration: audioDuration)
-        let config = makeUseCaseConfig(session: session, settings: settings)
-
-        if shouldDriveSharedTranscriptionState(for: session.id) {
-            meetingState = .processing(.generatingOutput)
-        }
-
-        let transcriptionEntity = try await transcribeAudioUseCase.finalizePreparedResponse(
+        let transcription = try await finalizeIncrementalPreparedResponse(
             response: result.response,
-            transcriptionID: result.checkpointID,
-            meeting: meetingEntity,
-            inputSource: resolveInputSourceLabel(for: session.meeting, recordingSource: session.recordingSource),
-            contextItems: config.postProcessingContextItems,
-            vocabularyReplacementRules: settings.vocabularyReplacementRules,
-            applyPostProcessing: config.applyPostProcessing,
-            postProcessingPrompt: config.postProcessingPrompt,
-            defaultPostProcessingPrompt: config.defaultPostProcessingPrompt,
-            postProcessingModel: config.postProcessingModel,
-            autoDetectMeetingType: config.autoDetectMeetingType,
-            availablePrompts: config.availablePrompts,
-            postProcessingContext: config.postProcessingContext,
-            kernelMode: config.kernelMode,
-            dictationStructuredPostProcessingEnabled: config.dictationStructuredPostProcessingEnabled,
-            transcriptionDuration: audioDuration ?? result.response.durationSeconds,
-            onPhaseChange: { [weak self] phase in
-                Task { @MainActor [weak self] in
-                    self?.handleUseCasePhaseChange(phase, meeting: session.meeting, sessionID: session.id)
-                }
-            }
-        )
-
-        let transcription = convertToModel(
-            transcriptionEntity,
-            audioDuration: audioDuration,
-            transcriptionStart: session.meeting.startTime
+            checkpointID: result.checkpointID,
+            session: session,
+            audioDuration: audioDuration
         )
         teardownIncrementalMeetingSession()
         return transcription
