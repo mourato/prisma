@@ -410,7 +410,7 @@ extension TranscribeAudioUseCase {
         from promptContent: String,
         transcription: String,
         mode: IntelligenceKernelMode,
-        contextMetadata: String?
+        contextMetadata _: String?
     ) -> (systemPrompt: String, userPrompt: String) {
         let extracted = AIPromptTemplates.extractSiteOrAppPriorityInstructions(from: promptContent)
         let baseSystemMessage = AIPromptTemplates.defaultSystemPrompt
@@ -427,7 +427,7 @@ extension TranscribeAudioUseCase {
             transcription: transcription,
             prompt: promptWithLanguage,
             priorityInstructions: nil,
-            contextMetadata: contextMetadata
+            contextMetadata: nil
         )
         return (systemMessage, userContent)
     }

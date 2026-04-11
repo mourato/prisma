@@ -305,7 +305,7 @@ extension RecordingManager {
         from promptContent: String,
         transcription: String,
         mode: IntelligenceKernelMode,
-        contextMetadata: String
+        contextMetadata _: String
     ) -> (systemPrompt: String, userPrompt: String) {
         let extracted = AIPromptTemplates.extractSiteOrAppPriorityInstructions(from: promptContent)
         let baseSystemMessage = AIPromptTemplates.defaultSystemPrompt
@@ -321,7 +321,7 @@ extension RecordingManager {
             transcription: transcription,
             prompt: promptWithLanguage,
             priorityInstructions: extracted.priorityInstructions,
-            contextMetadata: contextMetadata
+            contextMetadata: nil
         )
         return (systemMessage, userContent)
     }

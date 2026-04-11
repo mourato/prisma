@@ -92,11 +92,18 @@ public enum AIPromptTemplates {
         // Note: Priority instructions are now handled exclusively in systemPrompt() to avoid duplication.
         // This parameter is kept for backward compatibility but is not used in the user message.
 
-        let contextBlock = if let contextMetadata {
+        let trimmedContextMetadata = contextMetadata?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let shouldInjectContextBlock = if let trimmedContextMetadata {
+            !trimmedContextMetadata.isEmpty && !containsTaggedBlock(named: "CONTEXT_METADATA", in: transcription)
+        } else {
+            false
+        }
+
+        let contextBlock = if shouldInjectContextBlock, let trimmedContextMetadata {
             """
 
             <CONTEXT_METADATA>
-            \(contextMetadata)
+            \(trimmedContextMetadata)
             </CONTEXT_METADATA>
             """
         } else {
@@ -115,6 +122,17 @@ public enum AIPromptTemplates {
 
         Process the transcription above according to the instructions provided.
         """
+    }
+
+    private static func containsTaggedBlock(named tag: String, in text: String) -> Bool {
+        let openTag = "<\(tag)>"
+        let closeTag = "</\(tag)>"
+
+        guard let openRange = text.range(of: openTag) else {
+            return false
+        }
+
+        return text.range(of: closeTag, range: openRange.upperBound..<text.endIndex) != nil
     }
 
     /// Appends explicit site/app priority instructions to a base system prompt.

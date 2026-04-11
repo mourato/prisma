@@ -95,4 +95,26 @@ final class PromptServiceTests: XCTestCase {
         XCTAssertLessThan(instructionsRange.lowerBound, contextRange.lowerBound)
         XCTAssertLessThan(contextRange.lowerBound, transcriptionRange.lowerBound)
     }
+
+    func testUserMessage_WhenTranscriptionAlreadyContainsContextMetadata_DoesNotInjectSecondContextBlock() throws {
+        let userMessage = AIPromptTemplates.userMessage(
+            transcription: """
+            hello world
+
+            <CONTEXT_METADATA>
+            Active app: WhatsApp
+            </CONTEXT_METADATA>
+            """,
+            prompt: "Summarize",
+            priorityInstructions: nil,
+            contextMetadata: "Active app: WhatsApp"
+        )
+
+        let contextTagCount = userMessage.components(separatedBy: "<CONTEXT_METADATA>").count - 1
+        XCTAssertEqual(contextTagCount, 1)
+
+        let transcriptionRange = try XCTUnwrap(userMessage.range(of: "<TRANSCRIPTION>"))
+        let prefix = String(userMessage[..<transcriptionRange.lowerBound])
+        XCTAssertFalse(prefix.contains("<CONTEXT_METADATA>"))
+    }
 }
