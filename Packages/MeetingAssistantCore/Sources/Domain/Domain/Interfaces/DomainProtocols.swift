@@ -86,6 +86,23 @@ public protocol TranscriptionRepositoryDiarizationOverride: Sendable {
     ) async throws -> DomainTranscriptionResponse
 }
 
+public protocol TranscriptionRepositoryPurposeAware: Sendable {
+    func transcribe(
+        audioURL: URL,
+        onProgress: (@Sendable (Double) -> Void)?,
+        capturePurpose: CapturePurpose
+    ) async throws -> DomainTranscriptionResponse
+}
+
+public protocol TranscriptionRepositoryPurposeDiarized: Sendable {
+    func transcribe(
+        audioURL: URL,
+        onProgress: (@Sendable (Double) -> Void)?,
+        diarizationEnabledOverride: Bool?,
+        capturePurpose: CapturePurpose
+    ) async throws -> DomainTranscriptionResponse
+}
+
 @MainActor
 public protocol TranscriptionRepositoryFinalDiarization: Sendable {
     func diarize(audioURL: URL) async throws -> [SpeakerTimelineSegment]

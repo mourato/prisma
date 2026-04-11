@@ -95,6 +95,8 @@ extension AppSettingsStore {
         let enhancementsAISelection: EnhancementsAISelection
         let enhancementsDictationAISelection: EnhancementsAISelection
         let enhancementsProviderSelectedModels: [String: String]
+        let transcriptionDictationSelection: TranscriptionProviderSelection
+        let transcriptionProviderSelectedModels: [String: String]
     }
 
     /// Loads AI configuration properties from the context.
@@ -103,11 +105,17 @@ extension AppSettingsStore {
             defaultMeetingSelection: context.loadedEnhancementsSelection,
             defaultDictationSelection: context.loadedDictationSelection
         )
+        let transcriptionDictationSelection = loadTranscriptionDictationSelection()
+        let transcriptionProviderSelectedModels = loadTranscriptionProviderSelectedModels(
+            defaultDictationSelection: transcriptionDictationSelection
+        )
         return AIConfigurationValues(
             aiConfiguration: context.loadedAIConfiguration,
             enhancementsAISelection: context.loadedEnhancementsSelection,
             enhancementsDictationAISelection: context.loadedDictationSelection,
-            enhancementsProviderSelectedModels: enhancementsProviderSelectedModels
+            enhancementsProviderSelectedModels: enhancementsProviderSelectedModels,
+            transcriptionDictationSelection: transcriptionDictationSelection,
+            transcriptionProviderSelectedModels: transcriptionProviderSelectedModels
         )
     }
 

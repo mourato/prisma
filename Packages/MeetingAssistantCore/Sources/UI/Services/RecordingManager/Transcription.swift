@@ -224,8 +224,19 @@ extension RecordingManager {
 
     // MARK: - Health Check & Transcription
 
-    func performHealthCheck(sessionID: UUID? = nil) async throws {
+    func performHealthCheck(
+        capturePurpose: CapturePurpose = .meeting,
+        sessionID: UUID? = nil
+    ) async throws {
         updateVisibleTranscriptionProgress(phase: .preparing, sessionID: sessionID)
+
+        if capturePurpose == .dictation,
+           AppSettingsStore.shared.shouldUseRemoteTranscription(for: .dictation)
+        {
+            transcriptionStatus.updateServiceState(.connected)
+            return
+        }
+
         let isHealthy = try await transcriptionClient.healthCheck()
         guard isHealthy else {
             throw TranscriptionError.serviceUnavailable
@@ -235,6 +246,7 @@ extension RecordingManager {
     func performTranscription(
         audioURL: URL,
         diarizationEnabledOverride: Bool? = nil,
+        capturePurpose: CapturePurpose = .meeting,
         sessionID: UUID? = nil
     ) async throws -> TranscriptionResponse {
         updateVisibleTranscriptionProgress(
@@ -252,11 +264,28 @@ extension RecordingManager {
             }
         }
 
+        if let diarizationAwareClient = transcriptionClient as? any TranscriptionServicePurposeDiarized {
+            return try await diarizationAwareClient.transcribe(
+                audioURL: audioURL,
+                onProgress: onProgress,
+                diarizationEnabledOverride: diarizationEnabledOverride,
+                capturePurpose: capturePurpose
+            )
+        }
+
         if let diarizationAwareClient = transcriptionClient as? any TranscriptionServiceDiarizationOverride {
             return try await diarizationAwareClient.transcribe(
                 audioURL: audioURL,
                 onProgress: onProgress,
                 diarizationEnabledOverride: diarizationEnabledOverride
+            )
+        }
+
+        if let purposeAwareClient = transcriptionClient as? any TranscriptionServicePurposeAware {
+            return try await purposeAwareClient.transcribe(
+                audioURL: audioURL,
+                onProgress: onProgress,
+                capturePurpose: capturePurpose
             )
         }
 

@@ -25,7 +25,7 @@ extension RecordingManager {
         guard let recorder = micRecorder as? AudioRecorder else { return false }
         guard recorder === AudioRecorder.shared else { return false }
         guard let transcriptionClient = transcriptionClient as? TranscriptionClient else { return false }
-        guard transcriptionClient.supportsIncrementalTranscription else { return false }
+        guard transcriptionClient.supportsIncrementalTranscription(for: .meeting) else { return false }
         guard transcriptionClient is any TranscriptionServiceFinalDiarization else { return false }
         return true
     }

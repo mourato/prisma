@@ -25,7 +25,7 @@ extension RecordingManager {
         guard let recorder = micRecorder as? AudioRecorder else { return false }
         guard recorder === AudioRecorder.shared else { return false }
         guard let transcriptionClient = transcriptionClient as? TranscriptionClient else { return false }
-        return transcriptionClient.supportsIncrementalTranscription
+        return transcriptionClient.supportsIncrementalTranscription(for: .dictation)
     }
 
     func prepareIncrementalDictationSessionIfNeeded(

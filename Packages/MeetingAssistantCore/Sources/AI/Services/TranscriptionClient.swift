@@ -10,10 +10,12 @@ import os.log
 /// Client for communicating with the local FluidAudio transcription service.
 /// Adapts the local model manager to the existing client interface.
 @MainActor
-public class TranscriptionClient: ObservableObject, TranscriptionService, TranscriptionServiceDiarizationOverride, TranscriptionServiceFinalDiarization {
+public class TranscriptionClient: ObservableObject, TranscriptionService, TranscriptionServiceDiarizationOverride, TranscriptionServicePurposeAware, TranscriptionServicePurposeDiarized, TranscriptionServiceFinalDiarization {
     public static let shared = TranscriptionClient()
 
     private let logger = Logger(subsystem: AppIdentity.logSubsystem, category: "TranscriptionClient")
+    private let settingsStore: AppSettingsStore
+    private let groqTranscriptionClient: GroqTranscriptionClient
 
     public enum CachedReadinessState: String, Sendable {
         case unknown
@@ -27,6 +29,12 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
         case local
     }
 
+    private enum TranscriptionBackend {
+        case xpc
+        case local
+        case groq(modelID: String)
+    }
+
     private var transcriptionImplementation: TranscriptionImplementation {
         FeatureFlags.useXPCService ? .xpc : .local
     }
@@ -37,7 +45,18 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
         transcriptionImplementation == .local
     }
 
-    private init() {}
+    public func supportsIncrementalTranscription(for mode: TranscriptionExecutionMode) -> Bool {
+        guard transcriptionImplementation == .local else { return false }
+        return settingsStore.supportsIncrementalTranscription(for: mode)
+    }
+
+    private init(
+        settingsStore: AppSettingsStore = .shared,
+        groqTranscriptionClient: GroqTranscriptionClient = GroqTranscriptionClient()
+    ) {
+        self.settingsStore = settingsStore
+        self.groqTranscriptionClient = groqTranscriptionClient
+    }
 
     /// Check if the transcription service is healthy.
     public func healthCheck() async throws -> Bool {
@@ -119,6 +138,33 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
         try await transcribe(
             audioURL: audioURL,
             onProgress: onProgress,
+            executionMode: .meeting,
+            diarizationEnabledOverride: nil
+        )
+    }
+
+    public func transcribe(
+        audioURL: URL,
+        onProgress: (@Sendable (Double) -> Void)?,
+        capturePurpose: CapturePurpose
+    ) async throws -> TranscriptionResponse {
+        try await transcribe(
+            audioURL: audioURL,
+            onProgress: onProgress,
+            executionMode: executionMode(for: capturePurpose),
+            diarizationEnabledOverride: nil
+        )
+    }
+
+    public func transcribe(
+        audioURL: URL,
+        onProgress: (@Sendable (Double) -> Void)?,
+        executionMode: TranscriptionExecutionMode
+    ) async throws -> TranscriptionResponse {
+        try await transcribe(
+            audioURL: audioURL,
+            onProgress: onProgress,
+            executionMode: executionMode,
             diarizationEnabledOverride: nil
         )
     }
@@ -128,13 +174,55 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
         onProgress: (@Sendable (Double) -> Void)?,
         diarizationEnabledOverride: Bool?
     ) async throws -> TranscriptionResponse {
+        try await transcribe(
+            audioURL: audioURL,
+            onProgress: onProgress,
+            executionMode: .meeting,
+            diarizationEnabledOverride: diarizationEnabledOverride
+        )
+    }
+
+    public func transcribe(
+        audioURL: URL,
+        onProgress: (@Sendable (Double) -> Void)?,
+        diarizationEnabledOverride: Bool?,
+        capturePurpose: CapturePurpose
+    ) async throws -> TranscriptionResponse {
+        try await transcribe(
+            audioURL: audioURL,
+            onProgress: onProgress,
+            executionMode: executionMode(for: capturePurpose),
+            diarizationEnabledOverride: diarizationEnabledOverride
+        )
+    }
+
+    public func transcribe(
+        audioURL: URL,
+        onProgress: (@Sendable (Double) -> Void)?,
+        executionMode: TranscriptionExecutionMode,
+        diarizationEnabledOverride: Bool?
+    ) async throws -> TranscriptionResponse {
+        let backend = resolvedBackend(for: executionMode)
+        let implementationLabel: String = switch backend {
+        case .xpc:
+            "XPC"
+        case .local:
+            "local"
+        case .groq:
+            "groq"
+        }
+
         AppLogger.info(
             "Transcribing file",
             category: .transcriptionEngine,
-            extra: ["filename": audioURL.lastPathComponent, "implementation": transcriptionImplementation == .xpc ? "XPC" : "local"]
+            extra: [
+                "filename": audioURL.lastPathComponent,
+                "implementation": implementationLabel,
+                "mode": executionMode.rawValue,
+            ]
         )
 
-        switch transcriptionImplementation {
+        switch backend {
         case .xpc:
             return try await transcribeViaXPC(
                 audioURL: audioURL,
@@ -146,6 +234,12 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
                 audioURL: audioURL,
                 onProgress: onProgress,
                 diarizationEnabledOverride: diarizationEnabledOverride
+            )
+        case let .groq(modelID):
+            return try await transcribeViaGroq(
+                audioURL: audioURL,
+                modelID: modelID,
+                onProgress: onProgress
             )
         }
     }
@@ -267,6 +361,55 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
                 extra: ["filename": audioURL.lastPathComponent]
             )
             throw error
+        }
+    }
+
+    private func transcribeViaGroq(
+        audioURL: URL,
+        modelID: String,
+        onProgress: (@Sendable (Double) -> Void)?
+    ) async throws -> TranscriptionResponse {
+        do {
+            let response = try await groqTranscriptionClient.transcribe(
+                audioURL: audioURL,
+                modelID: modelID,
+                onProgress: onProgress
+            )
+            updateCachedReadiness(.healthy)
+            AppLogger.info(
+                "Transcription completed via Groq",
+                category: .transcriptionEngine,
+                extra: ["words": response.text.split(separator: " ").count, "model": response.model]
+            )
+            return response
+        } catch {
+            updateCachedReadiness(.unhealthy)
+            AppLogger.error(
+                "Transcription failed via Groq",
+                category: .transcriptionEngine,
+                error: error,
+                extra: ["filename": audioURL.lastPathComponent, "model": modelID]
+            )
+            throw error
+        }
+    }
+
+    private func executionMode(for capturePurpose: CapturePurpose) -> TranscriptionExecutionMode {
+        switch capturePurpose {
+        case .meeting:
+            .meeting
+        case .dictation:
+            .dictation
+        }
+    }
+
+    private func resolvedBackend(for mode: TranscriptionExecutionMode) -> TranscriptionBackend {
+        let selection = settingsStore.resolvedTranscriptionSelection(for: mode)
+        switch selection.provider {
+        case .local:
+            return transcriptionImplementation == .xpc ? .xpc : .local
+        case .groq:
+            return .groq(modelID: selection.selectedModel)
         }
     }
 

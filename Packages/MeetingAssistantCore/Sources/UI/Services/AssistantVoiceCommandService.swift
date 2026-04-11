@@ -216,6 +216,7 @@ public final class AssistantVoiceCommandService: ObservableObject {
         let transcription = try await transcriptionClient.transcribe(
             audioURL: recordingURL,
             onProgress: nil,
+            executionMode: .assistant,
             diarizationEnabledOverride: false
         )
         let command = transcription.text.trimmingCharacters(in: .whitespacesAndNewlines)

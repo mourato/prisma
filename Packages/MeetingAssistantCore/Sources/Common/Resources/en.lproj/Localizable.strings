@@ -436,6 +436,17 @@
 "settings.service.not_installed" = "Not Installed";
 "settings.service.delete_model" = "Delete Model";
 "settings.service.download_model" = "Download Model";
+"settings.service.transcription_provider.title" = "Dictation Transcription Provider";
+"settings.service.transcription_provider.description" = "Choose which provider handles Dictation and Assistant transcription.";
+"settings.service.transcription_provider.provider" = "Provider:";
+"settings.service.transcription_provider.model" = "Model:";
+"settings.service.transcription_provider.option.local" = "Local";
+"settings.service.transcription_provider.option.groq" = "Groq";
+"settings.service.transcription_provider.get_api_key" = "Get Groq API Key";
+"settings.service.transcription_provider.missing_key.title" = "Groq API key required";
+"settings.service.transcription_provider.missing_key.message" = "Save a Groq API key in Integrations to use remote dictation transcription.";
+"settings.service.transcription_provider.meeting_local.title" = "Meeting transcription stays local";
+"settings.service.transcription_provider.meeting_local.message" = "Meeting mode always uses local on-device transcription. Provider selection here affects Dictation and Assistant only.";
 
 /* Shortcut Settings */
 "settings.shortcuts.title" = "Keyboard Controls";

@@ -79,6 +79,37 @@ extension AppSettingsStore {
         return normalized
     }
 
+    static func loadTranscriptionDictationSelection() -> TranscriptionProviderSelection {
+        guard let selection = loadDecoded(
+            TranscriptionProviderSelection.self,
+            forKey: Keys.transcriptionDictationSelection
+        ) else {
+            return .default
+        }
+
+        let normalizedModel = selection.provider.normalizedModelID(selection.selectedModel)
+        return TranscriptionProviderSelection(
+            provider: selection.provider,
+            selectedModel: normalizedModel
+        )
+    }
+
+    static func loadTranscriptionProviderSelectedModels(
+        defaultDictationSelection: TranscriptionProviderSelection
+    ) -> [String: String] {
+        let loaded = loadDecoded([String: String].self, forKey: Keys.transcriptionProviderSelectedModels) ?? [:]
+        var normalized: [String: String] = [:]
+
+        for (providerRawValue, model) in loaded {
+            guard let provider = TranscriptionProvider(rawValue: providerRawValue) else { continue }
+            normalized[providerRawValue] = provider.normalizedModelID(model)
+        }
+
+        normalized[defaultDictationSelection.provider.rawValue] = defaultDictationSelection.provider
+            .normalizedModelID(defaultDictationSelection.selectedModel)
+        return normalized
+    }
+
     static func loadUUID(forKey key: String) -> UUID? {
         UserDefaults.standard.string(forKey: key).flatMap(UUID.init(uuidString:))
     }

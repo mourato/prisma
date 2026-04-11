@@ -61,11 +61,24 @@ public final class TranscribeAudioUseCase: Sendable {
             let transcriptionStartTime = Date()
             let response: DomainTranscriptionResponse
             do {
-                if let diarizationAwareRepository = transcriptionRepository as? any TranscriptionRepositoryDiarizationOverride {
+                if let diarizationPurposeAwareRepository = transcriptionRepository as? any TranscriptionRepositoryPurposeDiarized {
+                    response = try await diarizationPurposeAwareRepository.transcribe(
+                        audioURL: audioURL,
+                        onProgress: onTranscriptionProgress,
+                        diarizationEnabledOverride: diarizationEnabledOverride,
+                        capturePurpose: meeting.capturePurpose
+                    )
+                } else if let diarizationAwareRepository = transcriptionRepository as? any TranscriptionRepositoryDiarizationOverride {
                     response = try await diarizationAwareRepository.transcribe(
                         audioURL: audioURL,
                         onProgress: onTranscriptionProgress,
                         diarizationEnabledOverride: diarizationEnabledOverride
+                    )
+                } else if let capturePurposeAwareRepository = transcriptionRepository as? any TranscriptionRepositoryPurposeAware {
+                    response = try await capturePurposeAwareRepository.transcribe(
+                        audioURL: audioURL,
+                        onProgress: onTranscriptionProgress,
+                        capturePurpose: meeting.capturePurpose
                     )
                 } else {
                     response = try await transcriptionRepository.transcribe(

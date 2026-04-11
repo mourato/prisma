@@ -220,6 +220,65 @@ public struct EnhancementsAISelection: Codable, Equatable, Sendable {
     )
 }
 
+public enum TranscriptionProvider: String, CaseIterable, Codable, Sendable {
+    case local
+    case groq
+
+    public static let localModelID = "parakeet-tdt-0.6b-v3-coreml"
+
+    public static let groqPresetModelIDs = [
+        "whisper-large-v3-turbo",
+        "whisper-large-v3",
+    ]
+
+    public var defaultModelID: String {
+        switch self {
+        case .local:
+            Self.localModelID
+        case .groq:
+            Self.groqPresetModelIDs[0]
+        }
+    }
+
+    public var usesRemoteInference: Bool {
+        switch self {
+        case .local:
+            false
+        case .groq:
+            true
+        }
+    }
+
+    public func normalizedModelID(_ model: String) -> String {
+        let trimmed = model.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty {
+            return defaultModelID
+        }
+        return trimmed
+    }
+}
+
+public enum TranscriptionExecutionMode: String, Codable, Sendable {
+    case meeting
+    case dictation
+    case assistant
+}
+
+public struct TranscriptionProviderSelection: Codable, Equatable, Sendable {
+    public var provider: TranscriptionProvider
+    public var selectedModel: String
+
+    public init(provider: TranscriptionProvider, selectedModel: String) {
+        self.provider = provider
+        self.selectedModel = selectedModel
+    }
+
+    public static let `default` = TranscriptionProviderSelection(
+        provider: .local,
+        selectedModel: TranscriptionProvider.localModelID
+    )
+}
+
 public enum EnhancementsInferenceReadinessIssue: String, Sendable {
     case invalidBaseURL = "enhancements.invalid_base_url"
     case missingAPIKey = "enhancements.missing_api_key"

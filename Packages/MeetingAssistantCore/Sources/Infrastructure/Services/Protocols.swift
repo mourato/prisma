@@ -71,6 +71,25 @@ public protocol TranscriptionServiceDiarizationOverride: ObservableObject {
 }
 
 @MainActor
+public protocol TranscriptionServicePurposeAware: ObservableObject {
+    func transcribe(
+        audioURL: URL,
+        onProgress: (@Sendable (Double) -> Void)?,
+        capturePurpose: CapturePurpose
+    ) async throws -> TranscriptionResponse
+}
+
+@MainActor
+public protocol TranscriptionServicePurposeDiarized: ObservableObject {
+    func transcribe(
+        audioURL: URL,
+        onProgress: (@Sendable (Double) -> Void)?,
+        diarizationEnabledOverride: Bool?,
+        capturePurpose: CapturePurpose
+    ) async throws -> TranscriptionResponse
+}
+
+@MainActor
 public protocol TranscriptionServiceFinalDiarization: ObservableObject {
     func diarize(audioURL: URL) async throws -> [SpeakerTimelineSegment]
     func assignSpeakers(

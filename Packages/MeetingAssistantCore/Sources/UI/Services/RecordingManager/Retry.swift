@@ -80,13 +80,14 @@ extension RecordingManager {
         transcription: Transcription,
         audioDuration: Double?
     ) async throws -> Transcription {
-        try await performHealthCheck()
+        try await performHealthCheck(capturePurpose: transcription.meeting.capturePurpose)
 
         let transcriptionStart = Date()
         let diarizationEnabledOverride = shouldEnableDiarization(for: transcription.meeting)
         let response = try await performTranscription(
             audioURL: audioURL,
-            diarizationEnabledOverride: diarizationEnabledOverride
+            diarizationEnabledOverride: diarizationEnabledOverride,
+            capturePurpose: transcription.meeting.capturePurpose
         )
         let transcriptionProcessingDuration = Date().timeIntervalSince(transcriptionStart)
         let settings = AppSettingsStore.shared

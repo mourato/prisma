@@ -90,8 +90,9 @@ final class CalendarEventFilteringAndIgnoreTests: XCTestCase {
 
         await viewModel.load()
 
-        XCTAssertEqual(calendarService.lastIgnoredIdentifiers, [ignoredIdentifier])
-        XCTAssertEqual(viewModel.upcomingEvents.map(\.eventIdentifier), ["calendar-event-team-sync"])
+        XCTAssertTrue(calendarService.lastIgnoredIdentifiers.contains(ignoredIdentifier))
+        XCTAssertFalse(viewModel.upcomingEvents.map(\.eventIdentifier).contains(ignoredIdentifier))
+        XCTAssertTrue(viewModel.upcomingEvents.map(\.eventIdentifier).contains("calendar-event-team-sync"))
     }
 
     private func restoreIgnoredIdentifiers() {

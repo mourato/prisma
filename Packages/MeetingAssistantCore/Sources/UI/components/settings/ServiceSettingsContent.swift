@@ -20,6 +20,7 @@ public struct ServiceSettingsContent: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: AppDesignSystem.Layout.sectionSpacing) {
+            transcriptionProviderSection
             modelInfoSection
             performanceSection
             statusSection
@@ -29,6 +30,10 @@ public struct ServiceSettingsContent: View {
             viewModel.refreshInstalledModelStates()
             viewModel.testConnection()
         }
+    }
+
+    private var transcriptionProviderSection: some View {
+        ServiceTranscriptionProviderSection(viewModel: viewModel)
     }
 
     private var modelInfoSection: some View {

@@ -436,6 +436,17 @@
 "settings.service.not_installed" = "Não instalado";
 "settings.service.delete_model" = "Excluir Modelo";
 "settings.service.download_model" = "Baixar Modelo";
+"settings.service.transcription_provider.title" = "Provedor de Transcrição do Ditado";
+"settings.service.transcription_provider.description" = "Escolha qual provedor processa a transcrição de Ditado e Assistant.";
+"settings.service.transcription_provider.provider" = "Provedor:";
+"settings.service.transcription_provider.model" = "Modelo:";
+"settings.service.transcription_provider.option.local" = "Local";
+"settings.service.transcription_provider.option.groq" = "Groq";
+"settings.service.transcription_provider.get_api_key" = "Obter Chave de API da Groq";
+"settings.service.transcription_provider.missing_key.title" = "Chave de API da Groq obrigatória";
+"settings.service.transcription_provider.missing_key.message" = "Salve uma chave de API da Groq em Integrações para usar transcrição remota no ditado.";
+"settings.service.transcription_provider.meeting_local.title" = "Transcrição de reunião permanece local";
+"settings.service.transcription_provider.meeting_local.message" = "O modo reunião sempre usa transcrição local on-device. Esta seleção afeta apenas Ditado e Assistant.";
 
 /* Shortcut Settings */
 "settings.shortcuts.title" = "Controles de Teclado";

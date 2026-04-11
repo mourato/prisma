@@ -30,7 +30,11 @@ extension AudioRecorder: MeetingQuestionDictationRecording {
 
 extension TranscriptionClient: MeetingQuestionDictationTranscribing {
     public func transcribeQuestionDictation(audioURL: URL) async throws -> TranscriptionResponse {
-        try await transcribe(audioURL: audioURL, onProgress: nil)
+        try await transcribe(
+            audioURL: audioURL,
+            onProgress: nil,
+            executionMode: .dictation
+        )
     }
 }
 

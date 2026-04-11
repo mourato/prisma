@@ -223,4 +223,38 @@ final class AppSettingsStoreAISelectionTests: XCTestCase {
         XCTAssertEqual(settings.enhancementsSelectedModel(for: .google), "gemini-2.0-flash")
         XCTAssertEqual(settings.enhancementsProviderSelectedModels[AIProvider.google.rawValue], "gemini-2.0-flash")
     }
+
+    func testResolvedTranscriptionSelection_MeetingAlwaysUsesLocalProvider() {
+        settings.updateTranscriptionDictationSelection(
+            provider: .groq,
+            model: "whisper-large-v3"
+        )
+
+        let resolved = settings.resolvedTranscriptionSelection(for: .meeting)
+
+        XCTAssertEqual(resolved.provider, .local)
+        XCTAssertEqual(resolved.selectedModel, MeetingAssistantCoreInfrastructure.TranscriptionProvider.localModelID)
+    }
+
+    func testResolvedTranscriptionSelection_DictationFollowsConfiguredProvider() {
+        settings.updateTranscriptionDictationSelection(
+            provider: .groq,
+            model: "whisper-large-v3"
+        )
+
+        let resolved = settings.resolvedTranscriptionSelection(for: .dictation)
+
+        XCTAssertEqual(resolved.provider, .groq)
+        XCTAssertEqual(resolved.selectedModel, "whisper-large-v3")
+    }
+
+    func testSupportsIncrementalTranscription_DisabledForGroqDictationEnabledForMeeting() {
+        settings.updateTranscriptionDictationSelection(
+            provider: .groq,
+            model: "whisper-large-v3-turbo"
+        )
+
+        XCTAssertFalse(settings.supportsIncrementalTranscription(for: .dictation))
+        XCTAssertTrue(settings.supportsIncrementalTranscription(for: .meeting))
+    }
 }

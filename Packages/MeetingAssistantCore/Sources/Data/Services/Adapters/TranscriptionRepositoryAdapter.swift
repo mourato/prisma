@@ -6,7 +6,7 @@ import MeetingAssistantCoreInfrastructure
 
 /// Adapter que implementa TranscriptionRepository usando TranscriptionClient existente
 @MainActor
-public final class TranscriptionRepositoryAdapter: TranscriptionRepository, TranscriptionRepositoryDiarizationOverride, TranscriptionRepositoryFinalDiarization {
+public final class TranscriptionRepositoryAdapter: TranscriptionRepository, TranscriptionRepositoryDiarizationOverride, TranscriptionRepositoryPurposeAware, TranscriptionRepositoryPurposeDiarized, TranscriptionRepositoryFinalDiarization {
     private let transcriptionService: any TranscriptionService
 
     public init(transcriptionService: any TranscriptionService) {
@@ -33,7 +33,21 @@ public final class TranscriptionRepositoryAdapter: TranscriptionRepository, Tran
         try await transcribe(
             audioURL: audioURL,
             onProgress: onProgress,
-            diarizationEnabledOverride: nil
+            diarizationEnabledOverride: nil,
+            capturePurpose: .meeting
+        )
+    }
+
+    public func transcribe(
+        audioURL: URL,
+        onProgress: (@Sendable (Double) -> Void)?,
+        capturePurpose: CapturePurpose
+    ) async throws -> DomainTranscriptionResponse {
+        try await transcribe(
+            audioURL: audioURL,
+            onProgress: onProgress,
+            diarizationEnabledOverride: nil,
+            capturePurpose: capturePurpose
         )
     }
 
@@ -42,7 +56,36 @@ public final class TranscriptionRepositoryAdapter: TranscriptionRepository, Tran
         onProgress: (@Sendable (Double) -> Void)?,
         diarizationEnabledOverride: Bool?
     ) async throws -> DomainTranscriptionResponse {
-        let response: TranscriptionResponse = if let diarizationAwareService = transcriptionService as? any TranscriptionServiceDiarizationOverride {
+        try await transcribe(
+            audioURL: audioURL,
+            onProgress: onProgress,
+            diarizationEnabledOverride: diarizationEnabledOverride,
+            capturePurpose: .meeting
+        )
+    }
+
+    public func transcribe(
+        audioURL: URL,
+        onProgress: (@Sendable (Double) -> Void)?,
+        diarizationEnabledOverride: Bool?,
+        capturePurpose: CapturePurpose
+    ) async throws -> DomainTranscriptionResponse {
+        let response: TranscriptionResponse = if let purposeAwareService = transcriptionService as? any TranscriptionServicePurposeDiarized {
+            try await purposeAwareService.transcribe(
+                audioURL: audioURL,
+                onProgress: onProgress,
+                diarizationEnabledOverride: diarizationEnabledOverride,
+                capturePurpose: capturePurpose
+            )
+        } else if let purposeAwareService = transcriptionService as? any TranscriptionServicePurposeAware,
+                  diarizationEnabledOverride == nil
+        {
+            try await purposeAwareService.transcribe(
+                audioURL: audioURL,
+                onProgress: onProgress,
+                capturePurpose: capturePurpose
+            )
+        } else if let diarizationAwareService = transcriptionService as? any TranscriptionServiceDiarizationOverride {
             try await diarizationAwareService.transcribe(
                 audioURL: audioURL,
                 onProgress: onProgress,

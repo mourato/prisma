@@ -1,0 +1,112 @@
+import MeetingAssistantCoreAI
+import MeetingAssistantCoreAudio
+import MeetingAssistantCoreCommon
+import MeetingAssistantCoreData
+import MeetingAssistantCoreDomain
+import MeetingAssistantCoreInfrastructure
+import SwiftUI
+
+public struct ServiceTranscriptionProviderSection: View {
+    @ObservedObject private var viewModel: ServiceSettingsViewModel
+
+    public init(viewModel: ServiceSettingsViewModel) {
+        self.viewModel = viewModel
+    }
+
+    public var body: some View {
+        DSGroup("settings.service.transcription_provider.title".localized, icon: "network") {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("settings.service.transcription_provider.description".localized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Text("settings.service.transcription_provider.provider".localized)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 100, alignment: .leading)
+
+                    Picker(
+                        "",
+                        selection: Binding(
+                            get: { viewModel.selectedDictationProviderRawValue },
+                            set: { viewModel.updateDictationProvider(rawValue: $0) }
+                        )
+                    ) {
+                        ForEach(viewModel.availableDictationProviders, id: \.rawValue) { provider in
+                            Text(displayName(for: provider)).tag(provider.rawValue)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                }
+
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Text("settings.service.transcription_provider.model".localized)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 100, alignment: .leading)
+
+                    Picker(
+                        "",
+                        selection: Binding(
+                            get: { viewModel.selectedDictationModel },
+                            set: { viewModel.updateDictationModel($0) }
+                        )
+                    ) {
+                        ForEach(viewModel.availableDictationModels, id: \.self) { modelID in
+                            Text(modelID).tag(modelID)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                }
+
+                if viewModel.shouldShowGroqAPIKeyActions {
+                    if viewModel.isDictationProviderReady {
+                        HStack(spacing: 8) {
+                            Image(systemName: "lock.fill")
+                                .font(.caption)
+                                .foregroundStyle(AppDesignSystem.Colors.success)
+                            Text("settings.ai.keychain_secure".localized)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    } else {
+                        DSCallout(
+                            kind: .warning,
+                            title: "settings.service.transcription_provider.missing_key.title".localized,
+                            message: "settings.service.transcription_provider.missing_key.message".localized
+                        )
+                    }
+
+                    if let url = AIProvider.groq.apiKeyURL {
+                        Button("settings.service.transcription_provider.get_api_key".localized) {
+                            NSWorkspace.shared.open(url)
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.regular)
+                    }
+                }
+
+                DSCallout(
+                    kind: .info,
+                    title: "settings.service.transcription_provider.meeting_local.title".localized,
+                    message: "settings.service.transcription_provider.meeting_local.message".localized
+                )
+            }
+        }
+    }
+
+    private func displayName(for provider: MeetingAssistantCoreInfrastructure.TranscriptionProvider) -> String {
+        switch provider {
+        case .local:
+            "settings.service.transcription_provider.option.local".localized
+        case .groq:
+            "settings.service.transcription_provider.option.groq".localized
+        }
+    }
+}
+
+#Preview {
+    ServiceTranscriptionProviderSection(viewModel: ServiceSettingsViewModel())
+        .padding()
+        .frame(width: 760)
+}

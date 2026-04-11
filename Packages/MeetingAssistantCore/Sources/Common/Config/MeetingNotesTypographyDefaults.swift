@@ -13,6 +13,22 @@ public enum MeetingNotesTypographyDefaults {
     public static func normalizedFontSize(_ value: Double) -> Double {
         let fallback = defaultFontSize
         let candidate = (value.isFinite && value > 0) ? value : fallback
-        return supportedFontSizes.min(by: { abs($0 - candidate) < abs($1 - candidate) }) ?? fallback
+        guard let first = supportedFontSizes.first else { return fallback }
+
+        return supportedFontSizes.dropFirst().reduce(first) { best, current in
+            let bestDistance = abs(best - candidate)
+            let currentDistance = abs(current - candidate)
+
+            if currentDistance < bestDistance {
+                return current
+            }
+
+            // Deterministic tie-breaker: prefer smaller size when equidistant.
+            if abs(currentDistance - bestDistance) < 1e-9 {
+                return min(best, current)
+            }
+
+            return best
+        }
     }
 }

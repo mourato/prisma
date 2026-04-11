@@ -16,10 +16,18 @@ public class ServiceSettingsViewModel: ObservableObject {
     @Published public var isDiarizationLoaded: Bool = false
 
     private let transcriptionClient: TranscriptionClient
+    private let settings: AppSettingsStore
+    private let keychain: KeychainProvider
     private var cancellables = Set<AnyCancellable>()
 
-    public init(transcriptionClient: TranscriptionClient = .shared) {
+    public init(
+        transcriptionClient: TranscriptionClient = .shared,
+        settings: AppSettingsStore = .shared,
+        keychain: KeychainProvider = DefaultKeychainProvider()
+    ) {
         self.transcriptionClient = transcriptionClient
+        self.settings = settings
+        self.keychain = keychain
 
         modelState = FluidAIModelManager.shared.modelState
         isASRInstalled = FluidAIModelManager.shared.isASRInstalled
@@ -82,5 +90,56 @@ public class ServiceSettingsViewModel: ObservableObject {
 
     public func refreshInstalledModelStates() {
         FluidAIModelManager.shared.refreshInstalledModelStates()
+    }
+
+    public var selectedDictationProvider: MeetingAssistantCoreInfrastructure.TranscriptionProvider {
+        settings.transcriptionDictationSelection.provider
+    }
+
+    public var selectedDictationProviderRawValue: String {
+        selectedDictationProvider.rawValue
+    }
+
+    public var selectedDictationModel: String {
+        settings.transcriptionDictationSelection.selectedModel
+    }
+
+    public var availableDictationProviders: [MeetingAssistantCoreInfrastructure.TranscriptionProvider] {
+        MeetingAssistantCoreInfrastructure.TranscriptionProvider.allCases
+    }
+
+    public var availableDictationModels: [String] {
+        switch selectedDictationProvider {
+        case .local:
+            [MeetingAssistantCoreInfrastructure.TranscriptionProvider.localModelID]
+        case .groq:
+            MeetingAssistantCoreInfrastructure.TranscriptionProvider.groqPresetModelIDs
+        }
+    }
+
+    public var shouldShowGroqAPIKeyActions: Bool {
+        selectedDictationProvider == .groq
+    }
+
+    public var isDictationProviderReady: Bool {
+        switch selectedDictationProvider {
+        case .local:
+            true
+        case .groq:
+            keychain.existsAPIKey(for: .groq)
+        }
+    }
+
+    public func updateDictationProvider(rawValue: String) {
+        guard let provider = MeetingAssistantCoreInfrastructure.TranscriptionProvider(rawValue: rawValue) else {
+            return
+        }
+        settings.updateTranscriptionDictationProvider(provider)
+        objectWillChange.send()
+    }
+
+    public func updateDictationModel(_ model: String) {
+        settings.updateTranscriptionDictationModel(model)
+        objectWillChange.send()
     }
 }

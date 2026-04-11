@@ -67,7 +67,7 @@ final class PromptServiceTests: XCTestCase {
         XCTAssertTrue(system.contains("Always write in lowercase."))
     }
 
-    func testUserMessage_WithPriorityInstructions_IncludesPriorityBlock() {
+    func testUserMessage_WithPriorityInstructions_DoesNotDuplicatePriorityBlock() {
         let userMessage = AIPromptTemplates.userMessage(
             transcription: "hello world",
             prompt: "Summarize",
@@ -76,8 +76,8 @@ final class PromptServiceTests: XCTestCase {
 
         XCTAssertTrue(userMessage.contains("<TRANSCRIPTION>"))
         XCTAssertTrue(userMessage.contains("<INSTRUCTIONS>"))
-        XCTAssertTrue(userMessage.contains("<SITE_APP_PRIORITY>"))
-        XCTAssertTrue(userMessage.contains("Always write in lowercase."))
+        XCTAssertFalse(userMessage.contains("<SITE_APP_PRIORITY>"))
+        XCTAssertFalse(userMessage.contains("Always write in lowercase."))
     }
 
     func testUserMessage_BlockOrder_PlacesTranscriptionAfterContextMetadata() throws {
@@ -89,12 +89,10 @@ final class PromptServiceTests: XCTestCase {
         )
 
         let instructionsRange = try XCTUnwrap(userMessage.range(of: "<INSTRUCTIONS>"))
-        let priorityRange = try XCTUnwrap(userMessage.range(of: "<SITE_APP_PRIORITY>"))
         let contextRange = try XCTUnwrap(userMessage.range(of: "<CONTEXT_METADATA>"))
         let transcriptionRange = try XCTUnwrap(userMessage.range(of: "<TRANSCRIPTION>"))
 
-        XCTAssertLessThan(instructionsRange.lowerBound, priorityRange.lowerBound)
-        XCTAssertLessThan(priorityRange.lowerBound, contextRange.lowerBound)
+        XCTAssertLessThan(instructionsRange.lowerBound, contextRange.lowerBound)
         XCTAssertLessThan(contextRange.lowerBound, transcriptionRange.lowerBound)
     }
 }

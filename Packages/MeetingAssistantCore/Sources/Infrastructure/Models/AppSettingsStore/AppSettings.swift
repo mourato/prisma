@@ -46,6 +46,17 @@ public class AppSettingsStore: ObservableObject {
         didSet { save(enhancementsProviderSelectedModels, forKey: Keys.enhancementsProviderSelectedModels) }
     }
 
+    /// Provider/model selection for dictation and assistant transcription flows.
+    @Published public var transcriptionDictationSelection: TranscriptionProviderSelection {
+        didSet { save(transcriptionDictationSelection, forKey: Keys.transcriptionDictationSelection) }
+    }
+
+    /// Per-provider model selection for transcription providers.
+    /// Keys are `TranscriptionProvider.rawValue`.
+    @Published public var transcriptionProviderSelectedModels: [String: String] {
+        didSet { save(transcriptionProviderSelectedModels, forKey: Keys.transcriptionProviderSelectedModels) }
+    }
+
     // MARK: - Post-Processing Properties
 
     /// Custom system prompt for post-processing.
@@ -615,7 +626,7 @@ public class AppSettingsStore: ObservableObject {
         aiConfiguration = ai.aiConfiguration
         enhancementsAISelection = ai.enhancementsAISelection
         enhancementsDictationAISelection = ai.enhancementsDictationAISelection
-        enhancementsProviderSelectedModels = ai.enhancementsProviderSelectedModels
+        (enhancementsProviderSelectedModels, transcriptionDictationSelection, transcriptionProviderSelectedModels) = (ai.enhancementsProviderSelectedModels, ai.transcriptionDictationSelection, ai.transcriptionProviderSelectedModels)
 
         let postProcessing = Self.loadPostProcessingSettings()
         systemPrompt = postProcessing.systemPrompt
