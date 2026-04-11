@@ -37,7 +37,8 @@ HEARTBEAT_INTERVAL_SEC="${MA_XCODEBUILD_HEARTBEAT_INTERVAL_SEC:-15}"
 STRICT_DERIVED_DATA_PATH="${MA_XCODE_STRICT_DERIVED_DATA:-}"
 SERIAL_XCODE_TESTS="${MA_SERIAL_XCODE_TESTS:-0}"
 SERIAL_SWIFT_FALLBACK_TESTS="${MA_SERIAL_SWIFT_FALLBACK_TESTS:-0}"
-TEST_SCHEME="${MA_XCODE_TEST_SCHEME:-${APP_SCHEME}}"
+XCODE_TEST_MODE="${MA_XCODE_TEST_MODE:-package}"
+TEST_SCHEME="${MA_XCODE_TEST_SCHEME:-MeetingAssistantCore-Package}"
 
 if ma_agent_mode_enabled; then
     AGENT_MODE=1
@@ -107,15 +108,26 @@ if [ "${AGENT_MODE}" -eq 0 ]; then
 fi
 
 if [ -x "${PATCH_SCRIPT}" ]; then
-    (
-        cd "${PROJECT_DIR}"
-        xcodebuild -project "${XCODEPROJ}" -resolvePackageDependencies -scheme "${TEST_SCHEME}" -derivedDataPath "${DERIVED_DATA}" >/dev/null
-    )
+    if [ "${XCODE_TEST_MODE}" = "package" ]; then
+        (
+            cd "${PACKAGE_DIR}"
+            xcodebuild -resolvePackageDependencies -scheme "${TEST_SCHEME}" -derivedDataPath "${DERIVED_DATA}" >/dev/null
+        )
+    else
+        (
+            cd "${PROJECT_DIR}"
+            xcodebuild -project "${XCODEPROJ}" -resolvePackageDependencies -scheme "${TEST_SCHEME}" -derivedDataPath "${DERIVED_DATA}" >/dev/null
+        )
+    fi
     "${PATCH_SCRIPT}" "${DERIVED_DATA}/SourcePackages/checkouts/FluidAudio"
 fi
 
 run_xcode_tests() {
-    cd "${PROJECT_DIR}"
+    if [ "${XCODE_TEST_MODE}" = "package" ]; then
+        cd "${PACKAGE_DIR}"
+    else
+        cd "${PROJECT_DIR}"
+    fi
     local host_arch
     host_arch="$(uname -m)"
     local destination="platform=macOS"
@@ -123,8 +135,14 @@ run_xcode_tests() {
         destination="platform=macOS,arch=${host_arch}"
     fi
 
-    local xcode_args=(
-        -project "${XCODEPROJ}"
+    local xcode_args=()
+    if [ "${XCODE_TEST_MODE}" = "project" ]; then
+        xcode_args+=(
+            -project "${XCODEPROJ}"
+        )
+    fi
+
+    xcode_args+=(
         -scheme "${TEST_SCHEME}"
         -derivedDataPath "${DERIVED_DATA}"
         -destination "${destination}"
