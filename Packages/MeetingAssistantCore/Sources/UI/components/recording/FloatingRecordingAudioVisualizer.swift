@@ -1,71 +1,59 @@
 import MeetingAssistantCoreAudio
-import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
 // MARK: - Audio Visualizer
 
 enum AudioVisualizerMath {
-    static let visualHeightBoost: Double = 0.40
+    static func barHeight(level: Double, minHeight: CGFloat, maxHeight: CGFloat) -> CGFloat {
+        let effectiveLevel = min(max(level, 0.0), 1.0)
+        return minHeight + CGFloat(effectiveLevel) * (maxHeight - minHeight)
+    }
 
-    static func presentedLevels(
-        _ sourceLevels: [Double],
+    static func typeWhisperWaveformLevels(
+        audioLevel: Double,
         barCount: Int,
         isAnimationActive: Bool
     ) -> [Double] {
         guard barCount > 0 else { return [] }
+        guard isAnimationActive else { return Array(repeating: 0.0, count: barCount) }
 
-        if !isAnimationActive {
-            return Array(repeating: 0.0, count: barCount)
-        }
-
-        guard !sourceLevels.isEmpty else { return Array(repeating: 0.0, count: barCount) }
+        let clampedLevel = min(max(audioLevel, 0.0), 1.0)
+        let maxBarCount = max(barCount, 1)
 
         return (0..<barCount).map { index in
-            let sourceIndex = min(
-                Int(Double(index) * Double(sourceLevels.count) / Double(barCount)),
-                max(0, sourceLevels.count - 1)
-            )
-            return min(max(sourceLevels[sourceIndex], 0.0), 1.0)
+            let phase = Double(index) / Double(maxBarCount) * .pi * 2.0
+            let waveOffset = sin(phase + .pi * 0.75 + clampedLevel * 3.0) * 0.12 + 0.88
+            var barLevel = clampedLevel * waveOffset
+
+            if index == 0 {
+                barLevel *= 0.85
+            }
+
+            return min(max(barLevel, 0.0), 1.0)
         }
-    }
-
-    static func displayLevel(_ level: Double) -> Double {
-        let clamped = min(max(level, 0.0), 1.0)
-        let boosted = clamped + visualHeightBoost * pow(clamped, 3)
-        return min(max(boosted, 0.0), 1.0)
-    }
-
-    static func barHeight(level: Double, minHeight: CGFloat, maxHeight: CGFloat) -> CGFloat {
-        let displayLevel = displayLevel(level)
-        return minHeight + CGFloat(displayLevel) * (maxHeight - minHeight)
     }
 }
 
 struct AudioVisualizer: View {
-    let barLevels: [Double]
+    let audioLevel: Double
     let isAnimationActive: Bool
-    let animationSpeed: RecordingIndicatorAnimationSpeed
     let barCount: Int
     let maxHeight: CGFloat
     let barWidth: CGFloat
     let barSpacing: CGFloat
     let minHeight: CGFloat
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
     init(
-        barLevels: [Double],
+        audioLevel: Double = 0.0,
         isAnimationActive: Bool = true,
-        animationSpeed: RecordingIndicatorAnimationSpeed = .normal,
         barCount: Int,
         maxHeight: CGFloat,
         barWidth: CGFloat = 4,
         barSpacing: CGFloat = 2,
         minHeight: CGFloat = 8
     ) {
-        self.barLevels = barLevels
+        self.audioLevel = audioLevel
         self.isAnimationActive = isAnimationActive
-        self.animationSpeed = animationSpeed
         self.barCount = barCount
         self.maxHeight = maxHeight
         self.barWidth = barWidth
@@ -74,8 +62,8 @@ struct AudioVisualizer: View {
     }
 
     var body: some View {
-        let levels = AudioVisualizerMath.presentedLevels(
-            barLevels,
+        let levels = AudioVisualizerMath.typeWhisperWaveformLevels(
+            audioLevel: audioLevel,
             barCount: barCount,
             isAnimationActive: isAnimationActive
         )
@@ -95,27 +83,14 @@ struct AudioVisualizer: View {
             }
         }
         .frame(height: maxHeight, alignment: .center)
-        .animation(reduceMotion ? nil : .linear(duration: animationDuration), value: levels)
-    }
-
-    private var animationDuration: Double {
-        switch animationSpeed {
-        case .slow:
-            0.12
-        case .normal:
-            0.08
-        case .fast:
-            0.06
-        }
     }
 }
 
 private struct AudioVisualizerLivePreview: View {
     var body: some View {
         AudioVisualizer(
-            barLevels: [0.18, 0.24, 0.32, 0.52, 0.70, 0.64, 0.42, 0.28, 0.20],
+            audioLevel: 0.62,
             isAnimationActive: true,
-            animationSpeed: .normal,
             barCount: AppDesignSystem.Layout.recordingIndicatorClassicWaveCount,
             maxHeight: AppDesignSystem.Layout.recordingIndicatorClassicWaveHeight,
             barWidth: AppDesignSystem.Layout.recordingIndicatorWaveformBarWidth,

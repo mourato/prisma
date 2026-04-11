@@ -57,4 +57,5 @@ public enum FeatureFlags {
     public static let useXPCService: Bool = false
 
     public static let enableWaveformVisualization: Bool = false
+
 }

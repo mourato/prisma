@@ -3,38 +3,6 @@ import CoreGraphics
 import XCTest
 
 final class AudioVisualizerMathTests: XCTestCase {
-    func testPresentedLevels_WhenAnimationInactive_ReturnsFlatZero() {
-        let levels = AudioVisualizerMath.presentedLevels(
-            [0.9, 0.6, 0.3],
-            barCount: 6,
-            isAnimationActive: false
-        )
-
-        XCTAssertEqual(levels, Array(repeating: 0.0, count: 6))
-    }
-
-    func testPresentedLevels_ResamplesToRequestedBarCount() {
-        let levels = AudioVisualizerMath.presentedLevels(
-            [0.0, 0.2, 0.5, 0.9],
-            barCount: 8,
-            isAnimationActive: true
-        )
-
-        XCTAssertEqual(levels.count, 8)
-        XCTAssertTrue(levels.allSatisfy { $0 >= 0.0 && $0 <= 1.0 })
-        XCTAssertGreaterThan(levels[6], levels[1])
-    }
-
-    func testPresentedLevels_UsesZeroWhenSourceIsEmpty() {
-        let levels = AudioVisualizerMath.presentedLevels(
-            [],
-            barCount: 5,
-            isAnimationActive: true
-        )
-
-        XCTAssertEqual(levels, Array(repeating: 0.0, count: 5))
-    }
-
     func testBarHeight_StaysWithinMinAndMaxBounds() {
         let minHeight: CGFloat = 2
         let maxHeight: CGFloat = 24
@@ -50,13 +18,51 @@ final class AudioVisualizerMathTests: XCTestCase {
         }
     }
 
-    func testDisplayLevel_BoostsVisualHeightWithoutRevivingSilence() {
-        XCTAssertEqual(AudioVisualizerMath.displayLevel(0.0), 0.0, accuracy: 0.0001)
+    func testTypeWhisperWaveformLevels_WhenAnimationInactive_ReturnsFlatZero() {
+        let levels = AudioVisualizerMath.typeWhisperWaveformLevels(
+            audioLevel: 0.72,
+            barCount: 8,
+            isAnimationActive: false
+        )
 
-        let quiet = AudioVisualizerMath.displayLevel(0.16)
-        let medium = AudioVisualizerMath.displayLevel(0.55)
+        XCTAssertEqual(levels, Array(repeating: 0.0, count: 8))
+    }
 
-        XCTAssertLessThan(quiet, 0.17)
-        XCTAssertGreaterThan(medium, 0.55)
+    func testTypeWhisperWaveformLevels_StaysWithinNormalizedBounds() {
+        let levels = AudioVisualizerMath.typeWhisperWaveformLevels(
+            audioLevel: 0.64,
+            barCount: 8,
+            isAnimationActive: true
+        )
+
+        XCTAssertEqual(levels.count, 8)
+        XCTAssertTrue(levels.allSatisfy { $0 >= 0.0 && $0 <= 1.0 })
+    }
+
+    func testTypeWhisperWaveformLevels_DampensFirstBar() {
+        let levels = AudioVisualizerMath.typeWhisperWaveformLevels(
+            audioLevel: 0.75,
+            barCount: 8,
+            isAnimationActive: true
+        )
+
+        XCTAssertGreaterThanOrEqual(levels.count, 2)
+        XCTAssertLessThan(levels[0], levels[1])
+    }
+
+    func testTypeWhisperWaveformLevels_RespondsImmediatelyToLevelDecrease() {
+        let highLevels = AudioVisualizerMath.typeWhisperWaveformLevels(
+            audioLevel: 0.90,
+            barCount: 8,
+            isAnimationActive: true
+        )
+        let lowLevels = AudioVisualizerMath.typeWhisperWaveformLevels(
+            audioLevel: 0.20,
+            barCount: 8,
+            isAnimationActive: true
+        )
+
+        XCTAssertEqual(highLevels.count, lowLevels.count)
+        XCTAssertGreaterThan(highLevels.reduce(0, +), lowLevels.reduce(0, +))
     }
 }
