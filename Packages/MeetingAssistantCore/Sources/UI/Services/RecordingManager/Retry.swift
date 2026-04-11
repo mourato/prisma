@@ -132,10 +132,11 @@ extension RecordingManager {
             for: transcription.meeting,
             capturePurposeOverride: transcription.meeting.capturePurpose
         )
+        let resolvedPostProcessingContext = PostProcessingSystemContextMetadata.augment(postProcessingContext)
         let postProcessingInput = mergedPostProcessingInput(
             transcriptionText: qualityProfile.normalizedTextForIntelligence,
             qualityProfile: qualityProfile,
-            context: postProcessingContext,
+            context: resolvedPostProcessingContext,
             meetingNotes: transcription.contextItems.first(where: { $0.source == .meetingNotes })?.text,
             includeQualityMetadata: includeQualityMetadata
         )

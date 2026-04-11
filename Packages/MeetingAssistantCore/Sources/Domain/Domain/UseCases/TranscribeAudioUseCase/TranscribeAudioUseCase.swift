@@ -147,10 +147,12 @@ public final class TranscribeAudioUseCase: Sendable {
                 durationSeconds: response.durationSeconds
             )
 
+            let resolvedPostProcessingContext = PostProcessingSystemContextMetadata.augment(postProcessingContext)
+
             let postProcessingInput = mergedPostProcessingInput(
                 transcriptionText: qualityProfile.normalizedTextForIntelligence,
                 qualityProfile: qualityProfile,
-                context: postProcessingContext,
+                context: resolvedPostProcessingContext,
                 meetingNotes: contextItems.first(where: { $0.source == .meetingNotes })?.text,
                 includeQualityMetadata: kernelMode == .meeting
             )
@@ -163,7 +165,7 @@ public final class TranscribeAudioUseCase: Sendable {
                 availablePrompts: availablePrompts,
                 kernelMode: kernelMode,
                 dictationStructuredPostProcessingEnabled: dictationStructuredPostProcessingEnabled,
-                postProcessingContext: postProcessingContext
+                postProcessingContext: resolvedPostProcessingContext
             )
 
             if postProcessingConfig.shouldRunPostProcessing(postProcessingRepository: postProcessingRepository) {
