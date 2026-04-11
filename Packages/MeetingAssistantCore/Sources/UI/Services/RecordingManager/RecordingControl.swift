@@ -92,11 +92,8 @@ public extension RecordingManager {
             managerEntryAt: managerEntryAt
         )
 
-        let initialActiveContext = try? await activeAppContextProvider.fetchActiveAppContext()
         isStartingRecording = true
-        await Task.yield()
-        SoundFeedbackService.shared.playRecordingStartSound()
-        await Task.yield()
+        let initialActiveContext = try? await activeAppContextProvider.fetchActiveAppContext()
 
         do {
             let refreshedActiveContext: ActiveAppContext?
@@ -113,12 +110,10 @@ public extension RecordingManager {
                 for: purpose,
                 activeContext: activeContext
             )
-            let meeting = await applyAutomaticCalendarEventIfAvailable(
-                to: createMeeting(
-                    type: resolveMeetingType(),
-                    purpose: purpose,
-                    resolvedContext: resolvedContext
-                )
+            let meeting = createMeeting(
+                type: resolveMeetingType(),
+                purpose: purpose,
+                resolvedContext: resolvedContext
             )
             dictationStartBundleIdentifier = purpose == .dictation ? resolvedContext.appBundleIdentifier : nil
             dictationStartURL = purpose == .dictation ? resolvedContext.activeBrowserURL : nil
@@ -127,7 +122,6 @@ public extension RecordingManager {
             postProcessingContext = nil
             postProcessingContextItems = []
             restoreMeetingNotesIfNeeded(for: meeting.id)
-            synchronizeMeetingNotesWithLinkedCalendarEventIfNeeded()
             isMeetingNotesPanelVisible = false
 
             // We only need one output URL because AudioRecorder handles mixing
@@ -154,6 +148,9 @@ public extension RecordingManager {
             meetingState = .recording // Sync state
             currentMeeting?.state = .recording // Sync entity state
             currentMeeting?.audioFilePath = outputURL.path
+            SoundFeedbackService.shared.playRecordingStartSound()
+
+            enrichMeetingWithCalendarContextAfterRecordingStartIfNeeded(meetingID: meeting.id)
 
             startContextCaptureAfterRecordingStart(meetingID: meeting.id)
 
@@ -774,5 +771,25 @@ extension RecordingManager {
         isMeetingMicrophoneEnabled = false
         activeStartTelemetry = nil
         clearPostProcessingReadinessWarning()
+    }
+
+    private func enrichMeetingWithCalendarContextAfterRecordingStartIfNeeded(meetingID: UUID) {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            guard let currentMeeting, currentMeeting.id == meetingID else { return }
+
+            let enrichedMeeting = await applyAutomaticCalendarEventIfAvailable(to: currentMeeting)
+            guard let latestMeeting = self.currentMeeting, latestMeeting.id == meetingID else { return }
+
+            let updatedMeeting = meetingApplyingCalendarEvent(
+                enrichedMeeting.linkedCalendarEvent,
+                to: latestMeeting,
+                clearTitleWhenRemoving: false
+            )
+            self.currentMeeting = updatedMeeting
+            synchronizeMeetingNotesWithLinkedCalendarEventIfNeeded(
+                linkedEventIdentifier: updatedMeeting.linkedCalendarEvent?.eventIdentifier
+            )
+        }
     }
 }
