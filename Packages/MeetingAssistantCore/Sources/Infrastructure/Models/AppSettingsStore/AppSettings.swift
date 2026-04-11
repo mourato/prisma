@@ -131,6 +131,13 @@ public class AppSettingsStore: ObservableObject {
         }
     }
 
+    /// Configures how long local models remain in RAM after last use.
+    @Published public var modelResidencyTimeout: ModelResidencyTimeoutOption {
+        didSet {
+            UserDefaults.standard.set(modelResidencyTimeout.rawValue, forKey: Keys.modelResidencyTimeout)
+        }
+    }
+
     /// Minimum number of speakers for diarization.
     @Published public var minSpeakers: Int? {
         didSet {
@@ -636,6 +643,7 @@ public class AppSettingsStore: ObservableObject {
         postProcessingEnabled = postProcessing.postProcessingEnabled
         dictationStructuredPostProcessingEnabled = postProcessing.dictationStructuredPostProcessingEnabled
         isDiarizationEnabled = postProcessing.isDiarizationEnabled
+        modelResidencyTimeout = postProcessing.modelResidencyTimeout
         minSpeakers = postProcessing.minSpeakers
         maxSpeakers = postProcessing.maxSpeakers
         numSpeakers = postProcessing.numSpeakers

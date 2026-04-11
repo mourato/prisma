@@ -128,6 +128,7 @@ extension AppSettingsStore {
         let postProcessingEnabled: Bool
         let dictationStructuredPostProcessingEnabled: Bool
         let isDiarizationEnabled: Bool
+        let modelResidencyTimeout: ModelResidencyTimeoutOption
         let minSpeakers: Int?
         let maxSpeakers: Int?
         let numSpeakers: Int?
@@ -147,6 +148,7 @@ extension AppSettingsStore {
             postProcessingEnabled: UserDefaults.standard.bool(forKey: Keys.postProcessingEnabled),
             dictationStructuredPostProcessingEnabled: loadBoolDefaultIfUnset(forKey: Keys.dictationStructuredPostProcessingEnabled, defaultValue: false),
             isDiarizationEnabled: UserDefaults.standard.bool(forKey: Keys.isDiarizationEnabled),
+            modelResidencyTimeout: loadEnum(forKey: Keys.modelResidencyTimeout, defaultValue: .minutes30),
             minSpeakers: loadOptionalInt(forKey: Keys.minSpeakers),
             maxSpeakers: loadOptionalInt(forKey: Keys.maxSpeakers),
             numSpeakers: loadOptionalInt(forKey: Keys.numSpeakers),

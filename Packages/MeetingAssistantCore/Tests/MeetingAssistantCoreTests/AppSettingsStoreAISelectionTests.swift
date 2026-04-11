@@ -107,6 +107,32 @@ final class AppSettingsStoreAISelectionTests: XCTestCase {
         )
     }
 
+    func testModelResidencyTimeoutDefaultsToThirtyMinutes() {
+        XCTAssertEqual(settings.modelResidencyTimeout, .minutes30)
+    }
+
+    func testModelResidencyTimeoutResetReturnsToThirtyMinutes() {
+        settings.modelResidencyTimeout = .minutes5
+
+        settings.resetToDefaults()
+
+        XCTAssertEqual(settings.modelResidencyTimeout, .minutes30)
+    }
+
+    func testModelResidencyTimeoutSettingIsPersisted() {
+        settings.modelResidencyTimeout = .minutes60
+        XCTAssertEqual(
+            UserDefaults.standard.string(forKey: "modelResidencyTimeout"),
+            AppSettingsStore.ModelResidencyTimeoutOption.minutes60.rawValue
+        )
+
+        settings.modelResidencyTimeout = .never
+        XCTAssertEqual(
+            UserDefaults.standard.string(forKey: "modelResidencyTimeout"),
+            AppSettingsStore.ModelResidencyTimeoutOption.never.rawValue
+        )
+    }
+
     func testUpdateEnhancementsProviderClearsSelectedModel() {
         settings.enhancementsAISelection = EnhancementsAISelection(
             provider: .openai,

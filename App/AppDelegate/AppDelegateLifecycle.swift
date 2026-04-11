@@ -39,6 +39,8 @@ extension AppDelegate {
             }
         }
 
+        localModelResidencyCoordinator.startMonitoring()
+
         // Run auto-cleanup logic
         Task {
             await performCleanup()
@@ -60,6 +62,7 @@ extension AppDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        localModelResidencyCoordinator.stopMonitoring()
         recordingCancelShortcutController.stop()
     }
 
@@ -139,6 +142,8 @@ extension AppDelegate {
                 self.logger.error("Failed to warmup model: \(error.localizedDescription)")
             }
         }
+
+        localModelResidencyCoordinator.startMonitoring()
 
         // Run auto-cleanup logic
         Task {

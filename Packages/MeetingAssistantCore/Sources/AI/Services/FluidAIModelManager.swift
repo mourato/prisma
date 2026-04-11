@@ -34,9 +34,29 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
 
     @Published public var isASRInstalled: Bool = false
     @Published public var isDiarizationLoaded: Bool = false
+    @Published public private(set) var lastASRActivityAt: Date?
+    @Published public private(set) var lastDiarizationActivityAt: Date?
+
+    public var isASRInUse: Bool {
+        asrInFlightOperationCount > 0
+    }
+
+    public var isDiarizationInUse: Bool {
+        diarizationInFlightOperationCount > 0
+    }
+
+    public var isASRResidentInMemory: Bool {
+        asrManager != nil && modelState == .loaded
+    }
+
+    public var isDiarizationResidentInMemory: Bool {
+        diarizerManager != nil
+    }
 
     private(set) var asrManager: AsrManager?
     private(set) var diarizerManager: OfflineDiarizerManager?
+    private var asrInFlightOperationCount = 0
+    private var diarizationInFlightOperationCount = 0
 
     public enum ModelState: String, Sendable {
         case unloaded
@@ -116,6 +136,7 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
             asrManager = manager
             modelState = .loaded
             isASRInstalled = true
+            lastASRActivityAt = Date()
             updateReadyState()
             logger.info("ASR Manager initialized successfully.")
 
@@ -199,6 +220,7 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
             currentDiarizerNumSpeakers = num
 
             isDiarizationLoaded = true
+            lastDiarizationActivityAt = Date()
             updateReadyState()
 
             logger.info("Diarization Manager initialized successfully.")
@@ -221,11 +243,16 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
     /// Deletes the downloaded ASR models from disk and unloads from memory.
     public func deleteASRModels() {
         guard modelState != .downloading, modelState != .loading else { return }
+        guard !isASRInUse else {
+            logger.warning("Skipped ASR model deletion because transcription is currently in progress.")
+            return
+        }
 
         // Unload from memory
         asrManager = nil
         modelState = .unloaded
         isASRInstalled = false
+        lastASRActivityAt = nil
 
         // Remove from disk
         let fileManager = FileManager.default
@@ -250,12 +277,18 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
 
     /// Deletes the downloaded diarization models from disk and unloads from memory.
     public func deleteDiarizationModels() {
+        guard !isDiarizationInUse else {
+            logger.warning("Skipped diarization model deletion because diarization is currently in progress.")
+            return
+        }
+
         // Unload from memory
         diarizerManager = nil
         currentDiarizerMinSpeakers = nil
         currentDiarizerMaxSpeakers = nil
         currentDiarizerNumSpeakers = nil
         isDiarizationLoaded = false
+        lastDiarizationActivityAt = nil
 
         // Remove from disk
         let fileManager = FileManager.default
@@ -291,6 +324,39 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
         } else {
             isDiarizationLoaded = hasDiarizationModelsOnDisk()
         }
+    }
+
+    @discardableResult
+    public func unloadASRFromMemoryIfPossible() -> Bool {
+        guard asrManager != nil else { return false }
+        guard !isASRInUse else { return false }
+        guard modelState != .downloading, modelState != .loading else { return false }
+
+        asrManager = nil
+        modelState = .unloaded
+        if downloadPhase == .ready {
+            downloadPhase = .idle
+        }
+        refreshInstalledModelStates()
+        logger.info("Unloaded ASR model from RAM due to inactivity.")
+        return true
+    }
+
+    @discardableResult
+    public func unloadDiarizationFromMemoryIfPossible() -> Bool {
+        guard diarizerManager != nil else { return false }
+        guard !isDiarizationInUse else { return false }
+
+        diarizerManager = nil
+        currentDiarizerMinSpeakers = nil
+        currentDiarizerMaxSpeakers = nil
+        currentDiarizerNumSpeakers = nil
+        if downloadPhase == .ready {
+            downloadPhase = .idle
+        }
+        refreshInstalledModelStates()
+        logger.info("Unloaded diarization model from RAM due to inactivity.")
+        return true
     }
 
     private var currentDiarizerMinSpeakers: Int?
@@ -357,6 +423,10 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
         maxSpeakers: Int? = nil,
         numSpeakers: Int? = nil
     ) async throws -> [DiarizationSegment] {
+        lastDiarizationActivityAt = Date()
+        diarizationInFlightOperationCount += 1
+        defer { diarizationInFlightOperationCount = max(0, diarizationInFlightOperationCount - 1) }
+
         // Ensure models are loaded with the requested constraints
         await loadDiarizationModels(
             minSpeakers: minSpeakers,
@@ -398,9 +468,13 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
         audioURL: URL,
         progress: (@Sendable (Double) -> Void)? = nil
     ) async throws -> (text: String, segments: [AsrSegment], confidenceScore: Double?) {
+        lastASRActivityAt = Date()
         guard let manager = asrManager, modelState == .loaded else {
             throw FluidError.modelNotLoaded
         }
+
+        asrInFlightOperationCount += 1
+        defer { asrInFlightOperationCount = max(0, asrInFlightOperationCount - 1) }
 
         logger.info("Transcribing audio file: \(audioURL.path)")
 
@@ -437,9 +511,13 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
     }
 
     func transcribe(samples: [Float]) async throws -> (text: String, segments: [AsrSegment], confidenceScore: Double?) {
+        lastASRActivityAt = Date()
         guard let manager = asrManager, modelState == .loaded else {
             throw FluidError.modelNotLoaded
         }
+
+        asrInFlightOperationCount += 1
+        defer { asrInFlightOperationCount = max(0, asrInFlightOperationCount - 1) }
 
         logger.info("Transcribing in-memory audio samples: \(samples.count)")
         let result = try await manager.transcribe(samples, source: .microphone)

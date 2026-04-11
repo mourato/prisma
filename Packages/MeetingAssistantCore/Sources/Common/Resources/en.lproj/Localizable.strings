@@ -447,6 +447,14 @@
 "settings.service.transcription_provider.missing_key.message" = "Save a Groq API key in Integrations to use remote dictation transcription.";
 "settings.service.transcription_provider.meeting_local.title" = "Meeting transcription stays local";
 "settings.service.transcription_provider.meeting_local.message" = "Meeting mode always uses local on-device transcription. Provider selection here affects Dictation and Assistant only.";
+"settings.service.model_residency_timeout" = "Unload model from RAM:";
+"settings.service.model_residency_timeout.help" = "Applies to transcription and diarization local models. RAM only; downloaded model files stay on disk.";
+"settings.service.model_residency_timeout.option.5m" = "5 minutes";
+"settings.service.model_residency_timeout.option.10m" = "10 minutes";
+"settings.service.model_residency_timeout.option.15m" = "15 minutes";
+"settings.service.model_residency_timeout.option.30m" = "30 minutes";
+"settings.service.model_residency_timeout.option.60m" = "60 minutes";
+"settings.service.model_residency_timeout.option.never" = "Never";
 
 /* Shortcut Settings */
 "settings.shortcuts.title" = "Keyboard Controls";

@@ -152,6 +152,32 @@ public struct ServiceSettingsContent: View {
                         Text("settings.service.languages_desc".localized)
                             .fontWeight(.medium)
                     }
+
+                    GridRow(alignment: .top) {
+                        Text("settings.service.model_residency_timeout".localized)
+                            .foregroundStyle(.secondary)
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            Picker(
+                                "settings.service.model_residency_timeout".localized,
+                                selection: Binding(
+                                    get: { viewModel.modelResidencyTimeout },
+                                    set: { viewModel.modelResidencyTimeout = $0 }
+                                )
+                            ) {
+                                ForEach(viewModel.modelResidencyTimeoutOptions, id: \.self) { option in
+                                    Text(option.displayName)
+                                        .tag(option)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                            .labelsHidden()
+
+                            Text("settings.service.model_residency_timeout.help".localized)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
                 .font(.subheadline)
             }

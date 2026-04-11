@@ -48,6 +48,13 @@ public class ServiceSettingsViewModel: ObservableObject {
             .assign(to: \.isDiarizationLoaded, on: self)
             .store(in: &cancellables)
 
+        settings.$modelResidencyTimeout
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
+
         refreshInstalledModelStates()
     }
 
@@ -114,6 +121,19 @@ public class ServiceSettingsViewModel: ObservableObject {
             [MeetingAssistantCoreInfrastructure.TranscriptionProvider.localModelID]
         case .groq:
             MeetingAssistantCoreInfrastructure.TranscriptionProvider.groqPresetModelIDs
+        }
+    }
+
+    public var modelResidencyTimeoutOptions: [AppSettingsStore.ModelResidencyTimeoutOption] {
+        AppSettingsStore.ModelResidencyTimeoutOption.allCases
+    }
+
+    public var modelResidencyTimeout: AppSettingsStore.ModelResidencyTimeoutOption {
+        get {
+            settings.modelResidencyTimeout
+        }
+        set {
+            settings.modelResidencyTimeout = newValue
         }
     }
 

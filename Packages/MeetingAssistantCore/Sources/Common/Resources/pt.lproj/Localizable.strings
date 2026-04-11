@@ -447,6 +447,14 @@
 "settings.service.transcription_provider.missing_key.message" = "Salve uma chave de API da Groq em Integrações para usar transcrição remota no ditado.";
 "settings.service.transcription_provider.meeting_local.title" = "Transcrição de reunião permanece local";
 "settings.service.transcription_provider.meeting_local.message" = "O modo reunião sempre usa transcrição local on-device. Esta seleção afeta apenas Ditado e Assistant.";
+"settings.service.model_residency_timeout" = "Descarregar modelo da RAM:";
+"settings.service.model_residency_timeout.help" = "Aplica-se aos modelos locais de transcrição e diarização. Apenas RAM; os arquivos baixados permanecem no disco.";
+"settings.service.model_residency_timeout.option.5m" = "5 minutos";
+"settings.service.model_residency_timeout.option.10m" = "10 minutos";
+"settings.service.model_residency_timeout.option.15m" = "15 minutos";
+"settings.service.model_residency_timeout.option.30m" = "30 minutos";
+"settings.service.model_residency_timeout.option.60m" = "60 minutos";
+"settings.service.model_residency_timeout.option.never" = "Nunca";
 
 /* Shortcut Settings */
 "settings.shortcuts.title" = "Controles de Teclado";

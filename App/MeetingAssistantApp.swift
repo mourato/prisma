@@ -509,6 +509,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var cancelRecordingMenuItem: NSMenuItem?
     lazy var recordingManager: RecordingManager = .shared
     let settingsStore = AppSettingsStore.shared
+    let localModelResidencyCoordinator = LocalModelResidencyCoordinator.shared
     lazy var floatingIndicatorController = FloatingRecordingIndicatorController()
     lazy var meetingNotesPanelController = MeetingNotesFloatingPanelController()
     lazy var globalShortcutController = GlobalShortcutController(recordingManager: RecordingManager.shared)

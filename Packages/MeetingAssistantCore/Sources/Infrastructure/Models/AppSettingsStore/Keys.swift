@@ -18,6 +18,7 @@ extension AppSettingsStore {
         static let postProcessingEnabled = "postProcessingEnabled"
         static let dictationStructuredPostProcessingEnabled = "dictationStructuredPostProcessingEnabled"
         static let isDiarizationEnabled = "isDiarizationEnabled"
+        static let modelResidencyTimeout = "modelResidencyTimeout"
         static let minSpeakers = "minSpeakers"
         static let maxSpeakers = "maxSpeakers"
         static let numSpeakers = "numSpeakers"
