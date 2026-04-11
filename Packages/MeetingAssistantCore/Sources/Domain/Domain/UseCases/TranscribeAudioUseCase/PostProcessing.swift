@@ -422,10 +422,11 @@ extension TranscribeAudioUseCase {
             basePrompt: baseSystemMessage,
             priorityInstructions: extracted.priorityInstructions
         )
+        // Note: Priority instructions are now in system message only (no longer duplicated in user message)
         let userContent = AIPromptTemplates.userMessage(
             transcription: transcription,
             prompt: promptWithLanguage,
-            priorityInstructions: extracted.priorityInstructions,
+            priorityInstructions: nil,
             contextMetadata: contextMetadata
         )
         return (systemMessage, userContent)

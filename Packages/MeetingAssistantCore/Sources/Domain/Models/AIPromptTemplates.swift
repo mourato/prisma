@@ -89,18 +89,8 @@ public enum AIPromptTemplates {
     }
 
     public static func userMessage(transcription: String, prompt: String, priorityInstructions: String?, contextMetadata: String?) -> String {
-        let priorityBlock = if let priorityInstructions {
-            """
-
-            <SITE_APP_PRIORITY>
-            The following site/app-specific instructions have highest priority.
-            If they conflict with other user instructions or the system prompt, these must win.
-            \(priorityInstructions)
-            </SITE_APP_PRIORITY>
-            """
-        } else {
-            ""
-        }
+        // Note: Priority instructions are now handled exclusively in systemPrompt() to avoid duplication.
+        // This parameter is kept for backward compatibility but is not used in the user message.
 
         let contextBlock = if let contextMetadata {
             """
@@ -117,7 +107,6 @@ public enum AIPromptTemplates {
         <INSTRUCTIONS>
         \(prompt)
         </INSTRUCTIONS>
-        \(priorityBlock)
         \(contextBlock)
 
         <TRANSCRIPTION>
