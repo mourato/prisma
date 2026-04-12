@@ -1,6 +1,7 @@
 import AppKit
 @preconcurrency import ApplicationServices
 import Foundation
+import MeetingAssistantCoreCommon
 import MeetingAssistantCoreDomain
 
 @MainActor
@@ -10,6 +11,12 @@ public enum AccessibilityPermissionService {
     }
 
     public static func requestPermission() {
+        // Avoid system permission popups during XCTest execution.
+        if AppIdentity.isRunningTests {
+            _ = AXIsProcessTrusted()
+            return
+        }
+
         let options = ["AXTrustedCheckOptionPrompt" as CFString: true] as CFDictionary
         _ = AXIsProcessTrustedWithOptions(options)
     }
