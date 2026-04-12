@@ -70,9 +70,21 @@ public class GeneralSettingsViewModel: ObservableObject {
         }
     }
 
-    @Published public var muteOutputDuringRecording: Bool {
+    @Published public var audioDuckingEnabled: Bool {
         didSet {
-            settingsStore.muteOutputDuringRecording = muteOutputDuringRecording
+            settingsStore.audioDuckingEnabled = audioDuckingEnabled
+        }
+    }
+
+    @Published public var audioDuckingLevelPercent: Int {
+        didSet {
+            let clamped = AppSettingsStore.clampedAudioDuckingLevelPercent(audioDuckingLevelPercent)
+            guard clamped == audioDuckingLevelPercent else {
+                audioDuckingLevelPercent = clamped
+                return
+            }
+
+            settingsStore.audioDuckingLevelPercent = audioDuckingLevelPercent
         }
     }
 
@@ -206,7 +218,8 @@ public class GeneralSettingsViewModel: ObservableObject {
         autoCopyTranscriptionToClipboard = settingsStore.autoCopyTranscriptionToClipboard
         shortcutDoubleTapIntervalMilliseconds = settingsStore.shortcutDoubleTapIntervalMilliseconds
         autoPasteTranscriptionToActiveApp = settingsStore.autoPasteTranscriptionToActiveApp
-        muteOutputDuringRecording = settingsStore.muteOutputDuringRecording
+        audioDuckingEnabled = settingsStore.audioDuckingEnabled
+        audioDuckingLevelPercent = settingsStore.audioDuckingLevelPercent
         useSystemDefaultInput = settingsStore.useSystemDefaultInput
         microphoneWhenChargingUID = settingsStore.microphoneWhenChargingUID
         microphoneOnBatteryUID = settingsStore.microphoneOnBatteryUID

@@ -168,7 +168,36 @@ public final class SystemAudioMuteController: Sendable {
         )
     }
 
+    func applyDucking(to session: inout OutputMuteSession, levelPercent: Int) throws {
+        let clampedLevel = max(0, min(100, levelPercent))
+
+        if clampedLevel >= 100 {
+            session.appliedStrategy = nil
+            return
+        }
+
+        if clampedLevel == 0 {
+            try applyFullMute(to: &session)
+            return
+        }
+
+        guard let volumeState = session.volumeState else {
+            throw AudioError.coreAudioError(OSStatus(paramErr))
+        }
+
+        let duckedVolumeState = Self.makeDuckedOutputVolumeState(
+            from: volumeState,
+            levelPercent: clampedLevel
+        )
+        try setOutputVolume(for: session.deviceID, using: duckedVolumeState)
+        session.appliedStrategy = .volumeProperty
+    }
+
     func applyMute(to session: inout OutputMuteSession) throws {
+        try applyDucking(to: &session, levelPercent: 0)
+    }
+
+    private func applyFullMute(to session: inout OutputMuteSession) throws {
         var lastError: Error?
 
         if session.canMute {
@@ -333,6 +362,26 @@ public final class SystemAudioMuteController: Sendable {
         )
     }
 
+    static func makeDuckedOutputVolumeState(
+        from volumeState: OutputVolumeState,
+        levelPercent: Int
+    ) -> OutputVolumeState {
+        let clampedLevel = max(0, min(100, levelPercent))
+        let scalar = Float(clampedLevel) / 100.0
+        let duckedProperties = volumeState.properties.map { property in
+            OutputScalarPropertyState(
+                selector: property.selector,
+                element: property.element,
+                value: max(0.0, min(1.0, property.value * scalar))
+            )
+        }
+
+        return OutputVolumeState(
+            properties: duckedProperties,
+            strategyDescription: volumeState.strategyDescription
+        )
+    }
+
     private func getOutputChannelVolumeStates(for deviceID: AudioObjectID) -> [OutputScalarPropertyState] {
         guard let channelCount = getOutputChannelCount(for: deviceID), channelCount > 0 else { return [] }
 
@@ -434,7 +483,7 @@ public final class SystemAudioMuteController: Sendable {
         }
     }
 
-    private func restoreOutputVolume(for deviceID: AudioObjectID, using volumeState: OutputVolumeState) throws {
+    private func setOutputVolume(for deviceID: AudioObjectID, using volumeState: OutputVolumeState) throws {
         for property in volumeState.properties {
             try setOutputScalarProperty(
                 property.value,
@@ -443,6 +492,10 @@ public final class SystemAudioMuteController: Sendable {
                 element: property.element
             )
         }
+    }
+
+    private func restoreOutputVolume(for deviceID: AudioObjectID, using volumeState: OutputVolumeState) throws {
+        try setOutputVolume(for: deviceID, using: volumeState)
     }
 
     private func setOutputScalarProperty(

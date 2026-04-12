@@ -853,8 +853,10 @@
 "settings.general.device_not_selected" = "Não selecionado";
 "settings.general.device_unavailable" = "Indisponível";
 "settings.general.device_default" = "Padrão";
-"settings.general.mute_output_during_recording" = "Silenciar Saída Durante Gravação";
-"settings.general.mute_output_desc" = "Silencia o áudio do sistema enquanto uma gravação está em andamento.";
+"settings.general.audio_ducking" = "Atenuação de Áudio";
+"settings.general.audio_ducking_desc" = "Reduz o volume do sistema durante a gravação.";
+"settings.general.audio_ducking_percent" = "%d%%";
+"settings.general.audio_ducking_note" = "Percentual do volume atual a ser usado durante a gravação. 0%% silencia completamente.";
 "settings.general.auto_increase_microphone_volume" = "Aumentar automaticamente o volume do microfone";
 "settings.general.auto_increase_microphone_volume_tooltip" = "Define o volume de entrada do microfone no máximo ao iniciar uma gravação. Só funciona ao usar o dispositivo padrão do sistema.";
 "settings.general.audio_processing" = "Processamento de Áudio";

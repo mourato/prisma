@@ -92,4 +92,42 @@ final class SystemAudioMuteControllerTests: XCTestCase {
             )
         )
     }
+
+    func testMakeDuckedOutputVolumeStateScalesVolumeByPercent() {
+        let state = SystemAudioMuteController.OutputVolumeState(
+            properties: [
+                SystemAudioMuteController.OutputScalarPropertyState(
+                    selector: kAudioHardwareServiceDeviceProperty_VirtualMainVolume,
+                    element: kAudioObjectPropertyElementMain,
+                    value: 0.8
+                ),
+            ],
+            strategyDescription: "virtualMainVolume"
+        )
+
+        let ducked = SystemAudioMuteController.makeDuckedOutputVolumeState(from: state, levelPercent: 30)
+
+        XCTAssertEqual(ducked.properties.count, 1)
+        XCTAssertEqual(ducked.properties[0].value, 0.24, accuracy: 0.0001)
+        XCTAssertEqual(ducked.strategyDescription, state.strategyDescription)
+    }
+
+    func testMakeDuckedOutputVolumeStateClampsPercentRange() {
+        let state = SystemAudioMuteController.OutputVolumeState(
+            properties: [
+                SystemAudioMuteController.OutputScalarPropertyState(
+                    selector: kAudioDevicePropertyVolumeScalar,
+                    element: 1,
+                    value: 0.65
+                ),
+            ],
+            strategyDescription: "channelVolumeScalar"
+        )
+
+        let muted = SystemAudioMuteController.makeDuckedOutputVolumeState(from: state, levelPercent: -10)
+        let unchanged = SystemAudioMuteController.makeDuckedOutputVolumeState(from: state, levelPercent: 140)
+
+        XCTAssertEqual(muted.properties[0].value, 0.0, accuracy: 0.0001)
+        XCTAssertEqual(unchanged.properties[0].value, 0.65, accuracy: 0.0001)
+    }
 }

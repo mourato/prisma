@@ -11,6 +11,10 @@ import SwiftUI
 public class AppSettingsStore: ObservableObject {
     public static let shared = AppSettingsStore()
 
+    public static func clampedAudioDuckingLevelPercent(_ value: Int) -> Int {
+        max(0, min(100, value))
+    }
+
     /// Sentinel UUID used to represent an explicit "No post-processing" selection.
     /// This avoids changing persisted schemas while still allowing an opt-out choice.
     public static let noPostProcessingPromptId: UUID = {
@@ -202,9 +206,23 @@ public class AppSettingsStore: ObservableObject {
         didSet { UserDefaults.standard.set(microphoneOnBatteryUID, forKey: Keys.microphoneOnBatteryUID) }
     }
 
-    /// Whether to mute system audio output while recording is in progress.
-    @Published public var muteOutputDuringRecording: Bool {
-        didSet { UserDefaults.standard.set(muteOutputDuringRecording, forKey: Keys.muteOutputDuringRecording) }
+    /// Whether system output volume should be reduced while recording Dictation/Assistant.
+    @Published public var audioDuckingEnabled: Bool {
+        didSet { UserDefaults.standard.set(audioDuckingEnabled, forKey: Keys.audioDuckingEnabled) }
+    }
+
+    /// Target percentage of the current system output volume while recording.
+    /// 0 means full mute, 100 keeps current output volume unchanged.
+    @Published public var audioDuckingLevelPercent: Int {
+        didSet {
+            let clamped = Self.clampedAudioDuckingLevelPercent(audioDuckingLevelPercent)
+            guard clamped == audioDuckingLevelPercent else {
+                audioDuckingLevelPercent = clamped
+                return
+            }
+
+            UserDefaults.standard.set(audioDuckingLevelPercent, forKey: Keys.audioDuckingLevelPercent)
+        }
     }
 
     /// Whether to set the default microphone input volume to maximum when recording starts.
@@ -658,7 +676,8 @@ public class AppSettingsStore: ObservableObject {
         useSystemDefaultInput = audioSettings.useSystemDefaultInput
         microphoneWhenChargingUID = audioSettings.microphoneWhenChargingUID
         microphoneOnBatteryUID = audioSettings.microphoneOnBatteryUID
-        muteOutputDuringRecording = audioSettings.muteOutputDuringRecording
+        audioDuckingEnabled = audioSettings.audioDuckingEnabled
+        audioDuckingLevelPercent = audioSettings.audioDuckingLevelPercent
         autoIncreaseMicrophoneVolume = audioSettings.autoIncreaseMicrophoneVolume
         removeSilenceBeforeProcessing = audioSettings.removeSilenceBeforeProcessing
 

@@ -28,7 +28,8 @@ public extension AppSettingsStore {
         useSystemDefaultInput = true
         microphoneWhenChargingUID = nil
         microphoneOnBatteryUID = nil
-        muteOutputDuringRecording = false
+        audioDuckingEnabled = false
+        audioDuckingLevelPercent = Self.defaultAudioDuckingLevelPercent
         autoIncreaseMicrophoneVolume = false
         removeSilenceBeforeProcessing = false
         shortcutActivationMode = .holdOrToggle
@@ -85,5 +86,7 @@ public extension AppSettingsStore {
         webTargetBrowserBundleIdentifiers = Self.defaultWebTargetBrowserBundleIdentifiers
         monitoredMeetingBundleIdentifiers = Self.defaultMonitoredMeetingBundleIdentifiers
         webMeetingTargets = Self.defaultWebMeetingTargets
+
+        UserDefaults.standard.removeObject(forKey: Keys.muteOutputDuringRecording)
     }
 }

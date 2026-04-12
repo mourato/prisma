@@ -65,4 +65,5 @@ public extension AppSettingsStore {
 
     static let defaultShortcutDoubleTapIntervalMilliseconds: Double = 350
     static let shortcutDoubleTapIntervalRangeMilliseconds: ClosedRange<Double> = 150...1_000
+    static let defaultAudioDuckingLevelPercent: Int = 30
 }

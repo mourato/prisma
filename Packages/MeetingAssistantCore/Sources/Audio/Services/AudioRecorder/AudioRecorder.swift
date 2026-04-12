@@ -100,6 +100,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
     private let muteController = SystemAudioMuteController.shared
     private var outputMuteSession: SystemAudioMuteController.OutputMuteSession?
+    private var outputDuckingLevelPercent: Int?
     private var outputMuteTask: Task<Void, Never>?
     let deviceManager = AudioDeviceManager()
     let microphoneInputSelectionResolver: MicrophoneInputSelectionResolver
@@ -207,30 +208,10 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         lastMeterSnapshotDate = nil
         latestMeterSnapshot = nil
         currentBarPowerLevels = []
-
-        // Muting system output must only apply to Dictation/Assistant (mic-only).
-        // Meetings (system + mic) must preserve the system output volume.
-        //
-        // IMPORTANT: Skip mute when the system default output device is the same as the
-        // input device (USB mic). AVAudioEngine creates aggregate devices combining
-        // input + output; muting the aggregate's output also silences its input.
-        let shouldMuteOutput = AppSettingsStore.shared.muteOutputDuringRecording && source == .microphone
-        if shouldMuteOutput {
-            let defaultOutputID = deviceManager.getDefaultOutputDeviceID()
-            let defaultInputID = deviceManager.getDefaultInputDeviceIDRaw()
-
-            if let outID = defaultOutputID, let inID = defaultInputID, outID == inID {
-                AppLogger.warning(
-                    "Skipping output mute: output device is the same as input device (muting would silence recording)",
-                    category: .recordingManager,
-                    extra: ["deviceID": outID, "deviceName": deviceManager.getDeviceName(for: outID) ?? "Unknown"]
-                )
-            } else {
-                outputMuteSession = muteController.prepareOutputMuteSession()
-            }
-        }
-
         let settings = AppSettingsStore.shared
+
+        prepareOutputDuckingIfNeeded(source: source, settings: settings)
+
         setMeetingMicrophoneEnabled(true)
         let shouldBoostMicInputVolume = settings.autoIncreaseMicrophoneVolume
             && settings.useSystemDefaultInput
@@ -490,6 +471,7 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
 
         guard let session = outputMuteSession else { return }
         outputMuteSession = nil
+        outputDuckingLevelPercent = nil
         muteController.restoreOutputState(from: session)
     }
 
@@ -497,10 +479,11 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
         outputMuteTask?.cancel()
         outputMuteTask = nil
         outputMuteSession = nil
+        outputDuckingLevelPercent = nil
     }
 
     private func scheduleOutputMuteIfNeeded() {
-        guard outputMuteSession != nil else { return }
+        guard outputMuteSession != nil, outputDuckingLevelPercent != nil else { return }
 
         outputMuteTask?.cancel()
         outputMuteTask = Task { @MainActor [weak self] in
@@ -511,18 +494,48 @@ public class AudioRecorder: ObservableObject, AudioRecordingService {
     }
 
     private func applyOutputMuteIfNeeded() {
-        guard var session = outputMuteSession else { return }
+        guard var session = outputMuteSession, let duckingLevelPercent = outputDuckingLevelPercent else { return }
 
         do {
-            try muteController.applyMute(to: &session)
+            try muteController.applyDucking(to: &session, levelPercent: duckingLevelPercent)
             outputMuteSession = session
         } catch {
             AppLogger.warning(
-                "Failed to mute system audio output",
+                "Failed to apply system audio ducking",
                 category: .recordingManager,
                 extra: ["error": error.localizedDescription]
             )
         }
+    }
+
+    private func prepareOutputDuckingIfNeeded(source: RecordingSource, settings: AppSettingsStore) {
+        // Output ducking must only apply to Dictation/Assistant (mic-only).
+        // Meetings (system + mic) must preserve the system output volume.
+        let configuredDuckingLevelPercent = AppSettingsStore.clampedAudioDuckingLevelPercent(
+            settings.audioDuckingLevelPercent
+        )
+        let shouldDuckOutput = settings.audioDuckingEnabled
+            && source == .microphone
+            && configuredDuckingLevelPercent < 100
+
+        guard shouldDuckOutput else { return }
+
+        // IMPORTANT: Skip ducking when output and input are the same device.
+        // Reducing aggregate output in this case can also affect capture.
+        if let outID = deviceManager.getDefaultOutputDeviceID(),
+           let inID = deviceManager.getDefaultInputDeviceIDRaw(),
+           outID == inID
+        {
+            AppLogger.warning(
+                "Skipping output ducking: output device is the same as input device",
+                category: .recordingManager,
+                extra: ["deviceID": outID, "deviceName": deviceManager.getDeviceName(for: outID) ?? "Unknown"]
+            )
+            return
+        }
+
+        outputMuteSession = muteController.prepareOutputMuteSession()
+        outputDuckingLevelPercent = configuredDuckingLevelPercent
     }
 
     private func cleanupEngine() {

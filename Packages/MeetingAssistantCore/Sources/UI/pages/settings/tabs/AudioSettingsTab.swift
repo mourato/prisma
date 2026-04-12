@@ -52,10 +52,44 @@ public struct AudioSettingsTab: View {
                     Divider()
 
                     DSToggleRow(
-                        "settings.general.mute_output_during_recording".localized,
-                        description: "settings.general.mute_output_desc".localized,
-                        isOn: $viewModel.muteOutputDuringRecording
+                        "settings.general.audio_ducking".localized,
+                        description: "settings.general.audio_ducking_desc".localized,
+                        isOn: $viewModel.audioDuckingEnabled
                     )
+
+                    if viewModel.audioDuckingEnabled {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(spacing: 10) {
+                                Image(systemName: "speaker.slash")
+                                    .foregroundStyle(.secondary)
+
+                                Slider(
+                                    value: audioDuckingSliderBinding,
+                                    in: 0...100,
+                                    step: 1
+                                )
+                                .controlSize(.small)
+
+                                Image(systemName: "speaker.wave.2")
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            Text(
+                                String(
+                                    format: "settings.general.audio_ducking_percent".localized,
+                                    viewModel.audioDuckingLevelPercent
+                                )
+                            )
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                            Text("settings.general.audio_ducking_note".localized)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .transition(SettingsMotion.sectionTransition(reduceMotion: reduceMotion))
+                    }
 
                     Divider()
 
@@ -184,6 +218,13 @@ public struct AudioSettingsTab: View {
         }
 
         return device.name
+    }
+
+    private var audioDuckingSliderBinding: Binding<Double> {
+        Binding(
+            get: { Double(viewModel.audioDuckingLevelPercent) },
+            set: { viewModel.audioDuckingLevelPercent = Int($0.rounded()) }
+        )
     }
 
     private func previewSound(_ sound: SoundFeedbackSound) {

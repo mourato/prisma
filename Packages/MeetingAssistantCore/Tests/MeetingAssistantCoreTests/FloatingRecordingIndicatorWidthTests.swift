@@ -168,8 +168,14 @@ final class FloatingRecordingIndicatorWidthTests: XCTestCase {
             for: size,
             processingSnapshot: longSnapshot
         )
+        let maxWidth = FloatingRecordingIndicatorViewUtilities.processingStatusMaxWidth(for: size)
 
-        XCTAssertGreaterThan(longWidth, shortWidth)
+        // Localized strings can both saturate at max width; allow equality only in that clamp case.
+        if shortWidth == maxWidth, longWidth == maxWidth {
+            XCTAssertEqual(longWidth, shortWidth, accuracy: 0.001)
+        } else {
+            XCTAssertGreaterThan(longWidth, shortWidth)
+        }
         XCTAssertGreaterThanOrEqual(shortWidth, FloatingRecordingIndicatorViewUtilities.processingStatusMinWidth(for: size))
         XCTAssertLessThanOrEqual(longWidth, FloatingRecordingIndicatorViewUtilities.processingStatusMaxWidth(for: size))
     }
@@ -191,7 +197,19 @@ final class FloatingRecordingIndicatorWidthTests: XCTestCase {
             renderState: renderState,
             processingSnapshot: longSnapshot
         )
+        let shortStatusWidth = FloatingRecordingIndicatorViewUtilities.processingStatusWidth(
+            for: .classic,
+            processingSnapshot: shortSnapshot
+        )
+        let longStatusWidth = FloatingRecordingIndicatorViewUtilities.processingStatusWidth(
+            for: .classic,
+            processingSnapshot: longSnapshot
+        )
 
-        XCTAssertGreaterThan(longWidth, shortWidth)
+        if shortStatusWidth == longStatusWidth {
+            XCTAssertEqual(longWidth, shortWidth, accuracy: 0.001)
+        } else {
+            XCTAssertGreaterThan(longWidth, shortWidth)
+        }
     }
 }
