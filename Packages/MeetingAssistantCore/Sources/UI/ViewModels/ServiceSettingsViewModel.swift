@@ -118,10 +118,20 @@ public class ServiceSettingsViewModel: ObservableObject {
     public var availableDictationModels: [String] {
         switch selectedDictationProvider {
         case .local:
-            [MeetingAssistantCoreInfrastructure.TranscriptionProvider.localModelID]
+            MeetingAssistantCoreInfrastructure.TranscriptionProvider.localPresetModelIDs
         case .groq:
             MeetingAssistantCoreInfrastructure.TranscriptionProvider.groqPresetModelIDs
         }
+    }
+
+    public var meetingLocalModelDisplayName: String {
+        displayName(forModelID: settings.resolvedTranscriptionSelection(for: .meeting).selectedModel)
+    }
+
+    public var shouldShowMeetingDiarizationAutoDisableWarning: Bool {
+        let meetingModelID = settings.resolvedTranscriptionSelection(for: .meeting).selectedModel
+        return settings.isDiarizationEnabled
+            && !settings.localModelSupportsDiarization(modelID: meetingModelID)
     }
 
     public var modelResidencyTimeoutOptions: [AppSettingsStore.ModelResidencyTimeoutOption] {
@@ -161,5 +171,18 @@ public class ServiceSettingsViewModel: ObservableObject {
     public func updateDictationModel(_ model: String) {
         settings.updateTranscriptionDictationModel(model)
         objectWillChange.send()
+    }
+
+    public func displayName(forModelID modelID: String) -> String {
+        if let localModel = MeetingAssistantCoreInfrastructure.LocalTranscriptionModel(rawValue: modelID) {
+            switch localModel {
+            case .parakeetTdt06BV3:
+                "settings.service.transcription_provider.model_option.local.parakeet".localized
+            case .cohereTranscribe032026CoreML6Bit:
+                "settings.service.transcription_provider.model_option.local.cohere".localized
+            }
+        } else {
+            modelID
+        }
     }
 }

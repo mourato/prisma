@@ -54,7 +54,7 @@ public extension AppSettingsStore {
         case .meeting:
             return TranscriptionProviderSelection(
                 provider: .local,
-                selectedModel: TranscriptionProvider.localModelID
+                selectedModel: transcriptionSelectedModel(for: .local)
             )
         case .dictation, .assistant:
             let provider = transcriptionDictationSelection.provider
@@ -70,7 +70,17 @@ public extension AppSettingsStore {
     }
 
     func supportsIncrementalTranscription(for mode: TranscriptionExecutionMode) -> Bool {
-        !shouldUseRemoteTranscription(for: mode)
+        let selection = resolvedTranscriptionSelection(for: mode)
+        guard selection.provider == .local else { return false }
+        guard let localModel = LocalTranscriptionModel(rawValue: selection.selectedModel) else {
+            return LocalTranscriptionModel.parakeetTdt06BV3.supportsIncrementalTranscription
+        }
+        return localModel.supportsIncrementalTranscription
+    }
+
+    func localModelSupportsDiarization(modelID: String) -> Bool {
+        guard let model = LocalTranscriptionModel(rawValue: modelID) else { return true }
+        return model.supportsDiarization
     }
 
     func setTranscriptionProviderSelectedModel(_ model: String, for provider: TranscriptionProvider) {

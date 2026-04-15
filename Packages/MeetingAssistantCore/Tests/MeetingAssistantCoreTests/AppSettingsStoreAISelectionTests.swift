@@ -264,6 +264,25 @@ final class AppSettingsStoreAISelectionTests: XCTestCase {
         XCTAssertEqual(resolved.selectedModel, MeetingAssistantCoreInfrastructure.TranscriptionProvider.localModelID)
     }
 
+    func testResolvedTranscriptionSelection_MeetingUsesLastSelectedLocalModel() {
+        settings.updateTranscriptionDictationSelection(
+            provider: .local,
+            model: MeetingAssistantCoreInfrastructure.TranscriptionProvider.cohereLocalModelID
+        )
+        settings.updateTranscriptionDictationSelection(
+            provider: .groq,
+            model: "whisper-large-v3"
+        )
+
+        let resolved = settings.resolvedTranscriptionSelection(for: .meeting)
+
+        XCTAssertEqual(resolved.provider, .local)
+        XCTAssertEqual(
+            resolved.selectedModel,
+            MeetingAssistantCoreInfrastructure.TranscriptionProvider.cohereLocalModelID
+        )
+    }
+
     func testResolvedTranscriptionSelection_DictationFollowsConfiguredProvider() {
         settings.updateTranscriptionDictationSelection(
             provider: .groq,
@@ -306,5 +325,18 @@ final class AppSettingsStoreAISelectionTests: XCTestCase {
 
         XCTAssertFalse(settings.supportsIncrementalTranscription(for: .assistant))
         XCTAssertTrue(settings.supportsIncrementalTranscription(for: .meeting))
+    }
+
+    func testSupportsIncrementalTranscription_DisabledWhenMeetingLocalModelDoesNotSupportIt() {
+        settings.updateTranscriptionDictationSelection(
+            provider: .local,
+            model: MeetingAssistantCoreInfrastructure.TranscriptionProvider.cohereLocalModelID
+        )
+        settings.updateTranscriptionDictationSelection(
+            provider: .groq,
+            model: "whisper-large-v3-turbo"
+        )
+
+        XCTAssertFalse(settings.supportsIncrementalTranscription(for: .meeting))
     }
 }

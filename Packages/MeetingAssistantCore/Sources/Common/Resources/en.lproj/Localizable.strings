@@ -442,11 +442,15 @@
 "settings.service.transcription_provider.model" = "Model:";
 "settings.service.transcription_provider.option.local" = "Local";
 "settings.service.transcription_provider.option.groq" = "Groq";
+"settings.service.transcription_provider.model_option.local.parakeet" = "Parakeet TDT 0.6B v3";
+"settings.service.transcription_provider.model_option.local.cohere" = "Cohere Transcribe 03-2026 (CoreML 6-bit)";
 "settings.service.transcription_provider.get_api_key" = "Get Groq API Key";
 "settings.service.transcription_provider.missing_key.title" = "Groq API key required";
 "settings.service.transcription_provider.missing_key.message" = "Save a Groq API key in Integrations to use remote dictation transcription.";
 "settings.service.transcription_provider.meeting_local.title" = "Meeting transcription stays local";
-"settings.service.transcription_provider.meeting_local.message" = "Meeting mode always uses local on-device transcription. Provider selection here affects Dictation and Assistant only.";
+"settings.service.transcription_provider.meeting_local.message" = "Meeting mode always uses local on-device transcription (%@). Provider selection here affects Dictation and Assistant only.";
+"settings.service.transcription_provider.meeting_diarization_warning.title" = "Speaker identification will be disabled";
+"settings.service.transcription_provider.meeting_diarization_warning.message" = "Meeting diarization is automatically disabled when %@ is selected because this model does not provide diarization support.";
 "settings.service.model_residency_timeout" = "Unload model from RAM:";
 "settings.service.model_residency_timeout.help" = "Applies to transcription and diarization local models. RAM only; downloaded model files stay on disk.";
 "settings.service.model_residency_timeout.option.5m" = "5 minutes";

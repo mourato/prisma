@@ -12,6 +12,15 @@ public class LocalTranscriptionClient {
     private let logger = Logger(subsystem: AppIdentity.logSubsystem, category: "LocalTranscriptionClient")
     private let manager = FluidAIModelManager.shared
 
+    private struct TranscriptionRunContext {
+        let text: String
+        let asrSegments: [FluidAIModelManager.AsrSegment]
+        let audioURL: URL
+        let minSpeakers: Int?
+        let maxSpeakers: Int?
+        let numSpeakers: Int?
+    }
+
     private init() {}
 
     /// Initializes and warms up the model.
@@ -26,85 +35,48 @@ public class LocalTranscriptionClient {
     public func transcribe(
         audioURL: URL,
         isDiarizationEnabled: Bool? = nil,
+        modelID: String = MeetingAssistantCoreInfrastructure.TranscriptionProvider.localModelID,
         minSpeakers: Int? = nil,
         maxSpeakers: Int? = nil,
         numSpeakers: Int? = nil,
         onProgress: (@Sendable (Double) -> Void)? = nil
     ) async throws -> TranscriptionResponse {
         logger.info("Starting local transcription for: \(audioURL.lastPathComponent)")
+        let selectedModel = LocalTranscriptionModel(rawValue: modelID) ?? .parakeetTdt06BV3
 
-        // Ensure models are loaded
-        if manager.modelState != .loaded {
-            await manager.loadModels()
-        }
+        await ensureASRModelLoaded()
 
         let startTime = Date()
 
-        // Perform transcription
         let (text, segmentsFromASR, confidenceScore) = try await manager.transcribe(
             audioURL: audioURL,
             progress: onProgress
         )
 
-        var segments: [Transcription.Segment] = []
+        let context = TranscriptionRunContext(
+            text: text,
+            asrSegments: segmentsFromASR,
+            audioURL: audioURL,
+            minSpeakers: minSpeakers,
+            maxSpeakers: maxSpeakers,
+            numSpeakers: numSpeakers
+        )
 
-        // Use passed settings or fallback to singleton (for app-process usage)
-        let diarizationSetting = isDiarizationEnabled ?? AppSettingsStore.shared.isDiarizationEnabled
-        let diarizationEnabled = diarizationSetting && FeatureFlags.enableDiarization
-        _ = (minSpeakers, maxSpeakers, numSpeakers)
-        let minS: Int? = nil
-        let maxS: Int? = nil
-        let numS: Int? = nil
-
-        // Check if diarization is enabled
-        if diarizationEnabled {
-            // Perform diarization
-            logger.info(
-                "Diarization enabled. Processing with automatic speaker count..."
-            )
-            do {
-                let diarizationSegments = try await manager.diarize(
-                    audioURL: audioURL,
-                    minSpeakers: minS,
-                    maxSpeakers: maxS,
-                    numSpeakers: numS
-                )
-                logger.info("Diarization produced \(diarizationSegments.count) segments")
-                if segmentsFromASR.isEmpty {
-                    // Fallback when token timings are unavailable.
-                    logger.info("ASR segments unavailable. Falling back to diarization-only segmentation.")
-                    segments = fallbackSegments(text: text, speakers: diarizationSegments)
-                } else {
-                    segments = merge(
-                        text: text, asrSegments: segmentsFromASR, speakers: diarizationSegments
-                    )
-
-                    if segments.isEmpty {
-                        logger.info("Merged segments empty. Falling back to diarization-only segmentation.")
-                        segments = fallbackSegments(text: text, speakers: diarizationSegments)
-                    }
-                }
-            } catch {
-                logger.error(
-                    "Diarization failed: \(error.localizedDescription). Proceeding with transcription only."
-                )
-            }
-        } else {
-            logger.info(
-                "Diarization disabled for this run (setting=\(diarizationSetting, privacy: .public), flag=\(FeatureFlags.enableDiarization, privacy: .public))."
-            )
-        }
+        let segments = await resolveSegmentsWithOptionalDiarization(
+            context: context,
+            isDiarizationEnabled: isDiarizationEnabled,
+            model: selectedModel
+        )
 
         let duration = Date().timeIntervalSince(startTime)
         let processedAt = ISO8601DateFormatter().string(from: Date())
 
-        // Map FluidAudio result to App response
         return TranscriptionResponse(
             text: text,
             segments: segments,
             language: "auto",
             durationSeconds: duration,
-            model: "parakeet-tdt-0.6b-v3-coreml",
+            model: selectedModel.rawValue,
             processedAt: processedAt,
             confidenceScore: confidenceScore
         )
@@ -113,9 +85,7 @@ public class LocalTranscriptionClient {
     public func transcribe(samples: [Float]) async throws -> TranscriptionResponse {
         logger.info("Starting local in-memory transcription for \(samples.count) samples")
 
-        if manager.modelState != .loaded {
-            await manager.loadModels()
-        }
+        await ensureASRModelLoaded()
 
         let startTime = Date()
         let (text, segmentsFromASR, confidenceScore) = try await manager.transcribe(samples: samples)
@@ -136,10 +106,75 @@ public class LocalTranscriptionClient {
             segments: segments,
             language: "auto",
             durationSeconds: duration,
-            model: "parakeet-tdt-0.6b-v3-coreml",
+            model: MeetingAssistantCoreInfrastructure.TranscriptionProvider.localModelID,
             processedAt: processedAt,
             confidenceScore: confidenceScore
         )
+    }
+
+    private func ensureASRModelLoaded() async {
+        if manager.modelState != .loaded {
+            await manager.loadModels()
+        }
+    }
+
+    private func resolveSegmentsWithOptionalDiarization(
+        context: TranscriptionRunContext,
+        isDiarizationEnabled: Bool?,
+        model: LocalTranscriptionModel
+    ) async -> [Transcription.Segment] {
+        let diarizationSetting = isDiarizationEnabled ?? AppSettingsStore.shared.isDiarizationEnabled
+        let diarizationEnabled = diarizationSetting && FeatureFlags.enableDiarization && model.supportsDiarization
+
+        if diarizationSetting, !model.supportsDiarization {
+            logger.info("Diarization auto-disabled for local model: \(model.rawValue)")
+        }
+
+        guard diarizationEnabled else {
+            logger.info(
+                "Diarization disabled for this run (setting=\(diarizationSetting, privacy: .public), flag=\(FeatureFlags.enableDiarization, privacy: .public))."
+            )
+            return []
+        }
+
+        return await diarizedSegments(
+            context: context
+        )
+    }
+
+    private func diarizedSegments(
+        context: TranscriptionRunContext
+    ) async -> [Transcription.Segment] {
+        logger.info("Diarization enabled. Processing with automatic speaker count...")
+
+        do {
+            let diarizationSegments = try await manager.diarize(
+                audioURL: context.audioURL,
+                minSpeakers: context.minSpeakers,
+                maxSpeakers: context.maxSpeakers,
+                numSpeakers: context.numSpeakers
+            )
+            logger.info("Diarization produced \(diarizationSegments.count) segments")
+
+            if context.asrSegments.isEmpty {
+                logger.info("ASR segments unavailable. Falling back to diarization-only segmentation.")
+                return fallbackSegments(text: context.text, speakers: diarizationSegments)
+            }
+
+            let merged = merge(
+                text: context.text,
+                asrSegments: context.asrSegments,
+                speakers: diarizationSegments
+            )
+            if merged.isEmpty {
+                logger.info("Merged segments empty. Falling back to diarization-only segmentation.")
+                return fallbackSegments(text: context.text, speakers: diarizationSegments)
+            }
+            return merged
+        } catch {
+            logger.error("Diarization failed: \(error.localizedDescription). Proceeding with transcription only.")
+            return []
+        }
     }
 
     public func diarize(audioURL: URL) async throws -> [SpeakerTimelineSegment] {

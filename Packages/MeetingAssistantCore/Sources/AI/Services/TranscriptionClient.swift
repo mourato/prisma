@@ -95,13 +95,14 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
             )
         case .local:
             let state = FluidAIModelManager.shared.modelState
+            let meetingModelID = settingsStore.resolvedTranscriptionSelection(for: .meeting).selectedModel
             updateCachedReadiness(state == .loaded ? .healthy : (state == .error ? .unhealthy : .unknown))
             return ServiceStatusResponse(
                 status: state == .error ? "unhealthy" : "healthy",
                 modelState: state.rawValue,
                 modelLoaded: state == .loaded,
                 device: "ANE",
-                modelName: "parakeet-tdt-0.6b-v3-coreml",
+                modelName: meetingModelID,
                 uptimeSeconds: 0,
                 lastTranscriptionTime: nil,
                 totalTranscriptions: 0,
@@ -123,7 +124,12 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
             }
         case .local:
             await FluidAIModelManager.shared.loadModels()
-            if FeatureFlags.enableDiarization, AppSettingsStore.shared.isDiarizationEnabled {
+            let meetingSelection = settingsStore.resolvedTranscriptionSelection(for: .meeting)
+            let supportsDiarization = settingsStore.localModelSupportsDiarization(modelID: meetingSelection.selectedModel)
+            if FeatureFlags.enableDiarization,
+               AppSettingsStore.shared.isDiarizationEnabled,
+               supportsDiarization
+            {
                 await FluidAIModelManager.shared.loadDiarizationModels()
             }
             updateCachedReadiness(FluidAIModelManager.shared.modelState == .loaded ? .healthy : .unhealthy)
@@ -202,7 +208,8 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
         executionMode: TranscriptionExecutionMode,
         diarizationEnabledOverride: Bool?
     ) async throws -> TranscriptionResponse {
-        let backend = resolvedBackend(for: executionMode)
+        let selection = settingsStore.resolvedTranscriptionSelection(for: executionMode)
+        let backend = resolvedBackend(for: selection)
         let implementationLabel: String = switch backend {
         case .xpc:
             "XPC"
@@ -230,10 +237,15 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
                 diarizationEnabledOverride: diarizationEnabledOverride
             )
         case .local:
+            let effectiveDiarizationOverride = localDiarizationOverride(
+                for: selection,
+                requestedOverride: diarizationEnabledOverride
+            )
             return try await transcribeLocally(
                 audioURL: audioURL,
                 onProgress: onProgress,
-                diarizationEnabledOverride: diarizationEnabledOverride
+                diarizationEnabledOverride: effectiveDiarizationOverride,
+                modelID: selection.selectedModel
             )
         case let .groq(modelID):
             return try await transcribeViaGroq(
@@ -337,12 +349,14 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
     private func transcribeLocally(
         audioURL: URL,
         onProgress: (@Sendable (Double) -> Void)?,
-        diarizationEnabledOverride: Bool?
+        diarizationEnabledOverride: Bool?,
+        modelID: String
     ) async throws -> TranscriptionResponse {
         do {
             let response = try await LocalTranscriptionClient.shared.transcribe(
                 audioURL: audioURL,
                 isDiarizationEnabled: diarizationEnabledOverride,
+                modelID: modelID,
                 onProgress: onProgress
             )
             updateCachedReadiness(.healthy)
@@ -403,14 +417,32 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
         }
     }
 
-    private func resolvedBackend(for mode: TranscriptionExecutionMode) -> TranscriptionBackend {
-        let selection = settingsStore.resolvedTranscriptionSelection(for: mode)
+    private func resolvedBackend(for selection: TranscriptionProviderSelection) -> TranscriptionBackend {
         switch selection.provider {
         case .local:
             return transcriptionImplementation == .xpc ? .xpc : .local
         case .groq:
             return .groq(modelID: selection.selectedModel)
         }
+    }
+
+    private func localDiarizationOverride(
+        for selection: TranscriptionProviderSelection,
+        requestedOverride: Bool?
+    ) -> Bool? {
+        guard selection.provider == .local else { return requestedOverride }
+        guard !settingsStore.localModelSupportsDiarization(modelID: selection.selectedModel) else {
+            return requestedOverride
+        }
+
+        if requestedOverride != false {
+            AppLogger.info(
+                "Diarization auto-disabled for selected local transcription model",
+                category: .transcriptionEngine,
+                extra: ["model": selection.selectedModel]
+            )
+        }
+        return false
     }
 
     private func updateCachedReadiness(_ state: CachedReadinessState) {

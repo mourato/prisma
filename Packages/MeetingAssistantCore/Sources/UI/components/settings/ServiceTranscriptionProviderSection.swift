@@ -53,7 +53,7 @@ public struct ServiceTranscriptionProviderSection: View {
                         )
                     ) {
                         ForEach(viewModel.availableDictationModels, id: \.self) { modelID in
-                            Text(modelID).tag(modelID)
+                            Text(viewModel.displayName(forModelID: modelID)).tag(modelID)
                         }
                     }
                     .pickerStyle(.menu)
@@ -89,8 +89,16 @@ public struct ServiceTranscriptionProviderSection: View {
                 DSCallout(
                     kind: .info,
                     title: "settings.service.transcription_provider.meeting_local.title".localized,
-                    message: "settings.service.transcription_provider.meeting_local.message".localized
+                    message: "settings.service.transcription_provider.meeting_local.message".localized(with: viewModel.meetingLocalModelDisplayName)
                 )
+
+                if viewModel.shouldShowMeetingDiarizationAutoDisableWarning {
+                    DSCallout(
+                        kind: .warning,
+                        title: "settings.service.transcription_provider.meeting_diarization_warning.title".localized,
+                        message: "settings.service.transcription_provider.meeting_diarization_warning.message".localized(with: viewModel.meetingLocalModelDisplayName)
+                    )
+                }
             }
         }
     }

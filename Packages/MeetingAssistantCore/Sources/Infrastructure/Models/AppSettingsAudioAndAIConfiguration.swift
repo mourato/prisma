@@ -220,11 +220,37 @@ public struct EnhancementsAISelection: Codable, Equatable, Sendable {
     )
 }
 
+public enum LocalTranscriptionModel: String, CaseIterable, Codable, Sendable {
+    case parakeetTdt06BV3 = "parakeet-tdt-0.6b-v3-coreml"
+    case cohereTranscribe032026CoreML6Bit = "cohere-transcribe-03-2026-coreml-6bit"
+
+    public var supportsDiarization: Bool {
+        switch self {
+        case .parakeetTdt06BV3:
+            true
+        case .cohereTranscribe032026CoreML6Bit:
+            false
+        }
+    }
+
+    public var supportsIncrementalTranscription: Bool {
+        switch self {
+        case .parakeetTdt06BV3:
+            true
+        case .cohereTranscribe032026CoreML6Bit:
+            false
+        }
+    }
+}
+
 public enum TranscriptionProvider: String, CaseIterable, Codable, Sendable {
     case local
     case groq
 
-    public static let localModelID = "parakeet-tdt-0.6b-v3-coreml"
+    public static let localModelID = LocalTranscriptionModel.parakeetTdt06BV3.rawValue
+    public static let cohereLocalModelID = LocalTranscriptionModel.cohereTranscribe032026CoreML6Bit.rawValue
+
+    public static let localPresetModelIDs = LocalTranscriptionModel.allCases.map(\.rawValue)
 
     public static let groqPresetModelIDs = [
         "whisper-large-v3-turbo",
@@ -254,6 +280,11 @@ public enum TranscriptionProvider: String, CaseIterable, Codable, Sendable {
         if trimmed.isEmpty {
             return defaultModelID
         }
+
+        if self == .local {
+            return LocalTranscriptionModel(rawValue: trimmed)?.rawValue ?? Self.localModelID
+        }
+
         return trimmed
     }
 }
