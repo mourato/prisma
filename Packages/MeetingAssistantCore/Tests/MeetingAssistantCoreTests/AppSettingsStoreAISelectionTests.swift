@@ -165,6 +165,24 @@ final class AppSettingsStoreAISelectionTests: XCTestCase {
         XCTAssertNil(settings.resolvedTranscriptionInputLanguageCode(for: .dictation))
     }
 
+    func testTranscriptionInputLanguageHint_AllCasesMatchSharedProviderSupport() {
+        let allCases = TranscriptionInputLanguageHint.allCases
+        let expected: [TranscriptionInputLanguageHint] = [
+            .automatic,
+            .german,
+            .english,
+            .spanish,
+            .french,
+            .italian,
+            .portuguese,
+            .greek,
+            .dutch,
+            .polish,
+        ]
+
+        XCTAssertEqual(allCases, expected)
+    }
+
     func testUpdateEnhancementsProviderClearsSelectedModel() {
         settings.enhancementsAISelection = EnhancementsAISelection(
             provider: .openai,

@@ -175,9 +175,9 @@ Use this decision order to keep feedback fast without sacrificing safety:
 
 For every task, leave auditable evidence in the PR description, issue comment, or agent output.
 
-| Lane | Required quality gates | Required evidence |
-| ---- | ---------------------- | ----------------- |
-| **Fast** | Iteration scoped checks + `make lint-fix`, `make test-agent` | Risk level, reusable-block decision (reuse/extend/create), scoped commands executed, escalation rationale (if any), test result summary |
+| Lane     | Required quality gates                                                                            | Required evidence                                                                                                                                |
+| -------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Fast** | Iteration scoped checks + `make lint-fix`, `make test-agent`                                      | Risk level, reusable-block decision (reuse/extend/create), scoped commands executed, escalation rationale (if any), test result summary          |
 | **Full** | Iteration scoped checks + `make lint-fix`, `make build-test`, and `make lint` for broad refactors | Risk level, reusable-block decision, semáforo review outcome, scoped commands executed, escalation rationale (if any), test/build result summary |
 
 ### PR & Merge Policy

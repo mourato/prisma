@@ -245,24 +245,22 @@ public enum LocalTranscriptionModel: String, CaseIterable, Codable, Sendable {
 
 public enum TranscriptionInputLanguageHint: String, CaseIterable, Codable, Sendable {
     case automatic
+    case german = "de"
     case english = "en"
     case spanish = "es"
-    case portuguese = "pt"
     case french = "fr"
-    case german = "de"
-    case chinese = "zh"
-    case japanese = "ja"
-    case korean = "ko"
     case italian = "it"
-    case hindi = "hi"
-    case arabic = "ar"
+    case portuguese = "pt"
+    case greek = "el"
+    case dutch = "nl"
+    case polish = "pl"
 
     public var languageCode: String? {
         switch self {
         case .automatic:
             nil
-        case .english, .spanish, .portuguese, .french, .german,
-             .chinese, .japanese, .korean, .italian, .hindi, .arabic:
+        case .german, .english, .spanish, .french, .italian, .portuguese,
+             .greek, .dutch, .polish:
             rawValue
         }
     }
@@ -271,28 +269,24 @@ public enum TranscriptionInputLanguageHint: String, CaseIterable, Codable, Senda
         switch self {
         case .automatic:
             "settings.service.transcription_provider.input_language.option.auto".localized
+        case .german:
+            "settings.rules_per_app.language.option.german".localized
         case .english:
             "settings.rules_per_app.language.option.english".localized
         case .spanish:
             "settings.rules_per_app.language.option.spanish".localized
-        case .portuguese:
-            "settings.rules_per_app.language.option.portuguese".localized
         case .french:
             "settings.rules_per_app.language.option.french".localized
-        case .german:
-            "settings.rules_per_app.language.option.german".localized
-        case .chinese:
-            "settings.rules_per_app.language.option.chinese".localized
-        case .japanese:
-            "settings.rules_per_app.language.option.japanese".localized
-        case .korean:
-            "settings.rules_per_app.language.option.korean".localized
         case .italian:
             "settings.rules_per_app.language.option.italian".localized
-        case .hindi:
-            "settings.rules_per_app.language.option.hindi".localized
-        case .arabic:
-            "settings.rules_per_app.language.option.arabic".localized
+        case .portuguese:
+            "settings.rules_per_app.language.option.portuguese".localized
+        case .greek:
+            "settings.rules_per_app.language.option.greek".localized
+        case .dutch:
+            "settings.rules_per_app.language.option.dutch".localized
+        case .polish:
+            "settings.rules_per_app.language.option.polish".localized
         }
     }
 }
