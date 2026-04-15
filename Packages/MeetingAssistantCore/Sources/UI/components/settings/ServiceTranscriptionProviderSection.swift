@@ -59,6 +59,29 @@ public struct ServiceTranscriptionProviderSection: View {
                     .pickerStyle(.menu)
                 }
 
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Text("settings.service.transcription_provider.input_language".localized)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 100, alignment: .leading)
+
+                    Picker(
+                        "",
+                        selection: Binding(
+                            get: { viewModel.selectedInputLanguageHintRawValue },
+                            set: { viewModel.updateTranscriptionInputLanguageHint(rawValue: $0) }
+                        )
+                    ) {
+                        ForEach(viewModel.availableInputLanguageHints, id: \.rawValue) { hint in
+                            Text(hint.displayName).tag(hint.rawValue)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                }
+
+                Text("settings.service.transcription_provider.input_language.help".localized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
                 if viewModel.shouldShowGroqAPIKeyActions {
                     if viewModel.isDictationProviderReady {
                         HStack(spacing: 8) {

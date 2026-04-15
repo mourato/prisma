@@ -466,6 +466,7 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
     /// Returns: Tuple of (full text, segments, confidence score)
     func transcribe(
         audioURL: URL,
+        inputLanguageHintCode: String? = nil,
         progress: (@Sendable (Double) -> Void)? = nil
     ) async throws -> (text: String, segments: [AsrSegment], confidenceScore: Double?) {
         lastASRActivityAt = Date()
@@ -477,6 +478,11 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
         defer { asrInFlightOperationCount = max(0, asrInFlightOperationCount - 1) }
 
         logger.info("Transcribing audio file: \(audioURL.path)")
+        if let inputLanguageHintCode, !inputLanguageHintCode.isEmpty {
+            logger.info(
+                "ASR language hint requested: \(inputLanguageHintCode) (FluidAudio currently auto-detects language)"
+            )
+        }
 
         // Monitor progress via stream if callback provided
         let stream = await manager.transcriptionProgressStream
@@ -510,7 +516,10 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
         return (result.text, mappedSegments, Double(result.confidence))
     }
 
-    func transcribe(samples: [Float]) async throws -> (text: String, segments: [AsrSegment], confidenceScore: Double?) {
+    func transcribe(
+        samples: [Float],
+        inputLanguageHintCode: String? = nil
+    ) async throws -> (text: String, segments: [AsrSegment], confidenceScore: Double?) {
         lastASRActivityAt = Date()
         guard let manager = asrManager, modelState == .loaded else {
             throw FluidError.modelNotLoaded
@@ -520,6 +529,11 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
         defer { asrInFlightOperationCount = max(0, asrInFlightOperationCount - 1) }
 
         logger.info("Transcribing in-memory audio samples: \(samples.count)")
+        if let inputLanguageHintCode, !inputLanguageHintCode.isEmpty {
+            logger.info(
+                "ASR language hint requested: \(inputLanguageHintCode) (FluidAudio currently auto-detects language)"
+            )
+        }
         let result = try await manager.transcribe(samples, source: .microphone)
 
         let mappedSegments = (result.tokenTimings ?? []).map { timing in

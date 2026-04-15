@@ -36,6 +36,7 @@ public class LocalTranscriptionClient {
         audioURL: URL,
         isDiarizationEnabled: Bool? = nil,
         modelID: String = MeetingAssistantCoreInfrastructure.TranscriptionProvider.localModelID,
+        inputLanguageHintCode: String? = nil,
         minSpeakers: Int? = nil,
         maxSpeakers: Int? = nil,
         numSpeakers: Int? = nil,
@@ -49,9 +50,14 @@ public class LocalTranscriptionClient {
         await ensureASRModelLoaded()
 
         let startTime = Date()
+        let resolvedLanguageCode = normalizedLanguageCode(
+            inputLanguageHintCode,
+            fallbackHint: AppSettingsStore.shared.transcriptionInputLanguageHint.languageCode
+        )
 
         let (text, segmentsFromASR, confidenceScore) = try await manager.transcribe(
             audioURL: audioURL,
+            inputLanguageHintCode: resolvedLanguageCode,
             progress: onProgress
         )
 
@@ -76,7 +82,7 @@ public class LocalTranscriptionClient {
         return TranscriptionResponse(
             text: text,
             segments: segments,
-            language: "auto",
+            language: resolvedLanguageCode ?? "auto",
             durationSeconds: duration,
             model: selectedModel.rawValue,
             processedAt: processedAt,
@@ -84,13 +90,23 @@ public class LocalTranscriptionClient {
         )
     }
 
-    public func transcribe(samples: [Float]) async throws -> TranscriptionResponse {
+    public func transcribe(
+        samples: [Float],
+        inputLanguageHintCode: String? = nil
+    ) async throws -> TranscriptionResponse {
         logger.info("Starting local in-memory transcription for \(samples.count) samples")
 
         await ensureASRModelLoaded()
 
         let startTime = Date()
-        let (text, segmentsFromASR, confidenceScore) = try await manager.transcribe(samples: samples)
+        let resolvedLanguageCode = normalizedLanguageCode(
+            inputLanguageHintCode,
+            fallbackHint: AppSettingsStore.shared.transcriptionInputLanguageHint.languageCode
+        )
+        let (text, segmentsFromASR, confidenceScore) = try await manager.transcribe(
+            samples: samples,
+            inputLanguageHintCode: resolvedLanguageCode
+        )
         let duration = Date().timeIntervalSince(startTime)
         let processedAt = ISO8601DateFormatter().string(from: Date())
 
@@ -106,7 +122,7 @@ public class LocalTranscriptionClient {
         return TranscriptionResponse(
             text: text,
             segments: segments,
-            language: "auto",
+            language: resolvedLanguageCode ?? "auto",
             durationSeconds: duration,
             model: MeetingAssistantCoreInfrastructure.TranscriptionProvider.localModelID,
             processedAt: processedAt,
@@ -118,6 +134,17 @@ public class LocalTranscriptionClient {
         if manager.modelState != .loaded {
             await manager.loadModels()
         }
+    }
+
+    private func normalizedLanguageCode(_ requestedCode: String?, fallbackHint: String?) -> String? {
+        let candidates = [requestedCode, fallbackHint]
+        for candidate in candidates {
+            let normalized = candidate?.trimmingCharacters(in: .whitespacesAndNewlines)
+            if let normalized, !normalized.isEmpty {
+                return normalized
+            }
+        }
+        return nil
     }
 
     private func ensureSelectedModelCanRunLocally(_ selectedModel: LocalTranscriptionModel) throws {

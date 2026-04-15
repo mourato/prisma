@@ -142,6 +142,16 @@ public class AppSettingsStore: ObservableObject {
         }
     }
 
+    /// Optional language hint used by transcription providers to improve speech recognition accuracy.
+    @Published public var transcriptionInputLanguageHint: TranscriptionInputLanguageHint {
+        didSet {
+            UserDefaults.standard.set(
+                transcriptionInputLanguageHint.rawValue,
+                forKey: Keys.transcriptionInputLanguageHint
+            )
+        }
+    }
+
     /// Minimum number of speakers for diarization.
     @Published public var minSpeakers: Int? {
         didSet {
@@ -662,6 +672,7 @@ public class AppSettingsStore: ObservableObject {
         dictationStructuredPostProcessingEnabled = postProcessing.dictationStructuredPostProcessingEnabled
         isDiarizationEnabled = postProcessing.isDiarizationEnabled
         modelResidencyTimeout = postProcessing.modelResidencyTimeout
+        transcriptionInputLanguageHint = postProcessing.transcriptionInputLanguageHint
         minSpeakers = postProcessing.minSpeakers
         maxSpeakers = postProcessing.maxSpeakers
         numSpeakers = postProcessing.numSpeakers

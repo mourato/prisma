@@ -209,6 +209,7 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
         diarizationEnabledOverride: Bool?
     ) async throws -> TranscriptionResponse {
         let selection = settingsStore.resolvedTranscriptionSelection(for: executionMode)
+        let inputLanguageCode = settingsStore.resolvedTranscriptionInputLanguageCode(for: executionMode)
         let backend = resolvedBackend(for: selection)
         let implementationLabel: String = switch backend {
         case .xpc:
@@ -245,13 +246,15 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
                 audioURL: audioURL,
                 onProgress: onProgress,
                 diarizationEnabledOverride: effectiveDiarizationOverride,
-                modelID: selection.selectedModel
+                modelID: selection.selectedModel,
+                inputLanguageCode: inputLanguageCode
             )
         case let .groq(modelID):
             return try await transcribeViaGroq(
                 audioURL: audioURL,
                 modelID: modelID,
-                onProgress: onProgress
+                onProgress: onProgress,
+                inputLanguageCode: inputLanguageCode
             )
         }
     }
@@ -269,7 +272,11 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
         }
 
         do {
-            let response = try await LocalTranscriptionClient.shared.transcribe(samples: samples)
+            let inputLanguageCode = settingsStore.resolvedTranscriptionInputLanguageCode(for: .dictation)
+            let response = try await LocalTranscriptionClient.shared.transcribe(
+                samples: samples,
+                inputLanguageHintCode: inputLanguageCode
+            )
             updateCachedReadiness(.healthy)
             return response
         } catch {
@@ -350,13 +357,15 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
         audioURL: URL,
         onProgress: (@Sendable (Double) -> Void)?,
         diarizationEnabledOverride: Bool?,
-        modelID: String
+        modelID: String,
+        inputLanguageCode: String?
     ) async throws -> TranscriptionResponse {
         do {
             let response = try await LocalTranscriptionClient.shared.transcribe(
                 audioURL: audioURL,
                 isDiarizationEnabled: diarizationEnabledOverride,
                 modelID: modelID,
+                inputLanguageHintCode: inputLanguageCode,
                 onProgress: onProgress
             )
             updateCachedReadiness(.healthy)
@@ -381,12 +390,14 @@ public class TranscriptionClient: ObservableObject, TranscriptionService, Transc
     private func transcribeViaGroq(
         audioURL: URL,
         modelID: String,
-        onProgress: (@Sendable (Double) -> Void)?
+        onProgress: (@Sendable (Double) -> Void)?,
+        inputLanguageCode: String?
     ) async throws -> TranscriptionResponse {
         do {
             let response = try await groqTranscriptionClient.transcribe(
                 audioURL: audioURL,
                 modelID: modelID,
+                inputLanguageCode: inputLanguageCode,
                 onProgress: onProgress
             )
             updateCachedReadiness(.healthy)

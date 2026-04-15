@@ -133,6 +133,38 @@ final class AppSettingsStoreAISelectionTests: XCTestCase {
         )
     }
 
+    func testTranscriptionInputLanguageHintDefaultsToAutomatic() {
+        XCTAssertEqual(settings.transcriptionInputLanguageHint, .automatic)
+    }
+
+    func testTranscriptionInputLanguageHintSettingIsPersisted() {
+        settings.transcriptionInputLanguageHint = .portuguese
+
+        XCTAssertEqual(
+            UserDefaults.standard.string(forKey: "transcriptionInputLanguageHint"),
+            TranscriptionInputLanguageHint.portuguese.rawValue
+        )
+    }
+
+    func testResolvedTranscriptionInputLanguageCode_ResolvesAcrossExecutionModes() {
+        settings.transcriptionInputLanguageHint = .portuguese
+        settings.updateTranscriptionDictationSelection(
+            provider: .groq,
+            model: "whisper-large-v3"
+        )
+
+        XCTAssertEqual(settings.resolvedTranscriptionInputLanguageCode(for: .meeting), "pt")
+        XCTAssertEqual(settings.resolvedTranscriptionInputLanguageCode(for: .dictation), "pt")
+        XCTAssertEqual(settings.resolvedTranscriptionInputLanguageCode(for: .assistant), "pt")
+    }
+
+    func testResolvedTranscriptionInputLanguageCode_AutomaticReturnsNil() {
+        settings.transcriptionInputLanguageHint = .automatic
+
+        XCTAssertNil(settings.resolvedTranscriptionInputLanguageCode(for: .meeting))
+        XCTAssertNil(settings.resolvedTranscriptionInputLanguageCode(for: .dictation))
+    }
+
     func testUpdateEnhancementsProviderClearsSelectedModel() {
         settings.enhancementsAISelection = EnhancementsAISelection(
             provider: .openai,

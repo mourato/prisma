@@ -55,6 +55,13 @@ public class ServiceSettingsViewModel: ObservableObject {
             }
             .store(in: &cancellables)
 
+        settings.$transcriptionInputLanguageHint
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
+
         refreshInstalledModelStates()
     }
 
@@ -124,6 +131,14 @@ public class ServiceSettingsViewModel: ObservableObject {
         }
     }
 
+    public var availableInputLanguageHints: [TranscriptionInputLanguageHint] {
+        TranscriptionInputLanguageHint.allCases
+    }
+
+    public var selectedInputLanguageHintRawValue: String {
+        settings.transcriptionInputLanguageHint.rawValue
+    }
+
     public var meetingLocalModelDisplayName: String {
         displayName(forModelID: settings.resolvedTranscriptionSelection(for: .meeting).selectedModel)
     }
@@ -170,6 +185,12 @@ public class ServiceSettingsViewModel: ObservableObject {
 
     public func updateDictationModel(_ model: String) {
         settings.updateTranscriptionDictationModel(model)
+        objectWillChange.send()
+    }
+
+    public func updateTranscriptionInputLanguageHint(rawValue: String) {
+        guard let hint = TranscriptionInputLanguageHint(rawValue: rawValue) else { return }
+        settings.transcriptionInputLanguageHint = hint
         objectWillChange.send()
     }
 

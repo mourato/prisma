@@ -14,6 +14,7 @@ public final class GroqTranscriptionClient {
     public func transcribe(
         audioURL: URL,
         modelID: String,
+        inputLanguageCode: String? = nil,
         onProgress: (@Sendable (Double) -> Void)? = nil
     ) async throws -> TranscriptionResponse {
         let apiKey = try resolveAPIKey()
@@ -21,6 +22,7 @@ public final class GroqTranscriptionClient {
         let request = try buildRequest(
             audioURL: audioURL,
             modelID: normalizedModel,
+            inputLanguageCode: inputLanguageCode,
             apiKey: apiKey
         )
 
@@ -46,6 +48,7 @@ public final class GroqTranscriptionClient {
     private func buildRequest(
         audioURL: URL,
         modelID: String,
+        inputLanguageCode: String?,
         apiKey: String
     ) throws -> URLRequest {
         guard FileManager.default.fileExists(atPath: audioURL.path) else {
@@ -69,7 +72,8 @@ public final class GroqTranscriptionClient {
             boundary: boundary,
             fileData: fileData,
             fileName: audioURL.lastPathComponent,
-            modelID: modelID
+            modelID: modelID,
+            inputLanguageCode: inputLanguageCode
         )
 
         return request
@@ -87,12 +91,16 @@ public final class GroqTranscriptionClient {
         boundary: String,
         fileData: Data,
         fileName: String,
-        modelID: String
+        modelID: String,
+        inputLanguageCode: String?
     ) -> Data {
         var body = Data()
 
         appendField("model", value: modelID, boundary: boundary, to: &body)
         appendField("response_format", value: "verbose_json", boundary: boundary, to: &body)
+        if let inputLanguageCode = normalizedLanguageCode(inputLanguageCode) {
+            appendField("language", value: inputLanguageCode, boundary: boundary, to: &body)
+        }
 
         appendString("--\(boundary)\r\n", to: &body)
         appendString("Content-Disposition: form-data; name=\"file\"; filename=\"\(fileName)\"\r\n", to: &body)
@@ -117,6 +125,12 @@ public final class GroqTranscriptionClient {
 
     private func appendString(_ value: String, to body: inout Data) {
         body.append(contentsOf: value.utf8)
+    }
+
+    private func normalizedLanguageCode(_ value: String?) -> String? {
+        let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let trimmed, !trimmed.isEmpty else { return nil }
+        return trimmed
     }
 
     private func mimeType(for fileName: String) -> String {

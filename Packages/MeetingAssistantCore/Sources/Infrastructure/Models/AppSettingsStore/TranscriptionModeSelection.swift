@@ -69,6 +69,14 @@ public extension AppSettingsStore {
         resolvedTranscriptionSelection(for: mode).provider.usesRemoteInference
     }
 
+    func resolvedTranscriptionInputLanguageCode(for mode: TranscriptionExecutionMode) -> String? {
+        let provider = resolvedTranscriptionSelection(for: mode).provider
+        switch provider {
+        case .local, .groq:
+            return transcriptionInputLanguageHint.languageCode
+        }
+    }
+
     func supportsIncrementalTranscription(for mode: TranscriptionExecutionMode) -> Bool {
         let selection = resolvedTranscriptionSelection(for: mode)
         guard selection.provider == .local else { return false }
