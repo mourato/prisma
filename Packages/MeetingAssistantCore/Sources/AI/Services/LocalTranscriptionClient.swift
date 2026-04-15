@@ -44,6 +44,8 @@ public class LocalTranscriptionClient {
         logger.info("Starting local transcription for: \(audioURL.lastPathComponent)")
         let selectedModel = LocalTranscriptionModel(rawValue: modelID) ?? .parakeetTdt06BV3
 
+        try ensureSelectedModelCanRunLocally(selectedModel)
+
         await ensureASRModelLoaded()
 
         let startTime = Date()
@@ -115,6 +117,17 @@ public class LocalTranscriptionClient {
     private func ensureASRModelLoaded() async {
         if manager.modelState != .loaded {
             await manager.loadModels()
+        }
+    }
+
+    private func ensureSelectedModelCanRunLocally(_ selectedModel: LocalTranscriptionModel) throws {
+        switch selectedModel {
+        case .parakeetTdt06BV3:
+            return
+        case .cohereTranscribe032026CoreML6Bit:
+            throw TranscriptionError.transcriptionFailed(
+                "Selected local model is not executable yet in this build: \(selectedModel.rawValue)"
+            )
         }
     }
 

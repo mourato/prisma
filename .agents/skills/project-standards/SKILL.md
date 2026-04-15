@@ -30,6 +30,7 @@ Guidelines for maintaining consistent project documentation and visibility into 
 - **Source Layout Standard**: Keep filesystem paths and public module names distinct in docs. Public imports stay `MeetingAssistantCore*`; physical source folders use short PascalCase names under `Packages/MeetingAssistantCore/Sources/`.
 - **Split File Naming**: Document and enforce colocated type directories such as `Services/RecordingManager/RecordingManager.swift` plus unique sibling basenames like `RecordingManagerRetry.swift`, `RecordingManagerPermissions.swift`, and similar companions. Do not reintroduce `Type+Concern.swift`.
 - **Command Surface Sync**: When Makefile/script targets are renamed or removed, update `AGENTS.md`, README, and affected skills/docs in the same PR to avoid stale guidance.
+- **Local Model Residency Coverage**: Keep `modelResidencyTimeout` documented as a mandatory global policy for every local model runtime. When adding a new local transcription model, require explicit residency registration and unload hooks so timeout-based RAM release always applies.
 
 ## 3. Information Routing (No Root `docs/`)
 

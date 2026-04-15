@@ -1,6 +1,6 @@
 # AGENTS.md - Prisma Development Guide
 
-**Document Status:** v2.9 | Updated: Apr 8, 2026 | Maintained by: Team
+**Document Status:** v2.10 | Updated: Apr 15, 2026 | Maintained by: Team
 
 ---
 
@@ -101,6 +101,7 @@ These are inviolable rules that apply to every task:
 - ⛔ **Always localize UI text:** User-facing strings must use `"key".localized`. Never hardcode. Remove orphaned keys from `Localizable.strings` when text is deleted.
 - ⛔ **Never hardcode secrets:** API keys, tokens, credentials always use Keychain. Never store in source/tests/scripts.
 - ⛔ **Do not stack redundant UI copy or helpers:** In the same viewport, avoid repeating the same title/description across section headers, cards, and popovers. Prefer one visible explanation plus one optional helper surface when the extra context is materially different.
+- ⛔ **Model residency timeout must cover all local models:** The `modelResidencyTimeout` setting is a global policy for every local model runtime (current and future). Any new local transcription model must be registered in the local residency registry and provide unload hooks so RAM unloading is never bypassed.
 
 ---
 

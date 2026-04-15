@@ -7,6 +7,8 @@ import XCTest
 final class LocalModelResidencyCoordinatorTests: XCTestCase {
     func testEvaluateDoesNotUnloadWhenTimeoutIsNever() {
         let manager = MockLocalModelResidencyManager(
+            residencyManagerID: "manager-a",
+            managedLocalModelIDs: [LocalTranscriptionModel.parakeetTdt06BV3.rawValue],
             asrResident: true,
             diarizationResident: true,
             lastASRActivityAt: Date(timeIntervalSince1970: 0),
@@ -28,6 +30,8 @@ final class LocalModelResidencyCoordinatorTests: XCTestCase {
     func testEvaluateUnloadsBothModelsWhenInactivityThresholdIsExceeded() {
         let referenceDate = Date(timeIntervalSince1970: 1_000)
         let manager = MockLocalModelResidencyManager(
+            residencyManagerID: "manager-a",
+            managedLocalModelIDs: [LocalTranscriptionModel.parakeetTdt06BV3.rawValue],
             asrResident: true,
             diarizationResident: true,
             lastASRActivityAt: referenceDate,
@@ -51,6 +55,8 @@ final class LocalModelResidencyCoordinatorTests: XCTestCase {
     func testEvaluateSkipsUnloadWhenModelsAreInUse() {
         let referenceDate = Date(timeIntervalSince1970: 1_000)
         let manager = MockLocalModelResidencyManager(
+            residencyManagerID: "manager-a",
+            managedLocalModelIDs: [LocalTranscriptionModel.parakeetTdt06BV3.rawValue],
             asrResident: true,
             diarizationResident: true,
             lastASRActivityAt: referenceDate,
@@ -74,6 +80,8 @@ final class LocalModelResidencyCoordinatorTests: XCTestCase {
     func testEvaluateSkipsUnloadBeforeThreshold() {
         let referenceDate = Date(timeIntervalSince1970: 1_000)
         let manager = MockLocalModelResidencyManager(
+            residencyManagerID: "manager-a",
+            managedLocalModelIDs: [LocalTranscriptionModel.parakeetTdt06BV3.rawValue],
             asrResident: true,
             diarizationResident: true,
             lastASRActivityAt: referenceDate,
@@ -91,6 +99,59 @@ final class LocalModelResidencyCoordinatorTests: XCTestCase {
         XCTAssertEqual(manager.asrUnloadAttempts, 0)
         XCTAssertEqual(manager.diarizationUnloadAttempts, 0)
     }
+
+    func testIsResidencyManagedReturnsTrueWhenModelIDIsCoveredByAnyRegisteredManager() {
+        let managerA = MockLocalModelResidencyManager(
+            residencyManagerID: "manager-a",
+            managedLocalModelIDs: [LocalTranscriptionModel.parakeetTdt06BV3.rawValue],
+            asrResident: false,
+            diarizationResident: false,
+            lastASRActivityAt: nil,
+            lastDiarizationActivityAt: nil
+        )
+        let managerB = MockLocalModelResidencyManager(
+            residencyManagerID: "manager-b",
+            managedLocalModelIDs: [LocalTranscriptionModel.cohereTranscribe032026CoreML6Bit.rawValue],
+            asrResident: false,
+            diarizationResident: false,
+            lastASRActivityAt: nil,
+            lastDiarizationActivityAt: nil
+        )
+        let settings = MockModelResidencySettings(timeout: .minutes5)
+        let coordinator = LocalModelResidencyCoordinator(
+            modelManagers: [managerA, managerB],
+            settingsStore: settings,
+            checkIntervalSeconds: 1
+        )
+
+        XCTAssertTrue(
+            coordinator.isResidencyManaged(localModelID: LocalTranscriptionModel.parakeetTdt06BV3.rawValue)
+        )
+        XCTAssertTrue(
+            coordinator.isResidencyManaged(localModelID: LocalTranscriptionModel.cohereTranscribe032026CoreML6Bit.rawValue)
+        )
+    }
+
+    func testIsResidencyManagedReturnsFalseWhenModelIDIsNotCovered() {
+        let manager = MockLocalModelResidencyManager(
+            residencyManagerID: "manager-a",
+            managedLocalModelIDs: [LocalTranscriptionModel.parakeetTdt06BV3.rawValue],
+            asrResident: false,
+            diarizationResident: false,
+            lastASRActivityAt: nil,
+            lastDiarizationActivityAt: nil
+        )
+        let settings = MockModelResidencySettings(timeout: .minutes5)
+        let coordinator = LocalModelResidencyCoordinator(
+            modelManagers: [manager],
+            settingsStore: settings,
+            checkIntervalSeconds: 1
+        )
+
+        XCTAssertFalse(
+            coordinator.isResidencyManaged(localModelID: LocalTranscriptionModel.cohereTranscribe032026CoreML6Bit.rawValue)
+        )
+    }
 }
 
 @MainActor
@@ -104,6 +165,8 @@ private final class MockModelResidencySettings: ModelResidencyTimeoutSettingsPro
 
 @MainActor
 private final class MockLocalModelResidencyManager: LocalModelResidencyManaging {
+    let residencyManagerID: String
+    let managedLocalModelIDs: Set<String>
     var lastASRActivityAt: Date?
     var lastDiarizationActivityAt: Date?
     var isASRInUse: Bool
@@ -115,6 +178,8 @@ private final class MockLocalModelResidencyManager: LocalModelResidencyManaging 
     private(set) var diarizationUnloadAttempts = 0
 
     init(
+        residencyManagerID: String,
+        managedLocalModelIDs: Set<String>,
         asrResident: Bool,
         diarizationResident: Bool,
         lastASRActivityAt: Date?,
@@ -122,6 +187,8 @@ private final class MockLocalModelResidencyManager: LocalModelResidencyManaging 
         isASRInUse: Bool = false,
         isDiarizationInUse: Bool = false
     ) {
+        self.residencyManagerID = residencyManagerID
+        self.managedLocalModelIDs = managedLocalModelIDs
         isASRResidentInMemory = asrResident
         isDiarizationResidentInMemory = diarizationResident
         self.lastASRActivityAt = lastASRActivityAt
