@@ -217,6 +217,30 @@ final class AppSettingsStoreAISelectionTests: XCTestCase {
         XCTAssertNil(issue)
     }
 
+    func testEnhancementsInferenceReadinessIssue_UsesRegistrationScopedKeyForSelectedEntry() throws {
+        let registration = settings.addEnhancementsProviderRegistration(
+            provider: .custom,
+            displayName: "Proxy",
+            baseURLOverride: "https://proxy.example/v1"
+        )
+        let registrationID = try XCTUnwrap(registration?.id)
+        defer { try? KeychainManager.deleteAPIKey(for: registrationID) }
+
+        settings.updateEnhancementsSelection(
+            registrationID: registrationID,
+            model: "custom-model",
+            for: .dictation
+        )
+        try KeychainManager.storeAPIKey("sk-registration", for: registrationID)
+
+        let issue = settings.enhancementsInferenceReadinessIssue(
+            for: .dictation,
+            apiKeyExists: { _ in false }
+        )
+
+        XCTAssertNil(issue)
+    }
+
     func testBackfillEnhancementsSelectionModels_FillsMeetingSelectionFromLegacyConfiguration() {
         settings.updateAIConfiguration(
             provider: .openai,

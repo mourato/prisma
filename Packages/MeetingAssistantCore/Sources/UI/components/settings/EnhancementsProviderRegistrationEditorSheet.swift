@@ -83,8 +83,6 @@ public struct EnhancementsProviderEditorSheet: View {
                 Text("settings.ai.api_key".localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                SecureField("settings.ai.api_key_placeholder".localized, text: $apiKey)
-                    .textFieldStyle(.roundedBorder)
 
                 if hasSavedAPIKey {
                     HStack(spacing: 8) {
@@ -98,12 +96,15 @@ public struct EnhancementsProviderEditorSheet: View {
                         Spacer()
 
                         if let onRemoveKey {
-                            Button("settings.ai.remove_key".localized, role: .destructive) {
+                            Button("settings.enhancements.providers.editor.remove_api_and_edit".localized, role: .destructive) {
                                 onRemoveKey()
                             }
                             .buttonStyle(.borderless)
                         }
                     }
+                } else {
+                    SecureField("settings.ai.api_key_placeholder".localized, text: $apiKey)
+                        .textFieldStyle(.roundedBorder)
                 }
             }
 

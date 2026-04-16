@@ -168,6 +168,7 @@ public extension AppSettingsStore {
 
     func enhancementsAPIKey(for mode: IntelligenceKernelMode) -> String? {
         let selection = enhancementsSelection(for: mode)
+        let selectedRegistration = enhancementsRegistration(for: selection.registrationID)
 
         if let registrationID = selection.registrationID,
            let registrationKey = try? KeychainManager.retrieveAPIKey(for: registrationID)
@@ -178,7 +179,8 @@ public extension AppSettingsStore {
             }
         }
 
-        if let providerKey = try? KeychainManager.retrieveAPIKey(for: selection.provider) {
+        let providerForFallback = selectedRegistration?.provider ?? selection.provider
+        if let providerKey = try? KeychainManager.retrieveAPIKey(for: providerForFallback) {
             let trimmed = providerKey.trimmingCharacters(in: .whitespacesAndNewlines)
             if !trimmed.isEmpty {
                 return trimmed
@@ -386,8 +388,17 @@ public extension AppSettingsStore {
     ) -> EnhancementsInferenceReadinessIssue? {
         let config = resolvedEnhancementsAIConfiguration(for: mode)
         let selection = enhancementsSelection(for: mode)
-        let provider = enhancementsRegistration(for: selection.registrationID)?.provider ?? selection.provider
-        let hasKey = apiKeyExists?(provider) ?? KeychainManager.existsAPIKey(for: provider)
+        let selectedRegistration = enhancementsRegistration(for: selection.registrationID)
+        let provider = selectedRegistration?.provider ?? selection.provider
+        let hasKey: Bool = if let registrationID = selectedRegistration?.id {
+            if KeychainManager.existsAPIKey(for: registrationID) {
+                true
+            } else {
+                apiKeyExists?(provider) ?? KeychainManager.existsAPIKey(for: provider)
+            }
+        } else {
+            apiKeyExists?(provider) ?? KeychainManager.existsAPIKey(for: provider)
+        }
         let hasModel = !config.selectedModel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
 
         guard Self.isValidHTTPURLString(config.baseURL) else {
