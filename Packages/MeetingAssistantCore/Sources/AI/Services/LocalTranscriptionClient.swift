@@ -45,9 +45,7 @@ public class LocalTranscriptionClient {
         logger.info("Starting local transcription for: \(audioURL.lastPathComponent)")
         let selectedModel = LocalTranscriptionModel(rawValue: modelID) ?? .parakeetTdt06BV3
 
-        try ensureSelectedModelCanRunLocally(selectedModel)
-
-        await ensureASRModelLoaded()
+        await ensureASRModelLoaded(for: selectedModel)
 
         let startTime = Date()
         let resolvedLanguageCode = normalizedLanguageCode(
@@ -96,7 +94,10 @@ public class LocalTranscriptionClient {
     ) async throws -> TranscriptionResponse {
         logger.info("Starting local in-memory transcription for \(samples.count) samples")
 
-        await ensureASRModelLoaded()
+        let dictationModelID = AppSettingsStore.shared.resolvedTranscriptionSelection(for: .dictation).selectedModel
+        let selectedModel = LocalTranscriptionModel(rawValue: dictationModelID) ?? .parakeetTdt06BV3
+
+        await ensureASRModelLoaded(for: selectedModel)
 
         let startTime = Date()
         let resolvedLanguageCode = normalizedLanguageCode(
@@ -124,15 +125,18 @@ public class LocalTranscriptionClient {
             segments: segments,
             language: resolvedLanguageCode ?? "auto",
             durationSeconds: duration,
-            model: MeetingAssistantCoreInfrastructure.TranscriptionProvider.localModelID,
+            model: selectedModel.rawValue,
             processedAt: processedAt,
             confidenceScore: confidenceScore
         )
     }
 
-    private func ensureASRModelLoaded() async {
-        if manager.modelState != .loaded {
-            await manager.loadModels()
+    private func ensureASRModelLoaded(for selectedModel: LocalTranscriptionModel) async {
+        let isExpectedModelLoaded = manager.modelState == .loaded
+            && manager.loadedASRLocalModelID == selectedModel.rawValue
+
+        if !isExpectedModelLoaded {
+            await manager.loadModels(for: selectedModel.rawValue)
         }
     }
 
@@ -145,17 +149,6 @@ public class LocalTranscriptionClient {
             }
         }
         return nil
-    }
-
-    private func ensureSelectedModelCanRunLocally(_ selectedModel: LocalTranscriptionModel) throws {
-        switch selectedModel {
-        case .parakeetTdt06BV3:
-            return
-        case .cohereTranscribe032026CoreML6Bit:
-            throw TranscriptionError.transcriptionFailed(
-                "Selected local model is not executable yet in this build: \(selectedModel.rawValue)"
-            )
-        }
     }
 
     private func resolveSegmentsWithOptionalDiarization(
@@ -355,6 +348,7 @@ public class LocalTranscriptionClient {
 
         return result
     }
+
     private func makeAssignedSegment(
         from batch: [Transcription.Segment],
         speaker: String

@@ -34,6 +34,7 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
 
     @Published public var isASRInstalled: Bool = false
     @Published public var isDiarizationLoaded: Bool = false
+    @Published public private(set) var loadedASRLocalModelID: String?
     @Published public private(set) var lastASRActivityAt: Date?
     @Published public private(set) var lastDiarizationActivityAt: Date?
 
@@ -114,16 +115,29 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
 
     /// Loads the ASR models. Downloads them if not present.
     public func loadModels() async {
-        guard modelState != .loaded, modelState != .loading else { return }
+        let meetingSelection = AppSettingsStore.shared.resolvedTranscriptionSelection(for: .meeting)
+        await loadModels(for: meetingSelection.selectedModel)
+    }
+
+    /// Loads the ASR models for a specific local model ID.
+    public func loadModels(for localModelID: String) async {
+        let requestedModel = resolveLocalModel(from: localModelID)
+
+        guard modelState != .downloading, modelState != .loading else { return }
+        if modelState == .loaded,
+           asrManager != nil,
+           loadedASRLocalModelID == requestedModel.rawValue
+        {
+            return
+        }
 
         modelState = .downloading
         downloadPhase = .downloadingASR
         lastError = nil
-        logger.info("Starting model download/load...")
+        logger.info("Starting model download/load for local ASR model: \(requestedModel.rawValue, privacy: .public)")
 
         do {
-            // Use v3 (Multilingual)
-            let models = try await AsrModels.downloadAndLoad(version: .v3)
+            let models = try await loadASRModels(for: requestedModel)
 
             modelState = .loading
             downloadPhase = .loadingASR
@@ -134,8 +148,9 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
             try await manager.initialize(models: models)
 
             asrManager = manager
+            loadedASRLocalModelID = requestedModel.rawValue
             modelState = .loaded
-            isASRInstalled = true
+            isASRInstalled = isASRModelInstalled(localModelID: requestedModel.rawValue)
             lastASRActivityAt = Date()
             updateReadyState()
             logger.info("ASR Manager initialized successfully.")
@@ -250,6 +265,7 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
 
         // Unload from memory
         asrManager = nil
+        loadedASRLocalModelID = nil
         modelState = .unloaded
         isASRInstalled = false
         lastASRActivityAt = nil
@@ -262,9 +278,12 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
         do {
             if fileManager.fileExists(atPath: modelsDir.path) {
                 let contents = try fileManager.contentsOfDirectory(at: modelsDir, includingPropertiesForKeys: nil)
+                let knownModelFolders = Set(LocalTranscriptionModel.allCases.map(\.rawValue))
                 for url in contents {
                     // Safe heuristic: delete known ASR model folders
-                    if url.lastPathComponent.contains("parakeet") {
+                    if knownModelFolders.contains(url.lastPathComponent)
+                        || url.lastPathComponent.contains("parakeet")
+                    {
                         try fileManager.removeItem(at: url)
                         logger.info("Deleted ASR model: \(url.lastPathComponent)")
                     }
@@ -333,6 +352,7 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
         guard modelState != .downloading, modelState != .loading else { return false }
 
         asrManager = nil
+        loadedASRLocalModelID = nil
         modelState = .unloaded
         if downloadPhase == .ready {
             downloadPhase = .idle
@@ -363,51 +383,9 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
     private var currentDiarizerMaxSpeakers: Int?
     private var currentDiarizerNumSpeakers: Int?
 
-    private func hasASRModelsOnDisk() -> Bool {
-        let fileManager = FileManager.default
-        guard let supportDir = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
-            return false
-        }
+}
 
-        let modelsDir = supportDir.appendingPathComponent("FluidAudio/Models")
-        guard fileManager.fileExists(atPath: modelsDir.path) else {
-            return false
-        }
-
-        do {
-            let contents = try fileManager.contentsOfDirectory(at: modelsDir, includingPropertiesForKeys: nil)
-            return contents.contains { url in
-                url.lastPathComponent.lowercased().contains("parakeet")
-            }
-        } catch {
-            logger.error("Failed to inspect ASR model directory: \(error.localizedDescription)")
-            return false
-        }
-    }
-
-    private func hasDiarizationModelsOnDisk() -> Bool {
-        let fileManager = FileManager.default
-        guard let supportDir = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
-            return false
-        }
-
-        let modelsDir = supportDir.appendingPathComponent("FluidAudio/Models")
-        guard fileManager.fileExists(atPath: modelsDir.path) else {
-            return false
-        }
-
-        do {
-            let contents = try fileManager.contentsOfDirectory(at: modelsDir, includingPropertiesForKeys: nil)
-            return contents.contains { url in
-                let name = url.lastPathComponent.lowercased()
-                return name.contains("pyannote") || name.contains("segmentation")
-            }
-        } catch {
-            logger.error("Failed to inspect Diarization model directory: \(error.localizedDescription)")
-            return false
-        }
-    }
-
+extension FluidAIModelManager {
     /// Structure to hold raw diarization result
     struct DiarizationSegment: Identifiable {
         let id = UUID()
@@ -427,7 +405,6 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
         diarizationInFlightOperationCount += 1
         defer { diarizationInFlightOperationCount = max(0, diarizationInFlightOperationCount - 1) }
 
-        // Ensure models are loaded with the requested constraints
         await loadDiarizationModels(
             minSpeakers: minSpeakers,
             maxSpeakers: maxSpeakers,
@@ -440,15 +417,11 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
 
         logger.info("Diarizing audio file: \(audioURL.path)")
 
-        // If specific constraints provided, update manager config (assuming it supports it at runtime or we recreate)
-        // For simplicity, we use the ones set during loadModels which uses AppSettings.
-        // If we need runtime override, we'd rebuild the manager.
-
         let result = try await manager.process(audioURL)
 
         return result.segments.map { segment in
             DiarizationSegment(
-                speakerId: String(segment.speakerId), // Ensure it's string
+                speakerId: String(segment.speakerId),
                 startTime: Double(segment.startTimeSeconds),
                 endTime: Double(segment.endTimeSeconds)
             )
@@ -462,8 +435,7 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
         let endTime: Double
     }
 
-    /// Transcribe audio from a URL
-    /// Returns: Tuple of (full text, segments, confidence score)
+    /// Transcribe audio from a URL.
     func transcribe(
         audioURL: URL,
         inputLanguageHintCode: String? = nil,
@@ -484,25 +456,21 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
             )
         }
 
-        // Monitor progress via stream if callback provided
         let stream = await manager.transcriptionProgressStream
         let progressTask = Task {
             if let progress {
                 do {
                     for try await p in stream {
-                        progress(p * 100.0) // Convert to percentage if needed
+                        progress(p * 100.0)
                     }
                 } catch {
-                    // Progress stream failed, but we shouldn't fail transcription for this
+                    // Keep transcription resilient when progress stream fails.
                 }
             }
         }
 
-        // Use the file-based API for automatic conversion
         let result = try await manager.transcribe(audioURL, source: .system)
         progressTask.cancel()
-
-        // Map library tokens to our internal struct
 
         let mappedSegments = (result.tokenTimings ?? []).compactMap { (token: Any) -> AsrSegment? in
             guard let timing = token as? TokenTiming else { return nil }
@@ -577,10 +545,6 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
         }
 
         var error: NSError?
-
-        // Use a local capture that is technically unsafe but safe in this context because convert is synchronous
-        // To appease the compiler, we can't easily make AVAudioPCMBuffer sendable.
-        // But we can define the block.
         let inputBlock: AVAudioConverterInputBlock = { _, outStatus in
             outStatus.pointee = .haveData
             return buffer

@@ -122,6 +122,22 @@ public struct ServiceTranscriptionProviderSection: View {
                         message: "settings.service.transcription_provider.meeting_diarization_warning.message".localized(with: viewModel.meetingLocalModelDisplayName)
                     )
                 }
+
+                if viewModel.isMeetingLocalCohereSelected, !viewModel.isMeetingLocalCohereInstalled {
+                    DSCallout(
+                        kind: .warning,
+                        title: "settings.service.transcription_provider.local_cohere_unavailable.title".localized,
+                        message: "settings.service.transcription_provider.local_cohere_unavailable.message".localized
+                    )
+
+                    Button("settings.service.transcription_provider.download_cohere_coming_soon".localized) {
+                        viewModel.downloadMeetingLocalCohereModel()
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.regular)
+                    .disabled(viewModel.isASRDownloadInProgress)
+                    .help("settings.service.transcription_provider.download_cohere_coming_soon.help".localized)
+                }
             }
         }
     }

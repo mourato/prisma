@@ -457,6 +457,10 @@
 "settings.service.transcription_provider.meeting_local.message" = "Meeting mode always uses local on-device transcription (%@). Provider selection here affects Dictation and Assistant only.";
 "settings.service.transcription_provider.meeting_diarization_warning.title" = "Speaker identification will be disabled";
 "settings.service.transcription_provider.meeting_diarization_warning.message" = "Meeting diarization is automatically disabled when %@ is selected because this model does not provide diarization support.";
+"settings.service.transcription_provider.local_cohere_unavailable.title" = "Cohere local model is not installed";
+"settings.service.transcription_provider.local_cohere_unavailable.message" = "Install the Cohere local runtime before using this model in Meeting mode.";
+"settings.service.transcription_provider.download_cohere_coming_soon" = "Download Cohere Model";
+"settings.service.transcription_provider.download_cohere_coming_soon.help" = "Requires access to the Cohere CoreML model repository on Hugging Face.";
 "settings.service.model_residency_timeout" = "Unload model from RAM:";
 "settings.service.model_residency_timeout.help" = "Applies to transcription and diarization local models. RAM only; downloaded model files stay on disk.";
 "settings.service.model_residency_timeout.option.5m" = "5 minutes";

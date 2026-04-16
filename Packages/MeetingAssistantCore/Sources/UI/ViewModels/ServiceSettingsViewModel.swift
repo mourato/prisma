@@ -106,6 +106,17 @@ public class ServiceSettingsViewModel: ObservableObject {
         FluidAIModelManager.shared.refreshInstalledModelStates()
     }
 
+    public func downloadMeetingLocalCohereModel() {
+        Task {
+            await FluidAIModelManager.shared.loadModels(
+                for: MeetingAssistantCoreInfrastructure.TranscriptionProvider.cohereLocalModelID
+            )
+            await MainActor.run {
+                self.objectWillChange.send()
+            }
+        }
+    }
+
     public var selectedDictationProvider: MeetingAssistantCoreInfrastructure.TranscriptionProvider {
         settings.transcriptionDictationSelection.provider
     }
@@ -147,6 +158,21 @@ public class ServiceSettingsViewModel: ObservableObject {
         let meetingModelID = settings.resolvedTranscriptionSelection(for: .meeting).selectedModel
         return settings.isDiarizationEnabled
             && !settings.localModelSupportsDiarization(modelID: meetingModelID)
+    }
+
+    public var isMeetingLocalCohereSelected: Bool {
+        settings.resolvedTranscriptionSelection(for: .meeting).selectedModel
+            == MeetingAssistantCoreInfrastructure.TranscriptionProvider.cohereLocalModelID
+    }
+
+    public var isMeetingLocalCohereInstalled: Bool {
+        FluidAIModelManager.shared.isASRModelInstalled(
+            localModelID: MeetingAssistantCoreInfrastructure.TranscriptionProvider.cohereLocalModelID
+        )
+    }
+
+    public var isASRDownloadInProgress: Bool {
+        modelState == .downloading || modelState == .loading
     }
 
     public var modelResidencyTimeoutOptions: [AppSettingsStore.ModelResidencyTimeoutOption] {
