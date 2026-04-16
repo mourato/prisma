@@ -77,10 +77,24 @@ public class ServiceSettingsViewModel: ObservableObject {
 
         Task {
             do {
-                let isHealthy = try await self.transcriptionClient.healthCheck()
-                self.transcriptionStatus = isHealthy ? .success : .failure(nil)
+                var isHealthy = try await self.transcriptionClient.healthCheck()
+
+                // If unhealthy, attempt an explicit warmup/load so Verify can recover
+                // from unloaded/error model states instead of only reporting failure.
+                if !isHealthy {
+                    try await self.transcriptionClient.warmupModel()
+                    isHealthy = try await self.transcriptionClient.healthCheck()
+                }
+
+                if isHealthy {
+                    self.transcriptionStatus = .success
+                } else {
+                    let message = FluidAIModelManager.shared.lastError?.trimmingCharacters(in: .whitespacesAndNewlines)
+                    self.transcriptionStatus = .failure((message?.isEmpty == false) ? message : nil)
+                }
             } catch {
-                self.transcriptionStatus = .failure(error.localizedDescription)
+                let message = error.localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+                self.transcriptionStatus = .failure(message.isEmpty ? nil : message)
             }
         }
     }

@@ -220,6 +220,15 @@ public struct ServiceSettingsContent: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
+
+                    if let detail = viewModel.transcriptionStatus.detail,
+                       !detail.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    {
+                        Text(detail)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(3)
+                    }
                 }
 
                 Spacer()
