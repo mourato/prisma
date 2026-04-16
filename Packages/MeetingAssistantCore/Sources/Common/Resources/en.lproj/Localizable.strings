@@ -229,6 +229,7 @@
 "settings.ai.connection.cannot_connect" = "Unable to connect to server";
 "settings.ai.connection.secure_failed" = "Secure connection failed";
 "settings.ai.connection.network_lost" = "Network connection lost";
+"settings.ai.save_failed" = "Failed to save API key. Please check Keychain permissions.";
 
 /* AI Model Download Progress */
 "settings.ai.phase_idle" = "Waiting to start...";
@@ -276,6 +277,22 @@
 "settings.enhancements.provider.google.desc" = "Google Gemini models for post-processing and meeting Q&A.";
 "settings.enhancements.provider.custom.desc" = "OpenAI-compatible custom endpoint for internal or proxy providers.";
 "settings.enhancements.provider.custom.default_name" = "Custom %d";
+"settings.enhancements.providers.select_title" = "Select a provider";
+"settings.enhancements.providers.already_added" = "Already added";
+"settings.enhancements.providers.active_title" = "Active provider registrations";
+"settings.enhancements.providers.active_desc" = "Manage providers available for meeting and dictation model selection.";
+"settings.enhancements.providers.add" = "Add provider";
+"settings.enhancements.providers.empty" = "No providers registered yet. Add one to get started.";
+"settings.enhancements.providers.editor.title_create" = "Add provider";
+"settings.enhancements.providers.editor.title_edit" = "Edit provider";
+"settings.enhancements.providers.editor.provider_label" = "Provider";
+"settings.enhancements.providers.editor.name" = "Name";
+"settings.enhancements.providers.editor.create_failed" = "Could not create provider registration.";
+"settings.enhancements.providers.editor.missing_registration" = "Provider registration no longer exists.";
+"settings.enhancements.providers.editor.validation.name_required" = "Enter a name for the custom provider.";
+"settings.enhancements.providers.editor.validation.base_url_required" = "Enter a base URL for the custom provider.";
+"settings.enhancements.providers.editor.validation.base_url_invalid" = "Enter a valid HTTP or HTTPS base URL.";
+"settings.enhancements.providers.editor.validation.key_required_for_test" = "Enter an API key or keep an existing key to test the connection.";
 "settings.enhancements.badge.recommended" = "Recommended";
 "settings.enhancements.badge.requires_api_key" = "Requires API Key";
 "settings.enhancements.badge.model_picker" = "Model Picker";

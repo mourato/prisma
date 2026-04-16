@@ -47,7 +47,7 @@ public struct EnhancementsModelSelectionSheet: View {
                                 Text(option.modelID)
                                     .font(.body)
                                     .foregroundStyle(.primary)
-                                Text(option.provider.displayName)
+                                Text(option.registrationName ?? option.provider.displayName)
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
@@ -78,6 +78,7 @@ public struct EnhancementsModelSelectionSheet: View {
         return options.filter { option in
             option.modelID.localizedCaseInsensitiveContains(query)
                 || option.provider.displayName.localizedCaseInsensitiveContains(query)
+                || option.registrationName?.localizedCaseInsensitiveContains(query) == true
         }
     }
 

@@ -8,7 +8,7 @@ import MeetingAssistantCoreInfrastructure
 import SwiftUI
 
 public struct EnhancementsProviderModelsPage: View {
-    private enum ModelSelectionTarget: String, Identifiable {
+    enum ModelSelectionTarget: String, Identifiable {
         case meeting
         case dictation
 
@@ -24,11 +24,26 @@ public struct EnhancementsProviderModelsPage: View {
         }
     }
 
-    @ObservedObject private var viewModel: AISettingsViewModel
-    @ObservedObject private var postProcessingViewModel: PostProcessingSettingsViewModel
-    @State private var expandedProvider: AIProvider?
-    @State private var editingAPIKeyProvider: AIProvider?
-    @State private var modelSelectionTarget: ModelSelectionTarget?
+    struct RegistrationEditorContext: Identifiable {
+        let id = UUID()
+        let mode: EnhancementsProviderEditorMode
+        let provider: AIProvider
+        let registrationID: UUID?
+    }
+
+    @ObservedObject var viewModel: AISettingsViewModel
+    @ObservedObject var postProcessingViewModel: PostProcessingSettingsViewModel
+
+    @State var modelSelectionTarget: ModelSelectionTarget?
+    @State var isShowingProviderPicker = false
+    @State var registrationEditorContext: RegistrationEditorContext?
+
+    @State var draftDisplayName = ""
+    @State var draftBaseURL = ""
+    @State var draftAPIKey = ""
+    @State var draftHasSavedAPIKey = false
+    @State var draftConnectionStatus: ConnectionStatus = .unknown
+    @State var draftErrorMessage: String?
 
     public init(
         viewModel: AISettingsViewModel,
@@ -37,7 +52,7 @@ public struct EnhancementsProviderModelsPage: View {
     ) {
         self.viewModel = viewModel
         self.postProcessingViewModel = postProcessingViewModel
-        _expandedProvider = State(initialValue: initialExpandedProvider)
+        _ = initialExpandedProvider
     }
 
     public var body: some View {
@@ -49,17 +64,9 @@ public struct EnhancementsProviderModelsPage: View {
             )
 
             executionModelSelectorsSection
-
-            VStack(spacing: 12) {
-                ForEach(AIProvider.allCases, id: \.self) { provider in
-                    providerCard(for: provider)
-                }
-            }
+            providerRegistrationsSection
         }
         .onAppear {
-            let initialProvider = expandedProvider ?? viewModel.activeEnhancementsProvider
-            expandedProvider = initialProvider
-            viewModel.prepareEnhancementsProvider(initialProvider)
             viewModel.refreshEnhancementsProviderModelsManually()
         }
         .sheet(item: $modelSelectionTarget) { target in
@@ -89,225 +96,153 @@ public struct EnhancementsProviderModelsPage: View {
                 }
             )
         }
+        .sheet(isPresented: $isShowingProviderPicker) {
+            EnhancementsProviderPickerSheet(
+                registeredBuiltInProviders: registeredBuiltInProviders,
+                onSelect: { provider in
+                    isShowingProviderPicker = false
+                    DispatchQueue.main.async {
+                        beginCreateRegistration(provider)
+                    }
+                },
+                onCancel: {
+                    isShowingProviderPicker = false
+                }
+            )
+        }
+        .sheet(item: $registrationEditorContext) { context in
+            EnhancementsProviderEditorSheet(
+                mode: context.mode,
+                provider: context.provider,
+                displayName: $draftDisplayName,
+                baseURL: $draftBaseURL,
+                apiKey: $draftAPIKey,
+                hasSavedAPIKey: draftHasSavedAPIKey,
+                connectionStatus: draftConnectionStatus,
+                errorMessage: draftErrorMessage,
+                onSave: {
+                    saveRegistration(from: context, shouldTestConnection: false)
+                },
+                onTestAndSave: {
+                    saveRegistration(from: context, shouldTestConnection: true)
+                },
+                onDelete: context.mode == .edit ? {
+                    deleteRegistration(from: context)
+                } : nil,
+                onRemoveKey: {
+                    removeRegistrationKey(from: context)
+                },
+                onCancel: {
+                    registrationEditorContext = nil
+                }
+            )
+        }
     }
+}
 
-    private func providerCard(for provider: AIProvider) -> some View {
-        let isExpanded = expandedProvider == provider
-        let readinessIssue = viewModel.enhancementsReadinessIssue(for: provider)
-        let isReady = readinessIssue == nil
-
-        return DSCard {
+extension EnhancementsProviderModelsPage {
+    var providerRegistrationsSection: some View {
+        DSCard {
             VStack(alignment: .leading, spacing: 10) {
-                providerHeader(
-                    for: provider,
-                    isExpanded: isExpanded,
-                    isReady: isReady,
-                    readinessIssue: readinessIssue
-                )
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    handleExpansionToggle(for: provider)
-                }
-
-                if isExpanded {
-                    Divider()
-                    expandedProviderContent(for: provider)
-                        .transition(SettingsMotion.sectionTransition())
-                }
-            }
-        }
-        .accessibilityElement(children: .contain)
-        .accessibilityHint("settings.enhancements.provider_models.card.accessibility_hint".localized)
-    }
-
-    private func providerHeader(
-        for provider: AIProvider,
-        isExpanded: Bool,
-        isReady: Bool,
-        readinessIssue: EnhancementsInferenceReadinessIssue?
-    ) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            providerAvatar(for: provider)
-
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 8) {
-                    Text(provider.displayName)
-                        .font(.headline)
-
-                    if isRecommended(provider) {
-                        DSBadge("settings.enhancements.badge.recommended".localized, kind: .success)
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("settings.enhancements.providers.active_title".localized)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        Text("settings.enhancements.providers.active_desc".localized)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
-                }
-
-                Text(providerDescription(for: provider))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                HStack(spacing: 8) {
-                    providerMetaTag("settings.enhancements.badge.requires_api_key".localized)
-                }
-
-                HStack(spacing: 6) {
-                    Circle()
-                        .fill(isReady ? AppDesignSystem.Colors.success : AppDesignSystem.Colors.warning)
-                        .frame(width: 7, height: 7)
-                    Text(providerStatusText(isReady: isReady, issue: readinessIssue))
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            Spacer()
-
-            Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .padding(.top, 4)
-        }
-    }
-
-    private func expandedProviderContent(for provider: AIProvider) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            apiKeySection(for: provider)
-
-            if let actionError = viewModel.enhancementsActionError,
-               !actionError.isEmpty
-            {
-                DSCallout(
-                    kind: .warning,
-                    title: "settings.enhancements.provider_models.error.title".localized,
-                    message: actionError
-                )
-            }
-
-            footerActions(for: provider)
-        }
-    }
-
-    private func apiKeySection(for provider: AIProvider) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("settings.ai.api_key".localized)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            if shouldShowAPIKeyEditor(for: provider) {
-                SecureField(
-                    "settings.ai.api_key_placeholder".localized,
-                    text: $viewModel.enhancementsAPIKeyText
-                )
-                .textFieldStyle(.roundedBorder)
-
-                if viewModel.isEnhancementsProviderKeySaved {
-                    HStack {
-                        Spacer()
-                        Button("common.cancel".localized) {
-                            editingAPIKeyProvider = nil
-                            viewModel.enhancementsAPIKeyText = ""
-                        }
-                        .buttonStyle(.borderless)
-                    }
-                }
-            } else if viewModel.isEnhancementsProviderKeySaved {
-                HStack(spacing: 8) {
-                    Image(systemName: "lock.fill")
-                        .font(.caption)
-                        .foregroundStyle(AppDesignSystem.Colors.success)
-                    Text("settings.ai.keychain_secure".localized)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
 
                     Spacer()
 
-                    Button("settings.enhancements.provider_models.edit_key".localized) {
-                        editingAPIKeyProvider = provider
+                    Button {
+                        isShowingProviderPicker = true
+                    } label: {
+                        Label("settings.enhancements.providers.add".localized, systemImage: "plus")
                     }
-                    .buttonStyle(.borderless)
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.regular)
+                }
 
-                    Button("settings.ai.remove_key".localized, role: .destructive) {
-                        editingAPIKeyProvider = nil
-                        viewModel.removeEnhancementsAPIKey()
+                if activeRegistrations.isEmpty {
+                    Text("settings.enhancements.providers.empty".localized)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.vertical, 6)
+                } else {
+                    ForEach(Array(activeRegistrations.enumerated()), id: \.element.id) { index, registration in
+                        registrationRow(registration)
+                        if index < activeRegistrations.count - 1 {
+                            Divider()
+                        }
                     }
-                    .buttonStyle(.borderless)
+                }
+
+                if let fetchError = viewModel.enhancementsProviderModelsFetchError,
+                   !fetchError.isEmpty
+                {
+                    DSCallout(
+                        kind: .warning,
+                        title: "settings.enhancements.provider_models.error.title".localized,
+                        message: fetchError
+                    )
                 }
             }
         }
     }
 
-    private func footerActions(for provider: AIProvider) -> some View {
-        HStack(spacing: 8) {
-            if let url = provider.apiKeyURL {
-                Button("settings.ai.get_api_key".localized) {
-                    NSWorkspace.shared.open(url)
+    func registrationRow(_ registration: EnhancementsProviderRegistration) -> some View {
+        let readinessIssue = registrationReadinessIssue(for: registration)
+        let isReady = readinessIssue == nil
+
+        return Button {
+            beginEditRegistration(registration)
+        } label: {
+            HStack(alignment: .top, spacing: 12) {
+                providerAvatar(for: registration.provider)
+
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 8) {
+                        Text(registration.displayName)
+                            .font(.headline)
+
+                        if isRegistrationSelected(registration.id, in: .meeting) {
+                            DSBadge("settings.enhancements.selector.meeting.title".localized, kind: .success)
+                        }
+
+                        if isRegistrationSelected(registration.id, in: .dictation) {
+                            DSBadge("settings.enhancements.selector.dictation.title".localized, kind: .neutral)
+                        }
+                    }
+
+                    Text(providerDescription(for: registration.provider))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(isReady ? AppDesignSystem.Colors.success : AppDesignSystem.Colors.warning)
+                            .frame(width: 7, height: 7)
+                        Text(providerStatusText(isReady: isReady, issue: readinessIssue))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.regular)
-            }
 
-            Spacer()
+                Spacer()
 
-            HStack(spacing: 6) {
-                Circle()
-                    .fill(viewModel.enhancementsConnectionStatus.color)
-                    .frame(width: 7, height: 7)
-                Text(viewModel.enhancementsConnectionStatus.text)
-                    .font(.caption)
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
+                    .padding(.top, 4)
             }
-
-            Button("settings.enhancements.test_and_save".localized) {
-                viewModel.testEnhancementsAPIConnection()
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.regular)
-            .disabled(!canTestAndSave(for: provider))
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
     }
 
-    private func canTestAndSave(for provider: AIProvider) -> Bool {
-        guard viewModel.activeEnhancementsProvider == provider else { return false }
-        guard viewModel.enhancementsConnectionStatus != .testing else { return false }
-        return viewModel.isEnhancementsProviderKeySaved || viewModel.hasPendingEnhancementsAPIKeyInput
-    }
-
-    private func handleExpansionToggle(for provider: AIProvider) {
-        if expandedProvider == provider {
-            expandedProvider = nil
-            editingAPIKeyProvider = nil
-            return
-        }
-
-        expandedProvider = provider
-        editingAPIKeyProvider = nil
-        viewModel.prepareEnhancementsProvider(provider)
-    }
-
-    private func shouldShowAPIKeyEditor(for provider: AIProvider) -> Bool {
-        guard viewModel.activeEnhancementsProvider == provider else { return false }
-        if !viewModel.isEnhancementsProviderKeySaved { return true }
-        if viewModel.hasPendingEnhancementsAPIKeyInput { return true }
-        return editingAPIKeyProvider == provider
-    }
-
-    private func providerStatusText(isReady: Bool, issue: EnhancementsInferenceReadinessIssue?) -> String {
-        guard !isReady else {
-            return "settings.enhancements.provider_models.status.ready".localized
-        }
-
-        guard let issue else {
-            return "settings.enhancements.provider_models.status.not_ready".localized
-        }
-
-        switch issue {
-        case .missingModel:
-            return "settings.enhancements.provider_models.status.not_ready_missing_model".localized
-        case .missingAPIKey:
-            return "settings.enhancements.provider_models.status.not_ready_missing_key".localized
-        case .invalidBaseURL:
-            return "settings.enhancements.provider_models.status.not_ready_invalid_url".localized
-        }
-    }
-
-    private var executionModelSelectorsSection: some View {
+    var executionModelSelectorsSection: some View {
         DSCard {
             VStack(alignment: .leading, spacing: 10) {
                 selectorRow(
@@ -329,7 +264,7 @@ public struct EnhancementsProviderModelsPage: View {
         }
     }
 
-    private func selectorRow(
+    func selectorRow(
         title: String,
         subtitle: String,
         summary: String,
@@ -375,7 +310,7 @@ public struct EnhancementsProviderModelsPage: View {
         }
     }
 
-    private func selectionSummary(for selection: EnhancementsAISelection) -> String {
+    func selectionSummary(for selection: EnhancementsAISelection) -> String {
         let providerName = postProcessingViewModel.settings.enhancementsProviderDisplayName(for: selection)
         let model = selection.selectedModel.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !model.isEmpty else {
@@ -384,7 +319,7 @@ public struct EnhancementsProviderModelsPage: View {
         return "settings.enhancements.provider_models.summary".localized(with: providerName, model)
     }
 
-    private func isSelectedOption(_ option: EnhancementsProviderModelOption, for target: ModelSelectionTarget) -> Bool {
+    func isSelectedOption(_ option: EnhancementsProviderModelOption, for target: ModelSelectionTarget) -> Bool {
         let selection: EnhancementsAISelection = switch target {
         case .meeting:
             postProcessingViewModel.settings.enhancementsAISelection
@@ -402,7 +337,26 @@ public struct EnhancementsProviderModelsPage: View {
         return selection.provider == option.provider && selection.selectedModel == option.modelID
     }
 
-    private func providerDescription(for provider: AIProvider) -> String {
+    func providerStatusText(isReady: Bool, issue: EnhancementsInferenceReadinessIssue?) -> String {
+        guard !isReady else {
+            return "settings.enhancements.provider_models.status.ready".localized
+        }
+
+        guard let issue else {
+            return "settings.enhancements.provider_models.status.not_ready".localized
+        }
+
+        switch issue {
+        case .missingModel:
+            return "settings.enhancements.provider_models.status.not_ready_missing_model".localized
+        case .missingAPIKey:
+            return "settings.enhancements.provider_models.status.not_ready_missing_key".localized
+        case .invalidBaseURL:
+            return "settings.enhancements.provider_models.status.not_ready_invalid_url".localized
+        }
+    }
+
+    func providerDescription(for provider: AIProvider) -> String {
         switch provider {
         case .openai:
             "settings.enhancements.provider.openai.desc".localized
@@ -417,21 +371,7 @@ public struct EnhancementsProviderModelsPage: View {
         }
     }
 
-    private func isRecommended(_ provider: AIProvider) -> Bool {
-        provider == .openai
-    }
-
-    private func providerMetaTag(_ text: String) -> some View {
-        Text(text)
-            .font(.caption2)
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(AppDesignSystem.Colors.subtleFill2)
-            .clipShape(Capsule())
-    }
-
-    private func providerAvatar(for provider: AIProvider) -> some View {
+    func providerAvatar(for provider: AIProvider) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: AppDesignSystem.Layout.smallCornerRadius)
                 .fill(provider.logoBackgroundColor)
@@ -464,7 +404,7 @@ public struct EnhancementsProviderModelsPage: View {
         }
     }
 
-    private func providerLogoImage(for provider: AIProvider) -> Image? {
+    func providerLogoImage(for provider: AIProvider) -> Image? {
         guard let logoAssetName = provider.logoAssetName else {
             return nil
         }
@@ -486,127 +426,17 @@ public struct EnhancementsProviderModelsPage: View {
     }
 }
 
-private extension AIProvider {
-    var logoAssetName: String? {
-        switch self {
-        case .openai:
-            "openai"
-        case .anthropic:
-            "anthropic"
-        case .groq:
-            "groq"
-        case .google:
-            "google"
-        case .custom:
-            nil
-        }
+extension EnhancementsProviderModelsPage {
+    var activeRegistrations: [EnhancementsProviderRegistration] {
+        postProcessingViewModel.settings.enhancementsProviderRegistrations
     }
 
-    var logoBackgroundColor: Color {
-        switch self {
-        case .openai:
-            Color(
-                red: 0.0 / 255.0,
-                green: 0.0 / 255.0,
-                blue: 0.0 / 255.0
-            )
-        case .anthropic:
-            Color(
-                red: 242.0 / 255.0,
-                green: 237.0 / 255.0,
-                blue: 229.0 / 255.0
-            )
-        case .groq:
-            Color(
-                red: 232.0 / 255.0,
-                green: 80.0 / 255.0,
-                blue: 53.0 / 255.0
-            )
-        case .google:
-            Color.white
-        case .custom:
-            AppDesignSystem.Colors.subtleFill2
-        }
+    var registeredBuiltInProviders: Set<AIProvider> {
+        Set(activeRegistrations.filter { $0.provider != .custom }.map(\.provider))
     }
 
-    var logoTintColor: Color? {
-        switch self {
-        case .openai, .groq:
-            .white
-        case .anthropic, .google, .custom:
-            nil
-        }
-    }
-}
-
-private struct PreviewEnhancementsKeychainProvider: KeychainProvider {
-    func store(_ value: String, for key: KeychainManager.Key) throws {}
-    func retrieve(for key: KeychainManager.Key) throws -> String? {
-        nil
+    func isRegistrationSelected(_ registrationID: UUID, in mode: IntelligenceKernelMode) -> Bool {
+        postProcessingViewModel.settings.enhancementsSelection(for: mode).registrationID == registrationID
     }
 
-    func delete(for key: KeychainManager.Key) throws {}
-    func exists(for key: KeychainManager.Key) -> Bool {
-        false
-    }
-
-    func retrieveAPIKey(for provider: AIProvider) throws -> String? {
-        nil
-    }
-
-    func existsAPIKey(for provider: AIProvider) -> Bool {
-        provider == .openai
-    }
-}
-
-private struct PreviewEnhancementsLLMService: LLMService {
-    func validateURL(_ urlString: String) -> URL? {
-        URL(string: "https://api.openai.com/v1")
-    }
-
-    func fetchAvailableModels(baseURL: URL, apiKey: String, provider: AIProvider) async throws -> [LLMModel] {
-        [
-            .init(id: "gpt-4o-mini", object: "model", created: nil, ownedBy: "openai"),
-            .init(id: "gpt-4.1-mini", object: "model", created: nil, ownedBy: "openai"),
-        ]
-    }
-
-    func testConnection(baseURL: URL, apiKey: String, provider: AIProvider) async throws -> Bool {
-        true
-    }
-}
-
-@MainActor
-private struct EnhancementsProviderModelsPagePreview: View {
-    @StateObject private var aiViewModel: AISettingsViewModel
-    @StateObject private var postProcessingViewModel: PostProcessingSettingsViewModel
-
-    init() {
-        let settings = AppSettingsStore.shared
-        settings.postProcessingEnabled = true
-        settings.enhancementsAISelection = EnhancementsAISelection(provider: .openai, selectedModel: "gpt-4o-mini")
-        let aiViewModel = AISettingsViewModel(
-            settings: settings,
-            keychain: PreviewEnhancementsKeychainProvider(),
-            llmService: PreviewEnhancementsLLMService()
-        )
-        aiViewModel.enhancementsConnectionStatus = .unknown
-        _aiViewModel = StateObject(wrappedValue: aiViewModel)
-        _postProcessingViewModel = StateObject(wrappedValue: PostProcessingSettingsViewModel(settings: settings))
-    }
-
-    var body: some View {
-        NavigationStack {
-            EnhancementsProviderModelsPage(
-                viewModel: aiViewModel,
-                postProcessingViewModel: postProcessingViewModel,
-                initialExpandedProvider: .openai
-            )
-        }
-        .frame(width: 860, height: 640)
-    }
-}
-
-#Preview("Enhancements Provider Models") {
-    EnhancementsProviderModelsPagePreview()
 }

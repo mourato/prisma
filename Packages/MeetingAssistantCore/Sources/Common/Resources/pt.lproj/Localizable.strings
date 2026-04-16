@@ -229,6 +229,7 @@
 "settings.ai.connection.cannot_connect" = "Não foi possível conectar ao servidor";
 "settings.ai.connection.secure_failed" = "Falha na conexão segura";
 "settings.ai.connection.network_lost" = "Conexão de rede perdida";
+"settings.ai.save_failed" = "Falha ao salvar a chave de API. Verifique as permissões do Keychain.";
 
 /* AI Model Download Progress */
 "settings.ai.phase_idle" = "Aguardando início...";
@@ -276,6 +277,22 @@
 "settings.enhancements.provider.google.desc" = "Modelos Gemini do Google para pós-processamento e Q&A de reuniões.";
 "settings.enhancements.provider.custom.desc" = "Endpoint customizado compatível com OpenAI para provedores internos ou proxy.";
 "settings.enhancements.provider.custom.default_name" = "Custom %d";
+"settings.enhancements.providers.select_title" = "Selecionar provedor";
+"settings.enhancements.providers.already_added" = "Já adicionado";
+"settings.enhancements.providers.active_title" = "Registros de provedores ativos";
+"settings.enhancements.providers.active_desc" = "Gerencie os provedores disponíveis para seleção de modelo de reunião e ditado.";
+"settings.enhancements.providers.add" = "Adicionar provedor";
+"settings.enhancements.providers.empty" = "Nenhum provedor registrado ainda. Adicione um para começar.";
+"settings.enhancements.providers.editor.title_create" = "Adicionar provedor";
+"settings.enhancements.providers.editor.title_edit" = "Editar provedor";
+"settings.enhancements.providers.editor.provider_label" = "Provedor";
+"settings.enhancements.providers.editor.name" = "Nome";
+"settings.enhancements.providers.editor.create_failed" = "Não foi possível criar o registro do provedor.";
+"settings.enhancements.providers.editor.missing_registration" = "O registro do provedor não existe mais.";
+"settings.enhancements.providers.editor.validation.name_required" = "Informe um nome para o provedor customizado.";
+"settings.enhancements.providers.editor.validation.base_url_required" = "Informe uma URL base para o provedor customizado.";
+"settings.enhancements.providers.editor.validation.base_url_invalid" = "Informe uma URL base HTTP ou HTTPS válida.";
+"settings.enhancements.providers.editor.validation.key_required_for_test" = "Informe uma chave de API ou mantenha uma chave existente para testar a conexão.";
 "settings.enhancements.badge.recommended" = "Recomendado";
 "settings.enhancements.badge.requires_api_key" = "Exige Chave de API";
 "settings.enhancements.badge.model_picker" = "Seletor de Modelo";
