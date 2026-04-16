@@ -26,25 +26,13 @@ enum CohereTranscribeModelRuntime {
         "cohere_vocab.json",
     ]
 
-    private struct RepositoryTreeItem: Decodable {
-        let path: String
-        let type: String
-        let size: Int?
-    }
-
     enum RuntimeError: LocalizedError {
-        case accessDenied
-        case invalidResponse(statusCode: Int)
         case missingRequiredArtifacts([String])
         case vocabularyNotFound
         case vocabularyUnreadable(String)
 
         var errorDescription: String? {
             switch self {
-            case .accessDenied:
-                "Cohere model repository access denied. Confirm your Hugging Face token has access to this model."
-            case let .invalidResponse(statusCode):
-                "Failed to fetch Cohere model files (HTTP \(statusCode))."
             case let .missingRequiredArtifacts(missing):
                 "Missing required Cohere model artifacts: \(missing.joined(separator: ", "))."
             case .vocabularyNotFound:
@@ -92,16 +80,18 @@ enum CohereTranscribeModelRuntime {
         try fileManager.createDirectory(at: targetDirectory, withIntermediateDirectories: true)
 
         logger.info("Downloading Cohere local model artifacts from Hugging Face...")
-        let files = try await listFilesRecursively(path: "")
+        let files = try await HuggingFaceRepositoryDownloader.listFilesRecursively(repoPath: remoteRepoPath)
         let filteredFiles = files.filter { shouldDownload(path: $0.path) }
 
         if filteredFiles.isEmpty {
             throw RuntimeError.missingRequiredArtifacts(requiredModelDirectoryNames + vocabularyCandidates)
         }
 
-        for file in filteredFiles {
-            try await downloadFile(path: file.path, size: file.size, to: targetDirectory)
-        }
+        try await HuggingFaceRepositoryDownloader.downloadFiles(
+            repoPath: remoteRepoPath,
+            files: filteredFiles,
+            to: targetDirectory
+        )
 
         let missing = requiredModelDirectoryNames.filter { name in
             (try? findDirectory(named: name, under: targetDirectory)) == nil
@@ -164,89 +154,6 @@ enum CohereTranscribeModelRuntime {
         return requiredModelDirectoryNames.contains { directoryName in
             path.contains("/\(directoryName)/") || path.hasPrefix("\(directoryName)/")
         }
-    }
-
-    private static func huggingFaceToken() -> String? {
-        ProcessInfo.processInfo.environment["HF_TOKEN"]
-            ?? ProcessInfo.processInfo.environment["HUGGING_FACE_HUB_TOKEN"]
-            ?? ProcessInfo.processInfo.environment["HUGGINGFACEHUB_API_TOKEN"]
-    }
-
-    private static func authorizedRequest(url: URL) -> URLRequest {
-        var request = URLRequest(url: url, timeoutInterval: 1_800)
-        if let token = huggingFaceToken() {
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        }
-        return request
-    }
-
-    private static func listFilesRecursively(path: String) async throws -> [RepositoryTreeItem] {
-        let apiPath = path.isEmpty ? "tree/main" : "tree/main/\(path)"
-        let url = try ModelRegistry.apiModels(remoteRepoPath, apiPath)
-        let request = authorizedRequest(url: url)
-        let (data, response) = try await DownloadUtils.sharedSession.data(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw RuntimeError.invalidResponse(statusCode: -1)
-        }
-
-        if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
-            throw RuntimeError.accessDenied
-        }
-
-        guard (200..<300).contains(httpResponse.statusCode) else {
-            throw RuntimeError.invalidResponse(statusCode: httpResponse.statusCode)
-        }
-
-        let items = try JSONDecoder().decode([RepositoryTreeItem].self, from: data)
-        var collectedFiles: [RepositoryTreeItem] = []
-
-        for item in items {
-            if item.type == "directory" {
-                let nested = try await listFilesRecursively(path: item.path)
-                collectedFiles.append(contentsOf: nested)
-            } else if item.type == "file" {
-                collectedFiles.append(item)
-            }
-        }
-
-        return collectedFiles
-    }
-
-    private static func downloadFile(path: String, size: Int?, to rootDirectory: URL) async throws {
-        let destinationURL = rootDirectory.appendingPathComponent(path)
-        if FileManager.default.fileExists(atPath: destinationURL.path) {
-            return
-        }
-
-        try FileManager.default.createDirectory(
-            at: destinationURL.deletingLastPathComponent(),
-            withIntermediateDirectories: true
-        )
-
-        if size == 0 {
-            FileManager.default.createFile(atPath: destinationURL.path, contents: Data())
-            return
-        }
-
-        let encodedPath = path.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? path
-        let downloadURL = try ModelRegistry.resolveModel(remoteRepoPath, encodedPath)
-        let request = authorizedRequest(url: downloadURL)
-        let (tempFileURL, response) = try await DownloadUtils.sharedSession.download(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw RuntimeError.invalidResponse(statusCode: -1)
-        }
-
-        if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
-            throw RuntimeError.accessDenied
-        }
-
-        guard (200..<300).contains(httpResponse.statusCode) else {
-            throw RuntimeError.invalidResponse(statusCode: httpResponse.statusCode)
-        }
-
-        try FileManager.default.moveItem(at: tempFileURL, to: destinationURL)
     }
 
     private static func findDirectory(named targetName: String, under rootDirectory: URL) throws -> URL {

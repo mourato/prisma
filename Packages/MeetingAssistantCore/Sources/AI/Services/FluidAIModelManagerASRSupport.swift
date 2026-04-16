@@ -13,16 +13,8 @@ extension FluidAIModelManager {
 
     public func isASRModelInstalled(localModelID: String) -> Bool {
         guard let model = LocalTranscriptionModel(rawValue: localModelID) else { return false }
-
-        switch model {
-        case .parakeetTdt06BV3:
-            return AsrModels.modelsExist(
-                at: AsrModels.defaultCacheDirectory(for: .v3),
-                version: .v3
-            )
-        case .cohereTranscribe032026CoreML6Bit:
-            return CohereTranscribeModelRuntime.modelsExist()
-        }
+        let runtime = LocalASRModelRuntimeRegistry.runtime(for: model)
+        return runtime.isInstalled()
     }
 
     func resolveLocalModel(from rawValue: String) -> LocalTranscriptionModel {
@@ -30,12 +22,8 @@ extension FluidAIModelManager {
     }
 
     func loadASRModels(for model: LocalTranscriptionModel) async throws -> AsrModels {
-        switch model {
-        case .parakeetTdt06BV3:
-            try await AsrModels.downloadAndLoad(version: .v3)
-        case .cohereTranscribe032026CoreML6Bit:
-            try await CohereTranscribeModelRuntime.downloadAndLoad()
-        }
+        let runtime = LocalASRModelRuntimeRegistry.runtime(for: model)
+        return try await runtime.downloadAndLoad()
     }
 
     func hasDiarizationModelsOnDisk() -> Bool {
