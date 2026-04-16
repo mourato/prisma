@@ -53,15 +53,15 @@ public class LocalTranscriptionClient {
             fallbackHint: AppSettingsStore.shared.transcriptionInputLanguageHint.languageCode
         )
 
-        let (text, segmentsFromASR, confidenceScore) = try await manager.transcribe(
+        let asrOutput = try await manager.transcribe(
             audioURL: audioURL,
             inputLanguageHintCode: resolvedLanguageCode,
             progress: onProgress
         )
 
         let context = TranscriptionRunContext(
-            text: text,
-            asrSegments: segmentsFromASR,
+            text: asrOutput.text,
+            asrSegments: asrOutput.segments,
             audioURL: audioURL,
             minSpeakers: minSpeakers,
             maxSpeakers: maxSpeakers,
@@ -78,13 +78,13 @@ public class LocalTranscriptionClient {
         let processedAt = ISO8601DateFormatter().string(from: Date())
 
         return TranscriptionResponse(
-            text: text,
+            text: asrOutput.text,
             segments: segments,
             language: resolvedLanguageCode ?? "auto",
             durationSeconds: duration,
             model: selectedModel.rawValue,
             processedAt: processedAt,
-            confidenceScore: confidenceScore
+            confidenceScore: asrOutput.confidenceScore
         )
     }
 
@@ -104,14 +104,14 @@ public class LocalTranscriptionClient {
             inputLanguageHintCode,
             fallbackHint: AppSettingsStore.shared.transcriptionInputLanguageHint.languageCode
         )
-        let (text, segmentsFromASR, confidenceScore) = try await manager.transcribe(
+        let asrOutput = try await manager.transcribe(
             samples: samples,
             inputLanguageHintCode: resolvedLanguageCode
         )
         let duration = Date().timeIntervalSince(startTime)
         let processedAt = ISO8601DateFormatter().string(from: Date())
 
-        let segments = segmentsFromASR.map { segment in
+        let segments = asrOutput.segments.map { segment in
             Transcription.Segment(
                 speaker: Transcription.unknownSpeaker,
                 text: segment.text,
@@ -121,13 +121,13 @@ public class LocalTranscriptionClient {
         }
 
         return TranscriptionResponse(
-            text: text,
+            text: asrOutput.text,
             segments: segments,
             language: resolvedLanguageCode ?? "auto",
             durationSeconds: duration,
             model: selectedModel.rawValue,
             processedAt: processedAt,
-            confidenceScore: confidenceScore
+            confidenceScore: asrOutput.confidenceScore
         )
     }
 

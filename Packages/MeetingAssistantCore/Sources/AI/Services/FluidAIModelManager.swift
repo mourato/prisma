@@ -47,7 +47,7 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
     }
 
     public var isASRResidentInMemory: Bool {
-        asrManager != nil && modelState == .loaded
+        hasLoadedASRRuntime && modelState == .loaded
     }
 
     public var isDiarizationResidentInMemory: Bool {
@@ -55,9 +55,14 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
     }
 
     private(set) var asrManager: AsrManager?
+    private(set) var cohereAsrManager: CohereTranscribeAsrManager?
     private(set) var diarizerManager: OfflineDiarizerManager?
     private var asrInFlightOperationCount = 0
     private var diarizationInFlightOperationCount = 0
+
+    private var hasLoadedASRRuntime: Bool {
+        asrManager != nil || cohereAsrManager != nil
+    }
 
     public enum ModelState: String, Sendable {
         case unloaded
@@ -125,7 +130,7 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
 
         guard modelState != .downloading, modelState != .loading else { return }
         if modelState == .loaded,
-           asrManager != nil,
+              hasLoadedASRRuntime,
            loadedASRLocalModelID == requestedModel.rawValue
         {
             return
@@ -137,23 +142,31 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
         logger.info("Starting model download/load for local ASR model: \(requestedModel.rawValue, privacy: .public)")
 
         do {
-            let models = try await loadASRModels(for: requestedModel)
-
             modelState = .loading
             downloadPhase = .loadingASR
-            logger.info("Initializing ASR Manager...")
+            logger.info("Initializing local ASR runtime for model: \(requestedModel.rawValue, privacy: .public)")
 
-            // AsrManager initialization
-            let manager = AsrManager(config: .default)
-            try await manager.initialize(models: models)
+            switch requestedModel {
+            case .parakeetTdt06BV3:
+                let models = try await loadASRModels(for: requestedModel)
+                let manager = AsrManager(config: .default)
+                try await manager.initialize(models: models)
+                asrManager = manager
+                cohereAsrManager = nil
+            case .cohereTranscribe032026CoreML6Bit:
+                let modelDirectory = try await CohereTranscribeModelRuntime.downloadIfNeeded()
+                let manager = CohereTranscribeAsrManager()
+                try await manager.loadModels(from: modelDirectory, computeUnits: .cpuAndGPU)
+                cohereAsrManager = manager
+                asrManager = nil
+            }
 
-            asrManager = manager
             loadedASRLocalModelID = requestedModel.rawValue
             modelState = .loaded
             isASRInstalled = isASRModelInstalled(localModelID: requestedModel.rawValue)
             lastASRActivityAt = Date()
             updateReadyState()
-            logger.info("ASR Manager initialized successfully.")
+            logger.info("Local ASR runtime initialized successfully.")
 
         } catch {
             let errorMessage = error.localizedDescription
@@ -265,6 +278,7 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
 
         // Unload from memory
         asrManager = nil
+        cohereAsrManager = nil
         loadedASRLocalModelID = nil
         modelState = .unloaded
         isASRInstalled = false
@@ -332,7 +346,7 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
 
     /// Refreshes model installation flags based on in-memory managers and local disk contents.
     public func refreshInstalledModelStates() {
-        if asrManager != nil {
+        if hasLoadedASRRuntime {
             isASRInstalled = true
         } else {
             isASRInstalled = hasASRModelsOnDisk()
@@ -347,11 +361,12 @@ public class FluidAIModelManager: ObservableObject, AIModelService {
 
     @discardableResult
     public func unloadASRFromMemoryIfPossible() -> Bool {
-        guard asrManager != nil else { return false }
+        guard hasLoadedASRRuntime else { return false }
         guard !isASRInUse else { return false }
         guard modelState != .downloading, modelState != .loading else { return false }
 
         asrManager = nil
+        cohereAsrManager = nil
         loadedASRLocalModelID = nil
         modelState = .unloaded
         if downloadPhase == .ready {
@@ -435,84 +450,148 @@ extension FluidAIModelManager {
         let endTime: Double
     }
 
+    struct AsrTranscriptionOutput {
+        let text: String
+        let segments: [AsrSegment]
+        let confidenceScore: Double?
+    }
+
     /// Transcribe audio from a URL.
     func transcribe(
         audioURL: URL,
         inputLanguageHintCode: String? = nil,
         progress: (@Sendable (Double) -> Void)? = nil
-    ) async throws -> (text: String, segments: [AsrSegment], confidenceScore: Double?) {
+    ) async throws -> AsrTranscriptionOutput {
         lastASRActivityAt = Date()
-        guard let manager = asrManager, modelState == .loaded else {
+        guard modelState == .loaded, let loadedASRLocalModelID else {
             throw FluidError.modelNotLoaded
         }
+        let loadedModel = resolveLocalModel(from: loadedASRLocalModelID)
 
         asrInFlightOperationCount += 1
         defer { asrInFlightOperationCount = max(0, asrInFlightOperationCount - 1) }
 
         logger.info("Transcribing audio file: \(audioURL.path)")
-        if let inputLanguageHintCode, !inputLanguageHintCode.isEmpty {
-            logger.info(
-                "ASR language hint requested: \(inputLanguageHintCode) (FluidAudio currently auto-detects language)"
-            )
-        }
 
-        let stream = await manager.transcriptionProgressStream
-        let progressTask = Task {
-            if let progress {
-                do {
-                    for try await p in stream {
-                        progress(p * 100.0)
+        switch loadedModel {
+        case .parakeetTdt06BV3:
+            if let inputLanguageHintCode, !inputLanguageHintCode.isEmpty {
+                logger.info(
+                    "ASR language hint requested: \(inputLanguageHintCode) (FluidAudio currently auto-detects language)"
+                )
+            }
+
+            guard let manager = asrManager else {
+                throw FluidError.modelNotLoaded
+            }
+
+            let stream = await manager.transcriptionProgressStream
+            let progressTask = Task {
+                if let progress {
+                    do {
+                        for try await p in stream {
+                            progress(p * 100.0)
+                        }
+                    } catch {
+                        // Keep transcription resilient when progress stream fails.
                     }
-                } catch {
-                    // Keep transcription resilient when progress stream fails.
                 }
             }
-        }
+            defer { progressTask.cancel() }
 
-        let result = try await manager.transcribe(audioURL, source: .system)
-        progressTask.cancel()
+            let result = try await manager.transcribe(audioURL, source: .system)
 
-        let mappedSegments = (result.tokenTimings ?? []).compactMap { (token: Any) -> AsrSegment? in
-            guard let timing = token as? TokenTiming else { return nil }
-            return AsrSegment(
-                text: timing.token,
-                startTime: Double(timing.startTime),
-                endTime: Double(timing.endTime)
+            let mappedSegments = (result.tokenTimings ?? []).compactMap { (token: Any) -> AsrSegment? in
+                guard let timing = token as? TokenTiming else { return nil }
+                return AsrSegment(
+                    text: timing.token,
+                    startTime: Double(timing.startTime),
+                    endTime: Double(timing.endTime)
+                )
+            }
+
+            return AsrTranscriptionOutput(
+                text: result.text,
+                segments: mappedSegments,
+                confidenceScore: Double(result.confidence)
             )
-        }
 
-        return (result.text, mappedSegments, Double(result.confidence))
+        case .cohereTranscribe032026CoreML6Bit:
+            if let inputLanguageHintCode, !inputLanguageHintCode.isEmpty {
+                logger.info(
+                    "ASR language hint requested: \(inputLanguageHintCode) (Cohere runtime currently uses manifest default prompts)"
+                )
+            }
+
+            guard let manager = cohereAsrManager else {
+                throw FluidError.modelNotLoaded
+            }
+
+            progress?(10)
+            let text = try await manager.transcribe(audioFileAt: audioURL)
+            progress?(100)
+
+            return AsrTranscriptionOutput(text: text, segments: [], confidenceScore: nil)
+        }
     }
 
     func transcribe(
         samples: [Float],
         inputLanguageHintCode: String? = nil
-    ) async throws -> (text: String, segments: [AsrSegment], confidenceScore: Double?) {
+    ) async throws -> AsrTranscriptionOutput {
         lastASRActivityAt = Date()
-        guard let manager = asrManager, modelState == .loaded else {
+        guard modelState == .loaded, let loadedASRLocalModelID else {
             throw FluidError.modelNotLoaded
         }
+        let loadedModel = resolveLocalModel(from: loadedASRLocalModelID)
 
         asrInFlightOperationCount += 1
         defer { asrInFlightOperationCount = max(0, asrInFlightOperationCount - 1) }
 
         logger.info("Transcribing in-memory audio samples: \(samples.count)")
-        if let inputLanguageHintCode, !inputLanguageHintCode.isEmpty {
-            logger.info(
-                "ASR language hint requested: \(inputLanguageHintCode) (FluidAudio currently auto-detects language)"
-            )
-        }
-        let result = try await manager.transcribe(samples, source: .microphone)
 
-        let mappedSegments = (result.tokenTimings ?? []).map { timing in
-            AsrSegment(
-                text: timing.token,
-                startTime: Double(timing.startTime),
-                endTime: Double(timing.endTime)
-            )
-        }
+        switch loadedModel {
+        case .parakeetTdt06BV3:
+            if let inputLanguageHintCode, !inputLanguageHintCode.isEmpty {
+                logger.info(
+                    "ASR language hint requested: \(inputLanguageHintCode) (FluidAudio currently auto-detects language)"
+                )
+            }
 
-        return (result.text, mappedSegments, Double(result.confidence))
+            guard let manager = asrManager else {
+                throw FluidError.modelNotLoaded
+            }
+
+            let result = try await manager.transcribe(samples, source: .microphone)
+
+            let mappedSegments = (result.tokenTimings ?? []).map { timing in
+                AsrSegment(
+                    text: timing.token,
+                    startTime: Double(timing.startTime),
+                    endTime: Double(timing.endTime)
+                )
+            }
+
+            return AsrTranscriptionOutput(
+                text: result.text,
+                segments: mappedSegments,
+                confidenceScore: Double(result.confidence)
+            )
+
+        case .cohereTranscribe032026CoreML6Bit:
+            if let inputLanguageHintCode, !inputLanguageHintCode.isEmpty {
+                logger.info(
+                    "ASR language hint requested: \(inputLanguageHintCode) (Cohere runtime currently uses manifest default prompts)"
+                )
+            }
+
+            guard let manager = cohereAsrManager else {
+                throw FluidError.modelNotLoaded
+            }
+
+            let text = try await manager.transcribe(audioSamples: samples)
+            return AsrTranscriptionOutput(text: text, segments: [], confidenceScore: nil)
+        }
     }
 
     private func convertTo16kHz(buffer: AVAudioPCMBuffer) throws -> AVAudioPCMBuffer {
